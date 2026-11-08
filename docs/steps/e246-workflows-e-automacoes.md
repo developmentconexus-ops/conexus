@@ -18,43 +18,42 @@ reabre as linhas no `main` do dia.
 ## A página do fundador
 
 **No fim desta etapa** você monta, conversando com o Construtor dentro de um Projeto, o fluxo dos
-orçamentos do dia: todo dia às 8h o Conexus lê os orçamentos do dia no Sankhya, um agente faz a
-triagem e lança o pedido dos bons acima de um valor pedindo a sua aprovação para cada um, depois
-pede a sua aprovação para o resumo e avisa alguém. Você vê o fluxo ao lado da conversa como uma
+pedidos de hoje: todo dia às 8h o Conexus lê no Sankhya os pedidos de venda do dia, um agente faz a
+triagem e diz quais são de clientes bons acima de um valor, depois pede a sua aprovação para o
+resumo e avisa alguém. Você vê o fluxo ao lado da conversa como uma
 coluna de balões, o mesmo desenho do celular: clica num balão para ver quem ele é, como está
 configurado, o que recebe, o que devolve e a definição dele como código, e o move para cima ou para
 baixo. Depois de publicar, vê cada execução com os balões acesos e aprova a que espera você.
 
 **O roteiro de uso.** Você é a Ana (dona). A ligação do Sankhya está liberada ao Projeto
-"Compras", e o agente "Triagem de orçamento", com a escrita **Lançar pedido** em **Pergunta
-antes**, está publicado nele.
+"Compras", e o agente "Triagem de pedidos", que só lê, está publicado nele.
 
-1. No Projeto "Compras", abra o Construtor e escreva "todo dia às 8h, olha os orçamentos do dia no
-   Sankhya; o agente Triagem vê quais clientes estão bons e lança o pedido de cada orçamento bom
-   acima de R$ 20 mil; depois me pede para aprovar o resumo e avisa o Bruno". Ao lado da conversa
-   aparece a coluna **Workflow: Orçamentos do dia**, marcada "rascunho", com os balões **Gatilho**
-   (todo dia às 8h), **Ler os orçamentos do dia** (lê, Sankhya), **Triagem de orçamento**
-   (agente), **Aprovar o resumo? (Ana)** e **Avisar o Bruno**. Se faltar algo (o que é um
-   orçamento, quem avisar), o Construtor pergunta antes de montar.
-2. Clique em **Triagem de orçamento**: abre o painel com **Quem é** (o agente e a versão publicada
+1. No Projeto "Compras", abra o Construtor e escreva "todo dia às 8h, olha os pedidos de venda de
+   hoje no Sankhya; o agente Triagem vê quais são de clientes bons acima de R$ 20 mil; depois me
+   pede para aprovar o resumo e avisa o Bruno". Ao lado da conversa aparece a coluna **Workflow:
+   Pedidos de hoje**, marcada "rascunho", com os balões **Gatilho** (todo dia às 8h), **Ler os
+   pedidos de hoje** (lê, Sankhya: os pedidos com a data de negociação do dia), **Triagem de
+   pedidos** (agente), **Aprovar o resumo? (Ana)** e **Avisar o Bruno**. Se faltar algo (de qual
+   empresa do Sankhya, quem avisar), o Construtor pergunta antes de montar.
+2. Clique em **Triagem de pedidos**: abre o painel com **Quem é** (o agente e a versão publicada
    que o fluxo usa), **Configuração** (o pedido ao agente e quem aprova uma escrita dele), **O que
-   recebe** (o texto, com os orçamentos que a leitura devolveu), **O que devolve** (o texto da
+   recebe** (o texto, com os pedidos que a leitura devolveu), **O que devolve** (o texto da
    triagem) e **Código** (a definição do balão, só para ler). Em **Avisar o Bruno**, toque
    **Mover para cima** até antes da **Triagem**: o balão aparece marcado, porque usa o texto da
    triagem, e **Publicar** espera; mova de volta. Se um balão tem outro problema (por exemplo, uma
    pessoa que saiu da empresa), ele aparece marcado da mesma forma.
-3. Escreva "testa agora". Os balões acendem um a um; o teste para antes de lançar qualquer pedido e
-   ninguém é avisado. Toque **Publicar**. O workflow aparece em Automações do Projeto, ligado.
-4. Lance no Sankhya um orçamento de teste acima de R$ 20.000 com data de hoje e toque **Rodar
-   agora** (ou espere as 8h). O sino e o seu e-mail mostram "O workflow Orçamentos do dia espera sua
-   aprovação". Abra: os balões feitos em verde, e a triagem com o pedido que vai lançar e os campos.
-   Aprove, e o pedido aparece no Sankhya com a marca do Conexus na observação. **Aprovar o
-   resumo?** acende com o texto da triagem; aprove, e o Bruno recebe o aviso.
-5. Peça ao Construtor "acima de R$ 50 mil em vez de 20" e, antes de publicar, rode de novo com um
-   orçamento de R$ 30.000: a triagem ainda pede para lançar, porque a versão publicada continua a de
-   antes. Publique e rode outra vez: agora ela não lança.
-6. No Projeto, em Integrações, tire a liberação da ligação do Sankhya e rode: **Ler os orçamentos do
-   dia** falha com o motivo, e você recebe o aviso. Libere de novo e toque **Tentar de novo**: a
+3. Escreva "testa agora". Os balões acendem um a um, e ninguém é avisado. Toque **Publicar**. O workflow aparece em Automações do Projeto, ligado.
+4. Lance no Sankhya um pedido de teste acima de R$ 20.000, de um cliente bom, com data de hoje, e
+   toque **Rodar agora** (ou espere as 8h). "Hoje" é o dia em que a execução começou: às 8h, o do
+   disparo da agenda; no **Rodar agora**, o do toque; e **Tentar de novo** amanhã ainda lê o dia
+   da execução. O sino e o seu e-mail mostram "O workflow Pedidos de hoje espera sua aprovação".
+   Abra: os balões feitos em verde, e **Aprovar o resumo?** com o texto da triagem, que cita o
+   pedido de teste. Aprove, e o Bruno recebe o aviso.
+5. Peça ao Construtor "acima de R$ 50 mil em vez de 20" e, antes de publicar, lance um pedido de
+   R$ 30.000 e rode de novo: a triagem ainda o cita, porque a versão publicada continua a de antes.
+   Publique e rode outra vez: agora ela não o cita.
+6. No Projeto, em Integrações, tire a liberação da ligação do Sankhya e rode: **Ler os pedidos de
+   hoje** falha com o motivo, e você recebe o aviso. Libere de novo e toque **Tentar de novo**: a
    execução continua do balão que falhou. Em Automações, pause o workflow: às 8h nada roda; religue.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz o roteiro no
@@ -101,6 +100,13 @@ chamar nada de fora; as provas P1 a P15 do estudo, a prova do estudo de gatilhos
   gatilho do Sankhya: o fluxo aparece em coluna, o gatilho é horário ou manual, e o roteiro passa a
   "todo dia às 8h". O canvas `@xyflow/react` e o gatilho do Sankhya com a caixa de eventos vão para a
   24.6.1, já estudados e corrigidos no fim deste cartão.
+- **O roteiro roda com o que existe** (a sua resposta, 2026-11-08: "Okay segue seu recomendado
+  sendo nativo, mas não precisa ser na 24.6, poderia ser 24.6.1 por exemplo"). O kit do Sankhya
+  não tem leitura de orçamento, e nada dava a um balão a data de hoje. O roteiro desta etapa lê os
+  pedidos de venda de hoje, e a Triagem só diz quais são bons, sem lançar e sem **Se**. "Hoje" é o
+  dia em que a execução começou, tirado da id que a agenda do Mastra dá a cada disparo (~40 linhas
+  a mais). O **Se** sobre os campos que um balão de agente devolve e a leitura de orçamento pelo
+  tipo de operação vão para a 24.6.1, com uma pergunta a você (abaixo, "O que vai para a 24.6.1").
 
 **O que mudou na emenda anterior** (r2, contra o cartão em `ef048874`):
 
@@ -159,7 +165,8 @@ chamar nada de fora; as provas P1 a P15 do estudo, a prova do estudo de gatilhos
   manual, e nenhum dos dois traz um campo de número; o **Se** compara um campo do gatilho, então o
   roteiro desta etapa não o usa. O **Se** com **senão** e o **Usar outro workflow** estão no
   documento, na compilação, na coluna e nos testes do servidor (critérios 13, 38 e 41); você os usa
-  no roteiro da 24.6.1, com o gatilho do Sankhya.
+  no roteiro da 24.6.1, onde o **Se** passa a comparar qualquer campo que um balão anterior
+  declara, como o IF do n8n.
 - **24.6.2**: **Ao mesmo tempo** (caminhos lado a lado) e **Para cada** ("para cada item do
   orçamento", com "2 de 3" na execução). O documento e a compilação já os têm nesta etapa; a tela,
   o Construtor e a execução por item vêm lá.
@@ -350,15 +357,15 @@ o canvas).
 | --- | --- | --- |
 | U1 | ~1.350 | ~800 do cartão anterior, mais ~550 do documento recursivo, das quatro regras e dos caminhos (o preparo do fluxo completo estima ~700 para todas as formas; a U1 não leva a execução por item nem as esperas) |
 | U2 | ~350 | ~450 do cartão anterior, menos ~150 que a 24.5.1 leva (o cartão dela, decisão 1), mais ~60 da escrita do agente no livro da execução (a leitura do caminho de escrita, M7) |
-| U3 | ~1.500 | ~1.350 do cartão anterior, mais ~60 de `versionOf` e da montagem fixada, ~20 da ativação na identidade, ~70 do **senão**, do **Usar outro workflow** e de **Tentar de novo** num caminho aninhado |
+| U3 | ~1.540 | ~1.350 do cartão anterior, mais ~60 de `versionOf` e da montagem fixada, ~20 da ativação na identidade, ~70 do **senão**, do **Usar outro workflow** e de **Tentar de novo** num caminho aninhado, ~40 do `dia` em `conferir` e na compilação |
 | U5 | ~450 | ~400 do cartão anterior, mais ~50 do vocabulário do **senão** e do **Usar outro workflow** |
 | U6 | ~700 | a revisão de outro modelo: a coluna, o painel, a execução acesa, o cartão dividido e a lista, sem o canvas de arrastar (~800, que vai para a 24.6.1) |
-| **Total** | **~4.350** | |
+| **Total** | **~4.390** | |
 
-O total passa a regra L2 (~4.000) em cerca de 9% (~350 linhas). Antes da sua decisão do tamanho o
+O total passa a regra L2 (~4.000) em cerca de 10% (~390 linhas). Antes da sua decisão do tamanho o
 cartão tinha ~5.900; a 24.6.1 recebe ~1.550 (a U4, ~750, e o canvas, ~800), além do que já tinha, e
 a divisão G-a tira ~2.800 (a 24.6.2, ~1.500, e a 24.6.3, ~1.300). Aprovar esta página com esse
-tamanho é aceitar os ~350 que ficam acima. O construtor de cada unidade para e relata se a sua
+tamanho é aceitar os ~390 que ficam acima. O construtor de cada unidade para e relata se a sua
 passar de um terço do seu número.
 
 ## Os critérios de aceite
@@ -389,13 +396,13 @@ Os caminhos são de `apps/server/src/` quando não dizem outro. `BASE` é
 | 16 | U3 | O balão `WRITE` em **Pergunta antes** espera (`waiting.kind = 'WRITE'`, `reason: 'CHOSEN'`) e o dublê não recebe nada; aprovado, envia uma vez pelo funil com o autor `WORKFLOW` e a chave `<balão>#<tentativa>`; em **Faz sozinho** envia sem parar; **Tentar de novo** depois de um envio feito não envia de novo e devolve o que o registro diz; depois de um envio recusado pelo Sankhya, envia de novo uma vez; depois de um envio de fim incerto, espera com `reason: 'UNCERTAIN'` e a marca; a recusa do Sankhya falha o balão com `BALLOON_SYSTEM_REFUSED` e o Sankhya fora com `BALLOON_SYSTEM_UNREACHABLE` | `balloons.test.ts`, "escrever" | must |
 | 17 | U3 | `D2-a` num workflow: um `WRITE` em **Faz sozinho** cuja pessoa que ativou a versão perdeu `publishUnattendedWrite` ou a escrita depois de publicar espera com `reason: 'PUBLISHER_LOST_RIGHT'` e a pessoa que espera é ela; a versão não muda | `balloons.test.ts`, "o dono perdeu o direito" | must |
 | 18 | U3 | `POST BASE/{w}/runs/{r}/retry` numa execução `FAILED` sobe `workflow_run.attempt` e retoma do balão que falhou (`timeTravel` com `attempt` no `requestContext`) sem rodar os anteriores (o dublê conta uma leitura); num balão dentro de um caminho, passa `step` igual ao id do balão do caminho e refaz o caminho do primeiro balão dele e segue (prova P8 do estudo); uma execução `running` de antes do início do Hub aparece `INTERRUPTED` ao ser lida, como `builder/automations/runs.ts:82-99`, e **Tentar de novo** a termina com `restart()` do balão em que estava; antes de vencer a posse do Mastra responde `RUN_STILL_OWNED`; dois **Tentar de novo** ao mesmo tempo sobem a tentativa uma vez e o segundo responde `RUN_NOT_FAILED`; numa execução que não falhou nem foi interrompida, ou num teste, `RUN_NOT_FAILED` | `runs.test.ts`, "tentar de novo" e "a interrompida" | must |
-| 19 | U3 | O gatilho de horário: publicar um workflow com `SCHEDULE` cria a agenda `schedule_wf-<w>-v<n>` sobre `wf-<w>-v<n>` com o `cron` de `cronOf` e o `requestContext` `RunIdentity` (`startedBy: 'SCHEDULE'`, a versão e `answeredBy`); um disparo (relógio injetado) é uma execução de id `sched_schedule_wf-<w>-v<n>_<ms>` cujas ferramentas leem a empresa do `requestContext`; publicar a `n+1` cria a agenda da `n+1` antes de apagar a da `n`; o limite de 30 da 24.2 conta, por empresa, as agendas da Automação e as `schedule_wf-*` ativas cujo `requestContext.companyId` é a empresa (`AUTOMATION_LIMIT` ao publicar ou religar a 31ª), e um workflow `MANUAL` ligado não conta; o teste da agenda não espera o minuto do relógio de verdade (#754) | `builder/workflows/schedule.test.ts` (novo) | must |
-| 20 | U3 | `POST BASE/{w}/run` responde 202 com o `runId` e começa uma execução da versão ativa com `startedBy` igual à pessoa e `answeredBy` igual a `active_by`, lidos na mesma linha; sem versão publicada, `WORKFLOW_NOT_PUBLISHED`; pausar pausa a agenda e `run` responde `WORKFLOW_PAUSED`; religar a religa; apagar o workflow apaga a agenda, as execuções no Mastra e as definições, e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst`; quem sai da empresa deixa `active_by` nulo; com o Hub atualizando, `run`, `publish` e `answer` respondem `HUB_UPDATING` | `builder/workflows/routes.test.ts`, "rodar, pausar, religar, apagar" | must |
+| 19 | U3 | O gatilho de horário: publicar um workflow com `SCHEDULE` cria a agenda `schedule_wf-<w>-v<n>` sobre `wf-<w>-v<n>` com o `cron` de `cronOf` e o `requestContext` `RunIdentity` (`startedBy: 'SCHEDULE'`, a versão e `answeredBy`); um disparo (relógio injetado) é uma execução de id `sched_schedule_wf-<w>-v<n>_<ms>` cujas ferramentas leem a empresa do `requestContext`, e cujo `conferir` devolve `dia` igual ao dia dos `<ms>` da id em `AUTOMATION_TIMEZONE` (um disparo às 23h59 de 31/12 em São Paulo dá `31/12/aaaa`), e o `READ` seguinte recebe esse `dia` em `dataNegociacaoInicio`; um `restart` dois dias depois devolve o mesmo `dia`; publicar a `n+1` cria a agenda da `n+1` antes de apagar a da `n`; o limite de 30 da 24.2 conta, por empresa, as agendas da Automação e as `schedule_wf-*` ativas cujo `requestContext.companyId` é a empresa (`AUTOMATION_LIMIT` ao publicar ou religar a 31ª), e um workflow `MANUAL` ligado não conta; o teste da agenda não espera o minuto do relógio de verdade (#754) | `builder/workflows/schedule.test.ts` (novo) | must |
+| 20 | U3 | `POST BASE/{w}/run` responde 202 com o `runId` e começa uma execução da versão ativa com `startedBy` igual à pessoa e `answeredBy` igual a `active_by`, lidos na mesma linha, e com `dia` igual ao dia do relógio injetado no começo, que **Tentar de novo** depois da meia-noite não muda; sem versão publicada, `WORKFLOW_NOT_PUBLISHED`; pausar pausa a agenda e `run` responde `WORKFLOW_PAUSED`; religar a religa; apagar o workflow apaga a agenda, as execuções no Mastra e as definições, e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst`; quem sai da empresa deixa `active_by` nulo; com o Hub atualizando, `run`, `publish` e `answer` respondem `HUB_UPDATING` | `builder/workflows/routes.test.ts`, "rodar, pausar, religar, apagar" | must |
 | 21 | U3 | `GET BASE/{w}/runs` devolve as execuções de todas as versões (de `workflow_run`, sem as de teste), 20 por página, mais novas primeiro, cada uma com a versão, o `label` ("Rodado por Ana" no manual, a hora do disparo no horário), o estado e quantas esperam; `GET BASE/{w}/runs/{r}` traz o estado e a saída de cada balão, também os de um caminho e o de um `USE`, e também de um teste; lido de outra conexão antes do fim, um balão aparece `RUNNING` e os anteriores `DONE` (prova P10 do estudo); `GET BASE?place=` devolve os workflows do lugar com o estado, a última execução e `waitingCount` | `runs.test.ts`, "a lista e a vista" | must |
 | 22 | U3 | `POST BASE/{w}/test` responde 202 com o `runId`: compila o rascunho com os agentes e os workflows usados fixados nas versões ativas para `workflow.test_draft`, registra `wf-<w>-teste` e começa uma execução sobre a entrada `{}` (o gatilho horário ou manual não tem campos), gravada em `workflow_run` com `kind = 'TEST'` e `answered_by` igual a quem começou o teste; `GET BASE/{w}/runs/{r}` a lê e acende como qualquer execução; um `APPROVAL` espera quem começou o teste, que responde pela mesma rota, sem aviso no sino; o `NOTIFY` não avisa ninguém; um `WRITE`, ou a escrita de um agente mesmo em **Faz sozinho**, não envia e o teste termina `STOPPED_BEFORE_WRITE` ("parou antes de escrever"); um segundo teste cancela a execução de teste ainda aberta e substitui a definição; um rascunho com problema `ERROR` responde `WORKFLOW_HAS_PROBLEMS` | `runs.test.ts`, "o teste" | must |
 | 41 | U3 | O **Usar outro workflow**: um `USE` do workflow "Conferir cliente" fixado na versão 1 roda os balões da versão 1 dele dentro da execução, mesmo depois de o outro publicar a versão 2; a saída do `USE` é a saída do outro; a conferência de quem ativou não roda de novo dentro dele (o `conferir` do caminho só confere que a versão fixada do outro existe); uma escrita dentro do outro é respondida por quem ativou o workflow de fora; apagar o outro workflow depois faz o `USE` falhar com `WORKFLOW_NOT_FOUND` | `balloons.test.ts`, "usar outro workflow" | must |
 | 26 | U5 | O Construtor tem `workflow_catalog`, `workflow_read`, `workflow_save` e `workflow_test`, e nenhuma ferramenta que publica; com o modelo de mentira, um pedido completo grava o rascunho, com o **Se**, o **senão** e o **Usar outro workflow**; um desenho com problemas grava e volta com a lista, e o Construtor o corrige na chamada seguinte com a `revision` nova, também quando o problema do Mastra traz o conserto (`repair`); depois de 3 gravações seguidas que ainda voltam com problema `ERROR`, o Construtor para de gravar e pergunta à pessoa o que falta (o teto de 3 tentativas do estudo do Kiro do fundador); um pedido sem quem avisar faz o Construtor perguntar, sem gravar; uma `revision` velha volta `STALE` com o rascunho atual; o catálogo não oferece `PARALLEL`, `FOREACH` nem `LOOP`, e só oferece os gatilhos `SCHEDULE` e `MANUAL` | `builder/construtor/workflow-tools.test.ts` (novo) | must |
-| 27 | U5 | Avaliação com o modelo de verdade (opt-in): o pedido do roteiro, passo 1, termina num rascunho sem problema `ERROR`, com o gatilho `SCHEDULE` todo dia às 8h, e os balões na ordem: o `READ` dos orçamentos do dia, o `AGENT` da Triagem, o `APPROVAL` do resumo e o `NOTIFY` do Bruno | `builder/construtor/construtor.eval.test.ts`, "o fluxo dos orçamentos do dia" | should |
+| 27 | U5 | Avaliação com o modelo de verdade (opt-in): o pedido do roteiro, passo 1, termina num rascunho sem problema `ERROR`, com o gatilho `SCHEDULE` todo dia às 8h, e os balões na ordem: o `READ` `pedidos` com `{{gatilho.dia}}` nas duas datas de negociação, o `AGENT` da Triagem, o `APPROVAL` do resumo e o `NOTIFY` do Bruno | `builder/construtor/construtor.eval.test.ts`, "o fluxo dos pedidos de hoje" | should |
 | 29 | U6 | A coluna mostra cada balão com o ícone e a palavra da espécie ("gatilho", "lê", "agente", "se", "aprovação", "escreve", "avisa", "outro workflow"), o título e quem; a seta entre um e o seguinte; os caminhos "se sim" e "senão" sob o **Se**, cada um sob o seu rótulo, e a coluna seguindo depois; a marca "rascunho"; o arranjo é o mesmo para o mesmo rascunho; a 1280 e a 390 px, sem nada fora da tela | `apps/web/src/builder/workflows/train.test.tsx` (novo); `apps/web/src/builder/workflows/model.test.ts` (novo) | must |
 | 30 | U6 | Clicar num balão (ou Enter nele) abre o painel com **Quem é**, **Configuração** (por espécie: a ligação e a operação de um `READ` ou `WRITE` com os campos e **Pergunta antes / Faz sozinho**; o agente, a versão, o pedido e quem aprova de um `AGENT`; a pergunta e a pessoa de um `APPROVAL`; as pessoas e a mensagem de um `NOTIFY`; a condição de um **Se**; o workflow e a versão de um `USE`; o conector, o gatilho, os tipos e a cadência do **Gatilho**), **O que recebe**, **O que devolve** (com os valores da execução quando há) e **Código** (a definição do balão no documento, só para ler, sem campo editável); **Renomear**, **Mover para cima / para baixo** e **Apagar** gravam o rascunho; Esc fecha e devolve o foco | `apps/web/src/builder/workflows/panel.test.tsx` (novo) | must |
 | 31 | U6 | **Mover para cima / para baixo** no painel, também para dentro ou para fora de um caminho, grava o rascunho inteiro com a `revision`, a lista de problemas é recalculada, e a coluna mostra a nova ordem; levar **Avisar o Bruno**, que usa `{{b2.texto}}`, para antes de **Triagem** (`b2`) cria o problema `REF_NOT_BEFORE` no balão movido e **Publicar** desliga (o estudo do Kiro do fundador: reordenar quebra a ordem de quem produz antes de quem usa); um `WORKFLOW_DRAFT_STALE` relê o rascunho e diz "O rascunho mudou; veja de novo"; numa execução ou numa versão publicada **Mover** não aparece | `apps/web/src/builder/workflows/panel.test.tsx`, "mover" | must |
@@ -457,14 +464,14 @@ gaveta.
 
 ```text
 1280                                                                         390
-┌ Construtor · Compras ──────┐┌ Orçamentos do dia [rascunho] [1 ponto] [Publicar] ┐  ┌ Orçamentos do dia ───── ✕ ┐
-│ todo dia às 8h, olha os    ││ ⏱ Gatilho · todo dia às 8h  │┌ Triagem de orçamento ┐│  │ [rascunho] [Publicar]     │
-│ orçamentos do dia ...      ││ ↓                           ││ Quem é               ││  │ ⏱ Todo dia às 8h          │
-│ Montei o workflow ao lado. ││ ▤ lê · Ler os orçamentos    ││  agente, versão 3    ││  │ ↓                         │
-│                            ││ ↓                           ││ Configuração         ││  │ ▤ Ler os orçamentos       │
+┌ Construtor · Compras ──────┐┌ Pedidos de hoje [rascunho] [1 ponto] [Publicar] ──┐  ┌ Pedidos de hoje ─────── ✕ ┐
+│ todo dia às 8h, olha os    ││ ⏱ Gatilho · todo dia às 8h  │┌ Triagem de pedidos ──┐│  │ [rascunho] [Publicar]     │
+│ pedidos de venda de hoje...││ ↓                           ││ Quem é               ││  │ ⏱ Todo dia às 8h          │
+│ Montei o workflow ao lado. ││ ▤ lê · Ler os pedidos       ││  agente, versão 3    ││  │ ↓                         │
+│                            ││ ↓                           ││ Configuração         ││  │ ▤ Ler os pedidos          │
 │                            ││ 🤖 agente · Triagem    ◀    ││  pedido, quem aprova ││  │ ↓                         │
 │                            ││ ↓                           ││ O que recebe         ││  │ 🤖 Triagem                │
-│                            ││ ✋ aprovação · Aprovar o     ││  texto + orçamentos  ││  │  ▾ Quem é · Configuração  │
+│                            ││ ✋ aprovação · Aprovar o     ││  texto + pedidos     ││  │  ▾ Quem é · Configuração  │
 │                            ││    resumo? (Ana)            ││ O que devolve        ││  │    Recebe · Devolve · Cód.│
 │                            ││ ↓                           ││  texto               ││  │ ↓                         │
 │                            ││ 📣 avisa · Avisar o Bruno   ││ Código               ││  │ ✋ Aprovar o resumo? (Ana) │
@@ -527,6 +534,7 @@ estudo de uma tela; o estudo não as tirou.
 | Avisar uma pessoa | U3 | `deps.notify.automationRan` (`hub/notifications/notifications.ts:308-325`), `notifications.notification` (`tables.ts:37-90`) e a tabela ao lado `request_notice` (`tables.ts:92-131`), que o sino já lê numa lista de tabelas (`notifications.ts:196,203,272,291`) | Zapier e Make por um passo (documentado) | O sino e o e-mail de hoje, com a tabela `workflow_notice` ao lado, como `request_notice` (D6) | embrulhado | — | não precisa | `builder/workflows/balloons/notify.ts` |
 | O gatilho de horário | U3 | `mastra.schedules.create` sobre `conexus-automation-run` (`builder/automations/automations.ts:166-179`) | Mastra `mastra.schedules` (`dist/schedules/schedules.d.ts`), a id da execução por disparo | Uma agenda por versão ativa aponta direto a `wf-<id>-v<n>` | nativo | P12 | não precisa | `builder/workflows/schedule.ts` |
 | O gatilho manual e o teste | U3 | o "Rodar agora" da Automação (`automations.ts:227-238`, `schedules.run`) | Mastra `createRun().start()` | Uma execução da versão ativa, ou de `wf-<id>-teste` sobre o rascunho | nativo | — | não precisa | `builder/workflows/runs.ts` |
+| O dia da execução (`{{gatilho.dia}}`) | U1, U3 | `AUTOMATION_TIMEZONE` (`builder/automations/cadence.ts:4`); nenhum balão recebe a data: o Assistente a tem nas instruções (`builder/assistant/instructions.ts:60`), o agente publicado não (`builder/agents/agent.ts:339-349`) | `@mastra/core@1.82.0`: a agenda publica `inputData` e `requestContext` fixos e a hora do disparo só na id `sched_<agenda>_<ms>` (`dist/scheduler-Me4rCjO2.js:357,442-463`), e a execução começa com eles (`dist/agent-BP9OWM6D.js:30421-30440`); um `mapping` lê `initData`, `step`, `requestContextPath`, `value` e `template` (`dist/workflows/dynamic/mapping-config.d.ts:20-26`), e nenhum vê a id | `conferir` grava `started_at` com os `<ms>` da id (ou agora, no manual e no teste) e devolve `dia`; o `mapping` seguinte lê `${stepResults.conferir.dia}` | embrulhado: lê a id nativa da agenda | P19 | a resposta de 2026-11-08 | `builder/workflows/balloons/check.ts` |
 | O gatilho declarado pelo conector | 24.6.1 (U4) | `Connector` com `writes` (`packages/connectors/src/kernel/definition.ts:28-51`, `:44`), `defineConnector` (`:62-87`) | Nango, activepieces, n8n, Pipedream, Composio e Airbyte: o conector declara, o workflow escolhe, o motor roda (o estudo de gatilhos, 1.1) | `Connector.triggers`, cada um com a leitura que olha, a chave do item e o cursor | embrulhado: o kit é nosso | — | `T1a` | `packages/connectors/src/kernel/trigger.ts` |
 | O cursor e a caixa de eventos | 24.6.1 (U4) | nenhum | `@mastra/core@1.82.0`: a agenda não guarda cursor (`schedules/schedules.ts:111-112`; `workflows/scheduler/scheduler.ts:18-29`) e o mesmo `runId` roda duas vezes (a prova 6.2 do estudo de gatilhos); activepieces `polling/index.ts:38-141`; n8n `poll-cursor-hooks.ts:1-18` (o cursor só anda depois de dar certo) | `workflow_trigger` guarda o cursor e a saúde; `trigger_event` com `UNIQUE (trigger_id, item_key)` é a deduplicação, e `claimed_at` é a posse de quem começa cada evento; o cursor só anda depois de a leitura toda estar na caixa | remendo | `@mastra/core@1.82.0` lido e as provas 6.1 e 6.2 do estudo de gatilhos; critérios 23 e 24; [boundaries](../reference/boundaries.md), "the trigger remembers what it has seen" (a U4 reescreve a entrada) | `T1a`, `T2c`, `T8a`, e a aprovação desta página | `builder/workflows/trigger.ts`, `builder/workflows/trigger-tables.ts` |
 | Uma admissão por gatilho de cada vez, e um começo por evento | 24.6.1 (U4) | nenhum `SKIP LOCKED` no servidor; `FOR UPDATE` em vários donos (por exemplo `builder/agents/publish.ts:342`, `hub/requests/requests.ts:143,254`, `hub/apps/repair.ts:35`) e `FOR NO KEY UPDATE` em `hub/identity/admission.ts:267` | PostgreSQL 18 `SELECT … FOR NO KEY UPDATE SKIP LOCKED` e `FOR UPDATE SKIP LOCKED` numa subconsulta de `UPDATE`, a forma de toda fila; o estudo `T2`, 7 (`T2c`: a volta é a única que admite) | A admissão trava a linha do gatilho só enquanto grava os eventos e o cursor, e na mesma transação pega os eventos a começar (`claimed_at`); a leitura no fornecedor e o começo no Mastra ficam fora da trava (D22) | nativo (do Postgres) | — | `T2c` | `builder/workflows/trigger.ts` |
@@ -633,11 +641,13 @@ decidir, para a fila de método):
   `NONE`)". `packages/hub-api/src/failure-row.ts:9`: "`actionKind: 'RETRY' | 'SIGN_IN' | 'INITIAL'
   | 'NONE'`". O cartão usa `INITIAL` como o código tem.
 
-**O que fica por conferir no fim, com o Sankhya de verdade.** O balão **Ler os orçamentos do dia**
-usa uma leitura que o kit do Sankhya já tem; nenhuma leitura nova entra nesta etapa. Qual leitura
-o Construtor escolhe para "os orçamentos do dia" (o tipo de operação de orçamento e a data de hoje),
-e se ela filtra pelo dia, é o que o roteiro confere no Sankhya de verdade; se nenhuma leitura de
-hoje servir, o passo 1 do roteiro volta ao fundador, e a leitura nova `orcamentosNovos` é da 24.6.1.
+**O que fica por conferir no fim, com o Sankhya de verdade.** O balão **Ler os pedidos de hoje**
+usa a leitura `pedidos` que o kit já tem (`packages/connectors/src/sankhya/operations/vendas.ts:16-29`),
+com `codigoEmpresa` e com `dataNegociacaoInicio` e `dataNegociacaoFinal` iguais a `{{gatilho.dia}}`
+(a `Janela`, `vendas.ts:8-14`, em dd/mm/aaaa, `shared.ts:11`); nenhuma leitura nova entra nesta
+etapa. O roteiro confere no Sankhya de verdade que a rota filtra pelo dia de negociação como a
+documentação diz. O kit não tem leitura de orçamento: nenhuma leitura pronta (`operations/index.ts:26-40`)
+filtra pelo tipo de operação, e `pedidos` não o recebe. A leitura de orçamento é da 24.6.1.
 
 ## U1 O workflow como dado
 
@@ -950,7 +960,13 @@ o `WriteTarget` do `WRITE` em **Faz sozinho** e `slug` igual ao id do balão (o 
 
 `TriggerShape` é o esquema da entrada da execução: `{}` no `SCHEDULE` e no `MANUAL`, os dois desta
 etapa; a 24.6.1 traz o da linha que o gatilho do kit devolve num `CONNECTOR`. Ele diz que campo de
-`{{gatilho.campo}}` existe e qual é número (`IF_FIELD_NOT_NUMBER`).
+`{{gatilho.campo}}` existe e qual é número (`IF_FIELD_NOT_NUMBER`). Todo gatilho tem também
+`{{gatilho.dia}}`, texto, o dia da execução em dd/mm/aaaa no fuso `AUTOMATION_TIMEZONE`, que não
+vem da entrada: `conferir` o devolve (regra 1). A agenda do Mastra dá a cada disparo a mesma
+`inputData` e o mesmo `requestContext`, os da agenda; a hora do disparo chega só na id da execução,
+`sched_<agenda>_<ms>` (`dist/scheduler-Me4rCjO2.js:357,442-463`; a execução começa com eles em
+`dist/agent-BP9OWM6D.js:30421-30440`), que uma ferramenta lê e um `mapping` ou um predicado não
+leem (prova P19).
 
 **A gramática da compilação** (a compilação é a única dona, C26; as formas são as das provas P8,
 P13c, P14 e P15 do estudo, escritas aqui porque o construtor não lê os scripts do estudo).
@@ -959,9 +975,13 @@ O principal (`wf-<w>-v<n>`) e cada caminho (`wf-<w>-v<n>-<segmentos>`) são uma 
 de nível de cima. Para cada lista:
 
 1. **O começo.** No principal, a primeira entrada é `{ type: 'tool', id: 'conferir', toolId:
-   'conexus-conferir' }`, sem `mapping` antes: a ferramenta tem `inputSchema` e `outputSchema`
-   `z.object({}).passthrough()` e devolve a entrada igual, e a validação não acusa
-   `incompatible-schema` contra o `inputSchema` do gatilho (prova P13c). O caminho de um `USE`
+   'conexus-conferir' }`, sem `mapping` antes: a ferramenta tem `inputSchema`
+   `z.object({}).passthrough()` e `outputSchema` `z.object({ dia: z.string() }).passthrough()`, e
+   devolve a entrada igual mais `dia`, e a validação não acusa `incompatible-schema` contra o
+   `inputSchema` do gatilho (prova P13c) e aceita `${stepResults.conferir.dia}` num `mapping`
+   depois (prova P19). `dia` é o `started_at` da linha de `workflow_run` que `conferir` grava com
+   `ON CONFLICT DO NOTHING` e relê: os `<ms>` da id num disparo da agenda, a hora de agora no
+   manual e no teste; um `restart` ou **Tentar de novo** relê a mesma linha e o mesmo dia. O caminho de um `USE`
    começa da mesma forma, com id `conferir` (a U3 faz a ferramenta, ali, só conferir que a versão
    fixada do outro ainda existe). Os outros caminhos não têm `conferir`.
 2. **A entrada de cada lista.** O `inputSchema` do principal é o `TriggerShape`. O de um caminho
@@ -973,7 +993,8 @@ de nível de cima. Para cada lista:
    balão-folha `bN` vira `{ type: 'mapping', id: 'bN-in', mapConfig }` seguido da entrada do balão.
    O `mapConfig` sai como texto JSON (`JSON.stringify`), a forma que a validação aceita (F1 da
    revisão de outro modelo, `g1.mjs`; o objeto dá `invalid-map-config`). Ele tem `{ balloon: { value: 'bN' } }` e uma chave por valor que o balão usa: um
-   `template` em que `{{gatilho.x}}` vira `${initData.x}`, `{{bJ.x}}` de um balão da mesma lista
+   `template` em que `{{gatilho.x}}` vira `${initData.x}` (e `{{gatilho.dia}}`, no principal,
+   `${stepResults.conferir.dia}`; num caminho, a chave `conferir_dia` da regra 2), `{{bJ.x}}` de um balão da mesma lista
    vira `${stepResults.bJ.x}`, e `{{bJ.x}}` de fora da lista vira `${initData.bJ_x}`. Um valor que é
    exatamente uma referência a um campo do gatilho compila para `{ initData: true, path: 'x' }`, e
    guarda o tipo. Nunca uma fonte `step` com `path`: o Mastra a confere contra o esquema de saída e a
@@ -1605,7 +1626,8 @@ export function identityOf(requestContext: RequestContext | undefined): RunIdent
 
 Quem a escreve, sempre com `version` e `answeredBy` lidos na mesma linha de `workflow`
 (`active_version` e `active_by`): a agenda ao publicar ou religar (`startedBy: 'SCHEDULE'`, sem
-`label`: `conferir` escreve a hora do disparo, tirada dos `<ms>` da id); `POST …/run` (`startedBy`
+`label`: `conferir` escreve a hora do disparo, tirada dos `<ms>` da id, no `label` e em
+`started_at`); `POST …/run` (`startedBy`
 = a pessoa, "Rodado por <nome>"); `POST …/test` (a
 pessoa, "Teste", `version` nulo, `answeredBy` = a pessoa); **Tentar de novo** passa só `attempt`, e
 o resto volta do retrato (P13). A agenda guarda o `requestContext` de quando foi criada: quem sai da
@@ -2261,6 +2283,50 @@ conector (`{ kind: 'CONNECTOR', connectionId, trigger, label, summary, input, fi
 cadência. A U4 reescreve a entrada "the trigger remembers what it has seen" de
 `docs/reference/boundaries.md:1266-1283` para o desenho novo (`trigger.ts`, `workflow_trigger`,
 `trigger_event`). O aviso #819 (o Sankhya de mentira que recusa a consulta) vai com ela.
+
+**O Se sobre os campos de um balão anterior** (a sua resposta, 2026-11-08: o recomendado, nativo,
+na 24.6.1). O balão de agente declara os campos que devolve, cada um com nome e tipo (número,
+texto, sim ou não), e o Construtor os escolhe. Ao publicar, a compilação registra uma ferramenta
+por balão e versão, `conexus-agente-<w>-v<n>-<balão>`, com o `outputSchema` desses campos
+(`mastra.addTool`, `dist/mastra/index.d.ts:1741`), e o **Se** compara qualquer campo declarado de
+um balão anterior da mesma lista: `{ op, left: { path: 'stepResults.<balão>.<campo>' }, right: {
+literal } }`. O que as provas mostraram (Mastra 1.82.0, sem rede, banco local):
+
+- P16. A entrada `agent` nativa com `outputSchema` pede `responseFormat: json` e devolve o objeto,
+  e um **Se** em `stepResults.b1.valor` com a negação roda só um caminho. Um predicado sobre um
+  balão que não vem antes é recusado na validação (`invalid-predicate-reference`).
+- P16b. Uma ferramenta de saída genérica (`campos: z.record(...)`) não serve: a validação recusa
+  `stepResults.b1.campos.valor` ("does not exist in the known schema"). O caminho do predicado tem
+  de estar no esquema de saída declarado do passo.
+- P18. Uma ferramenta por balão e versão, com campos número, texto e sim ou não, cada um nulável:
+  três **Se** no mesmo balão (`valor > 20000`, `status = 'bom'`, `urgente = true`) vão todos ao
+  "se sim", todos ao "senão", e ao "senão" quando o campo é nulo; a versão 2 do mesmo balão, com
+  outros campos, roda ao lado da 1; um **Se** sobre um campo não declarado é recusado na
+  validação. Num processo novo, a versão guardada não aparece (`Workflow with ID … not found`) até
+  a sua ferramenta ser registrada de novo; registrada a partir dos campos da versão, roda. Por
+  isso a passagem do início registra as ferramentas de cada versão guardada antes de
+  `startWorkers`.
+- P17. Um turno do agente com `structuredOutput` que pede aprovação de uma escrita suspende a
+  execução sem escrever; noutro processo, `approveToolCall` com o mesmo `structuredOutput` escreve
+  uma vez, o balão devolve os campos tipados (`valor: 25000`, `bom: true`), e o **Se** seguinte os
+  lê. O modelo de mentira ignora o `responseFormat`; um modelo de verdade com ferramentas e
+  `responseFormat: json` no mesmo turno é o que a 24.6.1 confere primeiro.
+
+O que fica mais simples: o **Se** e o **Repetir** usam um só lado esquerdo para o gatilho e para
+um balão, e um campo não declarado é recusado pelo próprio Mastra, sem um problema do Conexus. O
+que fica mais difícil: uma ferramenta por balão e versão, criada ao publicar e de novo em cada
+início (a passagem do início lê `workflow_version`), e o turno com `structuredOutput`. Um **Se**
+dentro de um caminho que lê um balão de fora dele fica de fora: o `mapping` leva o valor como
+texto (regra 3), e a fonte `step` é recusada (P8). Tamanho, pela leitura: ~420 linhas (U1 ~170: os
+campos no `AGENT`, `Condition` com dois lados, a ferramenta por balão, os problemas, a regra 5; U3
+~130: `structuredOutput`, os campos na saída e na vista, as ferramentas na passagem do início; U5
+~40; U6 ~80), ~120 a mais que o campo `numero` fixo (~300), que você recusou por ser um caso
+virando regra.
+
+**A pergunta a você, para a 24.6.1.** Qual tipo de operação (TOP) é orçamento no seu Sankhya? O kit
+tem a lista das TOPs (`tiposOperacao`, `packages/connectors/src/sankhya/operations/cadastros.ts:64`),
+e nenhuma leitura pronta filtra por ela; a leitura de orçamento da 24.6.1 filtra pelos tipos que
+você disser.
 
 **O roteiro que volta na 24.6.1.** O fluxo do orçamento novo do cartão anterior: "quando entrar um
 orçamento novo no Sankhya, olhando a cada 15 minutos, usa o Conferir cliente, o agente Triagem vê
