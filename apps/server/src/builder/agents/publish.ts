@@ -226,8 +226,11 @@ export async function holdsWrite(
 
 /**
  * Whether a version's write in Faz sozinho still runs without asking (step 24.5, D2-a): who
- * published the version is still in the company, and their role, read now, holds both the action
- * and the write. Otherwise it asks; what the version declares does not change.
+ * answers for the version is still in the company, and their role, read now, holds both the action
+ * and the write. Otherwise it asks; what the version declares does not change. The conversation
+ * runs the active version (`activeOf`), answered for by who made it active, so restoring an old
+ * version moves the answer to who restored it (`agent.active_by`); a version that is not the
+ * active one keeps its publisher (`agent_version.published_by`).
  */
 export async function publisherLeavesAlone(
   deps: Holding,
@@ -237,8 +240,13 @@ export async function publisherLeavesAlone(
 ): Promise<boolean> {
   const [row] = await deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
     tx
-      .select({ by: agentVersion.publishedBy })
+      .select({
+        by: sql<
+          string | null
+        >`case when ${agent.activeVersion} = ${agentVersion.number} then ${agent.activeBy} else ${agentVersion.publishedBy} end`,
+      })
       .from(agentVersion)
+      .innerJoin(agent, eq(agent.id, agentVersion.agentId))
       .where(
         and(eq(agentVersion.agentId, version.agentId), eq(agentVersion.number, version.number)),
       ),
@@ -253,11 +261,11 @@ export async function publisherLeavesAlone(
   return holdsWrite(deps, companyId, personId, target)
 }
 
-/** Makes the version the agent's active one; the draft does not change. */
-export function makeActive(tx: CommandTx, agentId: AgentId, number: number) {
+/** Makes the version the agent's active one, answered for by `by`; the draft does not change. */
+export function makeActive(tx: CommandTx, agentId: AgentId, number: number, by: PersonId) {
   return tx
     .update(agent)
-    .set({ activeVersion: number, updatedAt: sql`now()` })
+    .set({ activeVersion: number, activeBy: by, updatedAt: sql`now()` })
     .where(eq(agent.id, agentId))
 }
 
@@ -278,6 +286,7 @@ async function republished(
   tx: CommandTx,
   row: AgentRow,
   revision: number,
+  by: PersonId,
   check: (number: number) => Promise<void>,
 ): Promise<Published | undefined> {
   const [earlier] = await tx
@@ -289,7 +298,7 @@ async function republished(
     return { number: earlier.number, did: 'NONE' }
   }
   await check(earlier.number)
-  await makeActive(tx, AgentIdSchema.parse(row.id), earlier.number)
+  await makeActive(tx, AgentIdSchema.parse(row.id), earlier.number, by)
   return { number: earlier.number, did: 'ACTIVATED' }
 }
 
@@ -318,7 +327,7 @@ async function frozen(
       })),
     )
   }
-  await makeActive(tx, agentId, number)
+  await makeActive(tx, agentId, number, scope.personId)
   return { number, did: 'PUBLISHED' }
 }
 
@@ -341,7 +350,7 @@ export async function published(
   const { agentId, body } = a
   const [row] = await tx.select().from(agent).where(ofProject(scope, agentId)).for('update')
   if (row === undefined) throw new Failure('AGENT_NOT_FOUND')
-  const earlier = await republished(tx, row, body.revision, async (number) => {
+  const earlier = await republished(tx, row, body.revision, scope.personId, async (number) => {
     const back = await versionBack(tx, agentId, number)
     if (back === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
     await refuseUnheld(tx, scope, { ...a, ...back })
