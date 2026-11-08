@@ -54,6 +54,7 @@ const NATIVE = [
   'approval',
   'approval-declined',
   'approval-interrupted',
+  'approval-refused',
   'approval-stopped',
   'cited',
   'files',
@@ -72,6 +73,7 @@ const STREAMED = new Set([
   'approval',
   'approval-declined',
   'approval-interrupted',
+  'approval-refused',
   'approval-stopped',
 ])
 

@@ -66,7 +66,7 @@ export function seenBy(
   })
 }
 
-export type ApprovalState = 'open' | 'approved' | 'declined' | 'interrupted' | 'stopped'
+type ApprovalState = 'open' | 'approved' | 'declined' | 'interrupted' | 'stopped'
 
 export type ApprovalCardItem = {
   kind: 'card'
