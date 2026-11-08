@@ -48,7 +48,7 @@ export async function checked(parts: MastraMessagePart[], scorers: readonly Chec
   return Promise.all(scorers.map(async (scorer) => (await scorer.run({ input, output })).score))
 }
 
-/** The models the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"), and the ChatGPT subscription's model the step 24.4 measure ran on (the starter, `openai/gpt-5`, the endpoint refuses for a ChatGPT account). */
+/** The models the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"), and the ChatGPT subscription's model the step 24.4 measure ran on (the starter since 24.5, `openai/gpt-5.6-luna`; the old `openai/gpt-5` the endpoint refused for a ChatGPT account). */
 const CHOICES = {
   claude: { model: 'anthropic/claude-sonnet-5-5', effort: 'low' },
   openai: { model: 'openai/gpt-5.6-luna', effort: 'low' },
