@@ -102,14 +102,38 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run test:scripts
 
-  server:
+  # How many shards the `server` job needs: scripts/server-shards.ts --count divides the recorded
+  # seconds of every server test file (with each file's start) by half the job's timeout, rounded up.
+  server-plan:
     runs-on: ubuntu-24.04
-    # Twice a shard's usual time: a test that hangs answers in 10 min, not 15.
+    timeout-minutes: 10
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      total: ${{ steps.plan.outputs.total }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - name: The shards of the server tests
+        id: plan
+        working-directory: apps/server
+        run: |
+          total="$(node ../../scripts/server-shards.ts --count)"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "shards=$(jq -nc --argjson total "$total" '[range(1; $total + 1)]')" >> "$GITHUB_OUTPUT"
+          echo "Server tests: $total shards" >> "$GITHUB_STEP_SUMMARY"
+
+  server:
+    needs: server-plan
+    runs-on: ubuntu-24.04
+    # Twice a shard's usual time: a test that hangs answers in 10 min, not 15. The shard count keeps
+    # the usual time at half of this (server-plan), and server-shards.test.ts holds the two equal.
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: ${{ fromJSON(needs.server-plan.outputs.shards) }}
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -138,7 +162,7 @@ jobs:
       # turn parked on a card keeps a timer alive, and its file used to hold the shard to the timeout.
       - run: npm test -w @conexus/server
         env:
-          TEST_SHARD: ${{ matrix.shard }}/6
+          TEST_SHARD: ${{ matrix.shard }}/${{ needs.server-plan.outputs.total }}
 
   web:
     runs-on: ubuntu-24.04
@@ -349,7 +373,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server, web, packages, sankhya-docs, e2e, removals-plan, removals, image]
+    needs: [check, scripts, server-plan, server, web, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -361,7 +385,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
