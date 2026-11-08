@@ -162,9 +162,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   message and body) as the tool's error, through the library's native failure path, never as a
   successful result. The connector's reader composes the message from every text of the refusal,
   with no sentence per connector or per error. Each other consumer cuts at its own edge: the app
-  (C51), logs and spans ([security S41, S42](security.md)), the screen by code (C49). An answer
-  that may have been taken, such as an uncertain write, stays a result that tells the model not to
-  repeat it. Founder, 2026-11-08: "não vai ser um patch nem uma gambiarra"; to the study's `D3`,
+  (C51), logs and spans ([security S41, S42](security.md)); the screen branches by code (C49) and
+  may show the system's message as it came. An answer that may have been taken, such as an
+  uncertain write, stays a result that tells the model not to repeat it. Founder, 2026-11-08: "não vai ser um patch nem uma gambiarra"; to the study's `D3`,
   "okay"; to its `D6`, "voltar ao erro original". Failure: the Sankhya reader dropped
   `error.details`, the funnel dropped the body for every reader, and the agent invented a cause
   for a refused order. [review]
