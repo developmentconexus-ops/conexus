@@ -15,7 +15,6 @@ export const WRITE = 'tool_lancar_pedido'
 /** The fields of an order the model fills; the model of the note is fixed by the tool. */
 export const ASKED = {
   codigoCliente: 1,
-  codigoLocalEstoque: 1,
   itens: [{ codigoProduto: 11, quantidade: 2, valorUnitario: 10 }],
 }
 
@@ -44,7 +43,7 @@ export async function approving(
     connectionId: on.matriz,
     operation: 'lancarPedido',
     description: 'Lança um pedido de venda da empresa 1.',
-    bound: { notaModelo: 12 },
+    bound: { notaModelo: 12, codigoLocalEstoque: 1 },
     open: ['codigoCliente', 'itens'],
   })
   /** A published agent of Ana with the write at `approval` and `others` of the library beside it. */
