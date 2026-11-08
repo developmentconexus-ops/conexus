@@ -218,10 +218,7 @@ async function toolAnswer(
     personId: at.person.id,
     conversationId: at.conversationId,
   }
-  if (approved && at.part.mayApprove !== undefined) {
-    const held = toolName !== undefined && (await at.part.mayApprove({ ...asked, toolName }))
-    if (!held) throw new Failure('NOT_IN_ROLE', { details: { toolCallId, reason: 'APPROVER' } })
-  }
+  if (approved) await refuseApprover(at.part.mayApprove, { ...asked, toolName }, toolCallId)
   const write = toolName === undefined ? undefined : await at.part.writeOf?.({ ...asked, toolName })
   request.requestContext.set(TOLD, {
     fields: {
@@ -234,6 +231,18 @@ async function toolAnswer(
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
   return undefined
+}
+
+/** An Aprovar by a person whose role lacks the write is `NOT_IN_ROLE`, and nothing runs (D3-a). */
+async function refuseApprover(
+  mayApprove: MayApprove | undefined,
+  asked: Omit<Parameters<MayApprove>[0], 'toolName'> & { toolName: string | undefined },
+  toolCallId: ToolCallId,
+): Promise<void> {
+  if (mayApprove === undefined) return
+  const { toolName } = asked
+  const held = toolName !== undefined && (await mayApprove({ ...asked, toolName }))
+  if (!held) throw new Failure('NOT_IN_ROLE', { details: { toolCallId, reason: 'APPROVER' } })
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */
