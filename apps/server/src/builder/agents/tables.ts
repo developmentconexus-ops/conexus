@@ -35,6 +35,8 @@ export const agent = builder.table(
     draft: jsonb('draft').notNull(),
     revision: integer('revision').notNull().default(1),
     activeVersion: integer('active_version'),
+    // Who made that version the active one (publish, restore or publish again): the person who answers for it (step 24.5, D2-a). Only an id, like the authors (data D17).
+    activeBy: text('active_by'),
     ...authored(),
     updatedAt: instant('updated_at').notNull().defaultNow(),
     // The start of the last turn with the published version, by anyone; the test conversation never writes it.

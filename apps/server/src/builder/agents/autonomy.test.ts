@@ -119,6 +119,59 @@ test('quem publicou guarda a ação e perde a escrita no papel: a escrita em Faz
   assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
 })
 
+/**
+ * Bia, an administrator, publishes v1 with the write in Faz sozinho; Bruno, a developer who holds
+ * the action, publishes v2 and then restores v1, so he answers for v1 (D2-a, the founder's option
+ * b: who restores). Ana's first call on v1 runs without a card; `change` then takes something away,
+ * and the write of v1 is read on the call that follows.
+ */
+async function restoredByBruno(
+  t: TestContext,
+  change: (on: On, bia: Person, bruno: Person) => Promise<void>,
+) {
+  const on = await approving(t, [[launched()], [said('Lançado.')], [launched()]])
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const v1 = await publishedAgent(on.hub, bia, on.agents, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  const asking = await drafted(on.hub, bruno, on.agents, v1, {
+    approvals: { [on.write.id]: 'ASK' },
+  })
+  await publishedNow(on.hub, bruno, on.agents, asking)
+  const back = await post(on.hub, bruno, `${on.agents}/${v1.id}/versions/1/activate`, {})
+  assert.equal(back.statusCode, 200, back.body)
+  const { url, stream } = await on.opened(v1.id)
+  await sent(on.hub, on.ana, url, 'Lance o pedido')
+  assert.deepEqual(approvalsIn(await stream.turn()), [], 'v1 in Faz sozinho, no card')
+  assert.equal(on.fake.orders().length, 1)
+
+  await change(on, bia, bruno)
+  await sent(on.hub, on.ana, url, 'Lance outro')
+  return { on, stream }
+}
+
+test('quem restaura responde pela versão: quem a publicou sai da empresa e a escrita em Faz sozinho segue sem cartão (D2-a, opção b)', async (t) => {
+  const { on, stream } = await restoredByBruno(t, async (on, bia) => {
+    const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${bia.id}`)
+    assert.equal(gone.statusCode, 204, gone.body)
+  })
+  assert.deepEqual(approvalsIn(await stream.turn()), [], 'Bruno answers, no card')
+  assert.equal(on.fake.orders().length, 2)
+})
+
+test('quem restaura responde pela versão: quem restaurou perde a ação e a escrita em Faz sozinho volta a perguntar, ainda que quem a publicou a tenha (D2-a, opção b)', async (t) => {
+  const { on, stream } = await restoredByBruno(t, async (on) => {
+    await developerHolds(on, READS, true)
+  })
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
+})
+
 /** The agent's active version, as its page reads it. */
 async function activeVersion(on: On, agentId: string) {
   return agentOf(await call(on.hub, on.ana, 'GET', `${on.agents}/${agentId}`)).state

@@ -279,7 +279,7 @@ async function activate(deps: AgentsDeps, scope: InProject, agentId: AgentId, nu
     const back = await versionBack(tx, agentId, number)
     if (back === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
     await refuseUnheld(tx, scope, { ...back, around, kit, identity: deps.identity })
-    await makeActive(tx, agentId, number)
+    await makeActive(tx, agentId, number, scope.personId)
     return detail(tx, scope, agentId, shown)
   })
   const { companyId } = scope
