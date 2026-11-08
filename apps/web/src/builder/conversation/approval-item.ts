@@ -1,3 +1,4 @@
+import type { WrittenRow } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
 
@@ -24,6 +25,8 @@ export type Seen = {
 export type Outcome =
   | { kind: 'LAUNCHED'; code: number | undefined }
   | { kind: 'UNCERTAIN'; mark: string }
+  /** The system answered and did not take the write; its message as it came, when it said one. */
+  | { kind: 'REFUSED'; message: string | null }
   | { kind: 'FAILED'; why: FailedWhy; text: string | undefined }
 
 /** Why a write that was approved did not go out: the Hub's refusals, the connection's, or the call that threw. */
@@ -50,7 +53,7 @@ export function seenBy(state: {
   })
 }
 
-type ApprovalState = 'open' | 'approved' | 'declined' | 'interrupted' | 'stopped'
+export type ApprovalState = 'open' | 'approved' | 'declined' | 'interrupted' | 'stopped'
 
 export type ApprovalCardItem = {
   kind: 'card'
@@ -90,6 +93,45 @@ function outcomeOf(result: unknown, threw: boolean): Outcome | undefined {
       return { kind: 'FAILED', why: kind.data.kind, text: undefined }
     default:
       return { kind: 'FAILED', why: 'OTHER', text: Refused.safeParse(result).data?.native.message }
+  }
+}
+
+/** What the card shows of a write that asked: how it ended, and whether a person's **Aprovar** is what the record keeps. */
+export type Decision = {
+  state: ApprovalState
+  /** The card says "Aprovado por você". */
+  approved: boolean
+  outcome: Outcome | undefined
+}
+
+/**
+ * How a card ended, from the record's row of the call (step 24.5, U6), never from what the model
+ * read of the failure (C49): the row says who approved and how the write ended. Without a row the
+ * write was refused before it was recorded (`NOT_IN_ROLE`), and the card says what Mastra kept of the
+ * call, with no "Aprovado". While the record is read, the card stays as Mastra left it.
+ */
+export function decided(
+  part: Pick<ApprovalCardItem, 'state' | 'outcome'>,
+  row: WrittenRow | undefined,
+  reading: boolean,
+): Decision {
+  const { state, outcome } = part
+  if (state !== 'approved') return { state, approved: false, outcome }
+  if (row === undefined) return { state, approved: reading, outcome }
+  return { state, approved: row.approved, outcome: outcomeOfRow(row, outcome) }
+}
+
+function outcomeOfRow(row: WrittenRow, kept: Outcome | undefined): Outcome {
+  switch (row.state) {
+    case 'DONE':
+      return kept?.kind === 'LAUNCHED' ? kept : { kind: 'LAUNCHED', code: undefined }
+    case 'SENDING':
+    case 'UNCERTAIN':
+      return { kind: 'UNCERTAIN', mark: row.mark }
+    case 'REFUSED':
+      return { kind: 'REFUSED', message: row.message }
+    default:
+      return row.state satisfies never
   }
 }
 

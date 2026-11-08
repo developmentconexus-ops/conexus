@@ -1,3 +1,4 @@
+import type { WrittenRow } from '@conexus/hub-api'
 import { phraseOf, ToolCallId } from '@conexus/hub-api'
 import { useEffect, useRef, useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
@@ -8,7 +9,8 @@ import { Card } from '../../ui/card.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { fieldsOf } from './approval-fields.ts'
-import type { ApprovalCardItem, Outcome } from './approval-item.ts'
+import type { ApprovalCardItem, Decision, Outcome } from './approval-item.ts'
+import { decided } from './approval-item.ts'
 import {
   APPROVAL_TEXT,
   launchedText,
@@ -18,7 +20,9 @@ import {
 } from './approval-text.ts'
 import { DEADLINE_TEXT, LOCAL_REFUSALS } from './connector-specs.ts'
 import { WaitingCaption } from './question-card.tsx'
+import type { WritesRead } from './room.ts'
 import { useApprove, useRoom } from './room.ts'
+import { refusedLabelText } from './text.ts'
 import type { ConnectorWords } from './tool-spec.ts'
 
 type Reply = 'approve' | 'decline'
@@ -61,6 +65,15 @@ function Result(props: { outcome: Outcome; connector: string; action: string }) 
       )
     case 'UNCERTAIN':
       return <p className="text-text-2">{uncertainText(outcome.mark)}</p>
+    case 'REFUSED':
+      return (
+        <>
+          <Alert tone="danger">{refusedLabelText(connectors.name(connector))}</Alert>
+          {outcome.message !== null && (
+            <p className="wrap-anywhere text-text-2">{outcome.message}</p>
+          )}
+        </>
+      )
     case 'FAILED':
       return (
         <>
@@ -135,14 +148,15 @@ function Fields({ fields }: { fields: Fields }) {
 }
 
 /** How the card ended: who decided, and what the write did. */
-function Decided(props: { part: ApprovalCardItem; connector: string; action: string }) {
-  const { part, connector, action } = props
+function Decided(props: { decision: Decision; connector: string; action: string }) {
+  const { decision, connector, action } = props
+  const { state, approved, outcome } = decision
   return (
     <>
-      {part.state !== 'open' && <p className="font-semibold">{ANSWERED[part.state]}</p>}
-      {part.outcome !== undefined && (
-        <Result outcome={part.outcome} connector={connector} action={action} />
+      {state !== 'open' && (state !== 'approved' || approved) && (
+        <p className="font-semibold">{ANSWERED[state]}</p>
       )}
+      {outcome !== undefined && <Result outcome={outcome} connector={connector} action={action} />}
     </>
   )
 }
@@ -168,6 +182,11 @@ function Answer(props: { lit: boolean } & Pick<Replying, 'sending' | 'error' | '
   )
 }
 
+/** The writes a read holds: what it read, or what it read before and is reading again. */
+function writesOf(read: Exclude<WritesRead, { kind: 'FAILED' }>): readonly WrittenRow[] {
+  return read.kind === 'READ' ? read.writes : read.kept
+}
+
 /**
  * The card of a write that asks the person (step 24.5, reference table row "O cartão"), drawn on
  * the plan's: who wants to write what, where, the fields, and **Aprovar** or **Recusar**. The buttons
@@ -180,17 +199,24 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const write = room.writeOf?.(part.toolName)
   const refresh = room.refreshWrites
   const open = part.state === 'open'
+  // The record is read again when the card opens and when its call ends: the end is the row's.
+  const wasOpen = useRef(open)
   useEffect(() => {
-    if (open) refresh?.()
+    if (open || wasOpen.current) refresh?.()
+    wasOpen.current = open
   }, [open, refresh])
   const system = write === undefined ? '' : room.connectors.name(write.connector)
   const action = write?.label ?? part.toolName
   const title = wantsText(room.agent, action, system)
   const read = room.writes
+  const kept = read === undefined || read.kind === 'FAILED' ? [] : writesOf(read)
+  const row = kept.find((one) => one.toolCallId === part.toolCallId)
+  const decision = decided(part, row, read?.kind === 'READING')
   const same =
     read?.kind === 'READ'
       ? read.writes.find(
           (one) =>
+            one.toolCallId !== part.toolCallId &&
             (one.state === 'SENDING' || one.state === 'UNCERTAIN') &&
             one.connectionId === write?.connectionId &&
             one.operation === write?.operation,
@@ -209,7 +235,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
             {write !== undefined && <span className="text-text-2"> · {write.connection}</span>}
           </h3>
         </div>
-        <Fields fields={fieldsOf(write?.operation, part.args)} />
+        <Fields fields={fieldsOf(write?.operation, part.args, write?.bound)} />
         {open && read?.kind === 'FAILED' && (
           <ReadFailure text={read.text} onRetry={() => refresh?.()} />
         )}
@@ -221,7 +247,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
         {open ? (
           <Answer lit={part.lit && checked} sending={sending} error={error} reply={reply} />
         ) : (
-          <Decided part={part} connector={write?.connector ?? ''} action={action} />
+          <Decided decision={decision} connector={write?.connector ?? ''} action={action} />
         )}
       </Card>
       {open && <p className="px-xs text-label text-text-2">{APPROVAL_TEXT.steer}</p>}

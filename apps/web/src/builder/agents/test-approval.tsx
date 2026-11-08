@@ -1,12 +1,14 @@
 import type { WrittenRow } from '@conexus/hub-api'
-import { AGENTS_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, BUILDER_ROUTES, OperationId, ToolCallId } from '@conexus/hub-api'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { expect } from 'vitest'
+import { z } from 'zod'
 import type { Stored } from '../conversation/messages.ts'
+import { IsStored, recordedRun } from '../conversation/test-recorded.ts'
 import type { Line } from '../conversation/test-stream.tsx'
-import { AGENT, AREA, CHAT } from './test-agents.ts'
+import { AGENT, AREA, CHAT, MATRIZ } from './test-agents.ts'
 import { writer } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
@@ -22,12 +24,14 @@ export function conversation(
   server: ReturnType<typeof setupServer>,
   held: {
     rows?: readonly Stored[]
+    /** What the version fixes in the write (the nota modelo). */
+    bound?: Record<string, unknown>
     writes?: WrittenRow[]
     writesAnswer?: () => Response | Promise<Response>
   } = {},
 ) {
   const opened = agentScreens(server).at(PAGE, {
-    agents: [writer('ASK')],
+    agents: [writer('ASK', held.bound)],
     conversations: [
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],
@@ -40,6 +44,35 @@ export function conversation(
     ),
   )
   return opened
+}
+
+/**
+ * The record's row for the write the recording `scenario` asked about, as the Hub lists it: a
+ * launched write a person approved, unless `fields` say otherwise.
+ */
+export function rowOf(scenario: string, fields: Partial<WrittenRow> = {}): WrittenRow {
+  const event = recordedRun(scenario).events.find(asks)
+  return {
+    toolCallId: ToolCallId.parse(
+      event === undefined ? undefined : Reflect.get(event, 'toolCallId'),
+    ),
+    connectionId: MATRIZ,
+    operation: OperationId.parse('lancarPedido'),
+    state: 'DONE',
+    sentAt: UPDATED,
+    mark: 'Conexus 7F3A2B1C',
+    approved: true,
+    message: null,
+    ...fields,
+  }
+}
+
+/** The stored rows with the arguments of every call replaced by `args`: what the model filled, for a card read after a reload. */
+export function withArgs(rows: readonly Stored[], args: object): Stored[] {
+  const swapped: unknown = JSON.parse(JSON.stringify(rows), (key, value) =>
+    key === 'args' ? args : value,
+  )
+  return z.array(IsStored).parse(swapped)
 }
 
 /** The line of the open stream, once the screen opened it. */

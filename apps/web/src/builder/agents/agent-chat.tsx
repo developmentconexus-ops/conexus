@@ -63,6 +63,7 @@ function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
     connection: connection.name,
     operation: tool.operation,
     label: label ?? tool.operation,
+    bound: tool.version.bound,
   }
 }
 
@@ -72,9 +73,11 @@ function writesRead(read: {
   error: unknown
   isFetching: boolean
 }): WritesRead {
-  if (read.isFetching) return { kind: 'READING' }
+  if (read.isFetching) return { kind: 'READING', kept: read.data?.writes ?? [] }
   if (read.error !== null) return { kind: 'FAILED', text: sentenceOf(read.error) }
-  return read.data === undefined ? { kind: 'READING' } : { kind: 'READ', writes: read.data.writes }
+  return read.data === undefined
+    ? { kind: 'READING', kept: [] }
+    : { kind: 'READ', writes: read.data.writes }
 }
 
 /** A conversation with an agent, published or the test one with the draft: the conversation of the 24.1 over the `agents` controller (web W31). */
@@ -96,7 +99,7 @@ export function AgentChat(props: {
   const phone = useIsMobile()
   const opened = useQuery(writesQuery(scope, agentId, conversationId))
   const { data, error, isFetching, refetch } = opened
-  const refresh = useCallback(() => void refetch(), [refetch])
+  const refresh = useCallback(() => void refetch({ cancelRefetch: false }), [refetch])
   const writes = useMemo(
     () => ({ read: writesRead({ data, error, isFetching }), refresh }),
     [data, error, isFetching, refresh],

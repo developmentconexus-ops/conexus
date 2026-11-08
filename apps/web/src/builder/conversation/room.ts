@@ -19,7 +19,8 @@ export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 
 /** The read of the conversation's writes as the record keeps them: until it answers, or fails, a card does not let the person approve. */
 export type WritesRead =
-  | { kind: 'READING' }
+  /** `kept` is the last answer, which a card may still read the end of a call from; it does not let anyone approve. */
+  | { kind: 'READING'; kept: readonly WrittenRow[] }
   | { kind: 'READ'; writes: readonly WrittenRow[] }
   | { kind: 'FAILED'; text: string }
 
@@ -33,6 +34,8 @@ export type WriteTool = {
   operation: string
   /** The operation's name ("Lançar pedido"). */
   label: string
+  /** What the version fixes in the write, which the model never chooses: the card lists it with what the model filled. */
+  bound: Readonly<Record<string, unknown>>
 }
 
 /**
