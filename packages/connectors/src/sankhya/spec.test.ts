@@ -73,6 +73,20 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
   return [...problems, ...fields]
 }
 
+/** Fields of a write's input that the kit moves before sending, so they are no field of the body: the order's place goes into each item. */
+const MOVED = new Set(['lancarPedido:codigoLocalEstoque'])
+
+/** Every key of a JSON body as a dotted path, a list's keys under the list's name. */
+function pathsOf(body: unknown, prefix = ''): string[] {
+  if (Array.isArray(body)) return body.flatMap((item) => pathsOf(item, prefix))
+  const object = z.record(z.string(), z.unknown()).safeParse(body)
+  if (!object.success) return []
+  return Object.entries(object.data).flatMap(([name, value]) => [
+    `${prefix}${name}`,
+    ...pathsOf(value, `${prefix}${name}.`),
+  ])
+}
+
 /** The keys of an operation's input that its request sends in the query, each tried on its own beside the probe's input. */
 function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): string[] {
   const names = Object.keys(z.toJSONSchema(operation.input, { io: 'input' }).properties ?? {})
@@ -109,7 +123,10 @@ async function samples(): Promise<Sample[]> {
     const input = operation.probe(new Map())
     assert.notEqual(input, null, operation.id)
     const request = requestOf(operation, input, { ref: null })
-    const bodied = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' }))
+    const declared = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' })).filter(
+      (name) => !MOVED.has(`${operation.id}:${name}`),
+    )
+    const bodied = [...new Set([...declared, ...pathsOf(request.body)])]
     out.push({ id: operation.id, request, queried: [], bodied })
   }
   return out

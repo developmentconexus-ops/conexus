@@ -9,6 +9,7 @@ import type {
   GrantAnswered,
   Native,
   Operation,
+  WriteOperation,
 } from '@conexus/connectors'
 import {
   loggedOutBy,
@@ -96,7 +97,7 @@ export type Executor = {
   write<I, O>(
     connection: OpenedConnection,
     token: BearerToken,
-    operation: Operation<I, O, 'write'>,
+    operation: WriteOperation<I, O>,
     input: I,
     deadlineMs: number,
   ): Promise<Wrote<O>>

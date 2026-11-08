@@ -90,7 +90,9 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
 test('o pedido recusado: o produto que não existe e o cliente que não existe voltam REFUSED ao modelo, e nada fica como enviado com sucesso', async (t) => {
   const on = await writing(t)
   const noProduct = await on.ask(
-    on.byAna({ input: { ...ORDER, itens: [{ codigoProduto: 99999999, quantidade: 1 }] } }),
+    on.byAna({
+      input: { ...ORDER, itens: [{ codigoProduto: 99999999, quantidade: 1, valorUnitario: 10 }] },
+    }),
   )
   assert.equal(noProduct.kind, 'REFUSED')
   const noClient = await on.ask(on.byAna({ input: { ...ORDER, codigoCliente: 999 } }))

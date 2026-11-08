@@ -20,7 +20,7 @@ async function writing(t: Parameters<typeof subscribed>[0], approval: 'ASK' | 'A
     connectionId: on.matriz,
     operation: 'lancarPedido',
     description: 'Lança um pedido de venda da empresa 1.',
-    bound: { notaModelo: 12 },
+    bound: { notaModelo: 12, codigoLocalEstoque: 1 },
     open: ['codigoCliente', 'itens'],
   })
   const agent = await publishedAgent(on.hub, on.ana, agents, {

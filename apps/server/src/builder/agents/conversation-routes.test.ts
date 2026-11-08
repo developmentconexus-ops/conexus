@@ -9,7 +9,10 @@ import { tool } from '../conversation/test-questions.ts'
 import { publishedAgent } from './test-agents.ts'
 import { ASKED, approving, launched, WRITE } from './test-approval.ts'
 
-const UNKNOWN_PRODUCT = { ...ASKED, itens: [{ codigoProduto: 999, quantidade: 1 }] }
+const UNKNOWN_PRODUCT = {
+  ...ASKED,
+  itens: [{ codigoProduto: 999, quantidade: 1, valorUnitario: 10 }],
+}
 
 test('os envios abertos: listOpenWrites traz cada envio da conversa sem fim conhecido, com ligação, operação, estado, hora e marca, sem os campos; DONE e REFUSED não aparecem; outra pessoa, ou outra conversa pelo caminho deste agente, recebe CONVERSATION_NOT_FOUND (23)', async (t) => {
   const on = await approving(t, [

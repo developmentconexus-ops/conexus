@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
-import type { AccountOf, Operation, OperationId } from './operation.ts'
+import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
   .string()
@@ -22,6 +22,18 @@ type AccountIdentity =
       who: Readonly<{ path: `/${string}`; answer: z.ZodType<AccountOf> }>
     }>
 
+/**
+ * An answer the provider's real service gave to an operation, kept so the double sends it as it came
+ * and the conformance checks the kit reads it: the body is invented in its values (S40), the
+ * envelope, the code and the message are the measured ones.
+ */
+export type RecordedRefusal = Readonly<{
+  operation: OperationId
+  status: number
+  body: unknown
+  kind: Failure['kind'] // what `operation.answer` must make of it
+}>
+
 const PerProject = z.enum(['one', 'many'])
 type PerProject = z.infer<typeof PerProject>
 
@@ -41,7 +53,9 @@ export type Connector = Readonly<{
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
-  writes?: readonly Operation<unknown, unknown, 'write'>[]
+  writes?: readonly WriteOperation<unknown, unknown>[]
+  // The refusals recorded from the real service (see `RecordedRefusal`); the conformance reads each one through its operation.
+  refusals?: readonly RecordedRefusal[]
   // The one read Testar sends (Nango's `verification`, n8n's credential `test`): one of
   // `operations`, reading from no earlier one; each read's own health is the platform's.
   check: Operation<unknown, unknown, 'read'>
