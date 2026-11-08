@@ -63,7 +63,7 @@ test('a versão não espera o envio: com o envio parado, o fluxo já tem a vers�
     while (!oursIn(before).includes('data-conexus-version')) before.push(await stream.next())
   })()
   await held.arrived
-  await Promise.race([reading, setTimeout(5_000)])
+  await Promise.race([reading, setTimeout(5_000, undefined, { ref: false })])
   assert.ok(oursIn(before).includes('data-conexus-version'), 'told while the send is held')
   assert.ok(oursIn(before).includes('preview:sending'))
   assert.ok(!oursIn(before).includes('agent_end'))
