@@ -1063,14 +1063,18 @@ rows for the five above wait on issue #458.
   merge keeps only the keys the context lacks (`:11435`, `:11658`, `:11745`), and it runs inside the
   workflow, after the tools were converted. So the `requestContext` that Mastra stores with a parked
   run reaches the tools and the instructions of the resume only if the answer already carries it.
-  Mastra's own pin for a stored agent, `__agentVersionId` (`agent.ts:8831-8843`), does not cover an
-  agent that is not stored in the editor, as the controller's delegating agent.
+  Mastra's own pin for a stored agent, `__agentVersionId` (`agent-BP9OWM6D.js:84172-84176` and
+  `:84714-84725`), does not cover an agent that is not stored in the editor, as the controller's
+  delegating agent.
 - **Hand-made piece.** `bringBack` in `apps/server/src/builder/conversation/guard.ts` reads the
   parked run's snapshot through the public workflows store (`loadWorkflowSnapshot`) and puts on the
   answer's `requestContext` the keys its part names (`carried`); the agents' part names
-  `conexus-agent-activation` (`ACTIVATION` in `agents/agent.ts`), the `{ number, answeredBy }` the
+  `conexus-agent-activation` (`ACTIVATION` in `agents/activation.ts`), the `{ number, answeredBy }` the
   registry delivered when the turn began. `Registry.resolve` makes that version again from its row
   (`versionBack`) when it is not the registered one.
+- **Not public.** The workflow name `'agentic-loop'` is `AGENTIC_LOOP_WORKFLOW_ID`, which no public
+  entry of `@mastra/core` exports; a rename fails the first test below, and the guard fails loudly when the
+  snapshot is missing.
 - **Why.** A turn that stopped on a card must go on with the instructions, tools and answerer it
   began with ([code C75](../guides/code.md)); a version published meanwhile is for the next turn.
 - **Proof.** `answer.test.ts` "um cartão aberto fixa o turno na versão em que começou…" and "quem saiu
