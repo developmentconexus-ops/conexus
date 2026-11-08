@@ -21,16 +21,23 @@ const Refusal = z.looseObject({
     .optional(),
   message: z.string().optional(),
   error: z
-    .union([z.string(), z.looseObject({ code: Text.optional(), message: z.string().optional() })])
+    .union([
+      z.string(),
+      z.looseObject({
+        code: Text.optional(),
+        message: z.string().optional(),
+        details: z.string().optional(),
+      }),
+    ])
     .optional(),
 })
 
-/** An add's 400 keeps the cause in `mensagem.details` ("O produto [9554] enviado não existe."), after the generic `message`. */
+/** An add's 400 keeps the cause in `details` ("O produto [9554] enviado não existe."), after the generic `message`; the same text is said once. */
 function detailed(
-  mensagem: { message?: string; details?: string } | undefined,
+  object: { message?: string; details?: string } | undefined,
 ): string | undefined {
-  const text = [mensagem?.message, mensagem?.details].filter((part) => part !== undefined)
-  return text.length === 0 ? undefined : text.join(' ')
+  const text = new Set([object?.message, object?.details].filter((part) => part !== undefined))
+  return text.size === 0 ? undefined : [...text].join(' ')
 }
 
 /**
@@ -44,7 +51,7 @@ function locate(body: unknown): Pick<Native, 'code' | 'message'> {
   const text = [
     message,
     typeof mensagem === 'string' ? mensagem : (mensagem?.descricao ?? detailed(mensagem)),
-    typeof error === 'string' ? error : error?.message,
+    typeof error === 'string' ? error : detailed(error),
   ].find((value) => value !== undefined)
   const given =
     code ??
