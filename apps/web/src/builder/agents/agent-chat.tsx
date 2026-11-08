@@ -1,11 +1,17 @@
-import type { AgentDetail, CompanyId, ConversationId, OpenWrite, ProjectId } from '@conexus/hub-api'
+import type {
+  AgentDetail,
+  CompanyId,
+  ConversationId,
+  ProjectId,
+  WrittenRow,
+} from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, agentFilePath } from '@conexus/hub-api'
 import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
-import type { OpenedFile, OpenWritesRead, WriteTool } from '../conversation/public.ts'
+import type { OpenedFile, WritesRead, WriteTool } from '../conversation/public.ts'
 import {
   agentRoom,
   Beside,
@@ -15,7 +21,7 @@ import {
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
 import { FileWidth } from './file-width.ts'
-import { agentConversationsQuery, agentQuery, openWritesQuery } from './queries.ts'
+import { agentConversationsQuery, agentQuery, writesQuery } from './queries.ts'
 import { askAgent, TEST_BANNER } from './text.ts'
 
 /** The room of a conversation with the agent: its name, its tools' words and the file its Computador showed beside it. */
@@ -25,7 +31,7 @@ function useAgentRoom(
   held: {
     file: OpenedFile | undefined
     setFile: (file: OpenedFile) => void
-    writes: { openWrites: OpenWritesRead; refresh: () => void }
+    writes: { read: WritesRead; refresh: () => void }
   },
 ) {
   const { file, setFile, writes } = held
@@ -35,8 +41,8 @@ function useAgentRoom(
       toolDescription: (slug: string) =>
         agent.tools.find((one) => one.slug === slug)?.version.description,
       writeOf: (toolName: string) => writeOf(agent, toolName),
-      openWrites: writes.openWrites,
-      refreshOpenWrites: writes.refresh,
+      writes: writes.read,
+      refreshWrites: writes.refresh,
       openFile: setFile,
       openedPath: file?.path,
     }),
@@ -60,12 +66,12 @@ function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
   }
 }
 
-/** What the read of the open sends says now: an answer kept from before is not one while it is read again. */
-function openWritesRead(read: {
-  data: { writes: readonly OpenWrite[] } | undefined
+/** What the read of the writes says now: an answer kept from before is not one while it is read again. */
+function writesRead(read: {
+  data: { writes: readonly WrittenRow[] } | undefined
   error: unknown
   isFetching: boolean
-}): OpenWritesRead {
+}): WritesRead {
   if (read.isFetching) return { kind: 'READING' }
   if (read.error !== null) return { kind: 'FAILED', text: sentenceOf(read.error) }
   return read.data === undefined ? { kind: 'READING' } : { kind: 'READ', writes: read.data.writes }
@@ -88,11 +94,11 @@ export function AgentChat(props: {
   const listKey = agentConversationsQuery(scope, agentId).queryKey
   const [file, setFile] = useState<OpenedFile>()
   const phone = useIsMobile()
-  const opened = useQuery(openWritesQuery(scope, agentId, conversationId))
+  const opened = useQuery(writesQuery(scope, agentId, conversationId))
   const { data, error, isFetching, refetch } = opened
   const refresh = useCallback(() => void refetch(), [refetch])
   const writes = useMemo(
-    () => ({ openWrites: openWritesRead({ data, error, isFetching }), refresh }),
+    () => ({ read: writesRead({ data, error, isFetching }), refresh }),
     [data, error, isFetching, refresh],
   )
   const room = useAgentRoom(agent, words, { file, setFile, writes })

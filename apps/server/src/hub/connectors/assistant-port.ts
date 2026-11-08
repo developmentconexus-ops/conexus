@@ -66,7 +66,7 @@ export type AssistantConnectors = {
   write(request: WriteRequest): Promise<Written | Spent>
   /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
   openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
-  /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); `openWrites` stays until the web moves to this. */
+  /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); the card reads it, `openWrites` stays for the tool's own check. */
   writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>

@@ -1,4 +1,4 @@
-import { OperationId } from '@conexus/hub-api'
+import { OperationId, ToolCallId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -130,8 +130,11 @@ test('UNREACHABLE e DEADLINE antes do envio: "Não conseguiu lançar" com a falh
 test('o aviso do pedido igual: com um envio aberto da mesma escrita, a hora e a marca aparecem acima dos botões; sem ele, não (critério 21)', async () => {
   const sentAt = '2026-11-07T13:12:00.000Z'
   const opened = conversation(server, {
-    openWrites: [
+    writes: [
       {
+        toolCallId: ToolCallId.parse('toolu_open'),
+        approved: true,
+        message: null,
         connectionId: MATRIZ,
         operation: OperationId.parse('lancarPedido'),
         state: 'UNCERTAIN',
@@ -147,6 +150,31 @@ test('o aviso do pedido igual: com um envio aberto da mesma escrita, a hora e a 
       `Um pedido foi enviado às ${hourOf(sentAt)} e não sabemos se entrou. Confira no Sankhya pela marca Conexus 7F3A2B1C antes de aprovar.`,
     ),
   ).toBeTruthy()
+})
+
+test('o aviso do pedido igual não vem de uma escrita que terminou: DONE e REFUSED do registro não avisam', async () => {
+  const done = {
+    toolCallId: ToolCallId.parse('toolu_done'),
+    approved: true,
+    message: null,
+    connectionId: MATRIZ,
+    operation: OperationId.parse('lancarPedido'),
+    sentAt: '2026-11-07T13:12:00.000Z',
+    mark: 'Conexus 7F3A2B1C',
+  }
+  const opened = conversation(server, {
+    writes: [
+      { ...done, state: 'DONE' },
+      { ...done, toolCallId: ToolCallId.parse('toolu_refused'), state: 'REFUSED', message: 'x' },
+    ],
+  })
+  const line = await lineOf(opened)
+  tell(line, recordedRun('approval').events, holdsApproval)
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  await waitFor(() =>
+    expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false),
+  )
+  expect(screen.queryByText(/não sabemos se entrou/)).toBeNull()
 })
 
 test('sem envio aberto da mesma escrita, o cartão não traz o aviso', async () => {
@@ -205,7 +233,7 @@ test.each([
 test('a leitura dos envios abertos que falha mostra a falha com Tentar de novo e deixa os botões apagados até ela voltar', async () => {
   let failing = true
   const opened = conversation(server, {
-    openWritesAnswer: () =>
+    writesAnswer: () =>
       failing ? refusal('DATABASE_UNAVAILABLE') : HttpResponse.json({ writes: [] }),
   })
   const line = await lineOf(opened)
@@ -225,6 +253,9 @@ test('a leitura dos envios abertos que falha mostra a falha com Tentar de novo e
 test('enquanto a leitura dos envios abertos se refaz, os botões ficam apagados e a resposta velha não aparece', async () => {
   const sentAt = '2026-11-07T13:12:00.000Z'
   const stale = {
+    toolCallId: ToolCallId.parse('toolu_open'),
+    approved: true,
+    message: null,
     connectionId: MATRIZ,
     operation: OperationId.parse('lancarPedido'),
     state: 'UNCERTAIN' as const,
@@ -237,7 +268,7 @@ test('enquanto a leitura dos envios abertos se refaz, os botões ficam apagados 
   })
   let reads = 0
   const opened = conversation(server, {
-    openWritesAnswer: async () => {
+    writesAnswer: async () => {
       reads += 1
       if (reads > 1) await gate
       return HttpResponse.json({ writes: [stale] })

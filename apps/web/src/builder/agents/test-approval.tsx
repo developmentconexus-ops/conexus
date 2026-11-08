@@ -1,4 +1,4 @@
-import type { OpenWrite } from '@conexus/hub-api'
+import type { WrittenRow } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -17,13 +17,13 @@ export const SESSION = `*${BUILDER_ROUTES}/agent-controller/${AGENTS_CONTROLLER}
 const PAGE = `${AREA}/${AGENT}/${CHAT}`
 const UPDATED = '2026-11-07T12:00:00.000Z'
 
-/** The agent's conversation open, with `rows` as what the thread kept and `openWrites` as the Hub lists them. */
+/** The agent's conversation open, with `rows` as what the thread kept and `writes` as the Hub lists them. */
 export function conversation(
   server: ReturnType<typeof setupServer>,
   held: {
     rows?: readonly Stored[]
-    openWrites?: OpenWrite[]
-    openWritesAnswer?: () => Response | Promise<Response>
+    writes?: WrittenRow[]
+    writesAnswer?: () => Response | Promise<Response>
   } = {},
 ) {
   const opened = agentScreens(server).at(PAGE, {
@@ -31,8 +31,8 @@ export function conversation(
     conversations: [
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],
-    openWrites: held.openWrites ?? [],
-    openWritesAnswer: held.openWritesAnswer,
+    writes: held.writes ?? [],
+    writesAnswer: held.writesAnswer,
   })
   server.use(
     http.get(`${SESSION}/threads/:threadId/messages`, () =>

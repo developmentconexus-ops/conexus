@@ -4,7 +4,6 @@ import {
   ConversationId,
   createAgentConversation,
   listAgentConversations,
-  listOpenWrites,
   listWrites,
 } from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
@@ -29,7 +28,7 @@ type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   queue: QueueDeps
   conversations: AgentConversations
   agents: Pick<AgentReads, 'activeOf' | 'draftOf'>
-  connectors: Pick<Connectors['assistant'], 'openWrites' | 'writes'>
+  connectors: Pick<Connectors['assistant'], 'writes'>
   log: FailureLog
 }
 
@@ -74,18 +73,10 @@ async function ownConversation(
 }
 
 /**
- * What the card's notice reads (step 24.5): the conversation's sends whose end is not known, as the
- * record keeps them; a conversation of another person or agent is not found (S10).
+ * What the card reads (step 24.5): the conversation's writes as the record keeps them; a
+ * conversation of another person or agent is not found (S10).
  */
-function serveOpenWrites(app: FastifyInstance, deps: Deps): void {
-  serve(app, listOpenWrites, async (input) => {
-    const open = await deps.connectors.openWrites(await ownConversation(deps, input))
-    const writes = open.map(({ connectionId, operation, state, since, mark }) => ({
-      ...{ connectionId, operation, state, mark },
-      sentAt: since.toISOString(),
-    }))
-    return answer({ writes })
-  })
+function serveWrites(app: FastifyInstance, deps: Deps): void {
   serve(app, listWrites, async (input) => {
     const kept = await deps.connectors.writes(await ownConversation(deps, input))
     const writes = kept.map(({ since, ...row }) => ({ ...row, sentAt: since.toISOString() }))
@@ -142,7 +133,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
   })
-  serveOpenWrites(app, deps)
+  serveWrites(app, deps)
 
   registerFile(app, {
     route: AGENT_FILE,

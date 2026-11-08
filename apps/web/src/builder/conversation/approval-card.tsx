@@ -178,7 +178,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const room = useRoom()
   const { reply, sending, error } = useReply(ToolCallId.parse(part.toolCallId))
   const write = room.writeOf?.(part.toolName)
-  const refresh = room.refreshOpenWrites
+  const refresh = room.refreshWrites
   const open = part.state === 'open'
   useEffect(() => {
     if (open) refresh?.()
@@ -186,11 +186,14 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const system = write === undefined ? '' : room.connectors.name(write.connector)
   const action = write?.label ?? part.toolName
   const title = wantsText(room.agent, action, system)
-  const read = room.openWrites
+  const read = room.writes
   const same =
     read?.kind === 'READ'
       ? read.writes.find(
-          (one) => one.connectionId === write?.connectionId && one.operation === write?.operation,
+          (one) =>
+            (one.state === 'SENDING' || one.state === 'UNCERTAIN') &&
+            one.connectionId === write?.connectionId &&
+            one.operation === write?.operation,
         )
       : undefined
   // Where the room reads the open sends, a person approves only after the read answered.

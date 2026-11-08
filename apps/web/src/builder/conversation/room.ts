@@ -1,10 +1,10 @@
 import type {
   AgentId,
   FailureCode,
-  OpenWrite,
   ProposedApp,
   ProposedAutomation,
   ShownFile,
+  WrittenRow,
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
@@ -17,10 +17,10 @@ import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
 
-/** The read of the sends whose end is not known: until it answers, or fails, a card does not let the person approve. */
-export type OpenWritesRead =
+/** The read of the conversation's writes as the record keeps them: until it answers, or fails, a card does not let the person approve. */
+export type WritesRead =
   | { kind: 'READING' }
-  | { kind: 'READ'; writes: readonly OpenWrite[] }
+  | { kind: 'READ'; writes: readonly WrittenRow[] }
   | { kind: 'FAILED'; text: string }
 
 /** A write of an agent's tool, as the card that asks about it names it: its connection and its operation. */
@@ -61,9 +61,9 @@ export type Room = {
   toolDescription?: (slug: string) => string | undefined
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
-  /** The agent's sends of this conversation whose end is not known, for the warning on a card (step 24.5); read again when a card opens. */
-  openWrites?: OpenWritesRead
-  refreshOpenWrites?: () => void
+  /** The agent's writes of this conversation as the record keeps them (step 24.5): the card's warning and its end, read again when a card opens. */
+  writes?: WritesRead
+  refreshWrites?: () => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
