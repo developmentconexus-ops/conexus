@@ -48,10 +48,10 @@ export async function checked(parts: MastraMessagePart[], scorers: readonly Chec
   return Promise.all(scorers.map(async (scorer) => (await scorer.run({ input, output })).score))
 }
 
-/** The models the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"), and the ChatGPT subscription's starter (`STARTER_MODELS`). */
+/** The models the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"), and the ChatGPT subscription's model the step 24.4 measure ran on (the starter, `openai/gpt-5`, the endpoint refuses for a ChatGPT account). */
 const CHOICES = {
   claude: { model: 'anthropic/claude-sonnet-5-5', effort: 'low' },
-  openai: { model: 'openai/gpt-5', effort: 'low' },
+  openai: { model: 'openai/gpt-5.6-luna', effort: 'low' },
 }
 
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
