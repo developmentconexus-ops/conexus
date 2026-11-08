@@ -1,12 +1,11 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import type { MayApprove, WriteOf } from '../conversation/public.ts'
 import type { AgentRun } from './agent.ts'
 import type { PresetFrozenTool } from './frozen.ts'
 import type { Holding } from './publish.ts'
-import { holdsWrite } from './publish.ts'
+import { holdsWrite, labelOf, targetOf } from './publish.ts'
 import type { AgentReads } from './registry.ts'
 
 type Kept = (owner: Owner, id: ConversationId) => Promise<AgentRun | undefined>
@@ -52,18 +51,15 @@ export function mayApproveAgents(
 ) {
   return async (input: Parameters<MayApprove>[0]): ReturnType<MayApprove> => {
     const found = await writeIn(keptRun, reads, input)
-    if (found === undefined) return false
+    if (found === undefined) return { held: false }
     const { companyId, personId, projectId } = found.run.scope
     const offered = await deps.connectors.connections({
       ...{ companyId, personId, place: { kind: 'PROJECT', projectId } },
       chosen: [],
     })
-    const home = offered.find((each) => each.connectionId === found.tool.connectionId)
-    if (home === undefined) return false
-    return holdsWrite(deps, input.companyId, input.personId, {
-      connectionId: found.tool.connectionId,
-      connectorId: ConnectorId.parse(home.connector),
-      operationId: OperationId.parse(found.tool.operation),
-    })
+    const target = targetOf(offered, found.tool)
+    if (target === undefined) return { held: false }
+    const held = await holdsWrite(deps, input.companyId, input.personId, target)
+    return held ? { held } : { held, operation: labelOf(target) }
   }
 }

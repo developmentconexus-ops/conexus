@@ -20,15 +20,17 @@ import {
 } from './test-approval.ts'
 
 const READS = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
+const BRUNO = { name: 'Bruno Lima', email: 'bruno@example.test' }
 const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 
 type On = Awaited<ReturnType<typeof approving>>
 
-/** The developer role's connector operations, set by Ana. */
-async function developerHolds(on: On, operations: readonly string[]) {
+/** The developer role's connector operations, and whether it publishes a write that runs alone, set by Ana. */
+async function developerHolds(on: On, operations: readonly string[], unattended?: boolean) {
   const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: operations },
+    ...(unattended === undefined ? {} : { unattended }),
   })
   assert.equal(role.statusCode, 200, role.body)
 }
@@ -94,6 +96,27 @@ test('quem publicou sai da empresa: a escrita em Faz sozinho volta a perguntar (
     const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${bia.id}`)
     assert.equal(gone.statusCode, 204, gone.body)
   })
+})
+
+test('quem publicou guarda a ação e perde a escrita no papel: a escrita em Faz sozinho volta a perguntar (D2-a)', async (t) => {
+  const on = await approving(t, [[launched()], [said('Lançado.')], [launched()]])
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const agent = await publishedAgent(on.hub, bruno, on.agents, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  const { url, stream } = await on.opened(agent.id)
+  await sent(on.hub, on.ana, url, 'Lance o pedido')
+  assert.deepEqual(approvalsIn(await stream.turn()), [], 'published in Faz sozinho, no card')
+  assert.equal(on.fake.orders().length, 1)
+
+  await developerHolds(on, READS, true)
+  await sent(on.hub, on.ana, url, 'Lance outro')
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
 })
 
 /** The agent's active version, as its page reads it. */
@@ -181,6 +204,7 @@ test('quem aprova precisa ter a escrita no próprio papel: o Aprovar de quem nã
     approved: true,
   })
   assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'NOT_IN_ROLE'], refused.body)
+  assert.equal(Object(refused.json()).operation, operationLabel('sankhya', 'lancarPedido'))
   assert.deepEqual(await answer(on.hub, dora, url, asked.toolCallId, false), { ok: true })
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.deepEqual(on.fake.orders(), [], 'nothing reached the Sankhya')

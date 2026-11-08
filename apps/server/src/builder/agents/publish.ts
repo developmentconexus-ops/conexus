@@ -116,7 +116,31 @@ async function refuseByRole(tx: ReadTx, scope: InProject, a: Becoming): Promise<
   }
 }
 
-/** The writes in Faz sozinho of the choices, each with its connector and operation. */
+type Target = Parameters<IdentityPorts['mayUse']>[2]
+
+/**
+ * What a role check names of a tool's operation: its connection, the connector the place offers that
+ * connection as, and the operation; none for a connection the place no longer offers.
+ */
+export function targetOf(
+  offered: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[],
+  tool: Readonly<{ connectionId: ConnectionId; operation: string | null }>,
+): Target | undefined {
+  const home = offered.find((each) => each.connectionId === tool.connectionId)
+  if (home === undefined) return undefined
+  return {
+    connectionId: tool.connectionId,
+    connectorId: ConnectorIdSchema.parse(home.connector),
+    operationId: OperationIdSchema.parse(tool.operation),
+  }
+}
+
+/** The label a person reads for a target's operation. */
+export function labelOf(target: Target): string {
+  return operationLabel(target.connectorId, target.operationId)
+}
+
+/** The writes in Faz sozinho of the choices, each with its role check's target. */
 async function alonesOf(
   tx: ReadTx,
   choices: readonly Choice[],
@@ -127,10 +151,11 @@ async function alonesOf(
     choices.filter((each) => each.approval === 'AUTO').map((each) => each.id),
   )
   return rows.flatMap(({ tool }) => {
-    const home = around.find((each) => each.connectionId === tool.connectionId)
-    if (home === undefined) return []
-    const operation = OperationIdSchema.parse(tool.operation)
-    return [{ slug: tool.slug, connector: home.connector, operation }]
+    const target = targetOf(around, {
+      ...tool,
+      connectionId: ConnectionIdSchema.parse(tool.connectionId),
+    })
+    return target === undefined ? [] : [{ slug: tool.slug, ...target }]
   })
 }
 
@@ -142,16 +167,13 @@ export async function mayLeaveAlone(
   identity: Pick<IdentityPorts, 'roleOf' | 'mayPublishUnattended'>,
   tx: ReadTx,
   scope: InProject,
-  write: { slug: string; connector: string; operation: OperationId },
+  write: Target & { slug: string },
 ): Promise<void> {
   const role = await identity.roleOf(tx, scope.companyId, scope.personId)
   if (role !== undefined && (await identity.mayPublishUnattended(scope.companyId, role))) return
   throw new Failure('NOT_IN_ROLE', {
-    details: { tool: write.slug, operation: write.operation, reason: 'UNATTENDED_WRITE' },
-    named: {
-      field: 'tools',
-      operation: operationLabel(ConnectorIdSchema.parse(write.connector), write.operation),
-    },
+    details: { tool: write.slug, operation: write.operationId, reason: 'UNATTENDED_WRITE' },
+    named: { field: 'tools', operation: labelOf(write) },
   })
 }
 
@@ -183,8 +205,6 @@ export type Holding = {
   database: Database
   identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
 }
-type Target = Parameters<IdentityPorts['mayUse']>[2]
-
 /** The role a person holds in the company now; none once they left. */
 function roleNow(deps: Holding, companyId: CompanyId, personId: PersonId) {
   return deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
@@ -230,7 +250,7 @@ export async function publisherLeavesAlone(
   if (role === undefined || !(await deps.identity.mayPublishUnattended(companyId, role))) {
     return false
   }
-  return deps.identity.mayUse(companyId, { kind: 'PERSON', personId, role }, target)
+  return holdsWrite(deps, companyId, personId, target)
 }
 
 /** Makes the version the agent's active one; the draft does not change. */

@@ -129,8 +129,13 @@ export type WriteOf = (input: {
   toolName: string
 }) => Promise<{ connectionId: ConnectionId; operation: string } | undefined>
 
-/** Whether the person answering a conversation's card holds the write its tool names, in their own role, now (step 24.5, D3-a). */
-export type MayApprove = (input: Parameters<WriteOf>[0]) => Promise<boolean>
+/**
+ * Whether the person answering a conversation's card holds the write its tool names, in their own
+ * role, now (step 24.5, D3-a); when not, the write's label, if the write is still offered.
+ */
+export type MayApprove = (
+  input: Parameters<WriteOf>[0],
+) => Promise<Readonly<{ held: boolean; operation?: string }>>
 
 /** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
 export type GuardedMastra = {
@@ -241,8 +246,13 @@ async function refuseApprover(
 ): Promise<void> {
   if (mayApprove === undefined) return
   const { toolName } = asked
-  const held = toolName !== undefined && (await mayApprove({ ...asked, toolName }))
-  if (!held) throw new Failure('NOT_IN_ROLE', { details: { toolCallId, reason: 'APPROVER' } })
+  const answer = toolName === undefined ? undefined : await mayApprove({ ...asked, toolName })
+  if (answer?.held) return
+  const operation = answer?.operation
+  throw new Failure('NOT_IN_ROLE', {
+    details: { toolCallId, reason: 'APPROVER' },
+    ...(operation === undefined ? {} : { named: { operation } }),
+  })
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */

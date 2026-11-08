@@ -1,5 +1,5 @@
 import type { AgentId, ConnectionId } from '@conexus/hub-api'
-import { ConnectorId, ConversationId, OperationId, ToolCallId } from '@conexus/hub-api'
+import { ConversationId, ToolCallId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
@@ -16,6 +16,7 @@ import { openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { approvedCallOf } from '../conversation/public.ts'
 import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
+import { targetOf } from './publish.ts'
 
 const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
@@ -43,11 +44,7 @@ type Deps = {
   /** Whether the publisher of the version still leaves this write alone, read now (`publisherLeavesAlone`). */
   leavesAlone: (
     version: Extract<WriteAuthor, { kind: 'VERSION' }>,
-    target: {
-      connectionId: ConnectionId
-      connectorId: ConnectorId
-      operationId: OperationId
-    },
+    target: NonNullable<ReturnType<typeof targetOf>>,
   ) => Promise<boolean>
   log: FailureLog
 }
@@ -119,13 +116,8 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
  */
 async function aloneByPublisher(deps: Deps, tool: PresetFrozenTool): Promise<boolean> {
   if (deps.author.kind === 'DRAFT') return true
-  const home = deps.offered.find((each) => each.connectionId === tool.connectionId)
-  if (home === undefined) return false
-  return deps.leavesAlone(deps.author, {
-    connectionId: tool.connectionId,
-    connectorId: ConnectorId.parse(home.connector),
-    operationId: OperationId.parse(tool.operation),
-  })
+  const target = targetOf(deps.offered, tool)
+  return target !== undefined && deps.leavesAlone(deps.author, target)
 }
 
 /**
