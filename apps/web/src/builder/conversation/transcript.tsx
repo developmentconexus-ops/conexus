@@ -12,6 +12,7 @@ import {
   useMessageScroller,
   useMessageScrollerScrollable,
 } from '../../ui/message-scroller.tsx'
+import { seenBy } from './approval-item.ts'
 import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
 import { chipOf, messageOf } from './messages.ts'
@@ -60,6 +61,7 @@ export function shownOf(state: SessionState): ShownTurn[] {
     const view = {
       closed,
       suspended: state.suspended,
+      approval: seenBy(state),
       running: state.commands,
       heard: state.heard,
     }

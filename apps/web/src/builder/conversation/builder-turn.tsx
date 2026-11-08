@@ -4,6 +4,7 @@ import { ConexusMark } from '../../brand/mark.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
+import { ApprovalCard } from './approval-card.tsx'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
 import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
@@ -72,9 +73,22 @@ function ItemRow({
     case 'tool':
       return <ToolRow tool={item} />
     case 'card':
-      return item.cardKind === 'question' ? <QuestionCard part={item} /> : <PlanCard part={item} />
+      return <CardOf item={item} />
     case 'conexus':
       return <ConexusPartRow item={item} live={streaming} onAsk={onAsk} />
+    default:
+      return item satisfies never
+  }
+}
+
+function CardOf({ item }: { item: Extract<TranscriptItem, { kind: 'card' }> }) {
+  switch (item.cardKind) {
+    case 'question':
+      return <QuestionCard part={item} />
+    case 'plan':
+      return <PlanCard part={item} />
+    case 'approval':
+      return <ApprovalCard part={item} />
     default:
       return item satisfies never
   }

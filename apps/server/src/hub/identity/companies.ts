@@ -1,4 +1,4 @@
-import type { PersonId } from '@conexus/hub-api'
+import type { PersonId, Role } from '@conexus/hub-api'
 import { Company, CompanyDetail, CompanyId, Membership, PAGE_SIZE } from '@conexus/hub-api'
 import { and, asc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -75,14 +75,17 @@ export async function companyDetailOf(
 
 /**
  * The company, the caller's role in it, the roles the caller may invite with and what the role may
- * do, one snapshot. `may` is read from `allows`, the table the routes admit by (code C26).
+ * do. `may` is read from `allows`, the table the routes admit by (code C26), except the action
+ * that publishes a write that runs without asking: a role's stored row adds it, so the library
+ * answers it, as it does when the publication checks (step 24.5).
  */
-export function readCompany(
+export async function readCompany(
   database: Database,
   input: { personId: PersonId; companyId: CompanyId; appsDomain: AppsDomain },
+  mayPublishUnattended: (companyId: CompanyId, role: Role) => Promise<boolean>,
 ) {
   const { appsDomain, ...scope } = input
-  return database.read({ kind: 'COMPANY', ...scope }, async (tx) => {
+  const read = await database.read({ kind: 'COMPANY', ...scope }, async (tx) => {
     const admitted = await admit({ tx, ...scope, action: 'readCompany' })
     const detail = await companyDetailOf(tx, { companyId: admitted.companyId, appsDomain })
     if (detail.nickname === null && admitted.role !== 'owner') {
@@ -99,4 +102,6 @@ export function readCompany(
       },
     }
   })
+  const publishUnattendedWrite = await mayPublishUnattended(scope.companyId, read.role)
+  return { ...read, may: { ...read.may, publishUnattendedWrite } }
 }

@@ -28,14 +28,16 @@ export type Saving = {
 
 /** The agent as the screen shows it while `fields` are on their way: what the next change starts from. */
 function applied(agent: AgentDetail, fields: Fields): AgentDetail {
-  const { tools, ready: _ready, ...draft } = fields
+  const { tools, ready: _ready, approvals, ...draft } = fields
+  const kept =
+    tools === undefined ? agent.tools : agent.tools.filter((one) => tools.includes(one.version.id))
   return {
     ...agent,
     draft: { ...agent.draft, ...draft },
-    tools:
-      tools === undefined
-        ? agent.tools
-        : agent.tools.filter((one) => tools.includes(one.version.id)),
+    tools: kept.map((one) => {
+      const approval = approvals?.[one.id]
+      return one.kind === 'PRESET' && approval !== undefined ? { ...one, approval } : one
+    }),
   }
 }
 

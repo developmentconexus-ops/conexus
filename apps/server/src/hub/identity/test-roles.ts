@@ -95,3 +95,11 @@ export async function memberMay(database: TestDatabase, companyId: string, owner
       ),
     )
 }
+
+/** What a person who may do nothing of the company's actions reads of `may`. */
+export const NO_MAY = {
+  manageAgents: false,
+  manageAutomations: false,
+  manageRoles: false,
+  publishUnattendedWrite: false,
+}

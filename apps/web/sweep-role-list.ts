@@ -14,7 +14,14 @@ function role(
   ids: string[],
   members: number,
 ) {
-  return { role: name, label, kind, connectors: { sankhya: ids }, members }
+  return {
+    role: name,
+    label,
+    kind,
+    connectors: { sankhya: ids },
+    unattended: kind === 'ALL',
+    members,
+  }
 }
 
 const ROLES = [

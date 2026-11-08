@@ -68,6 +68,7 @@ test('o papel muda: tirar a operação no meio da conversa faz a próxima chamad
   assert.equal((await on.ask('pedidos', { pagina: 1 })).kind === 'NOT_IN_ROLE', false)
   const changed = await call(on.hub, on.ana, 'PUT', `${on.base}/roles/atendente`, {
     connectors: { sankhya: ['empresas'] },
+    unattended: false,
   })
   assert.equal(changed.statusCode, 200)
   assert.equal((await on.ask('pedidos', { pagina: 1 })).kind, 'NOT_IN_ROLE')
@@ -144,6 +145,7 @@ test('publicar pelo papel: quem publica o app precisa poder cada operação que 
     `/api/companies/${on.companyId}/roles/developer`,
     {
       connectors: { sankhya: ['pedidos'] },
+      unattended: false,
     },
   )
   assert.equal(changed.statusCode, 200, changed.body)
@@ -164,6 +166,7 @@ test('mudar o Membro: sem o Financeiro, o Assistente do Membro não traz contasA
   const financeiro = ['contasAReceber', 'contasAPagar']
   const changed = await call(on.hub, on.ana, 'PUT', `${base}/roles/member`, {
     connectors: { sankhya: SANKHYA_READS.filter((read) => !financeiro.includes(read)) },
+    unattended: false,
   })
   assert.equal(changed.statusCode, 200, changed.body)
   const scope: SessionScope = {

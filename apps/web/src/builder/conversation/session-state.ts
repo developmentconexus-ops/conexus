@@ -25,6 +25,12 @@ export type SessionState = {
   running: boolean
   startedAt: number | null
   suspended: Readonly<Record<string, Suspended>>
+  /** The writes that ask the person, by call: what the session's display state says it waits on (step 24.5). */
+  approvals: Readonly<Record<string, unknown>>
+  /** The calls the stream said ask the person (`tool_approval_required`), until the screen is left. */
+  asked: Readonly<Record<string, true>>
+  /** How the calls the stream ended did, by call (`tool_end`): their result, whether the person's answer or the run refused them, and whether the call threw. */
+  ended: Readonly<Record<string, { result: unknown; denied: boolean; failed: boolean }>>
   memory: OMProgress | null
   omPhase: OMPhase
   memoryFailed: MemoryFailure | null
@@ -39,6 +45,9 @@ export const OPENED: SessionState = {
   running: false,
   startedAt: null,
   suspended: {},
+  approvals: {},
+  asked: {},
+  ended: {},
   memory: null,
   omPhase: 'idle',
   memoryFailed: null,
@@ -158,6 +167,7 @@ function displayed(state: SessionState, display: Display): SessionState {
     ...state,
     running: display.isRunning,
     suspended: byCall(display.pendingSuspensions),
+    approvals: display.pendingApprovals,
     memory: display.omProgress,
   }
 }
@@ -197,6 +207,20 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
       return { ...state, messages: [...state.messages, noticeSaid(event.message)] }
     case 'tool_start':
       return { ...state, heard: heardOf(state, event.toolCallId) }
+    case 'tool_approval_required':
+      return { ...state, asked: { ...state.asked, [event.toolCallId]: true } }
+    case 'tool_end':
+      return {
+        ...state,
+        ended: {
+          ...state.ended,
+          [event.toolCallId]: {
+            result: event.result,
+            denied: event.denied === true,
+            failed: event.isError,
+          },
+        },
+      }
     case 'shell_output': {
       const was = state.commands[event.toolCallId]
       const output = (was?.output ?? '') + event.output

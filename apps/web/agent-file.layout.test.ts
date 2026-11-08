@@ -5,6 +5,7 @@ import {
   getAgent,
   listAgentConversations,
   listAgentVersions,
+  listOpenWrites,
   listTools,
   MACHINE_TOOL,
 } from '@conexus/hub-api'
@@ -121,6 +122,9 @@ const replies = {
         updatedAt: '2026-11-05T12:01:00.000Z',
       },
     ],
+  }),
+  [`GET ${BASE}/agents/${AGENT}/conversations/${CHAT}/open-writes`]: ok(listOpenWrites, {
+    writes: [],
   }),
   ...sessionReplies(CHAT, { messages: MESSAGES, controller: AGENTS_CONTROLLER }),
 }
