@@ -26,11 +26,24 @@ export type Saving = {
   refused: { field: ProblemField | undefined; reason: string | undefined } | undefined
 }
 
+/** The tool on its newest version, as far as the screen knows it before the Hub answers: the number, not what the version holds. */
+function onLatest(one: AgentDetail['tools'][number]): AgentDetail['tools'][number] {
+  if (one.kind === 'PRESET') return { ...one, version: { ...one.version, ...one.latest } }
+  return { ...one, version: { ...one.version, ...one.latest } }
+}
+
 /** The agent as the screen shows it while `fields` are on their way: what the next change starts from. */
 function applied(agent: AgentDetail, fields: Fields): AgentDetail {
   const { tools, ready: _ready, approvals, ...draft } = fields
+  // A tool whose newest version is asked stays, on that version: the line is not unmarked, nor a write's key lost, while the Hub answers.
   const kept =
-    tools === undefined ? agent.tools : agent.tools.filter((one) => tools.includes(one.version.id))
+    tools === undefined
+      ? agent.tools
+      : agent.tools.flatMap((one) => {
+          if (tools.includes(one.version.id)) return [one]
+          if (!tools.includes(one.latest.id)) return []
+          return [onLatest(one)]
+        })
   return {
     ...agent,
     draft: { ...agent.draft, ...draft },

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Checkbox } from '../../ui/checkbox.tsx'
 import { newVersionText } from './text.ts'
+import type { Saving } from './use-draft-save.ts'
 
 /** The version ids of the agent's tools, but the ones named: what a change of the list starts from. */
 export function versionsOf(
@@ -10,6 +11,18 @@ export function versionsOf(
   without: ReadonlySet<string> = new Set(),
 ): ToolVersionId[] {
   return now.tools.filter((one) => !without.has(one.id)).map((one) => one.version.id)
+}
+
+/** The chosen tool's newer version, as the line offers it: the draft then holds that version. */
+export function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: Saving) {
+  if (tool === undefined || tool.latest.number <= tool.version.number) return undefined
+  return {
+    number: tool.latest.number,
+    onUse: () =>
+      saving.save((now) => ({
+        tools: now.tools.map((one) => (one.id === tool.id ? tool.latest.id : one.version.id)),
+      })),
+  }
 }
 
 /** One tool of a connection as a line: the mark, the title with what it says under it, and the newer version it offers. */

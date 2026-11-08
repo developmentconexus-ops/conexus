@@ -6,7 +6,7 @@ import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogFooter } from '../../ui/dialog.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { sendPublish, settleAgent, versionsQuery } from './queries.ts'
-import { missingField, UNCONFIRMED_PUBLISH } from './text.ts'
+import { missingField, reasonText, UNCONFIRMED_PUBLISH } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -14,6 +14,10 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 export function publishFailureText(failure: unknown): string {
   if (failure instanceof HubFailure && failure.code === 'AGENT_DRAFT_INVALID') {
     return missingField(failure.field)
+  }
+  if (failure instanceof HubFailure && failure.code === 'AGENT_TOOL_REFUSED') {
+    const said = reasonText(failure.reason)
+    if (said !== undefined) return said
   }
   return writeFailureText(failure, UNCONFIRMED_PUBLISH)
 }
