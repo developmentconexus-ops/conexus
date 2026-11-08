@@ -248,7 +248,6 @@ export const saveAgentDraft = defineOperation({
   ],
 })
 
-/** What refuses a configuration that is about to become the active version: the role does not hold a tool, or a tool does not fit. */
 const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 
 export const publishAgent = defineOperation({
