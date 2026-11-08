@@ -1,7 +1,7 @@
 # Etapa 24.5.1: Uma lógica
 
-Rascunho. O fundador respondeu às decisões em 2026-11-08 (1A, 2 aceita, 4A, 5A, 6A); a 3 segue
-aberta, e ele ainda não aprovou esta página. A
+Rascunho. O fundador respondeu às seis decisões em 2026-11-08 (1A, 2 aceita, 3A, 4A, 5A, 6A), e
+ainda não aprovou esta página. A
 etapa vem do pedido dele de 2026-11-08 e da auditoria de coesão de 2026-11-07, refeita por um estudo
 que tratou cada item da auditoria como hipótese. Cada linha citada foi lida no `main` em `a4e69677`,
 com `@mastra/core` 1.82.0, `@mastra/server` 1.82.0, `@mastra/memory` 1.41.0, `@mastra/pg` 1.35.0,
@@ -122,8 +122,10 @@ refeitas pelo estudo. As respostas são as suas, de 2026-11-08, com as suas pala
 
   Então o PR de método faz a máquina conferir o que o guia já manda (C8, a raiz, as portas
   aninhadas), conserta a violação de `request-notices.ts:38`, escreve na T5 a convenção que a
-  lista já segue, e põe a pergunta da C26 na revisão. Entra antes desta etapa, num PR só dele (L20).
-- **3. O vocabulário do Builder no contrato.** **Em aberto: você perguntou "O que é isso?".**
+  lista já segue, põe a pergunta da C26 na revisão e escreve na C4 a frase da decisão 3. Entra
+  antes desta etapa, num PR só dele (L20).
+- **3. O vocabulário do Builder no contrato.** Você perguntou "O que é isso?", e a explicação
+  abaixo foi a resposta.
 
   Em palavras simples: o Hub (a parte que guarda empresas, papéis e conectores) não deve depender
   do Builder (a parte que cria agentes e apps). Mas o pacote de contrato, que as duas partes e as
@@ -134,10 +136,14 @@ refeitas pelo estudo. As respostas são as suas, de 2026-11-08, com as suas pala
   - `3A`: vale. O contrato é a língua comum de todos, e isso se escreve na C4.
   - `3B`: não vale. O Hub nunca cita um nome do Builder, nem pelo contrato.
 
-  **Recomendo `3A`.** A U2 põe a regra de escrita no Hub (`hub/connectors/approval.ts`), e ela
+  O estudo recomendou `3A`. A U2 põe a regra de escrita no Hub (`hub/connectors/approval.ts`), e ela
   recebe a conversa onde a escrita acontece (`ConversationId`); a 24.6 acrescenta a corrida de um
   workflow. Com `3B`, a regra teria de voltar para o Builder, e o Hub teria de trocar os nomes que
-  já usa.
+  já usa. **Sua resposta: "A".**
+
+  A C4 ([code](../guides/code.md)) ganha a frase, no PR de método da decisão 2: "O contrato
+  (`@conexus/hub-api`) é o vocabulário comum dos programas e dos sujeitos: o Hub pode usar os tipos
+  dele, os do Builder inclusive, sem que isso conte como importar o Builder."
 - **4. A data de "Conversa de …" quando a conversa não tem título.** Hoje o Builder mostra o dia
   da criação, e o Assistente, os agentes e o Construtor mostram a última mensagem. A mesma
   conversa sem título muda de nome a cada mensagem.
