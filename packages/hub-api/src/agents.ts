@@ -183,6 +183,7 @@ const READ_FAILURES = [
   'DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[]
 const ONE_FAILURES = [...READ_FAILURES, 'AGENT_NOT_FOUND'] as const
+const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 const OneAgent = z.object({ agent: AgentDetail })
 /** A version's number as the path carries it. */
 const PathNumber = z
@@ -247,8 +248,6 @@ export const saveAgentDraft = defineOperation({
     'NOT_IN_ROLE',
   ],
 })
-
-const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 
 export const publishAgent = defineOperation({
   id: 'publishAgent',
