@@ -134,13 +134,9 @@ jobs:
           port: ${{ job.services.postgres.ports['5432'] }}
       # One file at a time in a job: files that share CPU starve each other's real-time margins
       # and migrate.test.ts changes the roles of the whole server. The shards are the parallelism.
-      # `--test-force-exit` ends a file's process once its tests are done: a failed test that leaves a
-      # turn parked on a card keeps a timer alive, and its file used to hold the shard to the timeout.
-      # That exit is `process.exit()`, which on Node 24.21 can deadlock joining a V8 worker parked
-      # in a concurrent Sparkplug compile until the main thread collects garbage (nodejs/node#54918):
-      # agents.eval.test.ts, which exits right after loading, held shard 3 to the timeout in about one
-      # run in eleven. `--no-concurrent-sparkplug` in the `test` and `e2e` commands compiles on the
-      # main thread instead. Revalidate when nodejs/node#66171 lands in the pinned Node.
+      # A file's process ends when nothing holds it: no `--test-force-exit`. Its `process.exit()` can
+      # deadlock on Node 24.21 joining a V8 compile worker parked until the main thread collects
+      # garbage (nodejs/node#54918), and held shard 3 to the timeout in about one run in eleven.
       - run: npm test -w @conexus/server
         env:
           TEST_SHARD: ${{ matrix.shard }}/6
