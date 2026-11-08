@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { json } from './fake-data.ts'
 import { CLIENTES, PRODUTOS } from './fake-rows.ts'
+import { lancarPedido } from './operations/vendas.ts'
+import { refusals } from './refusals.ts'
 
 // Invented orders only (S40). The real gateway has no idempotency key, so the double stores every
 // order it is sent and says nothing else about a repeat: counting what it holds is how a test sees a repeat.
@@ -26,19 +28,11 @@ const OrderBody = z.looseObject({
   itens: z.array(z.looseObject({ codigoProduto: z.number().int() })).min(1),
 })
 
-function refused(details: string): Response {
-  return json(
-    {
-      statusCode: 400,
-      error: 'Bad Request',
-      mensagem: {
-        code: 'INVALID_REQUEST',
-        message: 'Ocorreu algum erro inesperado!',
-        details,
-      },
-    },
-    400,
-  )
+/** The gateway's recorded answer to an add that names a product it does not have, sent as it was kept. */
+function unknownProduct(): Response {
+  const recorded = refusals.find((each) => each.operation === lancarPedido.id)
+  if (recorded === undefined) throw new Error('no recorded refusal for lancarPedido')
+  return json(recorded.body, recorded.status)
 }
 
 function gatewayTimeout(): Response {
@@ -57,11 +51,12 @@ export function orderBook(): OrderBook {
 
   function add(raw: unknown): Response {
     const parsed = OrderBody.safeParse(raw)
-    if (!parsed.success) return refused('Pedido sem cliente ou sem itens.')
+    // The kit's schema refuses an order without a client or items before it leaves: one that arrives is a test's mistake.
+    if (!parsed.success) throw new Error('the double was sent an order the kit does not build')
     const body = parsed.data
     const known = new Set(PRODUTOS.map((produto) => produto.codigoProduto))
     const unknown = body.itens.find((item) => !known.has(item.codigoProduto))
-    if (unknown) return refused(`O produto [${unknown.codigoProduto}] enviado não existe.`)
+    if (unknown) return unknownProduct()
     if (!CLIENTES.some((cliente) => Number(cliente.codigoCliente) === body.codigoCliente))
       return json({
         codigo: 0,

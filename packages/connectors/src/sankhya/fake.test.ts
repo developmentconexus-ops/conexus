@@ -6,6 +6,7 @@ import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
+import { refusals } from './refusals.ts'
 
 const GATEWAY = '/gateway/v1/mge/service.sbr'
 const COUNT = { sql: 'SELECT COUNT(*) AS N FROM TSIEMP' }
@@ -235,20 +236,16 @@ test('o dublê perde a resposta depois de gravar ou antes de gravar, e o mesmo 5
   })
 })
 
-test('o dublê recusa o produto que não existe com 400 INVALID_REQUEST e o cliente que não existe com 200 e [CORE_E…]', async () => {
+test('o dublê recusa o produto que não existe com a recusa gravada, como ela está, e o cliente que não existe com 200 e [CORE_E…]', async () => {
   await withToken(async (origin, token, fake) => {
     const product = await add(token, origin, {
       ...PEDIDO,
       itens: [{ codigoProduto: 9554, quantidade: 1 }],
     })
-    assert.equal(product.status, 400)
-    assert.partialDeepStrictEqual(product.body, {
-      mensagem: { code: 'INVALID_REQUEST', details: 'O produto [9554] enviado não existe.' },
-    })
+    assert.deepEqual(product, { status: refusals[0]?.status, body: refusals[0]?.body })
     const client = await add(token, origin, { ...PEDIDO, codigoCliente: 99 })
     assert.equal(client.status, 200)
     assert.match(z.object({ mensagem: z.string() }).parse(client.body).mensagem, /\[CORE_E\d+\]/)
-    assert.equal((await add(token, origin, { itens: [] })).status, 400)
     assert.equal(fake.orders().length, 0)
     fake.switches.refuse.add('lancarPedido')
     assert.equal((await add(token, origin, PEDIDO)).status, 403)
