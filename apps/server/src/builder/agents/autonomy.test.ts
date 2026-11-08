@@ -176,7 +176,7 @@ test('quem restaura responde pela versão: quem restaurou perde a ação e a esc
 test('quem publica de novo a revisão responde pela versão: quem a pôs ativa por último perde a ação e a escrita em Faz sozinho volta a perguntar (D2-a)', async (t) => {
   const on = await approving(t, [[launched()], [said('Lançado.')], [launched()]])
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'admin')
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'developer')
   await developerHolds(on, [...READS, 'lancarPedido'], true)
   const v1 = await publishedAgent(on.hub, bia, on.agents, {
