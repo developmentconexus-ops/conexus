@@ -242,10 +242,9 @@ export const saveAgentDraft = defineOperation({
   failures: [
     ...ONE_FAILURES,
     'AGENT_DRAFT_STALE',
-    'AGENT_TOOL_REFUSED',
     'TOOL_REFUSED',
     'REQUEST_MALFORMED',
-    'NOT_IN_ROLE',
+    ...NOT_HELD,
   ],
 })
 
