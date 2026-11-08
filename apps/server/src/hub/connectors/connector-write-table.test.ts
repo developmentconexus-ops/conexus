@@ -80,7 +80,12 @@ test('o registro de um envio: a empresa lê e grava só o seu, termina só o est
   const finish = `update connectors.connector_write set state = 'DONE', answer = '{"codigoPedido":1}'`
   assert.equal((await as(A, `${finish} returning 1`)).rows.length, 1)
   assert.equal((await as(A, `${finish} where company_id = '${B}' returning 1`)).rows.length, 0)
-  for (const column of ["input_hash = 'other'", "operation_id = 'other'", `person_id = 'person-a'`])
+  for (const column of [
+    "input_hash = 'other'",
+    "operation_id = 'other'",
+    `person_id = 'person-a'`,
+    "approved_by = 'x'",
+  ])
     await assert.rejects(as(A, `update connectors.connector_write set ${column}`), denied)
   await assert.rejects(as(A, 'delete from connectors.connector_write'), denied)
 })

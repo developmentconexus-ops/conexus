@@ -22,7 +22,7 @@ test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na 
   assert.equal(markOf(first.threadId, first.toolCallId).length + 1, 17)
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent.length, 2)
-  assert.equal(sent[0]?.fields.codigoPedido, 98001)
+  assert.equal(sent[0]?.fields.writtenId, 98001)
   assert.equal(sent[0]?.fields.personId, on.ana.id)
   assert.equal(sent[1]?.fields.agentId, on.agentId)
   assert.equal(sent[1]?.fields.versionNumber, 1)

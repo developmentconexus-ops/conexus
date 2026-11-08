@@ -3,6 +3,7 @@ import type { Answered } from '@conexus/connectors'
 import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
 import {
   ConnectionId as ConnectionIdSchema,
+  Native,
   OperationId as OperationIdSchema,
   ToolCallId,
 } from '@conexus/hub-api'
@@ -73,29 +74,13 @@ export function hashOf(input: unknown): string {
   return createHash('sha256').update(JSON.stringify(input)).digest('hex')
 }
 
-/** What the provider said, as the executor kept it, so a stored refusal is read back as it was sent to the model. */
-const StoredNative = z.object({
-  status: z.number(),
-  code: z.string().nullable(),
-  message: z.string().nullable(),
-  body: z.unknown(),
-  reason: z
-    .discriminatedUnion('kind', [
-      z.object({ kind: z.literal('TOO_LARGE'), limitBytes: z.number() }),
-      z.object({
-        kind: z.literal('SHAPE'),
-        issues: z.array(z.object({ path: z.string(), expected: z.string(), received: z.string() })),
-      }),
-    ])
-    .optional(),
-})
 const Stored = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('OK'), value: z.unknown() }),
   z.object({
     kind: z.enum(['REFUSED', 'AUTH_REFUSED', 'TOKEN_EXPIRED', 'UNREADABLE']),
-    native: StoredNative,
+    native: Native,
   }),
-  z.object({ kind: z.literal('BUSY'), native: StoredNative, waitMs: z.number().nullable() }),
+  z.object({ kind: z.literal('BUSY'), native: Native, waitMs: z.number().nullable() }),
   z.object({ kind: z.enum(['UNREACHABLE', 'DEADLINE']) }),
 ])
 

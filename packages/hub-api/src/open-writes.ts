@@ -8,6 +8,13 @@ import { defineOperation } from './operation.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
 
+const OfConversation = z.object({
+  companyId: CompanyId,
+  projectId: ProjectId,
+  agentId: AgentId,
+  conversationId: ConversationId,
+})
+
 /**
  * A write of the conversation as the record keeps it, whatever its end (step 24.5, U5): what the card
  * reads after a reload. Never the write's fields (security S40).
@@ -34,14 +41,7 @@ export const listWrites = defineOperation({
   method: 'GET',
   path: '/api/companies/{companyId}/projects/{projectId}/agents/{agentId}/conversations/{conversationId}/writes',
   bodyLimit: 1024,
-  input: {
-    params: z.object({
-      companyId: CompanyId,
-      projectId: ProjectId,
-      agentId: AgentId,
-      conversationId: ConversationId,
-    }),
-  },
+  input: { params: OfConversation },
   success: { status: 200, body: z.object({ writes: z.array(WrittenRow) }) },
   failures: [
     'NOT_FOUND',
