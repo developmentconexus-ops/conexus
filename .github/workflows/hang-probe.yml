@@ -1,7 +1,7 @@
 name: hang probe (temporary)
 
-# Temporary: catches the shard that stops printing and dumps the runner and its child. Removed
-# before the pull request is opened.
+# Temporary: proves the shards and e2e without --test-force-exit. Removed before the pull request
+# is opened.
 on:
   push:
     branches: [feat/conexus-ci-server-hang]
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lane: [flags-1, flags-2, flags-3, noexit-1, noexit-2, noexit-3, noexit-4, noexit-5, noexit-6]
+        lane: [head-1, head-2, head-3, shard-1, shard-2, shard-3, shard-4, shard-5, shard-6, e2e]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -41,41 +41,35 @@ jobs:
       - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] probe
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
-      - run: sudo apt-get install -y gdb >/dev/null 2>&1 || true
-      - name: run the shard, dump on silence
+      - name: run
         env:
           LANE: ${{ matrix.lane }}
-          TEST_SHARD: 3/6
         run: |
           set +e
-          dump() {
-            local root=$1
-            echo "::group::SILENT $2"
-            tail -5 /tmp/run.log
-            ps -eo pid,ppid,stat,etime,wchan:30,comm --forest | grep -E 'node|npm|sh|MainThread' | grep -v grep
-            for p in $(pgrep -x MainThread); do
-              echo "== pid $p ppid $(awk '{print $4}' /proc/$p/stat) $(tr '\0' ' ' < /proc/$p/cmdline | cut -c1-150)"
-              grep -E 'State|Threads|SigPnd|ShdPnd|SigBlk|SigCgt' /proc/$p/status
-              for t in /proc/$p/task/*; do echo "  $(basename $t) $(cat $t/comm) $(awk '{print $3}' $t/stat) wchan=$(cat $t/wchan)"; done
-              sudo bash -c "for t in /proc/$p/task/*; do echo \"-- kernel stack \$t\"; cat \$t/stack; done" | head -80
-              sudo gdb -p $p -batch -ex 'thread apply all bt' 2>&1 | grep -v '^\[New LWP' | tail -120
-              ls -l /proc/$p/fd | tail -40
-            done
-            echo "::endgroup::"
-          }
-          runs=25; [ "${LANE#noexit}" != "$LANE" ] && runs=1
-          for i in $(seq 1 $runs); do
-            rm -rf /tmp/node-compile-cache
-            if [ "${LANE#noexit}" != "$LANE" ]; then
-              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts ${LANE#noexit-}/6)) > /tmp/run.log 2>&1 &
-            else
-              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --no-concurrent-sparkplug --no-maglev-build-code-on-background --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
-            fi
-            pid=$!
-            while kill -0 $pid 2>/dev/null; do
-              sleep 5
-              age=$(( $(date +%s) - $(stat -c %Y /tmp/run.log) ))
-              if [ $age -gt 120 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
-            done
-            wait $pid; echo "run $i exit=$? lines=$(wc -l < /tmp/run.log)"
-          done
+          case "$LANE" in
+            e2e)
+              sed -i 's/"e2e": "node --test --test-force-exit /"e2e": "node --test /' package.json
+              echo "force-exit left in package.json: $(grep -c 'force-exit' package.json)"
+              start=$(date +%s); npm run e2e; echo "e2e exit=$? wall=$(( $(date +%s)-start ))s" ;;
+            shard-*)
+              export GITHUB_STEP_SUMMARY=/tmp/summary.md TEST_SHARD=${LANE#shard-}/6
+              start=$(date +%s); npm test -w @conexus/server > /tmp/run.log 2>&1; rc=$?
+              wall=$(( $(date +%s)-start ))
+              files=$(grep -cE '^\| [0-9.]+ \| src/' /tmp/run.log)
+              tests=$(grep -E '^\| [0-9.]+ \| src/' /tmp/run.log | awk -F'|' '{s+=$2} END {print int(s)}')
+              tail -70 /tmp/run.log
+              echo "shard $TEST_SHARD exit=$rc wall=${wall}s files=$files test-seconds=$tests" ;;
+            head-*)
+              hangs=0
+              for i in $(seq 1 25); do
+                rm -rf /tmp/node-compile-cache
+                (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
+                pid=$!
+                while kill -0 $pid 2>/dev/null; do
+                  sleep 5
+                  if [ $(( $(date +%s) - $(stat -c %Y /tmp/run.log) )) -gt 120 ]; then hangs=$((hangs+1)); echo "HANG run $i"; tail -5 /tmp/run.log; pkill -KILL -f -- '--test'; break; fi
+                done
+                wait $pid; echo "run $i exit=$?"
+              done
+              echo "hangs=$hangs/25" ;;
+          esac
