@@ -285,7 +285,7 @@ export const activateAgentVersion = defineOperation({
   bodyLimit: 1024,
   input: { params: OfAgent.extend({ number: PathNumber }) },
   success: { status: 200, body: OneAgent },
-  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND'],
+  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND', 'NOT_IN_ROLE'],
 })
 
 export const deleteAgent = defineOperation({

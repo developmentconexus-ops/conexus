@@ -1,4 +1,4 @@
-import type { AgentId } from '@conexus/hub-api'
+import type { AgentId, ConnectionId } from '@conexus/hub-api'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -16,6 +16,7 @@ import { openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { approvedCallOf } from '../conversation/public.ts'
 import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
+import { targetOf } from './publish.ts'
 
 const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
@@ -38,6 +39,13 @@ type Deps = {
   tools: readonly FrozenTool[]
   turnOf: (requestContext: RequestContext) => TurnKey
   author: WriteAuthor
+  /** The connector of each connection the place offers, which a write's role check names. */
+  offered: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[]
+  /** Whether the publisher of the version still leaves this write alone, read now (`publisherLeavesAlone`). */
+  leavesAlone: (
+    version: Extract<WriteAuthor, { kind: 'VERSION' }>,
+    target: NonNullable<ReturnType<typeof targetOf>>,
+  ) => Promise<boolean>
   log: FailureLog
 }
 
@@ -102,10 +110,23 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
 }
 
 /**
+ * Whether a published version's write in Faz sozinho may still run without asking (step 24.5,
+ * D2-a): the publisher's role, read on every call, holds the action and the write. A connection
+ * the place no longer offers has no connector to ask about, and asks.
+ */
+async function aloneByPublisher(deps: Deps, tool: PresetFrozenTool): Promise<boolean> {
+  if (deps.author.kind === 'DRAFT') return true
+  const target = targetOf(deps.offered, tool)
+  return target !== undefined && deps.leavesAlone(deps.author, target)
+}
+
+/**
  * A write of the version (step 24.5): it asks the person first when the version keeps it in
- * Pergunta antes, or when the conversation holds an earlier send of the same write whose end is
- * not known; Mastra treats the tool's own rule as final. Its `execute` sends through the Hub's
- * write funnel, which checks the open sends again unless a person approved this very call.
+ * Pergunta antes, when the publisher's role no longer leaves it alone, or when the conversation
+ * holds an earlier send of the same write whose end is not known; Mastra treats the tool's own
+ * rule as final, and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`),
+ * so a failed read asks. Its `execute` sends through the Hub's write funnel, which checks the open
+ * sends again unless a person approved this very call.
  */
 function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
   const target = { connectionId: tool.connectionId, operation: tool.operation }
@@ -115,6 +136,7 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
     inputSchema: openOf(input, tool),
     requireApproval: async (_given, context) => {
       if (tool.approval !== 'AUTO') return true
+      if (!(await aloneByPublisher(deps, tool))) return true
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])
       if (!threadId.success) return true
       const open = await deps.connectors.openWrites({

@@ -1,4 +1,4 @@
-import type { AgentId, ConnectionId, OperationId, Publish } from '@conexus/hub-api'
+import type { AgentId, CompanyId, ConnectionId, OperationId, Publish } from '@conexus/hub-api'
 import {
   AgentConfig,
   AgentId as AgentIdSchema,
@@ -6,19 +6,20 @@ import {
   ConnectionId as ConnectionIdSchema,
   ConnectorId as ConnectorIdSchema,
   OperationId as OperationIdSchema,
+  PersonId,
   ToolKind,
-  ToolVersionId as ToolVersionIdSchema,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
 import type { KitRead } from '../../hub/connectors/public.ts'
 import { operationLabel } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection } from '../tools/public.ts'
 import { versionsWithTools } from '../tools/public.ts'
 import { legacyReads } from './legacy.ts'
-import { chosenIds, ofProject } from './store.ts'
+import type { Choice } from './store.ts'
+import { chosenIds, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
 import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
 
 /** What publishing needs of the draft: instructions, and only connections the Projeto still offers. */
@@ -39,12 +40,15 @@ export async function invalidField(
 /** A read a chosen tool declares; `tool` names a company's own (code) tool by the title the person read, where one tool holds several reads. */
 type Declared = { slug: string; connectionId: ConnectionId; operation: OperationId; tool?: string }
 
-/** Each read the draft will give the agent: its chosen tools', or for a draft written before E4 the kit's reads of its connections. */
+/** Each read the configuration will give the agent: its chosen tools', or for one written before E4 the kit's reads of its connections. */
 async function declaredBy(
   tx: ReadTx,
-  a: { draft: AgentConfig; agentId: AgentId; kit: readonly KitRead[] },
+  a: { config: AgentConfig; choices: readonly Choice[]; kit: readonly KitRead[] },
 ): Promise<Declared[]> {
-  const rows = await versionsWithTools(tx, await chosenIds(tx, a.agentId))
+  const rows = await versionsWithTools(
+    tx,
+    a.choices.map((each) => each.id),
+  )
   const chosen = rows.flatMap((row): Declared[] => {
     const { slug, connectionId } = row.tool
     const home = ConnectionIdSchema.parse(connectionId)
@@ -57,8 +61,8 @@ async function declaredBy(
     }
     return [{ slug, connectionId: home, operation: OperationIdSchema.parse(row.tool.operation) }]
   })
-  if (a.draft.byTool) return chosen
-  const kit = legacyReads(a.kit, a.draft.connections).map((read) => ({
+  if (a.config.byTool) return chosen
+  const kit = legacyReads(a.kit, a.config.connections).map((read) => ({
     slug: read.operation,
     connectionId: read.connectionId,
     operation: read.operation,
@@ -66,21 +70,20 @@ async function declaredBy(
   return [...chosen, ...kit]
 }
 
+/** A configuration about to become the active version: the draft published, or a version brought back. */
+type Becoming = {
+  config: AgentConfig
+  choices: readonly Choice[]
+  around: readonly OfferedConnection[]
+  kit: readonly KitRead[]
+  identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach' | 'mayPublishUnattended'>
+}
+
 /**
  * Whether the role of who publishes holds every read the version will give the agent, the free
  * query included (decision C1 and E4): the first it lacks is `NOT_IN_ROLE` with the tool.
  */
-async function refuseByRole(
-  tx: ReadTx,
-  scope: InProject,
-  a: {
-    draft: AgentConfig
-    agentId: AgentId
-    around: readonly OfferedConnection[]
-    kit: readonly KitRead[]
-    identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>
-  },
-): Promise<void> {
+async function refuseByRole(tx: ReadTx, scope: InProject, a: Becoming): Promise<void> {
   const declared = await declaredBy(tx, a)
   if (declared.length === 0) return
   const role = await a.identity.roleOf(tx, scope.companyId, scope.personId)
@@ -113,21 +116,46 @@ async function refuseByRole(
   }
 }
 
-/** The draft's writes in Faz sozinho, each with its connector and operation. */
-async function alonesOf(tx: ReadTx, agentId: AgentId, around: readonly OfferedConnection[]) {
-  const auto = await tx
-    .select({ toolVersionId: agentTool.toolVersionId })
-    .from(agentTool)
-    .where(and(eq(agentTool.agentId, agentId), eq(agentTool.approval, 'AUTO')))
+type Target = Parameters<IdentityPorts['mayUse']>[2]
+
+/**
+ * What a role check names of a tool's operation: its connection, the connector the place offers that
+ * connection as, and the operation; none for a connection the place no longer offers.
+ */
+export function targetOf(
+  offered: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[],
+  tool: Readonly<{ connectionId: ConnectionId; operation: string | null }>,
+): Target | undefined {
+  const home = offered.find((each) => each.connectionId === tool.connectionId)
+  if (home === undefined) return undefined
+  return {
+    connectionId: tool.connectionId,
+    connectorId: ConnectorIdSchema.parse(home.connector),
+    operationId: OperationIdSchema.parse(tool.operation),
+  }
+}
+
+/** The label a person reads for a target's operation. */
+export function labelOf(target: Target): string {
+  return operationLabel(target.connectorId, target.operationId)
+}
+
+/** The writes in Faz sozinho of the choices, each with its role check's target. */
+async function alonesOf(
+  tx: ReadTx,
+  choices: readonly Choice[],
+  around: readonly OfferedConnection[],
+) {
   const rows = await versionsWithTools(
     tx,
-    auto.map((each) => ToolVersionIdSchema.parse(each.toolVersionId)),
+    choices.filter((each) => each.approval === 'AUTO').map((each) => each.id),
   )
   return rows.flatMap(({ tool }) => {
-    const home = around.find((each) => each.connectionId === tool.connectionId)
-    if (home === undefined) return []
-    const operation = OperationIdSchema.parse(tool.operation)
-    return [{ slug: tool.slug, connector: home.connector, operation }]
+    const target = targetOf(around, {
+      ...tool,
+      connectionId: ConnectionIdSchema.parse(tool.connectionId),
+    })
+    return target === undefined ? [] : [{ slug: tool.slug, ...target }]
   })
 }
 
@@ -139,17 +167,90 @@ export async function mayLeaveAlone(
   identity: Pick<IdentityPorts, 'roleOf' | 'mayPublishUnattended'>,
   tx: ReadTx,
   scope: InProject,
-  write: { slug: string; connector: string; operation: OperationId },
+  write: Target & { slug: string },
 ): Promise<void> {
   const role = await identity.roleOf(tx, scope.companyId, scope.personId)
   if (role !== undefined && (await identity.mayPublishUnattended(scope.companyId, role))) return
   throw new Failure('NOT_IN_ROLE', {
-    details: { tool: write.slug, operation: write.operation, reason: 'UNATTENDED_WRITE' },
-    named: {
-      field: 'tools',
-      operation: operationLabel(ConnectorIdSchema.parse(write.connector), write.operation),
-    },
+    details: { tool: write.slug, operation: write.operationId, reason: 'UNATTENDED_WRITE' },
+    named: { field: 'tools', operation: labelOf(write) },
   })
+}
+
+/**
+ * Whether who makes a configuration the active version may (step 24.5, option A of 2026-11-07):
+ * publishing the draft and bringing back an older version pass the same checks, each read now.
+ */
+export async function refuseUnheld(tx: ReadTx, scope: InProject, a: Becoming): Promise<void> {
+  await refuseByRole(tx, scope, a)
+  const [alone] = await alonesOf(tx, a.choices, a.around)
+  if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
+}
+
+/** A published version as it would become active again: its configuration and its tools' versions. */
+export async function versionBack(
+  tx: ReadTx,
+  agentId: AgentId,
+  number: number,
+): Promise<Pick<Becoming, 'config' | 'choices'> | undefined> {
+  const [version] = await tx
+    .select({ config: agentVersion.config })
+    .from(agentVersion)
+    .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
+  if (version === undefined) return undefined
+  return { config: AgentConfig.parse(version.config), choices: await pinnedOf(tx, agentId, number) }
+}
+
+export type Holding = {
+  database: Database
+  identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
+}
+/** The role a person holds in the company now; none once they left. */
+function roleNow(deps: Holding, companyId: CompanyId, personId: PersonId) {
+  return deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
+    deps.identity.roleOf(tx, companyId, personId),
+  )
+}
+
+/** Whether a person's role, read now, holds a write: who approves its card (step 24.5, D3-a). */
+export async function holdsWrite(
+  deps: Holding,
+  companyId: CompanyId,
+  personId: PersonId,
+  target: Target,
+): Promise<boolean> {
+  const role = await roleNow(deps, companyId, personId)
+  if (role === undefined) return false
+  return deps.identity.mayUse(companyId, { kind: 'PERSON', personId, role }, target)
+}
+
+/**
+ * Whether a version's write in Faz sozinho still runs without asking (step 24.5, D2-a): who
+ * published the version is still in the company, and their role, read now, holds both the action
+ * and the write. Otherwise it asks; what the version declares does not change.
+ */
+export async function publisherLeavesAlone(
+  deps: Holding,
+  companyId: CompanyId,
+  version: { agentId: AgentId; number: number },
+  target: Target,
+): Promise<boolean> {
+  const [row] = await deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
+    tx
+      .select({ by: agentVersion.publishedBy })
+      .from(agentVersion)
+      .where(
+        and(eq(agentVersion.agentId, version.agentId), eq(agentVersion.number, version.number)),
+      ),
+  )
+  // A person who left takes their authorship with them (`release.ts`), so no one leaves it alone.
+  if (row?.by == null) return false
+  const personId = PersonId.parse(row.by)
+  const role = await roleNow(deps, companyId, personId)
+  if (role === undefined || !(await deps.identity.mayPublishUnattended(companyId, role))) {
+    return false
+  }
+  return holdsWrite(deps, companyId, personId, target)
 }
 
 /** Makes the version the agent's active one; the draft does not change. */
@@ -177,6 +278,7 @@ async function republished(
   tx: CommandTx,
   row: AgentRow,
   revision: number,
+  check: (number: number) => Promise<void>,
 ): Promise<Published | undefined> {
   const [earlier] = await tx
     .select({ number: agentVersion.number })
@@ -186,6 +288,7 @@ async function republished(
   if (row.activeVersion === earlier.number || row.revision !== revision) {
     return { number: earlier.number, did: 'NONE' }
   }
+  await check(earlier.number)
   await makeActive(tx, AgentIdSchema.parse(row.id), earlier.number)
   return { number: earlier.number, did: 'ACTIVATED' }
 }
@@ -238,14 +341,16 @@ export async function published(
   const { agentId, body } = a
   const [row] = await tx.select().from(agent).where(ofProject(scope, agentId)).for('update')
   if (row === undefined) throw new Failure('AGENT_NOT_FOUND')
-  const earlier = await republished(tx, row, body.revision)
+  const earlier = await republished(tx, row, body.revision, async (number) => {
+    const back = await versionBack(tx, agentId, number)
+    if (back === undefined) throw new Failure('AGENT_VERSION_NOT_FOUND')
+    await refuseUnheld(tx, scope, { ...a, ...back })
+  })
   if (earlier !== undefined) return earlier
   if (row.revision !== body.revision) throw new Failure('AGENT_DRAFT_STALE')
   const draft = AgentConfig.parse(row.draft)
   const field = await invalidField(tx, draft, agentId, a.around)
   if (field !== undefined) throw new Failure('AGENT_DRAFT_INVALID', { named: { field } })
-  await refuseByRole(tx, scope, { ...a, draft })
-  const [alone] = await alonesOf(tx, agentId, a.around)
-  if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
+  await refuseUnheld(tx, scope, { ...a, config: draft, choices: await chosenOfDraft(tx, agentId) })
   return frozen(tx, scope, { agentId, draft, body })
 }
