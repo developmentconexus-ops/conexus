@@ -206,6 +206,15 @@ const ROUTES: readonly Route[] = [
     answer: (q) => paginated('Estoque', 'estoque', ESTOQUE, q),
   },
   {
+    name: 'estoqueDoProduto',
+    entity: 'Estoque',
+    pattern: /^\/v1\/estoque\/produtos\/(\d+)$/,
+    answer: (_q, match) => {
+      const lines = ESTOQUE.filter((line) => String(line.codigoProduto) === match[1])
+      return lines.length === 0 ? nothingFound('Estoque') : json({ estoque: lines })
+    },
+  },
+  {
     name: 'locaisEstoque',
     entity: 'LocalEstoque',
     pattern: /^\/v1\/estoque\/locais$/,

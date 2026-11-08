@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { z } from 'zod'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { requestOf } from './operation.ts'
@@ -44,4 +45,23 @@ export function assertMarkReachesRequest(connector: Connector): void {
     const sent = JSON.stringify(requestOf(operation, marked, { ref: null }))
     assert.ok(sent.includes(A_MARK), `${operation.id}: the mark is in the request`)
   }
+}
+
+/** Each key an operation lists in `fixed` is a top-level field of its input: a misspelt one would fix nothing. */
+export function assertFixedExist(connector: Connector): void {
+  for (const operation of [...inProbeOrder(connector), ...(connector.writes ?? [])]) {
+    for (const key of operation.fixed ?? []) {
+      assert.ok(
+        operation.input instanceof z.ZodObject && key in operation.input.shape,
+        `${operation.id}: "${key}" is a field of its input`,
+      )
+    }
+  }
+}
+
+/** What a connector declares of its provider: the recorded refusals, the marks and the fixed fields. */
+export function assertDeclaredByProvider(connector: Connector): void {
+  assertRefusalsRead(connector)
+  assertMarkReachesRequest(connector)
+  assertFixedExist(connector)
 }

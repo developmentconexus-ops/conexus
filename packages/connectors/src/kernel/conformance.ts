@@ -4,7 +4,7 @@ import { describe, it } from 'node:test'
 import { z } from 'zod'
 import type { ClientCredentialsAuth } from './auth.ts'
 import { readToken, tokenRequest } from './auth.ts'
-import { assertMarkReachesRequest, assertRefusalsRead } from './conformance-declared.ts'
+import { assertDeclaredByProvider } from './conformance-declared.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { logoProblems } from './logo.ts'
@@ -326,12 +326,8 @@ export function runConformance(connector: Connector, fake: Fake): void {
       assertWrites(connector)
     })
 
-    it('reads each recorded refusal as the kind recorded beside it, with every text of its body', () => {
-      assertRefusalsRead(connector)
-    })
-
-    it('puts the mark of each write in the request it builds', () => {
-      assertMarkReachesRequest(connector)
+    it('reads each recorded refusal, puts the mark of each write in its request and names as fixed only fields of the input', () => {
+      assertDeclaredByProvider(connector)
     })
 
     it('answers each probe, in order, from the sources it declares, with the value its output schema reads from the body', async () => {

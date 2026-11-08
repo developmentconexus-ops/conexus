@@ -3,7 +3,11 @@ import { test } from 'node:test'
 import { z } from 'zod'
 import { sankhya as sankhyaWithWrites } from '../sankhya/definition.ts'
 import { lancarPedido } from '../sankhya/operations/vendas.ts'
-import { assertMarkReachesRequest, assertRefusalsRead } from './conformance-declared.ts'
+import {
+  assertFixedExist,
+  assertMarkReachesRequest,
+  assertRefusalsRead,
+} from './conformance-declared.ts'
 import { defineConnector } from './definition.ts'
 import type { ProviderAnswer } from './operation.ts'
 import { defineOperation } from './operation.ts'
@@ -71,4 +75,12 @@ test('uma escrita declara o incerto, a marca e o id; sem eles não compila', () 
     mark: (input: unknown) => input,
   })
   assert.equal(defineOperation({ ...base, class: 'read' }).class, 'read')
+})
+
+test('os campos fixos existem no input da operação', () => {
+  assertFixedExist(sankhyaWithWrites)
+  assert.throws(
+    () => assertFixedExist(withWrite({ fixed: ['notaModel'] })),
+    /"notaModel" is a field of its input/,
+  )
 })

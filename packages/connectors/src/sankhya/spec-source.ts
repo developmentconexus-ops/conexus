@@ -25,6 +25,7 @@ const PAGES = [
   'getnfedevolucoes',
   'getnfecanceladas',
   'getestoqueprodutos',
+  'getestoqueporproduto',
   'get_v1-estoque-locais',
   'getfinanceiros',
   'getfinanceirosdespesas',
