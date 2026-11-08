@@ -95,12 +95,13 @@ One line per document (`check-docs`).
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
 - [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
+- [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
 
 ## Skills
 
 - [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md): the study; report; proof; screens; libraries.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
-- [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
+- [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.

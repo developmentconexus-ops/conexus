@@ -7,6 +7,7 @@ import { said } from '../assistant/test-assistant.ts'
 import { sent } from '../conversation/test-conversation.ts'
 import { agentOf, drafted, publishedAgent, publishedNow } from './test-agents.ts'
 import {
+  answer,
   approvalsIn,
   approving,
   askedOf,
@@ -135,4 +136,117 @@ test('quem publica de novo a revisão responde pela versão: quem a pôs ativa p
   await sent(on.hub, on.ana, url, 'Lance outro')
   assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
   assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
+})
+
+test('um cartão aberto fixa o turno na versão em que começou: a v2 entra em Faz sozinho com o cartão esperando, e o Aprovar roda a v1, que pergunta de novo; o turno seguinte roda a v2 (retomada fixada)', async (t) => {
+  const on = await approving(t, [
+    [launched()],
+    [launched()],
+    [said('Lançados.')],
+    [launched()],
+    [said('Lançado.')],
+  ])
+  const v1 = await on.writer('ASK')
+  const { url, stream } = await on.opened(v1.id)
+  await sent(on.hub, on.ana, url, 'Lance dois pedidos')
+  const first = askedOf(await untilAsked(stream))
+
+  const alone = await drafted(on.hub, on.ana, on.agents, v1, {
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  await publishedNow(on.hub, on.ana, on.agents, alone)
+  assert.deepEqual(await answer(on.hub, on.ana, url, first.toolCallId, true), { ok: true })
+  const second = askedOf(await untilAsked(stream))
+  assert.equal(on.fake.orders().length, 1, 'the approved call ran, and the v1 asks again')
+
+  assert.deepEqual(await answer(on.hub, on.ana, url, second.toolCallId, true), { ok: true })
+  assert.deepEqual(approvalsIn(await stream.turn()), [])
+  assert.equal(on.fake.orders().length, 2)
+
+  await sent(on.hub, on.ana, url, 'Lance mais um')
+  assert.deepEqual(
+    approvalsIn(await stream.turn()),
+    [],
+    'the next turn runs the v2, which runs alone',
+  )
+  assert.equal(on.fake.orders().length, 3)
+})
+
+test('quem saiu da empresa com o cartão esperando: a versão nova entra em Faz sozinho, e depois do Aprovar a escrita seguinte ainda é de quem ativou a v1, que não tem mais papel, e pergunta (D2-a, retomada fixada)', async (t) => {
+  const on = await approving(t, [[launched()], [launched()], [said('Lançados.')]])
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const v1 = await publishedAgent(on.hub, bia, on.agents, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  const asking = await drafted(on.hub, bruno, on.agents, v1, {
+    approvals: { [on.write.id]: 'ASK' },
+  })
+  const v2 = await publishedNow(on.hub, bruno, on.agents, asking)
+  const back = await post(on.hub, bruno, `${on.agents}/${v1.id}/versions/1/activate`, {})
+  assert.equal(back.statusCode, 200, back.body)
+  await developerHolds(on, READS, true)
+
+  const { url, stream } = await on.opened(v1.id)
+  await sent(on.hub, on.ana, url, 'Lance dois pedidos')
+  const first = askedOf(await untilAsked(stream))
+
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const next = await drafted(on.hub, on.ana, on.agents, v2, {
+    instructions: 'Lance os pedidos que a pessoa pedir, com cuidado.',
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  await publishedNow(on.hub, on.ana, on.agents, next)
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${bruno.id}`)
+  assert.equal(gone.statusCode, 204, gone.body)
+
+  assert.deepEqual(await answer(on.hub, on.ana, url, first.toolCallId, true), { ok: true })
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.equal(
+    on.fake.orders().length,
+    1,
+    'no one answers for the v1 now, so the card stops the second',
+  )
+})
+
+test('a pessoa da ativação fixada responde depois do Aprovar: a v2 em Pergunta antes entra no intervalo, e a escrita seguinte da v1, em Faz sozinho, roda sem cartão porque quem a ativou ainda tem a ação', async (t) => {
+  const on = await approving(t, [[launched()], [launched()], [said('Lançados.')]])
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const v1 = await publishedAgent(on.hub, bia, on.agents, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  const asking = await drafted(on.hub, bruno, on.agents, v1, {
+    approvals: { [on.write.id]: 'ASK' },
+  })
+  const v2 = await publishedNow(on.hub, bruno, on.agents, asking)
+  const back = await post(on.hub, bruno, `${on.agents}/${v1.id}/versions/1/activate`, {})
+  assert.equal(back.statusCode, 200, back.body)
+  await developerHolds(on, READS, true)
+
+  const { url, stream } = await on.opened(v1.id)
+  await sent(on.hub, on.ana, url, 'Lance dois pedidos')
+  const first = askedOf(await untilAsked(stream))
+
+  await developerHolds(on, [...READS, 'lancarPedido'], true)
+  const next = await drafted(on.hub, on.ana, on.agents, v2, {
+    instructions: 'Lance os pedidos que a pessoa pedir, com cuidado.',
+  })
+  await publishedNow(on.hub, on.ana, on.agents, next)
+
+  assert.deepEqual(await answer(on.hub, on.ana, url, first.toolCallId, true), { ok: true })
+  assert.deepEqual(
+    approvalsIn(await untilAsked(stream)),
+    [],
+    'Bruno answers the v1 and holds the write',
+  )
+  assert.equal(on.fake.orders().length, 2)
 })

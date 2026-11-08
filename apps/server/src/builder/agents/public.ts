@@ -18,7 +18,7 @@ export type { AgentReads } from './registry.ts'
 export { createRegistry } from './registry.ts'
 
 import { agentEvents } from './events.ts'
-import { activeOf, draftOf, liveOf, publishedAll } from './frozen.ts'
+import { activeOf, draftOf, liveOf, publishedAll, versionOf } from './frozen.ts'
 import { releaseAgents } from './release.ts'
 import { registerAgentRoutes } from './routes.ts'
 import { usedBy } from './store.ts'
@@ -48,6 +48,11 @@ export function agentsOf(
       activeOf(database, ids, agentId),
     draftOf: (ids: OfProject, agentId: Parameters<typeof draftOf>[2]) =>
       draftOf(database, ids, agentId),
+    versionOf: (
+      ids: OfProject,
+      agentId: Parameters<typeof versionOf>[2],
+      version: Parameters<typeof versionOf>[3],
+    ) => versionOf(database, ids, agentId, version),
     liveOf: (companyId: Parameters<typeof liveOf>[1], agentId: Parameters<typeof liveOf>[2]) =>
       liveOf(database, companyId, agentId),
     publishedAll: () => publishedAll(database),

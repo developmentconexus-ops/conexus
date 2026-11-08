@@ -25,7 +25,7 @@ import type { InProject, OfferedConnection } from '../tools/public.ts'
 import { versionsWithTools } from '../tools/public.ts'
 import { legacyReads } from './legacy.ts'
 import type { Choice } from './store.ts'
-import { chosenIds, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
+import { chosenIds, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
 import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
 
 /** What publishing needs of the draft: instructions, and only connections the Projeto still offers. */
@@ -191,20 +191,6 @@ export async function refuseUnheld(tx: ReadTx, scope: InProject, a: Becoming): P
   await refuseByRole(tx, scope, a)
   const [alone] = await alonesOf(tx, a.choices, a.around)
   if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
-}
-
-/** A published version as it would become active again: its configuration and its tools' versions. */
-export async function versionBack(
-  tx: ReadTx,
-  agentId: AgentId,
-  number: number,
-): Promise<Pick<Becoming, 'config' | 'choices'> | undefined> {
-  const [version] = await tx
-    .select({ config: agentVersion.config })
-    .from(agentVersion)
-    .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
-  if (version === undefined) return undefined
-  return { config: AgentConfig.parse(version.config), choices: await pinnedOf(tx, agentId, number) }
 }
 
 export type Holding = {
