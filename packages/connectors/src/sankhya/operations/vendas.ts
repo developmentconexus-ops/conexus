@@ -131,6 +131,21 @@ export const lancarPedido = defineOperation({
   label: 'Lançar pedido',
   input: LancarPedidoInput,
   ...placed(),
-  probe: () => ({ notaModelo: 1, codigoCliente: 1, itens: [{ codigoProduto: 1, quantidade: 1 }] }),
+  probe: (): z.infer<typeof LancarPedidoInput> => ({
+    notaModelo: 1,
+    codigoCliente: 1,
+    itens: [{ codigoProduto: 1, quantidade: 1 }],
+  }),
   request: (input) => post('/v1/vendas/pedidos', input),
+  // The gateway's own timeout answers for the provider after it took the request: the order may exist.
+  uncertain: (native) => native.code === 'GTW3503',
+  // `observacao` is the one free text the person finds in the order.
+  mark: (input, mark) => ({
+    ...input,
+    observacao:
+      input.observacao === undefined || input.observacao === ''
+        ? mark
+        : `${input.observacao} ${mark}`,
+  }),
+  idOf: (value) => value.codigoPedido,
 })

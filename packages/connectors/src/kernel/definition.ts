@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
-import type { AccountOf, Failure, Operation, OperationId } from './operation.ts'
+import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
   .string()
@@ -53,7 +53,7 @@ export type Connector = Readonly<{
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
-  writes?: readonly Operation<unknown, unknown, 'write'>[]
+  writes?: readonly WriteOperation<unknown, unknown>[]
   // The refusals recorded from the real service (see `RecordedRefusal`); the conformance reads each one through its operation.
   refusals?: readonly RecordedRefusal[]
   // The one read Testar sends (Nango's `verification`, n8n's credential `test`): one of

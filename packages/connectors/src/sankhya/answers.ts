@@ -33,9 +33,7 @@ const Refusal = z.looseObject({
 })
 
 /** An add's 400 keeps the cause in `details` ("O produto [9554] enviado não existe."), after the generic `message`; the same text is said once. */
-function detailed(
-  object: { message?: string; details?: string } | undefined,
-): string | undefined {
+function detailed(object: { message?: string; details?: string } | undefined): string | undefined {
   const text = new Set([object?.message, object?.details].filter((part) => part !== undefined))
   return text.size === 0 ? undefined : [...text].join(' ')
 }
