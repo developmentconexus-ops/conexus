@@ -26,6 +26,12 @@ type Part = {
   }): Promise<void>
   /** The connection and operation of the write a tool of the conversation is (step 24.5), for the log of an answer. */
   writeOf?: WriteOf
+  /**
+   * The `requestContext` keys of a parked run that its answer brings back. At Mastra 1.82 a resumed
+   * run resolves its instructions and tools before the run's own context is merged in
+   * (`docs/reference/boundaries.md`), so the guard puts them on the answer.
+   */
+  carried?: readonly string[]
   /** Whether the person answering a write's card holds that write in their role (step 24.5, D3-a). */
   mayApprove?: MayApprove
   release(scope: ReleaseScope): Promise<void>

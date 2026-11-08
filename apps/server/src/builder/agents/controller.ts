@@ -33,6 +33,7 @@ import { conversationMemory, routedModel } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
+import { ACTIVATION, activationIn, setActivation } from './activation.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf, setAgentRun } from './agent.ts'
 import type { AppDataPort } from './app-data.ts'
@@ -95,6 +96,22 @@ function runsOf(database: Database) {
 }
 
 type Resolved = (requestContext: RequestContext) => Promise<Agent>
+
+/**
+ * The agent a run's context names. The turn keeps its activation in the context, from where Mastra
+ * stores it with a parked run; the guard gives it back to the answer of the card (`carried`), and
+ * the registry makes that version.
+ */
+function resolverOf(runOf: ReturnType<typeof runsOf>, registry: Registry): Resolved {
+  return oncePerRun(async (requestContext) => {
+    const run = await runOf(requestContext)
+    if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+    setAgentRun(requestContext, run)
+    const { agent, activation } = await registry.resolve(run, activationIn(requestContext))
+    if (activation !== undefined) setActivation(requestContext, activation)
+    return agent
+  })
+}
 
 /**
  * The start of a turn with the published version, written on the agent's row (`last_run_at`, step
@@ -241,12 +258,7 @@ export function createAgentConversations(deps: Deps) {
     build: (live) => agentOf({ ...deps, memories, machines }, live),
   })
   const runOf = runsOf(database)
-  const resolvedOf = oncePerRun(async (requestContext) => {
-    const run = await runOf(requestContext)
-    if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-    setAgentRun(requestContext, run)
-    return registry.resolve(run)
-  })
+  const resolvedOf = resolverOf(runOf, registry)
   const machines = createConversationMachines(
     {
       ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS },
@@ -292,6 +304,7 @@ export function createAgentConversations(deps: Deps) {
       /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
       admit: agentManagerAdmission({ database, identity: deps.identity }),
       writeOf: writeOfAgents((owner, id) => keptRun(database, owner, id), deps.agents),
+      carried: [ACTIVATION],
       mayApprove: mayApproveAgents((owner, id) => keptRun(database, owner, id), deps.agents, deps),
       async release(scope: ReleaseScope): Promise<void> {
         const count = await sweep({

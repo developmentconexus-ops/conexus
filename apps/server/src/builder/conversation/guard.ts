@@ -142,7 +142,9 @@ export type GuardedMastra = {
   mastra: Mastra
   part(
     kind: ControllerKind,
-  ): { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove } | undefined
+  ):
+    | { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove; carried?: readonly string[] }
+    | undefined
   updating(): boolean
 }
 
@@ -235,7 +237,32 @@ async function toolAnswer(
   if (approved) {
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
+  await bringBack(deps.hub.mastra, request, at)
   return undefined
+}
+
+/**
+ * What the parked run kept in its context and its part names (`carried`), put on the answer: Mastra
+ * 1.82 resolves a resumed run's instructions and tools before it merges the snapshot's context in
+ * (`agent-BP9OWM6D.js:86117-86141`, the merge at `:11435`), so the run would take what is current.
+ * Read from the run's snapshot through the workflows store.
+ */
+async function bringBack(
+  mastra: Mastra,
+  request: FastifyRequest,
+  at: Awaited<ReturnType<typeof guard>>,
+): Promise<void> {
+  const keys = at.part.carried ?? []
+  if (keys.length === 0) return
+  const session = await mastra.getAgentController(at.controllerId)?.getSession(at.conversationId)
+  const runId = session?.run.getRunId()
+  if (runId === null || runId === undefined) return
+  const store = await mastra.getStorage()?.getStore('workflows')
+  const snapshot = await store?.loadWorkflowSnapshot({ workflowName: 'agentic-loop', runId })
+  const kept = snapshot?.requestContext
+  for (const key of keys) {
+    if (kept !== undefined && key in kept) request.requestContext.setRaw(key, kept[key])
+  }
 }
 
 /** An Aprovar by a person whose role lacks the write is `NOT_IN_ROLE`, and nothing runs (D3-a). */
