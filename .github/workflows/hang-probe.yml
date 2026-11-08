@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lane: [head-1, head-2, head-3, head-4]
+        lane: [flags-1, flags-2, flags-3, noexit-1, noexit-2, noexit-3, noexit-4, noexit-5, noexit-6]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -63,19 +63,19 @@ jobs:
             done
             echo "::endgroup::"
           }
-          runs=25; [ "${LANE#full}" != "$LANE" ] && runs=2
+          runs=25; [ "${LANE#noexit}" != "$LANE" ] && runs=1
           for i in $(seq 1 $runs); do
             rm -rf /tmp/node-compile-cache
-            if [ "${LANE#full}" != "$LANE" ]; then
-              npm test -w @conexus/server > /tmp/run.log 2>&1 &
+            if [ "${LANE#noexit}" != "$LANE" ]; then
+              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts ${LANE#noexit-}/6)) > /tmp/run.log 2>&1 &
             else
-              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --no-concurrent-sparkplug --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
+              (cd apps/server && npm run build >/dev/null 2>&1 && MASTRA_AGENT_THREAD_LEASE_TTL_MS=3000 node --no-concurrent-sparkplug --no-maglev-build-code-on-background --test --test-concurrency=1 --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts 3/6 | head -4)) > /tmp/run.log 2>&1 &
             fi
             pid=$!
             while kill -0 $pid 2>/dev/null; do
               sleep 5
               age=$(( $(date +%s) - $(stat -c %Y /tmp/run.log) ))
-              if [ $age -gt 60 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
+              if [ $age -gt 120 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
             done
             wait $pid; echo "run $i exit=$? lines=$(wc -l < /tmp/run.log)"
           done
