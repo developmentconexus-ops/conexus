@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { Answered, Native } from '@conexus/connectors'
+import type { Answered } from '@conexus/connectors'
 import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
 import {
   ConnectionId as ConnectionIdSchema,
@@ -73,26 +73,31 @@ export function hashOf(input: unknown): string {
   return createHash('sha256').update(JSON.stringify(input)).digest('hex')
 }
 
-/** The failures a stored answer may hold: the provider's words without its body (S41), never an `OK` of another write. */
-const Plain = z.object({
+/** What the provider said, as the executor kept it, so a stored refusal is read back as it was sent to the model. */
+const StoredNative = z.object({
   status: z.number(),
   code: z.string().nullable(),
   message: z.string().nullable(),
-  body: z.null(),
+  body: z.unknown(),
+  reason: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('TOO_LARGE'), limitBytes: z.number() }),
+      z.object({
+        kind: z.literal('SHAPE'),
+        issues: z.array(z.object({ path: z.string(), expected: z.string(), received: z.string() })),
+      }),
+    ])
+    .optional(),
 })
 const Stored = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('OK'), value: z.unknown() }),
   z.object({
     kind: z.enum(['REFUSED', 'AUTH_REFUSED', 'TOKEN_EXPIRED', 'UNREADABLE']),
-    native: Plain,
+    native: StoredNative,
   }),
-  z.object({ kind: z.literal('BUSY'), native: Plain, waitMs: z.number().nullable() }),
+  z.object({ kind: z.literal('BUSY'), native: StoredNative, waitMs: z.number().nullable() }),
   z.object({ kind: z.enum(['UNREACHABLE', 'DEADLINE']) }),
 ])
-
-export function plain(native: Native): z.infer<typeof Plain> {
-  return { status: native.status, code: native.code, message: native.message, body: null }
-}
 
 type Author =
   | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number }>
@@ -172,6 +177,7 @@ async function inserted(tx: CommandTx, a: WriteRequest, put: Put): Promise<boole
       agentId: author.kind === 'VERSION' ? author.agentId : null,
       versionNumber: author.kind === 'VERSION' ? author.number : null,
       personId: author.kind === 'PERSON' ? author.personId : null,
+      approvedBy: a.approvedBy ?? null,
       state: 'SENDING',
       createdAt: sql`statement_timestamp()`,
     })

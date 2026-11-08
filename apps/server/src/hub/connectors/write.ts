@@ -14,7 +14,7 @@ import { openedIn } from './testing.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 import type { WriteRequest, Written } from './write-record.ts'
-import { aboutOf, finish, hashOf, markOf, plain, register } from './write-record.ts'
+import { aboutOf, finish, hashOf, markOf, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
 
 /** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
@@ -40,9 +40,9 @@ function writtenOf(ended: Ended, mark: string): Written {
     case 'AUTH_REFUSED':
     case 'TOKEN_EXPIRED':
     case 'UNREADABLE':
-      return { kind: ended.kind, native: plain(ended.native) }
+      return { kind: ended.kind, native: ended.native }
     case 'BUSY':
-      return { kind: 'BUSY', native: plain(ended.native), waitMs: ended.waitMs }
+      return ended
     case 'UNREACHABLE':
     case 'APP_REFUSED':
       return { kind: 'UNREACHABLE' }
