@@ -2836,16 +2836,5 @@
       "file": "src/platform/cloudflare.test.ts",
       "name": "quem a pediu desiste"
     }
-  },
-  {
-    "id": "agent-resume-activation",
-    "file": "apps/server/src/builder/conversation/guard.ts",
-    "find": "  await bringBack(deps.hub.mastra, request, at)\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/agents/answer.test.ts",
-      "name": "cartão aberto fixa"
-    }
   }
 ]

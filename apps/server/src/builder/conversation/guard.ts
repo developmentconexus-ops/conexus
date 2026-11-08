@@ -142,9 +142,7 @@ export type GuardedMastra = {
   mastra: Mastra
   part(
     kind: ControllerKind,
-  ):
-    | { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove; carried?: readonly string[] }
-    | undefined
+  ): { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove } | undefined
   updating(): boolean
 }
 
@@ -237,37 +235,7 @@ async function toolAnswer(
   if (approved) {
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
-  await bringBack(deps.hub.mastra, request, session, at.part.carried ?? [])
   return undefined
-}
-
-/**
- * What the parked run kept in its context and its part names (`carried`), put on the answer: Mastra
- * resolves a resumed run's instructions and tools before it merges the snapshot's context in
- * (`docs/reference/boundaries.md`), so the run would take what is current. The gate is armed, so
- * the run and its snapshot exist: their absence fails. A key the snapshot lacks is a card parked
- * before the key existed, and stays as it was.
- */
-async function bringBack(
-  mastra: Mastra,
-  request: FastifyRequest,
-  session: { run: { getRunId(): string | null } },
-  keys: readonly string[],
-): Promise<void> {
-  if (keys.length === 0) return
-  const runId = session.run.getRunId()
-  const store = await mastra.getStorage()?.getStore('workflows')
-  const snapshot =
-    runId && store
-      ? await store.loadWorkflowSnapshot({ workflowName: 'agentic-loop', runId })
-      : null
-  if (!snapshot) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PARKED_RUN_SNAPSHOT_MISSING' } })
-  }
-  for (const key of keys) {
-    const kept = snapshot.requestContext?.[key]
-    if (kept !== undefined) request.requestContext.setRaw(key, kept)
-  }
 }
 
 /** An Aprovar by a person whose role lacks the write is `NOT_IN_ROLE`, and nothing runs (D3-a). */

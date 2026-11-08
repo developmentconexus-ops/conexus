@@ -5,7 +5,6 @@ import { call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
 import { sent } from '../conversation/test-conversation.ts'
-import { untilParked } from '../conversation/test-questions.ts'
 import { agentOf, drafted, publishedAgent, publishedNow } from './test-agents.ts'
 import {
   answer,
@@ -214,7 +213,7 @@ test('quem saiu da empresa com o cartão esperando: a versão nova entra em Faz 
   )
 })
 
-test('quem ativou a v1 ainda tem a ação quando o cartão é respondido: a v2 em Pergunta antes entra no intervalo, e a escrita seguinte, em Faz sozinho, roda sem cartão (retomada fixada)', async (t) => {
+test('a pessoa da ativação fixada responde depois do Aprovar: a v2 em Pergunta antes entra no intervalo, e a escrita seguinte da v1, em Faz sozinho, roda sem cartão porque quem a ativou ainda tem a ação', async (t) => {
   const on = await approving(t, [[launched()], [launched()], [said('Lançados.')]])
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'developer')
@@ -244,28 +243,10 @@ test('quem ativou a v1 ainda tem a ação quando o cartão é respondido: a v2 e
   await publishedNow(on.hub, on.ana, on.agents, next)
 
   assert.deepEqual(await answer(on.hub, on.ana, url, first.toolCallId, true), { ok: true })
-  assert.deepEqual(approvalsIn(await stream.turn()), [], 'Bruno answers the v1 and holds the write')
-  assert.equal(on.fake.orders().length, 2)
-})
-
-test('um cartão parado antes de a ativação existir retoma na versão de agora: o snapshot sem a chave não falha', async (t) => {
-  const on = await approving(t, [[launched()], [launched()], [said('Lançados.')]])
-  const v1 = await on.writer('ASK')
-  const { url, stream } = await on.opened(v1.id)
-  await sent(on.hub, on.ana, url, 'Lance dois pedidos')
-  const first = askedOf(await untilAsked(stream))
-  await untilParked(on.hub)
-  await on.hub.test.mastraPool.query(
-    `update mastra.mastra_workflow_snapshot
-        set snapshot = snapshot #- '{requestContext,conexus-agent-activation}'
-      where snapshot->>'status' = 'suspended'`,
+  assert.deepEqual(
+    approvalsIn(await untilAsked(stream)),
+    [],
+    'Bruno answers the v1 and holds the write',
   )
-  const alone = await drafted(on.hub, on.ana, on.agents, v1, {
-    approvals: { [on.write.id]: 'AUTO' },
-  })
-  await publishedNow(on.hub, on.ana, on.agents, alone)
-
-  assert.deepEqual(await answer(on.hub, on.ana, url, first.toolCallId, true), { ok: true })
-  assert.deepEqual(approvalsIn(await stream.turn()), [], 'without the key the v2 runs the rest')
   assert.equal(on.fake.orders().length, 2)
 })

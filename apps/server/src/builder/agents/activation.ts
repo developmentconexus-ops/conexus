@@ -1,7 +1,7 @@
 import { PersonId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import { MASTRA_SCOPES_KEY } from '@mastra/core/request-context'
 import { z } from 'zod'
-import { Failure } from '../../platform/failure.ts'
 
 const ActivationSchema = z.object({
   number: z.number().int().positive(),
@@ -9,30 +9,31 @@ const ActivationSchema = z.object({
 })
 /**
  * The activation a published turn runs: its version and who made it active when the turn began
- * (decision of 2026-11-08). The turn keeps it in the `requestContext`, which Mastra stores with a
- * parked run; the guard gives it back to the answer of the card, so the turn goes on with the version
- * it began on (`docs/reference/boundaries.md`).
+ * (decision of 2026-11-08). It travels as a scope of the turn, which Mastra keeps with a run parked
+ * on a card and gives back, unchanged, to the run that resumes.
  */
 export type Activation = z.infer<typeof ActivationSchema>
 
-/** The `requestContext` key of the turn's activation. */
-export const ACTIVATION = 'conexus-agent-activation'
+const TYPE = 'conexus-activation'
+const NONE = '-'
 
-/**
- * The activation the turn began with, which an answered card brings back; none for a new turn or
- * for a card parked before activations existed. A value that is there and is not one fails.
- */
-export function activationIn(requestContext: RequestContext): Activation | undefined {
-  const held = requestContext.get(ACTIVATION)
-  if (held === undefined) return undefined
-  const parsed = ActivationSchema.safeParse(held)
-  if (!parsed.success) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_ACTIVATION_INVALID' } })
-  }
-  return parsed.data
+/** The scope that says which activation the turn runs: `conexus-activation:<number>/<person or ->`. */
+export function activationScope(activation: Activation): string {
+  return `${TYPE}:${activation.number}/${activation.answeredBy ?? NONE}`
 }
 
-/** Pins the turn to its activation. */
-export function setActivation(requestContext: RequestContext, activation: Activation): void {
-  requestContext.set(ACTIVATION, activation)
+/**
+ * The activation in the scopes of the run, which a resumed run keeps from its start; none for a new
+ * turn that has not set its scopes yet, and for the draft. A scope that is there and is not an
+ * activation fails.
+ */
+export function activationIn(requestContext: RequestContext): Activation | undefined {
+  const scopes = z.array(z.string()).optional().parse(requestContext.get(MASTRA_SCOPES_KEY))
+  const found = scopes?.find((scope) => scope.startsWith(`${TYPE}:`))
+  if (found === undefined) return undefined
+  const [number, answeredBy] = found.slice(TYPE.length + 1).split('/')
+  return ActivationSchema.parse({
+    number: Number(number),
+    answeredBy: answeredBy === NONE ? null : answeredBy,
+  })
 }
