@@ -239,8 +239,8 @@ A etapa não cria tela. A única coisa que muda numa tela é o rótulo de uma co
 
 - O comentário de `hub/connectors/write-record.ts:197` diz "U2's gate sets `approvedBy`", mas quem
   o põe é `builder/agents/tools.ts:158`. A U2 corrige o comentário.
-- O comentário de `construtor/construtor.ts:66` ("same bytes as the Assistant's first part") é
-  falso. A U1 o apaga com o `CACHED`.
+- O comentário "same bytes as the Assistant's first part" de `construtor/construtor.ts:66` e de
+  `agents/agent.ts:49` é falso. A U1 o apaga com o `CACHED`.
 
 ## U1 O kit como casa comum
 
@@ -336,7 +336,9 @@ A linha de `docs/reference/stack.md` para `apps/server/src/builder/`: a skill `m
    - As frases de `assistant/memory.ts:5-8` e de `agents/controller.ts:47-50` passam a
      `TITLE.ask`; as de `conversation/builder.ts:31-35`, a `TITLE.app`; as de
      `construtor/construtor.ts:61-64`, a `TITLE.agent`. O texto não muda.
-   - Apague o comentário falso de `construtor.ts:66`.
+   - Apague o comentário falso "same bytes as the Assistant's first part" de `construtor.ts:66` e de
+     `agents/agent.ts:49`: o texto fixo do Assistente junta vários arquivos
+     (`assistant/instructions.ts:15-18`).
 
 ### Como se prova
 
@@ -640,7 +642,7 @@ servidores com `title: null` e `createdAt`.
 ### Os contratos que a unidade cria
 
 ```ts
-// builder/conversation/test-questions.ts; Sent e Anthropic de platform/test-anthropic.ts, Block de platform/test-anthropic-stream.ts
+// builder/conversation/test-questions.ts; Sent e Anthropic de platform/test-anthropic.ts (como o arquivo já importa), Block de platform/test-anthropic-stream.ts
 /** Os passos do modelo em ordem, depois `Pronto.`; o pedido sem stream responde `Título`; cada chamada vai para `calls`, quando dado. */
 export function stepped(steps: readonly ((asked: Sent) => Block[])[], calls?: Sent[]): Anthropic['answer']
 
