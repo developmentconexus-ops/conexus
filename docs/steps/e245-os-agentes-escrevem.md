@@ -9,10 +9,75 @@ Cada linha citada foi relida no `main` em `1f5be4fb`, com `@mastra/core` 1.82.0,
 1.82.0 e `@mastra/pg` 1.35.0; a emenda de 2026-11-07 foi escrita sobre o `main` em `50503a29`; a
 segunda emenda de 2026-11-07 (as decisões `D1-a`, `D2-a` e `D3-a`, a rodada de textos e os pontos
 não provados) foi escrita com a U1, a U2 e a U3 no `main` e o código das decisões na
-https://github.com/developmentconexus-ops/conexus/pull/843. O construtor de cada unidade reabre as
-linhas no `main` do dia.
+https://github.com/developmentconexus-ops/conexus/pull/843. A terceira emenda, de 2026-11-08 (o
+caminho de uma escrita, unidades U4 a U6), foi escrita sobre o `main` em `cfeb4e1b`, com
+`@mastra/core` 1.82.0. O construtor de cada unidade reabre as linhas no `main` do dia.
 
 ## A página do fundador
+
+**A emenda de 2026-11-08: a escrita recusada diz por quê.** No pedido de prova, o Sankhya recusou
+o pedido e o agente não soube dizer a causa. O Conexus jogou fora a explicação do Sankhya antes de
+entregá-la ao modelo, e o pedido não levava local de estoque nem controle. Depois desta emenda:
+
+- o agente lê o estoque do produto, escolhe o local e lança o pedido com a nota modelo que você
+  fixou na ferramenta; o modelo nunca escolhe a nota modelo;
+- se o Sankhya recusar, o modelo recebe a resposta inteira do Sankhya como falha da ferramenta, e
+  o cartão diz "Recusado, nada foi lançado." com a mensagem do Sankhya como ele a escreveu, sem
+  tradução;
+- recarregar a conversa mantém o cartão como ele terminou, com "Aprovado por você".
+
+A arquitetura e as pastas não mudam. Muda um fluxo (a falha volta como erro da ferramenta) e mudam
+donos: o que é do Sankhya sai do Hub e da tela e vai para o kit. Entram duas regras nos guias e uma
+emenda da decisão 0056, numa pull request só de documentos.
+
+**O roteiro desta emenda.** Você é a Ana. O "Pedidos" é o do roteiro abaixo, com **Lançar pedido**
+em **Pergunta antes**.
+
+1. Em Ferramentas, abra **Lançar pedido**, ponha a nota modelo nos valores fixos (por exemplo
+   `{"notaModelo": 12}`) e salve a versão nova. Na página do "Pedidos", passe a escrita para a
+   versão nova e publique. Sem a nota modelo fixada, publicar é recusado e diz para fixá-la.
+2. Peça "lança um pedido para o cliente 1, duas unidades do produto 8 a R$ 10". A conversa mostra a
+   leitura **Estoque de um produto** e depois o cartão, com a nota modelo, o cliente e cada item com
+   o local e o lote, quando houver. Toque **Aprovar**: o agente diz o número, "a confirmar".
+3. Recarregue a página. O cartão continua "Aprovado por você", e a linha da ferramenta diz que
+   escreveu, não que consultou.
+4. O pedido de prova seguinte, a sua resposta "Próximo": peça de novo o pedido que o Sankhya
+   recusou, como você o pediu. Se o Sankhya recusar, o cartão diz "Recusado, nada foi lançado." e a
+   frase do Sankhya, o agente diz a mesma causa sem inventar outra, e depois de recarregar o cartão
+   continua assim. O firstmate grava essa resposta do Sankhya, com os valores trocados por
+   inventados, no lugar da que o dublê tem hoje.
+
+**As suas respostas de 2026-11-08, e o que mudou por elas.** Cada uma como você escreveu.
+
+- **1.** "a gente tem que analisar o completo ... se a correção é mudar alguma arquitetura, fluxos,
+  folder structure, alguma regra ... verificar também nosso parte de do package de conector ...
+  como que a gente tem nosso padrão de erro". Analisado: o fluxo e os donos mudam, a arquitetura e
+  as pastas não. O padrão de erro do kit passa a guardar a resposta inteira e a montar a mensagem
+  dela, como as referências fazem (activepieces, Pipedream, n8n).
+- **2.** "Proximo". O passo 4 do roteiro.
+- **3.** "eu acho estranho a gente ter que ter uma nota modelo para lançar um pedido". A API oficial
+  de pedidos (`POST /v1/vendas/pedidos`) exige a nota modelo: dela o Sankhya tira a empresa, a TOP e
+  a natureza. O Sankhya em si não precisa dela; o serviço antigo `CACSP.incluirNota` recebe a TOP
+  direto. Você escolheu a API oficial ("`D1` API oficial").
+- **4.** "Sim" (guardar o corpo da recusa no registro). O registro guarda a resposta inteira de uma
+  recusa, dentro do teto de 2 MiB que o executor já tem. A coluna nova de quem aprovou entra numa
+  migração própria; aprovar esta página é a sua palavra para ela (regra D11).
+- **5.** "a nossa ferramenta que tem que ter isso, concorda?" Concordo: o `lancarPedido` passa a
+  levar local de estoque e controle por item, e o kit numera os itens.
+- **`D1`** "API oficial", **`D2`** "gostei", **`D3`** "okay", **`D4`** "okay", **`D5`** "okay". A nota modelo
+  fica fixa na ferramenta; o local vem da leitura do estoque, e quem configura pode fixar um; as
+  duas regras e a emenda da 0056; as unidades U4, U5 e U6; nada de `RESERVA` agora.
+- **`D6`** "Então, mas aí é que a gente tem que ver, porque se a gente for querer traduzir cada erro
+  para cada conector, para cada erro, a gente teria que montar uma frase. Eu não sei se faz
+  sentido ... ao invés de voltar ao erro original." Lido pelo firstmate: nenhuma tradução por
+  conector ou por erro. O cartão e o modelo mostram a mensagem original do sistema, sob um rótulo
+  só do estado, "Recusado, nada foi lançado.".
+- **`D7`** "depois". O X-Token fica para uma tarefa própria.
+
+**Fica de fora desta emenda.** `RESERVA` (`D5`: espera um pedido de prova mostrar se falta); o
+`CACSP.incluirNota` (`D1`); "Lançar pedido" duas vezes na página do agente, que vai como correção
+avulsa; o rótulo de cada campo do cartão declarado pelo kit, que vem depois; as recusas gravadas do
+Mercado Livre, que entram quando a primeira for gravada.
 
 **No fim desta etapa** um agente seu lança um pedido de venda no Sankhya. Quando a ferramenta está
 em **Pergunta antes**, você vê na conversa o pedido inteiro e só depois do seu **Aprovar** ele é
@@ -196,6 +261,11 @@ o texto escolhido entra com os textos das telas (critérios 13 a 17 e 21).
 | O aviso do envio aberto da mesma escrita | "Um pedido foi enviado às {hora} e não sabemos se entrou. Confira no Sankhya pela marca {marca} antes de aprovar." (`approval-text.ts:33`) | O mesmo texto, que o cartão já tinha de exemplo; fica a escolha entre dizer só a hora, como hoje, ou o dia também quando o envio não foi hoje |
 | A ação fora do papel, na linha da escrita | "Seu papel não publica escrita que faz sozinha" (`apps/web/src/builder/agents/text.ts:56`) | O mesmo, com a `D1-a` dizendo a quem pedir: "Seu papel não publica escrita que faz sozinha. Peça ao Dono ou a um Administrador." |
 | Quem não pode aprovar (a `D3-a`, achado 3 da revisão da https://github.com/developmentconexus-ops/conexus/pull/843) | "Seu papel não pode usar a ferramenta essa operação." e "Peça a quem tem esse acesso para publicar, ou tire a ferramenta.", com **Aprovar** e **Recusar** acesos (`packages/hub-api/src/failures.ts:265-272,306-310`, mostrados por `approval-card.tsx:44-45`) | "Seu papel não permite aprovar esta escrita", como o estudo propõe, sem os botões |
+| A linha de uma escrita na conversa (U6) | "Consultando …", "Consultou …", "Não conseguiu consultar …" para toda `tool_<slug>` (`apps/web/src/builder/conversation/construtor-specs.ts:214-226`) | "Escrevendo no {sistema}: {ação}", "Escreveu no {sistema}: {ação}", "Não conseguiu escrever no {sistema}: {ação}", com o verbo "escrever" da marca "escreve" que a página do agente já usa |
+| Um campo que só quem configura fixa (a nota modelo), sem valor (o motivo novo `NOT_FIXED`, U5, U6) | nenhum; o vizinho `REQUIRED_MISSING` diz "Falta um campo obrigatório da operação." (`apps/web/src/builder/agents/text.ts:113`) | "Esta operação pede um valor fixo de quem configura. Preencha-o nos valores fixos da ferramenta.", um texto só para todo conector |
+
+O rótulo de uma recusa no cartão já está decidido (`D6`): "Recusado, nada foi lançado.", seguido da
+mensagem do sistema como ele a escreveu.
 
 ## O que a emenda de 2026-11-07 muda
 
@@ -226,7 +296,13 @@ fora".
 | U2 O agente pergunta ou faz sozinho | O `yolo` desligado no controlador dos agentes; `requireApproval` em função em toda ferramenta do agente; a ferramenta da escrita com a chave da versão ou um envio aberto da mesma escrita; a ação **Publicar agente que escreve sozinho** e a conferência ao publicar; a escrita fora do programa; a rota `tool-approval` na lista fixa; os registros; as gravações do Mastra | `apps/server/src/builder/{agents,conversation,machine}/`, `apps/server/src/hub/identity/`, `apps/server/src/platform/recordings/mastra/`, `packages/hub-api/src/{agents,tools,roles}.ts` | [security](../guides/security.md) | U1; Papéis U2 e U3 no `main` |
 | U3 As telas | A chave **Pergunta antes / Faz sozinho** na linha da escrita da página do agente; o cartão **Aprovar?** na conversa do agente, os seus estados e o aviso do envio aberto da mesma escrita; a ação nova na tela de Papéis; o texto da confirmação de "Liberar" | `apps/web/src/builder/{agents,conversation}/`, `apps/web/src/hub/{identity,connectors}/`, `docs/reference/screens.md` | [web](../guides/web.md) | U2 |
 
-Correm em fila: a U2 chama o funil da U1, e a U3 lê o contrato e o evento da U2.
+| U4 O kit sabe o que é do Sankhya | O leitor de recusas que lê `error.details`; `sankhya/refusals.ts`, as recusas gravadas, que o dublê importa; a conformidade que confere cada recusa gravada; os itens de `lancarPedido` com `sequencia` preenchida pelo kit, `codigoLocalEstoque` e `controle`; a nota modelo declarada como campo fixo; a leitura nova **Estoque de um produto**; a escrita que declara `uncertain`, `mark` e `idOf` (a emenda da 0056), e o Hub que passa a perguntá-los | `packages/connectors/src/{kernel,sankhya}/`, `apps/server/src/hub/connectors/{wrote,write}.ts` | [testing](../guides/testing.md) | esta emenda aprovada; U1 a U3 no `main` |
+| U5 A falha chega inteira ao modelo | O funil que entrega a resposta inteira; o registro que guarda o corpo de uma recusa e quem aprovou (a coluna `approved_by`, numa migração em pull request próprio, D11); a ferramenta que lança a falha nativa do Mastra com a resposta inteira, e `WRITE_UNCERTAIN`, `WRITE_OPEN` e `IDEMPOTENCY_CONFLICT` que continuam resultados; a leitura do agente pela mesma regra; a rota `listWrites` no lugar de `listOpenWrites`; a publicação que recusa um campo fixo sem valor | `apps/server/src/hub/connectors/`, `apps/server/src/builder/{agents,tools}/`, `apps/server/migrations/`, `packages/hub-api/src/{agents,tools,failures}.ts` | [security](../guides/security.md) | U4 |
+| U6 A escrita na conversa, também depois de recarregar | O cartão que lê o desfecho e quem aprovou do registro da escrita (`listWrites`), o rótulo "Recusado, nada foi lançado." com a mensagem do sistema; a nota modelo, o local e o lote no cartão; a linha de uma escrita com os verbos de escrita; o texto do campo fixo sem valor | `apps/web/src/builder/{conversation,agents}/` | [web](../guides/web.md) | U5 |
+
+Correm em fila: a U2 chama o funil da U1, e a U3 lê o contrato e o evento da U2. A U4, a U5 e a U6
+também: a U5 lê o que a U4 declara, e a U6 lê a rota da U5. A correção avulsa de "Lançar pedido"
+duas vezes na página do agente vai antes, fora desta emenda.
 
 **O método das unidades.** Cada unidade segue o `pstack:poteto-mode` como as skills do repositório
 já o chamam ([`conexus-scope`](../../.agents/skills/conexus-scope/SKILL.md), passo 4;
@@ -237,7 +313,11 @@ a sua migração, a consulta dos envios abertos e a trava, o executor sem repeti
 controlador, as regras de cada tipo de ferramenta, a ferramenta da escrita, a coluna da chave, a ação e a conferência de publicar, o
 programa sem escrita, a rota, os registros, as gravações). U3: ~630 (a chave na linha, o cartão e
 os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da etapa: ~2.000, dentro da regra L2
-(estimado pela leitura, sem protótipo).
+(estimado pela leitura, sem protótipo). A emenda de 2026-11-08: U4 ~160 (o leitor +15,
+`refusals.ts` ~40, `vendas.ts` +35, `estoque.ts` +15, a conformidade +30, o dublê ~10 trocadas, o
+Hub −15 e +10); U5 ~180 (o funil −25 e +10, `wrote.ts` −5, o registro +15, a leitura e as portas
++20, a ferramenta +35, a rota +30, a publicação +25, a migração ~10); U6 ~80 (o cartão +35, a linha
++15, o texto +10, a sala +10, a página do agente +10). Total da emenda: ~420; da etapa, ~2.420.
 
 ## Os critérios de aceite
 
@@ -269,6 +349,23 @@ os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da eta
 | 24 | U2 | A `D2-a`: publicada em **Faz sozinho** por quem tem a ação e a escrita no papel, a escrita roda sem cartão; tirada a ação do papel de quem publicou, a chamada seguinte traz `tool_approval_required` e o dublê não recebe nada até o **Aprovar**; o mesmo quando quem publicou perde só a escrita (`lancarPedido`) no papel, guardando a ação, e quando sai da empresa; na dúvida (a leitura do papel falha), pergunta; a versão não muda e o agente não para | `builder/agents/autonomy.test.ts` (novo, na https://github.com/developmentconexus-ops/conexus/pull/843), "quem publicou perde a ação…", "quem publicou perde a ação e a escrita no papel…" e "quem publicou sai da empresa…"; o caso do Desenvolvedor que guarda a ação e perde só `lancarPedido`, que derruba a mutação da linha do `mayUse` de quem publicou, entra com o teste do achado 2 da revisão | must |
 | 25 | U2 | Restaurar uma versão é publicar: voltar (`activate`) a uma versão com uma escrita em **Faz sozinho**, ou com uma operação fora do papel, por quem não tem a ação ou a operação, dá `NOT_IN_ROLE`, e a versão ativa não muda; `AGENT_ACTIVATED` leva quem restaurou. Quem restaura passa a responder pela versão ativa para a `D2-a` (a opção b, "b, mas me explica melhor", 2026-11-08): `makeActive` grava `agent.active_by` ao publicar, restaurar ou publicar de novo uma revisão, `publisherLeavesAlone` o lê, `agent_version.published_by` não muda, quem sai da empresa perde `active_by`, e a migração o preenche com o `published_by` da versão ativa. Ana publica a v1 em **Faz sozinho**, Bruno publica a v2 e restaura a v1: Ana perde a ação e a escrita ainda roda sem cartão; Bruno perde a ação e ela pergunta | `builder/agents/autonomy.test.ts`, "restaurar é publicar…" (a ação, a operação e publicar de novo a revisão de uma versão) e o caso novo de Ana e Bruno | must |
 | 26 | U2 | A `D3-a`: quem toca **Aprovar** sem a escrita no próprio papel recebe `NOT_IN_ROLE`, e nada roda nem se grava; o **Recusar** não pede a escrita; com a escrita no papel, **Aprovar** roda uma vez | `builder/agents/autonomy.test.ts`, "quem aprova precisa ter a escrita no próprio papel…" | must |
+| 27 | U4 | A recusa gravada: `sankhya/refusals.ts` exporta o 400 do `addPedido` no envelope do gateway, `{"statusCode":400,"error":{"code":"BAD_REQUEST","message":"Ocorreu algum erro inesperado!","details":"O produto [8] enviado não existe."}}` (o envelope medido no 404 real, o código e a mensagem do 400 real que o registro guardou, a causa inventada, S40); `lancarPedido.answer` sobre ela dá `REFUSED` com `native.code` `BAD_REQUEST`, `native.message` com a mensagem **e** a causa, e `native.body` igual ao corpo inteiro | `packages/connectors/src/sankhya/answers.test.ts`, "a recusa gravada do addPedido" (falha hoje: a causa some) | must |
+| 28 | U4 | A conformidade: para cada recusa gravada que um conector exporta, `operation.answer` dá o `kind` gravado ao lado dela, e cada texto do corpo aparece em `native.message`; com o leitor de hoje, que não lê `error.details`, o caso falha | `packages/connectors/src/kernel/kernel.test.ts`, "as recusas gravadas" | must |
+| 29 | U4 | O dublê dos pedidos responde ao produto que não existe com a recusa gravada, importada de `refusals.ts`, sem literal próprio; o formato da documentação (`mensagem: {…}`) sai do dublê | `packages/connectors/src/sankhya/operations.test.ts`, "o pedido recusado" | must |
+| 30 | U4 | O pedido que o kit monta: cada item leva `sequencia` 1, 2, 3 na ordem, o `codigoLocalEstoque` do item ou o do cabeçalho, e `controle` (o dado, ou vazio); sem nenhum dos dois locais, o esquema recusa antes de enviar com um texto que manda ler o estoque do produto, e o dublê não recebe nada; o modelo não manda `sequencia`; `notaModelo` está na lista `fixed` da operação | `packages/connectors/src/sankhya/operations.test.ts`, "o pedido que o kit monta" | must |
+| 31 | U4 | **Estoque de um produto** (`estoqueDoProduto`, classe `read`): `GET /v1/estoque/produtos/{codigoProduto}` devolve as linhas com empresa, local, controle e saldo; o 404 sem linhas é `OK` vazio, como as outras leituras; a página entra em `spec-source.ts`, e o job `sankhya-docs` a confere | `packages/connectors/src/sankhya/operations.test.ts`, "o estoque de um produto" | must |
+| 32 | U4 | A escrita declara o que é dela: `lancarPedido.uncertain` é verdadeiro só para o `GTW3503`; `mark` põe a marca no fim de `observacao`; `idOf` lê `codigoPedido`. Os critérios 1, 3 e 4 passam sem mudar os seus testes, com o Hub perguntando à operação | `packages/connectors/src/sankhya/operations.test.ts`, "o que a escrita declara"; `hub/connectors/write.test.ts` de hoje | must |
+| 33 | U5 | O funil entrega a resposta inteira: com a recusa gravada no dublê, o `Written` de `writeThrough` traz `native.body` igual ao corpo gravado, e a linha de `connector_write` guarda o mesmo em `answer`; um corpo acima do teto do executor continua `UNREADABLE` `TOO_LARGE`, sem corpo; o app (a porta de `app-calls.ts`) continua recebendo só `status`, `code` e `message` (C51) | `hub/connectors/write.test.ts`, "a recusa inteira"; o teste da porta do app de hoje | must |
+| 34 | U5 | A falha nativa: numa conversa do agente com o dublê do modelo (T24), uma escrita recusada termina a chamada como erro da ferramenta, e o pedido seguinte ao modelo traz um `tool_result` com `is_error` cujo texto é o JSON `{kind, status, code, message, body}` com a causa gravada; o turno continua; o log traz `CONNECTOR_WRITE_REFUSED` e a linha do erro do Mastra só com escalares, sem a causa (S41) | `builder/agents/approval.test.ts`, "a recusa chega inteira ao modelo" | must |
+| 35 | U5 | Continuam resultados, sem `is_error`: `OK`, `WRITE_UNCERTAIN`, `WRITE_OPEN` e `IDEMPOTENCY_CONFLICT`, com a instrução de não chamar de novo; todo o resto que certamente não foi aceito lança (`REFUSED`, `AUTH_REFUSED`, `TOKEN_EXPIRED`, `UNREADABLE`, `BUSY`, `NOT_IN_ROLE`, `NOT_GRANTED`, `UNREACHABLE`, `DEADLINE`, `CALLS_SPENT`) | `builder/agents/approval.test.ts`, "o que lança e o que responde" | must |
+| 36 | U5 | A leitura do agente segue a mesma regra: uma leitura recusada lança com a resposta inteira, e o modelo recebe `is_error` com o corpo; uma leitura `OK` não muda | `builder/agents/agent.test.ts`, "a leitura recusada" | must |
+| 37 | U5 | Quem aprovou: a linha de `connector_write` de uma escrita aprovada guarda em `approved_by` a pessoa que tocou **Aprovar**; em **Faz sozinho**, `null`; a migração vem num pull request próprio (D11) | `hub/connectors/write.test.ts`, "quem aprovou" | must |
+| 38 | U5 | `listWrites` de uma conversa devolve cada escrita dela: `toolCallId`, a ligação, a operação, o estado, a hora, a marca, se foi aprovada por uma pessoa e, numa recusa, a mensagem do sistema (`native.message`); nunca os campos da escrita (S40); outra pessoa, ou a mesma em outra conversa, recebe `CONVERSATION_NOT_FOUND`; `listOpenWrites` sai, e o critério 23 passa por `listWrites` | `builder/agents/conversation-routes.test.ts`, "as escritas da conversa" | must |
+| 39 | U5 | O campo fixo: a versão pronta de uma escrita não abre ao modelo os campos `fixed` do kit, e o esquema que o modelo recebe não tem `notaModelo`; uma versão de **Lançar pedido** com `notaModelo` em `open`, ou sem ela nos valores fixos, não cabe na operação (`misfitOf`, `builder/tools/check.ts`): gravá-la dá `TOOL_REFUSED` com `{ field: 'bound', reason: 'NOT_FIXED' }`, e publicar um agente com uma versão assim é recusado com o mesmo motivo, sem publicar | `builder/tools/routes.test.ts`, "o campo que só quem configura fixa"; `builder/agents/publish.test.ts`, "a escrita sem o valor fixo" | must |
+| 40 | U6 | Depois de recarregar: uma escrita aprovada e recusada mostra "Aprovado por você" e "Recusado, nada foi lançado." com a mensagem do sistema como ela veio; uma aprovada e lançada, "Aprovado por você" e o número; uma em **Faz sozinho** não diz "Aprovado"; a linha diz "Não conseguiu escrever no Sankhya: Lançar pedido", nunca "consultar" | `apps/web/src/builder/conversation/approval-card.test.tsx`, "depois de recarregar, o desfecho vem do registro" | must |
+| 41 | U6 | Ao vivo, a recusa lançada (`output-error`) leva o cartão ao mesmo estado do critério 40, lido de `listWrites` quando a chamada termina, nunca do `errorText` do modelo | `approval-card.test.tsx`, "a recusa ao vivo" | must |
+| 42 | U6 | O cartão mostra a nota modelo (dos valores fixos da versão), o cliente e cada item com quantidade, produto, preço, local e lote, quando houver; a página do agente mostra o texto do campo fixo sem valor ao lado de **Lançar pedido** quando a publicação o recusa | `approval-card.test.tsx`, "o pedido com a nota modelo e os locais"; `apps/web/src/builder/agents/chooser.test.tsx`, "o campo fixo sem valor" | must |
+| 43 | U5 | Avaliação com o modelo de verdade (opt-in): com a recusa gravada, o agente diz à pessoa a causa que está em `details`, sem inventar outra, e não chama a escrita de novo com a mesma entrada | `builder/agents/agents.eval.test.ts`, "a recusa com a causa" | should |
 
 ## A matriz de estados
 
@@ -277,6 +374,8 @@ os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da eta
 | A escrita na linha da página do agente (U3) | desmarcada, "escreve" | o conector sem escrita: nenhuma linha "escreve" | como a lista de Papéis | o erro ao salvar fica na tela, como hoje | a ligação deixou de ser oferecida: como hoje (`NOT_OFFERED`) | fora do papel de quem edita: sem poder marcar (Papéis, critério 24); sem a ação: **Faz sozinho** desligada com o motivo | `NOT_IN_ROLE` ao publicar, com a ferramenta |
 | O cartão **Aprovar?** (U3) | o pedido inteiro e os dois botões; com um envio aberto da mesma escrita, a linha do aviso com a hora e a marca | — | "Aprovando…" ou "Recusando…", botões desligados | "Não conseguiu lançar", a falha dita (também `UNREACHABLE` e `DEADLINE`); `WRITE_UNCERTAIN` com a marca | já respondido em outra aba: o estado que a sessão diz | o Membro não chega à conversa de agente (`manageAgents`); quem não tem a escrita no papel não aprova: `NOT_IN_ROLE`, e o cartão diz o texto escolhido na rodada de textos, sem os botões (critério 26) | "Recusado", "Recusado porque você mandou outra mensagem", "Recusado porque você parou a conversa" |
 | A ação na tela de Papéis (U3) | marcada e fixa no Dono e no Administrador | — | como a tela | como a tela | como a tela | como a tela | — |
+| O cartão depois de recarregar (U6) | o desfecho lido de `listWrites`: "Aprovado por você" e o número, ou "Recusado, nada foi lançado." com a mensagem do sistema; em **Faz sozinho**, sem "Aprovado" | uma chamada sem linha no registro (recusada antes de gravar, como `NOT_IN_ROLE`): o que o Mastra guardou da chamada, sem "Aprovado" | o cartão como estava até `listWrites` chegar | `listWrites` falha: o cartão diz o que o Mastra guardou, sem inventar desfecho | a conversa de outra pessoa: `CONVERSATION_NOT_FOUND`, como hoje | como a conversa | `UNCERTAIN` ou `SENDING`: "Não deu para saber se o pedido foi lançado…" com a marca, como o critério 15 |
+| A linha de uma escrita na conversa (U6) | "Escrevendo no {sistema}: {ação}" | — | "Escrevendo…" | "Não conseguiu escrever no {sistema}: {ação}" | — | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -287,6 +386,12 @@ os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da eta
 | O envio aberto da mesma escrita (`openWritesOf`: estado, hora, marca) | o registro (U1) | a trava do funil (U1), a função `requireApproval` (U2), o aviso do cartão (U3) |
 | `pendingApprovals` do estado da sessão (só na memória do Hub) | o Mastra | o cartão depois de recarregar, no mesmo Hub (U3) |
 | O corpo da rota `{ toolCallId, approved }` | o cartão (U3) | o handler nativo do Mastra (U2) |
+| A recusa gravada (`refusals.ts`: o corpo e o `kind` que dá) | quem grava o corpo real, com valores inventados (U4; o firstmate depois do pedido de prova) | o dublê, a conformidade e os testes (U4, U5) |
+| `fixed` da operação (os campos que só quem configura fixa) | o kit (U4) | a versão pronta e `misfitOf` (U5), a página do agente pelo motivo `NOT_FIXED` (U6) |
+| `uncertain`, `mark` e `idOf` da escrita | o kit (U4) | o funil de escrita do Hub (U4, `wrote.ts` e `write.ts`) |
+| A falha lançada ao modelo (`ConnectorRefused`, a mensagem com `{kind, status, code, message, body}`) | a ferramenta do agente (U5) | o modelo, pelo `is_error` do Mastra; a tela não a lê (C49) |
+| `connector_write.answer` com o corpo da recusa, e `approved_by` | o funil (U5) | `listWrites` (U5), o cartão (U6) |
+| `listWrites` (`WrittenRow`: `toolCallId`, ligação, operação, estado, hora, marca, `approved`, `message`) | a rota (U5) | o cartão e o aviso do envio aberto (U6) |
 
 **O desenho do cartão**, a 1280 e a 390 px, sobre as peças de `ui/` e o cartão do plano de hoje
 (`plan-card.tsx`):
@@ -316,6 +421,8 @@ os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da eta
 | A resposta ao cartão (`tool-approval`, nativa, pela lista fixa) | duas abas ou dois cliques: uma vale, a outra `ok: false` | chega no mesmo instante do cartão: pode perder a corrida do Mastra (#27831), nada roda e a conversa fica parada até a próxima mensagem; os botões acendem só quando o estado da sessão traz o pedido, o que dá à pessoa o tempo de ler e não fecha a janela | o banco fora: a falha da rota; o pedido continua guardado | `CONNECTOR_WRITE_APPROVED` ou `_DECLINED` com a pessoa, a ligação, a operação e o `toolCallId` | 6, 7, 11, 14 |
 | A leitura do papel de quem publicou, na hora da escrita (a função `requireApproval` da escrita em **Faz sozinho**, `aloneByPublisher`) | duas chamadas ao mesmo tempo leem cada uma o papel na hora, sem cache; uma muda o papel no meio, e a chamada seguinte vê o novo | quem publicou perde a ação, a escrita no papel ou sai da empresa depois de a versão ficar ativa: a chamada seguinte pergunta (`tool_approval_required`), o dublê não recebe nada até o **Aprovar**, e a versão não muda | a leitura do papel falha ou lança: falha fechada, a função devolve `true` e o Mastra pergunta (`agent-BP9OWM6D.js:15129-15142`); nada é enviado sem o **Aprovar** | nada novo: a pergunta sai pelo `CONNECTOR_WRITE_APPROVED` ou `_DECLINED` de hoje | 24, 26 |
 | Gravar o rascunho e publicar a versão com a coluna `approval` de `agent_version_tool` | a fila de gravação do rascunho de hoje (`use-draft-save-queue`) e a regra de versão de hoje | sem a ação, uma escrita em **Faz sozinho**: `NOT_IN_ROLE`, nada gravado nem publicado | o banco fora: a falha sobe | a linha de hoje da gravação e da publicação | 9 |
+| O fim do registro com o corpo da recusa e quem aprovou (`approved_by` no `INSERT` de `SENDING`, o corpo no `UPDATE` final de `answer`) | o mesmo da linha do registro: a chave primária deixa um só | o banco cai depois de uma recusa: a linha fica `SENDING`, o modelo recebe a falha lançada que está na memória, e o processo imprime `CONNECTOR_WRITE_UNRECORDED` | o banco fora: o mesmo | `CONNECTOR_WRITE_REFUSED` só com escalares; o corpo nunca vai ao log (S41) | 33, 37 |
+| A falha lançada da ferramenta (o Mastra a embrulha em `TOOL_EXECUTION_FAILED` e a relança, `@mastra/core@1.82.0` `packages/core/src/tools/tool-builder/builder.ts:1051-1072`) | duas escritas recusadas no mesmo turno: duas falhas, cada uma no seu `toolCallId` | depois de um **Aprovar**, o Mastra só guarda `approval` num sucesso (`loop/workflows/agentic-execution/tool-call-step.ts:930-936`), então o cartão lê quem aprovou do registro (critério 40) | o banco do Mastra fora: a rodada falha como hoje | a linha do erro do Mastra (`builder/mastra/logger.ts`, só escalares) e `CONNECTOR_WRITE_REFUSED` | 34, 35, 40, 41 |
 
 ## A tabela de referência
 
@@ -348,6 +455,16 @@ os seus estados com o aviso, a ação na tela de Papéis, o texto). Total da eta
 | A liberação ao Projeto | U3 (o texto) | `apps/server/src/hub/connectors/tables.ts:170` ("to read, the whole connection"); `apps/web/src/hub/connectors/text.ts:182,216` | Claude Enterprise (papel com conectores e ações); Activepieces (ações por projeto) | um lugar para quem, outro para onde | nativo | — | "A1", 2026-11-07 | — |
 | Cancelar pelo agente | fica de fora: uma escrita depois, o comportamento num pedido "a confirmar" não documentado | — | Sankhya `POST /v1/vendas/pedidos/{codigoPedido}/cancela` com `{ motivo }`; "Pedidos faturados não serão cancelados" | cancela, não apaga | nativo (o kit), quando vier | — | "que aí eu consigo deletar depois" | — |
 | O Builder, o Construtor e o Assistente | fica de fora: sem mudança | `construtor.ts:275`, `conversation/permissions.ts:60`, `assistant.ts:305` | Mastra Code começa em `yolo` (`mastracode/sdk/src/index.ts:1129`, `6e8dfcb8`) | ferramentas sem pergunta | nativo | — | 0053 | — |
+| O leitor de recusas do Sankhya | U4 | `packages/connectors/src/sankhya/answers.ts:8-55`: o esquema `Refusal.error` só tem `code` e `message`, e `error.details`, onde o gateway real põe a causa, se perde; o corpo fica só em `native.body` (`:57-63`) | activepieces@f34c43cd `packages/pieces/common/src/lib/http/core/http-error.ts:1-49`; pipedream@05b24f0e `platform/lib/axios.ts:150-205`; n8n@2e855356 `packages/workflow/src/errors/node-api.error.ts:52-75` | guardam o corpo inteiro e compõem a mensagem a partir dele; nenhuma tem um esquema de erro por fornecedor | nativo: o leitor do kit, um esquema por conector com a união dos formatos medidos; no Sankhya, `error.message` e `error.details` | os critérios 27 e 28 | resposta 1; `D3` "okay" | — |
+| O dublê com as recusas gravadas | U4 | `sankhya/fake-orders.ts:29-40` responde no formato da documentação (`mensagem: {code, message, details}`), que o leitor lê bem; `answers.test.ts:105-113` usa o formato real e não confere `details` | a T24 para provedores de modelo; o `nothingFound` do próprio dublê, no formato medido no real (`sankhya/fake-data.ts:35-45`) | o dublê manda o que o serviço real manda, gravado, com valores inventados | nativo (a regra nova do guia de testes, `D3` b) | os critérios 27 a 29 | `D3` "okay" | `packages/connectors/src/sankhya/refusals.ts` |
+| Os itens do pedido | U4 | `sankhya/operations/vendas.ts:104-136`: o item só tem `codigoProduto`, `quantidade` e `valorUnitario`, e o pedido vai como o modelo o deu (`:135`) | Sankhya `addPedido` (developer.sankhya.com.br, página `addpedido`): o item pede `sequencia`, `codigoLocalEstoque`, `controle`, `codigoProduto`, `quantidade` e `valorUnitario`; o local, "quando existe controle de estoque envolvendo local" | o pedido leva cada item numerado, com local e controle | nativo: o `request` do kit numera e põe o local do item ou o do cabeçalho, função pura | o critério 30 | resposta 5 | — |
+| A nota modelo | U4, U5, U6 | `vendas.ts`: `notaModelo` aberta ao modelo; a versão pronta deixa todo campo aberto (`builder/tools/check.ts:112-114`); `misfitOf` (`:80-101`) já confere uma versão contra a operação | Sankhya `addPedido`: `notaModelo` obrigatória, de onde vêm empresa, TOP e natureza; os valores fixos de uma versão (`ToolVersionConfig.bound`, `packages/hub-api/src/tools.ts:76-87`, "Valores fixos (JSON)" em `apps/web/src/builder/agents/tool-form.tsx:169`) | quem configura fixa o molde; o modelo nunca o escolhe | embrulhado: o kit declara `fixed: ['notaModelo']`; a versão pronta não o abre, e `misfitOf` recusa uma versão que o abre ou não o fixa (`NOT_FIXED`) | os critérios 39 e 42 | `D1` "API oficial" | — |
+| Estoque de um produto | U4 | `sankhya/operations/estoque.ts:6-31`: `estoque` lê a lista inteira, sem filtro de produto | Sankhya `GET /v1/estoque/produtos/{codigoProduto}`, chamado em 2026-11-08 com um produto de teste: 200 com `{estoque: [{codigoProduto, codigoEmpresa, codigoLocal, controle, estoque}]}` | uma leitura por produto | nativo (o kit) | o critério 31 | `D2` "gostei" | — |
+| O incerto, a marca e o id de uma escrita | U4 | o Hub sabe três coisas do Sankhya: `GTW3503` (`hub/connectors/wrote.ts:17-27`), o campo `observacao` (`write.ts`, `markedInput`) e `codigoPedido` (`write.ts`, `logSent`) | a decisão 0056: um conector é uma definição, e o kit declara o que é do fornecedor | o kit declara; o funil pergunta | nativo: a escrita declara `uncertain`, `mark` e `idOf` (a emenda da 0056) | o critério 32 | `D3` "okay" | — |
+| O funil entrega a resposta inteira | U5 | `write.ts` (`writtenOf` com `plain(native)`, `body: null`), `write-record.ts:76-95` (`Plain`, `body: z.null()`), `read.ts:38-41` (`summaryOf`), cada um citando a S41, que trata de logs e spans | pipedream@05b24f0e `platform/lib/axios.ts:150-205` (`err.message` é o corpo inteiro); n8n@2e855356 `packages/@n8n/nodes-langchain/nodes/tools/ToolHttpRequest/utils.ts:857-872` (o corpo vai ao modelo para ele não inventar a causa) | a resposta inteira a quem pediu; cada consumidor corta na sua borda | nativo: o funil devolve `native` inteiro; o app corta na sua porta (C51), o log só tem escalares (S41) | os critérios 33 e 36 | resposta 4 | — |
+| A falha nativa do Mastra | U5 | `builder/agents/tools.ts`, `toldOf` e `readTool`: toda falha volta como resultado comum, que o modelo lê como sucesso | `@mastra/core@1.82.0` `packages/core/src/tools/tool-builder/builder.ts:1051-1072` (o erro vira `TOOL_EXECUTION_FAILED` com a mensagem e é relançado; o modelo recebe o texto com `is_error`); o cliente MCP do Mastra mantém o envelope inteiro de um `isError` (`packages/mcp/src/client/client.ts:1857-1882`); `dist/docs/references/docs-agents-tools.md:150`, um efeito que já aconteceu não se devolve como falha | lança o que certamente não foi aceito, com a resposta inteira no texto; o que pode ter entrado continua resultado | nativo | os critérios 34, 35 e 43 | resposta 1; `D3` "okay" | — |
+| Quem aprovou e o desfecho, no registro | U5, U6 | `connector_write` sem quem aprovou (`hub/connectors/tables.ts:217-247`; `approvedBy` só na requisição, `builder/agents/tools.ts`); `approvalItem` some sem `inv.approval` (`apps/web/src/builder/conversation/approval-item.ts:113-115`) | `@mastra/core@1.82.0` `tool-call-step.ts:930-936`: `approval` só num sucesso aprovado | o histórico de uma escrita fica no dono durável (C63) | embrulhado: a coluna `approved_by` e a rota `listWrites`, no lugar de `listOpenWrites`; o cartão lê o registro | os critérios 37, 38, 40 e 41 | resposta 4 | migração `approved_by` |
+| A linha de uma escrita na conversa | U6 | `slugToolSpec` diz "consultar" para toda `tool_<slug>` (`construtor-specs.ts:214-226`, por `tool-registry.ts:240-245`); a sala já sabe que é escrita (`room.ts`, `writeOf`) | a Mastra UI desenha o histórico como linha comum (relido pelo estudo) | — | nativo (as peças da casa) | o critério 40 | não precisa | — |
 
 **As medidas** (2026-11-05 e 06, `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, Postgres 18 local,
 modelo de mentira; os roteiros e as saídas ficam fora do repositório, com o firstmate). Com o `yolo`
@@ -374,6 +491,15 @@ a escrita da mesma ligação e operação continua perguntando naquela conversa 
 conserto); o relato pronto fica fora do repositório, esperando a autorização do firstmate para
 mandar. A decisão 0053 continua para o Builder, o Construtor e o Assistente; no fechamento ela ganha
 uma nota de escopo: o controlador dos agentes sai dela.
+
+A dívida da emenda de 2026-11-08. A resposta inteira vai ao modelo sem teto próprio: o teto é o
+de 2 MiB do executor, e uma recusa grande de outro fornecedor ocuparia o contexto do modelo; volta ao
+fundador quando um conector a mostrar. Quando o rastreamento da decisão 0052 entrar, a lista de
+atributos permitidos (S42) corta a mensagem do erro da ferramenta, porque o corpo estará nela; hoje
+não há spans (`builder/mastra/mastra.ts`, sem `observability`). A checagem da documentação
+(`sankhya/spec.test.ts`) não confere os obrigatórios que o kit não manda; ela pede uma lista declarada
+das exceções, como os campos de NF-e do cabeçalho. O 400 real do `addPedido` nunca foi gravado: o
+envelope da recusa gravada é o do 404 real, e o pedido de prova do roteiro o troca pelo real.
 
 ## U1 A escrita no Sankhya
 
@@ -697,3 +823,227 @@ O 18 roda com o modelo de verdade, pelo firstmate.
 - A sala trava a caixa de mensagem durante a aprovação: diga onde; não se cria um estado novo.
 - A tela de Papéis não tiver lugar para uma ação que não é de conector: diga onde; o fundador
   aprova o lugar.
+
+## U4 O kit sabe o que é do Sankhya
+
+**Base e modelo.** O `main` do dia, com a U1 a U3. Sonnet: o leitor, o dublê e a operação seguem
+o kit, e o Hub só passa a perguntar à operação.
+
+### As linhas da tabela
+
+O leitor de recusas do Sankhya, o dublê com as recusas gravadas, os itens do pedido, a nota modelo
+(o campo `fixed`), Estoque de um produto, o incerto, a marca e o id de uma escrita.
+
+Leia na base `packages/connectors/src/kernel/{operation,conformance,request}.ts`,
+`sankhya/{answers,fake-orders,fake-data,spec-source}.ts`, `sankhya/operations/{vendas,estoque}.ts`,
+`apps/server/src/hub/connectors/{wrote,write}.ts`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `packages/connectors/src/kernel/` | Muda `operation.ts` (a escrita declara `uncertain`, `mark`, `idOf`; toda operação pode declarar `fixed`), `conformance.ts` (as recusas gravadas) | o kit, o Hub |
+| `packages/connectors/src/sankhya/` | Cria `refusals.ts`; muda `answers.ts` (`error.details`), `operations/vendas.ts` (os itens, `fixed`, as três declarações), `operations/estoque.ts` (`estoqueDoProduto`), `spec-source.ts` (a página do estoque de um produto), `fake-orders.ts` (importa a recusa) e o dublê do estoque | o kit |
+| `apps/server/src/hub/connectors/` | Muda `wrote.ts` (apaga `GATEWAY_TIMEOUT`; pergunta `operation.uncertain`) e `write.ts` (apaga `markedInput`, `Observed` e `OrderCode`; chama `operation.mark` e `operation.idOf`) | a ferramenta da escrita |
+
+### Os contratos que a unidade cria
+
+```ts
+// packages/connectors/src/kernel/operation.ts
+// every operation may name the fields only whoever configures the tool sets; the model never fills them
+fixed?: readonly string[] // keys of the input's top level; the conformance checks each one exists
+export type WriteOperation<I, O> = Operation<I, O, 'write'> & Readonly<{
+  uncertain(native: Native): boolean // the provider's answer leaves the write's end unknown (Sankhya: GTW3503)
+  mark(input: I, mark: string): unknown // the input with the mark where the person finds the write; parsed again by `input`
+  idOf(value: O): string | number | null // the one scalar the log may print (Sankhya: codigoPedido)
+}>
+// defineOperation with class 'write' requires the three (TypeScript refuses a write without them)
+
+// packages/connectors/src/sankhya/refusals.ts
+export const refusals: readonly Readonly<{ operation: OperationId; status: number; body: unknown; kind: Failure['kind'] }>[]
+// each body recorded from the real gateway, values invented (S40); a comment names the route, the date and what was measured
+
+// packages/connectors/src/sankhya/operations/vendas.ts
+LancarPedidoInput = z.object({
+  notaModelo: z.number().int().positive(), // fixed
+  codigoCliente, codigoVendedor?, observacao?, // as today
+  codigoLocalEstoque: z.number().int().positive().optional(), // the order's default place; at the top so `bound` can fix it (`D2`)
+  itens: z.array(z.object({
+    codigoProduto, quantidade,
+    valorUnitario: z.number().nonnegative(), // required, as the page asks
+    codigoLocalEstoque: z.number().int().positive().optional(),
+    controle: z.string().optional(),
+  })).min(1),
+}) // refused when an item has no place of its own and the order none: the message tells the model to read the product's stock
+// request: each item with sequencia 1..n, its place or the order's, controle given or ''
+
+// packages/connectors/src/sankhya/operations/estoque.ts
+export const estoqueDoProduto // read, GET /v1/estoque/produtos/{codigoProduto}: lines { codigoEmpresa, codigoLocal, controle, estoque }
+```
+
+- A recusa é a união `Failure`, separada por `kind`, e o estado da escrita continua o do funil (C21).
+- O dono de cada fato do Sankhya é o kit: o incerto, o campo da marca, o id do que foi escrito, os campos fixos e o
+  formato da recusa (C26). Nada disso fica no Hub nem na tela.
+- O corpo da resposta é parseado uma vez, na borda do kit (C27).
+- O arquivo tomado como modelo é `answers.ts` com o `NothingFound` (`:83-89`), que já lê `details`
+  no envelope real; ele cumpre C21 e C26. O dublê toma `fake-data.ts:35-45` como modelo.
+
+### As skills e a leitura
+
+As linhas de `docs/reference/stack.md` das pastas: `node`, `typescript-magician`. A skill `mastra`
+não: a unidade não toca o Mastra.
+
+### A ordem do trabalho
+
+1. `refusals.ts` com a recusa do critério 27 e o `kind` ao lado; o comentário diz de onde veio cada
+   parte (o envelope do 404 real, o código e a mensagem do 400 real, a causa inventada).
+2. `answers.ts`: `error` como objeto ganha `details`, e `locate` junta `message` e `details` sem
+   repetir. Regras: C27, C52.
+3. A conformidade: cada recusa gravada passa por `operation.answer`, com o `kind` gravado, e cada
+   texto do corpo aparece em `native.message`. Plante o leitor de hoje e veja o caso falhar.
+4. `fake-orders.ts` importa a recusa gravada; o formato da documentação sai.
+5. `vendas.ts`: o esquema acima, o `request` que numera e põe local e controle, `fixed`, e as três
+   declarações. `estoque.ts`: `estoqueDoProduto`, e a página em `spec-source.ts`.
+6. O Hub: `wrote.ts` pergunta `operation.uncertain(native)` no lugar do `GTW3503`; `write.ts` chama
+   `operation.mark` no lugar de `markedInput` (o `roomLeft` de hoje continua: o esquema da operação
+   julga o texto com a marca) e `operation.idOf` no lugar de `OrderCode`. Os testes de
+   `write.test.ts` passam sem mudar.
+
+### Como se prova
+
+Os critérios 27 a 32, pelo kit e pelo dublê. O 27 e o 28 falham hoje.
+
+### Parar se
+
+- A página do estoque de um produto, lida pelo kit, não tiver a rota ou os campos acima: escreva o
+  que leu e pare antes da leitura.
+- O esquema de `defineOperation` não puder exigir as três declarações só na escrita sem `as`: diga
+  onde e pare.
+
+## U5 A falha chega inteira ao modelo
+
+**Base e modelo.** O `main` com a U4. Opus: cruza o funil, o registro, a ferramenta do agente, as
+portas de leitura, a rota e a publicação.
+
+### As linhas da tabela
+
+O funil entrega a resposta inteira, a falha nativa do Mastra, quem aprovou e o desfecho no registro
+(a coluna e a rota), a nota modelo (a versão pronta e `misfitOf`).
+
+Leia na base `apps/server/src/hub/connectors/{write,write-record,read,app-calls,builder-port,assistant-port,tables,public}.ts`,
+`apps/server/src/builder/agents/{tools,publish,conversation-routes}.ts`,
+`apps/server/src/builder/tools/check.ts`, `packages/hub-api/src/{open-writes,agent-failures}.ts`,
+`apps/server/src/builder/mastra/logger.ts`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/hub/connectors/` | Muda `write.ts` (apaga `plain`; o `Written` com `native` inteiro), `write-record.ts` (`Stored` com `body: z.unknown()`; `approved_by`; a leitura de `listWrites`; o comentário de `:76`), `read.ts` (`readThrough` devolve `native` inteiro; `summaryOf` vai para a porta do app; o comentário de `:38`), `app-calls.ts` (o corte do app, C51), `tables.ts` (`approvedBy`), `public.ts` | a ferramenta, a rota, o app |
+| `apps/server/migrations/` | A coluna `connector_write.approved_by text null`, num pull request próprio (D11; a aprovação desta emenda é a palavra do fundador) | o Drizzle, `catalog.test.ts` |
+| `apps/server/src/builder/agents/` | Muda `tools.ts` (a escrita e a leitura lançam `ConnectorRefused`; `toldOf` só para os resultados), `conversation-routes.ts` (serve `listWrites`), `publish.ts` (o motivo `NOT_FIXED`) | o controlador "agentes" |
+| `apps/server/src/builder/tools/` | Muda `check.ts` (`readyConfig` sem os campos `fixed`; `misfitOf` recusa `fixed` aberto ou sem valor) | a biblioteca, a publicação |
+| `packages/hub-api/src/` | Muda `open-writes.ts` (`listWrites` e `WrittenRow` no lugar de `listOpenWrites` e `OpenWrite`), `agent-failures.ts` (`NOT_FIXED`) | a web, o servidor |
+
+### Os contratos que a unidade cria
+
+```ts
+// packages/hub-api/src/open-writes.ts: listOpenWrites and OpenWrite leave
+export const WrittenRow = z.object({
+  toolCallId: ToolCallId, connectionId: ConnectionId, operation: OperationId,
+  state: z.enum(['SENDING', 'DONE', 'REFUSED', 'UNCERTAIN']),
+  sentAt: z.iso.datetime(), mark: z.string(),
+  approved: z.boolean(), // a person answered Aprovar for this call
+  message: z.string().nullable(), // on REFUSED, the system's message as it came; never the write's fields (S40)
+})
+export const listWrites // GET `${…}/agents/{agentId}/conversations/{conversationId}/writes` → { writes: WrittenRow[] }, oldest first
+
+// packages/hub-api/src/agent-failures.ts
+ProblemReason gains 'NOT_FIXED' // a version leaves open, or does not fix, a field the operation declares `fixed`
+
+// apps/server/src/builder/agents/tools.ts
+class ConnectorRefused extends Error // name 'ConnectorRefused'; message: JSON.stringify({ kind, status, code, message, body })
+// thrown for every answer that was surely not taken (criterion 35); OK, WRITE_UNCERTAIN, WRITE_OPEN and IDEMPOTENCY_CONFLICT are returned
+
+// apps/server/src/hub/connectors/tables.ts
+connector_write.approved_by text null // the person of Aprovar; null in Faz sozinho; written with SENDING
+```
+
+- O estado da escrita continua a união `state`; `WrittenRow.state` deriva dela (C21, C26).
+- O dono do corte é cada consumidor na sua borda: o app (C51), o log (S41), o modelo recebe tudo.
+- `ConnectorRefused` tem nome próprio para a linha do erro no log se ler: o logger do Builder imprime
+  o nome e os escalares, nunca a mensagem (`builder/mastra/logger.ts:9-25`).
+- A saída de `listWrites` passa pelo esquema do contrato (C31).
+- O arquivo tomado como modelo é `open-writes.ts` com a sua rota em `conversation-routes.ts`: cumpre
+  C21 e C26.
+
+### As skills e a leitura
+
+`mastra` (no `node_modules/@mastra/core/dist/docs` 1.82.0: `docs-agents-tools.md` 140-160, e o
+`builder.ts` citado na tabela), `node`, `typescript-magician`, as linhas de `docs/reference/stack.md`
+das pastas.
+
+### A ordem do trabalho
+
+1. A migração de `approved_by`, no seu pull request (D11).
+2. O funil: `writtenOf` passa `native` inteiro; `Stored` guarda o corpo; o `INSERT` grava
+   `approved_by`. O corpo continua dentro do teto do executor (C59). Corrija os comentários de
+   `write-record.ts:76` e `read.ts:38`, que citam a S41 para tirar o corpo de quem não é log.
+3. `readThrough` devolve `native` inteiro; a porta do app corta para `status`, `code` e `message`
+   (C51); as portas do Builder e do Assistente passam inteiro.
+4. `tools.ts`: `ConnectorRefused`, lançado pela escrita e pela leitura do agente para o que
+   certamente não foi aceito; os resultados do critério 35 continuam com a instrução. Confira no
+   log que a linha do erro do Mastra só traz escalares (S41).
+5. `listWrites` no lugar de `listOpenWrites`, com o critério 23 passando por ela.
+6. `check.ts`: `readyConfig` sem os campos `fixed`; `misfitOf` com `NOT_FIXED`; a publicação recusa
+   uma versão que não cabe.
+7. A gravação do dublê do modelo (T24) com o `tool_result` de `is_error`, e os testes sobre ela.
+
+### Como se prova
+
+Os critérios 33 a 39 e 43. O 34 lê o pedido seguinte ao modelo pelo dublê gravado (T24, T26).
+
+### Parar se
+
+- O texto que o modelo recebe de uma falha lançada não for a mensagem inteira: diga o que chegou e
+  pare.
+- O logger do Mastra imprimir a mensagem da falha: pare; o log só tem escalares (S41).
+- A biblioteca recusar uma versão nova de uma escrita pronta com valores fixos: diga onde e pare.
+
+## U6 A escrita na conversa, também depois de recarregar
+
+**Base e modelo.** O `main` com a U5. Sonnet.
+
+### As linhas da tabela
+
+Quem aprovou e o desfecho no registro (o cartão), a linha de uma escrita na conversa, a nota modelo
+(o cartão e o motivo `NOT_FIXED`).
+
+Leia `apps/web/src/builder/conversation/{approval-item,approval-card,approval-fields,approval-text,construtor-specs,tool-registry,room}.ts(x)`,
+`apps/web/src/builder/agents/{queries,chooser,text}.ts(x)`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/web/src/builder/conversation/` | Muda `approval-item.ts` (o desfecho e quem aprovou vêm de `listWrites`, não de `inv.approval` nem do resultado), `approval-card.tsx` (o rótulo da recusa e a mensagem), `approval-fields.ts` (a nota modelo dos valores fixos, o local e o lote), `construtor-specs.ts` e `tool-registry.ts` (a linha de uma escrita), `room.ts` | a sala do agente |
+| `apps/web/src/builder/agents/` | Muda `queries.ts` (`listWrites`), `text.ts` (`NOT_FIXED`), `chooser.tsx` | a página do agente |
+
+### A ordem do trabalho
+
+1. `queries.ts` lê `listWrites`; o aviso do envio aberto filtra `SENDING` e `UNCERTAIN`.
+2. `approval-item.ts`: o desfecho de uma escrita que pediu o cartão vem da linha de `listWrites`
+   pelo `toolCallId`; sem linha, o que o Mastra guardou, sem "Aprovado".
+3. `approval-card.tsx`: "Recusado, nada foi lançado." e, abaixo, `message` como veio.
+4. `approval-fields.ts`: os campos são `{ ...args, ...bound }` da versão, como o `execute` manda.
+5. A linha de uma escrita usa os verbos de escrita, pela `writeOf` da sala.
+6. Os textos novos vão ao fundador com a rodada de textos.
+
+### Como se prova
+
+Os critérios 40 a 42, e a QA curta da sala e da página do agente nos dois temas, a 1366 e 390 px.
+
+### Parar se
+
+- O cartão precisar interpretar o `errorText` do modelo para saber o desfecho: pare; o desfecho vem
+  do registro (C49).
