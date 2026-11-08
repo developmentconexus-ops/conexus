@@ -1,6 +1,7 @@
 import { PersonId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import { Failure } from '../../platform/failure.ts'
 
 const ActivationSchema = z.object({
   number: z.number().int().positive(),
@@ -17,9 +18,18 @@ export type Activation = z.infer<typeof ActivationSchema>
 /** The `requestContext` key of the turn's activation. */
 export const ACTIVATION = 'conexus-agent-activation'
 
-/** The activation the turn began with, which an answered card brings back; none for a new turn. */
+/**
+ * The activation the turn began with, which an answered card brings back; none for a new turn or
+ * for a card parked before activations existed. A value that is there and is not one fails.
+ */
 export function activationIn(requestContext: RequestContext): Activation | undefined {
-  return ActivationSchema.safeParse(requestContext.get(ACTIVATION)).data
+  const held = requestContext.get(ACTIVATION)
+  if (held === undefined) return undefined
+  const parsed = ActivationSchema.safeParse(held)
+  if (!parsed.success) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_ACTIVATION_INVALID' } })
+  }
+  return parsed.data
 }
 
 /** Pins the turn to its activation. */

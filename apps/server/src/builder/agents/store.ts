@@ -1,4 +1,5 @@
 import type {
+  AgentConfig as AgentConfigType,
   AgentDetail,
   AgentListed,
   AgentState,
@@ -144,6 +145,20 @@ export async function pinnedOf(tx: ReadTx, agentId: AgentId, number: number): Pr
     .from(agentVersionTool)
     .where(and(eq(agentVersionTool.agentId, agentId), eq(agentVersionTool.number, number)))
   return rows.map(choiceOf)
+}
+
+/** A published version as it would become active again: its configuration and its tools' versions. */
+export async function versionBack(
+  tx: ReadTx,
+  agentId: AgentId,
+  number: number,
+): Promise<{ config: AgentConfigType; choices: Choice[] } | undefined> {
+  const [version] = await tx
+    .select({ config: agentVersion.config })
+    .from(agentVersion)
+    .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
+  if (version === undefined) return undefined
+  return { config: AgentConfig.parse(version.config), choices: await pinnedOf(tx, agentId, number) }
 }
 
 /** The draft's tools as the page shows them, a write with its approval. */

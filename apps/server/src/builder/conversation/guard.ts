@@ -237,31 +237,36 @@ async function toolAnswer(
   if (approved) {
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
-  await bringBack(deps.hub.mastra, request, at)
+  await bringBack(deps.hub.mastra, request, session, at.part.carried ?? [])
   return undefined
 }
 
 /**
  * What the parked run kept in its context and its part names (`carried`), put on the answer: Mastra
- * 1.82 resolves a resumed run's instructions and tools before it merges the snapshot's context in
- * (`agent-BP9OWM6D.js:86117-86141`, the merge at `:11435`), so the run would take what is current.
- * Read from the run's snapshot through the workflows store.
+ * resolves a resumed run's instructions and tools before it merges the snapshot's context in
+ * (`docs/reference/boundaries.md`), so the run would take what is current. The gate is armed, so
+ * the run and its snapshot exist: their absence fails. A key the snapshot lacks is a card parked
+ * before the key existed, and stays as it was.
  */
 async function bringBack(
   mastra: Mastra,
   request: FastifyRequest,
-  at: Awaited<ReturnType<typeof guard>>,
+  session: { run: { getRunId(): string | null } },
+  keys: readonly string[],
 ): Promise<void> {
-  const keys = at.part.carried ?? []
   if (keys.length === 0) return
-  const session = await mastra.getAgentController(at.controllerId)?.getSession(at.conversationId)
-  const runId = session?.run.getRunId()
-  if (runId === null || runId === undefined) return
+  const runId = session.run.getRunId()
   const store = await mastra.getStorage()?.getStore('workflows')
-  const snapshot = await store?.loadWorkflowSnapshot({ workflowName: 'agentic-loop', runId })
-  const kept = snapshot?.requestContext
+  const snapshot =
+    runId && store
+      ? await store.loadWorkflowSnapshot({ workflowName: 'agentic-loop', runId })
+      : null
+  if (!snapshot) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PARKED_RUN_SNAPSHOT_MISSING' } })
+  }
   for (const key of keys) {
-    if (kept !== undefined && key in kept) request.requestContext.setRaw(key, kept[key])
+    const kept = snapshot.requestContext?.[key]
+    if (kept !== undefined) request.requestContext.setRaw(key, kept)
   }
 }
 

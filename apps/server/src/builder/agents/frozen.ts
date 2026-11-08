@@ -28,9 +28,9 @@ import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
-import { versionBack } from './publish.ts'
+import type { Activation } from './activation.ts'
 import type { Choice } from './store.ts'
-import { choiceOf, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
+import { choiceOf, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
 /**
@@ -158,7 +158,7 @@ export function versionOf(
   database: Database,
   ids: OfProject,
   agentId: AgentId,
-  version: { number: number; answeredBy: PersonId | null },
+  version: Activation,
 ) {
   return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion | null> => {
     const [row] = await tx.select({ id: agent.id }).from(agent).where(ofProject(ids, agentId))
