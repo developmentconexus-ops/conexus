@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
 
 /**
+ * Not `attemptIdOf` (`builder/controller-kit/open.ts`): that one's ids are stored and keep their
+ * input, so this one hashes its parts its own way.
+ *
  * A UUID (version 8, RFC 9562) derived from its parts, so a repeated attempt, or the same ready read
  * chosen twice, finds the same row (code C37).
  */
