@@ -5,6 +5,7 @@ import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { recordedRun } from '../conversation/test-recorded.ts'
+import { MATRIZ } from './test-agents.ts'
 import {
   conversation,
   ends,

@@ -288,6 +288,7 @@ test('Aprovar que a Mastra já não espera (ok: false: outra aba respondeu) deix
     ),
   )
   expect(screen.queryByText('Não foi possível enviar. Tente de novo.')).toBeNull()
+  recorded = [rowOf('approval')]
   for (const event of rest) line.emit(event)
   expect(await screen.findByText('Aprovado por você')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
