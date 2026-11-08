@@ -10,7 +10,7 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
-- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
+- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing, rollback; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
@@ -18,7 +18,7 @@ One line per document (`check-docs`).
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [steps/](steps/): cards in construction.
 - [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
-- [reference/stack.md](reference/stack.md): sources, skill, trap per package.
+- [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): readers' questions.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files, commands.
@@ -96,6 +96,7 @@ One line per document (`check-docs`).
 - [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
 - [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
+- [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
 
 ## Skills
 
