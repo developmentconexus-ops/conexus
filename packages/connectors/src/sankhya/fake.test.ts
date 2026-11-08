@@ -240,7 +240,7 @@ test('o dublê recusa o produto que não existe com a recusa gravada, como ela e
   await withToken(async (origin, token, fake) => {
     const product = await add(token, origin, {
       ...PEDIDO,
-      itens: [{ codigoProduto: 9554, quantidade: 1 }],
+      itens: [{ codigoProduto: 999, quantidade: 1 }],
     })
     assert.deepEqual(product, { status: refusals[0]?.status, body: refusals[0]?.body })
     const client = await add(token, origin, { ...PEDIDO, codigoCliente: 99 })

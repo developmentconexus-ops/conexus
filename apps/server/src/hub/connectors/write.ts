@@ -126,7 +126,7 @@ async function sendOnce(
   return sent
 }
 
-/** The line for what came of the send, before the record's end: scalars only, and the id the write declares when the answer has one (S40). */
+/** The line for what came of the send, before the record's end: scalars only, and the id the write declares when the answer has one, under a name of the Hub's own (S40). */
 function logSent(
   deps: Deps,
   a: WriteRequest,
@@ -137,10 +137,7 @@ function logSent(
   const about = aboutOf(a, connector)
   if (written.kind === 'OK') {
     const id = operation.idOf(written.value)
-    deps.log.info(
-      { ...about, ...(id === null ? {} : { codigoPedido: id }) },
-      'CONNECTOR_WRITE_SENT',
-    )
+    deps.log.info({ ...about, ...(id === null ? {} : { writtenId: id }) }, 'CONNECTOR_WRITE_SENT')
   } else if (written.kind === 'WRITE_UNCERTAIN') {
     deps.log.info(about, 'CONNECTOR_WRITE_UNCERTAIN')
   } else {
@@ -151,7 +148,7 @@ function logSent(
 /**
  * One write of a provider for an agent (card 24.5, U1), the twin of `readThrough` with the same
  * `mayUse`: the role and the release first, then the record committed with `SENDING`, then the one
- * send with the mark in the observation, then the record's end. A write is never sent twice: a call
+ * send with the mark the write declares, then the record's end. A write is never sent twice: a call
  * the record already holds answers from it. No database connection is held while the provider
  * answers (D22).
  */

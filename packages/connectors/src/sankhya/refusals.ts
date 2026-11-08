@@ -4,7 +4,7 @@ import { lancarPedido } from './operations/vendas.ts'
 /**
  * What the real gateway answered to a refused add, kept as it came. The envelope is the one measured
  * on the 404 of a list (2026-10-30, `RESOURCE_NOT_FOUND`); the code and the message are the 400 the
- * write record kept; `details` is the cause, with a product (999) that no catalog holds, invented (S40).
+ * write record kept for `POST /v1/vendas/pedidos` (its date was not kept with the record); `details` is the cause, with a product (999) that no catalog holds, invented (S40).
  */
 export const refusals: readonly RecordedRefusal[] = [
   {
