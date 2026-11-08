@@ -47,6 +47,7 @@ jobs:
         env:
           MASTRA_AGENT_THREAD_LEASE_TTL_MS: '3000'
         run: |
+          set +e
           hangs=0
           for i in $(seq 1 60); do
             rm -rf /tmp/ncc-probe
@@ -73,6 +74,7 @@ jobs:
               pkill -KILL -P $pid; kill -KILL $pid
             fi
             wait $pid 2>/dev/null
-            grep -c 'Exited the environment' /tmp/run.log | sed "s/^/run $i trace-exit lines: /"
+            echo "run $i trace-exit lines: $(grep -c 'Exited the environment' /tmp/run.log || true)"
+            [ $i = 1 ] && cat /tmp/run.log
           done
           echo "hangs=$hangs/60"
