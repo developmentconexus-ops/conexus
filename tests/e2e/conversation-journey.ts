@@ -140,6 +140,12 @@ export async function turnOnSwitch(page: Page) {
   for (const [provider, search] of models) {
     await pickModel(page, section, 'Modelo da troca', provider, search)
     await saving(page, () => section.getByRole('button', { name: 'Adicionar à fila' }).click())
+    // The write's answer is not the end of the add: the page refetches, and only then empties the
+    // field and moves focus to the section. A popup opened before that loses its focus and closes.
+    await section
+      .getByRole('combobox', { name: 'Modelo da troca', exact: true })
+      .filter({ hasText: 'Escolha um modelo' })
+      .waitFor()
   }
   const toggle = section.getByRole('switch', {
     name: 'Trocar para o próximo modelo quando as contas acabarem',
