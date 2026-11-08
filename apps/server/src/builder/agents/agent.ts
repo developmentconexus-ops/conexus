@@ -21,6 +21,8 @@ import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Speakers } from '../assistant/public.ts'
@@ -40,6 +42,7 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
+import { publisherLeavesAlone } from './publish.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
@@ -104,6 +107,8 @@ export async function agentTurnOf(
 }
 
 export type AgentDeps = {
+  database: Database
+  identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
@@ -258,7 +263,9 @@ function runToolsOf(
       frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
     const preset = await presetTools({
       ...{ ...deps, scope, tools, turnOf: turnKey.of },
-      author: authorOf(frozen),
+      ...{ author: authorOf(frozen), offered },
+      leavesAlone: (version, target) =>
+        publisherLeavesAlone(deps, frozen.companyId, version, target),
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({

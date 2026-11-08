@@ -94,7 +94,10 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
     [[2, 2]],
   )
   const logged = on.lines.find((line) => line.message === 'AGENT_PUBLISHED')
-  assert.deepEqual(logged?.fields, { companyId: on.companyId, agentId: made.id, version: 1 })
+  assert.deepEqual(logged?.fields, {
+    ...{ companyId: on.companyId, agentId: made.id, version: 1 },
+    by: on.ana.id,
+  })
 })
 
 test('publicar: um rascunho sem instruções, com uma ligação que o Projeto perdeu ou com uma ferramenta dela, dá AGENT_DRAFT_INVALID com o campo; um revision velho, AGENT_DRAFT_STALE', async (t) => {
@@ -186,7 +189,12 @@ test('publicar de novo o rascunho de uma versão depois de voltar a outra a torn
   const activated = on.lines.filter((line) => line.message === 'AGENT_ACTIVATED')
   assert.deepEqual(
     activated.map((line) => line.fields),
-    [1, 2].map((version) => ({ companyId: on.companyId, agentId: made.id, version })),
+    [1, 2].map((version) => ({
+      companyId: on.companyId,
+      agentId: made.id,
+      version,
+      by: on.ana.id,
+    })),
   )
 
   await drafted(on.hub, on.ana, on.agents, agentOf(again), { instructions: 'Mais uma.' })

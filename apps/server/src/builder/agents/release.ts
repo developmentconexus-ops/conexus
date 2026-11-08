@@ -29,6 +29,10 @@ export async function releaseAgents(deps: ReleaseDeps, scope: ReleaseScope): Pro
       const own = and(eq(agent.companyId, companyId), eq(agent.createdBy, personId))
       await tx.update(agent).set({ createdBy: null }).where(own)
       await tx
+        .update(agent)
+        .set({ activeBy: null })
+        .where(and(eq(agent.companyId, companyId), eq(agent.activeBy, personId)))
+      await tx
         .update(agentVersion)
         .set({ publishedBy: null })
         .where(and(eq(agentVersion.companyId, companyId), eq(agentVersion.publishedBy, personId)))
