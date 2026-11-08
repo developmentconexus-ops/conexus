@@ -62,46 +62,42 @@ operação (TOP) são orçamento na sua empresa, e em qual ligação; e diz o qu
 faz o roteiro no Sankhya de verdade da sua empresa, diz o que viu e aprova os textos das telas.
 
 **O que o estudo mostrou** (2026-11-07, com modelo de mentira e um banco local, sem chamar nada de
-fora; as provas P1 a P12 do estudo).
+fora; as provas P1 a P13 do estudo).
 
-- **O Mastra guarda um workflow montado na hora e o carrega de novo depois de um reinício.** É o
-  "workflow dinâmico" do roteiro, que o Mastra 1.82 ainda marca Beta. Medido (P1, P2).
-- **O fluxo que o Conexus monta e o que o Mastra guarda são a mesma linguagem**, e o próprio
-  Mastra aponta o que não serve num desenho, balão por balão, sem rodar: um balão repetido, uma
-  ferramenta que não existe, um valor que não encaixa. Medido (P9). Por isso um rascunho com
-  problema é guardado e os problemas aparecem no canvas; só testar e publicar esperam.
-- **Uma aprovação no meio do fluxo sobrevive a um reinício do Conexus**, também dentro do ramo
-  "se sim". Medido (P2, P5). Na conversa da 24.5 é diferente: lá o cartão some num reinício.
-- **Recusar termina a execução; tentar de novo continua do balão que falhou, sem refazer os
-  anteriores; uma execução cortada por um reinício termina depois**, do balão em que estava (o
-  Conexus espera 15 segundos, o tempo em que o Mastra ainda a considera do processo que parou).
-  Medido (P4, P6, P7, P8).
-- **O Mastra não tem versão de workflow.** Medido: se o mesmo workflow muda, uma execução que
-  esperava continua no desenho novo (P2). Por isso cada publicação é uma versão própria, como nos
-  agentes, e a execução fica na versão em que começou.
-- **Um agente que escreve pode ser um balão.** A peça pronta do Mastra para pôr um agente num
-  workflow trava quando o agente pede para escrever (P3). O Conexus roda o agente ele mesmo, e
-  quando o agente pede para escrever o workflow para e espera a aprovação; aprovado, o agente
-  escreve uma vez, também depois de um reinício (P11). A mesma decisão e o mesmo registro servem a
-  conversa, o balão de agente e o balão de escrita.
-- **A tela acende cada balão enquanto o fluxo roda**, relendo a execução a cada 5 segundos, como
-  o painel do Mastra faz (P10).
-- **A agenda do Mastra dispara a versão publicada direto**, e um disparo é uma execução (P12). Uma
-  Automação da 24.2 (um horário e uma pergunta ao Assistente) é um workflow de dois balões.
-- **O Sankhya não avisa sozinho.** A documentação pública dele não tem aviso para fora; o gatilho
-  é o Conexus olhar de tempos em tempos e lembrar o que já viu, como Zapier, Make, n8n,
-  activepieces e Pipedream fazem.
-- **O canvas vem de uma biblioteca aberta.** O painel do Mastra e o activepieces desenham com
-  `@xyflow/react` (licença MIT). Nenhum dos dois deixa largar um balão em qualquer ponto: o fluxo
-  é uma lista com ramos, e arrastar é encaixar o balão noutro lugar da lista.
-- **O pg-boss nunca foi instalado.** A 24.2 já usa a agenda do Mastra; sai só o texto que ainda
-  fala dele, no fechamento.
-- **Um pedido que espera é uma coisa só.** No Kiro, uma permissão, uma pergunta e uma aprovação
-  viajam como o mesmo pedido pendente (estudo do Kiro do fundador); é o que o Conexus faz ao pôr a
-  conversa, o balão de agente e o balão de escrita num caminho só de aprovação.
-- **Montar conversando é o que os produtos fazem.** Mastra Code, activepieces, n8n e o Kiro: o
-  modelo escreve o desenho inteiro, o produto confere e devolve o que não serve, e o modelo
-  conserta. O construtor de workflows do painel do Mastra é pago; o Conexus não o usa.
+- O Mastra guarda um fluxo montado na hora e o carrega de novo depois de um reinício. É o "workflow
+  dinâmico" do roteiro, que o Mastra ainda marca Beta.
+- O Mastra aponta, sem rodar, o que não serve num desenho, balão por balão. Por isso um rascunho
+  com problema é guardado, os problemas aparecem no canvas, e só testar e publicar esperam.
+- Uma aprovação no meio do fluxo sobrevive a um reinício do Conexus, também dentro do ramo "se sim".
+- Recusar termina a execução. **Tentar de novo** continua do balão que falhou, sem refazer os
+  anteriores. Uma execução cortada por um reinício termina depois, do balão em que estava.
+- O Mastra não guarda versões de um workflow. Por isso cada publicação é uma versão própria, como
+  nos agentes, e a execução fica na versão em que começou.
+- Um agente que escreve pode ser um balão: o fluxo para e espera a aprovação, também depois de um
+  reinício. A conversa, o balão de agente e o balão de escrita usam a mesma decisão e o mesmo
+  registro de envios.
+- A agenda do Mastra dispara a versão publicada direto. Uma Automação da 24.2 (um horário e uma
+  pergunta ao Assistente) é um workflow de dois balões.
+- O Sankhya não avisa sozinho. O gatilho é o Conexus olhar de tempos em tempos e lembrar o que já
+  viu, como Zapier, Make e n8n fazem.
+
+**O que mudou nesta emenda** (o estudo mais fundo de 2026-11-07, sobre o cartão anterior):
+
+- O fluxo aparece num canvas de balões que você clica e arrasta (decisão F, `F2a`), e não mais
+  numa lista.
+- Um agente que escreve no seu sistema pode ser um balão; antes, só o Assistente sem escritas.
+- A conversa, o balão de agente e o balão de escrita passam por uma só decisão de "pergunta ou
+  faz" e um só registro de envios, com o fluxo como terceiro autor.
+- As Automações da 24.2 viram workflows na 24.6.1, logo depois desta (decisão G); antes ficavam
+  para depois sem data.
+- Duas decisões novas: onde o workflow mora (H) e o que são as "informações" (I).
+- Do estudo do Kiro do fundador: até 50 balões por workflow; o Construtor para e pergunta depois
+  de três gravações seguidas com erro; mover um balão grava e confere o rascunho de novo; recusar
+  termina a execução sem chamar o agente outra vez; cada execução tem um rótulo seu ("Orçamento
+  nº 1043"). O Kiro reforçou o vocabulário fechado e o caminho único de aprovação, e é o precedente
+  da coluna (`F1`); `F2a` segue recomendada porque você pediu o canvas.
+- Um agente aprovado que pede outra escrita na mesma tentativa tem a sua própria decisão e o seu
+  próprio aviso (a chamada do agente entra nas duas chaves).
 
 **Fica de fora.**
 
@@ -135,9 +131,12 @@ fora; as provas P1 a P12 do estudo).
 **Aprovar esta página é também a sua palavra** para dois mecanismos do Conexus onde o Mastra não
 tem um (a regra C75): uma id do Mastra por versão publicada, e a tabela que lembra os orçamentos
 vistos (com a decisão `B1`); para o uso do workflow dinâmico do Mastra, que ele ainda marca Beta;
-para a biblioteca nova do canvas, `@xyflow/react` (com a decisão `F2a`); e para as permissões das
-seis tabelas novas, da mudança no registro de envios da 24.5 e das colunas novas dos avisos (a
-regra D11).
+para a biblioteca nova do canvas, `@xyflow/react` (com a decisão `F2a`); para as permissões das
+seis tabelas novas e da função que lista as empresas com workflow no início do Conexus, da mudança no
+registro de envios da 24.5, e da chave e das colunas novas dos avisos (a regra D11); e para três
+limites: um workflow ligado conta nas 30 automações da empresa (o limite da 24.2), uma olhada
+começa no máximo 20 execuções e deixa o resto para a seguinte, e um teste nunca avisa ninguém e
+para antes de qualquer escrita.
 
 **As decisões suas nesta etapa.**
 
@@ -156,9 +155,10 @@ regra D11).
     regra do Conexus).
   - `A2`: aprova qualquer pessoa de um papel escolhido no balão (por exemplo, Administradores).
     Caso real: o Zapier aceita vários aprovadores, e a primeira resposta vale. Mais gente vê; fica
-    menos claro quem respondeu por quê.
+    menos claro quem respondeu por quê. Como nativo: a mesma espera do Mastra; o papel é conferido
+    pelo Conexus. Veredito: embrulhado.
   - `A3`: só quem publicou aprova. Mais simples, mas o esboço já punha "Aprovar? (Ana)" para outra
-    pessoa.
+    pessoa. Como nativo: a mesma espera. Veredito: embrulhado.
   - **Por que `A1`**: é o que a 24.5 já faz com o agente publicado (o dono reconferido a cada
     chamada, PR 843) e o que a 24.2 faz com a Automação (o dono reconferido a cada execução);
     escolher a pessoa no passo é o que Zapier e Dify convergem.
@@ -174,10 +174,11 @@ regra D11).
     no seu Sankhya. Como nativo: a agenda do Mastra dispara a olhada; lembrar os vistos é do
     Conexus, porque o Mastra não guarda isso. Veredito: remendo.
   - `B2`: usar o registro de alterações do Sankhya. Precisa ligar um parâmetro nas preferências do
-    Sankhya Om, guarda só de 3 a 7 dias e diz "mudou", não "nasceu": uma segunda leitura separa o
+    Sankhya Om, guarda só de 3 a 7 dias (pela documentação pública do Sankhya) e diz "mudou", não "nasceu": uma segunda leitura separa o
     novo do editado. Mais leve para o Sankhya, mais coisa para ligar. Veredito: remendo também.
   - `B3`: um programa instalado no seu Sankhya chama o Conexus. Precisa de quem programe no Sankhya
-    e de o Conexus receber avisos de fora, que é a 20.2.
+    e de o Conexus receber avisos de fora, que é a 20.2. Como nativo: um gatilho de aviso de fora,
+    que o Conexus ainda não tem. Veredito: fica para a 20.2.
   - **Por que `B1`**: é o que todos os produtos lidos fazem com um sistema que não avisa, e não
     depende de nada do seu lado.
   - **E diga**: quais TOP são orçamento, e em qual ligação. É "o gatilho do Sankhya" que você
@@ -221,7 +222,7 @@ regra D11).
     e o Conexus decide perguntar ou fazer com a mesma função da conversa (P11). Veredito:
     embrulhado (o funil da 24.5).
   - `E2`: fica para depois. O fluxo desta etapa só lê, analisa, pede aprovação e avisa; o agente
-    do balão só lê.
+    do balão só lê. Como nativo: os mesmos balões, sem o de escrever. Veredito: embrulhado.
   - **Por que `E1`**: a prova P11 mostrou o caminho único, e sem ele o "um único fluxo" que você
     pediu teria uma segunda forma de escrever logo depois.
 - **F. Como o fluxo aparece.** As referências divergem no que a pessoa vê.
@@ -252,13 +253,14 @@ regra D11).
     coisa. Exemplo: "Resumo das vendas toda segunda" vira **Gatilho: horário** e **Assistente**.
     Objetivo: uma coisa só chamada Automação. Como nativo: a agenda do Mastra aponta direto à
     versão do workflow (P12). Veredito: embrulhado.
-  - `G2`: nesta etapa. Passa bem o tamanho de uma etapa (cerca de 5.700 linhas contra as 4.000
-    da regra L2).
+  - `G2`: nesta etapa. Passa bem o tamanho de uma etapa (cerca de 5.900 linhas, estimado, contra
+    as 4.000 da regra L2). Veredito: embrulhado, como `G1`.
   - `G3`: ficam como estão, para sempre ao lado dos workflows: dois executores e duas listas.
+    Veredito: nativo (nada muda).
   - **Por que `G1`**: a P12 mostrou que a Automação já é um workflow de dois balões; fazê-lo numa
-    etapa curta logo depois deixa esta em cerca de 4.570 linhas, uns 14% acima das 4.000 da regra
+    etapa curta logo depois deixa esta em cerca de 4.750 linhas, uns 19% acima das 4.000 da regra
     L2 (estimado pela leitura); aprovar a página com `G1` é aceitar esse excesso, ou dizer qual
-    parte sai (com `F1`, a etapa perde ~300).
+    parte sai (com `F1`, a etapa perde cerca de 300, estimado).
 - **H. Onde o workflow mora.**
   - `H1` (recomendada): nos mesmos lugares da Automação, a empresa (o Início) e o Projeto. O
     Construtor monta dentro de um Projeto; na empresa, o Assistente propõe como hoje, e na 24.6.1
@@ -266,8 +268,10 @@ regra D11).
     dois lugares. Exemplo: "Resumo das vendas da empresa" no Início, "Orçamento lançado" em
     Compras. Objetivo: a Automação não perder o lugar ao virar workflow. Como nativo: nada do
     Mastra; o lugar é do Conexus. Veredito: embrulhado.
-  - `H2`: só no Projeto. As Automações do Início ficariam como estão na 24.6.1.
-  - **Por que `H1`**: sem ele a decisão G não fecha para as Automações do Início.
+  - `H2`: só no Projeto. As Automações do Início ficariam como estão na 24.6.1. Veredito:
+    embrulhado.
+  - **Por que `H1`**: a 24.2 já pôs a Automação nos dois lugares, e cada Automação vira workflow no
+    mesmo lugar em que está; com `H2`, as do Início ficariam fora da conversão da 24.6.1.
 - **I. "Informações".** Você falou em "informações" num balão. A palavra não existe no código nem
   nos documentos do Conexus; diga o que é. O que existe:
   - `I1` (recomendada por agora): a informação chega ao fluxo por um balão de agente; o agente lê
@@ -275,16 +279,17 @@ regra D11).
     título vencido". Como nativo: o balão de agente desta etapa. Veredito: embrulhado.
   - `I2`: um balão que lê uma tabela de um app do Projeto. A leitura dos apps hoje não confere o
     papel de quem lê (`hub/apps/app-database.ts:131`), então pede uma porta antes; vem com a
-    escrita dos apps (a antiga 20.1).
+    escrita dos apps (a antiga 20.1). Como nativo: nada do Mastra; a porta é do Conexus. Veredito:
+    embrulhado, depois da porta.
   - **Por que `I1`**: não precisa de nada novo, e não abre uma leitura sem papel.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O workflow como dado | O contrato dos balões, dos problemas e das falhas; as tabelas `workflow` e `workflow_version`, a migração e as permissões; a lista de problemas (as regras do Conexus e `validateDynamicWorkflow` do Mastra sobre o índice que o Hub monta); a compilação de uma versão para as definições do Mastra (o principal e um por ramo) e o `addDynamicWorkflows` ao publicar, com o agente fixado na versão; as seis ferramentas registradas com as suas ids e esquemas, que falham até a U3; as rotas de ler, gravar o rascunho, publicar e apagar; apagar no início as definições sem versão | `packages/hub-api/src/`, `apps/server/src/builder/workflows/`, `apps/server/src/builder/mastra/`, `apps/server/src/conversations-of.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada |
-| U2 Um caminho de escrita | `hub/connectors/approval.ts` com `mustAsk` e `mayApprove`, movidos de `builder/agents/` (PR 843); a conversa os chama; o `WriteRequest` com `where` e `callKey`; o terceiro autor `WORKFLOW` no funil, no registro e em `mayUse`; a migração do registro; as marcas de id dos workflows | `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/conversation/guard.ts`, `packages/hub-api/src/workflow-ids.ts`, `apps/server/migrations/` | [data](../guides/data.md) | o PR 843 no `main` |
-| U3 O executor e as execuções | O corpo das seis ferramentas (conferir, ler, agente, aprovar, escrever, avisar); o gatilho de horário e o manual; a tabela `workflow_run` e as decisões; a lista e a vista das execuções pelo retrato; responder (aprovar e recusar); **Tentar de novo**; a interrompida; pausar, religar, apagar; o teste do rascunho; os avisos novos | `apps/server/src/builder/workflows/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/mastra/`, `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/hub/notifications/`, `packages/hub-api/src/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/platform/recordings/` | [testing](../guides/testing.md) | U1, U2 |
+| U1 O workflow como dado | O contrato dos balões, dos problemas e das falhas; as tabelas `workflow` e `workflow_version`, a migração e as permissões; a lista de problemas (as regras do Conexus e `validateDynamicWorkflow` do Mastra sobre o índice que o Hub monta); a compilação de uma versão para as definições do Mastra (o principal e um por ramo) e o `addDynamicWorkflows` ao publicar, com o agente fixado na versão; as seis ferramentas registradas com as suas ids e esquemas, que falham até a U3; as operações de criar, ler, gravar o rascunho, publicar e apagar; a função que lista as empresas com workflow; apagar no início as definições sem versão | `packages/hub-api/src/`, `apps/server/src/builder/workflows/`, `apps/server/src/builder/mastra/`, `apps/server/src/conversations-of.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql` | [data](../guides/data.md) | esta página aprovada |
+| U2 Um caminho de escrita | `hub/connectors/approval.ts` com `mustAsk` e `mayApprove`, movidos de `builder/agents/` (PR 843); a conversa os chama; o `WriteRequest` com `where` e `callKey`, e a chave de tentativa de um balão que nunca manda duas vezes; o terceiro autor `WORKFLOW` no funil, nas leituras (`SessionScope`), no registro e em `mayUse`; a migração do registro; as marcas de id dos workflows | `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/conversation/guard.ts`, `packages/hub-api/src/workflow-ids.ts`, `apps/server/migrations/` | [data](../guides/data.md) | o PR 843 no `main` |
+| U3 O executor e as execuções | O corpo das seis ferramentas (conferir, ler, agente, aprovar, escrever, avisar); a identidade da execução no `requestContext`; o gatilho de horário e o manual; a tabela `workflow_run` com a tentativa, e as decisões; a lista e a vista das execuções pelo retrato; responder (aprovar e recusar); **Tentar de novo**; a interrompida; pausar, religar, apagar; o teste do rascunho, que roda como uma execução; os avisos novos e a chave nova dos avisos; o trabalho do início por empresa | `apps/server/src/builder/workflows/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/mastra/`, `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/hub/notifications/`, `packages/hub-api/src/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/platform/recordings/` | [testing](../guides/testing.md) | U1, U2 |
 | U4 O gatilho do Sankhya | A leitura nova do kit e o seu dublê; o workflow fixo `conexus-workflow-poll` e a sua agenda por workflow; as tabelas `workflow_trigger` e `workflow_trigger_seen`; a leitura de base, a volta, o começo que avança, as vistas que saem; uma execução por orçamento; a última volta na página; o item mais recente para o teste | `apps/server/src/builder/workflows/`, `packages/connectors/src/sankhya/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `docs/reference/boundaries.md` | [testing](../guides/testing.md) | U3 |
 | U5 O Construtor monta | As quatro ferramentas `workflow_catalog`, `workflow_read`, `workflow_save`, `workflow_test`; o texto do Construtor; a linha de cada ferramenta na conversa | `apps/server/src/builder/construtor/`, `packages/hub-api/src/construtor.ts`, `apps/web/src/builder/conversation/construtor-specs.ts` | [security](../guides/security.md) | U3 |
 | U6 O canvas | A prova de CSP do `@xyflow/react`; o canvas e as suas peças; o painel do balão; arrastar para encaixar; o "+"; a execução acesa; os problemas; o celular em coluna; o canvas ao lado do Construtor; o cartão de aprovação dividido em peça e dois adaptadores; o workflow na lista de Automações | `apps/web/src/builder/workflows/` (novo), `apps/web/src/builder/conversation/`, `apps/web/src/builder/automations/`, `apps/web/src/builder/agents/construtor-chat.tsx`, `apps/web/src/routes/_app/companies/$companyId/projects/`, `apps/web/package.json`, `package-lock.json`, `docs/reference/stack.md`, `docs/reference/screens.md`, `tests/e2e/` | [web](../guides/web.md) | U3; PR 841 no `main` |
@@ -299,8 +304,10 @@ juntas depois da U3: a U4 fica em `builder/workflows/poll.ts` e no kit, a U5 no 
 `apps/web`; a U5 muda só `construtor-specs.ts` em `apps/web/src/builder/conversation/`, e a U6
 outros arquivos dessa pasta.
 
-**O que cada unidade apaga.** U1: nada. U2: as cópias de `holdsWrite`, `publisherLeavesAlone` e
-`aloneByPublisher` em `builder/agents/` (PR 843), e `threadId` e `toolCallId` de `WriteRequest`.
+**O que cada unidade apaga.** U1: nada. U2: as cópias de `holdsWrite`, `publisherLeavesAlone`,
+`roleNow`, `Holding` e `aloneByPublisher` em `builder/agents/` (PR 843), a dependência `leavesAlone`
+de `builder/agents/tools.ts`, `threadId` e `toolCallId` de `WriteRequest`, `threadId` e `except` de
+`OpenWritesKey`, e `agentVersion` de `SessionScope`.
 U3: a espera do minuto do relógio de verdade no teste da agenda (#754). U4: nada. U5: nada. U6: a
 fonte de dados presa dentro de `approval-card.tsx` (PR 841). Nenhum código de pg-boss existe para
 apagar; o texto sai no fechamento.
@@ -309,12 +316,14 @@ apagar; o texto sai no fechamento.
 já o chamam ([`conexus-scope`](../../.agents/skills/conexus-scope/SKILL.md), passo 4;
 [`conexus-build`](../../.agents/skills/conexus-build/SKILL.md)). O cartão não repete o método.
 
-**Orçamento de código alterado.** U1: ~800. U2: ~370. U3: ~1.250. U4: ~550. U5: ~400. U6: ~1.200
-(o canvas ~1.000, o cartão de aprovação dividido ~80, a lista de Automações ~120). Total da etapa:
-~4.570, estimado pela leitura, sem protótipo; passa a regra L2 em cerca de 14%. O construtor de
+**Orçamento de código alterado.** U1: ~800. U2: ~450 (a superfície do registro e das leituras é
+maior do que a da primeira rodada). U3: ~1.350 (a tentativa, o teste como execução e a chave dos
+avisos). U4: ~550. U5: ~400. U6: ~1.200 (o canvas ~1.000, o cartão de aprovação dividido ~80, a
+lista de Automações ~120). Total da etapa: ~4.750, estimado pela leitura, sem protótipo; passa a
+regra L2 em cerca de 19%. O construtor de
 cada unidade para e relata se a sua passar de um terço do seu número. Com `F1`, a U6 perde ~300
 (a casca, o layout e o arrastar); com `E2`, a U3 perde ~250 (a ferramenta de escrever e a
-suspensão do agente) e saem os critérios 17 e 19.
+suspensão do agente) e saem os critérios 12, 16 e 17.
 
 ## Os critérios de aceite
 
@@ -323,31 +332,32 @@ Os caminhos são de `apps/server/src/` quando não dizem outro. `BASE` é
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | `PUT BASE/{w}/draft` com um corpo que o esquema `SaveDraftBody` aceita grava o rascunho, sobe `revision` e devolve o `WorkflowView` com `problems`; um rascunho com problemas de sentido também grava, e cada um vem com o código, o balão e o caminho: um `READ` com operação de escrita (`OPERATION_WRONG_CLASS`), um `AGENT` de agente de outro Projeto (`AGENT_OTHER_PROJECT`), uma referência `{{b9.texto}}` a um balão que não vem antes (`REF_NOT_BEFORE`), um `IF` sobre um campo que não é número (`IF_FIELD_NOT_NUMBER`), um balão depois do `IF` que usa a saída de um de dentro do ramo (`REF_INSIDE_BRANCH`), um balão do "+" sem ligação (`BALLOON_INCOMPLETE`), 51 balões (`WORKFLOW_TOO_MANY_BALLOONS`, o rascunho grava); um corpo que o esquema recusa responde `REQUEST_MALFORMED` (C51) e não grava; uma `revision` que não é a atual responde `WORKFLOW_DRAFT_STALE` e não grava | `builder/workflows/routes.test.ts` (novo), "o rascunho" | must |
+| 1 | U1 | `POST BASE` (`createWorkflow`, com `Idempotency-Key`) com `{ place, draft }` cria o workflow e responde 201 com o `WorkflowView`; a mesma chave de novo responde o mesmo workflow; `PUT BASE/{w}/draft` (`saveWorkflowDraft`) com um corpo que o esquema `SaveDraftBody` aceita grava o rascunho, sobe `revision` e devolve o `WorkflowView` com `problems`; um rascunho com problemas de sentido também grava, e cada um vem com o código, o balão e o caminho: um `READ` com operação de escrita (`OPERATION_WRONG_CLASS`), um `AGENT` de agente de outro Projeto (`AGENT_OTHER_PROJECT`), uma referência `{{b9.texto}}` a um balão que não vem antes (`REF_NOT_BEFORE`), um `IF` sobre um campo que não é número (`IF_FIELD_NOT_NUMBER`), um balão depois do `IF` que usa a saída de um de dentro do ramo (`REF_INSIDE_BRANCH`), um balão do "+" sem ligação (`BALLOON_INCOMPLETE`), 51 balões (`WORKFLOW_TOO_MANY_BALLOONS`, o rascunho grava); um corpo que o esquema recusa responde `REQUEST_MALFORMED` (C51) e não grava; uma `revision` que não é a atual responde `WORKFLOW_DRAFT_STALE` e não grava; um `{w}` que não existe responde `WORKFLOW_NOT_FOUND` | `builder/workflows/routes.test.ts` (novo), "o rascunho" | must |
 | 2 | U1 | A lista de problemas junta a validação do Mastra: com o índice montado sem a ferramenta `conexus-ler`, um rascunho com um `READ` tem um problema `GRAPH_MISSING_REFERENCE` no balão do `READ`, com a mensagem em português e sem nome de passo do Mastra; com o índice inteiro, o mesmo rascunho não tem problema `GRAPH_*` | `builder/workflows/problems.test.ts` (novo), "a validação do Mastra" | must |
 | 3 | U1 | `POST BASE/{w}/publish` recusa com `WORKFLOW_HAS_PROBLEMS` enquanto houver um problema `ERROR`, inclusive os de papel calculados para quem publica (uma operação fora do papel dele, `OPERATION_NOT_IN_ROLE`; um `WRITE` em **Faz sozinho** sem `agent: publishUnattendedWrite`, `WRITE_AUTO_NOT_ALLOWED`; uma ligação não liberada, `CONNECTION_NOT_OFFERED`; uma pessoa fora da empresa, `PERSON_NOT_FOUND`); sem `manageAutomations`, `NOT_IN_ROLE`; nada se grava e nada vai ao Mastra | `builder/workflows/publish.test.ts` (novo), "a publicação recusada" | must |
-| 4 | U1 | Publicar sem problema grava a versão `n+1` com o `frozen` (o desenho, o agente de cada `AGENT` fixado na versão ativa dele, o que a versão declara), registra no Mastra `wf-<w>-v<n+1>` e um `wf-<w>-v<n+1>-<balão>` por `IF`, e as linhas aparecem em `mastra.mastra_workflow_definitions` com `status = 'active'`; as da versão `n` continuam `active`; publicar de novo sem mudar o rascunho responde a mesma versão; publicar o agente de novo depois não muda o `frozen` da versão do workflow | `publish.test.ts`, "publicar" | must |
-| 5 | U1 | Depois de um reinício (um Hub novo ao lado do mesmo banco, por `hubBeside`), cada versão publicada está no `Mastra` (`getWorkflowById('wf-<w>-v<n>')`) sem código do Conexus a registrar; uma definição `wf-*` sem versão no Hub é apagada no início; `DELETE BASE/{w}` apaga as definições e depois responde `WORKFLOW_NOT_FOUND` | `publish.test.ts`, "depois do reinício" e "apagar" | must |
-| 6 | U2 | Os testes de `D2-a` e `D3-a` da 24.5 (`builder/agents/autonomy.test.ts`, PR 843) e os do cartão da conversa passam sem mudar, com `holdsWrite` e `publisherLeavesAlone` só em `hub/connectors/approval.ts`; `mustAsk` com `choice: 'AUTO'` e um dono que perdeu `publishUnattendedWrite` devolve `{ kind: 'ASK', reason: 'PUBLISHER_LOST_RIGHT' }`, e com uma escrita aberta da mesma ligação e operação no mesmo `where`, `{ kind: 'ASK', reason: 'OPEN_WRITE' }` | `hub/connectors/approval.test.ts` (novo); `builder/agents/autonomy.test.ts` | must |
-| 7 | U2 | `writeThrough` com `speaker: WORKFLOW` e `where: { kind: 'RUN' }` envia ao dublê do Sankhya uma vez e grava a linha de `connector_write` com `thread_id` igual à execução, `tool_call_id` igual ao balão, `workflow_id` e `workflow_version`, e `agent_id`, `version_number` e `person_id` nulos; a mesma chave de novo não envia e devolve o que o registro diz; um `INSERT` direto com dois autores é recusado pelo `CHECK` `connector_write_speaker` (23514); uma operação que a versão não declara responde `NOT_IN_ROLE`, uma ligação não liberada `NOT_GRANTED` | `hub/connectors/write.test.ts`, "o workflow escreve" | must |
+| 4 | U1 | Publicar sem problema grava a versão `n+1` com o `frozen` (o desenho, o agente de cada `AGENT` fixado na versão ativa dele, o que a versão declara), registra no Mastra `wf-<w>-v<n+1>` e um `wf-<w>-v<n+1>-<balão>` por `IF`, e as linhas aparecem em `mastra.mastra_workflow_definitions` com `status = 'active'`; o `addDynamicWorkflows` aceita a primeira entrada `conferir`, de esquema `z.object({}).passthrough()` na entrada e na saída, contra o `inputSchema` `QuoteInput` do principal, sem `incompatible-schema` (prova P13c do estudo); as da versão `n` continuam `active`; publicar de novo sem mudar o rascunho responde a mesma versão; publicar o agente de novo depois não muda o `frozen` da versão do workflow | `publish.test.ts`, "publicar" | must |
+| 5 | U1 | Depois de um reinício (um Hub novo ao lado do mesmo banco, por `hubBeside`), cada versão publicada está no `Mastra`, achada por `listWorkflows()['wf-<w>-v<n>']` e nunca por `getWorkflow` ou `getWorkflowById`, sem código do Conexus a registrar; uma definição `wf-*` sem versão no Hub, de qualquer empresa, é apagada no início, que percorre as empresas por `builder.companies_with_workflows()`; `DELETE BASE/{w}` apaga as definições e depois responde `WORKFLOW_NOT_FOUND`; um `{w}` de outra empresa ou desconhecido responde `WORKFLOW_NOT_FOUND` sem nenhum nome de workflow do Mastra no corpo nem no log (S40) | `publish.test.ts`, "depois do reinício" e "apagar" | must |
+| 6 | U2 | Os testes de `D2-a` e `D3-a` da 24.5 (`builder/agents/autonomy.test.ts`, PR 843) e os do cartão da conversa passam sem mudar, com `holdsWrite` e `publisherLeavesAlone` só em `hub/connectors/approval.ts`; `mustAsk` com `choice: 'AUTO'` e um dono que perdeu `publishUnattendedWrite` devolve `{ kind: 'ASK', reason: 'PUBLISHER_LOST_RIGHT' }`; com o autor `DRAFT` e `choice: 'AUTO'`, nunca `PUBLISHER_LOST_RIGHT` (como `aloneByPublisher` hoje, PR 843 `tools.ts:121`); com uma escrita aberta da mesma ligação e operação no mesmo `where`, `{ kind: 'ASK', reason: 'OPEN_WRITE' }` | `hub/connectors/approval.test.ts` (novo); `builder/agents/autonomy.test.ts` | must |
+| 7 | U2 | `writeThrough` com `speaker: WORKFLOW`, `where: { kind: 'RUN' }` e `callKey` `b5#0` envia ao dublê do Sankhya uma vez e grava a linha de `connector_write` com `thread_id` igual à execução, `tool_call_id` igual a `b5#0`, `workflow_id` e `workflow_version`, e `agent_id`, `version_number` e `person_id` nulos; a mesma chave de novo não envia e devolve o que o registro diz; a tentativa seguinte (`b5#1`) depois de uma `b5#0` `DONE` devolve a resposta guardada e não envia, depois de uma `b5#0` `SENDING` ou `UNCERTAIN` devolve `WRITE_UNCERTAIN` com a marca da `b5#0` e não envia, e depois de uma `b5#0` `REFUSED` envia uma vez; um `INSERT` direto com dois autores é recusado pelo `CHECK` `connector_write_speaker` (23514); uma operação que a versão não declara responde `NOT_IN_ROLE`, uma ligação não liberada `NOT_GRANTED` | `hub/connectors/write.test.ts`, "o workflow escreve" e "a tentativa seguinte" | must |
 | 8 | U2 | A migração `e246_connector_write_workflow` passa `npm run migrations` com a sua linha `-- contract:`; uma linha da 24.5 gravada antes dela continua lida igual depois | `hub/connectors/connector-write-table.test.ts`, "o terceiro autor" | must |
-| 9 | U3 | A conferência no começo de cada execução: com quem publicou fora da empresa, ou sem uma leitura que a versão declara no papel dele hoje, a execução termina `FAILED` no balão `conferir` com `WORKFLOW_OWNER_CANNOT_RUN`, nenhum balão depois roda (o dublê não recebe leitura), o workflow fica `PAUSED_OWNER`, a agenda pausa e o dono recebe o aviso `WORKFLOW_PAUSED`; a execução aparece em `workflow_run` | `builder/workflows/balloons.test.ts` (novo), "conferir" | must |
-| 10 | U3 | O balão `READ` lê pelo funil com o autor `WORKFLOW` e quem publicou: o dublê recebe a leitura e a saída do balão traz `resultado`; uma entrada que não serve à operação falha o balão com `REQUEST_MALFORMED` (a ferramenta lança; nunca devolve `{ error: true }` como sucesso, prova P2 do estudo) | `balloons.test.ts`, "ler" | must |
-| 11 | U3 | O balão `AGENT` de um agente publicado abre uma conversa do agente com a etiqueta `AGENT_MARK.workflow` igual à id do workflow, roda a versão fixada com o texto do balão e as referências trocadas pelos valores, e devolve `texto` e `conversationId`; o balão `AGENT` com o Assistente abre uma conversa do Assistente como a Automação abre (`builder/automations/run.ts:112-142`); um turno que falha ou passa de 15 minutos falha o balão com o código do turno; um agente apagado depois de publicar falha o balão com `AGENT_NOT_FOUND` | `balloons.test.ts`, "o agente" | must |
-| 12 | U3 | Um agente com escrita em **Pergunta antes** num balão: o balão drena o stream e, no pedido de aprovação, a execução fica `WAITING` com `waiting.kind = 'AGENT_WRITE'`, a pessoa do balão e os campos da escrita, e o dublê não recebe nada; a resposta aprovada retoma, chama `approveToolCall`, e a escrita vai ao dublê uma vez com a chave da conversa do balão; recusada, `declineToolCall` é a resposta, a execução termina `DECLINED` e o agente não é chamado de novo nem pergunta outra vez na mesma execução (o anti-padrão do estudo do Kiro do fundador: um subagente chamado de novo cinco vezes depois de uma recusa); o mesmo depois de um reinício entre a espera e a resposta | `balloons.test.ts`, "o agente que escreve" | must |
-| 13 | U3 | O balão `APPROVAL` para a execução (`WAITING`, `waiting.kind = 'APPROVAL'`, com a pessoa e a pergunta) e nada depois dele roda; no mesmo instante a pessoa recebe o aviso `WORKFLOW_WAITING` no sino e por e-mail; num `IF` cujo valor não passa, os balões do ramo aparecem `SKIPPED` e a execução segue | `balloons.test.ts`, "aprovar espera" e "o ramo pulado" | must |
-| 14 | U3 | `POST BASE/{w}/runs/{r}/balloons/{b}/answer` com `approved: true` pela pessoa do balão retoma a execução; com `approved: false` num `APPROVAL`, num `WRITE` ou num `AGENT_WRITE`, a execução termina `DECLINED` (o Mastra guarda `canceled`) e nada depois roda; a decisão fica em `workflow_run_decision`; uma segunda resposta ao mesmo pedido responde `RUN_NOT_WAITING`; outra pessoa recebe `NOT_APPROVER`; num `WRITE` ou num `AGENT_WRITE`, a pessoa do balão sem a escrita no papel recebe `NOT_IN_ROLE` (`D3-a`, `mayApprove`) e nada roda; uma decisão gravada cuja retomada não aconteceu (o Hub morreu no meio) é retomada no início do Hub; uma execução que espera continua esperando depois de um reinício, e a resposta funciona, também dentro de um ramo | `builder/workflows/runs.test.ts` (novo), "responder" | must |
+| 9 | U3 | A conferência no começo de cada execução: com quem publicou fora da empresa, ou sem uma leitura que a versão declara no papel dele hoje, a execução termina `FAILED` no balão `conferir` com `WORKFLOW_OWNER_CANNOT_RUN`, nenhum balão depois roda (o dublê não recebe leitura), o workflow fica `PAUSED_OWNER`, a agenda pausa e o dono recebe o aviso `WORKFLOW_PAUSED`; a execução aparece em `workflow_run` com o `label` e `attempt = 0`; uma execução começada com um `requestContext` que `RunIdentity` recusa, ou cujo `workflowId` e `version` não são os da id do Mastra, falha em `conferir` com `INTERNAL_UNEXPECTED` e não grava nada | `builder/workflows/balloons.test.ts` (novo), "conferir" | must |
+| 10 | U3 | O balão `READ` lê pelo funil com o autor `WORKFLOW` (o `speaksAs` de `SessionScope`) e quem publicou: o dublê recebe a leitura e a saída do balão traz `resultado`; uma operação que a versão não declara responde `NOT_IN_ROLE` sem ler o papel de ninguém; uma entrada que não serve à operação falha o balão com `REQUEST_MALFORMED` (a ferramenta lança; nunca devolve `{ error: true }` como sucesso, prova P2 do estudo) | `balloons.test.ts`, "ler" | must |
+| 11 | U3 | O balão `AGENT` de um agente publicado abre uma conversa do agente com a etiqueta `AGENT_MARK.workflow` igual à id do workflow, de id tirada da execução, do balão e da tentativa, roda a versão fixada com o texto do balão e as referências trocadas pelos valores, e devolve `texto` e `conversationId`; **Tentar de novo** num balão de agente que falhou abre uma conversa nova; o balão `AGENT` com o Assistente abre uma conversa do Assistente como a Automação abre (`builder/automations/run.ts:112-142`); um turno que falha ou passa de 15 minutos falha o balão com o código do turno; um agente apagado depois de publicar falha o balão com `AGENT_NOT_FOUND` | `balloons.test.ts`, "o agente" | must |
+| 12 | U3 | Um agente com escrita em **Pergunta antes** num balão: o balão drena o stream e, no pedido de aprovação, a execução fica `WAITING` com `waiting.kind = 'AGENT_WRITE'`, a pessoa do balão e os campos da escrita, e o dublê não recebe nada; a resposta aprovada retoma, chama `approveToolCall` na versão fixada (que não é a ativa) com `APPROVED_CALL` no `requestContext`, e a escrita vai ao dublê uma vez com a chave da conversa do balão; recusada, o Hub grava a decisão e chama `run.cancel()`: a execução termina `DECLINED`, o modelo de mentira não recebe nenhuma chamada depois da recusa, o agente não pergunta outra vez (o anti-padrão do estudo do Kiro do fundador: um subagente chamado de novo cinco vezes depois de uma recusa), e a conversa do agente mostra a chamada sem cartão; o mesmo depois de um reinício entre a espera e a resposta | `balloons.test.ts`, "o agente que escreve" | must |
+| 13 | U3 | O balão `APPROVAL` para a execução (`WAITING`, `waiting.kind = 'APPROVAL'`, com a pessoa e a pergunta) e nada depois dele roda; no mesmo instante a pessoa recebe o aviso `WORKFLOW_WAITING` no sino e por e-mail; uma execução que espera e depois, aprovada, avisa no `NOTIFY` dois avisados grava os três avisos (um `WORKFLOW_WAITING` e dois `WORKFLOW_NOTICE`); o mesmo balão `NOTIFY` rodado de novo na mesma tentativa (a mesma chave do aviso) não grava outro; um aviso da 24.2 gravado antes da migração continua no sino; num `IF` cujo valor não passa, os balões do ramo aparecem `SKIPPED` e a execução segue | `balloons.test.ts`, "aprovar espera", "avisar" e "o ramo pulado"; `hub/notifications/notifications.test.ts`, "os avisos do workflow" | must |
+| 14 | U3 | `POST BASE/{w}/runs/{r}/balloons/{b}/answer` com `approved: true` pela pessoa do balão retoma a execução; com `approved: false` num `APPROVAL`, num `WRITE` ou num `AGENT_WRITE`, a execução termina `DECLINED` (o Mastra guarda `canceled`) e nada depois roda; a decisão fica em `workflow_run_decision` com a tentativa; uma segunda resposta ao mesmo pedido responde `RUN_NOT_WAITING`; outra pessoa recebe `NOT_APPROVER`; num `WRITE` ou num `AGENT_WRITE`, a pessoa do balão sem a escrita no papel recebe `NOT_IN_ROLE` (`D3-a`, `mayApprove`) e nada roda; no exemplo do roteiro, um `WRITE` do ramo que falhou e **Tentar de novo** refazem o `APPROVAL` do ramo (prova P8), que espera de novo e aceita a resposta da tentativa nova; uma decisão gravada cuja retomada não aconteceu (o Hub morreu no meio) é retomada no início do Hub só se a sua tentativa é a da execução; uma execução que espera continua esperando depois de um reinício, e a resposta funciona, também dentro de um ramo | `builder/workflows/runs.test.ts` (novo), "responder" | must |
 | 15 | U3 | Uma execução que espera na versão `n` continua na versão `n` depois de publicada a `n+1` com um balão a mais antes do que espera: aprovada, roda só os balões da versão `n` | `runs.test.ts`, "a versão em que começou" | must |
-| 16 | U3 | O balão `WRITE` em **Pergunta antes** espera (`waiting.kind = 'WRITE'`, `reason: 'CHOSEN'`) e o dublê não recebe nada; aprovado, envia uma vez pelo funil com o autor `WORKFLOW`; em **Faz sozinho** envia sem parar; **Tentar de novo** depois de um envio não envia de novo e devolve o que o registro diz | `balloons.test.ts`, "escrever" | must |
+| 16 | U3 | O balão `WRITE` em **Pergunta antes** espera (`waiting.kind = 'WRITE'`, `reason: 'CHOSEN'`) e o dublê não recebe nada; aprovado, envia uma vez pelo funil com o autor `WORKFLOW` e a chave `<balão>#<tentativa>`; em **Faz sozinho** envia sem parar; **Tentar de novo** depois de um envio feito não envia de novo e devolve o que o registro diz; depois de um envio recusado pelo Sankhya, envia de novo uma vez; depois de um envio de fim incerto, espera com `reason: 'UNCERTAIN'` e a marca; a recusa do Sankhya falha o balão com `BALLOON_SYSTEM_REFUSED` e o Sankhya fora com `BALLOON_SYSTEM_UNREACHABLE` | `balloons.test.ts`, "escrever" | must |
 | 17 | U3 | `D2-a` num workflow: um `WRITE` em **Faz sozinho** cujo dono perdeu `publishUnattendedWrite` ou a escrita depois de publicar espera com `reason: 'PUBLISHER_LOST_RIGHT'` e a pessoa que espera é o dono; a versão não muda | `balloons.test.ts`, "o dono perdeu o direito" | must |
-| 18 | U3 | `POST BASE/{w}/runs/{r}/retry` numa execução `FAILED` retoma do balão que falhou (`timeTravel`) sem rodar os anteriores (o dublê conta uma leitura do cliente); num balão dentro de um ramo, refaz o ramo do primeiro balão dele e segue (prova P8 do estudo); uma execução `running` de antes do início do Hub aparece `INTERRUPTED`, e **Tentar de novo** a termina com `restart()` do balão em que estava; antes de vencer a posse do Mastra responde `RUN_STILL_OWNED`; numa execução que não falhou nem foi interrompida, `RUN_NOT_FAILED` | `runs.test.ts`, "tentar de novo" e "a interrompida" | must |
-| 19 | U3 | O gatilho de horário: publicar um workflow com `SCHEDULE` cria a agenda `schedule_wf-<w>-v<n>` sobre `wf-<w>-v<n>` com o `cron` de `cronOf`; um disparo (relógio injetado) é uma execução de id `sched_schedule_wf-<w>-v<n>_<ms>`; publicar a `n+1` cria a agenda da `n+1` antes de apagar a da `n`; o limite de 30 da 24.2 conta também os workflows ligados (`AUTOMATION_LIMIT`); o teste da agenda não espera o minuto do relógio de verdade (#754) | `builder/workflows/schedule.test.ts` (novo) | must |
-| 20 | U3 | `POST BASE/{w}/run` começa uma execução da versão publicada (`MANUAL` e os outros gatilhos); sem versão publicada, `WORKFLOW_NOT_PUBLISHED`; pausar pausa a agenda e `run` responde `WORKFLOW_PAUSED`; religar a religa; apagar o workflow apaga a agenda, as execuções no Mastra e as definições, e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst` | `builder/workflows/routes.test.ts`, "rodar, pausar, religar, apagar" | must |
-| 21 | U3 | `GET BASE/{w}/runs` devolve as execuções de todas as versões (de `workflow_run`), 20 por página, mais novas primeiro, cada uma com a versão, o `label` para a pessoa ("Orçamento nº 1043" no gatilho do Sankhya, "Rodado por Ana" no manual, a hora do disparo no horário, como o `runLabel` do Kiro), o estado e quantas esperam; `GET BASE/{w}/runs/{r}` traz o estado e a saída de cada balão fora de um ramo; lido de outra conexão antes do fim, um balão aparece `RUNNING` e os anteriores `DONE` (prova P10 do estudo); `GET BASE?place=` devolve os workflows do lugar com o estado, a última execução e `waitingCount` | `runs.test.ts`, "a lista e a vista" | must |
-| 22 | U3 | `POST BASE/{w}/test` copia o rascunho para `workflow.test_draft` e o roda como `wf-<w>-teste` sobre a entrada do gatilho (o item mais recente da U4, ou nada para `SCHEDULE` e `MANUAL`); o `NOTIFY` não avisa; um `WRITE` e a escrita de um agente param antes de enviar e o teste termina ali, cancelado; o teste não entra em `workflow_run`; um rascunho com problema `ERROR` responde `WORKFLOW_HAS_PROBLEMS`; um segundo teste substitui a definição de teste | `runs.test.ts`, "o teste" | must |
+| 18 | U3 | `POST BASE/{w}/runs/{r}/retry` numa execução `FAILED` sobe `workflow_run.attempt` e retoma do balão que falhou (`timeTravel` com `attempt` no `requestContext`) sem rodar os anteriores (o dublê conta uma leitura do cliente); num balão dentro de um ramo, passa `step` igual ao id do ramo e refaz o ramo do primeiro balão dele e segue (prova P8 do estudo); uma execução `running` de antes do início do Hub aparece `INTERRUPTED` ao ser lida, como `builder/automations/runs.ts:87-99`, e **Tentar de novo** a termina com `restart()` do balão em que estava; antes de vencer a posse do Mastra responde `RUN_STILL_OWNED`; dois **Tentar de novo** ao mesmo tempo sobem a tentativa uma vez e o segundo responde `RUN_NOT_FAILED`; numa execução que não falhou nem foi interrompida, ou num teste, `RUN_NOT_FAILED` | `runs.test.ts`, "tentar de novo" e "a interrompida" | must |
+| 19 | U3 | O gatilho de horário: publicar um workflow com `SCHEDULE` cria a agenda `schedule_wf-<w>-v<n>` sobre `wf-<w>-v<n>` com o `cron` de `cronOf` e o `requestContext` `RunIdentity` (`startedBy: 'SCHEDULE'`); um disparo (relógio injetado) é uma execução de id `sched_schedule_wf-<w>-v<n>_<ms>` cujas ferramentas leem a empresa do `requestContext`; publicar a `n+1` cria a agenda da `n+1` antes de apagar a da `n`; o limite de 30 da 24.2 conta, por empresa, as agendas da Automação e as `schedule_wf-*` e `schedule_poll-*` ativas cujo `requestContext.companyId` é a empresa (`AUTOMATION_LIMIT` ao publicar ou religar a 31ª); o teste da agenda não espera o minuto do relógio de verdade (#754) | `builder/workflows/schedule.test.ts` (novo) | must |
+| 20 | U3 | `POST BASE/{w}/run` responde 202 com o `runId` e começa uma execução da versão publicada com `startedBy` igual à pessoa (`MANUAL` e os outros gatilhos); sem versão publicada, `WORKFLOW_NOT_PUBLISHED`; pausar pausa a agenda e `run` responde `WORKFLOW_PAUSED`; religar a religa; apagar o workflow apaga a agenda, as execuções no Mastra e as definições, e responde `WORKFLOW_NOT_FOUND` depois; apagar o Projeto ou a empresa faz o mesmo pelo `releaseFirst`; com o Hub atualizando, `run`, `publish` e `resume` respondem `HUB_UPDATING` | `builder/workflows/routes.test.ts`, "rodar, pausar, religar, apagar" | must |
+| 21 | U3 | `GET BASE/{w}/runs` devolve as execuções de todas as versões (de `workflow_run`, sem as de teste), 20 por página, mais novas primeiro, cada uma com a versão, o `label` para a pessoa ("Orçamento nº 1043" no gatilho do Sankhya, "Rodado por Ana" no manual, a hora do disparo no horário, como o `runLabel` do Kiro), o estado e quantas esperam; `GET BASE/{w}/runs/{r}` traz o estado e a saída de cada balão fora de um ramo, e também o de um teste; lido de outra conexão antes do fim, um balão aparece `RUNNING` e os anteriores `DONE` (prova P10 do estudo); `GET BASE?place=` devolve os workflows do lugar com o estado, a última execução e `waitingCount` | `runs.test.ts`, "a lista e a vista" | must |
+| 22 | U3 | `POST BASE/{w}/test` responde 202 com o `runId`: compila o rascunho com os agentes fixados nas versões ativas para `workflow.test_draft`, registra `wf-<w>-teste` e começa uma execução sobre a entrada de `TestInput` (o dublê da porta nos testes da U3; `{}` para `SCHEDULE` e `MANUAL`), gravada em `workflow_run` com `kind = 'TEST'`; `GET BASE/{w}/runs/{r}` a lê e acende como qualquer execução; um `APPROVAL` espera quem começou o teste, que responde pela mesma rota `answer`, sem aviso no sino; o `NOTIFY` não avisa ninguém; um `WRITE`, ou a escrita de um agente mesmo em **Faz sozinho**, não envia e o teste termina `STOPPED_BEFORE_WRITE` ("parou antes de escrever"); um segundo teste cancela a execução de teste ainda aberta e substitui a definição; um rascunho com problema `ERROR` responde `WORKFLOW_HAS_PROBLEMS` | `runs.test.ts`, "o teste" | must |
 | 23 | U4 | Ao ligar (publicar a primeira vez ou religar), uma leitura de base grava como vistas as notas da janela, sem disparar; um orçamento lançado depois dela, mesmo antes da primeira volta, dispara na volta seguinte; o dublê com três orçamentos novos dos tipos escolhidos dá três execuções, cada uma com o número da nota na entrada; a volta seguinte, com os mesmos três e um novo, dá uma; uma nota de outro tipo não dispara; mais de 20 novos numa volta disparam 20 e o resto na volta seguinte; uma volta que deu certo avança o começo para a hora em que começou, e as vistas de mais de dois dias antes do começo saem, sem que uma nota antiga volte a disparar (o relógio injetado passa 10 dias) | `builder/workflows/poll.test.ts` (novo), "orçamentos novos" | must |
 | 24 | U4 | Duas voltas ao mesmo tempo para o mesmo workflow dão uma execução por orçamento; a leitura recusada (`NOT_GRANTED` com a liberação tirada, ou `UNREACHABLE`, ou o dublê que recusa a consulta, #819) não avança o começo, grava a última volta como falha com o código, imprime `WORKFLOW_TRIGGER_FAILED`, e a volta seguinte, com a liberação de volta, dispara o mesmo orçamento uma vez; uma leitura de base que falha deixa `since` nulo e a volta seguinte a tenta de novo, sem disparar | `poll.test.ts`, "duas voltas" e "a volta que falhou" | must |
 | 25 | U4 | Cada volta confere quem publicou antes de ler: sem `manageAutomations`, fora da empresa, ou sem a leitura do gatilho no papel, nenhuma execução começa, a agenda pausa e o workflow fica `PAUSED_OWNER`; pausar e religar: um orçamento lançado durante a pausa não dispara | `poll.test.ts`, "o dono perdeu o papel" e "pausar" | must |
+| 37 | U4 | `TestInput` para `SANKHYA_NEW`: com o dublê com três orçamentos dos tipos escolhidos e um de outro tipo, `POST BASE/{w}/test` começa a execução com o `QuoteInput` do orçamento de maior número dos tipos escolhidos e não grava nenhuma linha em `workflow_trigger_seen`; sem nenhum orçamento na janela, responde `WORKFLOW_TEST_NO_ITEM` e nada começa | `poll.test.ts`, "o item do teste" | must |
 | 26 | U5 | O Construtor tem `workflow_catalog`, `workflow_read`, `workflow_save` e `workflow_test`, e nenhuma ferramenta que publica; com o modelo de mentira, um pedido completo grava o rascunho; um desenho com problemas grava e volta com a lista, e o Construtor o corrige na chamada seguinte com a `revision` nova; depois de 3 gravações seguidas que ainda voltam com problema `ERROR`, o Construtor para de gravar e pergunta à pessoa o que falta (o teto de 3 tentativas do estudo do Kiro do fundador); um pedido sem tipo de operação faz o Construtor perguntar, sem gravar; uma `revision` velha volta `STALE` com o rascunho atual | `builder/construtor/workflow-tools.test.ts` (novo) | must |
 | 27 | U5 | Avaliação com o modelo de verdade (opt-in): o pedido do roteiro, passo 1, termina num rascunho sem problema `ERROR`, com os balões na ordem, o `APPROVAL` e o `WRITE` dentro do `IF` do valor, e o `WRITE` em **Pergunta antes** | `builder/construtor/construtor.eval.test.ts`, "o fluxo do orçamento" | should |
 | 28 | U6 | O canvas carrega sob a CSP de verdade do Hub (`style-src 'self'`, W22) no Chromium sem cabeça com zero violações no console, ao abrir, ao arrastar e ao dar zoom | `tests/e2e/workflow-canvas.test.ts` (novo), "sob a CSP" | must |
@@ -368,14 +378,14 @@ Os caminhos são de `apps/server/src/` quando não dizem outro. `BASE` é
 | A página do workflow, com o canvas (U6) | a versão publicada e "Nenhuma execução ainda. A primeira vem com o próximo orçamento." | um rascunho nunca publicado: "Rascunho" e **Publicar** | o esqueleto | "Tentar de novo" | "Voltar ao início" | o Membro: não encontrado (W34) | "Pausado porque quem publicou não pode mais"; "A última olhada no Sankhya falhou" com o motivo; a recusa de publicar com a frase |
 | O painel do balão (U6) | **Quem é**, **O que recebe**, **O que devolve** do rascunho | um balão do "+" sem nada: "Diga ao Construtor o que este balão faz" | o esqueleto das três partes | o valor que não abriu: "Não foi possível ler este valor" | o balão saiu do rascunho: o painel fecha | — | um balão com problema: a frase do problema no topo |
 | Os problemas (U6) | "Tudo certo" | o mesmo | — | — | — | — | a lista balão e frase |
-| A execução acesa (U6) | os balões com o estado | — | o esqueleto | "Tentar de novo" | "Voltar ao início" | quem não é a pessoa do balão: "Esperando a aprovação de Ana", sem botões | "Não aprovado", "Interrompida", o balão que falhou com o motivo |
+| A execução acesa (U6) | os balões com o estado | — | o esqueleto | "Tentar de novo" | "Voltar ao início" | quem não é a pessoa do balão: "Esperando a aprovação de Ana", sem botões | "Não aprovado", "Interrompida", "Cancelada", num teste "Parou antes de escrever", o balão que falhou com o motivo |
 | O cartão **Aprovar?** na execução (U6) | a pergunta, ou a escrita com os campos, e os dois botões | — | "Aprovando…" ou "Recusando…" | a falha dita | respondido em outra aba: o estado que a execução diz | sem a escrita no papel: "Seu papel não permite aprovar esta escrita" | "Aprovado por você", "Recusado por você" |
 | A lista de execuções (U6) | "Nenhuma execução ainda" | o mesmo | o esqueleto | "Tentar de novo" | — | o Membro: não encontrado (W34) | a execução que falhou com o motivo em palavras |
 | A lista de Automações (U6) | "Nenhuma automação ainda" e como pedir uma | o mesmo | o esqueleto | "Tentar de novo" | — | o Membro: não encontrado (W34) | um workflow pausado com o motivo |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `WorkflowDraft` (`name`, `trigger`, `balloons`) | `workflow_save` (U5), o canvas por `PUT …/draft` (U6), pela rota do rascunho (U1) | os problemas e a compilação (U1), o canvas (U6) |
+| `WorkflowDraft` (`name`, `trigger`, `balloons`) | `workflow_save` (U5), o canvas por `POST BASE` e `PUT …/draft` (U6), pelas operações da U1 | os problemas e a compilação (U1), o canvas (U6) |
 | `WorkflowView.revision` | a rota do rascunho (U1) | `workflow_save` (U5), o canvas (U6) |
 | `WorkflowView.problems` | `problemsOf` a cada leitura (U1) | `workflow_save` e `workflow_read` (U5), os problemas e **Publicar** (U6) |
 | `workflow_version.frozen` | publicar (U1) | as ferramentas pela id do Mastra (U3), o gatilho (U4), a página (U6) |
@@ -383,16 +393,18 @@ Os caminhos são de `apps/server/src/` quando não dizem outro. `BASE` é
 | `WorkflowView.state` (`ON`, `PAUSED`, `PAUSED_OWNER`) | pausar e religar (U3), `conferir` (U3), a volta do gatilho (U4) | a página e a lista (U6), a agenda (U3, U4) |
 | `WorkflowView.lastLap` | a volta do gatilho (U4) | a página (U6) |
 | `workflow_trigger.since`, `workflow_trigger_seen` | ligar e religar o põem nulo; a leitura de base e cada volta que deu certo (U4) | a volta do gatilho (U4) |
-| `workflow_run` | `conferir` no começo de cada execução (U3) | a lista de execuções (U3) |
-| `workflow.test_draft` | o teste (U3) | as ferramentas numa id `TEST` (U3) |
+| `workflow_run` (`kind`, `label`, `started_by`) | `conferir` no começo de cada execução, do `requestContext` (U3) | a lista de execuções, sem as `TEST` (U3); a vista (U3) |
+| `workflow_run.attempt` | `conferir` grava 0; **Tentar de novo** soma 1 antes de `timeTravel` ou `restart` (U3) | as chaves do balão de escrita, do de agente e da decisão (U3); o início do Hub (U3) |
+| O `requestContext` da execução (`RunIdentity`) | a agenda ao publicar (U3), a volta do gatilho (U4), `run` e `test` (U3); o Mastra o devolve na retomada, no `restart` e no `timeTravel` (prova P13) | as seis ferramentas (U3) |
+| `workflow.test_draft` (um `FrozenWorkflow`) | o teste (U3) | as ferramentas numa id `TEST` (U3) |
 | `RunView.state`, `RunView.balloons[].state` | o retrato do Mastra e `workflow_run_decision`, lidos por `runs.ts` (U3) | a execução acesa e a lista (U6), `workflow_test` (U5) |
 | `RunView.balloons[].output`, `.conversationId` | o retrato (U3) | o painel (U6) |
 | `RunView.waiting` | o `suspendPayload` de `aprovar`, `escrever` e `agente` (U3) | o cartão (U6) |
 | `AnswerBody.approved` | o cartão (U6) | a rota de responder (U3) |
-| `workflow_run_decision` | a rota de responder (U3) | `runs.ts` e o início do Hub (U3) |
+| `workflow_run_decision` (chave execução, balão e tentativa) | a rota de responder (U3) | `runs.ts` e o início do Hub (U3) |
 | `WorkflowSummary.waitingCount`, `.lastRun` | `GET BASE` (U3) | a lista de Automações (U6) |
 | A linha de `connector_write` com `workflow_id` | o funil (U2) | o funil (U2), `escrever` (U3) |
-| Os avisos `WORKFLOW_WAITING`, `WORKFLOW_NOTICE`, `WORKFLOW_PAUSED`, `WORKFLOW_FAILED` | as ferramentas e `conferir` (U3) | o sino e o e-mail (U3, `hub/notifications`) |
+| Os avisos `WORKFLOW_WAITING`, `WORKFLOW_NOTICE`, `WORKFLOW_PAUSED`, `WORKFLOW_FAILED`, com `workflow_id`, `workflow_name`, `balloon_id` e `subject_key` | as ferramentas e `conferir` (U3) | o sino e o e-mail (U3, `hub/notifications`) |
 
 **O desenho do canvas**, a 1280 e a 390 px, sobre as peças de `ui/`:
 
@@ -435,27 +447,28 @@ antes de construir, como manda o estudo de uma tela; o estudo não as tirou.
 | Publicar (`INSERT workflow_version` e, na mesma transação antes do `COMMIT`, `addDynamicWorkflows` dos ramos e do principal) | o `for update` da linha do workflow deixa um; a chave `(workflow_id, source_revision)` faz o segundo responder a versão que existe | o Mastra recusa a definição: a transação volta, `WORKFLOW_PUBLISH_REFUSED` (um defeito da compilação, logado com o `[code] path` do Mastra); o `COMMIT` falha depois do Mastra: a definição fica sem versão no Hub, as ferramentas a recusam (`WORKFLOW_NOT_FOUND`) e o início a apaga | o banco fora: nada publicado | `WORKFLOW_PUBLISHED` com workflow e versão | 3, 4, 5 |
 | A agenda de horário (`mastra.schedules.create`, `pause`, `resume`, `delete`) | uma linha por versão ativa, id `schedule_wf-<w>-v<n>`; criar de novo é idempotente, como `builder/automations/automations.ts:143-188` | o Hub morre entre criar a da `n+1` e apagar a da `n`: no início, a agenda de uma versão que não é a ativa sai, e um workflow `ON` sem agenda ganha a sua | o banco fora: a falha à tela, o estado não muda | `WORKFLOW_SCHEDULED`, `_PAUSED`, `_RESUMED` | 19, 20 |
 | O disparo da agenda (o Mastra começa `wf-<w>-v<n>`) | a id da execução vem da agenda e da hora: um disparo, uma execução (prova P12 do estudo) | o agendador perde um disparo depois de três falhas (`docs-workflows-scheduled-workflows.md:45`; D27) | o banco fora: o disparo falha e o Mastra tenta de novo na volta seguinte | o do Mastra | 19 |
-| `conferir` (`INSERT workflow_run … ON CONFLICT DO NOTHING`, a reconferência do dono, e na falha `UPDATE workflow.state`, `schedules.pause`, o aviso) | um `restart()` refaz `conferir`: o `ON CONFLICT` deixa uma linha, e o aviso tem a chave `(run_id, kind)` | o Hub morre depois de pausar e antes do aviso: o workflow já está `PAUSED_OWNER`; o aviso não sai (aceito: a página diz o motivo) | o banco fora: o balão falha com `DATABASE_UNAVAILABLE` e a execução fica `FAILED`, sem ler nada | `WORKFLOW_OWNER_CANNOT_RUN` com workflow e versão | 9 |
+| `conferir` (`INSERT workflow_run … ON CONFLICT DO NOTHING` com o `requestContext`, a reconferência do dono, e na falha `UPDATE workflow.state`, `schedules.pause`, o aviso) | um `restart()` refaz `conferir`: o `ON CONFLICT` deixa uma linha, e o aviso tem a chave `(company_id, run_id, person_id, kind, subject_key)` com `subject_key` vazio | o Hub morre depois de pausar e antes do aviso: o workflow já está `PAUSED_OWNER`; o aviso não sai (aceito: a página diz o motivo) | o banco fora: o balão falha com `DATABASE_UNAVAILABLE` e a execução fica `FAILED`, sem ler nada | `WORKFLOW_OWNER_CANNOT_RUN` com workflow e versão | 9 |
 | A volta do gatilho do Sankhya (a leitura, `INSERT … ON CONFLICT DO NOTHING RETURNING` em `workflow_trigger_seen`, `createRun().start()`, a limpeza, o `UPDATE` do começo e da última volta); a leitura de base ao ligar | duas voltas: a chave `(workflow_id, item_key)` deixa uma execução por orçamento | o Hub morre depois do `INSERT` e antes de começar a execução: a linha fica com `run_id` nulo e `baseline` falso; a volta seguinte começa as execuções dessas linhas | o Sankhya fora ou a liberação tirada: o começo não avança, a última volta guarda a falha; na leitura de base, `since` fica nulo e a volta seguinte a tenta de novo, sem disparar; o banco fora: nada dispara | `WORKFLOW_TRIGGER_FAILED` com workflow e código, sem as linhas (S40) | 23, 24, 25 |
-| A conversa do balão `AGENT` (a conversa nova, o stream drenado) | uma por execução e balão: a id da conversa vem da execução e do balão, e um `restart()` encontra a mesma e não pergunta duas vezes, como `run.ts:119-120` | o turno falha: o balão falha com o código; o Hub morre no meio: a execução fica `INTERRUPTED` | o modelo fora: o código do turno | o mesmo da conversa de hoje, com a execução | 11 |
-| A suspensão do balão de agente (`approveToolCall` ou `declineToolCall` na retomada) | a retomada é reivindicada pelo Mastra (`WORKFLOW_RESUME_ALREADY_CLAIMED`): a segunda resposta recebe `RUN_NOT_WAITING` | suspender antes de drenar faz a retomada falhar com `AGENT_RESUME_TOOL_CALL_NOT_SUSPENDED` (prova P11 do estudo): o balão drena sempre antes; o Hub morre depois da decisão e antes da retomada: como aprovar | o banco fora: a execução continua esperando | `WORKFLOW_APPROVED` ou `_DECLINED` com execução, balão e pessoa | 12, 14 |
-| O aviso de esperar e o do `NOTIFY` (o sino e o e-mail) | um por execução, balão e espécie (`unique` de `notifications.notification`); um **Tentar de novo** depois de um balão feito não avisa de novo; um corte no meio do envio e um **Tentar de novo** podem mandar o e-mail duas vezes (aceito: um aviso a mais, nada escrito) | o e-mail falha: o sino fica e o balão termina | o envio de e-mail fora: igual | `WORKFLOW_NOTIFIED` | 13 |
-| Responder (`INSERT workflow_run_decision`, depois `run.resume`; na recusa de `APPROVAL`, `WRITE` e `AGENT_WRITE`, `run.cancel()`, este depois do `declineToolCall`) | a chave `(run_id, call_key)` deixa uma decisão; a outra recebe `RUN_NOT_WAITING`; o Mastra recusa a segunda retomada (`WORKFLOW_RESUME_ALREADY_CLAIMED`) | o Hub morre entre a decisão e a retomada: a execução continua `suspended` com a decisão gravada; no início, o Hub retoma cada decisão gravada cuja execução ainda espera naquele pedido | o banco fora: a falha ao cartão, a execução continua esperando | `WORKFLOW_APPROVED`, `WORKFLOW_DECLINED` | 14 |
-| Tentar de novo (`run.timeTravel` numa falha, `run.restart` numa interrompida) | o Mastra deixa um (`WORKFLOW_TIME_TRAVEL_ALREADY_CLAIMED`, `WORKFLOW_RESTART_RUN_OWNED`); o outro recebe `RUN_NOT_FAILED` ou `RUN_STILL_OWNED` | a definição não muda, porque cada versão é uma id | o banco fora: a falha à tela | `WORKFLOW_RETRIED` | 18 |
-| O teste (`UPDATE workflow.test_draft`, `addDynamicWorkflows` de `wf-<w>-teste`, a execução, o `cancel()` no fim) | o segundo teste substitui a definição; o primeiro, se ainda roda, termina sobre a definição que tinha no processo | o teste falha num balão: a resposta diz o balão e o motivo | o Sankhya fora: o teste falha na leitura | `WORKFLOW_TESTED` | 22, 26 |
+| A conversa do balão `AGENT` (a conversa nova, o stream drenado) | uma por execução, balão e tentativa: a id da conversa vem das três, e o mesmo passo rodado de novo na mesma tentativa encontra a mesma e não pergunta duas vezes (`workflowAsked`, como `run.ts:119-120`); **Tentar de novo** sobe a tentativa e abre outra | o turno falha: o balão falha com o código; o Hub morre no meio: a execução fica `INTERRUPTED` | o modelo fora: o código do turno | o mesmo da conversa de hoje, com a execução | 11 |
+| A suspensão do balão de agente (`approveToolCall` na retomada aprovada; na recusa, nada no agente) | a retomada é reivindicada pelo Mastra (`WORKFLOW_RESUME_ALREADY_CLAIMED`): a segunda resposta recebe `RUN_NOT_WAITING` | suspender antes de drenar faz a retomada falhar com `AGENT_RESUME_TOOL_CALL_NOT_SUSPENDED` (prova P11 do estudo): o balão drena sempre antes; o Hub morre depois da decisão e antes da retomada: como responder; a corrida suspensa do próprio agente fica como está depois de uma recusa, e nada a retoma | o banco fora: a execução continua esperando | `WORKFLOW_APPROVED` ou `_DECLINED` com execução, balão e pessoa | 12, 14 |
+| O aviso de esperar e o do `NOTIFY` (o sino e o e-mail) | um por execução, pessoa, espécie e `subject_key` (`<balão>#<tentativa>`, mais `#<toolCallId>` no agente): o mesmo pedido na mesma tentativa não avisa de novo; **Tentar de novo** que refaz um ramo com um `NOTIFY` dentro avisa de novo na tentativa nova, e um corte no meio do envio pode mandar o e-mail duas vezes (aceito: um aviso a mais, nada escrito) | o e-mail falha: o sino fica e o balão termina | o envio de e-mail fora: igual | `WORKFLOW_NOTIFIED` | 13 |
+| Responder (`INSERT workflow_run_decision`, depois `run.resume`; na recusa de `APPROVAL`, `WRITE` e `AGENT_WRITE`, `run.cancel()`, sem chamar o agente) | a chave `(run_id, balloon_id, attempt, call)` deixa uma decisão; a outra recebe `RUN_NOT_WAITING`; o Mastra recusa a segunda retomada (`WORKFLOW_RESUME_ALREADY_CLAIMED`) | o Hub morre entre a decisão e a retomada: a execução continua `suspended` com a decisão gravada; no início, o Hub retoma cada decisão gravada da tentativa atual cuja execução ainda espera naquele balão; uma de tentativa velha fica só como história | o banco fora: a falha ao cartão, a execução continua esperando | `WORKFLOW_APPROVED`, `WORKFLOW_DECLINED` | 14 |
+| Tentar de novo (`UPDATE workflow_run SET attempt = attempt + 1 WHERE attempt = <a lida>`, depois `run.timeTravel` numa falha ou `run.restart` numa interrompida, com `attempt` no `requestContext`) | o `UPDATE` deixa um; o outro recebe `RUN_NOT_FAILED`; o Mastra também deixa um (`WORKFLOW_TIME_TRAVEL_ALREADY_CLAIMED`, `WORKFLOW_RESTART_RUN_OWNED`) | o Mastra recusa depois do `UPDATE` (`RUN_STILL_OWNED`): a tentativa fica gasta sem nada rodar, e o próximo **Tentar de novo** sobe outra (as chaves dela nunca foram usadas); a definição não muda, porque cada versão é uma id | o banco fora: a falha à tela | `WORKFLOW_RETRIED` com a tentativa | 18 |
+| O teste (`UPDATE workflow.test_draft`, `addDynamicWorkflows` de `wf-<w>-teste`, `createRun().start()` com `RunIdentity`) | o segundo teste cancela a execução de teste ainda aberta (`run.cancel()`) e só então substitui a definição | o teste falha num balão: a vista diz o balão e o motivo; um `WRITE` lança `WORKFLOW_TEST_STOPPED_AT_WRITE` antes de chamar o funil, e a vista diz "parou antes de escrever" | o Sankhya fora: o teste falha na leitura | `WORKFLOW_TESTED` | 22, 26, 37 |
 | Rodar agora, pausar, religar, apagar (`createRun().start()`, `UPDATE workflow.state`, a agenda; apagar também as execuções no Mastra, as definições por `store.delete` e `removeWorkflow`, e as linhas do Hub) | a última vence; dois "rodar agora" dão duas execuções (é o que a pessoa pediu) | o Hub morre entre o Hub e o Mastra: no início, a agenda segue o `state` do Hub, e as definições de um workflow apagado saem | o banco fora: nada muda | `WORKFLOW_RAN`, `_PAUSED`, `_RESUMED`, `_DELETED` | 20 |
-| O balão que escreve (`writeThrough` com `WORKFLOW` e `where: RUN`) | a chave execução e balão no registro: a segunda chamada lê a linha e não envia | os casos de `WRITE_UNCERTAIN` da 24.5, iguais | os da 24.5, iguais | os da 24.5, com workflow e versão | 7, 16, 17 |
+| O balão que escreve (`writeThrough` com `WORKFLOW`, `where: RUN` e `callKey` `<balão>#<tentativa>`) | a chave execução e `callKey` no registro: a segunda chamada lê a linha e não envia; uma tentativa nova lê as linhas das anteriores do mesmo balão (`earlierAttempt`): `DONE` devolve a resposta, `SENDING` ou `UNCERTAIN` dá `WRITE_UNCERTAIN`, só `REFUSED` deixa enviar | os casos de `WRITE_UNCERTAIN` da 24.5, iguais: o balão espera a pessoa com `reason: 'UNCERTAIN'` e a marca | os da 24.5, iguais | os da 24.5, com workflow e versão | 7, 16, 17 |
 | A migração do registro (`e246_connector_write_workflow`: duas colunas e o `CHECK` trocado) | — | o `CHECK` novo é criado na mesma transação em que o velho sai | — | — | 8 |
+| A migração dos avisos (`e246_notification_workflow`: a chave única trocada, duas colunas que aceitam nulo, quatro colunas novas, os `CHECK` reescritos) | — | a chave nova e os `CHECK` novos são criados na mesma transação em que os velhos saem; as linhas da 24.2 passam nos novos (`subject_key` vazio) | — | — | 13 |
 
 ## A tabela de referência
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | O documento do workflow (balões, rascunho, versões) | U1 | o agente: rascunho e uma versão por publicação (`builder/agents/tables.ts:29,71`) | activepieces `f34c43cd` `flow-version.ts:16-23` (DRAFT e LOCKED); n8n `2e855356` `workflow-history.ts:12-27`; Kiro `library.py:292-331` (revisões, `expected_revision`); Mastra 1.82 sem versão (`storage/constants.ts:374-389`) | Um documento tipado, de vocabulário fechado, com rascunho e versões imutáveis | embrulhado: o documento e as versões são nossos; o grafo é do Mastra | P2 | não precisa | `packages/hub-api/src/workflows.ts`, `builder/workflows/tables.ts` |
-| Compilar uma versão para o Mastra | U1 | nenhum | `@mastra/core@1.82.0` `toStorableGraph` (`dynamic/serialize.ts:55`), `addDynamicWorkflows` (`mastra/index.ts:5875-5945`), `rehydrateWorkflow`; o ramo como workflow aninhado (`builder/authoring-playbook.ts:7,373`) | Balões viram entradas `tool`, `mapping` e `conditional`; cada versão é `wf-<id>-v<n>`; o ramo é `wf-<id>-v<n>-<balão>` | nativo (Beta) | P1, P2, P5, P8, P9 | a palavra pelo Beta | `builder/workflows/compile.ts` |
+| Compilar uma versão para o Mastra | U1 | nenhum | `@mastra/core@1.82.0` `toStorableGraph` (`dynamic/serialize.ts:55`), `addDynamicWorkflows` (`mastra/index.ts:5909`), `rehydrateWorkflow`; o ramo como workflow aninhado (`builder/authoring-playbook.ts:7,373`) | Balões viram entradas `tool`, `mapping` e `conditional`; cada versão é `wf-<id>-v<n>`; o ramo é `wf-<id>-v<n>-<balão>` | nativo (Beta) | P1, P2, P5, P8, P9 | a palavra pelo Beta | `builder/workflows/compile.ts` |
 | Uma versão publicada é a sua id do Mastra | U1 | o agente: uma versão por publicação (`builder/agents/tables.ts:71`) | Mastra 1.82: a definição não tem versão (`constants.ts:374-389`); a execução copia o grafo vivo ao ser criada (`workflows/workflow.ts:3083`); `addWorkflow` ignora uma id que já existe (`mastra-D4MXu5BN.js:3996`) | Com a mesma id, a retomada depois do reinício roda o grafo novo; cada versão publicada é uma id própria, `active` enquanto o workflow existe | remendo | `@mastra/core@1.82.0`, prova P2 do estudo; critério 15; [boundaries](../reference/boundaries.md), "a published workflow version is its own workflow id" | a aprovação desta página | `builder/workflows/ids.ts` |
 | A lista de problemas antes de rodar | U1, U5, U6 | o Construtor recusa um campo por vez (`builder/construtor/tools.ts:104-238`) | `validateDynamicWorkflow` (`dynamic/validate/index.ts:41`), códigos `validate/types.ts:13-29`, reparos `validate/repair-actions.ts:105`; activepieces `valid:false` e `invalidSteps` (`ap-build-flow.ts:194-215`); Dify checklist (`header/checklist/index.tsx`); Kiro `validate.py:818-852` e o laço de 3 reparos (`service.py:995-1070`) | Grava o rascunho mesmo com problema, lista cada um pelo balão, e só bloqueia testar e publicar | nativo (a validação do Mastra) mais as regras nossas (papel, liberação, pessoa) | P9 | não precisa | `builder/workflows/problems.ts`, `builder/workflows/index.ts` |
-| Ler um sistema num balão | U3 | `readThrough` (`hub/connectors/read.ts`), a ferramenta de leitura da biblioteca (`builder/agents/tools.ts:57-76`) | Mastra: a entrada `tool` resolve por id (`dynamic/rehydrate.ts:418-425`) e chama `tool.execute` (`run-tool-entry.ts:58`) | A ferramenta `conexus-ler` acha o balão pela `workflowId` e lê pelo funil de hoje, com quem publicou | embrulhado | — | não precisa | `builder/workflows/balloons/read.ts` |
+| Ler um sistema num balão | U3 | `readThrough` (`hub/connectors/read.ts`), a ferramenta de leitura da biblioteca (`builder/agents/tools.ts:57-76`) | Mastra: a entrada `tool` resolve por id (`dynamic/rehydrate.ts:418-425`) e chama `tool.execute` (`run-tool-entry.ts:58`) | A ferramenta `conexus-ler` acha o balão pela `workflowId` e lê pelo funil de hoje com o autor `WORKFLOW` (o declarado da versão), admitida como quem publicou | embrulhado | — | não precisa | `builder/workflows/balloons/read.ts` |
 | A conferência no começo de cada execução | U3 | a Automação reconfere o dono a cada execução (`builder/automations/run.ts:189-219`); o autor `VERSION` só confere o declarado (`hub/identity/may-use.ts:76`) | Mastra: a primeira entrada `tool` do grafo | A ferramenta `conexus-conferir` confere que quem publicou está na empresa e tem cada leitura declarada; senão pausa | embrulhado | — | a decisão A | `builder/workflows/balloons/check.ts` |
 | Um agente num balão, com escrita ou não | U3 | a conversa da Automação (`run.ts:112-142`), o agente publicado (`builder/agents/registry.ts:49-69`) | Mastra: a entrada `agent` e `createStep(agent)` travam numa aprovação (P3, `run-agent-entry.ts:166-173`); `.agent()` serializa para a mesma entrada (`reference-workflows-workflow-methods-agent.md:9`) | A ferramenta `conexus-agente` abre uma conversa do agente marcada "Workflow", drena o stream, e num pedido de aprovação suspende o workflow; na retomada, `approveToolCall` | embrulhado (a entrada `agent` do Mastra trava) | P3, P11 | a decisão E | `builder/workflows/balloons/agent.ts` |
 | "Aprovar?" no meio do fluxo | U3 | o cartão da conversa, só na memória (24.5, critério 8) | Mastra: `context.workflow.suspend` (`reference-tools-create-tool.md:75-77,105`), `run.resume` (`dist/agent-BP9OWM6D.js:11239`); Dify Human Input, n8n `sendAndWait`, Zapier Request Approval (as notas do estudo sobre os motores) | A ferramenta suspende; a resposta retoma; sobrevive a um reinício | nativo | P2, P5 | a decisão A e a D | `builder/workflows/balloons/approval.ts` |
@@ -465,10 +478,10 @@ antes de construir, como manda o estudo de uma tela; o estudo não as tirou.
 | Avisar uma pessoa | U3 | `deps.notify.automationRan` (`run.ts:230-247`), `notifications.notification` | Zapier e Make por um passo (documentado) | O sino e o e-mail de hoje, com tipos novos | embrulhado | — | não precisa | `builder/workflows/balloons/notify.ts` |
 | O gatilho de horário | U3 | `mastra.schedules.create` sobre `conexus-automation-run` (`builder/automations/automations.ts:143-188`) | Mastra `mastra.schedules` (`dist/schedules/schedules.d.ts`), a id da execução por disparo | Uma agenda por workflow publicado aponta direto a `wf-<id>-v<n>` | nativo | P12 | não precisa | `builder/workflows/schedule.ts` |
 | O gatilho manual e o teste | U3 | o "Rodar agora" da Automação (`automations.ts:208-246`, `schedules.run`) | Mastra `createRun().start()` | Uma execução da versão ativa, ou de `wf-<id>-teste` sobre o rascunho | nativo | — | não precisa | `builder/workflows/runs.ts` |
-| O gatilho: orçamentos novos no Sankhya | U4 | nenhum | Sankhya sem webhook (`developer.sankhya.com.br/llms.txt`, lido 2026-11-07); activepieces `polling/index.ts:38-141`; n8n `AirtableTrigger.node.ts:249-274` e o cursor que só avança depois de dar certo (`poll-cursor-hooks.ts:1-18`); Pipedream `dedupe: "unique"` | A agenda dispara a volta; a volta lê as notas novas dos TOP escolhidos e lembra as vistas pelo `NUNOTA`; uma execução por orçamento | remendo: o Mastra não guarda cursor (`workflows/scheduler/scheduler.ts:18-29`) | `@mastra/core@1.82.0` lido: sem cursor de gatilho; a U4 prova com o dublê; [boundaries](../reference/boundaries.md), "the trigger remembers what it has seen" | a decisão B e o que ele fornece | `builder/workflows/poll.ts`, migração `e246_workflow_trigger` |
+| O gatilho: orçamentos novos no Sankhya | U4 | nenhum | Sankhya sem webhook (`developer.sankhya.com.br/llms.txt`, lido 2026-11-07); activepieces `polling/index.ts:38-141`; n8n `AirtableTrigger.node.ts:249-274` e o cursor que só avança depois de dar certo (`poll-cursor-hooks.ts:1-18`); Pipedream `dedupe: "unique"` | A agenda dispara a volta; a volta lê as notas novas dos TOP escolhidos e lembra as vistas pelo `NUNOTA`; uma execução por orçamento | remendo: o Mastra não guarda cursor (a linha de agenda guarda só `lastFireAt`, `lastRunId`, `inputData` e `requestContext`, `dist/schedules/schedules.d.ts:41-60`) | `@mastra/core@1.82.0` lido e a prova P12: sem cursor de gatilho; a U4 prova com o dublê; [boundaries](../reference/boundaries.md), "the trigger remembers what it has seen" | a decisão B e o que ele fornece | `builder/workflows/poll.ts`, migração `e246_workflow_trigger` |
 | A lista de execuções e cada balão aceso | U3, U6 | `builder/automations/runs.ts:122-190` | Mastra `listWorkflowRuns`, `getWorkflowRunById`, o retrato por passo gravado durante a execução; o Studio relê a cada 5 s até terminar (`playground-ui/.../use-persisted-workflow-run.ts:10-23`); n8n `execution-status.ts:1-12` | O estado de cada balão vem do retrato; a tela relê enquanto roda | nativo | P10 | não precisa | `builder/workflows/runs.ts` |
 | Tentar de novo | U3 | nenhum | `run.timeTravel` (falha), `run.restart` (interrompida); activepieces `FROM_FAILED_STEP` na mesma versão | Retoma do balão, sem rodar os anteriores | nativo | P4, P6, P7, P8 | não precisa | `runs.ts` |
-| Recusar | U3 | nenhum | `run.cancel()` | A execução termina `canceled`, nada depois roda | nativo | P6 | não precisa | `runs.ts` |
+| Recusar | U3 | nenhum | `run.cancel()`; `agent.declineToolCall` é `resumeStream({ approved: false })`, uma chamada nova ao modelo (`packages/core/src/agent/agent.ts:11888-11900`), por isso não é usado | A decisão gravada e `run.cancel()`: a execução termina `canceled`, nada depois roda, o agente não é chamado | nativo | P6 | não precisa | `runs.ts` |
 | Montar conversando | U5 | o Construtor monta agentes (`builder/construtor/tools.ts:104-238`), o rascunho ao lado (`apps/web/src/builder/agents/construtor-chat.tsx:57-139`) | Mastra Code `sdk/src/tools/workflows/create-workflow.ts:30-59`; activepieces `ap_build_flow` (`ap-build-flow.ts:47`); n8n AI Builder (`.ee`, só desenho); Kiro: um agente escreve contra um vocabulário fechado e conserta com os erros (`service.py:114-200,995-1070`) | O modelo grava o rascunho inteiro numa ferramenta que valida e devolve os problemas; ele conserta | embrulhado: as ferramentas do Construtor | — | não precisa | `builder/construtor/workflow-tools.ts` |
 | O canvas: os balões, clicar, arrastar | U6 | nenhum; `apps/web` sem biblioteca de grafo | Mastra Studio `workflow-graph-canvas.tsx:91-124` (só leitura, `nodesDraggable=false` em `:100`); activepieces `flow-canvas/index.tsx:215-258` (`@xyflow/react` 12.3.5, layout próprio, arrastar para encaixar); Dify e Flowise em React Flow 11; n8n Vue Flow (só referência) | `@xyflow/react` (MIT) só na casca; layout puro do Conexus; o "+" na ligação; arrastar para um encaixe | nativo de uma biblioteca nova | a prova de CSP é o primeiro passo da U6 (critério 28) | a decisão F | `apps/web/src/builder/workflows/canvas.tsx` e as peças da seção da U6 |
 | O painel do balão: quem é, o que recebe, o que devolve | U6 | nenhum | n8n NDV `NodeDetailsView.vue:799-880`; Mastra inspetor `workflow-data-inspector.tsx:13-34`; activepieces `step-settings/index.tsx` | Três partes, com os valores da execução quando há | embrulhado (peças do `ui/`) | — | não precisa | `apps/web/src/builder/workflows/panel.tsx` |
@@ -476,9 +489,12 @@ antes de construir, como manda o estudo de uma tela; o estudo não as tirou.
 | As Automações da 24.2 viram workflows | fica de fora (24.6.1, decisão G) | `run.ts`, `automations.ts`, `runs.ts`, `cadence.ts`, `release.ts` | P12; a conversão no boot (as notas de coesão do estudo, seção 5) | Cada linha de agenda vira um workflow com gatilho de horário e um balão Assistente | embrulhado | P12 | a decisão G | — |
 | A lista de versões e "voltar a esta versão" | fica de fora (24.6.1): pede a tela de versões, e voltar passa pelas conferências de publicar | o agente: `versionBack` e `refuseUnheld` (PR 843, `publish.ts:162-169`) | activepieces `flow-versions-card.tsx:47,115`; Dify `version-history-panel` | Uma lista com o rascunho e as publicadas; voltar copia para o rascunho | embrulhado | — | — | — |
 
-As linhas citadas do Mastra sem `dist/` são do `mastra@6e8dfcb8` (a etiqueta `@mastra/core@1.82.0`);
+As linhas do Kiro (`library.py`, `service.py`, `validate.py`) são do estudo do Kiro do fundador,
+sobre uma cópia que não é pública: o leitor não as abre, e os números que vêm delas (50 balões, 3
+gravações seguidas com problema, o rótulo da execução) valem pela palavra do fundador ao aprovar a
+página. As linhas citadas do Mastra sem `dist/` são do `mastra@6e8dfcb8` (a etiqueta `@mastra/core@1.82.0`);
 as do activepieces em `f34c43cd`, as do n8n em `2e855356`, as do Mastra Code e do playground-ui no
-mesmo `6e8dfcb8`. As provas P1 a P12 rodaram fora do repositório com `@mastra/core` 1.82.0,
+mesmo `6e8dfcb8`. As provas P1 a P13 rodaram fora do repositório com `@mastra/core` 1.82.0,
 `@mastra/pg` 1.35.0 e Postgres 18; o relatório do estudo guarda os scripts e as saídas.
 
 **A medida do transplante.** Nada vem do produto antigo: ele não tinha workflows.
@@ -494,6 +510,27 @@ mesmo `6e8dfcb8`. As provas P1 a P12 rodaram fora do repositório com `@mastra/c
   guarda só o fim do ramo, prova P5 do estudo). Gatilho: um ramo com mais de um balão de leitura.
 - A tela relê a execução a cada 5 s; um aviso ao vivo pediria o processo da execução (prova P10 do
   estudo). Gatilho: alguém reclamar do atraso.
+
+**As notas da leitura para depois** (Issue futura da leitura de outro modelo, 2026-11-07):
+
+- I1. Publicar segura a linha do workflow `for update` enquanto `addDynamicWorkflows` valida e grava
+  em `mastra_workflow_definitions`, dentro da transação do Hub (U1, a ordem do trabalho, passo 5).
+  É limitado (nenhum terceiro, só o banco do Hub), e por isso fica dentro da regra D22; se um dia o
+  Mastra chamar algo de fora ao gravar, a chamada passa para depois do `COMMIT`, com o início do Hub
+  apagando a definição sem versão, como já faz. Também em "Parar se" da U1.
+- I2. A razão de um nível só de ramo era errada: o grafo guardado aninha (`conditional`, workflow,
+  `conditional`). A razão certa está na U1 ("Os contratos"): só um nível foi provado (P5, P8). O
+  limite fica.
+- I3. `waitingCount` e `lastRun` de `GET BASE?place=` custam uma leitura do Mastra por workflow (U3,
+  "Os contratos", o método). Gatilho: um lugar com mais de 30 workflows. Uma execução cancelada sem
+  decisão (o teste substituído, o workflow apagado) é `CANCELED`.
+- I4. A U1 pega `workflow-ids.ts` da U2 por `cherry-pick` (seção "As unidades"). Seria mais simples a
+  U1 ser a dona; fica assim porque a U2 pode entrar antes, logo depois do PR 843, e o rebase
+  deduplica o commit. As duas regeneram o retrato do catálogo; a segunda a entrar o regenera.
+- I5. A regra D11 pede a lista de permissões num PR próprio; a U1, a U3 e a U4 põem as permissões
+  ao lado do código, como o passo 4 da skill `conexus-scope` deixa ("uma migração que muda o retrato
+  do catálogo entra com a unidade dona de `database-grants.sql`"), e a palavra do fundador vem da
+  aprovação desta página (a frase "a regra D11" na página).
 
 **O que fica por conferir no fim, com o Sankhya de verdade.** Os nomes dos campos do orçamento em
 `CabecalhoNota` (o número, o tipo de operação, a data de negociação, o valor, o cliente) estão no
@@ -511,7 +548,7 @@ função pura com a forma da prova P8 do estudo.
   `revision`, `active_version`), `:71` (`agent_version`, com `source_revision` único e
   `published_by`), e `builder/agents/publish.ts:225-251` (`published`: a linha do agente
   `for update`, a republicação idempotente por `source_revision`, o `frozen()`).
-- **Compilar.** API: `mastra.addDynamicWorkflows(defs)` (`packages/core/src/mastra/index.ts:5909-6045`):
+- **Compilar.** API: `mastra.addDynamicWorkflows(defs)` (`packages/core/src/mastra/index.ts:5909`):
   valida cada definição contra o registro vivo, ordena os aninhados, volta atrás se uma falha, e
   grava em `mastra_workflow_definitions`. Os campos da definição e as entradas:
   `dist/docs/references/reference-workflows-dynamic-workflow-definition.md:13-24,52-68`. O
@@ -534,18 +571,32 @@ função pura com a forma da prova P8 do estudo.
   de publicar.
 - **Apagar uma definição.** `store.delete(id)` no domínio `workflowDefinitions` e
   `mastra.removeWorkflow(id)`, como o Mastra faz (`packages/server/src/server/handlers/dynamic-workflows.ts:161-185`).
+- **Achar um workflow do Mastra.** Nunca `getWorkflow` nem `getWorkflowById`: o erro deles lista
+  todas as ids registradas, de todas as empresas (`mastra/index.ts:3896`, `:4279`), o que a regra S40
+  proíbe; o Hub lê primeiro a sua linha (`workflow_version` na empresa da sessão ou do
+  `requestContext`) e só então `mastra.listWorkflows()[id]`, como `builder/agents/registry.ts:48-62`
+  faz com `listAgents()`. Um erro do Mastra vira uma `Failure` do Hub sem `details`.
+- **As empresas no início.** O Hub não tem escopo de sistema; o início percorre as empresas por
+  uma função `SECURITY DEFINER` de um papel que não entra, como `builder.companies_with_agents()`
+  (`20261102160408_e243_agents_grants`, `builder/agents/frozen.ts:214`, o papel
+  `hub_agent_companies` em `builder/agents/tables.ts:21`), e entra em cada uma com
+  `{ kind: 'COMPANY', companyId, personId: null }`, como `hub/apps/repair.ts:218-236`.
+- **As operações.** `defineOperation` de `packages/hub-api/src/operation.ts`, como
+  `packages/hub-api/src/agents.ts:194-300` (`createAgent` com `attemptKey` e 201, `saveAgentDraft`
+  com `bodyLimit: 65_536`) e `automations.ts:144-215` (`HUB_UPDATING` em quem fala com o Mastra);
+  as rotas do servidor por `serve(app, operação, …)`, como `builder/automations/routes.ts:22`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/workflows.ts`, `workflow-failures.ts`, `workflows.test.ts` | Cria | o servidor, a web |
-| `packages/hub-api/src/failures.ts`, `index.ts` | Muda (espalha `WORKFLOW_FAILURES`; exporta) | todo o Hub |
+| `packages/hub-api/src/workflows.ts`, `workflow-operations.ts`, `workflow-api.ts`, `workflow-failures.ts`, `workflows.test.ts` | Cria (`workflow-api.ts` é só a porta para o índice, como `automation-api.ts`) | o servidor, a web |
+| `packages/hub-api/src/failures.ts`, `index.ts` | Muda (espalha `WORKFLOW_FAILURES`; uma linha `export * from './workflow-api.ts'`) | todo o Hub |
 | `apps/server/src/builder/workflows/` | Cria `tables.ts`, `store.ts`, `ids.ts`, `compile.ts`, `index.ts`, `problems.ts`, `publish.ts`, `routes.ts`, `release.ts`, `public.ts`, `tools.ts` (as seis ferramentas, só ids e esquemas) | `conversations-of.ts`, a U3, a U4, a U5 |
 | `apps/server/src/builder/mastra/mastra.ts` | Muda (as seis ferramentas no `new Mastra({ tools })`, `:20-28`) | `main.ts` |
 | `apps/server/src/builder/mastra/hub-mastra.ts` | Muda (depois de `startWorkers()`, `:98-110`, apagar as definições `wf-*` sem versão) | `main.ts` |
 | `apps/server/src/conversations-of.ts` | Muda (as rotas; os workflows no `releaseFirst`, `:162-174`) | `main.ts` |
-| `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria `<ts>_e246_workflow` e `<ts>_e246_workflow_grants` | o catálogo |
+| `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria `<ts>_e246_workflow` e `<ts>_e246_workflow_grants` (com o papel `hub_workflow_companies` e a função `builder.companies_with_workflows()`) | o catálogo |
 | `apps/server/src/platform/catalog.test.ts` | Muda (o retrato do catálogo) | — |
 | `packages/hub-api/src/workflow-ids.ts` | Pega da U2 por `cherry-pick`, sem mudar | — |
 
@@ -560,7 +611,10 @@ import { WorkflowId, BalloonId, WorkflowRunId } from './workflow-ids.ts'
 export const BALLOONS_MAX = 50
 /** O teto do esquema, só contra um corpo absurdo: acima dele, REQUEST_MALFORMED. */
 export const BALLOONS_SCHEMA_MAX = 200
+/** Tetos do esquema, como BALLOONS_SCHEMA_MAX, contra um corpo absurdo; não são regras de produto: o problema é BALLOONS_MAX. */
 export const BRANCH_MAX = 10
+export const PEOPLE_MAX = 10
+export const OPERATION_TYPES_MAX = 20
 /** Um valor do gatilho ou de um balão anterior: '{{gatilho.valor}}', '{{b2.texto}}'. */
 export const Template = z.string().max(2000)
 export const Title = z.string().trim().min(1).max(80)
@@ -582,8 +636,8 @@ export const TriggerField = z.enum(['valor'])
 export const Trigger = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('SCHEDULE'), cadence: Cadence }),        // Cadence de automations.ts
   z.object({ kind: z.literal('SANKHYA_NEW'), connectionId: ConnectionId.nullable(),
-    operationTypes: z.array(z.int().positive()).max(20),
-    everyMinutes: z.literal(15) }),      // a decisão C: C2 troca por 5; C3 por 5 | 15 | 30 | 60
+    operationTypes: z.array(z.int().positive()).max(OPERATION_TYPES_MAX),
+    everyMinutes: z.literal(15) }),      // a decisão C; C2 ou C3 alargam a união, e um frozen antigo (15) continua passando, sem migração
   z.object({ kind: z.literal('MANUAL') }),
 ])
 
@@ -609,13 +663,13 @@ const Leaf = [
     connectionId: ConnectionId.nullable(), operation: OperationId.nullable(),
     input: z.record(z.string(), Template), approval: z.enum(['ASK', 'AUTO']), approver: Approver }),
   z.object({ kind: z.literal('NOTIFY'), id: BalloonId, title: Title,
-    people: z.array(PersonId).max(10), message: Template }),
+    people: z.array(PersonId).max(PEOPLE_MAX), message: Template }),
 ] as const
 export const LeafBalloon = z.discriminatedUnion('kind', Leaf)
 export const Balloon = z.discriminatedUnion('kind', [
   ...Leaf,
   z.object({ kind: z.literal('IF'), id: BalloonId, title: Title,
-    value: TriggerField, op: z.enum(['GT', 'GTE', 'LT', 'LTE', 'EQ', 'NEQ']),
+    value: TriggerField, op: z.enum(['gt', 'gte', 'lt', 'lte', 'eq', 'ne']),   // os nomes do predicado do Mastra
     than: z.number().nullable(), then: z.array(LeafBalloon).max(BRANCH_MAX) }),
 ])
 
@@ -633,7 +687,8 @@ export const WorkflowProblemCode = z.enum([
   'AGENT_NOT_FOUND', 'AGENT_NOT_PUBLISHED', 'AGENT_OTHER_PROJECT', 'AGENT_VERSION_CHANGED',
   'PERSON_NOT_FOUND', 'PERSON_CANNOT_APPROVE', 'IF_FIELD_NOT_NUMBER', 'IF_EMPTY',
   'WRITE_AUTO_NOT_ALLOWED',
-  // a validação do Mastra, um por código de `validate/types.ts:13-29`, os outros em GRAPH_OTHER
+  // a validação do Mastra: três dos 16 códigos de `validate/types.ts:13-29` com nome próprio
+  // (os que um rascunho do Conexus pode causar), todos os outros em GRAPH_OTHER
   'GRAPH_MISSING_REFERENCE', 'GRAPH_INCOMPATIBLE_SCHEMA', 'GRAPH_INVALID_MAP', 'GRAPH_OTHER',
 ])
 export const WorkflowProblem = z.object({
@@ -660,11 +715,8 @@ export const WorkflowView = z.object({
   state: WorkflowState,
   lastLap: LastLap.nullable(),                    // escrito pela U4; nulo sem gatilho do Sankhya
 })
-export const SaveDraftBody = z.object({
-  place: WorkflowPlace.optional(),                // só ao criar (um {w} novo)
-  revision: z.int().nonnegative(),                // 0 ao criar
-  draft: WorkflowDraft,
-})
+export const CreateWorkflowBody = z.object({ place: WorkflowPlace, draft: WorkflowDraft })
+export const SaveDraftBody = z.object({ revision: z.int().nonnegative(), draft: WorkflowDraft })
 export const PublishBody = z.object({ revision: z.int().nonnegative() })
 ```
 
@@ -672,8 +724,9 @@ export const PublishBody = z.object({ revision: z.int().nonnegative() })
 e o esquema dos códigos de falha já existem em `packages/hub-api/src/`. O "+" do canvas e o
 Construtor gravam o mesmo `WorkflowDraft`. Os limites: mais de `BALLOONS_MAX` balões, contando os
 de dentro dos ramos, dá o problema `WORKFLOW_TOO_MANY_BALLOONS` (`ERROR`) e o rascunho grava; um
-nível de ramo só nesta etapa (`then` aceita só `LeafBalloon`): o Kiro aninha até 8, mas o grafo
-guardado do Mastra não aceita um contêiner dentro de outro (as notas do estudo sobre o Mastra).
+nível de ramo só nesta etapa (`then` aceita só `LeafBalloon`): o grafo guardado do Mastra aninha
+(`conditional`, workflow, `conditional`), mas só um nível foi provado com espera, retomada e
+**Tentar de novo** (provas P5 e P8), e o Kiro, que aninha até 8, não é a medida aqui.
 
 Em `apps/server/src/builder/workflows/`, os tipos internos:
 
@@ -712,45 +765,72 @@ export const WORKFLOW_TOOL = {
 } as const
 ```
 
-**A gramática da compilação** (a compilação é a única dona, C26). A primeira entrada do principal
-é `{ type: 'tool', id: 'conferir', toolId: 'conexus-conferir' }`. Cada balão-folha `bN` vira um
-`mapping` de id `bN-in` (`{ balloon: { value: 'bN' }, …um template por valor que o balão usa… }`)
-seguido de um `tool` de id `bN` com a ferramenta da espécie. `{{gatilho.<campo>}}` vira o
-`template` `${initData.<campo>}`; `{{bN.<campo>}}` vira `${stepResults.bN.<campo>}`; nunca uma
-fonte `step` + `path`, que o Mastra confere contra o esquema de saída e recusa (prova P8 do
-estudo). Um `IF` `bK` vira um `mapping` de cima de id `bK-in`, que entrega ao ramo, com nomes
-próprios, cada valor de fora que os balões do ramo usam (como `template`) e o campo do `IF` (como
-`initData` + `path`), seguido de um `conditional` de id `bK` com um ramo, a definição aninhada
-`wf-<w>-v<n>-bK`; dentro do ramo, as referências de fora viram `${initData.<nome>}`. O
-`inputSchema` do principal é `QuoteInput` com `SANKHYA_NEW` e um objeto vazio com `SCHEDULE` e
-`MANUAL`. As saídas por espécie, que `REF_FIELD_UNKNOWN` confere e as ferramentas da U3 declaram:
-`READ` `{ resultado }`, `AGENT` `{ texto, conversationId }`, `APPROVAL` `{ aprovado, por }`,
-`WRITE` `{ resultado, marca }`, `NOTIFY` `{ avisados }`.
+**A gramática da compilação** (a compilação é a única dona, C26; a forma é a das provas P8 e
+P13c do estudo, escrita aqui porque o construtor não lê os scripts do estudo):
 
-**As seis ferramentas** entram no `new Mastra({ tools })` com as ids de `WORKFLOW_TOOL`, o
-`inputSchema` `z.object({ balloon: z.string() }).catchall(z.unknown())`, o `outputSchema` da
-espécie, e um `execute` que lança `Failure('INTERNAL_UNEXPECTED')` até a U3. Os testes da U1 trocam
-o `execute` por um que devolve a entrada.
+- A primeira entrada do principal é `{ type: 'tool', id: 'conferir', toolId: 'conexus-conferir' }`,
+  sem `mapping` antes: a ferramenta tem `inputSchema` e `outputSchema` `z.object({}).passthrough()`,
+  recebe a entrada do gatilho e a devolve igual, e a validação não acusa `incompatible-schema`
+  contra `QuoteInput` (prova P13c).
+- Cada balão-folha `bN` vira um `mapping` de id `bN-in`, `mapConfig` com
+  `{ balloon: { value: 'bN' }, <campo>: { template: … } }` (um campo por valor que o balão usa),
+  seguido de `{ type: 'tool', id: 'bN', toolId: <a ferramenta da espécie> }`. `{{gatilho.<campo>}}`
+  vira o `template` `${initData.<campo>}`; `{{bN.<campo>}}` vira `${stepResults.bN.<campo>}`; nunca
+  uma fonte `step` + `path`, que o Mastra confere contra o esquema de saída e recusa (prova P8).
+- Um `IF` `bK` vira um `mapping` de id `bK-in` cujo `mapConfig` entrega ao ramo `valor` como
+  `{ initData: true, path: '<TriggerField>' }` (um número, porque o `inputSchema` o declara) e, para
+  cada valor de fora que os balões do ramo usam, uma chave `<origem>_<campo>` (`gatilho_cliente`,
+  `b2_texto`) como `template` (um texto). Segue
+  `{ type: 'conditional', steps: [{ type: 'workflow', id: 'bK', workflowId: 'wf-<w>-v<n>-bK' }],
+  predicates: [{ op, left: { path: 'inputData.valor' }, right: { literal: than } }] }`: a entrada
+  `conditional` não tem id própria; o passo que o retrato guarda, e o `step` que **Tentar de novo**
+  passa a `timeTravel` para um balão de dentro do ramo, é `bK` (prova P8). Dentro do ramo
+  (`wf-<w>-v<n>-bK`, `inputSchema` com `valor` e as chaves `<origem>_<campo>`), as referências de
+  fora viram `${initData.<origem>_<campo>}`, e as de um balão do ramo `${stepResults.bJ.<campo>}`.
+- O predicado é o do Mastra (`packages/core/src/predicate/index.ts:20-58`): `op` é um de `eq`, `ne`,
+  `lt`, `lte`, `gt`, `gte`, e cada lado é `{ path }` ou `{ literal }`; o Conexus usa só `{ path:
+  'inputData.valor' }` à esquerda e `{ literal: <número> }` à direita. Os outros operadores (`in`,
+  `exists`, `and`, …) ficam de fora.
+- O `inputSchema` do principal é `QuoteInput` com `SANKHYA_NEW` e um objeto vazio com `SCHEDULE` e
+  `MANUAL`. As saídas por espécie, que `REF_FIELD_UNKNOWN` confere e as ferramentas da U3 declaram:
+  `READ` `{ resultado }`, `AGENT` `{ texto, conversationId }`, `APPROVAL` `{ aprovado, por }`,
+  `WRITE` `{ resultado, marca }`, `NOTIFY` `{ avisados }`.
 
-**Rotas** (`BASE` = `/api/companies/{companyId}/workflows`; acesso `manageAutomations`; a empresa e
-a pessoa vêm da sessão, S9; um `{w}` de outra empresa ou de um Projeto sem acesso responde
-`WORKFLOW_NOT_FOUND`):
+**As seis ferramentas** entram no `new Mastra({ tools })` com as ids de `WORKFLOW_TOOL`; `conexus-conferir`
+com os esquemas `passthrough` de cima; as outras cinco com o `inputSchema`
+`z.object({ balloon: z.string() }).catchall(z.unknown())` e o `outputSchema` da espécie; cada uma com
+um `execute` que lança `Failure('INTERNAL_UNEXPECTED')` até a U3. Os testes da U1 trocam o `execute`
+por um que devolve a entrada.
 
-- `GET BASE/{w}` → `WorkflowView`; `WORKFLOW_NOT_FOUND`.
-- `PUT BASE/{w}/draft` corpo `SaveDraftBody` (um `{w}` novo cria o workflow no `place`) →
-  `WorkflowView`; `REQUEST_MALFORMED`, `WORKFLOW_DRAFT_STALE`, `NOT_IN_ROLE`.
-- `POST BASE/{w}/publish` corpo `PublishBody` → `WorkflowView`; `WORKFLOW_HAS_PROBLEMS`,
-  `WORKFLOW_DRAFT_STALE`, `NOT_IN_ROLE`, `WORKFLOW_PUBLISH_REFUSED`.
-- `DELETE BASE/{w}` → 204.
+**As operações** (`packages/hub-api/src/workflow-operations.ts`, `defineOperation`, `access:
+'session'`; `BASE` = `/api/companies/{companyId}/workflows`; a admissão é `manageAutomations`, a
+empresa e a pessoa vêm da sessão, S9; um `{w}` de outra empresa, de um Projeto sem acesso ou
+desconhecido responde `WORKFLOW_NOT_FOUND`, lido na linha do Hub antes de qualquer chamada ao
+Mastra). `READ_FAILURES` e `ONE_FAILURES` como em `automations.ts:136-142`, com
+`WORKFLOW_NOT_FOUND`:
 
-`WORKFLOW_FAILURES` em `packages/hub-api/src/workflow-failures.ts`, cada um com categoria, estado
-HTTP, frase e ação, como `automation-failures.ts`: `WORKFLOW_NOT_FOUND` (404),
+| id | Método e caminho | `bodyLimit` | Entrada | Sucesso | Falhas além das de leitura |
+| --- | --- | --- | --- | --- | --- |
+| `createWorkflow` | `POST BASE`, `attemptKey: true` | 65_536 | `CreateWorkflowBody` | 201 `{ workflow: WorkflowView }` | `REQUEST_MALFORMED`, `IDEMPOTENCY_CONFLICT`, `NOT_IN_ROLE` |
+| `getWorkflow` | `GET BASE/{w}` | 1024 | — | 200 `{ workflow: WorkflowView }` | — |
+| `saveWorkflowDraft` | `PUT BASE/{w}/draft` | 65_536 | `SaveDraftBody` | 200 `{ workflow: WorkflowView }` | `REQUEST_MALFORMED`, `WORKFLOW_DRAFT_STALE`, `NOT_IN_ROLE` |
+| `publishWorkflow` | `POST BASE/{w}/publish` | 1024 | `PublishBody` | 200 `{ workflow: WorkflowView }` | `WORKFLOW_HAS_PROBLEMS`, `WORKFLOW_DRAFT_STALE`, `NOT_IN_ROLE`, `WORKFLOW_PUBLISH_REFUSED`, `AUTOMATION_LIMIT`, `HUB_UPDATING` |
+| `deleteWorkflow` | `DELETE BASE/{w}` | 1024 | — | 204 | `HUB_UPDATING` |
+
+As rotas do servidor ficam em `builder/workflows/routes.ts`, por `serve(app, operação, …)`.
+
+`WORKFLOW_FAILURES` em `packages/hub-api/src/workflow-failures.ts`, cada um com `category`,
+`settles`, `status`, `phrase`, `action` e `actionKind`, como `automation-failures.ts`, e espalhado em
+`failures.ts` ao lado de `AUTOMATION_FAILURES` (`:60`): `WORKFLOW_NOT_FOUND` (404),
 `WORKFLOW_DRAFT_STALE` (409), `WORKFLOW_HAS_PROBLEMS` (409), `WORKFLOW_PUBLISH_REFUSED` (500,
 categoria `SYSTEM`), `WORKFLOW_NOT_PUBLISHED` (409), `WORKFLOW_PAUSED` (409),
-`WORKFLOW_OWNER_CANNOT_RUN` (409), `WORKFLOW_TRIGGER_FAILED` (502), `RUN_NOT_FOUND` (404),
-`RUN_NOT_WAITING` (409), `NOT_APPROVER` (403), `RUN_NOT_FAILED` (409), `RUN_STILL_OWNED` (409).
-`AGENT_NOT_FOUND` (`agent-failures.ts:11`), `NOT_IN_ROLE`, `NOT_GRANTED` e `AUTOMATION_LIMIT` já
-existem e são reusados. As frases vão com os textos das telas ao fundador.
+`WORKFLOW_OWNER_CANNOT_RUN` (409), `WORKFLOW_TRIGGER_FAILED` (502), `WORKFLOW_TEST_NO_ITEM` (409),
+`WORKFLOW_TEST_STOPPED_AT_WRITE` (409), `BALLOON_SYSTEM_REFUSED` (502), `BALLOON_SYSTEM_UNREACHABLE`
+(502), `RUN_NOT_FOUND` (404), `RUN_NOT_WAITING` (409), `NOT_APPROVER` (403), `RUN_NOT_FAILED` (409),
+`RUN_STILL_OWNED` (409). `AGENT_NOT_FOUND` (`agent-failures.ts:11`), `NOT_IN_ROLE`,
+`CONNECTOR_NOT_GRANTED`, `CONNECTION_SIGN_IN_EXPIRED`, `IDEMPOTENCY_CONFLICT`, `INTERRUPTED`,
+`HUB_UPDATING` e `AUTOMATION_LIMIT` já existem e são reusados. As frases vão com os textos das telas
+ao fundador.
 
 **Tabelas** (esquema `builder`, `company_id` e a política de linha como as do agente, regra D11):
 
@@ -771,6 +851,13 @@ existem e são reusados. As frases vão com os textos das telas ao fundador.
   `20261107125733_e245_connector_write_grants`: `workflow` com `SELECT, INSERT, DELETE` e
   `UPDATE (name, draft, revision, test_draft, state, active_version, created_by)`;
   `workflow_version` com `SELECT, INSERT` e `UPDATE (published_by)`.
+- A lista das empresas para o início, na mesma migração e com os mesmos passos de
+  `20261102160408_e243_agents_grants`: o papel `hub_workflow_companies` (`NOLOGIN`, `NOBYPASSRLS`),
+  a política `workflow_companies_select` em `builder.workflow` para ele (`USING (true)`, gerada de
+  `tables.ts` como `AGENT_COMPANIES`), `GRANT SELECT (company_id)` em `builder.workflow`, e a função
+  `builder.companies_with_workflows() RETURNS TABLE (company_id text)`, `SECURITY DEFINER`, dona
+  `hub_workflow_companies`, `EXECUTE` só para `hub_runtime`. O Hub a chama por
+  `database.installation`, como `frozen.ts:214`.
 
 **O dono de cada fato.** O desenho publicado: `workflow_version.frozen` (o Mastra guarda a
 compilação, nunca o desenho). Quem publicou: `workflow_version.published_by`. A classe de cada
@@ -806,9 +893,12 @@ e para `apps/server` (`drizzle-kit`: a skill `drizzle` do pacote). Para os tipos
    `addDynamicWorkflows(compiled(...))`; recusado, a transação volta e responde
    `WORKFLOW_PUBLISH_REFUSED`.
 6. `tools.ts` e o registro em `mastra.ts`; em `hub-mastra.ts`, depois de `startWorkers()`, apagar
-   as definições `wf-*` (fora `wf-*-teste*`) sem versão no Hub.
-7. `routes.ts`, `release.ts` (apagar as definições de um workflow, de um Projeto, de uma empresa),
-   e o registro em `conversations-of.ts`.
+   as definições `wf-*` (fora `wf-*-teste*`) sem versão no Hub: as versões de todas as empresas,
+   lidas empresa por empresa pela lista de `builder.companies_with_workflows()`; uma empresa que
+   falha é logada e fica para o próximo início, como `repairApps`.
+7. `routes.ts` (as operações por `serve`; cada uma lê a linha do Hub antes do Mastra, e acha a
+   definição só por `listWorkflows()`), `release.ts` (apagar as definições de um workflow, de um
+   Projeto, de uma empresa), e o registro em `conversations-of.ts`. Regras: S40, C51.
 
 ### Como se prova
 
@@ -822,31 +912,49 @@ um segundo Hub ao lado do mesmo banco. O critério 2 falha hoje porque não há 
 - O predicado do `conditional` não comparar o número de um `TriggerField` entregue pelo `mapping`
   de cima: relatar; não escrever uma comparação nossa sem o cartão.
 - `addDynamicWorkflows` não puder rodar dentro da transação do Hub (outra conexão do Mastra ao
-  mesmo banco espera a transação): relatar; a ordem muda só com o cartão.
+  mesmo banco espera a transação), ou chamar algo fora do banco ao gravar (a regra D22, a nota I1):
+  relatar; a ordem muda só com o cartão.
 - `validateDynamicWorkflow` não estiver exportado no 1.82 instalado, ou o seu índice pedir o que as
   ferramentas não dão: relatar com a saída.
 
 ## U2 Um caminho de escrita
 
 **Base e modelo.** `main` do dia com o PR 843 já entrado; a unidade depende dele e não começa
-antes. Sonnet: move funções que já existem e acrescenta um braço a um tipo; a regra está fixa
-aqui.
+antes. Sonnet: move funções que já existem, acrescenta um braço a uma união e uma leitura ao
+registro; a regra está fixa aqui.
 
 ### As linhas da tabela
 
-- **A decisão.** No PR 843: `holdsWrite` (`builder/agents/publish.ts:196-209`),
-  `publisherLeavesAlone` (`publish.ts:212-234`, lê `agent_version.published_by`, `roleOf`,
-  `mayPublishUnattended`, `mayUse`), `aloneByPublisher` (`builder/agents/tools.ts:120-128`, chamado
-  em `writeTool.requireApproval` `:145-147`), `mayApproveAgents` (`builder/agents/write-of.ts`),
-  consumido em `builder/conversation/guard.ts:221-223`. No `main`: `writeTool`
-  (`builder/agents/tools.ts:110-142`), a escrita aberta (`hub/connectors/write-record.ts:242-298`,
-  `openWritesOf`).
+- **A decisão.** No PR 843 (`feat/conexus-e245-autonomy`, `d9b74ffa`): `Holding`, `roleNow`,
+  `holdsWrite` e `publisherLeavesAlone` (`builder/agents/publish.ts:182-234`;
+  `publisherLeavesAlone` lê `agent_version.published_by`, `roleOf`, `mayPublishUnattended`,
+  `mayUse`); `aloneByPublisher` (`builder/agents/tools.ts:120-128`, que devolve `true` para o autor
+  `DRAFT` em `:121`, chamado em `writeTool.requireApproval` `:145-157`); a dependência `leavesAlone`
+  de `tools.ts` (`:43-51`), que `builder/agents/agent.ts:267-268` enche com `publisherLeavesAlone`.
+  Quem chama `holdsWrite` no PR 843 é só `mayApproveAgents` (`builder/agents/write-of.ts:48-69`,
+  em `:63`); `builder/conversation/guard.ts:221-223` chama `part.mayApprove`, que é
+  `mayApproveAgents`, e não muda. `publish.ts` não chama `holdsWrite` nem passa a chamar
+  `mayApprove`.
 - **O registro.** `hub/connectors/tables.ts:205-250` (a chave `(company_id, thread_id,
-  tool_call_id)`, o `check` `connector_write_speaker`); `write-record.ts:30-43` (`WriteRequest`),
-  `:67-70` (`markOf`), `:108` (`aboutOf`), `:222-240` (`register`); `write.ts:69-106` (`admitted`),
-  `:154-183`; `assistant-port.ts:308-310`.
-- **Quem fala.** `hub/identity/may-use.ts:64-68` (`declares`), `:76` (o `VERSION` só confere o
-  declarado).
+  tool_call_id)`, o `check` `connector_write_speaker`); em `write-record.ts`: `WriteRequest`
+  (`:30-43`), `markOf` (`:67-70`), `authorOf` e `aboutOf` (`:100-118`), `foundIn` (`:131-135`, que
+  devolve a resposta guardada de uma linha `DONE` ou `REFUSED`), `key` (`:137-143`), `ownRow`,
+  `inserted` (`:161-182`), `heldBy` (`:198-214`), `register` com o `transactionLock`
+  `conexus.connector-write:<empresa>:<conversa>:<ligação>:<operação>` (`:222-241`), `OpenWritesKey`
+  (`:253-259`), `openRows` (`:265-295`), `openWritesOf` (`:298-301`), `finish` (`:306-326`);
+  `write.ts:69-106` (`admitted`), `:154-183` (a marca em `:160`). A porta `openWrites`:
+  `hub/connectors/assistant-port.ts:63,312`, `apps/server/src/conversations-of.ts:43`, chamada por
+  `builder/agents/conversation-routes.ts:71` e `builder/agents/tools.ts:120`.
+- **Quem fala.** `hub/identity/may-use.ts:22-27` (`Speaker`), `:64-68` (`declares`), `:76` (o
+  `VERSION` só confere o declarado); `hub/connectors/scope.ts:9-19` (`SessionScope`, com
+  `agentVersion?`); `hub/connectors/assistant-port.ts:109-125` (`mayAsk`: admite a pessoa com
+  `askAssistant` e devolve `scope.agentVersion ?? PERSON`). Quem preenche `agentVersion`:
+  `builder/agents/agent.ts:198`; quem lê: `tools.ts:99`, `assistant-port.ts:117`, e os testes
+  `hub/connectors/role-doors.test.ts:119,194`. `askAssistant` é de todo membro
+  (`hub/identity/admission.ts:95`), então quem publica sempre o tem.
+- **Os testes que chamam `markOf`**: `hub/connectors/write.test.ts:18-22,53,150,165,215`,
+  `write-lost.test.ts:17,38,84`, `write-executor.test.ts:35`,
+  `builder/agents/conversation-routes.test.ts:54`, `builder/agents/agents.eval.test.ts:81`.
 - **A migração.** `scripts/check-migrations.ts:16,51`: um `DROP` sem a linha `-- contract:` é
   recusado; trocar um `CHECK` é `DROP CONSTRAINT` e `ADD CONSTRAINT`.
 
@@ -855,17 +963,18 @@ aqui.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/hub-api/src/workflow-ids.ts`, `index.ts` | Cria; exporta | a U1, o servidor, a web |
-| `apps/server/src/hub/connectors/approval.ts` | Cria | `builder/agents/`, `builder/conversation/guard.ts`, a U3 |
-| `apps/server/src/hub/connectors/write-record.ts`, `write.ts`, `tables.ts`, `assistant-port.ts`, `public.ts` | Muda (`where`, `callKey`, o autor `WORKFLOW`, as colunas, o `CHECK`) | `builder/agents/tools.ts`, a U3 |
+| `apps/server/src/hub/connectors/approval.ts` | Cria (recebe `Holding` como `ApprovalDeps`, `roleNow`, `holdsWrite`, `publisherLeavesAlone`) | `builder/agents/`, a U3 |
+| `apps/server/src/hub/connectors/write-record.ts`, `write.ts`, `tables.ts`, `assistant-port.ts`, `scope.ts`, `public.ts` | Muda (`where`, `callKey`, `earlierAttempt`, o autor `WORKFLOW`, `speaksAs`, as colunas, o `CHECK`) | `builder/agents/`, `conversations-of.ts`, a U3 |
+| `apps/server/src/conversations-of.ts` | Muda (`openWrites` com o `OpenWritesKey` novo, `:43`) | `main.ts` |
 | `apps/server/src/hub/identity/may-use.ts`, `public.ts` | Muda (o braço `WORKFLOW` de `Speaker`) | `hub/connectors/` |
-| `apps/server/src/hub/connectors/{approval,write,connector-write-table}.test.ts`, `test-write.ts` | Cria ou muda (os testes dos critérios 6 a 8) | — |
-| `apps/server/src/builder/agents/tools.ts`, `publish.ts`, `write-of.ts`, `agent.ts` | Muda (chamam `approval.ts`; saem as cópias) | o controlador do agente |
-| `apps/server/src/builder/conversation/guard.ts` | Muda (`mayApprove` do lugar novo) | a conversa |
+| `apps/server/src/hub/connectors/{approval,write,connector-write-table}.test.ts`, `test-write.ts`, `write-lost.test.ts`, `write-executor.test.ts`, `role-doors.test.ts` | Cria ou muda (os critérios 6 a 8; `markOf` e `OpenWritesKey` com os argumentos novos; `speaksAs`) | — |
+| `apps/server/src/builder/agents/tools.ts`, `publish.ts`, `write-of.ts`, `agent.ts`, `conversation-routes.ts`, `conversation-routes.test.ts`, `agents.eval.test.ts` | Muda (chamam `approval.ts`; saem as cópias; `publisherOf` fica em `publish.ts`) | o controlador do agente |
 | `apps/server/migrations/` | Cria `<ts>_e246_connector_write_workflow` | o catálogo |
 | `apps/server/src/platform/catalog.test.ts` | Muda (o retrato do catálogo) | — |
 
-`database-grants.sql` não muda: `connector_write` já tem `SELECT, INSERT` na tabela e
-`UPDATE (state, answer)` (`database-grants.sql:331-333`), e as colunas novas só são inseridas.
+`builder/conversation/guard.ts` não muda. `database-grants.sql` não muda: `connector_write` já tem
+`SELECT, INSERT` na tabela e `UPDATE (state, answer)` (`database-grants.sql:331-333`), e as colunas
+novas só são inseridas.
 
 ### Os contratos que a unidade cria
 
@@ -881,6 +990,10 @@ export type BalloonId = z.infer<typeof BalloonId>
 /** Uma execução do Mastra: uuid (manual, gatilho do Sankhya, teste) ou sched_<agenda>_<ms> (horário). */
 export const WorkflowRunId = z.string().regex(/^([0-9a-f-]{36}|sched_[A-Za-z0-9_-]+_[0-9]+)$/).brand<'WorkflowRunId'>()
 export type WorkflowRunId = z.infer<typeof WorkflowRunId>
+/** A escrita de um balão numa tentativa da execução: '<balão>#<tentativa>' (workflow_run.attempt). */
+export const BalloonCallKey = z.string().regex(/^b[0-9]{1,3}#[0-9]{1,4}$/).brand<'BalloonCallKey'>()
+export type BalloonCallKey = z.infer<typeof BalloonCallKey>
+export function balloonCallKeyOf(balloon: BalloonId, attempt: number): BalloonCallKey
 ```
 
 Em `apps/server/src/hub/connectors/approval.ts`, a única dona de "pergunta ou faz" e de quem pode
@@ -888,49 +1001,101 @@ aprovar uma escrita:
 
 ```ts
 export type WriteScope =
-  | { kind: 'CONVERSATION'; threadId: ConversationId }  // a conversa: callKey é o toolCallId
-  | { kind: 'RUN'; runId: WorkflowRunId }              // o workflow: callKey é o balão
+  | { kind: 'CONVERSATION'; threadId: ConversationId }  // a conversa: callKey é um ToolCallId
+  | { kind: 'RUN'; runId: WorkflowRunId }              // o workflow: callKey é um BalloonCallKey
 export type WriteTarget = Readonly<{ connectionId: ConnectionId; connectorId: ConnectorId; operationId: OperationId }>
+/** O Holding do PR 843 e a porta das escritas abertas. */
+export type ApprovalDeps = Readonly<{
+  database: Database
+  identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
+  openWrites: (key: OpenWritesKey) => Promise<readonly OpenWrite[]>
+}>
+/** Quem escreve: o rascunho de um agente (a pessoa que conversa), ou uma versão publicada de agente ou de workflow. */
+export type WriteAuthorOf =
+  | { kind: 'DRAFT' }
+  | { kind: 'PUBLISHED'; publishedBy: PersonId | null }   // quem chama lê agent_version ou workflow_version
 export type Ask =
   | { kind: 'DO' }
   | { kind: 'ASK'; reason: 'CHOSEN' | 'PUBLISHER_LOST_RIGHT' | 'OPEN_WRITE' }
 
-/** Pergunta antes; D2-a (quem publicou perdeu o direito, ou saiu); uma escrita aberta no mesmo where. */
+/**
+ * Na ordem: `choice` ASK dá CHOSEN; um PUBLISHED cujo dono não deixa (publisherLeavesAlone, D2-a)
+ * dá PUBLISHER_LOST_RIGHT; um DRAFT nunca (como aloneByPublisher, PR 843 tools.ts:121); uma
+ * escrita aberta da mesma ligação e operação no mesmo where dá OPEN_WRITE; senão DO.
+ */
 export async function mustAsk(deps: ApprovalDeps, a: Readonly<{
   companyId: CompanyId
   choice: 'ASK' | 'AUTO'
-  publishedBy: PersonId | null       // quem chama lê: agent_version ou workflow_version
+  author: WriteAuthorOf
   scope: SessionScope
   where: WriteScope
   target: WriteTarget
 }>): Promise<Ask>
-/** D3-a: quem aprova tem a escrita no próprio papel, lido agora. */
-export async function mayApprove(deps: ApprovalDeps, a: Readonly<{
+/** D3-a: quem aprova tem a escrita no próprio papel, lido agora (o holdsWrite do PR 843). */
+export async function mayApprove(deps: Pick<ApprovalDeps, 'database' | 'identity'>, a: Readonly<{
   companyId: CompanyId; personId: PersonId; target: WriteTarget
 }>): Promise<boolean>
 ```
 
-`holdsWrite` e `publisherLeavesAlone` vêm do PR 843 para este arquivo, sem exportar; `publish.ts`
-guarda `refuseUnheld` e `versionBack`, que são do agente, e passa a chamar `mayApprove`.
-`writeTool.requireApproval` vira `(await mustAsk({ …, where: { kind: 'CONVERSATION', threadId },
-publishedBy })).kind === 'ASK'`, com `publishedBy` lido de `agent_version.published_by` como hoje.
+`roleNow`, `holdsWrite` e `publisherLeavesAlone` vêm do PR 843 para este arquivo, sem exportar e
+sem mudar o corpo, menos a leitura de `agent_version.published_by`, que sai de
+`publisherLeavesAlone` (passa a receber `publishedBy`) e fica em `builder/agents/publish.ts` como
+`publisherOf(deps, companyId, version): Promise<PersonId | null>`. `publish.ts` guarda
+`refuseUnheld` e `versionBack`, que são do agente. Em `builder/agents/tools.ts`, a dependência
+`leavesAlone` dá lugar a `publishedBy(version): Promise<PersonId | null>` (que `agent.ts:267` enche
+com `publisherOf`) e a `approval: ApprovalDeps`; `aloneByPublisher` sai; `writeTool.requireApproval`
+guarda as suas duas recusas de hoje (a ligação que o lugar não oferece mais e o `threadId` que não
+vem no `requestContext` perguntam) e então é `(await mustAsk(deps.approval, { …, author, where: {
+kind: 'CONVERSATION', threadId }, target })).kind === 'ASK'`, com `author` `DRAFT` ou `PUBLISHED`
+com `await deps.publishedBy(version)`. `write-of.ts:63` chama `mayApprove` em vez de `holdsWrite`.
 
-Em `hub/connectors/write-record.ts`, `WriteRequest` troca `threadId` e `toolCallId` por:
+Em `hub/connectors/write-record.ts`:
 
 ```ts
-  where: WriteScope
-  callKey: string                // o toolCallId, ou a id do balão
-  …
-} & (
+type Keyed =
+  | Readonly<{ where: Extract<WriteScope, { kind: 'CONVERSATION' }>; callKey: ToolCallId }>
+  | Readonly<{ where: Extract<WriteScope, { kind: 'RUN' }>; callKey: BalloonCallKey }>
+export type WriteRequest = Readonly<{
+  scope: SessionScope; connectionId: ConnectionId; operation: OperationId; input: unknown
+  approvedBy?: PersonId; turn: TurnKey; signal?: AbortSignal
+}> & Keyed & (
   | Readonly<{ speaker: Person }>
   | Readonly<{ speaker: Version; agentId: AgentId; number: number }>
   | Readonly<{ speaker: WorkflowSpeaker; workflowId: WorkflowId; number: number }>
 )
+/** Quais escritas abertas: as do where, de uma ligação e operação quando nomeadas, sem a chamada except. */
+export type OpenWritesKey = Readonly<{
+  scope: SessionScope; where: WriteScope
+  connectionId?: ConnectionId; operation?: OperationId
+  except?: ToolCallId | BalloonCallKey
+}>
+export function markOf(scopeId: ConversationId | WorkflowRunId, callKey: ToolCallId | BalloonCallKey): string
 ```
 
-`markOf(scopeId: string, callKey: string)` guarda a mesma conta de hoje, então a marca de uma
-escrita da 24.5 não muda. Em `hub/identity/may-use.ts`, `Speaker` ganha `{ kind: 'WORKFLOW';
-declared }`, conferido por `declares` como o `VERSION`.
+`markOf` guarda a mesma conta de hoje (`sha256` de `<conversa>\n<chamada>`), então a marca de uma
+escrita da 24.5 não muda; `key`, `ownRow`, `inserted`, `found`, `finish` usam `where` e `callKey`
+(`thread_id` é `threadId` ou `runId`); o `transactionLock` de `register` usa o mesmo id do `where`,
+então as tentativas de uma execução se revezam; `openRows` lê a marca com `ToolCallId.parse` numa
+`CONVERSATION` e `BalloonCallKey.parse` num `RUN`; `aboutOf` loga `toolCallId: a.callKey` (o nome
+do campo do log não muda) e o autor `WORKFLOW` com `workflowId` e `versionNumber`. Uma função nova:
+
+```ts
+/**
+ * As linhas do mesmo balão em tentativas anteriores da execução (step 24.6): só para um where RUN.
+ * Uma DONE devolve a resposta guardada e nunca envia; uma SENDING ou UNCERTAIN devolve
+ * WRITE_UNCERTAIN com a marca dela, salvo approvedBy (a pessoa conferiu no Sankhya e manda enviar);
+ * uma REFUSED, ou nenhuma, deixa esta tentativa enviar.
+ */
+async function earlierAttempt(tx: ReadTx, a: WriteRequest & { where: { kind: 'RUN' } }): Promise<Written | undefined>
+```
+
+`register` a chama depois de `ownRow` e antes de `heldBy`, dentro do mesmo `transactionLock`; ela lê
+`thread_id = runId` e `tool_call_id like '<balão>#%'` com `tool_call_id <> callKey`, a mais nova
+primeiro. Em `hub/connectors/scope.ts`, `SessionScope.agentVersion?` dá lugar a
+`speaksAs?: Extract<Speaker, { kind: 'VERSION' } | { kind: 'WORKFLOW' }>`; `mayAsk` devolve
+`scope.speaksAs ?? PERSON` depois da mesma admissão. Em `hub/identity/may-use.ts`, `Speaker` ganha
+`{ kind: 'WORKFLOW'; declared }`, e `mayUseEach` confere por `declares` todo autor que não é
+`PERSON`.
 
 A migração `<ts>_e246_connector_write_workflow`, gerada de `tables.ts` com a linha
 `-- contract: o CHECK connector_write_speaker ganha o braço WORKFLOW; a imagem anterior não grava esse braço`:
@@ -938,163 +1103,266 @@ acrescenta `workflow_id uuid null` e `workflow_version int null`; troca o `check
 `connector_write_speaker` por três braços exclusivos (`agent_id` e `version_number` não nulos e os
 outros nulos; só `person_id`; `workflow_id` e `workflow_version` não nulos e os outros nulos). A
 chave primária `(company_id, thread_id, tool_call_id)` fica: `thread_id` guarda a conversa ou a
-execução, `tool_call_id` o `toolCallId` ou o balão. Nada de chave nula, índice parcial ou segunda
-chave.
+execução, `tool_call_id` o `toolCallId` ou o `BalloonCallKey`. Nada de chave nula, índice parcial
+ou segunda chave.
 
 **O dono de cada fato.** "Pergunta ou faz": `approval.ts` `mustAsk`. Quem pode aprovar uma
-escrita: `approval.ts` `mayApprove`. A chave de uma escrita: `where` e `callKey`. O arquivo tomado
-como modelo: `hub/connectors/write-record.ts`, que cumpre C21 (o autor como união), C23 e C26.
+escrita: `approval.ts` `mayApprove`. A chave de uma escrita: `where` e `callKey`; a tentativa:
+`workflow_run.attempt` (U3). Quem publicou um agente: `publisherOf`. O arquivo tomado como modelo:
+`hub/connectors/write-record.ts`, que cumpre C21 (o autor como união), C23 e C26.
 
 ### As skills e a leitura
 
 As linhas de `docs/reference/stack.md` para `apps/server/src` (`drizzle-orm`), `apps/server`
 (`drizzle-kit`, a skill `drizzle`), `apps/server/src/hub` (`better-auth`: a skill
 `better-auth-best-practices`, para `hasPermission`), `apps/server/src/builder` (`@mastra/core`:
-`mastra`, para `requireApproval`).
+`mastra`, para `requireApproval`); `typescript-magician` para `Keyed`.
 
 ### A ordem do trabalho
 
 1. `workflow-ids.ts` num commit só (a U1 o pega). Regras: C23.
-2. `approval.ts`: mover `holdsWrite` e `publisherLeavesAlone` do PR 843 sem mudar o corpo,
-   trocar a leitura de `agent_version.published_by` pelo argumento `publishedBy`; escrever
-   `mustAsk` (a ordem: `choice` diferente de `AUTO` dá `CHOSEN`; quem publicou não deixa dá
-   `PUBLISHER_LOST_RIGHT`; uma escrita aberta no `where` dá `OPEN_WRITE`) e `mayApprove`. Apagar as
-   cópias em `builder/agents/` e chamar o lugar novo de `tools.ts`, `write-of.ts` e `guard.ts`.
-   Os testes do PR 843 passam sem mudar (critério 6).
-3. `write-record.ts`, `write.ts`, `assistant-port.ts`: `where` e `callKey`; o braço `WORKFLOW` em
-   `aboutOf`, `inserted`, `openRows`; `admitted` aceita o braço. `may-use.ts`: o braço.
+2. `approval.ts`: mover `Holding` (como `ApprovalDeps`), `roleNow`, `holdsWrite` e
+   `publisherLeavesAlone` do PR 843; `publisherOf` em `publish.ts`; escrever `mustAsk` e
+   `mayApprove`. Apagar as cópias e `aloneByPublisher`; `tools.ts`, `agent.ts:267` e `write-of.ts:63`
+   chamam o lugar novo. Os testes do PR 843 passam sem mudar (critério 6).
+3. `write-record.ts`, `write.ts`, `assistant-port.ts`, `conversations-of.ts:43`,
+   `conversation-routes.ts:71`: `where` e `callKey`; `earlierAttempt`; o braço `WORKFLOW` em
+   `authorOf`, `aboutOf`, `inserted`; `admitted` aceita o braço; os testes que chamam `markOf` com
+   `where` e `callKey`. `scope.ts`, `mayAsk` e `may-use.ts`: o braço. Regras: C21, C23, C65.
 4. `tables.ts`, `npm run generate`, a linha `-- contract:`, `npm run migrations`; o retrato do
    catálogo. Regras: data D6, D11.
 
 ### Como se prova
 
-Critérios 6 a 8. O critério 7 falha hoje porque `Speaker` não tem `WORKFLOW`.
+Critérios 6 a 8. O critério 7 falha hoje porque `Speaker` não tem `WORKFLOW` e `WriteRequest` não
+tem `where`; "a tentativa seguinte" falha hoje porque `foundIn` só olha a própria chave.
 
 ### Parar se
 
 - O PR 843 não estiver no `main`: não começar.
 - `markOf` com os argumentos novos der outra marca para uma linha da 24.5: relatar; a marca de uma
   escrita feita não muda.
+- Um teste do PR 843 ou do cartão da conversa precisar mudar para passar (fora `markOf` e
+  `OpenWritesKey` com os argumentos novos, e `speaksAs`): relatar com o teste; a regra não muda.
 - O `drizzle-kit` não gerar a troca do `CHECK` numa transação só: relatar com o SQL.
 
 ## U3 O executor e as execuções
 
 **Base e modelo.** A U1 e a U2 no `main`. Opus: a retomada através de um reinício, a corrida de
-duas respostas, a posse da execução e o agente que suspende cruzam o Mastra, o agente e o funil
-(concorrência e desenho entre módulos).
+duas respostas, a tentativa, a posse da execução e o agente que suspende cruzam o Mastra, o agente
+e o funil (concorrência e desenho entre módulos).
 
 ### As linhas da tabela
 
 - **As ferramentas.** O contexto `dist/tools/types.d.ts:202-212` (`workflowId`, `runId`,
-  `suspend`, `resumeData`, `suspendPayload`); `suspendSchema` e `resumeSchema`
-  (`reference-tools-create-tool.md:75-77,105`). Cada ferramenta acha a versão por
-  `parseMastraWorkflowId(context.workflow.workflowId)` e o balão pela id na entrada, lê o `frozen`
-  da versão, e nunca confia em empresa, ligação ou pessoa vindas do grafo (S7, S8, S9); confere a
+  `suspend`, `resumeData`, `suspendPayload`) e `context.requestContext`; `suspendSchema` e
+  `resumeSchema` (`reference-tools-create-tool.md:75-77,105`). Cada ferramenta lê a identidade da
+  execução do `requestContext` (`RunIdentity`, abaixo), confere que `workflowId` e `version` são os
+  de `parseMastraWorkflowId(context.workflow.workflowId)`, lê com o escopo
+  `{ kind: 'COMPANY', companyId, personId: null }`, como o Hub já faz (PR 843
+  `builder/agents/publish.ts:189-190`, `roleNow`; `hub/apps/repair.ts:224`), a linha da versão
+  (`workflow_version.frozen`, ou `workflow.test_draft` numa id `TEST`) e acha o balão pela id na
+  entrada; nunca confia em empresa, ligação ou pessoa vindas do grafo (S7, S8, S9); confere a
   própria entrada e lança uma `Failure` (prova P2 do estudo: o Mastra devolveria `{ error: true }`
-  como sucesso). O escopo de cada chamada é `SessionScope` com `personId` = quem publicou, `chosen`
-  = as ligações declaradas, e um `TurnKey` novo por execução (`hub/connectors/builder-port.ts:58-69`).
+  como sucesso). O Mastra devolve o `requestContext` gravado na retomada, no `restart` e no
+  `timeTravel`, e uma chave passada na chamada vence a gravada (`workflows/workflow.ts:5374`,
+  `:5715`, `:5863`; prova P13). O escopo de cada leitura e escrita é `SessionScope` com `personId` =
+  quem publicou, `place` = o lugar do workflow, `chosen` = as ligações declaradas, `speaksAs` =
+  `{ kind: 'WORKFLOW', declared }`, e um `TurnKey` novo por execução e tentativa
+  (`hub/connectors/builder-port.ts:58-69`).
+- **A falha de um balão.** Uma ferramenta lança `new Failure(code)` sem `details`: a mensagem é o
+  código sozinho (`platform/failure.ts:49-51`), e o Mastra guarda `{ name, message }` do erro
+  (prova P4). `runs.ts` lê o código como a primeira palavra de `error.message` por
+  `FailureCodeSchema`, e `INTERNAL_UNEXPECTED` quando não é um código. Nada de empresa no erro (S40).
 - **Conferir.** O modelo é `builder/automations/run.ts:189-219` (o dono reconferido, a agenda
   pausada). Lê `published_by`; nulo, ou fora da empresa, ou `mayUseEach` com `{ kind: 'PERSON',
-  role }` falso para uma leitura declarada: falha. Isso fecha a brecha de `may-use.ts:76`.
+  role }` falso para uma leitura declarada: falha. Isso fecha a brecha de `may-use.ts:76`. Os
+  esquemas `passthrough` da U1: devolve a entrada igual.
 - **Ler.** `hub/connectors/read.ts:135` (`readThrough`) pela porta do Assistente
-  (`assistant-port.ts:281-306`), com o autor `WORKFLOW` e o declarado.
+  (`assistant-port.ts:281-306`, `read(scope, call)`), com o `SessionScope` de cima: `mayAsk`
+  admite quem publicou e devolve o `speaksAs` `WORKFLOW` (U2). A entrada passa antes pelo esquema
+  de entrada da operação do kit; recusada, `REQUEST_MALFORMED`.
 - **O agente publicado.** `builder/agents/agent.ts:169-215` (`agentOf`, um `Agent` por versão) e
   `:81-86` (`agentRunContext`, "how a workflow, a test or the Construtor calls an agent alone");
   `builder/agents/open.ts:16-46` (`keep`, a linha antes da conversa) e `:54-88`; as etiquetas
-  `AGENT_MARK` (`builder/agents/controller.ts`). A prova P11 do estudo: `agent.stream`, drenar,
-  num pedaço `tool-call-approval` `context.workflow.suspend({ agentRunId, toolCallId })`; na
-  retomada `agent.approveToolCall({ runId, toolCallId })` ou `declineToolCall`, e drenar de novo.
+  `AGENT_MARK` (`builder/agents/controller.ts:56-62`); `attemptIdOf` (`builder/controller-kit/public.ts`,
+  usado em `run.ts:112`). A prova P11 do estudo: `agent.stream`, drenar, num pedaço
+  `tool-call-approval` `context.workflow.suspend({ agentRunId, toolCallId })`; na retomada aprovada
+  `agent.approveToolCall({ runId, toolCallId })`, e drenar de novo. Na recusa nada vai ao agente:
+  `agent.declineToolCall` é `resumeStream({ approved: false })`, uma chamada nova ao modelo, que
+  pode pedir a escrita de novo (`packages/core/src/agent/agent.ts:11888-11900`).
 - **O Assistente.** `builder/automations/run.ts:112-142`: `assistant.open`, `asked`, `turnEnd`,
   `sendSignal` com `requireDelivery`, os 15 minutos.
-- **Escrever.** `approval.ts` `mustAsk` (U2) e `writeThrough` com `where: { kind: 'RUN', runId }`
-  e `callKey` = o balão; aprovado, `approvedBy` = quem respondeu.
-- **Avisar.** `hub/notifications/notifications.ts:40-43,308-325`; a migração
-  `20261101085955_e242_notification` (as colunas, o `unique` empresa e execução, os `CHECK` de
-  `kind` e `failure_code`).
-- **A agenda.** `builder/automations/automations.ts:143-188` (criar idempotente), `cadence.ts:9,22-39`
-  (`cronOf`, o limite de 30), `AUTOMATION_TIMEZONE`. A prova P12 do estudo:
-  `mastra.schedules.create({ id, workflowId, cron, timezone, inputData, requestContext })` dispara a
-  versão; a execução é `sched_<agenda>_<ms>`.
-- **As execuções.** `builder/automations/runs.ts:70-190` é o modelo (a página de 20, a interrompida
-  cortada no início); `getWorkflowRunById`, `run.resume` (`dist/agent-BP9OWM6D.js:11239`),
-  `run.cancel` (`workflows/workflow.ts:4087-4126`), `run.timeTravel`, `run.restart`, a posse de
-  15 s (`packages/core/src/agent/run-ownership.ts:9`, `workflows/run-ownership.ts:6`); o retrato
-  `WorkflowRunState` (`workflows/types.ts:409-450`). As provas P5 a P8 e P10 do estudo são as formas
-  que funcionaram.
+- **Escrever.** `approval.ts` `mustAsk` (U2) com `author: { kind: 'PUBLISHED', publishedBy }` e
+  `writeThrough` com `where: { kind: 'RUN', runId }` e `callKey = balloonCallKeyOf(balão,
+  attempt)`; aprovado, `approvedBy` = quem respondeu.
+- **Avisar.** `hub/notifications/notifications.ts:40-43,308-325` (`automationRan`, o escopo
+  `COMPANY` com a pessoa avisada, porque a política da linha é a dela, `tables.ts:28`); a tabela
+  `hub/notifications/tables.ts:37-90` e a migração `20261101085955_e242_notification` (as colunas,
+  `notification_run_key` `UNIQUE (company_id, run_id)`, os `CHECK` `notification_kind`,
+  `notification_done`, `notification_failed` com `AutomationFailureCode`, `notification_paused`);
+  o leitor do sino `NotificationRow` (`packages/hub-api/src/notifications.ts`), lido em
+  `notifications.ts:281`.
+- **A agenda.** `builder/automations/automations.ts:105-114` (`atLimit`) e `:143-188` (criar
+  idempotente), `cadence.ts:4,9,22-39` (`AUTOMATION_TIMEZONE`, o limite de 30, `cronOf`). A prova
+  P12 do estudo: `mastra.schedules.create({ id, workflowId, cron, timezone, inputData,
+  requestContext })` dispara a versão; a execução é `sched_<agenda>_<ms>`; a linha guarda o
+  `requestContext` (`dist/schedules/schedules.d.ts:41-60`); `schedules.list` filtra por `status`
+  sem `workflowId` (`:151-165`).
+- **As execuções.** `builder/automations/runs.ts:70-190` é o modelo (a página de 20, e a
+  interrompida decidida ao ler: `running` criada antes de `bootedAt` é `INTERRUPTED`, `:87-99`, sem
+  escrever nada no início); `getWorkflowRunById`, `run.startAsync` (`workflows/workflow.ts:4431`),
+  `run.resume` (`dist/agent-BP9OWM6D.js:11239`), `run.cancel` (`workflows/workflow.ts:4087-4126`),
+  `run.timeTravel`, `run.restart` (`:5060`), a posse de 15 s (`packages/core/src/agent/run-ownership.ts:9`,
+  `workflows/run-ownership.ts:6`); o retrato `WorkflowRunState` (`workflows/types.ts:409-450`). As
+  provas P5 a P8, P10 e P13 do estudo são as formas que funcionaram.
+- **O início, por empresa.** `builder.companies_with_workflows()` (U1) por `database.installation`,
+  e cada empresa com `{ kind: 'COMPANY', companyId, personId: null }`, uma falha logada e deixada
+  para o próximo início, como `hub/apps/repair.ts:218-236`.
+- **As operações.** Como na U1: `defineOperation` em `packages/hub-api/src/workflow-operations.ts`,
+  `serve` em `builder/workflows/run-routes.ts`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/workflows/` | Cria `balloons/{check,read,agent,approval,write,notify}.ts`, `schedule.ts`, `runs.ts`, `run-routes.ts`, `run-tables.ts`; muda `tools.ts` (os corpos), `routes.ts` (a lista), `release.ts` (agendas e execuções) | `conversations-of.ts`, a U4, a U5 |
-| `apps/server/src/builder/agents/open.ts`, `public.ts`, `controller.ts` | Muda (`openWorkflowConversation`, `AGENT_MARK.workflow`, `workflowTurn` e `answerCall` em `agentsAlive`) | `balloons/agent.ts` |
-| `apps/server/src/builder/automations/` | Muda (`cadence.ts` e `public.ts`: o limite de 30 conta também as agendas `schedule_wf-*`; o teste da agenda com o relógio injetado, #754) | `schedule.ts` |
-| `apps/server/src/builder/mastra/hub-mastra.ts` | Muda (no início: a agenda segue o `state`; as decisões gravadas sem retomada são retomadas) | `main.ts` |
+| `apps/server/src/builder/workflows/` | Cria `balloons/{check,read,agent,approval,write,notify}.ts`, `run-identity.ts`, `schedule.ts`, `runs.ts`, `run-routes.ts`, `run-tables.ts`, `boot.ts`; muda `tools.ts` (os corpos), `routes.ts` (a lista), `release.ts` (agendas e execuções) | `conversations-of.ts`, `hub-mastra.ts`, a U4, a U5 |
+| `apps/server/src/builder/agents/open.ts`, `public.ts`, `controller.ts`, `tools.ts` | Muda (`openWorkflowConversation`, `workflowTurn`, `workflowAsked` e `approveCall` em `agentsAlive`; `AGENT_MARK.workflow`; `everyWriteAsks` nas escritas de um turno de teste) | `balloons/agent.ts` |
+| `apps/server/src/builder/automations/` | Muda (`cadence.ts` e `public.ts`: o limite de 30 conta também as agendas `schedule_wf-*` e `schedule_poll-*` da empresa; o teste da agenda com o relógio injetado, #754) | `schedule.ts` |
+| `apps/server/src/builder/mastra/hub-mastra.ts` | Muda (chama `boot.ts` depois de `startWorkers()`) | `main.ts` |
 | `apps/server/src/main.ts`, `conversations-of.ts` | Muda (as rotas das execuções; os workflows no `releaseFirst`) | — |
-| `apps/server/src/hub/notifications/` | Muda (`notifications.ts`, `tables.ts`, `mail.ts`, `public.ts`: quatro espécies novas) | o sino, o e-mail |
-| `packages/hub-api/src/workflows.ts`, `notifications.ts` | Muda (`RunView`, `RunPage`, `WorkflowSummary`, `AnswerBody`, `TestResult`; as espécies) | a web |
+| `apps/server/src/hub/notifications/` | Muda (`notifications.ts`: a porta `workflowNoticed`; `tables.ts`: as colunas, a chave, os `CHECK`; `mail.ts`; `public.ts`) | o sino, o e-mail, as ferramentas |
+| `packages/hub-api/src/workflows.ts`, `workflow-operations.ts`, `notifications.ts` | Muda (`RunView`, `RunPage`, `WorkflowSummary`, `AnswerBody`, `TestResult`; as operações das execuções; as quatro variantes `WORKFLOW_*` de `NotificationRow`) | a web |
 | `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria `<ts>_e246_workflow_run`, `<ts>_e246_workflow_run_grants`, `<ts>_e246_notification_workflow` | o catálogo |
 | `apps/server/src/platform/catalog.test.ts` | Muda (o retrato do catálogo) | — |
 | `apps/server/src/platform/recordings/` | Cria as gravações do retrato do Mastra | os testes |
 
 ### Os contratos que a unidade cria
 
+Em `builder/workflows/run-identity.ts`, o único canal da empresa e de quem começou até as
+ferramentas (C27: lido uma vez, na entrada de cada ferramenta):
+
+```ts
+export const RunIdentity = z.object({
+  companyId: CompanyId,
+  workflowId: WorkflowId,
+  version: z.int().positive().nullable(),            // nulo num TEST
+  startedBy: z.union([z.literal('SCHEDULE'), z.literal('POLL'), PersonId]),
+  attempt: z.int().nonnegative(),                     // workflow_run.attempt; 0 ao começar
+  label: z.string().max(120).optional(),              // 'Rodado por Ana', 'Orçamento nº 1043', 'Teste'; ausente na agenda
+})
+export type RunIdentity = z.infer<typeof RunIdentity>
+/** As chaves no requestContext do Mastra, uma por campo, com o prefixo conexus.run. */
+export function requestContextOf(identity: RunIdentity): RequestContext
+/** Recusada, ou sem chave: Failure('INTERNAL_UNEXPECTED'), e a ferramenta não lê nada. */
+export function identityOf(requestContext: RequestContext | undefined): RunIdentity
+```
+
+Quem a escreve: a agenda ao publicar (`schedules.create({ requestContext })`, `startedBy:
+'SCHEDULE'`, sem `label`: `conferir` escreve a hora do disparo, tirada dos `<ms>` da id da
+execução); `POST …/run` (`startedBy` = a pessoa, `label` "Rodado por <nome>"); a volta da U4
+(`'POLL'`, "Orçamento nº <número>"); `POST …/test` (a pessoa, "Teste"); **Tentar de novo** passa só
+`attempt`, e o resto volta do retrato (prova P13).
+
 Tabelas (esquema `builder`, D11):
 
 - `workflow_run(run_id text pk, company_id text not null, workflow_id uuid not null fk workflow on
-  delete cascade, version int not null, item_key text null, item_label text null, started_at
-  timestamptz not null)`; escrita por `conferir` com `ON CONFLICT DO NOTHING`; o teste não grava.
-  Permissões `SELECT, INSERT, DELETE`.
-- `workflow_run_decision(run_id text, call_key text, company_id text not null, workflow_id uuid not
-  null fk workflow on delete cascade, balloon_id text not null, person_id text not null, approved
-  boolean not null, decided_at timestamptz not null, primary key (run_id, call_key))`; `call_key` é
-  o balão num `APPROVAL` ou `WRITE`, e o `toolCallId` num `AGENT`. Permissões `SELECT, INSERT,
-  DELETE`.
-- `notifications.notification` ganha `workflow_id uuid null` e `workflow_name text null`; o `CHECK`
-  de `kind` aceita `WORKFLOW_WAITING`, `WORKFLOW_NOTICE`, `WORKFLOW_PAUSED`, `WORKFLOW_FAILED`; o de
-  `failure_code`, os códigos de `WORKFLOW_FAILURES`. Nada se renomeia; os `CHECK` trocados pedem a
-  linha `-- contract:`.
+  delete cascade, version int null, kind text not null check in ('RUN','TEST'), attempt int not
+  null default 0, label text not null, started_by text not null, item_key text null, started_at
+  timestamptz not null)`; `version` nulo só num `TEST`; escrita por `conferir` com `ON CONFLICT DO
+  NOTHING`. Permissões `SELECT, INSERT, DELETE` e `UPDATE (attempt)`.
+- `workflow_run_decision(run_id text, balloon_id text, attempt int, call text not null default '', company_id text not null,
+  workflow_id uuid not null fk workflow on delete cascade, person_id text not null, approved
+  boolean not null, decided_at timestamptz not null, primary key (run_id, balloon_id, attempt, call))`;
+  o balão é o `APPROVAL`, o `WRITE` ou o `AGENT` que espera; `call` é o `toolCallId` do agente num
+  balão `AGENT` (um agente aprovado pode pedir outra escrita na mesma tentativa, e cada pedido tem
+  a sua decisão) e `''` nos outros. Permissões `SELECT, INSERT, DELETE`.
+- `notifications.notification`, na migração `<ts>_e246_notification_workflow`, gerada de
+  `hub/notifications/tables.ts`, com a linha `-- contract: notification_run_key sai e
+  automation_id e automation_name aceitam nulo; a imagem anterior só grava AUTOMATION_*, que
+  continuam uma por execução e pessoa (subject_key vazio); um sino da imagem anterior que encontre
+  uma linha WORKFLOW_* recusa a lista até a imagem nova subir, a janela de uma troca de imagem`:
+  `automation_id` e `automation_name` `DROP NOT NULL`; colunas novas `workflow_id uuid null`,
+  `workflow_name text null`, `balloon_id text null`, `subject_key text not null default ''`;
+  `DROP CONSTRAINT notification_run_key` e `ADD CONSTRAINT notification_subject_key UNIQUE
+  (company_id, run_id, person_id, kind, subject_key)`; `subject_key` é `''` nos avisos da execução
+  (`AUTOMATION_*`, `WORKFLOW_PAUSED`, `WORKFLOW_FAILED`) e `<balão>#<tentativa>` nos de um balão
+  (`WORKFLOW_WAITING`, `WORKFLOW_NOTICE`), com `#<toolCallId>` no fim quando um balão `AGENT` espera
+  (cada pedido de escrita do agente avisa uma vez); `notification_kind` passa a aceitar as sete espécies;
+  `notification_done`, `notification_failed` e `notification_paused` são reescritos para exigir
+  também `automation_id` e `automation_name` não nulos e `workflow_id`, `workflow_name` e
+  `balloon_id` nulos; quatro `CHECK` novos: `notification_workflow_waiting` e
+  `notification_workflow_notice` (`workflow_id`, `workflow_name` e `balloon_id` não nulos,
+  `automation_*`, `conversation_id` e `failure_code` nulos), `notification_workflow_paused` (o
+  mesmo sem balão: `balloon_id` nulo), `notification_workflow_failed` (`workflow_*` não nulos,
+  `balloon_id` nulo, `failure_code` em `WorkflowFailureCode`). Uma linha da 24.2 passa em todos.
+  As permissões não mudam: `hub_company` já tem `SELECT, INSERT` na tabela e `UPDATE (read_at)`
+  (`20261101085959_e242_notification_grants`, `database-grants.sql:340-341`), e a política `OWN`
+  fica (o aviso é escrito no escopo da pessoa avisada, como `automationRan`).
+  `WorkflowFailureCode` é a lista dos códigos que um balão ou `conferir` lança, em
+  `workflow-failures.ts` (U1).
 
 O que as ferramentas suspendem e retomam (os esquemas do `suspendSchema` e do `resumeSchema`):
 
 ```ts
 type Suspended =
   | { kind: 'APPROVAL'; balloonId: BalloonId; approver: PersonId; question: string }
-  | { kind: 'WRITE'; balloonId: BalloonId; approver: PersonId; reason: Ask['reason'];
+  | { kind: 'WRITE'; balloonId: BalloonId; approver: PersonId;
+      reason: Ask['reason'] | 'UNCERTAIN'; mark: string | null;
       connectionId: ConnectionId; operation: OperationId; fields: Record<string, unknown> }
   | { kind: 'AGENT_WRITE'; balloonId: BalloonId; approver: PersonId; agentRunId: string;
       toolCallId: string; connectionId: ConnectionId; operation: OperationId; fields: Record<string, unknown> }
-type Resumed = { approved: boolean; personId: PersonId }
+type Resumed = { approved: true; personId: PersonId }   // a recusa nunca retoma: cancela
 ```
 
 O `approver` sai do `Approver` do balão (`PUBLISHER` é `published_by`); num `WRITE` com
-`PUBLISHER_LOST_RIGHT`, é sempre quem publicou (decisão A). `agentRunId` e `toolCallId` ficam no
-retrato; a vista não os mostra.
+`PUBLISHER_LOST_RIGHT`, é sempre quem publicou (decisão A); num `TEST`, é sempre quem começou o
+teste. `agentRunId` e `toolCallId` ficam no retrato; a vista não os mostra.
+
+O que cada resposta do funil faz com o balão `READ` e `WRITE` (a união `Written` de
+`write-record.ts:53-62` e `Answered` do kit):
+
+| Resposta | O balão |
+| --- | --- |
+| `OK` | devolve `{ resultado }` (`READ`) ou `{ resultado, marca }` com `markOf(runId, callKey)` (`WRITE`) |
+| `WRITE_UNCERTAIN`, `WRITE_OPEN` | suspende `WRITE` com `reason` `UNCERTAIN` ou `OPEN_WRITE` e a marca; aprovado, envia com `approvedBy` |
+| `NOT_IN_ROLE` | lança `NOT_IN_ROLE` |
+| `NOT_GRANTED` | lança `CONNECTOR_NOT_GRANTED` |
+| `TOKEN_EXPIRED` | lança `CONNECTION_SIGN_IN_EXPIRED` |
+| `AUTH_REFUSED` | lança `CONNECTION_CREDENTIAL_INVALID` |
+| `REFUSED`, `UNREADABLE`, `BUSY` | lança `BALLOON_SYSTEM_REFUSED` |
+| `UNREACHABLE`, `DEADLINE` | lança `BALLOON_SYSTEM_UNREACHABLE` |
+| `IDEMPOTENCY_CONFLICT` | lança `IDEMPOTENCY_CONFLICT` |
+| `CALLS_SPENT` | lança `INTERNAL_UNEXPECTED` (uma execução tem no máximo 50 balões, menos que as chamadas do turno) |
 
 Em `packages/hub-api/src/workflows.ts`:
 
 ```ts
-export const RunState = z.enum(['RUNNING', 'WAITING', 'DONE', 'FAILED', 'DECLINED', 'INTERRUPTED'])
+export const RunState = z.enum(['RUNNING', 'WAITING', 'DONE', 'FAILED', 'DECLINED', 'CANCELED',
+  'INTERRUPTED', 'STOPPED_BEFORE_WRITE'])               // o último só num TEST
 export const BalloonState = z.enum(['PENDING', 'RUNNING', 'DONE', 'FAILED', 'WAITING', 'SKIPPED'])
 export const Waiting = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('APPROVAL'), balloonId: BalloonId, approver: PersonId, question: z.string() }),
   z.object({ kind: z.literal('WRITE'), balloonId: BalloonId, approver: PersonId,
-    reason: z.enum(['CHOSEN', 'PUBLISHER_LOST_RIGHT', 'OPEN_WRITE']),
+    reason: z.enum(['CHOSEN', 'PUBLISHER_LOST_RIGHT', 'OPEN_WRITE', 'UNCERTAIN']), mark: z.string().nullable(),
     connectionId: ConnectionId, operation: OperationId, fields: z.record(z.string(), z.unknown()) }),
   z.object({ kind: z.literal('AGENT_WRITE'), balloonId: BalloonId, approver: PersonId,
     connectionId: ConnectionId, operation: OperationId, fields: z.record(z.string(), z.unknown()) }),
 ])
 export const RunView = z.object({
-  runId: WorkflowRunId, workflowId: WorkflowId, versionNumber: z.int().positive(),
+  runId: WorkflowRunId, workflowId: WorkflowId, versionNumber: z.int().positive().nullable(),
+  kind: z.enum(['RUN', 'TEST']),
+  attempt: z.int().nonnegative(),
   item: z.object({ key: z.string(), label: z.string() }).nullable(),
-  /** O nome da execução para a pessoa: 'Orçamento nº 1043', 'Rodado por Ana', '10/11 às 7h'. */
+  /** O nome da execução para a pessoa: 'Orçamento nº 1043', 'Rodado por Ana', '10/11 às 7h', 'Teste'. */
   label: z.string(),
   state: RunState,
   balloons: z.array(z.object({ id: BalloonId, state: BalloonState,
     output: z.unknown().optional(), conversationId: ConversationId.optional(),
     failure: FailureCodeSchema.optional() })),
   waiting: Waiting.nullable(),
-  decisions: z.array(z.object({ balloonId: BalloonId, approved: z.boolean(), by: PersonId, at: z.iso.datetime() })),
+  decisions: z.array(z.object({ balloonId: BalloonId, attempt: z.int().nonnegative(),
+    approved: z.boolean(), by: PersonId, at: z.iso.datetime() })),
   startedAt: z.iso.datetime(),
 })
 export const RunSummary = RunView.pick({ runId: true, versionNumber: true, item: true, label: true, state: true, startedAt: true })
@@ -1106,19 +1374,25 @@ export const WorkflowSummary = z.object({
   waitingCount: z.int().nonnegative(),
 })
 export const AnswerBody = z.object({ approved: z.boolean() })
+/** O que workflow_test (U5) responde: o teste começou, ou o rascunho tem problemas. */
 export const TestResult = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('RAN'), run: RunView }),                   // até o fim, ou até a escrita
+  z.object({ kind: z.literal('STARTED'), runId: WorkflowRunId }),
   z.object({ kind: z.literal('PROBLEMS'), problems: z.array(WorkflowProblem) }),
 ])
 ```
 
 O retrato do Mastra é lido com um esquema Zod só do que o Conexus usa (`status`,
-`suspendedPaths`, `context[<id>]` com `status`, `output`, `suspendPayload` e `error`), gravado com
-`npm run record` (T26) num `suspended`, `success`, `failed`, `canceled` e `running`. O estado:
-`suspended` é `WAITING`; `success` `DONE`; `failed` `FAILED`; `canceled` com uma decisão recusada
-`DECLINED`; `running` de antes do início do Hub `INTERRUPTED`. O de cada balão: o passo `bN` do
-retrato; um balão de um ramo não tomado num retrato terminado é `SKIPPED` (prova P5 do estudo); um
-balão sem passo num retrato que roda é `PENDING`.
+`suspendedPaths`, `requestContext`, `context[<id>]` com `status`, `output`, `suspendPayload` e
+`error`), gravado com `npm run record` (T26) num `suspended`, `success`, `failed`, `canceled` e
+`running`. O estado: `suspended` é `WAITING`; `success` `DONE`; `failed` `FAILED`, e num `TEST`
+falhado com `WORKFLOW_TEST_STOPPED_AT_WRITE` `STOPPED_BEFORE_WRITE`; `canceled` com uma decisão
+recusada da tentativa atual `DECLINED`, sem ela `CANCELED`; `running` criado antes de `bootedAt`
+`INTERRUPTED`, como `builder/automations/runs.ts:87-99`. O de cada balão: o passo `bN` do retrato;
+um balão de um ramo não tomado num retrato terminado é `SKIPPED` (prova P5 do estudo); um balão sem
+passo num retrato que roda é `PENDING`. `waitingCount` e `lastRun` de `GET BASE?place=`: `lastRun` é
+a linha mais nova de `workflow_run` (`kind = 'RUN'`) com o seu retrato; `waitingCount` conta as
+execuções `suspended` de `listWorkflowRuns({ workflowName, status: 'suspended' })` por versão do
+workflow que tem execução (a nota I3).
 
 Em `builder/agents/public.ts` (`agentsAlive`), para o balão de agente:
 
@@ -1126,38 +1400,76 @@ Em `builder/agents/public.ts` (`agentsAlive`), para o balão de agente:
 /** A conversa de um agente aberta por um workflow: a linha keep e o thread com AGENT_MARK.workflow, sem sessão do controlador. */
 openWorkflowConversation(a: { scope: InProject; agentId: AgentId; versionNumber: number;
   id: ConversationId; workflowId: WorkflowId }): Promise<void>
-/** Roda a versão fixada no thread da conversa: o stream do Mastra, que o balão drena. */
+/** Se o thread já tem a pergunta do balão: o mesmo passo de novo na mesma tentativa não pergunta duas vezes (como assistant.asked, run.ts:119-120). */
+workflowAsked(a: { scope: InProject; conversationId: ConversationId }): Promise<boolean>
+/** Roda a versão fixada no thread da conversa: o stream do Mastra, que o balão drena. Num TEST, everyWriteAsks faz toda escrita da versão perguntar. */
 workflowTurn(a: { scope: InProject; agentId: AgentId; versionNumber: number;
-  conversationId: ConversationId; prompt: string; signal: AbortSignal }): Promise<MastraModelOutput>
-/** A retomada: approveToolCall ou declineToolCall na mesma versão, com APPROVED_CALL no requestContext. */
-answerCall(a: { scope: InProject; agentId: AgentId; versionNumber: number;
-  agentRunId: string; toolCallId: string; approved: boolean; personId: PersonId; signal: AbortSignal }): Promise<MastraModelOutput>
+  conversationId: ConversationId; prompt: string; everyWriteAsks: boolean; signal: AbortSignal }): Promise<MastraModelOutput>
+/** A retomada aprovada: approveToolCall na mesma versão, com APPROVED_CALL no requestContext. A recusa não chama nada. */
+approveCall(a: { scope: InProject; agentId: AgentId; versionNumber: number;
+  agentRunId: string; toolCallId: string; personId: PersonId; signal: AbortSignal }): Promise<MastraModelOutput>
 ```
 
-A id da conversa vem da execução e do balão (`attemptIdOf` como `run.ts:112`), então um `restart()`
-encontra a mesma. Dentro do agente, a ferramenta de escrita vê `context.agent` e não
-`context.workflow`, então nunca suspende duas vezes (prova P11 do estudo); a escrita guarda a
-chave da conversa, com o autor `VERSION`.
+A id da conversa é `attemptIdOf('agent', dono, 'workflow:<execução>:<balão>:<tentativa>')`, como
+`run.ts:112`: o mesmo passo na mesma tentativa encontra a mesma (e `workflowAsked` faz o balão
+falhar com `INTERRUPTED` em vez de perguntar de novo), e **Tentar de novo** abre outra. Dentro do
+agente, a ferramenta de escrita vê `context.agent` e não `context.workflow`, então nunca suspende
+duas vezes (prova P11 do estudo); a escrita guarda a chave da conversa, com o autor `VERSION`.
+Recusada, a corrida suspensa do próprio agente fica como está e nada a retoma; a conversa do
+agente, aberta pelo painel do balão, mostra a chamada sem cartão, porque nenhuma sessão espera nela
+(`apps/web/src/builder/conversation/rows.ts:122-126`, `cardState` dá `'none'`), e quem recusou e
+quando está na página da execução, de `workflow_run_decision`. Nada muda em `rows.ts`.
 
-Rotas (`BASE` como na U1; acesso `manageAutomations`, menos `answer`, que é da pessoa do pedido):
+As operações das execuções, em `workflow-operations.ts` (como na U1; `manageAutomations`, menos
+`answerWorkflowCall`, que é da pessoa do pedido; `ONE_FAILURES` com `WORKFLOW_NOT_FOUND`):
 
-- `GET BASE?place=COMPANY|<projectId>` → `{ workflows: WorkflowSummary[] }`.
-- `GET BASE/{w}/runs?page=` → `RunPage`; `GET BASE/{w}/runs/{r}` → `RunView`; `RUN_NOT_FOUND`.
-- `POST BASE/{w}/runs/{r}/balloons/{b}/answer` corpo `AnswerBody` → `RunView`; `RUN_NOT_WAITING`,
-  `NOT_APPROVER`, `NOT_IN_ROLE`.
-- `POST BASE/{w}/runs/{r}/retry` → `RunView`; `RUN_NOT_FAILED`, `RUN_STILL_OWNED`.
-- `POST BASE/{w}/run` → `{ runId }`; `WORKFLOW_NOT_PUBLISHED`, `WORKFLOW_PAUSED`.
-- `POST BASE/{w}/pause`, `POST BASE/{w}/resume` → `WorkflowView`; `AUTOMATION_LIMIT` ao religar
-  além de 30.
-- `POST BASE/{w}/test` → `TestResult`.
+| id | Método e caminho | `bodyLimit` | Entrada | Sucesso | Falhas além das de leitura |
+| --- | --- | --- | --- | --- | --- |
+| `listWorkflows` | `GET BASE?place=COMPANY\|<projectId>` | 1024 | `query` | 200 `{ workflows: WorkflowSummary[] }` | — |
+| `listWorkflowRuns` | `GET BASE/{w}/runs?page=` | 1024 | `query` | 200 `RunPage` | — |
+| `getWorkflowRun` | `GET BASE/{w}/runs/{r}` | 1024 | — | 200 `{ run: RunView }` | `RUN_NOT_FOUND` |
+| `answerWorkflowCall` | `POST BASE/{w}/runs/{r}/balloons/{b}/answer` | 1024 | `AnswerBody` | 202 `{ run: RunView }` | `RUN_NOT_FOUND`, `RUN_NOT_WAITING`, `NOT_APPROVER`, `NOT_IN_ROLE`, `HUB_UPDATING` |
+| `retryWorkflowRun` | `POST BASE/{w}/runs/{r}/retry` | 1024 | — | 202 `{ run: RunView }` | `RUN_NOT_FOUND`, `RUN_NOT_FAILED`, `RUN_STILL_OWNED`, `HUB_UPDATING` |
+| `runWorkflow` | `POST BASE/{w}/run` | 1024 | — | 202 `{ runId }` | `WORKFLOW_NOT_PUBLISHED`, `WORKFLOW_PAUSED`, `HUB_UPDATING` |
+| `pauseWorkflow`, `resumeWorkflow` | `POST BASE/{w}/pause`, `POST BASE/{w}/resume` | 1024 | — | 200 `{ workflow: WorkflowView }` | `resume`: `AUTOMATION_LIMIT`, `HUB_UPDATING` |
+| `testWorkflow` | `POST BASE/{w}/test` | 1024 | — | 202 `{ runId }` | `WORKFLOW_HAS_PROBLEMS`, `WORKFLOW_TEST_NO_ITEM`, `HUB_UPDATING` |
+
+`runWorkflow` e `testWorkflow` usam `run.startAsync`, e respondem quando a execução começou;
+`answerWorkflowCall` e `retryWorkflowRun` gravam a decisão ou a tentativa, chamam `resume`,
+`timeTravel` ou `restart` sem esperar o fim, e respondem com o `RunView` lido logo depois; uma
+recusa do Mastra que chegue depois é logada (`WORKFLOW_RESUME_FAILED`) e a próxima leitura mostra a
+execução como está. `RUN_STILL_OWNED` é decidido antes de chamar: uma execução `INTERRUPTED` cujo
+retrato mudou há menos da posse do Mastra (15 s, `workflows/run-ownership.ts:6`).
 
 `schedule.ts`: `scheduleIdOf(workflowId, version)` = `schedule_wf-<w>-v<n>`; ao publicar com
-`SCHEDULE`, criar a da versão nova, depois apagar a da anterior; pausar, religar e apagar seguem o
-`state`. `runs.ts`: a porta `TestInput` (`latest(workflow): Promise<unknown>`), que a U4 enche para
-`SANKHYA_NEW`; para os outros, `{}`.
+`SCHEDULE`, criar a da versão nova com o `requestContext` de `RunIdentity`, depois apagar a da
+anterior; pausar, religar e apagar seguem o `state`. O limite de 30, em `cadence.ts` e
+`automations/public.ts`: `activeOfCompany(mastra, companyId)` soma as agendas da Automação de
+`atLimit` e as de `schedules.list({ status: 'active' })` cuja id começa por `schedule_wf-` ou
+`schedule_poll-` e cujo `requestContext.companyId` é a empresa; `atLimit` e a publicação de um
+workflow usam a mesma soma. `runs.ts`: a porta `TestInput` (`latest(workflow): Promise<unknown |
+null>`), que a U4 enche para `SANKHYA_NEW`; para os outros, `{}`; `null` responde
+`WORKFLOW_TEST_NO_ITEM`.
 
-**O dono de cada fato.** O estado de uma execução: o retrato do Mastra, lido por `runs.ts`. Quais
-execuções um workflow tem: `workflow_run`. Uma resposta: `workflow_run_decision`. A espera: o
+**O teste.** `POST …/test`: `problemsOf` (um `ERROR` responde `WORKFLOW_HAS_PROBLEMS`); o
+`FrozenWorkflow` do rascunho (os agentes por `activeOf` agora, o declarado) em
+`workflow.test_draft`; `run.cancel()` da execução de teste ainda aberta (a `workflow_run` `TEST`
+mais nova, se o retrato não terminou); `addDynamicWorkflows(compiled({ kind: 'TEST', … }))`;
+`createRun()` e `startAsync({ inputData: await testInput.latest(workflow), requestContext })`. Num
+`TEST`: `notify.ts` não avisa e devolve `{ avisados: [] }`; `approval.ts` espera quem começou e
+não avisa; `write.ts` lança `WORKFLOW_TEST_STOPPED_AT_WRITE` antes de chamar `mustAsk`; `agent.ts`
+roda `workflowTurn` com `everyWriteAsks: true` e, no pedido de escrita, lança o mesmo código.
+
+**O início do Hub** (`builder/workflows/boot.ts`, chamado de `hub-mastra.ts` depois de
+`startWorkers()`), para cada empresa de `builder.companies_with_workflows()`: a agenda de uma
+versão que não é a ativa sai, e um workflow `ON` com `SCHEDULE` sem agenda ganha a sua (a U4 faz o
+mesmo para `schedule_poll-<w>`); cada `workflow_run_decision` aprovada cuja `attempt` é a de
+`workflow_run` e cuja execução ainda está `suspended` naquele balão é retomada, e uma recusada nessa
+condição é cancelada. Nada marca execuções `INTERRUPTED`: isso é decidido ao ler.
+
+**O dono de cada fato.** O estado de uma execução: o retrato do Mastra, lido por `runs.ts`. Quem
+começou, a empresa e a tentativa: `RunIdentity` no `requestContext`, copiada em `workflow_run`.
+Quais execuções um workflow tem: `workflow_run`. Uma resposta: `workflow_run_decision`. A espera: o
 `suspendPayload`. O arquivo tomado como modelo: `builder/automations/runs.ts` e `run.ts`, que
 cumprem C21 (o desfecho como união), C23 e C26.
 
@@ -1172,60 +1484,76 @@ As linhas de `docs/reference/stack.md` para `apps/server/src/builder` (`@mastra/
 
 ### A ordem do trabalho
 
-1. As migrações `e246_workflow_run` (com permissões e espelho) e `e246_notification_workflow` (com
+1. **A prova do agente fixado, antes de tudo.** Com o registro do próprio Hub (`agentOf` de uma
+   versão publicada que não é a ativa, como o balão faz), num processo: o turno, o pedido de
+   escrita, o workflow suspenso; num Hub novo ao lado do mesmo banco: `approveToolCall` nessa
+   versão, e `APPROVED_CALL` chegando à ferramenta de escrita (`approvedBy` gravado na linha de
+   `connector_write`). O teste fica como o caso "o agente que escreve" depois do reinício
+   (critério 12). Se uma das duas falhar, parar (abaixo).
+2. As migrações `e246_workflow_run` (com permissões e espelho) e `e246_notification_workflow` (com
    `-- contract:`); `npm run migrations`. Regras: data D6, D11.
-2. `balloons/check.ts`: o `INSERT` em `workflow_run`, a reconferência, e na falha `state =
-   PAUSED_OWNER`, `schedules.pause`, o aviso `WORKFLOW_PAUSED`, e a `Failure`
-   `WORKFLOW_OWNER_CANNOT_RUN`.
-3. `balloons/read.ts`, `balloons/notify.ts` (nada num `TEST`), `balloons/approval.ts` (suspende
-   com `APPROVAL`, avisa `WORKFLOW_WAITING`; na retomada devolve `{ aprovado, por }`).
-4. `balloons/write.ts`: sem `resumeData`, `mustAsk`; `ASK`, ou um `TEST`, suspende com `WRITE` e
-   avisa (num `TEST` não avisa); `DO` envia. Com `resumeData.approved`, envia com `approvedBy`.
-5. `agents/open.ts` e `public.ts` (os três de cima); `balloons/agent.ts`: o Assistente como
+3. `run-identity.ts`; `balloons/check.ts`: `identityOf`, o `INSERT` em `workflow_run`, a
+   reconferência, e na falha `state = PAUSED_OWNER`, `schedules.pause`, o aviso `WORKFLOW_PAUSED`,
+   e a `Failure` `WORKFLOW_OWNER_CANNOT_RUN`. Regras: C27, S7, S8, S9.
+4. `hub/notifications`: a porta `workflowNoticed` com `subject_key`; `balloons/read.ts`,
+   `balloons/notify.ts`, `balloons/approval.ts` (suspende com `APPROVAL`, avisa `WORKFLOW_WAITING`;
+   na retomada devolve `{ aprovado, por }`).
+5. `balloons/write.ts`: sem `resumeData`, `mustAsk`; `ASK` suspende com `WRITE` e avisa; `DO`
+   envia com a chave `<balão>#<tentativa>`; cada resposta como a tabela de cima. Com
+   `resumeData.approved`, envia com `approvedBy`.
+6. `agents/open.ts` e `public.ts` (os quatro de cima); `balloons/agent.ts`: o Assistente como
    `run.ts:112-142`; o publicado abre a conversa, chama `workflowTurn`, **drena o stream inteiro**,
    e só então, se viu um `tool-call-approval`, suspende com `AGENT_WRITE` e avisa; na retomada,
-   aprovado, `answerCall` e drena de novo (o agente pode pedir outra escrita: suspende de novo com o
-   `toolCallId` novo); recusado, a rota de responder chama `answerCall` com `approved: false`
-   (o `declineToolCall`, para fechar a corrida do agente) e então `run.cancel()`: a execução termina
-   `DECLINED` e o agente não é chamado de novo. O começo:
+   `approveCall` e drena de novo (o agente pode pedir outra escrita: suspende de novo com o
+   `toolCallId` novo). O começo:
 
    ```ts
-   const output = await alive.workflowTurn({ scope, agentId, versionNumber, conversationId, prompt, signal })
+   const output = await alive.workflowTurn({ scope, agentId, versionNumber, conversationId, prompt, everyWriteAsks: test, signal })
    let asked: { toolCallId: string; toolName: string; args: unknown } | null = null
    for await (const chunk of output.fullStream) {
      if (chunk.type === 'tool-call-approval') asked = chunk.payload
    }
    // só depois de drenar (prova P11: antes, a retomada falha com AGENT_RESUME_TOOL_CALL_NOT_SUSPENDED)
+   if (asked !== null && test) throw new Failure('WORKFLOW_TEST_STOPPED_AT_WRITE')
    if (asked !== null) return context.workflow.suspend({ kind: 'AGENT_WRITE', agentRunId: output.runId, … })
    ```
 
-6. `schedule.ts` e o limite de 30 em `cadence.ts`; o #754: o teste da agenda recebe o relógio
-   injetado (testing T20).
-7. `runs.ts` e `run-routes.ts`: a lista, a vista, `answer` (`mayApprove` num `WRITE` e num
-   `AGENT_WRITE`; o `INSERT` da decisão; `resume({ resumeData })`, ou `cancel()` na recusa de um
-   `APPROVAL`, `WRITE` ou `AGENT_WRITE`, este depois do `declineToolCall`), `retry`, `run`, `pause`, `resume`, `test` (`test_draft`,
-   `addDynamicWorkflows` de `wf-<w>-teste`, a execução, e `cancel()` quando ela para numa escrita).
-8. O início em `hub-mastra.ts`; `release.ts` (as agendas, `deleteWorkflowRunById` de cada
-   execução, porque guardam a entrada, como `builder/automations/release.ts:22-35`); `GET BASE`.
+7. `schedule.ts` e `activeOfCompany`; o #754: o teste da agenda recebe o relógio injetado (testing
+   T20).
+8. `runs.ts` e `run-routes.ts`: a lista (sem `TEST`), a vista, `answer` (`mayApprove` num `WRITE`
+   e num `AGENT_WRITE`; o `INSERT` da decisão com a tentativa; aprovada, `resume({ resumeData })`;
+   recusada, `cancel()`, nunca o agente), `retry` (o `UPDATE … WHERE attempt = <a lida>`, depois
+   `timeTravel({ step, requestContext })` ou `restart({ requestContext })` com só `attempt`;
+   `step` é `bN`, ou `bK` para um balão de dentro do ramo `bK`), `run`, `pause`, `resume`, `test`.
+   Regras: C63, C65.
+9. `boot.ts` e o início em `hub-mastra.ts`; `release.ts` (as agendas, `deleteWorkflowRunById` de
+   cada execução, porque guardam a entrada, como `builder/automations/release.ts:22-35`); `GET
+   BASE`.
 
 ### Como se prova
 
 Critérios 9 a 22, com o dublê do Sankhya, o modelo de mentira e o relógio injetado; os critérios
 12, 14 e 18 abrem um segundo Hub ao lado do mesmo banco. O critério 12 falha hoje porque um agente
-com escrita num workflow lança `CONNECTOR_WRITE_NO_CONTEXT` (`builder/agents/tools.ts:127-130`).
+com escrita num workflow lança `CONNECTOR_WRITE_NO_CONTEXT` (`builder/agents/tools.ts:127-130`); o
+13, porque `notification_run_key` recusa o segundo aviso da execução.
 
 ### Parar se
 
+- O passo 1 falhar: `approveToolCall` num processo novo não achar a corrida do agente construído por
+  `agentOf` para uma versão que não é a ativa, ou `APPROVED_CALL` não chegar à ferramenta (a escrita
+  sem `approvedBy`): parar e relatar com a saída; não registrar a versão no Mastra por fora, e o
+  critério 12 não passa a should sem o cartão.
 - Rodar a versão fixada no thread aberto por `openWorkflowConversation` brigar com o controlador
   do agente (a sessão segura o thread): relatar com a saída; não abrir um segundo formato de
   conversa.
-- `approveToolCall` num processo novo não achar a corrida do agente construído por `agentOf` para
-  uma versão que não é a ativa: relatar; não registrar a versão no Mastra por fora.
-- `approveToolCall` não levar `requestContext`, e por isso a escrita não receber `approvedBy`:
-  relatar; o `WRITE_OPEN` da 24.5 decide o que fazer.
+- Um agente que, aprovado, pede outra escrita na mesma tentativa suspender de novo o balão e a
+  segunda decisão não chegar à segunda chamada (a chave é `(run_id, balloon_id, attempt, call)`, e
+  o aviso usa `subject_key` `<balão>#<tentativa>#<toolCallId>`): relatar com o teste.
 - Retomar sem `step` não achar o caminho dentro de um ramo no Hub, ou uma execução cortada dentro
   de um ramo não terminar com `restart()` (a prova P7 do estudo cortou fora de um ramo): relatar
   com a saída; não escrever uma retomada nossa.
+- O Mastra recusar `restart` de uma execução que o Hub julgou fora da posse: relatar; o tempo da
+  posse não muda sem o cartão.
 
 ## U4 O gatilho do Sankhya
 
@@ -1237,23 +1565,40 @@ tabela, e as regras estão fixas aqui.
 - **A volta.** O modelo é o activepieces (`packages/pieces/common/src/lib/polling/index.ts:38-140`):
   ao ligar, o começo é o agora (`:119-134`); cada volta lê, guarda o que é novo e dispara. O n8n só
   avança o cursor depois de dar certo (`poll-cursor-hooks.ts:1-18`).
-- **A leitura nova do kit.** `orcamentosNovos` (classe `read`, sem oferta ao modelo) em
-  `packages/connectors/src/sankhya/operations/vendas.ts`, lê `CabecalhoNota` pela porta `carregar`
-  (`packages/connectors/src/sankhya/door.ts:69-100`, o `loadRecords`) com o critério dos tipos e da
-  data de negociação desde o dia do começo menos um (a data é sem hora; o número da nota tira a
-  repetição). O dublê ganha as notas de orçamento e a consulta recusada (#819).
+- **A leitura nova do kit.** `orcamentosNovos`, uma leitura comum do kit (`defineOperation` de
+  `kernel/operation.ts:140-166`, classe `read`, `idempotent: true`), em
+  `packages/connectors/src/sankhya/operations/vendas.ts`, ao lado de `pedidos` (`:16-29`); o kernel
+  não tem leitura escondida do modelo, e esta só lê, então o agente e o Construtor também a veem.
+  Ela lê `CabecalhoNota` pela porta `carregar` (`packages/connectors/src/sankhya/door.ts:69-100`, o
+  `loadRecords`, uma página por chamada, com `temMais` em `:46`) com o critério dos tipos e da data
+  de negociação desde o dia do começo menos um (a data do Sankhya é sem hora, então o dia anterior
+  cobre um orçamento lançado perto da meia-noite; o número da nota tira a repetição). Entrada:
+  `z.object({ tipos: z.array(Code).min(1).max(OPERATION_TYPES_MAX), desde: Date_, pagina: Page(0) })`
+  (`Code`, `Date_`, `Page` de `operations/shared.ts:6-15`). Saída: `{ orcamentos: [{ numero, tipo,
+  data, valor, cliente }], temMais }`, as linhas no formato de `QuoteInput`. O dublê ganha as notas
+  de orçamento e a consulta recusada (#819).
 - **A agenda.** Um workflow fixo `conexus-workflow-poll`, registrado em código, e uma linha de
-  agenda `schedule_poll-<w>` por workflow ligado com `SANKHYA_NEW`, com `inputData: { workflowId }`.
-  O id fixo é um contrato guardado, como `AUTOMATION_WORKFLOW` (`builder/automations/run.ts:22-27`):
-  renomeá-lo apaga as agendas em três voltas.
+  agenda `schedule_poll-<w>` por workflow ligado com `SANKHYA_NEW`, com `cron` `*/15 * * * *` e
+  `timezone` `AUTOMATION_TIMEZONE` (`builder/automations/cadence.ts:4`), `inputData: { workflowId }`
+  e `requestContext` com `companyId`, `workflowId` e `startedBy: 'POLL'` (a volta conta no limite
+  de 30 por ele, e o início acha a empresa por ele). O id fixo é um contrato guardado, como
+  `AUTOMATION_WORKFLOW` (`builder/automations/run.ts:22-27`): renomeá-lo apaga as agendas em três
+  voltas.
+- **Por onde a volta lê.** Pela mesma porta do balão `READ` (U3): `connectors.assistant.read` com o
+  `SessionScope` de quem publicou, `speaksAs` `WORKFLOW` e o declarado da versão ativa, que inclui a
+  leitura do gatilho (U1, `FrozenWorkflow.declared`); a empresa vem do `requestContext` da agenda,
+  lida por `RunIdentity` sem `version`.
+- **O relógio.** Uma porta `now: () => Date` nas dependências de `poll.ts`, a de verdade em
+  `main.ts`, a injetada nos testes (testing T20), como o relógio do teste da agenda da U3 (#754).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/connectors/src/sankhya/` | Muda (`operations/vendas.ts`, `operations/index.ts`: `orcamentosNovos`; `fake-sales.ts` ou `fake.ts`: as notas e a recusa) | `hub/connectors/` |
+| `packages/connectors/src/sankhya/` | Muda (`operations/vendas.ts`, `operations/index.ts`: `orcamentosNovos`; `fake-sales.ts` ou `fake.ts`: as notas e a recusa; `skill/`, se o retrato do kit listar as leituras) | `hub/connectors/` |
 | `apps/server/src/builder/workflows/` | Cria `poll.ts`, `poll-tables.ts`; muda `schedule.ts` (as agendas de volta), `runs.ts` (a porta `TestInput`), `publish.ts` (a leitura de base ao ligar), `release.ts` | `builder/mastra/` |
-| `apps/server/src/builder/mastra/mastra.ts`, `hub-mastra.ts` | Muda (o workflow fixo; no início, um workflow `ON` com `SANKHYA_NEW` sem agenda ganha a sua) | `main.ts` |
+| `apps/server/src/builder/mastra/mastra.ts`, `apps/server/src/builder/workflows/boot.ts` | Muda (o workflow fixo; no início, por empresa como na U3, um workflow `ON` com `SANKHYA_NEW` sem agenda ganha a sua) | `main.ts` |
+| `apps/server/src/main.ts` | Muda (a porta `now` de `poll.ts`) | — |
 | `apps/server/migrations/`, `apps/server/database-grants.sql` | Cria `<ts>_e246_workflow_trigger` e `<ts>_e246_workflow_trigger_grants` | o catálogo |
 | `apps/server/src/platform/catalog.test.ts` | Muda (o retrato do catálogo) | — |
 | `docs/reference/boundaries.md` | Muda (a entrada "the trigger remembers what it has seen" passa a citar `poll.ts`) | a revisão |
@@ -1273,11 +1618,21 @@ tabela, e as regras estão fixas aqui.
   `since`; ligar e religar deixam `since` nulo, e uma volta com `since` nulo faz a leitura de base e
   não dispara.
 - A volta: confere quem publicou (como `conferir`, e também a leitura do gatilho); lê; `INSERT …
-  ON CONFLICT DO NOTHING RETURNING`; começa, até 20, as execuções das linhas sem `run_id` e sem
-  `baseline` (`createRun({ runId: randomUUID() })`, grava `run_id`, `start({ inputData:
-  QuoteInput })` na versão ativa `wf-<w>-v<n>`); avança `since`; limpa; grava `last_lap`. A
-  entrada de cada execução traz o número da nota em `numero`; `item_key` é o número em texto.
-- `TestInput` para `SANKHYA_NEW`: a nota mais recente dos tipos escolhidos, sem gravar vista.
+  ON CONFLICT DO NOTHING RETURNING`; começa, até `POLL_STARTS_MAX = 20` (a palavra do fundador
+  pela página), as execuções das linhas sem `run_id` e sem `baseline` (`createRun({ runId:
+  randomUUID() })`, grava `run_id`, `startAsync({ inputData: QuoteInput, requestContext })` na
+  versão ativa `wf-<w>-v<n>`, com `RunIdentity` `startedBy: 'POLL'` e `label` "Orçamento nº
+  <numero>"); avança `since`; limpa; grava `last_lap`. A entrada de cada execução traz o número da
+  nota em `numero`; `item_key` é o número em texto. A volta lê as páginas de `orcamentosNovos` da
+  0 até `temMais` falso, e cada página é uma chamada; a janela é de um dia mais o tempo desde a
+  última volta, então uma volta lê poucas páginas.
+- Por que dois dias: as vistas guardam o número da nota enquanto ela ainda pode cair na janela da
+  volta (desde o dia de `since` menos um); passados dois dias de `since`, nenhuma volta a lê de novo,
+  e a linha sai. É uma regra técnica, sem efeito que a pessoa veja.
+- `TestInput` para `SANKHYA_NEW`: a nota de maior número dos tipos escolhidos na janela de ligar,
+  sem gravar vista; nenhuma, `null` (`WORKFLOW_TEST_NO_ITEM`, critério 37).
+- `everyMinutes: z.literal(15)`: com `C2` ou `C3`, a união se alarga, um `frozen` antigo (15)
+  continua passando por ela, e nada se migra.
 
 ### As skills e a leitura
 
@@ -1297,7 +1652,7 @@ e T26.
 
 ### Como se prova
 
-Critérios 23 a 25, com o dublê e o relógio injetado. Falham hoje porque não há gatilho.
+Critérios 23 a 25 e 37, com o dublê e o relógio injetado. Falham hoje porque não há gatilho.
 
 ### Parar se
 
@@ -1355,7 +1710,7 @@ export const WorkflowRef = z.discriminatedUnion('kind', [
 - `workflow_save({ workflowId: WorkflowId | null, revision, draft: WorkflowDraft })` →
   `WorkflowRef`: `SAVED` com os problemas; `STALE` com o atual; `REFUSED` só quando o esquema
   recusa. `null` cria no Projeto, com a chave de tentativa do `toolCallId`.
-- `workflow_test({ workflowId })` → `TestResult` (U3).
+- `workflow_test({ workflowId })` → `TestResult` (U3): `STARTED` com o `runId`, que o canvas ao lado lê e acende como uma execução, ou `PROBLEMS`; a ferramenta não espera o fim do teste.
 - Nenhuma ferramenta publica, apaga ou pausa.
 - O laço de conserto tem teto: o texto do Construtor manda parar depois de 3 `workflow_save`
   seguidos que ainda voltam com problema `ERROR` e perguntar à pessoa (`ask_user`); a ferramenta
@@ -1413,8 +1768,9 @@ Critérios 26 e 27.
 - **A execução acesa.** Mastra `use-persisted-workflow-run.ts:10-23`: `refetchInterval` de 5 s
   enquanto não terminou (TanStack Query, W10).
 - **Os problemas.** Dify `header/checklist/index.tsx`; activepieces `incomplete-settings-widget.tsx:10-45`.
-- **O cartão.** PR 841: `apps/web/src/builder/conversation/approval-card.tsx` (199 linhas) e
-  `approval-item`, `approval-fields`, `approval-text`.
+- **O cartão.** PR 841 (`feat/conexus-e245-u3`, `484530d3`):
+  `apps/web/src/builder/conversation/approval-card.tsx` (227 linhas) e `approval-item.ts`,
+  `approval-fields.ts`, `approval-text.ts`.
 - **Ao lado do Construtor.** `apps/web/src/builder/agents/construtor-chat.tsx:57-139` (`openAgent`
   `:76-83`, `Beside` `:93-103`); `builder/conversation/tool-row.tsx:238-254,293`;
   `builder/conversation/room.ts:38-40`.
@@ -1434,7 +1790,7 @@ Critérios 26 e 27.
 | A execução acesa | Mastra `use-persisted-workflow-run.ts:10-23`; Dify a borda por estado | `Badge` (palavra e ponto), `TraceLine` | `run-state.ts`, `run-view.tsx` |
 | A lista de execuções | 24.2 `automations/runs.tsx` | `List`, `Badge`, `Pager` | `runs-list.tsx` |
 | Os problemas | Dify checklist; activepieces `incomplete-settings-widget.tsx` | `Popover`, `List`, `Badge` | `problems.tsx` |
-| O gatilho | activepieces `trigger-widget.tsx` | `Balloon` | `trigger.tsx` |
+| O gatilho | activepieces `trigger-widget.tsx` | `Card`, `Badge`, `Marker` | `trigger.tsx` |
 | O **Aprovar?** | Mastra `workflow-suspended-overlay.tsx`; o cartão da 24.5 | o cartão da 24.5 | `approval.tsx` |
 | O arrastar para outro encaixe | activepieces (dnd-kit, `useDraggable`) | — | dentro de `canvas.tsx` |
 | No celular | o mesmo modelo em coluna | `List`, `Collapsible` | `train.tsx` |
@@ -1445,7 +1801,7 @@ Critérios 26 e 27.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/workflows/` | Cria as peças acima e os seus testes | as rotas, `construtor-chat.tsx`, `automations/` |
-| `apps/web/src/builder/conversation/approval*` | Muda (`approval-card.tsx`, `approval-item`, `approval-fields`, `approval-text` do PR 841: a peça sem fonte; o adaptador da conversa) | a conversa, `workflows/approval.tsx` |
+| `apps/web/src/builder/conversation/approval*` | Muda (`approval-card.tsx`, `approval-item.ts`, `approval-fields.ts`, `approval-text.ts` do PR 841: a peça sem fonte; o adaptador da conversa) | a conversa, `workflows/approval.tsx` |
 | `apps/web/src/builder/conversation/room.ts`, `tool-row.tsx`, `tool-row.test.tsx` | Muda (`openWorkflow`; um `WorkflowRef` abre o canvas) | `construtor-chat.tsx` |
 | `apps/web/src/builder/agents/construtor-chat.tsx`, `construtor-chat.test.tsx` | Muda (uma coisa aberta: agente ou workflow) | a rota do Construtor |
 | `apps/web/src/builder/automations/` | Muda (`automations.tsx`, `queries.ts`, `text.ts`: os workflows na lista) | as rotas |
@@ -1465,8 +1821,10 @@ Critérios 26 e 27.
 - `run-state.ts`: `balloonStateWord(state: BalloonState): string` (esperando, rodando, feito, falhou,
   esperando você, pulado) e o tom do `Badge`; o estado é palavra e ponto, nunca só cor (V35).
 - `queries.ts`: `workflowQuery`, `runQuery` com `refetchInterval: (q) => terminal(q.state.data) ?
-  false : 5000`, `runsQuery`, `workflowsQuery`; as mutações `saveDraft`, `publish`, `answer`,
-  `retry`, `pause`, `resume`, `run`.
+  false : 5000`, `runsQuery`, `workflowsQuery`; as mutações `create`, `saveDraft`, `publish`,
+  `answer`, `retry`, `pause`, `resume`, `run`, `test` (as quatro últimas e `answer` respondem 202, e
+  a tela relê a execução). Um teste é uma execução: o canvas ao lado do Construtor a acende pela
+  mesma `runQuery`, e o seu `Aprovar?` é o cartão de `RunApproval`.
 - O cartão de aprovação: `ApprovalCard` (a peça: a ação, os campos, o aviso de escrita aberta,
   **Aprovar** e **Recusar**, recebendo `onAnswer`) e dois adaptadores, `ConversationApproval` (o
   de hoje) e `RunApproval` (`answer` da U3).
