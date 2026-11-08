@@ -28,7 +28,9 @@ entregá-la ao modelo, e o pedido não levava local de estoque nem controle. Dep
 
 A arquitetura e as pastas não mudam. Muda um fluxo (a falha volta como erro da ferramenta) e mudam
 donos: o que é do Sankhya sai do Hub e da tela e vai para o kit. Entram duas regras nos guias e uma
-emenda da decisão 0056, numa pull request só de documentos.
+emenda da decisão 0056, numa pull request só de documentos
+(https://github.com/developmentconexus-ops/conexus/pull/858), que entra quando a 24.5 fechar (regra
+L20); até lá, este cartão leva o comportamento.
 
 **O roteiro desta emenda.** Você é a Ana. O "Pedidos" é o do roteiro abaixo, com **Lançar pedido**
 em **Pergunta antes**.
