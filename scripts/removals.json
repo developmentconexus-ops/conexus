@@ -2499,7 +2499,7 @@
   {
     "id": "tool-operation-not-a-read",
     "file": "apps/server/src/builder/tools/check.ts",
-    "find": "  if (input === undefined) {\n    return { kind: 'REFUSED', named: { field: 'operation', reason: 'NOT_A_READ' } }\n  }\n",
+    "find": "  if (write === undefined) {\n    return { kind: 'REFUSED', named: { field: 'operation', reason: 'NOT_A_READ' } }\n  }\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
