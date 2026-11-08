@@ -22,7 +22,7 @@ pedidos de hoje: todo dia às 8h o Conexus lê no Sankhya os pedidos de venda do
 triagem e diz quais são de clientes bons acima de um valor, depois pede a sua aprovação para o
 resumo e avisa alguém. Você vê o fluxo ao lado da conversa como uma
 coluna de balões, o mesmo desenho do celular: clica num balão para ver quem ele é, como está
-configurado, o que recebe, o que devolve e a definição dele como código, e o move para cima ou para
+configurado, o que recebe, o que devolve e a definição dele no documento do workflow, e o move para cima ou para
 baixo. Depois de publicar, vê cada execução com os balões acesos e aprova a que espera você.
 
 **O roteiro de uso.** Você é a Ana (dona). A ligação do Sankhya está liberada ao Projeto
@@ -38,7 +38,8 @@ baixo. Depois de publicar, vê cada execução com os balões acesos e aprova a 
 2. Clique em **Triagem de pedidos**: abre o painel com **Quem é** (o agente e a versão publicada
    que o fluxo usa), **Configuração** (o pedido ao agente e quem aprova uma escrita dele), **O que
    recebe** (o texto, com os pedidos que a leitura devolveu), **O que devolve** (o texto da
-   triagem) e **Código** (a definição do balão, só para ler). Em **Avisar o Bruno**, toque
+   triagem) e **Código** (a definição do balão no documento do workflow, em JSON, só para ler;
+   nenhum balão guarda código). Em **Avisar o Bruno**, toque
    **Mover para cima** até antes da **Triagem**: o balão aparece marcado, porque usa o texto da
    triagem, e **Publicar** espera; mova de volta. Se um balão tem outro problema (por exemplo, uma
    pessoa que saiu da empresa), ele aparece marcado da mesma forma.
@@ -107,6 +108,23 @@ chamar nada de fora; as provas P1 a P15 do estudo, a prova do estudo de gatilhos
   dia em que a execução começou, tirado da id que a agenda do Mastra dá a cada disparo (~40 linhas
   a mais). O **Se** sobre os campos que um balão de agente devolve e a leitura de orçamento pelo
   tipo de operação vão para a 24.6.1, com uma pergunta a você (abaixo, "O que vai para a 24.6.1").
+- **O código nos balões** (as suas respostas, 2026-11-08: "1a / 2 Okay / 3 Okay / 4 Okay", e "4
+  Okay mas vamos poder ter ferramenta de gravar sim nao vejo o porquie"). Quatro regras valem para
+  todo workflow, nesta etapa e nas próximas:
+  1. Nenhum balão guarda código. O **Código** do painel é a definição do balão no documento do
+     workflow. Um cálculo é uma ferramenta de código da biblioteca do Projeto, com versão e
+     teste, e um balão **Ferramenta** a aponta (na 24.6.1).
+  2. O código lê pelas leituras que declara e calcula, e nunca sai para a internet: todo `fetch`
+     do Worker de uma ferramenta termina com 403 (`apps/edge/src/outbound.ts:1-6`, decisão 0047).
+  3. Um serviço de fora só entra por um conector do catálogo do Conexus.
+  4. Toda escrita sai por um funil só: `mustAsk`, **Pergunta antes / Faz sozinho**,
+     `writeThrough` e o livro de envios. Hoje ela é o balão **Escrever** ou o agente. A
+     ferramenta de código poderá gravar por esse mesmo funil; isso é um estudo próprio, fora da
+     24.6.
+
+  A 24.6 não muda: ela ainda não tem balão **Ferramenta**. O próximo passo do trilho de
+  conectores é o BrasilAPI (CEP, CNPJ, feriados), com os tipos de autenticação `none` e `api_key`,
+  num cartão próprio, fora deste.
 
 **O que mudou na emenda anterior** (r2, contra o cartão em `ef048874`):
 
@@ -130,7 +148,8 @@ chamar nada de fora; as provas P1 a P15 do estudo, a prova do estudo de gatilhos
   **Esperar** e **Esperar até** na 24.6.3.
 - **O painel do balão** (a sua explicação de "informações", 2026-11-08). A antiga decisão I sai:
   "informações" é o painel. Ele mostra **Quem é**, a **Configuração** de cada espécie de balão,
-  **O que recebe**, **O que devolve** e o **Código** do balão, só para ler; renomeia, move e apaga.
+  **O que recebe**, **O que devolve** e o **Código** do balão (a definição dele no documento, em
+  JSON), só para ler; renomeia, move e apaga.
 - **A coesão com a 24.5.1** (a sua `1A`, 2026-11-08). A 24.6 começa depois da 24.5.1 no `main` e
   usa o que ela cria (a regra de escrita com um dono, o kit de conversa, o hash de tentativa, as
   frases e o título, os ajudantes de teste) sem copiar. A U2 encolhe para acrescentar o workflow
@@ -2322,6 +2341,36 @@ campos no `AGENT`, `Condition` com dois lados, a ferramenta por balão, os probl
 ~130: `structuredOutput`, os campos na saída e na vista, as ferramentas na passagem do início; U5
 ~40; U6 ~80), ~120 a mais que o campo `numero` fixo (~300), que você recusou por ser um caso
 virando regra.
+
+**O balão Ferramenta** (a sua resposta, 2026-11-08; a nota do estudo `r4-balao-codigo.md` e o
+estudo do código nos balões). O código de um cálculo não fica no documento: fica na biblioteca de
+ferramentas da 24.4, com versão, teste e o Worker `t-<versão>` (`packages/hub-api/src/tools.ts:148-156,301-303`).
+O balão aponta uma ferramenta, `{ kind: 'TOOL', id, title, toolId, input }`, e publicar fixa a última
+versão no `frozen`, como fixa o agente de um `AGENT`. A compilação registra cada versão fixada uma
+vez, `conexus-ferramenta-<toolVersionId>`, com o `inputSchema` e o `outputSchema` da versão (`z.fromJSONSchema`),
+e o grafo usa a entrada `tool` com essa `toolId`; é a forma nativa do Mastra, cujo grafo guardado
+leva só a id da ferramenta e a resolve pelas registradas (`mastra@6e8dfcb8`
+`packages/core/src/workflows/dynamic/rehydrate.ts:312-319`). Num campo da entrada, `{{bJ.campo}}`
+sozinho compila para `{ step: 'bJ', path: 'campo' }` quando `bJ` declara a saída, e o tipo fica. O
+painel mostra o `source` da versão (`CodeToolRead`) em **Código**, só para ler. O corpo abre a chamada
+viva com o escopo e o turno da execução, como o `READ`, e reaproveita a chamada do agente
+(`apps/server/src/builder/agents/code-tools.ts:38-68`); `usedBy` e `TOOL_IN_USE` passam a contar as
+versões de workflow. O que a prova P20 mostrou (Mastra 1.82.0, sem rede): a ferramenta registrada
+da versão roda; a fonte `step` tipada chega como número, e a saída declarada alimenta um **Se**; um
+`template` (texto) num campo de número, um tipo errado e um campo que falta são recusados na
+validação (`incompatible-schema`), e um `value` é aceito; duas versões da mesma ferramenta
+convivem. Não provado: o corpo de verdade (a chamada viva, o Worker e as leituras pela porta).
+Tamanho, pela leitura: ~460 linhas sozinho, ~360 feito junto do **Se** por campos declarados (o
+mesmo mecanismo: uma ferramenta registrada por versão, de novo em cada início).
+
+**A ferramenta que só calcula** (a sua resposta "2 Okay"). Hoje uma ferramenta de código pertence a
+uma ligação e declara pelo menos uma leitura (`ToolTarget`, `packages/hub-api/src/tools.ts:76`;
+`reads` com `min(1)`, `tools.ts:148-156` e `apps/server/src/builder/construtor/code-tool.ts:82`), e o
+teste lê a resposta real de cada leitura (`code-tool.ts:220,277-279`). Uma regra como a margem de
+um orçamento não lê nada: recebe o valor do balão anterior. A 24.6.1 traz `connectionId` opcional,
+`reads` com mínimo 0 e um teste com entradas de exemplo que o Construtor escreve. O Worker não
+muda: sem leituras declaradas, `data.read` recusa tudo, como já recusa o que não foi declarado.
+Tamanho, pela leitura: ~120 linhas e ~150 de testes.
 
 **A pergunta a você, para a 24.6.1.** Qual tipo de operação (TOP) é orçamento no seu Sankhya? O kit
 tem a lista das TOPs (`tiposOperacao`, `packages/connectors/src/sankhya/operations/cadastros.ts:64`),
