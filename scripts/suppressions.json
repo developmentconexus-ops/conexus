@@ -31,6 +31,7 @@
   "packages/app-contract/src/runtime.ts": 1,
   "packages/app/src/client.ts": 1,
   "packages/app/src/types.check.ts": 8,
+  "packages/connectors/src/kernel/declared.test.ts": 2,
   "packages/connectors/src/kernel/kernel.test.ts": 8,
   "packages/connectors/src/mercado-livre/docs.test.ts": 1,
   "packages/connectors/src/sankhya/spec-source.ts": 1,
