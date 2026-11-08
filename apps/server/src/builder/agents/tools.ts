@@ -26,7 +26,7 @@ import { targetOf } from './publish.ts'
  * failure (`is_error` where the provider has one). The text is the JSON `{ kind, status, code,
  * message, body }` of what the provider said; the log never prints it (S41).
  */
-export class ConnectorRefused extends Error {
+class ConnectorRefused extends Error {
   override readonly name = 'ConnectorRefused'
 }
 
