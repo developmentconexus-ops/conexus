@@ -62,9 +62,12 @@ export const PLAIN_WORDS: ConnectorWords = {
   refusal: () => TOOL_FAILED,
 }
 
+/** What the Hub says of a call that outlasted its time. */
+export const DEADLINE_TEXT = 'O sistema demorou demais para responder.'
+
 /** The refusals that are the Hub's own, not a connection's: the connection's are said by its words. */
-const LOCAL_REFUSALS = {
-  DEADLINE: 'O sistema demorou demais para responder.',
+export const LOCAL_REFUSALS = {
+  DEADLINE: DEADLINE_TEXT,
   CALLS_SPENT: 'Esta resposta já usou as 50 leituras que cabem em uma resposta.',
   NOT_GRANTED: 'Esta ligação não está disponível nesta conversa.',
 } as const

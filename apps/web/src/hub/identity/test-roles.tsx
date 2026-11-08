@@ -30,7 +30,10 @@ function viewOf(
   ops: readonly string[],
   members = 0,
 ) {
-  return RoleView.parse({ role, label, kind, connectors: { sankhya: ops }, members })
+  return RoleView.parse({
+    ...{ role, label, kind, connectors: { sankhya: ops }, members },
+    unattended: kind === 'ALL',
+  })
 }
 
 /** The four roles every company has, as a company that created none sees them. */

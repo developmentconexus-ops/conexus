@@ -2,5 +2,10 @@
 export function mayOf(role: string) {
   const builds = role !== 'member'
   const governs = role === 'owner' || role === 'admin'
-  return { manageAgents: builds, manageAutomations: builds, manageRoles: governs }
+  return {
+    manageAgents: builds,
+    manageAutomations: builds,
+    manageRoles: governs,
+    publishUnattendedWrite: governs,
+  }
 }

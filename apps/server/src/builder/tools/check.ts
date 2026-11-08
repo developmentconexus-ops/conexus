@@ -29,9 +29,12 @@ export function sessionScopeOf(scope: InProject): SessionScope {
   return { companyId, personId, place: { kind: 'PROJECT', projectId }, chosen: [] }
 }
 
-/** A connection the Projeto received, with its reads, as the connectors' door describes it. */
+/** A connection the Projeto received, with its reads and writes, as the connectors' door describes it. */
 export type OfferedConnection = Readonly<
-  Omit<Offered, 'reads'> & { reads: readonly Readonly<Offered['reads'][number]>[] }
+  Omit<Offered, 'reads' | 'writes'> & {
+    reads: readonly Readonly<Offered['reads'][number]>[]
+    writes: readonly Readonly<Offered['writes'][number]>[]
+  }
 >
 
 /** What the tools read of the connectors' door: what the Projeto offers, and one read's input. */
@@ -40,6 +43,7 @@ export type ToolConnectors = {
   /** The same connections with every read, each marked `allowed` by the role of whoever edits. */
   listing(scope: SessionScope): Promise<readonly OfferedConnection[]>
   operationOf(scope: SessionScope, target: ToolTarget): Promise<z.ZodObject | undefined>
+  writeOf(scope: SessionScope, target: ToolTarget): Promise<z.ZodObject | undefined>
   kitReads(scope: SessionScope): Promise<readonly KitRead[]>
 }
 
@@ -47,7 +51,7 @@ export type ToolConnectors = {
 export type Target = { kind: 'OK'; input: z.ZodObject } | { kind: 'REFUSED'; named: Named }
 
 /**
- * Whether the Projeto received the connection and the operation is one of its reads, by the kit's
+ * Whether the Projeto received the connection and the operation is one of its reads or writes, by the kit's
  * definition behind the connectors' door, which alone reads the kit (security S36).
  */
 export async function targetOf(
@@ -60,7 +64,8 @@ export async function targetOf(
   if (!offered.some((each) => each.connectionId === target.connectionId)) {
     return { kind: 'REFUSED', named: { field: 'connectionId', reason: 'NOT_OFFERED' } }
   }
-  const input = await connectors.operationOf(scope, target)
+  const input =
+    (await connectors.operationOf(scope, target)) ?? (await connectors.writeOf(scope, target))
   if (input === undefined) {
     return { kind: 'REFUSED', named: { field: 'operation', reason: 'NOT_A_READ' } }
   }

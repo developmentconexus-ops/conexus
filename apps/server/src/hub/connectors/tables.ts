@@ -201,3 +201,47 @@ export const projectConnection = connectors.table(
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
+
+export const CONNECTOR_WRITE_STATES = ['SENDING', 'DONE', 'REFUSED', 'UNCERTAIN'] as const
+const WRITE_STATES = sql.raw(CONNECTOR_WRITE_STATES.map((state) => `'${state}'`).join(', '))
+
+/**
+ * What an agent sent to an outside system, one row per conversation and tool call, written before
+ * the call (card 24.5, U1): a write is never repeated, so a row still `SENDING` is a call that may
+ * have gone. The row leaves with its company by the foreign key's cascade (the founder, 2026-11-07),
+ * but has none to the connection, the version or the person: the record of a send outlives each of
+ * them (data D17). The published version that spoke is `agent_id` and
+ * `version_number` (a version has no id of its own), `person_id` the person talking to a draft,
+ * which has no version.
+ */
+export const connectorWrite = connectors.table(
+  'connector_write',
+  {
+    companyId: text('company_id').notNull(),
+    threadId: text('thread_id').notNull(),
+    toolCallId: text('tool_call_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+    operationId: text('operation_id').notNull(),
+    inputHash: text('input_hash').notNull(),
+    agentId: uuid('agent_id'),
+    versionNumber: integer('version_number'),
+    personId: text('person_id'),
+    state: text('state', { enum: CONNECTOR_WRITE_STATES }).notNull(),
+    answer: jsonb('answer'),
+    createdAt: instant('created_at').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'connector_write_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    primaryKey({ columns: [table.companyId, table.threadId, table.toolCallId] }),
+    check(
+      'connector_write_speaker',
+      sql`(${table.agentId} is not null and ${table.versionNumber} is not null and ${table.personId} is null) or (${table.agentId} is null and ${table.versionNumber} is null and ${table.personId} is not null)`,
+    ),
+    check('connector_write_state', sql`${table.state} in (${WRITE_STATES})`),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)

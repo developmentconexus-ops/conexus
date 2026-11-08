@@ -14,6 +14,7 @@ import {
   plantCompany,
   post,
 } from './test-hub.ts'
+import { NO_MAY } from './test-roles.ts'
 
 const CARLA_OPERATOR = { ...CARLA, role: 'admin' }
 
@@ -54,7 +55,7 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
     company: { id: companyId, name: 'Empresa Teste', ...address },
     role: 'member',
     mayInviteAs: [],
-    may: { manageAgents: false, manageAutomations: false, manageRoles: false },
+    may: NO_MAY,
   })
   const owner = await call(hub, ana, 'GET', `/api/companies/${companyId}`)
   assert.deepEqual(Object(owner.json()).mayInviteAs, ['owner', 'admin', 'developer', 'member'])

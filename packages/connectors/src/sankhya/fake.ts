@@ -14,6 +14,8 @@ import {
   OVERSIZE,
   SERVICE_PATH,
 } from './fake-data.ts'
+import type { OrderSwitches, StoredOrder } from './fake-orders.ts'
+import { ORDERS_PATH, orderBook } from './fake-orders.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
 import type { SalesSet } from './fake-sales.ts'
 import { salesDatabase } from './fake-sales.ts'
@@ -51,6 +53,10 @@ type SankhyaSwitches = {
 export type SankhyaFake = CredentialFake &
   Readonly<{
     switches: SankhyaSwitches
+    /** What the double does to an order add besides answering it (a lost answer, kept or not). */
+    orderSwitches: OrderSwitches
+    /** The orders it stored, in the order they came: a repeated call is a second order here. */
+    orders: () => readonly StoredOrder[]
     logins: () => number
     /** The logouts answered so far, of live or already ended tokens. */
     logouts: () => number
@@ -109,22 +115,40 @@ function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: Sankh
 
 type Query = ReturnType<typeof salesDatabase> | undefined
 
+/** The one POST route: the order's add, which a `refuse` of `lancarPedido` answers 403. */
+function isAdd(request: Request, url: URL): boolean {
+  return request.method === 'POST' && url.pathname === ORDERS_PATH
+}
+
+/** The name a `refuse` switch answers to: the order's add, a door service, or a REST route. */
+function switchName(
+  adding: boolean,
+  door: boolean,
+  service: string,
+  route: { name: string } | null,
+) {
+  if (adding) return 'lancarPedido'
+  return door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
+}
+
 async function serveCall(
   request: Request,
   url: URL,
   switches: SankhyaSwitches,
   query: Query,
+  orders: ReturnType<typeof orderBook>,
 ): Promise<Response> {
   const door = url.pathname === SERVICE_PATH
   const service = door ? (url.searchParams.get('serviceName') ?? '') : ''
   const route = door ? null : routeOf(url.pathname)
-  const name = door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
-  if (switches.refuse.has(name)) {
+  const adding = isAdd(request, url)
+  if (switches.refuse.has(switchName(adding, door, service, route))) {
     return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
   if (switches.notJson) return new Response('<html>valor da empresa</html>', { status: 200 })
+  if (adding) return orders.add(z.unknown().parse(await request.json()))
   if (!door) return restAnswer(route, url, switches)
   const { requestBody } = DoorBody.parse(await request.json())
   if (service === 'CRUDServiceProvider.loadRecords') return loadRecords(requestBody)
@@ -188,6 +212,7 @@ function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | 
  */
 export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
   const query = options.sales === undefined ? undefined : salesDatabase(options.sales)
+  const orders = orderBook()
   const switches: SankhyaSwitches = {
     refuse: new Set(),
     expireToken: false,
@@ -234,7 +259,7 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
     sessions.busy.add(token)
     try {
       await sleep(SERVICE_MILLISECONDS + switches.delayMilliseconds)
-      return await serveCall(request, url, switches, query)
+      return await serveCall(request, url, switches, query, orders)
     } finally {
       sessions.busy.delete(token)
     }
@@ -245,6 +270,8 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
     handle,
     serve: () => serveOnLoopback(handle),
     switches,
+    orderSwitches: orders.switches,
+    orders: orders.orders,
     logins: () => sessions.logins,
     logouts: () => sessions.logouts,
     expireTokens: () => {

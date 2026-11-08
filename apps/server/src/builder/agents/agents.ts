@@ -9,6 +9,7 @@ import type {
 } from '@conexus/hub-api'
 import { AgentConfig, AgentId as AgentIdSchema } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -37,7 +38,8 @@ import {
 } from './store.ts'
 import { agent, agentVersion } from './tables.ts'
 
-export type AgentsDeps = Pick<ToolsDeps, 'database' | 'identity' | 'liveProjectOf'> & {
+export type AgentsDeps = Pick<ToolsDeps, 'database' | 'liveProjectOf'> & {
+  identity: ToolsDeps['identity'] & Pick<IdentityPorts, 'mayPublishUnattended'>
   /** The ids of the company's live Projetos (`liveProjectIdsOf`). */
   liveProjectIdsOf: (tx: ReadTx, companyId: CompanyId) => Promise<ProjectId[]>
   connectors: ToolConnectors
@@ -144,9 +146,9 @@ function checked(deps: AgentsDeps, patch: DraftPatch, around: readonly OfferedCo
   }
 }
 
-/** The draft with the patch's fields over it; `revision`, `tools` and `ready` are not fields. */
+/** The draft with the patch's fields over it; `revision`, `tools`, `ready` and `approvals` are not fields. */
 function merged(current: AgentConfig, patch: DraftPatch): AgentConfig {
-  const { revision: _, tools: __, ready: ___, ...fields } = patch
+  const { revision: _, tools: __, ready: ___, approvals: ____, ...fields } = patch
   const given = Object.fromEntries(
     Object.entries(fields).filter(([, value]) => value !== undefined),
   )
@@ -181,6 +183,7 @@ async function saveDraft(
   const ready = await deps.tools.readyOf(scope, [...(patch.ready ?? []), ...old])
   const reshapes =
     patch.tools !== undefined ||
+    patch.approvals !== undefined ||
     patch.connections !== undefined ||
     ready.length > 0 ||
     !before.byTool
@@ -199,7 +202,7 @@ async function saveDraft(
       .returning({ revision: agent.revision })
     if (changed === undefined) throw new Failure('AGENT_DRAFT_STALE')
     if (reshapes) {
-      const homes = await choose(deps, tx, { scope, agentId, patch, around }, ready)
+      const homes = await choose(deps, tx, { scope, agentId, patch, around, shown }, ready)
       // The connection of every chosen tool is selected (decision E4).
       const connections = [...new Set([...next.connections, ...homes])]
       if (connections.length !== next.connections.length) {

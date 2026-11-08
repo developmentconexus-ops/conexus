@@ -29,6 +29,8 @@ walk ([code C75](../guides/code.md)), not a question here.
     ([card template](../../.agents/skills/conexus-scope/references/card.md))?
 12. Did the step add something that runs alone? Then the sleeping-database test ran again (D27).
 13. Does the diff bump a Mastra pin? Then the reference shelf and [stack](stack.md) moved with it.
+    `neverAsking`'s copy of each tool by its prototype (`builder/agents/agent.ts`) depends on the
+    shape of the `Tool` instance: prove it again on every version with the criterion 5 test.
 
 ## The sweep table
 

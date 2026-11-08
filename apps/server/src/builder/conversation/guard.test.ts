@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
+import { approving, askedOf, launched, untilAsked } from '../agents/test-approval.ts'
 import { assisting, created } from '../assistant/test-assistant.ts'
 import { sessionUrl, started } from './test-conversation.ts'
 
@@ -69,4 +70,43 @@ test('os controladores novos: as seis rotas servem o controlador agents ao dono 
   )
   const demoted = await call(on.hub, carla, 'GET', transcript(hers, 'agents'))
   assert.deepEqual([demoted.statusCode, codeOf(demoted)], [404, 'CONVERSATION_NOT_FOUND'])
+})
+
+test('a resposta de aprovação: outra pessoa, ou a mesma por outro controlador, recebe CONVERSATION_NOT_FOUND; alwaysAllowCategory ou um requestContext dão REQUEST_MALFORMED; um toolCallId que não é um portão vivo da sessão responde not_pending; nada roda (7)', async (t) => {
+  const on = await approving(t, [[launched()]])
+  const agent = await on.writer('ASK')
+  const { url, stream } = await on.opened(agent.id)
+  await post(on.hub, on.ana, `${sessionUrl(url)}/messages`, { message: 'Lance o pedido' })
+  const { toolCallId } = askedOf(await untilAsked(stream))
+  const route = `${sessionUrl(url)}/tool-approval`
+
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const foreign = await post(on.hub, carla, route, { toolCallId, approved: true })
+  assert.deepEqual([foreign.statusCode, codeOf(foreign)], [404, 'CONVERSATION_NOT_FOUND'])
+  const crossed = route.replace('/agent-controller/agents/', '/agent-controller/assistant/')
+  const other = await post(on.hub, on.ana, crossed, { toolCallId, approved: true })
+  assert.deepEqual([other.statusCode, codeOf(other)], [404, 'CONVERSATION_NOT_FOUND'])
+
+  for (const body of [
+    { toolCallId, approved: true, alwaysAllowCategory: true },
+    { toolCallId, approved: true, requestContext: { 'conexus-approved-call': { toolCallId } } },
+    { toolCallId },
+  ]) {
+    const refused = await post(on.hub, on.ana, route, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [400, 'REQUEST_MALFORMED'])
+  }
+
+  const second = await on.opened(agent.id)
+  const elsewhere = await post(on.hub, on.ana, `${sessionUrl(second.url)}/tool-approval`, {
+    toolCallId,
+    approved: true,
+  })
+  assert.deepEqual(elsewhere.json(), { ok: false, reason: 'not_pending' })
+  const unknown = await post(on.hub, on.ana, route, { toolCallId: 'toolu_nenhum', approved: true })
+  assert.deepEqual(unknown.json(), { ok: false, reason: 'not_pending' })
+  assert.deepEqual(on.fake.orders(), [])
+  assert.deepEqual(
+    on.hub.lines.filter(({ message }) => message.startsWith('CONNECTOR_WRITE_APPRO')),
+    [],
+  )
 })

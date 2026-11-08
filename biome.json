@@ -217,6 +217,7 @@
         "apps/web/src/builder/assistant/test-hub.tsx",
         "apps/web/src/builder/agents/test-hub.tsx",
         "apps/web/src/builder/agents/test-hub-tools.tsx",
+        "apps/web/src/builder/agents/test-approval.tsx",
         "apps/web/src/builder/assistant/test-model.tsx",
         "apps/web/src/builder/assistant/test-changes.tsx",
         "apps/web/src/builder/assistant/test-propose.tsx",

@@ -20,6 +20,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { changeCompanyRole, createCompanyRole } from './queries.ts'
 import { DeleteRole } from './role-delete.tsx'
 import { ConnectorPicker } from './role-picker.tsx'
+import { UnattendedAction } from './role-unattended.tsx'
 
 const UNCONFIRMED = 'Não confirmamos a gravação. Veja a lista de papéis.'
 
@@ -74,7 +75,10 @@ type Common = {
 export function NewRole({ companyId, kit, logo, onDone }: Common) {
   const send = useMutation(createCompanyRole)
   const attempt = useAttemptKey()
-  const form = useSchemaForm(createRole.input.body, { label: '', connectors: {} })
+  const form = useSchemaForm(createRole.input.body, {
+    label: '',
+    connectors: {},
+  })
   return (
     <div className="flex flex-col gap-lg">
       <Back companyId={companyId} />
@@ -116,6 +120,7 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
     connectors: Object.fromEntries(
       Object.entries(role.connectors).map(([id, operations]) => [id, [...operations]]),
     ),
+    unattended: role.unattended,
   })
   return (
     <div className="flex flex-col gap-lg">
@@ -132,7 +137,10 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
           try {
             await send.mutateAsync({
               params: { companyId, role: role.role },
-              body: { connectors: RoleConnectors.parse(values.connectors) },
+              body: {
+                connectors: RoleConnectors.parse(values.connectors),
+                unattended: values.unattended,
+              },
             })
             onDone()
           } catch (error) {
@@ -141,6 +149,7 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
         }}
       >
         <Picked kit={kit} readOnly={fixed} logo={logo} />
+        {role.role !== 'member' && role.kind !== 'CUSTOM' && <UnattendedAction readOnly={fixed} />}
         <FormAlert />
         {!fixed && <SubmitButton idle="Salvar" pending="Salvando…" />}
       </Form>

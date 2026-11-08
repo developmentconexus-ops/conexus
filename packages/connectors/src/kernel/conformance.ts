@@ -204,6 +204,18 @@ function assertDeclared(connector: Connector): void {
   )
 }
 
+/** Each write is a `write` that never repeats, builds a POST from its probe's input, and is no read of the connector. */
+function assertWrites(connector: Connector): void {
+  for (const operation of connector.writes ?? []) {
+    assert.equal(operation.class, 'write', operation.id)
+    assert.equal(operation.idempotent, false, `${operation.id} never repeats`)
+    assert.deepEqual(operation.from, [], `${operation.id} reads nothing earlier`)
+    const input = operation.probe(new Map())
+    assert.notEqual(input, null, `${operation.id} has a probe`)
+    assert.equal(requestOf(operation, input, { ref: null }).method, 'POST', operation.id)
+  }
+}
+
 /** The account, the catalog's facts, the logo and, for pasted fields, where each key comes from. */
 function assertShown(connector: Connector): void {
   assert.ok(connector.account.kind, 'the account')
@@ -244,7 +256,7 @@ async function assertReadsLeakNothing(
   values: readonly string[],
   account: Account,
 ): Promise<void> {
-  for (const operation of inProbeOrder(connector)) {
+  for (const operation of [...inProbeOrder(connector), ...(connector.writes ?? [])]) {
     const input = operation.probe(new Map())
     if (input === null) continue
     const text = await textOf(toRequest(connector, requestOf(operation, input, account), 'bearer'))
@@ -307,6 +319,10 @@ export function runConformance(connector: Connector, fake: Fake): void {
         assert.equal(typeof operation.probe, 'function', operation.id)
         if (operation.class === 'read') assert.equal(operation.idempotent, true, operation.id)
       }
+    })
+
+    it('declares each write as a write that never repeats', () => {
+      assertWrites(connector)
     })
 
     it('answers each probe, in order, from the sources it declares, with the value its output schema reads from the body', async () => {

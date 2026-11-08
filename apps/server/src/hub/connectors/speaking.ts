@@ -24,6 +24,7 @@ type Listed = Readonly<{
   connectionId: ConnectionId
   connector: string
   reads: readonly Readonly<{ operation: string }>[]
+  writes: readonly Readonly<{ operation: string }>[]
 }>
 
 /** The keys (`connection:operation`) of the reads the speaker may use, asked in one go. */
@@ -34,7 +35,7 @@ async function allowedKeys(
   connections: readonly Listed[],
 ): Promise<Set<string>> {
   const targets = connections.flatMap((each) =>
-    each.reads.map((read) => ({
+    [...each.reads, ...each.writes].map((read) => ({
       connectionId: each.connectionId,
       connectorId: ConnectorId.parse(each.connector),
       operationId: OperationId.parse(read.operation),
@@ -44,7 +45,7 @@ async function allowedKeys(
   return new Set(targets.filter((_, index) => answers[index]).map(keyOf))
 }
 
-/** Every read of the connections, each marked with whether the speaker may use it (`allowed`). */
+/** Every read and write of the connections, each marked with whether the speaker may use it (`allowed`). */
 export async function markedFor<T extends Listed>(
   deps: Deps,
   companyId: CompanyId,
@@ -52,16 +53,18 @@ export async function markedFor<T extends Listed>(
   connections: readonly T[],
 ) {
   const allowed = await allowedKeys(deps, companyId, speaker, connections)
-  return connections.map((each) => ({
-    ...each,
-    reads: each.reads.map((read) => ({
-      ...read,
-      allowed: allowed.has(`${each.connectionId}:${read.operation}`),
-    })),
-  }))
+  return connections.map((each) => {
+    function marked<R extends { operation: string }>(read: R) {
+      return { ...read, allowed: allowed.has(`${each.connectionId}:${read.operation}`) }
+    }
+    return { ...each, reads: each.reads.map(marked), writes: each.writes.map(marked) }
+  })
 }
 
-/** The connections with only the reads the speaker may use: the model is not told of the others. */
+/**
+ * The connections with only the reads the speaker may use: the model is not told of the others. The
+ * writes stay as the kit declares them, what tells a tool's class (code C26); no model is told of one.
+ */
 export async function visibleTo<T extends Listed>(
   deps: Deps,
   companyId: CompanyId,

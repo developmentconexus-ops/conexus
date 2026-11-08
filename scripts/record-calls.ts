@@ -49,3 +49,22 @@ export const HANDOFF_SIGNAL = {
 } as const
 /** What the model does in the `handoff` scenario: answer. */
 export const HANDOFF_CALLS: Block[][] = [[{ type: 'text', text: 'Começando o app de encomendas.' }]]
+
+export const APPROVAL_PROMPT =
+  'Lance um pedido para o cliente 1, duas unidades do produto 11 a R$ 10.'
+/** The person's words in `approval-interrupted`: they answer the card by writing instead of touching it. */
+export const APPROVAL_STEER = 'Espera, são três unidades.'
+/** The tool of the `approval` scenarios: a write that asks the person first, as the agents' controller runs it. */
+export const APPROVAL_TOOL = 'tool_lancar_pedido'
+const ORDER = {
+  codigoCliente: 1,
+  itens: [{ codigoProduto: 11, quantidade: 2, valorUnitario: 10 }],
+}
+const ASKED: Block = { type: 'tool_use', name: APPROVAL_TOOL, input: ORDER }
+/** What the model does in the `approval` scenarios: call the write, then say what came of it. */
+export const APPROVAL_CALLS = {
+  approval: [[ASKED], [{ type: 'text', text: 'Lancei o pedido, a confirmar.' }]],
+  'approval-declined': [[ASKED], [{ type: 'text', text: 'Não lancei o pedido.' }]],
+  'approval-interrupted': [[ASKED], [{ type: 'text', text: 'Entendi, não lancei o pedido.' }]],
+  'approval-stopped': [[ASKED]],
+} satisfies Record<string, Block[][]>

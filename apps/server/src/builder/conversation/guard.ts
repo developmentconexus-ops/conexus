@@ -1,7 +1,8 @@
 import type { ServerResponse } from 'node:http'
-import type { CompanyId, FailureCode, Person } from '@conexus/hub-api'
-import { BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, FailureCode, Person } from '@conexus/hub-api'
+import { BUILDER_ROUTES, ConversationId, PersonId, ToolCallId } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
+import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
 import { SERVER_ROUTES } from '@mastra/server/server-adapter'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
@@ -18,8 +19,8 @@ const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 
 /**
  * The only routes of Mastra's server the Hub exposes (security S39, decision 0050): a session's
- * state, stream, a message, Parar, a card's answer and the transcript. Any other is
- * not registered, so it is a 404.
+ * state, stream, a message, Parar, a card's answer, a write's Aprovar or Recusar (step 24.5) and
+ * the transcript. Any other is not registered, so it is a 404.
  */
 const FIXED_LIST: ReadonlySet<string> = new Set([
   `GET ${SESSION}`,
@@ -27,8 +28,29 @@ const FIXED_LIST: ReadonlySet<string> = new Set([
   `POST ${SESSION}/messages`,
   `POST ${SESSION}/abort`,
   `POST ${SESSION}/tool-suspension`,
+  `POST ${SESSION}/tool-approval`,
   `GET ${SESSION}/threads/:threadId/messages`,
 ])
+
+/**
+ * Where the guard tells the resumed run which call a person approved (step 24.5): Mastra hands the
+ * answer's `requestContext` to the run it resumes, and a write's `execute` reads it to know it
+ * passed a card. The browser cannot set it: a `requestContext` in a body is refused.
+ */
+const APPROVED_CALL = 'conexus-approved-call'
+const ApprovedCall = z.object({ toolCallId: ToolCallId, personId: PersonId })
+
+/** The call a person approved in this run, if any. */
+export function approvedCallOf(requestContext: RequestContext) {
+  return ApprovedCall.safeParse(requestContext.get(APPROVED_CALL)).data
+}
+
+/** What the guard writes to the log once Mastra's handler has taken the answer, and not before. */
+const TOLD = 'conexus-write-answer'
+const Told = z.object({ fields: z.record(z.string(), z.string()), message: z.string() })
+const Taken = z.object({ ok: z.literal(true) })
+
+const ToolAnswer = z.object({ toolCallId: ToolCallId, approved: z.boolean() })
 
 /**
  * 30 MiB: the route's sum of files (29 360 128 characters), the message, the JSON's keys and room.
@@ -98,10 +120,18 @@ type Admission = (input: {
   conversationId: ConversationId
 }) => Promise<void>
 
+/** The connection and operation of the write a conversation's tool names, as the agent that holds it keeps them (step 24.5). */
+export type WriteOf = (input: {
+  companyId: CompanyId
+  personId: PersonId
+  conversationId: ConversationId
+  toolName: string
+}) => Promise<{ connectionId: ConnectionId; operation: string } | undefined>
+
 /** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
 export type GuardedMastra = {
   mastra: Mastra
-  part(kind: ControllerKind): { admit: Admission } | undefined
+  part(kind: ControllerKind): { admit: Admission; writeOf?: WriteOf } | undefined
   updating(): boolean
 }
 
@@ -116,10 +146,7 @@ export type GuardedMastra = {
  * not a `data:` URL. While the Hub settles before it stops, a new message is refused before Mastra
  * starts a turn (founder E1).
  */
-async function guard(
-  deps: { builder: Builder; hub: GuardedMastra },
-  request: FastifyRequest,
-): Promise<void> {
+async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: FastifyRequest) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
     throw new Failure('REQUEST_MALFORMED')
   }
@@ -153,6 +180,50 @@ async function guard(
     throw new Failure('HUB_UPDATING')
   }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
+  return { person, controllerId, conversationId, companyId: owner.companyId, part }
+}
+
+/**
+ * A write's Aprovar or Recusar reaches Mastra only for a gate parked in this session now (step
+ * 24.5): after Parar, a new message or a restart, Mastra would answer the stored wait and run the
+ * write, and the card no longer exists. The autonomy lives in the version
+ * alone, so the always-allow of Mastra's body is refused. Anything else answers `not_pending`.
+ */
+async function toolAnswer(
+  deps: { hub: GuardedMastra; log: FailureLog },
+  request: FastifyRequest,
+  at: Awaited<ReturnType<typeof guard>>,
+): Promise<{ ok: false; reason: 'not_pending' } | undefined> {
+  if (typeof request.body === 'object' && request.body !== null) {
+    if (Object.hasOwn(request.body, 'alwaysAllowCategory')) throw new Failure('REQUEST_MALFORMED')
+  }
+  const answer = ToolAnswer.safeParse(request.body)
+  if (!answer.success) throw new Failure('REQUEST_MALFORMED')
+  const { toolCallId, approved } = answer.data
+  const controller = deps.hub.mastra.getAgentController(at.controllerId)
+  const session = await controller?.getSession(at.conversationId)
+  if (session === undefined || !session.approval.isArmed({ toolCallId })) {
+    return { ok: false, reason: 'not_pending' }
+  }
+  const toolName = session.displayState.get().pendingApprovals.get(toolCallId)?.toolName
+  const write =
+    toolName === undefined
+      ? undefined
+      : await at.part.writeOf?.({
+          ...{ companyId: at.companyId, personId: at.person.id, conversationId: at.conversationId },
+          toolName,
+        })
+  request.requestContext.set(TOLD, {
+    fields: {
+      ...{ companyId: at.companyId, conversationId: at.conversationId, toolCallId },
+      ...{ personId: at.person.id, ...(toolName === undefined ? {} : { toolName }), ...write },
+    },
+    message: approved ? 'CONNECTOR_WRITE_APPROVED' : 'CONNECTOR_WRITE_DECLINED',
+  })
+  if (approved) {
+    request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
+  }
+  return undefined
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */
@@ -198,8 +269,21 @@ export function registerBuilderRoutes(
     server.registerContextMiddleware()
     // Mastra's multipart parser reads no body, so no limit holds it: JSON stays the only one (S25).
     scope.removeContentTypeParser('multipart/form-data')
+    // A Parar between the guard's check and Mastra's handler leaves `not_pending`: no line says "approved" for a write that did not run.
+    scope.addHook('onSend', async (request, _reply, payload) => {
+      const told = Told.safeParse(request.requestContext?.get(TOLD))
+      if (!told.success || typeof payload !== 'string') return payload
+      if (Taken.safeParse(JSON.parse(payload)).success)
+        deps.log.info(told.data.fields, told.data.message)
+      return payload
+    })
     scope.addHook('preHandler', async (request, reply) => {
-      await guard(deps, request)
+      const at = await guard(deps, request)
+      if (request.routeOptions.url?.endsWith('/tool-approval')) {
+        const refused = await toolAnswer(deps, request, at)
+        if (refused !== undefined) return reply.send(refused)
+        return
+      }
       if (!request.routeOptions.url?.endsWith('/stream')) return
       deps.streams.add(reply.raw)
       reply.raw.once('close', () => deps.streams.delete(reply.raw))

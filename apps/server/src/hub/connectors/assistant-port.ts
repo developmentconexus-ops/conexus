@@ -1,5 +1,5 @@
 import { connectorOf } from '@conexus/connectors'
-import type { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { ConnectionId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId as ConnectionIdSchema, OperationId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
@@ -15,37 +15,24 @@ import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
+import type { SessionScope, TurnKey } from './scope.ts'
+import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
-
-/** Where a conversation lives: it decides which connections it may choose (C21). */
-type Place = { kind: 'COMPANY' } | { kind: 'PROJECT'; projectId: ProjectId }
-
-/** A conversation's scope, read from its thread on each turn (U2); the role is checked on every call. */
-export type SessionScope = {
-  companyId: CompanyId
-  personId: PersonId
-  place: Place
-  chosen: readonly ConnectionId[]
-  /**
-   * Set where a published (or draft) agent version converses: it reads by what the version
-   * declares, not by the role of the person who talks to it (decision C1).
-   */
-  agentVersion?: Extract<Speaker, { kind: 'VERSION' }>
-}
+import { writeThrough } from './write.ts'
+import type { OpenWrite, OpenWritesKey, WriteRequest, Written } from './write-record.ts'
+import { openWritesOf } from './write-record.ts'
 
 type AssistantConnection = {
   connectionId: ConnectionId
   connector: string
   name: string
   reads: readonly { operation: string; label: string; summary: string; allowed?: boolean }[]
+  /** The connector's writes (step 24.5), for an agent's tools only. */
+  writes: readonly { operation: string; label: string; summary: string; allowed?: boolean }[]
   skill: GrantedConnection['skill']
   chosen: boolean
 }
-
-/** The turn a call belongs to: a uuid the Assistant's takeTurn puts on the run's context (U2). */
-export const TurnKey = z.uuid().brand('TurnKey')
-export type TurnKey = z.infer<typeof TurnKey>
 
 /** The Builder's answer (builder-port.ts); an OK one also carries the connector's answer before the cut. */
 type AssistantRead =
@@ -70,6 +57,10 @@ export type AssistantConnectors = {
       signal?: AbortSignal
     },
   ): Promise<AssistantRead>
+  /** One write of a chosen, offered connection for an agent, never sent twice; it spends one of the turn's calls like a read. */
+  write(request: WriteRequest): Promise<Written | Spent>
+  /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
+  openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
@@ -92,6 +83,11 @@ export type AssistantConnectors = {
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
+  /** The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a read's; none otherwise. */
+  writeOf(
+    scope: SessionScope,
+    target: { connectionId: ConnectionId; operation: string },
+  ): Promise<z.ZodObject | undefined>
   /**
    * The kit's typed reads of every connection the place offers, the read door's left out: what a
    * version written before decision E4 reads as its connections' tools.
@@ -105,13 +101,6 @@ export type KitRead = Readonly<{
   summary: string
   open: readonly string[]
 }>
-
-/** The ids of the line and of the query: the Projeto only where the conversation lives in one. */
-function idsOf(scope: SessionScope) {
-  return scope.place.kind === 'PROJECT'
-    ? { companyId: scope.companyId, projectId: scope.place.projectId }
-    : { companyId: scope.companyId }
-}
 
 /**
  * Whether the person may ask now: admission reads their role on every call (S10), the same way as
@@ -259,12 +248,14 @@ function chosenAmong(scope: SessionScope) {
     connector,
     name,
     reads,
+    writes,
     skill,
   }: ReturnType<typeof described>[number]) => ({
     connectionId,
     connector,
     name,
     reads,
+    writes,
     skill,
     chosen: chosen.has(connectionId),
   })
@@ -312,6 +303,19 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       return answered.kind === 'OK'
         ? { kind: 'OK', ...shaped(answered.value), whole: answered.value }
         : answered
+    },
+
+    async write(request) {
+      return spend(request.turn) ? writeThrough(deps, request) : { kind: 'CALLS_SPENT' }
+    },
+
+    openWrites: (key) => openWritesOf(deps, key),
+
+    async writeOf(scope, target) {
+      const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
+      const connector = row === undefined ? undefined : connectorOf(row.connector)
+      const input = connector?.writes?.find((each) => each.id === target.operation)?.input
+      return input instanceof z.ZodObject ? input : undefined
     },
 
     async operationOf(scope, target) {

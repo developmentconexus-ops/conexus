@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { approving } from '../agents/test-approval.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
 import { assisting, created, publishedApp, reading, said, talking } from './test-assistant.ts'
@@ -247,4 +248,21 @@ test('a troca do modelo: uma resposta em andamento termina no modelo em que come
     [MODEL, OTHER_MODEL],
   )
   assert.equal((await sessionStateOf(on.hub, on.ana, url)).model, OTHER_MODEL)
+})
+
+test('sem escrita: com uma escrita no kit e na biblioteca do Projeto, o Assistente não recebe ferramenta nem texto dela, e a leitura roda sem pedir aprovação (12)', async (t) => {
+  const on = await approving(t, [[reading()], [said('Uma empresa.')]])
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [on.matriz],
+  })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  const events = await say('Quantas empresas?')
+  assert.equal(endOf(events), 'complete')
+  assert.ok(events.every((event) => event.type !== 'tool_approval_required'))
+  assert.equal(on.reads.length, 1)
+  const asked = on.calls[0]
+  assert.ok(asked !== undefined)
+  assert.ok(!asked.tools.some((name) => name.startsWith('tool_')), asked.tools.join())
+  assert.doesNotMatch(asked.system, /lancarPedido|Lançar pedido/)
 })

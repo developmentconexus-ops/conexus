@@ -40,7 +40,8 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
-import { presetTools } from './tools.ts'
+import type { WriteAuthor } from './tools.ts'
+import { NEVER_ASKS, presetTools } from './tools.ts'
 
 /** Conexus's fixed message, the same bytes as the Assistant's first part (step 24.1). */
 const FIXED = readFileSync(
@@ -50,6 +51,8 @@ const FIXED = readFileSync(
 const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 const READ_ONLY =
   'You only read: no tool of yours writes in a system. When the person asks you to change, save or send something, say that you cannot and what they can do instead.'
+const WRITES =
+  'Some of your tools write in a system, and only those do. A write may wait for the person to approve it here: when it is declined, do not call it again in the same answer and say that nothing was written. When a write answers that it must not be called again, do not, and tell the person what it says.'
 const RUN = 'conexus-agent-run'
 const turnKey = turnKeyOn('conexus-agent-turn-key')
 
@@ -205,9 +208,34 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
 }
 
 /**
+ * Each tool as a copy of its own that never asks (step 24.5): with the controller's `yolo` off,
+ * Mastra asks for every tool without a rule of its own, and only a tool's function beats that
+ * (`createTool({ requireApproval })`). A copy, so the objects the Builder shares (`web_fetch`) keep
+ * theirs.
+ */
+function neverAsking(tools: ToolsInput): ToolsInput {
+  return Object.fromEntries(
+    Object.entries(tools).map(([id, tool]) => [
+      id,
+      Object.assign(Object.create(Object.getPrototypeOf(tool)), tool, {
+        requireApproval: NEVER_ASKS,
+      }),
+    ]),
+  )
+}
+
+/** Who the version's writes speak as: the published version, or the person on its draft. */
+function authorOf(frozen: FrozenVersion & { agentId: AgentIdType }): WriteAuthor {
+  return frozen.source.kind === 'VERSION'
+    ? { kind: 'VERSION', agentId: frozen.agentId, number: frozen.source.number }
+    : { kind: 'DRAFT' }
+}
+
+/**
  * The run's tools, made once: the program tool fixes the ids of the tools it orchestrates when it is
  * made (`createCodeMode`), and its instructions list them, so the instructions and the tools of a
- * run come from one making. The Computador's, the web's and `show_file` stay direct only.
+ * run come from one making. The Computador's, the web's, `show_file` and the writes stay direct
+ * only: the program calls a tool's `execute` without its approval.
  */
 function runToolsOf(
   deps: AgentDeps,
@@ -228,22 +256,32 @@ function runToolsOf(
     const { companyId, personId, projectId } = run.scope
     const mayReadApp =
       frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
+    const preset = await presetTools({
+      ...{ ...deps, scope, tools, turnOf: turnKey.of },
+      author: authorOf(frozen),
+    })
     const ofTheAgent: ToolsInput = {
-      ...connectorTools(access, { noteSave: false, reads: false }),
-      ...(mayReadApp
-        ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
-        : {}),
-      ...(await presetTools({ ...deps, scope, tools, turnOf: turnKey.of })),
-      ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
+      ...neverAsking({
+        ...connectorTools(access, { noteSave: false, reads: false }),
+        ...(mayReadApp
+          ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
+          : {}),
+        ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
+      }),
+      ...preset.reads,
     }
     const program = machines === undefined ? undefined : codeModeOf(ofTheAgent, machines.codeMode)
     return {
       program,
+      writes: Object.keys(preset.writes).length > 0,
       tools: {
-        ...(frozen.web ? toolsOf(start.model) : {}),
-        ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
-        ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
+        ...neverAsking({
+          ...(frozen.web ? toolsOf(start.model) : {}),
+          ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
+          ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
+        }),
         ...ofTheAgent,
+        ...preset.writes,
       },
     }
   })
@@ -285,12 +323,12 @@ export function agentOf(
     description: frozen.description,
     instructions: async ({ requestContext }) => {
       const { scope, offered, selected } = await plan(requestContext)
-      const { program } = await toolsOfRun(requestContext)
+      const { program, writes } = await toolsOfRun(requestContext)
       const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
         { role: 'system', content: FIXED, providerOptions: CACHED },
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
-        { role: 'system', content: `${frozen.instructions}\n\n${READ_ONLY}` },
+        { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },
         ...(program === undefined
           ? []
           : [{ role: 'system' as const, content: program.instructions }]),
