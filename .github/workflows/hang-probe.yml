@@ -1,0 +1,78 @@
+name: hang probe (temporary)
+
+# Temporary: catches the agents.eval.test.ts child that never exits and dumps its threads. Removed
+# before the pull request is opened.
+on:
+  push:
+    branches: [feat/conexus-ci-server-hang]
+
+permissions:
+  contents: read
+
+env:
+  CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [1, 2]
+    services:
+      postgres:
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: ci-superuser
+        ports:
+          - 5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] probe
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] probe
+        with:
+          port: ${{ job.services.postgres.ports['5432'] }}
+      - run: sudo apt-get install -y gdb >/dev/null 2>&1 || true
+      - run: npm run build -w @conexus/server
+      - name: loop the file
+        working-directory: apps/server
+        env:
+          MASTRA_AGENT_THREAD_LEASE_TTL_MS: '3000'
+        run: |
+          hangs=0
+          for i in $(seq 1 60); do
+            rm -rf /tmp/ncc-probe
+            export NODE_COMPILE_CACHE=/tmp/ncc-probe
+            NODE_OPTIONS="--trace-exit --report-on-signal --report-signal=SIGUSR2 --report-directory=/tmp/reports" \
+              node --test --test-concurrency=1 --test-force-exit --test-timeout=120000 \
+              --test-reporter=../../scripts/test-reporter.ts src/builder/agents/agents.eval.test.ts \
+              > /tmp/run.log 2>&1 &
+            pid=$!
+            for s in $(seq 1 40); do kill -0 $pid 2>/dev/null || break; sleep 1; done
+            if kill -0 $pid 2>/dev/null; then
+              hangs=$((hangs+1))
+              echo "::group::HANG run $i"
+              cat /tmp/run.log
+              for c in $(pgrep -P $pid); do
+                echo "== child $c"; grep -E 'State|Threads' /proc/$c/status
+                for t in /proc/$c/task/*; do echo "$(basename $t) $(cat $t/comm) $(awk '{print $3}' $t/stat) wchan=$(cat $t/wchan)"; done
+                sudo bash -c "for t in /proc/$c/task/*; do echo \"-- kernel stack \$t\"; cat \$t/stack; done"
+                sudo gdb -p $c -batch -ex 'thread apply all bt' 2>&1 | tail -150
+                ls -l /proc/$c/fd
+                kill -USR2 $c; sleep 3; ls /tmp/reports || true
+              done
+              echo "::endgroup::"
+              pkill -KILL -P $pid; kill -KILL $pid
+            fi
+            wait $pid 2>/dev/null
+            grep -c 'Exited the environment' /tmp/run.log | sed "s/^/run $i trace-exit lines: /"
+          done
+          echo "hangs=$hangs/60"
