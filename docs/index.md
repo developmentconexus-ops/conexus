@@ -95,6 +95,7 @@ One line per document (`check-docs`).
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
 - [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
+- [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) a turn carries its activation as a scope.
 
 ## Skills
 
