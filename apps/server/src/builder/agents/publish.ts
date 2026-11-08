@@ -232,7 +232,7 @@ export async function holdsWrite(
  * version moves the answer to who restored it (`agent.active_by`); a version that is not the
  * active one keeps its publisher (`agent_version.published_by`).
  */
-export async function publisherLeavesAlone(
+export async function answererLeavesAlone(
   deps: Holding,
   companyId: CompanyId,
   version: { agentId: AgentId; number: number },

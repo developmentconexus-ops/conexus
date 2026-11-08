@@ -42,7 +42,7 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
-import { publisherLeavesAlone } from './publish.ts'
+import { answererLeavesAlone } from './publish.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
@@ -265,7 +265,7 @@ function runToolsOf(
       ...{ ...deps, scope, tools, turnOf: turnKey.of },
       ...{ author: authorOf(frozen), offered },
       leavesAlone: (version, target) =>
-        publisherLeavesAlone(deps, frozen.companyId, version, target),
+        answererLeavesAlone(deps, frozen.companyId, version, target),
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({
