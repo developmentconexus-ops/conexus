@@ -20,6 +20,7 @@ test('as permissões do papel também se leem na hora: tirar a escrita do papel 
   assert.equal((await on.ask(on.byCarla())).kind, 'OK')
   const changed = await call(on.hub, on.ana, 'PUT', `${route}/escritor`, {
     connectors: { sankhya: ['pedidos'] },
+    unattended: false,
   })
   assert.equal(changed.statusCode, 200)
   assert.deepEqual(await on.ask(on.byCarla()), { kind: 'NOT_IN_ROLE' })

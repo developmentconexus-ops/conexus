@@ -104,7 +104,12 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
     assert.equal(Object(read.json()).role, role)
     assert.deepEqual(
       Object(read.json()).may,
-      { manageAgents: mayBuild, manageAutomations: mayBuild, manageRoles: mayGovern },
+      {
+        manageAgents: mayBuild,
+        manageAutomations: mayBuild,
+        manageRoles: mayGovern,
+        publishUnattendedWrite: mayGovern,
+      },
       role,
     )
   }

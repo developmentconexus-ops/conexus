@@ -49,8 +49,31 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
 
 // The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
 // and `plan`, `files`, `tasks` and `reads`, whose model calls are streamed by the test double's Messages API stream.
-const NATIVE = ['abort', 'cited', 'files', 'handoff', 'plan', 'reads', 'tasks', 'thinking']
-const STREAMED = new Set(['plan', 'files', 'tasks', 'reads', 'handoff'])
+const NATIVE = [
+  'abort',
+  'approval',
+  'approval-declined',
+  'approval-interrupted',
+  'approval-stopped',
+  'cited',
+  'files',
+  'handoff',
+  'plan',
+  'reads',
+  'tasks',
+  'thinking',
+]
+const STREAMED = new Set([
+  'plan',
+  'files',
+  'tasks',
+  'reads',
+  'handoff',
+  'approval',
+  'approval-declined',
+  'approval-interrupted',
+  'approval-stopped',
+])
 
 test('cada gravação do fluxo nativo diz a biblioteca, a versão e a gravação do fornecedor que tocou, e não guarda endereço nem credencial (T24, S40)', () => {
   assert.deepEqual(

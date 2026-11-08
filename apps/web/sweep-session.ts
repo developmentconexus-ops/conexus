@@ -41,6 +41,7 @@ function displayOf(fields: Record<string, unknown> = {}) {
     displayState: {
       isRunning: false,
       currentMessage: null,
+      pendingApprovals: {},
       pendingSuspensions: {},
       tasks: [],
       omProgress: null,

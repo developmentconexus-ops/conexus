@@ -49,6 +49,15 @@ export const MARK_ALL_READS = 'Marcar todas as leituras'
 export const FREE_QUERY = 'consultar'
 export const FREE_QUERY_WARNING = 'Consulta livre: roda qualquer SQL no banco inteiro'
 export const OUT_OF_ROLE = 'Fora do seu papel'
+/** The word on a write of a connection, beside its name (step 24.5). */
+export const WRITES_WORD = 'escreve'
+export const ASK_FIRST = 'Pergunta antes'
+export const ON_ITS_OWN = 'Faz sozinho'
+export const NO_UNATTENDED = 'Seu papel não publica escrita que faz sozinha'
+/** The name of a write's key for a screen reader: when it runs. */
+export function approvalKeyName(title: string): string {
+  return `Quando ${title} roda`
+}
 export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
 export const VERSIONS_TITLE = 'Versões'

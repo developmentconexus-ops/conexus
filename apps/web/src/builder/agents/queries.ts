@@ -1,4 +1,4 @@
-import type { AgentDetail, AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AgentDetail, AgentId, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
   activateAgentVersion,
   createAgentConversation,
@@ -10,6 +10,7 @@ import {
   listAgents,
   listAgentVersions,
   listConstrutorConversations,
+  listOpenWrites,
   listTools,
   publishAgent,
   saveAgentDraft,
@@ -39,6 +40,11 @@ export function toolsQuery(scope: Scope) {
 
 export function agentConversationsQuery(scope: Scope, agentId: AgentId) {
   return hubQuery(listAgentConversations, { params: { ...scope, agentId } })
+}
+
+/** The agent's sends in the conversation whose end is not known (step 24.5), for the warning on a card. */
+export function openWritesQuery(scope: Scope, agentId: AgentId, conversationId: ConversationId) {
+  return hubQuery(listOpenWrites, { params: { ...scope, agentId, conversationId } })
 }
 
 export function construtorConversationsQuery(scope: Scope) {

@@ -265,6 +265,7 @@ test('a escrita que faz sozinha: gravar o rascunho ou publicar com uma escrita e
   const reads = ['clientes', 'empresas', 'pedidos', 'consultar', 'carregar']
   const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: [...reads, 'lancarPedido'] },
+    unattended: false,
   })
   assert.equal(role.statusCode, 200, role.body)
   const label = operationLabel('sankhya', 'lancarPedido')

@@ -1,28 +1,16 @@
-import type {
-  AgentDetail,
-  OfferedConnection,
-  ReadyTool,
-  ToolSummary,
-  ToolVersionId,
-} from '@conexus/hub-api'
+import type { AgentDetail, OfferedConnection, ReadyTool, ToolSummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { Checkbox } from '../../ui/checkbox.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
 import type { Part } from './section.tsx'
-import {
-  FREE_QUERY,
-  FREE_QUERY_WARNING,
-  MARK_ALL_READS,
-  newVersionText,
-  OUT_OF_ROLE,
-  toolTitle,
-} from './text.ts'
+import { FREE_QUERY, FREE_QUERY_WARNING, MARK_ALL_READS, OUT_OF_ROLE, toolTitle } from './text.ts'
+import { Line, versionsOf } from './tool-line.tsx'
 import type { Saving } from './use-draft-save.ts'
+import { WriteLines } from './write-lines.tsx'
 
 type Catalog = ReturnType<typeof useConnectorCatalog>
 type Listed = { tools: ToolSummary[]; ready: ReadyTool[] }
@@ -87,50 +75,6 @@ function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: Saving)
         tools: now.tools.map((one) => (one.id === tool.id ? tool.latest.id : one.version.id)),
       })),
   }
-}
-
-function versionsOf(now: AgentDetail, without: ReadonlySet<string> = new Set()): ToolVersionId[] {
-  return now.tools.filter((one) => !without.has(one.id)).map((one) => one.version.id)
-}
-
-function Line(props: {
-  id: string
-  title: string
-  detail?: string | undefined
-  warning?: string | undefined
-  checked: boolean
-  disabled: boolean
-  onChange: (on: boolean) => void
-  /** The chosen tool, when a newer version of it exists. */
-  newer?: { number: number; onUse: () => void } | undefined
-}) {
-  return (
-    <li className="flex flex-wrap items-start gap-sm py-xs">
-      <Checkbox
-        id={props.id}
-        checked={props.checked}
-        disabled={props.disabled}
-        onCheckedChange={props.onChange}
-      />
-      <label htmlFor={props.id} className="flex min-w-0 flex-1 flex-col">
-        <span>{props.title}</span>
-        {props.detail !== undefined && (
-          <span className="text-fact text-text-2">{props.detail}</span>
-        )}
-        {props.warning !== undefined && (
-          <span className="text-fact text-danger">{props.warning}</span>
-        )}
-      </label>
-      {props.newer !== undefined && (
-        <span className="flex flex-wrap items-center gap-xs">
-          <span className="text-fact text-text-2">{newVersionText(props.newer.number)}</span>
-          <Button size="sm" onClick={props.newer.onUse}>
-            Usar a versão {props.newer.number}
-          </Button>
-        </span>
-      )}
-    </li>
-  )
 }
 
 function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Saving }) {
@@ -232,6 +176,7 @@ export function ConnectionTools(props: Part & { connection: OfferedConnection; s
           )
         })}
         {reads.filter((one) => one.operation === FREE_QUERY).map(line)}
+        <WriteLines connection={connection} agent={agent} tools={read.data.tools} saving={saving} />
       </ul>
       <div>
         <Button

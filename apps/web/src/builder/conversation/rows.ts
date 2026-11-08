@@ -2,7 +2,10 @@ import type { Answer } from '@conexus/hub-api'
 import { CARD_TOOLS, Question, TASK_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
+import type { ApprovalCardItem, Seen } from './approval-item.ts'
+import { approvalItem } from './approval-item.ts'
 import type { Message, Suspended } from './messages.ts'
+import { parsePlan, SubmittedPlan } from './plan-parse.ts'
 import type { Running } from './session-state.ts'
 
 type ToolInvocationState = Extract<
@@ -57,7 +60,7 @@ export type PlanCardItem = {
   plan: string
   path?: string
 }
-type CardItem = QuestionCardItem | PlanCardItem
+type CardItem = QuestionCardItem | PlanCardItem | ApprovalCardItem
 type ConexusItem = {
   kind: 'conexus'
   id: string
@@ -94,22 +97,6 @@ const Answered = z.object({ answers: z.array(z.union([z.string(), z.array(z.stri
 
 function parseAnswers(input: unknown): Answer[] | undefined {
   return Answered.safeParse(input).data?.answers
-}
-
-/** What Mastra's `submit_plan` returns once answered: the plan as submitted and the decision on it. */
-const SubmittedPlan = z.object({
-  submittedPlan: z.object({
-    action: z.string(),
-    title: z.string().optional(),
-    plan: z.string().optional(),
-  }),
-})
-
-const PlanArgs = z.object({ title: z.string(), plan: z.string(), path: z.string() }).partial()
-
-function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
-  const parsed = PlanArgs.safeParse(input).data
-  return { title: parsed?.title ?? '', plan: parsed?.plan ?? '', path: parsed?.path }
 }
 
 type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
@@ -216,6 +203,8 @@ export type View = {
   /** The proposals whose card offers no button (`closedProposals`). */
   closed?: ReadonlySet<string>
   suspended: Readonly<Record<string, Suspended>>
+  /** What the screen knows of a call that asks the person (step 24.5), by the call. */
+  approval: (toolCallId: string) => Seen
   running: Readonly<Record<string, Running>>
   /** When the screen first heard of each tool call, by its id, epoch ms. */
   heard: Readonly<Record<string, number>>
@@ -240,6 +229,14 @@ function addText(items: TranscriptItem[], id: string, text: string, run: boolean
   return true
 }
 
+/** A tool call's row: the card of a write that asked the person, or the call as the others are. */
+function toolItem(inv: Parameters<typeof approvalItem>[0], view: View) {
+  return (
+    approvalItem(inv, view.approval(inv.toolCallId)) ??
+    invocationToItem(inv, view.suspended[inv.toolCallId])
+  )
+}
+
 function fromParts(
   message: Message,
   thoughts: ReadonlyMap<string, number>,
@@ -260,10 +257,7 @@ function fromParts(
         streaming: false,
       })
     else if (part.type === 'tool-invocation') {
-      const item = invocationToItem(
-        part.toolInvocation,
-        view.suspended[part.toolInvocation.toolCallId],
-      )
+      const item = toolItem(part.toolInvocation, view)
       if (item) items.push(item)
     } else if (
       part.type.startsWith('data-conexus-') &&

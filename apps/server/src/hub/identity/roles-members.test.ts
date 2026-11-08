@@ -104,7 +104,10 @@ test('o papel de outra empresa não vale aqui: trocar, convidar, mudar e apagar 
     email: INVITEE,
     role: 'contador',
   })
-  const changed = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/contador`, { connectors: {} })
+  const changed = await call(w.hub, w.ana, 'PUT', `${w.base}/roles/contador`, {
+    connectors: {},
+    unattended: false,
+  })
   const deleted = await call(w.hub, w.ana, 'DELETE', `${w.base}/roles/contador`)
   for (const response of [swapped, invited, changed, deleted])
     assert.deepEqual([response.statusCode, codeOf(response)], [404, 'ROLE_NOT_FOUND'])
