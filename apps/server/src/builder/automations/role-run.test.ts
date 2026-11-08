@@ -11,6 +11,7 @@ test('a automação roda pelo papel do dono: o modelo recebe só o que o papel d
   const diego = await memberOn(on.hub, on.companyId, DIEGO, 'developer')
   const without = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: ['pedidos'] },
+    unattended: false,
   })
   assert.equal(without.statusCode, 200, without.body)
   const body = salesSummary([on.matriz], { projectId: on.projectId })

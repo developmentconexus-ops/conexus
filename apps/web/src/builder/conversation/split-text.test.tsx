@@ -1,11 +1,13 @@
 import type { MastraMessagePart } from '@mastra/client-js'
 import { expect, test } from 'vitest'
+import { seenBy } from './approval-item.ts'
 import type { Message } from './messages.ts'
 import { messageOf } from './messages.ts'
 import { itemsOf } from './rows.ts'
+import { OPENED } from './session-state.ts'
 import { recordedRun } from './test-recorded.ts'
 
-const view = { suspended: {}, running: {}, heard: {}, live: false }
+const view = { suspended: {}, approval: seenBy(OPENED), running: {}, heard: {}, live: false }
 
 /** The Builder's answer after Anthropic's native web search, as Mastra stored it (recorded 2026-10-24). */
 const cited = recordedRun('cited')

@@ -45,6 +45,7 @@ import {
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { appInvitationOf, companyScope, pendingOf } from './invitations.ts'
+import { createMayUse } from './may-use.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { chooseNickname } from './nickname.ts'
@@ -65,13 +66,20 @@ type Deps = {
 
 function registerReads(app: FastifyInstance, deps: Deps): void {
   const { database } = deps
+  const mayUse = createMayUse(deps.auth, database, deps.roles)
   serve(app, listCompanies, async ({ person, query }) =>
     answer(await readMemberships(database, person.id, query.page)),
   )
 
   serve(app, getCompany, async ({ person, params }) => {
     const { appsDomain } = deps.config
-    return answer(await readCompany(database, { personId: person.id, ...params, appsDomain }))
+    return answer(
+      await readCompany(
+        database,
+        { personId: person.id, ...params, appsDomain },
+        mayUse.mayPublishUnattended,
+      ),
+    )
   })
 
   serve(app, listMembers, async ({ person, params, query }) =>
@@ -246,8 +254,16 @@ function registerRoles(app: FastifyInstance, deps: Deps): void {
   serve(app, updateRole, async ({ person, headers, params, body, log }) => {
     const { role, ...company } = params
     const changed = await update({ person, headers, ...company, role, body })
-    log.info({ ...params, by: person.id }, 'ROLE_UPDATED')
-    return answer({ role: changed })
+    log.info(
+      {
+        ...params,
+        by: person.id,
+        added: changed.actions.added.join(),
+        removed: changed.actions.removed.join(),
+      },
+      'ROLE_UPDATED',
+    )
+    return answer({ role: changed.role })
   })
   serve(app, deleteRole, async ({ person, headers, params, log }) => {
     await remove({ person, headers, log, ...params })

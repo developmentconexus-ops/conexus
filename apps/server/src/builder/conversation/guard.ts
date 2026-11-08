@@ -79,6 +79,7 @@ const FAILURES = [
   'DATABASE_UNAVAILABLE',
   'CONVERSATION_NOT_FOUND',
   'HUB_UPDATING',
+  'NOT_IN_ROLE',
 ] as const satisfies readonly FailureCode[]
 
 /**
@@ -128,10 +129,20 @@ export type WriteOf = (input: {
   toolName: string
 }) => Promise<{ connectionId: ConnectionId; operation: string } | undefined>
 
+/**
+ * Whether the person answering a conversation's card holds the write its tool names, in their own
+ * role, now (step 24.5, D3-a); when not, the write's label, if the write is still offered.
+ */
+export type MayApprove = (
+  input: Parameters<WriteOf>[0],
+) => Promise<Readonly<{ held: boolean; operation?: string }>>
+
 /** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
 export type GuardedMastra = {
   mastra: Mastra
-  part(kind: ControllerKind): { admit: Admission; writeOf?: WriteOf } | undefined
+  part(
+    kind: ControllerKind,
+  ): { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove } | undefined
   updating(): boolean
 }
 
@@ -187,7 +198,8 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
  * A write's Aprovar or Recusar reaches Mastra only for a gate parked in this session now (step
  * 24.5): after Parar, a new message or a restart, Mastra would answer the stored wait and run the
  * write, and the card no longer exists. The autonomy lives in the version
- * alone, so the always-allow of Mastra's body is refused. Anything else answers `not_pending`.
+ * alone, so the always-allow of Mastra's body is refused. Anything else answers `not_pending`. An
+ * Aprovar by a person whose role lacks the write is `NOT_IN_ROLE` and nothing runs (D3-a).
  */
 async function toolAnswer(
   deps: { hub: GuardedMastra; log: FailureLog },
@@ -206,13 +218,13 @@ async function toolAnswer(
     return { ok: false, reason: 'not_pending' }
   }
   const toolName = session.displayState.get().pendingApprovals.get(toolCallId)?.toolName
-  const write =
-    toolName === undefined
-      ? undefined
-      : await at.part.writeOf?.({
-          ...{ companyId: at.companyId, personId: at.person.id, conversationId: at.conversationId },
-          toolName,
-        })
+  const asked = {
+    companyId: at.companyId,
+    personId: at.person.id,
+    conversationId: at.conversationId,
+  }
+  if (approved) await refuseApprover(at.part.mayApprove, { ...asked, toolName }, toolCallId)
+  const write = toolName === undefined ? undefined : await at.part.writeOf?.({ ...asked, toolName })
   request.requestContext.set(TOLD, {
     fields: {
       ...{ companyId: at.companyId, conversationId: at.conversationId, toolCallId },
@@ -224,6 +236,23 @@ async function toolAnswer(
     request.requestContext.set(APPROVED_CALL, { toolCallId, personId: at.person.id })
   }
   return undefined
+}
+
+/** An Aprovar by a person whose role lacks the write is `NOT_IN_ROLE`, and nothing runs (D3-a). */
+async function refuseApprover(
+  mayApprove: MayApprove | undefined,
+  asked: Omit<Parameters<MayApprove>[0], 'toolName'> & { toolName: string | undefined },
+  toolCallId: ToolCallId,
+): Promise<void> {
+  if (mayApprove === undefined) return
+  const { toolName } = asked
+  const answer = toolName === undefined ? undefined : await mayApprove({ ...asked, toolName })
+  if (answer?.held) return
+  const operation = answer?.operation
+  throw new Failure('NOT_IN_ROLE', {
+    details: { toolCallId, reason: 'APPROVER' },
+    ...(operation === undefined ? {} : { named: { operation } }),
+  })
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */

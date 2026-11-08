@@ -4,8 +4,6 @@ import type {
   AgentVersionSummary,
   ConstrutorConversationSummary,
   ReadyTool,
-  ToolSummary,
-  ToolVersionDetail,
 } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
@@ -20,7 +18,6 @@ import {
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { z } from 'zod'
-import { SANKHYA } from '../../hub/connectors/fixtures.ts'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { ChosenModels } from '../assistant/test-model.tsx'
@@ -30,7 +27,8 @@ import { screens, view } from '../conversation/test-hub.tsx'
 import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
 import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
-import { toolRoutes } from './test-hub-tools.tsx'
+import type { ToolHeld } from './test-hub-tools.tsx'
+import { catalogRoute, openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -59,12 +57,9 @@ type Answers = {
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
-type Held = {
+type Held = ToolHeld & {
   agents: AgentDetail[]
   versions?: AgentVersionSummary[]
-  tools?: ToolSummary[]
-  /** The versions of every tool the Projeto reads, newest last; a tool read without them has version 1 alone. */
-  toolVersions?: ToolVersionDetail[]
   ready?: ReadyTool[]
   conversations?: AgentConversationSummary[]
   construtor?: ConstrutorConversationSummary[]
@@ -104,7 +99,13 @@ function draftRoutes(held: Held, note: Note) {
       const found = find(params.id)
       if (!found) return refusal('AGENT_NOT_FOUND')
       if (body.revision !== found.revision) return refusal('AGENT_DRAFT_STALE')
-      const { revision: _revision, tools: _tools, ready: _ready, ...fields } = body
+      const {
+        revision: _revision,
+        tools: _tools,
+        ready: _ready,
+        approvals: _approvals,
+        ...fields
+      } = body
       Object.assign(found, { revision: found.revision + 1, draft: { ...found.draft, ...fields } })
       return HttpResponse.json({ agent: found })
     }),
@@ -160,6 +161,7 @@ const OpenConversation = z.object({ draft: z.boolean().optional() })
 
 function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
   return [
+    openWritesRoute(held, PROJECT_API),
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
       HttpResponse.json({ conversations: held.conversations ?? [] }),
     ),
@@ -270,13 +272,6 @@ function memberRoutes() {
     http.all(`${PROJECT_API}/tools*`, refused),
     http.all(`*/api/companies/${COMPANY.id}/agents`, refused),
   ]
-}
-
-/** The company's catalog with the Sankhya, where the screens read the connectors' names and logos. */
-function catalogRoute() {
-  return http.get('*/api/companies/:companyId/connections', () =>
-    HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: true }),
-  )
 }
 
 /**

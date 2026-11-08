@@ -1,6 +1,7 @@
 import type {
   AgentId,
   FailureCode,
+  OpenWrite,
   ProposedApp,
   ProposedAutomation,
   ShownFile,
@@ -15,6 +16,24 @@ import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
+
+/** The read of the sends whose end is not known: until it answers, or fails, a card does not let the person approve. */
+export type OpenWritesRead =
+  | { kind: 'READING' }
+  | { kind: 'READ'; writes: readonly OpenWrite[] }
+  | { kind: 'FAILED'; text: string }
+
+/** A write of an agent's tool, as the card that asks about it names it: its connection and its operation. */
+export type WriteTool = {
+  connectionId: string
+  /** The connector's id ("sankhya"), whose name the room's words say. */
+  connector: string
+  /** The connection's own name ("Matriz"). */
+  connection: string
+  operation: string
+  /** The operation's name ("Lançar pedido"). */
+  label: string
+}
 
 /**
  * Whose conversation the rows are drawn in (step 24.1, U4): the Builder's, which every row was
@@ -40,6 +59,11 @@ export type Room = {
   openedAgent?: AgentId
   /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
   toolDescription?: (slug: string) => string | undefined
+  /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
+  writeOf?: (toolName: string) => WriteTool | undefined
+  /** The agent's sends of this conversation whose end is not known, for the warning on a card (step 24.5); read again when a card opens. */
+  openWrites?: OpenWritesRead
+  refreshOpenWrites?: () => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
@@ -90,4 +114,15 @@ export function useAnswerTo(): BuilderSession['answer'] {
   const answer = useContext(AnswerContext)
   if (answer === null) throw new Error('a card drawn outside a conversation')
   return answer
+}
+
+/** Where the answer to a write's card goes: the session of the conversation the card is drawn in. */
+const ApproveContext = createContext<BuilderSession['approve'] | null>(null)
+
+export const ApproveProvider = ApproveContext.Provider
+
+export function useApprove(): BuilderSession['approve'] {
+  const approve = useContext(ApproveContext)
+  if (approve === null) throw new Error('a card drawn outside a conversation')
+  return approve
 }

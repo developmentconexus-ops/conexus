@@ -7,7 +7,6 @@ import type {
 } from '@conexus/hub-api'
 import {
   ConnectionId as ConnectionIdSchema,
-  OperationId,
   ToolId,
   ToolVersionId as VersionId,
 } from '@conexus/hub-api'
@@ -16,7 +15,7 @@ import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
 import { effectOf, versionsWithTools } from '../tools/public.ts'
-import { mayLeaveAlone } from './publish.ts'
+import { mayLeaveAlone, targetOf } from './publish.ts'
 import { chosenIds } from './store.ts'
 import { agentTool } from './tables.ts'
 
@@ -40,21 +39,21 @@ async function approvalsOf(
     .from(agentTool)
     .where(eq(agentTool.agentId, a.agentId))
   const writes = homed.flatMap((row) => {
-    const home = a.shown.find((each) => each.connectionId === row.tool.connectionId)
-    const write = home !== undefined && effectOf(row.tool, a.shown) === 'WRITE'
-    return write ? [{ row, connector: home.connector }] : []
+    if (effectOf(row.tool, a.shown) !== 'WRITE') return []
+    const connectionId = ConnectionIdSchema.parse(row.tool.connectionId)
+    const target = targetOf(a.shown, { ...row.tool, connectionId })
+    return target === undefined ? [] : [{ row, target }]
   })
   const asked = Object.keys(a.patch.approvals ?? {})
   if (asked.some((toolId) => !writes.some(({ row }) => row.tool.id === toolId))) {
     throw new Failure('AGENT_TOOL_REFUSED', { named: { field: 'tools', reason: 'NOT_USABLE' } })
   }
   const approvals = new Map<string, ToolApproval>()
-  for (const { row, connector } of writes) {
+  for (const { row, target } of writes) {
     const before = held.find((each) => each.toolId === row.tool.id)?.approval
     const given = a.patch.approvals?.[ToolId.parse(row.tool.id)]
     if (given === 'AUTO' && before !== 'AUTO') {
-      const operation = OperationId.parse(row.tool.operation)
-      await mayLeaveAlone(identity, tx, a.scope, { slug: row.tool.slug, connector, operation })
+      await mayLeaveAlone(identity, tx, a.scope, { slug: row.tool.slug, ...target })
     }
     approvals.set(row.version.id, given ?? (before === 'AUTO' ? 'AUTO' : 'ASK'))
   }

@@ -122,7 +122,7 @@ test('a dona libera a ligação certa e a linha passa a ler', async () => {
   const dialog = await screen.findByRole('alertdialog')
   expect(
     within(dialog).getByText(
-      'O app e o Builder poderão ler o Mercado Livre da empresa. Quem usa o app vê o que o app mostrar.',
+      'O app, o Builder e os agentes poderão usar o Mercado Livre da empresa. O que cada um faz nele depende do papel de quem publica. Quem usa o app vê o que o app mostrar.',
     ),
   ).toBeTruthy()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Liberar' }))
