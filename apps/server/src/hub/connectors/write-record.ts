@@ -306,6 +306,13 @@ export function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly O
   return deps.database.read(scopeOf(viewer), (tx) => openRows(tx, key))
 }
 
+/** What the system said of a refused write, as stored; none for any other end. */
+export function refusedMessageOf(row: Pick<Row, 'state' | 'answer'>): string | null {
+  if (row.state !== 'REFUSED') return null
+  const stored = Stored.safeParse(row.answer)
+  return stored.success && 'native' in stored.data ? stored.data.native.message : null
+}
+
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
 
 /** The record's end; if the database refuses it the model still hears what the provider answered, and the process says the row stayed `SENDING`. */

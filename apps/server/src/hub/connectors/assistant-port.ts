@@ -20,6 +20,8 @@ import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
+import type { WrittenRecord } from './write-list.ts'
+import { writesOf } from './write-list.ts'
 import type { OpenWrite, OpenWritesKey, WriteRequest, Written } from './write-record.ts'
 import { openWritesOf } from './write-record.ts'
 
@@ -64,6 +66,8 @@ export type AssistantConnectors = {
   write(request: WriteRequest): Promise<Written | Spent>
   /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
   openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
+  /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); `openWrites` stays until the web moves to this. */
+  writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
@@ -330,6 +334,8 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
     },
 
     openWrites: (key) => openWritesOf(deps, key),
+
+    writes: (key) => writesOf(deps, key),
 
     writeOf: (scope, target) => writeShapeOf(deps, scope, target),
 
