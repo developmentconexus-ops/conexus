@@ -1222,7 +1222,7 @@ uniões, troca a chave de uma escrita por `where` e `callKey`, e acrescenta uma 
 ### As linhas da tabela
 
 - **A regra.** A 24.5.1, em `hub/connectors/approval.ts`: `mustAsk(deps, { companyId, choice,
-  author, scope, threadId, target })`, `mayApprove`, `publisherLeavesAlone(deps, companyId,
+  author, scope, threadId, target })`, `mayApprove`, `answererLeavesAlone(deps, companyId,
   answeredBy, target)`, `WriteAuthorOf` (`DRAFT` ou `PUBLISHED` com `answeredBy`), `WriteTarget`,
   `ApprovalDeps`, exportados por `hub/connectors/public.ts`. O corpo de `mustAsk` é o do cartão da
   24.5.1 (a sua U2, passo 3): `CHOSEN`, depois `PUBLISHER_LOST_RIGHT`, depois `OPEN_WRITE` pela
