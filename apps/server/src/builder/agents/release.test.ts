@@ -112,10 +112,11 @@ test('a pessoa: tirar a Carla deixa os agentes, as versões e as ferramentas del
   )
   const authors = await on.hub.test.asOwner(
     `select (select count(*)::int from builder.tool where created_by = $1) as tools,
-       (select count(*)::int from builder.tool_version where created_by = $1) as versions`,
+       (select count(*)::int from builder.tool_version where created_by = $1) as versions,
+       (select count(*)::int from builder.agent where active_by = $1) as answering`,
     [on.carla.id],
   )
-  assert.deepEqual(authors, [{ tools: 0, versions: 0 }])
+  assert.deepEqual(authors, [{ tools: 0, versions: 0, answering: 0 }])
   assert.deepEqual(await on.toolsLeft(), [[true, 1]])
 })
 

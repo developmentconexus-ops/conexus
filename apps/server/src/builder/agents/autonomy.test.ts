@@ -13,6 +13,7 @@ import {
   approvalsIn,
   approving,
   askedOf,
+  developerHolds,
   launched,
   PERSON_PACE_MS,
   untilAsked,
@@ -25,15 +26,6 @@ const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 
 type On = Awaited<ReturnType<typeof approving>>
-
-/** The developer role's connector operations, and whether it publishes a write that runs alone, set by Ana. */
-async function developerHolds(on: On, operations: readonly string[], unattended?: boolean) {
-  const role = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
-    connectors: { sankhya: operations },
-    ...(unattended === undefined ? {} : { unattended }),
-  })
-  assert.equal(role.statusCode, 200, role.body)
-}
 
 /**
  * Bia, an administrator, publishes the write in Faz sozinho; Ana's first call runs without a card.
