@@ -1,7 +1,7 @@
-import type { Operation } from '@conexus/connectors'
+import type { WriteOperation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
-import { z } from 'zod'
+import type { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import { roleOfSpeaker } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
@@ -19,12 +19,12 @@ import type { Wrote } from './wrote.ts'
 
 /** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
 export function uncertainText(mark: string): string {
-  return `Do not call this again: the write may already exist. Tell the person to look for the mark "${mark}" in the system's observation.`
+  return `Do not call this again: the write may already exist. Tell the person to look for the mark "${mark}" in what the system wrote.`
 }
 
 /** The text the model reads for `WRITE_OPEN`: an earlier write of this kind in the conversation may exist, so this one was not sent. */
 export function openText(mark: string, since: Date): string {
-  return `Do not call this again: a write like it, asked at ${since.toISOString()}, may already exist and this one was not sent. Tell the person to look for the mark "${mark}" in the system's observation before anything is written again.`
+  return `Do not call this again: a write like it, asked at ${since.toISOString()}, may already exist and this one was not sent. Tell the person to look for the mark "${mark}" in what the system wrote before anything is written again.`
 }
 
 type Ended = Wrote<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused | { kind: 'DEADLINE' }
@@ -57,7 +57,7 @@ type Admitted =
   | Readonly<{
       kind: 'ADMITTED'
       opened: OpenedConnection
-      operation: Operation<unknown, unknown, 'write'>
+      operation: WriteOperation<unknown, unknown>
     }>
   | Readonly<{ kind: 'NOT_IN_ROLE' | 'NOT_GRANTED' }>
 
@@ -126,15 +126,19 @@ async function sendOnce(
   return sent
 }
 
-const OrderCode = z.object({ codigoPedido: z.number() })
-
-/** The line for what came of the send, before the record's end: scalars only, and an order's code when the answer has one (S40). */
-function logSent(deps: Deps, a: WriteRequest, connector: string, written: Written): void {
+/** The line for what came of the send, before the record's end: scalars only, and the id the write declares when the answer has one (S40). */
+function logSent(
+  deps: Deps,
+  a: WriteRequest,
+  connector: string,
+  operation: WriteOperation<unknown, unknown>,
+  written: Written,
+): void {
   const about = aboutOf(a, connector)
   if (written.kind === 'OK') {
-    const code = OrderCode.safeParse(written.value)
+    const id = operation.idOf(written.value)
     deps.log.info(
-      { ...about, ...(code.success ? { codigoPedido: code.data.codigoPedido } : {}) },
+      { ...about, ...(id === null ? {} : { codigoPedido: id }) },
       'CONNECTOR_WRITE_SENT',
     )
   } else if (written.kind === 'WRITE_UNCERTAIN') {
@@ -159,7 +163,7 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
   const parsed = operation.input.safeParse(a.input)
   const mark = markOf(a.threadId, a.toolCallId)
   const checked = parsed.success
-    ? operation.input.safeParse(markedInput(parsed.data, mark))
+    ? operation.input.safeParse(operation.mark(parsed.data, mark))
     : parsed
   // The kit's own schema judges what was written, and the mark must still fit the field: nothing is registered or sent when it refuses.
   if (!checked.success) {
@@ -177,7 +181,7 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
     a.signal,
   )
   const written = writtenOf(turn, mark)
-  logSent(deps, a, connector, written)
+  logSent(deps, a, connector, operation, written)
   await finish(deps, a, written, connector)
   return written
 }
@@ -192,17 +196,4 @@ function roomLeft(error: z.ZodError, mark: string): string {
         : `${field}: ${issue.message}`
     })
     .join('; ')
-}
-
-const Observed = z.looseObject({ observacao: z.string().optional() })
-
-/** The input with the mark at the end of its observation, where the person finds the order. */
-function markedInput(input: unknown, mark: string): unknown {
-  const observed = Observed.safeParse(input)
-  if (!observed.success) return input
-  const text = observed.data.observacao
-  return {
-    ...observed.data,
-    observacao: text === undefined || text === '' ? mark : `${text} ${mark}`,
-  }
 }

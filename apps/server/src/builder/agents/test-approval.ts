@@ -15,6 +15,7 @@ export const WRITE = 'tool_lancar_pedido'
 /** The fields of an order the model fills; the model of the note is fixed by the tool. */
 export const ASKED = {
   codigoCliente: 1,
+  codigoLocalEstoque: 1,
   itens: [{ codigoProduto: 11, quantidade: 2, valorUnitario: 10 }],
 }
 

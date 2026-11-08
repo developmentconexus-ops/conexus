@@ -43,6 +43,7 @@ export type {
   ProviderAnswer,
   ProviderRequest,
   Unread,
+  WriteOperation,
 } from './kernel/operation.ts'
 export { AccountRef, deniesAccess, locateOf, requestOf } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'

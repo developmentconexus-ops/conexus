@@ -33,6 +33,7 @@ type Over = Partial<{
 export const ORDER = {
   notaModelo: 12,
   codigoCliente: 1,
+  codigoLocalEstoque: 1,
   itens: [{ codigoProduto: 11, quantidade: 2, valorUnitario: 10 }],
 }
 export const LANCAR = OperationId.parse('lancarPedido')
