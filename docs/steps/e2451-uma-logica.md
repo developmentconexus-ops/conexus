@@ -1,6 +1,7 @@
 # Etapa 24.5.1: Uma lógica
 
-Rascunho. O fundador ainda não aprovou esta página nem a linha da etapa no roteiro (decisão 1). A
+Rascunho. O fundador respondeu às decisões em 2026-11-08 (1A, 2 aceita, 4A, 5A, 6A); a 3 segue
+aberta, e ele ainda não aprovou esta página. A
 etapa vem do pedido dele de 2026-11-08 e da auditoria de coesão de 2026-11-07, refeita por um estudo
 que tratou cada item da auditoria como hipótese. Cada linha citada foi lida no `main` em `a4e69677`,
 com `@mastra/core` 1.82.0, `@mastra/server` 1.82.0, `@mastra/memory` 1.41.0, `@mastra/pg` 1.35.0,
@@ -93,44 +94,63 @@ página. No fim: faz o roteiro e diz o que viu.
 - **Os avisos guardados para um cartão** (`next-card`): nenhum toca nestes arquivos.
 
 **As decisões suas nesta etapa.** Nenhuma é de produto, salvo a 4. Todas vêm da auditoria e foram
-refeitas pelo estudo.
+refeitas pelo estudo. As respostas são as suas, de 2026-11-08, com as suas palavras.
 
 - **1. Onde entra a arrumação.**
   - `1A`: nesta etapa própria, antes da 24.6.
   - `1B`: como a primeira unidade da 24.6.
   - `1C`: depois da 24.6.
 
-  **Recomendo `1A`.** A 24.6 já passa da L2 (~4.750 linhas no cartão dela), e a U2 daqui tira
-  ~150 de lá. O estudo encolheu esta etapa de ~1.050 linhas para ~520. Com a sua palavra, a linha
-  "24.5.1 Uma lógica" entra no roteiro.
-- **2. As regras de método** (C8 com máquina, a raiz do servidor sob a regra das portas, as portas
-  aninhadas, a convenção `test-*.ts` no lugar da lista de 50 nomes, e o revisor perguntando "isso
-  já existe noutro sujeito?").
+  O estudo recomendou `1A`: a 24.6 já passa da L2 (~4.750 linhas no cartão dela), e a U2 daqui
+  tira ~150 de lá. **Sua resposta: "A".** A linha "24.5.1 Uma lógica" entra no roteiro.
+- **2. As regras de fronteira, conferidas pela máquina.** **Sua resposta: "pra mim isso já era
+  dentro dos nossos guias, isso. De não importar a tabela de outro dono, de ter o... Por exemplo,
+  você tem um módulo, mas tudo que pode usar só tá no public, por exemplo, isso tudo é conforme
+  nosso stack desde o começo, nossas regras e nossos guias. Então, tem que verificar isso, mas eu
+  concordo. Aceito."**
 
-  **Recomendo aceitar as cinco, num PR de método só delas, antes desta etapa construir.** Nativo:
-  regras de caminho do dependency-cruiser. A C8 não dá para conferir pelo nome importado, porque o
-  dependency-cruiser não vê o nome. As tabelas ganham então uma segunda porta, que só um arquivo de
-  tabelas pode importar. A violação que o estudo achou (as notificações leem a tabela dos pedidos)
-  vira um conserto de uma linha.
-- **3. O vocabulário do Builder no contrato.**
-  - `3A`: o contrato é o vocabulário comum, e isso se escreve em C4.
-  - `3B`: o Hub não cita tipo do Builder.
+  A verificação, regra por regra, no `main` em `a4e69677`:
 
-  **Recomendo `3A`.** A U2 põe a regra de escrita no Hub, usando `AgentId`, e isso só é coerente
-  com `3A`.
+  | Regra | O que o guia já diz | O que a máquina confere hoje | O que o PR de método faz |
+  | --- | --- | --- | --- |
+  | Não importar a tabela de outro dono | C8 ([code](../guides/code.md)): um módulo não importa o objeto de tabela de outro dono, salvo a chave estrangeira e o arquivo que junta o esquema. A etiqueta diz `[dependency-cruiser, review]` | nada: nenhuma regra de `.dependency-cruiser.cjs` nomeia a C8, embora o comentário da linha 1 diga "C3 to C8". O dependency-cruiser vê o arquivo importado, não o nome, e as tabelas saem pelo `public.ts` do dono (`hub/requests/public.ts:7` exporta `request`) | a máquina passa a conferir: as tabelas saem por uma porta própria, que só o arquivo do esquema pode importar. Conserta a única violação achada: `hub/notifications/request-notices.ts:5,38` importa `request` e faz `innerJoin` na tabela dos pedidos; passa a chamar uma operação de `hub/requests` |
+  | Outro sujeito só pelo `public.ts` | C4: outro sujeito ou módulo só pelo seu `public.ts`, e o Hub não importa o Builder. `[dependency-cruiser]` | confere só de dentro de `hub/` e `builder/` (regra `subject-only-through-public`, `from` em `^apps/(server\|web)/src/(hub\|builder)/`) | igual |
+  | A raiz do servidor também | a C4 vale para todo código; o guia não abre exceção para a raiz | nada: `main.ts`, `conversations-of.ts` e `first-person-arguments.ts`, na raiz de `apps/server/src`, ficam fora do `from` da regra. Hoje os três só importam `public.ts` e `platform/` | a regra passa a valer também na raiz. Nenhum conserto |
+  | As portas aninhadas | a C4 diz "seu `public.ts`" sem dizer se um módulo dentro de um sujeito tem porta própria | a máquina aceita um `public.ts` em qualquer profundidade (`PUBLIC_DOOR`, linha 9). Existe um: `hub/identity/mail/public.tsx`, importado por `hub/notifications/automation-email.tsx:9` | a máquina aceita só o `public.ts` da raiz do sujeito, e o guia diz isso na C4. O e-mail passa a sair por `hub/identity/public.ts` |
+  | Os ajudantes de teste | T5 ([testing](../guides/testing.md)): o teste entra pela porta pública e não importa o miolo, salvo o banco de teste, `platform/test-neon.ts` e `hub/identity/test-hub.ts` | a máquina aceita mais do que o guia: uma lista de ~50 nomes (`TEST_DATABASE`, linha 10) | aqui o PR muda o texto da T5: a exceção passa a ser a convenção `test-*.ts`, que é o que a lista já faz. Nenhum teste muda |
+  | Um fato, um dono | C26: cada fato tem um dono. `[review; npm run quality]`, com o jscpd para cópias | o jscpd pega cópia de texto, não a mesma regra escrita duas vezes | a habilidade de revisão pergunta, a cada peça nova, "isso já existe noutro sujeito?" |
+
+  Então o PR de método faz a máquina conferir o que o guia já manda (C8, a raiz, as portas
+  aninhadas), conserta a violação de `request-notices.ts:38`, escreve na T5 a convenção que a
+  lista já segue, e põe a pergunta da C26 na revisão. Entra antes desta etapa, num PR só dele (L20).
+- **3. O vocabulário do Builder no contrato.** **Em aberto: você perguntou "O que é isso?".**
+
+  Em palavras simples: o Hub (a parte que guarda empresas, papéis e conectores) não deve depender
+  do Builder (a parte que cria agentes e apps). Mas o pacote de contrato, que as duas partes e as
+  telas leem, já tem nomes do Builder, como o número de um agente (`AgentId`), de uma conversa
+  (`ConversationId`) e de uma Automação (`AutomationId`), e o Hub já os usa
+  (`hub/connectors/write-record.ts:3`, `hub/notifications/notifications.ts:3`). A pergunta é se
+  isso vale.
+  - `3A`: vale. O contrato é a língua comum de todos, e isso se escreve na C4.
+  - `3B`: não vale. O Hub nunca cita um nome do Builder, nem pelo contrato.
+
+  **Recomendo `3A`.** A U2 põe a regra de escrita no Hub (`hub/connectors/approval.ts`), e ela
+  recebe a conversa onde a escrita acontece (`ConversationId`); a 24.6 acrescenta a corrida de um
+  workflow. Com `3B`, a regra teria de voltar para o Builder, e o Hub teria de trocar os nomes que
+  já usa.
 - **4. A data de "Conversa de …" quando a conversa não tem título.** Hoje o Builder mostra o dia
   da criação, e o Assistente, os agentes e o Construtor mostram a última mensagem. A mesma
   conversa sem título muda de nome a cada mensagem.
   - `4A`: a criação, um rótulo que não muda.
   - `4B`: a última mudança.
 
-  **Recomendo `4A`.** Exemplo: uma conversa começada em 7/11 às 10h12 se chama "Conversa de
+  **Sua resposta: "A".** Exemplo: uma conversa começada em 7/11 às 10h12 se chama "Conversa de
   07/11/2026, 10:12" para sempre, até ganhar um título.
-- **5. O dublê de modelo nos testes.** **Recomendo `5A`**, como na auditoria: a regra de teste T24
-  passa a aceitar o gerador de stream como dublê, e as gravações provam o gerador. É de método, e
-  esta etapa não muda isso.
-- **6. Apagar e renomear conversas fora do Assistente.** **Recomendo `6A`**: numa etapa de produto
-  futura, pelo kit.
+- **5. O dublê de modelo nos testes.** O estudo recomendou `5A`, como na auditoria: a regra de
+  teste T24 passa a aceitar o gerador de stream como dublê, e as gravações provam o gerador. É de
+  método, e esta etapa não muda isso. **Sua resposta: "A".**
+- **6. Apagar e renomear conversas fora do Assistente.** O estudo recomendou `6A`: numa etapa de
+  produto futura, pelo kit. **Sua resposta: "A".**
 
 ## As unidades
 
@@ -226,12 +246,12 @@ A etapa não cria tela. A única coisa que muda numa tela é o rótulo de uma co
 | O hash da tentativa | U3 | `builder/conversation/store.ts:30-32` (`bodyHashOf`) | drizzle-orm `onConflictDoNothing`; calcom `54343aa` `packages/prisma/extensions/booking-idempotency-key.ts`; trigger.dev `41ad199` `internal-packages/database/prisma/schema.prisma:1397` | o índice único dá o "uma vez"; comparar o corpo é de quem escreve | embrulhado | — | não precisa | `platform/attempt.ts` |
 | As ids derivadas | fica de fora | `controller-kit/open.ts:17-24`, `builder/tools/derived.ts:7-12`, `apps/web/src/platform/attempt-key.ts:34-42` | RFC 9562 v8 | — | embrulhado sobre `node:crypto`; as ids estão gravadas | trocar o layout de `attemptIdOf` abre conversa nova numa repetição (`automations/run.ts:112`) | não precisa | — |
 | "Não confirmamos …" | U4 | ~25 lugares em `apps/web/src` (lista na U4) | `packages/hub-api/src/failures.ts:306` (`phraseOf`) é dono das falhas que assentam; estas aparecem quando nada assentou | — | embrulhado: ao lado de `writeFailureText`, que lê o `phraseOf` | — | não precisa | `apps/web/src/platform/hub.ts` (muda) |
-| "Conversa de …" | U4 | `apps/web/src/builder/{conversation/text.ts:86, assistant/text.ts:69, agents/text.ts:128}` | `@mastra/memory@1.41.0` `generateTitle` dá o título | o rótulo da falta de título é nosso | embrulhado, com um defeito: três regras | — | decisão 4 | `apps/web/src/builder/conversation/text.ts` (muda) |
+| "Conversa de …" | U4 | `apps/web/src/builder/{conversation/text.ts:86, assistant/text.ts:69, agents/text.ts:128}` | `@mastra/memory@1.41.0` `generateTitle` dá o título | o rótulo da falta de título é nosso | embrulhado, com um defeito: três regras | — | `4A`, 2026-11-08 | `apps/web/src/builder/conversation/text.ts` (muda) |
 | "Criar conversa" na tela | fica de fora | sete fluxos com `useMutation` e `useAttemptKey` | TanStack Query 5.104 `useMutation` | — | nativo já em uso | — | não precisa | — |
 | A casca da conversa na tela | fica de fora | `assistant/conversation.tsx`, `agents/agent-chat.tsx`, `agents/construtor-chat.tsx` | o `Chat` do Conexus (`builder/conversation/`) | — | embrulhado, com cópias | a 24.6 não cria tela de conversa | não precisa | — |
 | O modelo de roteiro dos testes | U5 | `conversation/test-questions.ts:48-57` (`stepping`), `construtor/test-construtor.ts:13-24` (`scripted`) | `ai@6.0.309` `MockLanguageModelV3` fica acima do provedor; o dublê do Conexus fica no fio (T24) | — | embrulhado sobre o `plantAnthropic` | — | não precisa | `builder/conversation/test-questions.ts` (muda) |
 | O encaminhar do dublê de conector | U5 | `hub/connectors/test-connections.ts:181-195`, `test-rows.ts:33-46`, `test-write.ts:52-66` | `fetch` do Node | — | embrulhado | — | não precisa | `hub/connectors/test-connections.ts` (muda) |
-| As regras de fronteira | fica de fora (PR de método, decisão 2) | `.dependency-cruiser.cjs:1,9,10`; a violação `hub/notifications/request-notices.ts:38` | dependency-cruiser 18.4 não vê o nome importado (`types/cruise-result.d.mts:200-290`) | regras de caminho | nativo (configuração do dependency-cruiser) | — | decisão 2 | — |
+| As regras de fronteira | fica de fora (PR de método, decisão 2) | `.dependency-cruiser.cjs:1,9,10`; a violação `hub/notifications/request-notices.ts:38` | dependency-cruiser 18.4 não vê o nome importado (`types/cruise-result.d.mts:200-290`) | regras de caminho | nativo (configuração do dependency-cruiser) | — | decisão 2, aceita em 2026-11-08 | — |
 
 **A medida do transplante.** Nada vem do produto antigo.
 
