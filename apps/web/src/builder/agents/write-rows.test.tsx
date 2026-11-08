@@ -42,7 +42,7 @@ test('a linha de uma escrita diz que escreveu no sistema, nunca que consultou, e
   expect(screen.queryByText('Aprovado por você')).toBeNull()
 })
 
-test('a escrita que o sistema recusou diz que não conseguiu escrever, e aberta, o rótulo e a mensagem do registro, nunca o JSON nem o texto do modelo', async () => {
+test('o detalhe não mostra o JSON: a escrita que o sistema recusou diz que não conseguiu escrever, e aberta, o rótulo e a mensagem do registro, nunca o JSON nem o texto do modelo', async () => {
   conversation(server, {
     rows: alone('approval-refused', {
       errorText: thrown({ message: 'uma frase que o modelo leu' }),
