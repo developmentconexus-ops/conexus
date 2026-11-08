@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lane: [full-1, full-2, full-3, head-1, head-2]
+        lane: [head-1, head-2, head-3]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -53,8 +53,7 @@ jobs:
             echo "::group::SILENT $2"
             tail -5 /tmp/run.log
             ps -eo pid,ppid,stat,etime,wchan:30,comm --forest | grep -E 'node|npm|sh|MainThread' | grep -v grep
-            for p in $(pgrep -f -- '--test-reporter' ) $(pgrep -f 'NODE_TEST_CONTEXT' ); do :; done
-            for p in $(pgrep node); do
+            for p in $(pgrep -x MainThread); do
               echo "== pid $p ppid $(awk '{print $4}' /proc/$p/stat) $(tr '\0' ' ' < /proc/$p/cmdline | cut -c1-150)"
               grep -E 'State|Threads|SigPnd|ShdPnd|SigBlk|SigCgt' /proc/$p/status
               for t in /proc/$p/task/*; do echo "  $(basename $t) $(cat $t/comm) $(awk '{print $3}' $t/stat) wchan=$(cat $t/wchan)"; done
@@ -64,7 +63,7 @@ jobs:
             done
             echo "::endgroup::"
           }
-          runs=40; [ "${LANE#full}" != "$LANE" ] && runs=2
+          runs=25; [ "${LANE#full}" != "$LANE" ] && runs=2
           for i in $(seq 1 $runs); do
             rm -rf /tmp/node-compile-cache
             if [ "${LANE#full}" != "$LANE" ]; then
@@ -76,7 +75,7 @@ jobs:
             while kill -0 $pid 2>/dev/null; do
               sleep 5
               age=$(( $(date +%s) - $(stat -c %Y /tmp/run.log) ))
-              if [ $age -gt 150 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
+              if [ $age -gt 60 ]; then dump $pid "run $i"; pkill -KILL -f -- '--test'; break; fi
             done
             wait $pid; echo "run $i exit=$? lines=$(wc -l < /tmp/run.log)"
           done
