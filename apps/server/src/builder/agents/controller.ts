@@ -35,7 +35,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
-import { agentOf, agentTurnOf, planOf, setAgentRun } from './agent.ts'
+import { agentOf, agentTurnOf, planOf } from './agent.ts'
 import type { AppDataPort } from './app-data.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'

@@ -1,13 +1,10 @@
-import type { ModelId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
-import { webFetchTool, webSearchTool } from '@mastra/core/tools'
-import { Memory } from '@mastra/memory'
+import { webFetchTool } from '@mastra/core/tools'
 import type { PostgresStore } from '@mastra/pg'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
 import {
@@ -16,11 +13,9 @@ import {
   conversationMemory,
   oncePerRun,
   sessionModel,
-  sideTurn,
   toolsOf,
 } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { accountModel, chosenModel, providerOf } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
