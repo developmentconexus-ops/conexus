@@ -32,11 +32,13 @@ import {
   agentManagerAdmission,
   controllerOf,
   conversationMemory,
+  fixedSystem,
   oncePerRun,
   ownerOfResource,
   releaseThreads,
   sessionModel,
   sessionTurns,
+  TITLE,
   threadsByMarks,
   toolsOf,
   turnKeyOn,
@@ -55,18 +57,11 @@ import { construtorTools } from './tools.ts'
 
 const MODE = 'conversa'
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
-const TITLE =
-  'Dê à conversa um título curto em português, de até seis palavras, sobre o agente que a pessoa quer montar, sem aspas nem ponto final.'
-const OBSERVER =
-  'Escreva o título da conversa em português do Brasil, sobre o agente que a pessoa quer montar ou mudar.'
-
-/** Conexus's fixed message, the same bytes as the Assistant's first part (step 24.1). */
 const FIXED = readFileSync(
   new URL('../conversation/prompt/conexus.md', import.meta.url),
   'utf8',
 ).trim()
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
-const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 
 /**
  * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds of
@@ -196,7 +191,7 @@ function construtorAgent(
       const scope = await runScope(requestContext)
       const speakers = await deps.speakersOf(sessionScopeOf(scope))
       return [
-        { role: 'system', content: FIXED, providerOptions: CACHED },
+        fixedSystem(FIXED),
         { role: 'system', content: blockOf(speakers, await offeredOf(requestContext)) },
         { role: 'system', content: MANUAL },
       ] satisfies AgentInstructions
@@ -244,8 +239,7 @@ export function createConstrutor(deps: Deps) {
   const { storage, database, queue, log } = deps
   const memory = conversationMemory({
     ...{ storage, queue, recall: false },
-    title: TITLE,
-    observer: OBSERVER,
+    ...TITLE.agent,
   })
   const scopeOf = scopes(memory)
   const machines = createConversationMachines(

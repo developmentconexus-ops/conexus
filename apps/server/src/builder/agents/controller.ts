@@ -29,6 +29,7 @@ import {
   releaseThreads,
   routedModel,
   sessionTurns,
+  TITLE,
   threadsByMarks,
 } from '../controller-kit/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
@@ -46,10 +47,6 @@ import { agent, agentConversation } from './tables.ts'
 import { mayApproveAgents, writeOfAgents } from './write-of.ts'
 
 const MODE = 'conversa'
-const TITLE =
-  'Dê à conversa um título curto em português, de até seis palavras, sobre o que a pessoa pergunta ou pede, sem aspas nem ponto final.'
-const OBSERVER =
-  'Escreva o título da conversa em português do Brasil, sobre o que a pessoa pergunta, analisa ou pede.'
 
 /**
  * The marks of an agent's thread, stamped by `createSession({ tags })`: its own keys, so the
@@ -233,8 +230,7 @@ export function createAgentConversations(deps: Deps) {
   const { storage, database, queue, log } = deps
   const memory = conversationMemory({
     ...{ storage, queue, recall: false },
-    title: TITLE,
-    observer: OBSERVER,
+    ...TITLE.ask,
   })
   const memories = { observational: memory, plain: new Memory({ storage }) }
   // The registry builds its agents with the machines, and the machines' marks read a run's plan

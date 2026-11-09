@@ -13,6 +13,7 @@ import {
   conversationMemory,
   oncePerRun,
   sessionModel,
+  TITLE,
   toolsOf,
 } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -31,11 +32,6 @@ import { projectIn, turnOf } from './turn-of.ts'
 
 const CONVERSATION_MODE = 'conversa'
 
-const TITLE_INSTRUCTIONS =
-  'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
-/** The observer's title guidance names no language (Conexus OS `e0353c36` `builder/memory.ts:28`). */
-const OBSERVER_INSTRUCTION =
-  'Escreva o título da conversa em português do Brasil, sobre o que a pessoa quer construir ou mudar no app.'
 /**
  * The Projeto's granted connections for a Mastra run, read once for its tools, its skills and its
  * instructions: Mastra resolves each of them with the run's `RequestContext`, and a resumed run
@@ -63,11 +59,7 @@ function builderConnectorTools(
 }
 
 /** The Builder's memory words, and its recall of what the observation folded. */
-const BUILDER_MEMORY = {
-  title: TITLE_INSTRUCTIONS,
-  observer: OBSERVER_INSTRUCTION,
-  recall: true,
-} as const
+const BUILDER_MEMORY = { ...TITLE.app, recall: true } as const
 
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken

@@ -1,5 +1,6 @@
 export { admitAsker, agentManagerAdmission } from './admission.ts'
 export { agentDefaults, controllerOf, MODEL_TIMEOUT } from './factories.ts'
+export { fixedSystem, TITLE } from './instructions.ts'
 export type { ControllerKind, Owner, ResourceOwner } from './kinds.ts'
 export { CONTROLLER_KINDS, ownerOfResource, resourceOf } from './kinds.ts'
 export { conversationMemory, ownerIn, sideTurn, turnOfOwner } from './memory.ts'
