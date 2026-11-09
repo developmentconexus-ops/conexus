@@ -166,8 +166,11 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])
       if (at === undefined || !threadId.success) return true
       const asked = await mustAsk(deps.approval, {
-        ...{ companyId: deps.scope.companyId, scope: deps.scope, threadId: threadId.data },
-        ...{ choice: tool.approval === 'AUTO' ? 'AUTO' : 'ASK', author: authorOf(deps.author) },
+        companyId: deps.scope.companyId,
+        choice: tool.approval === 'AUTO' ? 'AUTO' : 'ASK',
+        author: authorOf(deps.author),
+        scope: deps.scope,
+        threadId: threadId.data,
         target: at,
       })
       return asked.kind === 'ASK'

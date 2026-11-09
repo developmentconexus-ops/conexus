@@ -118,6 +118,23 @@ test('quem publicou guarda a ação e perde a escrita no papel: a escrita em Faz
   assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
 })
 
+/**
+ * The turn reads what its place offers apart from each tool's shape; the place stops offering the
+ * Matriz between the two reads, so the write is made but has no connector to ask about.
+ */
+test('o lugar deixa de oferecer a conexão entre as duas leituras do começo do turno: a escrita em Faz sozinho não tem conector a consultar e pergunta (24.5)', async (t) => {
+  const on = await approving(t, [[launched()]])
+  const agent = await on.writer('AUTO')
+  const { url, stream } = await on.opened(agent.id)
+  const door = on.hub.connectors.assistant
+  const connectionsOf = door.connections.bind(door)
+  door.connections = async (scope) =>
+    (await connectionsOf(scope)).filter((each) => each.connectionId !== on.matriz)
+  await sent(on.hub, on.ana, url, 'Lance o pedido')
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.deepEqual(on.fake.orders(), [], 'the card stops the write before the Sankhya')
+})
+
 test('na conversa de teste, a escrita em Faz sozinho roda sem cartão mesmo que quem a deixou assim tenha perdido a ação: o rascunho fala como a pessoa (D2-a)', async (t) => {
   const on = await approving(t, [[launched()], [said('Lançado.')]])
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')

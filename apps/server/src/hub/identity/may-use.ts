@@ -128,5 +128,5 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
       }),
     )
   }
-  return { mayUse, mayUseEach, mayPublishUnattended, roleOf }
+  return { mayUse, mayUseEach, mayPublishUnattended }
 }

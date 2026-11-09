@@ -111,7 +111,7 @@ export async function agentTurnOf(
 
 export type AgentDeps = {
   database: Database
-  identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
+  identity: Pick<IdentityPorts, 'mayUse' | 'mayPublishUnattended'>
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
