@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
+import { holdsColumn } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, focusDrawn, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn, LAPTOP, PHONE } from './layout-harness.ts'
 import {
   AgentStart,
   recordedEvent,
@@ -314,3 +315,13 @@ test('o painel de tarefas aberto quebra os títulos longos dentro da tela', asyn
     await page.close()
   }
 })
+
+// The founder, 2026-11-09: the box moved and the scroll took it along (design V54).
+for (const viewport of [LAPTOP, PHONE])
+  test(`a ${viewport.width} px, na conversa do Builder, quem rola é a conversa e a caixa fica onde estava`, async () => {
+    const page = await open(`${PROJECT}/conversations/${FIRST}`, viewport)
+    if (viewport === PHONE)
+      await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+    await holdsColumn(page, viewport)
+    await page.close()
+  })
