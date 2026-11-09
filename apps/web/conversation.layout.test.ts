@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
-import { holdsColumn, LAPTOP } from './chat-column.ts'
+import { holdsColumn } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, focusDrawn, PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn, LAPTOP, PHONE } from './layout-harness.ts'
 import {
   AgentStart,
   recordedEvent,

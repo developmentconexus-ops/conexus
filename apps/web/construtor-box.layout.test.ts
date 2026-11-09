@@ -7,8 +7,8 @@ import {
   listModelAccounts,
   listTools,
 } from '@conexus/hub-api'
-import { holdsColumn, LAPTOP } from './chat-column.ts'
-import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { holdsColumn } from './chat-column.ts'
+import { createHarness, DESKTOP, LAPTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'

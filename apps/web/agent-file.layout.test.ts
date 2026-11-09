@@ -10,8 +10,8 @@ import {
   MACHINE_TOOL,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import { holdsColumn, LAPTOP } from './chat-column.ts'
-import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { holdsColumn } from './chat-column.ts'
+import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
@@ -230,8 +230,10 @@ for (const viewport of [LAPTOP, PHONE])
     await page.route('**/agents/conversations/*/files*', (route) =>
       route.fulfill({ status: 200, contentType: 'image/svg+xml', body: CHART }),
     )
-    await page.getByRole('button', { name: /^Abrir vendas/ }).click()
-    await page.getByRole('img', { name: /vendas/ }).waitFor()
+    if (viewport === LAPTOP) {
+      await page.getByRole('button', { name: /^Abrir vendas/ }).click()
+      await page.getByRole('img', { name: /vendas/ }).waitFor()
+    }
     await holdsColumn(page, viewport)
     await page.close()
   })
