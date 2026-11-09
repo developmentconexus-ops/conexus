@@ -41,18 +41,10 @@ export { roleOfSpeaker } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 export type { RoleKit } from './roles.ts'
-// The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
-// and the model accounts' foreign keys (code C8), and a person's name, for the version that
-// person sent, or a member's, for the request they decided.
-export {
-  ADMINISTRATOR,
-  company,
-  member,
-  memberNameColumn,
-  personNameColumn,
-  policy,
-  session,
-} from './tables.ts'
+// The row policies' pieces, for the Central's own table and the Hub session's table, and a
+// person's name, for the version that person sent, or a member's, for the request they decided.
+// The tables themselves leave by `public-tables.ts`, for the foreign keys (code C8).
+export { ADMINISTRATOR, memberNameColumn, personNameColumn, policy } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']

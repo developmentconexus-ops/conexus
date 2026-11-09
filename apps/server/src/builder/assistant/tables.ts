@@ -1,6 +1,7 @@
 import { foreignKey, text, uuid } from 'drizzle-orm/pg-core'
-import { company, member, policy } from '../../hub/identity/public.ts'
-import { project } from '../../hub/projects/public.ts'
+import { policy } from '../../hub/identity/public.ts'
+import { company, member } from '../../hub/identity/public-tables.ts'
+import { project } from '../../hub/projects/public-tables.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
 import { builder, OWN } from '../schema/public.ts'
 
