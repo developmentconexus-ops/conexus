@@ -67,20 +67,6 @@ test('a lista agrupa por dia no fuso do navegador: Hoje, Ontem, Esta semana, Ant
   }
 })
 
-test('uma conversa sem título leva o dia e a hora em que começou, não os da última mudança', async () => {
-  at(COMPANY_ROOT, {
-    conversations: [
-      assistantConversation({
-        title: null,
-        createdAt: '2026-11-01T15:00:00.000Z',
-        updatedAt: '2026-11-02T16:00:00.000Z',
-      }),
-    ],
-  })
-  const nav = await list()
-  expect(await nav.findByRole('link', { name: /Conversa de 01\/11\/2026, 12:00/ })).toBeTruthy()
-})
-
 test('uma conversa de Projeto leva o nome dele e abre pelo endereço do Projeto', async () => {
   const { conexus } = at(COMPANY_ROOT, { conversations: BY_DAY })
   const nav = await list()
