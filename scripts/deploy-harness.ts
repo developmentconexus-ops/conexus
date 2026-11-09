@@ -35,6 +35,7 @@ case "$*" in
     echo "PATH=/usr/bin"; [ -n "\${STUB_RUNNING_TEMPLATE:-}" ] && echo "HUB_E2B_TEMPLATE=$STUB_RUNNING_TEMPLATE"; exit 0 ;;
   "image inspect"*) [ -n "\${STUB_INSPECT_STATUS:-}" ] && exit "$STUB_INSPECT_STATUS"
     case "$*" in *conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;; *) echo "\${STUB_LABEL:-}" ;; esac ;;
+  "image prune"*) exit "\${STUB_PRUNE_STATUS:-0}" ;;
   "pull --quiet"*) exit "\${STUB_PULL_STATUS:-0}" ;;
   *" run --rm migrate")
     n=$(( $(cat "$CALLS.migrate" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$CALLS.migrate"
@@ -61,6 +62,7 @@ export type Stub = {
   resealStatus?: number
   upStatus?: number
   pullStatus?: number
+  pruneStatus?: number
   inspectStatus?: number
   /** A docker call whose arguments contain this text never answers, so only the script's bound ends it. */
   hang?: string
@@ -81,6 +83,7 @@ function stubEnv(stub: Stub): Record<string, string> {
     STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
     STUB_UP_STATUS: String(stub.upStatus ?? 0),
     STUB_PULL_STATUS: String(stub.pullStatus ?? 0),
+    STUB_PRUNE_STATUS: String(stub.pruneStatus ?? 0),
     STUB_INSPECT_STATUS: stub.inspectStatus === undefined ? '' : String(stub.inspectStatus),
     STUB_MISSING_SECRET: stub.missingSecret ?? '',
     STUB_HANG: stub.hang ?? '',
