@@ -2750,21 +2750,10 @@
     }
   },
   {
-    "id": "cliproxy-no-thinking-config",
-    "file": "apps/server/src/builder/model-accounts/queue.ts",
-    "find": "proxied(await callModel({ ...target, url, apiKey }))",
-    "replace": "await callModel({ ...target, url, apiKey })",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/assistant/assistant-memory-cliproxy.test.ts",
-      "name": "com o observador respondendo"
-    }
-  },
-  {
     "id": "cliproxy-auto-memory-model",
     "file": "apps/server/src/builder/model-accounts/processors.ts",
-    "find": "autoMemoryModel(turn.modelId(requestContext), turnAccount?.kind)",
-    "replace": "autoMemoryModel(turn.modelId(requestContext), undefined)",
+    "find": "autoMemoryModel(main, kind)",
+    "replace": "autoMemoryModel(main, undefined)",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/assistant-memory-cliproxy.test.ts",

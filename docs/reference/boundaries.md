@@ -1223,32 +1223,22 @@ reference tool checks a read against its documentation.
 - **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
   the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
 
-## CLIProxyAPI v8.0.33 and Mastra 1.41.0: the memory's calls on the Google sign-in (fix)
+## `@mastra/memory` 1.41.0 and CLIProxyAPI v8.0.33: the Automático model on the Google sign-in (fix)
 
-- **Library line.** `@mastra/core` 1.82.0 builds the CLIProxy account's model as an OpenAI-compatible
-  router model named `google`, which copies every key of `providerOptions.google` it does not know
-  into the request body (`netlify-*.js:3290-3294`). `@mastra/memory` 1.41.0 gives the Observer and the
-  Reflector Google's native `thinkingConfig` by default (`src-*.js:23581`, `:37032`) and, for Google,
-  `gemini-2.5-flash` as the Automático model (`:23575`), which the proxy does not list.
-- **Hand-made piece.** `proxied` in `apps/server/src/builder/model-accounts/google/proxy-options.ts`,
-  called by `pickedOf` only for `google_cliproxy`: the account's two calls leave without
-  `thinkingConfig`, and the effort stays the `reasoningEffort` the call set. It wraps the router's v2
-  model by hand because `wrapLanguageModel` takes v3 only. `CLIPROXY_AUTO_MODELS` in
-  `auto-memory-model.ts`, read by `modelOf` with the turn's account kind, picks the cheap model the
-  proxy serves (`gemini-3.5-flash-lite`) as Mastra's `autoModels` option allows. Founder, 2026-11-09:
-  "B junto com A", and only on this path.
+- **Library line.** `@mastra/memory` 1.41.0 picks `gemini-2.5-flash` for Google as the Automático model
+  (`src-*.js:23575`), which the proxy does not list, so the memory's calls fell to the conversation's model.
+- **Hand-made piece.** `CLIPROXY_AUTO_MODELS` in `auto-memory-model.ts`, read by `modelOf` with the turn's
+  account kind, picks the cheap model the proxy serves (`gemini-3.5-flash-lite`) as Mastra's `autoModels`
+  option allows. Founder, 2026-11-09: only on the `google_cliproxy` path.
 - **Why.** A conversation on `gemini-3.8-flash-high` through the sign-in showed Memória 100% and "O modelo
-  não respondeu": the Observer never succeeded and the history grew unsummarized. The local reproduction
-  showed its request carrying `thinkingConfig` beside no `reasoning_effort`, and asking a model the proxy
-  does not list. The fix covers that reproduced cause; the real error of production was not read, and a
-  provider 429 is not resolved by it.
-- **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request has no `thinkingConfig`
-  and asks `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it, and
-  the main request keeps its `reasoning_effort`. The rows `cliproxy-no-thinking-config` and
-  `cliproxy-auto-memory-model` in `scripts/removals.json` take each piece out and the test fails.
-- **Revisit when** the proxy accepts `thinkingConfig` or lists `gemini-2.5-flash`, or the
-  `google_cliproxy` path leaves the product. Then delete the file, the constant, the `kind` argument,
-  the test, the two removal rows and this entry.
+  não respondeu". The local reproduction showed the Observer asking a model the proxy does not list. The
+  fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
+  resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
+- **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
+  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it. The row
+  `cliproxy-auto-memory-model` in `scripts/removals.json` takes the piece out and the test fails.
+- **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
+  Then delete the constant, the `kind` argument, the test, the removal row and this entry.
 
 ## Mastra 1.82.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 

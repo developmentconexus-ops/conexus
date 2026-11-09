@@ -61,11 +61,11 @@ async function threeTurns(t: TestContext, observer: 'ok' | 'fail', served?: stri
     types: events.map((event) => event.type),
     observed: calls.filter(isObserver),
     main: calls.filter((call) => !isObserver(call) && call.reasoning_effort !== undefined),
-    raw: lines,
+    lines: on.hub.lines,
   }
 }
 
-test('a memória no CLIProxy: com o observador respondendo, depois de 30 mil tokens a memória guarda e a falha não aparece; o pedido do observador pede o modelo barato que o proxy serve e não leva thinkingConfig, e o principal segue com o esforço', {
+test('a memória no CLIProxy: com o observador respondendo, depois de 30 mil tokens a memória guarda e a falha não aparece; o pedido do observador pede o modelo barato que o proxy serve, e o principal segue com o esforço', {
   timeout: 120_000,
 }, async (t) => {
   const run = await threeTurns(t, 'ok')
@@ -73,7 +73,6 @@ test('a memória no CLIProxy: com o observador respondendo, depois de 30 mil tok
   assert.equal(run.types.includes('om_observation_failed'), false)
   assert.ok(run.observed.length > 0, 'the observer called the proxy')
   for (const call of run.observed) assert.equal(call.model, 'gemini-3.5-flash-lite')
-  for (const line of run.raw) assert.doesNotMatch(line, /thinkingConfig/)
   assert.ok(run.main.length >= 3, 'every turn asked with its effort')
   for (const call of run.main) {
     assert.deepEqual([call.model, call.reasoning_effort], ['gemini-3.8-flash-high', 'high'])
@@ -86,5 +85,17 @@ test('a memória no CLIProxy: se o proxy não serve o modelo barato, o observado
   const run = await threeTurns(t, 'ok', 'gemini-3.8-flash-high,gemini-3-flash')
   assert.ok(run.observed.length > 0, 'the observer called the proxy')
   for (const call of run.observed) assert.equal(call.model, 'gemini-3.8-flash-high')
-  for (const line of run.raw) assert.doesNotMatch(line, /thinkingConfig/)
+})
+
+test('a memória no CLIProxy: se o observador falha, o turno termina, a memória não guarda e o log diz MASTRA_ERROR com o nome e o status do erro', {
+  timeout: 120_000,
+}, async (t) => {
+  const run = await threeTurns(t, 'fail')
+  assert.ok(run.types.includes('om_observation_failed'), 'the observation failed')
+  assert.equal(run.types.includes('om_observation_end'), false)
+  const logged = run.lines.filter((line) => line.message === 'MASTRA_ERROR')
+  assert.ok(
+    logged.some((line) => line.fields.name === 'AI_APICallError' && line.fields.status === 500),
+    JSON.stringify(logged),
+  )
 })
