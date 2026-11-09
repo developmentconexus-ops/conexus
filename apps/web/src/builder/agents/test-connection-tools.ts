@@ -60,7 +60,10 @@ export const LANCAR = {
 }
 
 /** An agent with the Matriz selected and its write offered, the write chosen at `approval` when it is given. */
-export function writer(approval?: 'ASK' | 'AUTO'): AgentDetail {
+export function writer(
+  approval?: 'ASK' | 'AUTO',
+  bound: Record<string, unknown> = {},
+): AgentDetail {
   const one = bare()
   return bare({
     draft: { ...one.draft, connections: [MATRIZ] },
@@ -82,7 +85,7 @@ export function writer(approval?: 'ASK' | 'AUTO'): AgentDetail {
                 id: TOOL_V1,
                 number: 1,
                 description: 'Lança um pedido de venda.',
-                bound: {},
+                bound,
                 open: [],
               },
               approval,

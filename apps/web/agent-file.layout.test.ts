@@ -5,8 +5,8 @@ import {
   getAgent,
   listAgentConversations,
   listAgentVersions,
-  listOpenWrites,
   listTools,
+  listWrites,
   MACHINE_TOOL,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
@@ -123,7 +123,7 @@ const replies = {
       },
     ],
   }),
-  [`GET ${BASE}/agents/${AGENT}/conversations/${CHAT}/open-writes`]: ok(listOpenWrites, {
+  [`GET ${BASE}/agents/${AGENT}/conversations/${CHAT}/writes`]: ok(listWrites, {
     writes: [],
   }),
   ...sessionReplies(CHAT, { messages: MESSAGES, controller: AGENTS_CONTROLLER }),
