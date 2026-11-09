@@ -10,7 +10,15 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
-import { agentDefaults, controllerOf, MODEL_TIMEOUT, oncePerRun } from '../controller-kit/public.ts'
+import {
+  agentDefaults,
+  controllerOf,
+  conversationMemory,
+  oncePerRun,
+  sessionModel,
+  sideTurn,
+  toolsOf,
+} from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { accountModel, chosenModel, providerOf } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -24,7 +32,7 @@ import {
 } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
 import type { ConversationIndex } from './turn-of.ts'
-import { projectIn, sideTurn, turnOf } from './turn-of.ts'
+import { projectIn, turnOf } from './turn-of.ts'
 
 const CONVERSATION_MODE = 'conversa'
 
@@ -33,36 +41,6 @@ const TITLE_INSTRUCTIONS =
 /** The observer's title guidance names no language (Conexus OS `e0353c36` `builder/memory.ts:28`). */
 const OBSERVER_INSTRUCTION =
   'Escreva o título da conversa em português do Brasil, sobre o que a pessoa quer construir ou mudar no app.'
-// The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
-// stays out until the live proof of criterion 3 passes.
-const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
-
-function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
-  return modelId.includes('/')
-}
-
-/** The conversation's model, as its controller session holds it (`session.model.switch`). */
-export function sessionModel(requestContext: RequestContext): ModelId & `${string}/${string}` {
-  return routedModel(chosenModel(requestContext))
-}
-
-/** A model as Mastra's router names it, `provider/model`; any other is the Hub's defect. */
-export function routedModel(modelId: ModelId): ModelId & `${string}/${string}` {
-  if (!isRouterId(modelId)) {
-    throw new Failure('INTERNAL_UNEXPECTED', {
-      details: { reason: 'CONVERSATION_MODEL_NOT_ROUTED' },
-    })
-  }
-  return modelId
-}
-
-/** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
-export function toolsOf(modelId: ModelId): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool }
-  if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
-  return tools
-}
-
 /**
  * The Projeto's granted connections for a Mastra run, read once for its tools, its skills and its
  * instructions: Mastra resolves each of them with the run's `RequestContext`, and a resumed run
@@ -87,62 +65,6 @@ function builderConnectorTools(
   const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
   const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
   return connectorTools(access, { noteSave: true, save })
-}
-
-/**
- * The Builder's memory: its title and its observation through the turn's account, failing soft,
- * in Mastra's own database, with Mastra Code's observer context and titles
- * (`agents/memory.ts:355-417`). Async buffering is off (`bufferTokens: false`, Mastra's documented
- * mode): with it on, each buffer cycle re-read the last 20 messages and each step re-read the
- * memory record, which held the buffered chunks: 340 to 510 MB per Builder hour by the egress
- * study's count, 480 MB/h as Neon measured it, and the free transfer ran out in days. Off, it
- * measured 7 to 9 times fewer bytes, at the cost of a pause while the Observer runs, about every
- * 30k tokens. The founder accepted that trade. Idle and provider-change activation and both
- * `bufferActivation` act only on buffered chunks, and `blockAfter` only applies with buffering;
- * Mastra clears them when it is off, so they went with it.
- */
-export function conversationMemory(deps: {
-  storage: PostgresStore
-  queue: QueueDeps
-  /** The title's instructions and the observer's, in the words of the conversation's kind. */
-  title: string
-  observer: string
-  /** Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its instructions). */
-  recall: boolean
-}): Memory {
-  const { storage, queue } = deps
-  const modelSettings = { timeout: MODEL_TIMEOUT }
-  const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
-  const turnFor = sideTurn(queue)
-  return new Memory({
-    storage,
-    options: {
-      generateTitle: {
-        model: accountModel(queue, 'title', turnFor),
-        instructions: deps.title,
-      },
-      observationalMemory: {
-        enabled: true,
-        scope: 'thread',
-        ...(deps.recall ? { retrieval: { scope: 'thread' } } : {}),
-        temporalMarkers: true,
-        observation: {
-          ...failSoft,
-          model: accountModel(queue, 'observer', turnFor),
-          messageTokens: 30_000,
-          bufferTokens: false,
-          previousObserverTokens: 1000,
-          threadTitle: true,
-          instruction: deps.observer,
-        },
-        reflection: {
-          ...failSoft,
-          model: accountModel(queue, 'reflection', turnFor),
-          observationTokens: 40_000,
-        },
-      },
-    },
-  })
 }
 
 /** The Builder's memory words, and its recall of what the observation folded. */

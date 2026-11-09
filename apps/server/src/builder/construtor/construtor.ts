@@ -31,21 +31,18 @@ import {
   agentDefaults,
   agentManagerAdmission,
   controllerOf,
+  conversationMemory,
   oncePerRun,
   ownerOfResource,
   releaseThreads,
+  sessionModel,
   sessionTurns,
   threadsByMarks,
-  turnKeyOn,
-} from '../controller-kit/public.ts'
-import {
-  ASK_USER_TOOL,
-  conversationMemory,
-  createAskUserTool,
-  sessionModel,
   toolsOf,
+  turnKeyOn,
   turnOfOwner,
-} from '../conversation/public.ts'
+} from '../controller-kit/public.ts'
+import { ASK_USER_TOOL, createAskUserTool } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'

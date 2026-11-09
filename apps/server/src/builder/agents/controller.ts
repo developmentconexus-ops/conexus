@@ -23,13 +23,14 @@ import {
   agentDefaults,
   agentManagerAdmission,
   controllerOf,
+  conversationMemory,
   oncePerRun,
   ownerOfResource,
   releaseThreads,
+  routedModel,
   sessionTurns,
   threadsByMarks,
 } from '../controller-kit/public.ts'
-import { conversationMemory, routedModel } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'

@@ -29,8 +29,13 @@ import type { Speakers } from '../assistant/public.ts'
 import { blockOf } from '../assistant/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import { agentDefaults, oncePerRun, turnKeyOn } from '../controller-kit/public.ts'
-import { routedModel, toolsOf } from '../conversation/public.ts'
+import {
+  agentDefaults,
+  oncePerRun,
+  routedModel,
+  toolsOf,
+  turnKeyOn,
+} from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'

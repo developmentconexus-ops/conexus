@@ -1,5 +1,5 @@
 import type { PostgresStore } from '@mastra/pg'
-import { conversationMemory } from '../conversation/public.ts'
+import { conversationMemory } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 
 const TITLE_INSTRUCTIONS =
