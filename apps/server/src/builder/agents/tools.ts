@@ -44,18 +44,31 @@ type Refusal = Readonly<{
 /** What the model reads of a provider's body at most: Codex's default for a tool's output, 10 000 tokens at 4 characters each. The record keeps it all. */
 const TOLD_CHARACTERS = 40_000
 
-/** A body for the model: whole up to the cap, past it its start and its end in one text, as Claude Code keeps a long tool error. */
+/** A text for the model: whole up to the cap, past it its start and its end, as Claude Code keeps a long tool error; counted in characters, so a cut never splits one in two. */
+function cappedText(text: string): string {
+  if (text.length <= TOLD_CHARACTERS) return text
+  const characters = Array.from(text)
+  if (characters.length <= TOLD_CHARACTERS) return text
+  const half = TOLD_CHARACTERS / 2
+  const cut = characters.length - TOLD_CHARACTERS
+  return `${characters.slice(0, half).join('')}…[${cut} characters cut]…${characters.slice(-half).join('')}`
+}
+
+/** A body for the model: as it came up to the cap, past it the cut of its JSON. */
 function capped(body: unknown): unknown {
   const text = JSON.stringify(body)
-  if (text === undefined || text.length <= TOLD_CHARACTERS) return body
-  const half = TOLD_CHARACTERS / 2
-  return `${text.slice(0, half)}…[${text.length - TOLD_CHARACTERS} characters cut]…${text.slice(-half)}`
+  if (text === undefined) return body
+  const told = cappedText(text)
+  return told === text ? body : told
 }
 
 /** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said, up to the cap. */
 function refuse(answer: Refusal): never {
   const { status = null, code = null, message = null, body = null } = answer.native ?? {}
-  const told = { kind: answer.kind, status, code, message, body: capped(body) }
+  const told = {
+    ...{ kind: answer.kind, status, code },
+    ...{ message: message === null ? null : cappedText(message), body: capped(body) },
+  }
   throw new ConnectorRefused(JSON.stringify(told))
 }
 
@@ -148,10 +161,10 @@ function toldOf(written: Written | { kind: 'CALLS_SPENT' }) {
       return {
         ...written,
         returned: told(written.returned),
-        instruction: uncertainText(written.mark),
+        instruction: uncertainText(written.mark, { returned: true }),
       }
     case 'IDEMPOTENCY_CONFLICT':
-      return { ...written, instruction: uncertainText(written.mark) }
+      return { ...written, instruction: uncertainText(written.mark, { returned: false }) }
     case 'WRITE_OPEN':
       return { ...written, instruction: openText(written.mark, written.since) }
     default:

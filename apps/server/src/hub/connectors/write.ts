@@ -17,9 +17,12 @@ import type { WriteRequest, Written } from './write-record.ts'
 import { aboutOf, finish, hashOf, markOf, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
 
-/** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
-export function uncertainText(mark: string): string {
-  return `Do not call this again: the write may already exist. If "returned" shows what the system did, tell the person what it says; otherwise tell the person to look for the mark "${mark}" in what the system wrote.`
+/** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them; only the first carries what the system answered. */
+export function uncertainText(mark: string, a: Readonly<{ returned: boolean }>): string {
+  const look = `look for the mark "${mark}" in what the system wrote.`
+  return a.returned
+    ? `Do not call this again: the write may already exist. If "returned" shows what the system did, tell the person what it says; otherwise tell the person to ${look}`
+    : `Do not call this again: the write may already exist. Tell the person to ${look}`
 }
 
 /** The text the model reads for `WRITE_OPEN`: an earlier write of this kind in the conversation may exist, so this one was not sent. */

@@ -13,17 +13,9 @@ export type Returned = Readonly<{ status: number; body: unknown }>
  */
 export type Wrote<O> =
   | Readonly<{ kind: 'OK'; value: O; returned: Returned }>
-  | Exclude<Answered<O>, { kind: 'OK' }>
+  | Exclude<Answered<O>, { kind: 'OK' | 'UNREADABLE' }>
   | Readonly<{ kind: 'UNREACHABLE'; native: null }>
   | Readonly<{ kind: 'UNCERTAIN'; returned: Returned | null }>
-
-/** After the request left, only an answer the kit read as a refusal says it was refused: what the write declares uncertain and any answer that does not read, whatever its status, leave the order's fate unknown. */
-function endsUnknown(
-  answered: Exclude<Answered<unknown>, { kind: 'OK' }>,
-  operation: WriteOperation<unknown, unknown>,
-): boolean {
-  return operation.uncertain(answered.native) || answered.kind === 'UNREADABLE'
-}
 
 /**
  * A write's end: only a connection never made is a plain failure; what came back after the request
@@ -47,5 +39,8 @@ export function wroteOf<O>(
   const returned = { status: sent.status, body: sent.body }
   const answered = operation.answer(sent)
   if (answered.kind === 'OK') return { kind: 'OK', value: answered.value, returned }
-  return endsUnknown(answered, operation) ? { kind: 'UNCERTAIN', returned } : answered
+  // Only an answer the kit read as a refusal says it was refused: what the write declares uncertain and any answer it could not read, whatever the status, leave the order's fate unknown.
+  if (answered.kind === 'UNREADABLE' || operation.uncertain(answered.native))
+    return { kind: 'UNCERTAIN', returned }
+  return answered
 }

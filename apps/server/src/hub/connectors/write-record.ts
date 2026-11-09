@@ -306,12 +306,18 @@ export function refusedMessageOf(row: Pick<Row, 'state' | 'answer'>): string | n
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
 
-/** A NUL in JSON text: the escape `\u0000` whose backslash is not itself escaped. Postgres refuses it in `jsonb`. */
-const NUL = /(?<!\\)((?:\\\\)*)\\u0000/g
-
-/** The answer as `jsonb` takes it: every NUL a provider sent dropped, in a key or a text, so what came back is kept. */
-function storable(written: Written) {
-  return sql`${JSON.stringify(written).replace(NUL, '$1')}::jsonb`
+/**
+ * The answer as `jsonb` takes it, which refuses a NUL and half a character (a lone surrogate): in
+ * every key and text, the NUL a provider sent is dropped and half a character becomes U+FFFD, so
+ * what came back is kept.
+ */
+function storable(value: unknown): unknown {
+  if (typeof value === 'string') return value.replaceAll('\0', '').toWellFormed()
+  if (Array.isArray(value)) return value.map(storable)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value).map(([key, inner]) => [storable(key), storable(inner)]),
+  )
 }
 
 /** The record's end, with what the provider answered (within the executor's cap, C59); if the database refuses it the model still hears it, and the process says the row stayed `SENDING`. */

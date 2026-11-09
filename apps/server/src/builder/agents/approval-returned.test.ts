@@ -14,10 +14,11 @@ const ELSEWHERE = {
 }
 const LONG = { mensagem: SUCESSO, retorno: { codigoPedido: 98116 }, detalhe: 'x'.repeat(100_000) }
 
-/** What the model reads of a body past 40 000 characters: the first and the last 20 000. */
+/** What the model reads of a body past 40 000 characters: the first and the last 20 000, never half of one. */
 function cutOf(body: unknown): string {
-  const whole = JSON.stringify(body)
-  return `${whole.slice(0, 20_000)}…[${whole.length - 40_000} characters cut]…${whole.slice(-20_000)}`
+  const whole = Array.from(typeof body === 'string' ? body : JSON.stringify(body))
+  const head = whole.slice(0, 20_000).join('')
+  return `${head}…[${whole.length - 40_000} characters cut]…${whole.slice(-20_000).join('')}`
 }
 
 test('o que voltou chega ao modelo, no incerto com a instrução de lê-la e num sucesso: o começo e o fim de um corpo acima de 40 mil caracteres, e a linha guarda tudo', async (t) => {
@@ -64,7 +65,7 @@ test('o que voltou chega ao modelo, no incerto com a instrução de lê-la e num
 test('o teto ao modelo vale na recusa: a falha lançada leva o começo e o fim de um corpo longo, e a linha guarda tudo', async (t) => {
   const refusal = {
     statusCode: 400,
-    error: { code: 'BAD_REQUEST', message: 'Recusado.', details: 'y'.repeat(100_000) },
+    error: { code: 'BAD_REQUEST', message: 'Recusado.', details: '😀'.repeat(100_000) },
   }
   const real = globalThis.fetch
   t.mock.method(globalThis, 'fetch', (input: Request | string | URL, init?: RequestInit) => {
@@ -84,6 +85,8 @@ test('o teto ao modelo vale na recusa: a falha lançada leva o começo e o fim d
   const told = JSON.parse(result?.text ?? '')
   assert.equal(told.kind, 'REFUSED')
   assert.equal(told.body, cutOf(refusal))
+  assert.ok(told.body.isWellFormed(), 'no character is cut in half')
+  assert.equal(told.message, cutOf(`Recusado. ${refusal.error.details}`))
   const [row] = await on.hub.test.asOwner(
     "select answer->'native'->'body' as body from connectors.connector_write",
   )

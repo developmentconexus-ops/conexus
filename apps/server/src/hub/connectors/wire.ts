@@ -11,8 +11,8 @@ const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
 
 /**
  * The provider answered what the kit cannot read, with what it said. `text` is a 2xx that is not
- * JSON as it came, secrets replaced: only a write returns it (`Returned`), never a read or the
- * Testar, which say where and what kind came.
+ * JSON as it came, secrets replaced, kept apart from `native`: the write funnel alone reads it
+ * (`Returned`); a read, a login or the Testar pass on `native` only, which says where and what kind came.
  */
 export type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native; text?: string }>
 

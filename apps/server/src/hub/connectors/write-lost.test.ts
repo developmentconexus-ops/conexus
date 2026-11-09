@@ -65,8 +65,11 @@ test('a resposta perdida: perdida depois de gravar ou antes, e um corte, dão WR
     ['UNCERTAIN', 'UNCERTAIN', 'UNCERTAIN'],
   )
   assert.equal(on.lines('CONNECTOR_WRITE_UNCERTAIN').length, 3)
-  assert.match(uncertainText(mark), /Do not call this again/)
-  assert.ok(uncertainText(mark).includes(mark))
+  for (const returned of [true, false]) {
+    assert.match(uncertainText(mark, { returned }), /Do not call this again/)
+    assert.ok(uncertainText(mark, { returned }).includes(mark))
+  }
+  assert.doesNotMatch(uncertainText(mark, { returned: false }), /returned/)
 })
 
 test('um processo que morreu depois do registro: a linha SENDING faz a chamada de novo dar WRITE_UNCERTAIN, sem enviar', async (t) => {

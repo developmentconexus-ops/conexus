@@ -88,23 +88,26 @@ test('o que voltou: o 504 depois de enviar traz o que o gateway disse, e o corte
   })
 })
 
-test('o que voltou: um NUL na resposta sai do que a linha guarda, e a linha termina', async (t) => {
+test('o que voltou: um NUL e meio caractere na resposta saem do que a linha guarda, e a linha termina', async (t) => {
   const on = await writing(t, {
     order: async () =>
-      new Response('{"mensagem":"a\\u0000b","retorno":{"x\\u0000":"c\\\\u0000"}}', {
-        headers: { 'content-type': 'application/json' },
-      }),
+      new Response(
+        '{"mensagem":"a\\u0000b","retorno":{"x\\u0000":"c\\\\u0000","\\udc00":"d\\ud800"}}',
+        {
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
   })
   const answered = await on.ask(on.byAna())
   assert.deepEqual(Object(answered).returned.body, {
     mensagem: 'a\u0000b',
-    retorno: { 'x\u0000': 'c\\u0000' },
+    retorno: { 'x\u0000': 'c\\u0000', '\udc00': 'd\ud800' },
   })
   const [row] = await on.ledger()
   assert.equal(row?.state, 'UNCERTAIN')
   assert.deepEqual(Object(row?.answer).returned.body, {
     mensagem: 'ab',
-    retorno: { x: 'c\\u0000' },
+    retorno: { x: 'c\\u0000', '\ufffd': 'd\ufffd' },
   })
   assert.equal(on.lines('CONNECTOR_WRITE_UNRECORDED').length, 0)
 })
