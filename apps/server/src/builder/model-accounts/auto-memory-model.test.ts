@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ModelId } from '@conexus/hub-api'
-import { autoMemoryModel } from './auto-memory-model.ts'
+import { autoMemoryModel } from './public.ts'
 
 const GEMINI = ModelId.parse('google/gemini-3.8-flash-high')
 
