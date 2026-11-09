@@ -121,22 +121,22 @@ textos das telas e do bot.
   recusa o cartão aberto"). Medido: nada é lançado, e o agente responde à mensagem nova. O cartão em
   si não muda na hora, porque o Conexus não sabe qual mensagem do Telegram ele é; o bot diz
   "Cancelei o pedido de aprovação anterior.", e um toque depois no cartão velho o troca por "Este
-  cartão já foi respondido." (medido). Objetivo: uma lógica só no Hub e no Telegram, como a 24.5.1
+  cartão já foi respondido." (medido: a recusa limpa a espera guardada, e o clique não roda nada). Objetivo: uma lógica só no Hub e no Telegram, como a 24.5.1
   pediu. Como: o handler da mensagem recusa a espera pela função nativa `declineToolCall` antes de
   entregar a mensagem. Veredito: embrulhado.
 - **M2. Ela espera o cartão**, o comportamento nativo do canal. Medido: a mensagem não tem resposta
   até alguém tocar no cartão; depois do Aprovar, o pedido é lançado e só então ele responde. Contra:
   quem escreve em vez de tocar acha que o bot travou.
 
-**P. Quanto tempo vale o código do link.** O código liga um Telegram a você: quem o tiver fala
+**R. Quanto tempo vale o código do link.** O código liga um Telegram a você: quem o tiver fala
 com o agente como você. Um link esquecido no histórico do navegador ou repassado num chat continua
 valendo enquanto ninguém o usar.
 
-- **P1. Um prazo curto, que você escolhe (recomendado).** Por exemplo, 10 minutos: quem toca em
+- **R1. Um prazo curto, que você escolhe (recomendado).** Por exemplo, 10 minutos: quem toca em
   **Ligar meu Telegram** abre o Telegram na hora. Depois do prazo, o bot diz "Este código venceu.
   Gere outro no Conexus." Nenhuma referência dá o número; o Telegram não limita o tempo do
   `start`. O número é seu.
-- **P2. Sem prazo.** O código vale até ser usado ou até a pessoa gerar outro. Mais simples; o risco
+- **R2. Sem prazo.** O código vale até ser usado ou até a pessoa gerar outro. Mais simples; o risco
   é o link repassado.
 
 **Q. Quem pode ligar um bot a um agente.**
@@ -176,7 +176,7 @@ já o chamam ([`conexus-scope`](../../.agents/skills/conexus-scope/SKILL.md), pa
 [`conexus-build`](../../.agents/skills/conexus-build/SKILL.md)). O cartão não repete o método.
 
 **Orçamento de código alterado** (estimado pela leitura e pela prova, sem testes nem gerados). U0:
-documentos. U1: ~900 (as tabelas, a função de busca e as permissões ~150, o selo ~20, o contrato
+documentos. U1: ~960 (as tabelas, a função de busca e as permissões ~150, o selo ~20, o contrato
 ~120, as rotas e o serviço de ligar ~260, o tipo de acesso ~40, o canal posto no agente ~180, o
 dependency e a frase ~130, a troca de chave ~60). U2: ~720 (o código, o prazo e o `/start` ~200, o
 handler e o `AgentRun` ~200, a conversa, as marcas e a lista ~200, as frases e as opções do adaptador
@@ -198,7 +198,7 @@ e a conversa só de leitura ~160, os textos ~80). Total da etapa: ~2.720, dentro
 | 8 | U1 | O servidor recusa começar com uma rota `webhook` fora de `/api/channels/`, ou com método diferente de `POST` (C33) | `platform/access.test.ts`, "webhook só POST em /api/channels" | must |
 | 9 | U1 | Com o bot ligado, uma mensagem de um remetente sem ligação recebe pelo Bot API falso exatamente a frase da `B1` (ou nada, com `B2`), nenhuma conversa é criada no Mastra e nenhum modelo é chamado | `webhook.test.ts`, "quem não está ligado" | must |
 | 10 | U1 | Publicar uma versão nova do agente mantém o canal: a mensagem seguinte chega ao `Agent` da versão nova; apagar o agente chama `deleteWebhook` e apaga a linha pela cascata, e as conversas do Telegram dele saem com as outras (as marcas da U2); o Bot API fora não impede apagar o agente, e o log imprime `CHANNEL_WEBHOOK_NOT_DELETED`; o Bot API fora quando o Hub sobe deixa o agente registrado sem canal, com `CHANNEL_ATTACH_FAILED` no log | `builder/channels/registry.test.ts` (novo), "versão nova", "agente apagado" | must |
-| 11 | U2 | `POST …/agents/{agentId}/channels/telegram/links` pela pessoa com `manageAgents` devolve `{ url: 'https://t.me/<botUsername>?start=<código>' }`, com o código de 43 caracteres `A-Za-z0-9_-`; um segundo pedido troca o código, e o primeiro passa a não valer; com `P1`, o código vencido responde "Este código venceu. Gere outro no Conexus."; quem já está ligado recebe `CHANNEL_ALREADY_LINKED` e a ligação continua; sem o bot ligado, `CHANNEL_OFF`; `DELETE /api/companies/{companyId}/channel-links/telegram` desliga o Telegram da pessoa, e a mensagem seguinte dele recebe a frase da `B1` | `builder/channels/link.test.ts` (novo), "o link" | must |
+| 11 | U2 | `POST …/agents/{agentId}/channels/telegram/links` pela pessoa com `manageAgents` devolve `{ url: 'https://t.me/<botUsername>?start=<código>' }`, com o código de 43 caracteres `A-Za-z0-9_-`; um segundo pedido troca o código, e o primeiro passa a não valer; com `R1`, o código vencido responde "Este código venceu. Gere outro no Conexus."; quem já está ligado recebe `CHANNEL_ALREADY_LINKED` e a ligação continua; sem o bot ligado, `CHANNEL_OFF`; `DELETE /api/companies/{companyId}/channel-links/telegram` desliga o Telegram da pessoa, e a mensagem seguinte dele recebe a frase da `B1` | `builder/channels/link.test.ts` (novo), "o link" | must |
 | 12 | U2 | `/start <código>` do remetente 111 liga 111 à pessoa e responde "Pronto, <nome>. Pode conversar comigo por aqui."; o mesmo código de novo, ou um código trocado, responde "Este código já foi usado ou foi trocado. Gere outro no Conexus." e não liga | `link.test.ts`, "o /start" | must |
 | 13 | U2 | Um Telegram já ligado a outra pessoa da mesma empresa, com o código de uma segunda pessoa, responde "Este Telegram já está ligado a outra pessoa da empresa." e não muda nada; um Telegram desligado da pessoa A e ligado depois à pessoa B começa uma conversa nova, com o dono B, e a conversa de A fica com A, sem mensagem nova | `link.test.ts`, "um Telegram, uma pessoa" | must |
 | 14 | U2 | Uma mensagem do remetente ligado roda o `Agent` da versão como a pessoa: a leitura do conector vai pela porta da empresa com o papel da pessoa, a conta de modelo é a da pessoa, e a resposta chega pelo Bot API falso; a conversa no Mastra tem o dono `agents:company:<c>:person:<p>`, a id é uma `ConversationId` com a linha `agent_conversation` (`channel: 'telegram'`, `draft: false`) e as marcas de `AGENT_MARK` nos metadados; a segunda mensagem cai na mesma conversa | `builder/channels/message.test.ts` (novo), "a pessoa conversa" | must |
@@ -287,8 +287,8 @@ O produto antigo não tinha canal; não há captura a seguir.
 | O cartão de aprovação no Telegram | U3 | o cartão do Hub `apps/web/src/builder/conversation/approval-card.tsx:189` | `toolDisplay` em função (`reference-agents-channels.md:113,150,173-231`); os botões `tool_approve:<id>` / `tool_deny:<id>`; o adaptador faz deles `inline_keyboard` (`dist/index.js:36-80`); o padrão do `TelegramProvider` é `'text'` (`telegram-provider.ts:655`) | o cartão vem de uma função que devolve `{ kind: 'post', message }` com dois botões; aprovado e recusado vêm dos eventos `approved` e `denied` | embrulhado: nossa função em português, com o rótulo e os campos da escrita | provado: P1 (o cartão com dois botões; com `'text'` a escrita fica parada) | não precisa | `apps/server/src/builder/channels/approval-card.ts` |
 | Só quem pediu aprova | U3 | `builder/agents/write-of.ts:47-70` (`mayApproveAgents`); a 24.5.1 move a regra para `hub/connectors/approval.ts` | `toolApprovers` padrão `'requester'` (`reference-agents-channels.md:115`; `agent-channels.ts:817-826`) | o clique de outro usuário é ignorado | embrulhado: o nativo fica; o nosso `onAction` confere a ligação, se a espera está aberta e a regra de quem aprova da 24.5.1, e carimba quem aprovou (`guard.ts:40-45,236`, `APPROVED_CALL`). Depois de um reinício, o padrão não sabe quem pediu: procura a mensagem com papel `user` (`agent-channels.ts:770-796`) e o canal guarda o papel `signal` (P4); a conferência é a nossa | provado: P1 (o clique de 222 não roda, o de 111 roda; o aprovador chega à ferramenta); P6 (a espera conferida antes do padrão) | "`toolApprovers: 'requester'`" (roteiro, linha da 24.7) | `apps/server/src/builder/channels/approval.ts` |
 | O cartão depois de um reinício | U3 | o Hub responde `not_pending` (`builder/conversation/guard.ts:197-217`) | `agent-channels.ts:731-810` (acha a espera nas mensagens guardadas) e `dispatchApproval` (`:405-426`), que chama `Agent.approveToolCall` | a espera vive no armazenamento; o clique depois do reinício retoma | nativo | provado: P2 (roda uma vez; o segundo clique não repete) | não precisa (fato medido, na página) | — |
-| Mensagem nova com o cartão aberto | U3 | o Hub recusa o cartão (24.5, roteiro da 24.5.1, passo 3) | no canal, a mensagem espera (P4); `dispatchDecline` (`agent-channels.ts:427-445`), que chama `Agent.declineToolCall`; o padrão edita o cartão para aprovado antes de procurar a espera (`:934-945`) | `M1`: o handler recusa a espera e entrega a mensagem; `M2`: nada | embrulhado (`M1`): a recusa pela função pública, a frase "Cancelei…", e o cartão trocado só no clique seguinte, porque a id da mensagem do cartão fica num mapa em memória do canal (`agent-channels.ts:174`) | provado: P5 (recusa e responde); P6 (o clique atrasado troca o cartão pela frase, sem rodar) | a decisão `M` | — |
-| O remetente vira pessoa | U2 | nenhum; `agent_conversation.person_id` exige membro (`builder/agents/tables.ts:197-201`) | Telegram "Deep linking" (doc lida em 2026-11-08); `handlers.onDirectMessage` e `ctx.requestContext` (`reference-agents-channels.md:298-357`); dify `IMBinding` (relay); n8n `allowedUsers` (relay) | a ligação é do produto; o Mastra dá o lugar (o handler) | embrulhado: o código de uso único e a tabela `channel_link` são nossos; o handler e o `requestContext` são nativos. A conversa reaberta mantém o dono gravado e não chama `resolveResourceId` (`reference-agents-channels.md:93-94`; `agent-channels.ts:2480-2486`): o handler confere o dono da conversa mapeada e, se não é a pessoa ligada agora, troca o `channel_externalThreadId` dela por `unlinked:<id>`, e o canal abre uma conversa nova | provado: P1 (o handler põe a pessoa e o dono da conversa); P6 (o `patchThread` mescla e não apaga chave; a troca do valor solta a conversa, e a pessoa nova ganha a sua) | a decisão `A` | `apps/server/src/builder/channels/link.ts` |
+| Mensagem nova com o cartão aberto | U3 | o Hub recusa o cartão (24.5, roteiro da 24.5.1, passo 3) | no canal, a mensagem espera (P4); `dispatchDecline` (`agent-channels.ts:427-445`), que chama `Agent.declineToolCall`; o padrão edita o cartão para aprovado antes de procurar a espera (`:934-945`) | `M1`: o handler recusa a espera e entrega a mensagem; `M2`: nada | embrulhado (`M1`): a recusa pela função pública, a frase "Cancelei…", e o cartão trocado só no clique seguinte, porque a id da mensagem do cartão fica num mapa em memória do canal (`agent-channels.ts:174`) | provado: P5 (recusa e responde); P7 (a recusa pela mensagem limpa `pendingToolApprovals`, posta a frase, e o clique depois troca o cartão pela frase, sem rodar) | a decisão `M` | — |
+| O remetente vira pessoa | U2 | nenhum; `agent_conversation.person_id` exige membro (`builder/agents/tables.ts:197-201`) | Telegram "Deep linking" (doc lida em 2026-11-08); `handlers.onDirectMessage` e `ctx.requestContext` (`reference-agents-channels.md:298-357`); dify `IMBinding` (relay); n8n `allowedUsers` (relay) | a ligação é do produto; o Mastra dá o lugar (o handler) | embrulhado: o código de uso único e a tabela `channel_link` são nossos; o handler e o `requestContext` são nativos. A conversa reaberta mantém o dono gravado e não chama `resolveResourceId` (`reference-agents-channels.md:56,367`; `agent-channels.ts:2480-2486`): o handler confere o dono da conversa mapeada e, se não é a pessoa ligada agora, troca o `channel_externalThreadId` dela por `unlinked:<id>`, e o canal abre uma conversa nova | provado: P1 (o handler põe a pessoa e o dono da conversa); P6 (o `patchThread` mescla e não apaga chave; a troca do valor solta a conversa, e a pessoa nova ganha a sua) | a decisão `A` | `apps/server/src/builder/channels/link.ts` |
 | Quem não está ligado | U1, U2 | nenhum | n8n silêncio (`agent-chat-bridge.ts:511-513`, relay); Mastra `resolveSession` (`docs-harness-agent-controller.md:421`) | `B2` silêncio; `B1` a frase | embrulhado: o handler posta a frase e não chama o padrão | provado: P1 (a frase sai, nenhuma conversa) | a decisão `B` | — |
 | A pessoa roda o agente da versão | U2 | `builder/agents/agent.ts:59,76,305-333` (`conexus-agent-run`; sem ele, `NO_TURN`); `controller.ts:66-84` (`keptRun`) | `ctx.requestContext` antes do padrão (`reference-agents-channels.md:348-357`); `resolveResourceId` e `resolveThreadId` (`:363-449`) | o handler põe o que a corrida lê; a conversa nasce com o dono e a id escolhidos | embrulhado: o `AgentRun` e a linha `agent_conversation` são nossos | o critério 14 | não precisa | `apps/server/src/builder/channels/message.ts` |
 | A conversa no Hub | U2, U4 | `builder/agents/conversation-routes.ts:121-135` (lista por dono e pela marca `AGENT_MARK.agent`), `summaryOf` em `:47-53`; `open.ts:73-77` põe as marcas; `controller.ts:333-336` apaga pelas marcas | n8n lista as conversas por agente, com a origem (`agent-execution.entity.ts:150-151`, relay) | a conversa do canal aparece com a marca do canal | embrulhado: a conversa do canal nasce pelo `getOrCreateThread` do Mastra (`agent-channels.ts:2451-2514`) só com metadados `channel_*`, e o `resolveThreadId` só escolhe a id; o nosso handler põe as marcas pelo `memory.patchThread` e a linha `agent_conversation` com a coluna `channel` depois do primeiro turno; a conversa só de leitura | provado: P6 (marcada depois do turno, listada por dono e marca, a marca fica depois da aprovação); os critérios 15, 19 e 28 | não precisa | — |
@@ -428,7 +428,7 @@ chave composta com a empresa; a política `OWN` de empresa):
 - `channel_link` (a U2 usa; nasce aqui para um pull request só de permissões): `company_id`,
   `person_id` (FK `(company_id, person_id)` para `member`, cascata, como `agent_conversation`),
   `platform`, `state text check (state in ('PENDING','LINKED'))`, `code_hash bytea`,
-  `code_expires_at timestamptz` (com `P1`; sem coluna com `P2`),
+  `code_expires_at timestamptz` (com `R1`; sem coluna com `R2`),
   `external_user_id text`, `external_name text`, `updated_at`; `check` que `PENDING` tem
   `code_hash` e não `external_user_id`, e `LINKED` o contrário (C21 no banco);
   `unique (company_id, person_id, platform)`, `unique (code_hash)`,
@@ -497,8 +497,8 @@ conversa.
   (`:2488-2500`).
 - **A conversa no Hub.** Depois do padrão, `markConversation`: se a conversa mapeada não tem
   `AGENT_MARK.agent`, põe as marcas de `open.ts:73-77` pelo `memory.patchThread` (que mescla) e a
-  linha `agent_conversation` com `channel: 'telegram'` (`on conflict do nothing`). Roda em toda
-  mensagem até achar a marca (P6). A lista (`conversation-routes.ts:121-135`) passa a achar a
+  linha `agent_conversation` com `channel: 'telegram'` (`on conflict do nothing`). Roda num
+  `finally`, também quando o turno falha, e em toda mensagem até achar a marca (P6). A lista (`conversation-routes.ts:121-135`) passa a achar a
   conversa pela marca, e `summaryOf` (`:47-53`) lê a coluna `channel` da linha. Mandar mensagem numa
   conversa com `channel` responde `CHANNEL_CONVERSATION`.
 - **O dono da conversa reaberta.** A conversa reaberta não chama `resolveResourceId` e mantém o dono
@@ -533,7 +533,7 @@ export const deleteMyTelegram // DELETE `/api/companies/{companyId}/channel-link
 ```
 
 O código: 32 bytes aleatórios em base64url (43 caracteres, dentro dos 64 do `start`); guarda-se só o
-SHA-256 (`code_hash`). Um código vale até ser usado ou trocado e, com `P1`, até o prazo que o
+SHA-256 (`code_hash`). Um código vale até ser usado ou trocado e, com `R1`, até o prazo que o
 fundador escolher; nenhum número inventado. Quem já está `LINKED` não gera código
 (`CHANNEL_ALREADY_LINKED`): a chave `(company_id, person_id, platform)` faria a linha voltar a
 `PENDING` e desligaria a pessoa calada.
@@ -596,7 +596,7 @@ Os critérios 11 a 19, pela rota pública da U1 com o Bot API falso e o modelo d
   cartão já recusado), então tudo se confere antes dele: a ligação de `event.user.userId`; a espera
   aberta, pelas mensagens da conversa mapeada (`pendingToolApprovals` com o `toolCallId` de
   `event.actionId`), e, se não está, `event.adapter.editMessage(event.threadId, event.messageId,
-  'Este cartão já foi respondido.')` e retornar (P6); a regra de quem aprova da 24.5.1, e, se recusa,
+  'Este cartão já foi respondido.')` e retornar (P6 depois de aprovar, P7 depois de recusar por mensagem); a busca lê todas as mensagens da conversa (`perPage: false`), não uma página, para um cartão antigo não parecer fechado; a regra de quem aprova da 24.5.1, e, se recusa,
   editar o cartão com a frase do critério 22, recusar a espera e retornar (o lugar único que ela cria em
   `hub/connectors/approval.ts`), `ctx.requestContext.set('conexus-approved-call', { toolCallId,
   personId })` (`guard.ts:40-45`; exportar um `approvedCallSet` de lá, C26), o `AgentRun` e o turno, e
