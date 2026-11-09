@@ -56,7 +56,8 @@ página. No fim: faz o roteiro, diz o que viu e aprova os textos.
   3 minutos esbarra no limite de 10 minutos de cada publicação.
 - **Uma versão que troca a versão do Mastra** ainda sai do ar por alguns segundos, como hoje: o
   Conexus só põe dois Conexus lado a lado quando os dois usam o mesmo Mastra. O mesmo vale para
-  **Voltar atrás** a uma versão de antes desta etapa.
+  **Voltar atrás** a uma versão de antes desta etapa, e a primeira publicação desta etapa, que ainda
+  sai da versão de hoje.
 - **Dois servidores.** Os dois Conexus rodam no mesmo servidor de São Paulo; se ele cair, tudo cai,
   como hoje.
 - **O texto de uma resposta cortada** (o #339): o Mastra 1.82 guarda a resposta parada depois do
@@ -129,23 +130,23 @@ U4: ~170. Total da etapa: ~1.140, abaixo das 4.000 da L2.
 | 2 | U1 | O Hub novo ou o conector novo que não fica saudável em 90 s: o deploy para o par novo, o par velho segue no ar sem ter sido parado, e o deploy termina vermelho com "not healthy" (hoje: uma segunda queda pela volta) | `deploy.test.ts`, "a imagem nova doente não derruba a velha" | must |
 | 3 | U1 | Uma imagem sem o rótulo `conexus.mastra`, ou com outro valor que a imagem no ar, troca como hoje: para o par velho e então sobe o novo; se o novo não fica saudável, a volta sobe a imagem velha na cor velha. O deploy diz "Mastra changes: no overlap" | `deploy.test.ts`, "outro Mastra para e sobe" | must |
 | 4 | U1 | `--restart` e Voltar atrás usam o caminho dos critérios 1 a 3 (a mesma imagem tem o mesmo rótulo, então `--restart` sobrepõe); um `--restart` sem cor viva termina vermelho com "no live Hub" e não sobe nada | `deploy.test.ts`, "--restart troca a cor" e "voltar atrás para antes da 16 para e sobe" | must |
-| 5 | U1 | O primeiro deploy da 16, sobre o serviço `hub` antigo (que não tem o rótulo): para `cloudflared` e `hub` antigos pelo id do contêiner, como no critério 3, e sobe o `green`. Se o `green` não fica saudável, o deploy para o `green` e dá `docker start` nos dois contêineres antigos pelo id, e termina vermelho; nunca chama `up hub`, que não existe mais no Compose. O deploy seguinte acha a cor viva e apaga os órfãos (`--remove-orphans`) | `deploy.test.ts`, "o primeiro deploy da 16 aposenta o par antigo" e "o primeiro deploy doente religa o par antigo" | must |
+| 5 | U1 | O primeiro deploy da 16, sobre o serviço `hub` antigo (que não tem o rótulo): acha os contêineres antigos por rótulo (`docker ps --filter label=com.docker.compose.project=<projeto> --filter label=com.docker.compose.service=hub`, e o mesmo para `cloudflared`), porque o serviço `hub` não existe mais no Compose; para os dois pelo id, como no critério 3 (uma queda de segundos, como hoje), e sobe o `green`. Se o `green` não fica saudável, o deploy para o `green` e dá `docker start` nos dois contêineres antigos pelo id, e termina vermelho; nunca chama `up hub`, que não existe mais no Compose. O deploy seguinte acha a cor viva e apaga os órfãos (`--remove-orphans`) | `deploy.test.ts`, "o primeiro deploy da 16 aposenta o par antigo" e "o primeiro deploy doente religa o par antigo" | must |
 | 6 | U1 | Duas cores no ar (um deploy cortado no meio): o deploy seguinte toma como viva a cor que começou por último (`docker inspect` `.State.StartedAt`), para a outra antes da troca e diz "two live colors: stopping <cor>" | `deploy.test.ts`, "duas cores vivas" | must |
-| 7 | U1 | O Compose: `pid-anchor` sem porta, sem volume, sem segredo; os dois Hubs e os dois conectores com `pid: service:pid-anchor`; cada Hub com o apelido `hub` só na rede da sua cor; o volume `hub_signals` montado nos dois Hubs em `/run/conexus-signals`, uma pasta que a imagem cria com dono `node` (`hub.Dockerfile`, como a do `hub_git`); `HUB_SIGNALS_SOCKET` aponta para ela; cada conector com healthcheck de prontidão; o `stop_grace_period` de cada Hub cobre `SHUTDOWN_GRACE_MS`, e o de cada conector, `--grace-period` mais 5 s. Um Compose com um Hub sem `pid`, ou com o apelido `hub` nas duas redes, falha o teste | `scripts/deploy-compose.test.ts`, "duas cores, um espaço de PIDs, um socket" | must |
-| 8 | U1 | O prazo do job de deploy (`publish.yml`, `restart.yml`, `rollback.yml`) cobre a soma dos limites das fases no pior caso: pull 120 s, três migrações de 120 s, reseal 120 s, Hub 90 s, conector 90 s, parada do conector 35 s e do Hub 215 s (~1.130 s); um prazo menor que a soma falha o teste | `scripts/deploy-phases.test.ts`, "o prazo do job cobre as fases" | must |
+| 7 | U1 | O Compose: `pid-anchor` sem porta, sem volume, sem segredo; os dois Hubs e os dois conectores com `pid: service:pid-anchor`; cada Hub com o apelido `hub` só na rede da sua cor; o volume `hub_signals` montado nos dois Hubs em `/run/conexus-signals`, uma pasta que a imagem cria com dono `node` (`hub.Dockerfile`, como a do `hub_git`); `HUB_SIGNALS_SOCKET` aponta para ela; cada conector com healthcheck de prontidão; o `stop_grace_period` de cada Hub cobre `SHUTDOWN_GRACE_MS`, e o de cada conector, `--grace-period` mais 5 s. O teste lê o Compose com as âncoras `x-hub` e `x-cloudflared` já aplicadas, serviço por serviço. Um Compose com um Hub sem `pid`, ou com o apelido `hub` nas duas redes, falha o teste | `scripts/deploy-compose.test.ts`, "duas cores, um espaço de PIDs, um socket" | must |
+| 8 | U1 | O prazo do job de deploy (`publish.yml`, `restart.yml`, `rollback.yml`) cobre a soma dos limites das fases no pior caso: pull 120 s, três migrações de 120 s, reseal 120 s, Hub 90 s, conector 90 s, parada do conector 35 s e do Hub 215 s (1.030 s); o teste soma os limites que o `deploy.sh` declara, as checagens de segredo e as leituras do Docker incluídas, e um prazo menor que a soma falha | `scripts/deploy-phases.test.ts`, "o prazo do job cobre as fases" | must |
 | 9 | U1 | Os comandos que usavam o serviço `hub` por nome usam a cor viva: o `reseal` roda em `hub-<nova>`, e `infra/first-person.sh` acha o Hub vivo; sem cor viva, `first-person.sh` termina com "no live Hub" | `scripts/first-person.test.ts` e `deploy.test.ts`, "o reseal na cor nova" | must |
 | 10 | U1 | `migrate` que falha ao conectar com `57P01`, `57P03`, `08006`, `ECONNRESET` ou `ECONNREFUSED` sai com 75 e o deploy repete (o #275); outro código sai com 1 e o deploy não repete | `apps/server/src/platform/migrate.test.ts`, "a conexão que cai é repetida" | must |
 | 11 | U2 | Dois Hubs (`hubBeside`) com o mesmo `HUB_SIGNALS_SOCKET`: com uma resposta do Builder em andamento no primeiro, uma mensagem mandada ao segundo na mesma conversa responde 200, não abre outra rodada (o dublê do modelo recebe a segunda pergunta só depois de a primeira terminar) e roda logo depois | `builder/conversation/two-hubs.test.ts` (novo), "a mensagem no Hub novo espera a resposta do velho" | must |
 | 12 | U2 | O mesmo, com o primeiro Hub já em `settle` (recebeu o aviso de parar): a mensagem mandada ao segundo roda e termina `complete` mesmo depois de o primeiro fechar; nunca termina `HUB_UPDATED` | `two-hubs.test.ts`, "a mensagem no Hub novo não morre com o velho" | must |
 | 13 | U2 | O fluxo da conversa aberto no segundo Hub recebe as partes da resposta que roda no primeiro, e o fim dela; sem o socket comum, não recebe (o teste do contrário documenta o porquê) | `two-hubs.test.ts`, "a tela aberta no Hub novo segue a resposta do velho" | must |
-| 14 | U2 | Teste 10: o primeiro Hub recebe o aviso de parar (`close(30_000)`) com uma resposta em andamento e nenhuma tela aberta; a resposta termina, é guardada, e o segundo Hub a lê inteira em `GET …/threads/:threadId/messages`; uma resposta que passa do prazo termina `HUB_UPDATED`, como hoje | `two-hubs.test.ts`, "a tela fechada acha a resposta inteira" | must |
+| 14 | U2 | O teste 10 do roteiro: o primeiro Hub recebe o aviso de parar (`close(30_000)`) com uma resposta em andamento e nenhuma tela aberta; a resposta termina, é guardada, e o segundo Hub a lê inteira em `GET …/threads/:threadId/messages`; uma resposta que passa do prazo termina `HUB_UPDATED`, como hoje | `two-hubs.test.ts`, "a tela fechada acha a resposta inteira" | must |
 | 15 | U2 | O Projeto ocupado entre os dois: com um turno do Builder do Projeto P no primeiro Hub, outra conversa do Projeto P mandada ao segundo responde o `RUN_BUSY` de hoje, com o nome de quem o ocupa; a mesma conversa, mandada ao segundo enquanto o primeiro ainda guarda a versão, espera como hoje e não recebe `RUN_BUSY`; quando o primeiro solta, o segundo admite; sem o socket, um Hub só não muda (`runs.test.ts` passa intacto) | `builder/runs/runs-lease.test.ts` (novo), "o Projeto ocupado vale entre dois Hubs" | must |
 | 16 | U2 | O `Runs` solta a posse do Projeto no fim do turno, no Parar e no `drain`: um segundo Hub admite o Projeto logo depois do `close(30_000)` do primeiro, sem esperar os 15 s do prazo | `runs-lease.test.ts`, "o Hub que sai solta o Projeto" | must |
 | 17 | U2 | A agenda nos dois Hubs: com uma automação devida enquanto os dois rodam, sai um disparo só (uma execução `sched_…_<ms>`), embora a página do Mastra diga para não rodar duas agendas | `builder/automations/scheduler.test.ts`, "dois Hubs, um disparo" | must |
 | 18 | U2 | Sem `HUB_SIGNALS_SOCKET`, o Hub sobe com o PubSub padrão do Mastra e nenhum arquivo é criado; com um caminho cuja pasta não existe, o Hub recusa subir com `CONFIG_INVALID` e o nome da variável (regra deste cartão: um socket numa pasta errada separaria os dois Hubs sem aviso) | `platform/config.test.ts`, "o socket comum" | must |
 | 19 | U3 | Depois de o Hub da conversa trocar (um Hub novo ao lado, o velho fechado), o estado da sessão no novo traz o "Aprovar?" que estava aberto, com a mesma ferramenta e os mesmos campos; **Aprovar** roda a escrita uma vez (o dublê conta um pedido) e o cartão termina "Aprovado por você"; um segundo **Aprovar** responde `{ ok: false, reason: 'not_pending' }` e o dublê continua com um | `builder/agents/approval.test.ts`, "depois do reinício" (substitui o critério 8 da 24.5) | must |
 | 20 | U3 | O mesmo cartão guardado: quem não tem a escrita no papel recebe `NOT_IN_ROLE` e nada roda (`D3-a`); `alwaysAllowCategory` no corpo dá `REQUEST_MALFORMED` | `approval.test.ts`, "o cartão guardado e o guarda" | must |
-| 21 | U3 | Uma mensagem nova da pessoa na conversa recusa cada espera guardada antes de o turno novo começar: o cartão some do estado, um **Aprovar** depois dela responde `not_pending`, e a escrita guardada nunca roda (o dublê conta zero pedidos) | `approval.test.ts`, "a mensagem nova recusa o cartão guardado" | must |
+| 21 | U3 | Uma mensagem nova da pessoa na conversa recusa cada espera guardada antes de o turno novo começar: o cartão some do estado, um **Aprovar** depois dela responde `not_pending`, a escrita guardada nunca roda (o dublê conta zero pedidos), o turno novo começa só depois de a rodada recusada fechar, e a mensagem nova é respondida uma vez | `approval.test.ts`, "a mensagem nova recusa o cartão guardado" | must |
 | 22 | U3 | O plano e a pergunta do Builder: depois da troca, o estado traz o cartão; a resposta retoma a mesma rodada no Hub novo (a versão guardada é a mesma, o turno termina `complete`); uma segunda resposta dá `not_pending` | `conversation-update.test.ts`, critério 47 reescrito: "atualizar com uma pergunta aberta: o cartão volta e a resposta retoma" | must |
 | 23 | U3 | Na tela, depois de a conexão cair e voltar com a troca, o cartão aparece como antes, com os botões acesos; um cartão que o estado não traz mais (respondido em outra aba) não aparece | `apps/web/src/builder/conversation/approval-card.test.tsx` e `use-session.test.ts`, "o cartão volta depois da troca" | must |
 | 24 | U4 | Uma execução de fluxo com um balão em voo no Hub que sai: o velho espera o balão até o limite de 180 s; se o balão termina, a execução segue no velho até a próxima espera ou o fim; um balão que passa do prazo é largado e fica para o critério 25 | `builder/workflows/runs.test.ts`, "o Hub que sai espera o balão" | must |
@@ -185,7 +186,7 @@ Nenhuma tela nova: a U3 desenha os cartões que já existem a partir do estado d
 | `migrate` (o #275) | a trava de migrações de hoje | a conexão cai: 75 e o deploy repete até 3 vezes | Neon reiniciando: 75 | `MIGRATE_RETRY` com o código | 10 |
 | O socket e os arquivos de posse (`UnixSocketPubSub`) | o primeiro processo vira o corretor, os outros se ligam a ele | o corretor sai: outro processo assume (`reference-pubsub-unix-socket-pubsub.md:15-24`) | a pasta sem permissão: o Hub não sobe (`CONFIG_INVALID` para a pasta que falta; o erro do Mastra para a permissão) | o log do Mastra | 7, 18 |
 | A posse do Projeto (`acquireLease`) | um vence, o outro lê o dono: `RUN_BUSY` ou, da mesma conversa, espera | o Hub dono para: o `Runs` solta no fim do turno, no Parar e no `drain`; morre: a posse vence (o PID não existe mais: na hora; senão 15 s) | o socket some: a posse é um arquivo, não muda | `RUN_BUSY` como hoje | 15, 16 |
-| A renovação da posse do Projeto, a cada 5 s | — | uma renovação falha: o turno segue e a próxima tenta; três falhas seguidas e a posse vence, e outro Hub pode admitir o Projeto, protegido pelo compare-and-swap do `main` (`builder/runs/save.ts:57`) | idem | `PROJECT_LEASE_LOST` com o Projeto | 15 |
+| A renovação da posse do Projeto, a cada 5 s | — | uma renovação falha: o turno segue e a próxima tenta; três falhas seguidas e a posse vence, e outro Hub pode admitir o Projeto, protegido pelo compare-and-swap do `main` (`builder/runs/save.ts:57`) | idem | `PROJECT_LEASE_LOST` com o Projeto | 16 (o teste derruba a renovação com o relógio do teste) |
 | A posse da conversa (Mastra) | a segunda mensagem vai ao dono e espera | o dono acaba a rodada: o Mastra solta; morre: na hora ou 15 s | idem | nada novo | 11, 12 |
 | Os repositórios Git no volume `hub_git`, escritos pelos dois Hubs | o compare-and-swap do `main` deixa um (`builder/runs/save.ts:57`) e a posse do Projeto separa os turnos | a cópia ao bucket (`main.ts:233-247`) é refeita na próxima subida, como hoje | — | como hoje | 15 |
 | Disparo da agenda | o CAS do Mastra deixa um (`scheduler-Me4rCjO2.js:357-370`) | — | o banco fora: o disparo não é reclamado, o próximo tique tenta | o log do Mastra | 17 |
@@ -306,8 +307,8 @@ sobre o serviço antigo são concorrência entre processos.
    nomes novos antes de qualquer comportamento novo.
 2. `infra/compose.yaml` e `infra/hub.Dockerfile`: as cores, o anchor, a pasta do socket, o rótulo.
    Regras: C62 (o prazo), S42 (o log).
-3. `infra/deploy.sh`: `live_color` (`ps --quiet hub-blue`, `hub-green`, e o `hub` antigo para o
-   primeiro deploy; duas vivas: a mais recente fica); `up --detach --wait pid-anchor`; com o mesmo
+3. `infra/deploy.sh`: `live_color` (`ps --quiet hub-blue`, `hub-green`, e, no primeiro deploy, os contêineres
+   antigos achados pelo rótulo `com.docker.compose.service=hub` e `=cloudflared`; duas vivas: a mais recente fica); `up --detach --wait pid-anchor`; com o mesmo
    rótulo, `up --detach --wait --wait-timeout 90 --no-deps hub-<nova>`, depois o mesmo para
    `cloudflared-<nova>`, depois `stop --timeout 35 cloudflared-<velha>` e
    `stop --timeout 215 hub-<velha>`; a volta: `stop` do par novo. Com outro rótulo, ou sem rótulo, o
@@ -357,15 +358,17 @@ dos arquivos tocados.
   `docs-signals-running-across-processes.md:27`); renova a cada 5 s enquanto o `Driven` vive. O
   `close()` do PubSub não solta posses (`dist/events/index.js:998-1022`): o `Runs` chama
   `releaseLease` quando o `#writing` solta, no fim do turno, no Parar e no `drain`. Recusado: com o
-  dono de outra conversa, o `RUN_BUSY` de hoje com o nome dele; com o dono da mesma conversa, a espera
-  de hoje (`holder.ends`), lida do dono gravado.
+  dono de outra conversa, o `RUN_BUSY` de hoje com o nome dele; com o dono da mesma conversa em outro
+  Hub, o `Runs.take` espera a posse sumir, olhando a cada 250 ms até o limite do `settle` (180 s), e
+  então admite; o `holder.ends` de hoje continua valendo dentro de um Hub. Passado o limite, o
+  `RUN_BUSY` de hoje.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/platform/config.ts` (e `config-*.ts` do lugar certo) | Muda: `signalsSocket?: string` de `HUB_SIGNALS_SOCKET` | `main.ts`, `builder/mastra/` |
-| `apps/server/src/builder/mastra/mastra.ts` | Muda | `builder/conversation/conversations-of.ts`, `main.ts` |
+| `apps/server/src/builder/mastra/mastra.ts`, `hub-mastra.ts` (o único chamador de `createMastra`, `:60`), `apps/server/src/main.ts` | Muda | `builder/conversation/conversations-of.ts`, `main.ts` |
 | `apps/server/src/builder/runs/runs.ts`, `project-lease.ts` (novo) | Muda e cria | `builder/conversation/` |
 | `apps/server/src/builder/conversation/test-conversation.ts` | Muda: `hubBeside` aceita o socket | testes |
 | `docs/reference/boundaries.md` | Muda: "Mastra 1.82.0: UnixSocketPubSub leases check the owner's pid" e "Mastra 1.82.0: the scheduler page forbids two instances, the code claims each fire once" | — |
@@ -462,8 +465,10 @@ guardada passa pelas mesmas conferências de `toolAnswer` (`refuseApprover`, `wr
 `CONNECTOR_WRITE_APPROVED`), troca `session.approval.isArmed` por "armada ou guardada" e chama a função
 guardada do Mastra. A tela manda o `runId` da espera guardada no corpo de `tool-suspension`, e o
 guarda monta o endereço com o `threadId` e o `resourceId` da sessão, nunca do corpo (S39). Uma
-mensagem nova recusa cada espera guardada da conversa antes do turno, e o registro diz
-`CONNECTOR_WRITE_DECLINED`.
+mensagem nova recusa cada espera guardada da conversa (`respondToPersistedToolApproval` com
+`approved: false`, que retoma a rodada com a recusa, `agent-controller-BDds1y5w.js:5272`), espera
+essa rodada fechar e só então começa o turno novo; o registro diz `CONNECTOR_WRITE_DECLINED`. O que o
+modelo diz na rodada recusada fica na conversa, como depois de um **Recusar** de hoje.
 
 ### As skills e a leitura
 
