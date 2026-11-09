@@ -94,6 +94,14 @@ const ESTOQUE: readonly Stock[] = [
   [201, 1, 1, '', 'P', 0, 60, 10],
 ]
 
+/** The way the double puts rows in a table: one prepared statement, each row run through it. */
+export function inserter(database: DatabaseSync) {
+  return (sql: string, rows: readonly (readonly (string | number)[])[]) => {
+    const statement = database.prepare(sql)
+    for (const row of rows) statement.run(...row)
+  }
+}
+
 /** The columns the searches read, on top of the sales tables, and the rows above. */
 export function registerOn(database: DatabaseSync): void {
   database.exec(`
@@ -101,10 +109,7 @@ export function registerOn(database: DatabaseSync): void {
     CREATE TABLE TGFEST (CODPROD INTEGER, CODEMP INTEGER, CODLOCAL INTEGER, CONTROLE TEXT, TIPO TEXT,
       CODPARC INTEGER, ESTOQUE REAL, RESERVADO REAL);
   `)
-  function insert(sql: string, rows: readonly (readonly (string | number)[])[]) {
-    const statement = database.prepare(sql)
-    for (const row of rows) statement.run(...row)
-  }
+  const insert = inserter(database)
   insert(
     'INSERT INTO TGFGRU VALUES (?, ?)',
     GRUPOS.map((each) => [each.codgrupoprod, each.descrgrupoprod]),

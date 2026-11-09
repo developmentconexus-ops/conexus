@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import { registerOn } from './fake-register.ts'
+import { inserter, registerOn } from './fake-register.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
 
@@ -117,10 +117,7 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
     CREATE TABLE TGFITE (NUNOTA INTEGER, SEQUENCIA INTEGER, CODPROD INTEGER, QTDNEG REAL,
       VLRUNIT REAL, VLRTOT REAL);
   `)
-  function insert(sql: string, rows: readonly (readonly (string | number)[])[]) {
-    const statement = database.prepare(sql)
-    for (const row of rows) statement.run(...row)
-  }
+  const insert = inserter(database)
   insert(
     'INSERT INTO TGFVEN (CODVEND, APELIDO) VALUES (?, ?)',
     set.vendedores.map((each) => [each.codvend, each.apelido]),
