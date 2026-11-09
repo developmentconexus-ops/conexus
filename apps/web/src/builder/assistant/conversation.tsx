@@ -18,8 +18,8 @@ import {
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
+  titleOf,
 } from '../conversation/public.ts'
-import { titleOf } from '../conversation/text.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
 import { AppProposalCard } from './propose.tsx'

@@ -28,5 +28,5 @@ export {
   usePicked,
 } from './start.tsx'
 export { readStart } from './start-reads.ts'
-export { START_NO_ACCOUNT, toolsText } from './text.ts'
+export { START_NO_ACCOUNT, titleOf, toolsText, UNCONFIRMED_CREATION } from './text.ts'
 export { Workbench } from './workbench.tsx'

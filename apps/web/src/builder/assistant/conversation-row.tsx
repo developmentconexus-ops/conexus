@@ -2,7 +2,7 @@ import type { AssistantConversationSummary, CompanyId } from '@conexus/hub-api'
 import { Link } from '@tanstack/react-router'
 import { ageOf } from '../../platform/dates.ts'
 import { SidebarMenuButton, SidebarMenuItem } from '../../ui/sidebar.tsx'
-import { titleOf } from '../conversation/text.ts'
+import { titleOf } from '../conversation/public.ts'
 import { ConversationMenu } from './conversation-menu.tsx'
 
 export function ConversationRow(props: {

@@ -13,8 +13,8 @@ import {
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
+  titleOf,
 } from '../conversation/public.ts'
-import { titleOf } from '../conversation/text.ts'
 import { DraftPanel } from './draft-panel.tsx'
 import {
   agentQuery,

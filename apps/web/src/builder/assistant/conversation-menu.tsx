@@ -24,7 +24,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { titleOf } from '../conversation/text.ts'
+import { titleOf } from '../conversation/public.ts'
 import { sendAssistantDeletion, sendAssistantRename } from './queries.ts'
 import {
   CANCEL,

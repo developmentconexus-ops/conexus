@@ -13,7 +13,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '../../ui/combobox.tsx'
-import { titleOf } from '../conversation/text.ts'
+import { titleOf } from '../conversation/public.ts'
 import type { useOpenAgentConversation } from './open-conversation.ts'
 import { agentConversationsQuery } from './queries.ts'
 import { ReadStates } from './read-states.tsx'

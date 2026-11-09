@@ -2,7 +2,7 @@ import type { AgentState } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { ageOf } from '../../platform/dates.ts'
 import { Stamp } from '../../ui/block.tsx'
-import { titleOf } from '../conversation/text.ts'
+import { titleOf } from '../conversation/public.ts'
 import { CHANGED_STATE, DRAFT_STATE, publishedText } from './text.ts'
 
 /**

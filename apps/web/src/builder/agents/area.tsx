@@ -15,10 +15,10 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
+  UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
-import { UNCONFIRMED_CREATION } from '../conversation/text.ts'
 import { AgentList } from './agent-list.tsx'
 import { AreaFrame } from './area-frame.tsx'
 import { construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
