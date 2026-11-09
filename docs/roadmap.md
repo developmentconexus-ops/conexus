@@ -27,12 +27,8 @@ brinquedo. O mapa sai: "Deixa quieto sobre o Mapa". Este roteiro reescrito: "Pod
 ### As etapas, e o que você faz quando cada uma fecha
 
 Fechadas, com o uso nas [aprovações](approvals.md): da 1 à 20 com as subetapas, a 24.1
-à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa e a 24.5. Sua empresa usa o Conexus desde
+à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5 e a 24.5.1. Sua empresa usa o Conexus desde
 2026-11-02.
-
-**Fechar a 24.5.1.**
-
-- **24.5.1 Uma lógica.** Por dentro, o que as quatro conversas dividem ganha uma casa só.
 
 **As capacidades que faltam aos apps.**
 
@@ -103,8 +99,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 24.5.1 Uma lógica | A 24.5 | Respondidas em 2026-11-08 | "Pergunta antes ou faz sozinho" com um dono só |
-| Capacidades 1 a 7 | A 24.5.1, uma por vez, na ordem | As das respostas 5 e 6; outras, no estudo | Referências e Mastra; no Sync, as lições do ML-VIGIA; na 4, `defineRoles` e `can`; na 5, Impeccable, Claude Design e o frontend-design da Anthropic |
+| Capacidades 1 a 7 | Uma por vez, na ordem | As das respostas 5 e 6; outras, no estudo | Referências e Mastra; no Sync, as lições do ML-VIGIA; na 4, `defineRoles` e `can`; na 5, Impeccable, Claude Design e o frontend-design da Anthropic |
 | Fluxo 1 a 5 | As capacidades, uma fase por vez | Você é a régua | vibesdk, Mastra, o estudo do Builder ideal |
 | 24.6 Workflows e automações | Esta frente | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
