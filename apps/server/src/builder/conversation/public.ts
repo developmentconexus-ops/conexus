@@ -27,7 +27,6 @@ export { skillOf } from './instructions.ts'
 export { ASK_USER_TOOL, createAskUserTool } from './plan-tools.ts'
 export { turnDate } from './prompt/prompt.ts'
 export { createMastraStorage } from './storage.ts'
-export { bodyHashOf } from './store.ts'
 export { TurnTally } from './turn-line.ts'
 export { TOOL_CLOSURE }
 
