@@ -497,7 +497,7 @@ Brasília>".
    sob `bounded 240` (o `stop_grace_period` é 210 s). `--restart --restored <instante>
    [<template>]`: as opções antes do modelo, que continua o último argumento; com `--restored`, um Hub
    de pé é recusado, e o parado sobe com a imagem e o modelo que o contêiner parado guarda
-   (`compose ps --all` e a leitura de `deploy.sh:38-43`). A
+   (`running_id`, `deploy.sh:37-39`, passa a usar `ps --all --quiet`, e `running_template` lê o contêiner parado como lê o de pé). A
    entrada `restored_to` de `restart.yml` é texto ("AAAA-MM-DD HH:MM", hora de Brasília); vazia, o
    reinício é o de hoje.
 3. `after-restore <instante>` em `main.ts`, pela conexão de migração e a do Mastra: converte a hora
