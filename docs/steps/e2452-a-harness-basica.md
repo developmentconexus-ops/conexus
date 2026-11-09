@@ -2,7 +2,11 @@
 
 Cada linha citada foi relida no `main` em `ac4c6d31`, com `@mastra/core` 1.82.0, `@mastra/memory`
 1.41.0 e `ai` 6.0.309 instalados. `@mastra/observability` 1.23.1 ainda não está no repositório: foi
-lido e medido à parte, e a U7 o instala. As referências de terceiros citam o commit. O estudo fica fora do repositório (delivery L21).
+lido e medido à parte, e a U7 o instala. As referências de terceiros citam o commit.
+
+A 24.5 ainda está aberta, e `docs/steps/` guarda um arquivo por trilha (delivery L5). Este cartão só entra
+no `main` quando a 24.5 fechar, ou com a palavra do fundador para os dois juntos; até lá, `second-card`
+fica vermelho no PR. O estudo fica fora do repositório (delivery L21).
 
 ## A página do fundador
 
@@ -24,7 +28,7 @@ ferramenta com o que recebeu e devolveu, tokens e tempos.
 5. Vai à **Central**, abre a empresa, **Rastros**, e abre a conversa. Vê os turnos com o modelo, os
    tokens e o tempo, abre um passo e vê o raciocínio e as ferramentas. Baixa o arquivo do rastro.
 6. Apaga a conversa do Assistente. Os arquivos dela e o rastro somem da tela na hora, e do armazenamento
-   em até um dia. Os do Builder ficam.
+   em até dois dias. Os do Builder ficam.
 
 **O que você faz, e quando.** Antes: nada novo. No começo: aprova esta página e dá as seis decisões
 abaixo. No fim: faz o roteiro, diz o que viu e aprova os textos das telas. Com a loja usando, olha os
@@ -49,7 +53,7 @@ ele fala só um modelo de verdade mostra. Os critérios provam a harness com dub
 - **As `next-card` abertas, todas.** Esperam, e nenhuma é pré-requisito disto: são de outras frentes
   (papéis, convite, ferramentas em código, escrita, conectores). As mais próximas: 778 (a máquina de uma
   conversa parada; a cópia nova vive com a conversa), 234 (causa em log nas bordas), 815 (memória do
-  app), 148 (cache na assinatura) e 179 e 169 (título e teste do observador). Vão à 24.5.4 ou à 21.1.
+  app), 148 (cache na assinatura) e 179 e 169 (título e teste do observador). Cada uma segue na sua frente, sem etapa marcada aqui.
 - **Teto de armazenamento por conversa ou empresa.** Continua o limite de hoje por mensagem. Nenhuma
   referência dá um número, e S28 fica como dívida com medida do uso da loja.
 
@@ -129,19 +133,19 @@ apagar uma conversa, o Hub apaga as linhas dela. Vai num PR só disso, antes de 
 | --- | --- | --- | --- | --- |
 | U0 | A tabela e as permissões, em PR próprio | `apps/server/migrations`, `apps/server/database-grants.sql`, `apps/server/src/builder/attachments` | data | nada |
 | U1 | A cópia durável: rotas, nota e varredura | `packages/hub-api/src`, `apps/server/src/builder/attachments`, `apps/server/src/builder/git/copy`, `apps/server/src/builder/machine/file-route.ts`, `apps/server/src/main.ts` | security | U0 |
-| U2 | O arquivo na máquina, e o modelo orientado pela harness | `apps/server/src/builder/machine`, `apps/server/src/builder/assistant`, `apps/server/src/builder/conversation`, `infra/e2b` | testing | U1 |
+| U2 | O arquivo na máquina, e o modelo orientado pela harness | `apps/server/src/main.ts`, `apps/server/src/builder/runs/ports.ts`, `apps/server/src/builder/machine`, `apps/server/src/builder/assistant`, `apps/server/src/builder/conversation`, `infra/e2b` | testing | U1, U6 |
 | U3 | A tela: enviar, mostrar, novos tipos | `apps/web/src/builder/conversation`, `apps/web/src/builder/assistant` | web | U1 |
 | U4 | A passagem leva os arquivos | `packages/hub-api/src`, `apps/server/src/builder/assistant`, `apps/web/src/builder/assistant` | code | U2, U3 |
 | U5 | O texto: Assistente, skill e Builder | `apps/server/src/builder/assistant/prompt`, `apps/server/src/builder/assistant/skills`, `apps/server/src/builder/assistant/assistant.ts`, `apps/server/src/builder/conversation/prompt`, `apps/server/src/builder/conversation/test-prompt.ts`, `apps/server/src/builder/machine/show-file.ts` | testing | U2, e o molde publicado |
-| U6 | As lacunas da linha do turno e dos logs | `apps/server/src/builder/conversation`, `apps/server/src/builder/mastra`, `apps/server/src/builder/assistant/routes.ts`, `infra/compose.yaml` | security | nada |
+| U6 | As lacunas da linha do turno e dos logs | `apps/server/src/builder/conversation`, `apps/server/src/builder/mastra`, `apps/server/src/builder/assistant/routes.ts`, `apps/server/src/builder/construtor/routes.ts`, `infra/compose.yaml` | security | nada |
 | U7 | O rastro: exportador, rotas e páginas da Central | `apps/server/src/builder/mastra`, `apps/server/src/builder/trace` (nova), `packages/hub-api/src`, `apps/web/src/hub/operations`, `apps/web/src/routes/_app/operations`, `infra/compose.yaml`, `infra/hub.Dockerfile`, `apps/server/src/platform/config.ts`, `docs/reference` | security, design | U6 |
 
 U0 vem antes, em PR próprio. U6 corre em paralelo com U1 e entra antes de U2, porque as duas mexem em
-`guard.ts`. U3 e U2 correm em paralelo depois de U1. U5 depende do nome da pasta, da nota e do molde
+`guard.ts`. U3 e U2 correm em paralelo depois de U1 (U2 também depois de U6). U5 depende do nome da pasta, da nota e do molde
 publicado. U7 é a última, para o rastro já ver os anexos.
 
 **Orçamento de código alterado.** U0: 40. U1: 460. U2: 360. U3: 320. U4: 200. U5: 120. U6: 240. U7: 820. Total
-da etapa: 2.760.
+da etapa: 2.560.
 
 ## Os critérios de aceite
 
@@ -173,11 +177,12 @@ da etapa: 2.760.
 | 24 | U7 | Uma chave plantada não entra no arquivo; o texto plantado e o CPF plantado entram no arquivo e não aparecem em log nenhum nem em `mastra.*` | `builder/trace/trace.test.ts`, "o que fica e o que não sai" | must |
 | 25 | U7 | A falha ao gravar o rastro não muda o turno e escreve `TRACE_WRITE_FAILED` uma vez por conversa | `builder/trace/trace.test.ts`, "disco cheio" | must |
 | 26 | U7 | A rota e a página são da Central: pessoa da empresa, dono incluído, recebe `NOT_FOUND`, 404 (S10). Cada leitura escreve `TRACE_READ` com quem e qual conversa | `builder/trace/routes.test.ts` | must |
-| 27 | U7 | Apagar a conversa apaga o arquivo; na varredura, some o arquivo com mais de 30 dias e o de conversa que não existe mais | `builder/trace/trace.test.ts`, "apagar" e "30 dias" | must |
+| 27 | U7 | Na varredura, some o arquivo com mais de 30 dias e o de conversa que não existe mais | `builder/trace/trace.test.ts`, "30 dias" | must |
 | 28 | U7 | A página lista as conversas e abre uma nos passos; o botão baixa o arquivo | `tests/e2e/central-traces.test.ts` | must |
-| 30 | U1 | `ATTACHMENT_STORE_UNAVAILABLE` com o R2 fora, `DATABASE_UNAVAILABLE` com o banco fora; nenhum deixa linha sem objeto | `attachments.test.ts`, "fora" | must |
+| 30 | U1 | `ATTACHMENT_STORE_UNAVAILABLE` com o R2 fora, `DATABASE_UNAVAILABLE` com o banco fora; nenhum deixa linha sem objeto. `DELETE` da conversa com o banco fora responde `DATABASE_UNAVAILABLE` e a conversa fica | `attachments.test.ts`, "fora" | must |
 | 31 | U3 | No composer de um agente, o `.xlsx` dá "Este tipo de arquivo não é aceito." e o PDF segue como hoje | `conversation/attachments.test.tsx`, "agente" | must |
 | 32 | U6 | `MASTRA_WARNING`: `createMastra(...).getLogger().warn` duas vezes, com números diferentes, dá o mesmo `code` e nenhum texto | `mastra/mastra.test.ts` | should |
+| 33 | U0 | O Hub lê, grava e apaga anexos só da própria empresa; o teste de catálogo vê a tabela, a política e os grants | `database-grants`, o teste que já existe | must |
 
 ## A matriz de estados
 
@@ -229,14 +234,14 @@ da etapa: 2.760.
 | --- | --- | --- | --- | --- | --- |
 | `POST attachments`: objeto, depois linha | Mesmo `sha`: objeto igual, `ON CONFLICT DO NOTHING`; os dois respondem 201 iguais | Objeto sem linha: lixo inofensivo, o próximo igual usa; a varredura remove | R2 fora: `ATTACHMENT_STORE_UNAVAILABLE`, 503, a tela devolve o rascunho. Banco fora: `DATABASE_UNAVAILABLE` | `ATTACHMENT_SAVED {companyId, conversationId, bytes}` | 1, 13, 30 |
 | Corte da resposta do `POST` | n/a | O cliente repete: mesma resposta | n/a | Igual | 1, 13 |
-| `DELETE` da conversa com arquivo | Segunda dá `CONVERSATION_NOT_FOUND`, como hoje | Linhas apagadas na mesma ida; o objeto é da varredura | Banco fora: `DATABASE_UNAVAILABLE`, como hoje | Sem linha nova | 4 |
-| Varredura de objetos | Uma por processo | Falhou um: segue; o próximo dia repete | R2 fora: `ATTACHMENT_SWEEP_FAILED`, tenta amanhã | Contagem | 4 |
+| `DELETE` da conversa com arquivo | Segunda dá `CONVERSATION_NOT_FOUND`, como hoje | Linhas apagadas antes de soltar o thread, então uma falha deixa o que o próximo `DELETE` acha; o objeto é da varredura | Banco fora: `DATABASE_UNAVAILABLE`, como hoje | Sem linha nova | 4 |
+| Varredura de objetos | Uma por processo | Falhou um: segue; o próximo dia repete | R2 fora: `ATTACHMENT_SWEEP_FAILED` com `code`, tenta amanhã | Contagem | 4 |
 | Sincronia para a máquina | Voo único por sessão; por `sha`, gravar de novo é igual | Uma leitura no meio: a marca `stale` continua e a próxima ferramenta tenta | R2 fora: ferramenta segue, modelo acha o arquivo ausente e diz (prompt), linha `ATTACHMENT_SYNC_FAILED` | Código e contagem | 6 |
 | `handOff` copia linhas | `ON CONFLICT DO NOTHING`, e a chave de tentativa já cobre | Linhas antes do sinal: o reenvio não repete, `asked` responde | Como hoje | `ASSISTANT_HANDED_OFF` | 15 |
 | Exportador grava linha | Uma fila por conversa, `appendFile` em ordem | Linha cortada no fim do arquivo: a leitura ignora a última se não fecha | Disco cheio: `TRACE_WRITE_FAILED` uma vez, o turno continua | Código | 25 |
 | Varredura de 30 dias | Uma por processo | Falha num arquivo não para os outros | Disco fora: tenta no dia seguinte | Contagem | 27 |
 | Vigia de turno preso | Uma por execução | Só escreve | n/a | `CONVERSATION_TURN_STUCK` | 20 |
-| Apagar o rastro, pela rota ou na varredura | `unlink` de arquivo já apagado passa | Falhou um: segue | Disco fora: tenta amanhã | Contagem | 27 |
+| Apagar o rastro, na varredura | `unlink` de arquivo já apagado passa | Falhou um: segue | Disco fora: tenta amanhã | Contagem | 27 |
 | Observador, de `hooks.onObservationEnd` | Uma por ciclo | n/a | Falha do modelo: `failed` e o nativo continua (`failurePolicy: 'continue'`) | `MEMORY_OBSERVED` | 22 |
 
 ## A tabela de referência
@@ -299,7 +304,7 @@ builder.conversation_attachment (
   primary key (conversation_id, sha256))
 ```
 
-Política `OWN_COMPANY`: a máquina não conhece a pessoa, e a dona da conversa é conferida na rota. `GRANT SELECT, INSERT, DELETE` a `hub_company`. O `DELETE` é novo porque a conversa do Assistente sai por cascata e, aqui, as duas conversas têm donos diferentes. As saídas de pessoa, Projeto e empresa saem pelas FKs, e o `DELETE` só serve ao apagar uma conversa.
+Política `OWN_COMPANY`: a máquina não conhece a pessoa, e a dona da conversa é conferida na rota. `GRANT SELECT, INSERT, DELETE` a `hub_company`, e a linha `ALTER TABLE ... OWNER TO test_owner` no padrão de `database-grants.sql:60`. Hoje o Hub só tem `SELECT, INSERT` em `assistant_conversation` (`database-grants.sql:239-240`): o `DELETE` é novo e só serve ao apagar uma conversa do Assistente. As saídas de pessoa, Projeto e empresa são pelas FKs.
 
 ### As skills e a leitura
 
@@ -311,7 +316,7 @@ Política `OWN_COMPANY`: a máquina não conhece a pessoa, e a dona da conversa 
 
 ### Como se prova
 
-O teste de catálogo existente (`database-grants`). Falha hoje: a tabela não existe.
+Critério 33. Falha hoje: a tabela não existe.
 
 ### Parar se
 
@@ -334,7 +339,7 @@ Nota do arquivo, Rota e cópia, Tipos aceitos e Limite. Leia `builder/git/copy/c
 | `apps/server/src/builder/attachments/` | Cria | `assistant/assistant.ts`, `conversation/`, `main.ts`, U2 |
 | `apps/server/src/builder/git/copy/copy.ts` | Muda: `putAttachment`, `attachmentBytes`, `attachmentKeys`, `removeAttachment` | `main.ts`, `runs/test-runs.ts` (`memoryCopy`) |
 | `machine/file-route.ts` | Muda: exporta `fileHeaders(name, media)`, extraído | `registerFile`, U1 |
-| `assistant/routes.ts:243-253`, `conversation/routes.ts` | Muda: apagar a conversa apaga as linhas | |
+| `assistant/routes.ts:243-253`, `conversation/routes.ts:49` | Muda: apagar a conversa apaga as linhas | |
 
 ### Os contratos que a unidade cria
 
@@ -369,22 +374,33 @@ type: application/pdf
 size: 1258291 bytes
 ```
 
-O caminho nunca leva o nome. A extensão sai de `ATTACHMENT_MEDIA`, de uma tabela do mesmo arquivo (C26), nunca do nome enviado (S2). O `name` tem a quebra de linha trocada por espaço, e `notesIn` aceita só blocos com as cinco linhas. A pasta é do lado que registra a rota: Assistente, `WORK_FOLDER`; Builder, `APP_FOLDER`.
+O caminho nunca leva o nome. A extensão sai de `MEDIA_EXTENSION`, uma tabela do mesmo arquivo (C26), nunca do nome enviado (S2): `pdf`, `md`, `txt`, `csv`, `png`, `jpg`, `gif`, `webp`, `xlsx`, `docx`, na ordem de `ATTACHMENT_MEDIA`. O `name` tem a quebra de linha trocada por espaço, e `notesIn` aceita só blocos com as cinco linhas. A pasta é do lado que registra a rota: Assistente, `WORK_FOLDER`; Builder, `APP_FOLDER`.
 
 Rotas, em `attachments.ts` como `defineOperation`, `access: 'session'`, `attemptKey: true` (W24), `bodyLimit: 15_000_000`, falhas `CONVERSATION_NOT_FOUND`, `ATTACHMENT_TYPE_REFUSED`, `ATTACHMENT_STORE_UNAVAILABLE`, `DATABASE_UNAVAILABLE`, `REQUEST_TOO_LARGE`, `REQUEST_MALFORMED`:
 
 - `POST /api/companies/{companyId}/assistant/conversations/{conversationId}/attachments`, entrada `AttachmentUpload`, 201 `Attachment`.
 - `POST /api/companies/{companyId}/projects/{projectId}/conversations/{conversationId}/attachments`, igual.
 
-Bytes, ao lado das operações e com a mesma razão de `ASSISTANT_FILE` (`hub-api/assistant.ts:299`): `ASSISTANT_ATTACHMENT` e `BUILDER_ATTACHMENT`, `GET .../attachments/:sha`. Não usam `registerFile`, que lê da máquina por `?path=`. Usam `fileHeaders`, extraído. Imagem desenha, por `INLINE_MEDIA` somado de `gif` e `webp` só nesta rota.
+Bytes, ao lado das operações e com a mesma razão de `ASSISTANT_FILE` (`hub-api/assistant.ts:299`): `ASSISTANT_ATTACHMENT` e `BUILDER_ATTACHMENT`, `GET .../attachments/:sha`. A forma:
 
-Falhas novas, no formato de `failures.ts:257`: `ATTACHMENT_TYPE_REFUSED`, categoria `USER`, 415, "Este tipo de arquivo não é aceito.", ação "Mande em PDF, planilha, Word, CSV, texto ou imagem."; `ATTACHMENT_STORE_UNAVAILABLE`, categoria da falha do R2 em `copy`, 503, "Não conseguimos guardar o arquivo agora.", ação "Tente de novo.".
+```ts
+export const ASSISTANT_ATTACHMENT = {
+  url: '/api/companies/:companyId/assistant/conversations/:conversationId/attachments/:sha',
+  params: OfConversation.extend({ sha: AttachmentSha }),
+  failures: [...READ_FAILURES, 'REQUEST_MALFORMED', 'REQUEST_ORIGIN_REFUSED', 'FILE_NOT_FOUND'],
+} as const
+// BUILDER_ATTACHMENT: igual, com a url de projetos e os params do Builder
+```
+
+Não usam `registerFile`, que lê da máquina por `?path=`. Usam `fileHeaders`, extraído. Sha sem linha na conversa: `FILE_NOT_FOUND`, que hoje só existe em `assistant-failures.ts`; some a mesma linha a `conversation-failures.ts`, com a frase `Este arquivo não está mais nesta conversa.` Imagem desenha, por `INLINE_MEDIA` somado de `gif` e `webp` só nesta rota.
+
+Falhas novas, no formato de `failures.ts:257`: `ATTACHMENT_TYPE_REFUSED`, categoria `USER`, 415, "Este tipo de arquivo não é aceito.", ação "Mande em PDF, planilha, Word, CSV, texto ou imagem."; `ATTACHMENT_STORE_UNAVAILABLE`, `category: 'THIRD_PARTY'`, `settles: true`, 503, "Não conseguimos guardar o arquivo agora.", ação "Tente de novo.", `actionKind: 'RETRY'`, a forma de `MACHINE_UNAVAILABLE` (`failures.ts:110`). `copy.ts` lança `Error` simples: `save` e `bytesOf` o pegam e lançam esta `Failure`.
 
 Chave no R2: `attachments/<companyId>/<sha256>.<ext>`. Por empresa e por conteúdo, uma passagem só insere linha. Em `copy.ts`, as quatro funções reparsam ids como `prefixOf` faz, e `memoryCopy` também.
 
 ```ts
 // builder/attachments/attachments.ts
-export type StoredAttachment = { companyId: CompanyId; sha256: AttachmentSha; name: string; mediaType: AttachmentMedia; bytes: number }
+export type StoredAttachment = { companyId: CompanyId; sha256: AttachmentSha; name: string; mediaType: AttachmentMedia; bytes: number; createdAt: Date }
 export type AttachmentStore = {
   save(input: { owner: Owner; projectId?: ProjectId; conversationId: ConversationId; upload: AttachmentUpload; folder: string }): Promise<Attachment>
   listOf(input: { companyId: CompanyId; conversationId: ConversationId }): Promise<readonly StoredAttachment[]>
@@ -394,7 +410,7 @@ export type AttachmentStore = {
 }
 ```
 
-**Apagar é uma coisa só.** Conversa: `removeOf` apaga as linhas, nos pontos de `assistant/routes.ts:243-253` e na rota do Builder. Pessoa, Projeto e empresa: as linhas saem pelas FKs de U0. O objeto sai em `sweep`, uma vez por dia: objeto sem linha na empresa e com mais de um dia é apagado. Um lugar para todas as saídas, sem gancho em `hub/` (que não importa `builder/`), e também limpa o objeto cuja linha falhou. O corte de um dia evita bater com um envio em curso.
+**Apagar é uma coisa só.** Conversa do Assistente: `removeOf` **antes** de `releaseThreads` (`assistant/routes.ts:246`), para uma falha deixar o que o próximo `DELETE` acha, e o comentário de 243-245 ("the Hub holds no `DELETE`") muda, porque deixa de ser verdade. O Builder não tem rota de apagar conversa: sua linha sai com o Projeto, pela FK, e o único `store.remove` (`conversation/routes.ts:49`, thread já sumido) chama `removeOf` também. Pessoa, Projeto e empresa: as linhas saem pelas FKs de U0. O objeto sai em `sweep`, uma vez por dia. `attachmentKeys()` devolve `{ key, modified }[]` do prefixo `attachments/`, sem filtro de empresa: acrescente `LastModified` a uma variante de `keysOf`. Agrupe por `companyId`; para cada empresa, leia os `sha256` em `database.command(scopeOf(...))`, como `assistant/chosen.ts:37`; empresa que saiu não tem linhas. Objeto sem linha e com mais de um dia é apagado: um arquivo some em até dois dias. Um lugar para todas as saídas, sem gancho em `hub/` (que não importa `builder/`), e também limpa o objeto cuja linha falhou. O corte de um dia evita bater com um envio em curso.
 
 O dono de cada fato: a lista, a nota e o caminho são de `hub-api/attachments.ts`.
 
@@ -405,8 +421,8 @@ O dono de cada fato: a lista, a nota e o caminho são de `hub-api/attachments.ts
 ### A ordem do trabalho
 
 1. `hub-api/attachments.ts`, com os testes de `attachmentNote` e `notesIn`, incluindo nome com quebra de linha e texto digitado que imita nota parcial (fica como palavras).
-2. `copy.ts`: as quatro funções, com `readCapped` no limite do arquivo.
-3. `attachments/attachments.ts`: `save` (decodifica, calcula `sha256`, grava o objeto, depois a linha com `ON CONFLICT DO NOTHING`), `listOf`, `bytesOf`, `removeOf`, `sweep`.
+2. `copy.ts`: as quatro funções, com `readCapped` em 11.010.048 bytes (`ATTACHMENT_MAX_DATA` em bytes de arquivo).
+3. `attachments/attachments.ts`, `listOf` por `created_at` crescente: `save` (decodifica, calcula `sha256`, grava o objeto **sempre**, para renovar a data e não correr com a varredura, depois a linha com `ON CONFLICT DO NOTHING`), `listOf`, `bytesOf`, `removeOf`, `sweep`.
 4. `attachments/routes.ts`: `registerAttachments(app, { store, folder, ownConversation, saved })`. `ownConversation`: Assistente como `routes.ts:321`; Builder com `store.owned` de `conversation/routes.ts`. `saved(conversationId)` é opcional: é onde U2 liga a marca da máquina.
 5. Os dois pontos de apagar, e `sweep` em `main.ts`: na subida e a cada 24 h, com `unref`.
 
@@ -432,6 +448,7 @@ Gravar na máquina, Fora do Git, Leitura de PDF, Bloco de anexos, Texto digitado
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `machine/attachments.ts` | Cria | `conversation.ts`, `machines.ts` |
+| `main.ts:143`, `runs/ports.ts:18,33`, `runs/test-runs.ts`, `assistant/assistant.ts:292` | Muda: entrega a `AttachmentSource`; liga `saved` | Hub |
 | `machine/conversation.ts`, `port.ts`, `machines.ts` | Muda: `attachmentsChanged`, hooks e `read_file`. A dep é opcional em `Deps`: agentes e Construtor não a passam | Assistente, agentes, Construtor, Builder |
 | `machine/scripts.ts` | Muda: exclusão no `git add` e no `git clean` | `pack`, `check` |
 | `conversation/guard.ts` | Muda: recusa `files` | Rotas Mastra |
@@ -447,12 +464,13 @@ export type AttachmentSource = Pick<AttachmentStore, 'listOf' | 'bytesOf'>
 type SyncState =
   | { kind: 'CLEAN' }
   | { kind: 'STALE' }
-  | { kind: 'RUNNING'; again: boolean; done: Promise<void> }
+  | { kind: 'RUNNING'; again: boolean; done: Promise<void> } // `markStale` durante a corrida põe `again`
 export function attachmentSync(input: { companyId: CompanyId; conversationId: ConversationId;
   source: AttachmentSource; folder: string; log: FailureLog }): {
   markStale(): void
   run(files: SyncFiles): Promise<void> // voo único: quem chega durante RUNNING espera `done`
 }
+export function attachedText(attached: readonly StoredAttachment[], folder: string): string
 export type SyncFiles = Pick<WorkspaceFilesystem, 'exists' | 'mkdir' | 'writeFile'>
 // conversation.ts, port.ts
 attachmentsChanged(conversationId: ConversationId): void
@@ -470,12 +488,13 @@ No Builder, `Session` ganha o campo `sync`, e o `SandboxFilesystem` que hoje nas
 
 ### A ordem do trabalho
 
-1. `machine/attachments.ts`. `run`: em `CLEAN`, sai; em `RUNNING`, espera; em `STALE`, lista; para cada um, se o caminho não existe na máquina, `mkdir` e `writeFile`. No fim, `CLEAN`, ou `STALE` se falhou ou se `markStale` veio no meio. Falha: `log.error({conversationId, code}, 'ATTACHMENT_SYNC_FAILED')`, sem lançar.
+0. A ligação. `main.ts:143` monta a loja de U1 com `database` e `copy` antes das máquinas. `MachinesOf` passa a `(attachments: AttachmentSource) => Machines`, e `createMachines` a recebe (`runs/ports.ts:33`; o dublê de `test-runs.ts` ignora). `createConversationMachines` em `assistant.ts:292` recebe `attachments` em `deps`, opcional em `Deps`. O `saved` de `registerAttachments` é `(id) => machines.attachmentsChanged(id)`, cada lado com as suas máquinas. Agentes e Construtor não passam nada.
+1. `machine/attachments.ts`. `run`: em `CLEAN`, sai; em `RUNNING`, espera; em `STALE`, lista; para cada um, se o caminho não existe na máquina, `mkdir` e `writeFile`. No fim, `CLEAN`; `STALE` se falhou ou se `again`. Falha: `log.error({conversationId, code}, 'ATTACHMENT_SYNC_FAILED')`, sem lançar.
 2. `conversation.ts:281-296` e `machines.ts:249-264`: no `beforeToolCall`, depois de `ensure`, `await session.sync?.run(files)`. Em `started` e `onStart`, `markStale`.
 3. Em ambos `tools`: `[WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: { mediaTypes: ['image/png', 'image/jpeg', 'image/webp'] }`: o padrão de `read-file.ts:15`, sem o PDF. Vale também para agentes e Construtor, e a razão é a mesma: um PDF por `read_file` perde-se em dois passos.
 4. `scripts.ts`: em `treeIn` (130-139), `':(exclude).conexus/uploads'` no `git add`; em `seedScript` (41), `-e .conexus/uploads` no `git clean`. `PLANS_OUT` não serve de modelo: os planos entram na árvore, e estes não.
 5. `guard.ts`: **depois** de `Params.safeParse` (165-167), para `controllerId` do Assistente e do Builder, corpo com `files` é `REQUEST_MALFORMED`. `sendsFileUrl` e `BODY_LIMIT` ficam, para agentes e Construtor.
-6. `blockOf` ganha `attached`. Se houver, soma esta frase, com cada arquivo separado por `; `: `Files the person sent, for this whole conversation: lista.pdf (application/pdf, 1258291 bytes) at <caminho>.` Um arquivo enviado e cuja mensagem não foi é listado também: é raro e inofensivo. Em `builderInstructions`, a dep `attachedOf` (por `createBuilder`) soma o mesmo texto ao fim da string, depois de Project memory; o Builder segue com uma string só. A função do texto é de `machine/attachments.ts`.
+6. `blockOf` ganha `attached`. Se houver, soma esta frase, com cada arquivo separado por `; `: `Files the person sent, for this whole conversation: lista.pdf (application/pdf, 1258291 bytes) at <caminho>.` Um arquivo enviado e cuja mensagem não foi é listado também: é raro e inofensivo. Em `builderInstructions`, a dep `attachedOf` (por `createBuilder`) soma o mesmo texto ao fim da string, depois de Project memory; o Builder segue com uma string só. Os dois chamam `attachedText`.
 7. `assistant/memory.ts`: `recall: true`, com o comentário novo. `assistant/assistant.ts:62-73`: acrescente `BUILDER_TOOL.recall`, dizendo que a 24.1 fechava esse conjunto e esta o abre pela prova do passo 13. `instructions.test.ts:43` proíbe `recall`: troque a afirmação nesta unidade.
 8. `infra/e2b/template.ts`: `poppler-utils` em `aptInstall`.
 
@@ -529,7 +548,7 @@ type Upload = (file: MessageFile) => Promise<Attachment>
 
 ### A ordem do trabalho
 
-1. `attachments.ts`: `ACCEPT` segue para agentes; `ACCEPT_FILES` de `ATTACHMENT_MEDIA` mais `.md`, `.txt`, `.csv`, `.xlsx`, `.docx`; `BY_EXTENSION` soma os três, porque o navegador às vezes deixa o tipo vazio. `LIMITS` fica: 20 arquivos e a soma por mensagem.
+1. `attachments.ts`: `ACCEPT` segue para agentes; `ACCEPT_FILES` de `ATTACHMENT_MEDIA` mais `.md`, `.txt`, `.csv`, `.xlsx`, `.docx`; `BY_EXTENSION` soma os três, porque o navegador às vezes deixa o tipo vazio. `LIMITS` fica: 20 arquivos e a soma por mensagem. `TYPES` (`attachments.ts:14`) é global e derivado de `ACCEPT`: passa a sair do `accept` recebido por `useAttachments`, senão o `.xlsx` é recusado também no Assistente.
 2. `session.ts`: se `upload`, sobe cada arquivo em ordem, junta `note` e chama `sendMessage({ content: words + '\n\n' + notes.join('\n\n') })`, sem `files`. Falhou um: rejeita antes de mandar, e `chat.tsx:179` devolve o rascunho.
 3. `upload` com a operação de U1 e a chave de tentativa (W24), uma por arquivo do rascunho, para repetir sem duplicar.
 4. `messages.ts:sentOf`: passa cada texto por `notesIn`, chips dos `attached`; mantém `FilePart` para conversas velhas. Imagem: `image` é a rota `GET .../attachments/:sha`.
@@ -575,8 +594,8 @@ ProposeRefused.reason: ... | 'ATTACHMENT_NOT_FOUND'
 
 ### A ordem do trabalho
 
-1. `propose.ts`: resolve cada nome em `attachments.listOf` da conversa; se faltar, `refused('ATTACHMENT_NOT_FOUND')`. Descrição do `propose_app` e do `propose_app_change`: acrescente `Name in attachments the files the Builder will need; they reach its machine.`
-2. `handOff`: depois de `opened`, antes de `delivered`, insere as linhas para `opened.id` com `ON CONFLICT DO NOTHING`.
+1. `propose.ts`: resolve cada nome em `attachments.listOf` da conversa; dois com o mesmo nome, vale o último enviado (`createdAt`); se faltar, `refused('ATTACHMENT_NOT_FOUND')`. O resultado da ferramenta guarda os `sha256`, por isso o toque não informa nada: `handOff` os lê em `proposalOf`, e `hub-api/handoff.ts` não muda. Descrição do `propose_app` e do `propose_app_change`: acrescente `Name in attachments the files the Builder will need; they reach its machine.`
+2. `handOff`: depois de `opened`, antes de `delivered`, filtra `listOf` da conversa de origem pelos `sha256` da proposta e insere as linhas para `opened.id` com `ON CONFLICT DO NOTHING`.
 3. `contentsOf`: acrescenta um texto com as notas, com o caminho da pasta do Builder (`APP_FOLDER`).
 4. O cartão: "Vai junto: a.pdf, b.xlsx". Em palavras: `ATTACHMENTS_GOING` em `text.ts`.
 
@@ -787,7 +806,7 @@ Modelo na linha, Logs no deploy, Falha do observador. Leia `conversation/turn-li
 | `mastra/logger.ts` | Muda | Mastra |
 | `conversation/builder.ts` | Muda: `hooks` | Memória dos dois |
 | `conversation/guard.ts` | Muda: linha de aborto | Rota `abort` |
-| `assistant/routes.ts`, `conversation/routes.ts`, a linha do Construtor | Muda: `modelId` em `*_MODEL_SET` | |
+| `assistant/routes.ts:305`, `conversation/routes.ts:122`, `construtor/routes.ts:99` | Muda: `modelId` em `*_MODEL_SET` | |
 | `infra/compose.yaml` | Muda | Deploy |
 
 ### Os contratos que a unidade cria
@@ -807,6 +826,7 @@ Linhas: `CONVERSATION_ABORT_ASKED {conversationId, by}`, na fonte de cada pedido
 
 ### A ordem do trabalho
 
+0. `*_MODEL_SET`: nos três pontos do raio, some `modelId` ao objeto da linha, de `input.body`; é o que a pessoa escolheu.
 1. `Run` guarda `model = chosenModel(requestContext)` e `providerOf(model)` em `agent_start`; a troca automática (`Turn.switchTo`) fica no último. `turnLine` emite. S41: é um nome.
 2. `end.ts`: `Run` ganha `lastEventAt`. A cada evento, atualiza. `setInterval` por execução, com `unref`, a cada `everyMs`: passado `afterMs` sem evento, escreve `CONVERSATION_TURN_STUCK` uma vez. **Não aborta:** a pessoa tem Parar, uma pergunta suspensa e um comando longo são legítimos, e o evento não separa isso de um turno preso. O estudo pediu para ver o caso, e o limite vem do `MODEL_TIMEOUT`, sem número novo. Abortar sozinho vem com a medida.
 3. Quem aborta: a rota do aborto (`guard.ts`) escreve `PERSON`; `settle` da saída escreve `SHUTDOWN`; `onSessionDeleted`, `SESSION_DELETED`. Um `agent_end` com `aborted` e sem linha `CONVERSATION_ABORT_ASKED` antes é o achado que se procura (o aborto de 4 ms).
@@ -838,7 +858,7 @@ Rastro, Segredo, Tela. Leia `mastra/mastra.ts`, `mastracode/sdk/src/index.ts:787
 | `mastra/mastra.ts` | Muda: `observability` | `main.ts` |
 | `builder/trace/` | Cria | `main.ts` |
 | `hub-api/src/traces.ts` | Cria | Web |
-| `apps/web/src/hub/operations/traces.tsx`, `trace.tsx`; `routes/_app/operations/clients/$companyId.traces.tsx`, `$companyId.traces.$conversationId.tsx`; `docs/reference/screens.md` (W29) | Cria | Central |
+| `apps/web/src/hub/operations/traces.tsx`, `trace.tsx`; `routes/_app/operations/clients/$companyId_.traces.tsx`, `$companyId_.traces.$conversationId.tsx`, irmãs de `$companyId.tsx`, que não tem `Outlet` (o `_` final é a rota não aninhada nativa do TanStack); um link em `hub/operations/clients.tsx`; `docs/reference/screens.md` (W29) | Cria | Central |
 | `infra/compose.yaml`, `infra/hub.Dockerfile` | Volume `hub_traces:/var/lib/conexus/traces`, `mkdir` e `chown node:node`; sem isso, toda gravação falha só em produção | Deploy |
 | `platform/config.ts`, `config.test.ts` | `traceRoot`, de `HUB_TRACE_ROOT`, como `gitRoot` | |
 
@@ -860,6 +880,12 @@ export type TraceLine =
       input: unknown; output: unknown; failed: boolean }
   | { kind: 'THINKING'; traceId: string; text: string }
 // hub-api/src/traces.ts
+export const TraceStep = z.object({ actor: z.enum(['MAIN', 'OBSERVER', 'TITLE']), index: z.number(), start: z.string(), end: z.string(),
+  model: z.string(), provider: z.string(), ttftMs: z.number().optional(), finish: z.string(),
+  usage: z.object({ input: z.number(), output: z.number(), cacheRead: z.number(), cacheWrite: z.number(), reasoning: z.number() }),
+  system: z.string(), added: z.array(z.unknown()), output: z.unknown(),
+  tools: z.array(z.object({ name: z.string(), start: z.string(), end: z.string(), input: z.unknown(), output: z.unknown(), failed: z.boolean() })),
+  thinking: z.array(z.string()) })
 export const TraceTurn = z.object({ traceId: z.string(), start: z.string(), end: z.string().optional(),
   model: z.string().optional(), steps: z.array(TraceStep), memory: z.array(TraceStep) })
 ```
@@ -899,7 +925,7 @@ async exportTracingEvent(event: TracingEvent) {
 
 4. `lineOf`: guarda `agent_run`, `model_step`, `tool_call` e o `model_chunk` de nome `chunk: 'reasoning'`. Descarta o resto. Vale para toda conversa com sessão: Assistente, Builder, agentes e Construtor.
 5. Fila por conversa, `appendFile`. Falha: `TRACE_WRITE_FAILED`, uma vez por conversa.
-6. `sweep`: na subida e a cada 24 h, com `unref`: apaga arquivos com `mtime` acima de 30 dias (palavra de 2026-10-19) e arquivos cuja conversa o Mastra não tem mais. Assim todas as saídas (conversa, pessoa, Projeto, empresa) convergem em até um dia, sem gancho em `hub/`. Apagar a conversa pela rota também chama `remove` na hora.
+6. `sweep`: na subida e a cada 24 h, com `unref`: apaga arquivos com `mtime` acima de 30 dias (palavra de 2026-10-19) e arquivos cuja conversa o Mastra não tem mais. A conversa, por `memory.getThreadById({ threadId })`. Assim todas as saídas (conversa, pessoa, Projeto, empresa) convergem em até um dia, sem gancho em `hub/` nem nas rotas de apagar.
 7. Rotas, `TRACE_READ` com pessoa e conversa, leitura por linha, ignorando a última se cortada. Monta `TraceTurn`: `actor` diferente de `MAIN` vai em `memory`.
 8. Páginas: lista, com `useQuery`, e a conversa. Colapso para entrada e saída. Valores grandes em `<pre>`. Sem Markdown, para nada do rastro virar link ativo. O item da lista é o `conversationId` curto: a página não abre o Mastra nem nomes de pessoa.
 9. `compose.yaml` e `hub.Dockerfile`: volume e dono; `HUB_TRACE_ROOT` no ambiente.
