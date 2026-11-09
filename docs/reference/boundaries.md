@@ -1242,3 +1242,17 @@ reference tool checks a read against its documentation.
   MODEL_ACCOUNT_KIND_OFF"; `openai/sign-in-refusals.test.ts` "tipo desligado: recusa sem chamar a
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
+
+## Mastra 1.82.0: a loop stops at its count (step 24.6)
+
+- **Library line.** At `@mastra/core` 1.82.0 a dynamic `loop` entry (`dowhile`, `dountil`) has
+  no cap of its own, and its predicate cannot read a counter (a predicate on `requestContext` is
+  refused with `invalid-predicate-reference`). In the step 24.6 study's P14, an always-true
+  `dowhile` ran until its body tool threw at round 50.
+- **Hand-made piece.** The tool `conexus-contar` ends every compiled Repetir body
+  (`apps/server/src/builder/workflows/compile.ts`, `tools.ts`): it carries the round in the data
+  and throws `WORKFLOW_LOOP_LIMIT` past the balloon's `max`.
+- **Why.** "No máximo N vezes" must stop the run at N, on the balloon that said it.
+- **Proof.** The study's P14 (`p14-runaway`); the card's criterion 39. Founder's word: the
+  approval of the step 24.6 card.
+  Revisit when Mastra's `loop` takes a maximum.
