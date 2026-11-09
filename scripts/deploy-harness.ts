@@ -72,18 +72,23 @@ export type Stub = {
 
 function stubEnv(stub: Stub): Record<string, string> {
   const running = stub.running
+  const statuses = {
+    STUB_MIGRATE_STATUS: stub.migrateStatus,
+    STUB_RESEAL_STATUS: stub.resealStatus,
+    STUB_UP_STATUS: stub.upStatus,
+    STUB_PULL_STATUS: stub.pullStatus,
+    STUB_PRUNE_STATUS: stub.pruneStatus,
+  }
   return {
+    ...Object.fromEntries(
+      Object.entries(statuses).map(([name, code]) => [name, String(code ?? 0)]),
+    ),
     STUB_RUNNING_ID: running === undefined ? '' : 'container-id',
     STUB_RUNNING_IMAGE: running ?? '',
     STUB_RUNNING_TEMPLATE: stub.runningTemplate ?? (running === undefined ? '' : OLD_TEMPLATE),
     STUB_LABEL: stub.labeled === false ? '' : '1',
     STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
-    STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
     STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
-    STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
-    STUB_UP_STATUS: String(stub.upStatus ?? 0),
-    STUB_PULL_STATUS: String(stub.pullStatus ?? 0),
-    STUB_PRUNE_STATUS: String(stub.pruneStatus ?? 0),
     STUB_INSPECT_STATUS: stub.inspectStatus === undefined ? '' : String(stub.inspectStatus),
     STUB_MISSING_SECRET: stub.missingSecret ?? '',
     STUB_HANG: stub.hang ?? '',
