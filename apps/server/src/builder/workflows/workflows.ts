@@ -29,7 +29,7 @@ export type WorkflowsDeps = WorldDeps &
   Readonly<{
     database: Database
     liveProjectOf: ToolsDeps['liveProjectOf']
-    connectors: Pick<ToolConnectors, 'connections' | 'operationOf' | 'writeOf'>
+    connectors: Pick<ToolConnectors, 'listing' | 'operationOf' | 'writeOf'>
     mastra: Mastra
     updating: () => boolean
     log: FailureLog
@@ -112,6 +112,7 @@ export async function createWorkflow(
 ): Promise<WorkflowView> {
   const id = WorkflowId.parse(derivedUuid('workflow', who.companyId, who.personId, attemptKey))
   const bodyHash = bodyHashOf(body)
+  await deps.database.read(scopeOf(who), (tx) => admitted(deps, tx, who, body.place))
   const kits = await kitsFor(deps, who, body.place)
   const made = await deps.database.command(scopeOf(who), async (tx) => {
     await admitted(deps, tx, who, body.place)

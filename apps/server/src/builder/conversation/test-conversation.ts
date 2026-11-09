@@ -92,11 +92,7 @@ export async function conversing(
   return { hub, ana, companyId, projectId, conversations, anthropic, link, lines: hub.lines }
 }
 
-/**
- * A second Hub on the same databases, as after a restart or beside a process that stopped: its
- * own Builder and sessions, nothing shared in memory, its lines in `log`. `start: false` leaves the
- * Mastra storage unopened, for a Hub beside a database that is down.
- */
+/** A second Hub on the same databases, as after a restart: its own Builder and sessions, its lines in `log`; `start: false` leaves Mastra's storage unopened. */
 export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = silent, start = true) {
   const { test, config, sendMail } = hub
   const identity = testIdentity({ database: test.database, config, sendMail })
@@ -124,13 +120,11 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
     return closed
   }
   t.after(() => close())
-  const builder = {
-    ...hub.builder,
-    ...{ bucket: ports.bucket, control: ports.control, knobs: ports.knobs },
-  }
-  const { assistantMachines } = ports
-  const mastra = subjects.conversations.mastra
-  return { ...hub, app, runs: subjects.runs, mastra, builder, assistantMachines, close }
+  const { bucket, control, knobs, assistantMachines } = ports
+  const builder = { ...hub.builder, bucket, control, knobs }
+  const { mastra } = subjects.conversations
+  const { runs, workflows } = subjects
+  return { ...hub, app, runs, mastra, builder, assistantMachines, close, workflows }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {

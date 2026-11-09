@@ -19,12 +19,12 @@ export type WorldDeps = Readonly<{
     IdentityPorts,
     'mayUse' | 'mayPublishUnattended' | 'companyMembersOf' | 'admitMember'
   >
-  connectors: Pick<ToolConnectors, 'connections' | 'operationOf' | 'writeOf'>
+  connectors: Pick<ToolConnectors, 'listing' | 'operationOf' | 'writeOf'>
 }>
 
-/** What the place's connections give: each operation of the connector the connection is of, with its input and whether it returns a list. Read before the transaction, since the connectors' door has its own. */
+/** What the place's connections give, the reads the role lacks included (the role check names them): each operation of the connector the connection is of, with its input and whether it returns a list. Read before the transaction, since the connectors' door has its own. */
 export async function kitsOf(deps: WorldDeps, scope: SessionScope): Promise<OfferedKit[]> {
-  const offered = await deps.connectors.connections(scope)
+  const offered = await deps.connectors.listing(scope)
   return Promise.all(
     offered.map(async ({ connectionId, connector, reads, writes }) => {
       async function operation(name: string, kind: 'read' | 'write') {
