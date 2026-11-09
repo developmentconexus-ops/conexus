@@ -92,12 +92,11 @@ function refIssue(context: RefContext, spot: Spot, ref: Ref): Issue | null {
   return balloonRefIssue(context, spot, ref)
 }
 
-/** Every `{{…}}` of a value: where it points, and whether the balloon that holds it may read it there. */
-export function refProblems(
+function contextOf(
   spots: readonly Spot[],
   shape: TriggerShape,
-  outputsOfUse: (balloon: Balloon) => readonly string[] | null,
-): WorkflowProblem[] {
+  outputsOfUse: RefContext['outputsOfUse'],
+): RefContext {
   const byId = new Map<string, Spot>()
   for (const spot of spots) if (!byId.has(spot.balloon.id)) byId.set(spot.balloon.id, spot)
   const feedsForeach = new Set(
@@ -105,7 +104,16 @@ export function refProblems(
       spot.balloon.kind === 'FOREACH' && spot.previous !== null ? [spot.previous.id] : [],
     ),
   )
-  const context: RefContext = { byId, feedsForeach, shape, outputsOfUse }
+  return { byId, feedsForeach, shape, outputsOfUse }
+}
+
+/** Every `{{…}}` of a value: where it points, and whether the balloon that holds it may read it there. */
+export function refProblems(
+  spots: readonly Spot[],
+  shape: TriggerShape,
+  outputsOfUse: (balloon: Balloon) => readonly string[] | null,
+): WorkflowProblem[] {
+  const context = contextOf(spots, shape, outputsOfUse)
   const problems: WorkflowProblem[] = []
   for (const spot of spots) {
     const title = spot.balloon.title
