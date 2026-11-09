@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf, unconfirmedText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import {
   Form,
@@ -17,7 +17,7 @@ import {
 } from '../../ui/form.tsx'
 import { allProjectsQueryKey, sendProject } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos a criação. Tente de novo.'
+const UNCONFIRMED = unconfirmedText('a criação', 'Tente de novo.')
 // The refusals the name is to blame for, shown on its field.
 const ON_THE_NAME = {
   PROJECT_NAME_TAKEN: 'name',

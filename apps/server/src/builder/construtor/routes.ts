@@ -36,7 +36,8 @@ function admittedTo(deps: Deps, scope: InProject) {
 function summaryOf(thread: StorageThreadType): ConstrutorConversationSummary {
   return {
     id: ConversationId.parse(thread.id),
-    title: thread.title ?? '',
+    title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
   }
 }

@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useId, useState } from 'react'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf, unconfirmedText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { changePersonRole, forgetCompany, removePerson } from './queries.ts'
 import { useRoleLabel } from './role-labels.tsx'
 
-const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
+const UNCONFIRMED = unconfirmedText('a mudança', 'Veja a lista.')
 
 /** What a failed write says: a refusal the Hub settled in its words, any other as one that may have saved. */
 function refusalText(error: unknown): string {

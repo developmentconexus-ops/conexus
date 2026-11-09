@@ -2,7 +2,8 @@ import type { AgentState } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { ageOf } from '../../platform/dates.ts'
 import { Stamp } from '../../ui/block.tsx'
-import { CHANGED_STATE, DRAFT_STATE, publishedText, titleOf } from './text.ts'
+import { titleOf } from '../conversation/public.ts'
+import { CHANGED_STATE, DRAFT_STATE, publishedText } from './text.ts'
 
 /**
  * An agent's state as the Pauta's stamps (design V35): the published version in the success colour
@@ -21,7 +22,7 @@ export function StateStamp({ state }: { state: AgentState }) {
 
 /** The inside of a conversation's row: its title, what marks it, and how long ago it moved, at the row's end. */
 export function ConversationLine(props: {
-  conversation: { title: string; updatedAt: string }
+  conversation: { title: string | null; createdAt: string; updatedAt: string }
   now: Date
   mark?: ReactNode
 }) {

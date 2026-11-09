@@ -45,6 +45,7 @@ function assistantReplies(extra: { automation?: { automationId: string; name: st
           project: { id: PROJECT_ID, name: 'Pedidos' },
           automation: null,
           ...extra,
+          createdAt: '2026-10-19T12:00:00.000Z',
           updatedAt: '2026-10-19T12:00:00.000Z',
         },
       ],

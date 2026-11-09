@@ -89,6 +89,7 @@ async function conversationOf(deps: Deps, thread: StorageThreadType, scope: Sess
   return {
     id: ConversationId.parse(thread.id),
     title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
     projectId: scope.place.kind === 'PROJECT' ? scope.place.projectId : null,
     automation: automationOf(thread.metadata),
@@ -179,6 +180,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const conversations = listed.threads.map((thread, at) => ({
       id: ConversationId.parse(thread.id),
       title: thread.title || null,
+      createdAt: thread.createdAt.toISOString(),
       updatedAt: thread.updatedAt.toISOString(),
       project: projectShown(marks[at] ?? null, names),
       automation: automationOf(thread.metadata),

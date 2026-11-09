@@ -26,8 +26,8 @@ export function listedFor(
     .filter((one) => place !== 'HOME' || one.projectId === null)
     .filter((one) => place !== 'AUTOMATIONS' || one.automation !== null)
     .filter((one) => q === null || plain(one.title ?? '').includes(plain(q)))
-    .map(({ id, title, updatedAt, projectId, automation }) => ({
-      ...{ id, title, updatedAt, automation },
+    .map(({ id, title, createdAt, updatedAt, projectId, automation }) => ({
+      ...{ id, title, createdAt, updatedAt, automation },
       project: projectId === null ? null : { id: projectId, name: PEDIDOS.name },
     }))
   const more = from + held.pageSize < all.length

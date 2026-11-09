@@ -94,7 +94,14 @@ function construtor(reading: Replies[string]): Replies {
     ...WITH_ACCOUNT,
     ...projectsPage(COMPANY.id),
     [`GET ${AGENTS}/construtor/conversations`]: ok(listConstrutorConversations, {
-      conversations: [{ id: CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
+      conversations: [
+        {
+          id: CHAT,
+          title: 'Meu agente',
+          createdAt: '2026-11-02T12:00:00.000Z',
+          updatedAt: '2026-11-02T12:00:00.000Z',
+        },
+      ],
     }),
     [`GET ${AGENTS}/agents/${AGENT}`]: reading,
     [`GET ${AGENTS}/agents/${AGENT}/versions`]: ok(listAgentVersions, { versions: [] }),

@@ -123,6 +123,16 @@ test('um nome já usado: a frase no campo do nome, e o diálogo fica aberto', as
   expect(router.state.location.pathname).toBe(`${HOME}/projects`)
 })
 
+test('uma criação cujo fim não se sabe: "Não confirmamos a criação. Tente de novo.", letra por letra', async () => {
+  hub(() => HttpResponse.error())
+  const dialog = await openDialog()
+  name(dialog, 'Pedidos')
+  fireEvent.click(dialog.getByRole('button', { name: 'Criar projeto' }))
+  expect(
+    await dialog.findByText('Não confirmamos a criação. Tente de novo.', {}, { timeout: 5000 }),
+  ).toBeTruthy()
+})
+
 test('Cancelar fecha o diálogo sem criar', async () => {
   const { sent } = hub()
   const dialog = await openDialog()

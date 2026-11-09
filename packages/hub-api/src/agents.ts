@@ -168,7 +168,8 @@ export const AgentConversationSummary = z.object({
   id: ConversationId,
   agentId: AgentId,
   draft: z.boolean(),
-  title: z.string(),
+  title: z.string().nullable(),
+  createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
 export type AgentConversationSummary = z.infer<typeof AgentConversationSummary>
@@ -177,11 +178,7 @@ const InCompany = z.object({ companyId: CompanyId })
 const InProject = InCompany.extend({ projectId: ProjectId })
 const OfAgent = InProject.extend({ agentId: AgentId })
 const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
-const READ_FAILURES = [
-  'NOT_FOUND',
-  'SESSION_REQUIRED',
-  'DATABASE_UNAVAILABLE',
-] as const satisfies readonly FailureCode[]
+const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 const ONE_FAILURES = [...READ_FAILURES, 'AGENT_NOT_FOUND'] as const
 const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 const OneAgent = z.object({ agent: AgentDetail })

@@ -2,13 +2,13 @@ import type { CompanyId, Connection, Revocation } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { writeFailureText } from '../../platform/hub.ts'
+import { unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { FieldError } from '../../ui/field.tsx'
 import { connectionKeys, sendUnlink } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos o desligamento. Veja a lista.'
+const UNCONFIRMED = unconfirmedText('o desligamento', 'Veja a lista.')
 
 // The connection is gone either way; these say that the provider still lists the Conexus as authorized.
 const NOT_REVOKED: Partial<Record<Revocation, string>> = {
