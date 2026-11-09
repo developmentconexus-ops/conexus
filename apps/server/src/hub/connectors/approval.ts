@@ -117,8 +117,10 @@ export async function mustAsk(
     return { kind: 'ASK', reason: 'PUBLISHER_LOST_RIGHT' }
   }
   const open = await deps.openWrites({
-    ...{ scope: a.scope, threadId: a.threadId },
-    ...{ connectionId: a.target.connectionId, operation: a.target.operationId },
+    scope: a.scope,
+    threadId: a.threadId,
+    connectionId: a.target.connectionId,
+    operation: a.target.operationId,
   })
   return open.length > 0 ? { kind: 'ASK', reason: 'OPEN_WRITE' } : { kind: 'DO' }
 }
