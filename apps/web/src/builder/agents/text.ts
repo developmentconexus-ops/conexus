@@ -111,6 +111,8 @@ const REASONS = {
   FIELD_TWICE:
     'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
   REQUIRED_MISSING: 'Falta um campo obrigatório da operação.',
+  NOT_FIXED:
+    'Esta operação pede um valor fixo de quem configura. Preencha-o nos valores fixos da ferramenta.',
   SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
   NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
   SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',

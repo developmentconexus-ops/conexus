@@ -123,6 +123,7 @@ export const ProblemReason = z.enum([
   'UNKNOWN_FIELD',
   'FIELD_TWICE',
   'REQUIRED_MISSING',
+  'NOT_FIXED',
   'SLUG_TAKEN',
   'NOT_USABLE',
   'SAME_TOOL_TWICE',
