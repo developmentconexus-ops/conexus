@@ -16,8 +16,7 @@ const ASKED = {
 
 /** Mastra's context for a tool call has far more fields than the tool reads; the test gives the ones it reads. */
 function contextOf(given: object) {
-  // biome-ignore lint/nursery/noUnsafeTypeAssertion: the tool reads only the request context and the agent
-  return given as never
+  return Object.assign(Object.create(null), given)
 }
 
 /**
