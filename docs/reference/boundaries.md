@@ -1223,6 +1223,23 @@ reference tool checks a read against its documentation.
 - **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
   the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
 
+## `@mastra/memory` 1.41.0 and CLIProxyAPI v8.0.33: the Automático model on the Google sign-in (fix)
+
+- **Library line.** `@mastra/memory` 1.41.0 picks `gemini-2.5-flash` for Google as the Automático model
+  (`src-*.js:23575`), which the proxy does not list, so the memory's calls fell to the conversation's model.
+- **Hand-made piece.** `CLIPROXY_AUTO_MODELS` in `auto-memory-model.ts`, read by `modelOf` with the turn's
+  account kind, picks the cheap model the proxy serves (`gemini-3.5-flash-lite`) as Mastra's `autoModels`
+  option allows. Founder, 2026-11-09: only on the `google_cliproxy` path.
+- **Why.** A conversation on `gemini-3.8-flash-high` through the sign-in showed Memória 100% and "O modelo
+  não respondeu". The local reproduction showed the Observer asking a model the proxy does not list. The
+  fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
+  resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
+- **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
+  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it. The row
+  `cliproxy-auto-memory-model` in `scripts/removals.json` takes the piece out and the test fails.
+- **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
+  Then delete the constant, the `kind` argument, the test, the removal row and this entry.
+
 ## Mastra 1.82.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 
 - **Library line.** None. At `@mastra/core` 1.82.0 the model router reaches every provider of

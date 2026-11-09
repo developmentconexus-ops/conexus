@@ -110,6 +110,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     thinking: null,
     cached: [],
     toolUses: [],
+    toolResults: [],
     unfilled: null,
   }
 }

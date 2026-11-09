@@ -10,7 +10,7 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
-- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
+- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing, rollback; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
@@ -18,7 +18,7 @@ One line per document (`check-docs`).
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [steps/](steps/): cards in construction.
 - [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
-- [reference/stack.md](reference/stack.md): sources, skill, trap per package.
+- [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): readers' questions.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files, commands.
@@ -95,12 +95,14 @@ One line per document (`check-docs`).
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
 - [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
+- [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
+- [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
 
 ## Skills
 
 - [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md): the study; report; proof; screens; libraries.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
-- [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
+- [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.

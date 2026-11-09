@@ -162,7 +162,9 @@ test('o turno parado enquanto o Worker sobe de novo solta a subida: o sinal do t
   const turn = on.conversation.say('E setembro?')
   await held.arrived
   assert.equal((await stopped(on.hub, on.ana, on.url)).statusCode, 200)
-  const patience = new Promise<string>((resolve) => setTimeout(resolve, 3000, 'STILL_WAITING'))
+  const patience = new Promise<string>((resolve) =>
+    setTimeout(resolve, 3000, 'STILL_WAITING').unref(),
+  )
   assert.equal(await Promise.race([held.ended, patience]), 'ABORTED', 'the upload kept waiting')
   assert.equal(endOf(await turn), 'aborted')
   assert.deepEqual(on.hub.tools.workers(), [], 'the stopped upload left nothing in the namespace')

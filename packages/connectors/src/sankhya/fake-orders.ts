@@ -1,6 +1,8 @@
 import { z } from 'zod'
+import type { RecordedRefusal } from '../kernel/definition.ts'
 import { json } from './fake-data.ts'
 import { CLIENTES, PRODUTOS } from './fake-rows.ts'
+import { MISSING_DATE_AND_HOUR, UNKNOWN_PRODUCT } from './refusals.ts'
 
 // Invented orders only (S40). The real gateway has no idempotency key, so the double stores every
 // order it is sent and says nothing else about a repeat: counting what it holds is how a test sees a repeat.
@@ -20,25 +22,31 @@ export type OrderSwitches = { lostAfterStore: boolean; lostBeforeStore: boolean 
 
 const FIRST_CODE = 98001
 
+// What the page requires of an add that the double holds it to: the header's `data` and `hora` (without
+// them the gateway refuses, recorded) and the six fields of each item. Their format is not checked: no
+// refusal for a wrong one was recorded (D3 b).
 const OrderBody = z.looseObject({
   codigoCliente: z.number().int(),
   observacao: z.string().optional(),
-  itens: z.array(z.looseObject({ codigoProduto: z.number().int() })).min(1),
+  data: z.string().optional(),
+  hora: z.string().optional(),
+  itens: z
+    .array(
+      z.looseObject({
+        sequencia: z.number().int(),
+        codigoProduto: z.number().int(),
+        quantidade: z.number(),
+        valorUnitario: z.number(),
+        codigoLocalEstoque: z.number().int(),
+        controle: z.string(),
+      }),
+    )
+    .min(1),
 })
 
-function refused(details: string): Response {
-  return json(
-    {
-      statusCode: 400,
-      error: 'Bad Request',
-      mensagem: {
-        code: 'INVALID_REQUEST',
-        message: 'Ocorreu algum erro inesperado!',
-        details,
-      },
-    },
-    400,
-  )
+/** An answer the gateway recorded, sent as it was kept. */
+function recordedAnswer(recorded: RecordedRefusal): Response {
+  return json(recorded.body, recorded.status)
 }
 
 function gatewayTimeout(): Response {
@@ -57,11 +65,14 @@ export function orderBook(): OrderBook {
 
   function add(raw: unknown): Response {
     const parsed = OrderBody.safeParse(raw)
-    if (!parsed.success) return refused('Pedido sem cliente ou sem itens.')
+    // The kit's schema refuses an order without a client or items before it leaves, and it builds every field of an item: one that arrives is a test's mistake.
+    if (!parsed.success) throw new Error('the double was sent an order the kit does not build')
     const body = parsed.data
+    if (body.data === undefined || body.hora === undefined)
+      return recordedAnswer(MISSING_DATE_AND_HOUR)
     const known = new Set(PRODUTOS.map((produto) => produto.codigoProduto))
     const unknown = body.itens.find((item) => !known.has(item.codigoProduto))
-    if (unknown) return refused(`O produto [${unknown.codigoProduto}] enviado não existe.`)
+    if (unknown) return recordedAnswer(UNKNOWN_PRODUCT)
     if (!CLIENTES.some((cliente) => Number(cliente.codigoCliente) === body.codigoCliente))
       return json({
         codigo: 0,

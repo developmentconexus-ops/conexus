@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
-import { AGENT_SPECS, CONSTRUTOR_SPECS, slugToolSpec } from './construtor-specs.ts'
+import { AGENT_SPECS, CONSTRUTOR_SPECS, slugToolSpec, writeToolSpec } from './construtor-specs.ts'
 import { MACHINE_SPECS } from './machine-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -240,6 +240,8 @@ const AGENT_TOOL_PREFIX = 'tool_'
 export function specOf(toolName: string, room: Room): ToolSpec | undefined {
   if (isRowTool(toolName)) return room.overrides[toolName] ?? TOOLS[toolName]
   if (!toolName.startsWith(AGENT_TOOL_PREFIX)) return undefined
+  const write = room.writeOf?.(toolName)
+  if (write !== undefined) return writeToolSpec(write.label, room.connectors.name(write.connector))
   const slug = toolName.slice(AGENT_TOOL_PREFIX.length)
   return slugToolSpec(slug, room.toolDescription?.(slug))
 }

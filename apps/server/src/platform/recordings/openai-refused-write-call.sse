@@ -1,0 +1,141 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_planted01","object":"response","created_at":1794184948,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_lancar_pedido","description":"Lança um pedido de venda da empresa 1.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"codigoCliente":{"type":"integer","description":"constraints: greater than 0"},"itens":{"type":"array","items":{"type":"object","properties":{"codigoProduto":{"type":"integer","description":"constraints: greater than 0"},"quantidade":{"type":"number","description":"constraints: greater than 0"},"valorUnitario":{"type":"number","description":"constraints: greater than or equal to 0"},"codigoLocalEstoque":{"description":"constraints: greater than 0","anyOf":[{"type":"integer","description":"constraints: greater than 0"},{"type":"null"}]},"controle":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["codigoProduto","quantidade","valorUnitario","codigoLocalEstoque","controle"],"additionalProperties":false,"x-optional":["codigoLocalEstoque","controle"]},"description":"constraints: minimum length 1"}},"required":["codigoCliente","itens"],"additionalProperties":false},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":null,"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled","image":{"context_compression":"disabled"}}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_planted01","object":"response","created_at":1794184948,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_lancar_pedido","description":"Lança um pedido de venda da empresa 1.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"codigoCliente":{"type":"integer","description":"constraints: greater than 0"},"itens":{"type":"array","items":{"type":"object","properties":{"codigoProduto":{"type":"integer","description":"constraints: greater than 0"},"quantidade":{"type":"number","description":"constraints: greater than 0"},"valorUnitario":{"type":"number","description":"constraints: greater than or equal to 0"},"codigoLocalEstoque":{"description":"constraints: greater than 0","anyOf":[{"type":"integer","description":"constraints: greater than 0"},{"type":"null"}]},"controle":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["codigoProduto","quantidade","valorUnitario","codigoLocalEstoque","controle"],"additionalProperties":false,"x-optional":["codigoLocalEstoque","controle"]},"description":"constraints: minimum length 1"}},"required":["codigoCliente","itens"],"additionalProperties":false},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":null,"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled","image":{"context_compression":"disabled"}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":3,"output_index":0,"item":{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":4,"output_index":1,"item":{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_lancar_pedido","arguments":"","status":"in_progress"}}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":5,"item_id":"fc_planted03","output_index":1,"delta":"{\"","obfuscation":"YKHJPx91O75yYz"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":6,"item_id":"fc_planted03","output_index":1,"delta":"codigo","obfuscation":"VXj6mcwdDq"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":7,"item_id":"fc_planted03","output_index":1,"delta":"Cliente","obfuscation":"AiFEEnqao"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":8,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"uuMhBacZNvM2rl"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":9,"item_id":"fc_planted03","output_index":1,"delta":"1","obfuscation":"fbEQNmgWkSPnTrQ"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":10,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"ixtGEk2pSCqNJe"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":11,"item_id":"fc_planted03","output_index":1,"delta":"it","obfuscation":"CTqLuwCK8Iva8i"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":12,"item_id":"fc_planted03","output_index":1,"delta":"ens","obfuscation":"moISzjdcXDWvM"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":13,"item_id":"fc_planted03","output_index":1,"delta":"\":[","obfuscation":"Ty84i4pvumvSB"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":14,"item_id":"fc_planted03","output_index":1,"delta":"{\"","obfuscation":"IZbCj4A01Yb2Nb"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":15,"item_id":"fc_planted03","output_index":1,"delta":"codigo","obfuscation":"ZfKKf7Ar5C"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":16,"item_id":"fc_planted03","output_index":1,"delta":"Produto","obfuscation":"AIq0Fht5W"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":17,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"CbQMYINBsXJqsW"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":18,"item_id":"fc_planted03","output_index":1,"delta":"999","obfuscation":"MOsj1QCPmOeRX"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":19,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"vbR46m4TMb6Bz5"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":20,"item_id":"fc_planted03","output_index":1,"delta":"quant","obfuscation":"8wuIowlEJHw"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":21,"item_id":"fc_planted03","output_index":1,"delta":"idade","obfuscation":"ZMxdybBYvit"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":22,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"K1nHqhAwtvRxHq"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":23,"item_id":"fc_planted03","output_index":1,"delta":"1","obfuscation":"MeSLMO59JVDukA1"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":24,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"0sGeswhGLOxF4m"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":25,"item_id":"fc_planted03","output_index":1,"delta":"valor","obfuscation":"W9LZZ05vCAr"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":26,"item_id":"fc_planted03","output_index":1,"delta":"Unit","obfuscation":"AxIRMcAqmyYi"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":27,"item_id":"fc_planted03","output_index":1,"delta":"ario","obfuscation":"Uxrwu6agPrYg"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":28,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"R5zmTN0VTTW6XP"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":29,"item_id":"fc_planted03","output_index":1,"delta":"10","obfuscation":"rwiDYfRTD33Ab0"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":30,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"ZBf5owNfglEu86"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":31,"item_id":"fc_planted03","output_index":1,"delta":"codigo","obfuscation":"TuTkKwYMdJ"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":32,"item_id":"fc_planted03","output_index":1,"delta":"Local","obfuscation":"7lmEea4KT1r"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":33,"item_id":"fc_planted03","output_index":1,"delta":"Est","obfuscation":"LUrsBJchEovJP"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":34,"item_id":"fc_planted03","output_index":1,"delta":"oque","obfuscation":"dXiadBM1UeQo"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":35,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"NXtVlJxocnMlLt"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":36,"item_id":"fc_planted03","output_index":1,"delta":"null","obfuscation":"CXvMPbhYIAM8"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":37,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"tRSasg8BHQFeNs"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":38,"item_id":"fc_planted03","output_index":1,"delta":"controle","obfuscation":"I6zQtOUB"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":39,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"PX8F3bIA4EaELV"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":40,"item_id":"fc_planted03","output_index":1,"delta":"null","obfuscation":"ShipcaUFVz0h"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":41,"item_id":"fc_planted03","output_index":1,"delta":"}","obfuscation":"jRaC2wTbvxk0Cin"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":42,"item_id":"fc_planted03","output_index":1,"delta":"]}","obfuscation":"OzkN7ZwW8UMCGP"}
+
+event: response.function_call_arguments.done
+data: {"type":"response.function_call_arguments.done","sequence_number":43,"item_id":"fc_planted03","output_index":1,"arguments":"{\"codigoCliente\":1,\"itens\":[{\"codigoProduto\":999,\"quantidade\":1,\"valorUnitario\":10,\"codigoLocalEstoque\":null,\"controle\":null}]}"}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":44,"output_index":1,"item":{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_lancar_pedido","arguments":"{\"codigoCliente\":1,\"itens\":[{\"codigoProduto\":999,\"quantidade\":1,\"valorUnitario\":10,\"codigoLocalEstoque\":null,\"controle\":null}]}","status":"completed"}}
+
+event: response.metadata
+data: {"type":"response.metadata","sequence_number":45,"response_id":"resp_planted01","metadata":{"openai_chatgpt_moderation_metadata":{"prompt":{"omnimod":{"protection_type":"omnimod","outputs":[{"results":[{"category_flags":{"A1":false,"A2":false,"A3":false,"C1":false,"C11":false,"C2":false,"E1":false,"E2":false,"E3":false,"H1":false,"H2":false,"H3":false,"JB1":false,"K1":false,"K2":false,"K3":false,"K4":false,"P1":false,"P2":false,"P3":false,"P4":false,"PD1":false,"PD4":false,"S1":false,"S3+":false,"S4":false,"SH":false,"TXT-C3":false,"TXT-C4":false,"V1":false,"V2+":false,"V4+":false,"REFUSED":false,"CBRN-B1+":false,"IMG-C1":false,"IMG-C11":false,"IMG-C2":false,"IMG-S1":false,"IMG-SH":false,"IMG-V1":false,"IMG-V2+":false,"IMG-V4+":false}}],"is_blocked":false}]}},"generation":{},"tool_call":{},"tool_response":{}}}}
+
+event: response.completed
+data: {"type":"response.completed","sequence_number":46,"response":{"id":"resp_planted01","object":"response","created_at":1794184948,"completed_at":1794184951,"status":"completed","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"},{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_lancar_pedido","arguments":"{\"codigoCliente\":1,\"itens\":[{\"codigoProduto\":999,\"quantidade\":1,\"valorUnitario\":10,\"codigoLocalEstoque\":null,\"controle\":null}]}","status":"completed"}],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_lancar_pedido","description":"Lança um pedido de venda da empresa 1.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"codigoCliente":{"type":"integer","description":"constraints: greater than 0"},"itens":{"type":"array","items":{"type":"object","properties":{"codigoProduto":{"type":"integer","description":"constraints: greater than 0"},"quantidade":{"type":"number","description":"constraints: greater than 0"},"valorUnitario":{"type":"number","description":"constraints: greater than or equal to 0"},"codigoLocalEstoque":{"description":"constraints: greater than 0","anyOf":[{"type":"integer","description":"constraints: greater than 0"},{"type":"null"}]},"controle":{"anyOf":[{"type":"string"},{"type":"null"}]}},"required":["codigoProduto","quantidade","valorUnitario","codigoLocalEstoque","controle"],"additionalProperties":false,"x-optional":["codigoLocalEstoque","controle"]},"description":"constraints: minimum length 1"}},"required":["codigoCliente","itens"],"additionalProperties":false},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":{"input_tokens":542,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":119,"output_tokens_details":{"reasoning_tokens":63},"total_tokens":661,"attribution":{"items":{"fc_planted03":{"input_tokens":0,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":56},"msg_planted05":{"input_tokens":103,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":103,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted06":{"input_tokens":29,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":29,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted07":{"input_tokens":62,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":62,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted08":{"input_tokens":92,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":92,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"rs_planted02":{"input_tokens":2,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":63}},"request_fields":{"instructions":{"input_tokens":22,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0},"tools":{"input_tokens":232,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}}}},"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"default","truncation":"disabled","image":{"context_compression":"disabled"}}}
+

@@ -13,11 +13,11 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 
 const COLUMNS = [
   { name: 'Ferramenta' },
-  { name: 'Lê de', leavesOnPhone: true, width: 'lg:w-48' },
-  { name: 'Efeito', leavesOnPhone: true, width: 'lg:w-28' },
-  { name: 'Usada por', leavesOnPhone: true, width: 'lg:w-64' },
-  { name: 'Versão', leavesOnPhone: true, width: 'lg:w-20' },
-  { name: 'Ações', leavesOnPhone: true, width: 'lg:w-52' },
+  { name: 'Lê de', leavesOnPhone: true, width: 'lg:w-40' },
+  { name: 'Efeito', leavesOnPhone: true, width: 'lg:w-24' },
+  { name: 'Usada por', leavesOnPhone: true, width: 'lg:w-40' },
+  { name: 'Versão', leavesOnPhone: true, width: 'lg:w-16' },
+  { name: 'Ações', leavesOnPhone: true, width: 'lg:w-48' },
 ]
 
 /**

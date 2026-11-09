@@ -1,12 +1,20 @@
-import type { OpenWrite } from '@conexus/hub-api'
-import { AGENTS_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import type { AgentDetail, WrittenRow } from '@conexus/hub-api'
+import {
+  AGENTS_CONTROLLER,
+  BUILDER_ROUTES,
+  OperationId,
+  ToolCallId,
+  ToolId,
+} from '@conexus/hub-api'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { expect } from 'vitest'
+import { z } from 'zod'
 import type { Stored } from '../conversation/messages.ts'
+import { IsStored, recordedRun } from '../conversation/test-recorded.ts'
 import type { Line } from '../conversation/test-stream.tsx'
-import { AGENT, AREA, CHAT } from './test-agents.ts'
+import { AGENT, AREA, agent, CHAT, MATRIZ } from './test-agents.ts'
 import { writer } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
@@ -15,24 +23,40 @@ import { agentScreens } from './test-hub.tsx'
 
 export const SESSION = `*${BUILDER_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id`
 const PAGE = `${AREA}/${AGENT}/${CHAT}`
+const READ_TOOL = ToolId.parse('99999999-aaaa-4aaa-8aaa-999999999999')
 const UPDATED = '2026-11-07T12:00:00.000Z'
 
-/** The agent's conversation open, with `rows` as what the thread kept and `openWrites` as the Hub lists them. */
+/** The agent also holds its read of the Matriz, which the conversations about a refused read call. */
+function withRead(held: AgentDetail): AgentDetail {
+  const read = agent().tools.find((one) => one.slug === 'vendas_de_ontem')
+  return read === undefined ? held : { ...held, tools: [...held.tools, { ...read, id: READ_TOOL }] }
+}
+
+/** The agent's conversation open, with `rows` as what the thread kept and `writes` as the Hub lists them. */
 export function conversation(
   server: ReturnType<typeof setupServer>,
   held: {
     rows?: readonly Stored[]
-    openWrites?: OpenWrite[]
-    openWritesAnswer?: () => Response | Promise<Response>
+    /** What the version fixes in the write (the nota modelo). */
+    bound?: Record<string, unknown>
+    /** What the agent's page says of the published version; the default is one nobody changed. */
+    state?: AgentDetail['state']
+    writes?: WrittenRow[]
+    writesAnswer?: () => Response | Promise<Response>
   } = {},
 ) {
   const opened = agentScreens(server).at(PAGE, {
-    agents: [writer('ASK')],
+    agents: [
+      {
+        ...withRead(writer('ASK', held.bound)),
+        state: held.state ?? { kind: 'PUBLISHED', version: 1, changed: false },
+      },
+    ],
     conversations: [
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],
-    openWrites: held.openWrites ?? [],
-    openWritesAnswer: held.openWritesAnswer,
+    writes: held.writes ?? [],
+    writesAnswer: held.writesAnswer,
   })
   server.use(
     http.get(`${SESSION}/threads/:threadId/messages`, () =>
@@ -40,6 +64,41 @@ export function conversation(
     ),
   )
   return opened
+}
+
+/**
+ * The record's row for the write the recording `scenario` asked about, as the Hub lists it: a
+ * launched write a person approved, unless `fields` say otherwise.
+ */
+export function rowOf(scenario: string, fields: Partial<WrittenRow> = {}): WrittenRow {
+  const event = recordedRun(scenario).events.find(asks)
+  return {
+    toolCallId: ToolCallId.parse(
+      event === undefined ? undefined : Reflect.get(event, 'toolCallId'),
+    ),
+    connectionId: MATRIZ,
+    operation: OperationId.parse('lancarPedido'),
+    state: 'DONE',
+    sentAt: UPDATED,
+    mark: 'Conexus 7F3A2B1C',
+    approved: true,
+    message: null,
+    ...fields,
+  }
+}
+
+/** The stored rows with every value `change` names replaced: a test overlays what it is about and keeps the rest as Mastra stored it. */
+export function reshaped(
+  rows: readonly Stored[],
+  change: (key: string, value: unknown) => unknown,
+): Stored[] {
+  const swapped: unknown = JSON.parse(JSON.stringify(rows), change)
+  return z.array(IsStored).parse(swapped)
+}
+
+/** The stored rows with the arguments of every call replaced by `args`: what the model filled, for a card read after a reload. */
+export function withArgs(rows: readonly Stored[], args: object): Stored[] {
+  return reshaped(rows, (key, value) => (key === 'args' ? args : value))
 }
 
 /** The line of the open stream, once the screen opened it. */

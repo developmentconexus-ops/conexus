@@ -8,7 +8,7 @@ import {
   tiposOperacao,
   vendedores,
 } from './cadastros.ts'
-import { estoque, locaisEstoque } from './estoque.ts'
+import { estoque, estoqueDoProduto, locaisEstoque } from './estoque.ts'
 import { contasAPagar, contasAReceber, tiposPagamento } from './financeiro.ts'
 import { ordensCarga, transportadoras } from './logistica.ts'
 import { precosDaTabela, precosDoProduto } from './precos.ts'
@@ -38,6 +38,7 @@ const ready = readsOf({
   devolucoes,
   notasCanceladas,
   estoque,
+  estoqueDoProduto,
   locaisEstoque,
   contasAReceber,
   contasAPagar,

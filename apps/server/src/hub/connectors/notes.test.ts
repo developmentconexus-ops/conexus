@@ -69,7 +69,7 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
   })
   assert.deepEqual(refused, {
     kind: 'REFUSED',
-    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input' },
+    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input', body: null },
   })
   assert.deepEqual(
     await on.hub.test.asOwner("select 1 from connectors.connection where notes <> '{}'"),

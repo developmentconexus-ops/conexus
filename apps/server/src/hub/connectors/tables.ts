@@ -229,6 +229,7 @@ export const connectorWrite = connectors.table(
     personId: text('person_id'),
     state: text('state', { enum: CONNECTOR_WRITE_STATES }).notNull(),
     answer: jsonb('answer'),
+    approvedBy: text('approved_by'),
     createdAt: instant('created_at').notNull(),
   },
   (table) => [

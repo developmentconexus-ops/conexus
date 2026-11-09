@@ -24,6 +24,7 @@ export const SANKHYA_READS = [
   'devolucoes',
   'notasCanceladas',
   'estoque',
+  'estoqueDoProduto',
   'locaisEstoque',
   'contasAReceber',
   'contasAPagar',

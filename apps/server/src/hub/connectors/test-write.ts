@@ -33,6 +33,7 @@ type Over = Partial<{
 export const ORDER = {
   notaModelo: 12,
   codigoCliente: 1,
+  codigoLocalEstoque: 1,
   itens: [{ codigoProduto: 11, quantidade: 2, valorUnitario: 10 }],
 }
 export const LANCAR = OperationId.parse('lancarPedido')
@@ -127,7 +128,14 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
 }
 
 /** Empresa A with the Sankhya double released to the Projeto, and a way to ask the write funnel as Ana, as a version, or as Carla in a role without the write. */
-export async function writing(t: TestContext, a: { order?: () => Promise<Response> } = {}) {
+export async function writing(
+  t: TestContext,
+  a: {
+    /** Answers the order's POST instead of the double; `real` reaches the double. */
+    order?: (request: Request, real: typeof fetch) => Promise<Response>
+    clock?: () => Date
+  } = {},
+) {
   const mode: Mode = { cut: false, posts: 0 }
   const { order } = a
   if (order !== undefined) {
@@ -140,10 +148,13 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
       )
         return real(input, init)
       mode.posts += 1
-      return order()
+      return order(input, real)
     })
   }
-  const on = await appCalls(t, { through: counting(t, mode) })
+  const on = await appCalls(t, {
+    through: counting(t, mode),
+    ...(a.clock === undefined ? {} : { clock: a.clock }),
+  })
   const matriz = ConnectionId.parse(await on.connect('Matriz'))
   const companyRoute = `/api/companies/${on.companyId}`
   assert.equal(
@@ -165,7 +176,7 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
   }
   function ledger() {
     return on.hub.test.asOwner(
-      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, input_hash from connectors.connector_write order by created_at',
+      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, approved_by, input_hash from connectors.connector_write order by created_at',
     )
   }
   function lines(message: string) {

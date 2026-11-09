@@ -26,7 +26,7 @@ Each subject has a part you read on demand (`skill_read`, `references/<subject>.
 - `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers. Read `empresas` first: other operations need a company code.
 - `produtos` (Produtos): `produtos`, `gruposProduto`. The catalog and its groups.
 - `vendas` (Vendas): `pedidos`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices. The taxes of an order are read through the door (`consultar`).
-- `estoque` (Estoque): `estoque`, `locaisEstoque`. Stock balances and stock locations.
+- `estoque` (Estoque): `estoque`, `estoqueDoProduto`, `locaisEstoque`. Stock balances, the stock of one product and stock locations.
 - `financeiro` (Financeiro): `contasAReceber`, `contasAPagar`, `tiposPagamento`. Receivables, payables and payment types.
 - `precos` (Preços): `precosDoProduto`, `precosDaTabela`. Sale prices by product and by price table.
 - `logistica` (Logística): `transportadoras`, `ordensCarga`. Carriers and load orders.
