@@ -62,7 +62,7 @@ export function scopeIdOf(where: WriteScope): ConversationId | WorkflowRunId {
  * What the model and the screen are told of a write. `WRITE_UNCERTAIN` means the request may have
  * reached the provider and the Hub does not know: it is never sent again, and `mark` is what the person
  * looks for in the provider. `IDEMPOTENCY_CONFLICT` is another input under a key already used (code C37),
- * and `WRITE_OPEN` is a write asked under a new call while an earlier one of the same conversation,
+ * and `WRITE_OPEN` is a write asked under a new call while an earlier one of the same conversation or run,
  * connection and operation may still exist: `mark` and `since` name that earlier one. The kinds after
  * `OK` are the failures where nothing was sent.
  */

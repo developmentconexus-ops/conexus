@@ -155,8 +155,8 @@ function runCallOf(requestContext: RequestContext | Record<string, unknown>) {
     requestContext instanceof RequestContext
       ? requestContext.get(RUN_CALL_KEY)
       : requestContext[RUN_CALL_KEY]
-  const call = RunCall.safeParse(raw)
-  return call.success ? call.data : undefined
+  // Absent is a conversation's call; present but malformed is a defect that must not become absent (C27).
+  return raw === undefined ? undefined : RunCall.parse(raw)
 }
 
 type Asked = Omit<WriteRequest, 'speaker' | 'agentId' | 'workflowId' | 'number' | keyof WriteKey>

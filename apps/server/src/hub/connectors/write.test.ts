@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { ConnectionId, OperationId, ToolCallId } from '@conexus/hub-api'
+import { ConnectionId, ConversationId, OperationId, ToolCallId } from '@conexus/hub-api'
 import { markOf, openText, TurnKey } from './public.ts'
 import { markFor, ORDER, writing } from './test-write.ts'
 
@@ -284,4 +284,9 @@ test('quem aprovou: o Aprovar grava a pessoa em approved_by, e Faz sozinho grava
     rows.map((row) => row.approved_by),
     [on.ana.id, null],
   )
+})
+
+test('a marca de uma escrita da 24.5 não muda: a conta de hoje dá o mesmo texto da base', () => {
+  const thread = ConversationId.parse('11111111-1111-4111-8111-111111111111')
+  assert.equal(markOf(thread, ToolCallId.parse('call-fixa')), 'Conexus 218630b2')
 })

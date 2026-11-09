@@ -74,3 +74,16 @@ test('o terceiro autor: um INSERT com dois autores é recusado pelo CHECK connec
     { code: '23514', constraint: 'connector_write_speaker' },
   )
 })
+
+test('a tentativa seguinte: depois de uma b5#0 incerta, a b5#1 aprovada por quem olhou no sistema envia uma vez', async (t) => {
+  const on = await writing(t)
+  const first = on.byWorkflow({ callKey: balloonCallKeyOf(BalloonAddress.parse('b5'), 0) })
+  assert.equal((await on.ask(first)).kind, 'OK')
+  await on.hub.test.asOwner(
+    "update connectors.connector_write set state = 'UNCERTAIN', answer = null",
+  )
+  const second = on.byWorkflow({ callKey: balloonCallKeyOf(BalloonAddress.parse('b5'), 1) })
+  assert.equal((await on.ask(second)).kind, 'WRITE_UNCERTAIN')
+  assert.equal((await on.ask({ ...second, approvedBy: second.scope.personId })).kind, 'OK')
+  assert.equal(on.mode.posts, 2)
+})
