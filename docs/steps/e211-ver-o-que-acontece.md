@@ -10,7 +10,7 @@ critério 29)".
 Cada linha citada foi lida no `main` em `44fb4040`, com `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0
 e, fora do repositório, `@mastra/observability` 1.23.1, `@mastra/otel-exporter` 1.5.1 e
 `@mastra/otel-bridge` 1.5.21, que esta etapa instala. As tabelas da 24.6 (`workflow_run`) e da 24.7
-(`channel_link`, a marca **Telegram**) vêm dos cartões delas, ainda não no `main`: o cartão da 24.6
+(`agent_channel`, a marca **Telegram**) vêm dos cartões delas, ainda não no `main`: o cartão da 24.6
 na https://github.com/developmentconexus-ops/conexus/pull/842 e o da 24.7 na
 https://github.com/developmentconexus-ops/conexus/pull/890. O construtor de cada unidade reabre as
 linhas no `main` do dia; uma linha que mudou para a unidade (regra "Parar se" de cada uma).
@@ -190,11 +190,11 @@ arquitetura, e o `requestIdLogLabel: 'traceId'` com o `randomUUID` como id de ra
 | 3 | U1 | Convidar (`POST` de convite), aceitar convite, mudar papel, remover pessoa, sair da empresa, ligar e remover uma ligação deixam cada uma a sua entrada, com quem fez; a mesma rota recusada (sem permissão, 404) não deixa entrada | `hub/activity/writers.test.ts` | must |
 | 4 | U1 | Uma escrita de agente deixa uma entrada com o agente, a operação, quem aprovou (ou `UNATTENDED`) e o desfecho `DONE`, `REFUSED` ou `UNCERTAIN`, na mesma transação que muda o estado do `connector_write`; se essa transação falha, nem estado nem entrada. A mesma chamada repetida (a segunda vira `UNCERTAIN`, a primeira termina `DONE`) deixa uma entrada por estado, nunca duas iguais | `hub/activity/writes.test.ts` | must |
 | 5 | U1 | A tabela só aceita inclusão: o login do Hub não tem `UPDATE` nem `DELETE` nela, e apagar a empresa apaga as entradas dela | `platform/catalog.test.ts`; `hub/operations/client-deletion-database.test.ts`, caso novo | must |
-| 6 | U2 | Publicar e ativar uma versão de agente, uma execução de workflow `RUN` que termina `DONE`, `FAILED`, `DECLINED` ou `CANCELED`, ligar e desligar um canal, e um turno de agente publicado ou do Assistente que termina em falha deixam cada um a sua entrada, com quem iniciou ou `SCHEDULE`; uma execução `TEST`, uma `WAITING` e um turno que termina bem não deixam; o mesmo fim avisado duas vezes deixa uma entrada | `builder/agents/activity.test.ts`, `builder/workflows/activity.test.ts`, `builder/channels/activity.test.ts`, `builder/conversation/activity.test.ts` | must |
+| 6 | U2 | Publicar e ativar uma versão de agente, uma execução de workflow `RUN` que termina `DONE`, `FAILED`, `DECLINED` ou `CANCELED`, ligar e desligar um canal, e um turno de agente publicado ou do Assistente que termina em falha deixam cada um a sua entrada, com quem iniciou ou `SCHEDULE`; uma execução `TEST`, uma `WAITING` e um turno que termina bem não deixam; o mesmo fim avisado duas vezes deixa uma entrada. `DECLINED` e `CANCELED` podem vir da rota da 24.6 que recusa ou cancela, e não do `onFinish` (U2, "Parar se") | `builder/agents/activity.test.ts`, `builder/workflows/activity.test.ts`, `builder/channels/activity.test.ts`, `builder/conversation/activity.test.ts` | must |
 | 7 | U3 | Um turno de agente pela rota do controlador (`POST /api/agent-controller/{chave}/...`, a mesma que a conversa usa) deixa no banco do Mastra um rastro com o agente, cada passo, cada chamada ao modelo com tokens e cada ferramenta, com `organizationId` da empresa em todo span, também depois de uma retomada por aprovação | `builder/observability/stored.test.ts`, com a gravação T26 do turno | must |
 | 8 | U3 | Uma execução de workflow `RUN` que falha num passo deixa um rastro em que o passo que falhou leva o código da falha (`errorCode`), não `ERROR` | `builder/observability/stored.test.ts`, "workflow failed step" | must |
-| 9 | U3 | Um texto e um CPF plantados na mensagem da pessoa, nas instruções do agente, na descrição de uma ferramenta, na entrada e na resposta de um conector, no nome do agente e na mensagem de um erro de ferramenta não aparecem em nenhuma coluna de nenhum span guardado; o teste lê o banco de teste do Mastra (a exceção da T5 para o que nenhuma rota devolve) | `builder/observability/planted.test.ts` | must |
-| 10 | U3 | `GET /api/companies/{companyId}/traces?thread={t}&at={instante}` ou `?run={r}` devolve os rastros daquela conversa ou execução da empresa, o mais perto de `at` primeiro; `GET .../traces/{traceId}` devolve a árvore. Nas duas: um rastro ou conversa de outra empresa dá 404 `NOT_FOUND`, como um que não existe; um Membro 404; `thread` e `run` juntos, ou nenhum, 400 `REQUEST_MALFORMED`; na lista, nada achado com `at` de mais de 30 dias dá 404 `TRACE_EXPIRED` | `builder/observability/routes.test.ts` | must |
+| 9 | U3 | Um texto e um CPF plantados na mensagem da pessoa, nas instruções do agente, na descrição de uma ferramenta, na entrada e na resposta de um conector, no nome do agente, no nome de uma ferramenta de agente (`tool_<slug>`) e na mensagem de um erro de ferramenta não aparecem em nenhuma coluna de nenhum span guardado; o teste lê o banco de teste do Mastra (a exceção da T5 para o que nenhuma rota devolve) | `builder/observability/planted.test.ts` | must |
+| 10 | U3 | `GET /api/companies/{companyId}/traces?thread={t}&at={instante}` ou `?run={r}&at={instante}`, com o `at` da entrada da Atividade, devolve os rastros daquela conversa ou execução da empresa, o mais perto de `at` primeiro; `GET .../traces/{traceId}` devolve a árvore. Nas duas: um rastro ou conversa de outra empresa dá 404 `NOT_FOUND`, como um que não existe; um Membro 404; `thread` e `run` juntos, nenhum, ou sem `at`, 400 `REQUEST_MALFORMED`; na lista, nada achado com `at` de mais de 30 dias dá 404 `TRACE_EXPIRED` | `builder/observability/routes.test.ts` | must |
 | 11 | U3 | `GET /api/companies/{companyId}/usage?month=2026-11` devolve tokens de entrada, de saída e chamadas por ferramenta da empresa no mês, com as de conector marcadas; um Membro 404; `GET /api/operations/usage?month=` devolve o mesmo por empresa, com o nome, só ao operador (a pessoa da empresa recebe 404); um mês malformado 400 `REQUEST_MALFORMED` nas duas | `builder/observability/usage.test.ts` | must |
 | 12 | U3 | O banco do Mastra mantém partições do dia: com a partição de amanhã apagada, o trabalho ao subir a recria; um rastro de 31 dias some na limpeza; com a partição faltando, o turno termina igual e o Hub imprime `TRACE_STORE_FAILED` | `builder/observability/retention.test.ts` | must |
 | 13 | U4 | Um turno pela rota do controlador sai, no sumidouro OTLP local (`HUB_OTLP_ENDPOINT`), como um rastro só: o span do pedido do Hub é o pai do `invoke_agent` do Mastra, e os spans do banco e das chamadas de saída ficam no mesmo rastro; nenhum span `pg` sem pai sai (as gravações do próprio rastro e os ticks do agendador não viram rastro) | `platform/telemetry/one-trace.test.ts` | must |
@@ -299,7 +299,7 @@ com modelo simulado e Postgres 18 local.
 | A trilha de quem fez o quê | U1 | Nada: nenhum escritor de auditoria em `apps/server/src` | Mastra Factory `mastracode/factory/src/storage/domains/audit/base.ts:1-95` (prateleira `6e8dfcb8`); Activepieces `audit-event-entity.ts:10-60` (`f34c43cd`); Langfuse `schema.prisma:1077-1101` (`8ee97c4`) | Tabela só de inclusão, separada do rastro: ator (pessoa, agente, sistema), ação `namespace.verbo`, alvo, metadados curtos, nunca carga inteira | nativo (tabela do produto, como as três) | lido | 0052 ("the audit trail is the Hub's own append-only table, shown as Atividade"); "`D2` A"; decisão F | `apps/server/src/hub/activity/tables.ts`, `record.ts`, `routes.ts`, `public.ts` |
 | O registro da escrita | U1 | `connectors.connector_write` com `approved_by` (`hub/connectors/tables.ts:205-247`); o estado muda em `finish()` e `found()` (`hub/connectors/write-record.ts:175-186,304-325`) | Activepieces `AgentEventData` e o evento de ação de agente (`core/shared/src/lib/ee/audit-events/index.ts:132-191`) | O evento copia o que a tela mostra (agente, ação, desfecho, ligação), para não depender do registro vivo | nativo | lido | 24.5, resposta 4 | — (escritor em `write-record.ts`) |
 | As execuções de workflow | U2 | Fora do `main`: `workflow_run` no cartão da 24.6, gravada no início por `conferir`, desfecho deduzido ao ler | `@mastra/core@1.82.0` `options.onFinish` do workflow (`dist/docs/references/reference-workflows-workflow.md:152-164`); Activepieces `flow.run.finished` | Um aviso no fim, com o estado e os passos; os erros nele são pegos e logados | nativo | lido (não rodado) | cartão 24.6 | `builder/workflows/activity.ts` |
-| Os canais | U2 | Fora do `main`: `channel_link` no cartão da 24.7 | Activepieces `connection.upserted` | Uma entrada ao ligar e ao desligar | nativo | lido | cartão 24.7 | `builder/channels/activity.ts` |
+| Os canais | U2 | Fora do `main`: `builder.agent_channel` no cartão da 24.7, gravado por `connectTelegram` e apagado por `disconnectTelegram` | Activepieces `connection.upserted` | Uma entrada ao ligar e ao desligar | nativo | lido | cartão 24.7 | `builder/channels/activity.ts` |
 | Quem vê a Atividade | U1 | `CompanyMay` sem leitura de atividade (`packages/hub-api/src/roles.ts:47-52`), montado em `hub/identity/companies.ts:101`; ações em `admission.ts:85-120`; papéis em `hub/identity/roles.ts:24-113` | Langfuse `organizationAccessRights.ts:43-62`, `projectAccessRights.ts:77,165,240`; Activepieces `audit-event-module.ts:51` | Auditoria só para dono e administrador | nativo (permissão do Better Auth) | lido | decisão B | — (`activity: ['read']` em `roles.ts`) |
 | O rastro guardado | U3 | Nenhum `observability` no `new Mastra` (`builder/mastra/mastra.ts:13-33`); a arquitetura já põe "traces" no banco do Mastra (`docs/architecture.md`, tabela de bancos) | `@mastra/pg@1.35.0` `PostgresStoreVNext`, `ObservabilityStoragePostgresVNext` (`dist/storage/domains/observability/v-next/index.d.ts:41-134`); `@mastra/observability@1.23.1` `MastraStorageExporter` | Spans e métricas em tabelas particionadas por dia; consulta por empresa | nativo | provado (Q6, Q9) | decisão A; 2026-11-08 | `apps/server/src/builder/observability/store.ts`, `observability.ts` |
 | Esconder texto no rastro | U3 | — | `@mastra/core@1.82.0` `dist/observability/types/tracing.d.ts:2027-2031,2147-2160`; `spanOutputProcessors` (`@mastra/observability` `dist/index.js:5434,5836`) | Um processador de span roda antes de todo exportador e muda o span | embrulhado (processador nosso no gancho nativo) | provado em parte (Q3 d3, Q8): a prova plantou em ferramenta, resposta e erro; a mensagem da pessoa e as instruções ficaram nos spans do modelo e são a primeira prova da U3 | S41; "`D1` A" | `builder/observability/scrub.ts` |
@@ -410,7 +410,7 @@ devolve `null` quando a pessoa já não existe (D18).
 
 ```ts
 // apps/server/src/hub/activity/public.ts
-export type ActivityRecord = DistributiveOmit<ActivityEntry, 'id' | 'at'> & { dedupe?: string }
+export type ActivityRecord = DistributiveOmit<ActivityEntry, 'id' | 'at'> & { dedupe?: string } // os campos `name` de pessoa não são gravados: a consulta os lê
 export function recordActivity(tx: CompanyTx, companyId: CompanyId, record: ActivityRecord): Promise<void>
 ```
 
@@ -471,7 +471,7 @@ existe; o do 5 porque a tabela não existe.
   (`success` `DONE`; `failed` `FAILED`; `canceled` com decisão recusada `DECLINED`, sem ela
   `CANCELED`), lido do dono que a 24.6 criar, nunca copiado (C26). `suspended` não grava; `TEST` não
   grava. `actor` vem de `workflow_run.started_by`.
-- **Canal.** `channel_link` criado e apagado, no cartão da 24.7 (`docs/steps/e247-canais.md`).
+- **Canal.** `builder.agent_channel` gravado por `connectTelegram` e apagado por `disconnectTelegram`, no cartão da 24.7 (`docs/steps/e247-canais.md`).
 - **Turno falho.** `watchRuns` em `builder/conversation/end.ts:303-345`, que já tira a empresa do
   `resourceId` (`controller-kit/kinds.ts:61-67`); só os controladores `agents` e `assistant`.
 
@@ -486,7 +486,7 @@ existe; o do 5 porque a tabela não existe.
 
 ### Os contratos que a unidade cria
 
-Nenhum tipo novo: são os da U1. `dedupe`: `workflow:{runId}:{attempt}`, `turn:{runId}`. Código de
+Nenhum tipo novo: são os da U1. `dedupe`: `workflow:{runId}:{attempt}`, com o `attempt` lido de `workflow_run` pelo `runId` que o `onFinish` recebe, e `turn:{runId}`. Código de
 log `ACTIVITY_UNRECORDED`, no dono dos códigos de log do Builder. Modelo: o escritor da U1 em
 `write-record.ts`.
 
@@ -507,8 +507,10 @@ builder/channels/activity builder/conversation/activity`.
 
 ### Parar se
 
-- O `onFinish` não dispara para `canceled`: gravar `DECLINED` e `CANCELED` na rota que recusa ou
-  cancela, que a 24.6 já tem numa transação, e reportar.
+- O `onFinish` não dispara para `canceled` (a doc lista só `success`, `failed`, `suspended` e
+  `tripwire`): gravar `DECLINED` e `CANCELED` na rota que recusa ou cancela, que a 24.6 já tem numa
+  transação, e reportar; se essa rota não existir no `main`, o critério 6 para esses dois volta ao
+  firstmate.
 - O evento do fim do turno não diz se falhou: reportar o evento como o Mastra o emite.
 
 ## U3 O passo a passo guardado
@@ -535,8 +537,9 @@ ciclo de vida.
   `dist/observability/types/tracing.d.ts`; na prateleira `tracing.ts:2317-2331`). Para todo span:
   `input` e `output` vazios; `attributes` reduzidos a uma lista de chaves (uso de tokens, modelo,
   `finishReason`, `toolCallId`, estado do passo), o resto apagado, como a lista da U4; `entityName`
-  trocado pelo `entityId` (o nome de um agente ou ferramenta é escrito por pessoa, S41) e o nome do
-  span pelo tipo; `errorInfo` reduzido a `{ message: <código> }`, onde o código é o `code` da
+  trocado pelo `entityId` (o nome de um agente ou ferramenta é escrito por pessoa, S41), o
+  `tool_<slug>` de uma ferramenta de agente trocado pelo `OperationId` que ela chama (escrito pelo kit)
+  e o nome do span pelo tipo; `errorInfo` reduzido a `{ message: <código> }`, onde o código é o `code` da
   `Failure` do Hub ou o `id` do erro do Mastra, e `ERROR` só quando não há nenhum.
 - **Empresa.** `guard.ts:180-240` põe `organizationId` = a empresa da sessão no `requestContext`.
   Nos workflows agendados (24.6) e nos turnos do Telegram (24.7), o ponto que monta o
@@ -588,7 +591,7 @@ export const UsageByCompany = z.object({
 })
 ```
 
-- **Rotas.** `GET /api/companies/{companyId}/traces?thread=&at=|run=` (200 `TraceList`); `GET
+- **Rotas.** `GET /api/companies/{companyId}/traces?thread=|run=&at=` (200 `TraceList`); `GET
   /api/companies/{companyId}/traces/{traceId}` (200 `Trace`); `GET
   /api/companies/{companyId}/usage?month=` (200 `UsageMonth`); todas com `readActivity`, e as
   recusas do critério 10 e 11. `GET /api/operations/usage?month=` com `operateClients` (200
@@ -634,6 +637,7 @@ rastros de duas empresas. O 12 apaga a partição de amanhã e a de 31 dias atr�
 - Um texto plantado sobrevive num campo que o processador não alcança: reportar o campo e o tipo
   do span, não escrever filtro por conteúdo.
 - O `code` da `Failure` não chega ao `errorInfo` do span da ferramenta: reportar o que chega.
+- A ferramenta de agente não sabe o `OperationId` na hora do span: reportar, sem guardar o slug.
 - O `getMetricBreakdown` do Postgres não agrupa por `entityName`: contar as ferramentas pelos spans
   `TOOL_CALL` de `listTraces`/`getTrace` e reportar.
 - `mastra_runtime` não consegue criar as partições com `statement_timeout` de 10 s.
