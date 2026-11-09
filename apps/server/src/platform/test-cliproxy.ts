@@ -6,7 +6,10 @@
 // and none for the milliseconds the file `loading` holds after it starts, or while the file `hold`
 // is there, as v8.0.33 does while it fetches the login's models from Google. Its model route, `/v1`'s Chat
 // Completions, answers with the recording the file `recording` names (testing T24; one name a line, the call's own in order, the last again after them), and adds the
-// model each call asks for to the file `asked`, a line per call.
+// model each call asks for to the file `asked`, a line per call, and the body of each call to the file `bodies`, a
+// line per call. The call of Mastra's memory observer (its system starts "You are the memory consciousness") is
+// answered by the file `observer`: `fail` with a server error, `ok` with valid observations in the recording's own
+// stream, its text replaced; without the file it is any call.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
@@ -39,12 +42,49 @@ const loadedAt =
 const state = `estado-${process.pid}`
 let status = 'wait'
 
-function body(request: import('node:http').IncomingMessage): Promise<Record<string, string>> {
+function body(request: import('node:http').IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = []
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
     request.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString() || '{}')))
   })
+}
+
+const OBSERVATIONS = [
+  '<observations>',
+  '* 🔴 (10:00) Ana quer um app de encomendas da padaria.',
+  '</observations>',
+].join('\n')
+
+const Asked = z.object({
+  messages: z.array(z.object({ role: z.string(), content: z.unknown() })).default([]),
+})
+
+/** Whether the call is Mastra's observer: its system message opens with the observer's own words. */
+function isObserver(asked: Record<string, unknown>): boolean {
+  const system = Asked.parse(asked).messages.find((message) => message.role === 'system')
+  return (
+    typeof system?.content === 'string' &&
+    system.content.startsWith('You are the memory consciousness')
+  )
+}
+
+/** The recorded stream with its answer's text replaced by valid observations, every other byte as recorded. */
+function observed(recording: Buffer): Buffer {
+  let first = true
+  const lines = recording
+    .toString('utf8')
+    .split('\n')
+    .map((line) => {
+      if (!line.startsWith('data: {')) return line
+      const chunk: { choices: { delta: { content: string | null } }[] } = JSON.parse(line.slice(6))
+      const delta = chunk.choices[0]?.delta
+      if (typeof delta?.content !== 'string' || delta.content === '') return line
+      delta.content = first ? OBSERVATIONS : ''
+      first = false
+      return `data: ${JSON.stringify(chunk)}`
+    })
+  return Buffer.from(lines.join('\n'))
 }
 
 const server = createServer(async (request, response) => {
@@ -57,9 +97,22 @@ const server = createServer(async (request, response) => {
     return reply(200, { url: `https://accounts.google.com/o/oauth2/v2/auth?state=${state}`, state })
   }
   if (url.pathname === '/v0/management/oauth-callback' && request.method === 'POST') {
-    const sent = await body(request)
-    const given = new URL(sent.redirect_url ?? 'http://x').searchParams.get('state')
-    if (sent.provider !== 'antigravity' || sent.state !== state || given !== state)
+    const sent = z
+      .object({
+        redirect_url: z.string().default('http://x'),
+        provider: z.string(),
+        state: z.string(),
+      })
+      .safeParse(await body(request))
+    const given = sent.success
+      ? new URL(sent.data.redirect_url).searchParams.get('state')
+      : undefined
+    if (
+      !sent.success ||
+      sent.data.provider !== 'antigravity' ||
+      sent.data.state !== state ||
+      given !== state
+    )
       return reply(400, { error: 'state' })
     status = mode === 'refuse' ? 'error' : 'ok'
     if (status === 'ok') {
@@ -88,10 +141,19 @@ const server = createServer(async (request, response) => {
     const asked = await body(request)
     if ('tools' in asked) writeFileSync(join(control, 'body'), JSON.stringify(asked))
     appendFileSync(join(control, 'asked'), `${asked.model}\n`)
+    appendFileSync(join(control, 'bodies'), `${JSON.stringify(asked)}\n`)
+    const observing = isObserver(asked)
+    const observer = join(control, 'observer')
+    if (observing && existsSync(observer) && readFileSync(observer, 'utf8').trim() === 'fail') {
+      return reply(500, { error: { message: 'upstream failed', type: 'server_error' } })
+    }
     const names = readFileSync(join(control, 'recording'), 'utf8').trim().split('\n')
     const calls = readFileSync(join(control, 'asked'), 'utf8').trim().split('\n').length
     const name = names[Math.min(calls, names.length) - 1] ?? ''
-    const recorded = recordedBody(name)
+    const recorded =
+      observing && existsSync(observer)
+        ? observed(recordedBody('google-thinking'))
+        : recordedBody(name)
     response.writeHead(200, { 'content-type': 'text/event-stream' })
     // A stream the client cut stays open, as the provider was still sending, until the Hub stops.
     return endedOf(recorded) ? response.end(recorded) : response.write(recorded)

@@ -357,12 +357,14 @@ async function modelOf(
 ) {
   const choice =
     call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
-  const chosen = choice === 'auto' ? autoMemoryModel(turn.modelId(requestContext)) : choice
+  const turnAccount = await accountOf(deps, turn, { requestContext })
+  const chosen =
+    choice === 'auto' ? autoMemoryModel(turn.modelId(requestContext), turnAccount?.kind) : choice
   const side =
     chosen === null || chosen === turn.modelId(requestContext)
       ? undefined
       : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
-  const account = side ?? (await accountOf(deps, turn, { requestContext }))
+  const account = side ?? turnAccount
   return account === undefined
     ? noAccountModel(turn.modelId(requestContext))
     : watched(deps, turn, account, call)

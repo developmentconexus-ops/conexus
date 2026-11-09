@@ -13,6 +13,7 @@ import { apiKeyModel, subscriptionModel } from './claude/models.ts'
 import { refreshAnthropicTokens } from './claude/sign-in.ts'
 import type { AccountFailure } from './errors.ts'
 import type { GoogleCalls } from './google/port.ts'
+import { proxied } from './google/proxy-options.ts'
 import { CodexTokens, codexModel } from './openai/models.ts'
 import { codexRenewal } from './openai/sign-in.ts'
 import { isChoosable } from './providers.ts'
@@ -178,7 +179,7 @@ async function pickedOf(
         scopeOf(turn),
       )
       turn.hold(hold())
-      const model = await callModel({ ...target, url, apiKey })
+      const model = proxied(await callModel({ ...target, url, apiKey }))
       return { ...base, models: { conversation: model, system: model } }
     }
     case 'api_key': {
