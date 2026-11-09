@@ -52,7 +52,10 @@ export type ShownTurn = {
 }
 
 /** The conversation's one list, from the session's messages, by turn; the last streams while the run runs. */
-export function shownOf(state: SessionState): ShownTurn[] {
+export function shownOf(
+  state: SessionState,
+  approved: ReadonlySet<string> = new Set(),
+): ShownTurn[] {
   const messages = state.messages.flatMap((stored) => messageOf(stored) ?? [])
   const closed = closedProposals(messages)
   const turns = turnsOf(messages)
@@ -61,7 +64,7 @@ export function shownOf(state: SessionState): ShownTurn[] {
     const view = {
       closed,
       suspended: state.suspended,
-      approval: seenBy(state),
+      approval: seenBy(state, approved),
       running: state.commands,
       heard: state.heard,
     }

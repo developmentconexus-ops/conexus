@@ -1,8 +1,10 @@
-import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
+import type { AgentDetail, ProblemField, ProblemReason, ToolEffect } from '@conexus/hub-api'
 import { agoOf, dayAndHour } from '../../platform/dates.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
+/** What a tool's operation is called in its form, by what the operation does to the system's data. */
+export const OPERATION_LABEL: Record<ToolEffect, string> = { READ: 'Leitura', WRITE: 'Escrita' }
 export const CONSTRUTOR_NAME = 'Construtor'
 export const CONSTRUTOR_FIRST = 'Conte o que você quer que um agente faça.'
 export const CONSTRUTOR_PLACEHOLDER = 'Peça ao Construtor…'
@@ -111,6 +113,8 @@ const REASONS = {
   FIELD_TWICE:
     'Um campo aparece duas vezes: repetido nos que o modelo preenche, ou também nos valores fixos.',
   REQUIRED_MISSING: 'Falta um campo obrigatório da operação.',
+  NOT_FIXED:
+    'Esta operação pede um valor fixo de quem configura. Preencha-o nos valores fixos da ferramenta.',
   SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
   NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
   SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',

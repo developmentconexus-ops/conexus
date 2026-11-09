@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Checkbox } from '../../ui/checkbox.tsx'
 import { newVersionText } from './text.ts'
+import type { Saving } from './use-draft-save.ts'
 
 /** The version ids of the agent's tools, but the ones named: what a change of the list starts from. */
 export function versionsOf(
@@ -12,7 +13,19 @@ export function versionsOf(
   return now.tools.filter((one) => !without.has(one.id)).map((one) => one.version.id)
 }
 
-/** One tool of a connection as a line: the mark, the title with what it says under it, and the newer version it offers. */
+/** The chosen tool's newer version, as the line offers it: the draft then holds that version. */
+export function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: Saving) {
+  if (tool === undefined || tool.latest.number <= tool.version.number) return undefined
+  return {
+    number: tool.latest.number,
+    onUse: () =>
+      saving.save((now) => ({
+        tools: now.tools.map((one) => (one.id === tool.id ? tool.latest.id : one.version.id)),
+      })),
+  }
+}
+
+/** One tool of a connection as a line: the mark, the title with what it says under it, and the newer version it offers. The text keeps a readable column (`basis-64`): when it has not room beside the newer version, that one wraps under it. */
 export function Line(props: {
   id: string
   title: string
@@ -36,7 +49,7 @@ export function Line(props: {
         disabled={props.disabled}
         onCheckedChange={props.onChange}
       />
-      <label htmlFor={props.id} className="flex min-w-0 flex-1 flex-col">
+      <label htmlFor={props.id} className="flex min-w-0 flex-1 basis-64 flex-col">
         <span className="flex flex-wrap items-baseline gap-x-sm">
           <span>{props.title}</span>
           {props.tag !== undefined && <span className="text-fact text-text-2">{props.tag}</span>}

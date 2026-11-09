@@ -101,25 +101,82 @@ export const notasCanceladas = defineOperation({
   request: (input) => get('/v1/vendas/nfe/canceladas', input),
 })
 
-export const LancarPedidoInput = z.object({
-  notaModelo: z.number().int().positive(),
-  codigoCliente: z.number().int().positive(),
-  codigoVendedor: z.number().int().positive().optional(),
-  observacao: z
-    .string()
-    .max(150)
-    .describe('Até 150 caracteres menos 17: o Conexus acrescenta a sua marca no fim.')
-    .optional(),
-  itens: z
-    .array(
-      z.object({
-        codigoProduto: z.number().int().positive(),
-        quantidade: z.number().positive(),
-        valorUnitario: z.number().nonnegative().optional(),
-      }),
-    )
-    .min(1),
+const Place = z.number().int().positive()
+
+const ItemPedido = z.object({
+  codigoProduto: z.number().int().positive(),
+  quantidade: z.number().positive(),
+  valorUnitario: z.number().nonnegative(),
+  codigoLocalEstoque: Place.optional(),
+  controle: z.string().optional(),
 })
+
+export const LancarPedidoInput = z
+  .object({
+    notaModelo: z.number().int().positive(),
+    codigoCliente: z.number().int().positive(),
+    codigoVendedor: z.number().int().positive().optional(),
+    observacao: z
+      .string()
+      .max(150)
+      .describe('Até 150 caracteres menos 17: o Conexus acrescenta a sua marca no fim.')
+      .optional(),
+    codigoLocalEstoque: Place.describe(
+      'O local de estoque do pedido; quando vem, vale para todo item e vence o de cada um.',
+    ).optional(),
+    itens: z.array(ItemPedido).min(1),
+  })
+  .superRefine((input, context) => {
+    input.itens.forEach((item, index) => {
+      if (input.codigoLocalEstoque === undefined && item.codigoLocalEstoque === undefined)
+        context.addIssue({
+          code: 'custom',
+          path: ['itens', index, 'codigoLocalEstoque'],
+          message:
+            'o item não tem local de estoque e o pedido também não: leia o estoque do produto (estoqueDoProduto) e escolha o local',
+        })
+    })
+  })
+
+type Pedido = z.infer<typeof LancarPedidoInput>
+
+/** The company's clock: the Sankhya keeps dates and hours with no zone, and the companies are in Brasília. */
+const BRASILIA = 'America/Sao_Paulo'
+
+const DATA = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: BRASILIA,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+const HORA = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: BRASILIA,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+})
+
+/** The page's `data` (dd/MM/yyyy) and `hora` (HH:mm) of an instant, on Brasília's clock. */
+function brasiliaOf(at: Date): { data: string; hora: string } {
+  return { data: DATA.format(at), hora: HORA.format(at) }
+}
+
+/** The order as the page asks it: the date and hour of the send, each item numbered from 1, with the order's place when it gave one (it wins) or else the item's own, and its control or ''. */
+function pedidoOf({ codigoLocalEstoque, itens, ...header }: Pedido, at: Date) {
+  return {
+    ...header,
+    ...brasiliaOf(at),
+    itens: itens.map((item, index) => ({
+      sequencia: index + 1,
+      codigoProduto: item.codigoProduto,
+      quantidade: item.quantidade,
+      valorUnitario: item.valorUnitario,
+      codigoLocalEstoque: codigoLocalEstoque ?? item.codigoLocalEstoque,
+      controle: item.controle ?? '',
+    })),
+  }
+}
 
 export const lancarPedido = defineOperation({
   id: 'lancarPedido',
@@ -127,10 +184,27 @@ export const lancarPedido = defineOperation({
   subject: 'vendas',
   idempotent: false,
   summary:
-    'Lança um pedido de venda no Sankhya, sempre "a confirmar": nota modelo, cliente, itens e, se quiser, vendedor e observação. Devolve o código do pedido.',
+    'Lança um pedido de venda no Sankhya, sempre "a confirmar": nota modelo, cliente, itens com o valor unitário e o local de estoque (leia o estoque do produto) e, se quiser, vendedor e observação. Devolve o código do pedido.',
   label: 'Lançar pedido',
   input: LancarPedidoInput,
+  fixed: ['notaModelo'],
   ...placed(),
-  probe: () => ({ notaModelo: 1, codigoCliente: 1, itens: [{ codigoProduto: 1, quantidade: 1 }] }),
-  request: (input) => post('/v1/vendas/pedidos', input),
+  probe: (): Pedido => ({
+    notaModelo: 1,
+    codigoCliente: 1,
+    codigoLocalEstoque: 1,
+    itens: [{ codigoProduto: 1, quantidade: 1, valorUnitario: 1 }],
+  }),
+  request: (input, _account, at) => post('/v1/vendas/pedidos', pedidoOf(input, at)),
+  // The gateway's own timeout answers for the provider after it took the request: the order may exist.
+  uncertain: (native) => native.code === 'GTW3503',
+  // `observacao` is the one free text the person finds in the order.
+  mark: (input, mark) => ({
+    ...input,
+    observacao:
+      input.observacao === undefined || input.observacao === ''
+        ? mark
+        : `${input.observacao} ${mark}`,
+  }),
+  idOf: (value) => value.codigoPedido,
 })

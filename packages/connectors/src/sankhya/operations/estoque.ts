@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { defineOperation, get } from '../../kernel/operation.ts'
 import { rows } from '../answers.ts'
-import { Page } from './shared.ts'
+import { Code, Page } from './shared.ts'
 
 export const estoque = defineOperation({
   id: 'estoque',
@@ -15,6 +15,20 @@ export const estoque = defineOperation({
   ...rows({ list: 'estoque' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/estoque/produtos', { page }),
+})
+
+export const estoqueDoProduto = defineOperation({
+  id: 'estoqueDoProduto',
+  class: 'read' as const,
+  subject: 'estoque',
+  idempotent: true,
+  summary:
+    'Lê o saldo de estoque de um produto, por empresa, local e controle. Leia antes de lançar um pedido: o local de cada item vem daqui. Sem linha, o produto não tem estoque lido.',
+  label: 'Estoque de um produto',
+  input: z.object({ codigoProduto: Code.positive() }),
+  ...rows({ list: 'estoque' }),
+  probe: () => ({ codigoProduto: 11 }),
+  request: ({ codigoProduto }) => get(`/v1/estoque/produtos/${codigoProduto}`),
 })
 
 export const locaisEstoque = defineOperation({

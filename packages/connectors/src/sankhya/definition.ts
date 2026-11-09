@@ -6,6 +6,7 @@ import { readSkill } from '../kernel/skill.ts'
 import { sankhyaDoor } from './door.ts'
 import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects, sankhyaWrites } from './operations/index.ts'
+import { refusals } from './refusals.ts'
 
 const SKILL = new URL('./skill/', import.meta.url)
 
@@ -78,6 +79,7 @@ export const sankhya = defineConnector({
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
   writes: sankhyaWrites,
+  refusals,
   check: empresas,
   readDoor: sankhyaDoor,
   skill: readSkill(SKILL),

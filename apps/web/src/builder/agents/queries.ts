@@ -10,8 +10,8 @@ import {
   listAgents,
   listAgentVersions,
   listConstrutorConversations,
-  listOpenWrites,
   listTools,
+  listWrites,
   publishAgent,
   saveAgentDraft,
   setConstrutorModel,
@@ -42,9 +42,9 @@ export function agentConversationsQuery(scope: Scope, agentId: AgentId) {
   return hubQuery(listAgentConversations, { params: { ...scope, agentId } })
 }
 
-/** The agent's sends in the conversation whose end is not known (step 24.5), for the warning on a card. */
-export function openWritesQuery(scope: Scope, agentId: AgentId, conversationId: ConversationId) {
-  return hubQuery(listOpenWrites, { params: { ...scope, agentId, conversationId } })
+/** The agent's writes in the conversation as the record keeps them (step 24.5): the warning on a card and where it ended. */
+export function writesQuery(scope: Scope, agentId: AgentId, conversationId: ConversationId) {
+  return hubQuery(listWrites, { params: { ...scope, agentId, conversationId } })
 }
 
 export function construtorConversationsQuery(scope: Scope) {

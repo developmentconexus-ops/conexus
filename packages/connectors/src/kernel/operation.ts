@@ -148,17 +148,41 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   // The earlier operations whose answers `probe` reads (pedidos reads empresas), so a caller
   // tells a source that never read apart from one that read nothing.
   from: readonly OperationId[]
+  // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
+  fixed?: readonly string[]
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
-  request(input: I, account: Account): ProviderRequest
+  // `at` is the instant the executor sends it; a read ignores it, a write that stamps its request (Sankhya's date and hour) reads it.
+  request(input: I, account: Account, at: Date): ProviderRequest
   answer(answer: ProviderAnswer): Answered<O>
 }>
 
-/** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`; `from` is empty unless given. */
-export function defineOperation<I, O, C extends OperationClass>(
-  operation: Omit<Operation<I, O, C>, 'id' | 'from'> & { id: string; from?: readonly string[] },
-): Operation<I, O, C> {
+/** What a write says about its provider, so the Hub asks the operation and knows nothing of the vendor (decisions 0056, 0062). */
+export type WriteDeclarations<I, O> = Readonly<{
+  uncertain(native: Native): boolean // the provider's answer leaves the write's end unknown (Sankhya: GTW3503)
+  mark(input: I, mark: string): unknown // the input with the mark where the person finds the write; parsed again by `input`
+  idOf(value: O): string | number | null // the one scalar the log may print (Sankhya: codigoPedido)
+}>
+
+export type WriteOperation<I, O> = Operation<I, O, 'write'> & WriteDeclarations<I, O>
+
+type Definition<I, O, C extends OperationClass> = Omit<Operation<I, O, C>, 'id' | 'from'> & {
+  id: string
+  from?: readonly string[]
+}
+
+/** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`; `from` is empty unless given. A `write` that does not declare `uncertain`, `mark` and `idOf` does not compile. */
+export function defineOperation<I, O>(
+  operation: Definition<I, O, 'write'> & WriteDeclarations<I, O>,
+): WriteOperation<I, O>
+export function defineOperation<I, O, C extends Exclude<OperationClass, 'write'>>(
+  operation: Definition<I, O, C>,
+): Operation<I, O, C>
+export function defineOperation(
+  operation: Definition<unknown, unknown, OperationClass> &
+    Partial<WriteDeclarations<unknown, unknown>>,
+) {
   return Object.freeze({
     ...operation,
     id: OperationId.parse(operation.id),
@@ -190,11 +214,12 @@ export function post(path: `/${string}`, body: unknown): ProviderRequest {
   return { method: 'POST', path, query: {}, body }
 }
 
-/** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */
+/** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. `at` is the instant of the send. */
 export function requestOf<I>(
   operation: Operation<I, unknown>,
   input: unknown,
   account: Account,
+  at: Date,
 ): ProviderRequest {
-  return operation.request(operation.input.parse(input), account)
+  return operation.request(operation.input.parse(input), account, at)
 }

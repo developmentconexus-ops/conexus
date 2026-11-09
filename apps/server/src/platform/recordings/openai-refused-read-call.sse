@@ -1,0 +1,120 @@
+event: response.created
+data: {"type":"response.created","sequence_number":0,"response":{"id":"resp_planted01","object":"response","created_at":1794184953,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_pedidos_matriz","description":"Os pedidos de venda da empresa 1, por período.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"page":{"type":"integer","description":"constraints: greater than or equal to 0"},"dataNegociacaoInicio":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]},"dataNegociacaoFinal":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]}},"required":["page","dataNegociacaoInicio","dataNegociacaoFinal"],"additionalProperties":false,"x-optional":["dataNegociacaoInicio","dataNegociacaoFinal"]},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":null,"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled","image":{"context_compression":"disabled"}}}
+
+event: response.in_progress
+data: {"type":"response.in_progress","sequence_number":1,"response":{"id":"resp_planted01","object":"response","created_at":1794184953,"completed_at":null,"status":"in_progress","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_pedidos_matriz","description":"Os pedidos de venda da empresa 1, por período.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"page":{"type":"integer","description":"constraints: greater than or equal to 0"},"dataNegociacaoInicio":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]},"dataNegociacaoFinal":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]}},"required":["page","dataNegociacaoInicio","dataNegociacaoFinal"],"additionalProperties":false,"x-optional":["dataNegociacaoInicio","dataNegociacaoFinal"]},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":null,"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"auto","truncation":"disabled","image":{"context_compression":"disabled"}}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":2,"output_index":0,"item":{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"}}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":3,"output_index":0,"item":{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"}}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","sequence_number":4,"output_index":1,"item":{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_pedidos_matriz","arguments":"","status":"in_progress"}}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":5,"item_id":"fc_planted03","output_index":1,"delta":"{\"","obfuscation":"v9iqGFEG1qNfCW"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":6,"item_id":"fc_planted03","output_index":1,"delta":"page","obfuscation":"u4uoT7IblcOz"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":7,"item_id":"fc_planted03","output_index":1,"delta":"\":","obfuscation":"cU6CU80bOFTsdI"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":8,"item_id":"fc_planted03","output_index":1,"delta":"0","obfuscation":"2cyRT1woUBBESwD"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":9,"item_id":"fc_planted03","output_index":1,"delta":",\"","obfuscation":"iGmK3tpxzx3zva"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":10,"item_id":"fc_planted03","output_index":1,"delta":"data","obfuscation":"0Gx7q9Tbslx1"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":11,"item_id":"fc_planted03","output_index":1,"delta":"Neg","obfuscation":"rkHFNbZdB0Yka"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":12,"item_id":"fc_planted03","output_index":1,"delta":"oci","obfuscation":"YqAMpYR9q0HVt"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":13,"item_id":"fc_planted03","output_index":1,"delta":"acao","obfuscation":"Fdmj2BfiOAcK"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":14,"item_id":"fc_planted03","output_index":1,"delta":"Inicio","obfuscation":"kFzRlexRDt"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":15,"item_id":"fc_planted03","output_index":1,"delta":"\":\"","obfuscation":"EPh7y2XIOCKQd"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":16,"item_id":"fc_planted03","output_index":1,"delta":"01","obfuscation":"eWHnVKc85O102I"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":17,"item_id":"fc_planted03","output_index":1,"delta":"/","obfuscation":"5jNFT2KCiiaEOHr"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":18,"item_id":"fc_planted03","output_index":1,"delta":"09","obfuscation":"Jex0wCRCXAw664"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":19,"item_id":"fc_planted03","output_index":1,"delta":"/","obfuscation":"F9CyvMPMktTkBzN"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":20,"item_id":"fc_planted03","output_index":1,"delta":"202","obfuscation":"QaXkxDvtqSqWo"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":21,"item_id":"fc_planted03","output_index":1,"delta":"5","obfuscation":"mGTCNaTUS8lc13Y"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":22,"item_id":"fc_planted03","output_index":1,"delta":"\",\"","obfuscation":"aYQW28rQsXXTT"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":23,"item_id":"fc_planted03","output_index":1,"delta":"data","obfuscation":"eEGw4kaO97CK"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":24,"item_id":"fc_planted03","output_index":1,"delta":"Neg","obfuscation":"ARoGwV2UoIAHO"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":25,"item_id":"fc_planted03","output_index":1,"delta":"oci","obfuscation":"2gKfAg4Vv59in"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":26,"item_id":"fc_planted03","output_index":1,"delta":"acao","obfuscation":"SgpVq4I2VXLh"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":27,"item_id":"fc_planted03","output_index":1,"delta":"Final","obfuscation":"gYbM26w4JbP"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":28,"item_id":"fc_planted03","output_index":1,"delta":"\":\"","obfuscation":"NcjA0HHmYIpNi"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":29,"item_id":"fc_planted03","output_index":1,"delta":"01","obfuscation":"N8X1Lz8kMjwp43"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":30,"item_id":"fc_planted03","output_index":1,"delta":"/","obfuscation":"5XkgT87iUt7RFeX"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":31,"item_id":"fc_planted03","output_index":1,"delta":"09","obfuscation":"r3sBvzsnIO7NQQ"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":32,"item_id":"fc_planted03","output_index":1,"delta":"/","obfuscation":"iswKXzypuErd0zx"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":33,"item_id":"fc_planted03","output_index":1,"delta":"202","obfuscation":"5msEebj7Dw7xZ"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":34,"item_id":"fc_planted03","output_index":1,"delta":"5","obfuscation":"QBXc9kYcWmVimUk"}
+
+event: response.function_call_arguments.delta
+data: {"type":"response.function_call_arguments.delta","sequence_number":35,"item_id":"fc_planted03","output_index":1,"delta":"\"}","obfuscation":"8d4XqqKlRQ9f0A"}
+
+event: response.function_call_arguments.done
+data: {"type":"response.function_call_arguments.done","sequence_number":36,"item_id":"fc_planted03","output_index":1,"arguments":"{\"page\":0,\"dataNegociacaoInicio\":\"01/09/2025\",\"dataNegociacaoFinal\":\"01/09/2025\"}"}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","sequence_number":37,"output_index":1,"item":{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_pedidos_matriz","arguments":"{\"page\":0,\"dataNegociacaoInicio\":\"01/09/2025\",\"dataNegociacaoFinal\":\"01/09/2025\"}","status":"completed"}}
+
+event: response.metadata
+data: {"type":"response.metadata","sequence_number":38,"response_id":"resp_planted01","metadata":{"openai_chatgpt_moderation_metadata":{"prompt":{"omnimod":{"protection_type":"omnimod","outputs":[{"results":[{"category_flags":{"A1":false,"A2":false,"A3":false,"C1":false,"C11":false,"C2":false,"E1":false,"E2":false,"E3":false,"H1":false,"H2":false,"H3":false,"JB1":false,"K1":false,"K2":false,"K3":false,"K4":false,"P1":false,"P2":false,"P3":false,"P4":false,"PD1":false,"PD4":false,"S1":false,"S3+":false,"S4":false,"SH":false,"TXT-C3":false,"TXT-C4":false,"V1":false,"V2+":false,"V4+":false,"REFUSED":false,"CBRN-B1+":false,"IMG-C1":false,"IMG-C11":false,"IMG-C2":false,"IMG-S1":false,"IMG-SH":false,"IMG-V1":false,"IMG-V2+":false,"IMG-V4+":false}}],"is_blocked":false}]}},"generation":{},"tool_call":{},"tool_response":{}}}}
+
+event: response.completed
+data: {"type":"response.completed","sequence_number":39,"response":{"id":"resp_planted01","object":"response","created_at":1794184953,"completed_at":1794184955,"status":"completed","background":false,"frequency_penalty":0,"presence_penalty":0,"moderation":null,"model":"gpt-5.6-luna","access_programs":null,"previous_response_id":null,"instructions":"You are an assistant that helps people build and run business apps. Be concise and direct.","output":[{"type":"reasoning","id":"rs_planted02","summary":[],"content":[],"encrypted_content":"planted-encrypted-content"},{"type":"function_call","id":"fc_planted03","call_id":"call_planted04","name":"tool_pedidos_matriz","arguments":"{\"page\":0,\"dataNegociacaoInicio\":\"01/09/2025\",\"dataNegociacaoFinal\":\"01/09/2025\"}","status":"completed"}],"error":null,"incomplete_details":null,"tools":[{"type":"function","name":"connector_notes","description":"The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"connection":{"type":"string","enum":["Matriz"],"description":"The connection's name, exactly as listed"},"connector":{"description":"The connector, needed when two connections share the name","anyOf":[{"description":"The connector, needed when two connections share the name","type":"string"},{"type":"null"}]}},"required":["connection","connector"],"additionalProperties":false,"x-optional":["connector"]},"output_schema":null,"strict":true},{"type":"function","name":"tool_pedidos_matriz","description":"Os pedidos de venda da empresa 1, por período.","parameters":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"page":{"type":"integer","description":"constraints: greater than or equal to 0"},"dataNegociacaoInicio":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]},"dataNegociacaoFinal":{"description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$","anyOf":[{"type":"string","description":"constraints: input must match this regex ^\\d{2}\\/\\d{2}\\/\\d{4}$"},{"type":"null"}]}},"required":["page","dataNegociacaoInicio","dataNegociacaoFinal"],"additionalProperties":false,"x-optional":["dataNegociacaoInicio","dataNegociacaoFinal"]},"output_schema":null,"strict":true}],"tool_choice":"auto","parallel_tool_calls":true,"prompt_cache_key":"planted-prompt-cache-key","prompt_cache_retention":"24h","text":{"format":{"type":"text"},"verbosity":"medium"},"top_p":0.98,"top_logprobs":0,"temperature":1,"reasoning":{"effort":"low","context":"all_turns","summary":null,"mode":"standard"},"user":null,"usage":{"input_tokens":545,"input_tokens_details":{"cached_tokens":0,"cache_write_tokens":0},"output_tokens":77,"output_tokens_details":{"reasoning_tokens":27},"total_tokens":622,"attribution":{"items":{"fc_planted03":{"input_tokens":0,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":50},"msg_planted05":{"input_tokens":92,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":92,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted06":{"input_tokens":62,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":62,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted07":{"input_tokens":18,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":18,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"msg_planted08":{"input_tokens":70,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0,"content":[{"input_tokens":70,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}]},"rs_planted02":{"input_tokens":2,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":27}},"request_fields":{"instructions":{"input_tokens":22,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0},"tools":{"input_tokens":279,"cached_tokens":0,"cache_write_tokens":0,"output_tokens":0}}}},"tool_usage":{"image_gen":{"input_tokens":0,"output_tokens":0,"total_tokens":0,"input_tokens_details":{"text_tokens":0,"image_tokens":0},"output_tokens_details":{"image_tokens":0,"text_tokens":0}},"web_search":{"num_requests":0}},"safety_identifier":"user-planted","store":false,"metadata":{},"max_output_tokens":null,"max_tool_calls":null,"service_tier":"default","truncation":"disabled","image":{"context_compression":"disabled"}}}
+

@@ -183,6 +183,7 @@ const READ_FAILURES = [
   'DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[]
 const ONE_FAILURES = [...READ_FAILURES, 'AGENT_NOT_FOUND'] as const
+const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 const OneAgent = z.object({ agent: AgentDetail })
 /** A version's number as the path carries it. */
 const PathNumber = z
@@ -241,10 +242,9 @@ export const saveAgentDraft = defineOperation({
   failures: [
     ...ONE_FAILURES,
     'AGENT_DRAFT_STALE',
-    'AGENT_TOOL_REFUSED',
     'TOOL_REFUSED',
     'REQUEST_MALFORMED',
-    'NOT_IN_ROLE',
+    ...NOT_HELD,
   ],
 })
 
@@ -261,7 +261,7 @@ export const publishAgent = defineOperation({
     status: 200,
     body: z.object({ agent: AgentDetail, version: AgentVersionSummary }),
   },
-  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE', 'NOT_IN_ROLE'],
+  failures: [...ONE_FAILURES, 'AGENT_DRAFT_INVALID', 'AGENT_DRAFT_STALE', ...NOT_HELD],
 })
 
 export const listAgentVersions = defineOperation({
@@ -285,7 +285,7 @@ export const activateAgentVersion = defineOperation({
   bodyLimit: 1024,
   input: { params: OfAgent.extend({ number: PathNumber }) },
   success: { status: 200, body: OneAgent },
-  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND', 'NOT_IN_ROLE'],
+  failures: [...ONE_FAILURES, 'AGENT_VERSION_NOT_FOUND', ...NOT_HELD],
 })
 
 export const deleteAgent = defineOperation({

@@ -1,17 +1,22 @@
 import type { AgentDetail, OfferedConnection, ToolSummary } from '@conexus/hub-api'
 import { OperationId, ToolApproval } from '@conexus/hub-api'
+import { useMutationState } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useId } from 'react'
+import { z } from 'zod'
+import { HubFailure } from '../../platform/hub.ts'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
+import { sendDraft, sendPublish } from './queries.ts'
 import {
   ASK_FIRST,
   approvalKeyName,
   NO_UNATTENDED,
   ON_ITS_OWN,
   OUT_OF_ROLE,
+  reasonText,
   WRITES_WORD,
 } from './text.ts'
-import { Line, versionsOf } from './tool-line.tsx'
+import { Line, newerOf, versionsOf } from './tool-line.tsx'
 import type { Saving } from './use-draft-save.ts'
 
 const company = getRouteApi('/_app/companies/$companyId')
@@ -53,6 +58,36 @@ function ApprovalKey(props: { tool: Chosen; title: string; saving: Saving }) {
   )
 }
 
+const ForAgent = z.object({ params: z.object({ agentId: z.string() }) })
+
+/** The last send of this agent through `key`, as the mutation cache holds it: when it left and how it ended. */
+function useLastSent(key: typeof sendPublish.mutationKey, agentId: string) {
+  return useMutationState({
+    filters: { mutationKey: key },
+    select: (mutation) => ({
+      error: mutation.state.error,
+      at: mutation.state.submittedAt,
+      agentId:
+        mutation.options.scope?.id ??
+        ForAgent.safeParse(mutation.state.variables).data?.params.agentId,
+    }),
+  })
+    .filter((one) => one.agentId === agentId)
+    .at(-1)
+}
+
+/** Whether this agent's last publication was refused for a field only who configures fixes, and the draft has not changed since (decision 0062). */
+function useUnfixedRefusal(agentId: string): boolean {
+  const published = useLastSent(sendPublish.mutationKey, agentId)
+  const saved = useLastSent(sendDraft.mutationKey, agentId)
+  const error = published?.error
+  return (
+    error instanceof HubFailure &&
+    error.reason === 'NOT_FIXED' &&
+    (saved === undefined || saved.at < (published?.at ?? 0))
+  )
+}
+
 /**
  * The writes of a selected connection, last in its group (step 24.5, decision E4): each marked
  * "escreve", none marked until the person marks it, and a marked one shows its key. A write the
@@ -66,6 +101,7 @@ export function WriteLines(props: {
 }) {
   const { connection, agent, tools, saving } = props
   const at = connection.connectionId
+  const unfixed = useUnfixedRefusal(agent.id)
   return connection.writes.map((write) => {
     function same(one: { kind: string; connectionId?: string; operation?: string }) {
       return one.kind === 'PRESET' && one.connectionId === at && one.operation === write.operation
@@ -90,9 +126,11 @@ export function WriteLines(props: {
         title={write.label}
         tag={WRITES_WORD}
         detail={allowed ? write.summary : OUT_OF_ROLE}
+        warning={chosen !== undefined && unfixed ? reasonText('NOT_FIXED') : undefined}
         checked={chosen !== undefined}
         disabled={!allowed && chosen === undefined}
         onChange={change}
+        newer={newerOf(chosen, saving)}
         below={
           chosen === undefined ? undefined : (
             <ApprovalKey tool={chosen} title={write.label} saving={saving} />

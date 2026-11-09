@@ -29,7 +29,7 @@ test('o OpenAI não repete toolCallId na conversa: várias chamadas, duas escrit
     connectionId: on.matriz,
     operation: 'lancarPedido',
     description: 'Lança um pedido de venda da empresa 1.',
-    bound: { notaModelo: 12 },
+    bound: { notaModelo: 12, codigoLocalEstoque: 1 },
     open: ['codigoCliente', 'itens'],
   })
   const read = await madeTool(on.hub, on.ana, `${project}/tools`, ordersOf(String(on.matriz)))
