@@ -156,8 +156,8 @@ test('o papel de cada um: o texto fixo diz que o Builder faz apps e o Assistente
 
 test('as ferramentas que o turno leva: o texto fixo e a skill conexus não pedem ao modelo que confira se as tem', async (t) => {
   const steps: ReturnType<typeof said>[][] = []
-  const on = await assisting(t, steps)
   steps.push([tool('skill', { name: 'conexus' })], [said('Pronto.')])
+  const on = await assisting(t, steps)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Todo dia às 10:15 me manda um bom dia.')), 'complete')
