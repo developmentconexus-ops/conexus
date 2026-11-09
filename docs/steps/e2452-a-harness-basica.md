@@ -75,7 +75,7 @@ Recomendo **A**. Veredito: remendo novo, com prova (linha "Rota e cópia" da tab
 para entender o comportamento e comparar plataformas. Sem texto, não dá.
 
 - **A. Com conteúdo, num arquivo por conversa, no disco do servidor em São Paulo.** Nunca sai de lá,
-  não vai ao Neon, nem ao Grafana. Por 30 dias, como você disse para os rastros, e apaga junto com a
+  não vai ao Neon, nem ao Grafana. Por 30 dias, como você disse para os rastros, e apaga até um dia depois da
   conversa. Um turno de 18 passos pesou 213 KB. É como faz o Codex: um arquivo local com conteúdo, e o
   que sai para fora vai sem texto.
 - **B. Sem conteúdo**, como a 21.1. Só tempos, tokens e nomes. Barato e fraco: não mostra por que ele fez
