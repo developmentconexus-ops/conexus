@@ -9,7 +9,7 @@ import { workflowTools } from './tools.ts'
 
 export const WORKFLOW_A = WorkflowId.parse('11111111-1111-4111-8111-111111111111')
 export const WORKFLOW_B = WorkflowId.parse('22222222-2222-4222-8222-222222222222')
-const CONNECTION = ConnectionId.parse('33333333-3333-4333-8333-333333333333')
+export const CONNECTION = ConnectionId.parse('33333333-3333-4333-8333-333333333333')
 
 type Leaf<K extends Balloon['kind']> = Extract<Balloon, { kind: K }>
 
