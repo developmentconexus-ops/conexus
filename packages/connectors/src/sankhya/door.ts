@@ -74,6 +74,7 @@ const carregar = defineOperation({
   summary:
     'Lê registros de uma entidade do dicionário do Sankhya (loadRecords), uma página por chamada.',
   label: 'Leitura genérica',
+  many: true as const,
   input: CarregarInput,
   output: Loaded,
   probe: (): z.infer<typeof CarregarInput> => ({
@@ -128,6 +129,7 @@ const consultar = defineOperation({
   summary:
     'Roda uma consulta SQL de leitura (SELECT ou WITH, uma só) no Sankhya (DbExplorerSP.executeQuery).',
   label: 'Consulta',
+  many: true as const,
   input: z.object({ sql: ReadSql }),
   output: Queried,
   probe: () => ({ sql: ReadSql.parse('SELECT COUNT(*) AS N FROM TSIEMP') }),

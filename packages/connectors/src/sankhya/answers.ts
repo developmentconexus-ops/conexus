@@ -133,7 +133,7 @@ export function rows({ list }: { list: string }) {
       ? { ...result, empty: true }
       : result
   }
-  return { output, answer }
+  return { output, answer, many: true as const }
 }
 
 const Envelope = z.looseObject({

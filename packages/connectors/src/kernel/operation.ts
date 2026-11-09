@@ -150,6 +150,8 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   from: readonly OperationId[]
   // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
   fixed?: readonly string[]
+  // The answer has `linhas`: a workflow's Para cada may walk it (step 24.6); set by the ready reads, `carregar` and `consultar`.
+  many?: true
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null

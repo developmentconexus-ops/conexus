@@ -13,6 +13,7 @@ import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
 import { REQUEST_FAILURES } from './request-failures.ts'
 import { SOURCE_FAILURES } from './source-failures.ts'
+import { WORKFLOW_FAILURES } from './workflow-failures.ts'
 
 export const FAILURES = {
   INTERNAL_UNEXPECTED: {
@@ -58,6 +59,7 @@ export const FAILURES = {
   ...IDENTITY_FAILURES,
   ...CONVERSATION_FAILURES,
   ...AUTOMATION_FAILURES,
+  ...WORKFLOW_FAILURES,
   ...SOURCE_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',

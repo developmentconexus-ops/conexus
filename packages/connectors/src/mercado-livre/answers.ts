@@ -132,5 +132,5 @@ export function rows({
       ? { kind: 'OK', value: built.data }
       : { kind: 'UNREADABLE', native: { ...native, reason: shapeOf(built.error, answer.body) } }
   }
-  return { output, answer }
+  return { output, answer, many: true as const }
 }

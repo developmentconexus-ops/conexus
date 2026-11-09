@@ -36,6 +36,8 @@
   "packages/connectors/src/mercado-livre/docs.test.ts": 1,
   "packages/connectors/src/sankhya/spec-source.ts": 1,
   "packages/connectors/src/sankhya/spec.test.ts": 2,
+  "packages/hub-api/src/workflows.test.ts": 1,
+  "packages/hub-api/src/workflows.ts": 1,
   "scripts/check-approval.ts": 1,
   "scripts/log-line.ts": 1,
   "scripts/record-provider.ts": 1
