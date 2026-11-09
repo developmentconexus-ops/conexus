@@ -33,3 +33,6 @@ If 1 fails, the fallback is Jaeger on the server (founder's second choice).
 
 Proposed 2026-10-19. Founder: A on all four calls of the study; then (2026-10-19): "Okay di grafana e um
 so da telemtria do builder pro hub(B)".
+
+Amended by [0063](0063-a-trace-with-content-stays-on-the-server.md), proposed 2026-11-09: check 2 holds for
+what leaves the server.

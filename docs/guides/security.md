@@ -145,7 +145,8 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   messages, never secrets, tokens, person-written text, row contents or raw error objects. Secret
   wrappers prevent accidental serialization without a mandatory private-field spelling. Incoming
   external `traceparent`, `tracestate` and `baggage` are ignored rather than trusted as diagnostic
-  context. Failure: a library's stderr prints a password hash. JSON format and the outbound
+  context. The Central's trace file (0063) is conversation data on the server, not a log. Failure: a
+  library's stderr prints a password hash. JSON format and the outbound
   allowlist alone do not prove safe contents or inbound context selection. [review]
 - **S42.** Telemetry **must** leave only through an allowlist of attribute names; anything else is
   dropped and counted. A new field **must** come with a test that plants a string and proves it is

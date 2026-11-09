@@ -4,7 +4,7 @@ One line per document (`check-docs`).
 
 ## Overview
 
-- [AGENTS.md](../AGENTS.md): read first; skill per stage.
+- [AGENTS.md](../AGENTS.md): read first.
 - [README.md](../README.md): this repository.
 - [DESIGN.md](../DESIGN.md): the Pauta, values and pieces.
 - [roadmap.md](roadmap.md): steps.
@@ -97,6 +97,7 @@ One line per document (`check-docs`).
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
 - [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
 - [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
+- [0063](decisions/0063-a-trace-with-content-stays-on-the-server.md) trace.
 
 ## Skills
 

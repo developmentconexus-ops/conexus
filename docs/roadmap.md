@@ -51,6 +51,9 @@ Sua empresa usa o Conexus desde 2026-11-02, recebendo cada etapa.
 - **24.3.5 O Assistente anota no caderno.** Ensina ao Assistente o que um código quer dizer e vê a anotação na ligação.
 - **Papéis da empresa.** A empresa cria papéis e escolhe o que cada um, o Membro também, usa de cada conector.
 - **24.5 Os agentes escrevem, com aprovação.** Um agente ou app pede "Aprovar?" antes de escrever (resposta B, 2026-10-18; leva a 20.1).
+- **24.5.2 A harness básica.** Manda PDF e planilha, questiona, pede um app e abre o rastro.
+- **24.5.3 Diagrama na conversa.** Vê o diagrama desenhado.
+- **24.5.4 Conduta comum no Builder.** Com modelo real.
 - **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões.
 - **24.7 Canais.** O agente no Telegram.
 - **21.1 Ver o que acontece.** Vê a Atividade, o painel e o uso por empresa.
@@ -94,21 +97,20 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 
 ### As suas respostas de 2026-10-13
 
-1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A". Vive no `conexus-study`.
-2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela.
-3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
-4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
-5. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
+1. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela.
+2. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". A linha de uma etapa fechada sai da tabela; o que ficou é nas [aprovações](approvals.md). O teto de 1.600 palavras não sobe.
 
-6. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
-7. **Uma Automação, e a ordem da 24.2 à 24.5.** Em 2026-11-01: "1 confirmado 2. Okay 3.okay".
+3. **Depois da 20, Supervisor, agentes e workflows, antes das outras empresas.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
+4. **Uma Automação, e a ordem da 24.2 à 24.5.** Em 2026-11-01: "1 confirmado 2. Okay 3.okay".
+5. **A harness antes da 24.6.** Em 2026-11-09.
 
 ## 2. As etapas
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 24.5 Escrita com aprovação | Papéis da empresa | Uma, decidida ("A1"): a liberação da escrita no Projeto | `requireApproval` do Mastra como função em cada ferramenta, `yolo` desligado nos agentes, medido sem perda. Escrita nova chega só ao Dono e ao Administrador (`B1` de Papéis) |
-| 24.6 Workflows e automações | A 24.5 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
+| 24.5.2 A harness básica | A 24.5 | Cinco, na página | `FileUploadProcessor`, `Observability` e o Codex, 0063 |
+| 24.6 Workflows e automações | A 24.5.2 | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
 | 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. O rastro por ferramenta: as ferramentas de conector (`connector_read`, `connector_notes`, `connector_note_save`) escondem entrada e saída no span, com o exportador de lista permitida, porque o `TracingPolicy` do Mastra só tem `internal` (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
