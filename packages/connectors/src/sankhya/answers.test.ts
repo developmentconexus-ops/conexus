@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { sankhya } from './definition.ts'
 import { lancarPedido } from './operations/vendas.ts'
-import { refusals } from './refusals.ts'
+import { MISSING_DATE_AND_HOUR, refusals } from './refusals.ts'
 
 function answer(id: string, status: number, body: unknown) {
   const found = sankhya.operations.find((candidate) => candidate.id === id)
@@ -132,6 +132,25 @@ test('a recusa gravada do addPedido: a mensagem leva a causa e o corpo vai intei
       body: recorded.body,
     },
   })
+})
+
+test('a recusa gravada sem data e hora: a mensagem leva a frase inteira e o corpo vai inteiro', () => {
+  assert.deepEqual(
+    lancarPedido.answer({
+      status: MISSING_DATE_AND_HOUR.status,
+      body: MISSING_DATE_AND_HOUR.body,
+    }),
+    {
+      kind: 'REFUSED',
+      native: {
+        status: 400,
+        code: 'BAD_REQUEST',
+        message:
+          'Ocorreu algum erro inesperado! Campos não informados no : [data, hora] - Consulte o server.log para maiores informações!',
+        body: MISSING_DATE_AND_HOUR.body,
+      },
+    },
+  )
 })
 
 test('as linhas passam como vieram; o objeto único é uma lista de um; a página diz se há outra', () => {

@@ -140,10 +140,33 @@ export const LancarPedidoInput = z
 
 type Pedido = z.infer<typeof LancarPedidoInput>
 
-/** The order as the page asks it: each item numbered from 1, with the order's place when it gave one (it wins) or else the item's own, and its control or ''. */
-function pedidoOf({ codigoLocalEstoque, itens, ...header }: Pedido) {
+/** The company's clock: the Sankhya keeps dates and hours with no zone, and the companies are in Brasília. */
+const BRASILIA = 'America/Sao_Paulo'
+
+const DATA = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: BRASILIA,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+const HORA = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: BRASILIA,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+})
+
+/** The page's `data` (dd/MM/yyyy) and `hora` (HH:mm) of an instant, on Brasília's clock. */
+function brasiliaOf(at: Date): { data: string; hora: string } {
+  return { data: DATA.format(at), hora: HORA.format(at) }
+}
+
+/** The order as the page asks it: the date and hour of the send, each item numbered from 1, with the order's place when it gave one (it wins) or else the item's own, and its control or ''. */
+function pedidoOf({ codigoLocalEstoque, itens, ...header }: Pedido, at: Date) {
   return {
     ...header,
+    ...brasiliaOf(at),
     itens: itens.map((item, index) => ({
       sequencia: index + 1,
       codigoProduto: item.codigoProduto,
@@ -172,7 +195,7 @@ export const lancarPedido = defineOperation({
     codigoLocalEstoque: 1,
     itens: [{ codigoProduto: 1, quantidade: 1, valorUnitario: 1 }],
   }),
-  request: (input) => post('/v1/vendas/pedidos', pedidoOf(input)),
+  request: (input, _account, at) => post('/v1/vendas/pedidos', pedidoOf(input, at)),
   // The gateway's own timeout answers for the provider after it took the request: the order may exist.
   uncertain: (native) => native.code === 'GTW3503',
   // `observacao` is the one free text the person finds in the order.

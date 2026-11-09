@@ -35,18 +35,20 @@ function quantity(value: number): string {
 
 type Item = z.infer<typeof Order>['itens'][number]
 
-/** One item as the card says it: what, how many, at what price, from where in the stock, and the lot when there is one. The order's own place wins over the item's, as the write does. */
+/** One item as the card says it: what, how many, at what price, from where in the stock, and the lot when there is one (Sankhya's "no control" is a blank, a space too). The order's own place wins over the item's, as the write does. */
 function itemLine(item: Item, orderPlace: number | undefined): string {
   const place = orderPlace ?? item.codigoLocalEstoque
   const what = `${quantity(item.quantidade)} × produto ${item.codigoProduto}`
   return [
     item.valorUnitario === undefined ? what : `${what} a ${reais(item.valorUnitario)}`,
     ...(place === undefined ? [] : [`local ${place}`]),
-    ...(item.controle === undefined || item.controle === '' ? [] : [`lote ${item.controle}`]),
+    ...(item.controle === undefined || item.controle.trim() === ''
+      ? []
+      : [`lote ${item.controle}`]),
   ].join(' · ')
 }
 
-/** The fields of an order the model filled: client, items, and the total when every item has a price. */
+/** The fields of an order the model filled: client, items, the total when every item has a price, and the date and hour, which are the send's. */
 function orderFields(args: unknown): Field[] | undefined {
   const order = Order.safeParse(args)
   if (!order.success) return undefined
@@ -65,6 +67,8 @@ function orderFields(args: unknown): Field[] | undefined {
       lines: itens.map((item) => itemLine(item, place)),
     },
     ...(priced && itens.length > 0 ? [{ label: 'Total', lines: [reais(total)] }] : []),
+    // The Hub dates the order when it sends it, after Aprovar, so the card has no value to show yet.
+    { label: 'Data e hora', lines: ['as do envio'] },
     ...(observacao === undefined ? [] : [{ label: 'Observação', lines: [observacao] }]),
   ]
 }

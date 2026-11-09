@@ -40,6 +40,8 @@ export type ExecutorDeps = {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
   log: FailureLog
+  /** The instant of each send: a write that stamps its request (Sankhya's date and hour) is dated by it. */
+  now: () => Date
 }
 
 /**
@@ -65,7 +67,7 @@ export async function send(
       status === 429 ? retryAfterMs(Object.fromEntries(response.headers), Date.now()) : undefined
     const answer = bytes === null ? null : answerOf(status, bytes, redaction, wait)
     if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
-    return answer ?? unreadable(status, bytes)
+    return answer ?? unreadable(status, bytes, redaction)
   } catch (error) {
     const cause = unreachableCause(error)
     if (cause === undefined) throw error

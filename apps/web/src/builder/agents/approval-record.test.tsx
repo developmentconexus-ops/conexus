@@ -47,7 +47,7 @@ test.each([
   [
     'sem resposta',
     rowOf('approval', { state: 'UNCERTAIN' }),
-    'Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus 7F3A2B1C.',
+    'Sem confirmação automática. Veja o que o agente leu e confira a observação Conexus 7F3A2B1C.',
   ],
 ])(
   'depois de recarregar, o desfecho vem do registro: %s diz "Aprovado por você" e o desfecho da linha',
@@ -137,6 +137,7 @@ test('o pedido com a nota modelo e os locais: a nota vem dos valores fixos da ve
   expect(card.getByText('2 × produto 8 a R$ 10,00 · local 3 · lote L-9')).toBeTruthy()
   expect(card.getByText('1 × produto 9 a R$ 5,00 · local 4')).toBeTruthy()
   expect(card.getByText('R$ 25,00')).toBeTruthy()
+  expect(card.getByText('Data e hora').nextSibling?.textContent).toBe('as do envio')
 })
 
 test('o local fixado na versão vale para todo item e vence o de cada um, e a nota modelo do modelo não vence a fixa', async () => {
@@ -203,4 +204,21 @@ test('uma escrita que lançou o erro sem linha no registro diz "Não conseguiu l
   expect(screen.getByText('Deu um erro no Hub e o pedido não foi enviado.')).toBeTruthy()
   expect(screen.queryByText('Aprovado por você')).toBeNull()
   expect(screen.queryByText('Recusado')).toBeNull()
+})
+
+test('o item cujo controle é um espaço, o "sem controle" do Sankhya, não mostra lote', async () => {
+  const order = {
+    codigoCliente: 1,
+    itens: [
+      { codigoProduto: 8, quantidade: 2, valorUnitario: 10, codigoLocalEstoque: 3, controle: ' ' },
+    ],
+  }
+  conversation(server, {
+    rows: withArgs(recordedRun('approval').read, order),
+    bound: { notaModelo: 12 },
+    writes: [rowOf('approval')],
+  })
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  expect(card.getByText('2 × produto 8 a R$ 10,00 · local 3')).toBeTruthy()
+  expect(card.queryByText(/lote/)).toBeNull()
 })

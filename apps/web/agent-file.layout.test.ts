@@ -10,7 +10,8 @@ import {
   MACHINE_TOOL,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { holdsColumn } from './chat-column.ts'
+import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
@@ -220,3 +221,19 @@ for (const viewport of [DESKTOP, PHONE]) {
     await page.close()
   })
 }
+
+// The founder, 2026-11-09: the box moved and the scroll took it along (design V54).
+for (const viewport of [LAPTOP, PHONE])
+  test(`a ${viewport.width} px, na conversa do agente com o arquivo aberto, quem rola é a conversa e a caixa fica onde estava`, async () => {
+    const path = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}/${CHAT}`
+    const page = await harness.open(path, { viewport, replies })
+    await page.route('**/agents/conversations/*/files*', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/svg+xml', body: CHART }),
+    )
+    if (viewport === LAPTOP) {
+      await page.getByRole('button', { name: /^Abrir vendas/ }).click()
+      await page.getByRole('img', { name: /vendas/ }).waitFor()
+    }
+    await holdsColumn(page, viewport)
+    await page.close()
+  })

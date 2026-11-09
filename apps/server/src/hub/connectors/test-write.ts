@@ -38,6 +38,12 @@ export const ORDER = {
 }
 export const LANCAR = OperationId.parse('lancarPedido')
 
+/** What the double answers to an order it took, as a write's `returned` carries it. */
+export function placedAnswer(codigoPedido: number) {
+  const mensagem = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'
+  return { status: 200, body: { codigo: 1, tipo: 'SUCESSO', mensagem, retorno: { codigoPedido } } }
+}
+
 /** What the stand-in before the double does to the order's add: `cut` forwards it and drops the answer. */
 type Mode = { cut: boolean; posts: number }
 
@@ -128,7 +134,14 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
 }
 
 /** Empresa A with the Sankhya double released to the Projeto, and a way to ask the write funnel as Ana, as a version, or as Carla in a role without the write. */
-export async function writing(t: TestContext, a: { order?: () => Promise<Response> } = {}) {
+export async function writing(
+  t: TestContext,
+  a: {
+    /** Answers the order's POST instead of the double; `real` reaches the double. */
+    order?: (request: Request, real: typeof fetch) => Promise<Response>
+    clock?: () => Date
+  } = {},
+) {
   const mode: Mode = { cut: false, posts: 0 }
   const { order } = a
   if (order !== undefined) {
@@ -141,10 +154,13 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
       )
         return real(input, init)
       mode.posts += 1
-      return order()
+      return order(input, real)
     })
   }
-  const on = await appCalls(t, { through: counting(t, mode) })
+  const on = await appCalls(t, {
+    through: counting(t, mode),
+    ...(a.clock === undefined ? {} : { clock: a.clock }),
+  })
   const matriz = ConnectionId.parse(await on.connect('Matriz'))
   const companyRoute = `/api/companies/${on.companyId}`
   assert.equal(

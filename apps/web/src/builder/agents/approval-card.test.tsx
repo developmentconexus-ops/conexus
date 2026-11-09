@@ -68,6 +68,16 @@ test('o cartão mostra o agente, a ação, cada campo, Aprovar e Recusar, e a fr
   ).toBe(false)
 })
 
+test('com um cartão esperando, a linha diz que o agente espera a pessoa, sem relógio, e o Parar continua', async () => {
+  await asked('approval')
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe(
+      'Conferente de metas esperando sua resposta.',
+    ),
+  )
+  expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
+})
+
 test('os botões acendem só quando o estado da sessão traz o toolCallId', async () => {
   const opened = conversation(server)
   const line = await lineOf(opened)
@@ -133,7 +143,7 @@ test('um envio sem resposta diz a marca para procurar no Sankhya', async () => {
   })
   expect(
     await screen.findByText(
-      'Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus 7F3A2B1C.',
+      'Sem confirmação automática. Veja o que o agente leu e confira a observação Conexus 7F3A2B1C.',
     ),
   ).toBeTruthy()
 })
