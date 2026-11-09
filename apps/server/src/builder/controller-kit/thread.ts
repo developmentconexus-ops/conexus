@@ -5,7 +5,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, Owner } from './kinds.ts'
 import { resourceOf } from './kinds.ts'
 
-/** The conversation of the kind and the owner; senão CONVERSATION_NOT_FOUND (S10). */
+/** The conversation of the kind and the owner; otherwise CONVERSATION_NOT_FOUND (S10). */
 export async function ownThread(
   memory: Memory,
   kind: ControllerKind,

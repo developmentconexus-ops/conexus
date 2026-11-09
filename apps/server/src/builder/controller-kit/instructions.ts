@@ -5,14 +5,14 @@ const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } }
  * own cache mark, since the Hub marks only the last system message (`promptCacheMiddleware`).
  */
 export function fixedSystem(text: string) {
-  return Object.freeze({ role: 'system', content: text, providerOptions: CACHED } as const)
+  return { role: 'system', content: text, providerOptions: CACHED } as const
 }
 
 /**
  * The title and observer phrases, one per subject: the question (Assistant, agents), the app
  * (Builder), the agent (Construtor).
  */
-export const TITLE = Object.freeze({
+export const TITLE = {
   ask: {
     title:
       'Dê à conversa um título curto em português, de até seis palavras, sobre o que a pessoa pergunta ou pede, sem aspas nem ponto final.',
@@ -31,4 +31,4 @@ export const TITLE = Object.freeze({
     observer:
       'Escreva o título da conversa em português do Brasil, sobre o agente que a pessoa quer montar ou mudar.',
   },
-} as const)
+} as const

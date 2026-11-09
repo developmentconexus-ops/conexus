@@ -139,7 +139,7 @@ test('o texto fixo: o agente e o Construtor mandam a mensagem do Conexus com a m
     const [fixed] = asked.systems
     assert.ok(fixed?.text.startsWith(CONEXUS.trim().slice(0, 200)))
     assert.equal(fixed?.cached, true)
-    assert.ok(asked.cached.some((mark) => mark.at === 'system' && mark.ttl === '1h'))
+    assert.deepEqual(asked.cached[0], { at: 'system', ttl: '1h' })
   }
 })
 
