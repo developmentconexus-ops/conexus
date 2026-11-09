@@ -204,3 +204,20 @@ test('uma escrita que lançou o erro sem linha no registro diz "Não conseguiu l
   expect(screen.queryByText('Aprovado por você')).toBeNull()
   expect(screen.queryByText('Recusado')).toBeNull()
 })
+
+test('o item cujo controle é um espaço, o "sem controle" do Sankhya, não mostra lote', async () => {
+  const order = {
+    codigoCliente: 1,
+    itens: [
+      { codigoProduto: 8, quantidade: 2, valorUnitario: 10, codigoLocalEstoque: 3, controle: ' ' },
+    ],
+  }
+  conversation(server, {
+    rows: withArgs(recordedRun('approval').read, order),
+    bound: { notaModelo: 12 },
+    writes: [rowOf('approval')],
+  })
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  expect(card.getByText('2 × produto 8 a R$ 10,00 · local 3')).toBeTruthy()
+  expect(card.queryByText(/lote/)).toBeNull()
+})

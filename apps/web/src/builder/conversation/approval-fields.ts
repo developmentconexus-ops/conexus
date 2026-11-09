@@ -35,14 +35,16 @@ function quantity(value: number): string {
 
 type Item = z.infer<typeof Order>['itens'][number]
 
-/** One item as the card says it: what, how many, at what price, from where in the stock, and the lot when there is one. The order's own place wins over the item's, as the write does. */
+/** One item as the card says it: what, how many, at what price, from where in the stock, and the lot when there is one (Sankhya's "no control" is a blank, a space too). The order's own place wins over the item's, as the write does. */
 function itemLine(item: Item, orderPlace: number | undefined): string {
   const place = orderPlace ?? item.codigoLocalEstoque
   const what = `${quantity(item.quantidade)} × produto ${item.codigoProduto}`
   return [
     item.valorUnitario === undefined ? what : `${what} a ${reais(item.valorUnitario)}`,
     ...(place === undefined ? [] : [`local ${place}`]),
-    ...(item.controle === undefined || item.controle === '' ? [] : [`lote ${item.controle}`]),
+    ...(item.controle === undefined || item.controle.trim() === ''
+      ? []
+      : [`lote ${item.controle}`]),
   ].join(' · ')
 }
 
