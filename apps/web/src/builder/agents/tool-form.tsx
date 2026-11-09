@@ -258,14 +258,7 @@ export function ToolForm(props: {
       }}
     >
       <DialogBody className="flex flex-col gap-md">
-        {fixed !== undefined && (
-          <Kept
-            connection={fixed.connection}
-            effect={fixed.effect}
-            read={fixed.read}
-            slug={fixed.slug}
-          />
-        )}
+        {fixed !== undefined && <Kept {...fixed} />}
         {fixed === undefined && (
           <Where
             offered={props.offered}

@@ -215,23 +215,21 @@ test('a 1280 px a coluna da ferramenta mostra o nome inteiro, sem quebrar letra 
     replies: {
       ...replies,
       [`GET ${BASE}/tools`]: ok(listTools, {
-        tools: [
-          {
-            ...TOOLS[0],
-            slug: 'lancar_pedido_de_venda',
-            description: 'Lança um pedido de venda no Sankhya, a confirmar, com a nota modelo.',
-            readLabel: 'Lançar pedido',
-            effect: 'WRITE' as const,
-            usedBy: [
-              { id: AGENT, projectId: PROJECT_ID, name: 'Conferente de metas' },
-              {
-                id: '11111111-aaaa-4aaa-8aaa-222222222222',
-                projectId: PROJECT_ID,
-                name: 'Vendedor',
-              },
-            ],
-          },
-        ],
+        tools: TOOLS.map((tool) => ({
+          ...tool,
+          slug: 'lancar_pedido_de_venda',
+          description: 'Lança um pedido de venda no Sankhya, a confirmar, com a nota modelo.',
+          readLabel: 'Lançar pedido',
+          effect: 'WRITE' as const,
+          usedBy: [
+            { id: AGENT, projectId: PROJECT_ID, name: 'Conferente de metas' },
+            {
+              id: '11111111-aaaa-4aaa-8aaa-222222222222',
+              projectId: PROJECT_ID,
+              name: 'Vendedor',
+            },
+          ],
+        })),
         ready: [],
       }),
     },
