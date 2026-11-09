@@ -6,13 +6,15 @@ import type { OrderBook } from '../packages/connectors/src/sankhya/fake-orders.t
 import { APPROVAL_STEER, APPROVAL_TOOL } from './record-calls.ts'
 
 // The `approval` scenarios of `scripts/record.ts` (step 24.5, T26): a write that asks the person
-// first, on the Sankhya double's orders, answered the four ways a person can.
+// first, on the Sankhya double's orders, answered the four ways a person can, and a fifth where the
+// person approves and the system refuses: the tool throws what the agents' tools throw (U5).
 
 export const APPROVALS = [
   'approval',
   'approval-declined',
   'approval-interrupted',
   'approval-stopped',
+  'approval-refused',
 ] as const
 export function isApproval(scenario: string): scenario is (typeof APPROVALS)[number] {
   return APPROVALS.some((each) => each === scenario)
@@ -65,7 +67,8 @@ async function answerApproval(
   toolCallId: string,
 ): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, PERSON_PACE_MS))
-  if (scenario === 'approval') session.respondToToolApproval({ decision: 'approve', toolCallId })
+  if (scenario === 'approval' || scenario === 'approval-refused')
+    session.respondToToolApproval({ decision: 'approve', toolCallId })
   else if (scenario === 'approval-declined')
     session.respondToToolApproval({ decision: 'decline', toolCallId })
   else if (scenario === 'approval-interrupted')
@@ -75,8 +78,17 @@ async function answerApproval(
 
 const Sent = z.object({ retorno: z.object({ codigoPedido: z.number() }) })
 
-/** The write of the version, here always asking, whose order the double keeps. */
-export function approvalTool(orders: OrderBook) {
+/** What the system said in `approval-refused`, invented: the text of a `ConnectorRefused` of the agents' tools (`apps/server/src/builder/agents/tools.ts`). */
+const REFUSED_TEXT = JSON.stringify({
+  kind: 'REFUSED',
+  status: 400,
+  code: null,
+  message: 'Ocorreu algum erro inesperado! O produto [11] enviado não existe.',
+  body: null,
+})
+
+/** The write of the version, here always asking, whose order the double keeps; in `approval-refused` the system refuses it. */
+export function approvalTool(orders: OrderBook, refuses: boolean) {
   return createTool({
     id: APPROVAL_TOOL,
     description: 'Lança um pedido de venda no Sankhya.',
@@ -88,6 +100,7 @@ export function approvalTool(orders: OrderBook) {
     }),
     requireApproval: async () => true,
     execute: async (given) => {
+      if (refuses) throw new Error(REFUSED_TEXT)
       const { retorno } = Sent.parse(await orders.add(given).json())
       return { kind: 'OK', value: { codigoPedido: retorno.codigoPedido } }
     },

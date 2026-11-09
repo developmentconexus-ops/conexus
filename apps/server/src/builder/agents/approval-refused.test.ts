@@ -5,6 +5,7 @@ import { endOf, hubBeside, sent, streamOf } from '../conversation/test-conversat
 import { tool } from '../conversation/test-questions.ts'
 import { talkedTo } from './test-agents.ts'
 import { ASKED, approving, launched, WRITE } from './test-approval.ts'
+import { approvingOnOpenai } from './test-openai-agent.ts'
 
 const UNKNOWN_PRODUCT = {
   ...ASKED,
@@ -39,7 +40,12 @@ test('a recusa chega inteira ao modelo: a escrita recusada termina em erro com o
   assert.deepEqual(JSON.parse(result?.text ?? ''), REFUSAL)
   const [row] = await on.hub.test.asOwner('select state, answer from connectors.connector_write')
   assert.equal(row?.state, 'REFUSED')
-  const logged = on.hub.lines.filter(
+  loggedWithoutCause(on.hub.lines)
+})
+
+/** The refusal and Mastra's error are logged with scalars only, and the cause is in no line (S41). */
+function loggedWithoutCause(lines: { fields: Record<string, unknown>; message: string }[]) {
+  const logged = lines.filter(
     (line) => line.message === 'MASTRA_ERROR' || line.message === 'CONNECTOR_WRITE_REFUSED',
   )
   assert.ok(logged.some((line) => line.message === 'CONNECTOR_WRITE_REFUSED'))
@@ -49,7 +55,29 @@ test('a recusa chega inteira ao modelo: a escrita recusada termina em erro com o
       assert.ok(['string', 'number', 'boolean'].includes(typeof value))
     }
   }
-  assert.doesNotMatch(JSON.stringify(on.hub.lines), /não existe|BAD_REQUEST|statusCode/)
+  assert.doesNotMatch(JSON.stringify(lines), /não existe|BAD_REQUEST|statusCode/)
+}
+
+test('a recusa chega inteira ao OpenAI: o stream gravado da assinatura ChatGPT chama a escrita, ela termina em erro, e a function_call_output do pedido seguinte leva o texto inteiro, que começa pelo kind, sem marca de erro (34)', async (t) => {
+  const on = await approvingOnOpenai(t, [
+    'openai-refused-write-call',
+    'openai-refused-write-closing',
+  ])
+  const agent = await on.writer('AUTO')
+  const { url, stream } = await on.opened(agent.id)
+  await sent(on.hub, on.ana, url, 'Lance o pedido do produto 999')
+  const events = await stream.turn()
+  assert.equal(endOf(events), 'complete', 'the turn goes on after the failure')
+  const ended = events.find((event) => event.type === 'tool_end')
+  assert.equal(Reflect.get(ended ?? {}, 'isError'), true)
+  const [output, ...others] = on.outputs()
+  assert.deepEqual(others, [])
+  assert.ok(String(output?.output).startsWith('{"kind":"REFUSED"'))
+  assert.deepEqual(JSON.parse(output?.output ?? ''), REFUSAL)
+  assert.deepEqual(Object.keys(output ?? {}).sort(), ['call_id', 'output', 'type'])
+  const [row] = await on.hub.test.asOwner('select state from connectors.connector_write')
+  assert.equal(row?.state, 'REFUSED')
+  loggedWithoutCause(on.hub.lines)
 })
 
 test('o que lança e o que responde: a escrita sem resposta volta como resultado com a instrução, sem marca de erro; a recusada lança (35)', async (t) => {

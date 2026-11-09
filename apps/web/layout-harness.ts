@@ -32,6 +32,8 @@ const APP_STYLE =
   'body{font:16px system-ui;margin:0;padding:24px;background:#fffdf8;color:#222}h1{margin:0 0 12px}'
 
 export const DESKTOP = { width: 1366, height: 900 }
+/** The 1280 px desktop the founder uses */
+export const LAPTOP = { width: 1280, height: 800 }
 export const PHONE = { width: 390, height: 844 }
 export const SMALL_PHONE = { width: 320, height: 640 }
 // A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).

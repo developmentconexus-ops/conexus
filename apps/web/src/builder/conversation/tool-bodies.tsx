@@ -1,11 +1,17 @@
-import type { ToolSearchResult } from '@conexus/hub-api'
+import type { FailureCode, ToolSearchResult } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
+import { sentenceOfCode } from '../../platform/hub.ts'
+import { cn } from '../../ui/cn.ts'
+import { failureDetail, thrownOf } from './connector-specs.ts'
 import { ProgramSuccess } from './machine-specs.ts'
 import { Markdown } from './markdown.tsx'
+import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { calledText, READY_TOOL } from './text.ts'
 import { shown } from './tool-args.ts'
+import { specOf } from './tool-registry.ts'
 
 export const BLOCK =
   'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
@@ -99,5 +105,38 @@ export function Answer({ text, called }: { text: string; called: number }) {
       <Markdown text={text} />
       {called > 0 && <p className="text-fact text-text-2">{calledText(called)}</p>}
     </div>
+  )
+}
+
+function isFailureCode(code: string): code is FailureCode {
+  return Object.hasOwn(FAILURES, code)
+}
+
+/** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
+function reasonOf(tool: ToolItem): string {
+  const text = tool.errorText ?? textOf(tool.result)
+  if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
+  const code = text.trim()
+  return isFailureCode(code) ? sentenceOfCode(code) : text
+}
+
+/** Whether the agent's read failed with a kind that asks the person to link the connection again. */
+export function asksToReconnect(tool: ToolItem, room: Room): boolean {
+  const kind = thrownOf(tool)?.kind
+  return kind !== undefined && specOf(tool.toolName, room)?.reconnects?.includes(kind) === true
+}
+
+export function Reason({ tool }: { tool: ToolItem }) {
+  const detail = failureDetail(tool, useRoom())
+  if (detail === null) return null
+  if (detail === undefined)
+    return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
+  return (
+    <>
+      <p className="font-semibold text-danger">{detail.label}</p>
+      {detail.message !== undefined && (
+        <pre className={cn(BLOCK, 'text-danger')}>{shown(detail.message)}</pre>
+      )}
+    </>
   )
 }

@@ -41,8 +41,8 @@ export { openText, uncertainText } from './write.ts'
 export type { WriteRequest, Written } from './write-record.ts'
 export { markOf } from './write-record.ts'
 
-/** Tests shorten the deadline. */
-export type ConnectorDeadlines = { callDeadlineMs?: number }
+/** What tests change: a shorter deadline, and the clock a write is dated by (production's is the machine's). */
+export type ConnectorTuning = { callDeadlineMs?: number; now?: (() => Date) | undefined }
 
 export type Connectors = ReturnType<typeof createConnectors>
 
@@ -59,7 +59,7 @@ export function createConnectors(deps: {
   log: FailureLog
   /** The apps' door: who an app's call is, the version its session gets and its manifest. */
   door: AppDoorPort
-  deadlines?: ConnectorDeadlines
+  tuning?: ConnectorTuning
 }) {
   const origins = new Map<ConnectorId, string>()
   for (const [id, origin] of deps.config.connectorOrigins ?? []) {
@@ -79,7 +79,12 @@ export function createConnectors(deps: {
       })
     apps.set(connector.id, app)
   }
-  const executor = createExecutor({ fetch, origins, log: deps.log })
+  const executor = createExecutor({
+    fetch,
+    origins,
+    log: deps.log,
+    now: deps.tuning?.now ?? (() => new Date()),
+  })
   const limits = createLimits({ executor, log: deps.log })
   const routeDeps = {
     ...deps,
@@ -90,7 +95,7 @@ export function createConnectors(deps: {
     executor,
     limits,
     log: deps.log,
-    callDeadlineMs: deps.deadlines?.callDeadlineMs ?? CALL_DEADLINE_MS,
+    callDeadlineMs: deps.tuning?.callDeadlineMs ?? CALL_DEADLINE_MS,
   }
   const appCalls = createAppCalls(routeDeps, deps.door)
   // One door for the agents and the saved tools they call, so a turn's 50 reads count both.

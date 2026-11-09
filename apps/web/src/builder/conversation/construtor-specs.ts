@@ -12,6 +12,7 @@ import {
   CodeIcon,
   DatabaseIcon,
   FlaskConicalIcon,
+  PenLineIcon,
   SearchIcon,
   WrenchIcon,
 } from 'lucide-react'
@@ -222,5 +223,20 @@ export function slugToolSpec(slug: string, description?: string): ToolSpec {
     body: 'generic',
     groups: true,
     refusal: readRefusal,
+    reconnects: ['AUTH_REFUSED', 'TOKEN_EXPIRED'],
+  }
+}
+
+/** The agent's own write, named `tool_<slug>` (step 24.5): its row says it writes, in which system and what, never that it consulted. */
+export function writeToolSpec(action: string, system: string): ToolSpec {
+  const where = `no ${system}: ${action}`
+  return {
+    icon: PenLineIcon,
+    running: `Escrevendo ${where}`,
+    done: `Escreveu ${where}`,
+    failed: `Não conseguiu escrever ${where}`,
+    verb: 'escreveu',
+    body: 'generic',
+    groups: false,
   }
 }

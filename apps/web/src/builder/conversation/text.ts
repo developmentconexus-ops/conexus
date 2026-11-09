@@ -127,3 +127,16 @@ export function doneText(done: number, failed: number): string {
 /** What the footer of a request the Assistant handed to the Builder says beside the hour (Factory's "via Slack · Jane"). */
 export const FROM_ASSISTANT = 'via Assistente'
 export const FROM_ASSISTANT_LABEL = 'Enviado pelo Assistente'
+
+/**
+ * What a write says when the system refused it: one label for the state, and under it the system's
+ * own message as it came, with no translation (step 24.5, decision D6).
+ */
+export function refusedLabelText(system: string): string {
+  return `O ${system} não aceitou. Nada foi lançado.`
+}
+
+/** What a read's row says when the system answered and did not give what was asked, named as the write's label names it; its message follows as it came (decision of the founder, 2026-11-08). */
+export function readRefusedText(system: string): string {
+  return `O ${system} não aceitou.`
+}
