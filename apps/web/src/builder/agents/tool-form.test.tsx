@@ -142,7 +142,7 @@ test('outra aba gravou uma versão no meio (STALE_VERSION): a tela diz que há v
   expect(description).toHaveProperty('value', 'Da outra aba.')
 })
 
-test('a Nova versão de uma ferramenta que escreve chama a operação de Escrita, e a que lê, de Leitura', async () => {
+test('a Nova versão de uma ferramenta que escreve chama a operação de Escrita, não de Leitura', async () => {
   const config = { description: 'Lança o pedido.', bound: {}, open: [] }
   at(`${AREA}/tools/${TOOL}`, {
     agents: [agent()],

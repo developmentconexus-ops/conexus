@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { getAgent, listAgentVersions, listTools } from '@conexus/hub-api'
+import { getAgent, listAgentConversations, listAgentVersions, listTools } from '@conexus/hub-api'
 import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
@@ -203,5 +203,94 @@ test('as ligações do agente com duas ferramentas escolhidas não deixam o text
     nodes.map((node) => node.scrollHeight > node.clientHeight),
   )
   assert.deepEqual(cut, [false, false], 'o texto de uma ferramenta passa da linha dela')
+  await page.close()
+})
+
+// Founder's real test, 2026-11-08: at 1280 the first column of the list shrank to 40px and the name
+// and description broke letter by letter. The name keeps a readable column whenever the table shows.
+const LAPTOP = { width: 1280, height: 800 }
+test('a 1280 px a coluna da ferramenta mostra o nome inteiro, sem quebrar letra por letra', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/tools`, {
+    viewport: LAPTOP,
+    replies: {
+      ...replies,
+      [`GET ${BASE}/tools`]: ok(listTools, {
+        tools: [
+          {
+            ...TOOLS[0],
+            slug: 'lancar_pedido_de_venda',
+            description: 'Lança um pedido de venda no Sankhya, a confirmar, com a nota modelo.',
+            readLabel: 'Lançar pedido',
+            effect: 'WRITE' as const,
+            usedBy: [
+              { id: AGENT, projectId: PROJECT_ID, name: 'Conferente de metas' },
+              {
+                id: '11111111-aaaa-4aaa-8aaa-222222222222',
+                projectId: PROJECT_ID,
+                name: 'Vendedor',
+              },
+            ],
+          },
+        ],
+        ready: [],
+      }),
+    },
+  })
+  const name = page.getByRole('link', { name: /lancar_pedido_de_venda/ })
+  await name.waitFor()
+  const line = Number.parseFloat(await name.evaluate((el) => getComputedStyle(el).lineHeight))
+  const box = await name.boundingBox()
+  assert.ok(box && box.height <= line + 1, `o nome tem ${box?.height}px de altura, quebrou`)
+  const description = page.getByText('Lança um pedido de venda no Sankhya, a confirmar')
+  const text = await description.boundingBox()
+  assert.ok(text && text.width >= 200, `a descrição tem ${text?.width}px de largura`)
+  await page.close()
+})
+
+const WRITE_SUMMARY =
+  'Lança um pedido de venda no Sankhya, sempre "a confirmar": nota modelo, cliente, itens com o valor unitário e o local de estoque.'
+const writeAgentReplies = {
+  ...agentReplies,
+  [`GET ${BASE}/agents/${AGENT}/conversations`]: ok(listAgentConversations, {
+    conversations: [],
+  }),
+  [`GET ${BASE}/agents/${AGENT}`]: ok(getAgent, {
+    agent: {
+      ...AGENT_DETAIL,
+      draft: { ...DRAFT, connections: [CONNECTION] },
+      offered: [
+        {
+          connectionId: CONNECTION,
+          connector: 'sankhya',
+          name: 'Matriz',
+          reads: [],
+          writes: [{ operation: 'lancarPedido', label: 'Lançar pedido', summary: WRITE_SUMMARY }],
+        },
+      ],
+      tools: [
+        {
+          ...handMade(
+            '33333333-aaaa-4aaa-8aaa-000000000003',
+            'lancar_pedido',
+            WRITE_SUMMARY,
+            'lancarPedido',
+          ),
+          effect: 'WRITE' as const,
+          latest: { id: '44444444-aaaa-4aaa-8aaa-444444444445', number: 2 },
+        },
+      ],
+    },
+  }),
+}
+test('a 1280 px a linha da escrita com versão nova dá ao texto uma coluna que se lê', async () => {
+  const page = await harness.open(
+    `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}`,
+    { viewport: LAPTOP, replies: writeAgentReplies },
+  )
+  const row = page.getByRole('list', { name: 'Ferramentas de Matriz' }).locator('li').first()
+  await row.waitFor()
+  const text = row.getByText(WRITE_SUMMARY)
+  const box = await text.boundingBox()
+  assert.ok(box && box.width >= 200, `o texto da escrita tem ${box?.width}px de largura`)
   await page.close()
 })
