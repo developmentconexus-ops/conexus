@@ -71,6 +71,13 @@ choice of test tools.
   double. Any turn the screen draws from a stream is also read back after it ends, and the
   test asserts the two are equal. A double plays every tool the model is offered, not only
   those a card names, and the tests and QA read each tool's row on the screen. [review]
+- **T29.** A double of a connector **must** answer with bodies recorded from the real service,
+  refusals included, carrying invented values only (security S40), kept beside the connector and
+  imported by its double and its conformance. A page of the vendor's documentation is not a
+  recording. Until a route's real body is recorded, the card names the proof that records it, and
+  the nearest envelope measured on the real service stands in. Founder, 2026-11-08, to the
+  study's `D3`: "okay". Failure: the Sankhya double refused orders in the documentation's shape,
+  the reader read that shape, and the real gateway's `error.details` was lost. [review]
 - **T28.** In a model double, the arguments of a tool call **must** use only what the model call
   showed the model (names, texts), never an id or a value only the test knows. A double that knows
   more than the model hid the Assistant's `propose_automation` asking for ids it never saw. [review]
