@@ -150,8 +150,9 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
  * A write of the version (step 24.5): whether it asks first is the Hub's rule (`mustAsk`); a
  * connection the place no longer offers has no connector to ask about, and a call without its
  * conversation has no open sends to read, so both ask. Mastra treats the tool's own rule as final,
- * and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`), so a failed read asks. Its `execute` sends through the Hub's write funnel, which checks the open
- * sends again unless a person approved this very call.
+ * and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`), so a failed
+ * read asks. Its `execute` sends through the Hub's write funnel, which checks the open sends again
+ * unless a person approved this very call.
  */
 function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
   const { input, fixed } = write
