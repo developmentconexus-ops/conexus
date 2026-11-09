@@ -8,6 +8,7 @@ import { z } from 'zod'
 import type {
   ApprovalDeps,
   Connectors,
+  Returned,
   SessionScope,
   TurnKey,
   WriteAuthorOf,
@@ -42,10 +43,35 @@ type Refusal = Readonly<{
   }>
 }>
 
-/** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said. */
+/** What the model reads of a provider's body at most: Codex's default for a tool's output, 10 000 tokens at 4 characters each. The record keeps it all. */
+const TOLD_CHARACTERS = 40_000
+
+/** A text for the model: whole up to the cap, past it its start and its end, as Claude Code keeps a long tool error; counted in characters, so a cut never splits one in two. */
+function cappedText(text: string): string {
+  if (text.length <= TOLD_CHARACTERS) return text
+  const characters = Array.from(text)
+  if (characters.length <= TOLD_CHARACTERS) return text
+  const half = TOLD_CHARACTERS / 2
+  const cut = characters.length - TOLD_CHARACTERS
+  return `${characters.slice(0, half).join('')}…[${cut} characters cut]…${characters.slice(-half).join('')}`
+}
+
+/** A body for the model: as it came up to the cap, past it the cut of its JSON. */
+function capped(body: unknown): unknown {
+  const text = JSON.stringify(body)
+  if (text === undefined) return body
+  const told = cappedText(text)
+  return told === text ? body : told
+}
+
+/** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said, up to the cap. */
 function refuse(answer: Refusal): never {
   const { status = null, code = null, message = null, body = null } = answer.native ?? {}
-  throw new ConnectorRefused(JSON.stringify({ kind: answer.kind, status, code, message, body }))
+  const told = {
+    ...{ kind: answer.kind, status, code },
+    ...{ message: message === null ? null : cappedText(message), body: capped(body) },
+  }
+  throw new ConnectorRefused(JSON.stringify(told))
 }
 
 /** Every tool of an agent but a write runs without asking (step 24.5): only its own rule beats the controller's. */
@@ -109,17 +135,29 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
   })
 }
 
+/** What the provider answered, for the model: the body up to the cap. */
+function told(returned: Returned | null) {
+  return returned && { status: returned.status, body: capped(returned.body) }
+}
+
 /**
- * What the model hears of a write: the answers that leave the end unknown or the write held come
- * back as results with what to do next, and every other one that was not taken is thrown (criterion 35).
+ * What the model hears of a write: what the provider answered, whole up to the cap, on a success and
+ * when the end is unknown, so the model reads it itself; the answers that leave the end unknown or the
+ * write held come back as results with what to do next, and every other one that was not taken is
+ * thrown (criterion 35).
  */
 function toldOf(written: Written | { kind: 'CALLS_SPENT' }) {
   switch (written.kind) {
     case 'OK':
-      return written
+      return { ...written, returned: told(written.returned) }
     case 'WRITE_UNCERTAIN':
+      return {
+        ...written,
+        returned: told(written.returned),
+        instruction: uncertainText(written.mark, { returned: true }),
+      }
     case 'IDEMPOTENCY_CONFLICT':
-      return { ...written, instruction: uncertainText(written.mark) }
+      return { ...written, instruction: uncertainText(written.mark, { returned: false }) }
     case 'WRITE_OPEN':
       return { ...written, instruction: openText(written.mark, written.since) }
     default:

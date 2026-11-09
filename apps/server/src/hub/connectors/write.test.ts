@@ -3,15 +3,23 @@ import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConnectionId, OperationId, ToolCallId } from '@conexus/hub-api'
 import { markOf, openText, TurnKey } from './public.ts'
-import { ORDER, writing } from './test-write.ts'
+import { ORDER, placedAnswer, writing } from './test-write.ts'
 
 test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na observação e o código no log, sem os campos', async (t) => {
   const on = await writing(t)
   const first = on.byAna()
   const answered = await on.ask(first)
-  assert.deepEqual(answered, { kind: 'OK', value: { codigoPedido: 98001 } })
+  assert.deepEqual(answered, {
+    kind: 'OK',
+    value: { codigoPedido: 98001 },
+    returned: placedAnswer(98001),
+  })
   const second = on.byVersion()
-  assert.deepEqual(await on.ask(second), { kind: 'OK', value: { codigoPedido: 98002 } })
+  assert.deepEqual(await on.ask(second), {
+    kind: 'OK',
+    value: { codigoPedido: 98002 },
+    returned: placedAnswer(98002),
+  })
   const stored = on.fake.orders()
   assert.equal(stored.length, 2)
   assert.equal(stored[0]?.estado, 'A_CONFIRMAR')
@@ -206,13 +214,18 @@ test('o pedido sem resposta (f): a chamada que se repete com outra linha aberta 
   on.mode.cut = false
   const approved = on.byAna({ toolCallId: another() })
   const done = await on.ask({ ...approved, approvedBy: approved.scope.personId })
-  assert.deepEqual(done, { kind: 'OK', value: { codigoPedido: 98002 } })
+  assert.deepEqual(done, {
+    kind: 'OK',
+    value: { codigoPedido: 98002 },
+    returned: placedAnswer(98002),
+  })
   assert.deepEqual(await on.ask(approved), done)
   const held = another()
   await plant(on, { toolCallId: held })
   assert.deepEqual(await on.ask(on.byAna({ toolCallId: held })), {
     kind: 'WRITE_UNCERTAIN',
     mark: markOf(on.thread, held),
+    returned: null,
   })
   assert.equal(on.mode.posts, 2)
 })
@@ -266,15 +279,16 @@ test('a recusa inteira: o Written traz native.body igual ao corpo gravado, e a l
   assert.deepEqual(await on.ask(repeated), await on.ask(repeated))
 })
 
-test('a recusa inteira: um corpo acima do teto do executor continua UNREADABLE TOO_LARGE, sem corpo', async (t) => {
+test('a recusa inteira: um corpo acima do teto do executor não prova recusa: WRITE_UNCERTAIN com o status, sem corpo', async (t) => {
   const on = await writing(t, {
     order: async () => new Response('x'.repeat(2 * 1024 * 1024 + 1), { status: 400 }),
   })
-  const answered = await on.ask(on.byAna())
-  assert.equal(answered.kind, 'UNREADABLE')
-  const native = Object(answered).native
-  assert.equal(native.body, null)
-  assert.equal(native.reason.kind, 'TOO_LARGE')
+  const asked = on.byAna()
+  assert.deepEqual(await on.ask(asked), {
+    kind: 'WRITE_UNCERTAIN',
+    mark: markOf(asked.threadId, asked.toolCallId),
+    returned: { status: 400, body: null },
+  })
 })
 
 test('quem aprovou: o Aprovar grava a pessoa em approved_by, e Faz sozinho grava null', async (t) => {

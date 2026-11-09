@@ -7,6 +7,7 @@ import {
   assertFixedExist,
   assertMarkReachesRequest,
   assertRefusalsRead,
+  assertWriteNeedsProofToRefuse,
 } from './conformance-declared.ts'
 import { defineConnector } from './definition.ts'
 import type { ProviderAnswer } from './operation.ts'
@@ -46,6 +47,21 @@ test('a marca chega ao pedido: a de cada escrita passa no input e aparece no que
   assert.throws(() => assertMarkReachesRequest(lost), /the mark is in the request/)
   const unreadable = withWrite({ mark: () => ({ notaModelo: 'x' }) })
   assert.throws(() => assertMarkReachesRequest(unreadable), /the marked input reads/)
+})
+
+test('uma escrita só recusa com prova: um 200 sem o id e sem recusa do sistema é ilegível', () => {
+  assertWriteNeedsProofToRefuse(sankhyaWithWrites)
+  // The reader before this change took a 2xx without `retorno` for the vendor's refusal, so nothing held the next send.
+  const refusesWithoutProof = withWrite({
+    answer: (answer: ProviderAnswer) => {
+      const read = lancarPedido.answer(answer)
+      return read.kind === 'UNREADABLE' ? { ...read, kind: 'REFUSED' } : read
+    },
+  })
+  assert.throws(
+    () => assertWriteNeedsProofToRefuse(refusesWithoutProof),
+    /is unreadable, not refused/,
+  )
 })
 
 const base = {
