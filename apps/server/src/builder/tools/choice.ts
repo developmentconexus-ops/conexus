@@ -49,7 +49,7 @@ export async function readyOf(
       if (read === undefined) {
         throw new Failure('TOOL_REFUSED', { named: { field: 'operation', reason: 'NOT_A_READ' } })
       }
-      return { target, config: readyConfig(resolved.input, read.summary) }
+      return { target, config: readyConfig(resolved.input, read.summary, resolved.fixed) }
     }),
   )
 }

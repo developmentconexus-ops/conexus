@@ -9,6 +9,7 @@ import type {
   GrantAnswered,
   Native,
   Operation,
+  WriteOperation,
 } from '@conexus/connectors'
 import {
   loggedOutBy,
@@ -96,7 +97,7 @@ export type Executor = {
   write<I, O>(
     connection: OpenedConnection,
     token: BearerToken,
-    operation: Operation<I, O, 'write'>,
+    operation: WriteOperation<I, O>,
     input: I,
     deadlineMs: number,
   ): Promise<Wrote<O>>
@@ -270,10 +271,11 @@ function sentFor<I, O>(
 ) {
   const { connection, token, operation } = a
   const { connector } = connection
+  // The clock is read at each build, so a read's repeat is dated again; a write is built once and never repeated.
   function requestFor() {
     return toRequest(
       connector,
-      requestOf(operation, a.input, { ref: connection.accountRef }),
+      requestOf(operation, a.input, { ref: connection.accountRef }, deps.now()),
       token.reveal(),
       originFor(deps, connector),
     )

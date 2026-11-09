@@ -3,6 +3,7 @@ import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { Activation } from './activation.ts'
 import type { AgentRun } from './agent.ts'
 import { agentKey } from './agent.ts'
 import type { FrozenVersion } from './frozen.ts'
@@ -13,9 +14,17 @@ type Live = FrozenVersion & OfProject & { agentId: AgentId }
 export type AgentReads = {
   activeOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion | null>
   draftOf: (ids: OfProject, agentId: AgentId) => Promise<FrozenVersion>
+  versionOf: (
+    ids: OfProject,
+    agentId: AgentId,
+    version: Activation,
+  ) => Promise<FrozenVersion | null>
   liveOf: (companyId: CompanyId, agentId: AgentId) => Promise<Live | null>
   publishedAll: () => Promise<Live[]>
 }
+
+/** The agent a turn runs, and the activation it runs: none for the draft. */
+type Resolution = { agent: Agent; activation: Activation | undefined }
 
 export type Registry = {
   /** Before `startWorkers`; never throws for one agent alone. */
@@ -24,8 +33,12 @@ export type Registry = {
   replace(agentId: AgentId, companyId: CompanyId): Promise<void>
   /** In the agent's line, behind a swap or a registration still under way. */
   remove(agentId: AgentId): Promise<void>
-  /** The registered agent (registered if missing: `lazy`), or the draft's, made for the turn. */
-  resolve(run: AgentRun): Promise<Agent>
+  /**
+   * The registered agent (registered if missing: `lazy`), or the draft's, made for the turn. A turn
+   * that began on another activation, which its snapshot brings back after a card, gets that
+   * version made again from its row (`pinned`); a new turn gets the registered one.
+   */
+  resolve(run: AgentRun, pinned?: Activation): Promise<Resolution>
 }
 
 /** Work on one agent waits for the work before it on the same agent, whichever way that ended (C63). */
@@ -56,6 +69,7 @@ export function createRegistry(
   deps: AgentReads & { mastra: () => Mastra; build: (live: Live) => Agent; log: FailureLog },
 ): Registry {
   const inLine = lineUp()
+  const activations = new WeakMap<Agent, Activation>()
 
   function found(agentId: AgentId): Agent | undefined {
     const agents: Record<string, Agent | undefined> = deps.mastra().listAgents()
@@ -65,6 +79,8 @@ export function createRegistry(
   function register(live: Live, lazy: boolean): Agent {
     const key = agentKey(live.agentId)
     const agent = deps.build(live)
+    const activation = activationOf(live.source)
+    if (activation !== undefined) activations.set(agent, activation)
     deps.mastra().removeAgent(key)
     deps.mastra().addAgent(agent, key, { source: 'stored' })
     const version = live.source.kind === 'VERSION' ? live.source.number : 0
@@ -117,21 +133,54 @@ export function createRegistry(
         deps.mastra().removeAgent(agentKey(agentId))
       }),
 
-    async resolve(run) {
+    async resolve(run, pinned) {
       if (run.kind === 'DRAFT') {
         const draft = await deps.draftOf(run.scope, run.agentId)
-        return deps.build({ ...draft, ...run.scope, agentId: run.agentId })
+        const agent = deps.build({ ...draft, ...run.scope, agentId: run.agentId })
+        return { agent, activation: undefined }
       }
-      return (
+      const agent =
         found(run.agentId) ??
-        inLine(run.agentId, async () => {
+        (await inLine(run.agentId, async () => {
           const again = found(run.agentId)
           if (again !== undefined) return again
           const active = await deps.activeOf(run.scope, run.agentId)
           if (active === null) throw new Failure('AGENT_NOT_PUBLISHED')
           return register({ ...active, ...run.scope, agentId: run.agentId }, true)
-        })
-      )
+        }))
+      const activation = activationHeld(activations, agent)
+      if (pinned === undefined || sameActivation(pinned, activation)) return { agent, activation }
+      return madeAgain(deps, run, pinned)
     },
   }
+}
+
+/** The version a turn began on, made again from its row once it is no longer the registered one. */
+async function madeAgain(
+  deps: Pick<AgentReads, 'versionOf'> & { build: (live: Live) => Agent },
+  run: AgentRun,
+  pinned: Activation,
+): Promise<Resolution> {
+  const version = await deps.versionOf(run.scope, run.agentId, pinned)
+  if (version === null) throw new Failure('AGENT_VERSION_NOT_FOUND')
+  const agent = deps.build({ ...version, ...run.scope, agentId: run.agentId })
+  return { agent, activation: pinned }
+}
+
+function activationOf(source: FrozenVersion['source']): Activation | undefined {
+  return source.kind === 'VERSION'
+    ? { number: source.number, answeredBy: source.answeredBy }
+    : undefined
+}
+
+function activationHeld(activations: WeakMap<Agent, Activation>, agent: Agent): Activation {
+  const activation = activations.get(agent)
+  if (activation === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_WITHOUT_ACTIVATION' } })
+  }
+  return activation
+}
+
+function sameActivation(a: Activation, b: Activation): boolean {
+  return a.number === b.number && a.answeredBy === b.answeredBy
 }

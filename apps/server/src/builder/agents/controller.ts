@@ -40,6 +40,7 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
+import { resolverOf, scopesOf } from './resolver.ts'
 import { agent, agentConversation } from './tables.ts'
 import { mayApproveAgents, writeOfAgents } from './write-of.ts'
 
@@ -169,12 +170,14 @@ function machineMarks(runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
  */
 function delegatingAgent(
   queue: QueueDeps,
-  resolvedOf: Resolved,
+  own: { resolvedOf: Resolved; scopes: ReturnType<typeof scopesOf> },
   turns: ReturnType<typeof sessionTurns>,
 ): Agent {
+  const { resolvedOf } = own
   return new Agent({
     id: AGENTS_CONTROLLER,
     name: 'Agents',
+    scopes: own.scopes,
     instructions: async ({ requestContext }) =>
       (await resolvedOf(requestContext)).getInstructions({ requestContext }),
     model: async ({ requestContext }) =>
@@ -241,12 +244,7 @@ export function createAgentConversations(deps: Deps) {
     build: (live) => agentOf({ ...deps, memories, machines }, live),
   })
   const runOf = runsOf(database)
-  const resolvedOf = oncePerRun(async (requestContext) => {
-    const run = await runOf(requestContext)
-    if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-    setAgentRun(requestContext, run)
-    return registry.resolve(run)
-  })
+  const resolvedOf = resolverOf(runOf, registry)
   const machines = createConversationMachines(
     {
       ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS },
@@ -262,7 +260,7 @@ export function createAgentConversations(deps: Deps) {
       kind: 'agents',
       storage,
       memory,
-      agent: delegatingAgent(queue, resolvedOf, turns),
+      agent: delegatingAgent(queue, { resolvedOf, scopes: scopesOf(runOf, registry) }, turns),
     },
     mode: { id: MODE },
     // The conversation's machine, none for a version without its Computador (Factory `session-sandbox.ts:29-36`).

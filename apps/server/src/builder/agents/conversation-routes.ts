@@ -4,7 +4,7 @@ import {
   ConversationId,
   createAgentConversation,
   listAgentConversations,
-  listOpenWrites,
+  listWrites,
 } from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
@@ -28,7 +28,7 @@ type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   queue: QueueDeps
   conversations: AgentConversations
   agents: Pick<AgentReads, 'activeOf' | 'draftOf'>
-  connectors: Pick<Connectors['assistant'], 'openWrites'>
+  connectors: Pick<Connectors['assistant'], 'writes'>
   log: FailureLog
 }
 
@@ -54,28 +54,32 @@ function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversati
   }
 }
 
+/** The conversation of the person in this agent and Projeto, else `CONVERSATION_NOT_FOUND` (S10): the one admission of both write routes. */
+async function ownConversation(
+  deps: Deps,
+  input: Parameters<typeof inProjectOf>[0] & {
+    params: { agentId: AgentId; conversationId: ConversationId }
+  },
+) {
+  const scope = inProjectOf(input)
+  const { agentId, conversationId } = input.params
+  await admittedTo(deps, scope, agentId)
+  const owner = { companyId: scope.companyId, personId: scope.personId }
+  const run = await keptRun(deps.database, owner, conversationId)
+  if (run?.agentId !== agentId || run.scope.projectId !== scope.projectId) {
+    throw new Failure('CONVERSATION_NOT_FOUND')
+  }
+  return { scope: sessionScopeOf(scope), threadId: conversationId }
+}
+
 /**
- * What the card's notice reads (step 24.5): the conversation's sends whose end is not known, as the
- * record keeps them; a conversation of another person or agent is not found (S10).
+ * What the card reads (step 24.5): the conversation's writes as the record keeps them; a
+ * conversation of another person or agent is not found (S10).
  */
-function serveOpenWrites(app: FastifyInstance, deps: Deps): void {
-  serve(app, listOpenWrites, async (input) => {
-    const scope = inProjectOf(input)
-    const { agentId, conversationId } = input.params
-    await admittedTo(deps, scope, agentId)
-    const owner = { companyId: scope.companyId, personId: scope.personId }
-    const run = await keptRun(deps.database, owner, conversationId)
-    if (run?.agentId !== agentId || run.scope.projectId !== scope.projectId) {
-      throw new Failure('CONVERSATION_NOT_FOUND')
-    }
-    const open = await deps.connectors.openWrites({
-      scope: sessionScopeOf(scope),
-      threadId: conversationId,
-    })
-    const writes = open.map(({ connectionId, operation, state, since, mark }) => ({
-      ...{ connectionId, operation, state, mark },
-      sentAt: since.toISOString(),
-    }))
+function serveWrites(app: FastifyInstance, deps: Deps): void {
+  serve(app, listWrites, async (input) => {
+    const kept = await deps.connectors.writes(await ownConversation(deps, input))
+    const writes = kept.map(({ since, ...row }) => ({ ...row, sentAt: since.toISOString() }))
     return answer({ writes })
   })
 }
@@ -129,7 +133,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
   })
-  serveOpenWrites(app, deps)
+  serveWrites(app, deps)
 
   registerFile(app, {
     route: AGENT_FILE,

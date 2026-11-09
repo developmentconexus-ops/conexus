@@ -1,6 +1,6 @@
 import type { AgentId, CompanyId } from '@conexus/hub-api'
 
-/** What changes an agent's live version: publishing and going back, or deleting, after the transaction commits; and the start of a deletion. */
+/** What changes an agent's live version or who answers for it: publishing and going back, the person who answered leaving, or deleting, after the transaction commits; and the start of a deletion. */
 export type AgentEvent =
   | { kind: 'ACTIVATED'; companyId: CompanyId; agentId: AgentId; version: number }
   | { kind: 'DELETED'; companyId: CompanyId; agentId: AgentId }

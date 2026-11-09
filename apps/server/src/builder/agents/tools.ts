@@ -1,4 +1,4 @@
-import type { AgentId, ConnectionId } from '@conexus/hub-api'
+import type { AgentId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -10,15 +10,41 @@ import type {
   SessionScope,
   TurnKey,
   WriteRequest,
+  WriteShape,
   Written,
 } from '../../hub/connectors/public.ts'
 import { openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { approvedCallOf } from '../conversation/public.ts'
+import { unfixedOf } from '../tools/public.ts'
 import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
 import { targetOf } from './publish.ts'
 
-const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
+/**
+ * The failure an agent's tool throws for what certainly was not taken (decision 0062): Mastra
+ * wraps it in `TOOL_EXECUTION_FAILED` and hands the model its message, the whole of it, as a tool
+ * failure (`is_error` where the provider has one). The text is the JSON `{ kind, status, code,
+ * message, body }` of what the provider said; the log never prints it (S41).
+ */
+class ConnectorRefused extends Error {
+  override readonly name = 'ConnectorRefused'
+}
+
+type Refusal = Readonly<{
+  kind: string
+  native?: Readonly<{
+    status: number
+    code: string | null
+    message: string | null
+    body: unknown
+  }>
+}>
+
+/** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said. */
+function refuse(answer: Refusal): never {
+  const { status = null, code = null, message = null, body = null } = answer.native ?? {}
+  throw new ConnectorRefused(JSON.stringify({ kind: answer.kind, status, code, message, body }))
+}
 
 /** Every tool of an agent but a write runs without asking (step 24.5): only its own rule beats the controller's. */
 export function NEVER_ASKS() {
@@ -27,7 +53,7 @@ export function NEVER_ASKS() {
 
 /** Who an agent's write speaks as: a published version by its agent and number (it has no id of its own), or the person talking to the draft. */
 export type WriteAuthor =
-  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number }>
+  | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number; answeredBy: PersonId | null }>
   | Readonly<{ kind: 'DRAFT' }>
 
 type Deps = {
@@ -41,7 +67,10 @@ type Deps = {
   author: WriteAuthor
   /** The connector of each connection the place offers, which a write's role check names. */
   offered: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[]
-  /** Whether the publisher of the version still leaves this write alone, read now (`publisherLeavesAlone`). */
+  /**
+   * Whether who answers for the version (who made it active) still leaves this write alone, read
+   * now (`answererLeavesAlone`).
+   */
   leavesAlone: (
     version: Extract<WriteAuthor, { kind: 'VERSION' }>,
     target: NonNullable<ReturnType<typeof targetOf>>,
@@ -49,11 +78,13 @@ type Deps = {
   log: FailureLog
 }
 
-/** The open fields of a read's or a write's own input, the ones the model fills. */
-function openOf(input: z.ZodObject, tool: PresetFrozenTool) {
+/** The open fields of a read's or a write's own input, the ones the model fills, never one the operation says only whoever configures fixes. */
+function openOf(input: z.ZodObject, tool: PresetFrozenTool, fixed: readonly string[] = []) {
   const open = new Set(tool.open)
   return z.object(
-    Object.fromEntries(Object.entries(input.shape).filter(([field]) => open.has(field))),
+    Object.fromEntries(
+      Object.entries(input.shape).filter(([field]) => open.has(field) && !fixed.includes(field)),
+    ),
   )
 }
 
@@ -69,7 +100,8 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
     inputSchema: input === undefined ? z.object({}) : openOf(input, tool),
     requireApproval: NEVER_ASKS,
     execute: async (given, { requestContext, abortSignal }) => {
-      if (input === undefined || requestContext === undefined) return NOT_GRANTED
+      if (input === undefined || requestContext === undefined)
+        return refuse({ kind: 'NOT_GRANTED' })
       const answered = await deps.connectors.read(deps.scope, {
         connectionId: tool.connectionId,
         operation: tool.operation,
@@ -77,23 +109,28 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
         turn: deps.turnOf(requestContext),
         signal: abortSignal,
       })
-      if (answered.kind !== 'OK') return answered
+      if (answered.kind !== 'OK') return refuse(answered)
       const { whole: _whole, ...cut } = answered
       return cut
     },
   })
 }
 
-/** What the model hears of a write: the funnel's answer, with what to do next where nothing more may be sent. */
+/**
+ * What the model hears of a write: the answers that leave the end unknown or the write held come
+ * back as results with what to do next, and every other one that was not taken is thrown (criterion 35).
+ */
 function toldOf(written: Written | { kind: 'CALLS_SPENT' }) {
   switch (written.kind) {
+    case 'OK':
+      return written
     case 'WRITE_UNCERTAIN':
     case 'IDEMPOTENCY_CONFLICT':
       return { ...written, instruction: uncertainText(written.mark) }
     case 'WRITE_OPEN':
       return { ...written, instruction: openText(written.mark, written.since) }
     default:
-      return written
+      return refuse(written)
   }
 }
 
@@ -111,10 +148,11 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
 
 /**
  * Whether a published version's write in Faz sozinho may still run without asking (step 24.5,
- * D2-a): the publisher's role, read on every call, holds the action and the write. A connection
- * the place no longer offers has no connector to ask about, and asks.
+ * D2-a): the role of who answers for the version (who made it active), read on every call, holds
+ * the action and the write. A connection the place no longer offers has no connector to ask about,
+ * and asks.
  */
-async function aloneByPublisher(deps: Deps, tool: PresetFrozenTool): Promise<boolean> {
+async function aloneByAnswerer(deps: Deps, tool: PresetFrozenTool): Promise<boolean> {
   if (deps.author.kind === 'DRAFT') return true
   const target = targetOf(deps.offered, tool)
   return target !== undefined && deps.leavesAlone(deps.author, target)
@@ -122,21 +160,22 @@ async function aloneByPublisher(deps: Deps, tool: PresetFrozenTool): Promise<boo
 
 /**
  * A write of the version (step 24.5): it asks the person first when the version keeps it in
- * Pergunta antes, when the publisher's role no longer leaves it alone, or when the conversation
- * holds an earlier send of the same write whose end is not known; Mastra treats the tool's own
- * rule as final, and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`),
+ * Pergunta antes, when the role of who answers for the version (who made it active) no longer
+ * leaves it alone, or when the conversation holds an earlier send of the same write whose end is
+ * not known; Mastra treats the tool's own rule as final, and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`),
  * so a failed read asks. Its `execute` sends through the Hub's write funnel, which checks the open
  * sends again unless a person approved this very call.
  */
-function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
+function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
+  const { input, fixed } = write
   const target = { connectionId: tool.connectionId, operation: tool.operation }
   return createTool({
     id: `tool_${tool.slug}`,
     description: tool.description,
-    inputSchema: openOf(input, tool),
+    inputSchema: openOf(input, tool, fixed),
     requireApproval: async (_given, context) => {
       if (tool.approval !== 'AUTO') return true
-      if (!(await aloneByPublisher(deps, tool))) return true
+      if (!(await aloneByAnswerer(deps, tool))) return true
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])
       if (!threadId.success) return true
       const open = await deps.connectors.openWrites({
@@ -149,6 +188,12 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject) {
       if (requestContext === undefined || agent?.threadId === undefined) {
         deps.log.error({ ...target, tool: tool.slug }, 'CONNECTOR_WRITE_NO_CONTEXT')
         throw new Error('an agent’s write was called without its conversation')
+      }
+      // A version published before the field was declared fixed leaves it open: nothing is sent (criterion 44).
+      const unfixed = unfixedOf(fixed, tool)
+      if (unfixed !== undefined) {
+        deps.log.info({ ...target, tool: tool.slug, field: unfixed }, 'CONNECTOR_WRITE_NOT_FIXED')
+        throw new ConnectorRefused(JSON.stringify({ kind: 'NOT_FIXED', field: unfixed }))
       }
       const toolCallId = ToolCallId.parse(agent.toolCallId)
       const approved = approvedCallOf(requestContext)

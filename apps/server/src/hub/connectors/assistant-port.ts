@@ -13,6 +13,7 @@ import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
+import { fixedFieldsOf } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
@@ -20,6 +21,8 @@ import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
+import type { WrittenRecord } from './write-list.ts'
+import { writesOf } from './write-list.ts'
 import type { OpenWrite, OpenWritesKey, WriteRequest, Written } from './write-record.ts'
 import { openWritesOf } from './write-record.ts'
 
@@ -39,6 +42,9 @@ type AssistantRead =
   | (Extract<ShapedRead, { kind: 'OK' }> & { whole: unknown })
   | Exclude<ShapedRead, { kind: 'OK' }>
   | Spent
+
+/** A write's input and the fields of it that only whoever configures the tool sets. */
+export type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[] }>
 
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
@@ -61,6 +67,8 @@ export type AssistantConnectors = {
   write(request: WriteRequest): Promise<Written | Spent>
   /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
   openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
+  /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); the card reads it, `openWrites` stays for the tool's own check. */
+  writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
@@ -83,11 +91,14 @@ export type AssistantConnectors = {
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
-  /** The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a read's; none otherwise. */
+  /**
+   * The input of one write of a connection the place offers (step 24.5), as `operationOf` gives a
+   * read's, with the fields only whoever configures the tool fixes (`fixed`, decision 0062); none otherwise.
+   */
   writeOf(
     scope: SessionScope,
     target: { connectionId: ConnectionId; operation: string },
-  ): Promise<z.ZodObject | undefined>
+  ): Promise<WriteShape | undefined>
   /**
    * The kit's typed reads of every connection the place offers, the read door's left out: what a
    * version written before decision E4 reads as its connections' tools.
@@ -261,6 +272,20 @@ function chosenAmong(scope: SessionScope) {
   })
 }
 
+/** One write of a connection the place offers, by the kit's declaration: its input and its fixed fields. */
+async function writeShapeOf(
+  deps: Deps,
+  scope: SessionScope,
+  target: { connectionId: ConnectionId; operation: string },
+): Promise<WriteShape | undefined> {
+  const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
+  const connector = row === undefined ? undefined : connectorOf(row.connector)
+  const write = connector?.writes?.find((each) => each.id === target.operation)
+  return connector !== undefined && write?.input instanceof z.ZodObject
+    ? { input: write.input, fixed: fixedFieldsOf(connector.id, target.operation) }
+    : undefined
+}
+
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
@@ -311,12 +336,9 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
 
     openWrites: (key) => openWritesOf(deps, key),
 
-    async writeOf(scope, target) {
-      const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
-      const connector = row === undefined ? undefined : connectorOf(row.connector)
-      const input = connector?.writes?.find((each) => each.id === target.operation)?.input
-      return input instanceof z.ZodObject ? input : undefined
-    },
+    writes: (key) => writesOf(deps, key),
+
+    writeOf: (scope, target) => writeShapeOf(deps, scope, target),
 
     async operationOf(scope, target) {
       const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)

@@ -1,6 +1,5 @@
-// Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
-// the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, handoff, approval, approval-declined, approval-interrupted or approval-stopped) runs the native flow once: Mastra's
+// Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -12,8 +11,7 @@
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
 // is called and no credential is read; every prompt is invented (security S40). `reads` is the
 // Assistant's turn: a `connector_read` that runs its SQL on the Sankhya double's Padaria Sol (Matriz),
-// then an answer with its numbers, for the numbers' check (step 24.1, criterion 11a). `tool-error` is not a scenario: its
-// recording holds one model call and the turn asks a second.
+// then an answer with its numbers (step 24.1, criterion 11a). `tool-error` is no scenario: its recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Agent } from '@mastra/core/agent'
@@ -265,7 +263,7 @@ const RECORDED_TOOLS = {
       return { kind: 'OK', value: { linhas, completo: true }, complete: true }
     },
   }),
-  [APPROVAL_TOOL]: approval.approvalTool(orders),
+  [APPROVAL_TOOL]: approval.approvalTool(orders, process.argv.includes('approval-refused')),
   anotar: createTool({
     id: 'anotar',
     description: 'Anota uma nota.',

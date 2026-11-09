@@ -138,9 +138,12 @@ export function invocations(parts: MastraMessagePart[], toolCallId: string) {
 /** The parked runs in Mastra's database: one run keeps a snapshot of its loop and of its execution. */
 export const PARKED = `select distinct run_id from mastra.mastra_workflow_snapshot where snapshot->>'status' = 'suspended'`
 
-/** What `said` resolves to within `ms`, or `undefined`: a stream that says nothing fails the test, not hangs it. */
+/**
+ * What `said` resolves to within `ms`, or `undefined`: a stream that says nothing fails the test, not
+ * hangs it. The deadline does not hold the file's process once `said` has answered.
+ */
 export async function within<T>(ms: number, said: Promise<T>): Promise<T | undefined> {
-  return Promise.race([said, sleep(ms).then(() => undefined)])
+  return Promise.race([said, sleep(ms, undefined, { ref: false })])
 }
 
 /** What a call that Mastra closed without an answer reads as: the states of its `tool-invocation` part. */

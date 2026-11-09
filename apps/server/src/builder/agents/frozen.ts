@@ -16,6 +16,7 @@ import {
   CompanyId as CompanyIdSchema,
   ConnectionId,
   OperationId,
+  PersonId,
   ProjectId,
   ToolKind,
   ToolSlug as ToolSlugSchema,
@@ -27,8 +28,9 @@ import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
+import type { Activation } from './activation.ts'
 import type { Choice } from './store.ts'
-import { choiceOf, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
+import { choiceOf, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
 /**
@@ -52,7 +54,9 @@ export type FrozenTool = PresetFrozenTool | CodeFrozenTool
 /** The configuration a version or the draft becomes an agent with, its tools as their versions hold them. */
 export type FrozenVersion = AgentConfig & {
   tools: readonly FrozenTool[]
-  source: { kind: 'VERSION'; number: number } | { kind: 'DRAFT'; revision: number }
+  source:
+    | { kind: 'VERSION'; number: number; answeredBy: PersonId | null }
+    | { kind: 'DRAFT'; revision: number }
 }
 
 // A row of `builder.companies_with_agents()`.
@@ -124,7 +128,11 @@ async function toolsOf(tx: ReadTx, choices: readonly Choice[]): Promise<Tools> {
 export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
   return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion | null> => {
     const [row] = await tx
-      .select({ config: agentVersion.config, number: agentVersion.number })
+      .select({
+        config: agentVersion.config,
+        number: agentVersion.number,
+        answeredBy: agent.activeBy,
+      })
       .from(agent)
       .innerJoin(
         agentVersion,
@@ -133,8 +141,32 @@ export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
       .where(ofProject(ids, agentId))
     if (row === undefined) return null
     const tools = await toolsOf(tx, await pinnedOf(tx, agentId, row.number))
-    const source = { kind: 'VERSION', number: row.number } as const
+    const source = {
+      kind: 'VERSION',
+      number: row.number,
+      answeredBy: PersonId.nullable().parse(row.answeredBy),
+    } as const
     return { ...AgentConfigSchema.parse(row.config), tools, source }
+  })
+}
+
+/**
+ * A published version as it was published, answered for by `answeredBy`: the version a turn that
+ * began on it goes on with, once another has become the active one. None when the version is gone.
+ */
+export function versionOf(
+  database: Database,
+  ids: OfProject,
+  agentId: AgentId,
+  version: Activation,
+) {
+  return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion | null> => {
+    const [row] = await tx.select({ id: agent.id }).from(agent).where(ofProject(ids, agentId))
+    if (row === undefined) return null
+    const back = await versionBack(tx, agentId, version.number)
+    if (back === undefined) return null
+    const source = { kind: 'VERSION', ...version } as const
+    return { ...back.config, tools: await toolsOf(tx, back.choices), source }
   })
 }
 
@@ -175,6 +207,7 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
       projectId: agent.projectId,
       config: agentVersion.config,
       number: agentVersion.number,
+      answeredBy: agent.activeBy,
     })
     .from(agent)
     .innerJoin(agentVersion, active)
@@ -197,7 +230,11 @@ async function publishedOf(tx: ReadTx, companyId: CompanyId) {
     return {
       ...AgentConfigSchema.parse(row.config),
       tools: sorted(own),
-      source: { kind: 'VERSION', number: row.number } as const,
+      source: {
+        kind: 'VERSION',
+        number: row.number,
+        answeredBy: PersonId.nullable().parse(row.answeredBy),
+      } as const,
       ...ids,
       agentId: AgentId.parse(row.id),
     }

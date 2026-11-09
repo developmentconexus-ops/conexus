@@ -26,7 +26,7 @@ import { admitted, databaseScopeOf, derivedUuid, sessionScopeOf } from '../tools
 import { choose } from './choose.ts'
 import type { AgentEvent } from './events.ts'
 import { legacyReads } from './legacy.ts'
-import { invalidField, makeActive, published, refuseUnheld, versionBack } from './publish.ts'
+import { invalidField, makeActive, published, refuseUnheld } from './publish.ts'
 import {
   agentIn,
   agentsIn,
@@ -34,6 +34,7 @@ import {
   detailOf,
   listedOf,
   ofProject,
+  versionBack,
   versionsOf,
 } from './store.ts'
 import { agent } from './tables.ts'

@@ -81,7 +81,11 @@ test('publicar: a versão 1 guarda o rascunho e a versão 1 da ferramenta; depoi
   const active = await on.hub.agents.activeOf(ids, AgentId.parse(made.id))
   assert.equal(active?.instructions, INSTRUCTIONS)
   assert.deepEqual(active?.connections, [on.matriz])
-  assert.deepEqual(active?.source, { kind: 'VERSION', number: 1 })
+  assert.deepEqual(active?.source, {
+    kind: 'VERSION',
+    number: 1,
+    answeredBy: on.ana.id,
+  })
   assert.deepEqual(presetsOf(active?.tools), [
     {
       ...{ slug: 'pedidos_matriz', operation: 'pedidos', bound: { codigoEmpresa: 1 } },

@@ -15,6 +15,7 @@ import { readUnserved } from './served.ts'
 import type { SignInFlows } from './sign-ins.ts'
 import { createModelAccountStore } from './store.ts'
 
+export { autoMemoryModel } from './auto-memory-model.ts'
 export { promptCacheMiddleware, subscriptionModel } from './claude/models.ts'
 export { conversationStart } from './defaults.ts'
 export { memoryModelsFor } from './observational-memory-settings.ts'

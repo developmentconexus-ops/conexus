@@ -41,6 +41,7 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
     writeOf: (scope, target) => connectors().assistant.writeOf(scope, target),
     openWrites: (key) => connectors().assistant.openWrites(key),
+    writes: (key) => connectors().assistant.writes(key),
     kitReads: (scope) => connectors().assistant.kitReads(scope),
   }
 }

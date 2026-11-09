@@ -1,4 +1,11 @@
-import type { AgentId, CompanyId, ConnectionId, OperationId, Publish } from '@conexus/hub-api'
+import type {
+  AgentId,
+  CompanyId,
+  ConnectionId,
+  OperationId,
+  PersonId,
+  Publish,
+} from '@conexus/hub-api'
 import {
   AgentConfig,
   AgentId as AgentIdSchema,
@@ -6,20 +13,20 @@ import {
   ConnectionId as ConnectionIdSchema,
   ConnectorId as ConnectorIdSchema,
   OperationId as OperationIdSchema,
-  PersonId,
   ToolKind,
+  ToolVersionConfig,
 } from '@conexus/hub-api'
 import { and, eq, max, sql } from 'drizzle-orm'
 import type { KitRead } from '../../hub/connectors/public.ts'
-import { operationLabel } from '../../hub/connectors/public.ts'
+import { fixedFieldsOf, operationLabel } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection } from '../tools/public.ts'
-import { versionsWithTools } from '../tools/public.ts'
+import { unfixedOf, versionsWithTools } from '../tools/public.ts'
 import { legacyReads } from './legacy.ts'
 import type { Choice } from './store.ts'
-import { chosenIds, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
+import { chosenIds, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
 import { agent, agentTool, agentVersion, agentVersionTool } from './tables.ts'
 
 /** What publishing needs of the draft: instructions, and only connections the Projeto still offers. */
@@ -183,22 +190,34 @@ export async function mayLeaveAlone(
  */
 export async function refuseUnheld(tx: ReadTx, scope: InProject, a: Becoming): Promise<void> {
   await refuseByRole(tx, scope, a)
+  await refuseUnfixed(tx, a)
   const [alone] = await alonesOf(tx, a.choices, a.around)
   if (alone !== undefined) await mayLeaveAlone(a.identity, tx, scope, alone)
 }
 
-/** A published version as it would become active again: its configuration and its tools' versions. */
-export async function versionBack(
-  tx: ReadTx,
-  agentId: AgentId,
-  number: number,
-): Promise<Pick<Becoming, 'config' | 'choices'> | undefined> {
-  const [version] = await tx
-    .select({ config: agentVersion.config })
-    .from(agentVersion)
-    .where(and(eq(agentVersion.agentId, agentId), eq(agentVersion.number, number)))
-  if (version === undefined) return undefined
-  return { config: AgentConfig.parse(version.config), choices: await pinnedOf(tx, agentId, number) }
+/**
+ * Whether every write the choices hold fixes the fields its operation declares `fixed` (decision
+ * 0062): the first that leaves one open or without a value is `AGENT_TOOL_REFUSED`, `NOT_FIXED`,
+ * naming the tool and the field, and nothing is published.
+ */
+async function refuseUnfixed(tx: ReadTx, a: Becoming): Promise<void> {
+  const rows = await versionsWithTools(
+    tx,
+    a.choices.map((each) => each.id),
+  )
+  for (const { tool, version } of rows) {
+    if (ToolKind.parse(tool.kind) !== 'PRESET') continue
+    const connector = a.around.find((each) => each.connectionId === tool.connectionId)?.connector
+    if (connector === undefined) continue
+    const fixed = fixedFieldsOf(connector, OperationIdSchema.parse(tool.operation))
+    const field = unfixedOf(fixed, ToolVersionConfig.parse(version.config))
+    if (field !== undefined) {
+      throw new Failure('AGENT_TOOL_REFUSED', {
+        details: { tool: tool.slug, field },
+        named: { field: 'tools', reason: 'NOT_FIXED' },
+      })
+    }
+  }
 }
 
 export type Holding = {
@@ -227,38 +246,23 @@ export async function holdsWrite(
 /**
  * Whether a version's write in Faz sozinho still runs without asking (step 24.5, D2-a): who
  * answers for the version is still in the company, and their role, read now, holds both the action
- * and the write. Otherwise it asks; what the version declares does not change. The conversation
- * runs the active version (`activeOf`), answered for by who made it active, so restoring an old
- * version moves the answer to who restored it (`agent.active_by`); a version that is not the
- * active one keeps its publisher (`agent_version.published_by`).
+ * and the write. Otherwise it asks; what the version declares does not change. The run answers for
+ * the version by who made it active when the run began (`agent.active_by`, read with the version
+ * in `activeOf`), so a later publish or restore does not change who answers for a run in progress.
  */
-export async function publisherLeavesAlone(
+export async function answererLeavesAlone(
   deps: Holding,
   companyId: CompanyId,
-  version: { agentId: AgentId; number: number },
+  answeredBy: PersonId | null,
   target: Target,
 ): Promise<boolean> {
-  const [row] = await deps.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
-    tx
-      .select({
-        by: sql<
-          string | null
-        >`case when ${agent.activeVersion} = ${agentVersion.number} then ${agent.activeBy} else ${agentVersion.publishedBy} end`,
-      })
-      .from(agentVersion)
-      .innerJoin(agent, eq(agent.id, agentVersion.agentId))
-      .where(
-        and(eq(agentVersion.agentId, version.agentId), eq(agentVersion.number, version.number)),
-      ),
-  )
   // A person who left takes their authorship with them (`release.ts`), so no one leaves it alone.
-  if (row?.by == null) return false
-  const personId = PersonId.parse(row.by)
-  const role = await roleNow(deps, companyId, personId)
+  if (answeredBy === null) return false
+  const role = await roleNow(deps, companyId, answeredBy)
   if (role === undefined || !(await deps.identity.mayPublishUnattended(companyId, role))) {
     return false
   }
-  return holdsWrite(deps, companyId, personId, target)
+  return holdsWrite(deps, companyId, answeredBy, target)
 }
 
 /** Makes the version the agent's active one, answered for by `by`; the draft does not change. */

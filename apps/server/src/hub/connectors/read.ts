@@ -1,4 +1,3 @@
-import type { ConnectorAnswer } from '@conexus/app-contract'
 import type { Answered, Native, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
@@ -35,14 +34,19 @@ export type ReadRequest = Readonly<{
 /** The speaker's role (or version) does not hold the operation: the model hears the role's name and never the input (S40). */
 export type NotInRole = Readonly<{ kind: 'NOT_IN_ROLE'; role: string | null; operation: string }>
 
-/** What of the provider's answer an app may see: never its body (S41). */
-function summaryOf(native: Native) {
-  return { status: native.status, code: native.code, message: native.message }
-}
+/**
+ * What a read answers: the provider's refusal whole, as it came. Each consumer cuts at its own
+ * edge: the app keeps the status, code and message (`app-calls.ts`), the model gets it all.
+ */
+export type ReadAnswer =
+  | Readonly<{ kind: 'OK'; value: unknown; empty?: true }>
+  | Readonly<{ kind: 'REFUSED' | 'AUTH_REFUSED' | 'UNREADABLE'; native: Native }>
+  | Readonly<{ kind: 'BUSY'; waitMs: number | null }>
+  | Readonly<{ kind: 'UNREACHABLE' | 'DEADLINE' }>
 
 function answerOf(
   answered: Answered<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused,
-): ConnectorAnswer {
+): ReadAnswer {
   switch (answered.kind) {
     case 'OK':
       return answered.empty === true
@@ -51,9 +55,9 @@ function answerOf(
     case 'REFUSED':
     case 'AUTH_REFUSED':
     case 'UNREADABLE':
-      return { kind: answered.kind, native: summaryOf(answered.native) }
+      return { kind: answered.kind, native: answered.native }
     case 'TOKEN_EXPIRED':
-      return { kind: 'AUTH_REFUSED', native: summaryOf(answered.native) }
+      return { kind: 'AUTH_REFUSED', native: answered.native }
     case 'BUSY':
       return { kind: 'BUSY', waitMs: answered.waitMs }
     case 'UNREACHABLE':
@@ -118,7 +122,7 @@ function isStopped(a: ReadRequest): boolean {
 }
 
 /** A read the reader stopped before it reached the provider: no call was made, so no `CONNECTOR_CALLED` line. */
-function stopped(deps: Deps, a: ReadRequest): ConnectorAnswer {
+function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
   deps.log.info(
     { connectionId: a.opened.id, operation: a.operation.id, by: a.by },
     'CONNECTOR_READ_STOPPED',
@@ -132,10 +136,7 @@ function stopped(deps: Deps, a: ReadRequest): ConnectorAnswer {
  * leaves one `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated)
  * its own error line (#470).
  */
-export async function readThrough(
-  deps: Deps,
-  a: ReadRequest,
-): Promise<ConnectorAnswer | NotInRole> {
+export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswer | NotInRole> {
   if (isStopped(a)) return stopped(deps, a)
   const allowed = await deps.identity.mayUse(a.ids.companyId, a.speaker, {
     connectionId: a.opened.id,
@@ -163,7 +164,7 @@ export async function readThrough(
       'CONNECTOR_INPUT_REFUSED',
     )
     const message = issuesOf(parsed.error)
-    return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message } }
+    return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message, body: null } }
   }
   let queuedMs = a.deadlineMs
   const turn = await deps.limits.inTurn(
@@ -177,7 +178,7 @@ export async function readThrough(
   )
   const answered = 'kind' in turn && turn.kind === 'DEADLINE' ? null : turn
   if (answered === null && isStopped(a)) return stopped(deps, a)
-  const result: ConnectorAnswer = answered === null ? { kind: 'DEADLINE' } : answerOf(answered)
+  const result: ReadAnswer = answered === null ? { kind: 'DEADLINE' } : answerOf(answered)
   if (answered?.kind === 'UNREADABLE' && answered.native.code === CONCURRENT_CALL)
     deps.log.error(
       { connectionId: a.opened.id, connector: a.opened.connector.id },

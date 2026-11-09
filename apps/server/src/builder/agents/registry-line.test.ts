@@ -16,7 +16,7 @@ const ids = {
 }
 const live: Live = Object.assign(Object.create(null), {
   ...ids,
-  source: { kind: 'VERSION', number: 1 },
+  source: { kind: 'VERSION', number: 1, answeredBy: null },
 })
 
 function agentNamed(id: string): Agent {
@@ -44,6 +44,7 @@ function registryOver(options: {
   const registry = createRegistry({
     activeOf: async () => null,
     draftOf: async () => live,
+    versionOf: async () => null,
     liveOf: options.liveOf ?? (async () => live),
     publishedAll: options.publishedAll ?? (async () => [live]),
     mastra: () => mastra,
