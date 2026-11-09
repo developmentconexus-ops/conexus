@@ -10,7 +10,7 @@ export const LAPTOP: Viewport = { width: 1280, height: 800 }
  * scrolls, the box stays where it was after the scroll, and the page is the height of the screen
  * (design V54; the box sat in the scroll when a screen put no column round the `Chat`).
  */
-export async function holdsColumn(page: Page, viewport: Viewport) {
+export async function holdsColumn(page: Page & { problems: string[] }, viewport: Viewport) {
   const box = page.locator('form:has(textarea)').last()
   await box.waitFor()
   await page.evaluate(() => {
