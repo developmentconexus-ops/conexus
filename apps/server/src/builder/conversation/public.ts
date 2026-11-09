@@ -19,7 +19,6 @@ import { TOOL_CLOSURE } from './permissions.ts'
 import { created, registerConversationRoutes } from './routes.ts'
 import { createConversationStore } from './store.ts'
 
-export { conversationMemory, routedModel, sessionModel, toolsOf } from './builder.ts'
 export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra, MayApprove, WriteOf } from './guard.ts'
@@ -30,7 +29,6 @@ export { turnDate } from './prompt/prompt.ts'
 export { createMastraStorage } from './storage.ts'
 export { bodyHashOf } from './store.ts'
 export { TurnTally } from './turn-line.ts'
-export { turnOfOwner } from './turn-of.ts'
 export { TOOL_CLOSURE }
 
 /**

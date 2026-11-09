@@ -29,8 +29,14 @@ import type { Speakers } from '../assistant/public.ts'
 import { blockOf } from '../assistant/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import { agentDefaults, oncePerRun, turnKeyOn } from '../controller-kit/public.ts'
-import { routedModel, toolsOf } from '../conversation/public.ts'
+import {
+  agentDefaults,
+  fixedSystem,
+  oncePerRun,
+  routedModel,
+  toolsOf,
+  turnKeyOn,
+} from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -46,12 +52,10 @@ import { answererLeavesAlone } from './publish.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
-/** Conexus's fixed message, the same bytes as the Assistant's first part (step 24.1). */
 const FIXED = readFileSync(
   new URL('../conversation/prompt/conexus.md', import.meta.url),
   'utf8',
 ).trim()
-const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 const READ_ONLY =
   'You only read: no tool of yours writes in a system. When the person asks you to change, save or send something, say that you cannot and what they can do instead.'
 const WRITES =
@@ -341,7 +345,7 @@ export function agentOf(
       const { program, writes } = await toolsOfRun(requestContext)
       const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
-        { role: 'system', content: FIXED, providerOptions: CACHED },
+        fixedSystem(FIXED),
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
         { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },
         ...(program === undefined
