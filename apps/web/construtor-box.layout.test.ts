@@ -7,6 +7,7 @@ import {
   listModelAccounts,
   listTools,
 } from '@conexus/hub-api'
+import { holdsColumn, LAPTOP } from './chat-column.ts'
 import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
@@ -84,3 +85,11 @@ for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE]) {
     })
   }
 }
+
+// The founder, 2026-11-09: the box moved and the scroll took it along (design V54).
+for (const viewport of [LAPTOP, PHONE])
+  test(`a ${viewport.width} px, na conversa do Construtor, quem rola é a conversa e a caixa fica onde estava`, async () => {
+    const page = await harness.open(`${AREA}/construtor/${CONVERSATION}`, { viewport, replies })
+    await holdsColumn(page, viewport)
+    await page.close()
+  })

@@ -242,11 +242,11 @@ export function Chat(props: ChatProps) {
 
   const { writes } = useRoom()
   const turns = useMemo(() => shownOf(state, approvedCalls(writes)), [state, writes])
-  const waiting = Object.keys(state.suspended).length > 0
+  const waiting = Object.keys(state.suspended).length > 0 || Object.keys(state.approvals).length > 0
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-col">
       <Notices
         companyId={companyId}
         canAnswer={canAnswer}
@@ -289,6 +289,6 @@ export function Chat(props: ChatProps) {
           </ApproveProvider>
         </AnswerProvider>
       </div>
-    </>
+    </div>
   )
 }

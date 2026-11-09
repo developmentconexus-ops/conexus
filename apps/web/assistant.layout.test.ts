@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import { holdsColumn, LAPTOP } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE, touching } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -312,3 +313,11 @@ test('as linhas do "+" têm 44 px num toque e 32 com o mouse (V58)', async () =>
   const touch = await plusRows(PHONE, true)
   assert.ok(touch.length > 0 && touch.every((height) => height === 44), `touch rows: ${touch}`)
 })
+
+// The founder, 2026-11-09: the box moved and the scroll took it along (design V54).
+for (const viewport of [LAPTOP, PHONE])
+  test(`a ${viewport.width} px, na conversa do Assistente, quem rola é a conversa e a caixa fica onde estava`, async () => {
+    const page = await harness.open(ASSISTANT_PATH, { viewport, replies: ASSISTANT_REPLIES })
+    await holdsColumn(page, viewport)
+    await page.close()
+  })
