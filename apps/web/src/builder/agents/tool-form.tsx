@@ -2,6 +2,7 @@ import type {
   OfferedConnection,
   ProblemField,
   ProblemReason,
+  ToolEffect,
   ToolInput,
   ToolVersionConfig,
 } from '@conexus/hub-api'
@@ -17,7 +18,7 @@ import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
-import { reasonText } from './text.ts'
+import { OPERATION_LABEL, reasonText } from './text.ts'
 
 type Refusal = { field: ProblemField | undefined; reason: ProblemReason | undefined }
 type Local = { field: string; text: string }
@@ -131,13 +132,13 @@ function Where(props: {
   )
 }
 
-/** The connection, the read and the name of an existing tool: they belong to the tool, so a new version only shows them. */
-function Kept(props: { connection: string; read: string; slug: string }) {
+/** The connection, the operation (a read or a write) and the name of an existing tool: they belong to the tool, so a new version only shows them. */
+function Kept(props: { connection: string; effect: ToolEffect; read: string; slug: string }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-md gap-y-xs text-label">
       <dt className="text-text-2">Ligação</dt>
       <dd>{props.connection}</dd>
-      <dt className="text-text-2">Leitura</dt>
+      <dt className="text-text-2">{OPERATION_LABEL[props.effect]}</dt>
       <dd>{props.read}</dd>
       <dt className="text-text-2">Nome da ferramenta</dt>
       <dd>{props.slug}</dd>
@@ -209,6 +210,7 @@ export function ToolForm(props: {
   offered: readonly OfferedConnection[]
   fixed?: Pick<ToolInput, 'connectionId' | 'operation' | 'slug'> & {
     connection: string
+    effect: ToolEffect
     read: string
   }
   initial?: ToolVersionConfig
@@ -256,9 +258,7 @@ export function ToolForm(props: {
       }}
     >
       <DialogBody className="flex flex-col gap-md">
-        {fixed !== undefined && (
-          <Kept connection={fixed.connection} read={fixed.read} slug={fixed.slug} />
-        )}
+        {fixed !== undefined && <Kept {...fixed} />}
         {fixed === undefined && (
           <Where
             offered={props.offered}

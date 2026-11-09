@@ -25,7 +25,7 @@ export function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: 
   }
 }
 
-/** One tool of a connection as a line: the mark, the title with what it says under it, and the newer version it offers. */
+/** One tool of a connection as a line: the mark, the title with what it says under it, and the newer version it offers. The text keeps a readable column (`basis-64`): when it has not room beside the newer version, that one wraps under it. */
 export function Line(props: {
   id: string
   title: string
@@ -49,7 +49,7 @@ export function Line(props: {
         disabled={props.disabled}
         onCheckedChange={props.onChange}
       />
-      <label htmlFor={props.id} className="flex min-w-0 flex-1 flex-col">
+      <label htmlFor={props.id} className="flex min-w-0 flex-1 basis-64 flex-col">
         <span className="flex flex-wrap items-baseline gap-x-sm">
           <span>{props.title}</span>
           {props.tag !== undefined && <span className="text-fact text-text-2">{props.tag}</span>}
