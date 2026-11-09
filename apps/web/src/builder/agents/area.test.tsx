@@ -182,7 +182,12 @@ test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o
 })
 
 test('a conversa com o Construtor sumir do Hub faz a lista ser lida de novo', async () => {
-  const row = { id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }
+  const row = {
+    id: BUILDER_CHAT,
+    title: 'Meu agente',
+    createdAt: '2026-11-02T11:00:00.000Z',
+    updatedAt: '2026-11-02T12:00:00.000Z',
+  }
   let reads = 0
   let atGone = Number.POSITIVE_INFINITY
   at(`${AREA}/construtor/${BUILDER_CHAT}`, { agents: [], construtor: [row] })

@@ -43,6 +43,10 @@ function assistant(
   }
 }
 
+function continuing(on: Page) {
+  return on.getByRole('region', { name: 'Continuar' }).getByRole('link', { name: /Pedidos do mês/ })
+}
+
 test('no celular, a linha de Continuar de um Projeto de nome comprido mantém o título e a idade na tela', async () => {
   const replies = assistant([
     {
@@ -52,9 +56,7 @@ test('no celular, a linha de Continuar de um Projeto de nome comprido mantém o 
     },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: PHONE, replies })
-  const row = page
-    .getByRole('region', { name: 'Continuar' })
-    .getByRole('link', { name: /Pedidos do mês/ })
+  const row = continuing(page)
   await row.waitFor()
   const [title, project, age] = await Promise.all(
     [0, 1, 2].map((at) => row.locator(':scope > span').nth(at).boundingBox()),
@@ -78,9 +80,7 @@ test('no computador, a linha de Continuar mostra o nome inteiro de um Projeto de
     },
   ])
   const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
-  const row = page
-    .getByRole('region', { name: 'Continuar' })
-    .getByRole('link', { name: /Pedidos do mês/ })
+  const row = continuing(page)
   const label = row.locator(':scope > span').nth(1)
   await label.waitFor()
   const cut = await label.evaluate((one) => one.scrollWidth - one.clientWidth)
