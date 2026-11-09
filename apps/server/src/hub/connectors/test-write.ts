@@ -38,6 +38,12 @@ export const ORDER = {
 }
 export const LANCAR = OperationId.parse('lancarPedido')
 
+/** What the double answers to an order it took, as a write's `returned` carries it. */
+export function placedAnswer(codigoPedido: number) {
+  const mensagem = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'
+  return { status: 200, body: { codigo: 1, tipo: 'SUCESSO', mensagem, retorno: { codigoPedido } } }
+}
+
 /** What the stand-in before the double does to the order's add: `cut` forwards it and drops the answer. */
 type Mode = { cut: boolean; posts: number }
 
