@@ -74,7 +74,6 @@ test('o membro não recebe propor automação: a execução de quem não cria au
     assert.equal(tools.includes('show_file'), true, role)
   }
   const steps: ReturnType<typeof said>[][] = []
-  const invented = await assisting(t, steps)
   steps.push(
     [
       tool('propose_automation', {
@@ -86,6 +85,7 @@ test('o membro não recebe propor automação: a execução de quem não cria au
     ],
     [said('Peça a um administrador.')],
   )
+  const invented = await assisting(t, steps)
   const bruno = await memberOn(invented.hub, invented.companyId, BRUNO, 'member')
   const url = await created(invented.hub, bruno, invented.assistant, { connections: [] })
   const asking = await talking(t, invented.hub, bruno, url)

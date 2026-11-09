@@ -106,7 +106,6 @@ test('as ferramentas: numa conversa de Projeto o modelo recebe propose_app_chang
 
 test('as ferramentas: propose_automation, numa conversa de Projeto, recebe as ligações pelo nome que o modelo vê e devolve os ids das que a conversa escolheu, sem gravar nada (17)', async (t) => {
   const steps: ReturnType<typeof said>[][] = []
-  const on = await assisting(t, steps)
   const proposal = {
     name: 'Resumo de vendas',
     prompt: 'Resuma as vendas de ontem, por vendedor.',
@@ -116,6 +115,7 @@ test('as ferramentas: propose_automation, numa conversa de Projeto, recebe as li
     [tool('propose_automation', { ...proposal, connections: ['Matriz'] })],
     [said('Pronto.')],
   )
+  const on = await assisting(t, steps)
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
     connections: [on.matriz],
@@ -136,7 +136,6 @@ test('as ferramentas: propose_automation, numa conversa de Projeto, recebe as li
 
 test('as ferramentas: propose_automation recusa uma ligação que a conversa não escolheu e diz os nomes que há (17)', async (t) => {
   const steps: ReturnType<typeof said>[][] = []
-  const on = await assisting(t, steps)
   steps.push(
     [
       tool('propose_automation', {
@@ -148,6 +147,7 @@ test('as ferramentas: propose_automation recusa uma ligação que a conversa nã
     ],
     [said('Vou corrigir.')],
   )
+  const on = await assisting(t, steps)
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
     connections: [on.matriz],

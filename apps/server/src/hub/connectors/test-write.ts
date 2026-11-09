@@ -18,6 +18,7 @@ import { post } from '../identity/test-hub.ts'
 import type { SessionScope, WriteRequest } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
+import { forward } from './test-connections.ts'
 
 /** What a test changes in the request of `byAna`, `byVersion` and `byCarla`. */
 type Over = Partial<{
@@ -55,24 +56,13 @@ function counting(t: TestContext, mode: Mode) {
       for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
       const adding = incoming.method === 'POST' && incoming.url === '/v1/vendas/pedidos'
       if (adding) mode.posts += 1
-      const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-        typeof value === 'string' && name !== 'host'
-          ? [[name, value] satisfies [string, string]]
-          : [],
-      )
-      const answered = await fetch(`${origin}${incoming.url}`, {
-        method: incoming.method,
-        headers,
-        redirect: 'manual',
-        ...(incoming.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
-      })
-      const body = Buffer.from(await answered.arrayBuffer())
+      const answered = await forward(origin, incoming, Buffer.concat(chunks))
       if (adding && mode.cut) {
         outgoing.destroy()
         return
       }
-      outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-      outgoing.end(body)
+      outgoing.writeHead(answered.status, answered.headers)
+      outgoing.end(answered.body)
     })
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     t.after(() => {

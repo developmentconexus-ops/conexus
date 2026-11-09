@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import type { IncomingMessage } from 'node:http'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -160,6 +161,28 @@ export function sealingWith(...lines: string[]) {
   return (config: Config): Config => ({ ...config, sealKeys: parseSealKeys(lines.join('\n')) })
 }
 
+/** Forwards a request to the connector double, without the host header and with a manual redirect; returns the answer for the caller to write, read or cut. */
+export async function forward(
+  origin: string,
+  incoming: IncomingMessage,
+  body: Buffer | undefined,
+): Promise<Readonly<{ status: number; headers: Record<string, string>; body: Buffer }>> {
+  const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
+    typeof value === 'string' && name !== 'host' ? [[name, value] satisfies [string, string]] : [],
+  )
+  const answered = await fetch(`${origin}${incoming.url}`, {
+    method: incoming.method,
+    headers,
+    redirect: 'manual',
+    ...(incoming.method === 'GET' || body === undefined ? {} : { body }),
+  })
+  return {
+    status: answered.status,
+    headers: Object.fromEntries(answered.headers),
+    body: Buffer.from(await answered.arrayBuffer()),
+  }
+}
+
 /**
  * In front of a double: the token route answers as `mode.refresh` says, everything else passes;
  * every body the token route answers is kept in `mode.seen`, to look for its keys elsewhere.
@@ -177,21 +200,10 @@ export function standIn(
         outgoing.writeHead(status, { 'content-type': 'application/json' }).end(body)
         return
       }
-      const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-        typeof value === 'string' && name !== 'host'
-          ? [[name, value] satisfies [string, string]]
-          : [],
-      )
-      const answered = await fetch(`${origin}${incoming.url}`, {
-        method: incoming.method,
-        headers,
-        redirect: 'manual',
-        ...(incoming.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
-      })
-      const body = Buffer.from(await answered.arrayBuffer())
-      if (incoming.url === '/oauth/token') mode.seen?.push(body.toString('utf8'))
-      outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-      outgoing.end(body)
+      const answered = await forward(origin, incoming, Buffer.concat(chunks))
+      if (incoming.url === '/oauth/token') mode.seen?.push(answered.body.toString('utf8'))
+      outgoing.writeHead(answered.status, answered.headers)
+      outgoing.end(answered.body)
     })
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     t.after(() => {
