@@ -22,7 +22,7 @@ export async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<Turn>
 }
 
 /** A turn for a side call made before the run read its input: the observer's (`accountModel`). */
-export function sideTurn(queue: QueueDeps) {
+function sideTurn(queue: QueueDeps) {
   return async (requestContext: RequestContext): Promise<Turn | undefined> => {
     const owner = ownerIn(requestContext)
     return owner === undefined ? undefined : turnOfOwner(queue, owner)
