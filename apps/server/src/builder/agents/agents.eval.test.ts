@@ -81,3 +81,21 @@ test('a escrita, com o modelo de verdade: em Faz sozinho, com WRITE_UNCERTAIN, o
   const mark = markOf(threadId, ToolCallId.parse(row?.tool_call_id))
   assert.ok(saidIn(turn).includes(mark), saidIn(turn))
 })
+
+test('a recusa com a causa, com o modelo de verdade: o agente diz a causa que está em details, sem inventar outra, e não chama a escrita de novo com a mesma entrada (43)', {
+  timeout: 1_800_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) {
+    t.skip(OPT_IN)
+    return
+  }
+  const on = await writing(t, 'AUTO')
+  const unknown = 'Lance um pedido para o cliente 1: 1 unidade do produto 999 a R$ 10,00.'
+  assert.equal((await sent(on.hub, on.ana, on.url, unknown)).statusCode, 200)
+  const turn = await on.stream.turn()
+  assert.match(saidIn(turn), /999/, saidIn(turn))
+  assert.match(saidIn(turn), /não existe/i, 'the cause the system gave, as it gave it')
+  const rows = await on.hub.test.asOwner('select input_hash from connectors.connector_write')
+  assert.equal(new Set(rows.map((row) => row.input_hash)).size, rows.length, 'no repeated input')
+  assert.deepEqual(on.sankhya.orders(), [])
+})

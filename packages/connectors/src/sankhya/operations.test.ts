@@ -232,7 +232,7 @@ test('o pedido recusado pelo dublê: todo produto fora do catálogo dá a recusa
   await withDouble(async (call, fake) => {
     const request = requestOf(
       lancarPedido,
-      { ...PEDIDO, itens: [{ ...ITEM, codigoProduto: 4242 }] },
+      { ...PEDIDO, itens: [{ ...ITEM, codigoProduto: 999 }] },
       { ref: null },
     )
     const answered = await call(request)

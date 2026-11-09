@@ -70,7 +70,7 @@ test('a prova da anotação: a consulta que a porta recusa não grava; a gravaç
   const on = await notingOn(t)
   assert.deepEqual(await on.note(on.ana, { sql: 'DELETE FROM TSIEMP' }), {
     kind: 'REFUSED',
-    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input' },
+    native: { status: 400, code: 'INPUT_INVALID', message: 'sql: Invalid input', body: null },
   })
   assert.deepEqual(await on.notebook(), {})
   const turn = randomUUID()

@@ -129,7 +129,7 @@ test('o fim do registro que falha: o modelo recebe o OK, o processo diz CONNECTO
   const first = on.byAna()
   assert.deepEqual(await on.ask(first), { kind: 'OK', value: { codigoPedido: 98001 } })
   const sent = on.lines('CONNECTOR_WRITE_SENT')
-  assert.equal(sent[0]?.fields.codigoPedido, 98001)
+  assert.equal(sent[0]?.fields.writtenId, 98001)
   assert.equal(on.lines('CONNECTOR_WRITE_UNRECORDED')[0]?.fields.toolCallId, first.toolCallId)
   assert.equal(Object((await on.ledger())[0]).state, 'SENDING')
   await on.hub.test.asOwner('drop trigger refuse_end on connectors.connector_write')

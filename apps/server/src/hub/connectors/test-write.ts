@@ -166,7 +166,7 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
   }
   function ledger() {
     return on.hub.test.asOwner(
-      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, input_hash from connectors.connector_write order by created_at',
+      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, approved_by, input_hash from connectors.connector_write order by created_at',
     )
   }
   function lines(message: string) {
