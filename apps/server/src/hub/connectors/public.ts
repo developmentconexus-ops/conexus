@@ -38,6 +38,7 @@ export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'
 export type { WriteRequest, Written } from './write-record.ts'
 export { markOf } from './write-record.ts'
+export type { Returned } from './wrote.ts'
 
 /** What tests change: a shorter deadline, and the clock a write is dated by (production's is the machine's). */
 export type ConnectorTuning = { callDeadlineMs?: number; now?: (() => Date) | undefined }
