@@ -22,8 +22,8 @@ ela volta.
    quantos bancos copiou (o do Hub, o das conversas e um por empresa) e o tamanho de cada um. No
    console do lugar da cópia (decisão `A`), a pasta do dia tem esses arquivos e um `manifesto.json`.
 2. Rode "Conferir a cópia". Em até 15 minutos ela fica verde e diz o que voltou num banco
-   descartável: as migrações, as empresas, as conversas e as automações, cada número igual ao do
-   manifesto.
+   descartável: a última migração (a mesma do manifesto), as empresas, as conversas, as automações
+   ativas e os cartões que esperavam resposta.
 3. Prepare o ensaio na empresa de teste: comece uma conversa; peça ao agente uma escrita e deixe o
    "Aprovar?" sem responder; crie uma automação para daqui a 10 minutos; ligue o seu Telegram ao
    agente. **Anote a hora.** Depois dela: comece outra conversa, aprove o cartão (o pedido vai ao
@@ -164,15 +164,15 @@ memória cada chamada `S3`.
 | 13 | U2 | Uma execução suspensa antes da cópia está suspensa no banco restaurado e retoma até `success` por uma instância do Mastra apontada para ele (a prova do estudo, agora como teste; o comando só conta, o teste retoma) | `copy-check.test.ts`, "o Mastra volta" | must |
 | 14 | U2 | A Action "Conferir a cópia" roda só por botão, no executor do servidor, no grupo `hub-copy`; o banco descartável sai com `docker stop` também quando a conferência falha | `scripts/workflows.test.ts`, um caso para `copy-check.yml`; `scripts/copy-check.test.ts` (o script com um `docker` dublê) | must |
 | 15 | U2 | **Ao vivo**: "Conferir a cópia" fica verde em até 15 minutos com a cópia da noite | Firstmate | must |
-| 16 | U3 | A Action "Parar o Hub" para o Hub com a espera de saída dele (`stop_grace_period`) e sai 0; "Reiniciar o Hub" com "Depois de restaurar" sobe um Hub parado pela imagem da última versão registrada; sem a caixa, um Hub parado continua recusado ("no Hub is running") | `scripts/deploy.test.ts`, "--stop" e "--restart --restored com o Hub parado" | must |
-| 17 | U3 | "Depois de restaurar" pede a hora restaurada; `deploy.sh --restart --restored <instante> [<template>]` roda `migrate`, depois `after-restore <instante>`, depois sobe o Hub; `after-restore` falhando para o reinício antes de subir, com "after-restore failed" | `scripts/deploy.test.ts`, "--restart --restored"; `scripts/workflows.test.ts`, a entrada `restored_to` de `restart.yml` | must |
+| 16 | U3 | A Action "Parar o Hub" para o Hub com a espera de saída dele (`stop_grace_period`, 210 s), sob o limite de 240 s, imprime "stopped" e sai 0; um Hub já parado imprime "already stopped" e sai 0. "Reiniciar o Hub" com "Depois de restaurar" sobe o Hub parado com a imagem e o modelo que o contêiner parado guarda (`compose ps --all`); sem a caixa, um Hub parado continua recusado ("no Hub is running") | `scripts/deploy.test.ts`, "--stop", "--stop parado" e "--restart --restored com o Hub parado"; `scripts/workflows.test.ts`, um caso para `stop.yml` | must |
+| 17 | U3 | "Depois de restaurar" pede a hora restaurada; `deploy.sh --restart --restored <instante> [<template>]` roda `migrate`, depois `after-restore <instante>`, depois sobe o Hub; `after-restore` falhando para o reinício antes de subir, com "after-restore failed". Com um Hub de pé, `--restored` recusa antes de tudo, com "stop the Hub first: run Parar o Hub" | `scripts/deploy.test.ts`, "--restart --restored"; `scripts/workflows.test.ts`, a entrada `restored_to` de `restart.yml` | must |
 | 18 | U3 | `after-restore <instante>` grava uma linha em `hub.restores` com o instante e o id da rodada da Action, e imprime `RESTORE_APPLIED`; a mesma rodada repetida não grava outra | `apps/server/src/hub/status/restores.test.ts`, "uma linha por rodada" | must |
-| 19 | U3 | `after-restore` recusa, sem mudar nada, quando o banco tem um `hub.starts` depois do instante dado (`RESTORE_POINT_MISMATCH`: a restauração não aconteceu, ou a hora está errada), quando não tem nenhum (`RESTORE_POINT_UNKNOWN`) e quando o instante está no futuro | `restores.test.ts`, "a caixa marcada sem restauração", "sem início", "no futuro" | must |
+| 19 | U3 | `after-restore` recusa, sem mudar nada, quando o banco tem um `hub.starts` depois do instante dado (`RESTORE_POINT_MISMATCH`: a restauração não aconteceu, ou a hora está errada), quando não tem nenhum (`RESTORE_POINT_UNKNOWN`) e quando o instante está no futuro. A recusa cobre a caixa marcada sem restauração só quando o Hub iniciou depois daquela hora; no outro caso, `after-restore` encerra sessões e cartões e move agendas, o que é seguro, e a página "Restaurar tudo" diz para marcar a caixa só depois de uma restauração | `restores.test.ts`, "a caixa marcada sem restauração", "sem início", "no futuro" | must |
 | 20 | U3 | Depois de `after-restore`, toda sessão acabou: a chamada com o cookie antigo responde 401, e entrar de novo funciona; imprime `RESTORE_SESSIONS_ENDED` com a contagem | `apps/server/src/hub/identity/restore-sessions.test.ts`, pela porta pública | must |
 | 21 | U3 | Decisão `B1`: depois de `after-restore`, nenhuma execução com `runId` `sched_<id>_<nextFireAt>` de um `nextFireAt` anterior à linha de `hub.restores` roda quando o Hub sobe; os disparos seguintes rodam no horário; uma agenda pausada pela pessoa continua pausada; imprime `RESTORE_SCHEDULES_MOVED` com a contagem. Sem `after-restore`, o mesmo teste mostra o disparo repetido | `apps/server/src/builder/automations/after-restore.test.ts`, "a agenda vencida não roda de novo" | must |
-| 22 | U3 | Decisão `B1`, com a 16: uma espera "Aprovar?" guardada antes da linha de `hub.restores` volta como `RESTORED`, sem botões; responder a ela pela rota da conversa recebe 409 `RESTORED_WAIT_CLOSED` e nada vai ao Sankhya; uma espera criada depois da subida aprova normalmente | `apps/server/src/builder/conversation/restored-wait.test.ts`, pela rota da conversa | must |
-| 23 | U3 | Decisão `B1`, na 24.6: uma execução parada num balão de aprovação antes da restauração aparece como `RESTORED`, e a decisão dela recebe 409 `RESTORED_WAIT_CLOSED` | o teste da rota de decisão da 24.6, `apps/server/src/builder/workflows/runs.test.ts`, caso novo | must |
-| 24 | U3 | Decisão `B1`, na 24.7: o botão Aprovar de um cartão do Telegram guardado antes da restauração responde "Restaurado: peça de novo se ainda precisar" e nada vai ao Sankhya | o teste do canal da 24.7, caso novo | must |
+| 22 | U3 | Decisão `B1`, com a `A1` da 16 (com a `A2`, o cartão não volta e este critério sai): uma espera "Aprovar?" cuja execução estava suspensa quando `after-restore` rodou volta como `RESTORED`, sem botões; responder a ela pela rota da conversa recebe 409 `RESTORED_WAIT_CLOSED` e nada vai ao Sankhya; uma espera criada depois da subida aprova normalmente | `apps/server/src/builder/conversation/restored-wait.test.ts`, pela rota da conversa | must |
+| 23 | U3 | Decisão `B1`, na 24.6: uma execução que estava suspensa num balão de aprovação quando `after-restore` rodou aparece como `RESTORED`, e a decisão dela recebe 409 `RESTORED_WAIT_CLOSED` | o teste da rota de decisão da 24.6, `apps/server/src/builder/workflows/runs.test.ts`, caso novo | must |
+| 24 | U3 | Decisão `B1`, na 24.7: o botão Aprovar de um cartão do Telegram cuja execução estava suspensa quando `after-restore` rodou responde "Restaurado: peça de novo se ainda precisar" e nada vai ao Sankhya | o teste do canal da 24.7, caso novo | must |
 | 25 | U3 | `GET /api/status` traz `lastRestore` (`{ state: 'NONE' }` ou `{ state: 'RESTORED', restoredTo, appliedAt }`); a página de status mostra "Última restauração: 09/11/2026 07:55" abaixo de "Último início", ou nada | `apps/server/src/hub/status/status.test.ts`; `apps/web/src/hub/status/status-page.test.tsx` | must |
 | 26 | U4 | `docs/how-to/restaurar-tudo.md` existe, em português, abaixo de 800 palavras, com a ordem: "Parar o Hub"; restaurar o ramo do Hub; restaurar cada empresa ao mesmo minuto; "Reiniciar o Hub" com "Depois de restaurar" e a hora; conferir; apagar os ramos `_old_`; conferir o Git dos Projetos mexidos depois do minuto; `hub-database-restore.md` saiu e nenhum link aponta para ele | `npm run docs` | must |
 | 27 | U4 | **Ao vivo**, o ensaio: o roteiro de uso, passos 3 a 5, na empresa de teste, com o tempo de cada passo no livro de aprovações; o Sankhya tem um pedido só | Fundador, com o firstmate | must |
@@ -193,11 +193,12 @@ memória cada chamada `S3`.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `hub.restores.restored_to` | `after-restore` (U3) | `lastRestore` (status), o leitor das esperas guardadas da 16, o leitor das execuções da 24.6, o canal da 24.7 |
-| `hub.restores.applied_at` | `after-restore` | `lastRestore`; as esperas comparam a hora delas com ele |
+| `hub.restores.restored_to` | `after-restore` (U3) | `lastRestore` (status) |
+| `hub.restores.applied_at` | `after-restore` | `lastRestore` |
 | `hub.restores.run_id` | `after-restore` (o id da rodada da Action) | `after-restore` (uma linha por rodada) |
 | `hub.restores.paused` | `after-restore`, antes de pausar | `after-restore` da rodada seguinte, quando `resumed` é falso |
 | `hub.restores.resumed` | `after-restore`, depois de retomar todas | `after-restore` da rodada seguinte |
+| `hub.restores.closed_runs` | `after-restore`: os `runId` de toda execução suspensa no Mastra | o leitor das esperas guardadas da 16, o leitor das execuções da 24.6, o canal da 24.7 |
 | `HubStatus.lastRestore` | `status.ts` | `apps/web/src/hub/status/status-page.tsx` |
 | `RESTORED` no estado da espera | o leitor das esperas guardadas da 16 (`RestoredWait`) | o cartão "Aprovar?" |
 | `manifesto.json` | `copy` (U1) | `copy-check` (U2), quem restaura à mão (página da cópia) |
@@ -209,11 +210,11 @@ memória cada chamada `S3`.
 | --- | --- | --- | --- | --- | --- |
 | `copy`: `pg_dump` de um banco e envio ao bucket | O grupo `hub-copy` enfileira; à mão, a segunda vai para `<data>/<hora>/` | Envio cortado: o objeto por partes não se completa e o bucket não o mostra; o manifesto, o último a subir, não existe, e `copy-check` ignora a pasta sem manifesto | Banco da empresa fora: segue as outras, `COPY_PARTIAL`; bucket fora: sai 1, `COPY_UPLOAD_FAILED`, nada apagado | `COPY_DONE`, `COPY_PARTIAL`, `COPY_UPLOAD_FAILED` | 1, 2, 4, 5, 6 |
 | `copy-check`: restaurar no banco descartável | Mesmo grupo `hub-copy` | Cortada: o contêiner `--rm` some com o que tinha; a rodada sai 1 | Bucket fora: `COPY_UNREACHABLE`; sha256 errado: `COPY_CORRUPT` | `COPY_CHECKED`, `COPY_CORRUPT`, `COPY_NEWER_THAN_IMAGE`, `COPY_UNREACHABLE`, `COPY_NONE` | 9 a 14 |
-| `deploy.sh --stop` | O grupo `hub-server` enfileira | Parada cortada: o Compose termina a parada sozinho; rodar de novo para um Hub já parado sai 0 | Docker fora: sai 1 | "stopped", "no Hub is running" | 16 |
+| `deploy.sh --stop` | O grupo `hub-server` enfileira | Parada cortada: o Compose termina a parada sozinho; rodar de novo para um Hub já parado sai 0 | Docker fora: sai 1 | "stopped", "already stopped" | 16 |
 | `deploy.sh --restart --restored` inteiro | O grupo `hub-server` enfileira | Queda entre `migrate` e `after-restore`: o Hub não sobe; rodar de novo repete `migrate` (nada a aplicar) e `after-restore` (seguro de repetir) | Banco fora: `migrate` e `after-restore` saem 75 e o script tenta de novo, como hoje | "after-restore failed", "restarted" | 17, 19 |
 | `after-restore`: linha em `hub.restores` | `run_id` único: a mesma rodada não grava duas vezes (`ON CONFLICT DO NOTHING`) | Gravada e queda antes das agendas: a rodada seguinte acha a linha e continua dela | Banco fora: sai 75 | `RESTORE_APPLIED`, `RESTORE_POINT_MISMATCH`, `RESTORE_POINT_UNKNOWN` | 18, 19 |
 | `after-restore`: apagar sessões | Apagar duas vezes não muda nada | — | Banco fora: sai 75 | `RESTORE_SESSIONS_ENDED` | 20 |
-| `after-restore`: gravar `paused`, `schedules.pause` e `resume` do Mastra, gravar `resumed` | `pause` e `resume` do Mastra são seguros de repetir (`schedules-D8PrAbVN.js:664-698`) | Pausadas e sem `resumed`: a rodada seguinte retoma toda agenda de `paused` antes de tudo | Banco do Mastra fora: sai 75 | `RESTORE_SCHEDULES_MOVED` | 21 |
+| `after-restore`: gravar `closed_runs` e `paused`, `schedules.pause` e `resume` do Mastra, gravar `resumed` | `pause` e `resume` do Mastra são seguros de repetir (`schedules-D8PrAbVN.js:664-698`) | Pausadas e sem `resumed`: a rodada seguinte retoma toda agenda de `paused` antes de tudo | Banco do Mastra fora: sai 75 | `RESTORE_SCHEDULES_MOVED` | 21 |
 | Responder a uma espera `RESTORED` (conversa, workflow, Telegram) | Dois toques: os dois recusados | — | — | nada (409 para a pessoa) | 22, 23, 24 |
 
 ## A tabela de referência
@@ -399,7 +400,7 @@ contêiner descartável. Cada `kind` tem a sua linha impressa (`COPY_CHECKED`, `
 
 ### A ordem do trabalho
 
-1. Achar a pasta mais nova com `manifesto.json` e validá-lo com `Manifest` (critério 12 sem nenhuma).
+1. Achar a pasta mais nova com `manifesto.json`, contando as de `copias/<data>/<hora>/` (critério 4), e validá-lo com `Manifest` (critério 12 sem nenhuma).
 2. Baixar cada arquivo e conferir o sha256 (critério 10); uma `lastMigration` que a imagem não tem é
    `NEWER_THAN_IMAGE` (critério 11).
 3. Restaurar os globais; o Hub e o Mastra com `pg_restore -C -j 4`, nos nomes de origem; cada empresa
@@ -463,7 +464,8 @@ run_id text not null unique,                 -- o id da rodada da Action
 restored_to timestamptz not null,            -- a hora que a pessoa restaurou
 applied_at timestamptz not null default now(),
 paused text[] not null default '{}',          -- as agendas que esta rodada pausou
-resumed boolean not null default false
+resumed boolean not null default false,
+closed_runs text[] not null default '{}'      -- os runId suspensos no Mastra quando a rodada rodou
 ```
 
 ```ts
@@ -473,8 +475,10 @@ export const LastRestore = z.discriminatedUnion('state', [
   z.object({ state: z.literal('NONE') }),
 ]) // como `Start`, C22 e C40
 // HubStatus ganha lastRestore: LastRestore
+// apps/server/src/hub/status/restores.ts
+export async function closedRuns(tx: ReadTx): Promise<ReadonlySet<string>> // a união de closed_runs
 // apps/server/src/builder/conversation/restored.ts
-export function isRestoredWait(waitedSince: string, last: LastRestore): boolean // ambos RFC 3339
+export function isRestoredWait(runId: string, closed: ReadonlySet<string>): boolean
 ```
 
 O estado `RESTORED` entra na união que o leitor `RestoredWait` da 16 devolve ao cartão, e na do
@@ -489,21 +493,26 @@ Brasília>".
 ### A ordem do trabalho
 
 1. O pull request da migração e dos grants, sozinho (D11).
-2. `stop.yml` e `deploy.sh --stop`: `compose stop hub` no grupo `hub-server`. `--restart --restored
-   <instante> [<template>]`: as opções antes do modelo, que continua o último argumento; com
-   `--restored`, um Hub parado sobe pela imagem da última versão registrada (`infra/releases.sh`). A
+2. `stop.yml` (`timeout-minutes: 10`) e `deploy.sh --stop`: `compose stop hub` no grupo `hub-server`,
+   sob `bounded 240` (o `stop_grace_period` é 210 s). `--restart --restored <instante>
+   [<template>]`: as opções antes do modelo, que continua o último argumento; com `--restored`, um Hub
+   de pé é recusado, e o parado sobe com a imagem e o modelo que o contêiner parado guarda
+   (`compose ps --all` e a leitura de `deploy.sh:38-43`). A
    entrada `restored_to` de `restart.yml` é texto ("AAAA-MM-DD HH:MM", hora de Brasília); vazia, o
    reinício é o de hoje.
 3. `after-restore <instante>` em `main.ts`, pela conexão de migração e a do Mastra: converte a hora
    de Brasília para RFC 3339; recusa (`RESTORE_POINT_MISMATCH`, `RESTORE_POINT_UNKNOWN`, futuro) sem
-   mudar nada; grava `hub.restores` (`ON CONFLICT (run_id) DO NOTHING`); apaga `auth.session`; abre o
-   Mastra sem `startWorkers`, grava em `paused` as agendas de `schedules.list({ status: 'active' })`,
+   mudar nada; com um Hub de pé, `deploy.sh` já recusou antes; grava `hub.restores` (`ON CONFLICT
+   (run_id) DO NOTHING`); apaga `auth.session`; abre o Mastra sem `startWorkers`; grava em
+   `closed_runs` os `runId` de `listWorkflowRuns({ status: 'suspended' })` (`@mastra/pg` 1.35.0
+   `dist/index.js:26227`, todas as páginas); grava em `paused` as agendas de `schedules.list({ status: 'active' })`,
    faz `pause` e `resume` de cada uma e marca `resumed`. Uma linha achada com `resumed` falso retoma
    as de `paused` antes de tudo. Funções: `@mastra/core` 1.82.0 `mastra.schedules.pause`, `resume`
    (`schedules-D8PrAbVN.js:664-698`). Regras: S46, C50, D20.
 4. O leitor `RestoredWait` da 16, o da 24.6 e o canal da 24.7 recebem `lastRestore` e marcam
-   `RESTORED` toda espera guardada antes de `applied_at`; cada resposta a uma delas é recusada antes
-   de qualquer chamada ao Mastra.
+   `RESTORED` toda espera cujo `runId` está em `closedRuns`; cada resposta a uma delas é recusada
+   antes de qualquer chamada ao Mastra. O `RestoredWait` da 16 já traz o `runId` (cartão `405b67f6`,
+   linha 173).
 5. `status.ts` e `apps/web/src/hub/status/status-page.tsx:53` (uma linha a mais): `lastRestore`.
 
 ### Como se prova
@@ -516,8 +525,9 @@ da 24.5 (`builder/agents/test-approval.ts`).
 
 ### Parar se
 
-- O leitor `RestoredWait` da 16 não traz a hora em que a espera foi guardada: pare; essa hora é um
-  contrato que este cartão não tem.
+- A espera de ferramenta de um agente não aparece em `listWorkflowRuns({ status: 'suspended' })`
+  (a 16 a lê por `listSuspendedRuns`): use a mesma leitura da 16 para `closed_runs`; se ela não der o
+  `runId`, pare.
 - A 24.6 ou a 16 ligou `restartAllActiveWorkflowRuns`: uma execução que corria no minuto restaurado
   volta a correr; pare e traga ao firstmate antes do critério 23.
 - O canal da 24.7 responde ao botão por um caminho que não lê o banco do Hub: pare.
