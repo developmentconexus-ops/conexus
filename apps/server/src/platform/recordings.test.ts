@@ -10,7 +10,8 @@ import {
   Recording,
 } from './test-recordings.ts'
 
-// Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them.
+// Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them,
+// and the ChatGPT subscription's turns of a refused write and a refused read, as `openai-failure.eval.test.ts` records them.
 const EXPECTED = [
   'anthropic-abort',
   'anthropic-cited',
@@ -20,6 +21,9 @@ const EXPECTED = [
   'google-propose-automation-weekly-no-days',
   'google-propose-automation',
   'google-thinking',
+  'openai-refused-read-call',
+  'openai-refused-write-call',
+  'openai-refused-write-closing',
 ]
 
 test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabeçalho, token ou e-mail (T24, S40)', () => {
