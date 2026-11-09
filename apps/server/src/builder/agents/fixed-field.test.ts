@@ -65,3 +65,34 @@ test('a escrita sem o valor fixo: publicar um agente cuja versão da ferramenta 
   const read = await call(on.hub, on.ana, 'GET', `${on.agents}/${draft.id}`)
   assert.equal(Object(read.json()).agent.activeVersion ?? null, null)
 })
+
+test('a escrita pronta não abre a nota modelo: a versão gravada tem o notaModelo fora de open, e uma versão nova com ele nos valores fixos cabe', async (t) => {
+  const on = await approving(t, [])
+  const made = await madeAgent(on.hub, on.ana, on.agents)
+  await drafted(on.hub, on.ana, on.agents, made, {
+    ready: [{ connectionId: on.matriz, operation: 'lancarPedido' }],
+  })
+  const listed = await call(on.hub, on.ana, 'GET', on.tools)
+  const ready = Object(listed.json()).tools.find(
+    (each: { operation: string; slug: string }) =>
+      each.operation === 'lancarPedido' && each.slug !== 'lancar_pedido',
+  )
+  assert.ok(ready, 'the ready write is in the library')
+  const detail = Object((await call(on.hub, on.ana, 'GET', `${on.tools}/${ready.id}`)).json()).tool
+  const [first] = detail.versions
+  assert.ok(first.open.length > 0)
+  assert.equal(first.open.includes('notaModelo'), false)
+  const next = await post(
+    on.hub,
+    on.ana,
+    `${on.tools}/${ready.id}/versions`,
+    {
+      description: first.description,
+      bound: { notaModelo: 12, codigoLocalEstoque: 1 },
+      open: first.open.filter((field: string) => field !== 'codigoLocalEstoque'),
+      basedOn: detail.latest.number,
+    },
+    randomUUID(),
+  )
+  assert.equal(next.statusCode, 201, next.body)
+})

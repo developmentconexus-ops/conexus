@@ -13,6 +13,7 @@ import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
+import { fixedFieldsOf } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
@@ -280,8 +281,8 @@ async function writeShapeOf(
   const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)
   const connector = row === undefined ? undefined : connectorOf(row.connector)
   const write = connector?.writes?.find((each) => each.id === target.operation)
-  return write?.input instanceof z.ZodObject
-    ? { input: write.input, fixed: write.fixed ?? [] }
+  return connector !== undefined && write?.input instanceof z.ZodObject
+    ? { input: write.input, fixed: fixedFieldsOf(connector.id, target.operation) }
     : undefined
 }
 
