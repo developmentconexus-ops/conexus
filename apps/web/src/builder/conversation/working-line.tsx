@@ -4,7 +4,7 @@ import { useEverySecond } from './elapsed.ts'
 import { useRoom } from './room.ts'
 import { durationOf, STILL_WORKING, workingText } from './text.ts'
 
-/** The line while a question or a plan waits on the person (founder, 2026-10-22, "Aprovo"). */
+/** The line while a question, a plan or an approval waits on the person (founder, 2026-10-22, "Aprovo"). */
 function waitingText(agent: string): string {
   return `${agent} esperando sua resposta.`
 }
@@ -20,7 +20,7 @@ function secondsSince(instant: number): number {
  * "Builder trabalhando · há 12 s", counted from the instant the screen heard the run start (a screen
  * that opens mid-run shows no count, as Mastra's display state has no start); after a minute in which the
  * answer's parts did not change, "Ainda trabalhando… há 1 min 20 s". The count is for the eye: the
- * reader hears the line once, not every second. While a question or a plan waits on the person,
+ * reader hears the line once, not every second. While a question, a plan or an approval waits on the person,
  * the line says so, with no clock: the time is hers.
  */
 export function WorkingLine({

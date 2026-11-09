@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getAgent, listAgentConversations, listAgentVersions, listTools } from '@conexus/hub-api'
-import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, LAPTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
@@ -208,7 +208,6 @@ test('as ligações do agente com duas ferramentas escolhidas não deixam o text
 
 // Founder's real test, 2026-11-08: at 1280 the first column of the list shrank to 40px and the name
 // and description broke letter by letter. The name keeps a readable column whenever the table shows.
-const LAPTOP = { width: 1280, height: 800 }
 test('a 1280 px a coluna da ferramenta mostra o nome inteiro, sem quebrar letra por letra', async () => {
   const page = await harness.open(`/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/tools`, {
     viewport: LAPTOP,
