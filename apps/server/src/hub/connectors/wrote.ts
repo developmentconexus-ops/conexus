@@ -1,11 +1,10 @@
 import type { Answered, Native, ProviderAnswer, WriteOperation } from '@conexus/connectors'
 import type { Unreachable } from './send.ts'
 import type { Unreadable } from './wire.ts'
-import { isOk } from './wire.ts'
 
 /**
  * What a write ended as: the kit's answer, a provider never reached (nothing was sent), or a send
- * whose end is unknown (`UNCERTAIN`: a cut, a 5xx, what the write declares uncertain or a 2xx that does not read,
+ * whose end is unknown (`UNCERTAIN`: a cut, a 5xx, what the write declares uncertain or an answer that does not read,
  * after the request left): the order may exist, so the caller never sends it again.
  */
 export type Wrote<O> =
@@ -17,13 +16,13 @@ function uncertain(native: Native | null) {
   return { kind: 'UNCERTAIN', native } as const
 }
 
-/** After the request left, only what the write declares uncertain and a 2xx that does not read leave the order's fate unknown; every other answer says it was refused. */
+/** After the request left, what the write declares uncertain and any answer that does not read, whatever its status, leave the order's fate unknown; only an answer the kit read as a refusal says it was refused. */
 function endsUnknown(
   answered: Exclude<Answered<unknown>, { kind: 'OK' }>,
   operation: WriteOperation<unknown, unknown>,
 ): boolean {
   if (operation.uncertain(answered.native)) return true
-  return answered.kind === 'UNREADABLE' && isOk(answered.native.status)
+  return answered.kind === 'UNREADABLE'
 }
 
 /** A write's end: only a connection never made is a plain failure, and what came back after the request left is `UNCERTAIN` unless the provider's answer proves it refused. */

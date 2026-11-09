@@ -266,13 +266,14 @@ test('a recusa inteira: o Written traz native.body igual ao corpo gravado, e a l
   assert.deepEqual(await on.ask(repeated), await on.ask(repeated))
 })
 
-test('a recusa inteira: um corpo acima do teto do executor continua UNREADABLE TOO_LARGE, sem corpo', async (t) => {
+test('a recusa inteira: um corpo acima do teto do executor não prova recusa: fica incerto, sem corpo, e a linha guarda o motivo', async (t) => {
   const on = await writing(t, {
     order: async () => new Response('x'.repeat(2 * 1024 * 1024 + 1), { status: 400 }),
   })
-  const answered = await on.ask(on.byAna())
-  assert.equal(answered.kind, 'UNREADABLE')
-  const native = Object(answered).native
+  assert.equal((await on.ask(on.byAna())).kind, 'WRITE_UNCERTAIN')
+  const [row] = await on.ledger()
+  assert.equal(row?.state, 'UNCERTAIN')
+  const native = Object(row?.answer).native
   assert.equal(native.body, null)
   assert.equal(native.reason.kind, 'TOO_LARGE')
 })

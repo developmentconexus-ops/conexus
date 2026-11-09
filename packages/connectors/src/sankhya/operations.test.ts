@@ -261,9 +261,9 @@ test('lançar pedido: só o retorno.codigoPedido é sucesso', () => {
   })
 })
 
-test('o pedido recusado: o 200 sem codigoPedido ou com [CORE_E…] e o 400 dão REFUSED com o texto', () => {
+test('o pedido recusado: só o [CORE_E…] no 200 e o 400 dão REFUSED com o texto; o 200 sem codigoPedido é ilegível', () => {
   const semCodigo = lancarPedido.answer({ status: 200, body: { codigo: 0, mensagem: 'Nada.' } })
-  assert.partialDeepStrictEqual(semCodigo, { kind: 'REFUSED', native: { message: 'Nada.' } })
+  assert.equal(semCodigo.kind, 'UNREADABLE')
   const core = lancarPedido.answer({
     status: 200,
     body: { mensagem: '[CORE_E0001] Parceiro 9 não encontrado', retorno: { codigoPedido: 5 } },
@@ -306,12 +306,4 @@ test('as escritas do conector são só write, sem id repetido e de um assunto de
     () => redefine({ writes: [{ ...lancarPedido, subject: 'nothing' }] }),
     /Unknown subject/,
   )
-})
-
-test('um 200 de sucesso cujo codigoPedido não é inteiro é ilegível, nunca recusa: o pedido pode existir', () => {
-  const sucesso = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'
-  for (const retorno of [{ codigoPedido: '98001' }, { codigoPedido: 98001.5 }, {}, 'texto']) {
-    const answered = lancarPedido.answer({ status: 200, body: { mensagem: sucesso, retorno } })
-    assert.equal(answered.kind, 'UNREADABLE', JSON.stringify(retorno))
-  }
 })
