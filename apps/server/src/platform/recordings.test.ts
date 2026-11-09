@@ -11,7 +11,8 @@ import {
 } from './test-recordings.ts'
 
 // Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them,
-// and the ChatGPT subscription's turns of a refused write and a refused read, as `openai-failure.eval.test.ts` records them.
+// and the ChatGPT subscription's calls of a refused write and a refused read, with the closing of the write turn only,
+// as `openai-failure.eval.test.ts` records them.
 const EXPECTED = [
   'anthropic-abort',
   'anthropic-cited',
