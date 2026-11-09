@@ -137,4 +137,11 @@ test('a lista de conversas com o agente traz title null quando o Mastra não deu
   assert.equal(own?.id, url.slice(url.lastIndexOf('/') + 1))
   assert.equal(own?.title, null)
   assert.equal(new Date(String(own?.createdAt)).toISOString(), own?.createdAt)
+  await on.hub.test.mastraPool.query(
+    `update mastra.mastra_threads set "updatedAt" = "updatedAt" + interval '1 hour', "updatedAtZ" = "updatedAtZ" + interval '1 hour'`,
+  )
+  const touched = await call(on.hub, on.ana, 'GET', `${on.agents}/${agent.id}/conversations`)
+  const [after] = AgentConversationSummary.array().parse(Object(touched.json()).conversations)
+  assert.equal(after?.createdAt, own?.createdAt, 'touching the thread does not move its creation')
+  assert.notEqual(after?.updatedAt, own?.updatedAt, 'but it moves the last change')
 })
