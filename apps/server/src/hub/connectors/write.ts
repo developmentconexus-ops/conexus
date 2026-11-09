@@ -1,7 +1,8 @@
-import type { WriteOperation } from '@conexus/connectors'
+import type { Native, WriteOperation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { z } from 'zod'
+import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { roleOfSpeaker } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
@@ -50,6 +51,28 @@ function writtenOf(ended: Ended, mark: string): Written {
       return ended
     default:
       return ended satisfies never
+  }
+}
+
+/** What came back of an uncertain send, for the record: the provider's answer when it gave one. */
+function cameOf(ended: Ended): Native | null {
+  return ended.kind === 'UNCERTAIN' ? ended.native : null
+}
+
+/** The scalars of what came back, so the log tells the causes apart: the status, and the paths and types a 2xx did not read as, never a value (S41). */
+function cameFields(came: Native | null): Record<string, Scalar> {
+  if (came === null) return {}
+  const { reason } = came
+  return {
+    status: came.status,
+    ...(reason === undefined ? {} : { reason: reason.kind }),
+    ...(reason?.kind === 'SHAPE'
+      ? {
+          shape: reason.issues
+            .map((issue) => `${issue.path || '(body)'}: ${issue.expected}, got ${issue.received}`)
+            .join('; '),
+        }
+      : {}),
   }
 }
 
@@ -133,13 +156,14 @@ function logSent(
   connector: string,
   operation: WriteOperation<unknown, unknown>,
   written: Written,
+  came: Native | null,
 ): void {
   const about = aboutOf(a, connector)
   if (written.kind === 'OK') {
     const id = operation.idOf(written.value)
     deps.log.info({ ...about, ...(id === null ? {} : { writtenId: id }) }, 'CONNECTOR_WRITE_SENT')
   } else if (written.kind === 'WRITE_UNCERTAIN') {
-    deps.log.info(about, 'CONNECTOR_WRITE_UNCERTAIN')
+    deps.log.info({ ...about, ...cameFields(came) }, 'CONNECTOR_WRITE_UNCERTAIN')
   } else {
     deps.log.info({ ...about, result: written.kind }, 'CONNECTOR_WRITE_REFUSED')
   }
@@ -178,8 +202,9 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
     a.signal,
   )
   const written = writtenOf(turn, mark)
-  logSent(deps, a, connector, operation, written)
-  await finish(deps, a, written, connector)
+  const came = cameOf(turn)
+  logSent(deps, a, connector, operation, written, came)
+  await finish(deps, a, written, connector, came)
   return written
 }
 

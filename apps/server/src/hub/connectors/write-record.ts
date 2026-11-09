@@ -300,12 +300,17 @@ export function refusedMessageOf(row: Pick<Row, 'state' | 'answer'>): string | n
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
 
-/** The record's end; if the database refuses it the model still hears what the provider answered, and the process says the row stayed `SENDING`. */
+/**
+ * The record's end; if the database refuses it the model still hears what the provider answered, and the process says the row stayed `SENDING`.
+ * An uncertain write keeps what came back in `answer` as `{ native }`, as the refusals do (null: the provider said nothing, as a cut);
+ * it never reaches the model, the card or `writesOf`, and the write is still never sent again.
+ */
 export async function finish(
   deps: Deps,
   a: WriteRequest,
   written: Written,
   connector: string,
+  came: Native | null,
 ): Promise<void> {
   const viewer = { person: { id: a.scope.personId }, companyId: a.scope.companyId }
   const state =
@@ -314,7 +319,7 @@ export async function finish(
     await deps.database.command(scopeOf(viewer), (tx) =>
       tx
         .update(connectorWrite)
-        .set({ state, answer: written.kind === 'WRITE_UNCERTAIN' ? null : written })
+        .set({ state, answer: written.kind === 'WRITE_UNCERTAIN' ? { native: came } : written })
         .where(key(a)),
     )
   } catch (error) {
