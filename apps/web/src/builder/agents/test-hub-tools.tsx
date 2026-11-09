@@ -1,4 +1,4 @@
-import type { Connection, OpenWrite, ToolSummary, ToolVersionDetail } from '@conexus/hub-api'
+import type { Connection, ToolSummary, ToolVersionDetail, WrittenRow } from '@conexus/hub-api'
 import { FAILURES, PROBLEM_MEDIA_TYPE, ToolVersionBody, ToolVersionId } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
 import { SANKHYA as SANKHYA_ENTRY } from '../../hub/connectors/fixtures.ts'
@@ -11,18 +11,18 @@ export type ToolHeld = {
   tools?: ToolSummary[]
   /** The versions of every tool the Projeto reads, newest last; a tool read without them has version 1 alone. */
   toolVersions?: ToolVersionDetail[]
-  /** The agent's sends whose end is not known, which the card of a write warns of (step 24.5). */
-  openWrites?: OpenWrite[]
-  /** What the read of the open sends answers instead of the list: a failure, or an answer that waits. */
-  openWritesAnswer?: () => Response | Promise<Response>
+  /** The agent's writes as the record keeps them: the card of a write warns of the open ones and ends as the row says (step 24.5). */
+  writes?: WrittenRow[]
+  /** What the read of the writes answers instead of the list: a failure, or an answer that waits. */
+  writesAnswer?: () => Response | Promise<Response>
 }
 type Held = ToolHeld
 
-/** The sends of a conversation whose end is not known. */
-export function openWritesRoute(held: Held, projectApi: string) {
+/** The writes of a conversation as the record keeps them. */
+export function writesRoute(held: Held, projectApi: string) {
   return http.get(
-    `${projectApi}/agents/:id/conversations/:conversationId/open-writes`,
-    () => held.openWritesAnswer?.() ?? HttpResponse.json({ writes: held.openWrites ?? [] }),
+    `${projectApi}/agents/:id/conversations/:conversationId/writes`,
+    () => held.writesAnswer?.() ?? HttpResponse.json({ writes: held.writes ?? [] }),
   )
 }
 

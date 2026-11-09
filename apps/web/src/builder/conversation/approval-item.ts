@@ -1,5 +1,13 @@
+import type { WrittenRow } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
+
+/** The read of the conversation's writes as the record keeps them: until it answers, or fails, a card does not let the person approve. */
+export type WritesRead =
+  /** `kept` is the last answer, which a card may still read the end of a call from; it does not let anyone approve. */
+  | { kind: 'READING'; kept: readonly WrittenRow[] }
+  | { kind: 'READ'; writes: readonly WrittenRow[] }
+  | { kind: 'FAILED'; text: string }
 
 type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
 
@@ -14,6 +22,8 @@ const ABORTED = 'Aborted by the user'
 export type Seen = {
   /** The display state holds the call: the buttons are lit. */
   lit: boolean
+  /** The record keeps a person's **Aprovar** for the call: Mastra keeps no `approval` on a call that threw. */
+  recorded: boolean
   /** The stream told `tool_approval_required` for the call. */
   asked: boolean
   /** The stream told `tool_end` for the call, with its result. */
@@ -24,6 +34,8 @@ export type Seen = {
 export type Outcome =
   | { kind: 'LAUNCHED'; code: number | undefined }
   | { kind: 'UNCERTAIN'; mark: string }
+  /** The system answered and did not take the write; its message as it came, when it said one. */
+  | { kind: 'REFUSED'; message: string | null }
   | { kind: 'FAILED'; why: FailedWhy; text: string | undefined }
 
 /** Why a write that was approved did not go out: the Hub's refusals, the connection's, or the call that threw. */
@@ -38,13 +50,17 @@ type FailedWhy =
   | 'OTHER'
 
 /** What the screen knows of each call that may ask, from the session's state, the stream and the calls' ends. */
-export function seenBy(state: {
-  approvals: Readonly<Record<string, unknown>>
-  asked: Readonly<Record<string, true>>
-  ended: Readonly<Record<string, { result: unknown; denied: boolean; failed: boolean }>>
-}): (toolCallId: string) => Seen {
+export function seenBy(
+  state: {
+    approvals: Readonly<Record<string, unknown>>
+    asked: Readonly<Record<string, true>>
+    ended: Readonly<Record<string, { result: unknown; denied: boolean; failed: boolean }>>
+  },
+  approved: ReadonlySet<string> = new Set(),
+): (toolCallId: string) => Seen {
   return (toolCallId) => ({
     lit: Object.hasOwn(state.approvals, toolCallId),
+    recorded: approved.has(toolCallId),
     asked: Object.hasOwn(state.asked, toolCallId),
     ended: state.ended[toolCallId],
   })
@@ -93,6 +109,63 @@ function outcomeOf(result: unknown, threw: boolean): Outcome | undefined {
   }
 }
 
+/** What the card shows of a write that asked: how it ended, and whether a person's **Aprovar** is what the record keeps. */
+export type Decision = {
+  state: ApprovalState
+  /** The card says "Aprovado por você". */
+  approved: boolean
+  outcome: Outcome | undefined
+}
+
+/**
+ * How a card ended, from the record's row of the call (step 24.5, U6), never from what the model
+ * read of the failure (C49): the row says who approved and how the write ended. Without a row the
+ * write was refused before it was recorded (`NOT_IN_ROLE`), and the card says what Mastra kept of the
+ * call, with no "Aprovado". While the record is read, the card stays as Mastra left it.
+ */
+export function decided(
+  part: Pick<ApprovalCardItem, 'state' | 'outcome'>,
+  row: WrittenRow | undefined,
+  reading: boolean,
+): Decision {
+  const { state, outcome } = part
+  if (state !== 'approved') return { state, approved: false, outcome }
+  if (row === undefined) return { state, approved: reading, outcome }
+  return { state, approved: row.approved, outcome: outcomeOfRow(row, outcome) }
+}
+
+/** The calls a person approved, by the record: the ones whose card a reload draws though Mastra kept no approval on them. */
+export function approvedCalls(read: WritesRead | undefined): ReadonlySet<string> {
+  if (read === undefined || read.kind === 'FAILED') return new Set()
+  const rows = read.kind === 'READ' ? read.writes : read.kept
+  return new Set(rows.filter((row) => row.approved).map((row) => row.toolCallId))
+}
+
+/** The record's row of a call, as far as the screen has read it: an answer kept while the record is read again still holds the row. */
+export function writtenBy(
+  read: WritesRead | undefined,
+  toolCallId: string,
+): WrittenRow | undefined {
+  if (read === undefined || read.kind === 'FAILED') return undefined
+  return (read.kind === 'READ' ? read.writes : read.kept).find(
+    (one) => one.toolCallId === toolCallId,
+  )
+}
+
+function outcomeOfRow(row: WrittenRow, kept: Outcome | undefined): Outcome {
+  switch (row.state) {
+    case 'DONE':
+      return kept?.kind === 'LAUNCHED' ? kept : { kind: 'LAUNCHED', code: undefined }
+    case 'SENDING':
+    case 'UNCERTAIN':
+      return { kind: 'UNCERTAIN', mark: row.mark }
+    case 'REFUSED':
+      return { kind: 'REFUSED', message: row.message }
+    default:
+      return row.state satisfies never
+  }
+}
+
 /** Whether Mastra closed the call as the person's refusal, and by what: their answer, a message or the stop. */
 function declinedBy(inv: Invocation, result: unknown, denied: boolean): ApprovalState | undefined {
   if (result === INTERRUPTED || inv.approval?.reason === INTERRUPTED) return 'interrupted'
@@ -111,7 +184,7 @@ function declinedBy(inv: Invocation, result: unknown, denied: boolean): Approval
  */
 export function approvalItem(inv: Invocation, seen: Seen): ApprovalCardItem | null {
   if (!inv.toolName.startsWith(AGENT_TOOL)) return null
-  if (!seen.lit && !seen.asked && inv.approval === undefined) return null
+  if (!seen.lit && !seen.asked && !seen.recorded && inv.approval === undefined) return null
   const base = {
     kind: 'card',
     cardKind: 'approval',

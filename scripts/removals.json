@@ -2750,6 +2750,17 @@
     }
   },
   {
+    "id": "cliproxy-auto-memory-model",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "autoMemoryModel(main, kind)",
+    "replace": "autoMemoryModel(main, undefined)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/assistant-memory-cliproxy.test.ts",
+      "name": "com o observador respondendo"
+    }
+  },
+  {
     "id": "edge-tools-access-audience",
     "file": "apps/edge/src/tools.ts",
     "find": "access === undefined || access.aud !== env.TOOLS_ACCESS_AUD",

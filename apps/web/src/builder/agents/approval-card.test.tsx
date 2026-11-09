@@ -1,4 +1,5 @@
-import { OperationId } from '@conexus/hub-api'
+import type { WrittenRow } from '@conexus/hub-api'
+import { OperationId, ToolCallId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -7,16 +8,31 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { say } from '../conversation/test-hub.tsx'
 import { recordedRun } from '../conversation/test-recorded.ts'
 import { MATRIZ } from './test-agents.ts'
-import { asks, conversation, ends, holdsApproval, lineOf, SESSION, tell } from './test-approval.tsx'
+import {
+  asks,
+  conversation,
+  ends,
+  holdsApproval,
+  lineOf,
+  rowOf,
+  SESSION,
+  tell,
+} from './test-approval.tsx'
 
 // The card **Aprovar?** of a write that asks the person (step 24.5, criteria 14, 15 and 21), fed with
 // the events Mastra emitted in the recordings of `npm run record -- approval*`.
 const server = hubServer()
 const TITLE = /quer lançar pedido no Sankhya/
 
+/** What the record lists now: a test sets it before the call ends, as the funnel writes the row. */
+let recorded: WrittenRow[] = []
+
 /** The conversation told up to the moment the session's state holds the call, as a person sees the card appear. */
 async function asked(scenario: string) {
-  const opened = conversation(server)
+  recorded = []
+  const opened = conversation(server, {
+    writesAnswer: () => HttpResponse.json({ writes: recorded }),
+  })
   const line = await lineOf(opened)
   const rest = tell(line, recordedRun(scenario).events, holdsApproval)
   return { opened, line, rest, card: await screen.findByRole('region', { name: TITLE }) }
@@ -52,6 +68,16 @@ test('o cartão mostra o agente, a ação, cada campo, Aprovar e Recusar, e a fr
   ).toBe(false)
 })
 
+test('com um cartão esperando, a linha diz que o agente espera a pessoa, sem relógio, e o Parar continua', async () => {
+  await asked('approval')
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe(
+      'Conferente de metas esperando sua resposta.',
+    ),
+  )
+  expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
+})
+
 test('os botões acendem só quando o estado da sessão traz o toolCallId', async () => {
   const opened = conversation(server)
   const line = await lineOf(opened)
@@ -73,6 +99,7 @@ test('Aprovar manda o toolCallId pela rota nativa; o cartão passa a "Aprovado p
   expect(bodies[0]).toMatchObject({ approved: true })
   expect(Reflect.get(Object(bodies[0]), 'toolCallId')).toMatch(/^toolu_/)
   await screen.findByText('Aprovando…')
+  recorded = [rowOf('approval')]
   for (const event of rest) line.emit(event)
   expect(await screen.findByText('Aprovado por você')).toBeTruthy()
   expect(screen.getByText('Pedido 98001 lançado, a confirmar.')).toBeTruthy()
@@ -130,8 +157,11 @@ test('UNREACHABLE e DEADLINE antes do envio: "Não conseguiu lançar" com a falh
 test('o aviso do pedido igual: com um envio aberto da mesma escrita, a hora e a marca aparecem acima dos botões; sem ele, não (critério 21)', async () => {
   const sentAt = '2026-11-07T13:12:00.000Z'
   const opened = conversation(server, {
-    openWrites: [
+    writes: [
       {
+        toolCallId: ToolCallId.parse('toolu_open'),
+        approved: true,
+        message: null,
         connectionId: MATRIZ,
         operation: OperationId.parse('lancarPedido'),
         state: 'UNCERTAIN',
@@ -155,7 +185,7 @@ test('sem envio aberto da mesma escrita, o cartão não traz o aviso', async () 
 })
 
 test('ao reabrir, a escrita decidida em outra aba aparece decidida, com o número do pedido (critério 16)', async () => {
-  conversation(server, { rows: recordedRun('approval').read })
+  conversation(server, { rows: recordedRun('approval').read, writes: [rowOf('approval')] })
   expect(await screen.findByText('Aprovado por você')).toBeTruthy()
   expect(screen.getByText('Pedido 98001 lançado, a confirmar.')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
@@ -169,22 +199,6 @@ test('ao reabrir, a escrita ainda guardada como aberta volta com os botões aces
   tell(line, run.events, holdsApproval)
   const card = within(await screen.findByRole('region', { name: TITLE }))
   expect(card.getByRole('button', { name: 'Aprovar' }).hasAttribute('disabled')).toBe(false)
-})
-
-test('uma escrita que lançou o erro depois de Aprovar diz "Não conseguiu lançar" e a falha, nunca "Recusado"', async () => {
-  const { line, rest, card } = await asked('approval')
-  fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
-  for (const event of rest) {
-    line.emit(
-      ends(event)
-        ? { ...event, result: 'connect ECONNREFUSED', isError: true, denied: false }
-        : event,
-    )
-  }
-  expect(await screen.findByText('Aprovado por você')).toBeTruthy()
-  expect(screen.getByText('Não conseguiu lançar')).toBeTruthy()
-  expect(screen.getByText('Deu um erro no Hub e o pedido não foi enviado.')).toBeTruthy()
-  expect(screen.queryByText('Recusado')).toBeNull()
 })
 
 test.each([
@@ -205,7 +219,7 @@ test.each([
 test('a leitura dos envios abertos que falha mostra a falha com Tentar de novo e deixa os botões apagados até ela voltar', async () => {
   let failing = true
   const opened = conversation(server, {
-    openWritesAnswer: () =>
+    writesAnswer: () =>
       failing ? refusal('DATABASE_UNAVAILABLE') : HttpResponse.json({ writes: [] }),
   })
   const line = await lineOf(opened)
@@ -225,6 +239,9 @@ test('a leitura dos envios abertos que falha mostra a falha com Tentar de novo e
 test('enquanto a leitura dos envios abertos se refaz, os botões ficam apagados e a resposta velha não aparece', async () => {
   const sentAt = '2026-11-07T13:12:00.000Z'
   const stale = {
+    toolCallId: ToolCallId.parse('toolu_open'),
+    approved: true,
+    message: null,
     connectionId: MATRIZ,
     operation: OperationId.parse('lancarPedido'),
     state: 'UNCERTAIN' as const,
@@ -237,7 +254,7 @@ test('enquanto a leitura dos envios abertos se refaz, os botões ficam apagados 
   })
   let reads = 0
   const opened = conversation(server, {
-    openWritesAnswer: async () => {
+    writesAnswer: async () => {
       reads += 1
       if (reads > 1) await gate
       return HttpResponse.json({ writes: [stale] })
@@ -281,6 +298,7 @@ test('Aprovar que a Mastra já não espera (ok: false: outra aba respondeu) deix
     ),
   )
   expect(screen.queryByText('Não foi possível enviar. Tente de novo.')).toBeNull()
+  recorded = [rowOf('approval')]
   for (const event of rest) line.emit(event)
   expect(await screen.findByText('Aprovado por você')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull()
