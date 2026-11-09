@@ -18,7 +18,7 @@ cada um fechar. Este cartão espera a vaga do trilho da fronteira (delivery L5).
 criar a senha, lê e aceita por escrito o que sai do Brasil. Você vê na ficha dela, na Central,
 quem aceitou, quando e qual versão. A sua empresa aceita o mesmo aviso no Início. Qualquer pessoa
 lê o aviso numa página pública, sem entrar. E o Neon já está no plano pago, porque o plano grátis
-derrubaria todas as empresas perto do dia 16 de cada mês.
+derrubaria todas as empresas perto do dia 17 de cada mês.
 
 Hoje o Conexus já cadastra uma empresa de fora (etapa 4.2), convida o dono, separa os dados de
 cada empresa no banco (etapa 5) e deixa você abrir as assinaturas de modelo por empresa (etapa 11).
@@ -31,8 +31,11 @@ você aceita escritos.
    administrador dela. O convite sai por e-mail, como hoje.
 2. O administrador abre o convite. Acima do nome e da senha aparece "O que sai do Brasil": a lista
    de quem recebe dados fora do país, o que vai e para onde, com a linha do ditado no Chrome. Ele
-   marca "Li e aceito em nome da Empresa B", cria a senha e entra. Sem marcar, o botão "Criar senha"
-   não segue.
+   marca "Li e aceito em nome da Empresa B", cria a senha e já está dentro da empresa: criar a
+   senha aceita o convite no mesmo toque, para todo convite (hoje são dois toques, e quem sai antes
+   do segundo cai em "Você ainda não está em nenhuma empresa"). A página também diz para qual e-mail
+   é o convite. Sem marcar, o botão "Criar senha" não segue. "Recusar convite" continua antes da
+   senha, como hoje.
 3. Na Central, a ficha da Empresa B mostra "Aviso do que sai do Brasil: aceito em 09/11/2026 por
    <nome>, versão de 09/11/2026". Na mesma ficha, em "Tipos de conta", só a chave de API está ligada.
 4. Na sua empresa, o Início mostra o cartão "Leia o que sai do Brasil". Você lê e aceita em nome da
@@ -42,8 +45,8 @@ você aceita escritos.
    conversa, nem integração. Na Central você vê da B só o que já via (ficha, pessoas, convites).
 
 **O que você faz, e quando.** Antes: escolhe o plano do Neon (decisão E) e o liga no console do
-Neon, nas duas organizações, seguindo `docs/how-to/paid-plans.md` que a U3 escreve; nenhuma conta
-nova. No começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova o texto do
+Neon, nas duas organizações, seguindo a seção "Paid plan" que a U3 escreve em
+`docs/how-to/hub-company-databases.md`; nenhuma conta nova. No começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova o texto do
 aviso. O primeiro uso com uma empresa de fora publica a versão `v1.0.0` (delivery L17).
 
 **Fica de fora.**
@@ -59,6 +62,12 @@ aviso. O primeiro uso com uma empresa de fora publica a versão `v1.0.0` (delive
   seguir as recomendações H1, G1 e F1.
 - **O que os cartões de antes trazem.** O Telegram (24.7) entra no aviso como uma linha nova
   quando a 24.7 fechar: é o primeiro caso da decisão B.
+- **As pendências marcadas para o próximo cartão.** Esta etapa leva três, porque mexe no que
+  elas tocam: o convite que diz "Você já entrou" antes de a pessoa estar na empresa (issue 760) e o
+  que não mostra o e-mail (issue 761), ambos no passo 2 do roteiro, e o Worker de ferramenta que
+  sobra ao apagar uma empresa (issue 798: a varredura da U3 conta os Workers da empresa apagada; a
+  corrida com um turno vivo fica com o gatilho dela). As outras ficam com a 24.6, a 24.7, a 21.1, a
+  16 e a 22, que constroem antes.
 
 **As decisões suas nesta etapa.** As letras não usam C, D, L, S, T, V e W, que são as regras dos
 guias.
@@ -68,10 +77,13 @@ avisada por escrito antes de entrar ("8. A", 2026-10-13). O objetivo: ninguém d
 Conexus sem ter lido para onde vão os dados.
 
 - **A1 (recomendado).** No convite do primeiro dono, acima da senha, com a marca "Li e aceito em
-  nome da empresa". Exemplo: o roteiro, passo 2. O Twenty guarda o acordo de cada workspace com a
-  versão do modelo (`dpa-agreement.entity.ts:29-45`, `twenty@b76d0217`); o aceite do Conexus vai
-  junto do aceite do convite que o Better Auth já faz (`crud-invites.mjs:262-300`, 1.7.8). Nativo
-  do convite, mais uma tabela nossa.
+  nome da empresa". Exemplo: o roteiro, passo 2. Só o primeiro dono, de uma empresa ainda sem
+  ninguém, é perguntado no convite; quem é convidado depois entra como hoje. Numa empresa que já
+  tem gente, como a sua, quem aceita em nome dela é o dono ou o administrador, pelo cartão do
+  Início. O Twenty guarda o acordo de cada workspace com a versão do modelo
+  (`dpa-agreement.entity.ts:29-45`, `twenty@b76d0217`); o aceite do Conexus vai junto do aceite do
+  convite que o Better Auth já faz (`crud-invites.mjs:262-300`, 1.7.8). Nativo do convite, mais
+  uma tabela nossa.
 - **A2.** No primeiro passo da Preparação, depois de entrar, e a Preparação não segue sem aceitar.
   Exemplo: ele cria a senha, entra e vê o aviso antes de dar nome à empresa. Mais simples no
   convite, mas ele já entrou antes de ler.
@@ -84,15 +96,16 @@ trabalho do dia.
 
 - **B1 (recomendado).** O dono e o administrador veem no Início o cartão "O aviso mudou: entrou o
   Telegram" até um deles aceitar; nada trava. A Supabase versiona a lista de suboperadores por data
-  e avisa quem pede, sem travar a conta (captura `supabase-subprocessors-1280.png`).
+  e avisa por e-mail quem pede, sem travar a conta (captura `supabase-subprocessors-1280.png`). Uma
+  empresa duas versões atrás vê as duas mudanças.
 - **B2.** A empresa fica travada até aceitar. Exemplo: segunda de manhã ninguém usa o Conexus até
   o dono entrar.
 - **B3.** Só a página pública muda; a empresa não é avisada.
 
 **E. O plano pago do Neon.** O caso: desde a 24.2 a agenda das automações mantém o banco do Hub
 acordado; o plano grátis dá 100 CU-hora por projeto por mês e suspende o banco ao esgotar
-(neon.com, lido em 2026-11-09). Acordado o mês todo, o Hub gasta cerca de 182 CU-hora, então o
-Neon o suspende perto do dia 16: todas as empresas param. O grátis também guarda só 6 horas de
+(neon.com, lido em 2026-11-09). A 0,25 CU, 100 CU-hora duram 400 horas, então o Neon o suspende
+perto do dia 17: todas as empresas param. O grátis também guarda só 6 horas de
 histórico. O objetivo: o Conexus não para por cota e um erro visto no dia seguinte ainda volta.
 
 - **E1 (recomendado).** Launch nas duas organizações, a do Hub e a das empresas, antes da primeira
@@ -188,9 +201,9 @@ A seção 11 da arquitetura no `main` de hoje, linha a linha. A U3 a reescreve c
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O aviso e o aceite | A constante do aviso, a tabela do aceite, o aceite no convite e a rota da versão nova, o aceite na ficha da Central | `packages/hub-api/src`, `apps/server/src/hub/identity`, `apps/server/src/hub/operations`, `apps/server/migrations`, `apps/server/database-grants.sql` | [data](../guides/data.md) | nada |
-| U2 As telas do aviso | O aviso no convite, a página pública, o cartão no Início, a linha na ficha da Central | `apps/web/src/hub/notice` (nova), `apps/web/src/hub/identity`, `apps/web/src/hub/projects`, `apps/web/src/hub/operations`, `packages/hub-api/src/pages.ts` | [web](../guides/web.md) | U1 |
-| U3 Duas empresas, provadas | A varredura das rotas, as chaves estrangeiras com a empresa, a varredura da exclusão, a seção 11 e o how-to dos planos | `apps/server/src/platform`, `apps/server/src/hub/operations`, `apps/server/migrations`, `docs/architecture.md`, `docs/how-to/paid-plans.md`, `docs/index.md` | [testing](../guides/testing.md) | U1 (migração antes) |
+| U1 O aviso e o aceite | A constante do aviso, a tabela do aceite, o aceite no convite e a rota da versão nova, o aceite na ficha da Central | `packages/hub-api/src`, `apps/server/src/hub/identity`, `apps/server/src/hub/operations`, `apps/server/migrations`, `apps/server/database-grants.sql` | [data](../guides/data.md) | nada; as permissões de `database-grants.sql` vão num pull request próprio antes da U1 (data D11), e aprovar esta página é a palavra do fundador para elas |
+| U2 As telas do aviso | O aviso no convite, a página pública, o cartão no Início, a linha na ficha da Central | `apps/web/src/hub/notice` (nova), `apps/web/src/hub/identity`, `apps/web/src/hub/projects`, `apps/web/src/hub/operations`, `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | [web](../guides/web.md) | U1 |
+| U3 Duas empresas, provadas | A varredura das rotas, as chaves estrangeiras com a empresa, a varredura da exclusão, a seção 11 e o plano pago no how-to | `apps/server/src/platform`, `apps/server/src/hub/operations`, `apps/server/src/hub/apps`, `apps/server/src/hub/requests`, `apps/server/src/hub/notifications`, `apps/server/src/builder/agents`, `apps/server/src/builder/assistant`, `apps/server/src/builder/conversation`, `apps/server/src/builder/model-accounts`, `apps/server/migrations`, `docs/architecture.md`, `docs/how-to/hub-company-databases.md` | [testing](../guides/testing.md) | U1 (migração antes) |
 
 A U2 e a U3 correm em paralelo depois da U1: não dividem pasta. A U3 vem depois da U1 porque as
 duas mudam o retrato do catálogo das migrações.
@@ -203,37 +216,42 @@ migração, mais os documentos. Total da etapa: cerca de 1.060 linhas, abaixo do
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | O aviso tem uma versão e uma linha por destino fora do Brasil da arquitetura, seção 3, mais a linha do ditado no Chrome; a web e o servidor leem a mesma constante | `packages/hub-api/src/egress-notice.test.ts`: cada fornecedor da tabela tem linha; a do ditado existe | must |
-| 2 | U1 | O primeiro dono de uma empresa sem aceite aceita o convite com a versão atual: entra, e a empresa fica com o aceite (versão, pessoa, hora). Sem a versão, `PUT /api/invitations/{id}/acceptance` responde 409 `NOTICE_REQUIRED` e não cria o membro; com uma versão velha, 409 `NOTICE_STALE` | `apps/server/src/hub/identity/notice-acceptance.test.ts` | must |
-| 3 | U1 | Uma pessoa convidada para uma empresa que já aceitou a versão atual aceita o convite sem mandar versão, como hoje | o mesmo arquivo, caso "segundo convidado" | must |
-| 4 | U1 | `PUT /api/companies/{companyId}/egress-notice` com a versão atual, pelo dono ou administrador, grava o aceite e responde o estado `CURRENT`; repetido, responde o mesmo e não cria outra linha; um membro, uma pessoa de outra empresa ou uma empresa que não existe recebem o mesmo 404 `NOT_FOUND`; uma versão velha, 409 `NOTICE_STALE` | o mesmo arquivo | must |
-| 5 | U1 | `GET /api/companies/{companyId}` devolve `notice` com `NEVER`, `BEHIND` ou `CURRENT` para o dono e o administrador | o mesmo arquivo | must |
-| 6 | U1 | `GET /api/clients/{companyId}` devolve o último aceite da empresa ao operador; uma pessoa que não é operadora recebe 404 | `apps/server/src/hub/operations/client-reads.test.ts` | must |
-| 7 | U1 | Sem escopo, ou no escopo de outra empresa, a tabela do aceite lê zero e recusa gravar (42501) | `apps/server/src/platform/isolation-notice.test.ts` | must |
+| 2 | U1 | `getInvitation` diz `noticeAsked: true` só no convite do primeiro dono (`firstOwner`) de uma empresa sem o aceite da versão atual. Esse dono aceita o convite com a versão atual: entra, e a empresa fica com o aceite (versão, pessoa, hora). Sem a versão, `PUT /api/invitations/{id}/acceptance` responde 409 `NOTICE_REQUIRED` e não cria o membro; com uma versão velha, 412 `NOTICE_STALE` | `apps/server/src/hub/identity/notice-acceptance.test.ts` | must |
+| 3 | U1 | Uma pessoa convidada para uma empresa que já tem membro tem `noticeAsked: false` e aceita o convite sem mandar versão, como hoje, aceita a empresa o aviso ou não; o convite de app também | o mesmo arquivo, caso "segundo convidado" | must |
+| 4 | U1 | `PUT /api/companies/{companyId}/egress-notice` com a versão atual, pelo dono ou administrador, grava o aceite e responde o estado `CURRENT`; repetido, responde o mesmo e não cria outra linha; um membro, uma pessoa de outra empresa ou uma empresa que não existe recebem o mesmo 404 `NOT_FOUND`; uma versão velha, 412 `NOTICE_STALE` | o mesmo arquivo | must |
+| 5 | U1 | `GET /api/companies/{companyId}` devolve `notice` com `NEVER`, `BEHIND` (com o último aceite) ou `CURRENT` (com o aceite), e `may.acceptNotice` verdadeiro só para o dono e o administrador | o mesmo arquivo | must |
+| 6 | U1 | `GET /api/clients/{companyId}` devolve ao operador o mesmo `NoticeState` da empresa; uma pessoa que não é operadora recebe 404 | `apps/server/src/hub/operations/client-reads.test.ts` | must |
+| 7 | U1 | Sem escopo, ou no escopo de outra empresa ou de um convite de outra empresa, a tabela do aceite lê zero e recusa gravar (42501); no escopo do convite, lê e grava só a da empresa do convite | `apps/server/src/platform/isolation-notice.test.ts` | must |
 | 8 | U1 | Apagar a empresa apaga os aceites dela | `apps/server/src/hub/operations/client-deletion-database.test.ts` | must |
-| 9 | U2 | O convite do primeiro dono mostra o aviso acima do nome; "Criar senha" fica desligado até marcar "Li e aceito em nome de <empresa>"; um `NOTICE_STALE` mostra o aviso novo e pede para marcar de novo | `apps/web/src/hub/notice/invitation-notice.test.tsx` | must |
-| 10 | U2 | `/egress-notice` abre sem sessão, com o aviso, a versão em data brasileira e nenhum dado de empresa | `apps/web/src/hub/notice/public-notice.test.tsx`; `pages.ts` tem a rota | must |
-| 11 | U2 | O Início mostra o cartão do aviso ao dono e ao administrador quando `notice` é `NEVER` ou `BEHIND`, e não ao membro; aceitar tira o cartão sem recarregar | `apps/web/src/hub/notice/home-notice.test.tsx` | must |
-| 12 | U2 | A ficha do cliente na Central mostra "Aceito em <data> por <nome>, versão de <data>" ou "Ainda não aceito" | `apps/web/src/hub/operations/client.test.tsx` | must |
-| 13 | U3 | Toda rota `/api/` com `:companyId`, chamada por uma pessoa da empresa A com o id da empresa B, responde o mesmo status e código que com o id de uma empresa que não existe, e nunca 2xx; a lista vem das rotas registradas, então uma rota nova entra sozinha | `apps/server/src/platform/isolation-routes.test.ts` | must |
-| 14 | U3 | Nenhuma chave estrangeira entre duas tabelas com `company_id` deixa a empresa de fora; inserir na A uma linha que aponte para um id da B é recusado (23503) | `apps/server/src/platform/catalog.test.ts`, caso novo, e `isolation-versions.test.ts` | must |
-| 15 | U3 | Depois de apagar uma empresa, nenhuma tabela com `company_id` tem linha dela, o Mastra não tem conversa nem agenda com recurso dela, e o balde de Git não tem chave `git/<empresa>/` | `apps/server/src/hub/operations/client-deletion-sweep.test.ts` | must |
-| 16 | U3 | A seção 11 da arquitetura tem a tabela com as respostas do fundador; `docs/how-to/paid-plans.md` diz o que ligar no Neon; `npm run docs` passa | `npm run docs` | must |
+| 9 | U2 | Com `noticeAsked`, o convite mostra o aviso acima do nome em `NEW`, e acima de "Aceitar convite" em `HAS_PASSWORD` e `INVITED`; o botão fica desligado até marcar "Li e aceito em nome de <empresa>"; um `NOTICE_STALE` mostra o aviso novo e pede para marcar de novo; sem `noticeAsked`, o convite é o de hoje | `apps/web/src/hub/notice/invitation-notice.test.tsx` | must |
+| 10 | U2 | `/egress-notice` abre sem sessão, com o aviso, a versão em data brasileira (formatada com `timeZone: 'UTC'`, para 2026-11-09 não virar 08/11) e nenhum dado de empresa; `docs/reference/screens.md` tem a linha da tela | `apps/web/src/hub/notice/public-notice.test.tsx`; `pages.ts` tem a rota | must |
+| 11 | U2 | O Início mostra o cartão do aviso quando `may.acceptNotice` e `notice` é `NEVER` ou `BEHIND`, e não ao membro; em `BEHIND`, o cartão lista o texto de cada versão depois da aceita; aceitar tira o cartão sem recarregar | `apps/web/src/hub/notice/home-notice.test.tsx` | must |
+| 12 | U2 | A ficha do cliente na Central mostra "Aceito em <data> por <nome>, versão de <data>" ou "Ainda não aceito", com as datas em `timeZone: 'UTC'` | `apps/web/src/hub/operations/client.test.tsx` | must |
+| 12a | U2 | No convite, a página diz para qual e-mail ele é; criar a senha aceita o convite no mesmo toque, e a pessoa cai na empresa, nunca em "Você ainda não está em nenhuma empresa"; se o aceite falha depois da senha, a página fica em `HAS_PASSWORD` ou `INVITED` com a frase da falha e o botão "Aceitar convite" (issues 760 e 761) | `apps/web/src/hub/identity/invitation.test.tsx` | must |
+| 13 | U3 | Toda rota `/api/` com `:companyId`, chamada por uma pessoa da empresa A com o id da empresa B, responde o mesmo status e código que com o id de uma empresa que não existe, e nunca 2xx; a lista vem das rotas registradas, então uma rota nova entra sozinha. O limite, escrito no teste: as rotas que recusam o corpo vazio pela forma (30 no estudo) e as de `/api/clients/:companyId` (só do operador) não exercitam a admissão | `apps/server/src/platform/isolation-routes.test.ts` | must |
+| 14 | U3 | Nenhuma chave estrangeira entre duas tabelas com `company_id` deixa a empresa de fora, e cada uma guarda o `onDelete` de hoje; inserir na A uma linha que aponte para um id da B é recusado (23503) | `apps/server/src/platform/catalog.test.ts`, caso novo, e `isolation-versions.test.ts` | must |
+| 15 | U3 | Depois de apagar uma empresa, nenhuma tabela com `company_id` tem linha dela; nenhuma das tabelas do Mastra com `resourceId` tem linha com o prefixo `company:<empresa>:` (lidas sem filtro de metadado); nenhuma agenda tem `inputData.companyId` dela; o balde de Git não tem chave `git/<empresa>/`; e o namespace das ferramentas não tem Worker com a tag da empresa (issue 798) | `apps/server/src/hub/operations/client-deletion-sweep.test.ts` | must |
+| 16 | U3 | A seção 11 da arquitetura tem a tabela com as respostas do fundador; a seção 3 aponta para a constante do aviso em vez de repetir quem sai do Brasil; a seção "Paid plan" de `docs/how-to/hub-company-databases.md` diz o que ligar no Neon; `npm run docs` passa, a arquitetura dentro do teto da L24 | `npm run docs` | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Convite do primeiro dono | o aviso aberto acima do nome, marca desmarcada | não há | o formulário de hoje carregando | a frase de `DATABASE_UNAVAILABLE` de hoje | o convite inexistente de hoje | não há: o convite é público pelo link | `NOTICE_STALE`: "O aviso mudou. Leia de novo e marque para seguir", com o aviso novo; o convite vencido de hoje |
+| Convite com `noticeAsked`, em `NEW` | o aviso aberto acima do nome, marca desmarcada | não há | o formulário de hoje carregando | a frase de `DATABASE_UNAVAILABLE` de hoje | o convite inexistente de hoje | não há: o convite é público pelo link | `NOTICE_STALE`: "O aviso mudou. Leia de novo e marque para seguir", com o aviso novo; o convite vencido de hoje |
+| Convite com `noticeAsked`, em `HAS_PASSWORD` ou `INVITED` (voltou depois de criar a senha, ou o aceite falhou) | o aviso aberto acima de "Aceitar convite", marca desmarcada | não há | o de hoje | a frase da falha (`NOTICE_STALE`, `COMPANY_FULL`, `DATABASE_UNAVAILABLE`) e o botão volta | o de hoje | `OTHER` de hoje: outro e-mail entrou | como em `NEW` |
 | Página pública do aviso | o aviso inteiro | não há: o texto é fixo no código | não há: nada a buscar | não há | não há | não há: é pública | não há |
-| Cartão no Início | `NEVER`: "Leia o que sai do Brasil antes de convidar a empresa" | some em `CURRENT` | some enquanto carrega | "Não foi possível aceitar agora. Tente de novo." e o botão volta | não há | o membro não vê o cartão | `BEHIND`: "O aviso mudou: <o que entrou>"; `NOTICE_STALE` ao aceitar recarrega o aviso |
+| Cartão no Início | `NEVER`: "Leia o que sai do Brasil e aceite em nome de <empresa>" | some em `CURRENT` | some enquanto carrega | "Não foi possível aceitar agora. Tente de novo." e o botão volta | não há | o membro não vê o cartão | `BEHIND`: "O aviso mudou" e o texto de cada versão depois da aceita; `NOTICE_STALE` ao aceitar recarrega o aviso |
+| Caixa "Ler o aviso" (do cartão) | o aviso inteiro | não há | não há: o texto é fixo | não há | não há | não há | não há |
 | Ficha da Central | "Ainda não aceito" | igual | a ficha de hoje carregando | a frase de hoje | o cliente inexistente de hoje | só o operador | "Aceito em <data> por <nome>, versão de <data>; há versão nova" |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `EGRESS_NOTICE.version`, `destinations`, `dictation` | o código (`packages/hub-api/src/egress-notice.ts`) | a U2 (convite, página, cartão); o servidor ao conferir o aceite |
-| `notice_acceptance.version`, `person_id`, `accepted_at` | a U1 no aceite do convite e na rota da versão nova | `getCompany` (`notice`), `getClient` (`notice`) |
-| `CompanyDetail.notice` (`NoticeState`) | o servidor | o Início (U2) |
-| `Client.notice` (`ClientNotice`) | o servidor | a ficha da Central (U2) |
+| `EGRESS_NOTICE.version`, `destinations`, `dictation` | o código (`packages/hub-api/src/egress-notice.ts`) | a U2 (convite, página, caixa); o servidor ao conferir o aceite |
+| `EGRESS_NOTICE.changes` (`{ version, text }[]`) | o código, uma linha a cada versão nova | o cartão do Início em `BEHIND`, as versões depois de `accepted.version` |
+| `egress_notice_acceptance.version`, `person_id`, `accepted_at` | a U1 no aceite do convite e na rota da versão nova | `noticeOf`, que dá o `NoticeState`; `person_id` vira `personName` |
+| `InvitationView.noticeAsked` | o servidor (`getInvitation`) | o convite (U2) |
+| corpo de `getCompany`: `notice` (`NoticeState`), `may.acceptNotice` | o servidor | o Início (U2) |
+| `Client.notice` (`NoticeState`) e seu `accepted` | o servidor | a ficha da Central (U2): data, nome e versão |
 | corpo `acceptInvitation.notice` | o convite (U2) | o servidor (U1) |
 
 **As caixas, a 1280 e a 390 px.** As capturas de hoje das telas que mudam e das referências estão
@@ -246,10 +264,10 @@ Convite do primeiro dono, 1280 (coluna de 384 px de hoje, centrada):
 ```text
             [logo Conexus]
             Conexus convidou você para ser o primeiro dono de Empresa B.
-            Válido até 11/11/2026, 01:36.
+            Convite para admin@empresa-b.example. Válido até 11/11/2026, 01:36.
             ┌ O que sai do Brasil · versão de 09/11/2026 ─────────┐
             │ Quem          O que vai                 Para onde   │
-            │ Anthropic     a conversa e o que ela lê  EUA         │
+            │ Anthropic     a conversa e o que ela lê  fora do Brasil │
             │ ...                                                  │
             │ O ditado no Chrome manda o áudio ao Google.          │
             └──────────────────────────────────────────────────────┘
@@ -276,8 +294,9 @@ social, cadastrado em), igual às outras.
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Aceite do convite com o aviso (U1, mais o `acceptInvitation` do Better Auth) | A trava da empresa de hoje (`lockCompany`, `invitation-response.ts:211`) serializa; a segunda vê o convite aceito e responde como hoje, sem outro aceite (`on conflict do nothing` na chave empresa e versão) | A gravação do aceite e a do membro estão na mesma transação de biblioteca; se o Better Auth recusar, nada fica | `DATABASE_UNAVAILABLE`; o cliente repete o mesmo pedido, que é idempotente | `INVITATION_ACCEPTED` com `noticeVersion` | 2, 3 |
+| Criar a senha e logo aceitar (U2: `createInvitationPassword`, depois `acceptInvitation`) | O segundo aceite vê o convite aceito e responde como hoje | A senha fica e o convite segue pendente; a página fica em `HAS_PASSWORD` ou `INVITED` com o aviso, a marca e a frase da falha, e o toque em "Aceitar convite" repete só o aceite | `DATABASE_UNAVAILABLE` ou a rede: a mesma página; abrir o link de novo chega ao mesmo estado | o `INVITATION_ACCEPTED` de hoje, quando passa | 9, 12a |
 | `PUT /api/companies/{companyId}/egress-notice` (U1) | Os dois gravam a mesma chave; o segundo não cria linha e responde `CURRENT` | Uma instrução só | `DATABASE_UNAVAILABLE`; repetir é seguro | `EGRESS_NOTICE_ACCEPTED` com `companyId`, `version` | 4 |
-| A migração das chaves estrangeiras (U3) | Não há: roda uma vez antes do programa (data D9) | Uma transação por migração; uma linha que já viola a chave nova falha a migração inteira, e o programa não sobe | O banco fora: a publicação para antes de subir | a saída do migrador | 14 |
+| As duas migrações das chaves estrangeiras (U3) | Não há: roda uma vez antes do programa (data D9) | Uma transação por migração; uma linha que já viola a chave nova falha a migração inteira, o programa novo não sobe e o antigo segue de pé; a consulta de pré-checagem da U3, rodada pelo firstmate antes da publicação, conta essas linhas por tabela | O banco fora: a publicação para antes de subir | a saída do migrador | 14 |
 
 ## A tabela de referência
 
@@ -285,19 +304,19 @@ social, cadastrado em), igual às outras.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Cadastrar uma empresa de fora e convidar o dono | fica de fora: já existe (4.2) | `apps/server/src/hub/operations/clients.ts:127` `insertClient`; `packages/hub-api/src/operations.ts:94` `registerClient` | `twenty@b76d0217` `twenty-config/config-variables.ts:583-589`; `dify-latest@208a2489` `api/commands/account.py:75` | Twenty: só o administrador do servidor cria workspace, por padrão; Dify: comando de operador `create-tenant` (lido) | nativo: `allowUserToCreateOrganization: false` (`hub/identity/organization.ts:49`; padrão `true` em `better-auth@1.7.8` `organization/routes/crud-org.mjs:56`) | | 4.2 aprovada em 2026-10-16 | nenhum |
 | Um e-mail em várias empresas | fica de fora: já existe | `hub/identity/tables.ts:226` membro único por (empresa, pessoa); `apps/web/src/hub/identity/company-switcher.tsx` | `better-auth@1.7.8` `organization/adapter.mjs:474-485` `listOrganizations` | membro por (organização, pessoa) (lido) | nativo; `activeOrganizationId` (`tables.ts:122`) sem leitor, porque a empresa vem no caminho | | não precisa | nenhum |
-| O texto do aviso | U1 | nenhum; tabela da arquitetura, seção 3 | nenhuma faz, entre as bibliotecas; produtos: `supabase@cb52c0f4` `apps/studio/components/interfaces/Organization/Documents/DPA.tsx:17-31`; lista de suboperadores com data (captura); ANPD, Resolução 19/2024 (resumo de escritório, 2026-11-09) | Supabase: documento por organização e lista datada; ANPD: o controlador publica país de destino e finalidade (documentado) | remendo: nenhuma biblioteca tem aviso de transferência; é texto do produto, com um dono (C26) | critério 1; `docs/decisions/0032-data-leaving-brazil-told.md` | 0032, "8. A", 2026-10-13; o roteiro pede a linha do ditado | `packages/hub-api/src/egress-notice.ts` |
+| O texto do aviso | U1 | nenhum; tabela da arquitetura, seção 3 | nenhuma faz, entre as bibliotecas; produtos: a lista de suboperadores da Supabase, com data (captura `supabase-subprocessors-1280.png`); ANPD, Resolução 19/2024 (resumo de escritório, 2026-11-09) | Supabase: uma lista pública datada de quem recebe dados (o acordo dela vem nos termos, sem aceite à parte); ANPD: o controlador publica país de destino e finalidade (documentado) | remendo: nenhuma biblioteca tem aviso de transferência; é texto do produto, com um dono (C26) | critério 1; `docs/decisions/0032-data-leaving-brazil-told.md` | 0032, "8. A", 2026-10-13; o roteiro pede a linha do ditado | `packages/hub-api/src/egress-notice.ts` |
 | O aceite do aviso | U1 | nenhum | `twenty@b76d0217` `packages/twenty-server/src/engine/core-modules/dpa/entities/dpa-agreement.entity.ts:29-45`; `better-auth@1.7.8` `organization/routes/crud-invites.mjs:262-300` | Twenty guarda o acordo por workspace com `templateVersion` e quem assinou; Better Auth aceita o convite conferindo o e-mail da sessão (`:269`) (lido) | embrulhado: o aceite vai na mesma transação do `acceptInvitation` do plugin, numa tabela da empresa com política de linha | critérios 2 a 8 | decisão A | `apps/server/src/hub/identity/notice.ts`, migração |
 | O ditado no Chrome | U1 (texto) | `apps/web/src/ui/speech-input.tsx:45`, `processLocally` desligado | developer.chrome.com, Web Speech API (documentado, 2026-11-09) | o Chrome manda o áudio a um servidor do Google e devolve só o texto | nativo do navegador; só o texto é nosso | | o roteiro, tabela do que você fornece | nenhum |
 | A página pública | U2 | nenhuma; o acesso `page` (S48) e `PAGES` (`packages/hub-api/src/pages.ts:6`) | captura `supabase-subprocessors-1280.png`, `n8n-legal-1280.png`, `calcom-legal-1280.png` | página pública, sem entrar, com data da versão | nativo do Hub: uma rota de tela | | não precisa | `apps/web/src/hub/notice/public-notice.tsx` |
-| O aviso no convite | U2 | `apps/web/src/hub/identity/invitation.tsx`, `set-password-form.tsx` (captura `invitation-page-before-password-*`) | `better-auth` aceite por e-mail | | embrulhado: peças de `apps/web/src/ui/` | | decisão A | `apps/web/src/hub/notice/invitation-notice.tsx` |
-| O cartão no Início | U2 | `apps/web/src/hub/projects/home.tsx` (captura `company-inicio-first-time-*`) | Supabase avisa a mudança da lista por e-mail, sem travar (captura) | | embrulhado | | decisão B | `apps/web/src/hub/notice/home-notice.tsx` |
-| O aceite na ficha da Central | U1, U2 | `apps/web/src/hub/operations/client.tsx`; `getClient` (`operations.ts:83`) (captura `central-client-*`) | Twenty, o acordo por workspace | | embrulhado | | não precisa | campo `notice` de `Client` |
-| Rotas por empresa recusam outra | U3 | `hub/identity/admission.ts:316,339` (o mesmo `NOT_FOUND`); testes por família em `apps/server/src/platform/isolation*.test.ts` | `flowise@9291856` `packages/server/src/utils/ControllerServiceUtils.ts:6` `getWorkspaceSearchOptions` | um ajudante lança erro sem escopo (lido) | nativo do teste: Fastify `printRoutes` lista as rotas registradas | rodado no estudo: 106 rotas, todas iguais a "empresa que não existe"; 30 recusam antes pela forma do corpo | não precisa | `apps/server/src/platform/isolation-routes.test.ts` |
+| O aviso no convite | U2 | `apps/web/src/hub/identity/invitation.tsx`, `set-password-form.tsx` (captura `invitation-page-before-password-*`) | `better-auth@1.7.8` `organization/routes/crud-invites.mjs:262-300`; `twenty@b76d0217` `dpa-agreement.entity.ts:29-45` | o Better Auth aceita o convite da pessoa da sessão e chama `beforeAcceptInvitation` (`:280`) antes; o Twenty grava o acordo com a versão do modelo e quem assinou (lido) | embrulhado: peças de `apps/web/src/ui/` | | decisão A | `apps/web/src/hub/notice/invitation-notice.tsx` |
+| O cartão no Início | U2 | `apps/web/src/hub/projects/home.tsx` (captura `company-inicio-first-time-*`) | lista de suboperadores da Supabase (captura `supabase-subprocessors-1280.png`) | a lista muda com data nova e quem pede é avisado por e-mail; a conta não trava (documentado) | embrulhado | | decisão B | `apps/web/src/hub/notice/home-notice.tsx` |
+| O aceite na ficha da Central | U1, U2 | `apps/web/src/hub/operations/client.tsx`; `getClient` (`operations.ts:83`) (captura `central-client-*`) | `twenty@b76d0217` `dpa-agreement.entity.ts:29-45` | uma linha por workspace com a versão e quem assinou, que o painel lê (lido) | embrulhado | | não precisa | campo `notice` de `Client` |
+| Rotas por empresa recusam outra | U3 | `hub/identity/admission.ts:316,339` (o mesmo `NOT_FOUND`); testes por família em `apps/server/src/platform/isolation*.test.ts` | `flowise@9291856` `packages/server/src/enterprise/utils/ControllerServiceUtils.ts:6` `getWorkspaceSearchOptions` | um ajudante lança erro sem escopo (lido) | nativo do teste: Fastify `printRoutes` lista as rotas registradas | rodado no estudo: 106 rotas, todas iguais a "empresa que não existe"; 30 recusam antes pela forma do corpo | não precisa | `apps/server/src/platform/isolation-routes.test.ts` |
 | Política de linha em toda tabela de empresa | fica de fora: já existe | `apps/server/src/platform/catalog.test.ts:200-232` | basejump, teste `rls_enabled` | o catálogo falha sem RLS (lido) | nativo (PostgreSQL) | rodado no estudo: os 28 testes de isolamento e do guarda passam | 0039 | nenhum |
 | Chaves estrangeiras com a empresa | U3 | 12 chaves entre tabelas de empresa sem `company_id`, ex. `apps/server/src/hub/apps/tables.ts:111-115` `app_project_id_fkey` | PostgreSQL: a checagem da chave estrangeira não passa pela política de linha | uma linha da A aponta para um id da B e é aceita (rodado no estudo: a lista das 12) | nativo: chave composta `(company_id, …)` | critério 14 | não precisa | migração; `catalog.test.ts` |
 | As conversas do Mastra por empresa | fica de fora: já existe | `builder/controller-kit/kinds.ts:56-57` `resourceOf`; `builder/conversation/guard.ts:175-186` | `@mastra/memory@1.41.0` `recall`; `@mastra/pg@1.35.0` `getThreadById` | só confere o dono quando recebe `resourceId`; sem ele devolve a conversa; nenhuma das 39 tabelas tem RLS (rodado no estudo) | embrulhado: o guarda confere pessoa e admissão | `guard.test.ts`, 3 de 3 | 0050 | nenhum |
-| Apagar uma empresa não deixa nada | U3 | `hub/operations/clients.ts:212-242` | `twenty`, exportação do workspace no painel (relay do leitor) | | nativo do teste: catálogo, Mastra e balde depois de apagar | critério 15 | etapa 5 | `apps/server/src/hub/operations/client-deletion-sweep.test.ts` |
-| O plano pago do Neon | U3 (documento); você no console | 0009; `docs/how-to/hub-company-databases.md` | `neon-for-agent-platforms@028b69b` `skills/neon-postgres-agent-platforms/SKILL.md:211`; neon.com/pricing (2026-11-09) | um projeto por cliente; Launch sem mínimo (documentado) | nativo | | decisão E | `docs/how-to/paid-plans.md` |
+| Apagar uma empresa não deixa nada | U3 | `hub/operations/clients.ts:212-242` | nenhuma das referências da prateleira tem teste de sobra depois de apagar um inquilino (busca em twenty, dify, flowise, basejump) | o Conexus apaga em fases e o teste varre o que sobra | nativo do teste: catálogo, Mastra e balde depois de apagar | critério 15 | etapa 5 | `apps/server/src/hub/operations/client-deletion-sweep.test.ts` |
+| O plano pago do Neon | U3 (documento); você no console | 0009; `docs/how-to/hub-company-databases.md` | `neon-for-agent-platforms@028b69b` `skills/neon-postgres-agent-platforms/SKILL.md:211`; neon.com/pricing (2026-11-09) | um projeto por cliente; Launch sem mínimo (documentado) | nativo | | decisão E | nenhum: seção "Paid plan" em `docs/how-to/hub-company-databases.md` |
 | As contas de modelo de outra empresa | fica de fora: já existe | `builder/model-accounts/kinds.ts:12-19` `openKindsOf`; `setKinds` só do operador | | só a chave de API vale para uma empresa nova | nativo do Conexus (0049) | | 0049 | nenhum |
 | Suporte | fica de fora com G1 | `hub/identity/auth.ts:339` `admin()` sem rota de personificação | `better-auth@1.7.8` `admin/routes.mjs:559,598`; `twenty@b76d0217` `impersonation/services/impersonation.service.ts:145` | personificação de 1 hora, registrada (lido) | nativo se G2 | | decisão G | nenhum com G1 |
 | Página de status | fica de fora com H1 | StatusCake grátis, e-mail ao fundador (`docs/how-to/hub-server.md:33-35`) | `supabase@cb52c0f4` `apps/studio/components/layouts/AppLayout/StatusPageBanner.tsx:7`; `langfuse@8ee97c4` `web/src/features/cloud-status-notification/server/cloud-status-router.ts:49-55` | faixa no produto com o link de uma página de terceiro (lido) | nativo de terceiro se H2 | | decisão H | nenhum com H1 |
@@ -333,7 +352,8 @@ em duas leituras, no padrão das tabelas de empresa.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/hub-api/src/egress-notice.ts` | Cria | a U2; `hub/identity/notice.ts` |
-| `packages/hub-api/src/companies.ts` | Muda: `acceptInvitation` (corpo e falhas), `CompanyDetail.notice`, `acceptEgressNotice` | `apps/web` |
+| `packages/hub-api/src/companies.ts` | Muda: `NoticeState`, `InvitationView.noticeAsked`, `acceptInvitation` (corpo e falhas), o corpo de `getCompany` (`notice`), `acceptEgressNotice` | `apps/web` |
+| `packages/hub-api/src/roles.ts` | Muda: `CompanyMay.acceptNotice` | `apps/web` |
 | `packages/hub-api/src/operations.ts` | Muda: `Client.notice` | `apps/web/src/hub/operations` |
 | `packages/hub-api/src/identity-failures.ts` | Muda: `NOTICE_REQUIRED`, `NOTICE_STALE` | `failures.ts` |
 | `apps/server/src/hub/identity/` | Cria `notice.ts`; muda `invitation-response.ts`, `company-routes.ts`, `admission.ts`, `tables.ts`, `roles.ts`, `public.ts` | `hub/operations/clients.ts` |
@@ -349,43 +369,51 @@ export type NoticeVersion = z.infer<typeof NoticeVersion>
 export type EgressDestination = Readonly<{ who: string; what: string; where: string }>
 export const EGRESS_NOTICE: Readonly<{
   version: NoticeVersion
-  /** Uma linha por destino fora do Brasil; o que mudou desde a versão anterior, para o cartão. */
+  /** Uma linha por destino fora do Brasil. */
   destinations: readonly EgressDestination[]
   dictation: string
-  changed: string | null
+  /** O que cada versão mudou, da mais nova à mais velha; a primeira versão não tem linha. */
+  changes: readonly Readonly<{ version: NoticeVersion; text: string }>[]
 }>
+
+// packages/hub-api/src/companies.ts, ao lado de PersonName (sem ciclo: companies importa egress-notice)
+const Accepted = z.object({ version: NoticeVersion, acceptedAt: z.iso.datetime(), personName: PersonName })
 export const NoticeState = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('NEVER') }),
-  z.object({ kind: z.literal('BEHIND'), accepted: NoticeVersion }),
-  z.object({ kind: z.literal('CURRENT') }),
+  z.object({ kind: z.literal('BEHIND'), accepted: Accepted }),
+  z.object({ kind: z.literal('CURRENT'), accepted: Accepted }),
 ])
-export const ClientNotice = z.object({
-  version: NoticeVersion,
-  acceptedAt: z.iso.datetime(),
-  personName: PersonName,
-  current: z.boolean(),
-}).nullable()
 ```
 
+- `InvitationView`: `OpenInvitation` ganha `noticeAsked: z.boolean()`, verdadeiro só quando
+  `firstOwner` e a empresa não tem o aceite da versão atual. Uma função só,
+  `noticeAsked(tx, invitation)` em `hub/identity/notice.ts`, decide para `getInvitation` e para o
+  aceite.
 - `acceptInvitation`: corpo `Revision.extend({ notice: NoticeVersion.optional() })`; falhas
-  novas `NOTICE_REQUIRED` (409) e `NOTICE_STALE` (409). Só o convite de empresa (sem
-  `projectId`) de uma empresa sem aceite da versão atual pede a versão; o convite de app não muda.
+  novas `NOTICE_REQUIRED` (409, "Leia o aviso do que sai do Brasil e marque para aceitar.") e
+  `NOTICE_STALE` (412, como `INVITATION_STALE`: "O aviso mudou. Leia de novo e marque para
+  seguir."), cada uma com `phrase`, `action` e `actionKind` em `identity-failures.ts`. Só pede a
+  versão quando `noticeAsked`; com `noticeAsked` falso, uma versão mandada é ignorada.
 - `acceptEgressNotice`: `PUT /api/companies/{companyId}/egress-notice`, acesso `session`, corpo
   `{ version: NoticeVersion }`, 200 `{ notice: NoticeState }`; falhas `NOT_FOUND`,
   `NOTICE_STALE`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE`. Ação nova em `ACTIONS`:
   `acceptEgressNotice: { by: 'MEMBER', statement: { company: ['notice'] }, locks: true }`; a
-  afirmação é fixa do dono e do administrador no kit de papéis (`roles.ts`), fora dos papéis
-  editáveis.
-- `CompanyDetail.notice: NoticeState`, preenchido para quem pode aceitar; `null` para os outros.
-- `Client.notice: ClientNotice`.
+  afirmação é fixa do dono e do administrador no kit de papéis (`roles.ts`, ao lado de
+  `company: ['nickname']`), fora dos papéis editáveis.
+- `getCompany`: o corpo ganha `notice: NoticeState`, e `CompanyMay` ganha `acceptNotice`.
+  `CompanyDetail` não muda, então `chooseNickname` e quem o lê ficam como estão.
+- `Client.notice: NoticeState`, a mesma união: a ficha e o Início leem o mesmo estado.
 - Tabela `auth.egress_notice_acceptance`: `company_id text not null` (FK para `auth.company` com
   `on delete cascade`), `version text not null` (check de data), `person_id text not null`,
-  `accepted_at timestamptz not null default now()`, chave `(company_id, version)`. Política: o
-  escopo da empresa lê e grava a própria; o do convite grava a da sua empresa (como a A2 da 0039);
-  o do operador lê todas. Sem `UPDATE` nem `DELETE` para o login do Hub.
+  `accepted_at timestamptz not null default now()`, chave `(company_id, version)`. Políticas: o
+  escopo da empresa lê e grava a própria; o do convite lê e grava a da empresa do convite
+  (`exists` em `auth.invitation` com o `invitationId` do escopo, como a política do convite em
+  `auth.member`, `hub/identity/tables.ts:247-257`), porque o aceite do convite lê o estado antes
+  de gravar; o do operador lê todas. Sem `UPDATE` nem `DELETE` para o login do Hub.
 - O dono de cada fato: o texto e a versão, a constante (C26); o aceite, a tabela de identity; a
   Central lê pelo porto de identity, sem tabela própria (data D17).
-- O modelo a seguir: `hub/operations/tables.ts:11-41` para a política com `policy(...)`; cumpre
+- O modelo a seguir: `auth.company` e `auth.member` em `hub/identity/tables.ts:187-265`, com os
+  três escopos em `policy(...)`; cumpre
   C21 (sem estado em texto livre), C23 (`CompanyId`, `PersonId` com marca) e C26.
 
 ### As skills e a leitura
@@ -397,16 +425,16 @@ export const ClientNotice = z.object({
 
 1. `egress-notice.ts`: a constante, com uma linha por destino da tabela da seção 3 da arquitetura
    que diz "Yes" em "Leaves Brazil", mais a do ditado. Regras: C26, L23 (texto em português).
-2. A tabela e a migração; as permissões em `database-grants.sql`; o retrato do catálogo. Regras:
-   data D6, D9, D11; decisão 0038.
-3. `hub/identity/notice.ts`: `noticeOf(tx, companyId)` devolve o `NoticeState`; `accept(tx, …)`
-   grava com `on conflict do nothing`.
-4. `invitation-response.ts`: em `acceptedCompany`, antes de `auth.api.acceptInvitation`, se a
-   empresa não tem a versão atual: sem `notice`, `NOTICE_REQUIRED`; diferente da atual,
+2. As permissões em `database-grants.sql`, num pull request próprio que entra antes (data D11).
+   Depois, a tabela e a migração e o retrato do catálogo. Regras: data D6, D9; decisão 0038.
+3. `hub/identity/notice.ts`: `noticeOf(tx, companyId)` devolve o `NoticeState`; `noticeAsked(tx,
+   invitation)`; `accept(tx, …)` grava com `on conflict do nothing`.
+4. `invitation-response.ts`: em `acceptedCompany`, antes de `auth.api.acceptInvitation`, se
+   `noticeAsked`: sem `notice`, `NOTICE_REQUIRED`; diferente da atual,
    `NOTICE_STALE`; igual, grava o aceite na mesma transação. Regras: S8, S12.
 5. A rota `acceptEgressNotice` em `company-routes.ts`; o log `EGRESS_NOTICE_ACCEPTED` só com ids e
    versão (S41).
-6. `getCompany` e `getClient` leem o estado.
+6. `getInvitation` diz `noticeAsked`; `getCompany` e `getClient` leem o estado.
 
 ### Como se prova
 
@@ -436,26 +464,36 @@ Ler na base: `apps/web/src/hub/identity/invitation.tsx`, `set-password-form.tsx`
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/notice/` | Cria: `notice-table.tsx`, `invitation-notice.tsx`, `public-notice.tsx`, `home-notice.tsx`, `queries.ts`, `public.ts` | identity, projects, o roteador |
-| `apps/web/src/hub/identity/invitation.tsx`, `set-password-form.tsx` | Muda | |
+| `apps/web/src/hub/identity/invitation.tsx`, `set-password-form.tsx`, `queries.ts` (`acceptReceivedInvitation` leva o `notice`), e os testes `invitation.test.tsx` e `set-password-form.test.tsx` | Muda | |
 | `apps/web/src/hub/projects/home.tsx` | Muda: põe o cartão | |
 | `apps/web/src/hub/operations/client.tsx` | Muda: a linha do aceite | |
 | `packages/hub-api/src/pages.ts` | Muda: `/egress-notice` | o teste do roteador (W1) |
 | o roteador da web | Muda: a rota pública | |
+| `docs/reference/screens.md` | Muda: uma linha para `/egress-notice`, a página pública no andar W29 da entrada, e uma para o cartão | |
 
 ### A ordem do trabalho
 
 1. `notice-table.tsx`: a tabela a 1280 e a lista a 390, das peças de `apps/web/src/ui/`. Regras:
    W1, V39.
-2. O convite: o aviso acima do nome e a marca; o botão desligado sem ela; o `notice` no corpo do
-   aceite; `NOTICE_STALE` recarrega a constante e desmarca.
+2. O convite, só com `noticeAsked`: o aviso e a marca em `NEW`, `HAS_PASSWORD` e `INVITED`; o
+   botão desligado sem ela; o `notice` no corpo do aceite; `NOTICE_STALE` recarrega a constante e
+   desmarca.
 3. A página pública, sem sessão, no acesso `page` (S48).
-4. O cartão no Início, só com `notice` `NEVER` ou `BEHIND`; aceitar invalida a leitura da empresa.
-5. A linha na ficha da Central.
-6. `impeccable detect` nos arquivos mudados (`docs/reference/impeccable.md`).
+4. O cartão no Início, só com `may.acceptNotice` e `notice` `NEVER` ou `BEHIND`; em `BEHIND`, as
+   linhas de `EGRESS_NOTICE.changes` depois da versão aceita; aceitar invalida a leitura da
+   empresa.
+5. A linha na ficha da Central. As datas de `NoticeVersion` e `acceptedAt` com `timeZone: 'UTC'`
+   no `Intl.DateTimeFormat`.
+6. O convite mostra o e-mail que `getInvitation` já devolve (issue 761); depois de "Criar senha", a
+   página chama o aceite (com o aviso, quando pedido) sem pedir outro toque, e só então diz que a
+   pessoa entrou (issue 760). Se o aceite falha, a página fica no estado que o servidor devolve,
+   com a frase da falha (a tabela de falhas).
+7. A linha de cada tela nova em `docs/reference/screens.md`.
+8. `impeccable detect` nos arquivos mudados (`docs/reference/impeccable.md`).
 
 ### Como se prova
 
-Os critérios 9 a 12, com os testes de tela; o QA da etapa anda o roteiro a 1366 e 390 px nos dois
+Os critérios 9 a 12a, com os testes de tela; o QA da etapa anda o roteiro a 1366 e 390 px nos dois
 temas.
 
 ### Parar se
@@ -478,10 +516,11 @@ nada; o plano pago do Neon (o documento). Ler na base: `apps/server/src/hub/iden
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/platform/` | Cria `isolation-routes.test.ts`; muda `catalog.test.ts` | |
-| `apps/server/migrations/` | Cria a migração das 12 chaves estrangeiras compostas, com as chaves únicas `(company_id, id)` que elas pedem | `catalog.test.ts` |
-| `apps/server/src/hub/*/tables.ts` das 12 chaves | Muda a declaração da chave | |
+| `apps/server/migrations/` | Cria duas migrações: a primeira soma as chaves compostas e as chaves únicas `(company_id, id)` que elas pedem; a segunda, com a linha `-- contract:`, tira as 12 velhas | `catalog.test.ts` |
+| `tables.ts` de `hub/apps`, `hub/requests`, `hub/notifications`, `builder/agents`, `builder/assistant`, `builder/conversation`, `builder/model-accounts` | Muda a declaração da chave, com o mesmo `onDelete` | |
+| os testes que fixam os nomes das chaves: `hub/apps/tables.test.ts:63-75`, e os que o construtor achar com o nome de uma das 12 | Muda o nome esperado | |
 | `apps/server/src/hub/operations/` | Cria `client-deletion-sweep.test.ts` | |
-| `docs/architecture.md`, `docs/how-to/paid-plans.md`, `docs/index.md` | Muda a seção 11 e a 7; cria o how-to | |
+| `docs/architecture.md`, `docs/how-to/hub-company-databases.md` | Muda as seções 3, 7 e 11 da arquitetura; soma a seção "Paid plan" ao how-to | |
 
 ### Os contratos que a unidade cria
 
@@ -491,7 +530,14 @@ Nenhum de rota. As 12 chaves, como o estudo as achou no `main` de `44fb4040`: `a
 `builder.assistant_conversation` e `builder.conversation` para `projects.project`;
 `builder.model_account_assignee` para `builder.model_account`; `notifications.request_notice` para
 `requests.request`; `requests.request` para `projects.project`. Cada uma passa a levar
-`company_id` primeiro.
+`company_id` primeiro e guarda o `onDelete` de hoje (`cascade` em `app_project_id_fkey`, `no action`
+nas três de versão do app, como fixa `hub/apps/tables.test.ts`). A `agent_tool_tool_version_fkey`
+já tem a irmã composta `agent_tool_company_tool_version_fkey`: ela só sai, sem chave nova.
+
+A consulta de pré-checagem, no corpo do pull request, para o firstmate rodar no banco da nuvem
+antes da publicação: uma contagem por chave das linhas cuja `company_id` difere da linha
+apontada (só números, sem dados). Com zero em todas, a migração passa; com uma acima de zero, a
+publicação espera o fundador.
 
 ### A ordem do trabalho
 
@@ -501,22 +547,31 @@ Nenhum de rota. As 12 chaves, como o estudo as achou no `main` de `44fb4040`: `a
    repositório).
 2. O caso novo em `catalog.test.ts`: nenhuma chave estrangeira entre tabelas com `company_id` sem a
    coluna. Ele falha hoje com as 12.
-3. A migração das chaves compostas e as declarações em Drizzle. Regras: data D6 (só adiciona; a
-   chave velha sai depois da nova), D9.
-4. `client-deletion-sweep.test.ts`: planta uma empresa com Projeto, conversa, automação e versão,
-   apaga pela Central e varre o catálogo, o Mastra (`listThreads` por recurso, `schedules.list`) e
-   o balde dobrado (`test-bucket.ts`).
-5. A seção 11 da arquitetura com as respostas; a seção 7 com o plano escolhido;
-   `docs/how-to/paid-plans.md` com os passos do console e os preços lidos com data. Regras: L24.
+3. As duas migrações e as declarações em Drizzle; a pré-checagem. Regras: data D6 (a primeira só
+   adiciona; a segunda tira, com `-- contract:`), D9.
+4. `client-deletion-sweep.test.ts`: planta a empresa pelos ajudantes que os testes de exclusão de
+   hoje já usam (`client-deletion-database.test.ts`), com Projeto, conversa, automação, versão e
+   ferramenta; apaga pela rota da Central e varre: o catálogo; as 12 tabelas do Mastra com
+   `resourceId` (lista do estudo), sem filtro de metadado, pelo prefixo da empresa; as agendas por
+   `inputData.companyId`; o balde dobrado (`test-bucket.ts`); e os Workers do dublê
+   `fakeCloudflare().workers()` pela tag `company-<id>` (issue 798).
+5. A arquitetura: a seção 11 com as respostas; a 7 com o plano escolhido; a coluna "Leaves
+   Brazil" da seção 3 vira um apontador para `EGRESS_NOTICE` (um dono, C26). A arquitetura está no
+   teto da L24 (2.500 palavras): o espaço vem de tirar as duas linhas do Neon que a decisão E
+   resolve e a dívida que esta etapa fecha. O how-to ganha a seção "Paid plan" com os passos do
+   console e os preços lidos com data, em inglês como o resto do arquivo; o índice não muda.
+   Regras: L23, L24.
 
 ### Como se prova
 
 Os critérios 13 a 16. O 14 falha hoje (as 12 chaves); o 13 passa hoje e passa a guardar toda rota
-nova.
+nova, no limite que o critério escreve.
 
 ### Parar se
 
 - A migração acha uma linha que já aponta para outra empresa: pare, não apague; relate com a
   contagem por tabela (sem dados).
 - A varredura de exclusão acha uma sobra: é um defeito da etapa 5 ou do cartão que criou a tabela;
-  relate com o nome da tabela, não conserte fora do raio.
+  relate com o nome da tabela, não conserte fora do raio. O Worker da issue 798 é o caso esperado:
+  se sobrar, o teste fica marcado com a issue e o conserto vai num cartão curto.
+- Cortar texto da arquitetura não fecha o teto sem tirar uma regra viva: pare e relate.
