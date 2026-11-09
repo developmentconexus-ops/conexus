@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
 import { markOf, TurnKey, uncertainText } from './public.ts'
-import { ORDER, writing } from './test-write.ts'
+import { ORDER, placedAnswer, writing } from './test-write.ts'
 
 test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar, outra entrada sob a mesma chave não, e noutra conversa é outra escrita', async (t) => {
   const on = await writing(t)
@@ -19,7 +19,11 @@ test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar,
   assert.equal(on.mode.posts, 1)
   assert.equal(on.fake.orders().length, 1)
   const elsewhere = await on.ask({ ...first, threadId: ConversationId.parse(randomUUID()) })
-  assert.deepEqual(elsewhere, { kind: 'OK', value: { codigoPedido: 98001 + 1 } })
+  assert.deepEqual(elsewhere, {
+    kind: 'OK',
+    value: { codigoPedido: 98002 },
+    returned: placedAnswer(98002),
+  })
   assert.equal(on.mode.posts, 2)
 })
 
@@ -36,8 +40,10 @@ test('a resposta perdida: perdida depois de gravar ou antes, e um corte, dão WR
   on.fake.orderSwitches.lostAfterStore = true
   const after = on.byAna()
   const mark = markOf(after.threadId, after.toolCallId)
-  assert.deepEqual(await on.ask(after), { kind: 'WRITE_UNCERTAIN', mark })
-  assert.deepEqual(await on.ask(after), { kind: 'WRITE_UNCERTAIN', mark })
+  const timeout = { code: 'GTW3503', message: 'Tempo limite do gateway esgotado' }
+  const lost = { kind: 'WRITE_UNCERTAIN', mark, returned: { status: 504, body: timeout } }
+  assert.deepEqual(await on.ask(after), lost)
+  assert.deepEqual(await on.ask(after), lost)
   assert.equal(on.mode.posts, 1)
   assert.equal(on.fake.orders().length, 1)
   on.fake.orderSwitches.lostAfterStore = false
@@ -82,6 +88,7 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
   assert.deepEqual(await on.ask(first), {
     kind: 'WRITE_UNCERTAIN',
     mark: markOf(first.threadId, first.toolCallId),
+    returned: null,
   })
   assert.equal(on.mode.posts, 0)
   assert.equal(Object((await on.ledger())[0]).state, 'UNCERTAIN')
@@ -127,7 +134,11 @@ test('o fim do registro que falha: o modelo recebe o OK, o processo diz CONNECTO
     create trigger refuse_end before update on connectors.connector_write
       for each row execute function connectors.refuse_end();`)
   const first = on.byAna()
-  assert.deepEqual(await on.ask(first), { kind: 'OK', value: { codigoPedido: 98001 } })
+  assert.deepEqual(await on.ask(first), {
+    kind: 'OK',
+    value: { codigoPedido: 98001 },
+    returned: placedAnswer(98001),
+  })
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent[0]?.fields.writtenId, 98001)
   assert.equal(on.lines('CONNECTOR_WRITE_UNRECORDED')[0]?.fields.toolCallId, first.toolCallId)

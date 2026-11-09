@@ -7,6 +7,7 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type {
   Connectors,
+  Returned,
   SessionScope,
   TurnKey,
   WriteRequest,
@@ -40,10 +41,22 @@ type Refusal = Readonly<{
   }>
 }>
 
-/** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said. */
+/** What the model reads of a provider's body at most: Codex's default for a tool's output, 10 000 tokens at 4 characters each. The record keeps it all. */
+const TOLD_CHARACTERS = 40_000
+
+/** A body for the model: whole up to the cap, past it its start and its end in one text, as Claude Code keeps a long tool error. */
+function capped(body: unknown): unknown {
+  const text = JSON.stringify(body)
+  if (text === undefined || text.length <= TOLD_CHARACTERS) return body
+  const half = TOLD_CHARACTERS / 2
+  return `${text.slice(0, half)}…[${text.length - TOLD_CHARACTERS} characters cut]…${text.slice(-half)}`
+}
+
+/** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said, up to the cap. */
 function refuse(answer: Refusal): never {
   const { status = null, code = null, message = null, body = null } = answer.native ?? {}
-  throw new ConnectorRefused(JSON.stringify({ kind: answer.kind, status, code, message, body }))
+  const told = { kind: answer.kind, status, code, message, body: capped(body) }
+  throw new ConnectorRefused(JSON.stringify(told))
 }
 
 /** Every tool of an agent but a write runs without asking (step 24.5): only its own rule beats the controller's. */
@@ -116,15 +129,27 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
   })
 }
 
+/** What the provider answered, for the model: the body up to the cap. */
+function told(returned: Returned | null) {
+  return returned && { status: returned.status, body: capped(returned.body) }
+}
+
 /**
- * What the model hears of a write: the answers that leave the end unknown or the write held come
- * back as results with what to do next, and every other one that was not taken is thrown (criterion 35).
+ * What the model hears of a write: what the provider answered, whole up to the cap, on a success and
+ * when the end is unknown, so the model reads it itself; the answers that leave the end unknown or the
+ * write held come back as results with what to do next, and every other one that was not taken is
+ * thrown (criterion 35).
  */
 function toldOf(written: Written | { kind: 'CALLS_SPENT' }) {
   switch (written.kind) {
     case 'OK':
-      return written
+      return { ...written, returned: told(written.returned) }
     case 'WRITE_UNCERTAIN':
+      return {
+        ...written,
+        returned: told(written.returned),
+        instruction: uncertainText(written.mark),
+      }
     case 'IDEMPOTENCY_CONFLICT':
       return { ...written, instruction: uncertainText(written.mark) }
     case 'WRITE_OPEN':

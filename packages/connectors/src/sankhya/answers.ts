@@ -61,8 +61,8 @@ function locate(body: unknown): Pick<Native, 'code' | 'message'> {
 
 function nativeOf(answer: ProviderAnswer): Native {
   const ok = answer.status >= 200 && answer.status < 300
-  // A 2xx body is the company's data: it never rides along on an unreadable answer, and its
-  // "Consulta realizada com sucesso!" does not sit under a failure.
+  // A 2xx that did not read says only why, so its "Consulta realizada com sucesso!" does not sit
+  // under a failure; a write's whole answer reaches the model apart, as the Hub's `Returned`.
   return ok
     ? { status: answer.status, code: null, message: null, body: null }
     : { status: answer.status, ...locate(answer.body), body: answer.body }
@@ -179,10 +179,7 @@ export function gatewayAnswer<O>(answer: ProviderAnswer, responseBody: z.ZodType
   return read(responseBody, answer, envelope.data.responseBody)
 }
 
-const Created = z.looseObject({
-  mensagem: z.string().optional(),
-  retorno: z.unknown().optional(),
-})
+const Created = z.looseObject({ mensagem: z.string().optional() })
 
 /** The add's success: only an integer `retorno.codigoPedido` counts (the page declares `type: integer`, no text format), and never beside a `[CORE_E…]` in the message. */
 const Placed = z
@@ -190,9 +187,9 @@ const Placed = z
   .transform(({ retorno }) => ({ codigoPedido: retorno.codigoPedido }))
 
 /**
- * An order's add: a refusal outside 2xx as the reads see it, and a 2xx that carries no `codigoPedido`
- * or a `[CORE_E…]` in its message is the vendor's refusal too, never a success; a body that is no
- * object, or a `retorno` whose `codigoPedido` is not an integer, is unreadable.
+ * An order's add: a refusal outside 2xx as the reads see it, and a 2xx with a `[CORE_E…]` in its
+ * message is the vendor's refusal too. Only that proves a refusal: any other 2xx without an integer
+ * `retorno.codigoPedido` (no object, no `retorno`, another shape) is unreadable, since the order may exist.
  */
 export function placed() {
   function answer(answer: ProviderAnswer): Answered<z.infer<typeof Placed>> {
@@ -204,8 +201,8 @@ export function placed() {
         kind: 'UNREADABLE',
         native: { ...nativeOf(answer), reason: shapeOf(body.error, answer.body) },
       }
-    const { mensagem, retorno } = body.data
-    if (mensagem?.includes('[CORE_E') || retorno === undefined || retorno === null)
+    const { mensagem } = body.data
+    if (mensagem?.includes('[CORE_E'))
       return {
         kind: 'REFUSED',
         native: {
@@ -216,7 +213,7 @@ export function placed() {
         },
       }
     const created = Placed.safeParse(body.data)
-    // A `retorno` that does not read is a success we cannot read, never a refusal: the order may exist.
+    // A 2xx that does not read is a success we cannot read, never a refusal: the order may exist.
     return created.success
       ? { kind: 'OK', value: created.data }
       : {

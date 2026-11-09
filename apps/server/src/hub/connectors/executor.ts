@@ -282,8 +282,12 @@ function sentFor<I, O>(
   }
   const { auth } = connector
   const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
-  // No door returns an operation's 2xx body: the kit nulls an unreadable one, and the check keeps none.
-  const redaction = { secrets: [...Object.values(pasted), token.reveal()], whole2xx: true }
+  // A read's 2xx reaches the kit whole: no door returns it, the kit nulls an unreadable one and the check keeps none.
+  // A write's answer goes back to the model and the record whole (`Returned`), so its secrets are replaced too.
+  const redaction = {
+    secrets: [...Object.values(pasted), token.reveal()],
+    whole2xx: operation.class !== 'write',
+  }
   return sendRead(deps, requestFor, whereOf(connection), redaction, {
     deadlineMs,
     repeat: operation.idempotent,

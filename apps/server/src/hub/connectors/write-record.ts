@@ -18,6 +18,7 @@ import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
 import { connectorWrite } from './tables.ts'
+import type { Returned } from './wrote.ts'
 
 /** A person talking to a draft; the funnel reads their role on every call, so the request carries none. */
 type Person = Readonly<{ kind: 'PERSON'; personId: PersonId }>
@@ -48,14 +49,15 @@ export type WriteRequest = Readonly<{
  * reached the provider and the Hub does not know: it is never sent again, and `mark` is what the person
  * looks for in the provider. `IDEMPOTENCY_CONFLICT` is another input under a key already used (code C37),
  * and `WRITE_OPEN` is a write asked under a new call while an earlier one of the same conversation,
- * connection and operation may still exist: `mark` and `since` name that earlier one. The kinds after
- * `OK` are the failures where nothing was sent.
+ * connection and operation may still exist: `mark` and `since` name that earlier one. `returned` is
+ * what the provider answered, whole, null when nothing came back or the record does not hold it. The
+ * kinds after `OK` are the failures where nothing was sent.
  */
 export type Written =
-  | Readonly<{ kind: 'OK'; value: unknown }>
+  | Readonly<{ kind: 'OK'; value: unknown; returned: Returned | null }>
   | Readonly<{ kind: 'NOT_IN_ROLE' }>
   | Readonly<{ kind: 'NOT_GRANTED' }>
-  | Readonly<{ kind: 'WRITE_UNCERTAIN'; mark: string }>
+  | Readonly<{ kind: 'WRITE_UNCERTAIN'; mark: string; returned: Returned | null }>
   | Readonly<{ kind: 'IDEMPOTENCY_CONFLICT'; mark: string }>
   | Readonly<{ kind: 'WRITE_OPEN'; mark: string; since: Date }>
   | Readonly<{ kind: 'UNREACHABLE' }>
@@ -74,8 +76,12 @@ export function hashOf(input: unknown): string {
   return createHash('sha256').update(JSON.stringify(input)).digest('hex')
 }
 
+const StoredReturned = z.object({ status: z.number(), body: z.unknown() }).nullable()
+
+/** A row's `answer`; one written before the record kept what came back has no `returned`. */
 const Stored = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('OK'), value: z.unknown() }),
+  z.object({ kind: z.literal('OK'), value: z.unknown(), returned: StoredReturned.default(null) }),
+  z.object({ kind: z.literal('WRITE_UNCERTAIN'), mark: z.string(), returned: StoredReturned }),
   z.object({
     kind: z.enum(['REFUSED', 'AUTH_REFUSED', 'TOKEN_EXPIRED', 'UNREADABLE']),
     native: Native,
@@ -117,10 +123,10 @@ type Row = Readonly<{
   answer: unknown
 }>
 
-/** What the record says of a write already registered: the same input gets the answer back, another input is a conflict of the key. */
+/** What the record says of a write already registered: the same input gets the answer back, another input is a conflict of the key; a row with no answer yet is uncertain. */
 function foundIn(row: Row, hash: string, mark: string): Written {
   if (row.inputHash !== hash) return { kind: 'IDEMPOTENCY_CONFLICT', mark }
-  if (row.state === 'SENDING' || row.state === 'UNCERTAIN') return { kind: 'WRITE_UNCERTAIN', mark }
+  if (row.answer === null) return { kind: 'WRITE_UNCERTAIN', mark, returned: null }
   return Stored.parse(row.answer)
 }
 
@@ -300,7 +306,15 @@ export function refusedMessageOf(row: Pick<Row, 'state' | 'answer'>): string | n
 
 const STATES = { OK: 'DONE', WRITE_UNCERTAIN: 'UNCERTAIN' } as const
 
-/** The record's end; if the database refuses it the model still hears what the provider answered, and the process says the row stayed `SENDING`. */
+/** A NUL in JSON text: the escape `\u0000` whose backslash is not itself escaped. Postgres refuses it in `jsonb`. */
+const NUL = /(?<!\\)((?:\\\\)*)\\u0000/g
+
+/** The answer as `jsonb` takes it: every NUL a provider sent dropped, in a key or a text, so what came back is kept. */
+function storable(written: Written) {
+  return sql`${JSON.stringify(written).replace(NUL, '$1')}::jsonb`
+}
+
+/** The record's end, with what the provider answered (within the executor's cap, C59); if the database refuses it the model still hears it, and the process says the row stayed `SENDING`. */
 export async function finish(
   deps: Deps,
   a: WriteRequest,
@@ -314,7 +328,7 @@ export async function finish(
     await deps.database.command(scopeOf(viewer), (tx) =>
       tx
         .update(connectorWrite)
-        .set({ state, answer: written.kind === 'WRITE_UNCERTAIN' ? null : written })
+        .set({ state, answer: storable(written) })
         .where(key(a)),
     )
   } catch (error) {
