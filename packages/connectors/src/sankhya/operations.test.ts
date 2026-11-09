@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
@@ -12,9 +13,6 @@ import { sankhyaFake } from './fake.ts'
 import { estoqueDoProduto } from './operations/estoque.ts'
 import { LancarPedidoInput, lancarPedido } from './operations/vendas.ts'
 import { refusals } from './refusals.ts'
-
-/** The instant the requests below are built at. */
-const AT = new Date('2026-11-09T13:00:00Z')
 
 function answer(id: string, status: number, body: unknown) {
   const found = sankhya.operations.find((operation) => operation.id === id)
@@ -106,7 +104,7 @@ async function withDouble(
 function itensOf(input: unknown) {
   return z
     .object({ itens: z.array(z.record(z.string(), z.unknown())) })
-    .parse(requestOf(lancarPedido, input, { ref: null }, AT).body).itens
+    .parse(requestOf(lancarPedido, input, { ref: null }, SENT_AT).body).itens
 }
 
 const ITEM = { codigoProduto: 11, quantidade: 2, valorUnitario: 50 }
@@ -126,7 +124,7 @@ test('lançar pedido manda só os campos do cartão ao POST dos pedidos, e recus
     lancarPedido,
     { ...PEDIDO, observacao: 'Conexus abc', codigoVendedor: 7, extra: 'não vai' },
     { ref: null },
-    AT,
+    SENT_AT,
   )
   assert.equal(sent.method, 'POST')
   assert.equal(sent.path, '/v1/vendas/pedidos')
@@ -188,7 +186,7 @@ test('o local fixo vale para todo item, e sem local o esquema manda ler o estoqu
     lancarPedido,
     { ...PEDIDO, codigoLocalEstoque: 3, itens: [{ ...ITEM, codigoLocalEstoque: 5 }, ITEM] },
     { ref: null },
-    AT,
+    SENT_AT,
   )
   assert.deepEqual(
     z.object({ itens: z.array(z.object({ codigoLocalEstoque: z.number() })) }).parse(locais.body)
@@ -199,7 +197,7 @@ test('o local fixo vale para todo item, e sem local o esquema manda ler o estoqu
   const refused = LancarPedidoInput.safeParse(bare)
   assert.equal(refused.success, false)
   assert.match(refused.error?.issues[0]?.message ?? '', /estoqueDoProduto/)
-  assert.throws(() => requestOf(lancarPedido, bare, { ref: null }, AT))
+  assert.throws(() => requestOf(lancarPedido, bare, { ref: null }, SENT_AT))
   assert.deepEqual(lancarPedido.fixed, ['notaModelo'])
 })
 
@@ -219,7 +217,7 @@ test('o que a escrita declara: o incerto só no GTW3503, a marca no fim da obser
 })
 
 test('o estoque de um produto: a rota por produto devolve as linhas e o 404 sem linhas é OK vazio', async () => {
-  const sent = requestOf(estoqueDoProduto, { codigoProduto: 12 }, { ref: null }, AT)
+  const sent = requestOf(estoqueDoProduto, { codigoProduto: 12 }, { ref: null }, SENT_AT)
   assert.equal(sent.path, '/v1/estoque/produtos/12')
   await withDouble(async (call) => {
     const found = estoqueDoProduto.answer(await call(sent))
@@ -227,7 +225,7 @@ test('o estoque de um produto: a rota por produto devolve as linhas e o 404 sem 
       kind: 'OK',
       value: { linhas: [{ codigoEmpresa: 1, codigoLocal: 1, controle: 'L1', estoque: 12.5 }] },
     })
-    const none = requestOf(estoqueDoProduto, { codigoProduto: 999 }, { ref: null }, AT)
+    const none = requestOf(estoqueDoProduto, { codigoProduto: 999 }, { ref: null }, SENT_AT)
     assert.partialDeepStrictEqual(estoqueDoProduto.answer(await call(none)), {
       kind: 'OK',
       empty: true,
@@ -241,7 +239,7 @@ test('o pedido recusado pelo dublê: todo produto fora do catálogo dá a recusa
       lancarPedido,
       { ...PEDIDO, itens: [{ ...ITEM, codigoProduto: 999 }] },
       { ref: null },
-      AT,
+      SENT_AT,
     )
     const answered = await call(request)
     assert.deepEqual(

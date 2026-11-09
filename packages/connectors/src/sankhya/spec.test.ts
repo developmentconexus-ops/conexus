@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { before, describe, it } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { fetchText } from '../kernel/page.ts'
@@ -10,9 +11,6 @@ import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
 import { downloadSpec, fieldsOf, SITE, Spec } from './spec-source.ts'
-
-/** The instant the requests below are built at. */
-const AT = new Date('2026-11-09T13:00:00Z')
 
 // The documentation is Sankhya's ("Licença Sankhya") and the repository is public, so none of it is
 // kept here. The check reads it when it runs: SANKHYA_SPEC names a file or an address of the cut
@@ -96,7 +94,7 @@ function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): st
   return names.filter(
     (name) =>
       name in
-      operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }, AT)
+      operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }, SENT_AT)
         .query,
   )
 }
@@ -115,7 +113,7 @@ async function samples(): Promise<Sample[]> {
   for (const operation of sankhya.operations) {
     const input = operation.probe(earlier)
     assert.notEqual(input, null, operation.id)
-    const request = requestOf(operation, input, { ref: null }, AT)
+    const request = requestOf(operation, input, { ref: null }, SENT_AT)
     const response = await fake.handle(toRequest(sankhya, request, token.accessToken))
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })
@@ -126,7 +124,7 @@ async function samples(): Promise<Sample[]> {
   for (const operation of sankhya.writes ?? []) {
     const input = operation.probe(new Map())
     assert.notEqual(input, null, operation.id)
-    const request = requestOf(operation, input, { ref: null }, AT)
+    const request = requestOf(operation, input, { ref: null }, SENT_AT)
     const declared = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' })).filter(
       (name) => !MOVED.has(`${operation.id}:${name}`),
     )

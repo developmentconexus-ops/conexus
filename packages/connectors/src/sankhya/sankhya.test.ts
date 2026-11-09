@@ -2,14 +2,12 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONCURRENT_CALL, CONNECTORS, connectorOf, loggedOutBy } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaDoor } from './door.ts'
 import { sankhyaFake } from './fake.ts'
-
-/** The instant the requests below are built at. */
-const AT = new Date('2026-11-09T13:00:00Z')
 
 runConformance(sankhya, sankhyaFake())
 
@@ -71,10 +69,12 @@ test('a porta de leitura só lê', () => {
   ])
     assert.equal(consultar.input.safeParse({ sql }).success, false, sql)
 
-  assert.throws(() => requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }, NO_ACCOUNT, AT))
-  assert.throws(() => requestOf(sankhyaDoor.carregar, INJECTION, NO_ACCOUNT, AT))
+  assert.throws(() =>
+    requestOf(sankhyaDoor.consultar, { sql: 'DELETE FROM T' }, NO_ACCOUNT, SENT_AT),
+  )
+  assert.throws(() => requestOf(sankhyaDoor.carregar, INJECTION, NO_ACCOUNT, SENT_AT))
 
-  const loaded = carregar.request(LOADING, NO_ACCOUNT, AT)
+  const loaded = carregar.request(LOADING, NO_ACCOUNT, SENT_AT)
   assert.equal(loaded.method, 'POST')
   assert.equal(loaded.path, '/gateway/v1/mge/service.sbr')
   assert.deepEqual(loaded.query, {
@@ -108,9 +108,9 @@ test('a porta de leitura só lê', () => {
     )
 
   const services = [
-    consultar.request(consultar.input.parse(consultar.probe(new Map())), NO_ACCOUNT, AT).query
+    consultar.request(consultar.input.parse(consultar.probe(new Map())), NO_ACCOUNT, SENT_AT).query
       .serviceName,
-    carregar.request(carregar.input.parse(carregar.probe(new Map())), NO_ACCOUNT, AT).query
+    carregar.request(carregar.input.parse(carregar.probe(new Map())), NO_ACCOUNT, SENT_AT).query
       .serviceName,
   ]
   assert.deepEqual(services.sort(), [

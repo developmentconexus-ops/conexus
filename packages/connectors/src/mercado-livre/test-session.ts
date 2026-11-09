@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { inProbeOrder } from '../kernel/definition.ts'
 import type { GrantAnswered } from '../kernel/oauth.ts'
 import { authorizeUrl, codeRequest, readGrant } from '../kernel/oauth.ts'
@@ -14,9 +15,6 @@ import { AccountRef, requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { mercadoLivre } from './definition.ts'
 import type { mercadoLivreFake } from './fake.ts'
-
-/** The instant the requests below are built at. */
-const AT = new Date('2026-11-09T13:00:00Z')
 
 type Fake = ReturnType<typeof mercadoLivreFake>
 
@@ -93,7 +91,7 @@ export async function probeAll(fake: Fake): Promise<
   for (const operation of inProbeOrder(mercadoLivre)) {
     const input = operation.probe(earlier)
     if (input === null) continue
-    const request = requestOf(operation, input, ACCOUNT, AT)
+    const request = requestOf(operation, input, ACCOUNT, SENT_AT)
     const answered = operation.answer(
       await answerOf(await fake.handle(toRequest(mercadoLivre, request, granted.accessToken))),
     )

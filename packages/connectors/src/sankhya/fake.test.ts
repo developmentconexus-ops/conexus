@@ -6,7 +6,7 @@ import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
-import { refusals } from './refusals.ts'
+import { MISSING_DATE_AND_HOUR, UNKNOWN_PRODUCT } from './refusals.ts'
 
 const GATEWAY = '/gateway/v1/mge/service.sbr'
 const COUNT = { sql: 'SELECT COUNT(*) AS N FROM TSIEMP' }
@@ -255,7 +255,10 @@ test('o dublê recusa o pedido sem data e hora com a recusa gravada, como ela es
     const { data, hora, ...bare } = PEDIDO
     assert.deepEqual([data, hora], ['09/11/2026', '10:00'])
     const refused = await add(token, origin, bare)
-    assert.deepEqual(refused, { status: refusals[1]?.status, body: refusals[1]?.body })
+    assert.deepEqual(refused, {
+      status: MISSING_DATE_AND_HOUR.status,
+      body: MISSING_DATE_AND_HOUR.body,
+    })
     assert.deepEqual(refused.body, {
       statusCode: 400,
       error: {
@@ -275,7 +278,7 @@ test('o dublê recusa o produto que não existe com a recusa gravada, como ela e
       ...PEDIDO,
       itens: [{ ...ITEM, codigoProduto: 999 }],
     })
-    assert.deepEqual(product, { status: refusals[0]?.status, body: refusals[0]?.body })
+    assert.deepEqual(product, { status: UNKNOWN_PRODUCT.status, body: UNKNOWN_PRODUCT.body })
     const client = await add(token, origin, { ...PEDIDO, codigoCliente: 99 })
     assert.equal(client.status, 200)
     assert.match(z.object({ mensagem: z.string() }).parse(client.body).mensagem, /\[CORE_E\d+\]/)
