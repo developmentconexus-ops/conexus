@@ -27,6 +27,7 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 -- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
 ALTER FUNCTION builder.companies_with_agents() OWNER TO hub_agent_companies;
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
+ALTER FUNCTION builder.companies_with_workflows() OWNER TO hub_workflow_companies;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER FUNCTION connectors.companies_with_seals() OWNER TO hub_connection_seals;
@@ -70,6 +71,8 @@ ALTER TABLE builder.person_model_default OWNER TO test_owner;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER TABLE builder.tool OWNER TO test_owner;
 ALTER TABLE builder.tool_version OWNER TO test_owner;
+ALTER TABLE builder.workflow OWNER TO test_owner;
+ALTER TABLE builder.workflow_version OWNER TO test_owner;
 ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
@@ -110,6 +113,7 @@ GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
 GRANT USAGE ON SCHEMA builder TO hub_runtime;
 GRANT USAGE ON SCHEMA builder TO hub_agent_companies;
+GRANT USAGE ON SCHEMA builder TO hub_workflow_companies;
 GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
@@ -138,6 +142,8 @@ REVOKE ALL ON FUNCTION builder.companies_with_agents() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_agents() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
+REVOKE ALL ON FUNCTION builder.companies_with_workflows() FROM PUBLIC;
+GRANT ALL ON FUNCTION builder.companies_with_workflows() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
@@ -296,6 +302,21 @@ GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.tool TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.tool_version TO hub_company;
 GRANT UPDATE(created_by) ON TABLE builder.tool_version TO hub_company;
+-- Step 24.6, U1, the founder's word on the card (D11, docs/approvals.md): a company's routes create, change and
+-- delete workflows and record each published version, which is never changed but its author; the companies
+-- with a workflow are read by one function, for the clean-up at start.
+GRANT SELECT,INSERT,DELETE ON TABLE builder.workflow TO hub_company;
+GRANT SELECT(company_id) ON TABLE builder.workflow TO hub_workflow_companies;
+GRANT UPDATE(name) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(draft) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(revision) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(test_draft) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(state) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(active_version) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(active_by) ON TABLE builder.workflow TO hub_company;
+GRANT UPDATE(created_by) ON TABLE builder.workflow TO hub_company;
+GRANT SELECT,INSERT ON TABLE builder.workflow_version TO hub_company;
+GRANT UPDATE(published_by) ON TABLE builder.workflow_version TO hub_company;
 GRANT INSERT,DELETE ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection TO hub_connection_seals;
@@ -421,6 +442,8 @@ CREATE ROLE hub_person;
 ALTER ROLE hub_person WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_runtime;
 ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE hub_workflow_companies;
+ALTER ROLE hub_workflow_companies WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 12: Mastra's login, which enters only Mastra's database.
 CREATE ROLE mastra_runtime;
 ALTER ROLE mastra_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
@@ -448,4 +471,5 @@ GRANT hub_person TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANT
 GRANT hub_person TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 -- PostgreSQL grants the role that creates hub_runtime (the migration owner) the right to administer it. Neon does the same.
 GRANT hub_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
+GRANT hub_workflow_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT mastra_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
