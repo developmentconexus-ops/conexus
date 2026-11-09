@@ -47,7 +47,7 @@ test.each([
   [
     'sem resposta',
     rowOf('approval', { state: 'UNCERTAIN' }),
-    'Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus 7F3A2B1C.',
+    'Sem confirmação automática. Veja o que o agente leu e confira a observação Conexus 7F3A2B1C.',
   ],
 ])(
   'depois de recarregar, o desfecho vem do registro: %s diz "Aprovado por você" e o desfecho da linha',

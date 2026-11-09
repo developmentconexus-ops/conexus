@@ -9,8 +9,12 @@ import { z } from 'zod'
  */
 const RESPONSE_CAP_BYTES = 2 * 1024 * 1024
 
-/** The provider answered what the kit cannot read, with what it said. */
-export type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native }>
+/**
+ * The provider answered what the kit cannot read, with what it said. `text` is a 2xx that is not
+ * JSON as it came, secrets replaced, kept apart from `native`: the write funnel alone reads it
+ * (`Returned`); a read, a login or the Testar pass on `native` only, which says where and what kind came.
+ */
+export type Unreadable = Readonly<{ kind: 'UNREADABLE'; native: Native; text?: string }>
 
 /** The body, read in pieces up to the cap; past it the read is cancelled, nothing is kept and the result is null. */
 export async function bodyOf(response: Response): Promise<Uint8Array | null> {
@@ -75,11 +79,22 @@ export function nativeOf(status: number, body: unknown): Native {
   return { status, ...locateOf(body), body }
 }
 
-/** An answer the kit never sees: past the cap (`bytes` null), or a 2xx in text that is not JSON; the screen says which. */
-export function unreadable(status: number, bytes: Uint8Array | null): Unreadable {
-  const reason: Unread =
-    bytes === null
-      ? { kind: 'TOO_LARGE', limitBytes: RESPONSE_CAP_BYTES }
-      : { kind: 'SHAPE', issues: [{ path: '', expected: 'json', received: 'text' }] }
-  return { kind: 'UNREADABLE', native: { ...nativeOf(status, null), reason } }
+/** An answer the kit never sees: past the cap (`bytes` null, nothing kept), or a 2xx in text that is not JSON; the screen says which. */
+export function unreadable(
+  status: number,
+  bytes: Uint8Array | null,
+  redaction: Redaction,
+): Unreadable {
+  const native = nativeOf(status, null)
+  if (bytes === null)
+    return {
+      kind: 'UNREADABLE',
+      native: { ...native, reason: { kind: 'TOO_LARGE', limitBytes: RESPONSE_CAP_BYTES } },
+    }
+  const reason: Unread = {
+    kind: 'SHAPE',
+    issues: [{ path: '', expected: 'json', received: 'text' }],
+  }
+  const text = redacted(Buffer.from(bytes).toString('utf8'), redaction.secrets)
+  return { kind: 'UNREADABLE', native: { ...native, reason }, text }
 }
