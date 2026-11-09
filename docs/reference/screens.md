@@ -100,7 +100,7 @@ Decidido: o título e os campos ficam; no lugar dos botões, uma linha
  Aprovado por você · Pedido 98001 lançado, a confirmar.
  Recusado | Recusado porque você mandou outra mensagem
  | Recusado porque você parou a conversa | Não conseguiu lançar
- | Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus …
+ | Sem confirmação automática. Veja o que o agente leu e confira a observação Conexus …
 
 Página do agente, Ligações
  [x] Sankhya · Matriz  Funcionando

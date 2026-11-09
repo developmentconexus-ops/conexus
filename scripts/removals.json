@@ -2847,5 +2847,16 @@
       "file": "src/platform/cloudflare.test.ts",
       "name": "quem a pediu desiste"
     }
+  },
+  {
+    "id": "write-2xx-redacted",
+    "file": "apps/server/src/hub/connectors/executor.ts",
+    "find": "    whole2xx: operation.class !== 'write',\n",
+    "replace": "    whole2xx: true,\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/connectors/write-returned.test.ts",
+      "name": "o token que ele ecoa"
+    }
   }
 ]
