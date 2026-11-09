@@ -132,7 +132,7 @@ function Where(props: {
   )
 }
 
-/** The connection, the read and the name of an existing tool: they belong to the tool, so a new version only shows them. */
+/** The connection, the operation (a read or a write) and the name of an existing tool: they belong to the tool, so a new version only shows them. */
 function Kept(props: { connection: string; effect: ToolEffect; read: string; slug: string }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-md gap-y-xs text-label">
