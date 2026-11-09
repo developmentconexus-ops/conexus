@@ -14,12 +14,9 @@ export async function holdsColumn(page: Page, viewport: Viewport) {
   const box = page.locator('form:has(textarea)').last()
   await box.waitFor()
   await page.evaluate(() => {
-    const content = document.querySelector('[data-slot=message-scroller-content]')
-    for (let line = 0; line < 60; line++) {
-      const paragraph = document.createElement('p')
-      paragraph.textContent = `linha ${line} do que a conversa vai dizendo aos poucos`
-      ;(content?.lastElementChild ?? content)?.append(paragraph)
-    }
+    const taller = document.createElement('div')
+    taller.style.height = '3000px'
+    document.querySelector('[data-slot=message-scroller-content]')?.append(taller)
   })
   const scroller = page.locator('[data-slot=message-scroller-viewport]')
   const rolls = await scroller.evaluate((el) => el.scrollHeight > el.clientHeight)
