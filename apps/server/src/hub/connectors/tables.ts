@@ -226,6 +226,8 @@ export const connectorWrite = connectors.table(
     agentId: uuid('agent_id'),
     versionNumber: integer('version_number'),
     personId: text('person_id'),
+    workflowId: uuid('workflow_id'),
+    workflowVersion: integer('workflow_version'),
     state: text('state', { enum: CONNECTOR_WRITE_STATES }).notNull(),
     answer: jsonb('answer'),
     approvedBy: text('approved_by'),
@@ -240,7 +242,7 @@ export const connectorWrite = connectors.table(
     primaryKey({ columns: [table.companyId, table.threadId, table.toolCallId] }),
     check(
       'connector_write_speaker',
-      sql`(${table.agentId} is not null and ${table.versionNumber} is not null and ${table.personId} is null) or (${table.agentId} is null and ${table.versionNumber} is null and ${table.personId} is not null)`,
+      sql`(${table.agentId} is not null and ${table.versionNumber} is not null and ${table.personId} is null and ${table.workflowId} is null and ${table.workflowVersion} is null) or (${table.agentId} is null and ${table.versionNumber} is null and ${table.personId} is not null and ${table.workflowId} is null and ${table.workflowVersion} is null) or (${table.agentId} is null and ${table.versionNumber} is null and ${table.personId} is null and ${table.workflowId} is not null and ${table.workflowVersion} is not null)`,
     ),
     check('connector_write_state', sql`${table.state} in (${WRITE_STATES})`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),

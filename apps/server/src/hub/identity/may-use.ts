@@ -16,15 +16,14 @@ import type { RoleSet } from './roles.ts'
 
 /**
  * Who asks for a read. A person is held to their role in the company; a published version (an
- * agent's, an app's) to what it declares, which publishing checked against the publisher's role
- * (decision C1): each entry is a connection of the Projeto and one of its operations.
+ * agent's, an app's, a workflow's) to what it declares, which publishing checked against the
+ * publisher's role (decision C1): each entry is a connection of the Projeto and one of its operations.
  */
+type Declared = readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
 export type Speaker =
   | Readonly<{ kind: 'PERSON'; personId: PersonId; role: Role }>
-  | Readonly<{
-      kind: 'VERSION'
-      declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
-    }>
+  | Readonly<{ kind: 'VERSION'; declared: Declared }>
+  | Readonly<{ kind: 'WORKFLOW'; declared: Declared }>
 
 export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>
 
@@ -78,7 +77,7 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     )
   }
 
-  function declares(speaker: Extract<Speaker, { kind: 'VERSION' }>, target: Target): boolean {
+  function declares(speaker: Exclude<Speaker, { kind: 'PERSON' }>, target: Target): boolean {
     return speaker.declared.some(
       (each) => each.connectionId === target.connectionId && each.operation === target.operationId,
     )
@@ -90,7 +89,7 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     speaker: Speaker,
     targets: readonly Target[],
   ): Promise<boolean[]> {
-    if (speaker.kind === 'VERSION') return targets.map((target) => declares(speaker, target))
+    if (speaker.kind !== 'PERSON') return targets.map((target) => declares(speaker, target))
     if (targets.length === 0) return []
     const context = await auth.$context
     return command({ kind: 'COMPANY', companyId, personId: null }, async () => {

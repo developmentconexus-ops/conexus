@@ -22,10 +22,11 @@ import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
-import type { WrittenRecord } from './write-list.ts'
+import type { ConversationWritesKey, WrittenRecord } from './write-list.ts'
 import { writesOf } from './write-list.ts'
-import type { OpenWrite, OpenWritesKey, WriteRequest, Written } from './write-record.ts'
+import type { OpenWrite, OpenWritesKey } from './write-record.ts'
 import { openWritesOf } from './write-record.ts'
+import type { WriteRequest, Written } from './write-request.ts'
 
 type AssistantConnection = {
   connectionId: ConnectionId
@@ -69,7 +70,7 @@ export type AssistantConnectors = {
   /** The writes of the conversation whose end is not known, oldest first, of one connection and operation when named (step 24.5). */
   openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
   /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); `openWrites` stays until the web moves to this. */
-  writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
+  writes(key: ConversationWritesKey): Promise<readonly WrittenRecord[]>
   /** The connection's caderno, under the same check as read. */
   notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
@@ -126,7 +127,7 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope): Promise<Spea
       companyId: scope.companyId,
       action: 'askAssistant',
     })
-    return scope.agentVersion ?? personOf(scope.personId, admitted.role)
+    return scope.speaksAs ?? personOf(scope.personId, admitted.role)
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const reason = String(error.details.reason ?? 'NOT_FOUND')

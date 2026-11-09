@@ -1,8 +1,13 @@
 import type { AgentId, ConnectionId, PersonId } from '@conexus/hub-api'
-import { ConversationId, ToolCallId } from '@conexus/hub-api'
+import {
+  BalloonAddress,
+  balloonCallKeyOf,
+  ConversationId,
+  ToolCallId,
+  WorkflowRunId,
+} from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
-import type { RequestContext } from '@mastra/core/request-context'
-import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
+import { MASTRA_THREAD_ID_KEY, RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type {
@@ -11,7 +16,9 @@ import type {
   SessionScope,
   TurnKey,
   WriteAuthorOf,
+  WriteKey,
   WriteRequest,
+  WriteScope,
   WriteShape,
   Written,
 } from '../../hub/connectors/public.ts'
@@ -134,16 +141,34 @@ function authorOf(author: WriteAuthor): WriteAuthorOf {
     : { kind: 'PUBLISHED', answeredBy: author.answeredBy }
 }
 
-type Asked = Omit<WriteRequest, 'speaker' | 'agentId' | 'number'>
+/** The workflow run a balloon's agent is writing in, put on the turn's `requestContext` by the balloon (card 24.6, U3). */
+export const RUN_CALL_KEY = 'conexus.run.call'
+const RunCall = z.object({
+  runId: WorkflowRunId,
+  balloon: BalloonAddress,
+  attempt: z.number().int().nonnegative(),
+})
+
+/** Where the call writes: the run's book when the turn carries the run's call, else the conversation's. */
+function runCallOf(requestContext: RequestContext | Record<string, unknown>) {
+  const raw =
+    requestContext instanceof RequestContext
+      ? requestContext.get(RUN_CALL_KEY)
+      : requestContext[RUN_CALL_KEY]
+  const call = RunCall.safeParse(raw)
+  return call.success ? call.data : undefined
+}
+
+type Asked = Omit<WriteRequest, 'speaker' | 'agentId' | 'workflowId' | 'number' | keyof WriteKey>
 
 /** The request as its author speaks: a version by what it declares (decision C1), a person by the role the funnel reads. */
-function requestOf(deps: Deps, asked: Asked): WriteRequest {
+function requestOf(deps: Deps, asked: Asked, keyed: WriteKey): WriteRequest {
   if (deps.author.kind === 'DRAFT') {
-    return { ...asked, speaker: { kind: 'PERSON', personId: deps.scope.personId } }
+    return { ...asked, ...keyed, speaker: { kind: 'PERSON', personId: deps.scope.personId } }
   }
-  const declared = deps.scope.agentVersion?.declared ?? []
+  const declared = deps.scope.speaksAs?.declared ?? []
   const { agentId, number } = deps.author
-  return { ...asked, speaker: { kind: 'VERSION', declared }, agentId, number }
+  return { ...asked, ...keyed, speaker: { kind: 'VERSION', declared }, agentId, number }
 }
 
 /**
@@ -163,14 +188,22 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
     inputSchema: openOf(input, tool, fixed),
     requireApproval: async (_given, context) => {
       const at = targetOf(deps.offered, tool)
+      const run =
+        context?.requestContext === undefined ? undefined : runCallOf(context.requestContext)
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])
-      if (at === undefined || !threadId.success) return true
+      const where: WriteScope | undefined =
+        run === undefined
+          ? threadId.success
+            ? { kind: 'CONVERSATION', threadId: threadId.data }
+            : undefined
+          : { kind: 'RUN', runId: run.runId }
+      if (at === undefined || where === undefined) return true
       const asked = await mustAsk(deps.approval, {
         companyId: deps.scope.companyId,
         choice: tool.approval === 'AUTO' ? 'AUTO' : 'ASK',
         author: authorOf(deps.author),
         scope: deps.scope,
-        threadId: threadId.data,
+        where,
         target: at,
       })
       return asked.kind === 'ASK'
@@ -188,13 +221,23 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
       }
       const toolCallId = ToolCallId.parse(agent.toolCallId)
       const approved = approvedCallOf(requestContext)
+      const run = runCallOf(requestContext)
+      const keyed: WriteKey =
+        run === undefined
+          ? {
+              where: { kind: 'CONVERSATION', threadId: ConversationId.parse(agent.threadId) },
+              callKey: toolCallId,
+            }
+          : {
+              where: { kind: 'RUN', runId: run.runId },
+              callKey: balloonCallKeyOf(run.balloon, run.attempt, toolCallId),
+            }
       const asked: Asked = {
         ...{ scope: deps.scope, ...target, input: { ...given, ...tool.bound } },
-        ...{ threadId: ConversationId.parse(agent.threadId), toolCallId },
         ...(approved?.toolCallId === toolCallId ? { approvedBy: approved.personId } : {}),
         ...{ turn: deps.turnOf(requestContext), signal: abortSignal },
       }
-      return toldOf(await deps.connectors.write(requestOf(deps, asked)))
+      return toldOf(await deps.connectors.write(requestOf(deps, asked, keyed)))
     },
   })
 }

@@ -100,3 +100,34 @@ test('o registro de um envio sai com a empresa, apagada pelo dono: a chave estra
   const rows = await asOwner('select company_id from connectors.connector_write')
   assert.deepEqual(rows, [{ company_id: B }])
 })
+
+test('o terceiro autor: uma linha da 24.5 segue lida igual, a de um workflow entra com a versão, e dois autores ou nenhum são recusados', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(record(A, 'call-1', BY_VERSION))
+  await asOwner(record(A, 'call-2', BY_PERSON))
+  function workflow(id: string | null, version: number | null, person: string | null) {
+    return asOwner(`insert into connectors.connector_write(company_id, thread_id, tool_call_id, connection_id,
+      operation_id, input_hash, person_id, workflow_id, workflow_version, state, created_at) values
+      ('${A}', 'run-1', 'b5#0', '${CONNECTION}', 'lancarPedido', 'hash-1', ${person === null ? 'null' : `'${person}'`},
+       ${id === null ? 'null' : `'${id}'`}, ${version ?? 'null'}, 'SENDING', now())`)
+  }
+  await workflow(VERSION, 1, null)
+  for (const [id, version, person] of [
+    [VERSION, 1, 'person-a'],
+    [VERSION, null, null],
+    [null, 1, null],
+  ] as const)
+    await assert.rejects(workflow(id, version, person), {
+      code: '23514',
+      constraint: 'connector_write_speaker',
+    })
+  const rows = await asOwner(
+    'select tool_call_id, workflow_id, workflow_version from connectors.connector_write order by tool_call_id',
+  )
+  assert.deepEqual(rows, [
+    { tool_call_id: 'b5#0', workflow_id: VERSION, workflow_version: 1 },
+    { tool_call_id: 'call-1', workflow_id: null, workflow_version: null },
+    { tool_call_id: 'call-2', workflow_id: null, workflow_version: null },
+  ])
+})

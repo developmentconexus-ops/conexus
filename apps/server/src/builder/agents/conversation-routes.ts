@@ -70,7 +70,10 @@ async function ownConversation(
   if (run?.agentId !== agentId || run.scope.projectId !== scope.projectId) {
     throw new Failure('CONVERSATION_NOT_FOUND')
   }
-  return { scope: sessionScopeOf(scope), threadId: conversationId }
+  return {
+    scope: sessionScopeOf(scope),
+    where: { kind: 'CONVERSATION', threadId: conversationId },
+  } as const
 }
 
 /**

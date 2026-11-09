@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { markOf } from './public.ts'
-import { writing } from './test-write.ts'
+import { markFor, writing } from './test-write.ts'
 
 /** One write whose answer the provider's door is scripted to give, and the same call asked again. */
 async function scripted(t: Parameters<typeof writing>[0], order: () => Promise<Response>) {
@@ -32,7 +31,7 @@ test('o corte depois de sair, o 5xx e o GTW3503 dão WRITE_UNCERTAIN com a marca
   ]
   for (const order of answers) {
     const { on, request, first, again } = await scripted(t, order)
-    const mark = markOf(request.threadId, request.toolCallId)
+    const mark = markFor(request)
     assert.deepEqual(first, { kind: 'WRITE_UNCERTAIN', mark })
     assert.deepEqual(again, first)
     assert.equal(on.mode.posts, 1)

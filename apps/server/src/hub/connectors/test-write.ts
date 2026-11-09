@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
+import type { BalloonCallKey } from '@conexus/hub-api'
 import {
   AgentId,
+  BalloonAddress,
+  balloonCallKeyOf,
   CompanyId,
   ConnectionId,
   ConversationId,
@@ -12,12 +15,18 @@ import {
   ProjectId,
   Role,
   ToolCallId,
+  WorkflowId,
+  WorkflowRunId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import { post } from '../identity/test-hub.ts'
 import type { SessionScope, WriteRequest } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
+import { markOf, scopeIdOf } from './write-request.ts'
+
+/** A request kept in a conversation, whose call key is a tool call. */
+type InConversation = Extract<WriteRequest, { where: { kind: 'CONVERSATION' } }>
 
 /** What a test changes in the request of `byAna`, `byVersion` and `byCarla`. */
 type Over = Partial<{
@@ -92,19 +101,26 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
   }
   const thread = ConversationId.parse(randomUUID())
   const agentId = AgentId.parse(randomUUID())
-  function base(over: Over) {
+  const runId = WorkflowRunId.parse(randomUUID())
+  const workflowId = WorkflowId.parse(randomUUID())
+  function common(over: Omit<Over, 'threadId' | 'toolCallId'>) {
     return {
       scope: scopeOf(on.ana.id),
       connectionId: matriz,
       operation: LANCAR,
       input: ORDER,
-      threadId: thread,
-      toolCallId: ToolCallId.parse(randomUUID()),
       turn: TurnKey.parse(randomUUID()),
       ...over,
     }
   }
-  function byAna(over: Over = {}): WriteRequest {
+  function base({ threadId, toolCallId, ...rest }: Over) {
+    return {
+      ...common(rest),
+      where: { kind: 'CONVERSATION', threadId: threadId ?? thread },
+      callKey: toolCallId ?? ToolCallId.parse(randomUUID()),
+    } as const
+  }
+  function byAna(over: Over = {}): InConversation {
     const speaker = {
       kind: 'PERSON',
       personId: PersonId.parse(on.ana.id),
@@ -112,11 +128,29 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
     } as const
     return { ...base(over), speaker }
   }
-  function byVersion(over: Over = {}): WriteRequest {
+  function byVersion(over: Over = {}): InConversation {
     const declared = [{ connectionId: matriz, operation: LANCAR }]
     return { ...base(over), speaker: { kind: 'VERSION', declared }, agentId, number: 1 }
   }
-  function byCarla(over: Over = {}): WriteRequest {
+  /** A balloon of a workflow run writing: the run's book, the workflow's version declared. */
+  function byWorkflow(
+    over: Omit<Over, 'threadId' | 'toolCallId'> & {
+      callKey?: BalloonCallKey
+      declares?: boolean
+    } = {},
+  ): WriteRequest {
+    const { callKey, declares = true, ...rest } = over
+    const declared = declares ? [{ connectionId: matriz, operation: LANCAR }] : []
+    return {
+      ...common(rest),
+      where: { kind: 'RUN', runId },
+      callKey: callKey ?? balloonCallKeyOf(BalloonAddress.parse('b5'), 0),
+      speaker: { kind: 'WORKFLOW', declared },
+      workflowId,
+      number: 1,
+    }
+  }
+  function byCarla(over: Over = {}): InConversation {
     const speaker = {
       kind: 'PERSON',
       personId: PersonId.parse(on.carla.id),
@@ -124,7 +158,12 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
     } as const
     return { ...base({ scope: scopeOf(on.carla.id), ...over }), speaker }
   }
-  return { scopeOf, byAna, byVersion, byCarla, thread, agentId }
+  return { scopeOf, byAna, byVersion, byWorkflow, byCarla, thread, agentId, runId, workflowId }
+}
+
+/** The mark of the request's own write, as the record keeps it. */
+export function markFor(request: WriteRequest): string {
+  return markOf(scopeIdOf(request.where), request.callKey)
 }
 
 /** Empresa A with the Sankhya double released to the Projeto, and a way to ask the write funnel as Ana, as a version, or as Carla in a role without the write. */
@@ -160,13 +199,14 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
     "update auth.member set role = 'atendente' where company_id = $1 and user_id = $2",
     [on.companyId, on.carla.id],
   )
-  const { scopeOf, byAna, byVersion, byCarla, thread, agentId } = requesters(on, matriz)
+  const { scopeOf, byAna, byVersion, byWorkflow, byCarla, thread, agentId, runId, workflowId } =
+    requesters(on, matriz)
   function ask(request: WriteRequest) {
     return on.hub.connectors.assistant.write(request)
   }
   function ledger() {
     return on.hub.test.asOwner(
-      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, approved_by, input_hash from connectors.connector_write order by created_at',
+      'select thread_id, tool_call_id, state, answer, agent_id, version_number, person_id, workflow_id, workflow_version, approved_by, input_hash from connectors.connector_write order by created_at',
     )
   }
   function lines(message: string) {
@@ -180,6 +220,9 @@ export async function writing(t: TestContext, a: { order?: () => Promise<Respons
     agentId,
     byAna,
     byVersion,
+    byWorkflow,
+    runId,
+    workflowId,
     byCarla,
     ask,
     ledger,

@@ -1,78 +1,23 @@
-import { createHash } from 'node:crypto'
-import type { Answered } from '@conexus/connectors'
-import type { AgentId, ConnectionId, ConversationId, OperationId, PersonId } from '@conexus/hub-api'
+import type { AgentId, ConnectionId, OperationId, PersonId, WorkflowId } from '@conexus/hub-api'
 import {
+  BalloonCallKey,
   ConnectionId as ConnectionIdSchema,
   Native,
   OperationId as OperationIdSchema,
   ToolCallId,
 } from '@conexus/hub-api'
-import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Speaker } from '../identity/public.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
-import type { SessionScope, TurnKey } from './scope.ts'
+import type { SessionScope, WriteScope } from './scope.ts'
 import { connectorWrite } from './tables.ts'
-
-/** A person talking to a draft; the funnel reads their role on every call, so the request carries none. */
-type Person = Readonly<{ kind: 'PERSON'; personId: PersonId }>
-type Version = Extract<Speaker, { kind: 'VERSION' }>
-
-/**
- * One write an agent asks for, once per conversation and tool call. A published version speaks by what
- * it declares and is named by `agentId` and `number` (a version has no id of its own); a person talking to a draft, which has no version, speaks
- * by their role. The role is read again on every call.
- */
-export type WriteRequest = Readonly<{
-  scope: SessionScope
-  connectionId: ConnectionId
-  operation: OperationId
-  input: unknown
-  /** The conversation: with `toolCallId` it names the write, so a repeat of the call is found, never sent. */
-  threadId: ConversationId
-  toolCallId: ToolCallId
-  /** Set only by the approval gate of the next unit: the person who saw an earlier open write and lets this one be sent. */
-  approvedBy?: PersonId
-  turn: TurnKey
-  signal?: AbortSignal
-}> &
-  (Readonly<{ speaker: Person }> | Readonly<{ speaker: Version; agentId: AgentId; number: number }>)
-
-/**
- * What the model and the screen are told of a write. `WRITE_UNCERTAIN` means the request may have
- * reached the provider and the Hub does not know: it is never sent again, and `mark` is what the person
- * looks for in the provider. `IDEMPOTENCY_CONFLICT` is another input under a key already used (code C37),
- * and `WRITE_OPEN` is a write asked under a new call while an earlier one of the same conversation,
- * connection and operation may still exist: `mark` and `since` name that earlier one. The kinds after
- * `OK` are the failures where nothing was sent.
- */
-export type Written =
-  | Readonly<{ kind: 'OK'; value: unknown }>
-  | Readonly<{ kind: 'NOT_IN_ROLE' }>
-  | Readonly<{ kind: 'NOT_GRANTED' }>
-  | Readonly<{ kind: 'WRITE_UNCERTAIN'; mark: string }>
-  | Readonly<{ kind: 'IDEMPOTENCY_CONFLICT'; mark: string }>
-  | Readonly<{ kind: 'WRITE_OPEN'; mark: string; since: Date }>
-  | Readonly<{ kind: 'UNREACHABLE' }>
-  | Readonly<{ kind: 'DEADLINE' }>
-  | Exclude<Answered<unknown>, { kind: 'OK' }>
-
-const MARK_HASH_LENGTH = 8
-
-/** The one owner of the mark an order carries in its observation, so the person can find it: "Conexus " and 8 characters of a hash of the conversation and the call. */
-export function markOf(threadId: ConversationId, toolCallId: ToolCallId): string {
-  const hash = createHash('sha256').update(`${threadId}\n${toolCallId}`).digest('hex')
-  return `Conexus ${hash.slice(0, MARK_HASH_LENGTH)}`
-}
-
-export function hashOf(input: unknown): string {
-  return createHash('sha256').update(JSON.stringify(input)).digest('hex')
-}
+import type { RunWrite, WriteRequest, Written } from './write-request.ts'
+import { isRun, markOf, scopeIdOf } from './write-request.ts'
 
 const Stored = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('OK'), value: z.unknown() }),
@@ -87,11 +32,12 @@ const Stored = z.discriminatedUnion('kind', [
 type Author =
   | Readonly<{ kind: 'VERSION'; agentId: AgentId; number: number }>
   | Readonly<{ kind: 'PERSON'; personId: PersonId }>
+  | Readonly<{ kind: 'WORKFLOW'; workflowId: WorkflowId; number: number }>
 
 function authorOf(a: WriteRequest): Author {
-  return 'agentId' in a
-    ? { kind: 'VERSION', agentId: a.agentId, number: a.number }
-    : { kind: 'PERSON', personId: a.speaker.personId }
+  if ('agentId' in a) return { kind: 'VERSION', agentId: a.agentId, number: a.number }
+  if ('workflowId' in a) return { kind: 'WORKFLOW', workflowId: a.workflowId, number: a.number }
+  return { kind: 'PERSON', personId: a.speaker.personId }
 }
 
 /** What every line about this write says: scalars, never a field of the input (S40). */
@@ -102,10 +48,12 @@ export function aboutOf(a: WriteRequest, connector?: string): Record<string, Sca
     connectionId: a.connectionId,
     ...(connector === undefined ? {} : { connector }),
     operation: a.operation,
-    toolCallId: a.toolCallId,
-    ...(author.kind === 'VERSION'
-      ? { agentId: author.agentId, versionNumber: author.number }
-      : { personId: author.personId }),
+    toolCallId: a.callKey,
+    ...(author.kind === 'PERSON' ? { personId: author.personId } : {}),
+    ...(author.kind === 'VERSION' ? { agentId: author.agentId, versionNumber: author.number } : {}),
+    ...(author.kind === 'WORKFLOW'
+      ? { workflowId: author.workflowId, versionNumber: author.number }
+      : {}),
   }
 }
 
@@ -124,11 +72,11 @@ function foundIn(row: Row, hash: string, mark: string): Written {
   return Stored.parse(row.answer)
 }
 
-function key(a: WriteRequest) {
+function key(a: WriteRequest, callKey: string = a.callKey) {
   return and(
     eq(connectorWrite.companyId, a.scope.companyId),
-    eq(connectorWrite.threadId, a.threadId),
-    eq(connectorWrite.toolCallId, a.toolCallId),
+    eq(connectorWrite.threadId, scopeIdOf(a.where)),
+    eq(connectorWrite.toolCallId, callKey),
   )
 }
 
@@ -154,14 +102,16 @@ async function inserted(tx: CommandTx, a: WriteRequest, put: Put): Promise<boole
     .insert(connectorWrite)
     .values({
       companyId: a.scope.companyId,
-      threadId: a.threadId,
-      toolCallId: a.toolCallId,
+      threadId: scopeIdOf(a.where),
+      toolCallId: a.callKey,
       connectionId: a.connectionId,
       operationId: a.operation,
       inputHash: put.hash,
       agentId: author.kind === 'VERSION' ? author.agentId : null,
       versionNumber: author.kind === 'VERSION' ? author.number : null,
       personId: author.kind === 'PERSON' ? author.personId : null,
+      workflowId: author.kind === 'WORKFLOW' ? author.workflowId : null,
+      workflowVersion: author.kind === 'WORKFLOW' ? author.number : null,
       approvedBy: a.approvedBy ?? null,
       state: 'SENDING',
       createdAt: sql`statement_timestamp()`,
@@ -171,26 +121,75 @@ async function inserted(tx: CommandTx, a: WriteRequest, put: Put): Promise<boole
   return rows.length > 0
 }
 
-/** What a call answers from its own row: never sent again, and a `SENDING` row is an uncertain write now. */
-async function found(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put, row: Row) {
+/** What a call answers from a row of the record: never sent again, and a `SENDING` row is an uncertain write now. By default the call's own row; `earlier` is another attempt's. */
+async function found(
+  deps: Deps,
+  tx: CommandTx,
+  a: WriteRequest,
+  put: Put,
+  row: Row,
+  earlier?: Readonly<{ callKey: BalloonCallKey; mark: string }>,
+) {
+  const callKey = earlier?.callKey ?? a.callKey
   if (row.state === 'SENDING')
     await tx
       .update(connectorWrite)
       .set({ state: 'UNCERTAIN' })
-      .where(and(key(a), eq(connectorWrite.state, 'SENDING')))
+      .where(and(key(a, callKey), eq(connectorWrite.state, 'SENDING')))
   deps.log.info(
     { ...aboutOf(a, put.connector), state: row.state, sameInput: row.inputHash === put.hash },
     'CONNECTOR_WRITE_REPEATED',
   )
-  return { kind: 'FOUND', written: foundIn(row, put.hash, put.mark) } as const
+  return { kind: 'FOUND', written: foundIn(row, put.hash, earlier?.mark ?? put.mark) } as const
+}
+
+/**
+ * The rows of the same balloon in earlier attempts of the run, newest first: only for a balloon's own
+ * write (its call key has no tool call), and read by prefix, never `LIKE` (the `_` of `b7_0.b3` is a wildcard there).
+ */
+async function earlierRows(tx: ReadTx, a: RunWrite) {
+  const [address, , ...rest] = a.callKey.split('#')
+  if (address === undefined || rest.length > 0) return []
+  return tx
+    .select({
+      toolCallId: connectorWrite.toolCallId,
+      state: connectorWrite.state,
+      inputHash: connectorWrite.inputHash,
+      answer: connectorWrite.answer,
+    })
+    .from(connectorWrite)
+    .where(
+      and(
+        eq(connectorWrite.companyId, a.scope.companyId),
+        eq(connectorWrite.threadId, a.where.runId),
+        sql`starts_with(${connectorWrite.toolCallId}, ${`${address}#`})`,
+        sql`${connectorWrite.toolCallId} <> ${a.callKey}`,
+      ),
+    )
+    .orderBy(desc(connectorWrite.createdAt))
+}
+
+/**
+ * What an earlier attempt of the same balloon already settled: the newest row that is not `REFUSED`
+ * answers (a `DONE` with the same input gives its stored answer and never sends; another input is
+ * `IDEMPOTENCY_CONFLICT`; a `SENDING` or `UNCERTAIN` one is `WRITE_UNCERTAIN` with its own mark,
+ * unless a person who looked in the system approved this call). A `REFUSED` one, or none, lets this
+ * attempt send.
+ */
+async function earlierAttempt(deps: Deps, tx: CommandTx, a: RunWrite, put: Put) {
+  for (const row of await earlierRows(tx, a)) {
+    if (row.state === 'REFUSED' || (row.state !== 'DONE' && a.approvedBy !== undefined)) continue
+    const callKey = BalloonCallKey.parse(row.toolCallId)
+    return found(deps, tx, a, put, row, { callKey, mark: markOf(a.where.runId, callKey) })
+  }
+  return undefined
 }
 
 /** The refusal of a call while an earlier write of its kind may exist; none when a person approved this very call (the write tool sets `approvedBy` from the approval Mastra resumed with). */
 async function heldBy(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put) {
   if (a.approvedBy !== undefined) return undefined
   const [open] = await openRows(tx, {
-    ...{ scope: a.scope, threadId: a.threadId, connectionId: a.connectionId },
-    ...{ operation: a.operation, except: a.toolCallId },
+    ...{ scope: a.scope, where: a.where, connectionId: a.connectionId, operation: a.operation },
   })
   if (open === undefined) return undefined
   deps.log.info(
@@ -206,19 +205,21 @@ async function heldBy(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put) {
 /**
  * The record of the send, committed before the provider is called, so a process that dies between
  * leaves a `SENDING` row and no repeat sends again. One short transaction, locked on the company,
- * conversation, connection and operation (code C65), so two calls of the same write take turns: the
- * call's own row answers first, then an open write of another call refuses unless a person approved,
- * and only then the row is inserted.
+ * conversation or run, connection and operation (code C65), so two calls of the same write take
+ * turns: the call's own row answers first, then an earlier attempt of the same balloon, then an open
+ * write of another call refuses unless a person approved, and only then the row is inserted.
  */
 export async function register(deps: Deps, a: WriteRequest, put: Put): Promise<Registered> {
   const viewer = { person: { id: a.scope.personId }, companyId: a.scope.companyId }
   return deps.database.command(scopeOf(viewer), async (tx) => {
     await transactionLock(
       tx,
-      `conexus.connector-write:${a.scope.companyId}:${a.threadId}:${a.connectionId}:${a.operation}`,
+      `conexus.connector-write:${a.scope.companyId}:${scopeIdOf(a.where)}:${a.connectionId}:${a.operation}`,
     )
     const own = await ownRow(tx, a)
     if (own !== undefined) return found(deps, tx, a, put, own)
+    const earlier = isRun(a) ? await earlierAttempt(deps, tx, a, put) : undefined
+    if (earlier !== undefined) return earlier
     const held = await heldBy(deps, tx, a, put)
     if (held !== undefined) return held
     if (await inserted(tx, a, put)) return { kind: 'OWNED' }
@@ -240,23 +241,22 @@ export type OpenWrite = Readonly<{
 
 const OpenState = z.enum(['SENDING', 'UNCERTAIN'])
 
-/** Which open writes: the conversation's, of one connection and operation when named, without the call `except` names. */
+/** Which open writes: the conversation's or the run's, of one connection and operation when named. */
 export type OpenWritesKey = Readonly<{
   scope: SessionScope
-  threadId: ConversationId
+  where: WriteScope
   connectionId?: ConnectionId
   operation?: OperationId
-  except?: ToolCallId
 }>
 
 /**
- * The writes of the conversation that may exist in the provider: rows still `SENDING` or `UNCERTAIN`,
- * of one connection and operation when the key names them, without the call `except` names.
+ * The writes of the conversation or run that may exist in the provider: rows still `SENDING` or
+ * `UNCERTAIN`, of one connection and operation when the key names them.
  */
 async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
   const rows = await tx
     .select({
-      toolCallId: connectorWrite.toolCallId,
+      callKey: connectorWrite.toolCallId,
       connectionId: connectorWrite.connectionId,
       operation: connectorWrite.operationId,
       state: connectorWrite.state,
@@ -266,12 +266,11 @@ async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWr
     .where(
       and(
         eq(connectorWrite.companyId, key.scope.companyId),
-        eq(connectorWrite.threadId, key.threadId),
+        eq(connectorWrite.threadId, scopeIdOf(key.where)),
         key.connectionId === undefined
           ? undefined
           : eq(connectorWrite.connectionId, key.connectionId),
         key.operation === undefined ? undefined : eq(connectorWrite.operationId, key.operation),
-        key.except === undefined ? undefined : ne(connectorWrite.toolCallId, key.except),
         inArray(connectorWrite.state, ['SENDING', 'UNCERTAIN']),
       ),
     )
@@ -281,7 +280,7 @@ async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWr
     operation: OperationIdSchema.parse(row.operation),
     state: OpenState.parse(row.state),
     since: row.createdAt,
-    mark: markOf(key.threadId, ToolCallId.parse(row.toolCallId)),
+    mark: markOf(scopeIdOf(key.where), callKeyOf(key.where, row.callKey)),
   }))
 }
 
@@ -289,6 +288,11 @@ async function openRows(tx: ReadTx, key: OpenWritesKey): Promise<readonly OpenWr
 export function openWritesOf(deps: Deps, key: OpenWritesKey): Promise<readonly OpenWrite[]> {
   const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
   return deps.database.read(scopeOf(viewer), (tx) => openRows(tx, key))
+}
+
+/** The call key a row holds, parsed by what the scope's calls are named. */
+function callKeyOf(where: WriteScope, raw: string): ToolCallId | BalloonCallKey {
+  return where.kind === 'RUN' ? BalloonCallKey.parse(raw) : ToolCallId.parse(raw)
 }
 
 /** What the system said of a refused write, as stored; none for any other end. */

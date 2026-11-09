@@ -13,8 +13,9 @@ import { idsOf } from './scope.ts'
 import { openedIn } from './testing.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
-import type { WriteRequest, Written } from './write-record.ts'
-import { aboutOf, finish, hashOf, markOf, register } from './write-record.ts'
+import { aboutOf, finish, register } from './write-record.ts'
+import type { WriteRequest, Written } from './write-request.ts'
+import { hashOf, markOf, scopeIdOf } from './write-request.ts'
 import type { Wrote } from './wrote.ts'
 
 /** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
@@ -158,7 +159,7 @@ export async function writeThrough(deps: Deps, a: WriteRequest): Promise<Written
   const { opened, operation } = admit
   const connector = opened.connector.id
   const parsed = operation.input.safeParse(a.input)
-  const mark = markOf(a.threadId, a.toolCallId)
+  const mark = markOf(scopeIdOf(a.where), a.callKey)
   const checked = parsed.success
     ? operation.input.safeParse(operation.mark(parsed.data, mark))
     : parsed

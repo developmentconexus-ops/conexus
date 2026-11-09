@@ -1,0 +1,4 @@
+-- contract: o CHECK connector_write_speaker ganha o braço WORKFLOW; a imagem anterior não grava esse braço
+ALTER TABLE "connectors"."connector_write" ADD COLUMN "workflow_id" uuid;--> statement-breakpoint
+ALTER TABLE "connectors"."connector_write" ADD COLUMN "workflow_version" integer;--> statement-breakpoint
+ALTER TABLE "connectors"."connector_write" DROP CONSTRAINT "connector_write_speaker", ADD CONSTRAINT "connector_write_speaker" CHECK (("agent_id" is not null and "version_number" is not null and "person_id" is null and "workflow_id" is null and "workflow_version" is null) or ("agent_id" is null and "version_number" is null and "person_id" is not null and "workflow_id" is null and "workflow_version" is null) or ("agent_id" is null and "version_number" is null and "person_id" is null and "workflow_id" is not null and "workflow_version" is not null));

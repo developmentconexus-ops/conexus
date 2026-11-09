@@ -93,7 +93,7 @@ export async function mayUseNotebook(
   speaker: Speaker,
   on: Readonly<{ connectionId: ConnectionId; connector: string }>,
 ): Promise<NotInRole | undefined> {
-  if (speaker.kind === 'VERSION') return undefined
+  if (speaker.kind !== 'PERSON') return undefined
   const connector = connectorOf(on.connector)
   if (connector?.readDoor?.[NOTEBOOK_OPERATION] === undefined) return undefined
   const allowed = await deps.identity.mayUse(companyId, speaker, {

@@ -34,12 +34,12 @@ export { subjectsOf } from './catalog-subjects.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
-export type { SessionScope } from './scope.ts'
+export type { SessionScope, WriteScope } from './scope.ts'
 export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'
-export type { WriteRequest, Written } from './write-record.ts'
-export { markOf } from './write-record.ts'
+export type { WriteKey, WriteRequest, Written } from './write-request.ts'
+export { markOf } from './write-request.ts'
 
 /** Tests shorten the deadline. */
 export type ConnectorDeadlines = { callDeadlineMs?: number }

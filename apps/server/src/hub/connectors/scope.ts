@@ -1,4 +1,11 @@
-import type { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConnectionId,
+  ConversationId,
+  PersonId,
+  ProjectId,
+  WorkflowRunId,
+} from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Speaker } from '../identity/public.ts'
 
@@ -12,11 +19,16 @@ export type SessionScope = {
   place: Place
   chosen: readonly ConnectionId[]
   /**
-   * Set where a published (or draft) agent version converses: it reads by what the version
-   * declares, not by the role of the person who talks to it (decision C1).
+   * Set where a published (or draft) agent version converses, or a workflow version runs: it reads
+   * by what the version declares, not by the role of the person who talks to it (decision C1).
    */
-  agentVersion?: Extract<Speaker, { kind: 'VERSION' }>
+  speaksAs?: Extract<Speaker, { kind: 'VERSION' } | { kind: 'WORKFLOW' }>
 }
+
+/** Where a write is kept: a conversation (its calls are tool calls) or a workflow run (its calls are balloon attempts). */
+export type WriteScope =
+  | Readonly<{ kind: 'CONVERSATION'; threadId: ConversationId }>
+  | Readonly<{ kind: 'RUN'; runId: WorkflowRunId }>
 
 /** The turn a call belongs to: a uuid the Assistant's takeTurn puts on the run's context (U2). */
 export const TurnKey = z.uuid().brand('TurnKey')

@@ -9,7 +9,11 @@ import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import { connectorWrite } from './tables.ts'
 import type { OpenWritesKey } from './write-record.ts'
-import { markOf, refusedMessageOf } from './write-record.ts'
+import { refusedMessageOf } from './write-record.ts'
+import { markOf } from './write-request.ts'
+
+/** The writes of a conversation: a run's calls are not tool calls, and no screen lists them here. */
+export type ConversationWritesKey = OpenWritesKey & { where: { kind: 'CONVERSATION' } }
 
 /** A write of the conversation as the record keeps it, whatever its end: what the card reads after a reload (never the write's fields, S40). */
 export type WrittenRecord = Readonly<{
@@ -25,7 +29,10 @@ export type WrittenRecord = Readonly<{
 }>
 
 /** Every write of the conversation, oldest first, as the record keeps it: the card's outcome after a reload (step 24.5, U5). */
-export function writesOf(deps: Deps, key: OpenWritesKey): Promise<readonly WrittenRecord[]> {
+export function writesOf(
+  deps: Deps,
+  key: ConversationWritesKey,
+): Promise<readonly WrittenRecord[]> {
   const viewer = { person: { id: key.scope.personId }, companyId: key.scope.companyId }
   return deps.database.read(scopeOf(viewer), async (tx) => {
     const rows = await tx
@@ -42,7 +49,7 @@ export function writesOf(deps: Deps, key: OpenWritesKey): Promise<readonly Writt
       .where(
         and(
           eq(connectorWrite.companyId, key.scope.companyId),
-          eq(connectorWrite.threadId, key.threadId),
+          eq(connectorWrite.threadId, key.where.threadId),
         ),
       )
       .orderBy(connectorWrite.createdAt)
@@ -54,7 +61,7 @@ export function writesOf(deps: Deps, key: OpenWritesKey): Promise<readonly Writt
         operation: OperationIdSchema.parse(row.operation),
         state: row.state,
         since: row.createdAt,
-        mark: markOf(key.threadId, toolCallId),
+        mark: markOf(key.where.threadId, toolCallId),
         approved: row.approvedBy !== null,
         message: refusedMessageOf(row),
       }

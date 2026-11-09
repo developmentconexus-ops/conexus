@@ -203,7 +203,7 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
     const scope: SessionScope = {
       ...{ companyId, personId, place },
       chosen: [...selected],
-      agentVersion: {
+      speaksAs: {
         kind: 'VERSION',
         declared: declaredOf(tools),
       },

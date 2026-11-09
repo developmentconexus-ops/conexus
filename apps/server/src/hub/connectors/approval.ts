@@ -1,17 +1,10 @@
-import type {
-  CompanyId,
-  ConnectionId,
-  ConnectorId,
-  ConversationId,
-  OperationId,
-  PersonId,
-} from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, ConnectorId, OperationId, PersonId } from '@conexus/hub-api'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { speakerOf } from '../identity/public.ts'
 import { operationLabel } from './role-kit.ts'
-import type { SessionScope } from './scope.ts'
+import type { SessionScope, WriteScope } from './scope.ts'
 import type { OpenWrite, OpenWritesKey } from './write-record.ts'
 
 /** The operation the rule checks: the connection, the kit's connector and the operation (identity's Target). */
@@ -95,7 +88,7 @@ export async function mayLeaveAlone(
 
 /**
  * Whether a write asks the person first (step 24.5): when it is kept in Pergunta antes, when who
- * answers for a published version no longer leaves it alone, or when the conversation holds an
+ * answers for a published version no longer leaves it alone, or when the conversation or run holds an
  * earlier send of the same write whose end is not known. The draft runs as the person talking to it.
  */
 export async function mustAsk(
@@ -105,7 +98,7 @@ export async function mustAsk(
     choice: 'ASK' | 'AUTO'
     author: WriteAuthorOf
     scope: SessionScope
-    threadId: ConversationId
+    where: WriteScope
     target: WriteTarget
   }>,
 ): Promise<Ask> {
@@ -118,7 +111,7 @@ export async function mustAsk(
   }
   const open = await deps.openWrites({
     scope: a.scope,
-    threadId: a.threadId,
+    where: a.where,
     connectionId: a.target.connectionId,
     operation: a.target.operationId,
   })

@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConnectionId, OperationId, ToolCallId } from '@conexus/hub-api'
 import { markOf, openText, TurnKey } from './public.ts'
-import { ORDER, writing } from './test-write.ts'
+import { markFor, ORDER, writing } from './test-write.ts'
 
 test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na observação e o código no log, sem os campos', async (t) => {
   const on = await writing(t)
@@ -15,11 +15,11 @@ test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na 
   const stored = on.fake.orders()
   assert.equal(stored.length, 2)
   assert.equal(stored[0]?.estado, 'A_CONFIRMAR')
-  assert.equal(stored[0]?.observacao, markOf(first.threadId, first.toolCallId))
-  assert.equal(stored[1]?.observacao, markOf(second.threadId, second.toolCallId))
-  assert.match(markOf(first.threadId, first.toolCallId), /^Conexus [0-9a-f]{8}$/)
+  assert.equal(stored[0]?.observacao, markFor(first))
+  assert.equal(stored[1]?.observacao, markFor(second))
+  assert.match(markFor(first), /^Conexus [0-9a-f]{8}$/)
   // The kit's description of `observacao` says 17: the mark and the space before it.
-  assert.equal(markOf(first.threadId, first.toolCallId).length + 1, 17)
+  assert.equal(markFor(first).length + 1, 17)
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent.length, 2)
   assert.equal(sent[0]?.fields.writtenId, 98001)
@@ -48,10 +48,7 @@ test('a observação da pessoa fica, com a marca no fim', async (t) => {
   const on = await writing(t)
   const request = on.byAna({ input: { ...ORDER, observacao: 'urgente' } })
   assert.equal((await on.ask(request)).kind, 'OK')
-  assert.equal(
-    on.fake.orders()[0]?.observacao,
-    `urgente ${markOf(request.threadId, request.toolCallId)}`,
-  )
+  assert.equal(on.fake.orders()[0]?.observacao, `urgente ${markFor(request)}`)
 })
 
 test('a escrita recusada: sem a operação no papel, sem a liberação, sem a escolha, uma leitura ou uma entrada inválida, o dublê não recebe nada e nada se grava', async (t) => {
@@ -162,7 +159,7 @@ test('o pedido sem resposta (b): depois de um corte a linha UNCERTAIN trava outr
   const first = on.byAna()
   assert.equal((await on.ask(first)).kind, 'WRITE_UNCERTAIN')
   on.mode.cut = false
-  const mark = markOf(first.threadId, first.toolCallId)
+  const mark = markFor(first)
   for (const input of [ORDER, { ...ORDER, codigoCliente: 2 }]) {
     const answer = await on.ask(on.byAna({ toolCallId: another(), input }))
     assert.ok(answer.kind === 'WRITE_OPEN' && answer.mark === mark)

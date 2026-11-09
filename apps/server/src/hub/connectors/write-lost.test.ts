@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
-import { markOf, TurnKey, uncertainText } from './public.ts'
-import { ORDER, writing } from './test-write.ts'
+import { TurnKey, uncertainText } from './public.ts'
+import { markFor, ORDER, writing } from './test-write.ts'
 
 test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar, outra entrada sob a mesma chave não, e noutra conversa é outra escrita', async (t) => {
   const on = await writing(t)
@@ -14,11 +14,14 @@ test('o mesmo toolCallId: a repetição devolve o que o registro diz sem enviar,
   const other = await on.ask({ ...first, input: { ...ORDER, codigoCliente: 2 } })
   assert.deepEqual(other, {
     kind: 'IDEMPOTENCY_CONFLICT',
-    mark: markOf(first.threadId, first.toolCallId),
+    mark: markFor(first),
   })
   assert.equal(on.mode.posts, 1)
   assert.equal(on.fake.orders().length, 1)
-  const elsewhere = await on.ask({ ...first, threadId: ConversationId.parse(randomUUID()) })
+  const elsewhere = await on.ask({
+    ...first,
+    where: { kind: 'CONVERSATION', threadId: ConversationId.parse(randomUUID()) },
+  })
   assert.deepEqual(elsewhere, { kind: 'OK', value: { codigoPedido: 98001 + 1 } })
   assert.equal(on.mode.posts, 2)
 })
@@ -35,7 +38,7 @@ test('a resposta perdida: perdida depois de gravar ou antes, e um corte, dão WR
   const on = await writing(t)
   on.fake.orderSwitches.lostAfterStore = true
   const after = on.byAna()
-  const mark = markOf(after.threadId, after.toolCallId)
+  const mark = markFor(after)
   assert.deepEqual(await on.ask(after), { kind: 'WRITE_UNCERTAIN', mark })
   assert.deepEqual(await on.ask(after), { kind: 'WRITE_UNCERTAIN', mark })
   assert.equal(on.mode.posts, 1)
@@ -72,8 +75,8 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
      values ($1, $2, $3, $4, 'lancarPedido', $5, $6, 'SENDING', now())`,
     [
       on.companyId,
-      first.threadId,
-      first.toolCallId,
+      on.thread,
+      first.callKey,
       on.matriz,
       createHash('sha256').update(JSON.stringify(ORDER)).digest('hex'),
       on.ana.id,
@@ -81,7 +84,7 @@ test('um processo que morreu depois do registro: a linha SENDING faz a chamada d
   )
   assert.deepEqual(await on.ask(first), {
     kind: 'WRITE_UNCERTAIN',
-    mark: markOf(first.threadId, first.toolCallId),
+    mark: markFor(first),
   })
   assert.equal(on.mode.posts, 0)
   assert.equal(Object((await on.ledger())[0]).state, 'UNCERTAIN')
@@ -130,7 +133,7 @@ test('o fim do registro que falha: o modelo recebe o OK, o processo diz CONNECTO
   assert.deepEqual(await on.ask(first), { kind: 'OK', value: { codigoPedido: 98001 } })
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent[0]?.fields.writtenId, 98001)
-  assert.equal(on.lines('CONNECTOR_WRITE_UNRECORDED')[0]?.fields.toolCallId, first.toolCallId)
+  assert.equal(on.lines('CONNECTOR_WRITE_UNRECORDED')[0]?.fields.toolCallId, first.callKey)
   assert.equal(Object((await on.ledger())[0]).state, 'SENDING')
   await on.hub.test.asOwner('drop trigger refuse_end on connectors.connector_write')
   assert.equal((await on.ask(first)).kind, 'WRITE_UNCERTAIN')
