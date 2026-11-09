@@ -16,7 +16,7 @@ import type { FrozenWorkflow } from './frozen.ts'
 import type { RegistryIndex } from './index.ts'
 
 /** One operation the kit gives a connection: whether it returns a list, and the shape of what it takes. */
-export type KitOperation = Readonly<{
+type KitOperation = Readonly<{
   id: OperationId
   many: boolean
   input: z.ZodObject | null
@@ -31,7 +31,7 @@ export type OfferedKit = Readonly<{
 }>
 
 /** An agent of the company, with the Projeto it lives in and the version it is published at. */
-export type CompanyAgent = Readonly<{
+type CompanyAgent = Readonly<{
   agentId: AgentId
   projectId: ProjectId
   activeVersion: number | null

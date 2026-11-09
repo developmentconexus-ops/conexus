@@ -56,7 +56,7 @@ export function childOf(id: MastraWorkflowId, step: PathStep): MastraWorkflowId 
 }
 
 /** The list a path runs, the balloon that holds it (null for the main list) and the frozen workflow whose document has it. */
-export type FrozenPath = Readonly<{ balloon: Balloon | null; list: Path; frozen: FrozenWorkflow }>
+type FrozenPath = Readonly<{ balloon: Balloon | null; list: Path; frozen: FrozenWorkflow }>
 
 /** The paths a container balloon has, by index; a USE has none here, its path is the other workflow's list. */
 function pathsOf(balloon: Balloon): readonly Path[] {

@@ -74,11 +74,11 @@ export function addressOf(scope: Scope, balloon: Balloon): string {
 }
 
 /** The step id a balloon has in its workflow: a USE is the nested workflow `bN_0`. */
-export function stepIdOf(balloon: Balloon): string {
+function stepIdOf(balloon: Balloon): string {
   return balloon.kind === 'USE' ? `${balloon.id}_0` : balloon.id
 }
 
-export function fieldNeed(name: string): Need {
+function fieldNeed(name: string): Need {
   return { key: name, kind: 'field', name }
 }
 

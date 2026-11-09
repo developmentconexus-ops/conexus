@@ -5,7 +5,7 @@ import { Failure } from '../../platform/failure.ts'
 import { parseMastraWorkflowId } from './ids.ts'
 
 /** A call to Mastra's storage, its failure read by the database's map (code C52). */
-export async function stored<T>(work: Promise<T>): Promise<T> {
+async function stored<T>(work: Promise<T>): Promise<T> {
   try {
     return await work
   } catch (error) {

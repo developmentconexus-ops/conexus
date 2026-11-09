@@ -4,11 +4,8 @@ import type { Balloon } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { DynamicWorkflowGraph } from '@mastra/core/workflows'
 import { validateDynamicWorkflow } from '@mastra/core/workflows'
-import type { TriggerShape } from './compile.ts'
-import { compiled } from './compile.ts'
-import type { FrozenWorkflow } from './frozen.ts'
-import type { MastraWorkflowId } from './ids.ts'
-import { mastraWorkflowIdOf } from './ids.ts'
+import type { FrozenWorkflow, MastraWorkflowId, TriggerShape } from './public.ts'
+import { compiled, mastraWorkflowIdOf } from './public.ts'
 import {
   approval,
   foreach,

@@ -25,7 +25,7 @@ const SENTENCES: Readonly<Record<GraphCode, string>> = {
 }
 
 /** The balloon an entry of the compilation belongs to: `bN-in`, `bN`, `bN-contar` and the `bN_<i>` segments are `bN`; `conferir` has none. */
-export function balloonOfEntry(entry: string | undefined): BalloonId | null {
+function balloonOfEntry(entry: string | undefined): BalloonId | null {
   const found = BalloonId.safeParse(entry?.match(/^(b\d{1,3})(?:[-_].*)?$/)?.[1])
   return found.success ? found.data : null
 }

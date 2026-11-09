@@ -28,7 +28,7 @@ const BalloonInput = z.object({ balloon: z.string() }).catchall(z.unknown())
 const Carried = z.object({ balloon: z.string(), volta: z.int().nonnegative() }).passthrough()
 
 /** What a balloon's tool does with its input, under the run's request context; the output is read back by the tool's schema. */
-export type Executor = (
+type Executor = (
   input: Readonly<Record<string, unknown>>,
   requestContext: unknown,
 ) => Promise<unknown>

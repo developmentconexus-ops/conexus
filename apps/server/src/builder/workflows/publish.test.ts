@@ -6,7 +6,7 @@ import { AgentId, BalloonId, OperationId, PersonId, WorkflowId } from '@conexus/
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { drafted, madeAgent, publishedNow } from '../agents/test-agents.ts'
 import { hubBeside } from '../conversation/test-conversation.ts'
-import { compiled } from './compile.ts'
+import { compiled } from './public.ts'
 import { draftOf, madeWorkflow, saved, viewOf, workflowsOn } from './test-workflow-hub.ts'
 import { frozenOf, notify, read, use } from './test-workflows.ts'
 

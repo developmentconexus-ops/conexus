@@ -2,10 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Balloon, WorkflowDraft } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
-import { compiled } from './compile.ts'
-import { graphProblems } from './graph-problems.ts'
-import { registryIndexOf } from './index.ts'
-import { problemsOf } from './problems.ts'
+import { compiled, graphProblems, problemsOf, registryIndexOf } from './public.ts'
 import {
   foreach,
   frozenOf,

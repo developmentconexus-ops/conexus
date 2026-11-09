@@ -28,7 +28,7 @@ export type Problems = Readonly<{
 }>
 
 /** What the world says now, read once for the draft. */
-export async function seenOf(world: World, publisher: PersonId): Promise<Seen> {
+async function seenOf(world: World, publisher: PersonId): Promise<Seen> {
   const [kits, agents, workflows, people, speaker] = await Promise.all([
     world.offered(),
     world.agents(),

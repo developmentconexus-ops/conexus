@@ -23,3 +23,12 @@ export function workflowsOf(deps: WorkflowsDeps) {
     release: (scope: ReleaseScope) => releaseWorkflows(deps, scope),
   })
 }
+
+export type { TriggerShape } from './compile.ts'
+export { compiled } from './compile.ts'
+export type { FrozenWorkflow } from './frozen.ts'
+export { graphProblems } from './graph-problems.ts'
+export type { MastraWorkflowId } from './ids.ts'
+export { mastraWorkflowIdOf, parseMastraWorkflowId, pathOf } from './ids.ts'
+export { registryIndexOf } from './index.ts'
+export { problemsOf } from './problems.ts'
