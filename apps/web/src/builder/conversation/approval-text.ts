@@ -23,9 +23,9 @@ export function wantsText(agent: string, action: string, system: string): string
   return `O ${agent} quer ${action.charAt(0).toLowerCase()}${action.slice(1)} no ${system}`
 }
 
-/** What the card says when the Hub could not tell whether the write entered: where to look for it. */
+/** What the card says when the Hub could not tell whether the write entered: no verdict of its own, since the agent read what the system answered, and the mark to check. */
 export function uncertainText(mark: string): string {
-  return `Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação ${mark}.`
+  return `Sem confirmação automática. Veja o que o agente leu e confira a observação ${mark}.`
 }
 
 /** The warning of an earlier send of the same write that has no answer, above the buttons. */

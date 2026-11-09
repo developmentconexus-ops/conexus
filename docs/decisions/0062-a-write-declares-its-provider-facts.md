@@ -36,7 +36,7 @@ as Windmill does (`5d3f239b`, `backend/windmill-worker/src/ai/utils.rs:65-110`);
 
 ## Result
 
-Not measured yet: unit U4 of step 24.5 builds it.
+Step 24.5 U4 and U5, 2026-11-08: rows 1 to 3 met.
 
 ## Consequences
 
@@ -49,4 +49,6 @@ accepts a key against repetition.
 
 ## State
 
-Proposed 2026-11-08 with the amendment of the 24.5 card. Amends [0056].
+Accepted 2026-11-08 ("2 sim / 3 sim"). Amends [0056].
+
+[0056]: 0056-connectors-kit-and-one-executor.md
