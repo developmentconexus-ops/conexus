@@ -79,7 +79,7 @@ test('depois de recarregar, a escrita sem linha no registro mostra o que o Mastr
 })
 
 test('a recusa ao vivo: o cartão lê a linha do registro quando a chamada termina, não o errorText que o Mastra deu ao modelo', async () => {
-  const recorded = [rowOf('approval-refused', { state: 'REFUSED', message: REFUSAL })]
+  const recorded: WrittenRow[] = []
   const opened = conversation(server, {
     writesAnswer: () => HttpResponse.json({ writes: recorded }),
   })
@@ -88,7 +88,12 @@ test('a recusa ao vivo: o cartão lê a linha do registro quando a chamada termi
   const rest = tell(line, events, holdsApproval)
   const card = await screen.findByRole('region', { name: TITLE })
   fireEvent.click(within(card).getByRole('button', { name: 'Aprovar' }))
-  for (const event of rest) line.emit(event)
+  for (const event of rest) {
+    // The record has the row only once the call ended: the card reads it again then.
+    if (ends(event))
+      recorded.push(rowOf('approval-refused', { state: 'REFUSED', message: REFUSAL }))
+    line.emit(event)
+  }
   expect(await screen.findByText('O Sankhya não aceitou. Nada foi lançado.')).toBeTruthy()
   expect(screen.getByText(REFUSAL)).toBeTruthy()
   expect(screen.getByText('Aprovado por você')).toBeTruthy()
@@ -148,6 +153,23 @@ test('o local fixado na versão vale para todo item e vence o de cada um, e a no
   const card = within(await screen.findByRole('region', { name: TITLE }))
   expect(card.getByText('Nota modelo').nextSibling?.textContent).toBe('12')
   expect(card.getByText('2 × produto 8 a R$ 10,00 · local 7')).toBeTruthy()
+})
+
+test('numa conversa publicada cujo rascunho mudou depois, o cartão não mostra os valores fixos do rascunho', async () => {
+  const order = {
+    codigoCliente: 1,
+    itens: [{ codigoProduto: 8, quantidade: 2, valorUnitario: 10, codigoLocalEstoque: 3 }],
+  }
+  conversation(server, {
+    rows: withArgs(recordedRun('approval').read, order),
+    bound: { notaModelo: 12, codigoLocalEstoque: 7 },
+    state: { kind: 'PUBLISHED', version: 1, changed: true },
+    writes: [rowOf('approval')],
+  })
+  const card = within(await screen.findByRole('region', { name: TITLE }))
+  expect(card.getByText('Cliente').nextSibling?.textContent).toBe('1')
+  expect(card.queryByText('Nota modelo')).toBeNull()
+  expect(card.getByText('2 × produto 8 a R$ 10,00 · local 3')).toBeTruthy()
 })
 
 test('o aviso do pedido igual não vem de uma escrita que terminou: DONE e REFUSED do registro não avisam', async () => {

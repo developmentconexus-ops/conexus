@@ -136,5 +136,7 @@ export function refusedLabelText(system: string): string {
   return `O ${system} não aceitou. Nada foi lançado.`
 }
 
-/** What a read's row says when the system answered and did not give what was asked; its message follows as it came. */
-export const SYSTEM_REFUSED = 'O sistema recusou.'
+/** What a read's row says when the system answered and did not give what was asked, named as the write's label names it; its message follows as it came (decision of the founder, 2026-11-08). */
+export function readRefusedText(system: string): string {
+  return `O ${system} não aceitou.`
+}

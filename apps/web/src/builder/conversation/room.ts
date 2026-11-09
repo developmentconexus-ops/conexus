@@ -57,6 +57,8 @@ export type Room = {
   toolDescription?: (slug: string) => string | undefined
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
+  /** The connector ("sankhya") of the connection a tool `tool_<slug>` of the agent reads or writes; none where the room does not know the tools. */
+  connectorOf?: (toolName: string) => string | undefined
   /** The agent's writes of this conversation as the record keeps them (step 24.5): the card's warning and its end, read again when a card opens. */
   writes?: WritesRead
   refreshWrites?: () => void

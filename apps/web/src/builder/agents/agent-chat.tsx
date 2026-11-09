@@ -32,26 +32,36 @@ function useAgentRoom(
     file: OpenedFile | undefined
     setFile: (file: OpenedFile) => void
     writes: { read: WritesRead; refresh: () => void }
+    /** The draft's fixed values are the ones the conversation runs: its test one, or the published version nobody changed since. */
+    fixed: boolean
   },
 ) {
-  const { file, setFile, writes } = held
+  const { file, setFile, writes, fixed } = held
   return useMemo(
     () => ({
       ...agentRoom(agent.name, words),
       toolDescription: (slug: string) =>
         agent.tools.find((one) => one.slug === slug)?.version.description,
-      writeOf: (toolName: string) => writeOf(agent, toolName),
+      writeOf: (toolName: string) => writeOf(agent, toolName, fixed),
+      connectorOf: (toolName: string) => connectorOf(agent, toolName),
       writes: writes.read,
       refreshWrites: writes.refresh,
       openFile: setFile,
       openedPath: file?.path,
     }),
-    [agent, words, file?.path, setFile, writes],
+    [agent, words, file?.path, setFile, writes, fixed],
   )
 }
 
+/** The connector of the connection the agent's tool `toolName` uses. */
+function connectorOf(agent: AgentDetail, toolName: string): string | undefined {
+  const tool = agent.tools.find((one) => `tool_${one.slug}` === toolName)
+  if (tool === undefined || tool.kind !== 'PRESET') return undefined
+  return agent.offered.find((one) => one.connectionId === tool.connectionId)?.connector
+}
+
 /** The write a tool of the agent is, with its connection and the operation's name; none for a read. */
-function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
+function writeOf(agent: AgentDetail, toolName: string, fixed: boolean): WriteTool | undefined {
   const tool = agent.tools.find((one) => `tool_${one.slug}` === toolName)
   if (tool === undefined || tool.kind !== 'PRESET' || tool.effect !== 'WRITE') return undefined
   const connection = agent.offered.find((one) => one.connectionId === tool.connectionId)
@@ -63,7 +73,7 @@ function writeOf(agent: AgentDetail, toolName: string): WriteTool | undefined {
     connection: connection.name,
     operation: tool.operation,
     label: label ?? tool.operation,
-    bound: tool.version.bound,
+    bound: fixed ? tool.version.bound : {},
   }
 }
 
@@ -104,7 +114,8 @@ export function AgentChat(props: {
     () => ({ read: writesRead({ data, error, isFetching }), refresh }),
     [data, error, isFetching, refresh],
   )
-  const room = useAgentRoom(agent, words, { file, setFile, writes })
+  const fixed = draft || (agent.state.kind === 'PUBLISHED' && !agent.state.changed)
+  const room = useAgentRoom(agent, words, { file, setFile, writes, fixed })
   const widen = useContext(FileWidth)
   const open = file !== undefined
   useEffect(() => {

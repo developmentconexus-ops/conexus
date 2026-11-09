@@ -1,5 +1,11 @@
-import type { WrittenRow } from '@conexus/hub-api'
-import { AGENTS_CONTROLLER, BUILDER_ROUTES, OperationId, ToolCallId } from '@conexus/hub-api'
+import type { AgentDetail, WrittenRow } from '@conexus/hub-api'
+import {
+  AGENTS_CONTROLLER,
+  BUILDER_ROUTES,
+  OperationId,
+  ToolCallId,
+  ToolId,
+} from '@conexus/hub-api'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
@@ -8,7 +14,7 @@ import { z } from 'zod'
 import type { Stored } from '../conversation/messages.ts'
 import { IsStored, recordedRun } from '../conversation/test-recorded.ts'
 import type { Line } from '../conversation/test-stream.tsx'
-import { AGENT, AREA, CHAT, MATRIZ } from './test-agents.ts'
+import { AGENT, AREA, agent, CHAT, MATRIZ } from './test-agents.ts'
 import { writer } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 
@@ -17,7 +23,14 @@ import { agentScreens } from './test-hub.tsx'
 
 export const SESSION = `*${BUILDER_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id`
 const PAGE = `${AREA}/${AGENT}/${CHAT}`
+const READ_TOOL = ToolId.parse('99999999-aaaa-4aaa-8aaa-999999999999')
 const UPDATED = '2026-11-07T12:00:00.000Z'
+
+/** The agent also holds its read of the Matriz, which the conversations about a refused read call. */
+function withRead(held: AgentDetail): AgentDetail {
+  const read = agent().tools.find((one) => one.slug === 'vendas_de_ontem')
+  return read === undefined ? held : { ...held, tools: [...held.tools, { ...read, id: READ_TOOL }] }
+}
 
 /** The agent's conversation open, with `rows` as what the thread kept and `writes` as the Hub lists them. */
 export function conversation(
@@ -26,12 +39,19 @@ export function conversation(
     rows?: readonly Stored[]
     /** What the version fixes in the write (the nota modelo). */
     bound?: Record<string, unknown>
+    /** What the agent's page says of the published version; the default is one nobody changed. */
+    state?: AgentDetail['state']
     writes?: WrittenRow[]
     writesAnswer?: () => Response | Promise<Response>
   } = {},
 ) {
   const opened = agentScreens(server).at(PAGE, {
-    agents: [writer('ASK', held.bound)],
+    agents: [
+      {
+        ...withRead(writer('ASK', held.bound)),
+        state: held.state ?? { kind: 'PUBLISHED', version: 1, changed: false },
+      },
+    ],
     conversations: [
       { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
     ],

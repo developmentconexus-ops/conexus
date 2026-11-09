@@ -4,7 +4,7 @@ import { HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { problemOf } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT, AREA, TOOL } from './test-agents.ts'
+import { AGENT, AREA } from './test-agents.ts'
 import { writer } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 import { catalog } from './test-hub-tools.tsx'
@@ -52,27 +52,42 @@ test.each([
   },
 )
 
+function refusesUnfixed() {
+  return () =>
+    HttpResponse.json(
+      { ...problemOf('AGENT_TOOL_REFUSED'), field: 'tools', reason: 'NOT_FIXED' },
+      {
+        status: FAILURES.AGENT_TOOL_REFUSED.status,
+        headers: { 'content-type': PROBLEM_MEDIA_TYPE },
+      },
+    )
+}
+
+async function publishRefused(dialog?: boolean) {
+  fireEvent.click(await screen.findByRole('button', { name: /^Publicar v\d/ }))
+  const box = await screen.findByRole('dialog')
+  fireEvent.click(within(box).getByRole('button', { name: 'Publicar versão' }))
+  expect(await within(box).findByText(NOT_FIXED)).toBeTruthy()
+  if (dialog !== true) fireEvent.keyDown(box, { key: 'Escape' })
+  return box
+}
+
 test('o campo fixo sem valor: se a publicação o recusa, a linha de Lançar pedido diz o texto', async () => {
-  at(PAGE, {
-    agents: [writer('ASK')],
-    answers: {
-      publish: () =>
-        HttpResponse.json(
-          { ...problemOf('AGENT_TOOL_REFUSED'), field: 'tools', reason: 'NOT_FIXED' },
-          {
-            status: FAILURES.AGENT_TOOL_REFUSED.status,
-            headers: { 'content-type': PROBLEM_MEDIA_TYPE },
-          },
-        ),
-    },
-  })
+  at(PAGE, { agents: [writer('ASK')], answers: { publish: refusesUnfixed() } })
   server.use(catalog)
   expect(await screen.findByRole('group', { name: 'Quando Lançar pedido roda' })).toBeTruthy()
   expect(screen.queryByText(NOT_FIXED)).toBeNull()
-  fireEvent.click(await screen.findByRole('button', { name: /^Publicar v\d/ }))
-  const dialog = await screen.findByRole('dialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar versão' }))
-  expect(await within(dialog).findByText(NOT_FIXED)).toBeTruthy()
+  const box = await publishRefused(true)
   expect(screen.getAllByText(NOT_FIXED)).toHaveLength(2)
-  expect(TOOL).toBeTruthy()
+  expect(box).toBeTruthy()
+})
+
+test('o campo fixo sem valor: escolher Usar a versão 2 depois da recusa apaga o aviso da linha', async () => {
+  at(PAGE, { agents: [behind('ASK')], answers: { publish: refusesUnfixed() } })
+  server.use(catalog)
+  await publishRefused()
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(screen.getAllByText(NOT_FIXED)).toHaveLength(1)
+  fireEvent.click(await screen.findByRole('button', { name: 'Usar a versão 2' }))
+  await waitFor(() => expect(screen.queryByText(NOT_FIXED)).toBeNull())
 })

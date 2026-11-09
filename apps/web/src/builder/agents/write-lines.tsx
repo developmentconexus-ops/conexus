@@ -3,9 +3,10 @@ import { OperationId, ToolApproval } from '@conexus/hub-api'
 import { useMutationState } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useId } from 'react'
+import { z } from 'zod'
 import { HubFailure } from '../../platform/hub.ts'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
-import { sendPublish } from './queries.ts'
+import { sendDraft, sendPublish } from './queries.ts'
 import {
   ASK_FIRST,
   approvalKeyName,
@@ -57,13 +58,34 @@ function ApprovalKey(props: { tool: Chosen; title: string; saving: Saving }) {
   )
 }
 
-/** Whether the last publication was refused for a field only who configures fixes, left open or without a value (decision 0062). */
-function useUnfixedRefusal(): boolean {
-  const last = useMutationState({
-    filters: { mutationKey: sendPublish.mutationKey },
-    select: (mutation) => mutation.state.error,
-  }).at(-1)
-  return last instanceof HubFailure && last.reason === 'NOT_FIXED'
+const ForAgent = z.object({ params: z.object({ agentId: z.string() }) })
+
+/** The last send of this agent through `key`, as the mutation cache holds it: when it left and how it ended. */
+function useLastSent(key: typeof sendPublish.mutationKey, agentId: string) {
+  return useMutationState({
+    filters: { mutationKey: key },
+    select: (mutation) => ({
+      error: mutation.state.error,
+      at: mutation.state.submittedAt,
+      agentId:
+        mutation.options.scope?.id ??
+        ForAgent.safeParse(mutation.state.variables).data?.params.agentId,
+    }),
+  })
+    .filter((one) => one.agentId === agentId)
+    .at(-1)
+}
+
+/** Whether this agent's last publication was refused for a field only who configures fixes, and the draft has not changed since (decision 0062). */
+function useUnfixedRefusal(agentId: string): boolean {
+  const published = useLastSent(sendPublish.mutationKey, agentId)
+  const saved = useLastSent(sendDraft.mutationKey, agentId)
+  const error = published?.error
+  return (
+    error instanceof HubFailure &&
+    error.reason === 'NOT_FIXED' &&
+    (saved === undefined || saved.at < (published?.at ?? 0))
+  )
 }
 
 /**
@@ -79,7 +101,7 @@ export function WriteLines(props: {
 }) {
   const { connection, agent, tools, saving } = props
   const at = connection.connectionId
-  const unfixed = useUnfixedRefusal()
+  const unfixed = useUnfixedRefusal(agent.id)
   return connection.writes.map((write) => {
     function same(one: { kind: string; connectionId?: string; operation?: string }) {
       return one.kind === 'PRESET' && one.connectionId === at && one.operation === write.operation

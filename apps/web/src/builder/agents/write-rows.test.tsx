@@ -11,7 +11,7 @@ import { conversation, reshaped, rowOf } from './test-approval.tsx'
 const server = hubServer()
 const REFUSAL = 'Ocorreu algum erro inesperado! O produto [11] enviado não existe.'
 const WRITE_FAILED = 'Não conseguiu escrever no Sankhya: Lançar pedido'
-const READ_FAILED = 'Não conseguiu consultar vendas de ontem'
+const READ_FAILED = 'Não conseguiu consultar Vendas de ontem por vendedor.'
 
 /** What the system threw, as the agents' tools throw it: the JSON of the failure. */
 function thrown(fields: object): string {
@@ -75,13 +75,13 @@ test('a leitura que lançou pede ligar de novo quando o kind é AUTH_REFUSED ou 
   expect(screen.queryByText(/"kind"/)).toBeNull()
 })
 
-test('a leitura que lançou por outro motivo diz que o sistema recusou, e aberta, a mensagem dele, nunca o JSON', async () => {
+test('a leitura que lançou por outro motivo diz que o Sankhya não aceitou, e aberta, a mensagem dele, nunca o JSON', async () => {
   const errorText = thrown({ status: 500, message: 'Campo inválido: dataInicial' })
   conversation(server, {
     rows: alone('approval-refused', { tool: 'tool_vendas_de_ontem', errorText }),
   })
   fireEvent.click(await screen.findByText(READ_FAILED))
-  expect(await screen.findByText('O sistema recusou.')).toBeTruthy()
+  expect(await screen.findByText('O Sankhya não aceitou.')).toBeTruthy()
   expect(screen.getByText('Campo inválido: dataInicial')).toBeTruthy()
   expect(screen.queryByText(/"kind"/)).toBeNull()
   expect(screen.queryByRole('link', { name: 'Abrir Integrações' })).toBeNull()

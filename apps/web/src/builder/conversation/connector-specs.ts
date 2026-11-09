@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { WritesRead } from './approval-item.ts'
 import { writtenBy } from './approval-item.ts'
 import type { ToolItem } from './rows.ts'
-import { refusedLabelText, SYSTEM_REFUSED } from './text.ts'
+import { readRefusedText, refusedLabelText } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
@@ -141,6 +141,7 @@ export function failureDetail(
   room: {
     writes?: WritesRead
     writeOf?: (toolName: string) => { connector: string } | undefined
+    connectorOf?: (toolName: string) => string | undefined
     connectors: Pick<ConnectorWords, 'name'>
   },
 ): FailureDetail | null | undefined {
@@ -157,7 +158,9 @@ export function failureDetail(
   const thrown = thrownOf(tool)
   if (thrown === undefined) return undefined
   if (write !== undefined || thrown.status === null) return null
-  return { label: SYSTEM_REFUSED, message: thrown.message ?? undefined }
+  const connector = room.connectorOf?.(tool.toolName)
+  const system = connector === undefined ? 'sistema' : room.connectors.name(connector)
+  return { label: readRefusedText(system), message: thrown.message ?? undefined }
 }
 
 /** A read the connection refused, or asked to be linked again: the Assistant's row says it. */

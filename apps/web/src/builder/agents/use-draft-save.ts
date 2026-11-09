@@ -27,8 +27,7 @@ export type Saving = {
 }
 
 /** The tool on its newest version, as far as the screen knows it before the Hub answers: the number, not what the version holds. */
-function onLatest(one: AgentDetail['tools'][number]): AgentDetail['tools'][number] {
-  if (one.kind === 'PRESET') return { ...one, version: { ...one.version, ...one.latest } }
+function onLatest<T extends AgentDetail['tools'][number]>(one: T): T {
   return { ...one, version: { ...one.version, ...one.latest } }
 }
 
