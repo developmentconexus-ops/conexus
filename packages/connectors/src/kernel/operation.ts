@@ -153,7 +153,8 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
-  request(input: I, account: Account): ProviderRequest
+  // `at` is the instant the executor sends it; a read ignores it, a write that stamps its request (Sankhya's date and hour) reads it.
+  request(input: I, account: Account, at: Date): ProviderRequest
   answer(answer: ProviderAnswer): Answered<O>
 }>
 
@@ -213,11 +214,12 @@ export function post(path: `/${string}`, body: unknown): ProviderRequest {
   return { method: 'POST', path, query: {}, body }
 }
 
-/** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. */
+/** The only way a request is built from an input: the operation's own schema parses it first, so a refused input never reaches `request`. `at` is the instant of the send. */
 export function requestOf<I>(
   operation: Operation<I, unknown>,
   input: unknown,
   account: Account,
+  at: Date,
 ): ProviderRequest {
-  return operation.request(operation.input.parse(input), account)
+  return operation.request(operation.input.parse(input), account, at)
 }

@@ -6,7 +6,7 @@ import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
-import { refusals } from './refusals.ts'
+import { MISSING_DATE_AND_HOUR, UNKNOWN_PRODUCT } from './refusals.ts'
 
 const GATEWAY = '/gateway/v1/mge/service.sbr'
 const COUNT = { sql: 'SELECT COUNT(*) AS N FROM TSIEMP' }
@@ -195,7 +195,21 @@ function add(token: string, origin: string, body: unknown): Promise<ProviderAnsw
   return send(toRequest(sankhya, request, token, origin))
 }
 
-const PEDIDO = { notaModelo: 12, codigoCliente: 1, itens: [{ codigoProduto: 11, quantidade: 2 }] }
+const ITEM = {
+  sequencia: 1,
+  codigoProduto: 11,
+  quantidade: 2,
+  valorUnitario: 10,
+  codigoLocalEstoque: 1,
+  controle: '',
+}
+const PEDIDO = {
+  notaModelo: 12,
+  codigoCliente: 1,
+  data: '09/11/2026',
+  hora: '10:00',
+  itens: [ITEM],
+}
 
 test('o dublê guarda o pedido a confirmar com a observação, e cada chamada é outro pedido', async () => {
   await withToken(async (origin, token, fake) => {
@@ -236,13 +250,35 @@ test('o dublê perde a resposta depois de gravar ou antes de gravar, e o mesmo 5
   })
 })
 
+test('o dublê recusa o pedido sem data e hora com a recusa gravada, como ela está, e não guarda nada', async () => {
+  await withToken(async (origin, token, fake) => {
+    const { data, hora, ...bare } = PEDIDO
+    assert.deepEqual([data, hora], ['09/11/2026', '10:00'])
+    const refused = await add(token, origin, bare)
+    assert.deepEqual(refused, {
+      status: MISSING_DATE_AND_HOUR.status,
+      body: MISSING_DATE_AND_HOUR.body,
+    })
+    assert.deepEqual(refused.body, {
+      statusCode: 400,
+      error: {
+        code: 'BAD_REQUEST',
+        message: 'Ocorreu algum erro inesperado!',
+        details:
+          'Campos não informados no : [data, hora] - Consulte o server.log para maiores informações!',
+      },
+    })
+    assert.equal(fake.orders().length, 0)
+  })
+})
+
 test('o dublê recusa o produto que não existe com a recusa gravada, como ela está, e o cliente que não existe com 200 e [CORE_E…]', async () => {
   await withToken(async (origin, token, fake) => {
     const product = await add(token, origin, {
       ...PEDIDO,
-      itens: [{ codigoProduto: 999, quantidade: 1 }],
+      itens: [{ ...ITEM, codigoProduto: 999 }],
     })
-    assert.deepEqual(product, { status: refusals[0]?.status, body: refusals[0]?.body })
+    assert.deepEqual(product, { status: UNKNOWN_PRODUCT.status, body: UNKNOWN_PRODUCT.body })
     const client = await add(token, origin, { ...PEDIDO, codigoCliente: 99 })
     assert.equal(client.status, 200)
     assert.match(z.object({ mensagem: z.string() }).parse(client.body).mensagem, /\[CORE_E\d+\]/)

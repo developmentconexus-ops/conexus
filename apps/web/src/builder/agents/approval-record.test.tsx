@@ -137,6 +137,7 @@ test('o pedido com a nota modelo e os locais: a nota vem dos valores fixos da ve
   expect(card.getByText('2 × produto 8 a R$ 10,00 · local 3 · lote L-9')).toBeTruthy()
   expect(card.getByText('1 × produto 9 a R$ 5,00 · local 4')).toBeTruthy()
   expect(card.getByText('R$ 25,00')).toBeTruthy()
+  expect(card.getByText('Data e hora').nextSibling?.textContent).toBe('as do envio')
 })
 
 test('o local fixado na versão vale para todo item e vence o de cada um, e a nota modelo do modelo não vence a fixa', async () => {

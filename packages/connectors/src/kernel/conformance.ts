@@ -4,7 +4,7 @@ import { describe, it } from 'node:test'
 import { z } from 'zod'
 import type { ClientCredentialsAuth } from './auth.ts'
 import { readToken, tokenRequest } from './auth.ts'
-import { assertDeclaredByProvider } from './conformance-declared.ts'
+import { assertDeclaredByProvider, SENT_AT } from './conformance-declared.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { logoProblems } from './logo.ts'
@@ -166,7 +166,7 @@ async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
     assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
     const request = toRequest(
       connector,
-      requestOf(operation, input, session.account),
+      requestOf(operation, input, session.account, SENT_AT),
       session.accessToken,
     )
     const raw = await answerOf(await fake.handle(request))
@@ -213,7 +213,7 @@ function assertWrites(connector: Connector): void {
     assert.deepEqual(operation.from, [], `${operation.id} reads nothing earlier`)
     const input = operation.probe(new Map())
     assert.notEqual(input, null, `${operation.id} has a probe`)
-    assert.equal(requestOf(operation, input, { ref: null }).method, 'POST', operation.id)
+    assert.equal(requestOf(operation, input, { ref: null }, SENT_AT).method, 'POST', operation.id)
   }
 }
 
@@ -260,7 +260,9 @@ async function assertReadsLeakNothing(
   for (const operation of [...inProbeOrder(connector), ...(connector.writes ?? [])]) {
     const input = operation.probe(new Map())
     if (input === null) continue
-    const text = await textOf(toRequest(connector, requestOf(operation, input, account), 'bearer'))
+    const text = await textOf(
+      toRequest(connector, requestOf(operation, input, account, SENT_AT), 'bearer'),
+    )
     for (const value of values)
       assert.ok(!text.includes(value), `${operation.id} leaks a credential value`)
   }

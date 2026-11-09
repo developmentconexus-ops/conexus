@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { z } from 'zod'
 import { connectorOf } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { inProbeOrder } from '../kernel/definition.ts'
 import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
 import { AccountRef, requestOf } from '../kernel/operation.ts'
@@ -30,7 +31,7 @@ test('são 27 leituras em 11 assuntos, cada uma um GET na origem fixa, com a sua
     assert.ok(docsOf(operation), `${operation.id} cites its page`)
     const input = operation.probe(new Map())
     if (input === null) continue
-    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
+    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, SENT_AT)
     assert.equal(request.method, 'GET', operation.id)
     const sent = toRequest(mercadoLivre, request, 'bearer')
     assert.equal(new URL(sent.url).origin, 'https://api.mercadolibre.com', operation.id)
@@ -138,7 +139,7 @@ test('nenhuma leitura, resumo, habilidade ou pedido nomeia um cursor de varredur
     )
     const input = operation.probe(new Map())
     if (input === null) continue
-    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
+    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, SENT_AT)
     assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} request`)
   }
 })
