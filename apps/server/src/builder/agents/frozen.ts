@@ -28,8 +28,9 @@ import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { versionsWithTools } from '../tools/public.ts'
+import type { Activation } from './activation.ts'
 import type { Choice } from './store.ts'
-import { choiceOf, chosenOfDraft, ofProject, pinnedOf } from './store.ts'
+import { choiceOf, chosenOfDraft, ofProject, pinnedOf, versionBack } from './store.ts'
 import { agent, agentVersion, agentVersionTool } from './tables.ts'
 
 /**
@@ -146,6 +147,26 @@ export function activeOf(database: Database, ids: OfProject, agentId: AgentId) {
       answeredBy: PersonId.nullable().parse(row.answeredBy),
     } as const
     return { ...AgentConfigSchema.parse(row.config), tools, source }
+  })
+}
+
+/**
+ * A published version as it was published, answered for by `answeredBy`: the version a turn that
+ * began on it goes on with, once another has become the active one. None when the version is gone.
+ */
+export function versionOf(
+  database: Database,
+  ids: OfProject,
+  agentId: AgentId,
+  version: Activation,
+) {
+  return database.read(hubScope(ids.companyId), async (tx): Promise<FrozenVersion | null> => {
+    const [row] = await tx.select({ id: agent.id }).from(agent).where(ofProject(ids, agentId))
+    if (row === undefined) return null
+    const back = await versionBack(tx, agentId, version.number)
+    if (back === undefined) return null
+    const source = { kind: 'VERSION', ...version } as const
+    return { ...back.config, tools: await toolsOf(tx, back.choices), source }
   })
 }
 

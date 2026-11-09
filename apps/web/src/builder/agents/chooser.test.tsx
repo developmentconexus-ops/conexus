@@ -1,7 +1,8 @@
+import { OperationId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT, AREA, MATRIZ, TOOL } from './test-agents.ts'
+import { AGENT, AREA, MATRIZ, TOOL, toolSummary } from './test-agents.ts'
 import { bare, readyOf, writer } from './test-connection-tools.ts'
 import { agentScreens } from './test-hub.tsx'
 import { catalog } from './test-hub-tools.tsx'
@@ -54,6 +55,24 @@ test('a escrita na linha: no fim do grupo, desmarcada e marcada "escreve"; marca
   fireEvent.click(write)
   await waitFor(() => expect(hub.writes()).toHaveLength(2))
   expect(hub.writes()[1]?.body).toMatchObject({ ready: [{ operation: 'lancarPedido' }] })
+})
+
+test('uma escrita já na biblioteca aparece uma vez, como a linha "escreve", e não também como ferramenta da ligação', async () => {
+  at(PAGE, {
+    agents: [writer()],
+    tools: [
+      toolSummary({
+        operation: OperationId.parse('lancarPedido'),
+        description: 'Lança um pedido de venda e devolve o número dele.',
+        effect: 'WRITE',
+      }),
+    ],
+  })
+  server.use(catalog)
+  const section = within(await screen.findByRole('region', { name: 'Ligações' }))
+  expect(await section.findAllByRole('checkbox', { name: /Lançar pedido/ })).toHaveLength(1)
+  expect(section.getAllByText('escreve')).toHaveLength(1)
+  expect(section.queryByText(/devolve o número/)).toBeNull()
 })
 
 test('a chave da escrita marcada: começa em Pergunta antes, e Faz sozinho grava AUTO na ferramenta', async () => {

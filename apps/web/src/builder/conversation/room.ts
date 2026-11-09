@@ -1,13 +1,13 @@
 import type {
   AgentId,
   FailureCode,
-  OpenWrite,
   ProposedApp,
   ProposedAutomation,
   ShownFile,
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
+import type { WritesRead } from './approval-item.ts'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
 import type { BuilderSession } from './session.ts'
@@ -16,12 +16,6 @@ import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
 export type OpenedFile = Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
-
-/** The read of the sends whose end is not known: until it answers, or fails, a card does not let the person approve. */
-export type OpenWritesRead =
-  | { kind: 'READING' }
-  | { kind: 'READ'; writes: readonly OpenWrite[] }
-  | { kind: 'FAILED'; text: string }
 
 /** A write of an agent's tool, as the card that asks about it names it: its connection and its operation. */
 export type WriteTool = {
@@ -33,6 +27,8 @@ export type WriteTool = {
   operation: string
   /** The operation's name ("Lançar pedido"). */
   label: string
+  /** What the version fixes in the write, which the model never chooses: the card lists it with what the model filled. */
+  bound: Readonly<Record<string, unknown>>
 }
 
 /**
@@ -61,9 +57,11 @@ export type Room = {
   toolDescription?: (slug: string) => string | undefined
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
-  /** The agent's sends of this conversation whose end is not known, for the warning on a card (step 24.5); read again when a card opens. */
-  openWrites?: OpenWritesRead
-  refreshOpenWrites?: () => void
+  /** The connector ("sankhya") of the connection a tool `tool_<slug>` of the agent reads or writes; none where the room does not know the tools. */
+  connectorOf?: (toolName: string) => string | undefined
+  /** The agent's writes of this conversation as the record keeps them (step 24.5): the card's warning and its end, read again when a card opens. */
+  writes?: WritesRead
+  refreshWrites?: () => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */

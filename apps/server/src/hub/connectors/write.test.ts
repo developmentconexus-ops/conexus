@@ -22,7 +22,7 @@ test('o pedido sai: de uma versão e de uma pessoa num rascunho, com a marca na 
   assert.equal(markOf(first.threadId, first.toolCallId).length + 1, 17)
   const sent = on.lines('CONNECTOR_WRITE_SENT')
   assert.equal(sent.length, 2)
-  assert.equal(sent[0]?.fields.codigoPedido, 98001)
+  assert.equal(sent[0]?.fields.writtenId, 98001)
   assert.equal(sent[0]?.fields.personId, on.ana.id)
   assert.equal(sent[1]?.fields.agentId, on.agentId)
   assert.equal(sent[1]?.fields.versionNumber, 1)
@@ -232,4 +232,59 @@ test('o pedido sem resposta (g): duas chamadas da mesma escrita ao mesmo tempo, 
   assert.deepEqual(answers.map((answer) => answer.kind).sort(), ['OK', 'WRITE_OPEN'])
   assert.equal(on.mode.posts, 1)
   assert.equal(on.fake.orders().length, 1)
+})
+
+const UNKNOWN_PRODUCT = {
+  ...ORDER,
+  itens: [{ codigoProduto: 999, quantidade: 1, valorUnitario: 10 }],
+}
+const RECORDED_BODY = {
+  statusCode: 400,
+  error: {
+    code: 'BAD_REQUEST',
+    message: 'Ocorreu algum erro inesperado!',
+    details: 'O produto [999] enviado não existe.',
+  },
+}
+
+test('a recusa inteira: o Written traz native.body igual ao corpo gravado, e a linha guarda o mesmo em answer', async (t) => {
+  const on = await writing(t)
+  const answered = await on.ask(on.byAna({ input: UNKNOWN_PRODUCT }))
+  assert.deepEqual(answered, {
+    kind: 'REFUSED',
+    native: {
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: 'Ocorreu algum erro inesperado! O produto [999] enviado não existe.',
+      body: RECORDED_BODY,
+    },
+  })
+  const [row] = await on.ledger()
+  assert.equal(row?.state, 'REFUSED')
+  assert.deepEqual(row?.answer, answered)
+  const repeated = on.byAna({ input: UNKNOWN_PRODUCT })
+  assert.deepEqual(await on.ask(repeated), await on.ask(repeated))
+})
+
+test('a recusa inteira: um corpo acima do teto do executor continua UNREADABLE TOO_LARGE, sem corpo', async (t) => {
+  const on = await writing(t, {
+    order: async () => new Response('x'.repeat(2 * 1024 * 1024 + 1), { status: 400 }),
+  })
+  const answered = await on.ask(on.byAna())
+  assert.equal(answered.kind, 'UNREADABLE')
+  const native = Object(answered).native
+  assert.equal(native.body, null)
+  assert.equal(native.reason.kind, 'TOO_LARGE')
+})
+
+test('quem aprovou: o Aprovar grava a pessoa em approved_by, e Faz sozinho grava null', async (t) => {
+  const on = await writing(t)
+  const asked = on.byAna({ toolCallId: another() })
+  assert.equal((await on.ask({ ...asked, approvedBy: asked.scope.personId })).kind, 'OK')
+  assert.equal((await on.ask(on.byVersion())).kind, 'OK')
+  const rows = await on.ledger()
+  assert.deepEqual(
+    rows.map((row) => row.approved_by),
+    [on.ana.id, null],
+  )
 })

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { sankhya } from './definition.ts'
+import { lancarPedido } from './operations/vendas.ts'
+import { MISSING_DATE_AND_HOUR, refusals } from './refusals.ts'
 
 function answer(id: string, status: number, body: unknown) {
   const found = sankhya.operations.find((candidate) => candidate.id === id)
@@ -109,8 +111,46 @@ test('o código do corpo de erro do gateway fica com a recusa', () => {
   }
   assert.partialDeepStrictEqual(answer('clientes', 400, body), {
     kind: 'REFUSED',
-    native: { status: 400, code: 'INVALID_REQUEST', message: 'Texto inventado' },
+    native: { status: 400, code: 'INVALID_REQUEST', message: 'Texto inventado x' },
   })
+})
+
+test('a causa que repete a mensagem não entra duas vezes', () => {
+  const body = { statusCode: 400, error: { code: 'X', message: 'Igual.', details: 'Igual.' } }
+  assert.partialDeepStrictEqual(answer('clientes', 400, body), { native: { message: 'Igual.' } })
+})
+
+test('a recusa gravada do addPedido: a mensagem leva a causa e o corpo vai inteiro', () => {
+  const [recorded] = refusals
+  assert.ok(recorded)
+  assert.deepEqual(lancarPedido.answer({ status: recorded.status, body: recorded.body }), {
+    kind: 'REFUSED',
+    native: {
+      status: 400,
+      code: 'BAD_REQUEST',
+      message: 'Ocorreu algum erro inesperado! O produto [999] enviado não existe.',
+      body: recorded.body,
+    },
+  })
+})
+
+test('a recusa gravada sem data e hora: a mensagem leva a frase inteira e o corpo vai inteiro', () => {
+  assert.deepEqual(
+    lancarPedido.answer({
+      status: MISSING_DATE_AND_HOUR.status,
+      body: MISSING_DATE_AND_HOUR.body,
+    }),
+    {
+      kind: 'REFUSED',
+      native: {
+        status: 400,
+        code: 'BAD_REQUEST',
+        message:
+          'Ocorreu algum erro inesperado! Campos não informados no : [data, hora] - Consulte o server.log para maiores informações!',
+        body: MISSING_DATE_AND_HOUR.body,
+      },
+    },
+  )
 })
 
 test('as linhas passam como vieram; o objeto único é uma lista de um; a página diz se há outra', () => {

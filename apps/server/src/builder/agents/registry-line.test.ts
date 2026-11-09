@@ -44,6 +44,7 @@ function registryOver(options: {
   const registry = createRegistry({
     activeOf: async () => null,
     draftOf: async () => live,
+    versionOf: async () => null,
     liveOf: options.liveOf ?? (async () => live),
     publishedAll: options.publishedAll ?? (async () => [live]),
     mastra: () => mastra,

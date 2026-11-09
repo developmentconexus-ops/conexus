@@ -46,7 +46,7 @@ test('a carga: 20 conversas ao mesmo tempo no PostgresStore, 10 rodadas, cada um
     connectionId: on.matriz,
     operation: 'lancarPedido',
     description: 'Lança um pedido de venda da empresa 1 sem perguntar.',
-    bound: { notaModelo: 12 },
+    bound: { notaModelo: 12, codigoLocalEstoque: 1 },
     open: ['codigoCliente', 'itens'],
   })
   const agent = await on.writer(

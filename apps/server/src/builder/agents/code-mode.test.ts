@@ -10,10 +10,10 @@ import { ASKED, approving, WRITE } from './test-approval.ts'
 const ORDERS = 'tool_pedidos_matriz'
 const PROGRAM = MACHINE_TOOL.codeMode
 
-// 51 reads at once, counted by the turn's key: the 51st is refused with the connectors' own word.
+// 51 reads at once, counted by the turn's key: the 51st is refused with the connectors' own word, which the tool throws and the program reads from the message.
 const FIFTY_ONE = `
 const results = await Promise.all(
-  Array.from({ length: 51 }, () => external_${ORDERS}({ page: 1 })),
+  Array.from({ length: 51 }, () => external_${ORDERS}({ page: 1 }).catch((error) => JSON.parse(error.message))),
 )
 return { total: results.length, spent: results.filter((each) => each?.kind === 'CALLS_SPENT').length, read: results.filter((each) => each?.kind === 'OK').length }
 `

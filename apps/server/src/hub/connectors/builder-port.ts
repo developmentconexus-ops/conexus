@@ -1,4 +1,3 @@
-import type { ConnectorAnswer } from '@conexus/app-contract'
 import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
@@ -10,7 +9,7 @@ import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
 import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
-import type { NotInRole } from './read.ts'
+import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
@@ -35,7 +34,8 @@ export type GrantedConnection = Readonly<{
 }>
 export type ShapedRead =
   | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
-  | Exclude<ConnectorAnswer, { kind: 'OK' }>
+  | Exclude<ReadAnswer, { kind: 'OK' }>
+  | Readonly<{ kind: 'NOT_GRANTED' }>
   | NotInRole
 export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>

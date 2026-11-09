@@ -23,6 +23,12 @@ export function roleKit() {
   }))
 }
 
+/** The fields of a write that only whoever configures the tool fixes (decision 0062); none for a read or an unknown operation. */
+export function fixedFieldsOf(connector: string, operation: string): readonly string[] {
+  const write = connectorOf(connector)?.writes?.find((each) => each.id === operation)
+  return write?.fixed ?? []
+}
+
 /** What a person reads for a connector's operation, the read door's and the writes included; the id when the kit has none. */
 export function operationLabel(connector: string, operation: string): string {
   const kit = connectorOf(connector)

@@ -24,6 +24,12 @@ function get(path: `/${string}`, query: Record<string, string> = {}): ProviderRe
 /** A path the types would refuse, to meet the run-time check the Hub relies on. */
 const Unchecked = z.custom<`/${string}`>()
 
+const writing = {
+  uncertain: () => false,
+  mark: (input: unknown) => input,
+  idOf: () => null,
+}
+
 const base = {
   id: 'ping',
   subject: 'ping',
@@ -50,12 +56,12 @@ test('a classe é obrigatória', () => {
   defineOperation({ ...base })
   // @ts-expect-error a class outside read, write and destructive does not compile
   defineOperation({ ...base, class: 'search' })
-  assert.equal(defineOperation({ ...base, class: 'write' }).class, 'write')
+  assert.equal(defineOperation({ ...base, ...writing, class: 'write' }).class, 'write')
 })
 
 test('a porta de leitura só aceita operações read', () => {
   const read = defineOperation({ ...base, class: 'read' })
-  const write = defineOperation({ ...base, id: 'poke', class: 'write' })
+  const write = defineOperation({ ...base, ...writing, id: 'poke', class: 'write' })
   defineReadDoor({ ping: read })
   // @ts-expect-error a write operation does not fit the door
   defineReadDoor({ poke: write })
@@ -126,7 +132,7 @@ test('as leituras por nome: a chave é o id, e o registro é a porta mais as ope
   const ping = defineOperation({ ...base, class: 'read' })
   assert.equal(readsOf({ ping }).ping, ping)
   assert.throws(() => readsOf({ pong: ping }), /Read pong is named ping/)
-  const write = defineOperation({ ...base, id: 'poke', class: 'write' })
+  const write = defineOperation({ ...base, ...writing, id: 'poke', class: 'write' })
   // @ts-expect-error a write is not a read the app may call
   readsOf({ poke: write })
   for (const [connector, reads] of [

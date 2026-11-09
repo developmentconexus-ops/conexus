@@ -1,0 +1,1 @@
+ALTER TABLE "connectors"."connector_write" ADD COLUMN "approved_by" text;

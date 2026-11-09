@@ -92,3 +92,15 @@ test('o Builder segue a regra das outras portas: a ligação liberada que deixou
   )
   assert.equal((await on.hub.connectors.builder.granted(ids)).length, 1)
 })
+
+test('o app recebe só status, código e mensagem da recusa do sistema, nunca o corpo (C51)', async (t) => {
+  const on = await appCalls(t)
+  await on.connect('Matriz')
+  on.fake.switches.refuse.add('empresas')
+  const read = await on.read()
+  assert.equal(read.statusCode, 200, read.body)
+  const answer = Object(read.json())
+  assert.equal(answer.kind, 'REFUSED')
+  assert.deepEqual(Object.keys(answer.native).sort(), ['code', 'message', 'status'])
+  assert.deepEqual(answer.native, { status: 403, code: 'NO_ACCESS', message: 'Sem permissão' })
+})

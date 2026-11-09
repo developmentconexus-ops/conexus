@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { before, describe, it } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation, OperationId, ProviderRequest } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { fetchText } from '../kernel/page.ts'
@@ -73,13 +74,28 @@ function problemsOf(spec: Spec, sample: Sample): string[] {
   return [...problems, ...fields]
 }
 
+/** Fields of a write's input that the kit moves before sending, so they are no field of the body: the order's place goes into each item. */
+const MOVED = new Set(['lancarPedido:codigoLocalEstoque'])
+
+/** Every key of a JSON body as a dotted path, a list's keys under the list's name. */
+function pathsOf(body: unknown, prefix = ''): string[] {
+  if (Array.isArray(body)) return body.flatMap((item) => pathsOf(item, prefix))
+  const object = z.record(z.string(), z.unknown()).safeParse(body)
+  if (!object.success) return []
+  return Object.entries(object.data).flatMap(([name, value]) => [
+    `${prefix}${name}`,
+    ...pathsOf(value, `${prefix}${name}.`),
+  ])
+}
+
 /** The keys of an operation's input that its request sends in the query, each tried on its own beside the probe's input. */
 function queriedKeys(operation: Operation<unknown, unknown>, probe: unknown): string[] {
   const names = Object.keys(z.toJSONSchema(operation.input, { io: 'input' }).properties ?? {})
   return names.filter(
     (name) =>
       name in
-      operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }).query,
+      operation.request({ ...z.looseObject({}).parse(probe), [name]: '1' }, { ref: null }, SENT_AT)
+        .query,
   )
 }
 
@@ -97,7 +113,7 @@ async function samples(): Promise<Sample[]> {
   for (const operation of sankhya.operations) {
     const input = operation.probe(earlier)
     assert.notEqual(input, null, operation.id)
-    const request = requestOf(operation, input, { ref: null })
+    const request = requestOf(operation, input, { ref: null }, SENT_AT)
     const response = await fake.handle(toRequest(sankhya, request, token.accessToken))
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })
@@ -108,8 +124,11 @@ async function samples(): Promise<Sample[]> {
   for (const operation of sankhya.writes ?? []) {
     const input = operation.probe(new Map())
     assert.notEqual(input, null, operation.id)
-    const request = requestOf(operation, input, { ref: null })
-    const bodied = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' }))
+    const request = requestOf(operation, input, { ref: null }, SENT_AT)
+    const declared = fieldsOf(z.toJSONSchema(operation.input, { io: 'input' })).filter(
+      (name) => !MOVED.has(`${operation.id}:${name}`),
+    )
+    const bodied = [...new Set([...declared, ...pathsOf(request.body)])]
     out.push({ id: operation.id, request, queried: [], bodied })
   }
   return out

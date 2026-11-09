@@ -6,6 +6,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { ConnectorCall } from '../apps/public.ts'
 import { readOf } from './grants.ts'
+import type { ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf, usable } from './rows.ts'
@@ -28,6 +29,20 @@ type Call = Readonly<{
 }>
 
 const NOT_GRANTED: ConnectorAnswer = { kind: 'NOT_GRANTED' }
+
+/** What of the provider's answer an app may see: the status, code and message, never its body (S41, C51). */
+function cutForApp(answered: Exclude<ReadAnswer, { kind: 'NOT_IN_ROLE' }>): ConnectorAnswer {
+  switch (answered.kind) {
+    case 'REFUSED':
+    case 'AUTH_REFUSED':
+    case 'UNREADABLE': {
+      const { status, code, message } = answered.native
+      return { kind: answered.kind, native: { status, code, message } }
+    }
+    default:
+      return answered
+  }
+}
 
 /** The Projeto's connections of a connector that are ACTIVE, oldest first. */
 function grantedTo(call: ConnectorCall, connector: string) {
@@ -102,7 +117,7 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
       })
       // The manifest is the guard: the speaker declares only the operation checked above, so a role
       // refusal cannot come from here; the funnel is total over speakers, hence the mapping.
-      return answered.kind === 'NOT_IN_ROLE' ? NOT_GRANTED : answered
+      return answered.kind === 'NOT_IN_ROLE' ? NOT_GRANTED : cutForApp(answered)
     },
 
     /** The names the app may pass as `connection`; none for a connector its version did not declare. */
