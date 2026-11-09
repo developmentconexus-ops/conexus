@@ -13,6 +13,9 @@ import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
 import { authorize, getWith, grant, startSignIn } from './test-session.ts'
 
+/** The instant the requests below are built at. */
+const AT = new Date('2026-11-09T13:00:00Z')
+
 runConformance(mercadoLivre, mercadoLivreFake())
 
 const auth = mercadoLivre.auth
@@ -30,7 +33,7 @@ test('são 27 leituras em 11 assuntos, cada uma um GET na origem fixa, com a sua
     assert.ok(docsOf(operation), `${operation.id} cites its page`)
     const input = operation.probe(new Map())
     if (input === null) continue
-    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
+    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, AT)
     assert.equal(request.method, 'GET', operation.id)
     const sent = toRequest(mercadoLivre, request, 'bearer')
     assert.equal(new URL(sent.url).origin, 'https://api.mercadolibre.com', operation.id)
@@ -138,7 +141,7 @@ test('nenhuma leitura, resumo, habilidade ou pedido nomeia um cursor de varredur
     )
     const input = operation.probe(new Map())
     if (input === null) continue
-    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') })
+    const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, AT)
     assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} request`)
   }
 })

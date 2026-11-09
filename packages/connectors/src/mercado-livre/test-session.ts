@@ -15,6 +15,9 @@ import { toRequest } from '../kernel/request.ts'
 import { mercadoLivre } from './definition.ts'
 import type { mercadoLivreFake } from './fake.ts'
 
+/** The instant the requests below are built at. */
+const AT = new Date('2026-11-09T13:00:00Z')
+
 type Fake = ReturnType<typeof mercadoLivreFake>
 
 export async function answerOf(response: Response): Promise<ProviderAnswer> {
@@ -90,7 +93,7 @@ export async function probeAll(fake: Fake): Promise<
   for (const operation of inProbeOrder(mercadoLivre)) {
     const input = operation.probe(earlier)
     if (input === null) continue
-    const request = requestOf(operation, input, ACCOUNT)
+    const request = requestOf(operation, input, ACCOUNT, AT)
     const answered = operation.answer(
       await answerOf(await fake.handle(toRequest(mercadoLivre, request, granted.accessToken))),
     )

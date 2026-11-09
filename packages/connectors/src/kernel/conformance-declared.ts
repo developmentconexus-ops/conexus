@@ -4,6 +4,9 @@ import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { requestOf } from './operation.ts'
 
+/** The instant the conformance builds its requests at: fixed, so a stamped request reads the same every run. */
+export const SENT_AT = new Date('2026-11-09T13:00:00Z')
+
 /** The keys under which a refusal's body keeps text a person reads; `code` is a label, not text. */
 const TEXT_KEYS = new Set(['message', 'details', 'mensagem', 'descricao'])
 
@@ -42,7 +45,7 @@ export function assertMarkReachesRequest(connector: Connector): void {
     assert.notEqual(input, null, `${operation.id} has a probe`)
     const marked = operation.mark(input, A_MARK)
     assert.ok(operation.input.safeParse(marked).success, `${operation.id}: the marked input reads`)
-    const sent = JSON.stringify(requestOf(operation, marked, { ref: null }))
+    const sent = JSON.stringify(requestOf(operation, marked, { ref: null }, SENT_AT))
     assert.ok(sent.includes(A_MARK), `${operation.id}: the mark is in the request`)
   }
 }

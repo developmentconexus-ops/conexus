@@ -7,14 +7,18 @@ import { mercadoLivreFake } from './fake.ts'
 import { mensagensDoPacote } from './operations/mensagens.ts'
 import { ACCOUNT, answerOf, authorize, probeAll } from './test-session.ts'
 
+/** The instant the requests below are built at. */
+const AT = new Date('2026-11-09T13:00:00Z')
+
 test('não marca como lida', async () => {
-  const request = requestOf(mensagensDoPacote, { packId: '2000000000099' }, ACCOUNT)
+  const request = requestOf(mensagensDoPacote, { packId: '2000000000099' }, ACCOUNT, AT)
   assert.equal(request.query.mark_as_read, 'false')
   assert.equal(request.query.tag, 'post_sale')
   const withPaging = requestOf(
     mensagensDoPacote,
     { packId: '2000000000099', offset: 10, limit: 20 },
     ACCOUNT,
+    AT,
   )
   assert.equal(withPaging.query.mark_as_read, 'false')
 
@@ -119,7 +123,7 @@ test('uma linha passa como o Mercado Livre a mandou, com campo a mais ou de outr
 test('o envio pede o formato novo pelo cabeçalho, e o pedido sai com ele', () => {
   const shipment = mercadoLivre.operations.find((operation) => operation.id === 'envio')
   assert.ok(shipment)
-  const request = requestOf(shipment, { shipmentId: '40000000001' }, ACCOUNT)
+  const request = requestOf(shipment, { shipmentId: '40000000001' }, ACCOUNT, AT)
   assert.equal(request.headers?.['x-format-new'], 'true')
   assert.equal(toRequest(mercadoLivre, request, 'bearer').headers.get('x-format-new'), 'true')
 })
@@ -169,6 +173,7 @@ test('o resumo do faturamento é uma linha, e as duas leituras mandam document_t
       assert.fail('periodosDeFaturamento'),
     { documentType: 'CREDIT_NOTE' },
     ACCOUNT,
+    AT,
   )
   assert.equal(credit.query.document_type, 'CREDIT_NOTE')
 })
@@ -190,7 +195,7 @@ async function twoPages(
   const operation = mercadoLivre.operations.find((candidate) => candidate.id === id)
   assert.ok(operation)
   async function page(input: Record<string, unknown>) {
-    const request = requestOf(operation ?? assert.fail(id), input, ACCOUNT)
+    const request = requestOf(operation ?? assert.fail(id), input, ACCOUNT, AT)
     const answered = (operation ?? assert.fail(id)).answer(
       await answerOf(
         await fake.handle(
@@ -224,7 +229,7 @@ test('as visitas mandam as datas como a documentação mostra, só o dia', () =>
   const visitas = mercadoLivre.operations.find((operation) => operation.id === 'visitas')
   assert.ok(visitas)
   const input = { dateFrom: '2026-09-01', dateTo: '2026-09-30' }
-  assert.deepEqual(requestOf(visitas, input, ACCOUNT).query, {
+  assert.deepEqual(requestOf(visitas, input, ACCOUNT, AT).query, {
     date_from: '2026-09-01',
     date_to: '2026-09-30',
   })

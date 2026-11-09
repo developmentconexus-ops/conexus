@@ -40,6 +40,8 @@ export type ExecutorDeps = {
   fetch: typeof fetch
   origins: ReadonlyMap<ConnectorId, string>
   log: FailureLog
+  /** The instant of each send: a write that stamps its request (Sankhya's date and hour) is dated by it. */
+  now: () => Date
 }
 
 /**
