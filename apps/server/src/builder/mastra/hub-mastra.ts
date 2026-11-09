@@ -50,15 +50,16 @@ export function createHubMastra(deps: {
   log: FailureLog
   parts: readonly Part[]
   workflows: Readonly<Record<string, AnyWorkflow>>
+  tools: Parameters<typeof createMastra>[0]['tools']
   schedulerTickMs: number | undefined
   /** What leaves before the conversations: the automations (24.2) and the agents (24.3). */
-  releaseFirst: readonly ((scope: ReleaseScope) => Promise<void>)[]
+  releaseFirst: readonly ((scope: ReleaseScope) => Promise<unknown>)[]
   /** What stops after `Mastra`: Google's calls (code C62). */
   closeLast: readonly (() => Promise<void>)[]
 }) {
   const { parts, log } = deps
   const mastra = createMastra({
-    ...{ storage: deps.storage, log, workflows: deps.workflows },
+    ...{ storage: deps.storage, log, workflows: deps.workflows, tools: deps.tools },
     controllers: Object.fromEntries(
       parts.map((part) => [CONTROLLER_KINDS[part.kind].id, part.controller]),
     ),

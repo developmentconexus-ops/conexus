@@ -1,5 +1,6 @@
 import type { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
+import type { createTool } from '@mastra/core/tools'
 import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { PostgresStore } from '@mastra/pg'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -15,6 +16,8 @@ export function createMastra(deps: {
   log: FailureLog
   controllers: Readonly<Record<string, AgentController>>
   workflows: Readonly<Record<string, AnyWorkflow>>
+  /** The tools the published workflows' dynamic definitions name (step 24.6). */
+  tools: Readonly<Record<string, ReturnType<typeof createTool>>>
   schedulerTickMs: number | undefined
 }): Mastra {
   const mastra = new Mastra({
@@ -22,6 +25,7 @@ export function createMastra(deps: {
     storage: deps.storage,
     agentControllers: { ...deps.controllers },
     workflows: { ...deps.workflows },
+    tools: { ...deps.tools },
     ...(deps.schedulerTickMs === undefined
       ? {}
       : { scheduler: { tickIntervalMs: deps.schedulerTickMs } }),

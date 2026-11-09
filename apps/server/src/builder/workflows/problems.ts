@@ -2,7 +2,7 @@ import type { PersonId, WorkflowDraft, WorkflowId, WorkflowProblem } from '@cone
 import { compiled } from './compile.ts'
 import { triggerShapeOf } from './compile-refs.ts'
 import { freezeOf } from './freeze.ts'
-import type { ReadyDraft } from './frozen.ts'
+import type { FrozenWorkflow, ReadyDraft } from './frozen.ts'
 import { readyDraftOf } from './frozen.ts'
 import { graphProblems } from './graph-problems.ts'
 import {
@@ -20,7 +20,12 @@ import type { Seen } from './problem-world-rules.ts'
 import { operationProblems, peopleProblems } from './problem-world-rules.ts'
 import type { World } from './world.ts'
 
-export type Problems = Readonly<{ problems: WorkflowProblem[]; ready: ReadyDraft | null }>
+/** The problems, and, for a draft with no `ERROR`, the draft branded ready with what publishing would freeze. */
+export type Problems = Readonly<{
+  problems: WorkflowProblem[]
+  ready: ReadyDraft | null
+  frozen: FrozenWorkflow | null
+}>
 
 /** What the world says now, read once for the draft. */
 export async function seenOf(world: World, publisher: PersonId): Promise<Seen> {
@@ -91,9 +96,13 @@ export async function problemsOf(
       await Promise.all(spots.map((spot) => worldProblems(world, seen, self, publisher, spot)))
     ).flat(),
   ]
-  if (problems.some((each) => each.severity === 'ERROR')) return { problems, ready: null }
+  if (problems.some((each) => each.severity === 'ERROR'))
+    return { problems, ready: null, frozen: null }
   const ready = readyDraftOf(draft)
-  const defs = compiled({ kind: 'TEST', workflowId: self, path: [] }, freezeOf(seen, ready), shape)
+  const frozen = freezeOf(seen, ready)
+  const defs = compiled({ kind: 'TEST', workflowId: self, path: [] }, frozen, shape)
   const graph = graphProblems(draft.balloons, defs, world.registryOf(defs))
-  return { problems: graph, ready: graph.length === 0 ? ready : null }
+  return graph.length === 0
+    ? { problems: [], ready, frozen }
+    : { problems: graph, ready: null, frozen: null }
 }

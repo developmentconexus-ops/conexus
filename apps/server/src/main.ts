@@ -81,7 +81,8 @@ export async function createHub(
   })
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
-    ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
+    ...[deps.assistant, deps.automations, deps.agents, deps.workflows, deps.notifications],
+    deps.connectors,
     deps.requests,
   ]) {
     part.routes(app)
@@ -148,7 +149,7 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents } = conversationsOf({
+  const { conversations, assistant, automations, agents, workflows } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
@@ -182,7 +183,7 @@ export function subjectsOf(deps: {
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors },
+    ...{ conversations, assistant, automations, agents, workflows, notifications, connectors },
   }
 }
 
@@ -211,7 +212,7 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors, workflows } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
@@ -233,6 +234,7 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void workflows.boot().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       // The copies the bucket did not take before the stop are tried again.
       void runs
         .resumeCopies()

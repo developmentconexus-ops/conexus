@@ -36,3 +36,11 @@ export function operationLabel(connector: string, operation: string): string {
     kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
   return found?.label ?? operation
 }
+
+/** Whether the kit marks the operation as returning a list of rows (`many`): what a Para cada may loop over. */
+export function returnsMany(connector: string, operation: string): boolean {
+  const kit = connectorOf(connector)
+  const found =
+    kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
+  return found?.many === true
+}

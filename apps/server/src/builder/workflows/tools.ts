@@ -53,6 +53,9 @@ function notBuilt(): Promise<never> {
   )
 }
 
+/** Until the run of step 24.6 (U3) names its version, the counter finds no loop to count and fails loudly: no Repetir publishes in this step. */
+export const LOOP_LIMIT_NOT_BUILT: LoopLimit = () => Promise.resolve(null)
+
 export const NOT_BUILT: Executors = {
   [WORKFLOW_TOOL.check]: notBuilt,
   [WORKFLOW_TOOL.read]: notBuilt,

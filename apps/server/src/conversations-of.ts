@@ -15,6 +15,7 @@ import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
+import { workflowsOf, workflowToolsOf } from './builder/workflows/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
@@ -28,6 +29,28 @@ import type { Database, MastraPool } from './platform/database.ts'
 import type { EdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import type { SealKeys } from './platform/seal.ts'
+
+/** The automations (step 24.2) and the company's workflows (step 24.6), on the Hub's one `Mastra` made before them. */
+function besideHub(
+  hub: Pick<ReturnType<typeof createHubMastra>, 'mastra' | 'updating'>,
+  deps: Pick<Parameters<typeof workflowsOf>[0], 'database' | 'identity' | 'log'> & {
+    assistant: Parameters<typeof automationsOf>[0]['assistant']
+    door: Connectors['assistant']
+  },
+) {
+  const { database, identity, log, door, assistant } = deps
+  const { mastra, updating } = hub
+  return {
+    automations: automationsOf({
+      ...{ mastra, assistant, log, bootedAt: Date.now(), updating },
+      connectors: { connections: (scope) => door.connections(scope) },
+    }),
+    workflows: workflowsOf({
+      ...{ database, identity, liveProjectOf, log, mastra, updating },
+      connectors: door,
+    }),
+  }
+}
 
 /** The connectors' assistant door, reached when a route or a turn calls it. */
 function doorOf(connectors: () => Connectors): Connectors['assistant'] {
@@ -166,12 +189,12 @@ export function conversationsOf(deps: {
   const hub = createHubMastra({
     ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
     workflows: { [AUTOMATION_WORKFLOW]: run },
+    tools: workflowToolsOf(),
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [
       (scope) => automations.release(scope),
-      async (scope) => {
-        await agents.release(scope)
-      },
+      (scope) => workflows.release(scope),
+      (scope) => agents.release(scope),
     ],
     closeLast: [() => deps.google.stop()],
   })
@@ -182,10 +205,6 @@ export function conversationsOf(deps: {
       construtor.routes(app)
     },
   })
-  const automations = automationsOf({
-    ...{ mastra: hub.mastra, assistant, log, bootedAt: Date.now() },
-    connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
-    updating: hub.updating,
-  })
-  return { conversations, assistant, automations, agents }
+  const { automations, workflows } = besideHub(hub, { database, identity, log, door, assistant })
+  return { conversations, assistant, automations, agents, workflows }
 }
