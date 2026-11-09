@@ -314,6 +314,34 @@ test('as conversas da pessoa ficam na troca do painel', async () => {
   await waitFor(() => expect(conexus.router.state.location.pathname).toContain(CHAT))
 })
 
+test('na troca do painel, uma conversa sem título leva o dia e a hora em que começou, não os da última mudança', async () => {
+  at(`${PAGE}/${TEST_CHAT}`, {
+    agents: [agent()],
+    conversations: [
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: null,
+        createdAt: '2026-11-01T15:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+      {
+        id: TEST_CHAT,
+        agentId: AGENT,
+        draft: true,
+        title: null,
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
+  })
+  const panel = await screen.findByRole('region', { name: 'Testar' })
+  const switcher = await within(panel).findByRole('combobox', { name: 'Conversas' })
+  fireEvent.keyDown(switcher, { key: 'ArrowDown' })
+  expect(await screen.findByRole('option', { name: /Conversa de 01\/11\/2026, 12:00/ })).toBeTruthy()
+})
+
 test('o rascunho com mudanças aparece em Versões', async () => {
   at(PAGE, {
     agents: [agent({ state: { kind: 'PUBLISHED', version: 1, changed: true } })],

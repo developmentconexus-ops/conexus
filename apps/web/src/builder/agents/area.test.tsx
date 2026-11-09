@@ -68,6 +68,22 @@ test('as conversas anteriores com o Construtor aparecem em lista', async () => {
   expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
 })
 
+test('uma conversa com o Construtor sem título leva o dia e a hora em que começou, não os da última mudança', async () => {
+  at(AREA, {
+    agents: [],
+    construtor: [
+      {
+        id: BUILDER_CHAT,
+        title: null,
+        createdAt: '2026-11-01T15:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
+  })
+  const link = await screen.findByRole('link', { name: /^Conversa de 01\/11\/2026, 12:00/ })
+  expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
+})
+
 test('o membro: o endereço da área dá não encontrado', async () => {
   at(AREA, { agents: [], member: true }, { role: 'member' })
   expect(await screen.findByText(/Não encontramos o que você procurou\./)).toBeTruthy()
