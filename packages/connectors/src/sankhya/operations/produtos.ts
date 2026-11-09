@@ -9,7 +9,7 @@ export const produtos = defineOperation({
   subject: 'produtos',
   idempotent: true,
   summary:
-    'Lista os produtos do Sankhya (código, nome, grupo, marca, NCM), uma página por chamada; a página começa em 0. Não filtra por nome, código nem grupo, só por página.',
+    'Lista os produtos do Sankhya (código, nome, grupo, marca, NCM), uma página por chamada; a página começa em 0. Não filtra por nome, código nem grupo, só por página: para achar por nome, referência, código ou grupo, use `buscarProdutos`.',
   label: 'Produtos',
   input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'produtos' }),

@@ -2858,5 +2858,38 @@
       "file": "src/hub/connectors/write-returned.test.ts",
       "name": "o token que ele ecoa"
     }
+  },
+  {
+    "id": "sankhya-search-text-marks",
+    "file": "packages/connectors/src/sankhya/search-sql.ts",
+    "find": "!MARKS.test(text) && ",
+    "replace": "",
+    "test": {
+      "cwd": "packages/connectors",
+      "file": "src/sankhya/search.test.ts",
+      "name": "recusado antes de qualquer chamada"
+    }
+  },
+  {
+    "id": "sankhya-search-like-escape",
+    "file": "packages/connectors/src/sankhya/search-sql.ts",
+    "find": "    .replace(/[\\\\%_]/g, '\\\\$&')\n",
+    "replace": "",
+    "test": {
+      "cwd": "packages/connectors",
+      "file": "src/sankhya/search.test.ts",
+      "name": "nunca vira curinga"
+    }
+  },
+  {
+    "id": "sankhya-search-quote-doubled",
+    "file": "packages/connectors/src/sankhya/search-sql.ts",
+    "find": "    .replaceAll(\"'\", \"''\")\n",
+    "replace": "",
+    "test": {
+      "cwd": "packages/connectors",
+      "file": "src/sankhya/search.test.ts",
+      "name": "nunca vira curinga"
+    }
   }
 ]

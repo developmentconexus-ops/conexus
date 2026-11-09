@@ -9,10 +9,10 @@ test('cada leitura pronta recusa o campo que não tem e diz o nome dele, em vez 
   for (const operation of sankhya.operations) {
     // A read whose probe needs an earlier answer is refused for what it lacks too; the unknown field is named all the same.
     const probe = z.looseObject({}).parse(operation.probe(earlier) ?? {})
-    const refused = operation.input.safeParse({ ...probe, nome: 'Silva' })
+    const refused = operation.input.safeParse({ ...probe, telefone: '11999990000' })
     assert.equal(refused.success, false, operation.id)
     assert.ok(
-      refused.error?.issues.some((issue) => /Unrecognized key.*nome/.test(issue.message)),
+      refused.error?.issues.some((issue) => /Unrecognized key.*telefone/.test(issue.message)),
       operation.id,
     )
   }

@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
+import { registerOn } from './fake-register.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
 
@@ -106,9 +107,11 @@ export function soldBy(set: SalesSet, month: string): Map<string, number> {
 
 function tablesOf(database: DatabaseSync, set: SalesSet): void {
   database.exec(`
-    CREATE TABLE TGFVEN (CODVEND INTEGER PRIMARY KEY, APELIDO TEXT);
-    CREATE TABLE TGFPAR (CODPARC INTEGER PRIMARY KEY, NOMEPARC TEXT);
-    CREATE TABLE TGFPRO (CODPROD INTEGER PRIMARY KEY, DESCRPROD TEXT);
+    CREATE TABLE TGFVEN (CODVEND INTEGER PRIMARY KEY, APELIDO TEXT, ATIVO TEXT DEFAULT 'S');
+    CREATE TABLE TGFPAR (CODPARC INTEGER PRIMARY KEY, NOMEPARC TEXT, RAZAOSOCIAL TEXT, CGC_CPF TEXT,
+      TIPPESSOA TEXT DEFAULT 'J', ATIVO TEXT DEFAULT 'S', CLIENTE TEXT DEFAULT 'S', FORNECEDOR TEXT DEFAULT 'N');
+    CREATE TABLE TGFPRO (CODPROD INTEGER PRIMARY KEY, DESCRPROD TEXT, REFERENCIA TEXT, CODGRUPOPROD INTEGER,
+      CODVOL TEXT DEFAULT 'UN', MARCA TEXT, ATIVO TEXT DEFAULT 'S');
     CREATE TABLE TGFCAB (NUNOTA INTEGER PRIMARY KEY, CODEMP INTEGER, DTNEG TEXT, CODVEND INTEGER,
       CODPARC INTEGER, TIPMOV TEXT, VLRNOTA REAL);
     CREATE TABLE TGFITE (NUNOTA INTEGER, SEQUENCIA INTEGER, CODPROD INTEGER, QTDNEG REAL,
@@ -119,15 +122,15 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
     for (const row of rows) statement.run(...row)
   }
   insert(
-    'INSERT INTO TGFVEN VALUES (?, ?)',
+    'INSERT INTO TGFVEN (CODVEND, APELIDO) VALUES (?, ?)',
     set.vendedores.map((each) => [each.codvend, each.apelido]),
   )
   insert(
-    'INSERT INTO TGFPAR VALUES (?, ?)',
-    set.parceiros.map((each) => [each.codparc, each.nomeparc]),
+    'INSERT INTO TGFPAR (CODPARC, NOMEPARC, RAZAOSOCIAL) VALUES (?, ?, ?)',
+    set.parceiros.map((each) => [each.codparc, each.nomeparc, each.nomeparc]),
   )
   insert(
-    'INSERT INTO TGFPRO VALUES (?, ?)',
+    'INSERT INTO TGFPRO (CODPROD, DESCRPROD) VALUES (?, ?)',
     set.produtos.map((each) => [each.codprod, each.descrprod]),
   )
   insert(
@@ -157,6 +160,11 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
   )
 }
 
+/** SQLite has no `OFFSET 0 ROWS FETCH NEXT n ROWS ONLY` (what both Oracle 12c and SQL Server take), so the double runs the same page as `LIMIT n`. */
+function withLimit(sql: string): string {
+  return sql.replace(/ OFFSET 0 ROWS FETCH NEXT (\d+) ROWS ONLY$/, ' LIMIT $1')
+}
+
 /** The answer of a read query: the columns by name and the rows in their order. */
 export type QueryAnswer = { fields: string[]; rows: unknown[][] }
 
@@ -166,11 +174,19 @@ export type QueryAnswer = { fields: string[]; rows: unknown[][] }
  */
 export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | undefined {
   const database = new DatabaseSync(':memory:')
+  // Oracle's and SQL Server's `TRANSLATE`, which SQLite lacks: each letter of `from` becomes the one of `to` at its place.
+  database.function('TRANSLATE', (text, from, to) => {
+    const pairs = [...String(from)].map((letter, at) => [letter, [...String(to)][at] ?? ''])
+    return [...String(text)]
+      .map((letter) => pairs.find(([of]) => of === letter)?.[1] ?? letter)
+      .join('')
+  })
   tablesOf(database, set)
+  registerOn(database)
   return (sql) => {
     let statement: ReturnType<DatabaseSync['prepare']>
     try {
-      statement = database.prepare(sql)
+      statement = database.prepare(withLimit(sql))
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'ERR_SQLITE_ERROR') {
         return undefined

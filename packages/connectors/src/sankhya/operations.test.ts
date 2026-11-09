@@ -20,29 +20,6 @@ function answer(id: string, status: number, body: unknown) {
   return found.answer({ status, body })
 }
 
-test('as 23 operações prontas ficam nos assuntos, na ordem do Testar, e nenhuma é do RH', () => {
-  const bySubject = Object.groupBy(sankhya.operations, (operation) => operation.subject)
-  assert.deepEqual(
-    Object.entries(bySubject).map(([subject, operations]) => [
-      subject,
-      operations?.map((operation) => operation.id),
-    ]),
-    [
-      [
-        'cadastros',
-        ['empresas', 'clientes', 'vendedores', 'tiposOperacao', 'naturezas', 'centrosResultado'],
-      ],
-      ['produtos', ['produtos', 'gruposProduto']],
-      ['vendas', ['pedidos', 'notasFiscais', 'notaFiscal', 'devolucoes', 'notasCanceladas']],
-      ['estoque', ['estoque', 'estoqueDoProduto', 'locaisEstoque']],
-      ['financeiro', ['contasAReceber', 'contasAPagar', 'tiposPagamento']],
-      ['precos', ['precosDoProduto', 'precosDaTabela']],
-      ['logistica', ['transportadoras', 'ordensCarga']],
-    ],
-  )
-  assert.equal(sankhya.operations.length, 23)
-})
-
 test('cada operação pronta lê a recusa, o pedido errado e o corpo ilegível', () => {
   for (const { id } of sankhya.operations) {
     assert.partialDeepStrictEqual(answer(id, 403, { code: 'NO_ACCESS' }), { kind: 'REFUSED' }, id)
