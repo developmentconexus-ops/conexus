@@ -29,33 +29,32 @@ export type Problems = Readonly<{
 
 /** What the world says now, read once for the draft. */
 async function seenOf(world: World, publisher: PersonId): Promise<Seen> {
-  const [kits, agents, workflows, people, speaker] = await Promise.all([
-    world.offered(),
-    world.agents(),
-    world.workflows(),
-    world.people(),
-    world.speakerOf(publisher),
-  ])
+  // One after the other: the world's reads share the one transaction's connection.
+  const kits = await world.offered()
+  const agents = await world.agents()
+  const workflows = await world.workflows()
+  const people = await world.people()
+  const speaker = await world.speakerOf(publisher)
   return { kits, agents, workflows, people, speaker }
 }
 
-function worldProblems(
+async function worldProblems(
   world: World,
   seen: Seen,
   self: WorkflowId,
   publisher: PersonId,
   spot: Spot,
-): Promise<WorkflowProblem[]> | WorkflowProblem[] {
+): Promise<WorkflowProblem[]> {
   const { balloon } = spot
   switch (balloon.kind) {
     case 'READ':
       return operationProblems(world, seen, spot, balloon)
     case 'WRITE':
-      return Promise.all([
-        operationProblems(world, seen, spot, balloon),
-        writeProblems(world, seen, spot, balloon, publisher),
-        approverProblems(seen, spot, balloon),
-      ]).then((each) => each.flat())
+      return [
+        ...(await operationProblems(world, seen, spot, balloon)),
+        ...(await writeProblems(world, seen, spot, balloon, publisher)),
+        ...approverProblems(seen, spot, balloon),
+      ]
     case 'AGENT':
       return [
         ...agentProblems(seen, world, spot, balloon),
@@ -92,10 +91,9 @@ export async function problemsOf(
     ...documentProblems(spots, draft.balloons.length),
     ...balloonProblems(spots, shape),
     ...refProblems(spots, shape, lastOutputsOf(seen.workflows)),
-    ...(
-      await Promise.all(spots.map((spot) => worldProblems(world, seen, self, publisher, spot)))
-    ).flat(),
   ]
+  for (const spot of spots)
+    problems.push(...(await worldProblems(world, seen, self, publisher, spot)))
   if (problems.some((each) => each.severity === 'ERROR'))
     return { problems, ready: null, frozen: null }
   const ready = readyDraftOf(draft)

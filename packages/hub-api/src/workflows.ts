@@ -248,6 +248,20 @@ export type WorkflowProblem = z.infer<typeof WorkflowProblem>
 export const WorkflowState = z.enum(['ON', 'PAUSED', 'PAUSED_OWNER'])
 export type WorkflowState = z.infer<typeof WorkflowState>
 
+/** The agent a balloon froze, at the version it ran with. */
+export const FrozenAgent = z.object({
+  balloonId: BalloonId,
+  agentId: AgentId,
+  versionNumber: z.int().positive(),
+})
+
+/** The other workflow a USE froze, at the version it ran with. */
+export const FrozenUse = z.object({
+  balloonId: BalloonId,
+  workflowId: WorkflowId,
+  versionNumber: z.int().positive(),
+})
+
 export const WorkflowView = z.object({
   id: WorkflowId,
   place: WorkflowPlace,
@@ -260,16 +274,8 @@ export const WorkflowView = z.object({
     .object({
       number: z.int().positive(),
       draft: WorkflowDraft,
-      agents: z.array(
-        z.object({ balloonId: BalloonId, agentId: AgentId, versionNumber: z.int().positive() }),
-      ),
-      uses: z.array(
-        z.object({
-          balloonId: BalloonId,
-          workflowId: WorkflowId,
-          versionNumber: z.int().positive(),
-        }),
-      ),
+      agents: z.array(FrozenAgent),
+      uses: z.array(FrozenUse),
       publishedBy: PersonId.nullable(),
       publishedAt: z.iso.datetime(),
     })

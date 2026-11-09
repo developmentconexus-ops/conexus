@@ -30,33 +30,28 @@ export function placeOfRow(row: WorkflowRow): WorkflowPlace {
     : { kind: 'PROJECT', projectId: ProjectId.parse(row.projectId) }
 }
 
-/** The workflow of the company the id names, or `WORKFLOW_NOT_FOUND`: the same answer for one that is not there and one of another company (security S10). */
-export async function workflowIn(
-  tx: ReadTx,
-  companyId: CompanyId,
-  id: WorkflowId,
-): Promise<WorkflowRow> {
-  const [row] = await tx
-    .select()
-    .from(workflow)
-    .where(and(eq(workflow.companyId, companyId), eq(workflow.id, id)))
+function ofCompany(companyId: CompanyId, id: WorkflowId) {
+  return and(eq(workflow.companyId, companyId), eq(workflow.id, id))
+}
+
+async function found(rows: PromiseLike<WorkflowRow[]>): Promise<WorkflowRow> {
+  const [row] = await rows
   if (row === undefined) throw new Failure('WORKFLOW_NOT_FOUND')
   return row
 }
 
+/** The workflow of the company the id names, or `WORKFLOW_NOT_FOUND`: the same answer for one that is not there and one of another company (security S10). */
+export function workflowIn(tx: ReadTx, companyId: CompanyId, id: WorkflowId): Promise<WorkflowRow> {
+  return found(tx.select().from(workflow).where(ofCompany(companyId, id)))
+}
+
 /** The same row, held until the transaction ends: of two writers one waits for the other. */
-export async function workflowHeld(
+export function workflowHeld(
   tx: CommandTx,
   companyId: CompanyId,
   id: WorkflowId,
 ): Promise<WorkflowRow> {
-  const [row] = await tx
-    .select()
-    .from(workflow)
-    .where(and(eq(workflow.companyId, companyId), eq(workflow.id, id)))
-    .for('update')
-  if (row === undefined) throw new Failure('WORKFLOW_NOT_FOUND')
-  return row
+  return found(tx.select().from(workflow).where(ofCompany(companyId, id)).for('update'))
 }
 
 export async function versionRows(tx: ReadTx, id: WorkflowId): Promise<VersionRow[]> {

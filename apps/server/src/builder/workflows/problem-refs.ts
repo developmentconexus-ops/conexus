@@ -1,5 +1,5 @@
 import type { Balloon, WorkflowId, WorkflowProblem } from '@conexus/hub-api'
-import type { TriggerShape } from './compile-refs.ts'
+import type { Ref, TriggerShape } from './compile-refs.ts'
 import { refsOf, valuesOf } from './compile-refs.ts'
 import type { FrozenWorkflow } from './frozen.ts'
 import type { Spot } from './problem-walk.ts'
@@ -39,6 +39,59 @@ export function lastOutputsOf(
   }
 }
 
+type RefContext = Readonly<{
+  byId: ReadonlyMap<string, Spot>
+  feedsForeach: ReadonlySet<string>
+  shape: TriggerShape
+  outputsOfUse: (balloon: Balloon) => readonly string[] | null
+}>
+
+type Issue = Readonly<{ code: WorkflowProblem['code']; message: string }>
+
+/** A `{{bN.campo}}` of a balloon: the balloon must exist, come before, outside any path, and return the field. */
+function balloonRefIssue(context: RefContext, spot: Spot, ref: Ref): Issue | null {
+  const target = context.byId.get(ref.who)
+  if (target === undefined)
+    return { code: 'REF_BALLOON_UNKNOWN', message: `${ref.text}: não existe o balão ${ref.who}.` }
+  if (!spot.seen.has(ref.who)) {
+    const beforeIt = target.order < spot.order && !spot.inside.includes(target.balloon)
+    return beforeIt
+      ? {
+          code: 'REF_INSIDE_BRANCH',
+          message: `${ref.text}: o balão ${ref.who} está dentro de um caminho, e sua saída não sai de lá.`,
+        }
+      : { code: 'REF_NOT_BEFORE', message: `${ref.text}: o balão ${ref.who} não vem antes deste.` }
+  }
+  const outputs = outputsOf(target.balloon, context.feedsForeach, context.outputsOfUse)
+  return outputs !== null && !outputs.includes(ref.field)
+    ? {
+        code: 'REF_FIELD_UNKNOWN',
+        message: `${ref.text}: o balão ${ref.who} não devolve ${ref.field}.`,
+      }
+    : null
+}
+
+function refIssue(context: RefContext, spot: Spot, ref: Ref): Issue | null {
+  const inItem = spot.inside.some((outer) => outer.kind === 'FOREACH')
+  if (ref.who === 'item')
+    return inItem
+      ? null
+      : { code: 'REF_BALLOON_UNKNOWN', message: `${ref.text} só existe dentro de um Para cada.` }
+  if (inItem)
+    return {
+      code: 'REF_OUTSIDE_ITEM',
+      message: `${ref.text} é de fora do Para cada, e lá dentro só o item chega.`,
+    }
+  if (ref.who === 'gatilho')
+    return ref.field !== 'dia' && context.shape.fields[ref.field] === undefined
+      ? {
+          code: 'REF_FIELD_UNKNOWN',
+          message: `${ref.text}: o gatilho não traz o campo ${ref.field}.`,
+        }
+      : null
+  return balloonRefIssue(context, spot, ref)
+}
+
 /** Every `{{…}}` of a value: where it points, and whether the balloon that holds it may read it there. */
 export function refProblems(
   spots: readonly Spot[],
@@ -52,45 +105,16 @@ export function refProblems(
       spot.balloon.kind === 'FOREACH' && spot.previous !== null ? [spot.previous.id] : [],
     ),
   )
+  const context: RefContext = { byId, feedsForeach, shape, outputsOfUse }
   const problems: WorkflowProblem[] = []
   for (const spot of spots) {
     const title = spot.balloon.title
-    const inItem = spot.inside.some((outer) => outer.kind === 'FOREACH')
     for (const [key, text] of Object.entries(valuesOf(spot.balloon))) {
+      const field = 'input' in spot.balloon ? `input.${key}` : key
       for (const ref of refsOf(text)) {
-        const field = 'input' in spot.balloon ? `input.${key}` : key
-        function at(code: WorkflowProblem['code'], message: string): void {
-          problems.push(problemAt(code, spot, field, `${message} (em “${title}”)`))
-        }
-        if (ref.who === 'item') {
-          if (!inItem) at('REF_BALLOON_UNKNOWN', `${ref.text} só existe dentro de um Para cada.`)
-          continue
-        }
-        if (inItem) {
-          at('REF_OUTSIDE_ITEM', `${ref.text} é de fora do Para cada, e lá dentro só o item chega.`)
-          continue
-        }
-        if (ref.who === 'gatilho') {
-          if (ref.field !== 'dia' && shape.fields[ref.field] === undefined)
-            at('REF_FIELD_UNKNOWN', `${ref.text}: o gatilho não traz o campo ${ref.field}.`)
-          continue
-        }
-        const target = byId.get(ref.who)
-        if (target === undefined) {
-          at('REF_BALLOON_UNKNOWN', `${ref.text}: não existe o balão ${ref.who}.`)
-        } else if (!spot.seen.has(ref.who)) {
-          const beforeIt = target.order < spot.order && !spot.inside.includes(target.balloon)
-          at(
-            beforeIt ? 'REF_INSIDE_BRANCH' : 'REF_NOT_BEFORE',
-            beforeIt
-              ? `${ref.text}: o balão ${ref.who} está dentro de um caminho, e sua saída não sai de lá.`
-              : `${ref.text}: o balão ${ref.who} não vem antes deste.`,
-          )
-        } else {
-          const outputs = outputsOf(target.balloon, feedsForeach, outputsOfUse)
-          if (outputs !== null && !outputs.includes(ref.field))
-            at('REF_FIELD_UNKNOWN', `${ref.text}: o balão ${ref.who} não devolve ${ref.field}.`)
-        }
+        const issue = refIssue(context, spot, ref)
+        if (issue !== null)
+          problems.push(problemAt(issue.code, spot, field, `${issue.message} (em “${title}”)`))
       }
     }
   }

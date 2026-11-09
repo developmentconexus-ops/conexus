@@ -108,6 +108,7 @@ export function testMastra(
   limit: Parameters<typeof workflowTools>[0]['limit'] = async () => 3,
 ): Mastra {
   return new Mastra({
+    logger: false,
     storage: new InMemoryStore(),
     tools: workflowTools({ limit, executors: { ...echoes(), ...executors } }),
   })

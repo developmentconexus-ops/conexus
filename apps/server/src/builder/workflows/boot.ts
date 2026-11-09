@@ -57,5 +57,5 @@ export async function dropOrphans(deps: {
     return parsed?.kind === 'VERSION' && !held.has(`${parsed.workflowId}/${parsed.version}`)
   })
   await dropDefinitions(deps.mastra, orphans)
-  deps.log.info({ count: orphans.length }, 'WORKFLOW_ORPHANS_DROPPED')
+  if (orphans.length > 0) deps.log.info({ count: orphans.length }, 'WORKFLOW_ORPHANS_DROPPED')
 }

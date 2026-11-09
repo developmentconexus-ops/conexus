@@ -1,10 +1,11 @@
+import type { AgentId, WorkflowId } from '@conexus/hub-api'
 import {
-  AgentId,
   BalloonId,
   ConnectionId,
+  FrozenAgent,
+  FrozenUse,
   OperationId,
   WorkflowDraft,
-  WorkflowId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 
@@ -37,17 +38,8 @@ export type FrozenWorkflow = Readonly<{
 export const FrozenWorkflowSchema: z.ZodType<FrozenWorkflow> = z.lazy(() =>
   z.object({
     draft: Ready,
-    agents: z.array(
-      z.object({ balloonId: BalloonId, agentId: AgentId, versionNumber: z.int().positive() }),
-    ),
-    uses: z.array(
-      z.object({
-        balloonId: BalloonId,
-        workflowId: WorkflowId,
-        versionNumber: z.int().positive(),
-        frozen: FrozenWorkflowSchema,
-      }),
-    ),
+    agents: z.array(FrozenAgent),
+    uses: z.array(FrozenUse.extend({ frozen: FrozenWorkflowSchema })),
     reads: z.array(z.object({ balloonId: BalloonId, many: z.boolean() })),
     declared: z.array(z.object({ connectionId: ConnectionId, operation: OperationId })),
   }),
