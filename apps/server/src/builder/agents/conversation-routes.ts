@@ -50,7 +50,8 @@ function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversati
     id: ConversationId.parse(thread.id),
     agentId,
     draft: thread.metadata?.[AGENT_MARK.draft] === 'true',
-    title: thread.title ?? '',
+    title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
   }
 }

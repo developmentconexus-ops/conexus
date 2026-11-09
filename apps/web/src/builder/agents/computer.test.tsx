@@ -37,7 +37,16 @@ test('o Computador ligado no rascunho é uma linha com Tirar, que manda { machin
 test('o arquivo que o Computador mostrou abre ao lado da conversa do agente, lido da rota de arquivo da conversa do agente', async () => {
   at(`${PAGE}/${CHAT}`, {
     agents: [agent()],
-    conversations: [{ id: CHAT, agentId: AGENT, draft: false, title: 'x', updatedAt: UPDATED }],
+    conversations: [
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: 'x',
+        createdAt: UPDATED,
+        updatedAt: UPDATED,
+      },
+    ],
   })
   server.use(
     http.get(

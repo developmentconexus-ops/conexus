@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ConversationId, ToolCallId } from '@conexus/hub-api'
+import { AgentConversationSummary, ConversationId, ToolCallId } from '@conexus/hub-api'
 import { markOf } from '../../hub/connectors/public.ts'
 import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { said } from '../assistant/test-assistant.ts'
@@ -125,4 +125,16 @@ test('as escritas da conversa: listWrites traz cada escrita com o estado, a marc
   const crossed = `${a.url}/writes`.replace(`/agents/${asking.id}/`, `/agents/${alone.id}/`)
   const elsewhere = await call(on.hub, on.ana, 'GET', crossed)
   assert.deepEqual([elsewhere.statusCode, codeOf(elsewhere)], [404, 'CONVERSATION_NOT_FOUND'])
+})
+
+test('a lista de conversas com o agente traz title null quando o Mastra não deu título, e createdAt', async (t) => {
+  const on = await approving(t, [[launched()]])
+  const agent = await on.writer('ASK')
+  const { url } = await on.opened(agent.id)
+  const listed = await call(on.hub, on.ana, 'GET', `${on.agents}/${agent.id}/conversations`)
+  assert.equal(listed.statusCode, 200, listed.body)
+  const [own] = AgentConversationSummary.array().parse(Object(listed.json()).conversations)
+  assert.equal(own?.id, url.slice(url.lastIndexOf('/') + 1))
+  assert.equal(own?.title, null)
+  assert.equal(new Date(String(own?.createdAt)).toISOString(), own?.createdAt)
 })

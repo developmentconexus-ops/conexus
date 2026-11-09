@@ -34,6 +34,7 @@ function assistant(
       conversations: conversations.map((one) => ({
         automation: null,
         ...one,
+        createdAt: '2026-10-19T12:00:00.000Z',
         updatedAt: '2026-10-19T12:00:00.000Z',
       })),
       next: { kind: 'END' },

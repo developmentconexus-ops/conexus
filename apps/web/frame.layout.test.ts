@@ -51,6 +51,7 @@ function owner(conversations: { id: string; title: string }[]): Replies {
     [`GET ${ASSISTANT_API}/conversations`]: ok(listAssistantConversations, {
       conversations: conversations.map((one) => ({
         ...one,
+        createdAt: NOW,
         updatedAt: NOW,
         project: null,
         automation: null,

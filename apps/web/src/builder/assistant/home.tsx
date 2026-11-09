@@ -29,6 +29,7 @@ import {
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
+import { titleOf, UNCONFIRMED_CREATION } from '../conversation/text.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useDraftChoice } from './draft-choice.ts'
 import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
@@ -37,8 +38,6 @@ import {
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
   PROJECT_LIST_TITLE,
-  titleOf,
-  UNCONFIRMED_CREATION,
 } from './text.ts'
 
 type Begun = { content: string; files: Parameters<typeof stashHandoffFiles>[1] }

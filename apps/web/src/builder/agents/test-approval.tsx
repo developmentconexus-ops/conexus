@@ -29,7 +29,14 @@ export function conversation(
   const opened = agentScreens(server).at(PAGE, {
     agents: [writer('ASK')],
     conversations: [
-      { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: 'Pedido',
+        createdAt: UPDATED,
+        updatedAt: UPDATED,
+      },
     ],
     openWrites: held.openWrites ?? [],
     openWritesAnswer: held.openWritesAnswer,

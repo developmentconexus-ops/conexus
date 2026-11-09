@@ -18,6 +18,7 @@ import {
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
+import { UNCONFIRMED_CREATION } from '../conversation/text.ts'
 import { AgentList } from './agent-list.tsx'
 import { AreaFrame } from './area-frame.tsx'
 import { construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
@@ -29,7 +30,6 @@ import {
   CONSTRUTOR_PLACEHOLDER,
   MEMBERS_CANNOT,
   NO_CONSTRUTOR_CONVERSATIONS,
-  UNCONFIRMED_CREATION,
 } from './text.ts'
 
 const company = getRouteApi('/_app/companies/$companyId')

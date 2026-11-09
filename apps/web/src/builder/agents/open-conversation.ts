@@ -4,8 +4,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { writeFailureText } from '../../platform/hub.ts'
+import { UNCONFIRMED_CREATION } from '../conversation/text.ts'
 import { agentConversationsQuery, sendAgentConversation } from './queries.ts'
-import { UNCONFIRMED_CREATION } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 

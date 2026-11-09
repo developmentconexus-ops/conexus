@@ -38,7 +38,7 @@ function stored(controller: string) {
 test('a conversa do Construtor lê "Leu Sankhya · Matriz"', async () => {
   at(`${AREA}/construtor/${BUILDER_CHAT}`, {
     agents: [],
-    construtor: [{ id: BUILDER_CHAT, title: 'x', updatedAt: UPDATED }],
+    construtor: [{ id: BUILDER_CHAT, title: 'x', createdAt: UPDATED, updatedAt: UPDATED }],
   })
   stored(CONSTRUTOR_CONTROLLER)
   expect(await screen.findByText('Leu Sankhya · Matriz')).toBeTruthy()
@@ -47,7 +47,16 @@ test('a conversa do Construtor lê "Leu Sankhya · Matriz"', async () => {
 test('a conversa do agente lê "Leu Sankhya · Matriz"', async () => {
   at(`${AREA}/${AGENT}/${CHAT}`, {
     agents: [agent()],
-    conversations: [{ id: CHAT, agentId: AGENT, draft: false, title: 'x', updatedAt: UPDATED }],
+    conversations: [
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: 'x',
+        createdAt: UPDATED,
+        updatedAt: UPDATED,
+      },
+    ],
   })
   stored(AGENTS_CONTROLLER)
   expect(await screen.findByText('Leu Sankhya · Matriz')).toBeTruthy()

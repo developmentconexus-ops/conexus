@@ -52,7 +52,12 @@ const replies = {
   [`GET ${BASE}/tools`]: ok(listTools, { tools: [], ready: [] }),
   [`GET ${BASE}/construtor/conversations`]: ok(listConstrutorConversations, {
     conversations: [
-      { id: CONVERSATION, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' },
+      {
+        id: CONVERSATION,
+        title: 'Meu agente',
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
     ],
   }),
   ...sessionReplies(CONVERSATION, { controller: CONSTRUTOR_CONTROLLER }),

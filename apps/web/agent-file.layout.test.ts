@@ -119,6 +119,7 @@ const replies = {
         agentId: AGENT,
         draft: false,
         title: 'Gráfico de vendas',
+        createdAt: '2026-11-05T12:01:00.000Z',
         updatedAt: '2026-11-05T12:01:00.000Z',
       },
     ],

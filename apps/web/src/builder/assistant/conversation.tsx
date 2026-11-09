@@ -19,11 +19,12 @@ import {
   RoomContext,
   START_NO_ACCOUNT,
 } from '../conversation/public.ts'
+import { titleOf } from '../conversation/text.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
 import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
-import { EMPTY_ASSISTANT, titleOf } from './text.ts'
+import { EMPTY_ASSISTANT } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
 

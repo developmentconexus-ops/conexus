@@ -34,6 +34,7 @@ const OpenedBy = z.object({ automationId: AutomationId, name: z.string() }).null
 const ConversationHead = z.object({
   id: ConversationId,
   title: z.string().nullable(),
+  createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
 

@@ -56,7 +56,12 @@ test('as conversas anteriores com o Construtor aparecem em lista', async () => {
   at(AREA, {
     agents: [],
     construtor: [
-      { id: BUILDER_CHAT, title: 'Agente de vendas', updatedAt: '2026-11-02T12:00:00.000Z' },
+      {
+        id: BUILDER_CHAT,
+        title: 'Agente de vendas',
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
     ],
   })
   const link = await screen.findByRole('link', { name: /^Agente de vendas/ })
@@ -137,7 +142,14 @@ test('o modelo escolhido na caixa vai com o pedido que abre a conversa', async (
 test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o que o Hub guardou', async () => {
   const { writes } = at(`${AREA}/construtor/${BUILDER_CHAT}`, {
     agents: [],
-    construtor: [{ id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
+    construtor: [
+      {
+        id: BUILDER_CHAT,
+        title: 'Meu agente',
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
   })
   fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
   fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
