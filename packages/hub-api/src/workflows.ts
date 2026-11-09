@@ -101,6 +101,21 @@ export type Balloon =
   | { kind: 'LOOP'; id: BalloonId; title: string; until: Condition; max: number; body: Path }
 export type Path = Balloon[]
 
+/** The paths a balloon holds, by index: the "então" and the "senão", each path of "ao mesmo tempo", the body of a loop; none for the rest (a USE's path is the other workflow's list). */
+export function childrenOf(balloon: Balloon): readonly Path[] {
+  switch (balloon.kind) {
+    case 'IF':
+      return [balloon.then, balloon.else]
+    case 'PARALLEL':
+      return balloon.paths
+    case 'FOREACH':
+    case 'LOOP':
+      return [balloon.body]
+    default:
+      return []
+  }
+}
+
 const PathSchema: z.ZodType<Path> = z.lazy(() => z.array(Balloon).max(BALLOONS_SCHEMA_MAX))
 
 /** The balloons with no path inside, which need no laziness. */

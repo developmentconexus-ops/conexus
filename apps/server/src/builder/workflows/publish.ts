@@ -1,17 +1,40 @@
 import type { PublishBody, WorkflowId, WorkflowView } from '@conexus/hub-api'
 import { WorkflowDraft } from '@conexus/hub-api'
+import type { Mastra } from '@mastra/core/mastra'
+import { validateDynamicWorkflow } from '@mastra/core/workflows'
 import { eq, max } from 'drizzle-orm'
 import type { z } from 'zod'
+import { databaseFailure } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { compiled } from './compile.ts'
 import { triggerShapeOf } from './compile-refs.ts'
 import { dropWorkflow } from './definitions.ts'
+import { registryIndexOf } from './index.ts'
 import { problemsOf } from './problems.ts'
 import { placeOfRow, versionRows, workflowHeld } from './store.ts'
 import { workflow, workflowVersion } from './tables.ts'
 import type { Acting, WorkflowsDeps } from './workflows.ts'
 import { admitted, kitsFor, placeOf, scopeOf, viewIn } from './workflows.ts'
 import { worldOf } from './world-of.ts'
+
+/**
+ * Registers the version's definitions. Mastra's validation refuses the graph first, as a refused
+ * publish; what then fails in `addDynamicWorkflows` is its store, read by the database's map (code C52).
+ */
+async function registered(mastra: Mastra, defs: ReturnType<typeof compiled>): Promise<void> {
+  const index = registryIndexOf(mastra, defs)
+  const refused = defs.flatMap((def) => validateDynamicWorkflow(def, index))
+  if (refused.length > 0) {
+    throw new Failure('WORKFLOW_PUBLISH_REFUSED', {
+      details: { codes: refused.map((issue) => issue.code).join(',') },
+    })
+  }
+  try {
+    await mastra.addDynamicWorkflows(defs)
+  } catch (error) {
+    throw databaseFailure(error)
+  }
+}
 
 /**
  * Freezes the draft of the revision read as the next version and makes it active (decision D22,
@@ -29,8 +52,8 @@ export async function publishWorkflow(
   const place = await placeOf(deps, who, id)
   const kits = await kitsFor(deps, who, place)
   const done = await deps.database.command(scopeOf(who), async (tx) => {
+    await admitted(deps, tx, who, place)
     const row = await workflowHeld(tx, who.companyId, id)
-    await admitted(deps, tx, who, placeOfRow(row))
     const versions = await versionRows(tx, id)
     const earlier = versions.find((each) => each.sourceRevision === body.revision)
     if (earlier !== undefined) {
@@ -63,11 +86,7 @@ export async function publishWorkflow(
       frozen,
       triggerShapeOf(draft.trigger),
     )
-    try {
-      await deps.mastra.addDynamicWorkflows(defs)
-    } catch (cause) {
-      throw new Failure('WORKFLOW_PUBLISH_REFUSED', { cause })
-    }
+    await registered(deps.mastra, defs)
     const published = await tx.select().from(workflow).where(eq(workflow.id, id))
     const [now] = published
     return { view: await viewIn(deps, tx, { ...who, row: now ?? row, kits }), number, fresh: true }
@@ -81,18 +100,23 @@ export async function publishWorkflow(
   return done.view
 }
 
-/** Deletes the workflow: its definitions in Mastra first, then its row, so a failure between them leaves a row the next delete finds. */
+/**
+ * Deletes the workflow's row (its versions go with it) and commits, then drops its definitions in
+ * Mastra: a failure after the commit leaves definitions without a version, which the start's pass
+ * drops, and never a published workflow without its definitions.
+ */
 export async function deleteWorkflow(
   deps: WorkflowsDeps,
   who: Acting,
   id: WorkflowId,
 ): Promise<void> {
   if (deps.updating()) throw new Failure('HUB_UPDATING')
+  const place = await placeOf(deps, who, id)
   await deps.database.command(scopeOf(who), async (tx) => {
-    const row = await workflowHeld(tx, who.companyId, id)
-    await admitted(deps, tx, who, placeOfRow(row))
-    await dropWorkflow(deps.mastra, id)
+    await admitted(deps, tx, who, place)
+    await workflowHeld(tx, who.companyId, id)
     await tx.delete(workflow).where(eq(workflow.id, id))
   })
+  await dropWorkflow(deps.mastra, id)
   deps.log.info({ companyId: who.companyId, workflowId: id }, 'WORKFLOW_DELETED')
 }

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import type { Balloon } from '@conexus/hub-api'
 import { AgentId, BalloonId, OperationId, PersonId, WorkflowId } from '@conexus/hub-api'
+import pg from 'pg'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { drafted, madeAgent, publishedNow } from '../agents/test-agents.ts'
 import { hubBeside } from '../conversation/test-conversation.ts'
@@ -266,4 +267,49 @@ test('apagar: apaga as definições, depois responde WORKFLOW_NOT_FOUND, sem nom
   const unknown = await call(hub, ana, 'DELETE', `${base}/${randomUUID()}`)
   assert.equal(codeOf(unknown), 'WORKFLOW_NOT_FOUND')
   assert.doesNotMatch(JSON.stringify(hub.lines), /wf-/)
+})
+
+/** Makes a call of Mastra's workflow-definitions store throw, until `restore`. */
+function failingStore(on: On, method: 'upsert' | 'delete', error: Error) {
+  const definitions = Object(on.hub.mastra.getStorage()?.stores?.workflowDefinitions)
+  const original = definitions[method]
+  definitions[method] = async () => {
+    throw error
+  }
+  return () => {
+    definitions[method] = original
+  }
+}
+
+test('apagar: a linha sai e confirma antes das definições; se o Mastra falha depois, a órfã sai no início', async (t) => {
+  const on = await workflowsOn(t)
+  const { hub, ana, base } = on
+  const made = await madeWorkflow(hub, ana, base, draftOf([notify(1, 'x')]))
+  assert.equal((await publishedBy(on, ana, made.id)).statusCode, 200)
+  const restore = failingStore(on, 'delete', new Error('o armazém do Mastra caiu'))
+  const failed = await call(hub, ana, 'DELETE', `${base}/${made.id}`)
+  restore()
+  assert.notEqual(failed.statusCode, 204)
+  const gone = await call(hub, ana, 'GET', `${base}/${made.id}`)
+  assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'WORKFLOW_NOT_FOUND'])
+  assert.deepEqual(await definitions(on), [`wf-${made.id}-v1:active`])
+  const beside = await hubBeside(t, hub)
+  await beside.workflows.boot()
+  assert.deepEqual(await definitions(on), [])
+})
+
+test('publicar: o armazém do Mastra fora é DATABASE_UNAVAILABLE e desfaz a versão; não é WORKFLOW_PUBLISH_REFUSED', async (t) => {
+  const on = await workflowsOn(t)
+  const { hub, ana, base } = on
+  const made = await madeWorkflow(hub, ana, base, draftOf([notify(1, 'x')]))
+  const down = Object.assign(new pg.DatabaseError('terminating connection', 0, 'error'), {
+    code: '57P01',
+  })
+  const restore = failingStore(on, 'upsert', down)
+  const failed = await publishedBy(on, ana, made.id)
+  restore()
+  assert.deepEqual([failed.statusCode, codeOf(failed)], [503, 'DATABASE_UNAVAILABLE'])
+  const unpublished = await call(hub, ana, 'GET', `${base}/${made.id}`)
+  assert.equal(viewOf(unpublished).published, null)
+  assert.equal((await publishedBy(on, ana, made.id)).statusCode, 200)
 })

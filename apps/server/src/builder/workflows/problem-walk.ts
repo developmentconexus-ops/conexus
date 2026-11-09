@@ -1,4 +1,5 @@
 import type { Balloon, Path, WorkflowProblem } from '@conexus/hub-api'
+import { childrenOf } from '@conexus/hub-api'
 
 /** One balloon of the draft where it lives: its path in the document, and what the balloons around it let it see. */
 export type Spot = Readonly<{
@@ -15,21 +16,10 @@ export type Spot = Readonly<{
   previous: Balloon | null
 }>
 
-function listsOf(balloon: Balloon, path: string): { list: Path; path: string }[] {
-  switch (balloon.kind) {
-    case 'IF':
-      return [
-        { list: balloon.then, path: `${path}.then` },
-        { list: balloon.else, path: `${path}.else` },
-      ]
-    case 'PARALLEL':
-      return balloon.paths.map((list, index) => ({ list, path: `${path}.paths.${index}` }))
-    case 'FOREACH':
-    case 'LOOP':
-      return [{ list: balloon.body, path: `${path}.body` }]
-    default:
-      return []
-  }
+/** The document name of a balloon's path: `then`, `else`, `paths.<i>`, `body`. */
+function segmentOf(balloon: Balloon, index: number): string {
+  if (balloon.kind === 'IF') return index === 0 ? 'then' : 'else'
+  return balloon.kind === 'PARALLEL' ? `paths.${index}` : 'body'
 }
 
 /** Every balloon of the draft, the ones inside a path too, in the order a person reads them. */
@@ -52,9 +42,9 @@ export function spotsOf(balloons: Path): Spot[] {
         inside,
         previous: list[index - 1] ?? null,
       })
-      for (const child of listsOf(balloon, path)) {
-        visit(child.list, child.path, before, [...inside, balloon])
-      }
+      childrenOf(balloon).forEach((child, at) => {
+        visit(child, `${path}.${segmentOf(balloon, at)}`, before, [...inside, balloon])
+      })
       before.add(balloon.id)
     })
   }

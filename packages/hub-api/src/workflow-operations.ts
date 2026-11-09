@@ -26,7 +26,7 @@ export const createWorkflow = defineOperation({
   input: { params: InCompany, body: CreateWorkflowBody },
   attemptKey: true,
   success: { status: 201, body: One },
-  failures: [...READ_FAILURES, 'REQUEST_MALFORMED', 'IDEMPOTENCY_CONFLICT', 'NOT_IN_ROLE'],
+  failures: [...ONE_FAILURES, 'REQUEST_MALFORMED', 'IDEMPOTENCY_CONFLICT', 'NOT_IN_ROLE'],
 })
 
 export const getWorkflow = defineOperation({

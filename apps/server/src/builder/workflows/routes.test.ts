@@ -3,7 +3,14 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import type { Balloon } from '@conexus/hub-api'
 import { AgentId, BalloonId, OperationId } from '@conexus/hub-api'
-import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import {
+  call,
+  codeOf,
+  memberOn,
+  personOn,
+  plantCompany,
+  post,
+} from '../../hub/identity/test-hub.ts'
 import { madeAgent } from '../agents/test-agents.ts'
 import { draftOf, madeWorkflow, saved, viewOf, workflowsOn } from './test-workflow-hub.ts'
 import { foreach, ifBalloon, loop, notify, parallel, read, use } from './test-workflows.ts'
@@ -145,4 +152,67 @@ test('o rascunho: o USE de um workflow sem versão, dele mesmo e de outro lugar'
   assert.equal(published.statusCode, 200, published.body)
   const place = { kind: 'PROJECT', projectId: on.projectId }
   assert.deepEqual(await problemsFor(on, [use(1, company.id)], place), ['USE_OTHER_PLACE@b1'])
+})
+
+function routesOf(base: string, id: string) {
+  return [
+    ['GET', `${base}/${id}`, undefined],
+    ['PUT', `${base}/${id}/draft`, { revision: 0, draft: draftOf([notify(1, 'y')]) }],
+    ['POST', `${base}/${id}/publish`, { revision: 0 }],
+    ['DELETE', `${base}/${id}`, undefined],
+  ] as const
+}
+
+function send(
+  hub: On['hub'],
+  person: Parameters<typeof call>[1],
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  url: string,
+  body: object | undefined,
+) {
+  return method === 'POST' ? post(hub, person, url, body) : call(hub, person, method, url, body)
+}
+
+test('S10: quem não pode gerenciar, um Membro ou alguém de outra empresa, recebe a mesma resposta para o id que existe e para o que não existe, em toda rota', async (t) => {
+  const on = await workflowsOn(t)
+  const { hub, ana, base } = on
+  const existing = await madeWorkflow(hub, ana, base, draftOf([notify(1, 'x')]))
+  const mia = await memberOn(
+    hub,
+    on.companyId,
+    { name: 'Mia Lima', email: 'mia@example.test' },
+    'member',
+  )
+  const outsider = await personOn(hub, { name: 'Out Sider', email: 'out@example.test' })
+  await plantCompany(hub.test, outsider.id, 'Outra Empresa')
+  for (const person of [mia, outsider]) {
+    for (const [index, [method, url, body]] of routesOf(base, existing.id).entries()) {
+      const there = await send(hub, person, method, url, body)
+      const absent = routesOf(base, randomUUID())[index]
+      const nowhere = await send(hub, person, method, absent?.[1] ?? '', body)
+      assert.deepEqual([there.statusCode, codeOf(there)], [404, 'NOT_FOUND'], `${method} existente`)
+      assert.deepEqual(
+        [nowhere.statusCode, codeOf(nowhere)],
+        [there.statusCode, codeOf(there)],
+        `${method} ausente`,
+      )
+    }
+  }
+  const kept = await call(hub, ana, 'GET', `${base}/${existing.id}`)
+  assert.equal(kept.statusCode, 200)
+})
+
+test('criar num Projeto que não existe responde WORKFLOW_NOT_FOUND, uma falha declarada da operação', async (t) => {
+  const on = await workflowsOn(t)
+  const made = await post(
+    on.hub,
+    on.ana,
+    on.base,
+    {
+      place: { kind: 'PROJECT', projectId: randomUUID().replaceAll('-', '') },
+      draft: draftOf([notify(1, 'x')]),
+    },
+    randomUUID(),
+  )
+  assert.deepEqual([made.statusCode, codeOf(made)], [404, 'WORKFLOW_NOT_FOUND'])
 })

@@ -29,18 +29,17 @@ export function fixedFieldsOf(connector: string, operation: string): readonly st
   return write?.fixed ?? []
 }
 
+function kitOperationOf(connector: string, operation: string) {
+  const kit = connectorOf(connector)
+  return kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
+}
+
 /** What a person reads for a connector's operation, the read door's and the writes included; the id when the kit has none. */
 export function operationLabel(connector: string, operation: string): string {
-  const kit = connectorOf(connector)
-  const found =
-    kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
-  return found?.label ?? operation
+  return kitOperationOf(connector, operation)?.label ?? operation
 }
 
 /** Whether the kit marks the operation as returning a list of rows (`many`): what a Para cada may loop over. */
 export function returnsMany(connector: string, operation: string): boolean {
-  const kit = connectorOf(connector)
-  const found =
-    kit === undefined ? undefined : kitOperationsOf(kit).find((each) => each.id === operation)
-  return found?.many === true
+  return kitOperationOf(connector, operation)?.many === true
 }

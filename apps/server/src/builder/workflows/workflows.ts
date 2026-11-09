@@ -46,30 +46,58 @@ function sessionOf(who: Acting, place: WorkflowPlace): SessionScope {
   return { ...who, place, chosen: [] }
 }
 
-/** The person may manage the company's automations now, and a Projeto's workflow needs the Projeto live; else the same `WORKFLOW_NOT_FOUND`. */
+/** The person may manage the company's automations now; else the same `NOT_FOUND` for every id. */
+async function admittedMember(
+  deps: Pick<WorkflowsDeps, 'identity'>,
+  tx: ReadTx,
+  who: Acting,
+): Promise<void> {
+  const { companyId, personId } = who
+  await deps.identity.admitMember({ tx, companyId, personId, action: 'manageAutomations' })
+}
+
+/** A Projeto's workflow needs the Projeto live; else `WORKFLOW_NOT_FOUND`. */
+async function admittedPlace(
+  deps: Pick<WorkflowsDeps, 'liveProjectOf'>,
+  tx: ReadTx,
+  who: Acting,
+  place: WorkflowPlace,
+): Promise<void> {
+  if (place.kind !== 'PROJECT') return
+  const live = await deps.liveProjectOf(tx, {
+    companyId: who.companyId,
+    projectId: place.projectId,
+  })
+  if (live === undefined) throw new Failure('WORKFLOW_NOT_FOUND')
+}
+
+/** The person may manage the company's automations now, and a Projeto's workflow needs the Projeto live. */
 export async function admitted(
   deps: Pick<WorkflowsDeps, 'identity' | 'liveProjectOf'>,
   tx: ReadTx,
   who: Acting,
   place: WorkflowPlace,
 ): Promise<void> {
-  const { companyId, personId } = who
-  await deps.identity.admitMember({ tx, companyId, personId, action: 'manageAutomations' })
-  if (place.kind === 'PROJECT') {
-    const live = await deps.liveProjectOf(tx, { companyId, projectId: place.projectId })
-    if (live === undefined) throw new Failure('WORKFLOW_NOT_FOUND')
-  }
+  await admittedMember(deps, tx, who)
+  await admittedPlace(deps, tx, who, place)
 }
 
-/** Where a workflow lives, read before what needs its connections (the connectors' door has transactions of its own). */
+/**
+ * Where a workflow lives, read before what needs its connections (the connectors' door has
+ * transactions of its own). The person is admitted first, without touching the row, so an id that
+ * exists and one that does not answer the same to someone who may not manage (security S9, S10).
+ */
 export async function placeOf(
   deps: WorkflowsDeps,
   who: Acting,
   id: WorkflowId,
 ): Promise<WorkflowPlace> {
-  return deps.database.read(scopeOf(who), async (tx) =>
-    placeOfRow(await workflowIn(tx, who.companyId, id)),
-  )
+  return deps.database.read(scopeOf(who), async (tx) => {
+    await admittedMember(deps, tx, who)
+    const place = placeOfRow(await workflowIn(tx, who.companyId, id))
+    await admittedPlace(deps, tx, who, place)
+    return place
+  })
 }
 
 export function kitsFor(
@@ -140,8 +168,8 @@ export async function getWorkflow(
   const place = await placeOf(deps, who, id)
   const kits = await kitsFor(deps, who, place)
   return deps.database.read(scopeOf(who), async (tx) => {
+    await admitted(deps, tx, who, place)
     const row = await workflowIn(tx, who.companyId, id)
-    await admitted(deps, tx, who, placeOfRow(row))
     return viewIn(deps, tx, { ...who, row, kits })
   })
 }
@@ -160,8 +188,8 @@ export async function saveDraft(
   const place = await placeOf(deps, who, id)
   const kits = await kitsFor(deps, who, place)
   return deps.database.command(scopeOf(who), async (tx) => {
-    const held = await workflowHeld(tx, who.companyId, id)
-    await admitted(deps, tx, who, placeOfRow(held))
+    await admitted(deps, tx, who, place)
+    await workflowHeld(tx, who.companyId, id)
     const [saved] = await tx
       .update(workflow)
       .set({ draft: body.draft, name: body.draft.name, revision: sql`${workflow.revision} + 1` })

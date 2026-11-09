@@ -1,5 +1,5 @@
 import type { Balloon, Path } from '@conexus/hub-api'
-import { BalloonId, WorkflowId } from '@conexus/hub-api'
+import { BalloonId, childrenOf, WorkflowId } from '@conexus/hub-api'
 import type { FrozenWorkflow } from './frozen.ts'
 
 /**
@@ -58,25 +58,10 @@ export function childOf(id: MastraWorkflowId, step: PathStep): MastraWorkflowId 
 /** The list a path runs, the balloon that holds it (null for the main list) and the frozen workflow whose document has it. */
 type FrozenPath = Readonly<{ balloon: Balloon | null; list: Path; frozen: FrozenWorkflow }>
 
-/** The paths a container balloon has, by index; a USE has none here, its path is the other workflow's list. */
-function pathsOf(balloon: Balloon): readonly Path[] {
-  switch (balloon.kind) {
-    case 'IF':
-      return [balloon.then, balloon.else]
-    case 'PARALLEL':
-      return balloon.paths
-    case 'FOREACH':
-    case 'LOOP':
-      return [balloon.body]
-    default:
-      return []
-  }
-}
-
 function balloonOf(list: Path, id: BalloonId): Balloon | null {
   for (const balloon of list) {
     if (balloon.id === id) return balloon
-    for (const path of pathsOf(balloon)) {
+    for (const path of childrenOf(balloon)) {
       const found = balloonOf(path, id)
       if (found !== null) return found
     }
@@ -96,7 +81,7 @@ export function pathOf(frozen: FrozenWorkflow, path: readonly PathStep[]): Froze
       at = { balloon, list: other.frozen.draft.balloons, frozen: other.frozen }
       continue
     }
-    const list = pathsOf(balloon)[step.index]
+    const list = childrenOf(balloon)[step.index]
     if (list === undefined) return null
     at = { balloon, list, frozen: at.frozen }
   }

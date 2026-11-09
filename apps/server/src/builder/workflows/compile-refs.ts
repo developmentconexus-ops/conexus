@@ -1,4 +1,5 @@
 import type { Balloon, Condition, Path, Trigger } from '@conexus/hub-api'
+import { childrenOf } from '@conexus/hub-api'
 import type { FrozenWorkflow } from './frozen.ts'
 import type { MastraWorkflowId } from './ids.ts'
 import { childOf } from './ids.ts'
@@ -102,15 +103,8 @@ function conditionOf(balloon: Balloon): Condition | null {
 }
 
 /** The paths a container compiles to, by index; an empty "senão" has no workflow of its own. */
-export function childrenOf(scope: Scope, balloon: Balloon): { index: number; scope: Scope }[] {
-  const lists: readonly Path[] =
-    balloon.kind === 'IF'
-      ? [balloon.then, balloon.else]
-      : balloon.kind === 'PARALLEL'
-        ? balloon.paths
-        : balloon.kind === 'FOREACH' || balloon.kind === 'LOOP'
-          ? [balloon.body]
-          : []
+export function scopesOf(scope: Scope, balloon: Balloon): { index: number; scope: Scope }[] {
+  const lists = childrenOf(balloon)
   return lists.flatMap((list, index) =>
     list.length === 0
       ? []
@@ -135,7 +129,7 @@ export function containerNeeds(scope: Scope, balloon: Balloon): Need[] {
   const needs = new Map<string, Need>()
   const condition = conditionOf(balloon)
   if (condition !== null) needs.set(condition.field, fieldNeed(condition.field))
-  for (const child of childrenOf(scope, balloon)) {
+  for (const child of scopesOf(scope, balloon)) {
     if (child.scope.item) continue
     for (const need of needsOf(child.scope)) needs.set(need.key, need)
   }

@@ -1,12 +1,13 @@
 import type { Balloon } from '@conexus/hub-api'
 import type { DynamicWorkflowGraph } from '@mastra/core/workflows'
+import { Failure } from '../../platform/failure.ts'
 import type { Need, Scope, Source, TriggerShape } from './compile-refs.ts'
 import {
   addressOf,
-  childrenOf,
   containerNeeds,
   needSource,
   needsOf,
+  scopesOf,
   sourceOf,
   triggerShapeOf,
   valuesOf,
@@ -92,7 +93,7 @@ type Container<K extends Balloon['kind']> = Extract<Balloon, { kind: K }>
 
 /** The paths of a container as workflows of their own, registered before the one that names them. */
 function pathsOf(scope: Scope, balloon: Balloon, defs: Defs) {
-  const kids = childrenOf(scope, balloon)
+  const kids = scopesOf(scope, balloon)
   for (const kid of kids) pathDef(kid.scope, defs, pathSchema(kid.scope, needsOf(kid.scope)))
   return kids
 }
@@ -151,7 +152,7 @@ function loopEntries(
   before: ReadonlySet<string>,
   defs: Defs,
 ): Entry[] {
-  const [body] = childrenOf(scope, balloon)
+  const [body] = scopesOf(scope, balloon)
   if (body !== undefined) {
     const needs = containerNeeds(scope, balloon)
     const carry = Object.fromEntries(
@@ -190,7 +191,11 @@ function usedEntries(
   defs: Defs,
 ): Entry[] {
   const other = scope.frozen.uses.find((use) => use.balloonId === balloon.id)
-  if (other === undefined) return []
+  if (other === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', {
+      details: { reason: 'USE_WITHOUT_FROZEN', balloon: balloon.id },
+    })
+  }
   const keys = Object.keys(balloon.input)
   const child: Scope = {
     id: childOf(scope.id, { balloon: balloon.id, index: 0 }),

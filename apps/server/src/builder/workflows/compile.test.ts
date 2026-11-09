@@ -206,6 +206,14 @@ test('um Usar outro workflow compila o frozen do outro como o caminho b_0, com o
   assert.equal(JSON.stringify(defs).includes(WORKFLOW_B), false)
 })
 
+test('um Usar outro workflow sem o frozen do outro não compila em silêncio: INTERNAL_UNEXPECTED', () => {
+  const frozen = frozenOf([use(2, WORKFLOW_B, { nome: 'Ana' })])
+  assert.throws(
+    () => compile(frozen),
+    (error) => Reflect.get(Object(error), 'code') === 'INTERNAL_UNEXPECTED',
+  )
+})
+
 test('a mesma versão compila sempre nas mesmas definições', () => {
   const frozen = frozenOf([read(1), ifBalloon(2, 'total', [notify(3, '{{b1.resultado}}')], [])])
   assert.deepEqual(compile(frozen), compile(frozen))
@@ -245,7 +253,7 @@ test('o Para cada compilado roda: cada corpo recebe o item com o valor da sua li
 /** The shape has `volta` as a number field only so a test can end a Repetir on the round it reached. */
 const ROUNDS: TriggerShape = { fields: { volta: 'number' } }
 
-test('o contador: o Repetir com max 3 e um predicado que nunca para falha com WORKFLOW_LOOP_LIMIT no balão do LOOP', async () => {
+test('o contador: o Repetir com max 3 e um predicado que nunca para roda o corpo quatro vezes e então falha com WORKFLOW_LOOP_LIMIT no balão do LOOP (o critério 39 diz três e espera a emenda do cartão)', async () => {
   let limited = 0
   const mastra = testMastra({}, async (address) => {
     limited += 1
