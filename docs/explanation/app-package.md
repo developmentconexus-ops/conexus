@@ -58,11 +58,13 @@ vazio". It has no `shared/`, no `server/` and no generated client. Two details e
 content security policy: `main.tsx` tells Base UI not to write style elements, and
 `vite.config.ts` sets `assetsInlineLimit: 0` because the policy allows no `data:` address.
 
-When a Project is created, `repository.ensure()` commits the starter's files as "Start the app"
-on `main` of a new bare repository on the server's disk
-(`apps/server/src/builder/git/repository.ts`). Version numbers count commits after that one, so
-the starter is version 0. Each turn seeds the machine from a bundle of `main` into
-`/home/user/app` (`apps/server/src/builder/machine/scripts.ts`). The E2B template runs `npm ci`
+The Project's Git repository is made when first needed: the first machine seed or the first save
+calls `repository.ensure()`, which commits the starter's files as "Start the app" on `main` of a
+new bare repository on the server's disk (`apps/server/src/builder/git/repository.ts`,
+`apps/server/src/builder/runs/ports.ts`). Version numbers count commits after that one, so the
+starter is version 0. A new machine checks out a bundle of `main` into `/home/user/app`; a machine
+that kept unsaved work merges it onto `main` instead
+(`apps/server/src/builder/machine/scripts.ts`). The E2B template runs `npm ci`
 on the starter's lockfile once at template build time, so a machine's npm cache already holds the
 starter's packages and an install fetches only what the app added (`infra/e2b/template.ts`).
 

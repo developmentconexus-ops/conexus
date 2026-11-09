@@ -2,8 +2,9 @@
 
 Besides the Builder, three things talk to a model on a company's behalf: the Project agents a
 company configures, the Assistant every person can ask, and the automations that send the
-Assistant a prompt on a clock. All three run as Mastra agents on the Hub's one Mastra instance,
-each in its own agent controller ([the harness](harness.md)). Server code is under
+Assistant a prompt on a clock. Project agents and the Assistant are Mastra agents on the Hub's one
+Mastra instance, each kind in its own agent controller; an automation is a Mastra workflow that
+opens an Assistant conversation ([the harness](harness.md)). Server code is under
 `apps/server/src/builder/`, written `builder/` below; request and answer shapes are in
 `packages/hub-api/src/`.
 

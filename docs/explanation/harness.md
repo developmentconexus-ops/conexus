@@ -22,7 +22,9 @@ Mastra down.
 Each kind of conversation runs on its own `AgentController`, Mastra's harness for a long-lived
 session: `builder`, `assistant`, `agents` and `construtor` (the screen that edits a Project agent's
 draft). All four are built by `controllerOf` in `builder/controller-kit/factories.ts`, each with one
-mode, `conversa`, whose `availableTools` is a closed list. The controller's built-in tools stay off
+mode, `conversa`. For the Builder, the Assistant and the Construtor the mode's `availableTools`
+is a closed list; the `agents` controller has none, and the tool set each version's code builds is
+the closed set. The controller's built-in tools stay off
 unless the mode offers them; Conexus supplies its own `ask_user` and, for the Builder,
 `submit_plan`, under the native ids (`builder/conversation/plan-tools.ts`). The `subagent` tool is
 never on.
@@ -55,8 +57,8 @@ shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same process
 
 Model accounts live in processors, not in the agents
 ([0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md)). The input processors are
-the turn processor, which takes the person's slot in the account queue and puts it on the request
-context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
+the turn processor, which builds the person's `Turn` for the account queue (and, for the Builder,
+takes the Project) and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
 model and the thinking effort for each step. The error processors are Mastra's
 `CyberRefusalHandler` and `defaultStabilityErrorProcessors`, with the retry wrapped so it never
 repeats an account's own failure, then the account queue, which moves to the next account. The
@@ -79,8 +81,9 @@ database, outside Mastra's schema (`builder/conversation/public.ts`).
 
 Memory is one factory, `conversationMemory` (`builder/conversation/builder.ts`): Mastra's
 observational memory scoped to the thread, observing at 30,000 message tokens and reflecting at
-40,000 observation tokens, with async buffering off. The observer, the reflector and the title
-writer are model calls too, so they go through the account queue. Only the Builder turns on recall
+40,000 observation tokens, with async buffering off. The title writer uses the turn's account. The
+observer and the reflector use the company's memory models, read when the turn opens and picked
+beside the queue, never through it (`builder/model-accounts/processors.ts`). Only the Builder turns on recall
 inside its thread. Nothing uses working memory, semantic recall, vectors or embedders.
 
 ## Workspace, machine and filesystem

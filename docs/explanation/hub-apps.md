@@ -108,7 +108,7 @@ logins (`appLogin` in `packages/hub-api/src/app-login.ts`):
 
 The Prévia and the published app use the same schema and the same run login. A version that
 reaches the Prévia migrates the tables the published app is reading. That is why each migration
-batch runs an outcome check in its own transaction
+batch runs an outcome check inside its one transaction, around the migrations
 (`apps/server/src/platform/migration-outcome.ts`). It copies every table first and rolls back if
 a column disappears, a type changes incompatibly, or a value or a row is lost, so the previous
 version keeps reading and writing. Before running, a parser allows only a fixed list of statement

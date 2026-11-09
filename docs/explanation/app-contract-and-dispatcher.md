@@ -41,7 +41,8 @@ anything else. For each call it checks, in order:
 
 Roles are a plain map of name to label (`defineRoles`). In an app that declares roles, every
 operation must name the roles that may run it, or `'everyone'`; `serveApp` refuses to start
-otherwise. A role the current version no longer declares reads as no role, so it runs nothing.
+otherwise. A role the current version no longer declares reads as no role, so it runs only the
+operations open to `'everyone'`.
 On the screen side, `can(access, role)` mirrors that rule only to hide a button; the server's
 `ROLE_FORBIDDEN` is the guarantee (`packages/app/src/client.ts`).
 

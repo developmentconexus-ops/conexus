@@ -42,7 +42,8 @@ request, the Hub's guard (`builder/conversation/guard.ts`):
 4. refuses a new message while the Hub is updating (`HUB_UPDATING`);
 5. stamps the author on the request context.
 
-Every refusal is the same `CONVERSATION_NOT_FOUND`, so a stranger learns nothing.
+Steps 2 and 3 refuse with the same `CONVERSATION_NOT_FOUND`, so a stranger learns nothing; step
+1 answers `REQUEST_MALFORMED` and step 4 `HUB_UPDATING`.
 
 ## The run takes the Project
 
@@ -90,8 +91,9 @@ The mode's tool list is closed (`builder/conversation/permissions.ts`):
 
 The session starts with `yolo: true`, so no tool waits for approval
 ([0053](../decisions/0053-builder-tools-run-without-asking.md)). `ask_user` and `submit_plan`
-suspend the run on a card. The run ends there, and the answer resumes it. A new message while a
-question is open closes the question and continues. `web_search` exists only for models whose
+suspend the run on a card. The run ends there, and the answer resumes it. A message sent while a
+card is open is accepted, and Mastra holds it until the card is answered, then carries it into
+the run the answer opens (`builder/conversation/conversation-steer.test.ts`). `web_search` exists only for models whose
 provider search Mastra supports.
 
 ## The machine and Git
@@ -122,7 +124,8 @@ what the model wrote. `saveRun` (`builder/runs/save.ts`):
 
 1. does nothing if the machine was never touched;
 2. asks the machine for one commit of the whole tree on the current `main`, without
-   `node_modules` and the plans folder, and reads the bundle with a size cap;
+   `node_modules`, and reads the bundle with a size cap. A tree that differs from `main` only in
+   `.conexus/plans` counts as unchanged, so plans travel with the app but make no version alone;
 3. fetches the bundle into a run ref with object checks, requires exactly one new commit whose
    parent is `main`, and inspects the tree (`builder/git/tree.ts`);
 4. moves `main` by compare-and-swap. No other run can move it, since the run holds the Project;
