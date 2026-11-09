@@ -21,7 +21,7 @@ import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
-import type { ConnectorDeadlines, Connectors } from './hub/connectors/public.ts'
+import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, resealConnections, roleKit } from './hub/connectors/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
@@ -129,7 +129,7 @@ export function subjectsOf(deps: {
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
-  deadlines?: ConnectorDeadlines
+  tuning?: ConnectorTuning
   /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
   pruneBudgetMs?: number
 }) {

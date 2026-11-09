@@ -93,16 +93,19 @@ export async function appCalls(
     declared?: readonly object[]
     /** The origin the Hub is given for the double, when something stands in front of it. */
     through?: (origin: string) => Promise<string>
+    /** The clock the Hub dates a write by, when the test needs to read it. */
+    clock?: () => Date
   } = {},
 ) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
   const origin = a.through === undefined ? served.origin : await a.through(served.origin)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', origin]]),
-  }))
+  const hub = await hubWithLog(
+    t,
+    (config) => ({ ...config, connectorOrigins: new Map([['sankhya', origin]]) }),
+    a.clock,
+  )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
   const bruno = await memberOn(hub, companyId, BRUNO, 'admin')

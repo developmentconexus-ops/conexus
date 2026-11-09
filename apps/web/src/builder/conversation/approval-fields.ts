@@ -48,7 +48,7 @@ function itemLine(item: Item, orderPlace: number | undefined): string {
   ].join(' · ')
 }
 
-/** The fields of an order the model filled: client, items, and the total when every item has a price. */
+/** The fields of an order the model filled: client, items, the total when every item has a price, and the date and hour, which are the send's. */
 function orderFields(args: unknown): Field[] | undefined {
   const order = Order.safeParse(args)
   if (!order.success) return undefined
@@ -67,6 +67,8 @@ function orderFields(args: unknown): Field[] | undefined {
       lines: itens.map((item) => itemLine(item, place)),
     },
     ...(priced && itens.length > 0 ? [{ label: 'Total', lines: [reais(total)] }] : []),
+    // The Hub dates the order when it sends it, after Aprovar, so the card has no value to show yet.
+    { label: 'Data e hora', lines: ['as do envio'] },
     ...(observacao === undefined ? [] : [{ label: 'Observação', lines: [observacao] }]),
   ]
 }

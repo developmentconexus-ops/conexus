@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
+import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { inProbeOrder } from '../kernel/definition.ts'
 import type { GrantAnswered } from '../kernel/oauth.ts'
 import { authorizeUrl, codeRequest, readGrant } from '../kernel/oauth.ts'
@@ -90,7 +91,7 @@ export async function probeAll(fake: Fake): Promise<
   for (const operation of inProbeOrder(mercadoLivre)) {
     const input = operation.probe(earlier)
     if (input === null) continue
-    const request = requestOf(operation, input, ACCOUNT)
+    const request = requestOf(operation, input, ACCOUNT, SENT_AT)
     const answered = operation.answer(
       await answerOf(await fake.handle(toRequest(mercadoLivre, request, granted.accessToken))),
     )
