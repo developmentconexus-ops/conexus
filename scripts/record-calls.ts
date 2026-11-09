@@ -67,4 +67,5 @@ export const APPROVAL_CALLS = {
   'approval-declined': [[ASKED], [{ type: 'text', text: 'Não lancei o pedido.' }]],
   'approval-interrupted': [[ASKED], [{ type: 'text', text: 'Entendi, não lancei o pedido.' }]],
   'approval-stopped': [[ASKED]],
+  'approval-refused': [[ASKED], [{ type: 'text', text: 'O Sankhya não aceitou o pedido.' }]],
 } satisfies Record<string, Block[][]>

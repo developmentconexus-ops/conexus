@@ -55,6 +55,7 @@ async function hubServing(
   mailApiUrl?: string,
   log: FailureLog = silent,
   change?: Change,
+  clock?: () => Date,
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
   // the Builder's turns drain and end their streams while the server closes, as at shutdown.
@@ -79,12 +80,11 @@ async function hubServing(
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
-    deadlines: { callDeadlineMs: TEST_CALL_DEADLINE_MS },
+    tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: clock },
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
   })
   const { projects, apps, conversations, runs } = subjects
-  const webRoot = testWebRoot(t)
-  const app = await createHub(config, { status, identity, ...subjects, webRoot })
+  const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
   await conversations.start()
   // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
   let closed: Promise<void> | undefined
@@ -138,14 +138,14 @@ export function hubOn(t: TestContext) {
 export type Hub = Awaited<ReturnType<typeof hubOn>>
 export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
 
-/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one. */
-export async function hubWithLog(t: TestContext, change?: Change) {
+/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one, and `clock` dates the connectors' writes. */
+export async function hubWithLog(t: TestContext, change?: Change, clock?: () => Date) {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
   }
-  return { ...(await hubServing(t, undefined, log, change)), lines }
+  return { ...(await hubServing(t, undefined, log, change, clock)), lines }
 }
 
 /** A Hub whose mail goes to a fake of the provider. */

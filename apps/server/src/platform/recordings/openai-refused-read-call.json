@@ -1,0 +1,6 @@
+{
+  "provider": "openai",
+  "api": "ChatGPT Codex Responses API, streamed",
+  "sdk": "@ai-sdk/openai 3.0.130",
+  "recordedAt": "2026-11-08"
+}

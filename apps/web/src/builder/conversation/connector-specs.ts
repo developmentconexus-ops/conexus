@@ -1,7 +1,10 @@
 import { BUILDER_TOOL, ReadBusy, ReadCut, ReadRows } from '@conexus/hub-api'
 import { CircleAlertIcon, DatabaseIcon, NotebookPenIcon, NotebookTextIcon } from 'lucide-react'
 import { z } from 'zod'
+import type { WritesRead } from './approval-item.ts'
+import { writtenBy } from './approval-item.ts'
 import type { ToolItem } from './rows.ts'
+import { readRefusedText, refusedLabelText } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
@@ -100,6 +103,64 @@ function readOutcome(result: unknown): ReadOutcome | undefined {
   const busy = ReadBusy.safeParse(result)
   const why = isRefused(kind.data.kind) ? kind.data.kind : 'OTHER'
   return { kind: 'REFUSED', why, waitMs: busy.success ? busy.data.waitMs : null }
+}
+
+/** What a tool of the agent threw (`ConnectorRefused`): the kind, and what the system said when it answered. */
+const Thrown = z.object({
+  kind: z.string(),
+  status: z.number().nullable(),
+  message: z.string().nullable(),
+})
+type Thrown = z.infer<typeof Thrown>
+
+/** The failure a call threw, read at the edge of the screen; none when the text is not what the Hub's tools throw. */
+export function thrownOf(
+  tool: Pick<ToolItem, 'errorText' | 'result' | 'isError'>,
+): Thrown | undefined {
+  const text = tool.errorText ?? (tool.isError === true ? tool.result : undefined)
+  if (typeof text !== 'string') return undefined
+  try {
+    return Thrown.parse(JSON.parse(text))
+  } catch (cause) {
+    if (cause instanceof SyntaxError || cause instanceof z.ZodError) return undefined
+    throw cause
+  }
+}
+
+/** What an open row of a failed call says: a label and the system's message as it came. */
+export type FailureDetail = { label: string; message: string | undefined }
+
+/**
+ * What a failed agent tool says when opened, never the JSON it threw: a write the system refused says
+ * so from the record's row (the outcome is the record's, never the model's text), and a read the system
+ * refused says the system did, with its message. `null`: a failure with nothing to add to the line;
+ * `undefined`: the call did not fail with a Hub failure, and the row keeps its own words.
+ */
+export function failureDetail(
+  tool: Pick<ToolItem, 'toolName' | 'toolCallId' | 'errorText' | 'result' | 'isError'>,
+  room: {
+    writes?: WritesRead
+    writeOf?: (toolName: string) => { connector: string } | undefined
+    connectorOf?: (toolName: string) => string | undefined
+    connectors: Pick<ConnectorWords, 'name'>
+  },
+): FailureDetail | null | undefined {
+  const write = room.writeOf?.(tool.toolName)
+  if (write !== undefined) {
+    const row = writtenBy(room.writes, tool.toolCallId)
+    if (row?.state === 'REFUSED') {
+      return {
+        label: refusedLabelText(room.connectors.name(write.connector)),
+        message: row.message ?? undefined,
+      }
+    }
+  }
+  const thrown = thrownOf(tool)
+  if (thrown === undefined) return undefined
+  if (write !== undefined || thrown.status === null) return null
+  const connector = room.connectorOf?.(tool.toolName)
+  const system = connector === undefined ? 'sistema' : room.connectors.name(connector)
+  return { label: readRefusedText(system), message: thrown.message ?? undefined }
 }
 
 /** A read the connection refused, or asked to be linked again: the Assistant's row says it. */

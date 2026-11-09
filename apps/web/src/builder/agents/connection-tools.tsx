@@ -8,7 +8,7 @@ import { useConnectorCatalog } from '../assistant/public.ts'
 import { toolsQuery } from './queries.ts'
 import type { Part } from './section.tsx'
 import { FREE_QUERY, FREE_QUERY_WARNING, MARK_ALL_READS, OUT_OF_ROLE, toolTitle } from './text.ts'
-import { Line, versionsOf } from './tool-line.tsx'
+import { Line, newerOf, versionsOf } from './tool-line.tsx'
 import type { Saving } from './use-draft-save.ts'
 import { WriteLines } from './write-lines.tsx'
 
@@ -63,18 +63,6 @@ function toolDetail(tool: ToolSummary, title: string): string | undefined {
     return `Lê ${tool.reads.map((operation) => tool.readLabels[operation] ?? operation).join(', ')}`
   }
   return tool.description === title ? undefined : tool.description
-}
-
-/** The chosen tool's newer version, as the line offers it: the draft then holds that version. */
-function newerOf(tool: AgentDetail['tools'][number] | undefined, saving: Saving) {
-  if (tool === undefined || tool.latest.number <= tool.version.number) return undefined
-  return {
-    number: tool.latest.number,
-    onUse: () =>
-      saving.save((now) => ({
-        tools: now.tools.map((one) => (one.id === tool.id ? tool.latest.id : one.version.id)),
-      })),
-  }
 }
 
 function ReadLine(props: { connection: OfferedConnection; read: Read; saving: Saving }) {
