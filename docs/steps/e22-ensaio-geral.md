@@ -1,0 +1,536 @@
+# Etapa 22: Ensaio geral
+
+O roteiro chama esta etapa de "22 Ensaio geral. Restaura tudo junto, pelo procedimento." Ela vem
+depois da 16 e pede "O lugar da cópia fora do Neon"; o conhecimento trazido é "Ensaios das etapas 2,
+7, 9, 12 e 13. Carga de um painel e de uma rotina". Este cartão foi escrito sobre o `main` em
+`44fb4040` (2026-11-09), com `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, `@neon/sdk` 7.3.0, `pg`
+8.23.1 e PostgreSQL 18, enquanto a 24.6 constrói. Nesse commit a 24.5 ainda não fechou, e a 24.6, a
+24.7, a 21.1 e a 16 existem só nos seus cartões. Cada linha que este cartão cita de um desses cartões
+diz o commit lido; a construção da 22 relê cada uma no `main` do dia e para se o nome mudou (seção
+"Parar se" de cada unidade).
+
+## A página do fundador
+
+**No fim desta etapa** você restaura o Conexus inteiro a um minuto que escolheu, seguindo uma página
+só, e vê que o que era de antes voltou, que o que veio depois sumiu e que nada foi feito duas vezes.
+Vê também, toda manhã, que a cópia da noite está guardada fora do Neon, e manda o Conexus provar que
+ela volta.
+
+**O roteiro de uso.**
+
+1. No GitHub, em Actions, abra "Copiar para fora do Neon": a rodada desta noite está verde e diz
+   quantos bancos copiou (o do Hub, o das conversas e um por empresa) e o tamanho de cada um. No
+   console do lugar da cópia (decisão `A`), a pasta do dia tem esses arquivos e um `manifesto.json`.
+2. Rode "Conferir a cópia". Em até 15 minutos ela fica verde e diz o que voltou num banco
+   descartável: as migrações, as empresas, as conversas e as automações, cada número igual ao do
+   manifesto.
+3. Prepare o ensaio na empresa de teste: comece uma conversa; peça ao agente uma escrita e deixe o
+   "Aprovar?" sem responder; crie uma automação para daqui a 10 minutos; ligue o seu Telegram ao
+   agente. **Anote a hora.** Depois dela: comece outra conversa, aprove o cartão (o pedido vai ao
+   Sankhya), espere a automação rodar e ligue o Telegram de outra pessoa.
+4. Restaure tudo pela página "Restaurar tudo" do repositório: o projeto do Hub e o da empresa de
+   teste, no console do Neon, à hora anotada; depois, em Actions, "Reiniciar o Hub" com a caixa
+   "Depois de restaurar" marcada. Anote quanto tempo levou, do começo até o Hub voltar.
+5. Entre de novo (toda sessão acabou). Na página de status do Hub, onde fica "Último início",
+   a linha "Última restauração" mostra a hora anotada. A primeira conversa está lá, a segunda não. O cartão "Aprovar?" aparece encerrado,
+   com "Restaurado: peça de novo se ainda precisar", e o Sankhya tem um pedido só. A automação não
+   rodou de novo e mostra o próximo horário. O seu Telegram responde; o da outra pessoa pede para
+   ligar de novo.
+6. Rode "Medir a carga" em Actions. Ela diz quanto tempo o painel levou para 95% das respostas com 25
+   pessoas ao mesmo tempo, e se as 30 execuções da rotina terminaram, cada uma uma vez (decisão `E`).
+
+**O que você faz, e quando.** Antes: a sua letra na decisão `A` e, depois dela, a conta e o bucket
+no lugar escolhido, com a chave de gravação entregue ao firstmate (a página "Copiar para fora do
+Neon" diz como, sem colar a chave em lugar nenhum). No começo: aprova esta página. No fim: faz o
+roteiro, diz o que viu e aprova os textos da tela.
+
+**Fica de fora.**
+- O plano pago do Neon, com 7 dias de volta no tempo: é a etapa 23 ("O plano pago"). Até lá o
+  histórico do Neon é de 6 horas, e a cópia da noite é o que cobre um erro visto no dia seguinte.
+- Restaurar o Conexus noutro servidor, do zero: o ensaio restaura no servidor de hoje. A página da
+  cópia descreve o caminho de desastre (um projeto Neon novo a partir da cópia), e "Conferir a cópia"
+  prova toda noite que a cópia volta, mas um servidor novo não é ensaiado aqui.
+- Os rastros no Grafana (21.1): ficam com o que já mandaram; não voltam no tempo, e não precisam.
+- Os itens marcados `next-card`: são do próximo cartão da trilha, que não é este. Nenhum é sobre
+  cópia, restauração ou carga.
+
+**As decisões suas nesta etapa.**
+
+- **A. Onde fica a cópia fora do Neon.** Caso real: o Neon perde o projeto do Hub, ou a conta é
+  bloqueada; sem cópia fora, perde-se tudo, e hoje não existe nenhuma. Exemplo: a cópia de uma noite
+  com o Hub, as conversas e cada empresa, uns poucos GB.
+  - **A1. Cloudflare R2**, um bucket novo na conta que você já tem: US$ 0,015 por GB por mês, os
+    primeiros 10 GB grátis, saída grátis. Fica fora do Brasil (o R2 não tem região na América do
+    Sul) e na mesma conta que guarda os apps e o túnel.
+  - **A2. Amazon `S3` em São Paulo**: US$ 0,0405 por GB por mês; para trazer de volta, US$ 0,15 por GB
+    (uma restauração de 2 GB custa US$ 0,30). Os dados ficam no Brasil, numa conta separada do Neon e
+    da Cloudflare, com o bloqueio "compliance": nem a conta principal apaga a cópia antes do prazo.
+    Conta nova.
+  - **A3. Magalu Cloud**, região Sudeste ou Nordeste: R$ 0,10 por GiB por mês e R$ 0,10 por GiB para
+    trazer de volta, impostos inclusos. No Brasil, compatível com `S3`. Não consegui ler como é o
+    bloqueio contra apagar (a página estava fora do ar). Conta nova.
+  - **Recomendo A2.** Os dados das empresas ficam no Brasil (decisão 0032), a cópia não divide conta
+    com o que ela protege, e o bloqueio é o único dos três com texto lido que diz que ninguém apaga.
+    Com 4 empresas e 30 noites, entre US$ 0,20 e US$ 6 por mês (o maior número supõe cada banco no
+    teto de 1 GB do plano grátis). Como nativo: o `S3` é o destino que o próprio Neon ensina, com
+    `pg_dump` toda noite numa Action do GitHub; o Conexus já fala `S3` com o R2.
+- **B. O que a restauração faz com o que estava marcado ou esperando.** Caso real: a automação das 8h
+  lançou um pedido no Sankhya às 8h; às 9h você restaura às 7h55. Exemplo: um "Aprovar?" que você já
+  tinha aprovado volta a aparecer aberto.
+  - **B1. O que volta é passado.** Toda automação volta no próximo horário dela, sem rodar o que
+    passou; quem quiser roda agora pelo botão que já existe. Todo "Aprovar?" que estava aberto aparece
+    encerrado, com "Restaurado: peça de novo se ainda precisar". Nada se faz duas vezes; um disparo
+    pode faltar.
+  - **B2. O que o Mastra faz sozinho.** Cada automação atrasada roda uma vez ao subir, e os cartões
+    continuam abertos. Nada falta, mas o que já tinha sido feito pode ser feito de novo: medi aqui a
+    automação rodando de novo 47 milésimos depois de o Hub subir, com a mesma identidade do disparo
+    que já tinha acontecido.
+  - **B3. Tudo pausado.** Toda automação fica pausada até a pessoa religar; os cartões ficam abertos.
+  - **Recomendo B1**, a regra S46 do guia de segurança: o que volta de uma restauração é passado até
+    alguém confirmar. Como nativo: o próprio Mastra, ao retomar uma automação pausada, calcula o
+    próximo horário a partir de agora e não roda os atrasados; o Conexus pausa e retoma cada uma uma
+    vez, ao subir depois de uma restauração.
+- **E. Qual painel e qual rotina a carga mede, e quanto.** Caso real: dez pessoas abrem o painel de
+  vendas às 8h, enquanto as automações das 8h rodam. Nenhuma etapa fixou um número.
+  - **E1. Um app de painel e um workflow agendado, na empresa de teste.** O painel: um app publicado
+    que lê o banco da empresa, aberto por 25 pessoas ao mesmo tempo durante 5 minutos; passa com 95%
+    das respostas abaixo de 2 segundos e nenhum erro. A rotina: 30 workflows (o limite de uma
+    empresa) marcados para o mesmo minuto, sem modelo; passa se os 30 terminam em até 5 minutos, cada
+    um uma vez.
+  - **E2. As telas do Hub.** O painel é a Atividade e o Uso da etapa 21.1; a rotina, uma automação
+    que conversa com o modelo.
+  - **Recomendo E1.** A arquitetura liga o teste de carga desta etapa aos limites de processamento
+    dos apps, e o painel que uma pessoa abre todo dia é um app. Sem modelo, a medida não gasta a sua
+    assinatura e mede o Conexus, não o fornecedor. Os números são uma proposta: são seus.
+- **F. Quanto tempo a cópia guarda.** Caso real: um erro visto só na segunda-feira.
+  - **F1. Uma cópia por noite, às 3h, guardada 30 dias.**
+  - **F2. Uma por noite, guardada 7 dias**, como no exemplo do Neon.
+  - **Recomendo F1.** O Documenso, uma das referências, guarda 30 dias; com A2, 30 noites custam
+    poucos dólares.
+
+## As unidades
+
+| Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
+| --- | --- | --- | --- | --- |
+| U1 A cópia da noite | O comando `copy`, o cliente do PostgreSQL 18 na imagem, a Action "Copiar para fora do Neon", a página `copia-fora-do-neon.md` | `apps/server/src/platform/copy/`, `apps/server/src/main.ts`, `apps/server/src/platform/config.ts`, `infra/`, `.github/workflows/copy.yml`, `docs/how-to/` | data | A letra `A` e a `F` |
+| U2 Conferir a cópia | O comando `copy-check` e a Action "Conferir a cópia" | `apps/server/src/platform/copy/`, `apps/server/src/main.ts`, `infra/copy-check.sh`, `.github/workflows/copy-check.yml` | testing | U1 |
+| U3 Depois de restaurar | A tabela `hub.restores`, o comando `after-restore`, a caixa "Depois de restaurar" do "Reiniciar o Hub", o cartão encerrado e a linha "Última restauração" | `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/hub/status/`, `apps/server/src/hub/identity/`, `apps/server/src/builder/automations/`, `apps/server/src/builder/agents/`, `apps/server/src/main.ts`, `apps/web/src/`, `infra/deploy.sh`, `.github/workflows/restart.yml` | security | U1 (o `main.ts`), a letra `B` |
+| U4 O procedimento numa página | `docs/how-to/restaurar-tudo.md`; sai `hub-database-restore.md`; a seção de restauração de `hub-company-databases.md` passa a apontar para ela; arquitetura §7 | `docs/` | delivery | U1, U2, U3 |
+| U5 A medição de carga | `scripts/load/`, a Action "Medir a carga", a empresa de teste com o painel e os 30 workflows | `scripts/load/`, `.github/workflows/load.yml`, `package.json`, `docs/reference/stack.md` | testing | A letra `E`; a 24.6 no `main` |
+
+U1 e U5 correm ao mesmo tempo: não dividem pasta. U2 e U3 vêm depois de U1, porque mexem no mesmo
+`main.ts` e na mesma pasta `infra/`; entre si, U2 e U3 dividem só a tabela `COMMANDS` de `main.ts`,
+uma linha cada, e a segunda a chegar faz o merge. U4 vem por último. O ensaio ao vivo é o uso da
+etapa, não uma unidade.
+
+**Orçamento de código alterado.** U1: 600 linhas. U2: 350. U3: 650. U4: 0 (só documentos). U5: 400.
+Total da etapa: 2.000, dentro das 4.000 da regra L2.
+
+## Os critérios de aceite
+
+| # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
+| --- | --- | --- | --- | --- |
+| 1 | U1 | `node apps/server/src/main.ts copy` grava, sob `copias/<AAAA-MM-DD>/`, um `.dump` no formato próprio do `pg_dump` por banco (o do Hub, o do Mastra, um por empresa com banco pronto), um `globais.sql` e um `manifesto.json`; o manifesto lista cada arquivo com tamanho e sha256, a versão do Conexus, a última migração e, por Projeto, a versão mais nova no bucket do Git; o processo sai 0 e imprime `COPY_DONE` com a contagem | `apps/server/src/platform/copy/copy.test.ts`, "uma cópia com o Hub, o Mastra e duas empresas" (PostgreSQL 18 de teste, bucket dublê) | must |
+| 2 | U1 | Uma empresa cujo banco não responde não para a cópia das outras: o manifesto a lista com `falhou` e o motivo, o processo sai 1 e imprime `COPY_PARTIAL` com o id da empresa, nunca o endereço | `copy.test.ts`, "uma empresa fora" | must |
+| 3 | U1 | Sem a chave do lugar da cópia, ou com ela legível por outros, o comando recusa com `CONFIG_INVALID` nomeando `HUB_COPY_KEY_FILE`, antes de abrir qualquer banco; o Hub (servidor) sobe sem ela | `copy.test.ts`, "sem chave"; `apps/server/src/boot.test.ts`, "o Hub sobe sem a chave da cópia" | must |
+| 4 | U1 | A mesma data copiada duas vezes no mesmo dia não apaga a primeira: a segunda vai para `copias/<data>/<hora>/`; o bucket recusa apagar (bloqueio do provedor), e a cópia não tenta apagar nada | `copy.test.ts`, "duas no mesmo dia" | must |
+| 5 | U1 | Nenhum endereço de banco, senha ou id de projeto Neon aparece no que o comando imprime nem no manifesto; a empresa é nomeada pelo id do Conexus | `copy.test.ts`, "o que sai não tem segredo" | must |
+| 6 | U1 | A Action "Copiar para fora do Neon" roda às 06:00 UTC e por botão, no executor do servidor, com o grupo de concorrência `hub-copy`, e escreve no resumo da rodada a contagem e os tamanhos | `scripts/workflows.test.ts`, um caso para `copy.yml` | must |
+| 7 | U1 | **Ao vivo**: a primeira rodada no servidor copia o Hub, o Mastra e as empresas; o tempo e os tamanhos ficam no pull request da unidade | Firstmate, depois do Release | must |
+| 8 | U2 | `copy-check` restaura a cópia mais nova num PostgreSQL 18 descartável: confere o sha256 de cada arquivo contra o manifesto, restaura os papéis sem senha e cada banco, roda `migrate` nele (zero migrações a aplicar) e conta empresas, conversas, automações e esperas; imprime `COPY_CHECKED` com os números e sai 0 | `apps/server/src/platform/copy/copy-check.test.ts`, "a cópia volta" | must |
+| 9 | U2 | Um arquivo cujo sha256 não bate com o manifesto: sai 1 com `COPY_CORRUPT` e o nome do arquivo, sem restaurar o resto | `copy-check.test.ts`, "um arquivo trocado" | must |
+| 10 | U2 | Uma cópia que vem de uma versão do Conexus mais nova que a imagem que confere (uma migração que a imagem não conhece): sai 1 com `COPY_NEWER_THAN_IMAGE` | `copy-check.test.ts`, "cópia mais nova" | must |
+| 11 | U2 | A espera de aprovação e a agenda que estavam na cópia aparecem restauradas: a espera retoma até o fim e a agenda tem o mesmo próximo horário do manifesto (a prova do estudo, agora como teste) | `copy-check.test.ts`, "o Mastra volta" | must |
+| 12 | U2 | **Ao vivo**: "Conferir a cópia" fica verde em até 15 minutos com a cópia da noite; o banco descartável não sobra no servidor (`--rm`) | Firstmate | must |
+| 13 | U3 | `after-restore` grava uma linha em `hub.restores` com o minuto restaurado (o mais novo `hub.starts` antes de agora, que a restauração deixou) e a versão; uma segunda rodada sem nova restauração não grava outra (mesmo minuto) | `apps/server/src/hub/status/restores.test.ts`, "uma linha por restauração" | must |
+| 14 | U3 | Depois de `after-restore`, toda sessão da `auth.session` acabou: a próxima chamada com o cookie antigo responde 401, e entrar de novo funciona | `apps/server/src/hub/identity/restore-sessions.test.ts`, pela porta pública | must |
+| 15 | U3 | Decisão `B1`: cada agenda ativa do Mastra (automações e workflows) tem `nextFireAt` maior que agora depois de `after-restore`, e nenhuma roda nos 30 s seguintes à subida; uma agenda pausada pela pessoa continua pausada | `apps/server/src/builder/automations/after-restore.test.ts`, "a agenda vencida não roda" (a prova do estudo como teste) | must |
+| 16 | U3 | Decisão `B1`: uma espera "Aprovar?" criada antes da linha de `hub.restores` aparece na conversa com o estado `RESTORED`; `POST` de aprovar nela responde 409 `RESTORED_WAIT_CLOSED` e nada vai ao Sankhya; uma espera criada depois da subida aprova normalmente | `apps/server/src/builder/agents/restored-wait.test.ts`, pela rota da conversa | must |
+| 17 | U3 | Decisão `B1` nos workflows (24.6): uma execução parada num balão de aprovação antes da restauração aparece encerrada como `RESTORED` e a decisão dela responde 409 `RESTORED_WAIT_CLOSED` | `apps/server/src/builder/workflows/restored-run.test.ts` (o arquivo de teste da rota de decisão da 24.6) | must |
+| 18 | U3 | `GET /api/status` traz `lastRestore` (`{ restoredTo, appliedAt }` ou `null`); a página de status (`/operations/status`) mostra "Última restauração: 09/11/2026 07:55" abaixo de "Último início", ou nada | `apps/server/src/hub/status/status.test.ts`; `apps/web/src/hub/status/status-page.test.tsx` | must |
+| 19 | U3 | "Reiniciar o Hub" com "Depois de restaurar" marcado roda `migrate`, depois `after-restore`, depois sobe o Hub; sem a caixa, não roda `after-restore`; `after-restore` falhando para o reinício antes de subir, com "after-restore failed" | `scripts/deploy.test.ts`, "--restart --restored" | must |
+| 20 | U3 | `after-restore` sem nenhum `hub.starts` (restaurado antes da primeira migração) recusa com `RESTORE_POINT_UNKNOWN` e o reinício para | `restores.test.ts`, "sem início" | must |
+| 21 | U4 | `docs/how-to/restaurar-tudo.md` existe, em português, abaixo de 800 palavras, com a ordem: parar o Hub; restaurar o ramo do Hub; restaurar cada empresa ao mesmo minuto; "Reiniciar o Hub" com "Depois de restaurar"; conferir; apagar os ramos `_old_`; conferir o Git dos Projetos mexidos depois do minuto; `hub-database-restore.md` saiu e nenhum link aponta para ele | `npm run docs` | must |
+| 22 | U4 | **Ao vivo**, o ensaio: o roteiro de uso, passos 3 a 5, na empresa de teste, com o tempo de cada passo anotado no livro de aprovações; o Sankhya tem um pedido só | Fundador, com o firstmate | must |
+| 23 | U4 | **Ao vivo**, os ensaios trazidos: a empresa de teste apagada e recuperada pelo SDK (etapa 7); o Git de um Projeto refeito do bucket (etapa 13); os dois bancos do Hub no mesmo minuto (etapa 12), dentro do mesmo ensaio | Firstmate | must |
+| 24 | U5 | `node scripts/load/painel.ts <endereço>` abre o painel com 25 conexões por 5 minutos e imprime p50, p95, p99, a taxa e os erros; sai 1 se o p95 passa de 2 s ou há erro (os números da decisão `E`) | `scripts/load/painel.test.ts`, contra um servidor local de teste | must |
+| 25 | U5 | `node scripts/load/rotina.ts` lê, pela API do Hub, as execuções dos 30 workflows do minuto marcado e imprime quantas terminaram, a duração de cada e se algum `runId` aparece duas vezes; sai 1 se falta uma, se passou de 5 minutos ou se uma repetiu | `scripts/load/rotina.test.ts`, contra um Hub de teste | must |
+| 26 | U5 | A Action "Medir a carga" roda num executor do GitHub, fora do servidor, só por botão; nunca aponta para uma empresa que não seja a de teste (o id vem de um segredo do ambiente `load`) | `scripts/workflows.test.ts`, "load.yml" | must |
+| 27 | U5 | **Ao vivo**: "Medir a carga" verde ou vermelha, com os números no pull request da unidade e no livro | Fundador | must |
+
+## A matriz de estados
+
+| Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Página de status, linha "Última restauração" | Nada (nunca restaurado) | Nada | Como as linhas de início, até o status chegar | A página já trata o status fora; a linha não aparece | — | — | — |
+| Cartão "Aprovar?" | — | — | — | — | — | — | `RESTORED`: "Restaurado: peça de novo se ainda precisar", sem botões |
+| Execução de workflow parada | — | — | — | — | — | — | `RESTORED`, mesmo texto, sem Aprovar |
+
+| Campo de contrato | Quem escreve | Quem lê |
+| --- | --- | --- |
+| `hub.restores.restored_to` | `after-restore` (U3) | `status.ts` (`lastRestore`), o leitor das esperas (U3), o leitor das execuções da 24.6 (U3) |
+| `hub.restores.applied_at` | `after-restore` | `status.ts` |
+| `StatusView.lastRestore` | `status.ts` | `apps/web/src/hub/status/status-page.tsx` |
+| `ApprovalState` `RESTORED` | o leitor da conversa (U3) | o cartão "Aprovar?" |
+| `manifesto.json` | `copy` (U1) | `copy-check` (U2), quem restaura à mão (página da cópia) |
+| A Action, entrada `restored` | quem roda "Reiniciar o Hub" | `infra/deploy.sh` |
+
+## A tabela de falhas
+
+| Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
+| --- | --- | --- | --- | --- | --- |
+| `copy`: `pg_dump` de um banco e envio ao bucket | O grupo `hub-copy` da Action enfileira; à mão, a segunda vai para `<data>/<hora>/` | Envio cortado: o objeto multiparte não se completa, o `S3` não o mostra; o manifesto, o último a subir, não existe, e `copy-check` ignora a pasta sem manifesto | Banco da empresa fora: segue as outras, `COPY_PARTIAL`; bucket fora: sai 1, `COPY_UPLOAD_FAILED`, nada apagado | `COPY_DONE`, `COPY_PARTIAL`, `COPY_UPLOAD_FAILED` | 1, 2, 4, 5 |
+| `copy-check`: restaurar no banco descartável | Grupo de concorrência `hub-copy` (a mesma fila da cópia) | Restauração cortada: o contêiner `--rm` some com o que tinha; a rodada sai 1 | Bucket fora: `COPY_UNREACHABLE`; sha256 errado: `COPY_CORRUPT` | `COPY_CHECKED`, `COPY_CORRUPT`, `COPY_NEWER_THAN_IMAGE` | 8, 9, 10 |
+| `after-restore`: linha em `hub.restores` | Índice único em `restored_to`: a segunda gravação do mesmo minuto não entra (`ON CONFLICT DO NOTHING`) | Linha gravada e queda antes das agendas: a rodada seguinte não grava de novo, mas refaz sessões e agendas (cada passo é seguro de repetir) | Banco fora: sai 75 (como `migrate`), o reinício tenta de novo | `RESTORE_APPLIED`, `RESTORE_POINT_UNKNOWN` | 13, 19, 20 |
+| `after-restore`: apagar sessões | Apagar duas vezes não muda nada | — | Banco fora: sai 75 | `RESTORE_SESSIONS_ENDED` com a contagem | 14 |
+| `after-restore`: `schedules.pause` e `resume` do Mastra | Cada par é seguro de repetir: `resume` de uma agenda ativa recalcula de novo a partir de agora | Pausada e sem `resume` (queda): a rodada seguinte retoma toda agenda que esta rodada pausou, lida de `hub.restores.paused` | Banco do Mastra fora: sai 75 | `RESTORE_SCHEDULES_MOVED` com a contagem | 15 |
+| Aprovar uma espera `RESTORED` | Dois toques: os dois 409 | — | — | nada (409 para a pessoa) | 16, 17 |
+
+## A tabela de referência
+
+| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Cópia dos bancos fora do Neon | U1 | nenhum | Guia do Neon "Automate pg_dump to `S3`", `neon.com/docs/manage/backups-aws-s3-backup-part-2` (documentado, 2026-11-09); Documenso `cd0cc5f` (lido); Twenty `b76d0217` (lido) | `pg_dump` noturno por banco numa Action do GitHub, enviado a um bucket, guardado N dias, pela conexão direta | nativo (`pg_dump` 18, `@aws-sdk/client-s3`) | Estudo: 1,3 GB em 6,0 s, 97 MB (provado, local) | precisa: `A`, `F` | `apps/server/src/platform/copy/copy.ts` |
+| Lista dos bancos das empresas | U1 | `platform/neon.ts:41-51` (`list`, `ownerConnection`) | `@neon/sdk` 7.3.0 | Lista os projetos da organização das empresas e dá o endereço do dono para um ato | nativo | — | não precisa | — |
+| Papéis no destino | U1, U2 | `platform/migrate.ts:217-250`; migração `20261014145224_hub_runtime_login` | PostgreSQL 18 `pg_dumpall --globals-only --no-role-passwords`; Windmill `5d3f239` (dump do cluster) | Papéis à parte, sem senha; a senha volta pelo programa | nativo | Estudo: `migrate` no destino em 92 ms, 90 migrações (provado, local) | não precisa | — |
+| Bloqueio contra apagar | U1 | nenhum | `S3` Object Lock "compliance", `docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html` (documentado, 2026-11-09); R2 bucket locks (documentado) | O provedor recusa apagar antes do prazo; a retenção padrão do bucket vale para todo objeto | nativo (do provedor) | — | precisa: `A` | — |
+| Um registro que liga tudo | U1 | nenhum | `neon-for-agent-platforms@028b69b`, `skills/neon-postgres-agent-platforms/references/COMPOUND_CHECKPOINTS_FOR_AGENT_PLATFORMS.md:7-18,43` (lido) | Um registro liga banco, commit, segredos e deploy, restaurados numa ordem fixa | nativo (a forma: um manifesto) | — | não precisa | `apps/server/src/platform/copy/manifest.ts` |
+| Conferir a cópia | U2 | nenhum | Documenso `cd0cc5f` (teste mensal e `pg_restore --list`, lido) | Restaurar num banco descartável e conferir | nativo (`pg_restore` 18) | Estudo: restauração em 11,4 s, espera retoma (provado, local) | não precisa | `apps/server/src/platform/copy/copy-check.ts` |
+| Restaurar o Hub a um minuto | U4 | `docs/how-to/hub-database-restore.md`; `infra/deploy.sh:161-171` | Neon instant restore, `neon.com/docs/introduction/branch-restore` (documentado, 2026-11-09) | Sobrescreve a linha do tempo do ramo raiz; todos os bancos do ramo voltam juntos; deixa `{ramo}_old_{hora}` | nativo | Etapa 2, critérios 21 e 22 | "Deu certo" (etapa 2) | `docs/how-to/restaurar-tudo.md` |
+| Restaurar uma empresa | U4 | `hub-company-databases.md` "Restore a company"; `hub/apps/repair.ts:218` | Neon instant restore por projeto (documentado) | Um projeto por vez, à mesma hora; o Hub refaz Worker, logins e migrações ao subir | nativo + embrulhado (o conserto) | Etapa 9, critério 23 | "Restaurei" (etapa 9) | `docs/how-to/restaurar-tudo.md` |
+| Recuperar empresa apagada | U4 | decisão 0040, verificação 3 | `@neon/sdk` 7.3.0 `recover` | Recupera o projeto apagado | nativo | 0040: "the row returned" | "T4A" (etapa 7) | — |
+| Restaurar o Git de um Projeto | U4 | `docs/how-to/hub-git-restore.md`; `builder/git/copy/copy.ts` | `git bundle` | Um bundle por versão; `fetch` num repositório vazio | nativo | 0051: "um segundo" | "13 sim" | — |
+| Agenda depois de restaurar | U3 | `builder/automations/automations.ts:166-224`; `builder/mastra/hub-mastra.ts:101-104` | `@mastra/core` 1.82.0 `dist/scheduler-Me4rCjO2.js:340-360`; `dist/docs/references/docs-workflows-scheduled-workflows.md:151` (lido) | O vencido roda uma vez com `runId` `sched_<id>_<nextFireAt>`; `resume` recalcula a partir de agora | nativo (`schedules.pause`, `schedules.resume`) | Estudo: disparo repetido 47 ms após subir, mesmo `runId` (provado, local) | precisa: `B` | `apps/server/src/builder/automations/after-restore.ts` |
+| Espera de aprovação depois de restaurar | U3 | o controlador dos agentes (24.5), `apps/web/src/builder/conversation/approval-card.tsx` | `@mastra/core` 1.82.0 `dist/agent-BP9OWM6D.js:11300-11332` (retomada de execução suspensa, lido) | A espera restaurada retoma normalmente | embrulhado: o Mastra guarda a espera; o Conexus a fecha pela marca `hub.restores` | Estudo: a espera retoma (provado, local) | precisa: `B` | `apps/server/src/builder/agents/restored.ts` |
+| Execuções da 24.6 depois de restaurar | U3 | nada no `main` (cartão da 24.6, `b3218fd4`, linhas 1914-1921) | `@mastra/core` 1.82.0 `dist/mastra-D4MXu5BN.js:2886-2896` (`restartAllActiveWorkflowRuns`, lido) | Reinicia toda execução RUNNING ou WAITING | embrulhado, como a espera | Não rodado: a 24.6 não está no `main` | precisa: `B` | o arquivo da 24.6 que lê as execuções |
+| Sessões depois de restaurar | U3 | how-to, passo 3 (segredo trocado à mão) | Better Auth 1.7.8, sessões em `auth.session`; regra S46 | Apagar as sessões fecha toda entrada | embrulhado | Critério 14 | não precisa | `apps/server/src/hub/identity/restore-sessions.ts` |
+| Telegram depois de restaurar | U4 | nada no `main` (cartão da 24.7, `ffd94c4c`) | Telegram Bot API (o cartão da 24.7, linha 273: reentrega sem 200) | O webhook vive no Telegram; o vínculo vive no Hub e volta no tempo | nativo | Critério 22, ao vivo | não precisa | — |
+| Carga de um painel | U5 | nenhuma ferramenta | autocannon (MIT, Node; documentado; versão fixada na construção) | Conexões simultâneas por um tempo; percentis e taxa | nativo | — | precisa: `E` | `scripts/load/painel.ts` |
+| Carga de uma rotina | U5 | laboratório do firstmate de 2026-11-02 (local, modelo dublê) | `@mastra/core` 1.82.0, `mastra_schedule_triggers` e o retrato da execução | Mede pelas execuções que o Mastra grava | nativo | — | precisa: `E` | `scripts/load/rotina.ts` |
+
+**A medida do transplante.** Nada vem do Conexus OS: ele não tinha cópia nem ensaio. A técnica do
+seu `conexus-applications-backup` (globais sem senha e `pg_dump -Fc`, restaurados num PostgreSQL
+descartável) coincide com a das referências e entra pelas referências, não pelo código antigo.
+
+**A dívida.**
+- O plano grátis do Neon guarda 6 horas: a cópia cobre o dia seguinte até a etapa 23.
+- Um servidor novo, do zero, não é ensaiado (fica de fora).
+- O `restartAllActiveWorkflowRuns` do Mastra não é chamado no `main`; quem o ligar (24.6 ou 16) relê
+  o critério 17.
+
+## U1 A cópia da noite
+
+**Base e modelo.** O `main` do dia em que a 16 fechar. Sonnet: um comando novo, com um fluxo de
+envio de arquivo por partes; nada atravessa módulos.
+
+### As linhas da tabela
+
+"Cópia dos bancos fora do Neon", "Lista dos bancos das empresas", "Papéis no destino", "Bloqueio
+contra apagar", "Um registro que liga tudo". Ler na base: `apps/server/src/main.ts:311-315` (a tabela
+`COMMANDS`), `apps/server/src/platform/migrate.ts:217-250` (o modelo de um comando de uma vez),
+`apps/server/src/platform/neon.ts:41-51,179` (`list`, `ownerConnection`),
+`apps/server/src/builder/git/copy/copy.ts` (o modelo do cliente `S3`: `CALL_MS`, um `abortSignal` por
+chamada), `infra/compose.yaml:92-107` (o serviço `migrate`), `infra/hub.Dockerfile:30-40`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/platform/copy/` | Cria | `main.ts` |
+| `apps/server/src/main.ts` | Muda (uma linha em `COMMANDS`) | a imagem |
+| `apps/server/src/platform/config.ts` | Muda: `HUB_COPY_*` só para o comando | `copy.ts` |
+| `infra/hub.Dockerfile` | Muda: `postgresql-client-18` | a imagem |
+| `infra/compose.yaml` | Muda: serviço `copy` (perfil, de uma vez) | `infra/copy.sh` |
+| `infra/copy.sh` | Cria | `.github/workflows/copy.yml` |
+| `.github/workflows/copy.yml` | Cria | o GitHub |
+| `docs/how-to/copia-fora-do-neon.md`, `docs/index.md` | Cria, muda | — |
+
+### Os contratos que a unidade cria
+
+```ts
+// apps/server/src/platform/copy/manifest.ts
+export const COPY_PREFIX = 'copias' // a pasta do bucket; uma por dia, AAAA-MM-DD
+export type CopyTarget =
+  | { kind: 'HUB' }
+  | { kind: 'MASTRA' }
+  | { kind: 'COMPANY'; companyId: CompanyId }
+export type CopiedFile = { name: string; bytes: number; sha256: string }
+export type TargetResult =
+  | ({ kind: 'COPIED'; target: CopyTarget } & CopiedFile)
+  | { kind: 'FAILED'; target: CopyTarget; reason: 'UNREACHABLE' | 'DUMP_FAILED' | 'UPLOAD_FAILED' }
+export type Manifest = {
+  version: 1
+  conexus: string            // CONEXUS_VERSION da imagem
+  lastMigration: string      // a última linha de drizzle.__drizzle_migrations
+  startedAt: string; endedAt: string
+  globals: CopiedFile
+  targets: TargetResult[]
+  gitNewest: { companyId: CompanyId; projectId: ProjectId; version: number }[]
+}
+export const Manifest: z.ZodType<Manifest> // C27: copy-check lê de fora
+// apps/server/src/platform/copy/copy.ts
+export async function runCopy(deps: { config: CopyConfig; log: FailureLog; now?: () => Date }): Promise<Manifest>
+```
+
+Falhas novas: `COPY_UPLOAD_FAILED`, `COPY_PARTIAL` (saída 1), `CONFIG_INVALID` com
+`HUB_COPY_KEY_FILE`, `HUB_COPY_BUCKET`, `HUB_COPY_URL`, `HUB_COPY_REGION`. O dono de cada fato:
+`COPY_PREFIX` e o formato da pasta em `manifest.ts`; a lista de bancos em `copy.ts`. Modelo de
+arquivo: `builder/git/copy/copy.ts` cumpre C23 (ids marcados) e C26; o estado do resultado é união
+por `kind` (C21).
+
+### As skills e a leitura
+
+`@aws-sdk/client-s3` (linha da `stack.md`: README; o envio por partes é `@aws-sdk/lib-storage`
+`Upload`, que entra como pacote novo, com a sua linha); `@neon/sdk` (skills `neon:neon`,
+`neon-postgres-agent-platforms`); o guia do Neon de `pg_dump` (pela conexão direta).
+
+### A ordem do trabalho
+
+1. Apaga nada; acrescenta `postgresql-client-18` à imagem pelo repositório do PostgreSQL (o `apt`
+   do `node:24-slim` não traz a 18), com a chave do repositório fixada; confere `pg_dump --version`
+   no build. Regras: S40.
+2. `config.ts`: `HUB_COPY_URL` (https), `HUB_COPY_REGION`, `HUB_COPY_BUCKET`, `HUB_COPY_KEY_FILE`
+   (dono 1000, modo 0400, como `HUB_GIT_COPY_KEY_FILE`), lidos só pelo comando `copy`; o servidor não
+   os exige (critério 3).
+3. `copy.ts`: abre a conexão de migração do Hub (`HUB_MIGRATION_DATABASE_URL_FILE`) e a do Mastra
+   (`HUB_MASTRA_DATABASE_URL_FILE`); para cada empresa com banco pronto (`readyDatabaseOf`), pede
+   `ownerConnection` ao Neon. Roda `pg_dump -Fc -Z zstd:3 --no-owner` por banco num processo filho,
+   com a senha por `PGPASSWORD` no ambiente do filho e nunca na linha de comando; a saída vai direto
+   ao `Upload` por partes, sem arquivo no disco, contando bytes e sha256 no caminho. Os globais:
+   `pg_dumpall --globals-only --no-role-passwords` pela conexão de migração. O manifesto sobe por
+   último. Uma empresa por vez; o Hub e o Mastra primeiro. Regras: C50, C57, S40, D27 (a cópia
+   acorda os bancos uma vez por noite, e é isso).
+4. `infra/copy.sh` e `compose.yaml`: o serviço `copy` com o perfil `copy`, como `migrate`, e as
+   chaves que ele lê; `copy.sh` faz `compose run --rm copy`, com `timeout 1800`.
+5. `.github/workflows/copy.yml`: `schedule: cron '0 6 * * *'` e `workflow_dispatch`, `runs-on:
+   [self-hosted, hub]`, `concurrency: hub-copy`, `timeout-minutes: 40`; o resumo da rodada recebe a
+   linha `COPY_DONE`.
+6. `docs/how-to/copia-fora-do-neon.md` (português): como o fundador cria o bucket da letra `A`, com
+   versões e bloqueio de 30 dias (letra `F`), e uma chave que só grava e lê; como entregar a chave
+   ao firstmate; o caminho de desastre: um projeto Neon novo, `pg_restore` dos dois bancos, as
+   chaves do servidor apontadas para ele, "Reiniciar o Hub" com "Depois de restaurar".
+
+### Como se prova
+
+Critérios 1 a 6 com PostgreSQL 18 de teste (testing T19) e um bucket dublê que guarda em memória a
+chamada `S3`; o teste de "uma empresa fora" usa um endereço que não responde
+(`unreachableDatabaseUrl`). O critério 7 é ao vivo, depois do Release. O teste que falha hoje: o
+comando `copy` não existe.
+
+### Parar se
+
+- O Neon recusa `pg_dumpall --globals-only` (ele esconde `pg_authid`; `--no-role-passwords` lê
+  `pg_roles`, hipótese não rodada): pare e traga ao firstmate; a saída é gerar os papéis a partir das
+  migrações, e isso muda a U2.
+- O `pg_dump` 18 recusa o servidor do Neon por versão.
+- A primeira rodada ao vivo passa de 20 minutos.
+
+## U2 Conferir a cópia
+
+**Base e modelo.** Depois da U1. Sonnet.
+
+### As linhas da tabela
+
+"Conferir a cópia", "Papéis no destino". Ler: `manifest.ts` (U1), `migrate.ts:217-250`,
+`apps/server/src/platform/test-database.ts` (como os testes já montam um PostgreSQL 18), e a prova do
+estudo (o fluxo: globais, `pg_restore -C -j 4`, `migrate`, retomar a espera, ler a agenda).
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/platform/copy/copy-check.ts` | Cria | `main.ts` |
+| `apps/server/src/main.ts` | Muda (uma linha) | a imagem |
+| `infra/copy-check.sh` | Cria: rede própria, PostgreSQL 18 `--rm`, `compose run --rm copy-check` nela, `docker stop` no fim | `copy-check.yml` |
+| `.github/workflows/copy-check.yml` | Cria | o GitHub |
+
+### Os contratos que a unidade cria
+
+```ts
+export type CheckResult =
+  | { kind: 'CHECKED'; migrations: number; companies: number; threads: number; schedules: number; waits: number }
+  | { kind: 'CORRUPT'; file: string }
+  | { kind: 'NEWER_THAN_IMAGE'; lastMigration: string }
+export async function runCopyCheck(deps: { config: CopyConfig; scratchUrl: DatabaseUrl; log: FailureLog }): Promise<CheckResult>
+```
+
+`scratchUrl` vem de `HUB_COPY_SCRATCH_URL_FILE`, escrito por `copy-check.sh` com a senha do contêiner
+descartável.
+
+### A ordem do trabalho
+
+1. Baixar o manifesto mais novo (a pasta mais nova com `manifesto.json`); validar com `Manifest`.
+2. Baixar cada arquivo, conferir sha256 (critério 9); `lastMigration` que a imagem não tem:
+   `NEWER_THAN_IMAGE` (critério 10).
+3. Restaurar os globais, depois `pg_restore -C -j 4` de cada banco no descartável; rodar `migrate`
+   nele com senhas aleatórias de uma vez (zero a aplicar).
+4. Contar: `auth.company`, as conversas e as agendas do Mastra, as esperas; imprimir `COPY_CHECKED`.
+5. `copy-check.sh` sempre faz `docker stop` do descartável, mesmo na falha. Regras: S40, T19.
+
+### Como se prova
+
+Critérios 8 a 11, com uma cópia feita pela U1 no próprio teste. O critério 11 é a prova do estudo:
+uma espera de aprovação suspensa antes da cópia retoma até `success` no descartável, e a agenda tem o
+`nextFireAt` do manifesto.
+
+### Parar se
+
+- Restaurar um projeto de empresa exige papéis que o `globais.sql` do Hub não tem (cada projeto tem
+  os seus): pare; a U1 passa a guardar os globais de cada projeto.
+
+## U3 Depois de restaurar
+
+**Base e modelo.** Depois da U1, com a 24.6, a 24.7 e a 16 no `main`. Opus: atravessa identidade,
+automações, agentes, workflows, status e o deploy.
+
+### As linhas da tabela
+
+"Agenda depois de restaurar", "Espera de aprovação depois de restaurar", "Execuções da 24.6 depois
+de restaurar", "Sessões depois de restaurar", "Marca da restauração". Ler:
+`builder/automations/automations.ts:166-224` (`schedules.create`, `pause`, `resume`, `run`),
+`builder/mastra/hub-mastra.ts:80-110` (`prepare`, `start`, `settle`), `hub/status/` inteiro,
+`infra/deploy.sh:148-173`, `.github/workflows/restart.yml`, o leitor das esperas da 24.5 (o que
+desenha `approval-card.tsx`) e o da 24.6 (cartão `b3218fd4`, linhas 1807-1822 e 1914-1921).
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/migrations/<ts>_e22_restores/` | Cria | `migrate` |
+| `apps/server/database-grants.sql` | Muda: `hub_runtime` com `SELECT, INSERT, UPDATE` em `hub.restores` | o retrato do catálogo |
+| `apps/server/src/hub/status/` | Muda: `restores.ts`, `lastRestore` | `main.ts`, `public.ts` |
+| `apps/server/src/hub/identity/restore-sessions.ts` | Cria | `after-restore` |
+| `apps/server/src/builder/automations/after-restore.ts` | Cria | `after-restore` |
+| `apps/server/src/builder/agents/restored.ts` | Cria; o leitor e a rota de aprovar passam a consultar | as rotas da conversa |
+| o leitor e a rota de decisão dos workflows (24.6) | Muda | as rotas dos workflows |
+| `apps/server/src/main.ts` | Muda: comando `after-restore` | `deploy.sh` |
+| `apps/web/src/hub/status/status-page.tsx`, o cartão "Aprovar?" | Muda | — |
+| `infra/deploy.sh`, `.github/workflows/restart.yml` | Muda: entrada `restored` | o GitHub |
+
+### Os contratos que a unidade cria
+
+```sql
+-- hub.restores (D5, D6; grants em database-grants.sql)
+id bigint generated always as identity primary key,
+restored_to timestamptz not null unique,   -- o mais novo hub.starts que a restauração deixou
+applied_at timestamptz not null default now(),
+version text not null check (version ~ '^v[0-9]+\.[0-9]+\.[0-9]+$'),
+paused text[] not null default '{}',        -- ids das agendas que esta rodada pausou
+resumed boolean not null default false
+```
+
+```ts
+// apps/server/src/hub/status/restores.ts
+export type LastRestore = { restoredTo: string; appliedAt: string } | null
+export async function lastRestore(tx: ReadTx): Promise<LastRestore>
+// StatusView em hub-api ganha lastRestore: LastRestore
+// apps/server/src/builder/agents/restored.ts
+export function isRestoredWait(createdAt: Date, last: LastRestore): boolean
+// ApprovalState, onde a 24.5 o define, ganha o braço 'RESTORED'
+```
+
+Falhas novas: `RESTORED_WAIT_CLOSED` (409), `RESTORE_POINT_UNKNOWN` (saída 1). Texto da tela:
+"Restaurado: peça de novo se ainda precisar." e "Última restauração: <data e hora de Brasília>", à
+rodada de textos do fundador.
+
+### A ordem do trabalho
+
+1. A migração e os grants (D5, D6, D10; o retrato do catálogo muda nesta unidade).
+2. `after-restore` em `main.ts`: lê o mais novo `hub.starts` (`RESTORE_POINT_UNKNOWN` sem nenhum),
+   grava `hub.restores` (`ON CONFLICT (restored_to) DO NOTHING`); apaga `auth.session`
+   (`RESTORE_SESSIONS_ENDED`); abre o Mastra sem `startWorkers`, lista `schedules.list({ status:
+   'active' })`, grava os ids em `paused`, faz `pause` e depois `resume` de cada uma, marca `resumed`
+   (`RESTORE_SCHEDULES_MOVED`). Uma rodada que acha uma linha com `resumed = false` retoma as de
+   `paused` antes de tudo. Funções: `@mastra/core` 1.82.0 `mastra.schedules.pause/resume`
+   (`docs-workflows-scheduled-workflows.md:150-151`). Regras: S46, C50, D20.
+3. O leitor das esperas da 24.5 e o da 24.6 recebem `lastRestore` e marcam `RESTORED` toda espera
+   criada antes de `applied_at`; as rotas de aprovar e de decidir recusam com 409 antes de qualquer
+   chamada ao Mastra.
+4. `status.ts` e `apps/web/src/hub/status/status-page.tsx:53` (uma `StartRow` a mais): `lastRestore`.
+5. `restart.yml`: entrada booleana `restored` ("Depois de restaurar"); `deploy.sh --restart
+   --restored`: `migrate`, depois `compose run --rm migrate node apps/server/src/main.ts
+   after-restore` (as mesmas chaves do `migrate`, mais as do Mastra), depois o Hub. Com a 16, as duas
+   cores param antes da restauração e só uma sobe (relê o `deploy.sh` da 16 no dia).
+
+### Como se prova
+
+Critérios 13 a 20. O 15 repete a prova do estudo como teste: uma agenda com cron de seis campos
+dispara, a base é copiada, o Hub vivo dispara de novo, a cópia é restaurada, `after-restore` roda,
+e nada dispara nos 30 s seguintes à subida; sem `after-restore`, o mesmo teste mostra o disparo
+repetido (o teste que falha hoje). O 16 entra pela rota pública da conversa (T5), com o agente
+dublê da 24.5 (`test-approval.ts`).
+
+### Parar se
+
+- O leitor das esperas da 24.5 não tem a hora de criação da espera: pare; a hora vem do retrato do
+  Mastra, e isso é um contrato que este cartão não tem.
+- A 24.6 ligou `restartAllActiveWorkflowRuns`: uma execução que corria no minuto restaurado volta a
+  correr; pare e traga ao firstmate antes de escrever o critério 17.
+- A 24.7 desenha o cartão no Telegram por outro leitor: o mesmo `isRestoredWait` vale lá; se o
+  leitor não puder recebê-lo, pare.
+
+## U4 O procedimento numa página
+
+**Base e modelo.** Depois de U1, U2 e U3. Opus: texto para o fundador.
+
+### As linhas da tabela
+
+"Restaurar o Hub a um minuto", "Restaurar uma empresa", "Recuperar empresa apagada", "Restaurar o
+Git de um Projeto", "Telegram depois de restaurar".
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `docs/how-to/restaurar-tudo.md` | Cria | `docs/index.md` |
+| `docs/how-to/hub-database-restore.md` | Apaga | links em `docs/` |
+| `docs/how-to/hub-company-databases.md` | Muda: "Restore a company" vira um link; o "architecture §8" errado sai | — |
+| `docs/architecture.md` §7 "Restore" | Muda: a cópia fora do Neon e "Depois de restaurar" | — |
+
+### A ordem do trabalho
+
+1. Apagar `hub-database-restore.md` e trocar cada link (`grep -rn hub-database-restore docs`).
+2. Escrever `restaurar-tudo.md` na ordem do critério 21, com o que cada passo mostra; a hora em
+   Brasília e em UTC; o que conferir no Sankhya e no Telegram; o Git dos Projetos com versão depois
+   do minuto (`hub-git-restore.md`, o caso em que o bucket tem versão mais nova que o banco: a
+   próxima versão segue a do bucket, nunca refaz por cima). Regras: L23, L24, S46.
+3. O ensaio ao vivo (critérios 22 e 23), com o firstmate; os tempos e as palavras do fundador vão ao
+   livro de aprovações.
+
+### Parar se
+
+- O ensaio mostra um passo que só funciona com terminal: volta ao cartão.
+
+## U5 A medição de carga
+
+**Base e modelo.** Com a 24.6 no `main` (a rotina é um workflow). Sonnet.
+
+### As linhas da tabela
+
+"Carga de um painel", "Carga de uma rotina". Ler: o laboratório de carga do firstmate (2026-11-02)
+pelos seus números (600 disparos por minuto no máximo do agendador; 200 execuções ao mesmo tempo usam
+meio núcleo), a rota da 24.6 que lista execuções.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `scripts/load/painel.ts`, `scripts/load/rotina.ts` e testes | Cria | `load.yml` |
+| `package.json`, `package-lock.json` | Muda: `autocannon` como dependência de desenvolvimento | — |
+| `docs/reference/stack.md` | Muda: a linha do `autocannon` | — |
+| `.github/workflows/load.yml` | Cria: `runs-on: ubuntu-latest`, `environment: load`, só `workflow_dispatch` | o GitHub |
+
+### A ordem do trabalho
+
+1. `painel.ts`: `autocannon({ url, connections: 25, duration: 300 })`, com o cookie de uma pessoa de
+   teste vindo de um segredo do ambiente; imprime p50, p95, p99, taxa, erros; sai 1 fora dos números
+   da letra `E`.
+2. `rotina.ts`: lê pela API do Hub as execuções dos 30 workflows marcados, espera até 5 minutos,
+   confere que cada `runId` aparece uma vez.
+3. A empresa de teste ganha, pelo próprio Hub, o app de painel e os 30 workflows (o firstmate monta,
+   como usuário). Regras: S40 (nenhum dado de empresa no repositório), T14.
+
+### Parar se
+
+- O painel derruba outro app da mesma empresa (o risco da arquitetura §11): pare e leve os números
+  ao fundador antes de qualquer conserto.
