@@ -53,8 +53,8 @@ test.each([
   'depois de recarregar, o desfecho vem do registro: %s diz "Aprovado por você" e o desfecho da linha',
   async (_, row, said) => {
     conversation(server, { rows: recordedRun('approval').read, writes: [row] })
-    expect(await screen.findByText('Aprovado por você')).toBeTruthy()
-    expect(screen.getByText(said)).toBeTruthy()
+    expect(await screen.findByText(said)).toBeTruthy()
+    expect(screen.getByText('Aprovado por você')).toBeTruthy()
     if (row.state === 'REFUSED') {
       expect(screen.getByText(REFUSAL)).toBeTruthy()
       expect(screen.queryByText('Não conseguiu lançar')).toBeNull()
