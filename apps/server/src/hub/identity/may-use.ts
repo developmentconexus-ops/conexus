@@ -7,7 +7,7 @@ import type {
   Role,
 } from '@conexus/hub-api'
 import { hasPermission } from 'better-auth/plugins'
-import type { Database } from '../../platform/database.ts'
+import type { Database, ReadTx } from '../../platform/database.ts'
 import { roleOf } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { libraryCommandOn } from './auth.ts'
@@ -25,6 +25,23 @@ export type Speaker =
       kind: 'VERSION'
       declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
     }>
+
+export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>
+
+/** The person as the role they hold now, read in the caller's transaction; none for someone who is no member. */
+export async function speakerOf(
+  tx: ReadTx,
+  companyId: CompanyId,
+  personId: PersonId,
+): Promise<PersonSpeaker | undefined> {
+  const role = await roleOf(tx, companyId, personId)
+  return role === undefined ? undefined : personOf(personId, role)
+}
+
+/** The person with a role the caller already read (the Assistant's admission). */
+export function personOf(personId: PersonId, role: Role): PersonSpeaker {
+  return { kind: 'PERSON', personId, role }
+}
 
 /** The operation a speaker asks to use: the connection it runs on, the kit's connector and operation. */
 export type Target = Readonly<{
@@ -111,5 +128,5 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
       }),
     )
   }
-  return { mayUse, mayUseEach, mayPublishUnattended, roleOf }
+  return { mayUse, mayUseEach, mayPublishUnattended }
 }

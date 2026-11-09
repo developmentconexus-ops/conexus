@@ -48,7 +48,6 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
-import { answererLeavesAlone } from './publish.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
@@ -112,7 +111,7 @@ export async function agentTurnOf(
 
 export type AgentDeps = {
   database: Database
-  identity: Pick<IdentityPorts, 'roleOf' | 'mayUse' | 'mayPublishUnattended'>
+  identity: Pick<IdentityPorts, 'mayUse' | 'mayPublishUnattended'>
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
@@ -276,8 +275,7 @@ function runToolsOf(
     const preset = await presetTools({
       ...{ ...deps, scope, tools, turnOf: turnKey.of },
       ...{ author: authorOf(frozen), offered },
-      leavesAlone: (version, target) =>
-        answererLeavesAlone(deps, frozen.companyId, version.answeredBy, target),
+      approval: { ...deps, openWrites: deps.connectors.openWrites },
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({
