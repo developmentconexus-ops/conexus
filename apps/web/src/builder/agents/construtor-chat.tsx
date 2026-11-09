@@ -97,35 +97,33 @@ export function ConstrutorChat(props: {
               )
             }
             chat={
-              <div className="flex h-full min-h-0 flex-col">
-                <Chat
-                  companyId={companyId}
-                  conversationId={conversationId}
-                  place={{ controller: CONSTRUTOR_CONTROLLER }}
-                  conversationKey={listKey}
-                  onGone={() => void queryClient.invalidateQueries({ queryKey: listKey })}
-                  empty={CONSTRUTOR_FIRST}
-                  placeholder={CONSTRUTOR_PLACEHOLDER}
-                  noAccount={START_NO_ACCOUNT}
-                  picker={({ session, providers, onError }) => (
-                    <ModelChoice
-                      controller={CONSTRUTOR_CONTROLLER}
-                      conversationId={conversationId}
-                      write={{
-                        ...sendConstrutorModel,
-                        mutationFn: (body) =>
-                          sendConstrutorModel.mutationFn({
-                            params: { ...scope, conversationId },
-                            body,
-                          }),
-                      }}
-                      session={session}
-                      providers={providers}
-                      onError={onError}
-                    />
-                  )}
-                />
-              </div>
+              <Chat
+                companyId={companyId}
+                conversationId={conversationId}
+                place={{ controller: CONSTRUTOR_CONTROLLER }}
+                conversationKey={listKey}
+                onGone={() => void queryClient.invalidateQueries({ queryKey: listKey })}
+                empty={CONSTRUTOR_FIRST}
+                placeholder={CONSTRUTOR_PLACEHOLDER}
+                noAccount={START_NO_ACCOUNT}
+                picker={({ session, providers, onError }) => (
+                  <ModelChoice
+                    controller={CONSTRUTOR_CONTROLLER}
+                    conversationId={conversationId}
+                    write={{
+                      ...sendConstrutorModel,
+                      mutationFn: (body) =>
+                        sendConstrutorModel.mutationFn({
+                          params: { ...scope, conversationId },
+                          body,
+                        }),
+                    }}
+                    session={session}
+                    providers={providers}
+                    onError={onError}
+                  />
+                )}
+              />
             }
           />
         </div>

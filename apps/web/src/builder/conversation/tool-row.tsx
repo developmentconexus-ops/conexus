@@ -1,7 +1,5 @@
-import type { FailureCode } from '@conexus/hub-api'
 import {
   DraftRef,
-  FAILURES,
   ProposedApp,
   ProposedAutomation,
   ShownFile,
@@ -11,7 +9,6 @@ import {
 import { Link, useParams } from '@tanstack/react-router'
 import { BotIcon, FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
-import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -23,6 +20,7 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
+import { failureDetail } from './connector-specs.ts'
 import { useSecondsSince } from './elapsed.ts'
 import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
@@ -30,7 +28,16 @@ import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
-import { Answer, BLOCK, Generic, Library, Program, textOf } from './tool-bodies.tsx'
+import {
+  Answer,
+  asksToReconnect,
+  BLOCK,
+  Generic,
+  Library,
+  Program,
+  Reason,
+  textOf,
+} from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
 
@@ -57,7 +64,8 @@ function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
   // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
   const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
   if (refusal !== undefined) return refusal === 'RECONNECT'
-  if (status === 'error' || status === 'denied') return true
+  if (status === 'error' || status === 'denied')
+    return failureDetail(tool, room) !== null || asksToReconnect(tool, room)
   if (tool.output !== undefined && tool.output.length > 0) return true
   if (tool.result !== undefined && tool.result !== null) return true
   return (
@@ -66,22 +74,6 @@ function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
     typeof tool.args === 'object' &&
     Object.keys(tool.args).length > 0
   )
-}
-
-function isFailureCode(code: string): code is FailureCode {
-  return Object.hasOwn(FAILURES, code)
-}
-
-/** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
-function reasonOf(tool: ToolItem): string {
-  const text = tool.errorText ?? textOf(tool.result)
-  if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
-  const code = text.trim()
-  return isFailureCode(code) ? sentenceOfCode(code) : text
-}
-
-function Reason({ tool }: { tool: ToolItem }) {
-  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
 }
 
 function Side(props: { sign: '-' | '+'; text: string; className: string }) {
@@ -266,8 +258,10 @@ function AgentLine({
 }
 
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
-  const spec = specOf(tool.toolName, useRoom())
-  if (spec?.refusal?.(tool.result) === 'RECONNECT') return <Reconnect />
+  const room = useRoom()
+  const spec = specOf(tool.toolName, room)
+  if (spec?.refusal?.(tool.result) === 'RECONNECT' || asksToReconnect(tool, room))
+    return <Reconnect />
   const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'

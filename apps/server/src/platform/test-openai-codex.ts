@@ -6,8 +6,13 @@ const DEVICE_TOKEN_URL = `${ISSUER}/api/accounts/deviceauth/token`
 const TOKEN_URL = `${ISSUER}/oauth/token`
 const RESPONSES_URL = 'https://chatgpt.com/backend-api/codex/responses'
 
-/** One answer of the double: the status, and the JSON body when it has one. */
-export type CodexReply = { status: number; body?: unknown; headers?: Record<string, string> }
+/** One answer of the double: the status, and the JSON body when it has one, or a recorded stream (T24) the endpoint sends as it was recorded. */
+export type CodexReply = {
+  status: number
+  body?: unknown
+  stream?: Buffer
+  headers?: Record<string, string>
+}
 
 /** A call the process made to the vendor: which endpoint, and what it sent. */
 export type CodexCall = {
@@ -27,8 +32,8 @@ export type Codex = {
   exchange: () => CodexReply | Promise<CodexReply>
   /** The renewal at `oauth/token` (`grant_type=refresh_token`). */
   refresh: () => CodexReply | Promise<CodexReply>
-  /** A model call at the Codex endpoint: only a status, as the stream's shape is the recording's (T24). */
-  responses: () => CodexReply | Promise<CodexReply>
+  /** A model call at the Codex endpoint, given the body it sent: a status, or a recorded stream (T24). */
+  responses: (body: string) => CodexReply | Promise<CodexReply>
 }
 
 /** An unsigned token whose claims name a ChatGPT account, as the vendor's do; the content is invented. */
@@ -90,7 +95,7 @@ export function plantCodex(t: Lifetime): Codex {
     [DEVICE_TOKEN_URL, 'device-token', () => codex.deviceToken()],
     [TOKEN_URL, 'token', () => codex.exchange()],
     [TOKEN_URL, 'refresh', () => codex.refresh()],
-    [RESPONSES_URL, 'responses', () => codex.responses()],
+    [RESPONSES_URL, 'responses', (sent: string) => codex.responses(sent)],
   ] as const
   globalThis.fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : String(input)
@@ -107,7 +112,11 @@ export function plantCodex(t: Lifetime): Codex {
     const [, name, answer] = endpoint
     codex.calls.push({ endpoint: name, body, headers: new Headers(init?.headers) })
     init?.signal?.throwIfAborted()
-    const { status, body: reply, headers } = await answer()
+    const { status, body: reply, stream, headers } = await answer(body)
+    if (stream !== undefined) {
+      const sse = { 'content-type': 'text/event-stream', ...headers }
+      return new Response(new Uint8Array(stream), { status, headers: sse })
+    }
     return reply === undefined
       ? new Response(null, { status, headers })
       : Response.json(reply, { status, headers })

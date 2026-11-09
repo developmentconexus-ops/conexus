@@ -308,7 +308,7 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
     throw error
   }
   type Options = Parameters<typeof model.doGenerate>[0]
-  const watching: LanguageModel = {
+  return {
     specificationVersion: 'v3',
     provider: model.provider,
     modelId: model.modelId,
@@ -317,7 +317,6 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
     doGenerate: (options: Options) => Promise.resolve(model.doGenerate(options)).catch(report),
     doStream: (options: Options) => Promise.resolve(model.doStream(options)).catch(report),
   }
-  return watching
 }
 
 /**
@@ -357,15 +356,18 @@ async function modelOf(
 ) {
   const choice =
     call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
-  const chosen = choice === 'auto' ? autoMemoryModel(turn.modelId(requestContext)) : choice
-  const side =
-    chosen === null || chosen === turn.modelId(requestContext)
+  const main = turn.modelId(requestContext)
+  const kind =
+    choice === 'auto' && providerOf(main) === 'google'
+      ? (await accountOf(deps, turn, { requestContext }))?.kind
+      : undefined
+  const chosen = choice === 'auto' ? autoMemoryModel(main, kind) : choice
+  const account =
+    (chosen === null || chosen === main
       ? undefined
-      : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
-  const account = side ?? (await accountOf(deps, turn, { requestContext }))
-  return account === undefined
-    ? noAccountModel(turn.modelId(requestContext))
-    : watched(deps, turn, account, call)
+      : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))) ??
+    (await accountOf(deps, turn, { requestContext }))
+  return account === undefined ? noAccountModel(main) : watched(deps, turn, account, call)
 }
 
 /** Mastra's retry, answering before it only for a provider's own or unknown error, so a limit, a refusal or our `Failure` reaches the queue at once (code C75). */

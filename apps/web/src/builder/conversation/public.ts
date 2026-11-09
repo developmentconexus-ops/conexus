@@ -1,3 +1,4 @@
+export type { WritesRead } from './approval-item.ts'
 export { Beside } from './beside.tsx'
 export { Chat } from './chat.tsx'
 export type { ComposerTools } from './composer.tsx'
@@ -17,7 +18,7 @@ export {
   sendAssistantHandOff,
   sessionReadQuery,
 } from './queries.ts'
-export type { OpenedFile, OpenWritesRead, Room, WriteTool } from './room.ts'
+export type { OpenedFile, Room, WriteTool } from './room.ts'
 export { ASSISTANT_ROOM, agentRoom, RoomContext, useSay } from './room.ts'
 export { fileSide } from './shown-file.tsx'
 export {

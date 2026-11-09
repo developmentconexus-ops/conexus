@@ -141,3 +141,17 @@ test('outra aba gravou uma versão no meio (STALE_VERSION): a tela diz que há v
   const description = await screen.findByLabelText('O que ela faz')
   expect(description).toHaveProperty('value', 'Da outra aba.')
 })
+
+test('a Nova versão de uma ferramenta que escreve chama a operação de Escrita, não de Leitura', async () => {
+  const config = { description: 'Lança o pedido.', bound: {}, open: [] }
+  at(`${AREA}/tools/${TOOL}`, {
+    agents: [agent()],
+    tools: [toolSummary({ effect: 'WRITE', readLabel: 'Lançar pedido' })],
+    toolVersions: [{ kind: 'PRESET' as const, id: TOOL_V1, number: 1, ...config }],
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Nova versão' }))
+  const dialog = within(await screen.findByRole('dialog'))
+  expect(dialog.getByText('Escrita')).toBeTruthy()
+  expect(dialog.getByText('Lançar pedido')).toBeTruthy()
+  expect(dialog.queryByText('Leitura')).toBeNull()
+})

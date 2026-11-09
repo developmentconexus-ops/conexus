@@ -1,9 +1,11 @@
-import type { AgentDetail, ProblemField, ProblemReason } from '@conexus/hub-api'
+import type { AgentDetail, ProblemField, ProblemReason, ToolEffect } from '@conexus/hub-api'
 import { agoOf } from '../../platform/dates.ts'
 import { unconfirmedText } from '../../platform/hub.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
+/** What a tool's operation is called in its form, by what the operation does to the system's data. */
+export const OPERATION_LABEL: Record<ToolEffect, string> = { READ: 'Leitura', WRITE: 'Escrita' }
 export const CONSTRUTOR_NAME = 'Construtor'
 export const CONSTRUTOR_FIRST = 'Conte o que você quer que um agente faça.'
 export const CONSTRUTOR_PLACEHOLDER = 'Peça ao Construtor…'

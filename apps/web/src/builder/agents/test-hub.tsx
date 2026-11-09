@@ -28,7 +28,7 @@ import { START } from '../conversation/test-start.tsx'
 import { displayOf, openLine } from '../conversation/test-stream.tsx'
 import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
 import type { ToolHeld } from './test-hub-tools.tsx'
-import { catalogRoute, openWritesRoute, toolRoutes } from './test-hub-tools.tsx'
+import { catalogRoute, toolRoutes, writesRoute } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
@@ -161,7 +161,7 @@ const OpenConversation = z.object({ draft: z.boolean().optional() })
 
 function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
   return [
-    openWritesRoute(held, PROJECT_API),
+    writesRoute(held, PROJECT_API),
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
       HttpResponse.json({ conversations: held.conversations ?? [] }),
     ),
