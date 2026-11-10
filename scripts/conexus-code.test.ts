@@ -55,6 +55,8 @@ const BAD: Record<string, [string, string]> = {
     `${SERVER}/t26c.test.ts`,
     'const submittedPlan = {}\nexport const row = { submittedPlan }\n',
   ],
+  'C56 neondb literal': [`${SERVER}/n1.ts`, "export const db = 'neondb'\n"],
+  'C56 neondb_owner literal': [`${SERVER}/n2.ts`, 'export const owner = "neondb_owner"\n'],
   useThrowOnlyError: [`${SERVER}/t.ts`, "export function f() {\n  throw 'x'\n}\n"],
   useExhaustiveSwitchCases: [
     `${SERVER}/s.ts`,
@@ -93,6 +95,9 @@ const GOOD: Record<string, string> = {
     '',
   ].join('\n'),
   'apps/web/src/hub/ok3.ts': 'export function f(companyId: string) {\n  return companyId\n}\n',
+  'apps/server/src/platform/neon.ts':
+    "export const COMPANY_DATABASE = 'neondb'\nexport const OWNER_ROLE = 'neondb_owner'\n",
+  [`${SERVER}/ok7.test.ts`]: "export const db = 'neondb'\nexport const owner = 'neondb_owner'\n",
   [`${SERVER}/ok5.test.ts`]: 'export const v = JSON.parse("1")\n',
   [`${SERVER}/ok6.test.ts`]: [
     "import { nativeRecording } from '../../platform/test-recordings.ts'",
@@ -112,7 +117,7 @@ before(() => {
   delete config.vcs
   writeFileSync(join(dir, 'biome.json'), JSON.stringify(config))
   mkdirSync(join(dir, 'scripts'))
-  for (const grit of ['w25.grit', 'conexus-code.grit', 'library-shapes.grit']) {
+  for (const grit of ['w25.grit', 'conexus-code.grit', 'neon-names.grit', 'library-shapes.grit']) {
     cpSync(join(ROOT, 'scripts', grit), join(dir, 'scripts', grit))
   }
   const files = { ...Object.fromEntries(Object.values(BAD)), ...GOOD }
@@ -151,7 +156,7 @@ test('Biome aceita o código que as regras de conexus-code.grit deixam passar', 
 })
 
 test('cada recusa de conexus-code.grit e de library-shapes.grit diz a regra do guia', () => {
-  for (const rule of ['C23', 'C27', 'C48, C49', 'C53', 'T24']) {
+  for (const rule of ['C23', 'C27', 'C48, C49', 'C53', 'C56', 'T24']) {
     assert.ok(output.includes(`× ${rule}: `), `${rule} has no message`)
   }
 })
