@@ -37,10 +37,6 @@ function tablesOf(listed: Listed) {
 const TABLES = ok(listAppTables, { kind: 'TABLES', tables: tablesOf(LISTED) })
 const WITH_COPIES = ok(listAppTables, { kind: 'TABLES', tables: tablesOf([...LISTED, ...COPIED]) })
 const COPIES_ONLY = ok(listAppTables, { kind: 'TABLES', tables: tablesOf(COPIED) })
-const NO_APP_WITH_COPIES = ok(listAppTables, {
-  kind: 'NO_APP',
-  copies: tablesOf(COPIED.map((copy) => ({ ...copy, rows: { kind: 'UNKNOWN' as const } }))),
-})
 const NO_COPY_ROWS = ok(listCopyRows, { columns: [], rows: [], next: { kind: 'END' } })
 const NO_ROWS = ok(listAppRows, { columns: [], rows: [], next: { kind: 'END' } })
 
@@ -170,12 +166,6 @@ export const DATA_STATES: State[] = [
     path: PAGE,
     replies: copiesPage(COPIES_ONLY, 'vendas', NO_COPY_ROWS),
     settle: (p) => waitFor(p, 'O app ainda não criou tabelas.'),
-  },
-  {
-    name: 'Dados, um Projeto sem app com cópia liberada',
-    path: PAGE,
-    replies: copiesPage(NO_APP_WITH_COPIES, 'vendas', NO_COPY_ROWS),
-    settle: (p) => waitFor(p, 'Este Projeto ainda não tem app. Peça um ao Builder.'),
   },
   {
     name: 'Dados, uma cópia que não existe ou não foi liberada',

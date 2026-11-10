@@ -107,6 +107,7 @@ test('liberar, o banco da empresa não respondeu: a frase e o botão de novo', a
   open(copies(), 'owner', 'grant')
   fireEvent.click((await row('Vendas')).getByRole('button', { name: 'Liberar: Vendas' }))
   expect(await screen.findByText(sentenceOfCode('COPY_DATABASE_UNAVAILABLE'))).toBeTruthy()
+  expect((await row('Vendas')).queryByText('Liberada')).toBeNull()
   await waitFor(async () => {
     const button = (await row('Vendas')).getByRole('button', { name: 'Liberar: Vendas' })
     expect(button.hasAttribute('disabled')).toBe(false)

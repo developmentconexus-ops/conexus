@@ -26,28 +26,62 @@ function refused(deps: CopiesDeps, input: OfRelease, answer: Exclude<SqlAnswer, 
 }
 
 /**
+ * The release's row, taken back when the `GRANT` did not follow: a second transaction of the Hub,
+ * so the list never says "liberada" for a copy the Projeto cannot read. If this fails too, both
+ * failures are logged and the row stays: `applyGrants` gives it back at the next
+ * `APP_DATABASE_READY` (data D22: the external effect never runs inside a transaction).
+ */
+async function undoRelease(deps: CopiesDeps, input: OfRelease): Promise<void> {
+  const { companyId, projectId, copyId } = input
+  try {
+    await deps.database.command(personScope(input), async (tx) => {
+      await tx
+        .delete(projectCopy)
+        .where(
+          and(eq(projectCopy.projectId, input.projectId), eq(projectCopy.copyId, input.copyId)),
+        )
+    })
+  } catch (error) {
+    const reason = error instanceof Error ? error.name : 'UNKNOWN'
+    deps.log.error({ companyId, projectId, copyId, reason }, 'COPY_RELEASE_UNDO_FAILED')
+  }
+}
+
+/**
  * Liberar: the release's row first, then, with no transaction open (data D22), the Projeto's
- * schema and logins by their owner, `hub/apps`, and the `GRANT`. A silent database answers 503 and
- * keeps the row; doing it again finishes.
+ * schema and logins by their owner, `hub/apps`, and the `GRANT`. A silent database answers 503
+ * and the row this act made is taken back by a second transaction, so the Projeto reads nothing
+ * the list does not show; doing it again starts over. A row an earlier act made stays.
  */
 export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<void> {
-  const { name, sync } = await deps.database.command(personScope(input), async (tx) => {
+  const { name, sync, made } = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     const found = await bothOf(deps, tx, input)
-    await tx
+    const inserted = await tx
       .insert(projectCopy)
       .values({
         ...{ companyId: input.companyId, projectId: input.projectId, copyId: input.copyId },
         ...{ grantedBy: input.personId, grantedAt: sql`statement_timestamp()` },
       })
       .onConflictDoNothing()
-    return { name: found.name, sync: await syncOf(deps, tx, input.companyId) }
+      .returning({ copyId: projectCopy.copyId })
+    return {
+      name: found.name,
+      sync: await syncOf(deps, tx, input.companyId),
+      made: inserted.length > 0,
+    }
   })
   const unavailable = new Failure('COPY_DATABASE_UNAVAILABLE')
-  if ((await deps.apps().projectDatabase(input)).kind !== 'OPEN' || sync === undefined)
-    throw unavailable
-  const granted = await deps.companyPostgres.grantCopy(sync, { name, projectId: input.projectId })
-  if (granted.kind !== 'DONE') throw refused(deps, input, granted)
+  const opened = await deps.apps().projectDatabase(input)
+  const granted =
+    opened.kind === 'OPEN' && sync !== undefined
+      ? await deps.companyPostgres.grantCopy(sync, { name, projectId: input.projectId })
+      : undefined
+  if (granted?.kind !== 'DONE') {
+    if (made) await undoRelease(deps, input)
+    if (granted === undefined) throw unavailable
+    throw refused(deps, input, granted)
+  }
   const { companyId, projectId, copyId } = input
   deps.log.info({ companyId, projectId, copyId }, 'COPY_GRANTED')
 }
@@ -90,19 +124,6 @@ function releasesOf(deps: CopiesDeps, input: OfProject) {
     const sync = await syncOf(deps, tx, input.companyId)
     return sync === undefined ? undefined : { names: rows.map((row) => row.name), sync }
   })
-}
-
-/** The names of the copies released to the Projeto, in name order; none when nothing is released. */
-export async function releasedNamesOf(deps: CopiesDeps, input: OfProject): Promise<string[]> {
-  const rows = await deps.database.read(companyScope(input.companyId), (tx) =>
-    tx
-      .select({ name: copy.name })
-      .from(projectCopy)
-      .innerJoin(copy, eq(copy.id, projectCopy.copyId))
-      .where(eq(projectCopy.projectId, input.projectId))
-      .orderBy(copy.name),
-  )
-  return rows.map((row) => row.name)
 }
 
 const NOTHING: SqlAnswer = { kind: 'DONE', value: [] }

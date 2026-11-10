@@ -94,6 +94,67 @@ test('liberar e tirar', async (t) => {
   )
 })
 
+async function listedGrants(on: CopiesOn) {
+  const response = await call(on.hub, on.ana, 'GET', `${on.projects}/${on.projectId}/copies`)
+  assert.equal(response.statusCode, 200, response.body)
+  return Object(response.json()).copies.map((one: { copy: { name: string }; granted: boolean }) => [
+    one.copy.name,
+    one.granted,
+  ])
+}
+
+test('liberar: o GRANT que falha desfaz a linha, e a lista diz não liberada', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const silent = t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  const put = await call(on.hub, on.ana, 'PUT', `${on.projects}/${on.projectId}/copies/${copyId}`)
+  assert.deepEqual([put.statusCode, Object(put.json()).code], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  assert.equal(await releasesOf(on), 0, 'a linha que este ato fez foi desfeita')
+  assert.deepEqual(await listedGrants(on), [['vendas', false]])
+  silent.mock.restore()
+  await on.copies.grant(release(on, copyId))
+  assert.deepEqual(await listedGrants(on), [['vendas', true]])
+  t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.copies.grant(release(on, copyId)))
+  assert.deepEqual(await listedGrants(on), [['vendas', true]], 'a liberação de antes fica')
+})
+
+/** As the Hub's owner: the release's row can no longer be deleted, as when the Hub's database falls between the two acts. */
+async function refuseDeletes(on: CopiesOn) {
+  const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
+  await client.connect()
+  try {
+    await client.query(
+      "create function copies.refuse_delete() returns trigger language plpgsql as $$ begin raise exception 'refused'; end $$",
+    )
+    await client.query(
+      'create trigger refuse_delete before delete on copies.project_copy for each row execute function copies.refuse_delete()',
+    )
+  } finally {
+    await client.end()
+  }
+}
+
+test('liberar: o apagar que também falha registra e responde o mesmo 503', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  await refuseDeletes(on)
+  t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.copies.grant(release(on, copyId)))
+  assert.equal(await releasesOf(on), 1, 'a linha fica para a reparação')
+  const lines = on.hub.lines.map(({ message }) => message)
+  assert.ok(lines.includes('COPY_GRANT_FAILED'), 'o GRANT que falhou')
+  assert.ok(lines.includes('COPY_RELEASE_UNDO_FAILED'), 'o apagar que falhou')
+})
+
 test('liberar a um Projeto sem app', async (t) => {
   const on = await copiesOn(t)
   await readyForVersions(t, on.hub, on.ana, on.companyId)
@@ -102,8 +163,9 @@ test('liberar a um Projeto sem app', async (t) => {
   assert.deepEqual(await loginsOf(on.owner, on.projectId), [], 'o Projeto ainda não tem app')
   on.hub.neon.script('ownerConnection', 'NO_ANSWER')
   await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.copies.grant(release(on, copyId)))
-  assert.equal(await releasesOf(on), 1, 'a linha fica')
+  assert.equal(await releasesOf(on), 0, 'a linha desfeita: a lista não diz liberada')
   await on.copies.grant(release(on, copyId))
+  assert.equal(await releasesOf(on), 1)
   const made = await loginsOf(on.owner, on.projectId)
   assert.equal(made.length, 3, 'o esquema e os logins pelo dono de hoje')
   const { readLogin } = appLogin(on.projectId)

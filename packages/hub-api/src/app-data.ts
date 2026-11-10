@@ -33,7 +33,7 @@ export const AppTableSummary = z.object({
 export type AppTableSummary = z.infer<typeof AppTableSummary>
 
 export const AppTables = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('NO_APP'), copies: z.array(AppTableSummary) }),
+  z.object({ kind: z.literal('NO_APP') }),
   z.object({ kind: z.literal('TABLES'), tables: z.array(AppTableSummary) }),
 ])
 export type AppTables = z.infer<typeof AppTables>

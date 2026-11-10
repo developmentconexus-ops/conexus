@@ -93,6 +93,19 @@ export type Answers = {
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
 
+type Held = Parameters<typeof copiesHub>[1]
+
+/** The runs of one copy: the first page, with a MORE when `later` is held, or that later page when asked for. */
+function runsOf(held: Held, id: unknown, request: Request) {
+  const found = held.copies.find((one) => one.id === id)
+  if (found === undefined) return refusal('COPY_NOT_FOUND')
+  if (new URL(request.url).searchParams.has('page')) {
+    return HttpResponse.json({ copy: found, runs: held.later ?? [], next: { kind: 'END' } })
+  }
+  const next = held.later === undefined ? { kind: 'END' } : { kind: 'MORE', page: 'NTA' }
+  return HttpResponse.json({ copy: found, runs: held.runs ?? [], next })
+}
+
 /**
  * The Hub's copies on `server`: a list that changes as the writes land, the models, the connections
  * and the runs of each copy. `sent` holds every request, with its attempt key.
@@ -102,6 +115,8 @@ function copiesHub(
   held: {
     copies: CopySummary[]
     runs?: CopyRun[]
+    /** The runs of the page `NTA` that a `MORE` after the first points to. */
+    later?: CopyRun[]
     models?: CopyModelSummary[]
     connections?: Connection[]
     answers?: Answers
@@ -169,11 +184,7 @@ function copiesHub(
       await note(request)
       return answers.write?.() ?? HttpResponse.json({}, { status: 202 })
     }),
-    http.get(`${BASE}/copies/:id/runs`, ({ params }) => {
-      const found = held.copies.find((one) => one.id === params.id)
-      if (found === undefined) return refusal('COPY_NOT_FOUND')
-      return HttpResponse.json({ copy: found, runs: held.runs ?? [], next: { kind: 'END' } })
-    }),
+    http.get(`${BASE}/copies/:id/runs`, ({ params, request }) => runsOf(held, params.id, request)),
   )
   return {
     sent,

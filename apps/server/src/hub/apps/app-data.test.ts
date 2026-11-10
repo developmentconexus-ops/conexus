@@ -96,7 +96,7 @@ test('dados: Projeto sem app', async (t) => {
   const empty = `${on.base}/projects/${String(Object(made.json()).project.id)}`
   const listed = await on.tables(on.ana, empty)
   assert.equal(listed.statusCode, 200, listed.body)
-  assert.deepEqual(listed.json(), { kind: 'NO_APP', copies: [] })
+  assert.deepEqual(listed.json(), { kind: 'NO_APP' })
   const rows = await on.rows(on.ana, CLIENTES, undefined, empty)
   assert.deepEqual([rows.statusCode, codeOf(rows)], [404, 'NOT_FOUND'])
 })

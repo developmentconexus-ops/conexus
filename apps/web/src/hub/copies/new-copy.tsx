@@ -1,5 +1,5 @@
 import type { CompanyId, ConnectionId, CopyModelSummary } from '@conexus/hub-api'
-import { COPY_INTERVAL_DEFAULT, EnableCopy } from '@conexus/hub-api'
+import { COPY_INTERVAL_DEFAULT, EnableCopy, FAILURES } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -24,9 +24,6 @@ import { INTERVAL_CHOICES } from './interval.tsx'
 import { copyModelsQuery, sendCopyEnable } from './queries.ts'
 import { ENABLE_COPY, NO_MODEL_CONNECTION, TO_INTEGRATIONS, UNCONFIRMED_ENABLE } from './text.ts'
 
-// The refusals that leave the copy as it was and say to try again: the key stays, the sentence shows.
-const RETRYING = ['COPY_DATABASE_UNAVAILABLE', 'HUB_UPDATING', 'DATABASE_UNAVAILABLE']
-
 type Choice = { value: string; label: string }
 
 function ChoiceField(props: {
@@ -34,6 +31,7 @@ function ChoiceField(props: {
   label: string
   items: Choice[]
   invalid: string
+  placeholder?: string
   onPick?: (value: string) => void
 }) {
   const { control } = useFormContext()
@@ -47,6 +45,7 @@ function ChoiceField(props: {
         render={({ field }) => (
           <ChoiceSelect
             label={props.label}
+            placeholder={props.placeholder}
             value={field.value ?? ''}
             items={props.items}
             onValueChange={(next) => {
@@ -87,7 +86,7 @@ function CopyForm(props: {
       )
       props.onDone()
     } catch (error) {
-      if (error instanceof HubFailure && RETRYING.includes(error.code)) {
+      if (error instanceof HubFailure && FAILURES[error.code].actionKind === 'RETRY') {
         setServerError(form, error)
       } else setWriteError(form, error, UNCONFIRMED_ENABLE)
     }
@@ -99,10 +98,17 @@ function CopyForm(props: {
         name="connectionId"
         label="Conexão"
         invalid="Escolha a conexão."
+        placeholder="Escolha a conexão"
         items={connections.map((one) => ({ value: one.id, label: one.name }))}
         onPick={() => form.setValue('model', '')}
       />
-      <ChoiceField name="model" label="Modelo" invalid="Escolha o modelo." items={modelChoices} />
+      <ChoiceField
+        name="model"
+        label="Modelo"
+        invalid="Escolha o modelo."
+        placeholder="Escolha o modelo"
+        items={modelChoices}
+      />
       <ChoiceField
         name="interval"
         label="Intervalo"

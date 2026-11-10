@@ -136,6 +136,28 @@ function detailPage(runs: RunIn[]) {
   }
 }
 
+/** The dialog of Ligar with a connection and a model chosen, then Ligar pressed: the Hub refuses with `replies`. */
+function linkRefused(code: 'COPY_DATABASE_UNAVAILABLE' | 'COPY_EXISTS', sentence: string): State {
+  return {
+    name: `Ligar uma cópia, recusada: ${code}`,
+    path: PAGE,
+    replies: { ...copiesPage(LISTED), [`POST ${COMPANY_API}/copies`]: failure(code) },
+    settle: async (p) => {
+      await waitFor(p, 'Sem relógio')
+      await p.getByRole('button', { name: 'Ligar uma cópia' }).click()
+      for (const [field, option] of [
+        ['Conexão', 'Matriz'],
+        ['Modelo', 'Vendas'],
+      ] as const) {
+        await p.getByRole('combobox', { name: field }).click()
+        await p.getByRole('option', { name: option }).click()
+      }
+      await p.getByRole('button', { name: 'Ligar', exact: true }).click()
+      await waitFor(p, sentence)
+    },
+  }
+}
+
 // The screens capacity 2 brings: the company's Cópias, its dialog to turn one on, and one copy.
 export const COPIES_STATES: State[] = [
   {
@@ -208,5 +230,37 @@ export const COPIES_STATES: State[] = [
       [`GET ${COMPANY_API}/copies/${CLIENTES.replace('2', '9')}/runs`]: failure('COPY_NOT_FOUND'),
     },
     settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
+  },
+  {
+    name: 'Cópias, o menu da linha',
+    path: PAGE,
+    replies: copiesPage(LISTED),
+    settle: async (p) => {
+      await waitFor(p, 'Sem relógio')
+      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
+      await p.getByRole('menuitem', { name: 'Rodar agora' }).waitFor()
+    },
+  },
+  {
+    name: 'Cópias, o diálogo do Intervalo',
+    path: PAGE,
+    replies: copiesPage(LISTED),
+    settle: async (p) => {
+      await waitFor(p, 'Sem relógio')
+      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
+      await p.getByRole('menuitem', { name: 'Intervalo' }).click()
+      await waitFor(p, 'O mínimo é 15 minutos.')
+    },
+  },
+  linkRefused('COPY_DATABASE_UNAVAILABLE', 'O banco da empresa não respondeu.'),
+  linkRefused('COPY_EXISTS', 'A empresa já tem esta cópia.'),
+  {
+    name: 'Uma cópia, a leitura das rodadas que falhou',
+    path: `${PAGE}/${VENDAS}`,
+    replies: {
+      ...detailPage([]),
+      [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: failure('DATABASE_UNAVAILABLE'),
+    },
+    settle: (p) => waitFor(p, 'O banco do Conexus não respondeu.'),
   },
 ]

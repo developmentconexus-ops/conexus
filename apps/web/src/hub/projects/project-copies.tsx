@@ -1,5 +1,5 @@
 import type { CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -8,13 +8,7 @@ import { Button } from '../../ui/button.tsx'
 import { List, Row, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
-import {
-  projectCopiesKey,
-  projectCopiesQuery,
-  projectTablesKey,
-  sendCopyGrant,
-  sendCopyRevoke,
-} from './queries.ts'
+import { projectCopiesQuery, sendCopyGrant, sendCopyRevoke } from './queries.ts'
 
 const company = getRouteApi('/_app/companies/$companyId')
 
@@ -24,18 +18,11 @@ const ASK_MANAGER = 'Dono, administrador ou desenvolvedor libera uma cópia.'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
-/** Liberar or Tirar one copy: the Projeto's list and its Dados are read again when it settles, a refusal says why and leaves the button. */
+/** Liberar or Tirar one copy: every read is stale when it settles, a refusal says why and leaves the button. */
 function Release(props: Scope & { copyId: CopyId; label: string; granted: boolean }) {
   const { companyId, projectId, copyId, label, granted } = props
-  const queryClient = useQueryClient()
-  function onSettled() {
-    return Promise.all([
-      queryClient.invalidateQueries({ queryKey: projectCopiesKey(companyId, projectId) }),
-      queryClient.invalidateQueries({ queryKey: projectTablesKey(companyId, projectId) }),
-    ])
-  }
-  const grant = useMutation({ ...sendCopyGrant, onSettled })
-  const revoke = useMutation({ ...sendCopyRevoke, onSettled })
+  const grant = useMutation(sendCopyGrant)
+  const revoke = useMutation(sendCopyRevoke)
   const send = granted ? revoke : grant
   const word = granted ? 'Tirar' : 'Liberar'
   return (

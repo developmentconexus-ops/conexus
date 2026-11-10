@@ -107,6 +107,8 @@ test('Ligar: sem conexão que tenha modelo, a frase e o link para Integrações'
 test('Ligar: o formulário pede a conexão e o modelo antes de mandar', async () => {
   const hub = openCopies(server, { copies: [] }, LIST)
   const dialog = await openDialog()
+  expect(await dialog.findByText('Escolha a conexão')).toBeTruthy()
+  expect(dialog.getByText('Escolha o modelo')).toBeTruthy()
   fireEvent.click(await dialog.findByRole('button', { name: 'Ligar' }))
   expect(await dialog.findByText('Escolha a conexão.')).toBeTruthy()
   expect(hub.writes()).toHaveLength(0)

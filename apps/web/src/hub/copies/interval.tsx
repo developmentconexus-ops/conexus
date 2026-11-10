@@ -31,13 +31,17 @@ export function IntervalDialog(props: {
   const [failure, setFailure] = useState<string>()
   const change = useMutation(sendCopyInterval)
 
+  function onOpenChange(open: boolean) {
+    if (!open) setFailure(undefined)
+    props.onOpenChange(open)
+  }
+
   function save() {
     change.mutate(
       { params: { companyId, copyId: copy.id }, body: { interval: chosen } },
       {
         onSuccess: () => {
-          setFailure(undefined)
-          props.onOpenChange(false)
+          onOpenChange(false)
         },
         onError: (error) => setFailure(writeFailureText(error, UNCONFIRMED_ACTION)),
       },
@@ -45,7 +49,7 @@ export function IntervalDialog(props: {
   }
 
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+    <Dialog open={props.open} onOpenChange={onOpenChange}>
       <DialogContent
         title={`Intervalo de ${copy.label}`}
         description="De quanto em quanto tempo a cópia roda. O mínimo é 15 minutos."
@@ -61,7 +65,7 @@ export function IntervalDialog(props: {
           <Button variant="primary" disabled={change.isPending} onClick={save}>
             {change.isPending ? 'Salvando…' : 'Salvar'}
           </Button>
-          <Button disabled={change.isPending} onClick={() => props.onOpenChange(false)}>
+          <Button disabled={change.isPending} onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
         </div>

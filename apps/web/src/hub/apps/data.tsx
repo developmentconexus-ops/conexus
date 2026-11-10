@@ -82,14 +82,12 @@ function TableGroup(props: {
 
 /** What the page lists of a Projeto: the app's tables (or why it has none) and the copies released to it. */
 function listOf(data: AppTables) {
-  const [tables, copies] =
-    data.kind === 'NO_APP'
-      ? [[], data.copies]
-      : [
-          data.tables.filter((table) => table.schema === 'APP'),
-          data.tables.filter((table) => table.schema === 'COPY'),
-        ]
-  return { tables, copies, noTables: data.kind === 'NO_APP' ? NO_APP : NO_TABLES }
+  if (data.kind === 'NO_APP') return { tables: [], copies: [], noTables: NO_APP }
+  return {
+    tables: data.tables.filter((table) => table.schema === 'APP'),
+    copies: data.tables.filter((table) => table.schema === 'COPY'),
+    noTables: NO_TABLES,
+  }
 }
 
 /**

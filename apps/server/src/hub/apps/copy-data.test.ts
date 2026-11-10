@@ -50,7 +50,7 @@ async function releasedOn(t: TestContext) {
 
 test('Dados: as cópias liberadas', async (t) => {
   const on = await releasedOn(t)
-  assert.deepEqual(await on.tables(), { kind: 'NO_APP', copies: [] }, 'sem liberação e sem app')
+  assert.deepEqual(await on.tables(), { kind: 'NO_APP' }, 'sem liberação e sem app')
 
   await on.grant()
   assert.deepEqual(
@@ -88,21 +88,14 @@ test('Dados: as cópias liberadas', async (t) => {
   )
 })
 
-test('Dados: Projeto sem app com liberação interrompida', async (t) => {
+test('Dados: Projeto sem app com liberação desfeita', async (t) => {
   const on = await releasedOn(t)
   on.hub.neon.script('ownerConnection', 'NO_ANSWER')
   await assert.rejects(
     on.grant,
     (error: unknown) => Object(error).code === 'COPY_DATABASE_UNAVAILABLE',
   )
-  assert.deepEqual(
-    await on.tables(),
-    {
-      kind: 'NO_APP',
-      copies: [{ schema: 'COPY', name: 'vendas', rows: { kind: 'UNKNOWN' } }],
-    },
-    'a linha da liberação ficou, o app não: as cópias vêm sem contagem',
-  )
+  assert.deepEqual(await on.tables(), { kind: 'NO_APP' }, 'a liberação que falhou foi desfeita')
   const rows = await on.rows('copy-tables', 'vendas')
   assert.deepEqual([rows.statusCode, codeOf(rows)], [404, 'NOT_FOUND'])
 })

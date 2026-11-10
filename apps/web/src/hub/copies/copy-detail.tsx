@@ -6,14 +6,16 @@ import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { CodeBlock, CodeBlockContent, CodeBlockLine } from '../../ui/code-block.tsx'
-import { PageTitle, SectionTitle } from '../../ui/list.tsx'
+import { List, PageTitle, Row, SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Note } from './copy-list.tsx'
-import { CopyMenu, NoteLine, StateBadge } from './copy-list.tsx'
+import { CopyMenu, NoteLine, RunNowButton, StateBadge } from './copy-list.tsx'
 import { copyRunsQuery } from './queries.ts'
+import { useRunRequests } from './run-requests.ts'
 import {
   BACK_TO_COPIES,
   COPIED_TITLE,
@@ -38,12 +40,40 @@ function RunRow({ run }: { run: CopyRun }) {
   )
 }
 
+/** A run on a phone, as the card draws it: when and how long, then what was read and how it ended. */
+function RunPhoneRow({ run }: { run: CopyRun }) {
+  return (
+    <Row>
+      <div className="flex min-w-0 flex-col gap-xs px-sm py-md tabular-nums">
+        <span>{`${dayAndHour(run.startedAt)} · ${durationText(run)}`}</span>
+        <span className="break-words text-text-2">
+          {`${countText(run.read)} lidas · ${outcomeText(run)}`}
+        </span>
+      </div>
+    </Row>
+  )
+}
+
 function Runs(props: {
   runs: CopyRun[]
   next: Parameters<typeof Pager>[0]['next']
   page?: string
 }) {
+  const phone = useIsMobile()
   if (props.runs.length === 0) return <p className="text-text-2">{NO_RUNS_YET}</p>
+  const pager = <Pager next={props.next} param="page" page={props.page} list="Rodadas" />
+  if (phone) {
+    return (
+      <>
+        <List>
+          {props.runs.map((run) => (
+            <RunPhoneRow key={run.id} run={run} />
+          ))}
+        </List>
+        {pager}
+      </>
+    )
+  }
   return (
     <>
       <Table>
@@ -62,7 +92,7 @@ function Runs(props: {
           ))}
         </TableBody>
       </Table>
-      <Pager next={props.next} param="page" page={props.page} list="Rodadas" />
+      {pager}
     </>
   )
 }
@@ -74,7 +104,7 @@ function Runs(props: {
  */
 export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?: string }) {
   const { companyId, copyId, page } = props
-  const read = useQuery(copyRunsQuery(companyId, copyId, page))
+  const read = useQuery(copyRunsQuery(companyId, copyId, page, useRunRequests()))
   const [note, setNote] = useState<Note>()
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
@@ -100,7 +130,10 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
               : `${copy.connection.name} · a cada ${INTERVAL_LABEL[copy.interval]}`}
           </span>
         </div>
-        <CopyMenu companyId={companyId} copy={copy} onNote={setNote} />
+        <div className="flex items-center gap-sm">
+          <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
+          <CopyMenu companyId={companyId} copy={copy} onNote={setNote} withRun={false} />
+        </div>
       </div>
       {note !== undefined && <NoteLine note={note} />}
       <section aria-label={COPIED_TITLE} className="flex min-w-0 flex-col gap-md">

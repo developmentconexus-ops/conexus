@@ -94,20 +94,6 @@ test('Dados: um Projeto sem cópia liberada não mostra a seção', async () => 
   expect(screen.queryByRole('region', { name: 'Cópias liberadas' })).toBeNull()
 })
 
-test('Dados: Projeto sem app com cópia liberada', async () => {
-  const copies = TablesShape.parse({
-    kind: 'NO_APP',
-    copies: [{ schema: 'COPY', name: 'vendas', rows: { kind: 'UNKNOWN' } }],
-  })
-  open(`${PROJECT}/data`, { tables: () => copies, copyRows: copyRowsOf })
-  const app = within(await screen.findByRole('region', { name: 'Tabelas do app' }))
-  expect(app.getByText('Este Projeto ainda não tem app. Peça um ao Builder.')).toBeTruthy()
-  const shown = within(screen.getByRole('region', { name: 'Cópias liberadas' }))
-  expect(shown.getAllByRole('link').map((link) => link.textContent)).toEqual(['vendasindisponível'])
-  fireEvent.click(shown.getByRole('link', { name: /^vendas/ }))
-  expect(await screen.findByText('12.50')).toBeTruthy()
-})
-
 test('Dados: um Projeto com cópia liberada e app sem tabelas', async () => {
   const only = TablesShape.parse({
     kind: 'TABLES',

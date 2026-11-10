@@ -1,13 +1,13 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type {
   AppRows,
+  AppTableName,
   AppTableSummary,
   AppTables,
   CompanyId,
   Person,
   ProjectId,
 } from '@conexus/hub-api'
-import { AppTableName } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import { appRowsOf } from './app-rows.ts'
 import type { AppReadInput, AppTable, TableSchema } from './app-tables.ts'
@@ -21,21 +21,6 @@ export type AppDataDeps = SendDeps & {
 }
 
 type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
-
-/** With no app to read from, the copies released to the Projeto are named, their rows unknown. */
-async function releasedCopies(deps: AppDataDeps, read: AppReadInput) {
-  const names = await deps.copies().releasedNames({
-    companyId: read.scope.companyId,
-    projectId: read.projectId,
-  })
-  return names.map(
-    (name): AppTableSummary => ({
-      schema: 'COPY',
-      name: AppTableName.parse(name),
-      rows: { kind: 'UNKNOWN' },
-    }),
-  )
-}
 
 /** The app's tables, then the copies released to the Projeto, each with its rows counted in one read. */
 async function summariesOf(deps: AppDataDeps, read: AppReadInput, app: readonly AppTable[]) {
@@ -86,7 +71,7 @@ export function createAppData(deps: AppDataDeps) {
       const found = await appTablesOf(deps, read)
       switch (found.kind) {
         case 'NO_APP':
-          return { kind: 'NO_APP', copies: await releasedCopies(deps, read) }
+          return { kind: 'NO_APP' }
         case 'FAILED':
           throw new Failure('APP_DATABASE_UNAVAILABLE', { details: { answer: found.code } })
         case 'TABLES':

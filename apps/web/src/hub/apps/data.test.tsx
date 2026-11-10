@@ -48,7 +48,7 @@ test('Dados: a lista', async () => {
 })
 
 test('Dados: a lista, um Projeto sem app e um app sem tabelas dizem cada um a sua frase', async () => {
-  open(`${PROJECT}/data`, { tables: () => TablesShape.parse({ kind: 'NO_APP', copies: [] }) })
+  open(`${PROJECT}/data`, { tables: () => TablesShape.parse({ kind: 'NO_APP' }) })
   expect(
     await screen.findByText('Este Projeto ainda não tem app. Peça um ao Builder.'),
   ).toBeTruthy()

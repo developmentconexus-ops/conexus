@@ -23,6 +23,7 @@ import { useIsMobile } from '../../ui/use-mobile.ts'
 import { IntervalDialog } from './interval.tsx'
 import { NewCopy } from './new-copy.tsx'
 import { copiesQuery, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
+import { useRunRequests } from './run-requests.ts'
 import {
   COPIES_TITLE,
   countText,
@@ -69,26 +70,58 @@ function RunPhrase({ copy }: { copy: CopySummary }) {
   return <span className="text-text-2">{outcomeText(copy.run)}</span>
 }
 
+/** Rodar agora: the request, what it told, and the run the copy showed when it left (the list follows it until a newer one appears). */
+function useRunNow(companyId: CompanyId, copy: CopySummary, onNote: (note: Note) => void) {
+  const run = useMutation({ ...sendCopyRun, meta: { before: copy.run?.id ?? null } })
+  function start() {
+    run.mutate(
+      { params: { companyId, copyId: copy.id } },
+      {
+        onSuccess: () => onNote({ kind: 'ok', text: RUN_REQUESTED }),
+        onError: (error) => onNote(failedNote(error)),
+      },
+    )
+  }
+  return { start, pending: run.isPending, available: copy.schedule.kind !== 'MISSING' }
+}
+
+function failedNote(error: unknown): Note {
+  return { kind: 'error', text: writeFailureText(error, UNCONFIRMED_ACTION) }
+}
+
+/** The detail's own **Rodar agora**, beside its menu; a copy with no clock has none (the Hub answers `NO_SCHEDULE`). */
+export function RunNowButton(props: {
+  companyId: CompanyId
+  copy: CopySummary
+  onNote: (note: Note) => void
+}) {
+  const now = useRunNow(props.companyId, props.copy, props.onNote)
+  if (!now.available) return null
+  return (
+    <Button variant="primary" disabled={now.pending} onClick={now.start}>
+      {now.pending ? 'Pedindo…' : 'Rodar agora'}
+    </Button>
+  )
+}
+
 /**
- * The actions of one copy (criterion 33): **Rodar agora** (not on a copy with no clock: the Hub
- * answers it `NO_SCHEDULE`), **Pausar** or **Retomar**, and **Intervalo**, which opens its dialog.
- * Each tells its refusal in the Hub's sentence through `onNote`.
+ * The actions of one copy (criterion 33): **Rodar agora** (not on a copy with no clock, and not in
+ * the detail, which has its own button), **Pausar** or **Retomar**, and **Intervalo**, which opens
+ * its dialog. Each tells its refusal in the Hub's sentence through `onNote`.
  */
 export function CopyMenu(props: {
   companyId: CompanyId
   copy: CopySummary
   onNote: (note: Note | undefined) => void
+  withRun?: boolean
 }) {
-  const { companyId, copy, onNote } = props
+  const { companyId, copy, onNote, withRun = true } = props
   const [choosing, setChoosing] = useState(false)
   const params = { companyId, copyId: copy.id }
   const pause = useMutation(sendCopyPause)
   const resume = useMutation(sendCopyResume)
-  const run = useMutation(sendCopyRun)
-  const busy = pause.isPending || resume.isPending || run.isPending
-  function fail(error: unknown) {
-    onNote({ kind: 'error', text: writeFailureText(error, UNCONFIRMED_ACTION) })
-  }
+  const now = useRunNow(companyId, copy, onNote)
+  const busy = pause.isPending || resume.isPending || now.pending
   const toggle = copy.schedule.kind === 'ACTIVE' ? pause : resume
   return (
     <>
@@ -100,23 +133,18 @@ export function CopyMenu(props: {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
-            {copy.schedule.kind !== 'MISSING' && (
-              <DropdownMenuItem
-                disabled={busy}
-                onClick={() =>
-                  run.mutate(
-                    { params },
-                    { onSuccess: () => onNote({ kind: 'ok', text: RUN_REQUESTED }), onError: fail },
-                  )
-                }
-              >
+            {withRun && now.available && (
+              <DropdownMenuItem disabled={busy} onClick={now.start}>
                 Rodar agora
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
               disabled={busy}
               onClick={() =>
-                toggle.mutate({ params }, { onSuccess: () => onNote(undefined), onError: fail })
+                toggle.mutate(
+                  { params },
+                  { onSuccess: () => onNote(undefined), onError: (e) => onNote(failedNote(e)) },
+                )
               }
             >
               {copy.schedule.kind === 'ACTIVE' ? 'Pausar' : 'Retomar'}
@@ -286,7 +314,7 @@ function Copies(props: {
  * is and offers **Ligar uma cópia**. The list follows itself while a run is open.
  */
 export function CopyList({ companyId }: { companyId: CompanyId }) {
-  const read = useQuery(copiesQuery(companyId))
+  const read = useQuery(copiesQuery(companyId, useRunRequests()))
   const [note, setNote] = useState<Note>()
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
