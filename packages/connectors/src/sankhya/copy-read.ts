@@ -3,7 +3,7 @@ import type { CopyPage } from '../kernel/copy.ts'
 import { CopyColumnType, CopyPageSchema, PageInput } from '../kernel/copy.ts'
 import { defineOperation } from '../kernel/operation.ts'
 import { gatewayAnswer } from './answers.ts'
-import { queryRequest } from './door.ts'
+import { QueriedShape, queryRequest } from './door.ts'
 import { isOneReadStatement } from './read-only-sql.ts'
 import { pageSql } from './search-sql.ts'
 
@@ -76,26 +76,35 @@ const FLAGS: Readonly<Record<string, string>> = {
   false: 'false',
 }
 
+type Canonical = string | null | undefined
+
+function canonicalNumber(cell: unknown, pattern: RegExp, whole: boolean): Canonical {
+  if (typeof cell === 'number')
+    return (whole ? Number.isSafeInteger(cell) : Number.isFinite(cell)) ? String(cell) : undefined
+  return typeof cell === 'string' && pattern.test(cell) ? cell : undefined
+}
+
+function canonicalDate(type: 'date' | 'timestamp', cell: unknown): Canonical {
+  const [, day, month, year, hour, minute, second] =
+    typeof cell === 'string' ? (SANKHYA_DATE.exec(cell) ?? []) : []
+  if (year === undefined) return undefined
+  const date = `${year}-${month}-${day}`
+  return type === 'date' ? date : `${date}T${hour}:${minute}:${second}`
+}
+
 /** A cell as its type's canonical text, null for null, undefined when it is not a value of that type. */
-function canonical(type: CopyColumnType, cell: unknown): string | null | undefined {
+function canonical(type: CopyColumnType, cell: unknown): Canonical {
   if (cell === null) return null
   switch (type) {
     case 'text':
       return typeof cell === 'string' ? cell : typeof cell === 'number' ? String(cell) : undefined
     case 'numeric':
-      if (typeof cell === 'number') return Number.isFinite(cell) ? String(cell) : undefined
-      return typeof cell === 'string' && DECIMAL.test(cell) ? cell : undefined
+      return canonicalNumber(cell, DECIMAL, false)
     case 'bigint':
-      if (typeof cell === 'number') return Number.isSafeInteger(cell) ? String(cell) : undefined
-      return typeof cell === 'string' && WHOLE.test(cell) ? cell : undefined
+      return canonicalNumber(cell, WHOLE, true)
     case 'date':
-    case 'timestamp': {
-      const [, day, month, year, hour, minute, second] =
-        typeof cell === 'string' ? (SANKHYA_DATE.exec(cell) ?? []) : []
-      if (year === undefined) return undefined
-      const date = `${year}-${month}-${day}`
-      return type === 'date' ? date : `${date}T${hour}:${minute}:${second}`
-    }
+    case 'timestamp':
+      return canonicalDate(type, cell)
     case 'boolean':
       return FLAGS[String(cell)]
     default:
@@ -104,13 +113,8 @@ function canonical(type: CopyColumnType, cell: unknown): string | null | undefin
 }
 
 /** What the DbExplorer answers to a page, each cell written by the type its alias carries; the row past `limit` dropped and read as `more`. */
-const QueriedPage = z
-  .object({
-    fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
-    rows: z.array(z.array(z.unknown())),
-    burstLimit: z.boolean().optional(),
-  })
-  .transform(({ fieldsMetadata, rows, burstLimit }, context): CopyPage => {
+const QueriedPage = QueriedShape.transform(
+  ({ fieldsMetadata, rows, burstLimit }, context): CopyPage => {
     const columns = fieldsMetadata.slice(0, -1).map(({ name }, at) => {
       const [, place, mark] = ALIAS.exec(name) ?? []
       return Number(place) === at ? TYPE_OF.get(mark ?? '') : undefined
@@ -135,7 +139,8 @@ const QueriedPage = z
       read.push(cells.map((cell) => cell ?? null))
     }
     return { rows: read, more: extra || burstLimit === true }
-  })
+  },
+)
 
 /** The input, and the whole statement it makes judged by the read filter: a stored query the filter refuses never reaches Sankhya. */
 const PageRead = PageInput.refine((page) => isOneReadStatement(pageStatement(page)), {

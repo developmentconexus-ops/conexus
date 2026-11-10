@@ -204,6 +204,89 @@ function lastKey(stored: StoredCopy, rows: readonly (readonly (string | null)[])
   return key.map((name) => Number(last[columns.findIndex((column) => column.name === name)]))
 }
 
+const DATABASE_DOWN = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' } as const
+
+type Pass = {
+  deps: CopiesDeps
+  ids: Ids
+  signal: AbortSignal
+  claimed: Claimed
+  sync: DatabaseUrl
+  counts: Counts & { started: number }
+  end: (outcome: CopyOutcome) => Promise<CopyRunEnd>
+}
+
+/** The Hub's stop, or a ceiling, reached before the next page: the run's end; none when it goes on. */
+async function halted(pass: Pass): Promise<CopyRunEnd | undefined> {
+  const { deps, signal, counts } = pass
+  if (deps.updating() || signal.aborted) return pass.end({ kind: 'PARTIAL', reason: 'STOPPED' })
+  const capped =
+    counts.pages >= deps.tuning.runPages || performance.now() - counts.started >= deps.tuning.runMs
+  if (!capped) return undefined
+  const result = await pass.end({ kind: 'PARTIAL', reason: 'CAP' })
+  if (result.kind === 'ENDED' && result.outcome.kind === 'PARTIAL')
+    await deps.clock().runNow(pass.ids.copyId)
+  return result
+}
+
+type Step =
+  | { kind: 'END'; end: CopyRunEnd }
+  | { kind: 'PAGE'; position: StoredCopy['position']; more: boolean }
+
+/** One page: read from the source, written in the company's database, saved in the Hub. */
+async function pageOf(
+  pass: Pass,
+  position: StoredCopy['position'],
+  dates: ReturnType<typeof datesOf>,
+): Promise<Step> {
+  const { deps, ids, signal, claimed, sync, counts } = pass
+  const stored = claimed.copy
+  const { definition, name, pass: passId } = stored
+  const read = await deps.connectors().readPage({
+    companyId: ids.companyId,
+    connectionId: stored.connectionId,
+    enabledBy: stored.createdBy,
+    input: { definition, after: position, ...dates, limit: deps.tuning.pageRows },
+    signal,
+  })
+  if (read.kind === 'NO_CONNECTION')
+    return { kind: 'END', end: await pass.end({ kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' }) }
+  if (read.kind === 'FAILED') {
+    const outcome: CopyOutcome = signal.aborted
+      ? { kind: 'PARTIAL', reason: 'STOPPED' }
+      : { kind: 'ERROR', code: read.code }
+    return { kind: 'END', end: await pass.end(outcome) }
+  }
+  const { rows, more } = read.page
+  const written = await deps.companyPostgres.writePage(
+    sync,
+    { name, definition, pass: passId, rows },
+    signal,
+  )
+  if (written.kind !== 'DONE') return { kind: 'END', end: await pass.end(DATABASE_DOWN) }
+  const next = lastKey(stored, rows) ?? position
+  if (!(await saved(deps, claimed, { position: next, rows: rows.length })))
+    return { kind: 'END', end: lost(deps, claimed) }
+  counts.pages += 1
+  counts.read += rows.length
+  counts.written += rows.length
+  return { kind: 'PAGE', position: next, more }
+}
+
+/** The pass's close, once its last page is written: the rows the window no longer holds go, and the pass is counted. */
+async function closedPass(pass: Pass, windowFrom: string | null): Promise<CopyRunEnd> {
+  const { deps, claimed, sync, signal } = pass
+  const { definition, name, pass: passId } = claimed.copy
+  const closed = await deps.companyPostgres.closePass(
+    sync,
+    { name, definition, pass: passId, windowFrom },
+    signal,
+  )
+  if (closed.kind !== 'DONE') return pass.end(DATABASE_DOWN)
+  if (!(await passed(deps, claimed, closed.rows))) return lost(deps, claimed)
+  return pass.end({ kind: 'COMPLETE' })
+}
+
 /**
  * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then page after page
  * read from the source, written in the company's database and saved in the Hub, until the pass
@@ -222,56 +305,17 @@ export async function runCopy(
   function end(outcome: CopyOutcome) {
     return ended(deps, held, outcome, counts)
   }
-  const databaseDown = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' } as const
   const { sync } = claimed
-  if (sync === undefined) return end(databaseDown)
-  const stored = claimed.copy
-  const { definition, name, pass } = stored
-  const { since, windowFrom } = datesOf(stored)
-  let position = stored.position
+  if (sync === undefined) return end(DATABASE_DOWN)
+  const pass: Pass = { deps, ids, signal, claimed: held, sync, counts, end }
+  const { since, windowFrom } = datesOf(held.copy)
+  let position = held.copy.position
   for (;;) {
-    if (deps.updating() || signal.aborted) return end({ kind: 'PARTIAL', reason: 'STOPPED' })
-    if (
-      counts.pages >= deps.tuning.runPages ||
-      performance.now() - counts.started >= deps.tuning.runMs
-    ) {
-      const capped = await end({ kind: 'PARTIAL', reason: 'CAP' })
-      if (capped.kind === 'ENDED' && capped.outcome.kind === 'PARTIAL')
-        await deps.clock().runNow(ids.copyId)
-      return capped
-    }
-    const read = await deps.connectors().readPage({
-      companyId: ids.companyId,
-      connectionId: stored.connectionId,
-      enabledBy: stored.createdBy,
-      input: { definition, after: position, since, windowFrom, limit: deps.tuning.pageRows },
-      signal,
-    })
-    if (read.kind === 'NO_CONNECTION')
-      return end({ kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' })
-    if (read.kind === 'FAILED')
-      return end(
-        signal.aborted
-          ? { kind: 'PARTIAL', reason: 'STOPPED' }
-          : { kind: 'ERROR', code: read.code },
-      )
-    const { rows, more } = read.page
-    const table = { name, definition }
-    const written = await deps.companyPostgres.writePage(sync, { ...table, pass, rows }, signal)
-    if (written.kind !== 'DONE') return end(databaseDown)
-    position = lastKey(stored, rows) ?? position
-    if (!(await saved(deps, claimed, { position, rows: rows.length }))) return lost(deps, claimed)
-    counts.pages += 1
-    counts.read += rows.length
-    counts.written += rows.length
-    if (more) continue
-    const closed = await deps.companyPostgres.closePass(
-      sync,
-      { ...table, pass, windowFrom },
-      signal,
-    )
-    if (closed.kind !== 'DONE') return end(databaseDown)
-    if (!(await passed(deps, claimed, closed.rows))) return lost(deps, claimed)
-    return end({ kind: 'COMPLETE' })
+    const stopped = await halted(pass)
+    if (stopped !== undefined) return stopped
+    const step = await pageOf(pass, position, { since, windowFrom })
+    if (step.kind === 'END') return step.end
+    position = step.position
+    if (!step.more) return closedPass(pass, windowFrom)
   }
 }
