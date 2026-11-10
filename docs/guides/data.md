@@ -102,6 +102,10 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   action **must** live in the Builder's server skill. [PostgreSQL, dispatcher]
 - **D29.** An app's migrations **must** live in its own Git. The Hub **must** apply them with that
   app's migration login, and read them as SQL before Preview. [from step 15]
+- **D31.** A column that belongs to the engine, such as a copy's `_pass`, **must** leave in the code
+  that owns the read (the catalog of `hub/apps/app-tables.ts`), never be hidden only by a screen;
+  a read of the table itself still returns it (issue 946). Failure: Dados showed `_pass` as data.
+  [copy-data test]
 
 ## 6. Change with real data
 

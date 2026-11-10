@@ -56,6 +56,7 @@ export function copy(fields: Partial<CopySummary> = {}): CopySummary {
     shown: {
       query: 'SELECT NUNOTA, CODPARC\nFROM TGFCAB',
       key: ['NUNOTA'],
+      changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
     },
     ...fields,

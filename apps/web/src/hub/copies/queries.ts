@@ -30,12 +30,11 @@ function waitingFor(requests: RunRequest[], copyId: string, run: Run) {
   )
 }
 
-/** Whether a run the person asked for on this copy is still owed or open: not in the list yet, or running. */
-export function requestOpen(requests: RunRequest[], copyId: string, run: Run) {
+/** Whether the run one request asked for is still owed or open: not in the list yet, or running, within the window. */
+export function requestOpen(one: RunRequest, run: Run) {
   return (
-    waitingFor(requests, copyId, run) ||
-    (run?.outcome.kind === 'RUNNING' &&
-      requests.some((one) => one.copyId === copyId && one.before !== run.id))
+    Date.now() - one.at < REQUEST_WINDOW_MS &&
+    (run === null || run.id === one.before || run.outcome.kind === 'RUNNING')
   )
 }
 

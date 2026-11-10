@@ -71,6 +71,8 @@ export const CopySummary = z.object({
   shown: z.object({
     query: z.string(),
     key: z.array(z.string()),
+    // What a pass rereads: the rows changed since the last one, and the window; both none reads the whole source.
+    changedSince: z.object({ column: z.string() }).nullable(),
     window: z.object({ column: z.string(), days: z.int() }).nullable(),
   }),
 })

@@ -148,6 +148,7 @@ async function summaries(
       shown: {
         query: row.definition.source.sql,
         key: row.definition.key,
+        changedSince: row.definition.changedSince,
         window: window === undefined ? null : { column: window.column, days: window.days },
       },
     }

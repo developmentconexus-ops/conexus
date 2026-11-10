@@ -57,6 +57,7 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     shown: {
       query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,
       key: ['NUNOTA'],
+      changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
     },
     ...fields,

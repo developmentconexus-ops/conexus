@@ -1406,3 +1406,17 @@ moves the watermark or takes a row out.
   and milliseconds, never a query, a column read or a row).
 - **Revisit when** a Mastra release records a manual run, or when a company turns off a connection
   with copies: the foreign key's cascade removes the copy's rows and leaves its tables in `sync`.
+
+### The clock of each copy
+
+- **Library line.** `@mastra/core` 1.82.0 canonicalizes the id of a workflow schedule with a prefix and
+  looks an id without it up as an agent's; `schedules.run` publishes even when the scheduler is
+  stopped (`dist/docs/references/reference-schedules-overview.md`); after three failed publishes the
+  scheduler logs the id and calls the `scheduler.onError` it was given at creation.
+- **Hand-made piece.** `scheduleIdOf` in `builder/copy-clock/workflow.ts` names the row
+  `schedule_<copy id>`; `hub/copies/schedule.ts` refuses with `HUB_UPDATING` to create a schedule
+  while the Hub is updating; `builder/copy-clock/clock.ts` logs an unreadable row as
+  `COPY_SCHEDULE_UNREADABLE`; `schedulerOf` in `builder/mastra/mastra.ts` passes the `onError` that logs
+  `SCHEDULE_PUBLISH_FAILED`.
+- **Proof.** `builder/copy-clock/clock.test.ts` "rodar agora e o disparo", "uma agenda ilegível
+  aparece no registro" and "a empresa apagada leva as agendas".

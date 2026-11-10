@@ -8,6 +8,7 @@ import { copy, copyRun, detailOf, LIST, onPhone, openCopies, VENDAS } from './te
 const server = hubServer()
 const OLD = CopyRunId.parse('55555555-5555-4555-8555-555555555555')
 const NEW = CopyRunId.parse('66666666-6666-4666-8666-666666666666')
+const CLOCK = CopyRunId.parse('77777777-7777-4777-8777-777777777777')
 const RUNNING = { outcome: { kind: 'RUNNING' }, endedAt: null } as const
 
 beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
@@ -34,16 +35,48 @@ test('Rodar agora na lista: a rodada que o Hub ainda não abriu é esperada, e v
   expect(screen.queryByText('Pedido enviado. A rodada aparece na lista.')).toBeNull()
 })
 
-test('Pedido enviado: some na ação seguinte, mesmo com a rodada ainda esperada', async () => {
+const REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
+
+test('Pedido enviado: fica enquanto a rodada pedida roda e some quando ela termina', async () => {
+  const held = { copies: [copy({ run: copyRun({ id: OLD }) })] }
+  openCopies(server, held, LIST)
+  fireEvent.click(await screen.findByRole('button', { name: 'Ações: Vendas' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rodar agora' }))
+  await screen.findByText(REQUESTED)
+  held.copies[0] = copy({ run: copyRun({ id: NEW, ...RUNNING }) })
+  await tick()
+  await screen.findByText('Rodando…')
+  expect(screen.getByText(REQUESTED)).toBeTruthy()
+  held.copies[0] = copy({ run: copyRun({ id: NEW }) })
+  await tick()
+  await waitFor(() => expect(screen.queryByText(REQUESTED)).toBeNull())
+})
+
+test('Pedido enviado: não volta com uma rodada do relógio depois da pedida', async () => {
+  const held = { copies: [copy({ run: copyRun({ id: OLD }) })] }
+  openCopies(server, held, LIST)
+  fireEvent.click(await screen.findByRole('button', { name: 'Ações: Vendas' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rodar agora' }))
+  await screen.findByText(REQUESTED)
+  held.copies[0] = copy({ run: copyRun({ id: NEW }) })
+  await tick()
+  await waitFor(() => expect(screen.queryByText(REQUESTED)).toBeNull())
+  held.copies[0] = copy({ run: copyRun({ id: CLOCK, ...RUNNING }) })
+  await vi.advanceTimersByTimeAsync(5_100)
+  fireEvent.focus(window)
+  await tick()
+  expect(screen.queryByText(REQUESTED)).toBeNull()
+})
+
+test('Pedido enviado: some ao salvar o Intervalo', async () => {
   openCopies(server, { copies: [copy({ run: copyRun({ id: OLD }) })] }, LIST)
   fireEvent.click(await screen.findByRole('button', { name: 'Ações: Vendas' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Rodar agora' }))
-  await screen.findByText('Pedido enviado. A rodada aparece na lista.')
+  await screen.findByText(REQUESTED)
   fireEvent.click(screen.getByRole('button', { name: 'Ações: Vendas' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Pausar' }))
-  await waitFor(() =>
-    expect(screen.queryByText('Pedido enviado. A rodada aparece na lista.')).toBeNull(),
-  )
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Intervalo' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Salvar' }))
+  await waitFor(() => expect(screen.queryByText(REQUESTED)).toBeNull())
 })
 
 test('Rodar agora no detalhe: o botão é da página, a rodada pedida aparece sem recarregar', async () => {

@@ -8,7 +8,7 @@ import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
 /** The login that owns the copies in a company's database, and their schema. */
 export const SYNC_LOGIN = 'conexus_sync'
 const SYNC_SCHEMA = quoted('sync')
-/** The column that holds the pass that last wrote each row: the engine's own, so no screen reads it. */
+/** The column that holds the pass that last wrote each row: the engine's own. Only the Hub's catalog leaves it out; a read of the table itself still returns it (issue 946). */
 export const COPY_PASS_COLUMN = '_pass'
 
 /**
