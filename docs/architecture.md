@@ -205,7 +205,7 @@ program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
 copy that owns them. Basis: implemented so; accepted because queues and Redis serve
-a scale that does not exist. Every job but the automations' lets the database sleep:
+a scale that does not exist. Every job but the schedules' lets the database sleep:
 
 | Job | Shape that lets the database sleep |
 | --- | --- |
@@ -213,7 +213,7 @@ a scale that does not exist. Every job but the automations' lets the database sl
 | Expired sessions, handoffs, invitations | Expiry checked on read; cleanup once a day |
 | Idle conversations, traces | Touch nothing when there is nothing; daily otherwise |
 | The lease | Renewed by activity, not by clock |
-| Automations' schedule | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (step 24.2) |
+| Automations' and copies' schedules | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (24.2, Capacidade 2) |
 
 No job touches a machine; it ends with its conversation.
 

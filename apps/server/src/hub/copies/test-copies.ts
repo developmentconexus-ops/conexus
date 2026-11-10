@@ -115,7 +115,11 @@ export const TEST_TUNING = { pageRows: 50, runPages: 200, runMs: 60_000, leaseMs
  * Projeto Pedidos with no app, the company's database on the test server, and the Matriz linked
  * and tested. The copies are assembled over the Hub's own subjects, the clock a double.
  */
-export async function copiesOn(t: TestContext, tuning: CopyTuning = TEST_TUNING) {
+export async function copiesOn(
+  t: TestContext,
+  tuning: CopyTuning = TEST_TUNING,
+  schedulerTickMs?: number,
+) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
@@ -124,6 +128,10 @@ export async function copiesOn(t: TestContext, tuning: CopyTuning = TEST_TUNING)
   const hub = await hubWithLog(t, (config) => ({
     ...config,
     connectorOrigins: new Map([['sankhya', origin]]),
+    // A scheduler that ticks fast enough for a test to wait for a run it made due (T20).
+    ...(schedulerTickMs === undefined
+      ? {}
+      : { automationClock: { schedulerTickMs, turnMs: 60_000 } }),
   }))
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = CompanyIdSchema.parse(

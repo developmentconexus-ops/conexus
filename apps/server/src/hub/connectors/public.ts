@@ -34,7 +34,7 @@ export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export { connectionForCopy } from './copy-port.ts'
+export { connectionForCopy, connectionNamesOf } from './copy-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'

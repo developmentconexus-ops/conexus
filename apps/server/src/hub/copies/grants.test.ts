@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { ProjectId } from '@conexus/hub-api'
-import { appLogin, appLoginPassword, PersonId } from '@conexus/hub-api'
+import { appLogin, appLoginPassword, PersonId, ProjectId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import pg from 'pg'
 import { folder, readyForVersions, send } from '../apps/test-versions.ts'
+import { call, post } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 
 type DatabaseUrl = CopiesOn['owner']
@@ -115,4 +115,37 @@ test('liberar a um Projeto sem app', async (t) => {
   assert.equal(sent.preview?.state, 'ready', 'o primeiro envio acha os logins')
   assert.deepEqual(await loginsOf(on.owner, on.projectId), made, 'e não os recria')
   assert.deepEqual(await asApp(on.owner, readLogin, 'select * from sync.clientes'), read)
+})
+
+test('apagar o Projeto com a cópia liberada', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const made = await post(on.hub, on.ana, on.projects, { name: 'Estoque' })
+  assert.equal(made.statusCode, 201, made.body)
+  const other = ProjectId.parse(Object(made.json()).project.id)
+  await on.copies.grant(release(on, copyId))
+  await on.copies.grant({ ...release(on, copyId), projectId: other })
+  assert.equal(await releasesOf(on), 2)
+  assert.equal((await loginsOf(on.owner, on.projectId)).length, 3)
+
+  const removed = await call(on.hub, on.ana, 'DELETE', `${on.projects}/${on.projectId}`, {
+    name: 'Pedidos',
+  })
+  assert.equal(removed.statusCode, 204, removed.body)
+  const gone = await call(on.hub, on.ana, 'GET', `${on.projects}/${on.projectId}`)
+  assert.equal(gone.statusCode, 404, 'o Projeto saiu')
+  assert.deepEqual(await loginsOf(on.owner, on.projectId), [], 'os logins do app saíram')
+  assert.equal(await releasesOf(on), 1, 'a liberação saiu')
+  const kept = await on.hub.test.database.read(
+    { kind: 'COMPANY', companyId: on.companyId, personId: null },
+    (tx) => tx.execute(sql`select project_id from copies.project_copy`),
+  )
+  assert.equal(Object(kept.rows[0]).project_id, other)
+  const { readLogin } = appLogin(other)
+  assert.equal(
+    (await asApp(on.owner, readLogin, 'select * from sync.vendas')).rows,
+    183,
+    'a cópia continua para o outro Projeto',
+  )
 })

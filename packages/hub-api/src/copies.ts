@@ -1,8 +1,10 @@
 import { z } from 'zod'
+import { CompanyId, Next, Page } from './companies.ts'
 import { ConnectorId } from './company-roles.ts'
 import { ConnectionId } from './connectors.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
+import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 
 /** A copy of the company's data, kept in its own database (Capacidade 2). */
 export const CopyId = z.uuid().brand('CopyId')
@@ -87,3 +89,171 @@ export const EnableCopy = z.object({
   interval: CopyInterval,
 })
 export type EnableCopy = z.infer<typeof EnableCopy>
+
+const InCompany = z.object({ companyId: CompanyId })
+const OfCopy = InCompany.extend({ copyId: CopyId })
+const OfRelease = InCompany.extend({ projectId: ProjectId, copyId: CopyId })
+const BASE = '/api/companies/{companyId}/copies'
+const READ_FAILURES = [
+  'NOT_FOUND',
+  'SESSION_REQUIRED',
+  'DATABASE_UNAVAILABLE',
+] as const satisfies readonly FailureCode[]
+const ONE_FAILURES = [...READ_FAILURES, 'COPY_NOT_FOUND'] as const
+const Copy = z.object({ copy: CopySummary })
+
+export const listCopies = defineOperation({
+  id: 'listCopies',
+  summary: 'Lists the company’s copies, each with its connection, schedule and last run.',
+  access: 'session',
+  method: 'GET',
+  path: BASE,
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 200, body: z.object({ copies: z.array(CopySummary) }) },
+  failures: READ_FAILURES,
+})
+
+export const listCopyModels = defineOperation({
+  id: 'listCopyModels',
+  summary: 'Lists the copy models the connectors offer.',
+  access: 'session',
+  method: 'GET',
+  path: '/api/companies/{companyId}/copy-models',
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 200, body: z.object({ models: z.array(CopyModelSummary) }) },
+  failures: READ_FAILURES,
+})
+
+export const enableCopy = defineOperation({
+  id: 'enableCopy',
+  summary: `Turns a copy on from one of the company’s connections, keyed by ${ATTEMPT_KEY_HEADER}: its table in the company’s database and its schedule.`,
+  access: 'session',
+  method: 'POST',
+  path: BASE,
+  bodyLimit: 1024,
+  input: { params: InCompany, body: EnableCopy },
+  attemptKey: true,
+  success: { status: 201, body: Copy },
+  failures: [
+    ...READ_FAILURES,
+    ...(['IDEMPOTENCY_CONFLICT', 'COPY_EXISTS', 'COPY_MODEL_UNKNOWN'] as const),
+    ...(['COPY_CONNECTION_NOT_READY', 'COPY_DATABASE_UNAVAILABLE', 'HUB_UPDATING'] as const),
+  ],
+})
+
+export const pauseCopy = defineOperation({
+  id: 'pauseCopy',
+  summary: 'Pauses a copy: it does not run at its next times.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{copyId}/pause`,
+  bodyLimit: 1024,
+  input: { params: OfCopy },
+  success: { status: 200, body: Copy },
+  failures: ONE_FAILURES,
+})
+
+export const resumeCopy = defineOperation({
+  id: 'resumeCopy',
+  summary: 'Resumes a paused copy; one with no schedule gets the default interval.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{copyId}/resume`,
+  bodyLimit: 1024,
+  input: { params: OfCopy },
+  success: { status: 200, body: Copy },
+  failures: [...ONE_FAILURES, 'HUB_UPDATING'],
+})
+
+export const changeCopyInterval = defineOperation({
+  id: 'changeCopyInterval',
+  summary: 'Changes how often a copy runs; a paused copy stays paused.',
+  access: 'session',
+  method: 'PATCH',
+  path: `${BASE}/{copyId}`,
+  bodyLimit: 1024,
+  input: { params: OfCopy, body: z.object({ interval: CopyInterval }) },
+  success: { status: 200, body: Copy },
+  failures: ONE_FAILURES,
+})
+
+export const runCopy = defineOperation({
+  id: 'runCopy',
+  summary: 'Runs a copy now, paused or not, unless a run of it is running.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{copyId}/run`,
+  bodyLimit: 1024,
+  input: { params: OfCopy },
+  success: { status: 202, body: z.object({}) },
+  failures: [...ONE_FAILURES, 'COPY_RUNNING', 'HUB_UPDATING'],
+})
+
+export const listCopyRuns = defineOperation({
+  id: 'listCopyRuns',
+  summary: 'Lists the runs of a copy, newest first, 20 to a page.',
+  access: 'session',
+  method: 'GET',
+  path: `${BASE}/{copyId}/runs`,
+  bodyLimit: 1024,
+  input: { params: OfCopy, query: Page },
+  success: {
+    status: 200,
+    body: z.object({ copy: CopySummary, runs: z.array(CopyRun), next: Next }),
+  },
+  failures: ONE_FAILURES,
+})
+
+const RELEASE_BASE = '/api/companies/{companyId}/projects/{projectId}/copies'
+const RELEASE_FAILURES = [
+  ...ONE_FAILURES,
+  'COPY_DATABASE_UNAVAILABLE',
+] as const satisfies readonly FailureCode[]
+
+export const listProjectCopies = defineOperation({
+  id: 'listProjectCopies',
+  summary: 'Lists the company’s copies and whether each is released to the Projeto.',
+  access: 'session',
+  method: 'GET',
+  path: RELEASE_BASE,
+  bodyLimit: 1024,
+  input: { params: InCompany.extend({ projectId: ProjectId }) },
+  success: {
+    status: 200,
+    body: z.object({
+      copies: z.array(
+        z.object({
+          copy: CopyModelSummary.extend({ id: CopyId, name: z.string() }),
+          granted: z.boolean(),
+        }),
+      ),
+    }),
+  },
+  failures: READ_FAILURES,
+})
+
+export const grantProjectCopy = defineOperation({
+  id: 'grantProjectCopy',
+  summary: 'Releases a copy to a Projeto: its app’s logins may read the copy’s table.',
+  access: 'session',
+  method: 'PUT',
+  path: `${RELEASE_BASE}/{copyId}`,
+  bodyLimit: 1024,
+  input: { params: OfRelease },
+  success: { status: 200, body: z.object({ granted: z.literal(true) }) },
+  failures: RELEASE_FAILURES,
+})
+
+export const revokeProjectCopy = defineOperation({
+  id: 'revokeProjectCopy',
+  summary: 'Takes a copy back from a Projeto.',
+  access: 'session',
+  method: 'DELETE',
+  path: `${RELEASE_BASE}/{copyId}`,
+  bodyLimit: 1024,
+  input: { params: OfRelease },
+  success: { status: 200, body: z.object({ granted: z.literal(false) }) },
+  failures: RELEASE_FAILURES,
+})

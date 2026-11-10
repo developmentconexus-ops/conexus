@@ -47,6 +47,7 @@ export function isFixedRole(role: string): role is FixedRole {
 export const CompanyMay = z.object({
   manageAgents: z.boolean(),
   manageAutomations: z.boolean(),
+  manageCopies: z.boolean(),
   manageRoles: z.boolean(),
   publishUnattendedWrite: z.boolean(),
 })

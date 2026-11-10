@@ -25,6 +25,9 @@ import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
 import { copy } from './tables.ts'
 
+/** What the clock holds for a copy: its schedule, and the interval it was set with. */
+export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterval }>
+
 /** What the clock does for a copy: the Builder implements it, and the Hub never imports the Builder. */
 export type CopyClock = {
   set(input: { companyId: CompanyId; copyId: CopyId; interval: CopyInterval }): Promise<void>
@@ -33,7 +36,8 @@ export type CopyClock = {
   resume(copyId: CopyId): Promise<void>
   runNow(copyId: CopyId): Promise<void>
   remove(copyId: CopyId): Promise<void>
-  states(companyId: CompanyId): Promise<ReadonlyMap<CopyId, CopySchedule>>
+  /** The company's copies that have a schedule; one with none is not in the map (MISSING). */
+  states(companyId: CompanyId): Promise<ReadonlyMap<CopyId, CopyState>>
 }
 
 /** The Projeto's schema and logins in the company's database, made by `hub/apps` when it has no app yet. */

@@ -5,14 +5,13 @@ import { and, eq, sql } from 'drizzle-orm'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { CopyName } from '../connectors/public.ts'
 import { connectionForCopy } from '../connectors/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { companyOwner, parsedCopy, personScope } from './store.ts'
 import { copy } from './tables.ts'
 
 /** What a copy's definition comes from: a template of the connection's connector (Capacidade 3 adds its own). */
-type CopySource = Readonly<{ kind: 'MODEL'; model: CopyName }>
+type CopySource = Readonly<{ kind: 'MODEL'; model: string }>
 
 export type Enabling = InCompany & {
   connectionId: ConnectionId

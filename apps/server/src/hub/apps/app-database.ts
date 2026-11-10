@@ -7,7 +7,7 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
-import type { AppRead, CompanyPostgres } from '../../platform/company-postgres.ts'
+import type { AppRead, CompanyPostgres, SqlAnswer } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -19,6 +19,10 @@ export type AppDatabaseDeps = {
   projects: ProjectPorts
   neon: NeonProjects
   companyPostgres: CompanyPostgres
+  /** The copies are made after the apps; the repair of a Projeto's logins gives its releases back. */
+  copies: () => {
+    applyGrants(input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer>
+  }
   log: FailureLog
 }
 
@@ -58,6 +62,12 @@ export async function openAppDatabase(
       return failed
     }
     deps.log.info({ companyId, projectId }, 'APP_DATABASE_READY')
+    // Logins made again lose what was granted them: the Projeto's releases are given back (a repair; a failure is only logged).
+    const regranted = await deps.copies().applyGrants({ companyId, projectId })
+    if (regranted.kind !== 'DONE') {
+      const code = regranted.kind === 'REFUSED' ? regranted.code : regranted.kind
+      deps.log.error({ companyId, projectId, code }, 'COPY_GRANT_FAILED')
+    }
   }
   return { kind: 'OPEN', owner: owner.value }
 }
