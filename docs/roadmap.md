@@ -33,6 +33,7 @@ Fechadas, com o uso nas [aprovações](approvals.md): da 1 à 20 com as subetapa
 **As capacidades que faltam aos apps.**
 
 - **Capacidade 3. O Builder aprende o Sync.** Pede o acompanhamento de vendedor; o gestor vê vendas, metas e clientes de todos. O Builder vê colunas e conteúdo copiados e roda as leituras do app nos dados reais, vendo só contagens.
+- **O Sync de qualquer conector.** Logo depois da Capacidade 3 e antes da 4: a cópia de conectores de API, com a definição versão 2 do motor sobre as leituras que o conector declara. Ainda sem cartão.
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
