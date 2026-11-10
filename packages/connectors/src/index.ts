@@ -20,6 +20,13 @@ export {
   tokenRequest,
 } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance.ts'
+export type {
+  ConnectorCopy,
+  CopyColumnType,
+  CopyModel,
+  CopyPage,
+} from './kernel/copy.ts'
+export { CopyDefinition, CopyName, CopyPageSchema, PAGE_ROWS, PageInput } from './kernel/copy.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
 export {
   type AppKeys,
@@ -52,6 +59,7 @@ export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
 export type { SalesSet } from './sankhya/fake-sales.ts'
 export {
+  changedOn,
   PADARIA_SOL_FILIAL,
   PADARIA_SOL_MATRIZ,
   salesDatabase,

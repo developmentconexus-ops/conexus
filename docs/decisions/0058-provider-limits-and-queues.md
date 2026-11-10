@@ -12,7 +12,7 @@ Conexus has one Mercado Livre app, so every company shares it. Basis: the founde
   The executor waits that time once, when it fits the call's deadline, and repeats an idempotent
   read once; otherwise it answers `BUSY`. The person reads "O fornecedor pediu para esperar".
 - **Step 20:** one call at a time per connection, in process; a waiter past its deadline gets DEADLINE.
-- **With the webhooks step:** a Postgres queue (pg-boss).
+- **Webhooks step:** no queue planned; copies run on Mastra's schedules, not pg-boss.
 - **Not now:** a large workflow engine, Redis, or a limiter shared across Hub copies.
 - The in-process limiter holds only while one Hub process runs. It moves to the database before a
   second Hub process starts.
@@ -36,8 +36,8 @@ Token calls keep mapping 429 as UNREACHABLE. A write that gets a 429 is not repe
 
 ## Reopens when
 
-A second Hub process is planned, or the measured use of a provider's quota says reads should be
-synced into the company's database.
+A second Hub process is planned, or reads must be synced into the company's database: Capacidade 2
+reopened it.
 
 ## State
 

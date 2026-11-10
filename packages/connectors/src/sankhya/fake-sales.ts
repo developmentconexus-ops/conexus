@@ -105,17 +105,30 @@ export function soldBy(set: SalesSet, month: string): Map<string, number> {
   return sold
 }
 
+/** When the registers last changed, in the double: before every note's day. */
+const REGISTER_CHANGED = '2026-08-20 09:15:00'
+
+/** When a note last changed: the evening of its day, except every tenth day of September, changed again on 20 October. */
+export function changedOn(dtneg: string): string {
+  return dtneg.startsWith('2026-09') && dtneg.endsWith('0')
+    ? '2026-10-20 11:00:00'
+    : `${dtneg} 18:30:00`
+}
+
 function tablesOf(database: DatabaseSync, set: SalesSet): void {
   database.exec(`
-    CREATE TABLE TGFVEN (CODVEND INTEGER PRIMARY KEY, APELIDO TEXT, ATIVO TEXT DEFAULT 'S');
+    CREATE TABLE TGFVEN (CODVEND INTEGER PRIMARY KEY, APELIDO TEXT, ATIVO TEXT DEFAULT 'S',
+      DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
     CREATE TABLE TGFPAR (CODPARC INTEGER PRIMARY KEY, NOMEPARC TEXT, RAZAOSOCIAL TEXT, CGC_CPF TEXT,
-      TIPPESSOA TEXT DEFAULT 'J', ATIVO TEXT DEFAULT 'S', CLIENTE TEXT DEFAULT 'S', FORNECEDOR TEXT DEFAULT 'N');
+      TIPPESSOA TEXT DEFAULT 'J', ATIVO TEXT DEFAULT 'S', CLIENTE TEXT DEFAULT 'S', FORNECEDOR TEXT DEFAULT 'N',
+      DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
     CREATE TABLE TGFPRO (CODPROD INTEGER PRIMARY KEY, DESCRPROD TEXT, REFERENCIA TEXT, CODGRUPOPROD INTEGER,
-      CODVOL TEXT DEFAULT 'UN', MARCA TEXT, ATIVO TEXT DEFAULT 'S');
-    CREATE TABLE TGFCAB (NUNOTA INTEGER PRIMARY KEY, CODEMP INTEGER, DTNEG TEXT, CODVEND INTEGER,
-      CODPARC INTEGER, TIPMOV TEXT, VLRNOTA REAL);
+      CODVOL TEXT DEFAULT 'UN', MARCA TEXT, ATIVO TEXT DEFAULT 'S', DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
+    CREATE TABLE TGFCAB (NUNOTA INTEGER PRIMARY KEY, CODEMP INTEGER, DTNEG DATE, CODVEND INTEGER,
+      CODPARC INTEGER, TIPMOV TEXT, VLRNOTA REAL, NUMNOTA INTEGER, CODTIPOPER INTEGER DEFAULT 3200,
+      STATUSNOTA TEXT DEFAULT 'L', DTALTER DATE);
     CREATE TABLE TGFITE (NUNOTA INTEGER, SEQUENCIA INTEGER, CODPROD INTEGER, QTDNEG REAL,
-      VLRUNIT REAL, VLRTOT REAL);
+      VLRUNIT REAL, VLRTOT REAL, CODVOL TEXT DEFAULT 'UN');
   `)
   const insert = inserter(database)
   insert(
@@ -131,7 +144,7 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
     set.produtos.map((each) => [each.codprod, each.descrprod]),
   )
   insert(
-    'INSERT INTO TGFCAB VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO TGFCAB (NUNOTA, CODEMP, DTNEG, CODVEND, CODPARC, TIPMOV, VLRNOTA, NUMNOTA, DTALTER) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     set.notas.map((nota) => [
       nota.nunota,
       nota.codemp,
@@ -140,10 +153,12 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
       nota.codparc,
       'V',
       cents(nota.itens.reduce((sum, item) => sum + item.vlrtot, 0)),
+      nota.nunota % 100_000,
+      changedOn(nota.dtneg),
     ]),
   )
   insert(
-    'INSERT INTO TGFITE VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO TGFITE (NUNOTA, SEQUENCIA, CODPROD, QTDNEG, VLRUNIT, VLRTOT) VALUES (?, ?, ?, ?, ?, ?)',
     set.notas.flatMap((nota) =>
       nota.itens.map((item, at) => [
         nota.nunota,
@@ -160,6 +175,13 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
 /** SQLite has no `OFFSET 0 ROWS FETCH NEXT n ROWS ONLY` (what both Oracle 12c and SQL Server take), so the double runs the same page as `LIMIT n`. */
 function withLimit(sql: string): string {
   return sql.replace(/ OFFSET 0 ROWS FETCH NEXT (\d+) ROWS ONLY$/, ' LIMIT $1')
+}
+
+/** A `DATE` column as the DbExplorer answers it, `DDMMYYYY HH24:MI:SS` (decision 0063): the double keeps `YYYY-MM-DD[ HH:MM:SS]`. */
+function asSankhyaDate(value: unknown): unknown {
+  const [, year, month, day, time] =
+    /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}:\d{2}))?$/.exec(String(value)) ?? []
+  return year === undefined ? value : `${day}${month}${year} ${time ?? '00:00:00'}`
 }
 
 /** The answer of a read query: the columns by name and the rows in their order. */
@@ -182,6 +204,12 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
   database.function('UPPER', { deterministic: true }, (text) =>
     text === null ? null : String(text).toUpperCase(),
   )
+  // Oracle's `TO_DATE` in the one form the paged read writes (`YYYY-MM-DD`): the day, as the double keeps dates.
+  database.function('TO_DATE', { deterministic: true }, (text, format) => {
+    if (format !== 'YYYY-MM-DD' || !/^\d{4}-\d{2}-\d{2}$/.test(String(text)))
+      throw new Error('The double reads only TO_DATE(day, YYYY-MM-DD).')
+    return String(text)
+  })
   database.exec('PRAGMA case_sensitive_like = ON')
   tablesOf(database, set)
   registerOn(database)
@@ -196,7 +224,18 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       throw error
     }
     statement.setReturnArrays(true)
-    const fields = statement.columns().map((column) => column.name)
-    return { fields, rows: statement.all().map((row) => [...Object.values(row)]) }
+    const columns = statement.columns()
+    const fields = columns.map((column) => column.name)
+    const dated = columns.map((column) => column.type === 'DATE')
+    return {
+      fields,
+      rows: statement
+        .all()
+        .map((row) =>
+          Object.values(row).map((cell, at) =>
+            dated[at] && cell !== null ? asSankhyaDate(cell) : cell,
+          ),
+        ),
+    }
   }
 }

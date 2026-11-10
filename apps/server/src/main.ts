@@ -7,7 +7,6 @@ import { repositoriesIn } from './builder/git/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
-  resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
 import type {
@@ -22,7 +21,8 @@ import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
-import { createConnectors, resealConnections, roleKit } from './hub/connectors/public.ts'
+import { createConnectors, roleKit } from './hub/connectors/public.ts'
+import { createCopies } from './hub/copies/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
@@ -59,6 +59,7 @@ import { migrate, migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
+import { runReseal } from './reseal.ts'
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 
@@ -82,7 +83,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    deps.requests,
+    ...[deps.requests, deps.copies],
   ]) {
     part.routes(app)
   }
@@ -138,7 +139,11 @@ export function subjectsOf(deps: {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
-  const appRemoval = createAppRemoval(deps)
+  // The copies are made below, after the apps their release and removal reach; both come long after.
+  function lateCopies() {
+    return copies
+  }
+  const appRemoval = createAppRemoval({ ...deps, copies: lateCopies })
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
@@ -150,11 +155,12 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents } = conversationsOf({
+  const { conversations, assistant, automations, agents, copyClock } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
+    copies: lateCopies,
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release
@@ -174,6 +180,7 @@ export function subjectsOf(deps: {
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
+    copies: lateCopies,
     appDataDeadlineMs: deps.appDataDeadlineMs,
   })
   const { noticeRequests } = notifications
@@ -183,9 +190,15 @@ export function subjectsOf(deps: {
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
   const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
+  const copies = createCopies({
+    ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
+    ...{ projects: projects.ports, connectors: () => connectors.copies, apps: () => apps },
+    clock: () => copyClock,
+    updating: () => conversations.updating(),
+  })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, copies },
   }
 }
 
@@ -289,23 +302,6 @@ async function runFirstPerson(args: string[]): Promise<void> {
       appendFileSync(input.summary, `${FAILURES.FIRST_PERSON_EXISTS.phrase}\n`)
     }
     throw error
-  } finally {
-    await database.close()
-  }
-}
-
-/** Each deploy's step after migrate: moves the credentials off keys that only open (security S32). */
-async function runReseal(): Promise<void> {
-  const config = readConfig('serve')
-  const log = bootLog(config.logLevel)
-  const database = openDatabase({ url: config.databaseUrl, log })
-  try {
-    await assertRuntimeLogin(database)
-    await assertMigrated(database)
-    const accounts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
-    const connections = await resealConnections({ database, sealKeys: config.sealKeys })
-    const moved = accounts.moved + connections.moved
-    log.info({ moved, refused: accounts.refused + connections.refused }, 'RESEALED')
   } finally {
     await database.close()
   }

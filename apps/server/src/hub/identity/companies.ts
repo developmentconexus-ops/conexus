@@ -98,6 +98,7 @@ export async function readCompany(
       may: {
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
+        manageCopies: allows(admitted.role, 'manageCopies'),
         manageRoles: allows(admitted.role, 'manageRoles'),
         viewAppData: allows(admitted.role, 'viewAppData'),
       },

@@ -100,6 +100,7 @@ export async function memberMay(database: TestDatabase, companyId: string, owner
 export const NO_MAY = {
   manageAgents: false,
   manageAutomations: false,
+  manageCopies: false,
   manageRoles: false,
   viewAppData: false,
   publishUnattendedWrite: false,

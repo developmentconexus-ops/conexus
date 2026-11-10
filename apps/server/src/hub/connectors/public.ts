@@ -14,6 +14,7 @@ import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
+import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
 import { grant, mayGrant } from './grants.ts'
@@ -27,10 +28,13 @@ import {
 } from './routes.ts'
 import { createToolDoor } from './tool-door.ts'
 
+/** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056). */
+export { CopyDefinition, CopyName } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
+export { connectionForCopy, connectionNamesOf } from './copy-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
@@ -121,6 +125,8 @@ export function createConnectors(deps: {
       may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),
       grant: (input: OfGrant) => grant(routeDeps, input),
     },
+    /** The copies' templates and their paged read (Capacidade 2, U2). */
+    copies: createCopyPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

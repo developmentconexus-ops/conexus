@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { readSkill } from '../kernel/skill.ts'
+import { sankhyaCopyModels } from './copies.ts'
+import { lerPagina } from './copy-read.ts'
 import { sankhyaDoor } from './door.ts'
 import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects, sankhyaWrites } from './operations/index.ts'
@@ -82,5 +84,6 @@ export const sankhya = defineConnector({
   refusals,
   check: empresas,
   readDoor: sankhyaDoor,
+  copy: { read: lerPagina, models: sankhyaCopyModels },
   skill: readSkill(SKILL),
 })

@@ -1,9 +1,19 @@
 import type { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
-import type { AnyWorkflow } from '@mastra/core/workflows'
+import type { AnyWorkflow, SchedulerConfig } from '@mastra/core/workflows'
 import type { PostgresStore } from '@mastra/pg'
 import type { FailureLog } from '../../platform/failure.ts'
 import { BuilderLogger } from './logger.ts'
+
+/** Mastra's scheduler, its publish failures (after its own retries) in the central log under a code of ours. */
+export function schedulerOf(log: FailureLog, tickMs: number | undefined) {
+  const config = {
+    ...(tickMs === undefined ? {} : { tickIntervalMs: tickMs }),
+    onError: (_error, context) =>
+      log.error({ scheduleId: context.scheduleId }, 'SCHEDULE_PUBLISH_FAILED'),
+  } satisfies SchedulerConfig
+  return config
+}
 
 /**
  * The Hub's one `Mastra` (step 24.1, H1): every controller under its key, as Mastra's routes name
@@ -22,9 +32,7 @@ export function createMastra(deps: {
     storage: deps.storage,
     agentControllers: { ...deps.controllers },
     workflows: { ...deps.workflows },
-    ...(deps.schedulerTickMs === undefined
-      ? {}
-      : { scheduler: { tickIntervalMs: deps.schedulerTickMs } }),
+    scheduler: schedulerOf(deps.log, deps.schedulerTickMs),
   })
   // Mastra 1.82.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.

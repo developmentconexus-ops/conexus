@@ -13,8 +13,8 @@ import { connection } from './tables.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 
-/** Who asked for the read: the app of a click, the Builder's tool, or the Assistant's. */
-type ReadBy = 'app' | 'builder' | 'assistant'
+/** Who asked for the read: the app of a click, the Builder's tool, the Assistant's, or a copy's run. */
+type ReadBy = 'app' | 'builder' | 'assistant' | 'copy'
 
 export type ReadRequest = Readonly<{
   by: ReadBy
