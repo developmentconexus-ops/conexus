@@ -8,6 +8,7 @@ ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA connectors OWNER TO test_owner;
+ALTER SCHEMA copies OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA notifications OWNER TO test_owner;
@@ -74,6 +75,9 @@ ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
+ALTER TABLE copies.copy OWNER TO test_owner;
+ALTER TABLE copies.copy_run OWNER TO test_owner;
+ALTER TABLE copies.project_copy OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -114,6 +118,7 @@ GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
+GRANT USAGE ON SCHEMA copies TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
@@ -332,6 +337,26 @@ GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
+-- Capacity 2, U2, with the founder's word in the pull request of its own (data D11): a company's
+-- routes and its copies' runs turn a copy on, hold its run's lease and save where its pass stands,
+-- record each run and keep the newest, and release a copy to a Projeto and take it back.
+GRANT SELECT,INSERT ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(claim_token) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(claimed_until) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(pass) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(pass_started_at) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE("position") ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(watermark) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(reason) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(pages) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(read) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(written) ON TABLE copies.copy_run TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
