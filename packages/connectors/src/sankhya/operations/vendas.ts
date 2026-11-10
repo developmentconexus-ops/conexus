@@ -5,7 +5,7 @@ import { empresaPage, empresas } from './cadastros.ts'
 import { Code, DashDate, Date_, firstCode, Page } from './shared.ts'
 
 /** The filters the orders and the invoices share; the order route ignores `codigoNota` (measured 2026-10-30), so only the invoices take it. */
-const Janela = z.object({
+const Janela = z.strictObject({
   codigoEmpresa: Code,
   page: Page(0),
   dataNegociacaoInicio: Date_.optional(),
@@ -50,7 +50,7 @@ export const notaFiscal = defineOperation({
   idempotent: true,
   summary: 'Lê uma nota fiscal de venda inteira pelo código: itens, impostos e parcelas.',
   label: 'Nota fiscal com itens',
-  input: z.object({ codigoNota: Code }),
+  input: z.strictObject({ codigoNota: Code }),
   ...rows({ list: 'nota' }),
   from: [notasFiscais.id],
   probe: (earlier) => {
@@ -68,7 +68,7 @@ export const devolucoes = defineOperation({
   summary:
     'Lista as notas de devolução de venda de uma empresa, sem os itens; a página começa em 0 e as datas vão como dd-mm-aaaa.',
   label: 'Devoluções',
-  input: z.object({
+  input: z.strictObject({
     codigoEmpresa: Code,
     page: Page(0),
     dataNegociacaoInicio: DashDate.optional(),
@@ -89,7 +89,7 @@ export const notasCanceladas = defineOperation({
   summary:
     'Lista as notas fiscais canceladas de uma empresa (número, cliente, motivo, data); a página começa em 0 e as datas de cancelamento vão como dd-mm-aaaa.',
   label: 'Notas canceladas',
-  input: z.object({
+  input: z.strictObject({
     codigoEmpresa: Code,
     page: Page(0),
     dataCancelamentoInicio: DashDate.optional(),

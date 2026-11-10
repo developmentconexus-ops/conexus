@@ -12,7 +12,7 @@ export const transportadoras = defineOperation({
   summary:
     'Lista as transportadoras (código, nome, CNPJ, cidade); a página começa em 0. `modifiedSince` traz só o que mudou depois de uma data.',
   label: 'Transportadoras',
-  input: z.object({ page: Page(0), modifiedSince: DateTime.optional() }),
+  input: z.strictObject({ page: Page(0), modifiedSince: DateTime.optional() }),
   ...rows({ list: 'transportadoras' }),
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/parceiros/transportadoras', input),
@@ -26,7 +26,7 @@ export const ordensCarga = defineOperation({
   summary:
     'Lista as ordens de carga de uma empresa (veículo, motorista, transportadora, situação); a página começa em 0.',
   label: 'Ordens de carga',
-  input: z.object({ codigoEmpresa: Code, page: Page(0) }),
+  input: z.strictObject({ codigoEmpresa: Code, page: Page(0) }),
   ...rows({ list: 'ordensCarga' }),
   from: [empresas.id],
   probe: empresaPage(0),

@@ -1,5 +1,7 @@
 import { readsOf } from '../../kernel/definition.ts'
 import { sankhyaDoor } from '../door.ts'
+import { buscarParceiros, buscarProdutos, buscarVendedores } from './buscas.ts'
+import { estoqueDosProdutos } from './buscas-estoque.ts'
 import {
   centrosResultado,
   clientes,
@@ -30,8 +32,11 @@ const ready = readsOf({
   tiposOperacao,
   naturezas,
   centrosResultado,
+  buscarParceiros,
+  buscarVendedores,
   produtos,
   gruposProduto,
+  buscarProdutos,
   pedidos,
   notasFiscais,
   notaFiscal,
@@ -40,6 +45,7 @@ const ready = readsOf({
   estoque,
   estoqueDoProduto,
   locaisEstoque,
+  estoqueDosProdutos,
   contasAReceber,
   contasAPagar,
   tiposPagamento,
