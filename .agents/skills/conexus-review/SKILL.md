@@ -9,7 +9,7 @@ description: "Reviews a whole Conexus roadmap step at its exact commit, as the o
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
 QA, at `main` once the last unit is merged and CI is green there. The same skill reviews each unit
-on its pull request's diff, before that unit merges. Later passes are a delta check (step 9).
+commit by commit, before the merge. Later passes are a delta check (step 9).
 
 ## What it receives
 
@@ -22,9 +22,8 @@ The pull request, its head commit and the card; nothing from the builders' conve
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
    Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column,
    said so.
-2. Read the step's whole diff, `main` at the last unit's merge against the step's first commit, and
-   against each unit's section, at the exact commit; a unit review reads its pull
-   request diff.
+2. Read the step's whole diff, `main` at the last group's merge against the step's first commit, and
+   against each unit's section, at the exact commit; a unit review reads its commit.
 3. Try a counterexample to every acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test

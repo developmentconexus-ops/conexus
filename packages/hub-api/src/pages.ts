@@ -14,6 +14,8 @@ export const PAGES = [
   '/companies/$companyId/projects/$projectId/about',
   '/companies/$companyId/projects/$projectId/access',
   '/companies/$companyId/projects/$projectId/integrations',
+  '/companies/$companyId/projects/$projectId/data',
+  '/companies/$companyId/projects/$projectId/data/$table',
   '/companies/$companyId/projects/$projectId/conversations/$conversationId',
   '/companies/$companyId/projects/$projectId/assistant',
   '/companies/$companyId/projects/$projectId/assistant/$conversationId',

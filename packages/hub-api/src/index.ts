@@ -16,6 +16,7 @@ export {
   revokeAllAppAccess,
   revokeAppAccess,
 } from './app-access.ts'
+export * from './app-data.ts'
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_OPEN_PATH,
@@ -38,7 +39,7 @@ export {
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
-  type OfProject,
+  OfProject,
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'

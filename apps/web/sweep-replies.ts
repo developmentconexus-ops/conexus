@@ -17,7 +17,6 @@ import {
   listModelAccounts,
   listMyApps,
   listNotifications,
-  listProjectConnections,
   listProjects,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
@@ -25,6 +24,7 @@ import { ok } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { mayOf } from './src/platform/test-may.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
+import { projectPreloadsPage } from './sweep-project-preloads.ts'
 import { railListsPage } from './sweep-rail-lists.ts'
 import { settingsLists } from './sweep-role-list.ts'
 
@@ -231,10 +231,7 @@ export function projectsPage(
       conversations: [],
       next: { kind: 'END' },
     }),
-    // The rail's Integrações link preloads its page, whose loader reads what the Projeto may read.
-    [`GET /api/companies/${id}/projects/${PROJECT.id}/connections`]: ok(listProjectConnections, {
-      connectors: [],
-    }),
+    ...projectPreloadsPage(id, PROJECT.id),
   }
 }
 

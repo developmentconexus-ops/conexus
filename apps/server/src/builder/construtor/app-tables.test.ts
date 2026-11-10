@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import type { AppRead } from '../../hub/apps/public.ts'
+import { CompanyId, PersonId, ProjectId, AppTableName as TableName } from '@conexus/hub-api'
+import type { AppTablesRead } from '../../hub/apps/public.ts'
 import type { AppDataPort } from '../agents/public.ts'
-import { appTablesOf } from './public.ts'
+import { tablesWithColumnNamesOf } from './public.ts'
 
 const scope = {
   companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
@@ -12,9 +12,13 @@ const scope = {
   personId: PersonId.parse(randomUUID().replaceAll('-', '')),
 }
 
-function readingAs(read: AppRead) {
-  const appData: AppDataPort = { hasApp: async () => true, read: async () => read }
-  return appTablesOf(appData)(scope)
+function readingAs(read: AppTablesRead) {
+  const appData: AppDataPort = {
+    hasApp: async () => true,
+    tables: async () => read,
+    read: async () => ({ kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' }),
+  }
+  return tablesWithColumnNamesOf(appData)(scope)
 }
 
 test('as tabelas do app: o banco do app que não responde ou estoura o prazo é DATABASE_UNAVAILABLE, não INTERNAL_UNEXPECTED', async () => {
@@ -26,14 +30,16 @@ test('as tabelas do app: o banco do app que não responde ou estoura o prazo é 
   }
 })
 
-test('as tabelas do app: o que a leitura não devia dar segue INTERNAL_UNEXPECTED, e as linhas viram tabelas com colunas', async () => {
+test('as tabelas do app: o Construtor lê a lista do Hub, e o que a leitura não devia dar segue INTERNAL_UNEXPECTED', async () => {
   await assert.rejects(readingAs({ kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }), {
     code: 'INTERNAL_UNEXPECTED',
   })
-  const rows = [
-    ['recado', 'id'],
-    ['recado', 'texto'],
-  ]
-  const read = { kind: 'ROWS', columns: ['table_name', 'column_name'], rows } as const
+  assert.equal(await readingAs({ kind: 'NO_APP' }), null)
+  const table = TableName.parse('recado')
+  const columns = [{ name: 'id' }, { name: 'texto' }]
+  const read: AppTablesRead = {
+    kind: 'TABLES',
+    tables: [{ schema: 'public', name: table, columns, key: ['id'] }],
+  }
   assert.deepEqual(await readingAs(read), [{ name: 'recado', columns: ['id', 'texto'] }])
 })
