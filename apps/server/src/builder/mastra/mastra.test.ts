@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { schedulerOf } from './mastra.ts'
+import { schedulerOf } from './public.ts'
 
 test('o agendador: a falha de publicação vai ao registro com o id da agenda', () => {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
