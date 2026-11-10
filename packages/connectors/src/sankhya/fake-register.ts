@@ -21,7 +21,7 @@ function partner(codparc: number, nomeparc: string, more: Partial<Partner> = {})
   }
 }
 
-/** The names the searches are tried on: accents, an apostrophe, a `%`, a `_`, a supplier, an inactive one, and a long run after them to page through. */
+/** The names the searches are tried on: accents, a legal name in mixed case, an apostrophe, a `%`, a `_`, a supplier, an inactive one, and a long run after them to page through. */
 const PARCEIROS_EXTRAS: readonly Partner[] = [
   partner(200, 'PADARIA SÃO JOSÉ', { cgc: '99999999000101' }),
   partner(201, 'SAO PAULO BEBIDAS LTDA', { cgc: '99999999000202', fornecedor: 'S', cliente: 'N' }),
@@ -29,7 +29,7 @@ const PARCEIROS_EXTRAS: readonly Partner[] = [
   partner(203, "D'AGUA CLARA DISTRIBUIDORA", { cgc: '99999999000303', fornecedor: 'S' }),
   partner(204, 'FAZENDA 100% LEITE', { fornecedor: 'S', cliente: 'N' }),
   partner(205, 'LOJA_UM COMERCIO', { ativo: 'N' }),
-  partner(206, 'JOÃO DA SILVA ME', { tippessoa: 'F', razaosocial: 'JOAO DA SILVA COMERCIO ME' }),
+  partner(206, 'JOÃO DA SILVA ME', { tippessoa: 'F', razaosocial: 'João da Silva Comércio ME' }),
   ...Array.from({ length: 45 }, (_, at) =>
     partner(300 + at, `ARMAZEM NORTE ${String(at + 1).padStart(3, '0')}`),
   ),
@@ -88,8 +88,8 @@ const ESTOQUE: readonly Stock[] = [
   [10, 1, 2, '', 'P', 0, 8, 0],
   [11, 1, 1, 'L1', 'P', 0, 12.5, 2.5],
   [11, 2, 1, '', 'P', 0, 3, 0],
-  [12, 1, 1, '', 'P', 0, 0, 0],
   [12, 1, 1, '', 'T', 201, 7, 0],
+  [12, 1, 1, '', 'P', 0, 0, 0],
   [200, 1, 1, '', 'P', 0, 25, 4],
   [201, 1, 1, '', 'P', 0, 60, 10],
 ]
