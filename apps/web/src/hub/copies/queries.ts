@@ -30,6 +30,14 @@ function waitingFor(requests: RunRequest[], copyId: string, run: Run) {
   )
 }
 
+/** Whether the run one request asked for is still owed or open: not in the list yet, or running, within the window. */
+export function requestOpen(one: RunRequest, run: Run) {
+  return (
+    Date.now() - one.at < REQUEST_WINDOW_MS &&
+    (run === null || run.id === one.before || run.outcome.kind === 'RUNNING')
+  )
+}
+
 /**
  * The company's copies, read again every 5 s while one runs, and while a run the person asked for
  * has not appeared (the write's own re-read can come back before the Hub opened the run).

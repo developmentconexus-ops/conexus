@@ -137,6 +137,7 @@ test('a lista e as rodadas', async (t) => {
   assert.deepEqual(copy.shown, {
     query: definition.source.sql,
     key: definition.key,
+    changedSince: definition.changedSince,
     window: definition.window ?? null,
   })
 

@@ -57,6 +57,7 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     shown: {
       query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,
       key: ['NUNOTA'],
+      changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
     },
     ...fields,
@@ -250,6 +251,20 @@ export const COPIES_STATES: State[] = [
       await p.getByRole('button', { name: 'Ações: Vendas' }).click()
       await p.getByRole('menuitem', { name: 'Intervalo' }).click()
       await waitFor(p, 'O mínimo é 15 minutos.')
+    },
+  },
+  {
+    name: 'Cópias, o pedido de Rodar agora enviado',
+    path: PAGE,
+    replies: {
+      ...copiesPage(LISTED),
+      [`POST ${COMPANY_API}/copies/${VENDAS}/run`]: { status: 202, json: {} },
+    },
+    settle: async (p) => {
+      await waitFor(p, 'Sem relógio')
+      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
+      await p.getByRole('menuitem', { name: 'Rodar agora' }).click()
+      await waitFor(p, 'Pedido enviado. A rodada aparece na lista.')
     },
   },
   linkRefused('COPY_DATABASE_UNAVAILABLE', 'O banco da empresa não respondeu.'),

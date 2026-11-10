@@ -23,8 +23,7 @@ routes/           one file per address: who enters, what loads, which screen ope
                   company, Configurações, first entry and Central layouts each draw their frame
 hub/              public.ts and one folder per subject
 builder/          public.ts and one folder per subject
-ui/               pieces with no subject: cn.ts, button, input, label, field, form, alert-dialog,
-                  dropdown-menu, avatar, sheet, toast, skeleton, states, frame
+ui/               pieces with no subject: cn.ts, button, input, states, frame, and the rest
 platform/         jitless.ts, hub.ts (the only fetch), cache, attempt key, failure reader,
                   auth.ts (the Better Auth client), theme, dates
 brand/            tokens, fonts, mark
@@ -44,8 +43,7 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
   import Mastra's client, with the `fetch` of `platform/hub.ts`. [dependency-cruiser]
 - **W8.** A screen **must** read route parameters and data through `getRouteApi`, never by importing
   the route. A piece drawn above the route that owns the parameter, such as the Workbench drawn by
-  the Projeto route reading a conversation's id, reads it with `useParams({ strict: false, select })`,
-  TanStack Router's documented form for a shared component; `getRouteApi` there would fail on the
+  the Projeto route reading a conversation's id, reads it with `useParams({ strict: false, select })`; `getRouteApi` there would fail on the
   parent route, where the child is absent. [dependency-cruiser, review]
 
 ## 3. Calling the Hub
@@ -62,8 +60,9 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
   current invalidate-all policy with explicit `meta` exceptions and the conversation outside it.
   Failure: saving in one screen leaves another displaying an old version. TanStack does not
   invalidate that data automatically. A loader that decides whether an item exists **must** read
-  fresh (`queryClient.query`), never `ensureQueryData`, which returns data a write marked stale.
-  [review]
+  fresh (`queryClient.query`), never `ensureQueryData`, which returns data a write marked stale. A
+  write whose effect appears later (Rodar agora, Ligar) **must** be followed for a bounded time: its
+  own re-read can come first, so `refetchInterval` also watches the person's request. [review]
 - **W13.** `platform/hub.ts` **must not** know a subject. [dependency-cruiser]
 
 One declaration supplies address, schema and query identity. Better Auth's own session atom is a
@@ -88,16 +87,14 @@ second owner, so its `useSession` is not a substitute for the shared cache.
   before `router.invalidate()`; after sign-out the cache **must** be cleared. [review, and a test per
   flow]
 
-`ensureQueryData` can return a cached session even when stale. The flow tests retain that
-distinction.
+`ensureQueryData` can return a cached session even when stale; the flow tests keep that.
 
 ## 5. Pieces and forms
 
 - **W21.** Shared visual pieces **should** use the selected native source, adapted once in `ui/`,
   not copied into variants per screen: Conexus's own shadcn pieces on Base UI and brand tokens
   [0033]. Read copied code; aliases do not bypass [0003]. Failure: a manual `FieldError` loses the
-  alert behavior its native piece already has. The choice remains; a CLI ritual is not another
-  correctness rule. [review]
+  alert behavior its native piece already has. [review]
 - **W22.** Shared loading/error/empty states and pieces **should** work under the actual CSP,
   including error output: root Base UI `CSPProvider` with `disableStyleElements`, Base UI toast,
   no injected style elements. Fonts remain local to the brand, without a CDN. Failure: sonner
@@ -118,7 +115,7 @@ distinction.
 
 [Design V23](design.md) owns style reuse and the width-token collision; its existing GritQL plugin
 stays enabled. [Code C37](code.md) owns attempt identity end to end, while the mixed rule above
-retains the form/socket proof already required. No new checker is claimed for semantic judgment.
+retains the form/socket proof already required.
 
 ## 6. Information architecture
 
@@ -132,9 +129,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
-- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações and
-  Agentes (founder, 2026-11-02, `V1`) for an owner, an administrator or a developer (step 24.3.4,
-  founder, 2026-11-04: "2. Aprovo"), and Configurações, the bell and the account at the foot) with
+- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações,
+  Agentes (founder, 2026-11-02, `V1`) and Cópias (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
+  Aprovo"), and Configurações, the bell and the account at the foot) with
   the place's list beside it. In the company the list is Nova conversa and Conversas by day, for
   every role, since the member talks with the Assistant too. Inside a Projeto
   the rail stays and the list is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
@@ -169,9 +166,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   forms, as references do (Mastra 1.82 Studio's `filterItem`,
   `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
   administration area the person's role never uses is hidden from the navigation and its address
-  answers not found (S10): Automações and Agentes for the member (founder, 2026-11-01: "1 A";
-  2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações and
-  Agentes (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
+  answers not found (S10): Automações, Agentes and Cópias for the member (founder, 2026-11-01: "1 A";
+  2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações,
+  Agentes and Cópias (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
   outside the role says who can (design V29), as Conectores and Contas de modelo do.
   Founder, 2026-11-07: "Vamos revisar a regra W34 então, se referencias fazem assim não teriamso
   que mudar", then "1. Aprovo".
@@ -179,5 +176,4 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
   workaround for it, such as a fixed padding or a status-bar style, and each iOS release is
-  retested in issue #387. Founder, 2026-10-27, offered a fixed padding and a retest: "A" (keep the
-  issue, retest). Failure: a fixed offset tuned to one iPhone leaves a gap on the next. [review]
+  retested in issue #387. Founder, 2026-10-27: "A" (keep the issue, retest). Failure: a fixed offset tuned to one iPhone leaves a gap on the next. [review]

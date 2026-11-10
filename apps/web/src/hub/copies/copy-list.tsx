@@ -22,7 +22,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { IntervalDialog } from './interval.tsx'
 import { NewCopy } from './new-copy.tsx'
-import { copiesQuery, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
+import type { RunRequest } from './queries.ts'
+import { copiesQuery, requestOpen, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import {
   COPIES_TITLE,
@@ -40,7 +41,10 @@ import {
 // The eight columns and the menu fit beside the rail at 1280px, so a cell's padding is `sm`, not the table's `md`.
 const CELL = 'px-sm'
 
-export type Note = { kind: 'ok' | 'error'; text: string }
+/** What an action told: a refusal, or that the request went, with the run it asked for. */
+export type Note =
+  | { kind: 'error'; text: string }
+  | { kind: 'ok'; text: string; request: RunRequest }
 
 const NOTE_LINE = {
   ok: { role: 'status', tone: 'text-text-2' },
@@ -55,6 +59,19 @@ export function NoteLine({ note }: { note: Note }) {
       {note.text}
     </p>
   )
+}
+
+/**
+ * The note on screen. A refusal stays until the next action; "Pedido enviado" goes for good once the
+ * run it asked for is no longer owed or open, so a later run of the clock never brings it back.
+ */
+export function useNote(copies: readonly Pick<CopySummary, 'id' | 'run'>[]) {
+  const [note, setNote] = useState<Note>()
+  if (note?.kind === 'ok') {
+    const run = copies.find((copy) => copy.id === note.request.copyId)?.run ?? null
+    if (!requestOpen(note.request, run)) setNote(undefined)
+  }
+  return [note, setNote] as const
 }
 
 /** The state of a copy as a word with its dot (design V35). */
@@ -77,7 +94,12 @@ function useRunNow(companyId: CompanyId, copy: CopySummary, onNote: (note: Note)
     run.mutate(
       { params: { companyId, copyId: copy.id } },
       {
-        onSuccess: () => onNote({ kind: 'ok', text: RUN_REQUESTED }),
+        onSuccess: () =>
+          onNote({
+            kind: 'ok',
+            text: RUN_REQUESTED,
+            request: { copyId: copy.id, at: Date.now(), before: copy.run?.id ?? null },
+          }),
         onError: (error) => onNote(failedNote(error)),
       },
     )
@@ -160,6 +182,7 @@ export function CopyMenu(props: {
         copy={copy}
         open={choosing}
         onOpenChange={setChoosing}
+        onSaved={() => onNote(undefined)}
       />
     </>
   )
@@ -314,8 +337,9 @@ function Copies(props: {
  * is and offers **Ligar uma cópia**. The list follows itself while a run is open.
  */
 export function CopyList({ companyId }: { companyId: CompanyId }) {
-  const read = useQuery(copiesQuery(companyId, useRunRequests()))
-  const [note, setNote] = useState<Note>()
+  const requests = useRunRequests()
+  const read = useQuery(copiesQuery(companyId, requests))
+  const [note, setNote] = useNote(read.data?.copies ?? [])
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <div className="flex flex-wrap items-center justify-between gap-md">

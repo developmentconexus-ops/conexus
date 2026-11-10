@@ -42,7 +42,7 @@ test('Dados: as cópias liberadas', async () => {
   ])
   const copies = within(screen.getByRole('region', { name: 'Cópias liberadas' }))
   expect(copies.getAllByRole('link').map((link) => link.textContent)).toEqual([
-    'clientesmais de 10.000',
+    'clientesmais de 10.000 (teto da contagem)',
     'vendas183',
   ])
   expect(copies.getByRole('link', { name: /^vendas/ }).getAttribute('href')).toBe(
