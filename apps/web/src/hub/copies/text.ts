@@ -81,13 +81,11 @@ export function durationText(run: Pick<CopyRun, 'startedAt' | 'endedAt'>): strin
     : `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
-/** What each run rereads, true to the engine: what changed since the last pass, the window, both, or the whole source. */
+/** What each run rereads, true to the engine: with a date of change, what changed since the last pass (and the window, if any); without it, the whole source, window or not. */
 export function windowText(shown: Pick<CopySummary['shown'], 'changedSince' | 'window'>): string {
   const { changedSince, window } = shown
-  const windowPart = window === null ? null : `${window.column} dos últimos ${window.days} dias`
-  if (changedSince === null && windowPart === null) return 'A fonte inteira, a cada rodada.'
-  const first = 'A primeira carga traz tudo; a cada rodada relê'
-  if (windowPart === null) return `${first} o que mudou desde a anterior.`
-  if (changedSince === null) return `${first} ${windowPart}.`
-  return `${first} o que mudou desde a anterior e ${windowPart}.`
+  if (changedSince === null) return 'A fonte inteira, a cada rodada.'
+  const first = 'A primeira carga traz tudo; a cada rodada relê o que mudou desde a anterior'
+  if (window === null) return `${first}.`
+  return `${first} e ${window.column} dos últimos ${window.days} dias.`
 }

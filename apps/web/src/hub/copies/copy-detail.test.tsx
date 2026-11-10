@@ -77,14 +77,10 @@ test('a releitura, só com a data de alteração: o que mudou desde a anterior',
   ).toBeTruthy()
 })
 
-test('a releitura, só com a janela: o período da janela', async () => {
+test('a releitura, com a janela e sem data de alteração: a fonte inteira, como o motor lê', async () => {
   const shown = { ...SHOWN, changedSince: null, window: { column: 'DTNEG', days: 30 } }
   openCopies(server, { copies: [copy({ shown })], runs: [] }, DETAIL)
-  expect(
-    await screen.findByText(
-      'A primeira carga traz tudo; a cada rodada relê DTNEG dos últimos 30 dias.',
-    ),
-  ).toBeTruthy()
+  expect(await screen.findByText('A fonte inteira, a cada rodada.')).toBeTruthy()
 })
 
 test('a releitura, sem data de alteração nem janela: a fonte inteira a cada rodada', async () => {
