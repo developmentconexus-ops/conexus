@@ -3,7 +3,7 @@ import type { SqlAnswer } from '../../platform/company-postgres.ts'
 import type { Enabling } from './enable.ts'
 import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
-import { applyGrants, grantCopy, revokeAllOf, revokeCopy } from './grants.ts'
+import { applyGrants, grantCopy, releasedNamesOf, revokeAllOf, revokeCopy } from './grants.ts'
 import { models, ofProject, runs, summaries } from './list.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
@@ -40,6 +40,9 @@ export function createCopyService(
     /** Before an app's logins are dropped: every release of the Projeto revoked. */
     revokeAllOf: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer> =>
       revokeAllOf(full, input),
+    /** The names of the copies released to a Projeto, for what Dados shows of it. */
+    releasedNames: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<string[]> =>
+      releasedNamesOf(full, input),
     /** After an app's logins are made: every release of the Projeto granted again (repair only). */
     applyGrants: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer> =>
       applyGrants(full, input),

@@ -28,10 +28,10 @@ export type AppReadInput = {
 }
 
 /** The schemas a table may live in: a closed union, never text from outside. */
-export type TableSchema = 'APP'
+export type TableSchema = 'APP' | 'COPY'
 
-/** The SQL that names each schema a table may live in. */
-const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
+/** The SQL that names each schema a table may live in; `sync` holds the company's copies. */
+const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()', COPY: "'sync'" }
 
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
@@ -96,6 +96,14 @@ export function appTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise
   return catalogOf(deps, input, { text: `${catalogSql('APP')} order by c.relname` })
 }
 
+/**
+ * The copies released to the Projeto, in name order: the same read login sees `sync` only where a
+ * `GRANT` gave it a table, which `has_table_privilege` keeps (Capacidade 2, U5).
+ */
+export function copyTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise<AppTablesRead> {
+  return catalogOf(deps, input, { text: `${catalogSql('COPY')} order by c.relname` })
+}
+
 /** What a look at one table gives: the table, or `NONE` when the catalog has none the login may read. */
 export type AppTableRead =
   | { kind: 'TABLE'; table: AppTable }
@@ -117,31 +125,31 @@ export async function appTableOf(
   return table === undefined ? { kind: 'NONE' } : { kind: 'TABLE', table }
 }
 
-const Counted = z.array(z.tuple([AppTableName, z.coerce.number().int()]))
+const Counted = z.array(z.tuple([z.coerce.number().int(), z.coerce.number().int()]))
 
 /**
- * How many rows each table has, up to one past the cap, which says "over": a `count(*)` over a
- * `limit` of the cap plus one, a row per table, the schema and name quoted from the catalog's own. A read that
- * fails leaves every table unknown, never zero; a reply of the wrong shape is ours to fix, so it throws.
+ * How many rows each table has, in the order given, up to one past the cap, which says "over": a
+ * `count(*)` over a `limit` of the cap plus one, a row per table tagged with its place in the list
+ * (an app table and a copy may share a name), the schema and name quoted from the catalog's own. A
+ * read that fails leaves every table unknown, never zero; a reply of the wrong shape is ours to
+ * fix, so it throws.
  */
 export async function rowCountsOf(
   deps: AppDatabaseDeps,
   input: AppReadInput & { tables: readonly Pick<AppTable, 'schema' | 'name'>[] },
-): Promise<Map<AppTableName, RowCount>> {
+): Promise<RowCount[]> {
   const { tables, ...rest } = input
-  const unknown = new Map<AppTableName, RowCount>(
-    tables.map(({ name }) => [name, { kind: 'UNKNOWN' }]),
-  )
+  const unknown = tables.map((): RowCount => ({ kind: 'UNKNOWN' }))
   if (tables.length === 0) return unknown
   const text = tables
     .map(
       ({ schema, name }, at) =>
-        `select $${at + 2}::text, (select count(*)::int from (select 1 from ${quoted(schema)}.${quoted(name)} limit $1) s)`,
+        `select ${at}, (select count(*)::int from (select 1 from ${quoted(schema)}.${quoted(name)} limit $1) s)`,
     )
     .join(' union all ')
   const read = await readAppData(deps, {
     ...rest,
-    statement: { text, values: [ROW_COUNT_CAP + 1, ...tables.map(({ name }) => name)] },
+    statement: { text, values: [ROW_COUNT_CAP + 1] },
   })
   if (read.kind !== 'ROWS') return unknown
   const counted = Counted.safeParse(read.rows)
@@ -151,10 +159,10 @@ export async function rowCountsOf(
       cause: counted.error,
     })
   }
-  return new Map(
-    counted.data.map(([name, rows]): [AppTableName, RowCount] => [
-      name,
-      rows > ROW_COUNT_CAP ? { kind: 'OVER' } : { kind: 'EXACT', rows },
-    ]),
-  )
+  const rows = new Map(counted.data)
+  return unknown.map((fallback, at): RowCount => {
+    const n = rows.get(at)
+    if (n === undefined) return fallback
+    return n > ROW_COUNT_CAP ? { kind: 'OVER' } : { kind: 'EXACT', rows: n }
+  })
 }

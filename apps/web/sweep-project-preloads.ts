@@ -7,6 +7,6 @@ export function projectPreloadsPage(id: string, projectId: string): Replies {
   const path = `/api/companies/${id}/projects/${projectId}`
   return {
     [`GET ${path}/connections`]: ok(listProjectConnections, { connectors: [] }),
-    [`GET ${path}/tables`]: ok(listAppTables, { kind: 'NO_APP' }),
+    [`GET ${path}/tables`]: ok(listAppTables, { kind: 'NO_APP', copies: [] }),
   }
 }

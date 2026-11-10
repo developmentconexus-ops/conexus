@@ -64,6 +64,7 @@ import { Route as AppCompaniesCompanyIdProjectsProjectIdDataTableRouteImport } f
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAgentsAgentIdConversationIdRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.agents.$agentId.$conversationId.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAgentsConstrutorConversationIdRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.agents.tools_.$toolId.tsx'
+import { Route as AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.data.copies.$table.tsx'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -428,6 +429,12 @@ const AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRoute =
     path: '/projects/$projectId/agents/tools/$toolId',
     getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
   } as any)
+const AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute =
+  AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRouteImport.update({
+    id: '/copies/$table',
+    path: '/copies/$table',
+    getParentRoute: () => AppCompaniesCompanyIdProjectsProjectIdDataRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -489,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsAgentIdConversationIdRoute
   '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsConstrutorConversationIdRoute
   '/companies/$companyId/projects/$projectId/agents/tools/$toolId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRoute
+  '/companies/$companyId/projects/$projectId/data/copies/$table': typeof AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -544,6 +552,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsAgentIdConversationIdRoute
   '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsConstrutorConversationIdRoute
   '/companies/$companyId/projects/$projectId/agents/tools/$toolId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRoute
+  '/companies/$companyId/projects/$projectId/data/copies/$table': typeof AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -608,6 +617,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/$projectId_/agents/$agentId/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsAgentIdConversationIdRoute
   '/_app/companies/$companyId/projects/$projectId_/agents/construtor/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsConstrutorConversationIdRoute
   '/_app/companies/$companyId/projects/$projectId_/agents/tools_/$toolId': typeof AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRoute
+  '/_app/companies/$companyId/projects/$projectId_/data/copies/$table': typeof AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId'
     | '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId'
     | '/companies/$companyId/projects/$projectId/agents/tools/$toolId'
+    | '/companies/$companyId/projects/$projectId/data/copies/$table'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -726,6 +737,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId'
     | '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId'
     | '/companies/$companyId/projects/$projectId/agents/tools/$toolId'
+    | '/companies/$companyId/projects/$projectId/data/copies/$table'
   id:
     | '__root__'
     | '/_app'
@@ -789,6 +801,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/$projectId_/agents/$agentId/$conversationId'
     | '/_app/companies/$companyId/projects/$projectId_/agents/construtor/$conversationId'
     | '/_app/companies/$companyId/projects/$projectId_/agents/tools_/$toolId'
+    | '/_app/companies/$companyId/projects/$projectId_/data/copies/$table'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1225,6 +1238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAgentsToolsToolIdRouteImport
       parentRoute: typeof AppCompaniesCompanyIdRouteRoute
     }
+    '/_app/companies/$companyId/projects/$projectId_/data/copies/$table': {
+      id: '/_app/companies/$companyId/projects/$projectId_/data/copies/$table'
+      path: '/copies/$table'
+      fullPath: '/companies/$companyId/projects/$projectId/data/copies/$table'
+      preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataRoute
+    }
   }
 }
 
@@ -1268,6 +1288,7 @@ const AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren =
 interface AppCompaniesCompanyIdProjectsProjectIdDataRouteChildren {
   AppCompaniesCompanyIdProjectsProjectIdDataTableRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataTableRoute
   AppCompaniesCompanyIdProjectsProjectIdDataIndexRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataIndexRoute
+  AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute
 }
 
 const AppCompaniesCompanyIdProjectsProjectIdDataRouteChildren: AppCompaniesCompanyIdProjectsProjectIdDataRouteChildren =
@@ -1276,6 +1297,8 @@ const AppCompaniesCompanyIdProjectsProjectIdDataRouteChildren: AppCompaniesCompa
       AppCompaniesCompanyIdProjectsProjectIdDataTableRoute,
     AppCompaniesCompanyIdProjectsProjectIdDataIndexRoute:
       AppCompaniesCompanyIdProjectsProjectIdDataIndexRoute,
+    AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute:
+      AppCompaniesCompanyIdProjectsProjectIdDataCopiesTableRoute,
   }
 
 const AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren =

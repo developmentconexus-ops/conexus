@@ -96,7 +96,7 @@ test('dados: Projeto sem app', async (t) => {
   const empty = `${on.base}/projects/${String(Object(made.json()).project.id)}`
   const listed = await on.tables(on.ana, empty)
   assert.equal(listed.statusCode, 200, listed.body)
-  assert.deepEqual(listed.json(), { kind: 'NO_APP' })
+  assert.deepEqual(listed.json(), { kind: 'NO_APP', copies: [] })
   const rows = await on.rows(on.ana, CLIENTES, undefined, empty)
   assert.deepEqual([rows.statusCode, codeOf(rows)], [404, 'NOT_FOUND'])
 })
@@ -290,7 +290,11 @@ test('dados: o registro não leva dado', async (t) => {
   assert.equal((await on.tables(on.ana)).statusCode, 200)
   assert.equal((await on.rows(on.ana, CLIENTES)).statusCode, 200)
   const reads = on.hub.lines.filter(({ message }) => message === 'APP_DATA_READ')
-  assert.equal(reads.length, 4)
+  assert.equal(
+    reads.length,
+    5,
+    'the app catalog, the copies catalog, the counts, one table and its page',
+  )
   for (const { fields } of reads) {
     assert.deepEqual(Object.keys(fields).sort(), ['answer', 'companyId', 'projectId'])
     assert.equal(fields.answer, 'ROWS')

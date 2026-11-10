@@ -44,8 +44,9 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Sobre, with its parts Sobre and Versões (`?part=`), where a version is published, or asked to be (Pedir esta) with the open request above the list | `/companies/<c>/projects/<p>/about` | Projeto | owner, administrator, developer, member |
 | Quem usa o app | `/companies/<c>/projects/<p>/access` | Projeto | owner, administrator, developer (reads), member (reads) |
 | Integrações do Projeto: each connected connection with whether the Projeto may read it, Liberar (whose confirmation says what app, Builder and agents may do) and Tirar | `/companies/<c>/projects/<p>/integrations` | Projeto | owner, administrator, developer (reads), member (reads) |
-| Dados do Projeto: the tables of the Projeto's app with their row counts | `/companies/<c>/projects/<p>/data` | Projeto | owner, administrator, developer |
+| Dados do Projeto: the tables of the Projeto's app (Tabelas do app) and the copies released to it (Cópias liberadas), with their row counts | `/companies/<c>/projects/<p>/data` | Projeto | owner, administrator, developer |
 | The rows of one table of the app, 50 at a time, read only | `/companies/<c>/projects/<p>/data/<table>` | Projeto | owner, administrator, developer |
+| The rows of one copy released to the Projeto, 50 at a time, read only | `/companies/<c>/projects/<p>/data/copies/<table>` | Projeto | owner, administrator, developer |
 | Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |

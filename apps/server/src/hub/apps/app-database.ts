@@ -27,6 +27,7 @@ export type AppDatabaseDeps = {
   /** The copies are made after the apps; the repair of a Projeto's logins gives its releases back. */
   copies: () => {
     applyGrants(input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer>
+    releasedNames(input: { companyId: CompanyId; projectId: ProjectId }): Promise<string[]>
   }
   log: FailureLog
 }

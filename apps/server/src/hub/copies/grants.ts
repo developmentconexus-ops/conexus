@@ -92,6 +92,19 @@ function releasesOf(deps: CopiesDeps, input: OfProject) {
   })
 }
 
+/** The names of the copies released to the Projeto, in name order; none when nothing is released. */
+export async function releasedNamesOf(deps: CopiesDeps, input: OfProject): Promise<string[]> {
+  const rows = await deps.database.read(companyScope(input.companyId), (tx) =>
+    tx
+      .select({ name: copy.name })
+      .from(projectCopy)
+      .innerJoin(copy, eq(copy.id, projectCopy.copyId))
+      .where(eq(projectCopy.projectId, input.projectId))
+      .orderBy(copy.name),
+  )
+  return rows.map((row) => row.name)
+}
+
 const NOTHING: SqlAnswer = { kind: 'DONE', value: [] }
 
 /** Before an app's logins are dropped: every release of the Projeto and the schema revoked, so `DROP ROLE` passes. */
