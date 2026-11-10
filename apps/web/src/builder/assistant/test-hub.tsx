@@ -53,6 +53,7 @@ export function assistantConversation(
   const conversation: AssistantConversation = {
     id: ASKED,
     title: 'Vendas da semana',
+    createdAt: '2026-10-19T12:00:00.000Z',
     updatedAt: '2026-10-19T12:00:00.000Z',
     ...{ projectId: null, automation: null },
     connections: OFFERED,

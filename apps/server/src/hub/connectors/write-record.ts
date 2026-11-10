@@ -191,7 +191,7 @@ async function found(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put, row: 
   return { kind: 'FOUND', written: foundIn(row, put.hash, put.mark) } as const
 }
 
-/** The refusal of a call while an earlier write of its kind may exist; none when a person approved it (U2's gate sets `approvedBy`). */
+/** The refusal of a call while an earlier write of its kind may exist; none when a person approved this very call (the write tool sets `approvedBy` from the approval Mastra resumed with). */
 async function heldBy(deps: Deps, tx: CommandTx, a: WriteRequest, put: Put) {
   if (a.approvedBy !== undefined) return undefined
   const [open] = await openRows(tx, {

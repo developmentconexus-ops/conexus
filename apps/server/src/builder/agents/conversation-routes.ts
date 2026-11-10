@@ -13,7 +13,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, listOwned, ownThread, resourceOf } from '../controller-kit/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
@@ -49,7 +49,8 @@ function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversati
     id: ConversationId.parse(thread.id),
     agentId,
     draft: thread.metadata?.[AGENT_MARK.draft] === 'true',
-    title: thread.title ?? '',
+    title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
   }
 }
@@ -103,9 +104,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
       { ...deps, controller, memory, machines: deps.conversations.machines },
       { scope, agentId, draft, frozen, id },
     )
-    const resourceId = resourceOf('agents', owner)
-    const thread = await memory.getThreadById({ threadId: id, resourceId })
-    if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+    const thread = await ownThread(memory, 'agents', owner, id)
     if (opened.made) {
       const about = {
         companyId: scope.companyId,
@@ -123,14 +122,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     const { agentId } = input.params
     await admittedTo(deps, scope, agentId)
     const owner = { companyId: scope.companyId, personId: scope.personId }
-    const { threads } = await memory.listThreads({
-      filter: {
-        resourceId: resourceOf('agents', owner),
-        metadata: { [AGENT_MARK.agent]: agentId },
-      },
-      perPage: false,
-      orderBy: { field: 'updatedAt', direction: 'DESC' },
-    })
+    const threads = await listOwned(memory, 'agents', owner, { [AGENT_MARK.agent]: agentId })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
   })
   serveWrites(app, deps)

@@ -89,7 +89,6 @@ test('o membro: a execução de quem não administra ligações não leva connec
     assert.equal(tools.includes('show_file'), true, role)
   }
   const steps: ReturnType<typeof said>[][] = []
-  const invented = await assisting(t, steps)
   steps.push(
     [
       tool(SAVE, {
@@ -101,6 +100,7 @@ test('o membro: a execução de quem não administra ligações não leva connec
     ],
     [said('Peça a um administrador.')],
   )
+  const invented = await assisting(t, steps)
   const bruno = await memberOn(invented.hub, invented.companyId, BRUNO, 'member')
   const link = await created(invented.hub, bruno, invented.assistant, {
     connections: [invented.matriz],

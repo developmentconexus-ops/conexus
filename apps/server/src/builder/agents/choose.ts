@@ -11,11 +11,12 @@ import {
   ToolVersionId as VersionId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
+import { mayLeaveAlone } from '../../hub/connectors/public.ts'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
 import { effectOf, versionsWithTools } from '../tools/public.ts'
-import { mayLeaveAlone, targetOf } from './publish.ts'
+import { targetOf } from './publish.ts'
 import { chosenIds } from './store.ts'
 import { agentTool } from './tables.ts'
 
@@ -53,7 +54,12 @@ async function approvalsOf(
     const before = held.find((each) => each.toolId === row.tool.id)?.approval
     const given = a.patch.approvals?.[ToolId.parse(row.tool.id)]
     if (given === 'AUTO' && before !== 'AUTO') {
-      await mayLeaveAlone(identity, tx, a.scope, { slug: row.tool.slug, ...target })
+      const { companyId, personId } = a.scope
+      await mayLeaveAlone(identity, tx, {
+        companyId,
+        personId,
+        write: { slug: row.tool.slug, ...target },
+      })
     }
     approvals.set(row.version.id, given ?? (before === 'AUTO' ? 'AUTO' : 'ASK'))
   }

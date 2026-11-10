@@ -17,8 +17,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { company, member, policy } from '../identity/public.ts'
-import { project } from '../projects/public.ts'
+import { policy } from '../identity/public.ts'
+import { company, member } from '../identity/public-tables.ts'
+import { project } from '../projects/public-tables.ts'
 
 // The connectors' own schema in the Hub's database (data D1). A connection belongs to a company and
 // leaves with it; its credential is sealed, and only connectors.sealed_of reads it (Grant A, as builder).

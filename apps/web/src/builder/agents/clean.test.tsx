@@ -91,6 +91,7 @@ test('a conversa de teste fica na folha branca', async () => {
         agentId: AGENT,
         draft: true,
         title: 'x',
+        createdAt: '2026-11-02T12:00:00.000Z',
         updatedAt: '2026-11-02T12:00:00.000Z',
       },
     ],
@@ -104,7 +105,14 @@ test('a conversa de teste fica na folha branca', async () => {
 test('a conversa com o Construtor fica na folha branca, com o botão do modelo na caixa e sem o Projeto', async () => {
   at(`${AREA}/construtor/${BUILDER_CHAT}`, {
     agents: [],
-    construtor: [{ id: BUILDER_CHAT, title: 'Meu agente', updatedAt: '2026-11-02T12:00:00.000Z' }],
+    construtor: [
+      {
+        id: BUILDER_CHAT,
+        title: 'Meu agente',
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
   })
   const title = await screen.findByRole('heading', { level: 1, name: 'Meu agente' })
   const root = title.parentElement?.parentElement

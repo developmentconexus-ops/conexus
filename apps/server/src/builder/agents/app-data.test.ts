@@ -14,7 +14,7 @@ import {
 import { unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { endOf } from '../conversation/test-conversation.ts'
-import { stepping, tool } from '../conversation/test-questions.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 import { agentsOn, publishedAgent, talkedTo } from './test-agents.ts'
 
 const READ = 'app_data_read'
@@ -30,10 +30,10 @@ const SEED = {
 }
 
 /** The model's steps in the agent's conversation; the Builder's send turns write a version as usual. */
-function answering(steps: Parameters<typeof stepping>[0]): Anthropic['answer'] {
+function answering(steps: ReturnType<typeof tool>[][]): Anthropic['answer'] {
   const writing = versionWriting()
-  const stepped = stepping(steps, [])
-  return (sent) => (sent.texts.some((text) => text.startsWith(ASK)) ? writing(sent) : stepped(sent))
+  const model = stepped(steps.map((blocks) => () => blocks))
+  return (sent) => (sent.texts.some((text) => text.startsWith(ASK)) ? writing(sent) : model(sent))
 }
 
 /** A Projeto with its app live on a company database and an agent with `appData`, in conversation. */

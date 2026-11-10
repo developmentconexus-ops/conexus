@@ -27,6 +27,8 @@ import {
 } from './routes.ts'
 import { createToolDoor } from './tool-door.ts'
 
+export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
+export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */

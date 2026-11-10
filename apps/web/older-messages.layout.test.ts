@@ -109,6 +109,7 @@ test('uma conversa do Início com mais de 100 mensagens abre no fim, rola dentro
           conversation: {
             id: FIRST,
             title: 'Vendas da semana',
+            createdAt: '2026-10-19T12:00:00.000Z',
             updatedAt: '2026-10-19T12:00:00.000Z',
             projectId: null,
             automation: null,

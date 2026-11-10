@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import { endOf, messagesOf, streamOf } from '../conversation/test-conversation.ts'
-import { stepping, tool } from '../conversation/test-questions.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const APP = 'propose_app'
@@ -47,7 +47,7 @@ async function proposing(
     [tool(name, { summary: SUMMARY, briefing: 'briefing.md' })],
     [said('Toque o botão.')],
   ]
-  const assistant = stepping(steps, [])
+  const assistant = stepped(steps.map((blocks) => () => blocks))
   // The Builder's turn on the hand-off held until `builder` settles, when one is given.
   const on = await assisting(
     t,

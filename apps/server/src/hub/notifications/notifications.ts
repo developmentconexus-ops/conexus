@@ -243,10 +243,7 @@ async function list(deps: Deps, input: Of & { after: NotificationId | undefined 
       .where(after(notification))
       .orderBy(desc(notification.createdAt), desc(notification.id))
       .limit(NOTIFICATIONS_PER_PAGE + 1)
-    const requests = await requestNoticeRows(tx)
-      .where(after(requestNotice))
-      .orderBy(desc(requestNotice.createdAt), desc(requestNotice.id))
-      .limit(NOTIFICATIONS_PER_PAGE + 1)
+    const requests = await requestNoticeRows(tx, after(requestNotice), NOTIFICATIONS_PER_PAGE + 1)
     const shown: Shown[] = [
       ...automations.map((row) => ({
         id: row.id,
