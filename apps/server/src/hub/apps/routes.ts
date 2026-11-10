@@ -113,7 +113,7 @@ export function registerDataRoutes(app: FastifyInstance, deps: SendDeps): void {
       case 'FAILED':
         throw new Failure('APP_DATABASE_UNAVAILABLE', { details: { answer: found.code } })
       case 'TABLES': {
-        const counts = await rowCountsOf(deps, { ...read, tables: found.tables.map((t) => t.name) })
+        const counts = await rowCountsOf(deps, { ...read, tables: found.tables })
         return answer({
           kind: 'TABLES',
           tables: found.tables.map(({ name }) => ({

@@ -1,83 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { AppRows, AppTables, CELL_CHARACTERS } from '@conexus/hub-api'
+import { AppTables, CELL_CHARACTERS } from '@conexus/hub-api'
 import { unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import type { Person } from '../identity/test-hub.ts'
-import { call, codeOf, memberOn, personOn, plantCompany, post } from '../identity/test-hub.ts'
+import { codeOf, memberOn, personOn, plantCompany, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
-import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
+import { CLIENTES, DORA, dataOn, QUOTED, WIDE_COLUMNS, WIDE_TEXT } from './test-data.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
-const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
-const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
 const EDU = { name: 'Edu Lima', email: 'edu@example.test' }
-const CLIENTES = 'clientes'
-const QUOTED = 'a"b c'
-
-function columns(count: number, type: string) {
-  return Array.from({ length: count }, (_, at) => `c${at + 1} ${type}`).join(', ')
-}
-
-/** The tables of the app of a Projeto that has stored clients: a key, a composite key, none, nothing. */
-const SEED = {
-  id: '002_dados',
-  statements: [
-    `CREATE TABLE ${CLIENTES} (id int PRIMARY KEY, nome text NOT NULL)`,
-    `INSERT INTO ${CLIENTES} SELECT n, 'cliente ' || n FROM generate_series(10001, 1, -1) AS n`,
-    'CREATE TABLE item_pedido (pedido int, item int, qtd int, PRIMARY KEY (item, pedido))',
-    'INSERT INTO item_pedido SELECT p, i, p * i FROM generate_series(3, 1, -1) p, generate_series(40, 1, -1) i',
-    'CREATE TABLE sem_chave (n int, texto text)',
-    "INSERT INTO sem_chave SELECT n, 'linha ' || n FROM generate_series(1, 120) AS n",
-    'CREATE TABLE vazia (id int PRIMARY KEY, nota text)',
-    `CREATE TABLE "${QUOTED.replaceAll('"', '""')}" (id int PRIMARY KEY)`,
-    `INSERT INTO "${QUOTED.replaceAll('"', '""')}" VALUES (1)`,
-    'CREATE TABLE tipos (id int PRIMARY KEY, n numeric(12,3), quando timestamptz, ok boolean, doc jsonb, bin bytea)',
-    `INSERT INTO tipos VALUES (1, 12.5, '2026-11-09 12:00:00+00', true, '{"a": 1, "b": [1, 2]}', '\\xdeadbeef'), (2, NULL, NULL, NULL, NULL, NULL)`,
-  ],
-}
-
-const WIDE_TEXT = {
-  id: '003_texto_longo',
-  statements: [
-    `CREATE TABLE texto_longo (id int PRIMARY KEY, ${columns(30, 'text')})`,
-    `INSERT INTO texto_longo SELECT n, ${Array.from({ length: 30 }, () => "repeat('x', 24000)").join(', ')} FROM generate_series(1, 52) AS n`,
-  ],
-}
-
-const WIDE_COLUMNS = {
-  id: '003_colunas',
-  statements: [
-    `CREATE TABLE colunas (id int PRIMARY KEY, ${columns(200, 'text')})`,
-    `INSERT INTO colunas SELECT n, ${Array.from({ length: 200 }, () => "repeat('é', 100)").join(', ')} FROM generate_series(1, 60) AS n`,
-  ],
-}
-
-/** Empresa A with its Projeto Pedidos, whose app holds the seed's tables, and every role that may or may not look. */
-async function dataOn(t: TestContext, ...more: (typeof SEED)[]) {
-  const on = await companyForVersions(t)
-  const { hub, companyId } = on
-  const sent = await send(on, on.ana, folder({ migrations: [MIGRATION, SEED, ...more] }))
-  assert.equal(sent.preview?.state, 'ready')
-  const admin = await memberOn(hub, companyId, CARLA, 'admin')
-  const developer = await memberOn(hub, companyId, DORA, 'developer')
-  const base = `/api/companies/${companyId}`
-  const project = `${base}/projects/${on.projectId}`
-  function tables(person: Person, at = project) {
-    return call(hub, person, 'GET', `${at}/tables`)
-  }
-  function rows(person: Person, table: string, page?: string, at = project) {
-    const query = page === undefined ? '' : `?page=${page}`
-    return call(hub, person, 'GET', `${at}/tables/${encodeURIComponent(table)}/rows${query}`)
-  }
-  async function page(table: string, token?: string) {
-    const response = await rows(on.ana, table, token)
-    assert.equal(response.statusCode, 200, response.body)
-    return AppRows.parse(response.json())
-  }
-  return { ...on, admin, developer, base, project, tables, rows, page }
-}
 
 function token(offset: number) {
   return Buffer.from(String(offset)).toString('base64url')
@@ -128,13 +59,14 @@ test('dados: a lista e a contagem', async (t) => {
   assert.ok(listed.kind === 'TABLES')
   assert.deepEqual(
     listed.tables.map(({ name }) => name),
-    ['a"b c', 'clientes', 'item_pedido', 'recado', 'sem_chave', 'tipos', 'vazia'],
+    ['a"b c', 'clientes', 'item_pedido', 'pg_class', 'recado', 'sem_chave', 'tipos', 'vazia'],
   )
   const counts = Object.fromEntries(listed.tables.map(({ name, rows }) => [name, rows]))
   assert.deepEqual(counts.clientes, { kind: 'OVER' })
   assert.deepEqual(counts.item_pedido, { kind: 'EXACT', rows: 120 })
   assert.deepEqual(counts.sem_chave, { kind: 'EXACT', rows: 120 })
   assert.deepEqual(counts.vazia, { kind: 'EXACT', rows: 0 })
+  assert.deepEqual(counts.pg_class, { kind: 'EXACT', rows: 2 })
   assert.deepEqual(counts['a"b c'], { kind: 'EXACT', rows: 1 })
   assert.equal(JSON.stringify(listed).includes('conexus_migration'), false)
 })
@@ -154,7 +86,7 @@ test('dados: a contagem que falha é indisponível', async (t) => {
   assert.equal(response.statusCode, 200, response.body)
   const listed = AppTables.parse(response.json())
   assert.ok(listed.kind === 'TABLES')
-  assert.equal(listed.tables.length, 7)
+  assert.equal(listed.tables.length, 8)
   for (const { rows } of listed.tables) assert.deepEqual(rows, { kind: 'UNKNOWN' })
 })
 
@@ -263,6 +195,17 @@ test('dados: o nome vem do catálogo', async (t) => {
     const refused = await on.rows(on.ana, name)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'], name)
   }
+  const catalogNamed = await on.page('pg_class')
+  assert.deepEqual(catalogNamed.rows, [
+    [
+      { text: '1', cut: false },
+      { text: 'a', cut: false },
+    ],
+    [
+      { text: '2', cut: false },
+      { text: 'b', cut: false },
+    ],
+  ])
   const quoted = await on.page(QUOTED)
   assert.deepEqual(quoted.rows, [[{ text: '1', cut: false }]])
   // `serve` answers a path parameter its contract refuses as it does a Projeto that is not there.
@@ -277,6 +220,21 @@ test('dados: o nome vem do catálogo', async (t) => {
     assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'], page)
   }
   assert.equal((await on.tables(on.ana)).statusCode, 200)
+})
+
+test('dados: uma contagem de forma errada é nossa', async (t) => {
+  const on = await dataOn(t)
+  const read = on.hub.postgres.companyPostgres.readApp.bind(on.hub.postgres.companyPostgres)
+  t.mock.method(
+    on.hub.postgres.companyPostgres,
+    'readApp',
+    (...args: Parameters<typeof read>): ReturnType<typeof read> =>
+      args[1].text.includes('count(*)')
+        ? Promise.resolve({ kind: 'ROWS', columns: [], rows: [['clientes', 'x']] })
+        : read(...args),
+  )
+  const response = await on.tables(on.ana)
+  assert.deepEqual([response.statusCode, codeOf(response)], [500, 'INTERNAL_UNEXPECTED'])
 })
 
 test('dados: o banco do app não responde', async (t) => {

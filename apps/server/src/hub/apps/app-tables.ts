@@ -113,25 +113,27 @@ const Counted = z.array(z.tuple([AppTableName, z.coerce.number().int()]))
 
 /**
  * How many rows each table has, up to one past the cap, which says "over": a `count(*)` over a
- * `limit` of the cap plus one, a row per table, the names quoted from the catalog's own. A read that
+ * `limit` of the cap plus one, a row per table, the schema and name quoted from the catalog's own. A read that
  * fails leaves every table unknown, never zero; a reply of the wrong shape is ours to fix, so it throws.
  */
 export async function rowCountsOf(
   deps: AppDatabaseDeps,
-  input: AppReadInput & { tables: readonly AppTableName[] },
+  input: AppReadInput & { tables: readonly Pick<AppTable, 'schema' | 'name'>[] },
 ): Promise<Map<AppTableName, RowCount>> {
   const { tables, ...rest } = input
-  const unknown = new Map<AppTableName, RowCount>(tables.map((name) => [name, { kind: 'UNKNOWN' }]))
+  const unknown = new Map<AppTableName, RowCount>(
+    tables.map(({ name }) => [name, { kind: 'UNKNOWN' }]),
+  )
   if (tables.length === 0) return unknown
   const text = tables
     .map(
-      (name, at) =>
-        `select $${at + 2}::text, (select count(*)::int from (select 1 from ${quoted(name)} limit $1) s)`,
+      ({ schema, name }, at) =>
+        `select $${at + 2}::text, (select count(*)::int from (select 1 from ${quoted(schema)}.${quoted(name)} limit $1) s)`,
     )
     .join(' union all ')
   const read = await readAppData(deps, {
     ...rest,
-    statement: { text, values: [ROW_COUNT_CAP + 1, ...tables] },
+    statement: { text, values: [ROW_COUNT_CAP + 1, ...tables.map(({ name }) => name)] },
   })
   if (read.kind !== 'ROWS') return unknown
   const counted = Counted.safeParse(read.rows)
