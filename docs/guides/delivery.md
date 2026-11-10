@@ -45,8 +45,9 @@ merge.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. Each unit goes as its own pull request;
-  with CI green, one Opus reviewer reads it and firstmate merges it. After the last unit, QA
+- **L9.** Review **should** follow the approved protocol. The build is one pull request per
+  step or group of units, one commit per unit. With CI green, one Opus reviewer
+  reads it commit by commit. After the last unit, QA
   ([testing T25](testing.md)) and one whole-step reviewer start together: Claude on Opus, no builder
   of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It walks
   the reference table row by row ([code C75](code.md)), runs the refusal criteria, reads CI logs.
@@ -76,11 +77,11 @@ merge.
 
 ## 4. Merge and use
 
-- **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
-  its review approves the same commit. The card's pull request and a proof's decision record carry
+- **L13.** Each build pull request **must** enter `main` as one merge, by firstmate, after the tests
+  pass and its review approves the same commit. The card's pull request and a proof's decision record carry
   documents only; the closing pull request adds the founder's text review and the reviews'
   follow-ups. One founder merge word covers a step's units; review and CI still gate each.
-  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
+  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim"; 2026-11-09: "U1, U2 e U3 seriam um PR".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that

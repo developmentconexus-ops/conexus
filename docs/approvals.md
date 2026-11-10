@@ -862,3 +862,7 @@ Linha de uso do cartão curto "As buscas do Sankhya", em 2026-11-09: o fundador 
 Cartão curto da Capacidade 1, O banco do app (`docs/steps/capacidade-1-o-banco-do-app.md`) aprovado em 2026-11-09 (commit bcf3ae0d782f2e74a9555e08fbe6149fdc453e05): "Aprovo"
 
 Lido pelo firstmate como a aprovação da página, depois de o fundador ler no chat o resumo dela: a página Dados, só leitura, o roteiro de seis passos, o que fica de fora e as duas unidades num só pull request de construção.
+
+## Mudança de método: um pull request por grupo de unidades
+
+Em 2026-11-09, como mudança de método (L20), o fundador disse: "eu queria fazer é mudar a nossa regra de toda o 1C1PR, 1CI, né? Eu acho que seria no mínimo um conjunto de 3 etapas, tipo 1, o 2, o 3. Aí sim poderia subir um PR e aí rodar CI e tudo. Lógico que o nosso teste, né? A gente faz testes, né? Tipo, do 1, a gente teria fazer e testar e validar. Mas eu falo realmente subir e utilizar o CI, sabe? Para ser mais rápido, mais efetivo." E, aprovando o formato que o firstmate propôs (o cartão segue como pull request só de documentos, aprovado antes de qualquer código; o build vai num pull request por etapa, ou por grupo de unidades quando a etapa é grande; um commit por unidade, cada uma construída, testada e validada antes do seu commit; o revisor Opus lê commit a commit; o CI roda uma vez, no fim; o merge guarda os commits): "Sim, por exemplo U1, U2 e U3 seriam um PR por exemplo". Muda a L9, a L13 e as skills `conexus-build`, `conexus-review` e o cartão leve do padrão.
