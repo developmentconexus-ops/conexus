@@ -93,6 +93,22 @@ function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   }
 }
 
+/** The copies' view for the Builder's turn, reached when a turn starts: the copies are made after the conversations. */
+function copiesOf(
+  copies: () => Pick<CopyService, 'projectView'>,
+): Pick<CopyService, 'projectView'> {
+  return { projectView: (ids) => copies().projectView(ids) }
+}
+
+/** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
+function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+  return {
+    connectors: builderDoorOf(deps.connectors),
+    data: builderDataOf(deps.apps),
+    copies: copiesOf(deps.copies),
+  }
+}
+
 /** The Assistant's hand-off doors (step 24.3.2), each reached when the person touches it. */
 function handOffsOf(
   deps: {
@@ -133,7 +149,7 @@ type ConversationsDeps = {
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
   /** The copies are made after the conversations; a run comes long after both. */
-  copies: () => Pick<CopyService, 'run'>
+  copies: () => Pick<CopyService, 'run' | 'projectView'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -192,7 +208,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
     ...{ storage, queue, runs: deps.runs },
-    ...{ connectors: builderDoorOf(deps.connectors), data: builderDataOf(deps.apps) },
+    ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
   // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and

@@ -53,6 +53,14 @@ export const CopyRun = z.object({
 })
 export type CopyRun = z.infer<typeof CopyRun>
 
+/** What a pass rereads: the whole source, the rows changed within a window of days, or only the rows changed. */
+export const CopyMode = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('WHOLE') }),
+  z.object({ kind: z.literal('WINDOW'), days: z.int().min(1) }),
+  z.object({ kind: z.literal('CHANGES') }),
+])
+export type CopyMode = z.infer<typeof CopyMode>
+
 export const CopySummary = z.object({
   id: CopyId,
   // The table, `sync.<name>`.
@@ -67,6 +75,8 @@ export const CopySummary = z.object({
   run: CopyRun.nullable(),
   // After the last complete pass.
   rows: z.int().min(0).nullable(),
+  // How a pass reads the source, from the definition alone.
+  mode: CopyMode,
   projects: z.array(z.object({ id: ProjectId, name: z.string() })),
   shown: z.object({
     query: z.string(),

@@ -109,6 +109,16 @@ async function plantRuns(on: CopiesOn, copyId: string) {
   }
 }
 
+test('a lista traz o modo', async (t) => {
+  const on = await copiesOn(t)
+  const made = await enabled(on, 'vendas')
+  const copy = await listed(on, on.ana, made.id)
+  const model = on.hub.connectors.copies.catalog().find((each) => each.model.id === 'vendas')
+  const days = model?.model.definition.window?.days
+  assert.ok(days !== undefined && model?.model.definition.changedSince !== null)
+  assert.deepEqual(copy.mode, { kind: 'WINDOW', days })
+})
+
 test('a lista e as rodadas', async (t) => {
   const on = await copiesOn(t)
   const { hub, companyId } = on

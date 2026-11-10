@@ -31,11 +31,13 @@ export type PromptValues = Readonly<{
   memory: string
   /** The Projeto's granted connections as `connectionsContext` says them; empty drops the block. */
   connections: string
+  /** The company's copies as `dataContext` says them; empty drops the block. */
+  data: string
 }>
 
 // One pass over the template, so text a placeholder brings in is never read as another placeholder.
 const PLACEHOLDER =
-  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n/gm
+  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n|^\{data\}\n\n/gm
 
 /** The prompt with the turn's values in place (Conexus OS `e0353c36` `harness/prompt.ts:45-59`). */
 export function fillPrompt(values: PromptValues): string {
@@ -56,6 +58,8 @@ export function fillPrompt(values: PromptValues): string {
         return values.instructions
       case '{connections}\n\n':
         return values.connections === '' ? '' : `${values.connections}\n\n`
+      case '{data}\n\n':
+        return values.data === '' ? '' : `${values.data}\n\n`
       default:
         return values.memory
     }

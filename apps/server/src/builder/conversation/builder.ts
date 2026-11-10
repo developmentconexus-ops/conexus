@@ -1,3 +1,4 @@
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
@@ -5,8 +6,9 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool } from '@mastra/core/tools'
 import type { PostgresStore } from '@mastra/pg'
 import type { BuilderData } from '../../hub/apps/public.ts'
+import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { builderAppDataTools } from '../app-data/public.ts'
+import { builderAppDataTools, dataContext } from '../app-data/public.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
 import {
@@ -66,6 +68,20 @@ function admittedFor(
   })
 }
 
+/**
+ * The "## Data" block of the turn, read once for the run: a failed read of the copies is a line in
+ * the block, never a turn that does not start, and a person not admitted gets no block.
+ */
+function dataFor(
+  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>,
+  projectOf: ReturnType<typeof projectIn>,
+): (requestContext: RequestContext) => Promise<string> {
+  return oncePerRun(async (requestContext) => {
+    const ids = await projectOf(requestContext)
+    return ids === undefined ? '' : dataContext(await copies(ids))
+  })
+}
+
 /** The Builder's three connector tools, its notebook's write included. */
 function builderConnectorTools(
   deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
@@ -94,6 +110,7 @@ export function createBuilder(deps: {
   index: ConversationIndex
   connectors: BuilderConnectors
   data: BuilderData
+  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
@@ -113,6 +130,7 @@ export function createBuilder(deps: {
       projectOf,
       projectName: deps.projectName,
       granted,
+      data: dataFor(deps.copies, projectOf),
     }),
     skills: async ({ requestContext }) => [
       ...APP_SKILLS,

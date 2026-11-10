@@ -7,6 +7,7 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
+import type { ReadResult } from '../../platform/app-sql.ts'
 import type {
   AppRead,
   AppReadAnswer,
@@ -14,6 +15,7 @@ import type {
   SqlAnswer,
   SqlStatement,
 } from '../../platform/company-postgres.ts'
+import { COPY_PASS_COLUMN } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -205,7 +207,29 @@ export async function askApp(
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
     answer = await deps.companyPostgres.readApp(address, statements, signal)
   }
-  return answer.kind === 'NO_LOGIN' ? silent('NO_LOGIN') : answer
+  return answer.kind === 'NO_LOGIN' ? silent('NO_LOGIN') : withoutPass(answer)
+}
+
+/** One result with every column named `COPY_PASS_COLUMN` taken out, its rows kept in step. */
+function withoutPassColumn(result: ReadResult): ReadResult {
+  const keep = result.columns.flatMap(({ name }, at) => (name === COPY_PASS_COLUMN ? [] : [at]))
+  if (keep.length === result.columns.length) return result
+  return {
+    columns: result.columns.filter(({ name }) => name !== COPY_PASS_COLUMN),
+    rows: result.rows.map((row) => keep.map((at) => row[at])),
+  }
+}
+
+/**
+ * A copy's pass is the engine's, not data (criterion 34 of Capacidade 3): no column of that name
+ * reaches the model, whether it came from `select *`, a join or an alias.
+ */
+function withoutPass(answer: ReadAnswered): ReadAnswered {
+  if (answer.kind !== 'ROWS') return answer
+  const results = answer.results.map(withoutPassColumn)
+  const [first] = results
+  if (first === undefined) return answer
+  return { ...answer, results, columns: first.columns.map(({ name }) => name), rows: first.rows }
 }
 
 /**

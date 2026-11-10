@@ -53,6 +53,7 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     run: DONE,
     rows: 118402,
+    mode: { kind: 'WINDOW', days: 30 },
     projects: [{ id: PROJECT_ID, name: 'Vendedores' }],
     shown: {
       query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,

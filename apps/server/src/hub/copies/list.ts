@@ -10,7 +10,6 @@ import type {
 } from '@conexus/hub-api'
 import {
   ConnectorId as ConnectorIdSchema,
-  CopyId as CopyIdSchema,
   CopyRunFailureCode,
   CopyRunId,
   ProjectId as ProjectIdSchema,
@@ -21,6 +20,7 @@ import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { pageKey, pageOf } from '../../platform/pages.ts'
 import { connectionNamesOf } from '../connectors/public.ts'
+import { copyModeOf } from './mode.ts'
 import type { CopiesDeps, CopyState, InCompany, StoredCopy } from './store.ts'
 import { parsedCopy, personScope, storedCopy } from './store.ts'
 import { copy, copyRun, projectCopy } from './tables.ts'
@@ -144,6 +144,7 @@ async function summaries(
       schedule,
       run: read.runs.get(row.id) ?? null,
       rows: row.rows,
+      mode: copyModeOf(row.definition),
       projects: read.released.get(row.id) ?? [],
       shown: {
         query: row.definition.source.sql,
@@ -199,36 +200,39 @@ async function runs(
   return { copy: summary, runs: page.rows.map(runOf), next: page.next }
 }
 
+/** Every copy of the company, each with its stored definition and whether the Projeto has it released; one reading for the page and for the Builder. */
+async function projectCopyRows(tx: ReadTx, input: { companyId: CompanyId; projectId: ProjectId }) {
+  const rows = await tx
+    .select({
+      row: copy,
+      granted: sql<boolean>`${projectCopy.copyId} IS NOT NULL`,
+    })
+    .from(copy)
+    .leftJoin(
+      projectCopy,
+      and(eq(projectCopy.copyId, copy.id), eq(projectCopy.projectId, input.projectId)),
+    )
+    .where(eq(copy.companyId, input.companyId))
+    .orderBy(copy.name)
+  return rows.map(({ row, granted }) => ({ copy: parsedCopy(row), granted }))
+}
+
 /** Every copy of the company and whether the Projeto has it released. */
 async function ofProject(deps: CopiesDeps, input: InCompany & { projectId: ProjectId }) {
   return deps.database.read(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'readCopies' })
     if ((await deps.projects.liveProjectOf(tx, input)) === undefined)
       throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
-    const rows = await tx
-      .select({
-        id: copy.id,
-        name: copy.name,
-        label: copy.label,
-        connector: copy.connectorId,
-        granted: sql<boolean>`${projectCopy.copyId} IS NOT NULL`,
-      })
-      .from(copy)
-      .leftJoin(
-        projectCopy,
-        and(eq(projectCopy.copyId, copy.id), eq(projectCopy.projectId, input.projectId)),
-      )
-      .where(eq(copy.companyId, input.companyId))
-      .orderBy(copy.name)
-    return rows.map(({ granted, ...shown }) => ({
+    return (await projectCopyRows(tx, input)).map(({ copy: stored, granted }) => ({
       copy: {
-        ...shown,
-        id: CopyIdSchema.parse(shown.id),
-        connector: ConnectorIdSchema.parse(shown.connector),
+        id: stored.id,
+        name: stored.name,
+        label: stored.label,
+        connector: ConnectorIdSchema.parse(stored.connectorId),
       },
       granted,
     }))
   })
 }
 
-export { models, ofProject, runs, summaries }
+export { models, ofProject, projectCopyRows, runs, summaries }

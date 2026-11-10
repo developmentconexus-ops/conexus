@@ -5,6 +5,7 @@ import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
 import { applyGrants, grantCopy, revokeAllOf, revokeCopy } from './grants.ts'
 import { models, ofProject, runs, summaries } from './list.ts'
+import { projectView } from './project-view.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
 import type { CopiesDeps, CopyTuning, InCompany } from './store.ts'
@@ -28,6 +29,9 @@ export function createCopyService(
     models: (input: InCompany) => models(full, input),
     runs: (input: Of & { page: string | undefined }) => runs(full, input),
     ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
+    /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
+    projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
+      projectView(full, input),
     /** The schedule's acts, admitting `manageCopies`. */
     pause: (input: Of) => pauseCopy(full, input),
     resume: (input: Of) => resumeCopy(full, input),
