@@ -222,9 +222,9 @@ test('produtos por nome, referência, lista, faixa e grupo, com o grupo e a unid
     assert.deepEqual(await ids({ nome: 'pao' }), [10, 12, 200])
     assert.deepEqual(await ids({ nome: 'ACUCAR' }), [201])
     assert.deepEqual(await ids({ referencia: 'cf-' }), [202])
-    const ten = [409, 400, 401, 402, 403, 404, 405, 406, 407, 408]
-    assert.deepEqual(await ids({ codigos: ten }), ten.toSorted((a, b) => a - b))
-    assert.deepEqual(await ids({ deCodigo: 400, ateCodigo: 409 }), ten.toSorted((a, b) => a - b))
+    const ten = Array.from({ length: 10 }, (_, at) => 400 + at)
+    assert.deepEqual(await ids({ codigos: ten.toReversed() }), ten)
+    assert.deepEqual(await ids({ deCodigo: 400, ateCodigo: 409 }), ten)
     assert.deepEqual(await ids({ grupos: [3] }), [203])
     assert.deepEqual(await ids({ grupos: [1, 3], ativo: true }), [200])
     const [row] = rowsOf(await read(buscarProdutos, { codigos: [202] })).linhas
@@ -267,17 +267,8 @@ test('o estoque de vários produtos numa chamada: o saldo, o reservado e o dispo
       await read(estoqueDosProdutos, { codigos: [400, 201, 11, 200, 10, 12, 13, 202, 203, 401] }),
     ).linhas
     assert.deepEqual(
-      lines.map((each) => [each.codigoProduto, each.codigoEmpresa, each.codigoLocal]),
-      [
-        [10, 1, 1],
-        [10, 1, 2],
-        [11, 1, 1],
-        [11, 2, 1],
-        [12, 1, 1],
-        [12, 1, 1],
-        [200, 1, 1],
-        [201, 1, 1],
-      ],
+      lines.map((each) => `${each.codigoProduto}/${each.codigoEmpresa}/${each.codigoLocal}`),
+      ['10/1/1', '10/1/2', '11/1/1', '11/2/1', '12/1/1', '12/1/1', '200/1/1', '201/1/1'],
     )
     assert.deepEqual(lines[2], {
       codigoProduto: 11,
