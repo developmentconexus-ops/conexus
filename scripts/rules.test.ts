@@ -77,6 +77,11 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
   ],
   'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
+  'neon-http-driver-only-in-its-adapters': [
+    'apps/server/src/hub/a/http-driver.ts',
+    '@neondatabase/serverless',
+    {},
+  ],
   // A bare package: the cruise's exclude drops a resolved @mastra/core from the graph, so this rule sees only what does not resolve.
   'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/memory', {}],
   'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],

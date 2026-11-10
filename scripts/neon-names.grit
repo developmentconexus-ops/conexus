@@ -1,0 +1,17 @@
+// Defect: the names Neon gives each company's project ('neondb' and 'neondb_owner') were written
+// as literals beside the one file that owns them. Only apps/server/src/platform/neon.ts spells them
+// out; everything else imports the name from there (C56).
+// Refusals are proved by planting each one in conexus-code.test.ts.
+// biome.json wires it to production code in apps, packages and scripts, leaving out tests, test
+// helpers and neon.ts itself.
+// Known blind spots: the name built from pieces, or held in a template literal.
+// Revalidate by 2027-04-19, or when Biome changes GritQL, or when neon.ts renames the constants.
+JsStringLiteralExpression() as $text where {
+  $text <: or {
+    r"\"neondb\"",
+    r"'neondb'",
+    r"\"neondb_owner\"",
+    r"'neondb_owner'"
+  },
+  register_diagnostic(span=$text, message="C56: do not spell a Neon project's database or owner name; import COMPANY_DATABASE (or the owner) from apps/server/src/platform/neon.ts.")
+}
