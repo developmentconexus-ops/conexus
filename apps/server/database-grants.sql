@@ -76,6 +76,7 @@ ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE copies.copy OWNER TO test_owner;
+ALTER TABLE copies.copy_proposal OWNER TO test_owner;
 ALTER TABLE copies.copy_run OWNER TO test_owner;
 ALTER TABLE copies.project_copy OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
@@ -349,6 +350,12 @@ GRANT UPDATE("position") ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(watermark) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
+-- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
+-- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
+-- dismiss it; the Hub never deletes one.
+GRANT SELECT,INSERT ON TABLE copies.copy_proposal TO hub_company;
+GRANT UPDATE(state) ON TABLE copies.copy_proposal TO hub_company;
+GRANT UPDATE(copy_id) ON TABLE copies.copy_proposal TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;

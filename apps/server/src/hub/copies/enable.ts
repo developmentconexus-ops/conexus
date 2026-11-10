@@ -5,6 +5,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
+import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
 import { mayCreate } from './schedule.ts'
@@ -126,6 +127,11 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
   const scheduled = (await deps.clock().states(companyId)).has(copyId)
   await deps.clock().set({ companyId, copyId, interval: input.interval })
   if (!scheduled) await deps.clock().runNow(copyId)
-  if (made.fresh) deps.log.info({ companyId, copyId, model: stored.model }, 'COPY_ENABLED')
+  if (made.fresh) {
+    // A copy turned on from a proposal has no template (Capacity 3).
+    const fields: Record<string, Scalar> = { companyId, copyId }
+    if (stored.model !== null) fields.model = stored.model
+    deps.log.info(fields, 'COPY_ENABLED')
+  }
   return copyId
 }
