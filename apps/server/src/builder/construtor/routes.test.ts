@@ -25,7 +25,9 @@ import {
 import { sessionStateOf } from '../conversation/test-questions.ts'
 import { kept, opened } from './test-construtor.ts'
 
-type Listed = { conversations: { id: string }[] }
+type Listed = {
+  conversations: { id: string; title: string | null; createdAt: string; updatedAt: string }[]
+}
 
 test('abrir e listar: 201, a mesma chave acha a mesma conversa, a lista é só da pessoa e do Projeto, e a chave com outro Projeto dá IDEMPOTENCY_CONFLICT', async (t) => {
   const on = await agentsOn(t)
@@ -46,6 +48,29 @@ test('abrir e listar: 201, a mesma chave acha a mesma conversa, a lista é só d
   assert.deepEqual(
     listed.conversations.map((each) => each.id),
     [url.slice(url.lastIndexOf('/') + 1)],
+  )
+  assert.equal(
+    listed.conversations[0]?.title,
+    null,
+    'no title from Mastra: null, not an empty string',
+  )
+  assert.equal(
+    new Date(String(listed.conversations[0]?.createdAt)).toISOString(),
+    listed.conversations[0]?.createdAt,
+  )
+  await on.hub.test.mastraPool.query(
+    `update mastra.mastra_threads set "updatedAt" = "updatedAt" + interval '1 hour', "updatedAtZ" = "updatedAtZ" + interval '1 hour'`,
+  )
+  const touched: Listed = Object((await call(on.hub, on.ana, 'GET', base)).json())
+  assert.equal(
+    touched.conversations[0]?.createdAt,
+    listed.conversations[0]?.createdAt,
+    'touching the thread does not move its creation',
+  )
+  assert.notEqual(
+    touched.conversations[0]?.updatedAt,
+    listed.conversations[0]?.updatedAt,
+    'but it moves the last change',
   )
   const theirs: Listed = Object((await call(on.hub, on.ana, 'GET', elsewhere)).json())
   assert.equal(theirs.conversations.length, 1)

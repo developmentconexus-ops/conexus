@@ -12,8 +12,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { company, member, policy } from '../identity/public.ts'
-import { project } from '../projects/public.ts'
+import { policy } from '../identity/public.ts'
+import { company, member } from '../identity/public-tables.ts'
+import { project } from '../projects/public-tables.ts'
 
 export const requests = pgSchema('requests')
 

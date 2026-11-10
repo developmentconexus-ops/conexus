@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Speaker } from '../identity/public.ts'
+import { personOf } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
@@ -125,7 +126,7 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope): Promise<Spea
       companyId: scope.companyId,
       action: 'askAssistant',
     })
-    return scope.agentVersion ?? { kind: 'PERSON', personId: scope.personId, role: admitted.role }
+    return scope.agentVersion ?? personOf(scope.personId, admitted.role)
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const reason = String(error.details.reason ?? 'NOT_FOUND')

@@ -12,8 +12,9 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { company, member, policy } from '../identity/public.ts'
-import { request } from '../requests/public.ts'
+import { policy } from '../identity/public.ts'
+import { company, member } from '../identity/public-tables.ts'
+import { request } from '../requests/public-tables.ts'
 
 /** An instant to the microsecond, as a whole number: a `Date` keeps milliseconds, a column keeps more. */
 export function microsOf(column: AnyColumn) {

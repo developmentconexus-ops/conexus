@@ -13,6 +13,7 @@ import {
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
+  titleOf,
 } from '../conversation/public.ts'
 import { DraftPanel } from './draft-panel.tsx'
 import {
@@ -21,13 +22,7 @@ import {
   sendConstrutorModel,
   toolsQuery,
 } from './queries.ts'
-import {
-  CONSTRUTOR_FIRST,
-  CONSTRUTOR_NAME,
-  CONSTRUTOR_PLACEHOLDER,
-  DRAFT_PANEL,
-  titleOf,
-} from './text.ts'
+import { CONSTRUTOR_FIRST, CONSTRUTOR_NAME, CONSTRUTOR_PLACEHOLDER, DRAFT_PANEL } from './text.ts'
 
 /** The strip over the conversation: the way back to Agentes and the conversation's title. */
 function Heading(props: {

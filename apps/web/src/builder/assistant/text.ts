@@ -1,5 +1,5 @@
 import { PROJECT_NAME_MAX_LENGTH } from '@conexus/hub-api'
-import { dayAndHour } from '../../platform/dates.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 
 /** The words of the Assistant's screens (step 24.1, U4); the founder approves them at the step's end. */
 export const HOME_PLACEHOLDER = 'Pergunte, peça uma análise ou um documento…'
@@ -61,14 +61,10 @@ export function moreConnections(count: number): string {
 export function chosenOf(chosen: number, offered: number): string {
   return `${chosen} de ${offered} ligadas`
 }
-export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
-export const UNCONFIRMED_CHOICE =
-  'Não confirmamos a troca das ferramentas. Confira a caixa e tente de novo.'
-
-/** What a conversation is called until it is titled: the moment it was last written, the contract's only date. */
-export function titleOf(conversation: { title: string | null; updatedAt: string }): string {
-  return conversation.title ?? `Conversa de ${dayAndHour(conversation.updatedAt)}`
-}
+export const UNCONFIRMED_CHOICE = unconfirmedText(
+  'a troca das ferramentas',
+  'Confira a caixa e tente de novo.',
+)
 
 /** Início's examples: the chip's words, and what a tap puts in the box. */
 export const ASSISTANT_EXAMPLES = [
@@ -90,7 +86,7 @@ export const DELETE_TEXT =
   'Isto não se desfaz. As mensagens e os arquivos da máquina dela vão junto. O app e as versões do Projeto ficam.'
 export const DELETE_CONFIRM = 'Apagar conversa'
 export const CANCEL = 'Cancelar'
-export const UNCONFIRMED_WRITE = 'Não confirmamos. Veja a lista.'
+export const UNCONFIRMED_WRITE = unconfirmedText(undefined, 'Veja a lista.')
 
 export const SEARCH_CONVERSATIONS = 'Buscar conversa'
 export const SEARCH_LABEL = 'Buscar pelo título'
@@ -115,7 +111,7 @@ export const RELEASE_CONNECTIONS = 'Ligações para o app ler'
 export const BRIEFING_LABEL = 'Briefing'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
 export const PROJECT_GONE = 'Este Projeto não existe mais.'
-export const UNCONFIRMED_HANDOFF = 'Não confirmamos o envio ao Builder. Tente de novo.'
+export const UNCONFIRMED_HANDOFF = unconfirmedText('o envio ao Builder', 'Tente de novo.')
 export const RETRY = 'Tentar de novo'
 export const OPEN_BUILDER = 'Abrir a conversa do Builder'
 export const NAME_HINT = `Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`

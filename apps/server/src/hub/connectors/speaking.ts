@@ -2,6 +2,7 @@ import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { Speaker } from '../identity/public.ts'
+import { speakerOf } from '../identity/public.ts'
 import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
 
@@ -14,10 +15,9 @@ export async function personSpeaker(
   companyId: CompanyId,
   personId: PersonId,
 ): Promise<Speaker | undefined> {
-  const role = await deps.database.read({ kind: 'COMPANY', companyId, personId }, (tx) =>
-    deps.identity.roleOf(tx, companyId, personId),
+  return deps.database.read({ kind: 'COMPANY', companyId, personId }, (tx) =>
+    speakerOf(tx, companyId, personId),
   )
-  return role === undefined ? undefined : { kind: 'PERSON', personId, role }
 }
 
 type Listed = Readonly<{

@@ -7,7 +7,13 @@ import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting, created } from './test-assistant.ts'
 
 type Listed = {
-  conversations: { id: string; project: { id: string; name: string } | null }[]
+  conversations: {
+    id: string
+    title: string | null
+    createdAt: string
+    updatedAt: string
+    project: { id: string; name: string } | null
+  }[]
   next: Next
 }
 type Next = { kind: 'END' } | { kind: 'MORE'; page: string }
@@ -51,6 +57,27 @@ test('criar: com o modelo padrão, só as ligações que o lugar oferece, no Pro
   assert.deepEqual(
     listed.conversations.map((each) => each.id),
     [conversation.id],
+  )
+  assert.equal(
+    listed.conversations[0]?.title,
+    null,
+    'no title from Mastra: null, not an empty string',
+  )
+  assert.equal(conversation.createdAt, listed.conversations[0]?.createdAt)
+  assert.equal(new Date(conversation.createdAt).toISOString(), conversation.createdAt)
+  await on.hub.test.mastraPool.query(
+    `update mastra.mastra_threads set "updatedAt" = "updatedAt" + interval '1 hour', "updatedAtZ" = "updatedAtZ" + interval '1 hour'`,
+  )
+  const touched: Listed = Object((await call(on.hub, on.ana, 'GET', on.assistant)).json())
+  assert.equal(
+    touched.conversations[0]?.createdAt,
+    conversation.createdAt,
+    'touching the thread does not move its creation',
+  )
+  assert.notEqual(
+    touched.conversations[0]?.updatedAt,
+    listed.conversations[0]?.updatedAt,
+    'but it moves the last change',
   )
   assert.ok(
     on.lines.some((line) => line.message === 'ASSISTANT_CONVERSATION_CREATED'),

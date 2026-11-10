@@ -26,6 +26,8 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
+  titleOf,
+  UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
@@ -37,8 +39,6 @@ import {
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
   PROJECT_LIST_TITLE,
-  titleOf,
-  UNCONFIRMED_CREATION,
 } from './text.ts'
 
 type Begun = { content: string; files: Parameters<typeof stashHandoffFiles>[1] }

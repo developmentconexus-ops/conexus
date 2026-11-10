@@ -7,16 +7,7 @@ import type { Sent } from '../../platform/test-anthropic.ts'
 import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 import { conversing, endOf, hubBeside, sent, started, streamOf } from './test-conversation.ts'
 import { failuresOf } from './test-parts.ts'
-import {
-  ask,
-  SUBMIT,
-  stepping,
-  tool,
-  untilCard,
-  WHO,
-  WRITE_PLAN,
-  within,
-} from './test-questions.ts'
+import { ask, SUBMIT, stepped, tool, untilCard, WHO, WRITE_PLAN, within } from './test-questions.ts'
 
 const WRITE_A = tool('mastra_workspace_write_file', { path: 'a.ts', content: 'x\n' })
 
@@ -32,7 +23,13 @@ async function parkedThenUpdated(
   choose?: (world: Awaited<ReturnType<typeof conversing>>) => Promise<void>,
 ) {
   const calls: Sent[] = []
-  const world = await conversing(t, stepping(steps, calls))
+  const world = await conversing(
+    t,
+    stepped(
+      steps.map((blocks) => () => blocks),
+      calls,
+    ),
+  )
   const { hub, ana, conversations } = world
   await choose?.(world)
   const closing = await hubBeside(t, hub)

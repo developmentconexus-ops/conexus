@@ -15,6 +15,7 @@ import {
   StartBox,
   StartWithoutAccount,
   stashHandoffFiles,
+  UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
 } from '../conversation/public.ts'
@@ -29,7 +30,6 @@ import {
   CONSTRUTOR_PLACEHOLDER,
   MEMBERS_CANNOT,
   NO_CONSTRUTOR_CONVERSATIONS,
-  UNCONFIRMED_CREATION,
 } from './text.ts'
 
 const company = getRouteApi('/_app/companies/$companyId')

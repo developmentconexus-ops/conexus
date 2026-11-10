@@ -14,7 +14,8 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { ADMINISTRATOR, company, member, policy } from '../../hub/identity/public.ts'
+import { ADMINISTRATOR, policy } from '../../hub/identity/public.ts'
+import { company, member } from '../../hub/identity/public-tables.ts'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { builder } from '../schema/public.ts'
 

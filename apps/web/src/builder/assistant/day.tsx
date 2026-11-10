@@ -9,6 +9,7 @@ import { BLOCK_ROWS, Block, BlockSentence, blockRow, Stamp } from '../../ui/bloc
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AutomationBadge } from '../automations/public.ts'
+import { titleOf } from '../conversation/public.ts'
 import { assistantConversationsQuery } from './queries.ts'
 import {
   CONNECTIONS_BLOCK,
@@ -17,7 +18,6 @@ import {
   moreConnections,
   NO_CONNECTIONS_BLOCK,
   NO_CONVERSATIONS_BLOCK,
-  titleOf,
 } from './text.ts'
 
 function ContinueRows({ companyId }: { companyId: CompanyId }) {

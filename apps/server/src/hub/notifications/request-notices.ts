@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { eq, sql } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { NoticeRequests } from '../requests/public.ts'
-import { NOTICE_VIEW, request } from '../requests/public.ts'
+import { noticeViewsOf } from '../requests/public.ts'
 import { microsOf, requestNotice } from './tables.ts'
 
 /**
@@ -23,19 +24,34 @@ export const noticeRequests: NoticeRequests = async (tx, notices) => {
     .onConflictDoNothing()
 }
 
-/** The bell's columns of a person's request notices, each with what its request says now. */
-export function requestNoticeRows(tx: ReadTx) {
-  return tx
+/**
+ * The bell's columns of a page of a person's request notices, each with what its request says now.
+ * The foreign key cascades and the request's row policy is the company's, so every notice has its
+ * request; one that has none is a broken invariant, not a row to leave out.
+ */
+export async function requestNoticeRows(tx: ReadTx, where: SQL | undefined, limit: number) {
+  const notices = await tx
     .select({
       id: requestNotice.id,
+      requestId: requestNotice.requestId,
       kind: requestNotice.kind,
       createdAt: requestNotice.createdAt,
       micros: microsOf(requestNotice.createdAt),
       readAt: requestNotice.readAt,
-      ...NOTICE_VIEW,
     })
     .from(requestNotice)
-    .innerJoin(request, eq(request.id, requestNotice.requestId))
+    .where(where)
+    .orderBy(desc(requestNotice.createdAt), desc(requestNotice.id))
+    .limit(limit)
+  const views = await noticeViewsOf(
+    tx,
+    notices.map((notice) => notice.requestId),
+  )
+  return notices.map((notice) => {
+    const view = views.get(notice.requestId)
+    if (view === undefined) throw new Error(`The request ${notice.requestId} of a notice is gone`)
+    return { ...view, ...notice }
+  })
 }
 
 type NoticeRow = Awaited<ReturnType<typeof requestNoticeRows>>[number]

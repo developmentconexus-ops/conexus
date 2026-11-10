@@ -257,6 +257,11 @@ export function writeFailureText(error: unknown, unconfirmed: string): string {
   return error instanceof HubFailure && !error.outcomeUnknown ? sentenceOf(error) : unconfirmed
 }
 
+/** "Não confirmamos <o quê>. <depois>": the text of a write whose end is not known (code C37, C48). */
+export function unconfirmedText(what: string | undefined, next: string): string {
+  return what === undefined ? `Não confirmamos. ${next}` : `Não confirmamos ${what}. ${next}`
+}
+
 const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set(['NOT_FOUND', 'CONVERSATION_NOT_FOUND'])
 
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */

@@ -10,7 +10,7 @@ import type {
 } from '@conexus/hub-api'
 import { providerOfModel, runningEffort } from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
-import { writeFailureText } from '../../platform/hub.ts'
+import { unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 import { modelLabel } from './model-label.ts'
 
 export const KIND_NAMES = {
@@ -23,7 +23,7 @@ export const KIND_NAMES = {
 /** A person of the company as the assignment lists them. */
 export type Person = { personId: PersonId; name: string }
 
-const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
+const UNCONFIRMED = unconfirmedText('a mudança', 'Veja a lista.')
 
 /** What a failed write says: a refusal the Hub settled in its words, any other as one that may have saved. */
 export function refusalText(error: unknown): string {
@@ -32,7 +32,7 @@ export function refusalText(error: unknown): string {
 
 /** What a failed write of a default says: the screen has no list to look at, so it says try again. */
 export function defaultRefusalText(error: unknown): string {
-  return writeFailureText(error, 'Não confirmamos a mudança. Tente de novo.')
+  return writeFailureText(error, unconfirmedText('a mudança', 'Tente de novo.'))
 }
 
 /** The provider's name, or its id for one the key list does not hold, such as a subscription's. */
