@@ -9,7 +9,7 @@ import type { Deps } from './rows.ts'
 import { lackedDoorRead, personSpeaker } from './speaking.ts'
 
 /** The rows of the page a proposal proves its definition with (Capacidade 3). */
-export const PROOF_PAGE_ROWS = 50
+const PROOF_PAGE_ROWS = 50
 
 /** One page of a proposed copy, counted: never a row (Capacidade 3). */
 export type Proved = Readonly<{ kind: 'PROVED'; rows: number; more: boolean }>

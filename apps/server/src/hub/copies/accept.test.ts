@@ -79,7 +79,8 @@ test('dois cliques em duas abas', async (t) => {
     enableProposal(on, on.ana, proposalId),
   ])
   const answers = [first, second].map((each) => each.statusCode).sort()
-  assert.deepEqual(answers, [201, 409], `${first?.body} ${second?.body}`)
+  const failed = on.hub.lines.filter((each) => each.message.endsWith('_FAILED'))
+  assert.deepEqual(answers, [201, 409], `${first?.body} ${second?.body} ${JSON.stringify(failed)}`)
   const late = first?.statusCode === 409 ? first : second
   assert.ok(late)
   assert.equal(codeOf(late), 'COPY_PROPOSAL_DECIDED')

@@ -27,7 +27,7 @@ type Copying = Readonly<{ connectionId: ConnectionId; connector: string; name: s
  * say which mode and why; the proof keeps a count; the proposal is turned on by a person, in the
  * conversation's card or on the Cópias page. No system is named: the connection's skill says how.
  */
-export const COPY_PROPOSE_DESCRIPTION = [
+const COPY_PROPOSE_DESCRIPTION = [
   'Proposes a copy of company data the app needs and the Projeto has no copy of: a definition the company keeps, read from the connection into `sync.<name>`, which the app then reads.',
   "Investigate the connection's system with `connector_read` first: the source query, its columns and types, a bigint key, and a column with the date each row changed.",
   'Choose the mode by the rule of thumb: a whole copy (the definition without `changedSince`) when more than 10% of the rows change at each run; a window of days (`changedSince` and `window`) or only the changed rows (`changedSince` alone) otherwise.',

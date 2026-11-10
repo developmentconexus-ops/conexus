@@ -23,22 +23,33 @@ async function lockedProposal(tx: CommandTx, input: Accepting) {
   return row
 }
 
-/** The copy row from the proposal's definition, with no template; a name a copy took meanwhile is `COPY_EXISTS`. */
-async function insertedFrom(
+/** What a new copy row is made of, from a template or a proposal. */
+export type NewCopy = Readonly<{
+  connectorId: ConnectorId
+  connectionId: ConnectionId
+  name: string
+  label: string
+  model: string | null
+  definition: CopyDefinition
+  bodyHash: string
+}>
+
+/** The new copy row under the attempt's key; a name a copy took is `COPY_EXISTS`. */
+export async function insertedCopy(
   tx: CommandTx,
-  input: Accepting,
-  proposal: typeof copyProposal.$inferSelect,
-  bodyHash: string,
+  input: InCompany & { attemptKey: string },
+  made: NewCopy,
 ) {
   try {
     const [row] = await tx
       .insert(copy)
       .values({
         ...{ id: CopyId.parse(randomUUID()), companyId: input.companyId },
-        ...{ connectorId: proposal.connectorId, connectionId: proposal.connectionId },
-        ...{ name: proposal.name, label: proposal.label, model: null },
-        ...{ definition: CopyDefinition.parse(proposal.definition), createdBy: input.personId },
-        ...{ createdAt: sql`statement_timestamp()`, attemptKey: input.attemptKey, bodyHash },
+        ...{ connectorId: made.connectorId, connectionId: made.connectionId },
+        ...{ name: made.name, label: made.label, model: made.model },
+        ...{ definition: made.definition, createdBy: input.personId },
+        ...{ createdAt: sql`statement_timestamp()`, attemptKey: input.attemptKey },
+        bodyHash: made.bodyHash,
       })
       .returning()
     if (row === undefined) throw new Failure('COPY_EXISTS')
@@ -65,12 +76,9 @@ export async function acceptedIn(
   const proposal = await lockedProposal(tx, input)
   if (proposal.state !== 'OPEN') throw new Failure('COPY_PROPOSAL_DECIDED')
   const connectionId = ConnectionId.parse(proposal.connectionId)
+  const connectorId = ConnectorId.parse(proposal.connectorId)
   const of = { companyId: input.companyId, connectionId }
-  const lacked = await lackedReadOf(deps, tx, {
-    ...of,
-    connectorId: ConnectorId.parse(proposal.connectorId),
-    personId: input.personId,
-  })
+  const lacked = await lackedReadOf(deps, tx, { ...of, connectorId, personId: input.personId })
   if (lacked !== undefined)
     throw new Failure('NOT_IN_ROLE', {
       details: { connectionId, reason: 'READ_DOOR' },
@@ -79,7 +87,11 @@ export async function acceptedIn(
   const linked = await connectionForCopy(tx, of)
   if (linked === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
   if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
-  const row = await insertedFrom(tx, input, proposal, bodyHash)
+  const row = await insertedCopy(tx, input, {
+    ...{ connectorId, connectionId, name: proposal.name, label: proposal.label },
+    ...{ model: null, bodyHash },
+    definition: CopyDefinition.parse(proposal.definition),
+  })
   await tx
     .update(copyProposal)
     .set({ state: 'ACCEPTED', copyId: row.id })

@@ -23,6 +23,22 @@ import {
   UNCONFIRMED_ENABLE,
 } from './text.ts'
 
+/** A copy's query in mono, a line at a time, scrolling inside its box (the detail and the dialog). */
+export function QueryBlock({ query }: { query: string }) {
+  return (
+    <CodeBlock>
+      <CodeBlockContent>
+        {query
+          .split('\n')
+          .map((text, number) => ({ number, text }))
+          .map((line) => (
+            <CodeBlockLine key={line.number}>{line.text}</CodeBlockLine>
+          ))}
+      </CodeBlockContent>
+    </CodeBlock>
+  )
+}
+
 /** A refusal that closes the dialog: the proposal was decided elsewhere, and the list or the card reads it again. */
 function decidedElsewhere(error: unknown) {
   return error instanceof HubFailure && error.code === 'COPY_PROPOSAL_DECIDED'
@@ -78,16 +94,7 @@ export function ProposalDialog(props: {
       >
         <div className="flex min-w-0 flex-col gap-md">
           <span className="text-text-2">Consulta</span>
-          <CodeBlock>
-            <CodeBlockContent>
-              {proposal.shown.query
-                .split('\n')
-                .map((text, number) => ({ number, text }))
-                .map((line) => (
-                  <CodeBlockLine key={line.number}>{line.text}</CodeBlockLine>
-                ))}
-            </CodeBlockContent>
-          </CodeBlock>
+          <QueryBlock query={proposal.shown.query} />
           <p className="break-words">
             <span className="text-text-2">Chave </span>
             <span className="font-mono text-fact">{proposal.shown.key.join(', ')}</span>

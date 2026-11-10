@@ -31,6 +31,7 @@ export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
 export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
+export type { AppCheck } from './app-check.ts'
 export type { AppTablesRead } from './app-tables.ts'
 export type { BuilderData } from './builder-data.ts'
 export type { ConnectorCall } from './handoff.ts'

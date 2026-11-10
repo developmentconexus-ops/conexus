@@ -2,18 +2,18 @@ import { randomUUID } from 'node:crypto'
 import type {
   ConnectionId,
   ConnectorId,
+  CopyId,
   CopyInterval,
   CopyProposalId,
   ProjectId,
 } from '@conexus/hub-api'
-import { CopyId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
-import { acceptedIn, acceptedProjectOf } from './accept.ts'
+import { acceptedIn, acceptedProjectOf, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
 import { mayCreate } from './schedule.ts'
 import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
@@ -53,32 +53,6 @@ async function earlierAttempt(tx: CommandTx, input: Enabling, bodyHash: string) 
   return again
 }
 
-/** The new row, from the template's definition on the connection's connector; a name taken is `COPY_EXISTS`. */
-async function insertedCopy(
-  tx: CommandTx,
-  input: Enabling & { connectionId: ConnectionId },
-  made: { connectorId: ConnectorId; model: Model; bodyHash: string },
-) {
-  const { model, bodyHash } = made
-  try {
-    const [row] = await tx
-      .insert(copy)
-      .values({
-        ...{ id: CopyId.parse(randomUUID()), companyId: input.companyId },
-        ...{ connectorId: made.connectorId, connectionId: input.connectionId },
-        ...{ name: model.id, label: model.label, model: model.id },
-        ...{ definition: model.definition, createdBy: input.personId },
-        ...{ createdAt: sql`statement_timestamp()`, attemptKey: input.attemptKey, bodyHash },
-      })
-      .returning()
-    if (row === undefined) throw new Failure('COPY_EXISTS')
-    return row
-  } catch (error) {
-    if (violatedConstraint(error) === 'copy_company_id_name_key') throw new Failure('COPY_EXISTS')
-    throw error
-  }
-}
-
 /**
  * The hash of what the attempt asked, the key's body (code C37): a template's keeps Capacidade 2's
  * shape, so a retry across the change still finds its row.
@@ -105,11 +79,11 @@ async function fromModel(
   if (linked === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
   if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
   if (made.model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
-  const row = await insertedCopy(
-    tx,
-    { ...input, connectionId },
-    { connectorId: linked.connectorId, model: made.model, bodyHash: made.bodyHash },
-  )
+  const { model } = made
+  const row = await insertedCopy(tx, input, {
+    ...{ connectorId: linked.connectorId, connectionId, name: model.id, label: model.label },
+    ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
+  })
   return parsedCopy(row)
 }
 

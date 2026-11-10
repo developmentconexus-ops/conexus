@@ -7,7 +7,7 @@ import { SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { fakeCloudflare } from './test-cloudflare.ts'
 import { pgTransport } from './test-company-postgres.ts'
-import { silent } from './test-database.ts'
+import { silent, withRoleLock } from './test-database.ts'
 import { fakeNeon } from './test-neon.ts'
 
 /**
@@ -60,7 +60,10 @@ export function heldCompanyPostgres(config: Config) {
       const same =
         seen === undefined || (seen !== 'TWO_COMPANIES' && seen.reveal() === owner.reveal())
       syncOwners.set(host, same ? owner : 'TWO_COMPANIES')
-      return inner.ensureSync(owner)
+      // The sync login belongs to the whole test server: another file's teardown may drop it between
+      // the look and the GRANT (42704), so the act holds the lock the drops take. Once the schema it
+      // owns exists here, a drop refuses (2BP01).
+      return withRoleLock(() => inner.ensureSync(owner))
     },
     ensureCopyTable: (sync, table) => inner.ensureCopyTable(sync, table),
     async syncAddress(host) {

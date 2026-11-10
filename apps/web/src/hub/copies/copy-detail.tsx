@@ -4,7 +4,6 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { CodeBlock, CodeBlockContent, CodeBlockLine } from '../../ui/code-block.tsx'
 import { List, PageTitle, Row, SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
@@ -12,6 +11,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
+import { QueryBlock } from './copy-proposal.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import {
@@ -138,16 +138,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
       {note !== undefined && <NoteLine note={note} />}
       <section aria-label={COPIED_TITLE} className="flex min-w-0 flex-col gap-md">
         <SectionTitle>{COPIED_TITLE}</SectionTitle>
-        <CodeBlock>
-          <CodeBlockContent>
-            {copy.shown.query
-              .split('\n')
-              .map((text, number) => ({ number, text }))
-              .map((line) => (
-                <CodeBlockLine key={line.number}>{line.text}</CodeBlockLine>
-              ))}
-          </CodeBlockContent>
-        </CodeBlock>
+        <QueryBlock query={copy.shown.query} />
         <p className="break-words">
           <span className="text-text-2">Chave </span>
           <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>

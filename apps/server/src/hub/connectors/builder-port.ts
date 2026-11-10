@@ -51,7 +51,7 @@ export type ShapedRead =
   | NotInRole
 export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
 /** Why the Builder's read or proof brought nothing: the source's refusal whole, as `connector_read` gets it. */
-export type BuilderReadRefusal = Exclude<ShapedRead, { kind: 'OK' }> | Spent
+type BuilderReadRefusal = Exclude<ShapedRead, { kind: 'OK' }> | Spent
 
 /** What proposing a copy answers to the model (`hub/copies/propose.ts` writes it). */
 export type ProposeAnswer =

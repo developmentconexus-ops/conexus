@@ -1,10 +1,10 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { CompanyId, PersonId, ProjectId, RowCount } from '@conexus/hub-api'
+import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { AGENT_TOOL, APP_DATA_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { AppRead, BuilderData } from '../../hub/apps/public.ts'
+import type { AppCheck, AppRead, BuilderData } from '../../hub/apps/public.ts'
 import { shaped } from '../../hub/connectors/public.ts'
 import type { AppDataPort } from './port.ts'
 
@@ -89,14 +89,8 @@ type Ids = { companyId: CompanyId; projectId: ProjectId; personId: PersonId }
 
 /** What `app_data_check`'s execute returns, which is what the model reads and Mastra keeps. */
 type AppDataCheckOutput =
-  | {
-      kind: 'COUNTED'
-      rows: Exclude<RowCount, { kind: 'UNKNOWN' }>
-      columns: { name: string; type: string }[]
-      ms: number
-    }
-  /** The database's refusal, its SQLSTATE only. */
-  | { kind: 'REFUSED'; code: 'APP_DATA_REFUSED'; sqlstate: string }
+  /** The count, the columns and the time; or the database's refusal, its SQLSTATE only. */
+  | Extract<AppCheck, { kind: 'COUNTED' | 'REFUSED' }>
   /** The person is not admitted to the Projeto (security S10). */
   | { kind: 'REFUSED'; code: 'NOT_FOUND' }
   | {

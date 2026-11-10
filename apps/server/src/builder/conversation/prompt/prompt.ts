@@ -35,35 +35,31 @@ export type PromptValues = Readonly<{
   data: string
 }>
 
+const STARTER_LINE = '- This app is new: it has only the starter screen.\n'
+const CUTOFF_LINE = ' Your knowledge cutoff: {cutoff}.'
 // One pass over the template, so text a placeholder brings in is never read as another placeholder.
 const PLACEHOLDER =
   /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n|^\{data\}\n\n/gm
 
+/** A block and the blank line after it; an empty block drops both. */
+function blockOf(text: string): string {
+  return text === '' ? '' : `${text}\n\n`
+}
+
 /** The prompt with the turn's values in place (Conexus OS `e0353c36` `harness/prompt.ts:45-59`). */
 export function fillPrompt(values: PromptValues): string {
-  return TEMPLATE.replace(PLACEHOLDER, (slot) => {
-    if (slot.startsWith('- This app is new')) return values.starter ? slot : ''
-    if (slot.startsWith(' Your knowledge cutoff'))
-      return values.cutoff === null ? '' : ` Your knowledge cutoff: ${values.cutoff}.`
-    switch (slot) {
-      case '{project name}':
-        return values.projectName
-      case '{date}':
-        return values.date
-      case '{app folder}':
-        return values.appFolder
-      case '{checks}':
-        return String(values.checks)
-      case '{AGENTS.md content}':
-        return values.instructions
-      case '{connections}\n\n':
-        return values.connections === '' ? '' : `${values.connections}\n\n`
-      case '{data}\n\n':
-        return values.data === '' ? '' : `${values.data}\n\n`
-      default:
-        return values.memory
-    }
-  })
+  const slots: Readonly<Record<string, string>> = {
+    [STARTER_LINE]: values.starter ? STARTER_LINE : '',
+    [CUTOFF_LINE]: values.cutoff === null ? '' : ` Your knowledge cutoff: ${values.cutoff}.`,
+    '{project name}': values.projectName,
+    '{date}': values.date,
+    '{app folder}': values.appFolder,
+    '{checks}': String(values.checks),
+    '{AGENTS.md content}': values.instructions,
+    '{connections}\n\n': blockOf(values.connections),
+    '{data}\n\n': blockOf(values.data),
+  }
+  return TEMPLATE.replace(PLACEHOLDER, (slot) => slots[slot] ?? values.memory)
 }
 
 /** Today as `YYYY-MM-DD` in `America/Sao_Paulo` (Conexus OS `e0353c36` `harness/prompt.ts:91-92`). */
