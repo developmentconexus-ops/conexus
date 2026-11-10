@@ -11,11 +11,11 @@ provider's quirk; otherwise the kit is the study.
 
 The light method, gate by gate:
 
-- **Unit review.** One Opus review per unit, launched only when CI is green on that head. A unit
+- **Unit review.** One Opus review per unit's commit, launched only when CI is green on the pull request's head. A unit
   that only adds kit operations covered by the conformance test is read in the step review.
 - **Deltas.** At most one; a second returns to the card.
 - **Step review.** One Opus review of the whole step, with QA when the step has screens.
-- **Closing.** Folded into the last unit's pull request.
+- **Closing.** Folded into the last group's pull request.
 - **Ownership.** A unit stays in `packages/connectors/src/<provider>/` and its fakes; a shared
   contract in its diff goes to a frontier review.
 

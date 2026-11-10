@@ -31,6 +31,7 @@ import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
   TEST_ACCOUNT,
+  TEST_APP_LOGIN_KEY,
   TEST_NAMESPACE,
   testAppsConfig,
   toolsEnvironment,
@@ -341,7 +342,7 @@ export function serveEnvironment(
     HUB_NEON_API_URL: NO_NEON_SERVER,
     HUB_NEON_ORG_ID: TEST_NEON_ORG,
     HUB_NEON_API_KEY_FILE: keyFile(t, 'hub_neon_api_key', randomBytes(16).toString('hex')),
-    HUB_APP_LOGIN_KEY_FILE: keyFile(t, 'hub_app_login_key', randomBytes(32).toString('hex')),
+    HUB_APP_LOGIN_KEY_FILE: keyFile(t, 'hub_app_login_key', TEST_APP_LOGIN_KEY),
     HUB_CLOUDFLARE_API_URL: NO_CLOUDFLARE_SERVER,
     HUB_CLOUDFLARE_ACCOUNT_ID: TEST_ACCOUNT,
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,

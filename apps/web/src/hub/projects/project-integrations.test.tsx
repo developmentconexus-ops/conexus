@@ -11,6 +11,7 @@ import {
   conversationsNone,
   hubServer,
   PEDIDOS,
+  projectCopiesNone,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -104,7 +105,7 @@ function open(view: View) {
   )
 }
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(conversationsNone, projectCopiesNone, versionsRead({ versions: [] })))
 
 async function row(name: string) {
   const heading = await screen.findByText(name)

@@ -10,6 +10,7 @@ import {
   conversationsNone,
   hubServer,
   PEDIDOS,
+  projectCopiesNone,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -38,7 +39,7 @@ const matriz = {
   access: { kind: 'READS', grant: { by: 'Ana', at: '2026-10-30T12:00:00.000Z' } },
 }
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(conversationsNone, projectCopiesNone, versionsRead({ versions: [] })))
 
 test('Tirar recusado diz a frase em um bloco, não dentro de um span', async () => {
   server.use(

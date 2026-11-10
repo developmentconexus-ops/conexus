@@ -18,9 +18,11 @@ const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
 const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
 const PUBLISH_APP = { app: ['publish'] } as const
+const VIEW_APP_DATA = { app: ['viewData'] } as const
 const MANAGE_AGENTS = { agent: ['manage'] } as const
 const PUBLISH_AGENT = { agent: ['publish'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
+const MANAGE_COPIES = { copy: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
@@ -39,9 +41,11 @@ type ActionRule = {
     | typeof MANAGE_APP_ACCESS
     | typeof MANAGE_CONNECTIONS
     | typeof PUBLISH_APP
+    | typeof VIEW_APP_DATA
     | typeof MANAGE_AGENTS
     | typeof PUBLISH_AGENT
     | typeof MANAGE_AUTOMATIONS
+    | typeof MANAGE_COPIES
     | typeof ASK_ASSISTANT
     | typeof REQUEST_PUBLISH
     | typeof DECIDE_REQUEST
@@ -68,6 +72,9 @@ const ACTIONS = {
   // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
   publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
+  // An owner, an administrator or a developer reads the tables and rows of the Projeto's app
+  // (capacity 1, "O banco do app"); a read holds no row.
+  viewAppData: { by: 'MEMBER', statement: VIEW_APP_DATA, locks: false },
   // Withdrawing needs only the membership; `cancel` checks the person is the asker.
   requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
   cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },
@@ -101,6 +108,10 @@ const ACTIONS = {
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
+  // The company's copies are an owner's, an administrator's or a developer's (Capacidade 2,
+  // 2026-11-09: "Dono e o admnistrador e desenvolvedor"): reading holds no row, a change the role.
+  readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
+  manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
   // Creating, changing and deleting the company's roles is the owner's and the administrator's
   // (step Papéis da empresa, U1); the library's own routes then check the same statements.
   manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },

@@ -279,6 +279,12 @@ export const conversationsNone = http.get(
   () => HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
 )
 
+/** Integrações do Projeto asks for the company's copies; for a test that has none to speak of. */
+export const projectCopiesNone = http.get(
+  `*/api/companies/${COMPANY.id}/projects/:projectId/copies`,
+  () => HttpResponse.json({ copies: [] }),
+)
+
 /** What the Hub shows of Empresa Teste's Projects; a test changes it between reads. */
 export type ProjectsView = {
   projects: ProjectSummary[]

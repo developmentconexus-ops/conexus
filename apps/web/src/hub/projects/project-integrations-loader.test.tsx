@@ -4,14 +4,20 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { conversationsNone, hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
+import {
+  conversationsNone,
+  hubServer,
+  PEDIDOS,
+  projectCopiesNone,
+  projectsRead,
+} from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 import { connectionsQuery, projectConnectionsQuery } from '../connectors/public.ts'
 
 const server = hubServer()
 const API = `*/api/companies/${COMPANY.id}`
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(conversationsNone, projectCopiesNone, versionsRead({ versions: [] })))
 
 test('a rota espera as leituras das ligações antes de mostrar a página: a primeira imagem não sai em branco', async () => {
   server.use(

@@ -5,7 +5,10 @@ import {
   createAppFrameHandoff,
   createAppSession,
   FAILURES,
+  listAppRows,
+  listAppTables,
   listAppVersions,
+  listCopyRows,
   publishAppVersion,
 } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -13,6 +16,7 @@ import { optionalSessionOf } from '../../platform/access.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { sendPage } from '../../platform/screens.ts'
+import type { AppData } from './app-data.ts'
 import type { AppVersions } from './app-versions.ts'
 import type { AppDoor } from './handoff.ts'
 
@@ -80,6 +84,19 @@ export function registerVersionRoutes(app: FastifyInstance, versions: AppVersion
   )
   serve(app, publishAppVersion, async ({ person, params, body }) =>
     answer({ version: await versions.publish({ person, ...params, number: body.number }) }),
+  )
+}
+
+/** A Projeto's app tables and rows, listed for who builds, on the public listener (capacity 1). */
+export function registerDataRoutes(app: FastifyInstance, data: AppData): void {
+  serve(app, listAppTables, async ({ person, params, signal }) =>
+    answer(await data.tables({ person, ...params, signal })),
+  )
+  serve(app, listAppRows, async ({ person, params: { table, ...params }, query, signal }) =>
+    answer(await data.rows({ person, ...params, schema: 'APP', table, page: query.page, signal })),
+  )
+  serve(app, listCopyRows, async ({ person, params: { table, ...params }, query, signal }) =>
+    answer(await data.rows({ person, ...params, schema: 'COPY', table, page: query.page, signal })),
   )
 }
 

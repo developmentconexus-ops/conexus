@@ -10,6 +10,16 @@ import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } fro
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
+import type { CopyRows, CopyTable } from './copy-sql.ts'
+import {
+  closePass,
+  ensureCopyTable,
+  ensureSync,
+  grantCopy,
+  revokeCopy,
+  syncAddress,
+  writePage,
+} from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { OUTCOME_AFTER, OUTCOME_BEFORE } from './migration-outcome.ts'
 import type { RuleBreak } from './migration-rule.ts'
@@ -119,7 +129,7 @@ export type CompanyPostgres = {
   /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
   ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
   /** One statement as the read login, whose address `readAddress` gives: the Hub never needs the company. */
-  readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppReadAnswer>
+  readApp(read: DatabaseUrl, statement: SqlStatement, signal: AbortSignal): Promise<AppReadAnswer>
   /** The read login's address on the company's host, its password derived here and never kept. */
   readAddress(host: string, projectId: ProjectId): Promise<DatabaseUrl>
   migrate(
@@ -128,6 +138,31 @@ export type CompanyPostgres = {
     migrations: readonly AppMigration[],
   ): Promise<MigrateAnswer>
   dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+  /** The `sync` schema and the login that owns it, once per company, as its owner. */
+  ensureSync(owner: DatabaseUrl): Promise<SqlAnswer>
+  /** The copy's table as the sync login. */
+  ensureCopyTable(sync: DatabaseUrl, table: CopyTable): Promise<SqlAnswer>
+  /** Where the Hub reaches the sync login, from the host it recorded, with no call to Neon. */
+  syncAddress(host: string): Promise<DatabaseUrl>
+  /** One page in one transaction, each row with the pass. */
+  writePage(
+    sync: DatabaseUrl,
+    input: CopyTable & { pass: number; rows: CopyRows },
+    signal: AbortSignal,
+  ): Promise<SqlAnswer>
+  /** The end of a complete pass: what it did not see leaves, then the count. */
+  closePass(
+    sync: DatabaseUrl,
+    input: CopyTable & { pass: number; windowFrom: string | null },
+    signal: AbortSignal,
+  ): Promise<{ kind: 'DONE'; rows: number } | Exclude<SqlAnswer, { kind: 'DONE' }>>
+  /** A copy released to a Projeto's run and read logins. */
+  grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
+  /** A release taken back; `ALL`, every one of the Projeto and the schema. */
+  revokeCopy(
+    sync: DatabaseUrl,
+    input: { copy: string | 'ALL'; projectId: ProjectId },
+  ): Promise<SqlAnswer>
 }
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
@@ -280,9 +315,16 @@ export function createCompanyPostgres(deps: {
   return Object.freeze({
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
-    readApp: (read, sql, signal) => readApp(context, read, sql, signal),
+    readApp: (read, statement, signal) => readApp(context, read, statement, signal),
     readAddress: (host, projectId) => readAddress(context, host, projectId),
     migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),
+    ensureSync: (owner) => ensureSync(context, owner),
+    ensureCopyTable: (sync, table) => ensureCopyTable(context, sync, table),
+    syncAddress: (host) => syncAddress(context, host),
+    writePage: (sync, input, signal) => writePage(context, sync, input, signal),
+    closePass: (sync, input, signal) => closePass(context, sync, input, signal),
+    grantCopy: (sync, input) => grantCopy(context, sync, input),
+    revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })
 }

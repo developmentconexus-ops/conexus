@@ -147,7 +147,7 @@ export const AppVersion = z.object({
 })
 export type AppVersion = z.infer<typeof AppVersion>
 
-const OfProject = z.object({ companyId: CompanyId, projectId: ProjectId })
+export const OfProject = z.object({ companyId: CompanyId, projectId: ProjectId })
 /** A Projeto of a company, as the Hub's subjects name one. */
 export type OfProject = z.infer<typeof OfProject>
 

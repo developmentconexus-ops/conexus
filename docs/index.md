@@ -5,8 +5,8 @@ One line per document (`check-docs`).
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): read first.
-- [README.md](../README.md): this repository.
-- [DESIGN.md](../DESIGN.md): the Pauta, values and pieces.
+- [README.md](../README.md): repo.
+- [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): design.
@@ -17,7 +17,7 @@ One line per document (`check-docs`).
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
-- [steps/](steps/): cards in construction.
+- [steps/](steps/): cards.
 - [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): readers' questions.
@@ -98,6 +98,7 @@ One line per document (`check-docs`).
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
 - [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
 - [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
+- [0063](decisions/0063-copy-models-proof.md) copy proof.
 
 ## Skills
 

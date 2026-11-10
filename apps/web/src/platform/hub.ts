@@ -262,7 +262,11 @@ export function unconfirmedText(what: string | undefined, next: string): string 
   return what === undefined ? `Não confirmamos. ${next}` : `Não confirmamos ${what}. ${next}`
 }
 
-const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set(['NOT_FOUND', 'CONVERSATION_NOT_FOUND'])
+const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set([
+  'NOT_FOUND',
+  'CONVERSATION_NOT_FOUND',
+  'COPY_NOT_FOUND',
+])
 
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */
 export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {

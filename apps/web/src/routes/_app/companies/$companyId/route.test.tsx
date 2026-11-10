@@ -79,7 +79,7 @@ test('o membro: o trilho tem Início, Projetos, Integrações, Configurações e
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('o desenvolvedor: o trilho tem Automações e Agentes depois de Integrações, como a dona; o membro não os tem', async () => {
+test('o desenvolvedor: o trilho tem Automações, Agentes e Cópias depois de Integrações, como a dona; o membro não os tem', async () => {
   open(HOME, PROJECTS, 'developer')
   const developer = await sidebar()
   expect(linkNames(developer.rail)).toEqual([
@@ -88,12 +88,13 @@ test('o desenvolvedor: o trilho tem Automações e Agentes depois de Integraçõ
     'Integrações',
     'Automações',
     'Agentes',
+    'Cópias',
     'Configurações',
   ])
   expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
-test('o trilho da dona tem Automações e Agentes logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações nem Agentes', async () => {
+test('o trilho da dona tem Automações, Agentes e Cópias logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações, Agentes nem Cópias', async () => {
   open(HOME, PROJECTS, 'owner')
   const owner = await sidebar()
   expect(linkNames(owner.rail)).toEqual([
@@ -102,6 +103,7 @@ test('o trilho da dona tem Automações e Agentes logo depois de Integrações; 
     'Integrações',
     'Automações',
     'Agentes',
+    'Cópias',
     'Configurações',
   ])
   expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
@@ -111,6 +113,7 @@ test('o trilho da dona tem Automações e Agentes logo depois de Integrações; 
   const member = await sidebar()
   expect(member.rail.queryByRole('link', { name: 'Automações' })).toBeNull()
   expect(member.rail.queryByRole('link', { name: 'Agentes' })).toBeNull()
+  expect(member.rail.queryByRole('link', { name: 'Cópias' })).toBeNull()
 })
 
 /** The Projetos the Projeto's own header offers to switch to, in order, without "Todos os projetos". */

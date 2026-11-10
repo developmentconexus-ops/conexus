@@ -104,7 +104,7 @@ logins (`appLogin` in `packages/hub-api/src/app-login.ts`):
 - `app_<id>_run` runs the app, with `statement_timeout` 5 s and `transaction_timeout` 6 s;
 - `app_<id>_migrate` owns the schema and applies migrations, with no timeouts, so a version's
   migration transaction is not cut;
-- `app_<id>_read` reads only, for the Project agents' `app_data_read`.
+- `app_<id>_read` reads only, for the Project agents' `app_data_read` and the Dados page.
 
 The Prévia and the published app use the same schema and the same run login. A version that
 reaches the Prévia migrates the tables the published app is reading. That is why each migration

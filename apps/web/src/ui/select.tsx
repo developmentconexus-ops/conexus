@@ -89,12 +89,13 @@ export function ChoiceSelect(props: {
   onValueChange: (next: string | null) => void
   disabled?: boolean
   className?: string
+  placeholder?: string
 }) {
-  const { label, items, className, ...root } = props
+  const { label, items, className, placeholder, value, ...root } = props
   return (
-    <Select items={items} {...root}>
+    <Select items={items} value={value === '' ? null : value} {...root}>
       <SelectTrigger aria-label={label} className={className}>
-        <SelectValue />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {items.map((item) => (

@@ -16,6 +16,7 @@ export {
   revokeAllAppAccess,
   revokeAppAccess,
 } from './app-access.ts'
+export * from './app-data.ts'
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_OPEN_PATH,
@@ -38,7 +39,7 @@ export {
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
-  type OfProject,
+  OfProject,
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
@@ -159,6 +160,7 @@ export {
   setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
+export * from './copies.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'

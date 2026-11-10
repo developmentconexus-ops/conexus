@@ -14,6 +14,7 @@ import {
   plantCompany,
   post,
 } from './test-hub.ts'
+import { ATENDENTE } from './test-roles.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
 const EDU = { name: 'Edu Lima', email: 'edu@example.test' }
@@ -107,7 +108,9 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
       {
         manageAgents: mayBuild,
         manageAutomations: mayBuild,
+        manageCopies: mayBuild,
         manageRoles: mayGovern,
+        viewAppData: mayBuild,
         publishUnattendedWrite: mayGovern,
       },
       role,
@@ -115,4 +118,14 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
   }
   const outsider = await personOn(hub, EDU)
   assert.equal((await call(hub, outsider, 'GET', base)).statusCode, 404)
+})
+
+test('o que a pessoa pode: um papel próprio da empresa cai em membro e não vê o banco do app', async (t) => {
+  const { hub, ana, base, companyId } = await company(t)
+  await post(hub, ana, `${base}/roles`, ATENDENTE)
+  const edu = await memberOn(hub, companyId, EDU, 'atendente')
+  const read = await call(hub, edu, 'GET', base)
+  assert.equal(read.statusCode, 200, read.body)
+  assert.equal(Object(read.json()).role, 'atendente')
+  assert.equal(Object(read.json()).may.viewAppData, false)
 })
