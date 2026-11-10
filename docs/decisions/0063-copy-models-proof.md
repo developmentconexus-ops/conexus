@@ -2,11 +2,9 @@
 
 ## Context
 
-Capacity 2 (`docs/steps/capacidade-2-o-sync-da-empresa.md`, "P1 A prova no Sankhya") needs, before
-unit U1, the dialect, `DTALTER` on the five template tables, the date literal, the cell shapes and
-whether a page fits. The founder authorized the read-only call ("leitura no Sankhya só contando";
-2026-11-10 "1. Vale"). One session through the kit's read door (`DbExplorerSP.executeQuery`, judged
-by the read filter), counts and shapes only.
+Capacity 2's P1 (`docs/steps/capacidade-2-o-sync-da-empresa.md`) measures, before U1, the dialect,
+`DTALTER`, the date literal, cell shapes and page size. The founder authorized the read-only call
+("leitura no Sankhya só contando"; 2026-11-10 "1. Vale"): one session through the kit's read door.
 
 ## Decision
 
@@ -34,13 +32,12 @@ repository. Stop rules: a template table without `DTALTER` (stop for `vendas`, `
   NUMBER with scale 0.
 - Every template's first page of 500 rows is under the 1 MiB stop rule and far under the executor's
   2 MiB ceiling ([0056]). No stop rule fired.
-- The invented cells' answer is the paged read's recording (testing T29).
+- The invented cells are the read's recording (T29).
 - The measured numbers are kept outside the public repository.
 
 ## Consequences
 
-U1 writes the templates with these columns and types. A large table's first pass runs over several
-capped runs before it completes; later passes reread only the window and what changed.
+U1 writes these columns and types. A large table's first pass spans several capped runs.
 
 ## Reopens when
 
@@ -48,6 +45,6 @@ A company's Sankhya runs on SQL Server, or a template table lacks `DTALTER`.
 
 ## State
 
-Accepted 2026-11-10 (the founder's authorization of the call, "1. Vale").
+Accepted 2026-11-10 ("1. Vale").
 
 [0056]: 0056-connectors-kit-and-one-executor.md
