@@ -108,7 +108,7 @@ test('o que lança e o que responde: a escrita sem resposta volta como resultado
 })
 
 test('a versão antiga que deixa o campo fixo aberto: o modelo não recebe notaModelo, e se chamar a falha lançada não envia nada (44)', async (t) => {
-  const asked = { ...ASKED, notaModelo: 99 }
+  const asked = ASKED
   const on = await approving(t, [[tool(WRITE, asked)], [said('Não lancei.')]])
   const agent = await on.writer('AUTO')
   await on.hub.test.asOwner(
