@@ -6,24 +6,42 @@ import type { ReactNode } from 'react'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { SidebarMenuButton } from '../../ui/sidebar.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { appTablesQuery } from './queries.ts'
 
 const NO_APP = 'Este Projeto ainda não tem app. Peça um ao Builder.'
 const NO_TABLES = 'O app ainda não criou tabelas.'
 
-/** What the list says a table holds: the count in the person's language, "mais de 10.000" with the word that it is the count's ceiling, or that it could not be counted. */
+const CAP_NOTE = 'teto da contagem'
+
+/** What the list says a table holds: the count in the person's language, "mais de 10.000" (its ceiling is said in `CountCell`), or that it could not be counted. */
 function countText(rows: RowCount): string {
   switch (rows.kind) {
     case 'EXACT':
       return rows.rows.toLocaleString('pt-BR')
     case 'OVER':
-      return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')} (teto da contagem)`
+      return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')}`
     case 'UNKNOWN':
       return 'indisponível'
     default:
       return rows satisfies never
   }
+}
+
+/** The count beside a table's name; past the ceiling, a tooltip and a screen-reader-only note say it is the count's ceiling, so the name keeps its room. */
+function CountCell({ rows }: { rows: RowCount }) {
+  const className = 'shrink-0 text-fact tabular-nums text-text-2'
+  if (rows.kind !== 'OVER') return <span className={className}>{countText(rows)}</span>
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className={className} />}>
+        {countText(rows)}
+        <span className="sr-only"> ({CAP_NOTE})</span>
+      </TooltipTrigger>
+      <TooltipContent>{CAP_NOTE}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 /** One table of the list: a link to its rows, by the route of its schema, with its count beside it. */
@@ -33,7 +51,7 @@ function TableLink(props: { companyId: CompanyId; projectId: ProjectId; table: A
   return (
     <Row>
       <SidebarMenuButton
-        className="justify-between gap-md"
+        className="h-auto min-h-row justify-between gap-md py-xs pointer-coarse:h-auto"
         render={
           table.schema === 'COPY' ? (
             <Link
@@ -45,8 +63,8 @@ function TableLink(props: { companyId: CompanyId; projectId: ProjectId; table: A
           )
         }
       >
-        <span className="min-w-0 truncate">{table.name}</span>
-        <span className="shrink-0 text-fact tabular-nums text-text-2">{countText(table.rows)}</span>
+        <span className="min-w-0 break-all">{table.name}</span>
+        <CountCell rows={table.rows} />
       </SidebarMenuButton>
     </Row>
   )
