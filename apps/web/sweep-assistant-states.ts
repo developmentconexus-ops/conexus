@@ -86,6 +86,7 @@ export const ASSISTANT_REPLIES = {
       conversation: {
         id: ID,
         title: 'Vendas da semana',
+        createdAt: '2026-10-19T12:00:00.000Z',
         updatedAt: '2026-10-19T12:00:00.000Z',
         projectId: null,
         automation: null,
@@ -133,6 +134,7 @@ export function cardReplies(projectId: string | null, messages: Said[]) {
       conversation: {
         id: ID,
         title: 'Vendas da semana',
+        createdAt: '2026-10-19T12:00:00.000Z',
         updatedAt: '2026-10-19T12:00:00.000Z',
         projectId,
         automation: null,

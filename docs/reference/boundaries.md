@@ -570,7 +570,7 @@ rows for the five above wait on issue #458.
 - **Packaging.** Native esbuild 0.28.2 bundles, for us, `invitation-email.tsx` (which also exports the
   recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) and
   `automation-email.tsx` of the notifications (step 24.2, in the same page through
-  `identity/mail/public.tsx`, the frame's door) as two ignored ESM artifacts, one command each, with
+  `identity/public-mail.tsx`) as two ignored ESM artifacts, one command each, with
   React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
   branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`
@@ -1038,6 +1038,24 @@ rows for the five above wait on issue #458.
   "uma página 8 MiB atrás perde o stream…" fails without `paced`. "uma página que lê devagar…" holds
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
+
+## Mastra 1.82.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
+
+- **Library line.** `@mastra/core` 1.82.0 (`6e8dfcb8`): the session's native "never ask" is the `allow`
+  policy, which suspends the call and approves it at once
+  (`packages/core/src/agent-controller/session.ts:4768-4789` and `:6459-6504`). With `@mastra/pg`
+  1.35.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
+  at `packages/core/src/agent/agent.ts:8522`).
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` in `apps/server/src/builder/agents/tools.ts` (the
+  reads) and in `agents/agent.ts` (`neverAsking`, the shared tools, on a copy), and
+  `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+  Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
+- **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
+  (the study of step 24.5; Papéis P1).
+- **Proof.** Covered, not fails without: `approval.test.ts`, "a escrita espera, o resto não", reads
+  every tool of an agent running without asking while a write in Pergunta antes waits. No test
+  swaps the rule for `allow` against Postgres, and no row of `scripts/removals.json` protects it.
+- **Revisit when** Mastra fixes the approval race, or `allow` stops suspending.
 
 ## Mastra 1.82.0: a step's answer without the body of its request
 

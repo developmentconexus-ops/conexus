@@ -2168,9 +2168,9 @@
   },
   {
     "id": "assistant-routes-own-thread",
-    "file": "apps/server/src/builder/assistant/routes.ts",
-    "find": "getThreadById({ threadId: conversationId, resourceId })",
-    "replace": "getThreadById({ threadId: conversationId })",
+    "file": "apps/server/src/builder/controller-kit/thread.ts",
+    "find": "getThreadById({ threadId, resourceId: resourceOf(kind, owner) })",
+    "replace": "getThreadById({ threadId })",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/routes.test.ts",

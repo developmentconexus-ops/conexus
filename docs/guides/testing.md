@@ -17,7 +17,8 @@ choice of test tools.
 ## 2. What a test asserts
 
 - **T5.** A test **must** enter through the server's public door and **must not** import the inside
-  of the server, except the test database, `platform/test-neon.ts` and `hub/identity/test-hub.ts`.
+  of the server, except the helpers a test shares, which are the files named `test-*.ts` (the test database,
+  `platform/test-neon.ts` and `hub/identity/test-hub.ts` among them).
   [lint]
 - **T6.** Tests **should** exercise observable consumer behavior beside its owner, comparing a
   result that distinguishes the failure rather than only existence. For a route, assert literal

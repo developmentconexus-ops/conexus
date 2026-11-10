@@ -6,15 +6,17 @@ import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type {
+  ApprovalDeps,
   Connectors,
   Returned,
   SessionScope,
   TurnKey,
+  WriteAuthorOf,
   WriteRequest,
   WriteShape,
   Written,
 } from '../../hub/connectors/public.ts'
-import { openText, uncertainText } from '../../hub/connectors/public.ts'
+import { mustAsk, openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { approvedCallOf } from '../conversation/public.ts'
 import { unfixedOf } from '../tools/public.ts'
@@ -83,24 +85,15 @@ export type WriteAuthor =
   | Readonly<{ kind: 'DRAFT' }>
 
 type Deps = {
-  connectors: Pick<
-    Connectors['assistant'],
-    'operationOf' | 'writeOf' | 'read' | 'write' | 'openWrites'
-  >
+  connectors: Pick<Connectors['assistant'], 'operationOf' | 'writeOf' | 'read' | 'write'>
   scope: SessionScope
   tools: readonly FrozenTool[]
   turnOf: (requestContext: RequestContext) => TurnKey
   author: WriteAuthor
   /** The connector of each connection the place offers, which a write's role check names. */
   offered: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[]
-  /**
-   * Whether who answers for the version (who made it active) still leaves this write alone, read
-   * now (`answererLeavesAlone`).
-   */
-  leavesAlone: (
-    version: Extract<WriteAuthor, { kind: 'VERSION' }>,
-    target: NonNullable<ReturnType<typeof targetOf>>,
-  ) => Promise<boolean>
+  /** What the Hub's write rule reads (`mustAsk`): the roles now and the conversation's open sends. */
+  approval: ApprovalDeps
   log: FailureLog
 }
 
@@ -172,6 +165,13 @@ function toldOf(written: Written | { kind: 'CALLS_SPENT' }) {
   }
 }
 
+/** The write rule's author: the draft, or a version with who answers for it. */
+function authorOf(author: WriteAuthor): WriteAuthorOf {
+  return author.kind === 'DRAFT'
+    ? { kind: 'DRAFT' }
+    : { kind: 'PUBLISHED', answeredBy: author.answeredBy }
+}
+
 type Asked = Omit<WriteRequest, 'speaker' | 'agentId' | 'number'>
 
 /** The request as its author speaks: a version by what it declares (decision C1), a person by the role the funnel reads. */
@@ -185,24 +185,12 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
 }
 
 /**
- * Whether a published version's write in Faz sozinho may still run without asking (step 24.5,
- * D2-a): the role of who answers for the version (who made it active), read on every call, holds
- * the action and the write. A connection the place no longer offers has no connector to ask about,
- * and asks.
- */
-async function aloneByAnswerer(deps: Deps, tool: PresetFrozenTool): Promise<boolean> {
-  if (deps.author.kind === 'DRAFT') return true
-  const target = targetOf(deps.offered, tool)
-  return target !== undefined && deps.leavesAlone(deps.author, target)
-}
-
-/**
- * A write of the version (step 24.5): it asks the person first when the version keeps it in
- * Pergunta antes, when the role of who answers for the version (who made it active) no longer
- * leaves it alone, or when the conversation holds an earlier send of the same write whose end is
- * not known; Mastra treats the tool's own rule as final, and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`),
- * so a failed read asks. Its `execute` sends through the Hub's write funnel, which checks the open
- * sends again unless a person approved this very call.
+ * A write of the version (step 24.5): whether it asks first is the Hub's rule (`mustAsk`); a
+ * connection the place no longer offers has no connector to ask about, and a call without its
+ * conversation has no open sends to read, so both ask. Mastra treats the tool's own rule as final,
+ * and asks when it throws (`@mastra/core@1.82.0` `agent-BP9OWM6D.js:15136-15140`), so a failed
+ * read asks. Its `execute` sends through the Hub's write funnel, which checks the open sends again
+ * unless a person approved this very call.
  */
 function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
   const { input, fixed } = write
@@ -212,15 +200,18 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
     description: tool.description,
     inputSchema: openOf(input, tool, fixed),
     requireApproval: async (_given, context) => {
-      if (tool.approval !== 'AUTO') return true
-      if (!(await aloneByAnswerer(deps, tool))) return true
+      const at = targetOf(deps.offered, tool)
       const threadId = ConversationId.safeParse(context?.requestContext?.[MASTRA_THREAD_ID_KEY])
-      if (!threadId.success) return true
-      const open = await deps.connectors.openWrites({
-        ...{ scope: deps.scope, threadId: threadId.data },
-        ...target,
+      if (at === undefined || !threadId.success) return true
+      const asked = await mustAsk(deps.approval, {
+        companyId: deps.scope.companyId,
+        choice: tool.approval === 'AUTO' ? 'AUTO' : 'ASK',
+        author: authorOf(deps.author),
+        scope: deps.scope,
+        threadId: threadId.data,
+        target: at,
       })
-      return open.length > 0
+      return asked.kind === 'ASK'
     },
     execute: async (given, { requestContext, agent, abortSignal }) => {
       if (requestContext === undefined || agent?.threadId === undefined) {

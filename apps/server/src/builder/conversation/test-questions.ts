@@ -45,22 +45,33 @@ export function submitPlan(path: string): Block {
 export const readPlan = tool('mastra_workspace_read_file', { path: PLAN })
 export const SUBMIT = submitPlan(PLAN)
 
-/** The model's steps in order, then `Pronto.`; each call is kept in `calls` for the test to read. */
-export function stepping(steps: Block[][], calls: Sent[]): Anthropic['answer'] {
-  let step = 0
+/** The model's steps in order, then `Pronto.`; the title request answers `Título`; each call goes to `calls`, when given. */
+export function stepped(
+  steps: readonly ((asked: Sent) => Block[])[],
+  calls?: Sent[],
+): Anthropic['answer'] {
+  let at = 0
   return (asked) => {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
-    calls.push(asked)
-    const blocks = steps[step]
-    step += 1
-    return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
+    calls?.push(asked)
+    const step = steps[at]
+    at += 1
+    return step === undefined
+      ? { kind: 'text', text: 'Pronto.' }
+      : { kind: 'blocks', blocks: step(asked) }
   }
 }
 
 /** The model's steps in order, then `Pronto.`; each call's texts are kept for the test to read. */
 export async function conversingWith(t: TestContext, steps: Block[][]) {
   const calls: Sent[] = []
-  const hub = await conversing(t, stepping(steps, calls))
+  const hub = await conversing(
+    t,
+    stepped(
+      steps.map((blocks) => () => blocks),
+      calls,
+    ),
+  )
   const url = `${hub.conversations}/${await started(hub.hub, hub.ana, hub.conversations)}`
   const stream = await streamOf(hub.hub, hub.ana, url)
   t.after(() => stream.close())

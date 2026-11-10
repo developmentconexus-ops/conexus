@@ -18,7 +18,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { resourceOf } from '../controller-kit/public.ts'
+import { ownThread, resourceOf } from '../controller-kit/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
 import type { assistantMemory } from './memory.ts'
@@ -257,9 +257,7 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   const owner = { companyId, personId: person.id }
   const doors = deps.doors()
   if (doors.updating()) throw new Failure('HUB_UPDATING')
-  const resourceId = resourceOf('assistant', owner)
-  const thread = await deps.memory.getThreadById({ threadId: conversationId, resourceId })
-  if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+  await ownThread(deps.memory, 'assistant', owner, conversationId)
   const kept = await deps.chosen.of(owner, conversationId)
   const place = placeOf(kept.projectId)
   await admitted(deps, owner, place, 'askAssistant')

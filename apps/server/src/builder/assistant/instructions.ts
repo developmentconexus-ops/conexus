@@ -4,6 +4,7 @@ import { fixedNameOf } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
+import { fixedSystem } from '../controller-kit/public.ts'
 import { turnDate } from '../conversation/public.ts'
 
 /**
@@ -16,9 +17,6 @@ const FIXED = [
 ]
   .map((text) => text.trim())
   .join('\n\n')
-
-/** The fixed message's own cache mark: the Hub marks only the last system message (`promptCacheMiddleware`). */
-const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 
 const ROLE_WORDS = {
   owner: 'owner',
@@ -85,7 +83,7 @@ export function assistantInstructions(deps: {
     }
     const chosen = offered.filter((each) => each.chosen)
     return [
-      { role: 'system', content: FIXED, providerOptions: CACHED },
+      fixedSystem(FIXED),
       { role: 'system', content: blockOf(speakers, chosen) },
     ] satisfies AgentInstructions
   }

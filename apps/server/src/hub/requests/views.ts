@@ -1,6 +1,6 @@
 import type { CompanyId, PersonId, ProjectId, Role } from '@conexus/hub-api'
 import { PublishRequest } from '@conexus/hub-api'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { memberNameColumn, personNameColumn } from '../identity/public.ts'
@@ -13,7 +13,7 @@ type Readers = { identity: Pick<IdentityPorts, 'allows'> }
  * What the bell reads of the request a notice names (`hub/notifications` joins it by id): one who
  * decided and has left the company is no longer named (criterion 19).
  */
-export const NOTICE_VIEW = {
+const NOTICE_VIEW = {
   projectId: request.projectId,
   projectName: projectNameColumn(request.projectId),
   number: request.number,
@@ -21,6 +21,15 @@ export const NOTICE_VIEW = {
   reason: request.reason,
   requestedByName: personNameColumn(request.requestedBy),
   decidedByName: memberNameColumn(request.companyId, request.decidedBy),
+}
+
+/** The view of each of these requests the reader may see, by the request's id (the bell joins it by id). */
+export async function noticeViewsOf(tx: ReadTx, ids: readonly string[]) {
+  const rows = await tx
+    .select({ id: request.id, ...NOTICE_VIEW })
+    .from(request)
+    .where(inArray(request.id, [...ids]))
+  return new Map(rows.map((row) => [row.id, row]))
 }
 
 export const VIEW = {

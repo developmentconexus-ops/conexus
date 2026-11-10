@@ -8,7 +8,7 @@ import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, streamOf } from '../conversation/test-conversation.ts'
-import { stepping, tool } from '../conversation/test-questions.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
 
@@ -53,7 +53,10 @@ export async function assisting(
   const calls: Sent[] = []
   const served = sankhya ?? (await kitSankhya(t))
   const answer = Array.isArray(model)
-    ? stepping(model, calls)
+    ? stepped(
+        model.map((blocks) => () => blocks),
+        calls,
+      )
     : (asked: Sent) => {
         if (asked.stream) calls.push(asked)
         return model(asked)
