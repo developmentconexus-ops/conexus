@@ -681,10 +681,10 @@ com `fields = defineFields({ area: 'Área de atendimento' })` em `references/ope
 `area` entra por uma migração nova, `002_ticket_area` (`ALTER TABLE ticket ADD COLUMN area text`),
 nunca editando a `001_ticket`, como o próprio exemplo manda; `createTicket` grava a área de quem
 abre, `fieldsOf(caller, fields).area` (nula para quem constrói ou para o gerente sem área);
-`listTickets`, `countTickets`, `getTicket` e `changeTicketStatus` leem `areaOf`: `NONE` devolve a
-lista vazia, `{}` em `getTicket` e nenhuma linha mudada em `changeTicketStatus`, sem ler o banco;
-`AREA` passa `area` como `$n`; `ALL` passa `NULL`. `ticketSummary` e `ticketsByWeek` são só do
-gerente (`MANAGERS`) e ficam sem filtro, com um comentário que diz por quê.
+`listTickets`, `countTickets` e `getTicket`, as leituras do atendente (`WORKERS`), leem `areaOf`:
+`NONE` devolve a lista vazia, e `{}` em `getTicket`, sem ler o banco; `AREA` passa `area` como `$n`;
+`ALL` passa `NULL`. `changeTicketStatus`, `ticketSummary` e `ticketsByWeek` são só do gerente
+(`MANAGERS`, trancados na operação) e ficam sem filtro, com um comentário que diz por quê.
 
 A forma de cada coisa:
 
