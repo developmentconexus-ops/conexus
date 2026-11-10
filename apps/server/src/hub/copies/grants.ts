@@ -1,7 +1,7 @@
 import type { CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { SqlAnswer } from '../../platform/company-postgres.ts'
-import type { ReadTx } from '../../platform/database.ts'
+import type { DatabaseUrl, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { companyScope, personScope, storedCopy, syncOf } from './store.ts'
@@ -48,6 +48,24 @@ async function undoRelease(deps: CopiesDeps, input: OfRelease): Promise<void> {
 }
 
 /**
+ * The release in the company's database, with no transaction open (data D22): the Projeto's schema
+ * and logins by their owner, `hub/apps`, then the `GRANT`, which repeats safely. None when the
+ * Projeto's database did not open or the company has no sync login yet.
+ */
+export async function grantedInDatabase(
+  deps: CopiesDeps,
+  input: InCompany & { projectId: ProjectId },
+  release: { name: string; sync: DatabaseUrl | undefined },
+): Promise<SqlAnswer | undefined> {
+  const opened = await deps.apps().projectDatabase(input)
+  if (opened.kind !== 'OPEN' || release.sync === undefined) return undefined
+  return deps.companyPostgres.grantCopy(release.sync, {
+    name: release.name,
+    projectId: input.projectId,
+  })
+}
+
+/**
  * Liberar: the release's row first, then, with no transaction open (data D22), the Projeto's
  * schema and logins by their owner, `hub/apps`, and the `GRANT`. A silent database answers 503
  * and the row this act made is taken back by a second transaction, so the Projeto reads nothing
@@ -72,11 +90,7 @@ export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<voi
     }
   })
   const unavailable = new Failure('COPY_DATABASE_UNAVAILABLE')
-  const opened = await deps.apps().projectDatabase(input)
-  const granted =
-    opened.kind === 'OPEN' && sync !== undefined
-      ? await deps.companyPostgres.grantCopy(sync, { name, projectId: input.projectId })
-      : undefined
+  const granted = await grantedInDatabase(deps, input, { name, sync })
   if (granted?.kind !== 'DONE') {
     if (made) await undoRelease(deps, input)
     if (granted === undefined) throw unavailable

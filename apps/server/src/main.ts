@@ -189,10 +189,15 @@ export function subjectsOf(deps: {
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
+  // The copies come next: the Builder's proposing is theirs, and a proposal comes long after.
+  const connectors = createConnectors({
+    ...{ ...deps, identity, door: apps.connectorCall },
+    propose: () => copies.propose,
+  })
   const copies = createCopies({
     ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
     ...{ projects: projects.ports, connectors: () => connectors.copies, apps: () => apps },
+    prove: () => connectors.builder.provePage,
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })

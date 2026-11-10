@@ -114,7 +114,7 @@ function copiesPage(copies: CopyIn[]) {
   return {
     ...OWNER,
     ...projectsPage(COMPANY.id),
-    [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies }),
+    [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies, proposals: [] }),
     [`GET ${COMPANY_API}/copy-models`]: MODELS,
     [`GET ${COMPANY_API}/connections`]: CONNECTIONS,
     // The list's links preload each copy's page.

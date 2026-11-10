@@ -39,8 +39,8 @@ export const APP_DATA_TOOL = { read: 'app_data_read', check: 'app_data_check' } 
 
 /**
  * The Builder's own tools besides the workspace's: the web, the memory's recall, the check, the
- * three of a Projeto's granted connections and the two that read its app's data (the server proves
- * them equal to its own, code C27).
+ * three of a Projeto's granted connections, the two that read its app's data and the one that
+ * proposes a copy (Capacidade 3); the server proves them equal to its own (code C27).
  */
 export const BUILDER_TOOL = {
   webSearch: 'web_search',
@@ -52,6 +52,7 @@ export const BUILDER_TOOL = {
   connectorNoteSave: 'connector_note_save',
   appDataRead: APP_DATA_TOOL.read,
   appDataCheck: APP_DATA_TOOL.check,
+  copyPropose: 'copy_propose',
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

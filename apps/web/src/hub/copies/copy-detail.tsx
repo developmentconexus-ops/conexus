@@ -20,6 +20,7 @@ import {
   countText,
   durationText,
   INTERVAL_LABEL,
+  modeText,
   NO_RUNS_YET,
   outcomeText,
   RUNS_TITLE,
@@ -152,8 +153,12 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>
         </p>
         <p className="break-words">
+          <span className="text-text-2">Modo </span>
+          {modeText(copy.mode)}
+        </p>
+        <p className="break-words">
           <span className="text-text-2">Releitura </span>
-          {windowText(copy.shown)}
+          {windowText(copy.mode, copy.shown)}
         </p>
       </section>
       <section aria-label={RUNS_TITLE} className="flex min-w-0 flex-col gap-md">

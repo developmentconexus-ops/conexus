@@ -163,7 +163,28 @@ test('Cópias: no celular, a lista vira linhas que quebram', async () => {
     const row = await rowOf('Vendas')
     expect(row.tagName).toBe('LI')
     expect(within(row).getByText('Em dia')).toBeTruthy()
+    expect(within(row).getByText('por janela de 30 dias')).toBeTruthy()
     expect(within(row).getByText('118.402 linhas · 30 min')).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
   })
+})
+
+test('o modo da cópia', async () => {
+  const whole = { kind: 'WHOLE' } as const
+  const changes = { kind: 'CHANGES' } as const
+  openCopies(
+    server,
+    {
+      copies: [
+        copy(),
+        copy({ id: CLIENTES, name: 'clientes', label: 'Clientes', mode: changes }),
+        copy({ id: PRODUTOS, name: 'produtos', label: 'Produtos', mode: whole }),
+      ],
+    },
+    LIST,
+  )
+  // The words come from `copy.mode`, as the Hub classified it; the screen never reads the definition.
+  expect(within(await rowOf('Vendas')).getByText('por janela de 30 dias')).toBeTruthy()
+  expect(within(await rowOf('Clientes')).getByText('só o alterado')).toBeTruthy()
+  expect(within(await rowOf('Produtos')).getByText('cópia inteira')).toBeTruthy()
 })

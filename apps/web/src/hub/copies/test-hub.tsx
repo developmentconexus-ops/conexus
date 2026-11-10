@@ -1,14 +1,23 @@
-import type { Connection, CopyModelSummary, CopyRun, CopySummary } from '@conexus/hub-api'
+import type {
+  Connection,
+  CopyModelSummary,
+  CopyProposalSummary,
+  CopyRun,
+  CopySummary,
+} from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   ConnectionId,
   ConnectorId,
   CopyId,
+  CopyProposalId,
   CopyRunId,
   changeCopyInterval,
+  EnableCopy,
   listConnections,
   listCopies,
   listCopyRuns,
+  PersonId,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
@@ -22,6 +31,8 @@ import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 export const VENDAS = CopyId.parse('11111111-1111-4111-8111-111111111111')
 export const CLIENTES = CopyId.parse('22222222-2222-4222-8222-222222222222')
 export const PRODUTOS = CopyId.parse('44444444-4444-4444-8444-444444444444')
+export const DEVOLUCOES = CopyProposalId.parse('55555555-5555-4555-8555-555555555555')
+export const DEVOLUCOES_COPY = CopyId.parse('66666666-6666-4666-8666-666666666666')
 const MATRIZ = ConnectionId.parse('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
 const SANKHYA = ConnectorId.parse('sankhya')
 const RUN_ID = CopyRunId.parse('33333333-3333-4333-8333-333333333333')
@@ -52,6 +63,7 @@ export function copy(fields: Partial<CopySummary> = {}): CopySummary {
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     run: copyRun(),
     rows: 118402,
+    mode: { kind: 'WINDOW', days: 30 },
     projects: [{ id: PEDIDOS.id, name: 'Vendedores' }],
     shown: {
       query: 'SELECT NUNOTA, CODPARC\nFROM TGFCAB',
@@ -59,6 +71,28 @@ export function copy(fields: Partial<CopySummary> = {}): CopySummary {
       changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
     },
+    ...fields,
+  })
+}
+
+/** A proposal as the Hub lists it: the Builder's `devolucoes` of the Matriz, a whole copy, more than 50 rows in its proof. */
+export function proposal(fields: Partial<CopyProposalSummary> = {}): CopyProposalSummary {
+  return listCopies.success.body.shape.proposals.element.parse({
+    id: DEVOLUCOES,
+    name: 'devolucoes',
+    label: 'Devoluções',
+    connection: { id: MATRIZ, name: 'Matriz', connector: SANKHYA },
+    project: { id: PEDIDOS.id, name: 'Vendedores' },
+    shown: {
+      query: 'SELECT ID_DEVOLUCAO\nFROM DEVOLUCOES',
+      key: ['ID_DEVOLUCAO'],
+      changedSince: null,
+      window: null,
+    },
+    mode: { kind: 'WHOLE' },
+    proved: { rows: 50, more: true },
+    proposedBy: { id: PersonId.parse('person-ana'), name: 'Ana Lima' },
+    state: 'OPEN',
     ...fields,
   })
 }
@@ -90,6 +124,8 @@ export type Answers = {
   write?: () => Response | undefined
   /** What the list of copies answers instead of its rows. */
   list?: () => Response | undefined
+  /** What a proposal's Ligar or Dispensar answers instead of the Hub's success. */
+  decide?: () => Response | undefined
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
@@ -107,6 +143,41 @@ function runsOf(held: Held, id: unknown, request: Request) {
   return HttpResponse.json({ copy: found, runs: held.runs ?? [], next })
 }
 
+/** The Builder's proposals of `held`: the list with those open or named, Ligar and Dispensar, each changing its state. */
+function proposalsOf(held: Held, note: (request: Request) => Promise<unknown>) {
+  const proposals = held.proposals ?? []
+  const answers = held.answers ?? {}
+  function listed(request: Request) {
+    const named = new URL(request.url).searchParams.get('proposalId')?.split(',') ?? []
+    const shown = proposals.filter((one) => one.state === 'OPEN' || named.includes(one.id))
+    return HttpResponse.json({ copies: held.copies, proposals: shown })
+  }
+  /** Ligar a proposal: the copy it becomes, released to its Projeto, and the proposal ACCEPTED. */
+  function accepted(proposalId: string) {
+    const found = proposals.find((one) => one.id === proposalId)
+    if (found === undefined) return refusal('NOT_FOUND')
+    if (found.state !== 'OPEN') return refusal('COPY_PROPOSAL_DECIDED')
+    found.state = 'ACCEPTED'
+    const made = copy({
+      ...{ id: DEVOLUCOES_COPY, name: found.name, label: found.label, run: null, rows: null },
+      ...{ mode: found.mode, shown: found.shown, projects: [found.project] },
+    })
+    held.copies.push(made)
+    return HttpResponse.json({ copy: made }, { status: 201 })
+  }
+  const dismiss = http.post(`${BASE}/copy-proposals/:id/dismiss`, async ({ request, params }) => {
+    await note(request)
+    const replaced = answers.decide?.()
+    if (replaced) return replaced
+    const found = proposals.find((one) => one.id === params.id)
+    if (found === undefined) return refusal('NOT_FOUND')
+    if (found.state === 'ACCEPTED') return refusal('COPY_PROPOSAL_DECIDED')
+    found.state = 'DISMISSED'
+    return HttpResponse.json({})
+  })
+  return { listed, accepted, dismiss }
+}
+
 /**
  * The Hub's copies on `server`: a list that changes as the writes land, the models, the connections
  * and the runs of each copy. `sent` holds every request, with its attempt key.
@@ -120,6 +191,7 @@ function copiesHub(
     later?: CopyRun[]
     models?: CopyModelSummary[]
     connections?: Connection[]
+    proposals?: CopyProposalSummary[]
     answers?: Answers
   },
 ) {
@@ -142,11 +214,10 @@ function copiesHub(
     Object.assign(found, fields)
     return HttpResponse.json({ copy: found })
   }
+  const proposals = proposalsOf(held, note)
   server.use(
-    http.get(
-      `${BASE}/copies`,
-      () => answers.list?.() ?? HttpResponse.json({ copies: held.copies }),
-    ),
+    http.get(`${BASE}/copies`, ({ request }) => answers.list?.() ?? proposals.listed(request)),
+    proposals.dismiss,
     http.get(`${BASE}/copy-models`, () => HttpResponse.json({ models: held.models ?? MODELS })),
     http.get(`${BASE}/connections`, () =>
       HttpResponse.json({
@@ -156,7 +227,8 @@ function copiesHub(
       }),
     ),
     http.post(`${BASE}/copies`, async ({ request }) => {
-      await note(request)
+      const body = EnableCopy.parse(await note(request))
+      if (body.from === 'PROPOSAL') return answers.decide?.() ?? proposals.accepted(body.proposalId)
       const replaced = answers.write?.()
       if (replaced) return replaced
       const made = copy({ id: CLIENTES, name: 'clientes', label: 'Clientes', run: null })

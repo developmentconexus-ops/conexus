@@ -2,6 +2,8 @@ import type {
   CompanyId,
   CopyId,
   CopyInterval,
+  CopyProposalId,
+  CopyProposalSummary,
   CopyRunFailureCode,
   CopySchedule,
   PersonId,
@@ -10,20 +12,25 @@ import type {
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
+  ConnectorId as ConnectorIdSchema,
   CopyId as CopyIdSchema,
+  CopyProposalId as CopyProposalIdSchema,
   PersonId as PersonIdSchema,
+  ProjectId as ProjectIdSchema,
 } from '@conexus/hub-api'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { Connectors } from '../connectors/public.ts'
-import { CopyDefinition, CopyName } from '../connectors/public.ts'
+import { CopyDefinition, CopyName, connectionNamesOf } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import { personNameColumn } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import { copy } from './tables.ts'
+import { copyModeOf } from './mode.ts'
+import { copy, copyProposal } from './tables.ts'
 
 /** What the clock holds for a copy: its schedule, and the interval it was set with. */
 export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterval }>
@@ -72,6 +79,8 @@ export type CopiesDeps = {
   neon: NeonProjects
   companyPostgres: CompanyPostgres
   connectors: () => Connectors['copies']
+  /** One page of a proposed copy as the Builder's turn may read the connection, counted in its run (Capacidade 3). */
+  prove: () => Connectors['builder']['provePage']
   apps: () => ProjectDatabase
   clock: () => CopyClock
   log: FailureLog
@@ -155,4 +164,69 @@ export async function syncOf(
 ): Promise<DatabaseUrl | undefined> {
   const ready = await deps.projects.readyDatabaseOf(tx, companyId)
   return ready?.host == null ? undefined : deps.companyPostgres.syncAddress(ready.host)
+}
+
+/**
+ * The company's open proposals, and those `named` by id whatever their state (the conversation's
+ * cards), as the list states them; one of a Projeto deleted or marked is left out.
+ */
+export async function proposalsOf(
+  deps: Pick<CopiesDeps, 'projects'>,
+  tx: ReadTx,
+  input: { companyId: CompanyId; named: readonly CopyProposalId[] },
+): Promise<CopyProposalSummary[]> {
+  const { companyId } = input
+  const rows = await tx
+    .select({ row: copyProposal, proposedByName: personNameColumn(copyProposal.proposedBy) })
+    .from(copyProposal)
+    .where(
+      and(
+        eq(copyProposal.companyId, companyId),
+        or(
+          eq(copyProposal.state, 'OPEN'),
+          input.named.length === 0 ? undefined : inArray(copyProposal.id, [...input.named]),
+        ),
+      ),
+    )
+    .orderBy(copyProposal.name)
+  const projects = await deps.projects.liveProjectNamesOf(tx, {
+    companyId,
+    ids: rows.map(({ row }) => ProjectIdSchema.parse(row.projectId)),
+  })
+  const connections = await connectionNamesOf(tx, {
+    companyId,
+    ids: rows.map(({ row }) => ConnectionIdSchema.parse(row.connectionId)),
+  })
+  return rows.flatMap(({ row, proposedByName }) => {
+    const projectId = ProjectIdSchema.parse(row.projectId)
+    const project = projects.get(projectId)
+    if (project === undefined) return []
+    const definition = CopyDefinition.parse(row.definition)
+    const connectionId = ConnectionIdSchema.parse(row.connectionId)
+    const linked = connections.get(connectionId)
+    const { window } = definition
+    return [
+      {
+        id: CopyProposalIdSchema.parse(row.id),
+        name: row.name,
+        label: row.label,
+        connection: {
+          id: connectionId,
+          name: linked?.name ?? '',
+          connector: linked?.connector ?? ConnectorIdSchema.parse(row.connectorId),
+        },
+        project: { id: projectId, name: project },
+        shown: {
+          query: definition.source.sql,
+          key: definition.key,
+          changedSince: definition.changedSince,
+          window: window === undefined ? null : { column: window.column, days: window.days },
+        },
+        mode: copyModeOf(definition),
+        proved: { rows: row.provedRows, more: row.provedMore },
+        proposedBy: { id: PersonIdSchema.parse(row.proposedBy), name: proposedByName ?? '' },
+        state: row.state,
+      },
+    ]
+  })
 }

@@ -64,8 +64,8 @@ export async function releasing(
   const ids = new Map<string, CopyId>()
   for (const name of names) {
     const copy = await hub.copies.enable({
-      ...{ companyId, personId, connectionId },
-      source: { kind: 'MODEL', model: CopyName.parse(name) },
+      ...{ companyId, personId },
+      source: { kind: 'MODEL', connectionId, model: CopyName.parse(name) },
       interval: '30m',
       attemptKey: randomUUID(),
     })
@@ -98,6 +98,7 @@ export function copiesWithoutHubDatabase(hub: Hub) {
     ...{ database: down, identity: hub.identity, projects: hub.projects.ports },
     ...{ neon: hub.neon.neon, companyPostgres: hub.postgres.companyPostgres },
     connectors: () => hub.connectors.copies,
+    prove: () => hub.connectors.builder.provePage,
     apps: () => hub.apps,
     clock: () => {
       throw new Error('the view reads no clock')

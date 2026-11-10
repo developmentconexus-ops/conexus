@@ -1,6 +1,8 @@
-import type { CompanyId, Person } from '@conexus/hub-api'
+import type { CompanyId, EnableCopy, Person } from '@conexus/hub-api'
 import {
+  CopyProposalId,
   changeCopyInterval,
+  dismissCopyProposal,
   enableCopy,
   grantProjectCopy,
   listCopies,
@@ -20,20 +22,33 @@ function inCompany(input: { person: Person; params: { companyId: CompanyId } }) 
   return { companyId: input.params.companyId, personId: input.person.id }
 }
 
+/** What the body turns a copy on from: a template of a connection, or a proposal. */
+function sourceOf(body: EnableCopy) {
+  return body.from === 'MODEL'
+    ? ({ kind: 'MODEL', connectionId: body.connectionId, model: body.model } as const)
+    : ({ kind: 'PROPOSAL', proposalId: body.proposalId } as const)
+}
+
 /** The company's copies; the service admits the person on each (`readCopies` or `manageCopies`, S10). */
 export function registerCopyRoutes(app: FastifyInstance, copies: CopyService): void {
-  serve(app, listCopies, async (input) => answer({ copies: await copies.list(inCompany(input)) }))
+  serve(app, listCopies, async (input) => {
+    const named = input.query.proposalId?.split(',').map((id) => CopyProposalId.parse(id)) ?? []
+    return answer(await copies.list({ ...inCompany(input), named }))
+  })
   serve(app, listCopyModels, async (input) =>
     answer({ models: await copies.models(inCompany(input)) }),
   )
   serve(app, enableCopy, async (input) => {
-    const { connectionId, model, interval } = input.body
     const made = await copies.enable({
       ...inCompany(input),
-      ...{ connectionId, interval, attemptKey: input.attemptKey },
-      source: { kind: 'MODEL', model },
+      ...{ interval: input.body.interval, attemptKey: input.attemptKey },
+      source: sourceOf(input.body),
     })
     return answer({ copy: await copies.summaryOf({ ...inCompany(input), copyId: made }) })
+  })
+  serve(app, dismissCopyProposal, async (input) => {
+    await copies.dismiss({ ...inCompany(input), proposalId: input.params.proposalId })
+    return answer({})
   })
   serve(app, pauseCopy, async (input) =>
     answer({ copy: await copies.pause({ ...inCompany(input), copyId: input.params.copyId }) }),

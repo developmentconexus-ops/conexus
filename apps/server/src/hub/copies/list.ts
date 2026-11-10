@@ -3,6 +3,8 @@ import type {
   CopyId,
   CopyInterval,
   CopyModelSummary,
+  CopyProposalId,
+  CopyProposalSummary,
   CopyRun,
   CopySchedule,
   CopySummary,
@@ -22,7 +24,7 @@ import { pageKey, pageOf } from '../../platform/pages.ts'
 import { connectionNamesOf } from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps, CopyState, InCompany, StoredCopy } from './store.ts'
-import { parsedCopy, personScope, storedCopy } from './store.ts'
+import { parsedCopy, personScope, proposalsOf, storedCopy } from './store.ts'
 import { copy, copyRun, projectCopy } from './tables.ts'
 
 /** The runs of a copy a page holds. */
@@ -156,6 +158,19 @@ async function summaries(
   })
 }
 
+/** The list's page: the company's copies, and its open proposals with those `named` whatever their state (Capacidade 3). */
+async function listed(
+  deps: CopiesDeps,
+  input: InCompany & { named: readonly CopyProposalId[] },
+): Promise<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }> {
+  const copies = await summaries(deps, input)
+  const proposals = await deps.database.read(personScope(input), async (tx) => {
+    await deps.identity.admitMember({ tx, ...input, action: 'readCopies' })
+    return proposalsOf(deps, tx, input)
+  })
+  return { copies, proposals }
+}
+
 /** The copy models the connectors offer. */
 async function models(deps: CopiesDeps, input: InCompany): Promise<CopyModelSummary[]> {
   await deps.database.read(personScope(input), (tx) =>
@@ -235,4 +250,4 @@ async function ofProject(deps: CopiesDeps, input: InCompany & { projectId: Proje
   })
 }
 
-export { models, ofProject, projectCopyRows, runs, summaries }
+export { listed, models, ofProject, projectCopyRows, runs, summaries }

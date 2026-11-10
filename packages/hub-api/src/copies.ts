@@ -3,6 +3,7 @@ import { CompanyId, Next, Page } from './companies.ts'
 import { ConnectorId } from './company-roles.ts'
 import { ConnectionId } from './connectors.ts'
 import type { FailureCode } from './failures.ts'
+import { PersonId } from './identity.ts'
 import { ProjectId } from './library-ids.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 
@@ -95,15 +96,73 @@ export const CopyModelSummary = z.object({
 })
 export type CopyModelSummary = z.infer<typeof CopyModelSummary>
 
-export const EnableCopy = z.object({
+/** A copy the Builder proposed in a Projeto's conversation, until a person turns it on or dismisses it (Capacidade 3). */
+export const CopyProposalId = z.uuid().brand('CopyProposalId')
+export type CopyProposalId = z.infer<typeof CopyProposalId>
+
+/** Ligar from one of the connector's templates. */
+export const EnableCopyFromModel = z.object({
+  from: z.literal('MODEL'),
   connectionId: ConnectionId,
   model: z.string().max(40),
   interval: CopyInterval,
 })
+export type EnableCopyFromModel = z.infer<typeof EnableCopyFromModel>
+
+/** What a copy is turned on from: a template of the connection's connector, or the Builder's proposal. */
+export const EnableCopy = z.discriminatedUnion('from', [
+  EnableCopyFromModel,
+  z.object({ from: z.literal('PROPOSAL'), proposalId: CopyProposalId, interval: CopyInterval }),
+])
 export type EnableCopy = z.infer<typeof EnableCopy>
+
+/** Where a proposal stands: open until a person turns it on (ACCEPTED) or dismisses it. */
+export const CopyProposalState = z.enum(['OPEN', 'ACCEPTED', 'DISMISSED'])
+export type CopyProposalState = z.infer<typeof CopyProposalState>
+
+export const CopyProposalSummary = z.object({
+  id: CopyProposalId,
+  // The table it would make, `sync.<name>`.
+  name: z.string(),
+  label: z.string(),
+  connection: z.object({ id: ConnectionId, name: z.string(), connector: ConnectorId }),
+  project: z.object({ id: ProjectId, name: z.string() }),
+  shown: CopySummary.shape.shown,
+  // The same words as a copy's own row, from the definition alone.
+  mode: CopyMode,
+  // The page of proof: its rows, never one of them, and whether more followed.
+  proved: z.object({ rows: z.int().min(0), more: z.boolean() }),
+  proposedBy: z.object({ id: PersonId, name: z.string() }),
+  state: CopyProposalState,
+})
+export type CopyProposalSummary = z.infer<typeof CopyProposalSummary>
+
+/** The most proposals one list may name by id (the conversation's cards). */
+export const PROPOSALS_NAMED_MAX = 20
+
+/** What `copy_propose` answers when the proposal is saved: the card in the conversation is drawn from it. */
+export const CopyProposed = z.object({
+  kind: z.literal('PROPOSED'),
+  proposalId: CopyProposalId,
+  name: z.string(),
+  connection: z.object({ name: z.string(), connector: ConnectorId }),
+  key: z.array(z.string()),
+  mode: CopyMode,
+  rows: z.int().min(0),
+  more: z.boolean(),
+})
+export type CopyProposed = z.infer<typeof CopyProposed>
 
 const InCompany = z.object({ companyId: CompanyId })
 const OfCopy = InCompany.extend({ copyId: CopyId })
+const OfProposal = InCompany.extend({ proposalId: CopyProposalId })
+/** Up to 20 proposals by id, comma-separated: each comes back whatever its state. */
+const NamedProposals = z.object({
+  proposalId: z
+    .string()
+    .regex(new RegExp(`^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36}){0,${PROPOSALS_NAMED_MAX - 1}}$`))
+    .optional(),
+})
 const OfRelease = InCompany.extend({ projectId: ProjectId, copyId: CopyId })
 const BASE = '/api/companies/{companyId}/copies'
 const READ_FAILURES = [
@@ -116,13 +175,17 @@ const Copy = z.object({ copy: CopySummary })
 
 export const listCopies = defineOperation({
   id: 'listCopies',
-  summary: 'Lists the company’s copies, each with its connection, schedule and last run.',
+  summary:
+    'Lists the company’s copies, each with its connection, schedule and last run, and the open proposals, with those named by id whatever their state.',
   access: 'session',
   method: 'GET',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InCompany },
-  success: { status: 200, body: z.object({ copies: z.array(CopySummary) }) },
+  input: { params: InCompany, query: NamedProposals },
+  success: {
+    status: 200,
+    body: z.object({ copies: z.array(CopySummary), proposals: z.array(CopyProposalSummary) }),
+  },
   failures: READ_FAILURES,
 })
 
@@ -140,7 +203,7 @@ export const listCopyModels = defineOperation({
 
 export const enableCopy = defineOperation({
   id: 'enableCopy',
-  summary: `Turns a copy on from one of the company’s connections, keyed by ${ATTEMPT_KEY_HEADER}: its table in the company’s database and its schedule.`,
+  summary: `Turns a copy on from a template of one of the company’s connections, or from the Builder’s proposal (released to its Projeto), keyed by ${ATTEMPT_KEY_HEADER}: its table in the company’s database and its schedule.`,
   access: 'session',
   method: 'POST',
   path: BASE,
@@ -152,7 +215,20 @@ export const enableCopy = defineOperation({
     ...READ_FAILURES,
     ...(['IDEMPOTENCY_CONFLICT', 'COPY_EXISTS', 'COPY_MODEL_UNKNOWN'] as const),
     ...(['COPY_CONNECTION_NOT_READY', 'COPY_DATABASE_UNAVAILABLE', 'HUB_UPDATING'] as const),
+    ...(['COPY_PROPOSAL_DECIDED', 'NOT_IN_ROLE'] as const),
   ],
+})
+
+export const dismissCopyProposal = defineOperation({
+  id: 'dismissCopyProposal',
+  summary: 'Dismisses an open copy proposal; one dismissed already answers the same.',
+  access: 'session',
+  method: 'POST',
+  path: '/api/companies/{companyId}/copy-proposals/{proposalId}/dismiss',
+  bodyLimit: 1024,
+  input: { params: OfProposal },
+  success: { status: 200, body: z.object({}) },
+  failures: [...READ_FAILURES, 'COPY_PROPOSAL_DECIDED'],
 })
 
 export const pauseCopy = defineOperation({

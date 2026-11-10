@@ -1,4 +1,10 @@
-import type { CopyInterval, CopyRun, CopySummary } from '@conexus/hub-api'
+import type {
+  CopyInterval,
+  CopyMode,
+  CopyProposalSummary,
+  CopyRun,
+  CopySummary,
+} from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
 import { unconfirmedText } from '../../platform/hub.ts'
 
@@ -17,6 +23,11 @@ export const RUN_REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
 export const NO_SCHEDULE = '—'
 export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
 export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
+export const PROPOSAL_WORD = 'Proposta'
+export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
+export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
+export const MANAGERS_ENABLE =
+  'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.'
 
 /** The six intervals, each in its words once (the column, the detail and the dialog read these). */
 export const INTERVAL_LABEL = {
@@ -81,11 +92,32 @@ export function durationText(run: Pick<CopyRun, 'startedAt' | 'endedAt'>): strin
     : `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
-/** What each run rereads, true to the engine: with a date of change, what changed since the last pass (and the window, if any); without it, the whole source, window or not. */
-export function windowText(shown: Pick<CopySummary['shown'], 'changedSince' | 'window'>): string {
-  const { changedSince, window } = shown
-  if (changedSince === null) return 'A fonte inteira, a cada rodada.'
+/** The copy's mode in words (Capacidade 3), from `copy.mode` as the Hub classified it; the screens never classify. */
+export function modeText(mode: CopyMode): string {
+  switch (mode.kind) {
+    case 'WHOLE':
+      return 'cópia inteira'
+    case 'WINDOW':
+      return `por janela de ${mode.days} dias`
+    case 'CHANGES':
+      return 'só o alterado'
+  }
+}
+
+/** What each run rereads, as the mode says, with the window's column from `shown`. */
+export function windowText(mode: CopyMode, shown: Pick<CopySummary['shown'], 'window'>): string {
   const first = 'A primeira carga traz tudo; a cada rodada relê o que mudou desde a anterior'
-  if (window === null) return `${first}.`
-  return `${first} e ${window.column} dos últimos ${window.days} dias.`
+  switch (mode.kind) {
+    case 'WHOLE':
+      return 'A fonte inteira, a cada rodada.'
+    case 'CHANGES':
+      return `${first}.`
+    case 'WINDOW':
+      return `${first} e ${shown.window?.column ?? 'a janela'} dos últimos ${mode.days} dias.`
+  }
+}
+
+/** The page of proof in words: "teste: 50 linhas", "teste: mais de 50 linhas". */
+export function provedText(proved: CopyProposalSummary['proved']): string {
+  return `teste: ${proved.more ? 'mais de ' : ''}${countText(proved.rows)} linhas`
 }

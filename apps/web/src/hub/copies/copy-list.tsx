@@ -1,4 +1,4 @@
-import type { CompanyId, CopySummary } from '@conexus/hub-api'
+import type { CompanyId, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -20,6 +20,7 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { ProposalPhoneRow, ProposalTableRow } from './copy-proposal.tsx'
 import { IntervalDialog } from './interval.tsx'
 import { NewCopy } from './new-copy.tsx'
 import type { RunRequest } from './queries.ts'
@@ -30,6 +31,7 @@ import {
   countText,
   durationText,
   INTERVAL_LABEL,
+  modeText,
   NO_COPIES,
   NO_SCHEDULE,
   outcomeText,
@@ -216,8 +218,11 @@ function CopyTableRow(props: { companyId: CompanyId; copy: CopySummary; onNote: 
       <TableCell className={`${CELL} max-w-36 truncate`} title={copy.connection.name}>
         {copy.connection.name}
       </TableCell>
-      <TableCell className={CELL}>
-        <CopyLink companyId={companyId} copy={copy} />
+      <TableCell className={`${CELL} whitespace-normal`}>
+        <div className="flex flex-col">
+          <CopyLink companyId={companyId} copy={copy} />
+          <span className="text-text-2">{modeText(copy.mode)}</span>
+        </div>
       </TableCell>
       <TableCell className={`${CELL} whitespace-normal`}>
         <div className="flex flex-col items-start gap-xs">
@@ -254,9 +259,19 @@ const HEADS = [
   'Projetos',
 ] as const
 
-type Props = { companyId: CompanyId; copies: CopySummary[]; onNote: (note?: Note) => void }
+type Props = {
+  companyId: CompanyId
+  copies: CopySummary[]
+  proposals: CopyProposalSummary[]
+  onNote: (note?: Note) => void
+}
 
-function CopyTable({ companyId, copies, onNote }: Props) {
+/** A refusal of a proposal's Ligar or Dispensar, as the page's note. */
+function refusedOf(onNote: Props['onNote']) {
+  return (text: string) => onNote({ kind: 'error', text })
+}
+
+function CopyTable({ companyId, copies, proposals, onNote }: Props) {
   return (
     <Table>
       <TableHeader>
@@ -272,6 +287,15 @@ function CopyTable({ companyId, copies, onNote }: Props) {
         </TableRow>
       </TableHeader>
       <TableBody>
+        {proposals.map((proposal) => (
+          <ProposalTableRow
+            key={proposal.id}
+            companyId={companyId}
+            proposal={proposal}
+            onRefused={refusedOf(onNote)}
+            cell={CELL}
+          />
+        ))}
         {copies.map((copy) => (
           <CopyTableRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
         ))}
@@ -295,6 +319,7 @@ function CopyPhoneRow(props: { companyId: CompanyId; copy: CopySummary; onNote: 
         </div>
         <div className="flex flex-wrap items-center gap-x-md gap-y-xs text-text-2">
           <StateBadge copy={copy} />
+          <span>{modeText(copy.mode)}</span>
           {copy.run !== null && <span>{dayAndHour(copy.run.startedAt)}</span>}
         </div>
         <RunPhrase copy={copy} />
@@ -310,7 +335,7 @@ function CopyPhoneRow(props: { companyId: CompanyId; copy: CopySummary; onNote: 
 /** The copies of the read in the shape of the screen: a table, or on a phone rows that break. */
 function Copies(props: {
   companyId: CompanyId
-  read: UseQueryResult<{ copies: CopySummary[] }>
+  read: UseQueryResult<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }>
   onNote: Props['onNote']
 }) {
   const { companyId, read, onNote } = props
@@ -319,11 +344,21 @@ function Copies(props: {
   if (read.isError) {
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   }
-  const { copies } = read.data
-  if (copies.length === 0) return <Empty>{NO_COPIES}</Empty>
-  if (!phone) return <CopyTable companyId={companyId} copies={copies} onNote={onNote} />
+  const { copies, proposals } = read.data
+  if (copies.length === 0 && proposals.length === 0) return <Empty>{NO_COPIES}</Empty>
+  if (!phone) {
+    return <CopyTable companyId={companyId} copies={copies} proposals={proposals} onNote={onNote} />
+  }
   return (
     <List>
+      {proposals.map((proposal) => (
+        <ProposalPhoneRow
+          key={proposal.id}
+          companyId={companyId}
+          proposal={proposal}
+          onRefused={refusedOf(onNote)}
+        />
+      ))}
       {copies.map((copy) => (
         <CopyPhoneRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
       ))}
@@ -332,9 +367,10 @@ function Copies(props: {
 }
 
 /**
- * **Cópias** (Capacidade 2, U4; web W29): every copy of the company with its source, its state and
- * last run, its rows, interval and Projetos, and the actions of its row. Empty, it says what a copy
- * is and offers **Ligar uma cópia**. The list follows itself while a run is open.
+ * **Cópias** (Capacidade 2, U4; web W29): every copy of the company with its source, its mode, its
+ * state and last run, its rows, interval and Projetos, and the actions of its row; above them the
+ * Builder's open proposals, each with **Ligar** and **Dispensar** (Capacidade 3). Empty, it says what
+ * a copy is and offers **Ligar uma cópia**. The list follows itself while a run is open.
  */
 export function CopyList({ companyId }: { companyId: CompanyId }) {
   const requests = useRunRequests()

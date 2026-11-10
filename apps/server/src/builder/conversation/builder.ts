@@ -82,15 +82,16 @@ function dataFor(
   })
 }
 
-/** The Builder's three connector tools, its notebook's write included. */
+/** The Builder's connector tools, its notebook's write included, and `copy_propose` where a connector copies. */
 function builderConnectorTools(
   deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
   granted: readonly GrantedConnection[],
   ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
 ): ToolsInput {
   const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
-  const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
-  return connectorTools(access, { noteSave: true, save })
+  const { access, save, propose } = builderAccess(deps.connectors, granted, who, deps.log)
+  const copying = granted.filter((each) => each.copies)
+  return connectorTools(access, { noteSave: true, save, propose: { copying, call: propose } })
 }
 
 /** The Builder's memory words, and its recall of what the observation folded. */

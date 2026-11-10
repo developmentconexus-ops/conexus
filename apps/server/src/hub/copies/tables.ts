@@ -152,8 +152,8 @@ export const projectCopy = copies.table(
   ],
 )
 
-/** The page of proof `copy_proposal.proved_rows` counts, the size of one page of the copy read. */
-export const PROOF_PAGE_ROWS = 50
+/** The page of proof `copy_proposal.proved_rows` counts: the connectors' `PROOF_PAGE_ROWS`, kept here so the tables load alone. */
+const PROOF_PAGE_ROWS = 50
 
 /**
  * A copy the Builder proposed in a Projeto's conversation (Capacity 3): the definition it wrote, the
