@@ -26,6 +26,8 @@ import { Route as AppCompaniesCompanyIdAgentsIndexRouteImport } from './routes/_
 import { Route as AppCompaniesCompanyIdAutomationsIndexRouteImport } from './routes/_app/companies/$companyId/automations.index.tsx'
 import { Route as AppCompaniesCompanyIdAutomationsAutomationIdRouteImport } from './routes/_app/companies/$companyId/automations.$automationId.tsx'
 import { Route as AppCompaniesCompanyIdConversationsConversationIdRouteImport } from './routes/_app/companies/$companyId/conversations/$conversationId.tsx'
+import { Route as AppCompaniesCompanyIdCopiesIndexRouteImport } from './routes/_app/companies/$companyId/copies.index.tsx'
+import { Route as AppCompaniesCompanyIdCopiesCopyIdRouteImport } from './routes/_app/companies/$companyId/copies.$copyId.tsx'
 import { Route as AppCompaniesCompanyIdIntegrationsIndexRouteImport } from './routes/_app/companies/$companyId/integrations.index.tsx'
 import { Route as AppCompaniesCompanyIdIntegrationsConnectionIdRouteImport } from './routes/_app/companies/$companyId/integrations.$connectionId.tsx'
 import { Route as AppCompaniesCompanyIdProjectsIndexRouteImport } from './routes/_app/companies/$companyId/projects/index.tsx'
@@ -185,6 +187,18 @@ const AppCompaniesCompanyIdConversationsConversationIdRoute =
   AppCompaniesCompanyIdConversationsConversationIdRouteImport.update({
     id: '/conversations/$conversationId',
     path: '/conversations/$conversationId',
+    getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
+  } as any)
+const AppCompaniesCompanyIdCopiesIndexRoute =
+  AppCompaniesCompanyIdCopiesIndexRouteImport.update({
+    id: '/copies/',
+    path: '/copies/',
+    getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
+  } as any)
+const AppCompaniesCompanyIdCopiesCopyIdRoute =
+  AppCompaniesCompanyIdCopiesCopyIdRouteImport.update({
+    id: '/copies/$copyId',
+    path: '/copies/$copyId',
     getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
   } as any)
 const AppCompaniesCompanyIdIntegrationsIndexRoute =
@@ -435,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/operations/clients/': typeof AppOperationsClientsIndexRoute
   '/companies/$companyId/automations/$automationId': typeof AppCompaniesCompanyIdAutomationsAutomationIdRoute
   '/companies/$companyId/conversations/$conversationId': typeof AppCompaniesCompanyIdConversationsConversationIdRoute
+  '/companies/$companyId/copies/$copyId': typeof AppCompaniesCompanyIdCopiesCopyIdRoute
   '/companies/$companyId/integrations/$connectionId': typeof AppCompaniesCompanyIdIntegrationsConnectionIdRoute
   '/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
@@ -451,6 +466,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/welcome/team': typeof AppCompaniesCompanyIdWelcomeTeamRoute
   '/companies/$companyId/agents/': typeof AppCompaniesCompanyIdAgentsIndexRoute
   '/companies/$companyId/automations/': typeof AppCompaniesCompanyIdAutomationsIndexRoute
+  '/companies/$companyId/copies/': typeof AppCompaniesCompanyIdCopiesIndexRoute
   '/companies/$companyId/integrations/': typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   '/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
@@ -490,6 +506,7 @@ export interface FileRoutesByTo {
   '/operations/clients': typeof AppOperationsClientsIndexRoute
   '/companies/$companyId/automations/$automationId': typeof AppCompaniesCompanyIdAutomationsAutomationIdRoute
   '/companies/$companyId/conversations/$conversationId': typeof AppCompaniesCompanyIdConversationsConversationIdRoute
+  '/companies/$companyId/copies/$copyId': typeof AppCompaniesCompanyIdCopiesCopyIdRoute
   '/companies/$companyId/integrations/$connectionId': typeof AppCompaniesCompanyIdIntegrationsConnectionIdRoute
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/companies/$companyId/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
@@ -505,6 +522,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/welcome/team': typeof AppCompaniesCompanyIdWelcomeTeamRoute
   '/companies/$companyId/agents': typeof AppCompaniesCompanyIdAgentsIndexRoute
   '/companies/$companyId/automations': typeof AppCompaniesCompanyIdAutomationsIndexRoute
+  '/companies/$companyId/copies': typeof AppCompaniesCompanyIdCopiesIndexRoute
   '/companies/$companyId/integrations': typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   '/companies/$companyId/projects': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings': typeof AppCompaniesCompanyIdSettingsIndexRoute
@@ -550,6 +568,7 @@ export interface FileRoutesById {
   '/_app/operations/clients/': typeof AppOperationsClientsIndexRoute
   '/_app/companies/$companyId/automations/$automationId': typeof AppCompaniesCompanyIdAutomationsAutomationIdRoute
   '/_app/companies/$companyId/conversations/$conversationId': typeof AppCompaniesCompanyIdConversationsConversationIdRoute
+  '/_app/companies/$companyId/copies/$copyId': typeof AppCompaniesCompanyIdCopiesCopyIdRoute
   '/_app/companies/$companyId/integrations/$connectionId': typeof AppCompaniesCompanyIdIntegrationsConnectionIdRoute
   '/_app/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/_app/companies/$companyId_/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
@@ -566,6 +585,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId_/welcome/team': typeof AppCompaniesCompanyIdWelcomeTeamRoute
   '/_app/companies/$companyId/agents/': typeof AppCompaniesCompanyIdAgentsIndexRoute
   '/_app/companies/$companyId/automations/': typeof AppCompaniesCompanyIdAutomationsIndexRoute
+  '/_app/companies/$companyId/copies/': typeof AppCompaniesCompanyIdCopiesIndexRoute
   '/_app/companies/$companyId/integrations/': typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   '/_app/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/_app/companies/$companyId_/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
@@ -611,6 +631,7 @@ export interface FileRouteTypes {
     | '/operations/clients/'
     | '/companies/$companyId/automations/$automationId'
     | '/companies/$companyId/conversations/$conversationId'
+    | '/companies/$companyId/copies/$copyId'
     | '/companies/$companyId/integrations/$connectionId'
     | '/companies/$companyId/projects/$projectId'
     | '/companies/$companyId/settings/account'
@@ -627,6 +648,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/welcome/team'
     | '/companies/$companyId/agents/'
     | '/companies/$companyId/automations/'
+    | '/companies/$companyId/copies/'
     | '/companies/$companyId/integrations/'
     | '/companies/$companyId/projects/'
     | '/companies/$companyId/settings/'
@@ -666,6 +688,7 @@ export interface FileRouteTypes {
     | '/operations/clients'
     | '/companies/$companyId/automations/$automationId'
     | '/companies/$companyId/conversations/$conversationId'
+    | '/companies/$companyId/copies/$copyId'
     | '/companies/$companyId/integrations/$connectionId'
     | '/companies/$companyId/settings/account'
     | '/companies/$companyId/settings/defaults'
@@ -681,6 +704,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/welcome/team'
     | '/companies/$companyId/agents'
     | '/companies/$companyId/automations'
+    | '/companies/$companyId/copies'
     | '/companies/$companyId/integrations'
     | '/companies/$companyId/projects'
     | '/companies/$companyId/settings'
@@ -725,6 +749,7 @@ export interface FileRouteTypes {
     | '/_app/operations/clients/'
     | '/_app/companies/$companyId/automations/$automationId'
     | '/_app/companies/$companyId/conversations/$conversationId'
+    | '/_app/companies/$companyId/copies/$copyId'
     | '/_app/companies/$companyId/integrations/$connectionId'
     | '/_app/companies/$companyId/projects/$projectId'
     | '/_app/companies/$companyId_/settings/account'
@@ -741,6 +766,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId_/welcome/team'
     | '/_app/companies/$companyId/agents/'
     | '/_app/companies/$companyId/automations/'
+    | '/_app/companies/$companyId/copies/'
     | '/_app/companies/$companyId/integrations/'
     | '/_app/companies/$companyId/projects/'
     | '/_app/companies/$companyId_/settings/'
@@ -931,6 +957,20 @@ declare module '@tanstack/react-router' {
       path: '/conversations/$conversationId'
       fullPath: '/companies/$companyId/conversations/$conversationId'
       preLoaderRoute: typeof AppCompaniesCompanyIdConversationsConversationIdRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdRouteRoute
+    }
+    '/_app/companies/$companyId/copies/': {
+      id: '/_app/companies/$companyId/copies/'
+      path: '/copies'
+      fullPath: '/companies/$companyId/copies/'
+      preLoaderRoute: typeof AppCompaniesCompanyIdCopiesIndexRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdRouteRoute
+    }
+    '/_app/companies/$companyId/copies/$copyId': {
+      id: '/_app/companies/$companyId/copies/$copyId'
+      path: '/copies/$copyId'
+      fullPath: '/companies/$companyId/copies/$copyId'
+      preLoaderRoute: typeof AppCompaniesCompanyIdCopiesCopyIdRouteImport
       parentRoute: typeof AppCompaniesCompanyIdRouteRoute
     }
     '/_app/companies/$companyId/integrations/': {
@@ -1262,10 +1302,12 @@ interface AppCompaniesCompanyIdRouteRouteChildren {
   AppCompaniesCompanyIdIndexRoute: typeof AppCompaniesCompanyIdIndexRoute
   AppCompaniesCompanyIdAutomationsAutomationIdRoute: typeof AppCompaniesCompanyIdAutomationsAutomationIdRoute
   AppCompaniesCompanyIdConversationsConversationIdRoute: typeof AppCompaniesCompanyIdConversationsConversationIdRoute
+  AppCompaniesCompanyIdCopiesCopyIdRoute: typeof AppCompaniesCompanyIdCopiesCopyIdRoute
   AppCompaniesCompanyIdIntegrationsConnectionIdRoute: typeof AppCompaniesCompanyIdIntegrationsConnectionIdRoute
   AppCompaniesCompanyIdProjectsProjectIdRoute: typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   AppCompaniesCompanyIdAgentsIndexRoute: typeof AppCompaniesCompanyIdAgentsIndexRoute
   AppCompaniesCompanyIdAutomationsIndexRoute: typeof AppCompaniesCompanyIdAutomationsIndexRoute
+  AppCompaniesCompanyIdCopiesIndexRoute: typeof AppCompaniesCompanyIdCopiesIndexRoute
   AppCompaniesCompanyIdIntegrationsIndexRoute: typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   AppCompaniesCompanyIdProjectsIndexRoute: typeof AppCompaniesCompanyIdProjectsIndexRoute
   AppCompaniesCompanyIdProjectsProjectIdAboutRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
@@ -1290,6 +1332,8 @@ const AppCompaniesCompanyIdRouteRouteChildren: AppCompaniesCompanyIdRouteRouteCh
       AppCompaniesCompanyIdAutomationsAutomationIdRoute,
     AppCompaniesCompanyIdConversationsConversationIdRoute:
       AppCompaniesCompanyIdConversationsConversationIdRoute,
+    AppCompaniesCompanyIdCopiesCopyIdRoute:
+      AppCompaniesCompanyIdCopiesCopyIdRoute,
     AppCompaniesCompanyIdIntegrationsConnectionIdRoute:
       AppCompaniesCompanyIdIntegrationsConnectionIdRoute,
     AppCompaniesCompanyIdProjectsProjectIdRoute:
@@ -1298,6 +1342,8 @@ const AppCompaniesCompanyIdRouteRouteChildren: AppCompaniesCompanyIdRouteRouteCh
       AppCompaniesCompanyIdAgentsIndexRoute,
     AppCompaniesCompanyIdAutomationsIndexRoute:
       AppCompaniesCompanyIdAutomationsIndexRoute,
+    AppCompaniesCompanyIdCopiesIndexRoute:
+      AppCompaniesCompanyIdCopiesIndexRoute,
     AppCompaniesCompanyIdIntegrationsIndexRoute:
       AppCompaniesCompanyIdIntegrationsIndexRoute,
     AppCompaniesCompanyIdProjectsIndexRoute:

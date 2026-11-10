@@ -101,6 +101,7 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
     'Integrações',
     'Automações',
     'Agentes',
+    'Cópias',
     'Configurações',
   ])
   const home = nav.getByRole('link', { name: 'Início' })

@@ -1,6 +1,14 @@
 import type { CompanyId, CompanyMay } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
-import { BotIcon, FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
+import {
+  BotIcon,
+  CopyIcon,
+  FolderIcon,
+  HouseIcon,
+  PlugIcon,
+  SettingsIcon,
+  TimerIcon,
+} from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
 import {
@@ -31,7 +39,7 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The rail's places at the top: Automações follows Integrações and Agentes follows it, each for whoever the Hub says may. */
+/** The rail's places at the top: Automações follows Integrações, Agentes follows it and Cópias follows Agentes, each for whoever the Hub says may. */
 function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
   const { companyId, may } = props
   const inInicio = useMatches({
@@ -74,6 +82,14 @@ function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
           params={params}
           icon={BotIcon}
           label="Agentes"
+        />
+      )}
+      {may.manageCopies && (
+        <SidebarRailButton
+          to="/companies/$companyId/copies"
+          params={params}
+          icon={CopyIcon}
+          label="Cópias"
         />
       )}
     </>

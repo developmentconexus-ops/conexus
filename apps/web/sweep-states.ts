@@ -7,6 +7,7 @@ import { APP_STATES } from './sweep-app-states.ts'
 import { ASSISTANT_STATES } from './sweep-assistant-states.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { COPIES_STATES } from './sweep-copies-states.ts'
 import { DATA_STATES } from './sweep-data-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
@@ -58,6 +59,7 @@ export const STATES: State[] = [
   ...INTEGRATIONS_STATES,
   ...PROJECT_INTEGRATIONS_STATES,
   ...DATA_STATES,
+  ...COPIES_STATES,
   ...ROLES_STATES,
   {
     name: 'Central sem clientes',
