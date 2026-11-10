@@ -1,6 +1,6 @@
 ---
 name: conexus-build
-description: "Builds one unit of an approved Conexus step card as its own pull request on `main`: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
+description: "Builds one unit of an approved Conexus step card as one commit of the step's pull request: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
 ---
 
 # Build
@@ -44,8 +44,8 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
    `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
    C73 decide what leaves.
-7. One pull request for the unit, its commits kept; the tests and proofs its section names are green
-   locally ([delivery L9](../../../docs/guides/delivery.md)).
+7. One commit for the unit, kept on merge; the tests and proofs its section names are green
+   locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
