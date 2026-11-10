@@ -16,9 +16,9 @@ Nenhuma peça de código, prompt ou skill desta capacidade fala de um sistema de
 com o que a conexão oferece; a proposta de cópia é a definição que a Capacidade 2 já guarda como dado
 da empresa; só uma conexão cujo conector diz que sabe copiar recebe a ferramenta de propor.
 
-O app que o Builder monta lê o dado da empresa sempre da cópia, pelo `db` do app; a consulta ao
-sistema ao vivo é do Builder, para investigar, e nunca de um app que ele proponha. Nada que o Builder
-lê de uma cópia usa algo do Neon: é SQL do PostgreSQL comum, pelo login de leitura do app.
+Hoje o app pode ler o sistema da empresa ao vivo pelo conector (a seção Connectors da skill
+`conexus-data`); a regra nova manda ler a cópia onde o conector copia. O que o Builder lê de uma
+cópia é SQL do PostgreSQL comum, pelo login de leitura do app, pela porta `SqlTransport`.
 
 ## A página do fundador
 
@@ -34,8 +34,8 @@ ao Projeto novo "Vendedores", que ainda não tem app (isso é a Capacidade 2).
 
 1. No Projeto "Vendedores", peça ao Builder: "quero acompanhar meus vendedores: vendas do mês, meta
    e clientes de cada um". Sem perguntar, ele já sabe que o Projeto lê as cópias `sync.vendas`,
-   `sync.vendedores` e `sync.clientes`, as colunas de cada uma com o tipo e o modo: "cópia inteira"
-   ou "por janela de 30 dias".
+   `sync.vendedores` e `sync.clientes`, as colunas de cada uma com o tipo e o modo: vendas "por janela de 30 dias", vendedores e clientes
+   "só o alterado".
 2. Ele olha o conteúdo: umas poucas linhas de exemplo de cada cópia (no máximo 20) e contagens,
    como "quantas vendas por tipo de operação este ano". No plano ele diz de onde vem cada número:
    "vendas e clientes vêm das cópias; a meta não existe no sistema de vocês, então o gestor digita a
@@ -47,8 +47,9 @@ ao Projeto novo "Vendedores", que ainda não tem app (isso é a Capacidade 2).
 4. Se falta um dado (por exemplo, devoluções), o Builder investiga o sistema, escreve a cópia que
    faltaria, testa uma página contando, e avisa no chat. Ele escolhe o modo pela regra prática: cópia
    inteira quando mais de 10% das linhas mudam a cada rodada, por janela nas demais, e diz qual
-   escolheu. Ele nunca monta um app que chame o sistema ao vivo: o app lê a cópia, e se a cópia não
-   existe, ele propõe a cópia. Na página **Cópias** aparece uma linha **Proposta**, com a consulta, a
+   escolheu. Onde o conector copia, o app lê a cópia, e se a cópia não existe, ele propõe a cópia;
+   ele só monta um app que leia o sistema ao vivo para um conector que não copia (hoje, o Mercado
+   Livre) e para gravar. Na página **Cópias** aparece uma linha **Proposta**, com a consulta, a
    chave, o modo e quantas linhas a página de teste trouxe. Toque **Ligar**:
    escolha o intervalo, e a cópia começa a rodar, já liberada ao Projeto "Vendedores". **Dispensar**
    tira a proposta.
@@ -108,35 +109,44 @@ VAMOS INCLUIR".
   que o Builder vê; a página **Dados** continua só de dono, administrador e desenvolvedor. Você
   disse, sobre a pergunta que o cartão fazia: "se a pessoal deu acesso ao builder para o membro ele
   vai ver então". Em 2026-11-10, à regra assim escrita: "1. Okay". A página do cartão: "3. Okay".
-- **O modo da cópia fica visível (Databricks, 1).** Uma cópia é **inteira** (cada rodada lê a fonte
-  toda) ou **por janela de N dias** (cada rodada lê o que mudou e relê os últimos N dias); a página
-  Cópias e o que o Builder sabe de cada cópia dizem qual. Quando o Builder propõe uma cópia, ele
-  segue a regra prática que o Databricks escreve para as suas tabelas sincronizadas: cópia inteira
-  quando mais de 10% das linhas mudam por rodada
-  (https://docs.databricks.com/aws/en/oltp/projects/sync-tables). O motor já faz as duas coisas
-  (uma definição sem data de alteração é a cópia inteira); o que muda é dizê-lo. Em 2026-11-10: "sIM
-  VAMOS INCLUIR".
-- **O app sempre lê a cópia (Databricks, 2).** O Builder nunca propõe um app que chame o sistema da
-  empresa ao vivo; a consulta ao vivo é só para ele investigar. É a recomendação do próprio
+- **O modo da cópia fica visível (Databricks, 1).** Uma cópia tem um de três modos, e a página
+  Cópias e o que o Builder sabe de cada cópia dizem qual: **cópia inteira** (sem data de alteração:
+  cada rodada lê a fonte toda), **por janela de N dias** (cada rodada lê o que mudou e relê os
+  últimos N dias) ou **só o alterado** (cada rodada lê só o que mudou, sem janela). Quando o Builder
+  propõe uma cópia, ele segue a regra prática que o Databricks escreve para as suas tabelas
+  sincronizadas: cópia inteira quando mais de 10% das linhas mudam por rodada
+  (https://docs.databricks.com/aws/en/oltp/projects/sync-tables); sem coluna de data de alteração, a
+  cópia é inteira. O motor já faz as três coisas; o que muda é dizê-lo. Em 2026-11-10: "sIM VAMOS
+  INCLUIR".
+- **O app lê a cópia (Databricks, 2).** Onde o conector copia, o app lê a cópia, pelo `db`, e o
+  Builder propõe a cópia que falta; a consulta ao vivo é do Builder, para investigar, e de um app só
+  para um conector que não copia (hoje, o Mercado Livre) e para gravar. É a recomendação do próprio
   Databricks: cópia para o uso que se repete, consulta direta para a consulta pontual
-  (https://docs.databricks.com/aws/en/ingestion/overview); o Conexus já fazia assim, e o prompt do
-  Builder passa a dizê-lo. Em 2026-11-10: "sIM VAMOS INCLUIR".
+  (https://docs.databricks.com/aws/en/ingestion/overview). Hoje o app pode chamar o sistema ao vivo
+  pelo conector (a seção Connectors de `conexus-data`); a regra nova estreita isso, e o prompt do
+  Builder passa a dizê-lo. Em 2026-11-10 você mandou incluir: "sIM VAMOS INCLUIR". **Pendente da sua
+  palavra:** o alcance acima é a leitura estreita que o cartão recomenda; se você quiser outra, por
+  exemplo que o Builder nunca monte um app que leia ao vivo, mesmo num conector que não copia, diga
+  e o cartão muda.
 - **Nada do Neon na leitura das cópias (Databricks, 3).** O que o Builder lê de uma cópia é SQL do
   PostgreSQL comum pelo login de leitura do app, com o catálogo (`information_schema`,
   `pg_catalog`, `has_table_privilege`) quando precisa saber o que existe e o que o login pode ler;
-  nenhum branch, Data API ou endereço HTTP do Neon. Assim a leitura vale num PostgreSQL que não
-  seja do Neon, o dia em que uma empresa pedir. Em 2026-11-10: "sIM VAMOS INCLUIR".
+  nenhum branch nem Data API do Neon. O SQL é PostgreSQL comum e passa pela porta `SqlTransport`,
+  cujo transporte de hoje, o driver HTTP do Neon, está num arquivo só e é o que se troca no dia em
+  que uma empresa pedir outro PostgreSQL. Em 2026-11-10: "sIM VAMOS INCLUIR".
 - **Uma checagem automática segura o Neon no lugar (Databricks, 4).** Os pacotes do Neon só entram
   nos arquivos que já os usam, e o nome do banco e do papel dono do Neon (`neondb`, `neondb_owner`)
   não se espalha além de `platform/neon.ts`; a checagem falha o CI se alguém espalhar. Entra como a
-  U5. Em 2026-11-10: "sIM VAMOS INCLUIR".
+  U5, num pull request próprio antes do de construção, com configuração nativa (o teste plantado
+  que falta e uma regra do Biome), sem script nem passo de CI novo. Em 2026-11-10: "sIM VAMOS INCLUIR".
 
 Além desta página, falta a sua palavra em duas coisas, cada uma no seu momento: a lista de permissões da tabela nova
 das propostas (D11), e a chamada paga que refaz o molde da máquina do Builder, que só a U4 pede. A
 U4 é a última e é opcional: sem ela, o banco já recusa a um app a cópia não liberada; ela só faz
 publicar dizer antes qual cópia falta.
 
-**Como as unidades viram pull requests.** U1, U2, U3 e U5 vão num só pull request de construção, um
+**Como as unidades viram pull requests.** A U5 vai antes, num pull request só dela (a checagem, delivery
+L20). U1, U2 e U3 vão num só pull request de construção, um
 commit por unidade, como a Capacidade 1 fez; a U4, se você autorizar o molde, vem depois, num pull
 request seu. Ao aprovar esta página você aprova também esse agrupamento.
 
@@ -145,20 +155,23 @@ request seu. Ao aprovar esta página você aprova também esse agrupamento.
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 Conferir e ver | O assunto `builder/app-data/` (com `agents/app-data.ts` movido para ele); `app_data_check` e `app_data_read` no Builder; a porta do Builder em `hub/apps`, que admite por `useConversations` (quem usa o Builder), conferido no Hub a cada chamada, e não por `viewAppData`, que fica na página Dados; a conferência em `hub/apps/app-check.ts`; os tipos das colunas na leitura de `platform/`; os nomes em `hub-api`; as linhas das ferramentas na conversa; o texto de conferir em `conexus-build` e `conexus-data` | `apps/server/src/builder/{app-data,agents,construtor,conversation}/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/`, `packages/app/skills/{conexus-build,conexus-data}/`, `apps/web/src/builder/conversation/`, `docs/explanation/builder-turn.md` | [data](../guides/data.md) | esta página aprovada; a Capacidade 1 no `main` (`viewAppData`, `readApp` com `SqlStatement`, `RowCount`) |
-| U2 O Builder sabe das cópias | O bloco "## Data" das instruções, com o modo de cada cópia; `hub/copies/mode.ts`, o dono único da classificação das três formas (alteração e janela; só alteração; nenhuma), que reaproveita o que o fechamento da Capacidade 2 (https://github.com/developmentconexus-ops/conexus/pull/945, F1) pôs em `main` em `CopySummary.shown` (`changedSince`) e em `windowText`, sem segunda função paralela: um nome, um significado; a vista das cópias "do Projeto" em `hub/copies`, da mesma leitura de `listProjectCopies`; a prova de que a porta `builderData` lê um Projeto sem versão enviada com cópia liberada, que em `main` já tem a linha `app` e os logins desde a liberação (`projectDatabase`); a regra de que o app lê a cópia e nunca o sistema ao vivo, no prompt e em `conexus-data`; a descrição de `app_data_read` dos agentes | `apps/server/src/builder/{app-data,conversation}/`, `apps/server/src/hub/{copies,apps}/`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/`, `packages/app/skills/conexus-data/`, `docs/reference/builder-prompt.md` | [data](../guides/data.md) | U1; a Capacidade 2 inteira no `main`, com a U5 (critérios 20 e 38 dela) |
-| U3 Propor cópia | A tabela `copies.copy_proposal`; propor, ligar a partir da proposta (com a liberação ao Projeto) e dispensar; a prova de uma página pela porta do Builder; `copy_propose`, com a regra dos 10% para escolher o modo; a linha **Proposta** na página Cópias; o modo da cópia na lista, no detalhe e no diálogo | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/connectors/`, `apps/server/src/{main,conversations-of}.ts`, `apps/server/migrations/`, `packages/hub-api/src/`, `apps/web/src/hub/copies/`, `apps/web/src/builder/conversation/` | [security](../guides/security.md) | U2; a lista de permissões da tabela nova, num pull request só dela (D11) |
-| U5 O Neon no seu lugar | A checagem automática: a regra de `npm run deps` do driver do Neon ganha o teste que lhe falta, e uma checagem de texto falha se `neondb` ou `neondb_owner` aparecem em código fora de `platform/neon.ts` | `.dependency-cruiser.cjs`, `scripts/`, `package.json`, `apps/server/src/platform/` | [code](../guides/code.md) apenas | nenhuma; vai por último no pull request de construção |
+| U2 O Builder sabe das cópias | O bloco "## Data" das instruções, com o modo de cada cópia; `hub/copies/mode.ts`, `copyModeOf`, a única classificação do modo (sem `changedSince` é `WHOLE`, com ou sem `window`; com `changedSince` e janela, `WINDOW`; com `changedSince` sem janela, `CHANGES`), sem alternativa nem segunda função; `CopySummary` ganha `mode`, escrito por `hub/copies/list.ts`; a vista das cópias "do Projeto" em `hub/copies`, da mesma leitura de `listProjectCopies`; a prova de que a porta `builderData` lê um Projeto sem versão enviada com cópia liberada, que em `main` já tem a linha `app` e os logins desde a liberação (`projectDatabase`); a regra de que, onde o conector copia, o app lê a cópia e o Builder propõe a que falta (ao vivo só para um conector sem cópia e para gravar), no prompt e em `conexus-data`; a descrição de `app_data_read` dos agentes | `apps/server/src/builder/{app-data,conversation}/`, `apps/server/src/hub/{copies,apps}/`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/`, `packages/app/skills/conexus-data/`, `docs/reference/builder-prompt.md` | [data](../guides/data.md) | U1; a Capacidade 2 inteira no `main`, com a U5 (critérios 20 e 38 dela) e o fechamento https://github.com/developmentconexus-ops/conexus/pull/945 (`CopySummary.shown.changedSince`, `COPY_PASS_COLUMN`) |
+| U3 Propor cópia | A tabela `copies.copy_proposal`; propor, ligar a partir da proposta (com a liberação ao Projeto) e dispensar; a prova de uma página pela porta do Builder; `copy_propose`, com a regra dos 10% para escolher o modo; a linha **Proposta** na página Cópias; o modo da cópia na lista, no detalhe, na proposta e no diálogo, lido de `copy.mode` | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/connectors/`, `apps/server/src/{main,conversations-of}.ts`, `apps/server/migrations/`, `packages/hub-api/src/`, `apps/web/src/hub/copies/`, `apps/web/src/builder/conversation/` | [security](../guides/security.md) | U2; o https://github.com/developmentconexus-ops/conexus/pull/945 no `main`; a lista de permissões da tabela nova, num pull request só dela (D11) |
+| U5 O Neon no seu lugar | A checagem, nativa: o teste plantado que falta à regra do driver do Neon em `scripts/rules.test.ts`, e uma regra GritQL do Biome que recusa os literais `'neondb'` e `'neondb_owner'` em código de produção fora de `platform/neon.ts`; nenhum script, comando ou passo de CI novo | `biome.json`, `scripts/neon-names.grit`, `scripts/rules.test.ts`, `scripts/conexus-code.test.ts` | [code](../guides/code.md) apenas | nenhuma; pull request próprio, antes do de construção (L20) |
 | U4 O app declara as cópias (opcional) | `copies` no manifesto; `defineCopies`; a conferência leva a lista ao manifesto; publicar recusa a cópia não liberada com `COPY_NOT_RELEASED`; o texto da skill; o molde da máquina refeito | `packages/app-contract/src/`, `packages/app/src/`, `packages/app/skills/conexus-data/`, `apps/server/src/hub/{apps,copies}/`, `apps/server/src/main.ts`, `packages/hub-api/src/` | [code](../guides/code.md) apenas | U2; a palavra do fundador sobre a chamada paga do molde |
 
-**A ordem.** U1, U2, U3 e U5 vão num pull request de construção, um commit por unidade, nessa ordem,
+**A ordem.** A U5 vai num pull request só dela, antes de tudo, porque não depende de nada da
+Capacidade 3 e uma checagem nova entra assim ([delivery L20](../guides/delivery.md)). U1, U2 e U3 vão
+num pull request de construção, um commit por unidade, nessa ordem,
 como a Capacidade 1 fez (mudança de método anunciada pelo fundador em 2026-11-09, escrita na L9 e
 na L13 pela pull request https://github.com/developmentconexus-ops/conexus/pull/925; o agrupamento
 está na página, para a aprovação cobri-lo). Se a 925 ainda não estiver no `main` quando o pull
 request de construção abrir, o fechamento ([delivery L20](../guides/delivery.md)) anota a emenda da
 L9. Cada commit termina verde sozinho. A U1 não precisa da Capacidade 2 e pode começar assim que a Capacidade 1
 estiver no `main` ([delivery L1](../guides/delivery.md)); a U2 e a U3 esperam a Capacidade 2 inteira
-no `main`, com a U5 dela (um Projeto sem app com cópia liberada já tem o banco, e a leitura dele). A U4, se o fundador autorizar o molde, vem num pull request seu, depois. A U5 não depende de nenhuma e vai por último, para que o
-mapa de arquivos que ela confere já tenha as peças novas. Nenhuma unidade corre em paralelo com outra:
+no `main`, com o fechamento dela (o pull request 945, que põe `changedSince` em `CopySummary.shown` e
+`COPY_PASS_COLUMN` em `platform/copy-sql.ts`) e com a liberação que cria a linha `app` e os logins
+(`projectDatabase`). A U4, se o fundador autorizar o molde, vem num pull request seu, depois. Nenhuma unidade de construção corre em paralelo com outra:
 cada uma lê o contrato da anterior.
 
 **A lista de permissões, sozinha.** A migração da U3 (a tabela, a política por linha e as permissões
@@ -177,8 +190,8 @@ conversa ~60, as skills e o documento ~40, as ligações ~80). U2: ~430 (o bloco
 ~70, a leitura de um Projeto sem versão enviada ~20, as ligações ~40, o prompt, a skill e o documento ~110). U3: ~1.000 (a
 tabela e o estado ~120, propor com a prova ~200, ligar a partir da proposta e dispensar ~200, o
 contrato e as falhas ~120, `copy_propose` ~110, a linha Proposta e o diálogo ~170, o modo nas telas ~80). U4: ~250.
-U5: ~120 (a checagem de texto ~70, a regra e os testes plantados ~50). Total
-da capacidade: ~2.520 linhas, abaixo do orçamento de [delivery L2](../guides/delivery.md).
+U5: ~70 (a regra GritQL e o plantio ~50, o teste plantado ~20), em pull request próprio. Total
+da capacidade: ~2.400 linhas, abaixo do orçamento de [delivery L2](../guides/delivery.md).
 
 ## Os critérios de aceite
 
@@ -215,13 +228,13 @@ da capacidade: ~2.520 linhas, abaixo do orçamento de [delivery L2](../guides/de
 | 29 | U3 | QA percorre o roteiro de uso nos dois temas, a 1366 e a 390 px, com o modelo dublê | relatório de QA ([testing T25](../guides/testing.md)) | should |
 | 30 | U4 | `defineCopies(['vendas'])` em `shared/operations.ts` leva `copies: ['vendas']` ao manifesto pela conferência; um nome repetido ou fora de `CopyName` reprova a conferência; um manifesto sem `copies` continua válido | `packages/app/src/check/manifest.test.ts`, "as cópias que o app lê" | must |
 | 31 | U4 | Publicar uma versão que declara uma cópia não liberada ao Projeto responde 409 `COPY_NOT_RELEASED` com o nome da cópia; liberada, publica | `apps/server/src/hub/apps/live.test.ts`, "publicar com cópia não liberada" | must |
-| 32 | U2 | O modo de cada cópia sai da definição guardada, por uma função só (`copyModeOf`): `copyModeOf` é a classificação única: o `changedSince` e o `windowText` de `CopySummary.shown` que o PR 945 entrou em `main` passam a derivar dela, ou ela deriva do que o 945 deixou, sem duas funções para a mesma pergunta; sem `changedSince`, `WHOLE`; com `changedSince` e janela, `WINDOW` com os dias; com `changedSince` e sem janela, `CHANGES`; o bloco "## Data" diz o modo de cada cópia liberada em palavras ("cópia inteira", "por janela de 30 dias", "só o alterado"), e uma cópia com a mesma definição dá o mesmo texto antes e depois de uma rodada | `apps/server/src/hub/copies/mode.test.ts`, "o modo vem da definição"; `context.test.ts`, "o bloco diz o modo" | must |
-| 33 | U2 | O pedido ao modelo num turno do Builder leva a regra da fonte: o app lê o dado da empresa da cópia (`sync.<nome>`, pelo `db`); consultar o sistema ao vivo (`connector_read`) é para investigar; ele não propõe app que chame o sistema ao vivo, e, se a cópia não existe, propõe a cópia com `copy_propose` (ou diz que o conector não copia); a recusa `42501` numa cópia listada quer dizer liberação pendente | `apps/server/src/builder/conversation/data-turn.test.ts`, "o app lê a cópia" (o texto montado das instruções e a descrição das ferramentas que o pedido leva) | must |
-| 34 | U2 | Tudo o que o Builder lê de uma cópia é SQL do PostgreSQL comum pelo login de leitura do app: `app_data_check` e `app_data_read` sobre `sync.<nome>` rodam no PostgreSQL local do teste, sem nenhum recurso do Neon; o bloco vem da definição guardada no Hub e da liberação, nunca de metadado do Neon; as leituras do Builder (`app_data_read`, `app_data_check`) e do app sobre `sync.<nome>` listam as colunas da definição, então a coluna interna `_pass` (que a tabela da cópia guarda e o `GRANT SELECT` da tabela inteira abre) não chega ao Builder, nem às linhas de exemplo, nem às colunas que a conferência devolve: um `select *` sobre a cópia volta sem `_pass`, e o bloco e a skill mandam escrever as colunas por nome; a leitura do que existe e do que o login pode ler, onde há (a lista de tabelas da página Dados e do Construtor), usa `information_schema` ou `pg_catalog` com `has_table_privilege`, o que o `main` já faz | `access.test.ts`, "as cópias se leem em PostgreSQL comum" e "a coluna interna não chega ao Builder"; a leitura da lista de tabelas, no teste dela da Capacidade 1 | must |
-| 35 | U3 | A página Cópias diz o modo de cada cópia, na linha da lista e no detalhe "o que é copiado", com as mesmas palavras do Builder; a linha **Proposta** e o diálogo **Ligar** dizem o modo da proposta; uma cópia ligada a partir de uma proposta tem o modo da definição dela | `apps/web/src/hub/copies/copy-list.test.tsx`, "o modo da cópia"; `copy-proposal.test.tsx`, "a proposta diz o modo" | must |
-| 36 | U3 | A descrição de `copy_propose` que o pedido ao modelo leva diz a regra de escolher o modo: cópia inteira (a definição sem data de alteração) quando mais de 10% das linhas mudam a cada rodada, por janela nas demais, e que a proposta diga qual escolheu e por quê; propor aceita as duas formas, e a proposta guarda a definição como veio | `copy-propose.test.ts`, "a regra do modo"; `propose.test.ts`, "propor: as duas formas de definição" | must |
-| 37 | U5 | `npm run deps` falha com um arquivo plantado que importa `@neondatabase/serverless` fora de `apps/server/src/platform/company-postgres.ts` e de `apps/edge/src/db.ts`, e com um que importa `@neon/sdk` fora de `apps/server/src/platform/neon.ts` (as duas regras de `.dependency-cruiser.cjs` existem, C56; falta o teste plantado da primeira em `scripts/rules.test.ts`) | `scripts/rules.test.ts`, "neon-http-driver-only-in-its-adapters" | must |
-| 38 | U5 | A checagem de nomes falha com um código plantado que escreve `neondb` ou `neondb_owner` fora de `apps/server/src/platform/neon.ts` (testes e ajudantes `test-*.ts` ficam de fora, como em `check-boundaries.ts`), e passa no `main` depois da unidade; roda no CI como o passo `npm run boundaries` (`.github/workflows/ci.yml:50`), com um comando novo no `package.json` | `scripts/check-neon-names.test.ts`, "o nome do banco do Neon não se espalha" | must |
+| 32 | U2 | `copyModeOf` (`hub/copies/mode.ts`) é a única classificação do modo, sem alternativa: sem `changedSince` é `WHOLE`, **com ou sem `window`** (o motor lê a fonte inteira e apaga o que não veio, `copy-sql.ts:153-154`); com `changedSince` e janela, `WINDOW` com os dias; com `changedSince` e sem janela, `CHANGES`. `CopySummary` ganha `mode`, escrito por `hub/copies/list.ts` com `copyModeOf`, e a web lê `copy.mode`; o `windowText` da Capacidade 2 não classifica (fica com a coluna e os dias de `shown`). O bloco "## Data" diz o modo de cada cópia liberada, e uma cópia com a mesma definição dá o mesmo texto antes e depois de uma rodada | `apps/server/src/hub/copies/mode.test.ts`, "o modo vem da definição" (um caso com `window` e sem `changedSince`, que dá `WHOLE`); `routes.test.ts`, "a lista traz o modo"; `context.test.ts`, "o bloco diz o modo" | must |
+| 33 | U2 | O pedido ao modelo num turno do Builder leva a regra da fonte, igual na página, no bloco e em `conexus-data`: onde o conector copia, o app lê o dado da empresa da cópia (`sync.<nome>`, pelo `db`) e o Builder propõe a cópia que falta com `copy_propose`; consultar o sistema ao vivo (`connector_read`) é para o Builder investigar; um app só lê o sistema ao vivo para um conector sem cópia (hoje, o Mercado Livre) e para gravar; a recusa `42501` numa cópia listada quer dizer liberação pendente. **Pendente da palavra do fundador** quanto ao alcance | `apps/server/src/builder/conversation/data-turn.test.ts`, "o app lê a cópia" (o texto montado das instruções e a descrição das ferramentas que o pedido leva) | must |
+| 34 | U2 | Tudo o que o Builder lê de uma cópia é SQL do PostgreSQL comum pelo login de leitura do app, pela porta `SqlTransport`: `app_data_check` e `app_data_read` sobre `sync.<nome>` rodam no PostgreSQL local do teste, sem nenhum recurso do Neon; o bloco vem da definição guardada no Hub e da liberação, nunca de metadado do Neon; toda coluna de resultado chamada `COPY_PASS_COLUMN` (o dono que o fechamento da Capacidade 2 criou em `platform/copy-sql.ts`) sai das linhas e das colunas de `app_data_read` e de `app_data_check`, então um `select *` sobre a cópia volta sem `_pass`, com junção, apelido ou várias cópias; a leitura do que existe e do que o login pode ler, onde há (a lista de tabelas da página Dados e do Construtor), usa `information_schema` ou `pg_catalog` com `has_table_privilege`, o que o `main` já faz. Só o Builder: o `select *` que o app faz direto no banco não passa pelo Hub; o app recebe a instrução da skill de escrever as colunas por nome, e o resto fica na https://github.com/developmentconexus-ops/conexus/issues/946 | `access.test.ts`, "as cópias se leem em PostgreSQL comum" e "a coluna interna não chega ao Builder" | must |
+| 35 | U3 | A página Cópias diz o modo de cada cópia, na linha da lista e no detalhe "o que é copiado", lendo `copy.mode`, o mesmo modo do Builder; a linha **Proposta** e o diálogo **Ligar** dizem o modo da proposta; uma cópia ligada a partir de uma proposta tem o modo da definição dela | `apps/web/src/hub/copies/copy-list.test.tsx`, "o modo da cópia"; `copy-proposal.test.tsx`, "a proposta diz o modo" | must |
+| 36 | U3 | A descrição de `copy_propose` que o pedido ao modelo leva diz a regra de escolher o modo e como medir: cópia inteira (a definição sem data de alteração) quando mais de 10% das linhas mudam a cada rodada, por janela ou só o alterado nas demais; medir com `connector_read`, contando as linhas cuja data de alteração cai dentro de um intervalo da cópia contra o total; sem coluna de data de alteração, a cópia é inteira; e que a proposta diga qual escolheu e por quê. Propor aceita as formas da definição e a guarda como veio | `copy-propose.test.ts`, "a regra do modo" (as duas frases no texto que o pedido leva); `propose.test.ts`, "propor: as formas de definição" | must |
+| 37 | U5 | `scripts/rules.test.ts` planta um arquivo que importa `@neondatabase/serverless` fora de `apps/server/src/platform/company-postgres.ts` e de `apps/edge/src/db.ts` e a regra `neon-http-driver-only-in-its-adapters` o recusa (a regra existe, C56; só a do `@neon/sdk` tem plantio hoje, `rules.test.ts:79`) | `scripts/rules.test.ts`, "neon-http-driver-only-in-its-adapters" | must |
+| 38 | U5 | A regra GritQL do Biome recusa um código de produção plantado que escreve `'neondb'` ou `'neondb_owner'` fora de `apps/server/src/platform/neon.ts` (testes `*.test.ts` e ajudantes `test-*.ts` ficam de fora, pelo override de `biome.json`), e `npm run lint` passa no `main` depois da unidade; nenhum script, comando ou passo de CI novo | `scripts/conexus-code.test.ts`, "o nome do banco do Neon não se espalha" | must |
 
 ## A matriz de estados
 
@@ -241,7 +254,8 @@ item 5): nenhuma célula declara "sem detalhe".
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `AppCheck` → `rows` (`EXACT` ou `OVER`), `columns[]` (`name`, `type`), `ms` | U1, `hub/apps/app-check.ts` | U1, o modelo pela ferramenta; a linha da conversa (o número) |
-| `CopyMode` (`WHOLE`, `WINDOW` com `days`, `CHANGES`) | U2, `hub/copies/mode.ts`, da `CopyDefinition` | U2, o bloco; U3, a lista, o detalhe e a proposta |
+| `CopyMode` (`WHOLE`, `WINDOW` com `days`, `CHANGES`) | U2, `hub/copies/mode.ts` (`copyModeOf`), da `CopyDefinition` | U2, o bloco; `CopySummary.mode`, escrito por `hub/copies/list.ts` na U2 |
+| `CopySummary.mode` | U2, `hub/copies/list.ts` | U3, a lista, o detalhe, a proposta e o diálogo, por `copy.mode` |
 | `ProjectCopiesView` → `released[]` (`name`, `columns`, `mode`), `unreleased[]` | U2, `hub/copies/project-view.ts`, das linhas `project_copy` e da definição | U2, `builder/app-data/context.ts` (o bloco) |
 | `GrantedConnection.copies` | U3, `hub/connectors/builder-port.ts`, de `Connector.copy` e `Connector.readDoor` | U3, `builder/connectors/connector-tools.ts` (oferecer `copy_propose`) |
 | `CopyProposalSummary` (`id`, `name`, `label`, `connection`, `project`, `shown`, `mode`, `proved`, `proposedBy`) | U3, `hub/copies/store.ts` | U3, `apps/web/src/hub/copies/copy-proposal.tsx` |
@@ -262,6 +276,7 @@ Capacidade 2, com o estado em palavras (V35) e as duas ações à direita.
 │    │                    │ vendas        ERP       Em dia      14:30, 12 s    118.402 Vendedores│
 │    │                    │   por janela de 30 dias                                          │
 │    │                    │ vendedores    ERP       Em dia      14:30, 1 s          38 Vendedores│
+│    │                    │   só o alterado                                                  │
 └────┴────────────────────┴──────────────────────────────────────────────────────────────────┘
 
 390 px, …/copies                         Ligar a proposta (diálogo)
@@ -306,10 +321,10 @@ linhas que o parecer acrescentou.
 | O Builder lê um Projeto antes do primeiro app | U2 | `hub/apps/app-database.ts:80-110` `projectDatabase` (liberar uma cópia a um Projeto sem app cria a linha `app`, o esquema e os logins e marca `database_ready`) e `appDatabaseOf` (que então já diz pronto) | `platform/company-postgres.ts` `ensureApp` (decisão 0043) | — | nativo: `builderData` abre o banco do Projeto por `appDatabaseOf`, como os agentes; o banco nasce só por `projectDatabase`, ao liberar. **Muda** do parecer, que criava o banco ao liberar nesta capacidade: a Capacidade 2 já o faz, com a linha `app` | | o roteiro (Projeto novo) | — |
 | O app declara as cópias que lê; publicar recusa a não liberada | U4 | `packages/app-contract/src/manifest.ts:44-58` (`connectors`); `packages/app/src/connectors.ts`; `hub/apps/live.ts:59-71` (`ungranted`) | `conexus-os@e0353c36` `influence-on-conexus.md:2270` | Cada leitura é artefato nomeado | nativo: `copies` no manifesto e `defineCopies`, conferidos no mesmo publicar. **Muda** do estudo o peso: o banco já recusa; a declaração não protege a Prévia, e o molde da máquina precisa ser refeito (chamada paga) | | a chamada paga do molde, a pedir | `packages/app/src/copies.ts` |
 | Propor a cópia que falta | U3 | `builder/connectors/connector-tools.ts:243-270` `connector_note_save` (roda a prova uma vez e guarda a contagem); `hub/connectors/builder-port.ts:113-120` `admit`, `:188-190` a conta de 50 | `conexus-os@e0353c36` `influence-on-conexus.md:969` (`DataLoader`); `nango@e6c6131` (catálogo que se copia, do parecer da Capacidade 2); `ml-vigia@0c0749f1` `app/consultor/consultas.py:1-6` (o agente propõe, a pessoa confirma na tela) | No Mitra o agente cria e liga; no ML-VIGIA o agente propõe e a pessoa confirma | embrulhado: a linha própria `copy_proposal` com a `CopyDefinition` da Capacidade 2, provada por uma página da leitura de cópia do conector; ligar é o `enableCopy` da Capacidade 2 com a origem `PROPOSAL`. **Muda** do estudo: tabela própria, não cópia "em estado proposta"; a prova pela leitura de cópia, não pela gravação do caderno | | 2026-11-09: "Ele investiga o sistema, né?"; 2026-11-10: "3. Sim" | `apps/server/src/hub/copies/propose.ts`, `accept.ts`; `apps/server/src/builder/connectors/copy-propose.ts`; `apps/web/src/hub/copies/copy-proposal.tsx` |
-| O modo da cópia, visível na página e no Builder; a regra de escolher o modo ao propor | U2, U3 | `packages/connectors/src/kernel/copy.ts:31-32` (`changedSince` nulo: "every pass reads the whole source"; `window` opcional); `apps/server/src/platform/copy-sql.ts:150-156` (sem `changedSince`, o fim da passada apaga tudo o que não veio); `docs/reference/screens.md:23-24` (a página Cópias mostra a consulta, a chave e a janela, sem nomear o modo) | Databricks, tabelas sincronizadas: https://docs.databricks.com/aws/en/oltp/projects/sync-tables (modos Snapshot, Triggered e Continuous; a regra prática: cópia inteira quando mais de 10% das linhas mudam por ciclo) | O Databricks nomeia o modo e dá o critério de escolha na documentação | nativo: `copyModeOf(definição)` em `hub/copies/mode.ts`, um dono, lido pelo bloco, pela lista, pelo detalhe e pela proposta; a regra dos 10% fica na descrição de `copy_propose`. Nenhum motor muda: as duas formas já existem | | 2026-11-10: "sIM VAMOS INCLUIR" | `apps/server/src/hub/copies/mode.ts` |
-| O app sempre lê a cópia; a consulta ao vivo é do Builder | U2 | `apps/server/src/builder/conversation/prompt/builder.md:16` ("Every value an app shows comes from what people save in the app…"); `packages/app/skills/conexus-data/SKILL.md:45-50` (a seção Connectors, em que o app chama o conector); cartão da Capacidade 2, "Um app nunca chama o Sankhya: só o Hub chama" | Databricks, visão geral da ingestão: https://docs.databricks.com/aws/en/ingestion/overview (cópia para o uso recorrente, consulta direta para a pontual) | O Databricks separa o que se copia do que se consulta na hora | nativo: uma regra escrita uma vez no prompt e em `conexus-data`; o app lê `sync.<nome>` pelo `db`; `connector_read` é de investigar. A seção Connectors de `conexus-data` fica como está para o que uma cópia não faz; o construtor da U2 diz no relatório o que sobrou de chamada ao vivo | | 2026-11-10: "sIM VAMOS INCLUIR" | — |
-| A leitura das cópias não usa nada do Neon | U2 | `apps/server/src/platform/company-postgres.ts:78-118` (a única implementação da porta `SqlTransport`, pelo driver HTTP do Neon); `hub/apps/app-database.ts:174` (`readAppData`, o login de leitura); a lista de tabelas da Capacidade 1, que lê `information_schema` com `has_table_privilege` | PostgreSQL 18, `information_schema` e `pg_catalog` | O catálogo é igual em todo PostgreSQL | nativo: nada de branch, Data API ou endereço HTTP do Neon na leitura que o Builder faz; o bloco vem da definição guardada (a dona das colunas, U2) e `app_data_check` e `app_data_read` rodam SQL comum pelo login de leitura | Critério 34 roda no PostgreSQL local | 2026-11-10: "sIM VAMOS INCLUIR" | — |
-| Os pacotes do Neon ficam nos arquivos que já os usam | U5 | `.dependency-cruiser.cjs:119-135` (`neon-sdk-only-in-the-neon-adapter`, `neon-http-driver-only-in-its-adapters`, C56); `scripts/rules.test.ts:79` (só a primeira tem arquivo plantado); `apps/server/src/platform/neon.ts:56-58` (`neondb_owner`, `neondb`) | `scripts/check-boundaries.ts` (a checagem de texto que o repositório já tem, com `OBSERVATION` para os testes) | O repositório já checa por importação e por texto | embrulhado: o teste plantado que falta e uma checagem de texto `scripts/check-neon-names.ts` no molde de `check-boundaries.ts`, com o seu teste | Critérios 37 e 38 | 2026-11-10: "sIM VAMOS INCLUIR" | `scripts/check-neon-names.ts` |
+| O modo da cópia, visível na página e no Builder; a regra de escolher o modo ao propor | U2, U3 | `packages/connectors/src/kernel/copy.ts:31-32` (`changedSince` nulo: "every pass reads the whole source"; `window` opcional); `apps/server/src/platform/copy-sql.ts:150-156` (sem `changedSince`, o fim da passada apaga tudo o que não veio, com ou sem `window`); `docs/reference/screens.md:23-24` (a página Cópias mostra a consulta, a chave e a janela, sem nomear o modo) | Databricks, tabelas sincronizadas: https://docs.databricks.com/aws/en/oltp/projects/sync-tables (modos Snapshot, Triggered e Continuous; a regra prática: cópia inteira quando mais de 10% das linhas mudam por ciclo) | O Databricks nomeia o modo e dá o critério de escolha na documentação | nativo: `copyModeOf(definição)` em `hub/copies/mode.ts`, um dono, escrito em `CopySummary.mode` por `list.ts` e lido pelo bloco, pela lista, pelo detalhe e pela proposta; a regra dos 10% e como medi-la ficam na descrição de `copy_propose`. Nenhum motor muda: as três formas já existem | | 2026-11-10: "sIM VAMOS INCLUIR" | `apps/server/src/hub/copies/mode.ts` |
+| O app lê a cópia onde o conector copia; ao vivo só sem cópia e para gravar | U2 | `apps/server/src/builder/conversation/prompt/builder.md:16` ("Every value an app shows comes from what people save in the app…"); `packages/app/skills/conexus-data/SKILL.md:44-52` (a seção Connectors: hoje o app chama o conector ao vivo, `connectorsOf`); `packages/connectors/src/` (só o conector do Sankhya declara `copy`; o Mercado Livre não) | Databricks, visão geral da ingestão: https://docs.databricks.com/aws/en/ingestion/overview (cópia para o uso recorrente, consulta direta para a pontual) | O Databricks separa o que se copia do que se consulta na hora | nativo: a mesma regra escrita igual no prompt, no bloco, no critério 33 e em `conexus-data`; o app lê `sync.<nome>` pelo `db`; `connector_read` é de investigar. A seção Connectors fica para o conector sem cópia e para gravar. **Pendente da palavra do fundador** quanto ao alcance; o construtor da U2 diz no relatório o que sobrou de chamada ao vivo | | 2026-11-10: "sIM VAMOS INCLUIR" (o alcance, pendente) | — |
+| A leitura das cópias não usa nada do Neon | U2 | `apps/server/src/platform/company-postgres.ts:78-118` (a única implementação da porta `SqlTransport`, pelo driver HTTP do Neon); `hub/apps/app-database.ts:174` (`readAppData`, o login de leitura); a lista de tabelas da Capacidade 1, que lê `information_schema` com `has_table_privilege` | PostgreSQL 18, `information_schema` e `pg_catalog` | O catálogo é igual em todo PostgreSQL | nativo: nada de branch nem Data API do Neon na leitura que o Builder faz, e o SQL passa pela porta `SqlTransport`, cujo transporte de hoje é o driver HTTP do Neon, num arquivo só; o bloco vem da definição guardada (a dona das colunas, U2) e `app_data_check` e `app_data_read` rodam SQL comum pelo login de leitura | Critério 34 roda no PostgreSQL local | 2026-11-10: "sIM VAMOS INCLUIR" | — |
+| Os pacotes do Neon ficam nos arquivos que já os usam | U5 | `.dependency-cruiser.cjs:119-135` (`neon-sdk-only-in-the-neon-adapter`, `neon-http-driver-only-in-its-adapters`, C56); `scripts/rules.test.ts:79` (só a primeira tem arquivo plantado); `apps/server/src/platform/neon.ts:56-58` (`neondb_owner`, `neondb`); `biome.json:249-259` e `scripts/conexus-code.grit` (as regras de texto do código, em plugins GritQL ligados só ao código de produção) | Biome (GritQL) e dependency-cruiser, já instalados | O repositório já checa por importação e por texto, nativo | nativo: o plantio que falta e um plugin GritQL no override de `biome.json` que já exclui testes e `test-*.ts`; nenhum script (L20, C75) | Critérios 37 e 38 | 2026-11-10: "sIM VAMOS INCLUIR" | `scripts/neon-names.grit` |
 | Investigar o sistema antes de propor | fica de fora | `packages/connectors/src/sankhya/skill/SKILL.md:56-65` (investigar em etapas, medir com contagens, nunca as linhas) | `conexus-os@e0353c36` `docs/research/mitra/full-study.md:729-738` | A descoberta derrubou suposições | nativo: herdado, cada conector com a sua skill; fica de fora | | não precisa | — |
 | Dizer o que rodou | U1 | `conexus-build/SKILL.md:18,49` | `conexus-os@e0353c36` `full-study.md:1187-1190` | Declara o que não conseguiu, com número | nativo: texto da skill: as leituras conferidas "rodaram nos dados reais", as gravações não | | não precisa | — |
 | Ausência não é zero; corte não é total | U1 | cartão da Capacidade 1 (`EXACT`, `OVER`, `UNKNOWN`) | `ml-vigia@0c0749f1` `ARCHITECTURE.md:221,278` | Ausência não é zero; o lote cortado não é o total | nativo: o `RowCount` e o `ROW_COUNT_CAP` da Capacidade 1 | | não precisa | — |
@@ -575,8 +590,8 @@ Capacidade 2) com os contratos escritos abaixo.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/` | Cria `project-view.ts`, `mode.ts` e `mode.test.ts`; muda a leitura que serve `listProjectCopies` (traz também as colunas e o modo da definição) e `public.ts` (a vista e `copyModeOf`) | `conversations-of.ts`, `hub/copies` (a lista, na U3) |
-| `packages/hub-api/src/copies.ts` | Muda (`CopyMode`, o tipo que a vista, a lista e a proposta levam) | `apps/server`, `apps/web` |
+| `apps/server/src/hub/copies/` | Cria `project-view.ts`, `mode.ts` e `mode.test.ts`; muda `list.ts` (`CopySummary.mode`), a leitura que serve `listProjectCopies` (traz também as colunas e o modo da definição) e `public.ts` (a vista e `copyModeOf`) | `conversations-of.ts`, `hub/copies` (a lista, na U3) |
+| `packages/hub-api/src/copies.ts` | Muda (`CopyMode`; `CopySummary.mode`; o tipo que a vista, a lista e a proposta levam) | `apps/server`, `apps/web` |
 | `apps/server/src/hub/apps/` | Nenhuma mudança de código esperada em `builder-data.ts`: o Projeto sem versão enviada com cópia liberada já tem banco pronto; só o teste do critério 14 | `conversations-of.ts` |
 | `apps/server/src/builder/app-data/` | Cria `context.ts`, `context.test.ts`; muda `tools.ts` (a descrição de `app_data_read`), `access.test.ts` (critério 14) | `builder/conversation`, `builder/agents` |
 | `apps/server/src/builder/conversation/` | Muda `instructions.ts`, `prompt/prompt.ts` (o lugar `{data}`), `prompt/builder.md`, `builder.ts`; cria `data-turn.test.ts` | o controlador |
@@ -604,9 +619,9 @@ export function projectView(input: { companyId: CompanyId; projectId: ProjectId 
 (`hub/copies/mode.ts`) têm um dono (C26): sem `changedSince`, `{ kind: 'WHOLE' }` (cada rodada lê a
 fonte toda, `copy-sql.ts:150-156`); com `changedSince` e `window`, `{ kind: 'WINDOW', days }`; com
 `changedSince` e sem `window`, `{ kind: 'CHANGES' }`, que a definição da Capacidade 2 aceita
-(`kernel/copy.ts:31-32`). As palavras (`cópia inteira`, `por janela de N dias`, `só o alterado`) saem
-de uma função de `packages/hub-api` que o Hub e a web usam; o bloco as escreve em inglês, como o
-resto do prompt, e a tela em português. A regra prática do Databricks escolhe entre `WHOLE` e `WINDOW`; `CHANGES` é a
+(`kernel/copy.ts:31-32`). Um dono por língua: as palavras em português (`cópia inteira`, `por janela de N dias`, `só o
+alterado`) ficam em `apps/web/src/hub/copies/text.ts`, onde já estão os textos da página Cópias, e as
+em inglês, em `builder/app-data/context.ts`; as duas leem `CopyMode`, que só `copyModeOf` escreve. A regra prática do Databricks escolhe entre `WHOLE` e `WINDOW`; `CHANGES` é a
 forma que o motor também sabe e que o Builder não escolhe sozinho ao propor.
 
 `projectView` não é uma segunda leitura: sai da mesma função de `hub/copies` que serve
@@ -647,12 +662,12 @@ answer now; do not assume there are none." Com cópias, `## Data`, uma linha de 
 tipo`, e a linha "Released to other Projects or not yet released here: <nomes>. Ask the owner to
 release one; never propose a copy that exists." Teto de 8 KB por `cutToBytes`; passado, as cópias
 que faltam pelo nome, com a frase de que `app_data_check` sobre `select * from sync.<nome>` devolve
-as colunas. A frase da fonte: o app lê o dado da empresa sempre da cópia (`sync.<nome>`, pelo `db`), que é
-recente pelo intervalo da cópia; ele nunca chama o sistema ao vivo, e o Builder nunca propõe um app
-que chame; a leitura ao vivo da conexão (`connector_read`) é para o Builder investigar; um dado que
-falta vira uma cópia proposta (`copy_propose`), ou, se o conector não copia, a frase de que ele não
-copia. Uma cópia `WHOLE` é lida inteira a cada rodada: pesa mais, e o modo está no bloco para o
-Builder dizer à pessoa.
+as colunas. A frase da fonte, igual na página, no critério 33 e em `conexus-data`: onde o conector copia, o
+app lê o dado da empresa da cópia (`sync.<nome>`, pelo `db`), recente pelo intervalo da cópia, e o
+Builder propõe a cópia que falta (`copy_propose`); a leitura ao vivo da conexão (`connector_read`) é
+para o Builder investigar; um app só lê o sistema ao vivo para um conector sem cópia (hoje, o Mercado
+Livre) e para gravar. O alcance está pendente da palavra do fundador. Uma cópia `WHOLE` é lida
+inteira a cada rodada: pesa mais, e o modo está no bloco para o Builder dizer à pessoa.
 
 `builder/conversation/builder.ts`: `projectView` lido uma vez por rodada com `oncePerRun`, como
 `granted`; `instructions.ts` passa `dataContext(view)` a `fillPrompt` no lugar `{data}`, depois de
@@ -698,7 +713,8 @@ inteira pelo construtor e pelo revisor.
 
 1. `projectView` em `hub/copies`, da leitura de `listProjectCopies`. Regras: C8 (as tabelas pelo
    dono), C26, C27.
-1b. `copyModeOf` e `CopyMode`, o modo de cada cópia da vista. Regras: C26, C21.
+1b. `copyModeOf` e `CopyMode`, e `CopySummary.mode` escrito por `list.ts`; as palavras em inglês em
+   `context.ts` e as em português em `text.ts`, uma lista por língua. Regras: C26, C21.
 2. `dataContext` e o lugar `{data}`; `builder.md:16`, com a regra da fonte. Regras: C26.
 3. `builder.ts`: a vista com `oncePerRun`.
 4. O teste de `builderData` num Projeto sem versão enviada com cópia liberada (nenhum código novo se
@@ -707,8 +723,8 @@ inteira pelo construtor e pelo revisor.
 5. A descrição de `app_data_read`: as tabelas do app pelo nome, e as cópias liberadas por
    `sync.<nome>` com as colunas entre aspas.
 6. `conexus-data`: a exceção das cópias, as colunas entre aspas na caixa da definição, a regra da
-   fonte (o app lê a cópia; a seção Connectors diz o que sobra de chamada ao conector e que o Builder
-   não propõe app que leia o sistema ao vivo).
+   fonte, na frase acima (a seção Connectors diz o que sobra de chamada ao conector: o conector sem
+   cópia e gravar).
 7. Documento: `builder-prompt.md`.
 
 ### Como se prova
@@ -737,8 +753,13 @@ inteira pelo construtor e pelo revisor.
 - A Capacidade 2 entrar sem as colunas na definição, ou criando as colunas sem aspas: parar; a
   fonte e a forma do bloco mudam.
 - A seção Connectors de `conexus-data` ou o prompt não poderem ser estreitados sem tirar do app uma
-  chamada ao conector que nenhuma cópia substitui (por exemplo, gravar no sistema): parar e dizer qual;
-  a regra do fundador é sobre o que uma cópia pode ler.
+  chamada ao conector que nenhuma cópia substitui, isto é, a de um conector sem cópia (hoje, o
+  Mercado Livre) ou a que grava no sistema: parar e dizer qual; a regra é sobre o que uma cópia pode
+  ler, e o alcance está pendente da palavra do fundador.
+- O pull request 945 entrar sem `shown.changedSince` em `CopySummary`, ou com `windowText` que ainda
+  classifica o caso sem `changedSince` e com `window` como outra coisa que a cópia inteira, ou sem
+  `COPY_PASS_COLUMN` em `platform/copy-sql.ts`: parar e reler o critério 32; a classificação é só de
+  `copyModeOf`.
 - A leitura do Builder num Projeto com cópia liberada pedir código novo para abrir o banco: parar e
   dizer; `projectDatabase` já criou a linha `app` e marcou `database_ready`, e mexer nisso mudaria o
   que a Capacidade 2 provou na Prévia, na lista de Projetos e na página Dados.
@@ -773,8 +794,8 @@ inteira pelo construtor e pelo revisor.
 | `apps/server/src/builder/conversation/permissions.ts` | Muda (`copy_propose` em `READ`) | o controlador |
 | `apps/server/migrations/`, `apps/server/database-grants.sql`, o `snapshot.json` | Cria a migração de `copy_proposal` e tira o `not null` de `copies.copy.model`; muda as permissões, num pull request só dele (D11) | `migrate`, `catalog.test.ts` |
 | `copies.copy` (tabela da Capacidade 2) | Muda: `model` aceita nulo (uma cópia ligada de uma proposta não tem modelo) | `hub/copies` (`enable.ts`, `store.ts`, a lista) |
-| `packages/hub-api/src/{copies,copy-failures,tools}.ts` | Muda (`EnableCopy` com a origem, `CopyProposalSummary`, `dismissCopyProposal`, `COPY_PROPOSAL_DECIDED`, `BUILDER_TOOL.copyPropose`) | `apps/server`, `apps/web` |
-| `apps/web/src/hub/copies/` | Cria `copy-proposal.tsx` e o teste; muda `copy-list.tsx`, `queries.ts` | a rota `…/copies` |
+| `packages/hub-api/src/{copies,copy-failures,tools}.ts` | Muda (`EnableCopy` com a origem, `CopyProposalSummary` com `mode`, `dismissCopyProposal`, `COPY_PROPOSAL_DECIDED`, `BUILDER_TOOL.copyPropose`) | `apps/server`, `apps/web` |
+| `apps/web/src/hub/copies/` | Cria `copy-proposal.tsx` e o teste; muda `copy-list.tsx` e `copy-detail.tsx` (o modo, de `copy.mode`), `text.ts` (as palavras do modo em português; `windowText` deixa de classificar), `queries.ts` | a rota `…/copies` |
 | `apps/web/src/builder/conversation/connector-specs.ts` | Muda (a linha de `copy_propose`) | a conversa |
 | `docs/reference/screens.md` | Muda a linha da página Cópias | — |
 
@@ -900,7 +921,9 @@ conexão de `granted` tem `copies`, com a entrada `{ connection, connector, name
 (`definition` como `z.unknown()` na ferramenta; o Hub parseia, para a mensagem do erro voltar ao
 modelo). A descrição diz: investigue o sistema da conexão com `connector_read` antes; escolha o modo pela
 regra prática (cópia inteira, a definição sem `changedSince`, quando mais de 10% das linhas mudam a
-cada rodada; por janela nas demais) e diga qual escolheu e por quê; a proposta roda
+cada rodada; por janela ou só o alterado nas demais), meça a fração com `connector_read`, contando
+as linhas cuja data de alteração cai dentro de um intervalo da cópia contra o total, e, sem coluna de
+data de alteração, a cópia é inteira; diga qual modo escolheu e por quê; a proposta roda
 uma página de prova e guarda só a contagem; uma pessoa liga na página Cópias; diga à pessoa que a
 proposta está lá e siga com o que não depende dela.
 
@@ -944,9 +967,12 @@ inteira pelo construtor e pelo revisor.
    D15.
 2. `propose.ts` e `provePage`. Regras: S2, S7, C79, D20, D22.
 3. `EnableCopy` com a origem, `accept.ts`, dispensar e as falhas. Regras: C37, C48, C65, S8.
-4. `copy_propose` no Builder e em `permissions.ts`; a linha da conversa.
+4. `copy_propose` no Builder e em `permissions.ts`, com a regra dos 10% e como medi-la na
+   descrição; a linha da conversa.
 5. A linha **Proposta** e o diálogo em `copy-proposal.tsx`, com `hubMutation` em `queries.ts`.
    Regras: W10, W12, W24, V29, V35.
+5b. O modo na lista, no detalhe, na proposta e no diálogo, por `copy.mode`, com as palavras de
+   `text.ts`; `windowText` deixa de classificar. Regras: W10, V35.
 6. `docs/reference/screens.md`.
 
 ### Como se prova
@@ -957,6 +983,11 @@ inteira pelo construtor e pelo revisor.
 - Critérios 20 a 24: `routes.test.ts` e `accept.test.ts`, pela porta HTTP do Hub de teste (T5). O
   critério 22 dispara os dois pedidos juntos e espera os dois (C65).
 - Critérios 27 e 28: `copy-proposal.test.tsx`, pelo roteador de teste da web com o Hub dublê.
+- Critério 35: `copy-list.test.tsx` e `copy-proposal.test.tsx`, pelo roteador de teste da web com o
+  Hub dublê que devolve `mode` nas três formas; falha hoje: a lista e o detalhe não dizem o modo.
+- Critério 36: `copy-propose.test.ts`, pelo turno de teste do Builder lendo a descrição que o pedido ao
+  modelo leva, com as duas frases (os 10% e como medir; sem data de alteração, inteira); falha hoje:
+  a ferramenta não existe.
 - Critério 29: QA ([testing T25](../guides/testing.md)).
 - Local: os testes tocados, `npm run typecheck`, `npm run lint`, `npm run docs`.
 
@@ -968,6 +999,8 @@ inteira pelo construtor e pelo revisor.
   real, que é chamada a um serviço de fora.
 - `enableCopy` da Capacidade 2 não aceitar a origem sem mudar a chave de tentativa (`body_hash`):
   parar e dizer.
+- O pull request 945 não estar no `main`, ou entrar sem `CopySummary.shown.changedSince`: parar; o modo
+  da lista e do detalhe depende dele (critério 32).
 
 ## U4 O app declara as cópias (opcional)
 
@@ -1030,3 +1063,61 @@ inteira pelo construtor e pelo revisor.
 ### Parar se
 
 - A autorização do molde não vier: a unidade não começa, e o cartão fecha sem ela.
+
+## U5 O Neon no seu lugar
+
+**Base e modelo.** O `main`; não depende de nada da Capacidade 3 e vai num pull request só dela,
+antes do de construção ([delivery L20](../guides/delivery.md): uma checagem nova entra num pull
+request próprio, nativa primeiro). Sonnet.
+
+### As linhas da tabela
+
+- `.dependency-cruiser.cjs:119-135` (as duas regras do Neon, C56) e `scripts/rules.test.ts:60-90` (o
+  plantio por regra; só `neon-sdk-only-in-the-neon-adapter` tem o seu, `:79`).
+- `biome.json:249-259` e `scripts/conexus-code.grit`, `scripts/conexus-code.test.ts` (as regras de
+  texto como plugins GritQL ligados a código de produção, com `!**/*.test.ts` e `!**/test-*.ts`).
+- `apps/server/src/platform/neon.ts:56-58` (`neondb_owner`, `neondb`); fora dele, o literal só aparece
+  em testes e ajudantes de teste e em `scripts/removals.json`, que um plugin de código não lê.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `scripts/rules.test.ts` | Muda (o plantio de `neon-http-driver-only-in-its-adapters`) | `npm test` de `scripts` |
+| `scripts/neon-names.grit` | Cria (recusa o literal `'neondb'` ou `'neondb_owner'`, com a mensagem de usar `COMPANY_DATABASE` ou o dono de `neon.ts`) | `biome.json` |
+| `biome.json` | Muda (um override que liga o plugin ao código de produção de `apps/**`, `packages/**` e `scripts/**`, sem testes, sem `test-*.ts` e sem `apps/server/src/platform/neon.ts`) | `npm run lint` |
+| `scripts/conexus-code.test.ts` | Muda (o plantio da regra nova e o caso do arquivo de fora) | `npm test` de `scripts` |
+
+### Os contratos que a unidade cria
+
+**Apaga do `main`, antes de acrescentar:** nada. O que a regra recusa: o literal `'neondb'` ou
+`'neondb_owner'` em código de produção fora de `apps/server/src/platform/neon.ts`; quem precisa do
+nome importa `COMPANY_DATABASE` de `neon.ts`, como `app-read.ts` e `copy-sql.ts` já fazem. Nenhum
+script, comando de `package.json` ou passo de CI novo: a regra roda em `npm run lint`.
+
+### As skills e a leitura
+
+- `neon:neon-postgres` não se aplica: a unidade não toca o driver, só confere onde ele entra.
+- GritQL e Biome: `scripts/conexus-code.grit` como modelo, e a versão de Biome instalada.
+
+### A ordem do trabalho
+
+1. O plantio que falta em `scripts/rules.test.ts`.
+2. `scripts/neon-names.grit`, o override em `biome.json` e o plantio em `conexus-code.test.ts`.
+3. `npm run lint` no `main` passa sem mudar nenhum arquivo de produção.
+
+### Como se prova
+
+- Critério 37: `scripts/rules.test.ts`, o arquivo plantado que importa `@neondatabase/serverless`
+  fora dos dois arquivos permitidos; falha hoje: a regra não tem plantio, então nada a prova.
+- Critério 38: `scripts/conexus-code.test.ts`, o código de produção plantado com `'neondb'` e outro
+  com `'neondb_owner'` fora de `neon.ts`, recusados; o mesmo literal em `neon.ts` e em um teste
+  passa; falha hoje: nenhuma regra recusa.
+- Local: os testes tocados, `npm run lint`, `npm run deps`, `npm run docs`.
+
+### Parar se
+
+- O GritQL do Biome instalado não casar um literal de texto: parar e dizer; só então um script,
+  que o cartão não prevê.
+- `npm run lint` falhar em arquivo de produção que já escreve o literal fora de `neon.ts`: parar e
+  dizer qual; o conserto é importar `COMPANY_DATABASE`, e a unidade o faz só se for uma linha.
