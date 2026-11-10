@@ -36,13 +36,13 @@ async function stored<T>(work: Promise<T>): Promise<T> {
 type Row = Awaited<ReturnType<Mastra['schedules']['get']>>
 
 /** A copy's schedule row, with what it is; a row of another workflow, or unreadable, is none. */
-function ownedOf(row: Row) {
+function ownedOf(row: Row, log: FailureLog) {
   if (row?.workflowId !== COPY_WORKFLOW) return undefined
   const input = CopyInput.safeParse(row.inputData)
   const metadata = Metadata.safeParse(row.metadata)
-  return input.success && metadata.success
-    ? { row, input: input.data, metadata: metadata.data }
-    : undefined
+  if (input.success && metadata.success) return { row, input: input.data, metadata: metadata.data }
+  log.error({ scheduleId: row.id }, 'COPY_SCHEDULE_UNREADABLE')
+  return undefined
 }
 
 function stateOf(owned: NonNullable<ReturnType<typeof ownedOf>>): CopyState {
@@ -54,7 +54,7 @@ function stateOf(owned: NonNullable<ReturnType<typeof ownedOf>>): CopyState {
 }
 
 /** The copies' clock on `mastra.schedules`: one schedule row for each copy, with nothing of its own beside them. */
-export function createCopyClock(deps: { mastra: Mastra }): CopyClock {
+export function createCopyClock(deps: { mastra: Mastra; log: FailureLog }): CopyClock {
   const { schedules } = deps.mastra
   async function update(id: string, patch: { cron: string; metadata: Metadata }) {
     await stored(schedules.update(id, patch))
@@ -65,7 +65,7 @@ export function createCopyClock(deps: { mastra: Mastra }): CopyClock {
       const metadata = { companyId, interval }
       const cron = CRONS[interval]
       // `update` keeps a pause (the study's P1).
-      if (ownedOf(await stored(schedules.get(id))) !== undefined)
+      if (ownedOf(await stored(schedules.get(id)), deps.log) !== undefined)
         return update(id, { cron, metadata })
       try {
         await schedules.create({
@@ -74,7 +74,8 @@ export function createCopyClock(deps: { mastra: Mastra }): CopyClock {
         })
       } catch (error) {
         // No stable field tells a race lost at the row's id (code C52): the row read again is the race.
-        if (ownedOf(await stored(schedules.get(id))) === undefined) throw databaseFailure(error)
+        if (ownedOf(await stored(schedules.get(id)), deps.log) === undefined)
+          throw databaseFailure(error)
         await update(id, { cron, metadata })
       }
     },
@@ -94,7 +95,7 @@ export function createCopyClock(deps: { mastra: Mastra }): CopyClock {
       const rows = await stored(schedules.list({ workflowId: COPY_WORKFLOW }))
       const found = new Map<CopyId, CopyState>()
       for (const row of rows) {
-        const owned = ownedOf(row)
+        const owned = ownedOf(row, deps.log)
         if (owned?.input.companyId === companyId) found.set(owned.input.copyId, stateOf(owned))
       }
       return found

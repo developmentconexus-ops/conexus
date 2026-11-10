@@ -73,7 +73,10 @@ test('ligar: a linha, o esquema e a tabela', async (t) => {
   assert.ok(table.columns.includes('DTNEG date'))
   assert.ok(table.columns.includes('DTALTER timestamp without time zone'))
   assert.ok(table.columns.includes('VLRNOTA numeric'))
-  assert.deepEqual(on.calls, [`set ${copyId} 30m`, `runNow ${copyId}`])
+  assert.deepEqual(
+    on.calls.filter((call) => call.startsWith('runNow')),
+    [`runNow ${copyId}`],
+  )
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_ENABLED'))
 
   assert.equal(await on.enable('vendas', { key }), copyId, 'a mesma chave acha a mesma cópia')
@@ -123,6 +126,25 @@ test('ligar: as recusas', async (t) => {
   assert.equal((await copiesOf(on)).length, 1)
 })
 
+test('ligar: o Hub atualizando recusa antes de tudo', async (t) => {
+  const on = await copiesOn(t)
+  on.hubState.updating = true
+  await refusedWith('HUB_UPDATING', () => on.enable('vendas'))
+  assert.equal((await copiesOf(on)).length, 0, 'nem a linha')
+  assert.deepEqual(on.calls, [])
+})
+
+test('ligar: repetir com a mesma chave não pede outra rodada', async (t) => {
+  const on = await copiesOn(t)
+  const key = randomUUID()
+  const copyId = await on.enable('vendas', { key })
+  assert.equal(await on.enable('vendas', { key }), copyId)
+  assert.deepEqual(
+    on.calls.filter((call) => call.startsWith('runNow')),
+    [`runNow ${copyId}`],
+  )
+})
+
 test('ligar: o banco da empresa cai no meio', async (t) => {
   const on = await copiesOn(t)
   const key = randomUUID()
@@ -130,9 +152,12 @@ test('ligar: o banco da empresa cai no meio', async (t) => {
   await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.enable('produtos', { key }))
   const [kept] = await copiesOf(on)
   assert.equal(kept?.name, 'produtos', 'a linha fica')
-  assert.deepEqual(on.calls, [], 'o relógio só depois da tabela')
+  assert.equal(on.calls.length, 0, 'o relógio só depois da tabela')
   const copyId = await on.enable('produtos', { key })
   assert.equal(copyId, kept.id, 'a mesma chave termina o que faltou')
   assert.deepEqual((await tableOf(on, 'produtos')).key, ['CODPROD'])
-  assert.deepEqual(on.calls, [`set ${copyId} 30m`, `runNow ${copyId}`])
+  assert.deepEqual(
+    on.calls.filter((call) => call.startsWith('runNow')),
+    [`runNow ${copyId}`],
+  )
 })

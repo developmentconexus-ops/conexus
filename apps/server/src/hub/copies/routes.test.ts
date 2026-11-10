@@ -213,4 +213,8 @@ test('a agenda', async (t) => {
   assert.equal(COPY_INTERVAL_DEFAULT, '30m')
   await missing()
   assert.deepEqual(stateOf(await interval('6h')), ['ACTIVE', '6h'])
+  await missing()
+  await hub.settle(AbortSignal.timeout(10_000))
+  const stopping = await interval('6h')
+  assert.deepEqual([stopping.statusCode, codeOf(stopping)], [503, 'HUB_UPDATING'])
 })

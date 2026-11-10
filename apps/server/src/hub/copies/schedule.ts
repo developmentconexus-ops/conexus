@@ -30,7 +30,7 @@ async function stateOf(deps: CopiesDeps, input: Of) {
 }
 
 /** A schedule made while the scheduler is stopping would start it again (as an automation's). */
-function mayCreate(deps: CopiesDeps) {
+export function mayCreate(deps: CopiesDeps) {
   if (deps.updating()) throw new Failure('HUB_UPDATING')
 }
 

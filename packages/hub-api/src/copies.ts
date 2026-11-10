@@ -176,7 +176,7 @@ export const changeCopyInterval = defineOperation({
   bodyLimit: 1024,
   input: { params: OfCopy, body: z.object({ interval: CopyInterval }) },
   success: { status: 200, body: Copy },
-  failures: ONE_FAILURES,
+  failures: [...ONE_FAILURES, 'HUB_UPDATING'],
 })
 
 export const runCopy = defineOperation({

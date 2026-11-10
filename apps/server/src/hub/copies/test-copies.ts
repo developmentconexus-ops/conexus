@@ -96,13 +96,26 @@ function gateOf(t: TestContext) {
 /** The clock as a double that notes each call (T20): the run is called directly by the test. */
 function clockDouble() {
   const calls: string[] = []
+  const made = new Set<CopyId>()
   const clock: CopyClock = {
-    set: async ({ copyId, interval }) => void calls.push(`set ${copyId} ${interval}`),
+    set: async ({ copyId, interval }) => {
+      made.add(copyId)
+      calls.push(`set ${copyId} ${interval}`)
+    },
     pause: async (copyId) => void calls.push(`pause ${copyId}`),
     resume: async (copyId) => void calls.push(`resume ${copyId}`),
     runNow: async (copyId) => void calls.push(`runNow ${copyId}`),
-    remove: async (copyId) => void calls.push(`remove ${copyId}`),
-    states: async () => new Map(),
+    remove: async (copyId) => {
+      made.delete(copyId)
+      calls.push(`remove ${copyId}`)
+    },
+    states: async () =>
+      new Map(
+        [...made].map((copyId) => [
+          copyId,
+          { schedule: { kind: 'PAUSED' }, interval: '30m' } as const,
+        ]),
+      ),
   }
   return { clock, calls }
 }

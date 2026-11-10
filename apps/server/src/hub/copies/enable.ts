@@ -6,6 +6,7 @@ import { bodyHashOf } from '../../platform/attempt.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
+import { mayCreate } from './schedule.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { companyOwner, parsedCopy, personScope } from './store.ts'
 import { copy } from './tables.ts'
@@ -79,6 +80,8 @@ async function recorded(deps: CopiesDeps, input: Enabling) {
  * keeps the row.
  */
 export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<CopyId> {
+  // Before the row: a schedule made while the scheduler stops would start it again.
+  mayCreate(deps)
   const made = await recorded(deps, input)
   const stored = made.copy
   const unavailable = new Failure('COPY_DATABASE_UNAVAILABLE')
@@ -100,8 +103,11 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
     deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
     throw unavailable
   }
+  // A first run is asked for only when the schedule is new: a repeat, or a retry after the schedule
+  // was made, does nothing more (criterion 7); a retry after a cut before it still gets its run.
+  const scheduled = (await deps.clock().states(companyId)).has(copyId)
   await deps.clock().set({ companyId, copyId, interval: input.interval })
-  await deps.clock().runNow(copyId)
+  if (!scheduled) await deps.clock().runNow(copyId)
   if (made.fresh) deps.log.info({ companyId, copyId, model: stored.model }, 'COPY_ENABLED')
   return copyId
 }

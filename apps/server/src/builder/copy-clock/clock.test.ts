@@ -156,3 +156,21 @@ test('a empresa apagada leva as agendas', { timeout: 120_000 }, async (t) => {
   assert.deepEqual(await schedules(), [])
   assert.equal(await copyRows(on), 0)
 })
+
+test('uma agenda ilegível aparece no registro', { timeout: 120_000 }, async (t) => {
+  const on = await copiesOn(t, undefined, TICK_MS)
+  await started(on, 'clientes')
+  await on.hub.mastra.schedules.create({
+    ...{ id: 'schedule_ilegivel', workflowId: COPY_WORKFLOW, cron: '0 * * * *' },
+    ...{ timezone: 'America/Sao_Paulo', metadata: { broken: true }, inputData: { broken: true } },
+  })
+  const read = await call(on.hub, on.ana, 'GET', copiesUrl(on))
+  assert.equal(read.statusCode, 200, read.body)
+  assert.ok(
+    on.hub.lines.some(
+      (line) =>
+        line.message === 'COPY_SCHEDULE_UNREADABLE' &&
+        line.fields.scheduleId === 'schedule_ilegivel',
+    ),
+  )
+})
