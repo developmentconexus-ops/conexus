@@ -903,7 +903,7 @@ Aprovação dos textos novos da tela, em 2026-11-10: o fundador viu as cinco cap
 
 ## Capacidade 3, O Builder aprende o Sync
 
-Cartão curto da Capacidade 3, O Builder aprende o Sync (`docs/steps/capacidade-3-o-builder-aprende-o-sync.md`) aprovado em 2026-11-10 (commit 5cc713e97b381542bded9f1da910e88d75cfbe75): "3. Okay"
+Cartão curto da Capacidade 3, O Builder aprende o Sync (`docs/steps/capacidade-3-o-builder-aprende-o-sync.md`) aprovado em 2026-11-10 (commit 20a1fb817f217e5080dad6cc8c757ad704553830), a página final e o agrupamento das unidades (a U5 num pull request só dela, U1, U2 e U3 num de construção, a U4 depois): "Aprovo". Antes, sobre o primeiro texto da página (commit 5cc713e97b381542bded9f1da910e88d75cfbe75): "3. Okay"
 
 Em 2026-11-09, à decisão A do estudo (o Builder propõe a cópia que falta), a A1, com a lembrança de que o Sankhya é só o primeiro conector: "Só lembrando, o Sunker é só o primeiro conector, gente. Não tem que fixar e focar no Sunker. Ele investiga o sistema, né? Por exemplo, vamos supor que é um Mercado Livre. Concorda? Ele vai investigar o Mercado Livre, por exemplo." No mesmo dia, sobre o que o Builder sabe no começo da conversa e as 20 linhas de exemplo, pediu a base antes de aprovar: "Esse começo de cada conversa, ele já sabe quais cópias o projeto tem, quais colunas, o número de linhas, como que ele vai saber isso e por quê? precisa ter." e "Poucas linhas de exemplo, no máximo 20. Beleza. De onde veio isso? Faz sentido? Porque se fizer, eu aprovo."
 
