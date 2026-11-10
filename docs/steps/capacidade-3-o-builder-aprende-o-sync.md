@@ -42,13 +42,13 @@ ao Projeto novo "Vendedores", que ainda não tem app (isso é a Capacidade 2).
    **Proposta**, com a consulta, a chave e quantas linhas a página de teste trouxe. Toque **Ligar**:
    escolha o intervalo, e a cópia começa a rodar, já liberada ao Projeto "Vendedores". **Dispensar**
    tira a proposta.
-5. Entre como uma pessoa que é **Membro** da empresa e converse com o Builder no mesmo Projeto (com a
-   B1 abaixo): ele
-   ainda roda as leituras contando, mas não mostra linhas de exemplo, porque quem é membro não vê o
-   banco do app.
+5. Entre como uma pessoa que é **Membro** da empresa e converse com o Builder no mesmo Projeto: ele
+   tem o Builder inteiro, como você, e olha as linhas de exemplo e roda as leituras contando. A
+   página **Dados** do Projeto continua fechada para ele, que não é dono, administrador nem
+   desenvolvedor.
 
 **O que você faz, e quando.** Antes: nada além da Capacidade 2 no ar. No começo: aprova esta
-página e responde a decisão B. Quando a lista de permissões do banco do Conexus ganhar a tabela das propostas: diz sim
+página. Quando a lista de permissões do banco do Conexus ganhar a tabela das propostas: diz sim
 nesse pull request, que vem sozinho ([data D11](../guides/data.md)). Antes da U4, se você a quiser:
 autoriza a chamada paga que refaz o molde da máquina do Builder. No fim: faz o roteiro, diz o que
 viu e aprova os textos das telas.
@@ -72,28 +72,8 @@ viu e aprova os textos das telas.
   é de outro assunto. A #148 (o cache de instruções do provedor da assinatura) não muda o bloco de
   dados, que nasce estável de qualquer forma.
 
-**As decisões suas nesta capacidade.** Uma nova, a B, e quatro já respondidas.
-
-**B. Quem conversa com o Builder e não vê o banco do app (o Membro) pode contar o que está nas
-cópias?** Exemplo: um membro pede um app e o Builder roda "quantas vendas acima de R$ 10 mil este
-mês"; volta "37", nunca as linhas. Contando com filtros, um membro descobre qualquer número (o total
-de um vendedor, por exemplo), mesmo sem ver as linhas.
-
-- **B1 (recomendo).** Sim: todo que conversa conta; ver linhas continua só de dono, administrador e
-  desenvolvedor. Quem constrói precisa provar as leituras do app, e hoje qualquer membro conversa
-  com o Builder e manda versões ao app do Projeto; publicar é de dono, administrador e
-  desenvolvedor, e o membro só pede a publicação. Pesa também, lido no código e não rodado: a
-  versão que o membro manda roda na Prévia com o login do app, que recebe a liberação das cópias,
-  então o app que o membro constrói já pode mostrar a ele linhas das cópias liberadas. Nativo: a
-  conversa já admite todo membro (`useConversations`).
-- **B2.** Não: só dono, administrador e desenvolvedor contam; o membro constrói sem provar as
-  leituras nos dados, como hoje. Nativo também: a mesma permissão de ver o banco do app. Com a B2
-  mudam o critério 5 (o membro não recebe nenhuma das duas ferramentas de dados), o 15 (o membro
-  não conta), a coluna "Sem permissão" da linha de `app_data_check` na matriz de estados (a
-  ferramenta não está no turno do membro) e o passo 5 do roteiro (o membro constrói sem rodar as
-  leituras nos dados).
-
-As quatro já respondidas, que a página escreve como você decidiu:
+**As decisões suas nesta capacidade.** Cinco, todas já respondidas por você; a página as escreve
+como você decidiu.
 
 - **O Builder propõe a cópia que falta (A1).** Em 2026-11-09, lembrando que o Sankhya é só o primeiro
   conector: "Ele investiga o sistema, né? Por exemplo, vamos supor que é um Mercado Livre. Concorda?
@@ -111,8 +91,13 @@ As quatro já respondidas, que a página escreve como você decidiu:
   entender a forma do dado; para analisar, conta e agrupa. Em 2026-11-10: "Pergunta 2, Aprovado".
 - **Ligar uma proposta libera a cópia ao Projeto que a pediu.** Sem isso o Builder ficaria sem ver
   a cópia até um segundo clique, em Integrações. Em 2026-11-10: "3. Sim".
+- **Quem usa o Builder num Projeto tem o Builder inteiro.** Quem a empresa deixou conversar com o
+  Builder naquele Projeto, o Membro inclusive, vê as contagens, as colunas e as linhas de exemplo
+  que o Builder vê; a página **Dados** continua só de dono, administrador e desenvolvedor. Você
+  disse, sobre a pergunta que o cartão fazia: "se a pessoal deu acesso ao builder para o membro ele
+  vai ver então". Em 2026-11-10, à regra assim escrita: "1. Okay". A página do cartão: "3. Okay".
 
-Além da B e desta página, falta a sua palavra em duas coisas, cada uma no seu momento: a lista de permissões da tabela nova
+Além desta página, falta a sua palavra em duas coisas, cada uma no seu momento: a lista de permissões da tabela nova
 das propostas (D11), e a chamada paga que refaz o molde da máquina do Builder, que só a U4 pede. A
 U4 é a última e é opcional: sem ela, o banco já recusa a um app a cópia não liberada; ela só faz
 publicar dizer antes qual cópia falta.
@@ -125,7 +110,7 @@ request seu. Ao aprovar esta página você aprova também esse agrupamento.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 Conferir e ver | O assunto `builder/app-data/` (com `agents/app-data.ts` movido para ele); `app_data_check` e `app_data_read` no Builder; a porta do Builder em `hub/apps` com a permissão conferida no Hub; a conferência em `hub/apps/app-check.ts`; os tipos das colunas na leitura de `platform/`; os nomes em `hub-api`; as linhas das ferramentas na conversa; o texto de conferir em `conexus-build` e `conexus-data` | `apps/server/src/builder/{app-data,agents,construtor,conversation}/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/`, `packages/app/skills/{conexus-build,conexus-data}/`, `apps/web/src/builder/conversation/`, `docs/explanation/builder-turn.md` | [data](../guides/data.md) | esta página aprovada; a Capacidade 1 no `main` (`viewAppData`, `readApp` com `SqlStatement`, `RowCount`) |
+| U1 Conferir e ver | O assunto `builder/app-data/` (com `agents/app-data.ts` movido para ele); `app_data_check` e `app_data_read` no Builder; a porta do Builder em `hub/apps`, que admite por `useConversations` (quem usa o Builder), conferido no Hub a cada chamada, e não por `viewAppData`, que fica na página Dados; a conferência em `hub/apps/app-check.ts`; os tipos das colunas na leitura de `platform/`; os nomes em `hub-api`; as linhas das ferramentas na conversa; o texto de conferir em `conexus-build` e `conexus-data` | `apps/server/src/builder/{app-data,agents,construtor,conversation}/`, `apps/server/src/hub/apps/`, `apps/server/src/platform/`, `apps/server/src/conversations-of.ts`, `packages/hub-api/src/`, `packages/app/skills/{conexus-build,conexus-data}/`, `apps/web/src/builder/conversation/`, `docs/explanation/builder-turn.md` | [data](../guides/data.md) | esta página aprovada; a Capacidade 1 no `main` (`viewAppData`, `readApp` com `SqlStatement`, `RowCount`) |
 | U2 O Builder sabe das cópias | O bloco "## Data" das instruções; a vista das cópias "do Projeto" em `hub/copies`, da mesma leitura de `listProjectCopies`; a porta `builderData` lendo um Projeto sem app com cópia liberada pela regra da U5 da Capacidade 2; a regra de qual fonte usar no prompt e em `conexus-data`; a descrição de `app_data_read` dos agentes | `apps/server/src/builder/{app-data,conversation}/`, `apps/server/src/hub/{copies,apps}/`, `apps/server/src/conversations-of.ts`, `packages/app/skills/conexus-data/`, `docs/reference/builder-prompt.md` | [data](../guides/data.md) | U1; a Capacidade 2 inteira no `main`, com a U5 (critérios 20 e 38 dela) |
 | U3 Propor cópia | A tabela `copies.copy_proposal`; propor, ligar a partir da proposta (com a liberação ao Projeto) e dispensar; a prova de uma página pela porta do Builder; `copy_propose`; a linha **Proposta** na página Cópias | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/connectors/`, `apps/server/src/{main,conversations-of}.ts`, `apps/server/migrations/`, `packages/hub-api/src/`, `apps/web/src/hub/copies/`, `apps/web/src/builder/conversation/` | [security](../guides/security.md) | U2; a lista de permissões da tabela nova, num pull request só dela (D11) |
 | U4 O app declara as cópias (opcional) | `copies` no manifesto; `defineCopies`; a conferência leva a lista ao manifesto; publicar recusa a cópia não liberada com `COPY_NOT_RELEASED`; o texto da skill; o molde da máquina refeito | `packages/app-contract/src/`, `packages/app/src/`, `packages/app/skills/conexus-data/`, `apps/server/src/hub/{apps,copies}/`, `apps/server/src/main.ts`, `packages/hub-api/src/` | [code](../guides/code.md) apenas | U2; a palavra do fundador sobre a chamada paga do molde |
@@ -166,7 +151,7 @@ da capacidade: ~2.200 linhas, abaixo do orçamento de [delivery L2](../guides/de
 | 2 | U1 | A conferência liga os valores: `{ sql: '… where id = $1', values: [7] }` conta 1; uma leitura que termina em `-- comentário` conta certo; uma que já tem `order by … limit 5` conta 5; duas colunas de mesmo nome contam | `check.test.ts`, "conferir: valores, comentário, limite e nomes repetidos" | must |
 | 3 | U1 | Pela saída de `app_data_check` (`AppDataCheckOutput`, na U1): o texto que fecha o parêntese e emenda `union all select …` devolve `FAILED` `CHECK_NOT_A_COUNT` e nenhum número; as recusas do banco devolvem `REFUSED` `APP_DATA_REFUSED` com o SQLSTATE: um `insert` dentro do embrulho, `42601`; um `with … insert`, `0A000`; `nextval`, `25006`; tabela que não existe, `42P01`; tabela sem `GRANT`, `42501`; `;` no fim, `42601`; cada recusa leva só o SQLSTATE, como `app_data_read` hoje, nunca a mensagem do PostgreSQL, que pode trazer o valor de uma célula; passado o prazo de 5 s por instrução, `FAILED` `APP_DATA_TIMEOUT` | `check.test.ts`, "conferir: o que não é contagem e as recusas do banco" | must |
 | 4 | U1 | Uma leitura que não traz linha devolve `EXACT 0` e as colunas com o tipo | `check.test.ts`, "conferir: zero linhas mantém as colunas" | must |
-| 5 | U1 | Num turno de dono, administrador ou desenvolvedor o Builder oferece `app_data_read` e `app_data_check`; num turno de membro oferece só `app_data_check`; a porta do Hub chamada como membro para ler linhas responde `NOT_FOUND`, igual a um Projeto que não existe (S10), e para conferir responde a contagem (decisão B da página) | `apps/server/src/builder/app-data/access.test.ts`, "quem vê linhas e quem só conta" | must |
+| 5 | U1 | Num turno de qualquer pessoa admitida ao Projeto (dono, administrador, desenvolvedor ou membro) o Builder oferece `app_data_read` e `app_data_check`; a porta do Hub chamada como membro admitido lê linhas e confere, e chamada por quem não é admitido ao Projeto responde `NOT_FOUND`, igual a um Projeto que não existe (S10); a página **Dados** e as rotas da Capacidade 1 seguem com `viewAppData`, e o membro recebe 404 nelas | `apps/server/src/builder/app-data/access.test.ts`, "quem usa o Builder lê e conta" | must |
 | 6 | U1 | `app_data_read` do Builder corta em 20 linhas e 16 KB pelo mesmo `shaped` das leituras de conector; a ferramenta dos agentes continua com o mesmo id e o mesmo resultado; `apps/server/src/builder/agents/app-data.ts` não existe mais | `apps/server/src/builder/agents/app-data.test.ts`, os casos de hoje sem mudar; `access.test.ts`, "o Builder lê com o corte das leituras de conector"; `git ls-files` | must |
 | 7 | U1 | Num Projeto sem app e sem cópia liberada, as duas ferramentas devolvem `FAILED` `APP_DATA_NO_APP`; num app antigo sem login de leitura, a conferência cria o login pelo caminho herdado de `readAppData` e conta | `access.test.ts`, "Projeto sem banco"; `check.test.ts`, "conferir: app sem login de leitura" | must |
 | 8 | U1 | O registro de cada conferência leva só ids, o tipo da resposta e os milissegundos (`APP_DATA_CHECKED`), nunca o SQL, um valor ligado nem uma linha (S41) | `check.test.ts`, "o registro não leva dado" | must |
@@ -176,7 +161,7 @@ da capacidade: ~2.200 linhas, abaixo do orçamento de [delivery L2](../guides/de
 | 12 | U2 | Passados 8 KB, as cópias seguintes aparecem só pelo nome, com a frase de que `app_data_check` sobre `select * from sync.<nome>` devolve as colunas | `context.test.ts`, "o teto do bloco" | must |
 | 13 | U2 | Com o banco do Hub falhando na vista das cópias, o turno começa e o bloco diz que as cópias não responderam agora (C22); nenhuma cópia liberada, nenhum bloco | `context.test.ts`, "as cópias não responderam" | must |
 | 14 | U2 | Num Projeto sem app com uma cópia liberada (o banco nasceu ao liberar, critério 20 da Capacidade 2), `app_data_check` sobre `select * from sync.<nome>` conta e `app_data_read` do dono lê, sem nenhuma versão enviada e sem criar a linha `app`; sem liberação e sem app, as duas devolvem `FAILED` `APP_DATA_NO_APP` | `apps/server/src/builder/app-data/access.test.ts`, "Projeto sem app com cópia liberada" | must |
-| 15 | U2 | Um turno com o modelo dublê chama cada ferramenta que o turno oferece, sobre uma cópia com uma coluna em maiúsculas: o dono conta `select "CODVEND" from sync.vendas`, com a coluna escrita como o bloco a mostra, e lê; o membro conta, e `app_data_read` não está entre as ferramentas que o pedido ao modelo leva ([testing T24, T28](../guides/testing.md)) | `apps/server/src/builder/conversation/data-turn.test.ts`, "um turno lê e conta as cópias" | must |
+| 15 | U2 | Um turno com o modelo dublê chama cada ferramenta que o turno oferece, sobre uma cópia com uma coluna em maiúsculas, uma vez como dono e outra como membro: cada um conta `select "CODVEND" from sync.vendas`, com a coluna escrita como o bloco a mostra, e lê; as duas ferramentas estão entre as que o pedido ao modelo leva nos dois turnos ([testing T24, T28](../guides/testing.md)) | `apps/server/src/builder/conversation/data-turn.test.ts`, "um turno lê e conta as cópias" | must |
 | 16 | U2 | O agente do Projeto lê uma cópia liberada por `app_data_read` (`sync.<nome>`) e recebe `42501` numa cópia não liberada | `apps/server/src/builder/agents/app-data.test.ts`, "o agente lê a cópia liberada" | must |
 | 17 | U3 | `copy_propose` existe no turno só quando uma conexão liberada ao Projeto é de um conector com `copy` e `readDoor` (a condição da definição versão 1, `QUERY`); num Projeto só com outra conexão, não existe | `apps/server/src/builder/connectors/copy-propose.test.ts`, "a ferramenta só onde se copia" | must |
 | 18 | U3 | Propor roda uma página pela leitura de cópia do conector, grava a proposta `OPEN` com as linhas da página de teste e se havia mais, e devolve só esses dois números; nenhuma linha vai ao modelo nem à tabela; a chamada conta na conta de 50 da rodada | `apps/server/src/hub/copies/propose.test.ts`, "propor: prova uma página e guarda só a contagem" | must |
@@ -198,8 +183,8 @@ da capacidade: ~2.200 linhas, abaixo do orçamento de [delivery L2](../guides/de
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A linha de `app_data_check` na conversa | "Conferindo uma leitura do app" | não se aplica | O mesmo, com o indicador de ferramenta rodando | "Não conseguiu conferir a leitura"; o detalhe abre os argumentos e a recusa (o SQLSTATE) | não se aplica | Não acontece: todo o que conversa confere (decisão B) | `CHECK_NOT_A_COUNT` e `APP_DATA_TIMEOUT`: falha, com a recusa no detalhe |
-| A linha de `app_data_read` do Builder | A linha de hoje dos agentes, "Consultando os dados do app" | Zero linhas: "Consultou os dados do app" e o detalhe com as colunas | O mesmo da primeira vez | A falha de hoje (`appDataRefusal`) | não se aplica | A ferramenta não está no turno do membro; o controlador recusa a chamada | A recusa do banco no detalhe |
+| A linha de `app_data_check` na conversa | "Conferindo uma leitura do app" | não se aplica | O mesmo, com o indicador de ferramenta rodando | "Não conseguiu conferir a leitura"; o detalhe abre os argumentos e a recusa (o SQLSTATE) | não se aplica | Não acontece: quem conversa confere | `CHECK_NOT_A_COUNT` e `APP_DATA_TIMEOUT`: falha, com a recusa no detalhe |
+| A linha de `app_data_read` do Builder | A linha de hoje dos agentes, "Consultando os dados do app" | Zero linhas: "Consultou os dados do app" e o detalhe com as colunas | O mesmo da primeira vez | A falha de hoje (`appDataRefusal`) | não se aplica | Não acontece: quem conversa lê; sem admissão ao Projeto a ferramenta não está no turno e a porta recusa com `NOT_FOUND` | A recusa do banco no detalhe |
 | A linha de `copy_propose` | "Propondo uma cópia" | não se aplica | O mesmo | "Não conseguiu propor a cópia", o detalhe com a recusa do sistema ou o erro da definição | `NOT_GRANTED` como falha | `NOT_IN_ROLE` como falha, com o nome da leitura | `EXISTS` como falha, com a frase de pedir a liberação |
 | Cópias, a linha **Proposta** (`…/copies`) | Uma proposta e nenhuma cópia: a lista com a linha, sem a frase de primeira vez | Sem proposta: a lista da Capacidade 2 | A lista inteira em esqueleto, como hoje | Falha de leitura da lista: a da Capacidade 2 | não se aplica | Membro: a página não aparece (Capacidade 2) | Ligada ou dispensada em outra aba: o clique recebe 409 `COPY_PROPOSAL_DECIDED`, a frase e a lista relida; o nome tomado por uma cópia ligada depois: 409 `COPY_EXISTS`, a frase, e só **Dispensar** a tira |
 | Ligar a proposta (o diálogo) | A consulta em mono, a chave, a janela e o intervalo (30 minutos marcado) | não se aplica | O botão **Ligar** ocupado, um pedido só (W24) | 503 `COPY_DATABASE_UNAVAILABLE`: a frase e o botão de novo, com a mesma chave | Proposta que sumiu (Projeto ou conexão apagados): `NOT_FOUND` no diálogo | `NOT_IN_ROLE`: a frase com o nome da leitura | `COPY_PROPOSAL_DECIDED`: a frase, o diálogo fecha e a lista é relida; `COPY_EXISTS` e `COPY_CONNECTION_NOT_READY` (Capacidade 2): a frase no diálogo |
@@ -212,7 +197,6 @@ item 5): nenhuma célula declara "sem detalhe".
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `AppCheck` → `rows` (`EXACT` ou `OVER`), `columns[]` (`name`, `type`), `ms` | U1, `hub/apps/app-check.ts` | U1, o modelo pela ferramenta; a linha da conversa (o número) |
-| `BuilderDataAccess.viewRows` | U1, `hub/apps/builder-data.ts` por `allows(role, 'viewAppData')` | U1, `builder/conversation/builder.ts` (oferecer `app_data_read`) |
 | `ProjectCopiesView` → `released[]` (`name`, `columns`), `unreleased[]` | U2, `hub/copies/project-view.ts`, das linhas `project_copy` e da definição | U2, `builder/app-data/context.ts` (o bloco) |
 | `GrantedConnection.copies` | U3, `hub/connectors/builder-port.ts`, de `Connector.copy` e `Connector.readDoor` | U3, `builder/connectors/connector-tools.ts` (oferecer `copy_propose`) |
 | `CopyProposalSummary` (`id`, `name`, `label`, `connection`, `project`, `shown`, `proved`, `proposedBy`) | U3, `hub/copies/store.ts` | U3, `apps/web/src/hub/copies/copy-proposal.tsx` |
@@ -267,11 +251,11 @@ linhas que o parecer acrescentou.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | O que o Builder sabe no começo: as cópias liberadas e as colunas | U2 | `apps/server/src/builder/conversation/prompt/prompt.ts:163-178` `connectionsContext` (só as ligações, com o caderno); `conversation/instructions.ts:36-51` (instruções como função do turno); `builder/controller-kit/instructions.ts:1-8` (cache de 1 hora) | `@mastra/core@1.82.0` `dist/docs/references/docs-guides-context-engineering.md:41,63` (nas instruções o que é estável; o que muda vai por ferramenta, senão perde o cache); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/instructions.ts:9-95`; `conexus-os@e0353c36` `docs/research/mitra/influence-on-conexus.md:2142` ("tabelas-núcleo com colunas; demais só nomes") | Mastra e Mastra Code: só o estável no começo; Mitra: colunas das principais, as outras pelo nome | nativo: um bloco "## Data" ao lado de `connectionsContext`, pela mesma função do turno, com o teto de 8 KB de `cutToBytes` (`prompt.ts:82-87`). **Muda** do estudo: sem linhas e sem última rodada; as colunas vêm da definição da cópia (Capacidade 2), não do catálogo | | 2026-11-10: "Pergunta 1, Okay" | `apps/server/src/builder/app-data/context.ts`; `apps/server/src/hub/copies/project-view.ts` |
 | As cópias da empresa que o Projeto não liberou | U2 | `prompt/builder.md:16` (sistema sem ligação: dizer que precisa ligar e liberar) | `conexus-os@e0353c36` `influence-on-conexus.md:1419` | O agente vê o que existe fora do projeto como contexto | nativo: só os nomes, da tabela `copy` da empresa; a frase de hoje vira "peça a liberação" | | 2026-11-10: "Pergunta 1, Okay" | (o mesmo) |
-| Ver o conteúdo de uma cópia (linhas de exemplo) | U1 | `apps/server/src/builder/agents/app-data.ts:43-75` `app_data_read`, só dos agentes; `hub/connectors/cut.ts:3-8` (20 linhas, 16 KB, `MAX_TEXT` 600) | `conexus-os@e0353c36` `influence-on-conexus.md:2155` (`LIMIT 200` forçado); vibesdk `9da158d` `space/src/space/inspector-wrapper.ts:55-119` (só a pessoa vê) | Mitra dá ao agente SQL livre com teto; vibesdk não dá nada ao agente | nativo: a mesma `app_data_read`, com o mesmo id e o mesmo corte, dada ao Builder quando a pessoa tem `viewAppData`. **Muda** do estudo: uma ferramenta, não duas | | 2026-11-10: "Pergunta 2, Aprovado"; resposta 5 de 2026-11-09 (quem vê o banco do app) | `apps/server/src/builder/app-data/tools.ts` |
+| Ver o conteúdo de uma cópia (linhas de exemplo) | U1 | `apps/server/src/builder/agents/app-data.ts:43-75` `app_data_read`, só dos agentes; `hub/connectors/cut.ts:3-8` (20 linhas, 16 KB, `MAX_TEXT` 600) | `conexus-os@e0353c36` `influence-on-conexus.md:2155` (`LIMIT 200` forçado); vibesdk `9da158d` `space/src/space/inspector-wrapper.ts:55-119` (só a pessoa vê) | Mitra dá ao agente SQL livre com teto; vibesdk não dá nada ao agente | nativo: a mesma `app_data_read`, com o mesmo id e o mesmo corte, dada ao Builder a quem pode usá-lo no Projeto (`useConversations`). **Muda** do estudo: uma ferramenta, não duas | | 2026-11-10: "Pergunta 2, Aprovado"; regra de 2026-11-10 (quem usa o Builder tem o Builder inteiro) | `apps/server/src/builder/app-data/tools.ts` |
 | Rodar a leitura do app nos dados reais, só contagens | U1 | nenhum: `packages/app/skills/conexus-build/SKILL.md:18` ("nothing here calls it … say it was not run") | PostgreSQL 18 (`count(*)` sobre subconsulta, `default_transaction_read_only`); `conexus-os@e0353c36` `influence-on-conexus.md:2778-2792` (testa em produção com a saída inteira) | Mitra roda as funções em produção vendo todas as linhas | embrulhado: `select count(*) from (select 1 from (\n<leitura>\n) leitura limit 10001) contada` e `select * from (\n<leitura>\n) leitura limit 0` na mesma transação só de leitura; a resposta conferida por Zod (uma linha, uma coluna, um inteiro). **Muda** do estudo: o fechamento numa linha nova e `select 1` | Parecer, PostgreSQL 18 local com login só de `SELECT`: a leitura com `-- comentário` quebrava o embrulho na mesma linha e conta `10001` com a linha nova; o escape com `union all` deu duas linhas (`1` e `11`), que a conferência Zod recusa; sem `GRANT`, `permission denied` | "roda as leituras do app nos dados reais, vendo só contagens", roteiro | `apps/server/src/hub/apps/app-check.ts`; `apps/server/src/builder/app-data/tools.ts` |
 | Os tipos das colunas | U1 | `apps/server/src/platform/company-postgres.ts:86-98` (`fullResults`, só `name` dos `fields`, só `results[0]`) | `@neondatabase/serverless@1.2.0` `index.d.ts:419-426` (`FieldDef.dataTypeID`), `:1241-1250` (`types.builtins`); `pg-types` `lib/builtins.js:16,53` | O driver devolve o OID de cada coluna e exporta o mapa de OID para nome | nativo: a leitura devolve cada resultado com o OID das colunas; o nome sai de `types.builtins`, e um OID fora dele aparece como `oid <n>` | | não precisa | — |
 | O que o modelo recebe de uma ferramenta | U1 | `builder/agents/app-data.ts:30-37` (corta antes de devolver) | `@mastra/core@1.82.0` `dist/docs/references/reference-tools-create-tool.md:71`, `dist/docs/references/docs-agents-tools.md:273,313` (`toModelOutput` guarda o resultado inteiro) | O `execute` é o que fica guardado | nativo: o `execute` devolve só a contagem; `toModelOutput` não entra | | não precisa | — |
-| Quem pode o quê no Builder com dados | U1 | `hub/identity/admission.ts:83` `useConversations` (todo membro conversa); cartão da Capacidade 1, `viewAppData` | `better-auth@1.7.8` `createAccessControl` (uso em `hub/identity/roles.ts:67`) | O papel é a lista de permissões do plugin | nativo: ver linhas pede `viewAppData`, conferido na porta do Hub a cada chamada; contar pede `useConversations`. **Muda** do estudo: a recusa está na porta, esconder a ferramenta é cortesia | | resposta 5 de 2026-11-09 | `apps/server/src/hub/apps/builder-data.ts` |
+| Quem pode o quê no Builder com dados | U1 | `hub/identity/admission.ts:83` `useConversations` (todo membro conversa); cartão da Capacidade 1, `viewAppData` (só a página Dados e as suas rotas) | `better-auth@1.7.8` `createAccessControl` (uso em `hub/identity/roles.ts:67`) | O papel é a lista de permissões do plugin | nativo: ler linhas e contar pedem `useConversations`, a permissão com que o Builder já admite quem conversa, conferida na porta do Hub a cada chamada; `viewAppData` fica na página Dados. **Muda** do estudo: ele separava ver linhas (`viewAppData`) de contar; a regra decidida junta as duas ferramentas, e a recusa está na porta | | regra de 2026-11-10: "se a pessoal deu acesso ao builder para o membro ele vai ver então"; "1. Okay" | `apps/server/src/hub/apps/builder-data.ts` |
 | Escrever a leitura do app sobre uma cópia | U2 | `packages/app/skills/conexus-data/SKILL.md:31` ("do not prefix them with a schema name") | PostgreSQL 18, nome qualificado `esquema.tabela`; `ml-vigia@0c0749f1` `ARCHITECTURE.md:261` (a fonte por pergunta) | A fonte é escolhida por pergunta | nativo: `sync.<nome>`, a exceção na skill e a regra de quando ler a cópia ou o sistema ao vivo | Estudo, P1 local: uma leitura junta uma tabela do app sem esquema e uma cópia qualificada | não precisa | — |
 | O Builder lê um Projeto antes do primeiro app | U2 | `hub/apps/app-database.ts:107-123` `appDatabaseOf` (sem `database_ready`, nenhum banco); cartão da Capacidade 2 em `6d6266d2`: critério 20 (liberar cria o esquema e os logins pela porta `apps().projectDatabase`, sobre `openAppDatabase`) e a U5 (a lista e as linhas de um Projeto sem app com `project_copy` leem pelo login de leitura em `readAddress`, sem a linha `app`) | `platform/company-postgres.ts` `ensureApp` (decisão 0043) | — | nativo: `builderData` abre o banco do Projeto pela mesma regra da U5 da Capacidade 2; o banco nasce só por `projectDatabase`. **Muda** do parecer, que criava o banco ao liberar nesta capacidade: a Capacidade 2 já o faz | | o roteiro (Projeto novo) | — |
 | O app declara as cópias que lê; publicar recusa a não liberada | U4 | `packages/app-contract/src/manifest.ts:44-58` (`connectors`); `packages/app/src/connectors.ts`; `hub/apps/live.ts:59-71` (`ungranted`) | `conexus-os@e0353c36` `influence-on-conexus.md:2270` | Cada leitura é artefato nomeado | nativo: `copies` no manifesto e `defineCopies`, conferidos no mesmo publicar. **Muda** do estudo o peso: o banco já recusa; a declaração não protege a Prévia, e o molde da máquina precisa ser refeito (chamada paga) | | a chamada paga do molde, a pedir | `packages/app/src/copies.ts` |
@@ -383,10 +367,10 @@ valor de célula".
 
 ```ts
 type Ids = { companyId: CompanyId; projectId: ProjectId; personId: PersonId }
-export type BuilderDataAccess = { kind: 'ADMITTED'; viewRows: boolean } | { kind: 'NOT_FOUND' }
+export type BuilderDataAccess = { kind: 'ADMITTED' } | { kind: 'NOT_FOUND' }
 export type BuilderData = {
   access(ids: Ids): Promise<BuilderDataAccess>                                       // useConversations
-  read(ids: Ids, statement: SqlStatement, signal: AbortSignal): Promise<AppRead | { kind: 'REFUSED'; code: 'NOT_FOUND' }> // viewAppData
+  read(ids: Ids, statement: SqlStatement, signal: AbortSignal): Promise<AppRead | { kind: 'REFUSED'; code: 'NOT_FOUND' }>  // useConversations
   check(ids: Ids, statement: SqlStatement, signal: AbortSignal): Promise<AppCheck | { kind: 'REFUSED'; code: 'NOT_FOUND' }> // useConversations
 }
 ```
@@ -402,8 +386,8 @@ const AppDataCheckInput = z.object({
   sql: z.string().trim().min(1).max(4000),
   values: z.array(z.union([z.string().max(1000), z.number(), z.boolean(), z.null()])).max(20).default([]),
 })
-export function builderAppDataTools(deps: { data: BuilderData; ids: Ids; viewRows: boolean }): ToolsInput
-// app_data_check always; app_data_read only when viewRows; the read cuts with `shaped` as today's agent tool
+export function builderAppDataTools(deps: { data: BuilderData; ids: Ids }): ToolsInput
+// both tools whenever the person is admitted; the read cuts with `shaped` as today's agent tool
 
 /** What `app_data_check`'s execute returns, which is what the model reads and Mastra keeps. */
 export type AppDataCheckOutput =
@@ -443,8 +427,8 @@ revisor carregam cada skill inteira antes de escrever ou de ler o diff.
 - `neon:neon-postgres` (`@neondatabase/serverless`, `apps/server/src/platform`): `fullResults`,
   `fields`, `types`, `sql.transaction`.
 - `better-auth-best-practices`, `better-auth-security-best-practices` e
-  `organization-best-practices` (`better-auth`, `apps/server/src/hub`): `viewAppData` e
-  `useConversations` pelo controle de acesso do plugin, conferidos a cada chamada da porta.
+  `organization-best-practices` (`better-auth`, `apps/server/src/hub`): `useConversations`
+  pelo controle de acesso do plugin, conferido a cada chamada da porta; `viewAppData` fica na página Dados.
 - `fastify-best-practices` (`fastify`, `apps/server/src`): a porta nova é ligada ao lado das rotas
   em `conversations-of.ts`, sem rota nova.
 - `zod.dev/llms.txt` para `tuple` e `coerce` em Zod 4 (`zod` não tem skill).
@@ -497,7 +481,7 @@ revisor carregam cada skill inteira antes de escrever ou de ler o diff.
   `hub/apps/test-versions.ts`, como `builder/agents/app-data.test.ts:40-55` (T5). As migrações do
   teste criam uma tabela de 10.001 linhas, uma de colunas `integer`, `numeric`, `bigint`, `date` e
   `text`, `boolean` e `timestamptz`, e uma vazia. O prazo de 5 s por instrução (`APP_CALL_LIMITS.statementTimeoutMs`) com `pg_sleep(6)`.
-- Critérios 5 a 7: `access.test.ts`, com os papéis por `test-may` e o turno montado pelo
+- Critérios 5 a 7: `access.test.ts`, com os papéis, o membro inclusive, por `test-may` e o turno montado pelo
   `builderAgent` de teste.
 - Critério 9: `app-data-specs.test.ts`, como os testes de `connector-specs.ts`.
 - O critério 1 falha hoje: não há `app_data_check`. O critério 6 falha hoje:
@@ -512,7 +496,7 @@ revisor carregam cada skill inteira antes de escrever ou de ler o diff.
   parar e dizer o que devolve; o tipo das colunas muda de fonte.
 - A conferência com `pg_sleep(6)` não chegar a `APP_DATA_TIMEOUT` (o `57014`) pelo login de leitura: parar; é premissa do
   estudo (o prazo do login).
-- Um papel próprio da empresa receber `viewRows` verdadeiro: parar; contraria a resposta 5.
+- A porta do Builder admitir por `viewAppData` em vez de `useConversations`, ou a página **Dados** e as rotas da Capacidade 1 deixarem de conferir `viewAppData`: parar; contraria a regra decidida de 2026-11-10 (o Builder é de quem o usa; a página Dados continua de dono, administrador e desenvolvedor).
 
 ## U2 O Builder sabe das cópias
 
