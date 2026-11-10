@@ -9,8 +9,8 @@ import { readAppData } from './app-database.ts'
 
 /** A column as the catalog names it; `type` is `format_type`'s text. */
 type AppColumn = { name: string; type: string }
-/** A table the read login may read: its columns in order, and its primary key's columns in key order, empty when it has none. */
-export type AppTable = { name: AppTableName; columns: AppColumn[]; key: string[] }
+/** A table the read login may read: the schema the catalog found it in, its columns in order, and its primary key's columns in key order, empty when it has none. */
+export type AppTable = { schema: string; name: AppTableName; columns: AppColumn[]; key: string[] }
 /** Why a look at the app's database gave nothing: it was silent, past its deadline, or too long a reply. */
 export type AppDataFailed = {
   kind: 'FAILED'
@@ -40,7 +40,7 @@ export type TableSchema = 'APP'
 const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
 
 function catalogSql(schema: TableSchema) {
-  return `select c.relname,
+  return `select n.nspname::text, c.relname,
   (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname,
       'type', format_type(a.atttypid, a.atttypmod)) order by a.attnum), '[]')
      from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped),
@@ -53,6 +53,7 @@ where n.nspname = ${SCHEMA_SQL[schema]} and c.relkind in ('r', 'p')
 }
 
 const CatalogRow = z.tuple([
+  z.string(),
   AppTableName,
   z.array(z.object({ name: z.string(), type: z.string() })),
   z.array(z.string()),
@@ -83,7 +84,7 @@ async function catalogOf(
       }
       return {
         kind: 'TABLES',
-        tables: rows.data.map(([name, columns, key]) => ({ name, columns, key })),
+        tables: rows.data.map(([schema, name, columns, key]) => ({ schema, name, columns, key })),
       }
     }
     default:
@@ -113,7 +114,7 @@ const Counted = z.array(z.tuple([AppTableName, z.coerce.number().int()]))
 /**
  * How many rows each table has, up to one past the cap, which says "over": a `count(*)` over a
  * `limit` of the cap plus one, a row per table, the names quoted from the catalog's own. A read that
- * fails leaves every table unknown, never zero.
+ * fails leaves every table unknown, never zero; a reply of the wrong shape is ours to fix, so it throws.
  */
 export async function rowCountsOf(
   deps: AppDatabaseDeps,
@@ -132,8 +133,14 @@ export async function rowCountsOf(
     ...rest,
     statement: { text, values: [ROW_COUNT_CAP + 1, ...tables] },
   })
-  const counted = read.kind === 'ROWS' ? Counted.safeParse(read.rows) : undefined
-  if (counted?.success !== true) return unknown
+  if (read.kind !== 'ROWS') return unknown
+  const counted = Counted.safeParse(read.rows)
+  if (!counted.success) {
+    throw new Failure('INTERNAL_UNEXPECTED', {
+      details: { reason: 'APP_COUNTS_UNREADABLE', answer: 'SHAPE' },
+      cause: counted.error,
+    })
+  }
   return new Map(
     counted.data.map(([name, rows]): [AppTableName, RowCount] => [
       name,

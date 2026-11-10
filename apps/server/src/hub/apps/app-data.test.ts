@@ -258,6 +258,7 @@ test('dados: o nome vem do catálogo', async (t) => {
     'conexus_migration',
     'x"; select 1; --',
     "x'; drop table clientes; --",
+    '\u0000',
   ]) {
     const refused = await on.rows(on.ana, name)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'], name)

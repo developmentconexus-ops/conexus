@@ -3,8 +3,13 @@ import { OfProject } from './apps.ts'
 import { Next, Page } from './companies.ts'
 import { defineOperation } from './operation.ts'
 
-/** A table of an app's schema, as PostgreSQL names it: 1 to 63 characters (NAMEDATALEN − 1). */
-export const AppTableName = z.string().min(1).max(63).brand<'AppTableName'>()
+/** A table of an app's schema, as PostgreSQL names it: 1 to 63 characters (NAMEDATALEN − 1), never NUL, which no name holds. */
+export const AppTableName = z
+  .string()
+  .min(1)
+  .max(63)
+  .refine((name) => !name.includes('\0'))
+  .brand<'AppTableName'>()
 export type AppTableName = z.infer<typeof AppTableName>
 
 /** How many rows a table has: exact below the cap, past it, or unknown when the count failed. */

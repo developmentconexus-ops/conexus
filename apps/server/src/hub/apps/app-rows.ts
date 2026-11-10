@@ -39,7 +39,7 @@ function pageStatement(table: AppTable, offset: number) {
   )
   const order = table.key.length === 0 ? 'ctid' : table.key.map(quoted).join(', ')
   return {
-    text: `select ${columns.join(', ')} from ${quoted(table.name)} order by ${order} limit $1 offset $2`,
+    text: `select ${columns.join(', ')} from ${quoted(table.schema)}.${quoted(table.name)} order by ${order} limit $1 offset $2`,
     values: [PAGE_SIZE + 1, offset],
   }
 }

@@ -42,7 +42,7 @@ test('as tabelas do app: o Construtor lê a lista do Hub, e o que a leitura não
   ]
   const read: AppTablesRead = {
     kind: 'TABLES',
-    tables: [{ name: table, columns, key: ['id'] }],
+    tables: [{ schema: 'public', name: table, columns, key: ['id'] }],
   }
   assert.deepEqual(await readingAs(read), [{ name: 'recado', columns: ['id', 'texto'] }])
 })
