@@ -32,7 +32,9 @@ test('a cópia e as rodadas: a consulta, a chave, a janela e cada rodada em pala
   expect(screen.getByText(/Matriz · a cada 30 min/)).toBeTruthy()
   expect(screen.getByText('SELECT NUNOTA, CODPARC')).toBeTruthy()
   expect(screen.getByText('NUNOTA')).toBeTruthy()
-  expect(screen.getByText('DTNEG, 30 dias')).toBeTruthy()
+  expect(
+    screen.getByText('A primeira carga traz tudo; a cada rodada relê DTNEG dos últimos 30 dias.'),
+  ).toBeTruthy()
   const table = within(screen.getByRole('table'))
   expect(table.getByText('Completa')).toBeTruthy()
   expect(table.getByText('O sistema não respondeu.')).toBeTruthy()

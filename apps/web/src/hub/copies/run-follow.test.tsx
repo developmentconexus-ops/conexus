@@ -31,6 +31,19 @@ test('Rodar agora na lista: a rodada que o Hub ainda não abriu é esperada, e v
   held.copies[0] = copy({ run: copyRun({ id: NEW, startedAt: '2026-11-02T11:00:00.000Z' }) })
   await tick()
   await waitFor(() => expect(screen.getByText('Em dia')).toBeTruthy())
+  expect(screen.queryByText('Pedido enviado. A rodada aparece na lista.')).toBeNull()
+})
+
+test('Pedido enviado: some na ação seguinte, mesmo com a rodada ainda esperada', async () => {
+  openCopies(server, { copies: [copy({ run: copyRun({ id: OLD }) })] }, LIST)
+  fireEvent.click(await screen.findByRole('button', { name: 'Ações: Vendas' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rodar agora' }))
+  await screen.findByText('Pedido enviado. A rodada aparece na lista.')
+  fireEvent.click(screen.getByRole('button', { name: 'Ações: Vendas' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Pausar' }))
+  await waitFor(() =>
+    expect(screen.queryByText('Pedido enviado. A rodada aparece na lista.')).toBeNull(),
+  )
 })
 
 test('Rodar agora no detalhe: o botão é da página, a rodada pedida aparece sem recarregar', async () => {
@@ -77,8 +90,12 @@ test('as rodadas, 20 por página: Ver mais abre a seguinte e Primeira página vo
 
 test('as rodadas num celular: linhas empilhadas, não tabela', async () => {
   await onPhone(async () => {
-    openCopies(server, { copies: [copy()], runs: [copyRun()] }, detailOf(VENDAS))
-    expect(await screen.findByText(/1\.204 lidas · Completa/)).toBeTruthy()
+    openCopies(
+      server,
+      { copies: [copy()], runs: [copyRun({ read: 1204, written: 1100 })] },
+      detailOf(VENDAS),
+    )
+    expect(await screen.findByText(/1\.204 lidas · 1\.100 gravadas · Completa/)).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
   })
 })

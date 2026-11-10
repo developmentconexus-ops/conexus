@@ -252,6 +252,20 @@ export const COPIES_STATES: State[] = [
       await waitFor(p, 'O mínimo é 15 minutos.')
     },
   },
+  {
+    name: 'Cópias, o pedido de Rodar agora enviado',
+    path: PAGE,
+    replies: {
+      ...copiesPage(LISTED),
+      [`POST ${COMPANY_API}/copies/${VENDAS}/run`]: { status: 202, json: {} },
+    },
+    settle: async (p) => {
+      await waitFor(p, 'Sem relógio')
+      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
+      await p.getByRole('menuitem', { name: 'Rodar agora' }).click()
+      await waitFor(p, 'Pedido enviado. A rodada aparece na lista.')
+    },
+  },
   linkRefused('COPY_DATABASE_UNAVAILABLE', 'O banco da empresa não respondeu.'),
   linkRefused('COPY_EXISTS', 'A empresa já tem esta cópia.'),
   {

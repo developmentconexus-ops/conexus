@@ -22,7 +22,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { IntervalDialog } from './interval.tsx'
 import { NewCopy } from './new-copy.tsx'
-import { copiesQuery, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
+import type { RunRequest } from './queries.ts'
+import { copiesQuery, requestOpen, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import {
   COPIES_TITLE,
@@ -55,6 +56,19 @@ export function NoteLine({ note }: { note: Note }) {
       {note.text}
     </p>
   )
+}
+
+/**
+ * The note on screen: a refusal stays until the next action, and "Pedido enviado" goes when the run
+ * it asked for is no longer owed or open.
+ */
+export function shownNote(
+  note: Note | undefined,
+  requests: RunRequest[],
+  copies: readonly Pick<CopySummary, 'id' | 'run'>[],
+): Note | undefined {
+  if (note?.kind !== 'ok') return note
+  return copies.some((copy) => requestOpen(requests, copy.id, copy.run)) ? note : undefined
 }
 
 /** The state of a copy as a word with its dot (design V35). */
@@ -160,6 +174,7 @@ export function CopyMenu(props: {
         copy={copy}
         open={choosing}
         onOpenChange={setChoosing}
+        onSaved={() => onNote(undefined)}
       />
     </>
   )
@@ -314,15 +329,17 @@ function Copies(props: {
  * is and offers **Ligar uma cópia**. The list follows itself while a run is open.
  */
 export function CopyList({ companyId }: { companyId: CompanyId }) {
-  const read = useQuery(copiesQuery(companyId, useRunRequests()))
+  const requests = useRunRequests()
+  const read = useQuery(copiesQuery(companyId, requests))
   const [note, setNote] = useState<Note>()
+  const shown = shownNote(note, requests, read.data?.copies ?? [])
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <div className="flex flex-wrap items-center justify-between gap-md">
         <PageTitle>{COPIES_TITLE}</PageTitle>
         <NewCopy companyId={companyId} />
       </div>
-      {note !== undefined && <NoteLine note={note} />}
+      {shown !== undefined && <NoteLine note={shown} />}
       <Copies companyId={companyId} read={read} onNote={setNote} />
     </div>
   )

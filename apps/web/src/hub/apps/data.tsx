@@ -12,13 +12,13 @@ import { appTablesQuery } from './queries.ts'
 const NO_APP = 'Este Projeto ainda não tem app. Peça um ao Builder.'
 const NO_TABLES = 'O app ainda não criou tabelas.'
 
-/** What the list says a table holds: the count in the person's language, "mais de 10.000", or that it could not be counted. */
+/** What the list says a table holds: the count in the person's language, "mais de 10.000" with the word that it is the count's ceiling, or that it could not be counted. */
 function countText(rows: RowCount): string {
   switch (rows.kind) {
     case 'EXACT':
       return rows.rows.toLocaleString('pt-BR')
     case 'OVER':
-      return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')}`
+      return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')} (teto da contagem)`
     case 'UNKNOWN':
       return 'indisponível'
     default:

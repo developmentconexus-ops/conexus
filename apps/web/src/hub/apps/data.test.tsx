@@ -38,7 +38,7 @@ test('Dados: a lista', async () => {
   expect(shown).toEqual([
     'anotacoes37',
     'clientes1.284',
-    'logsmais de 10.000',
+    'logsmais de 10.000 (teto da contagem)',
     'metas0',
     'sobrasindisponível',
   ])

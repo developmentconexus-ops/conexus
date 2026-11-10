@@ -81,7 +81,9 @@ export function durationText(run: Pick<CopyRun, 'startedAt' | 'endedAt'>): strin
     : `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
-/** The window a copy rereads, as "DTNEG, 30 dias"; none when the source is read whole. */
+/** What a copy rereads: the first load brings everything, then each run reads the window again; none when the source is read whole. */
 export function windowText(window: CopySummary['shown']['window']): string {
-  return window === null ? 'A fonte inteira' : `${window.column}, ${window.days} dias`
+  return window === null
+    ? 'A fonte inteira'
+    : `A primeira carga traz tudo; a cada rodada relê ${window.column} dos últimos ${window.days} dias.`
 }

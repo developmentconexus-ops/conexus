@@ -13,7 +13,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Note } from './copy-list.tsx'
-import { CopyMenu, NoteLine, RunNowButton, StateBadge } from './copy-list.tsx'
+import { CopyMenu, NoteLine, RunNowButton, StateBadge, shownNote } from './copy-list.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import {
@@ -47,7 +47,7 @@ function RunPhoneRow({ run }: { run: CopyRun }) {
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md tabular-nums">
         <span>{`${dayAndHour(run.startedAt)} · ${durationText(run)}`}</span>
         <span className="break-words text-text-2">
-          {`${countText(run.read)} lidas · ${outcomeText(run)}`}
+          {`${countText(run.read)} lidas · ${countText(run.written)} gravadas · ${outcomeText(run)}`}
         </span>
       </div>
     </Row>
@@ -104,12 +104,14 @@ function Runs(props: {
  */
 export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?: string }) {
   const { companyId, copyId, page } = props
-  const read = useQuery(copyRunsQuery(companyId, copyId, page, useRunRequests()))
+  const requests = useRunRequests()
+  const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
   const [note, setNote] = useState<Note>()
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
+  const shown = shownNote(note, requests, [{ id: copy.id, run: runs[0] ?? null }])
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <Link
@@ -135,7 +137,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <CopyMenu companyId={companyId} copy={copy} onNote={setNote} withRun={false} />
         </div>
       </div>
-      {note !== undefined && <NoteLine note={note} />}
+      {shown !== undefined && <NoteLine note={shown} />}
       <section aria-label={COPIED_TITLE} className="flex min-w-0 flex-col gap-md">
         <SectionTitle>{COPIED_TITLE}</SectionTitle>
         <CodeBlock>
@@ -153,7 +155,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>
         </p>
         <p className="break-words">
-          <span className="text-text-2">Janela </span>
+          <span className="text-text-2">Releitura </span>
           {windowText(copy.shown.window)}
         </p>
       </section>

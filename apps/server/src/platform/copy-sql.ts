@@ -8,6 +8,8 @@ import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
 /** The login that owns the copies in a company's database, and their schema. */
 export const SYNC_LOGIN = 'conexus_sync'
 const SYNC_SCHEMA = quoted('sync')
+/** The column that holds the pass that last wrote each row: the engine's own, so no screen reads it. */
+export const COPY_PASS_COLUMN = '_pass'
 
 /**
  * What the company's database keeps of a copy, as the kit's parsed `CopyDefinition` gives it: the
@@ -89,7 +91,7 @@ export function ensureCopyTable(
   const statements: SqlStatement[] = [
     {
       text: `CREATE TABLE IF NOT EXISTS ${tableOf(name)} (${columns.join(', ')},
-        _pass integer NOT NULL, PRIMARY KEY (${definition.key.map(quoted).join(', ')}))`,
+        ${COPY_PASS_COLUMN} integer NOT NULL, PRIMARY KEY (${definition.key.map(quoted).join(', ')}))`,
     },
   ]
   if (definition.window !== undefined) {
@@ -117,7 +119,7 @@ export async function writePage(
   const keys = new Set(key)
   const updated = [
     ...columns.filter((c) => !keys.has(c.name)).map((c) => quoted(c.name)),
-    '_pass',
+    COPY_PASS_COLUMN,
   ].map((column) => `${column} = EXCLUDED.${column}`)
   const objects = input.rows.map((row) =>
     Object.fromEntries(columns.map((c, at) => [c.name, row[at] ?? null])),
@@ -126,7 +128,7 @@ export async function writePage(
     sync,
     [
       {
-        text: `INSERT INTO ${tableOf(input.name)} (${names.join(', ')}, _pass)
+        text: `INSERT INTO ${tableOf(input.name)} (${names.join(', ')}, ${COPY_PASS_COLUMN})
           SELECT ${names.map((n) => `r.${n}`).join(', ')}, $2::integer
           FROM jsonb_to_recordset($1::jsonb) AS r(${record.join(', ')})
           ON CONFLICT (${key.map(quoted).join(', ')}) DO UPDATE SET ${updated.join(', ')}`,
@@ -151,11 +153,11 @@ export async function closePass(
   const table = tableOf(input.name)
   const gone: SqlStatement[] =
     changedSince === null
-      ? [{ text: `DELETE FROM ${table} WHERE _pass <> $1`, values: [input.pass] }]
+      ? [{ text: `DELETE FROM ${table} WHERE ${COPY_PASS_COLUMN} <> $1`, values: [input.pass] }]
       : window !== undefined && input.windowFrom !== null
         ? [
             {
-              text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND _pass <> $2`,
+              text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND ${COPY_PASS_COLUMN} <> $2`,
               values: [input.windowFrom, input.pass],
             },
           ]
