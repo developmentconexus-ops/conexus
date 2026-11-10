@@ -29,7 +29,7 @@ Every piece this skill names comes from `@conexus/app`. When one is missing from
 - Read with `query(db, RowSchema, text, values)`: it returns the rows, each checked against `RowSchema`. `db.query` runs in a read-only transaction.
 - Write with `write(db, [{ text, values }, ...])`: every statement of the list runs in one transaction, all or none. Put a change and the row that records it in the same `write`.
 - Always pass values as parameters (`$1`, `$2`), never inside the text. Tables live in this app's own schema: do not prefix them with a schema name.
-- Postgres `integer` arrives as a number; `bigint`, `count(*)` and `numeric` arrive as text, so cast a count with `::int` in SQL and keep decimals as text, which the screens format with `lib/format.ts`; sums belong in SQL. Read a `timestamptz` with `z.coerce.date()` and return it as ISO text, as the example's `When` does. Alias columns to the names the output declares, for example `opened_at AS "openedAt"`.
+- Postgres `integer` arrives as a number; `bigint`, `count(*)` and `numeric` arrive as text (`app_data_check` shows each column's type on the real data), so cast a count with `::int` in SQL and keep decimals as text, which the screens format with `lib/format.ts`; sums belong in SQL. Read a `timestamptz` with `z.coerce.date()` and return it as ISO text, as the example's `When` does. Alias columns to the names the output declares, for example `opened_at AS "openedAt"`.
 - `server/` runs in a Worker: no file system, no environment variables and no network, since the platform refuses every request the app sends out. It reaches only `db`.
 - One call may use 50 ms of CPU and 50 `db` calls, 10 s in all, and 5 s per statement.
 

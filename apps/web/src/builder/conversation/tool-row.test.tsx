@@ -1,5 +1,4 @@
 import {
-  AGENT_TOOL,
   ASSISTANT_TOOL,
   CARD_TOOLS,
   CLOSED_TOOLS,
@@ -196,7 +195,6 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
     CONSTRUTOR_TOOL.agentDraft,
     CONSTRUTOR_TOOL.agentSet,
     CONSTRUTOR_TOOL.agentTest,
-    AGENT_TOOL.appDataRead,
     MACHINE_TOOL.codeMode,
   ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
-import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
+import type { AppDataPort } from './builder/app-data/public.ts'
 import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
@@ -16,7 +16,7 @@ import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
-import type { Apps } from './hub/apps/public.ts'
+import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { CopyService } from './hub/copies/public.ts'
@@ -81,6 +81,15 @@ function appDataOf(
     hasApp: (input) => apps().hasAppData(input),
     tables: (input) => apps().appTables(input),
     read: (input) => apps().readAppData(input),
+  }
+}
+
+/** The apps' door as the Builder reads and checks its Projeto's data (Capacidade 3): reached when a turn calls it. */
+function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
+  return {
+    access: (ids) => apps().builderData.access(ids),
+    read: (ids, statement, signal) => apps().builderData.read(ids, statement, signal),
+    check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
   }
 }
 
@@ -183,7 +192,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
     ...{ storage, queue, runs: deps.runs },
-    connectors: builderDoorOf(deps.connectors),
+    ...{ connectors: builderDoorOf(deps.connectors), data: builderDataOf(deps.apps) },
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
   // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and

@@ -9,6 +9,7 @@ import { ProjectId } from './library-ids.ts'
 import { MACHINE_FILE_FAILURES, MachineFileQuery } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import {
+  APP_DATA_TOOL,
   CodeVersionDetail,
   LatestVersion,
   PresetVersionDetail,
@@ -161,7 +162,7 @@ export type AgentVersionSummary = z.infer<typeof AgentVersionSummary>
 export const AGENTS_CONTROLLER = 'agents'
 
 /** The tools of an agent that are not a tool of the company's library: the name the model reads (step 24.3, U3). */
-export const AGENT_TOOL = { appDataRead: 'app_data_read' } as const
+export const AGENT_TOOL = { appDataRead: APP_DATA_TOOL.read } as const
 
 /** A conversation of the person's with an agent: with its published version, or the test one with its draft. */
 export const AgentConversationSummary = z.object({

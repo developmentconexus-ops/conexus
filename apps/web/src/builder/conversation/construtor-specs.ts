@@ -40,7 +40,7 @@ function appDataRefusal(result: unknown): Refusal | undefined {
 type Tool = Parameters<NonNullable<ToolSpec['present']>>[0]
 
 /** A row that says, beside its sentence, what the result holds; a failed or running one says only its sentence. */
-function withDetail(
+export function withDetail(
   spec: ToolSpec,
   detailOf: (tool: Tool, words: ConnectorWords) => string | undefined,
 ): ToolSpec {

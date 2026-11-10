@@ -34,9 +34,13 @@ export const WORKSPACE_TOOL = {
   killProcess: 'mastra_workspace_kill_process',
 } as const
 
+/** The app-data tools, the Builder's and the agents' (one name per tool, code C26). */
+export const APP_DATA_TOOL = { read: 'app_data_read', check: 'app_data_check' } as const
+
 /**
- * The Builder's own tools besides the workspace's: the web, the memory's recall, the check and the
- * three of a Projeto's granted connections (the server proves them equal to its own, code C27).
+ * The Builder's own tools besides the workspace's: the web, the memory's recall, the check, the
+ * three of a Projeto's granted connections and the two that read its app's data (the server proves
+ * them equal to its own, code C27).
  */
 export const BUILDER_TOOL = {
   webSearch: 'web_search',
@@ -46,6 +50,8 @@ export const BUILDER_TOOL = {
   connectorRead: 'connector_read',
   connectorNotes: 'connector_notes',
   connectorNoteSave: 'connector_note_save',
+  appDataRead: APP_DATA_TOOL.read,
+  appDataCheck: APP_DATA_TOOL.check,
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

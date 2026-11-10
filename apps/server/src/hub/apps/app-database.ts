@@ -9,6 +9,7 @@ import type {
 import { eq } from 'drizzle-orm'
 import type {
   AppRead,
+  AppReadAnswer,
   CompanyPostgres,
   SqlAnswer,
   SqlStatement,
@@ -165,35 +166,33 @@ export async function appDatabaseOf(
   })
 }
 
+/** What the read login answered: past `NO_LOGIN`, which the owner's login made good and asked again. */
+type ReadAnswered = Exclude<AppReadAnswer, { kind: 'NO_LOGIN' }>
+
 /**
- * One read of a Projeto's app data for its agents (step 24.3, U3), as the app's read login: its
- * address comes from the host the Hub recorded, with no call to Neon. A Projeto made before the
- * login existed asks the owner's address once to make it, then reads again. The log carries ids and
- * the kind of answer, never the SQL nor a row (code C50).
+ * The statements as the Projeto's app read login, in one read-only transaction: its address comes
+ * from the host the Hub recorded, with no call to Neon. A Projeto made before the login existed asks
+ * the owner's address once to make it, then reads again. The caller logs what it read of the
+ * answer: this logs only the login's own making (code C50).
  */
-export async function readAppData(
+export async function askApp(
   deps: AppDatabaseDeps,
   input: {
     scope: { companyId: CompanyId; personId: PersonId }
     projectId: ProjectId
-    statement: SqlStatement
+    statements: readonly SqlStatement[]
     signal: AbortSignal
   },
-): Promise<AppRead> {
-  const { projectId, signal } = input
+): Promise<ReadAnswered> {
+  const { projectId, signal, statements } = input
   const { companyId } = input.scope
   const found = await appDatabaseOf(deps, input)
   if (found === undefined) return { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
-  const unavailable = { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' } as const
-  function silent(cause: string): typeof unavailable {
-    deps.log.info(
-      { companyId, projectId, answer: unavailable.kind, code: unavailable.code, cause },
-      'APP_DATA_READ',
-    )
-    return unavailable
+  function silent(cause: string) {
+    return { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE', cause } as const
   }
   const address = await deps.companyPostgres.readAddress(found.host, projectId)
-  let answer = await deps.companyPostgres.readApp(address, input.statement, signal)
+  let answer = await deps.companyPostgres.readApp(address, statements, signal)
   if (answer.kind === 'NO_LOGIN') {
     const owner = await deps.neon.ownerConnection(found.neonProjectId)
     if (owner.kind !== 'DONE') return silent(`OWNER_${owner.kind}`)
@@ -204,12 +203,31 @@ export async function readAppData(
       return silent('READ_LOGIN_NOT_MADE')
     }
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
-    answer = await deps.companyPostgres.readApp(address, input.statement, signal)
+    answer = await deps.companyPostgres.readApp(address, statements, signal)
   }
+  return answer.kind === 'NO_LOGIN' ? silent('NO_LOGIN') : answer
+}
+
+/**
+ * One read of a Projeto's app data for its agents (step 24.3, U3), as the app's read login. The log
+ * carries ids and the kind of answer, never the SQL nor a row (code C50).
+ */
+export async function readAppData(
+  deps: AppDatabaseDeps,
+  input: {
+    scope: { companyId: CompanyId; personId: PersonId }
+    projectId: ProjectId
+    statement: SqlStatement
+    signal: AbortSignal
+  },
+): Promise<AppRead> {
+  const { projectId } = input
+  const { companyId } = input.scope
+  const answer = await askApp(deps, { ...input, statements: [input.statement] })
   switch (answer.kind) {
     case 'ROWS':
       deps.log.info({ companyId, projectId, answer: answer.kind }, 'APP_DATA_READ')
-      return answer
+      return { kind: 'ROWS', columns: answer.columns, rows: answer.rows }
     case 'REFUSED':
       deps.log.info(
         { companyId, projectId, answer: answer.kind, sqlstate: answer.sqlstate },
@@ -217,19 +235,19 @@ export async function readAppData(
       )
       return answer
     case 'FAILED':
-      deps.log.info(
-        {
-          companyId,
-          projectId,
-          answer: answer.kind,
-          code: answer.code,
-          cause: answer.cause ?? 'none',
-        },
-        'APP_DATA_READ',
-      )
+      if (answer.code !== 'APP_DATA_NO_APP') {
+        deps.log.info(
+          {
+            companyId,
+            projectId,
+            answer: answer.kind,
+            code: answer.code,
+            cause: answer.cause ?? 'none',
+          },
+          'APP_DATA_READ',
+        )
+      }
       return { kind: 'FAILED', code: answer.code }
-    case 'NO_LOGIN':
-      return silent('NO_LOGIN')
     default:
       return answer satisfies never
   }

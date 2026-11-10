@@ -84,14 +84,14 @@ The mode's tool list is closed (`builder/conversation/permissions.ts`):
 
 | Kind | Tools |
 | --- | --- |
-| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `connector_notes`, `connector_note_save`; the skill tools |
+| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `connector_notes`, `connector_note_save`; `app_data_read`, `app_data_check`; the skill tools |
 | Edit | the workspace's write, edit, mkdir and delete |
 | Run | the workspace's command tools; `conexus_check` |
 | Talk | `ask_user`, `submit_plan`, `task_write`, `task_update`, `task_complete`, `task_check` |
 
 The session starts with `yolo: true`, so no tool waits for approval
 ([0053](../decisions/0053-builder-tools-run-without-asking.md)). `ask_user` and `submit_plan`
-suspend the run on a card. The run ends there, and the answer resumes it. A message sent while a
+suspend the run on a card. `app_data_read` and `app_data_check` are offered to whoever the company lets converse with the Builder in the Projeto (`useConversations`, read in the Hub once per turn and again on each call); `app_data_check` answers a count, the columns and the time of a read on the real data, never a row (`builder/app-data/`). The run ends there, and the answer resumes it. A message sent while a
 card is open is accepted, and Mastra holds it until the card is answered, then carries it into
 the run the answer opens (`builder/conversation/conversation-steer.test.ts`). `web_search` exists only for models whose
 provider search Mastra supports.
