@@ -20,6 +20,13 @@ export {
   tokenRequest,
 } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance.ts'
+export type {
+  ConnectorCopy,
+  CopyColumnType,
+  CopyModel,
+  CopyPage,
+} from './kernel/copy.ts'
+export { CopyDefinition, CopyName, CopyPageSchema, PAGE_ROWS, PageInput } from './kernel/copy.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
 export {
   type AppKeys,
