@@ -3,7 +3,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../agents/public.ts'
 import type { InProject } from '../tools/public.ts'
 
-export type AppTable = { name: string; columns: string[] }
+export type TableWithColumnNames = { name: string; columns: string[] }
 
 /**
  * The tables of a Projeto's app, names and columns, never a row (step 24.3, U4): the list the Dados
@@ -11,8 +11,8 @@ export type AppTable = { name: string; columns: string[] }
  * the Construtor's turn shows, never an empty list that says the app has no tables. The app's
  * database not answering in time is the database's, not a defect of ours.
  */
-export function appTablesOf(appData: AppDataPort) {
-  return async (scope: InProject): Promise<AppTable[] | null> => {
+export function tablesWithColumnNamesOf(appData: AppDataPort) {
+  return async (scope: InProject): Promise<TableWithColumnNames[] | null> => {
     const { projectId } = scope
     const read = await appData.tables({
       scope: { companyId: scope.companyId, personId: scope.personId },

@@ -1,4 +1,3 @@
-import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { CompanyId, PersonId, ProjectId, RowCount } from '@conexus/hub-api'
 import { AppTableName, ROW_COUNT_CAP } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -7,8 +6,8 @@ import { Failure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { readAppData } from './app-database.ts'
 
-/** A column as the catalog names it; `type` is `format_type`'s text. */
-type AppColumn = { name: string; type: string }
+/** A column as the catalog names it. */
+type AppColumn = { name: string }
 /** A table the read login may read: the schema the catalog found it in, its columns in order, and its primary key's columns in key order, empty when it has none. */
 export type AppTable = { schema: string; name: AppTableName; columns: AppColumn[]; key: string[] }
 /** Why a look at the app's database gave nothing: it was silent, past its deadline, or too long a reply. */
@@ -28,21 +27,21 @@ export type AppReadInput = {
   signal: AbortSignal
 }
 
+/** The schemas a table may live in: a closed union, never text from outside. */
+export type TableSchema = 'APP'
+
+/** The SQL that names each schema a table may live in. */
+const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
+
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
  * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
  * login that only reads).
  */
-export type TableSchema = 'APP'
-
-/** The SQL that names each schema a table may live in: a closed union, never text from outside. */
-const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
-
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
-  (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname,
-      'type', format_type(a.atttypid, a.atttypmod)) order by a.attnum), '[]')
+  (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname) order by a.attnum), '[]')
      from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped),
   (select coalesce(array_agg(a.attname::text order by array_position(i.indkey::int2[], a.attnum)), '{}')
      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
@@ -55,7 +54,7 @@ where n.nspname = ${SCHEMA_SQL[schema]} and c.relkind in ('r', 'p')
 const CatalogRow = z.tuple([
   z.string(),
   AppTableName,
-  z.array(z.object({ name: z.string(), type: z.string() })),
+  z.array(z.object({ name: z.string() })),
   z.array(z.string()),
 ])
 
@@ -97,16 +96,25 @@ export function appTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise
   return catalogOf(deps, input, { text: `${catalogSql('APP')} order by c.relname` })
 }
 
+/** What a look at one table gives: the table, or `NONE` when the catalog has none the login may read. */
+export type AppTableRead =
+  | { kind: 'TABLE'; table: AppTable }
+  | { kind: 'NONE' }
+  | { kind: 'NO_APP' }
+  | AppDataFailed
+
 /** One table of `schema` by its name, bound as a value, or `NONE` when the catalog has none the login may read. */
 export async function appTableOf(
   deps: AppDatabaseDeps,
   input: AppReadInput & { schema: TableSchema; name: AppTableName },
-): Promise<AppTablesRead | { kind: 'NONE' }> {
+): Promise<AppTableRead> {
   const found = await catalogOf(deps, input, {
     text: `${catalogSql(input.schema)} and c.relname = $1`,
     values: [input.name],
   })
-  return found.kind === 'TABLES' && found.tables.length === 0 ? { kind: 'NONE' } : found
+  if (found.kind !== 'TABLES') return found
+  const [table] = found.tables
+  return table === undefined ? { kind: 'NONE' } : { kind: 'TABLE', table }
 }
 
 const Counted = z.array(z.tuple([AppTableName, z.coerce.number().int()]))
@@ -149,9 +157,4 @@ export async function rowCountsOf(
       rows > ROW_COUNT_CAP ? { kind: 'OVER' } : { kind: 'EXACT', rows },
     ]),
   )
-}
-
-/** The deadline of one look at the app's database, joined to the request's own signal (code C57). */
-export function withinDeadline(signal: AbortSignal): AbortSignal {
-  return AbortSignal.any([signal, AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs)])
 }

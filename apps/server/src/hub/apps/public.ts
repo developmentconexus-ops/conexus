@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
+import type { AppDataDeps } from './app-data.ts'
+import { createAppData } from './app-data.ts'
 import { appDatabaseOf, readAppData } from './app-database.ts'
 import { appTablesOf } from './app-tables.ts'
 import { createAppVersions } from './app-versions.ts'
@@ -72,14 +74,17 @@ export function createAppRemoval(deps: RemovalDeps) {
  * reaches identity and Projects only through their ports (code C4), Neon and Cloudflare only
  * through the ports `main.ts` hands it (C56).
  */
-export function createApps(deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'>) {
+export function createApps(
+  deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'> & Pick<AppDataDeps, 'appDataDeadlineMs'>,
+) {
   const door = createAppDoor(deps)
   const versions = createAppVersions(deps)
+  const data = createAppData(deps)
   return Object.freeze({
     routes: (app: FastifyInstance) => {
       registerHandoffRoute(app, door)
       registerVersionRoutes(app, versions)
-      registerDataRoutes(app, deps)
+      registerDataRoutes(app, data)
     },
     edgeRoutes: (edge: FastifyInstance) => registerEdgeRoutes(edge, door),
     /** What the connectors' door asks of an app call: who, the version the session gets and its manifest (step 20). */

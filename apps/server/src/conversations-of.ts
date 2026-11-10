@@ -9,7 +9,7 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
-import { appTablesOf, createConstrutor } from './builder/construtor/public.ts'
+import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
@@ -144,7 +144,7 @@ export function conversationsOf(deps: {
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    ...{ automations: () => automations, appTables: tablesWithColumnNamesOf(appData) },
     ...machineOf(deps),
   })
   const clock = deps.automationClock
