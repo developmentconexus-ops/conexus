@@ -36,9 +36,10 @@ Projeto novo, "Vendas ML", sem app e sem cópia.
 2. Ele investiga com umas leituras de pedidos, sem guardar nada, e propõe a cópia `ml_pedidos`: sobre
    a leitura Pedidos, as duas lojas na mesma tabela, as colunas que o painel usa (id, status, total,
    criado em, alterado em, os itens), a chave id e o modo **só o alterado**. Ele diz por quê: um pedido
-   nunca some da API, só muda de status, e a leitura filtra pela data de alteração, então cada rodada
-   lê só o que mudou. Na conversa aparece o cartão da proposta: o nome, "Pedidos · Mercado Livre", as
-   duas lojas, a chave, o modo, quantas linhas a página de teste trouxe e quantas chamadas uma
+   não some da API enquanto tem menos de 12 meses, só muda de status, e a leitura filtra pela data de
+   alteração, então cada rodada lê só o que mudou; e a cópia só o alterado guarda os pedidos mais
+   velhos, que o Mercado Livre deixa de mostrar. Na conversa aparece o cartão da proposta: o nome,
+   "Pedidos · Mercado Livre", as duas lojas, a chave, o modo, quantas linhas a página de teste trouxe e quantas chamadas uma
    passada inteira gasta ("cerca de 6 chamadas por passada"), e o botão **Ligar**.
 3. Toque **Ligar**, escolha o intervalo (30 minutos já vem marcado) e a cópia começa a rodar, já
    liberada ao Projeto. Na página **Cópias**, `ml_pedidos` mostra a fonte "Pedidos · Mercado Livre",
@@ -56,10 +57,14 @@ estão). No começo: aprova esta página. Antes de a U2 entrar no `main`: autori
 respostas reais do Mercado Livre com uma loja sua (pedidos pedidos pela data de alteração, a primeira
 e a segunda página da varredura de anúncios e a de perguntas), feita pelo firstmate pelo Hub no ar; os
 valores são trocados por inventados antes de entrar no repositório, que é a regra dos dublês
-([testing T29](../guides/testing.md)). Sem ela, a U2 usa a forma que a documentação mostra e a
-gravação fica pendente na lista do fechamento. Quando a lista de permissões do banco do Conexus ganhar
-as duas tabelas novas: diz sim nesse pull request, que vem sozinho ([data D11](../guides/data.md)). No
-fim: faz o roteiro, diz o que viu e aprova os textos das telas.
+([testing T29](../guides/testing.md)). Sem a gravação, a U2 pode ser construída, mas não entra no
+`main`: pela mesma regra, uma página da documentação não vale como resposta gravada, e o conector do
+Mercado Livre não tem nenhuma resposta medida no serviço real que possa ficar no lugar. Os parâmetros
+novos (`order.date_last_updated.from`, `search_type=scan`, `scroll_id`) são conferidos à mão na
+documentação: o teste automático de hoje confere só que a rota de cada leitura está na página.
+Quando a lista de permissões do banco do Conexus ganhar as duas tabelas novas: diz sim nesse pull
+request, que vem sozinho ([data D11](../guides/data.md)). No fim: faz o roteiro, diz o que viu e
+aprova os textos das telas.
 
 **Fica de fora.**
 
@@ -77,7 +82,8 @@ fim: faz o roteiro, diz o que viu e aprova os textos das telas.
   entra num cartão próprio. Uma loja nova pede uma cópia nova, ou desligar e ligar de novo.
 - **A janela de dias numa cópia de API.** Uma leitura de API recebe um filtro por chamada e não sabe
   pedir "o que mudou ou o que é dos últimos 30 dias" de uma vez; e o que a janela faz no Sankhya (tirar
-  o que sumiu da fonte nos últimos dias) não acontece com pedidos, que nunca somem, só mudam de status.
+  o que sumiu da fonte nos últimos dias) não acontece com pedidos, que não somem antes dos 12 meses, só
+  mudam de status (depois disso saem da busca do Mercado Livre, e a cópia os guarda).
   A cópia de API é **inteira** ou **só o alterado**; a janela continua nas cópias do Sankhya.
 - **O Mercado Livre avisando que algo mudou** (as notificações dele como "rode agora"). É da etapa dos
   avisos do fornecedor (20.2).
@@ -107,8 +113,11 @@ duas novas.
   3, que nesta capacidade passa a mostrar também a leitura, as lojas e as chamadas por passada.
 - **A ordem (3).** Em 2026-11-10: "3. a": a Capacidade 3 como está, e esta logo depois, antes da 4.
 - **O que der, em paralelo.** Em 2026-11-10: "Tô querendo executar em paralelo o que der." Por isso
-  a U1 e a U2 começam assim que você aprovar esta página, ao lado do pull request 948 (veja "Como as
-  unidades viram pull requests").
+  a U1 e a U2 começam assim que você aprovar esta página, ao lado do pull request 948: só mudam
+  `packages/connectors`, que o 948 não toca, e a U1 deixa a definição de cópia de hoje como está, então
+  o servidor compila igual (conferido: o contrato novo da U1 aplicado ao `main` passa no typecheck do
+  servidor e do pacote dos conectores). A U2 entra no `main` só com a gravação acima. A U3 e a U4
+  esperam o 948 (veja "Como as unidades viram pull requests").
 - **Várias lojas sem a plataforma decidir.** Em 2026-11-10, sobre uma tabela ou várias para as lojas:
   "a gente já tá querendo limitar como que ele vai fazer". O Builder escolhe em cada cópia: as duas
   lojas numa tabela, ou uma cópia por loja. A plataforma só garante a coluna da loja, com o código que
@@ -123,48 +132,77 @@ duas novas.
   - (a) **cada loja sabe onde parou.** Uma cópia de duas lojas lembra, para cada loja, até onde já
     leu. Sem isso, a cópia só pode ter uma loja.
   - (b) **quando o Mercado Livre pede para esperar, a cópia espera.** Hoje esse pedido vira erro. Com
-    (b), a rodada para, lembra a página em que estava e continua na próxima rodada, sem chamar antes
-    da hora que o Mercado Livre pediu. A leitura de anúncios e de perguntas acima de mil usa uma senha
-    de página que vale 5 minutos; se a senha venceu, a cópia daquela loja recomeça a leitura do zero.
+    (b), a rodada para, lembra a página em que estava e continua na próxima rodada. Quando o
+    fornecedor diz quanto esperar, a cópia não chama antes disso; o Mercado Livre não documenta esse
+    tempo (a página dele manda esperar um pouco mais a cada tentativa), então ali a cópia continua na
+    rodada seguinte do intervalo. A leitura de anúncios e de perguntas acima de mil usa uma senha de
+    página que vale 5 minutos; se a senha venceu, a cópia daquela loja recomeça a leitura do zero.
   - (c) **uma chamada de cópia por vez no Mercado Livre, somando todas as empresas.** O Mercado Livre
     conta o limite pelo aplicativo do Conexus, que é um só para todas as empresas. Com (c), duas
-    empresas copiando ao mesmo tempo esperam a vez uma da outra.
+    empresas copiando ao mesmo tempo esperam a vez uma da outra; se a vez demora mais que o prazo de
+    uma chamada, a rodada para sem chamar, guarda onde estava e continua na seguinte, com a mesma
+    frase de (b) na tela.
 
-  Exemplo: a Loja Norte recebe "espere" no meio da primeira leitura; a página Cópias diz "O fornecedor
-  pediu para esperar; a próxima continua de onde parou", nada é apagado; a rodada seguinte continua da
-  página em que parou, e nenhuma linha fica repetida. O jeito pronto lá fora: o Airbyte faz as três
-  dentro da plataforma dele e o Nango guarda onde cada conexão parou, mas nenhum dos dois é uma peça
-  que o Conexus instala. Recomendo **sim às três**: sem (a) não há duas lojas numa tabela; sem (b) o
-  primeiro "espere" vira erro na tela; sem (c), dez empresas copiando do Mercado Livre gastam juntas o
-  limite de um aplicativo só.
-- **Nova: uma loja apagada em Integrações.** Numa cópia de duas lojas, se você apaga a conexão de uma
-  delas: (A) a cópia segue com a outra e a rodada seguinte apaga da tabela as linhas da loja que saiu;
-  (B) a cópia segue com a outra e as linhas da loja que saiu ficam na tabela, paradas. Nos dois casos,
-  apagar a primeira loja da cópia apaga a cópia inteira, como a Capacidade 2 já faz quando a conexão de
-  uma cópia é apagada. Recomendo **A**: o app nunca mostra vendas de uma loja que não está mais
-  ligada.
+  Exemplo: a Loja Norte recebe "espere" no meio da primeira leitura; a página Cópias diz "Esperando o
+  fornecedor; a próxima rodada continua de onde parou", nada é apagado; a rodada seguinte continua da
+  página em que parou, e nenhuma linha fica repetida. O jeito pronto lá fora: para (a) e (b), o
+  Airbyte e o Nango fazem dentro da plataforma deles (o Nango guarda onde cada conexão parou; os dois
+  esperam e repetem quando o fornecedor pede); para (c), o Airbyte limita as chamadas de uma conexão
+  por janela, e nenhuma referência lida soma as chamadas de várias empresas num aplicativo só. Nenhum
+  dos dois é uma peça que o Conexus instala, e nenhuma biblioteca instalada limita chamadas.
+  Recomendo **sim às três**: sem (a) não há duas lojas numa tabela; sem (b) o primeiro "espere" vira
+  erro na tela; sem (c), dez empresas copiando do Mercado Livre gastam juntas o limite de um
+  aplicativo só.
+- **Nova: uma loja apagada em Integrações.** Hoje (Capacidade 2) uma cópia pende de uma conexão:
+  apagada a conexão, a cópia acaba. Com duas lojas numa cópia, há três caminhos quando você apaga a
+  conexão de uma delas:
+  - (A) a cópia segue com a outra loja, e a rodada seguinte apaga da tabela as linhas da loja que
+    saiu. Mas a cópia continua pendurada na primeira loja com que foi ligada: apagar essa (a Loja
+    Centro, no roteiro) acaba a cópia das duas, e as vendas da Loja Norte param de chegar.
+  - (B) como A, mas as linhas da loja que saiu ficam na tabela, paradas. Apagar a primeira loja
+    também acaba a cópia das duas.
+  - (C) nenhuma loja é a primeira: apagar qualquer uma tira só ela da cópia, e a rodada seguinte
+    apaga da tabela as linhas dela, como em A; a cópia acaba só quando sai a última loja, ou quando
+    alguém a desliga na página Cópias. Uma cópia de uma loja só (todas as de hoje) acaba como hoje,
+    quando a loja sai. Custa à U3 uma peça a mais: a cópia deixa de pender de uma conexão (a U3 tira
+    a ligação que hoje apaga a cópia junto com a primeira conexão), e a rodada que encontra a cópia
+    sem loja nenhuma a encerra; a página Cópias não a mostra nesse meio-tempo.
+
+  Por que importa: o Mercado Livre tira da busca os pedidos com mais de 12 meses, e a cópia só o
+  alterado guarda esses pedidos. Em A e B, apagar a conexão da Loja Centro acaba a cópia da Loja
+  Norte: a tabela fica parada, sem cópia que a mantenha, e uma cópia nova da Loja Norte não traz de
+  volta do Mercado Livre os pedidos dela com mais de 12 meses. Recomendo **C**: apagar uma loja nunca
+  acaba a cópia de outra, e o app nunca mostra vendas de uma loja que não está mais ligada. (C também
+  poderia deixar paradas as linhas da loja que saiu, como B; recomendo apagá-las, pelo motivo de A.)
 
 **Como as unidades viram pull requests.** A U1 (o contrato da leitura de lista, no kit) e a U2 (as
 leituras do Mercado Livre declaram a lista) vão num pull request de construção, um commit por
-unidade, e podem começar assim que você aprovar esta página: não tocam nenhum arquivo do pull request
-948 ([delivery L1](../guides/delivery.md)). A lista de permissões das duas tabelas novas vai num pull
-request só dela, depois que a da Capacidade 3 estiver no `main`. A U3 (o motor) e a U4 (o Builder e
-as telas) vão num segundo pull request de construção, depois que o 948 estiver no `main`, porque
-mudam os mesmos arquivos de `hub/copies` que a U3 da Capacidade 3 muda. Ao aprovar esta página você
-aprova também esse agrupamento.
+unidade, e podem começar assim que você aprovar esta página: só mudam `packages/connectors`, que o
+948 não toca, e a U1 não muda a definição de cópia que o servidor lê de hoje
+([delivery L1](../guides/delivery.md)). Esse pull request entra no `main` quando a gravação da U2
+estiver nele; se a gravação demorar, a U1 entra sozinha e a U2 segue num pull request seu. A lista
+de permissões das duas tabelas novas vai num pull request só dela, depois que a da Capacidade 3
+estiver no `main`. A U3 (o motor) e a U4 (o Builder e as telas) vão num segundo pull request de construção, depois que o 948 estiver no `main`, porque mudam os mesmos arquivos de
+`hub/copies` que a U3 da Capacidade 3 muda; é a U3 que junta as duas versões da definição numa só,
+que o servidor lê. Ao aprovar esta página você aprova também esse agrupamento.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O contrato da leitura de lista | `list` na operação do kit (como pagina: `OFFSET`, `CURSOR` ou `NONE`; por qual entrada filtra o que mudou; o teto); `Rows` ganha `seguinte` e `total`; a `CopyDefinition` versão 2 (fonte `OPERATION`, coluna com `path` e o tipo `json`, chave `bigint` ou `text`, descrições, sem janela); a posição opaca `CopyPosition`; a leitura de cópia genérica (`listInputOf`, `listPageOf`); a conformidade que anda todas as páginas do dublê; `PageInput.since` nulo na primeira passada, com a leitura do Sankhya sem filtro de data nesse caso (#940) | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/copy-read.ts` e o seu teste, `packages/connectors/src/index.ts` | [testing](../guides/testing.md) | esta página aprovada; nada do pull request 948 |
-| U2 As leituras do Mercado Livre declaram a lista | `pedidos` com `list` de `OFFSET` e o filtro de alteração (`order.date_last_updated.from`); `anuncios` e `perguntas` com `list` de `CURSOR` (`search_type=scan`, `scroll_id`), sem o teto falso de 1.000; `reclamacoes` e `periodosDeFaturamento` com `list` de `OFFSET` (`mensagensDoPacote` não: pede um pacote); o dublê pagina as cinco e anda pela conformidade; as respostas gravadas quando a gravação for autorizada; a skill do conector corrigida | `packages/connectors/src/mercado-livre/` | [testing](../guides/testing.md) | U1 |
-| U3 O motor versão 2 | `copies.copy_source` (cada conexão de uma cópia com a sua conta, a sua posição, a sua passada, a sua marca e a sua espera) e a migração que dá a cada cópia de hoje a sua fonte; a rodada que anda as fontes; a página de uma `OPERATION` por `readThrough` com a leitura genérica; o 429 como `PARTIAL` `WAIT`; o cursor vencido recomeça a passada da fonte; o teto como `ERROR` `COPY_SOURCE_CEILING`; a fila de uma chamada de cópia por vez por conector de aplicativo único; no banco da empresa, o tipo `json`, a chave de texto, `_account` e `_account_name`, o fim de passada só da conta da fonte e as descrições como `COMMENT ON`; a primeira passada sem filtro de alteração (#940) | `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/`, `apps/server/src/platform/copy-sql.ts`, `apps/server/src/platform/company-postgres.ts`, `apps/server/src/platform/test-company-postgres.ts`, `apps/server/migrations/`, `packages/hub-api/src/{copies,copy-failures}.ts`, `apps/web/src/hub/copies/text.ts`, `docs/reference/boundaries.md` | [data](../guides/data.md) | U1; o 948 no `main`; a lista de permissões, num pull request só dela (D11) |
+| U1 O contrato da leitura de lista | `list` na operação do kit (como pagina: `OFFSET`, `CURSOR` ou `NONE`; por qual entrada filtra o que mudou; o teto); `Rows` ganha `seguinte` e `total`; a `CopyDefinitionV2` ao lado da `CopyDefinition` de hoje, que não muda (fonte `OPERATION`, coluna com `path` e o tipo `json` só no enum da versão 2, chave `bigint` ou `text`, descrições, sem janela); o texto canônico de cada tipo, do kit; a posição opaca `CopyPosition`; a leitura de cópia genérica (`listInputOf`, `listPageOf`); a conformidade que anda todas as páginas do dublê; `PageInput.since` nulo na primeira passada, com a leitura do Sankhya sem filtro de data nesse caso (#940) | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/copy-read.ts` e o seu teste, `packages/connectors/src/index.ts` | [testing](../guides/testing.md) | esta página aprovada; nada do pull request 948 |
+| U2 As leituras do Mercado Livre declaram a lista | `pedidos` com `list` de `OFFSET` e o filtro de alteração (`order.date_last_updated.from`); `anuncios` e `perguntas` com `list` de `CURSOR` (`search_type=scan`, `scroll_id`), sem o teto falso de 1.000; `reclamacoes` e `periodosDeFaturamento` com `list` de `OFFSET` (`mensagensDoPacote` não: pede um pacote); o dublê pagina as cinco e anda pela conformidade; as respostas gravadas (sem elas, a U2 não entra no `main`); a skill do conector corrigida | `packages/connectors/src/mercado-livre/` | [testing](../guides/testing.md) | U1 |
+| U3 O motor versão 2 | `copies.copy_source` (cada conexão de uma cópia com a sua conta, a sua posição, a sua passada, a sua marca e a sua espera) e a migração que dá a cada cópia de hoje a sua fonte; a rodada que anda as fontes; a página de uma `OPERATION` por `readThrough` com a leitura genérica; o 429 como `PARTIAL` `WAIT`; o cursor vencido recomeça a passada da fonte; o teto como `ERROR` `COPY_SOURCE_CEILING`; a fila de uma chamada de cópia por vez por conector de aplicativo único; no banco da empresa, o tipo `json`, a chave de texto, `_account` e `_account_name`, o fim de passada só da conta da fonte e as descrições como `COMMENT ON`; a primeira passada sem filtro de alteração (#940); a união das duas versões em `CopyDefinition`, lida pelo servidor; a cópia sem fonte encerrada pela rodada (se o fundador escolher C) | `packages/connectors/src/kernel/copy.ts`, `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/`, `apps/server/src/platform/copy-sql.ts`, `apps/server/src/platform/company-postgres.ts`, `apps/server/src/platform/test-company-postgres.ts`, `apps/server/migrations/`, `packages/hub-api/src/{copies,copy-failures}.ts`, `apps/web/src/hub/copies/text.ts`, `docs/reference/boundaries.md` | [data](../guides/data.md) | U1; o 948 no `main`; a lista de permissões, num pull request só dela (D11) |
 | U4 O Builder propõe de qualquer conector | `copy_propose` numa conexão cujo conector declara uma leitura de lista, com a definição versão 2, várias conexões e a prova maior; `copy_proposal_source` e `proved_calls`; ligar a proposta cria as fontes; `CopySummary` e `CopyProposalSummary` com as fontes, a origem e a descrição; a página Cópias, a linha Proposta, o diálogo e o cartão da conversa com a leitura, as lojas e as chamadas por passada; o bloco "## Data" com a origem, as descrições e as colunas da conta; a regra da fonte sem "hoje, o Mercado Livre"; as seis perguntas na descrição de `copy_propose` e em `conexus-data` | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/{connectors,app-data,conversation}/`, `apps/server/src/{main,conversations-of}.ts`, `packages/hub-api/src/`, `packages/app/skills/conexus-data/`, `apps/web/src/hub/copies/`, `apps/web/src/builder/conversation/`, `docs/reference/{screens,builder-prompt}.md`, `docs/explanation/builder-turn.md` | [security](../guides/security.md) | U3 |
 
 **A ordem.** A U1 e a U2 vão num pull request de construção, um commit cada, nessa ordem; começam
 assim que a página for aprovada e correm ao lado do pull request 948, porque não tocam nenhum arquivo
-dele (só `packages/connectors/`; [delivery L1](../guides/delivery.md)). A lista de permissões de
+dele (só `packages/connectors/`, e a `CopyDefinition` que o servidor lê fica igual até a U3;
+[delivery L1](../guides/delivery.md)). Conferido no `main` em `3c6472e6`: a `CopyDefinitionV2` ao lado
+da de hoje, `PageInput.since` nulo, `Rows.seguinte` e `Rows.total`, `Operation.list` e o Sankhya sem
+filtro com `since` nulo passam no `tsc` de `packages/connectors` e de `apps/server`; a união das duas
+versões no lugar da `CopyDefinition` quebra `hub/copies/{list,run,enable}.ts` e `routes.test.ts`,
+arquivos que o 948 muda, e por isso é da U3. A lista de permissões de
 `copies.copy_source`, `copies.copy_proposal_source` e da coluna `proved_calls` vai num pull request só
 dela, com a palavra do fundador ([data D11](../guides/data.md)), depois que a da Capacidade 3 (a tabela
 `copy_proposal`) estiver no `main`, porque as duas mudam `apps/server/database-grants.sql` e o
@@ -196,29 +234,29 @@ skill e os documentos ~150). Total da capacidade: ~3.100 linhas, abaixo do orça
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `defineOperation` aceita `list` numa leitura com `paging` `OFFSET` (as entradas do deslocamento e do tamanho, o máximo, o teto ou nulo), `CURSOR` (a entrada do cursor, a do tamanho, o máximo, a entrada fixa da primeira página, a validade em milissegundos) ou `NONE`, e `changed` (a entrada e o campo da linha) ou nulo; recusa, lançando com o nome: `list` numa operação que não é `read`; uma entrada nomeada em `paging` ou `changed` que não é chave do `z.object` da entrada da operação | `packages/connectors/src/kernel/list.test.ts`, "a declaração da lista" | must |
-| 2 | U1 | `CopyDefinition` aceita a versão 2: fonte `{ kind: 'OPERATION', operation, input }`, colunas com `path` e o tipo `json`, chave de 1 a 4 colunas `bigint` ou `text`, `changedSince` com uma coluna `date` ou `timestamp`, a descrição da tabela e a de cada coluna; recusa, com o caminho: chave numa coluna `json`, `numeric`, `date`, `timestamp` ou `boolean`; uma coluna cujo nome começa por `_`; uma coluna ou uma chave repetida; `window` na versão 2; os casos de hoje da versão 1 passam iguais | `packages/connectors/src/kernel/copy.test.ts`, os casos de hoje sem mudar e "a versão 2" | must |
+| 2 | U1 | `CopyDefinitionV2` aceita a versão 2: fonte `{ kind: 'OPERATION', operation, input }`, colunas com `path` e o tipo `json`, chave de 1 a 4 colunas `bigint` ou `text`, `changedSince` com uma coluna `date` ou `timestamp`, a descrição da tabela e a de cada coluna; recusa, com o caminho: chave numa coluna `json`, `numeric`, `date`, `timestamp` ou `boolean`; uma coluna cujo nome começa por `_`; uma coluna ou uma chave repetida; `window` na versão 2; a `CopyDefinition` de hoje não muda: os casos de hoje passam iguais e uma coluna `json` nela é recusada | `packages/connectors/src/kernel/copy.test.ts`, os casos de hoje sem mudar e "a versão 2" | must |
 | 3 | U1 | `listInputOf` monta a entrada da operação: a entrada fixa da definição; numa `OFFSET`, o deslocamento da posição (0 sem posição) e o tamanho no máximo declarado; numa `CURSOR`, a entrada fixa da primeira página sem posição e o cursor com posição; a entrada de `changed` com `since` só quando a definição tem `changedSince` e `since` não é nulo; a entrada sai pelo esquema da própria operação (`requestOf`), e uma entrada fixa que nomeia uma entrada de `paging` ou de `changed` é recusada | `list.test.ts`, "a entrada de cada página" | must |
-| 4 | U1 | `listPageOf` dá as células na ordem das colunas, cada uma o texto canônico do tipo (`bigint` inteiro, `numeric` decimal, `boolean` `true` ou `false`, `date` `AAAA-MM-DD`, `timestamp` ISO 8601, `json` o texto JSON, `text` como veio), nulo onde o caminho não existe; um valor que não cabe no tipo devolve `MISFIT` com a coluna e o caminho, nunca nulo; a próxima posição (`OFFSET` somado às linhas; `CURSOR` com `Rows.seguinte` e o instante); `more` vem de `Rows.temMais`, e `temMais` nulo devolve `UNREADABLE` `NO_MORE_SIGNAL` (o fim da passada só por evidência); `OFFSET` com teto que chegaria ao teto com mais páginas devolve `CEILING` | `list.test.ts`, "a página na forma da cópia" | must |
+| 4 | U1 | `listPageOf` dá as células na ordem das colunas, cada uma o texto canônico do tipo, que casa com o padrão do kit para o tipo (`CANONICAL_CELL`; `bigint` inteiro, `numeric` decimal, `boolean` `true` ou `false`, `date` `AAAA-MM-DD`, `timestamp` ISO 8601, `json` o texto JSON, `text` como veio), nulo onde o caminho não existe; um valor que não cabe no tipo devolve `MISFIT` com a coluna e o caminho, nunca nulo; a próxima posição (`OFFSET` somado às linhas; `CURSOR` com `Rows.seguinte` e o instante); `more` vem de `Rows.temMais`, e `temMais` nulo devolve `UNREADABLE` `NO_MORE_SIGNAL` (o fim da passada só por evidência); `OFFSET` com teto que chegaria ao teto com mais páginas devolve `CEILING` | `list.test.ts`, "a página na forma da cópia" | must |
 | 5 | U1 | A conformidade anda, para cada leitura com `list` de um conector, todas as páginas do dublê por `listInputOf` e `listPageOf`: cada linha do dublê aparece uma vez, nenhuma falta nem repete; com `changed`, a página pedida com `since` traz só as linhas alteradas desde então; uma declaração de paginação errada (o tamanho trocado pelo deslocamento) falha a conformidade | `packages/connectors/src/kernel/conformance.ts` (`assertListsWalk`), chamado por `kernel.test.ts` com um conector de teste e um plantio errado | must |
-| 6 | U1 | Com `PageInput.since` nulo, a leitura do Sankhya monta a consulta sem filtro de data de alteração, e a linha com a data vazia vem; com `since`, o filtro de hoje | `packages/connectors/src/sankhya/copy-read.test.ts`, "a primeira passada lê tudo" | must |
+| 6 | U1 | Com `PageInput.since` nulo, a leitura do Sankhya monta a consulta sem filtro de data de alteração, e a linha com a data vazia vem; com `since`, o filtro de hoje; cada célula dos cinco modelos casa com o padrão do kit para o tipo (`CANONICAL_CELL`, no lugar do `CANONICAL` local do teste) | `packages/connectors/src/sankhya/copy-read.test.ts`, "a primeira passada lê tudo" | must |
 | 7 | U2 | `pedidos` aceita `changedFrom` e manda `order.date_last_updated.from`; declara `OFFSET` (`offset`, `limit`, 50, teto nulo) e `changed` (`changedFrom`, `date_last_updated`); as leituras e os pedidos de hoje continuam iguais | `packages/connectors/src/mercado-livre/operations.test.ts`, "pedidos pelo que mudou" | must |
 | 8 | U2 | `anuncios` e `perguntas` declaram `CURSOR`: a primeira página manda `search_type=scan` e o tamanho, as seguintes mandam `scroll_id`; `Rows.seguinte` vem do `scroll_id` da resposta e falta na última; o resumo de cada uma e a skill não dizem mais "no máximo 1000"; o dublê com 1.300 anúncios inventados entrega todos pela conformidade; recusa: uma página com linhas e sem `scroll_id` dá `UNREADABLE` `NO_CURSOR` | `operations.test.ts`, "a varredura passa de mil"; a conformidade do conector | must |
 | 9 | U2 | `reclamacoes` e `periodosDeFaturamento` declaram `OFFSET`; `mensagensDoPacote` não declara `list` (pede o `packId` de um pacote; uma cópia dela seria de um pacote só); `Rows.total` vem de `paging.total` (ou do total no topo) nas leituras de lista; a conformidade anda as cinco | `packages/connectors/src/mercado-livre/mercado-livre.test.ts`, a conformidade | must |
 | 10 | U2 | Por uma definição versão 2 sobre cada leitura com `list` que tem `omit` (`pedidos`, `perguntas`), nenhuma célula de nenhuma página traz o texto pessoal que o dublê planta, nem por uma coluna `json` do objeto inteiro: o `omit` da leitura vale para a cópia | `operations.test.ts`, "o comprador não chega à cópia" | must |
-| 11 | U2 | O dublê responde as quatro formas novas (pedidos pelo que mudou, a primeira e a segunda página da varredura de anúncios, a de perguntas) com respostas gravadas do serviço real, os valores inventados, com o serviço, a data e a rota ao lado ([testing T29](../guides/testing.md)); até a gravação autorizada, com a forma que a documentação mostra, dito na lista do fechamento | `fake.test.ts`, "as respostas gravadas" | should |
+| 11 | U2 | O dublê responde as quatro formas novas (pedidos pelo que mudou, a primeira e a segunda página da varredura de anúncios, a de perguntas) com respostas gravadas do serviço real, os valores inventados, com o serviço, a data e a rota ao lado ([testing T29](../guides/testing.md)); sem a gravação, a U2 não entra no `main` (não há envelope medido do Mercado Livre que fique no lugar) | `fake.test.ts`, "as respostas gravadas" | must |
 | 12 | U3 | Uma cópia versão 2 de uma fonte `OFFSET`: a primeira passada lê todas as páginas sem filtro de alteração, grava cada linha com `_account` e `_account_name`, e fecha; a passada seguinte manda o filtro com a marca menos um dia e lê só o que mudou; nenhuma linha duplica; recusa: uma célula que não cabe no tipo (`MISFIT`) ou uma página sem sinal de fim (`UNREADABLE`) termina `ERROR` `COPY_SOURCE_UNREADABLE`, a posição fica e a marca não anda | `apps/server/src/hub/copies/run-v2.test.ts`, "a passada de uma leitura de lista" | must |
 | 13 | U3 | Uma página respondida `BUSY` termina a rodada `PARTIAL` `WAIT`, guarda a posição da fonte e, quando o fornecedor disse quanto esperar, a hora até a qual não se chama; nada é apagado e a marca não anda; uma rodada antes dessa hora não chama e termina `PARTIAL` `WAIT`; depois, continua da posição; com dois 429 no meio, as linhas saem sem repetição | `run-v2.test.ts`, "o fornecedor pede para esperar" | must |
 | 14 | U3 | Uma fonte `CURSOR` cuja posição passou da validade declarada recomeça a passada dela do começo, com o mesmo número de passada, e o registro diz `COPY_PASS_RESTARTED`; a passada fecha certa; um cursor dentro da validade continua | `run-v2.test.ts`, "o cursor vencido recomeça" (o relógio injetado, T20) | must |
 | 15 | U3 | `listPageOf` com `CEILING` termina a rodada `ERROR` `COPY_SOURCE_CEILING`, sem apagar nem andar a marca, com a posição guardada; a página Cópias diz a frase da falha | `run-v2.test.ts`, "o teto da leitura" | must |
 | 16 | U3 | Uma cópia com duas fontes (duas contas do mesmo conector) tem uma tabela com chave primária `(_account, <chave>)`; o mesmo id em duas contas dá duas linhas; cada fonte tem a sua posição, a sua passada e a sua marca; recusa: uma segunda fonte com a mesma conta na mesma cópia viola `(copy_id, account_ref)`; o fim de uma passada inteira da fonte A apaga só as linhas de A que a passada não gravou, e as de B ficam | `run-v2.test.ts`, "duas lojas numa tabela" | must |
 | 17 | U3 | O fim de uma passada de uma fonte põe em `_account_name` o nome que a conexão tem agora; renomear a conexão aparece na tabela depois da passada seguinte daquela fonte | `run-v2.test.ts`, "o nome da loja segue a conexão" | must |
-| 18 | U3 | Duas cópias de duas empresas sobre um conector `oauth2_code` cujo aplicativo é da instalação (`app.from: 'installation'`) nunca têm duas chamadas de cópia abertas ao mesmo tempo (o contador de chamadas abertas do dublê nunca passa de 1); duas cópias de um conector `client_credentials` (sem aplicativo da instalação) podem se sobrepor; uma chamada que passa do prazo esperando a vez termina a rodada `ERROR` `COPY_SOURCE_UNREACHABLE`, sem chamar, e a posição fica | `apps/server/src/hub/connectors/copy-lane.test.ts`, "uma chamada de cópia por vez por conector" | must |
+| 18 | U3 | Duas cópias de duas empresas sobre um conector `oauth2_code` cujo aplicativo é da instalação (`app.from: 'installation'`) nunca têm duas chamadas de cópia abertas ao mesmo tempo (o contador de chamadas abertas do dublê nunca passa de 1); duas cópias de um conector `client_credentials` (sem aplicativo da instalação) podem se sobrepor; uma chamada que passa do prazo esperando a vez termina a rodada `PARTIAL` `WAIT`, sem chamar e sem `wait_until`, e a posição fica | `apps/server/src/hub/connectors/copy-lane.test.ts`, "uma chamada de cópia por vez por conector" | must |
 | 19 | U3 | No banco da empresa, uma coluna `json` é `jsonb` e se lê com `jsonb_array_elements`; uma `timestamp` da versão 2 é `timestamptz` e guarda o instante com o deslocamento que veio; uma chave `text` grava `MLB1`; a descrição da tabela e a de cada coluna estão em `obj_description` e `col_description` | `apps/server/src/platform/copy-sql.test.ts`, "json, chave de texto e descrições" | must |
 | 20 | U3 | Na primeira passada (sem marca), a leitura manda `since` nulo, nas cópias versão 1 e 2 (#940) | `run-v2.test.ts`, "a primeira passada sem filtro"; `run.test.ts`, o mesmo caso na versão 1 | must |
-| 21 | U3 | Depois da migração, cada cópia de hoje tem uma fonte com a sua conexão, a sua posição (`{ kind: 'KEY', after }`), a sua passada e a sua marca; a primeira rodada continua da posição guardada; os testes de hoje do motor passam sem mudar o que veem | `apps/server/src/hub/copies/run.test.ts`, os casos de hoje; `migrate-copy-source.test.ts`, "a fonte de cada cópia de hoje" | must |
-| 22 | U3 | Pela decisão nova da página (A): apagar uma conexão que não é a primeira de uma cópia tira só a fonte dela, e a rodada seguinte apaga da tabela as linhas cuja `_account` não é de fonte nenhuma; as linhas das outras contas ficam; apagar a primeira conexão apaga a cópia, como na Capacidade 2. Se o fundador escolher B, o `DELETE` sai e o critério diz que as linhas ficam | `run-v2.test.ts`, "a loja desligada" | must |
+| 21 | U3 | Depois da migração, cada cópia de hoje tem uma fonte com a sua conexão, a sua posição (`{ kind: 'KEY', after }`), a sua passada e a sua marca; a primeira rodada continua da posição guardada; a `CopyDefinition` é a união das duas versões (`discriminatedUnion` por `version`), a versão 1 de hoje lida igual; os testes de hoje do motor passam sem mudar o que veem | `apps/server/src/hub/copies/run.test.ts`, os casos de hoje; `migrate-copy-source.test.ts`, "a fonte de cada cópia de hoje"; `copy.test.ts`, "as duas versões" | must |
+| 22 | U3 | Pela decisão nova da página, na recomendação (C): apagar qualquer conexão de uma cópia de duas tira só a fonte dela, a cópia continua, e a rodada seguinte apaga da tabela as linhas cuja `_account` não é de fonte nenhuma; as linhas da outra conta ficam; apagar a última conexão deixa a cópia sem fonte, a lista não a mostra, e a rodada seguinte a encerra como a cascata da Capacidade 2 (a linha da cópia sai); uma cópia de uma conexão só acaba como hoje. Se o fundador escolher A, apagar a primeira conexão apaga a cópia pela cascata de hoje; se escolher B, além disso o `DELETE` sai e o critério diz que as linhas ficam | `run-v2.test.ts`, "a loja desligada" | must |
 | 23 | U3 | O registro de cada rodada e de cada página leva só ids, contagens, o código e o motivo (`WAIT`, `CAP`, `STOPPED`, `COPY_PASS_RESTARTED`), nunca o cursor, a entrada da leitura, uma célula nem uma linha (S41) | `run-v2.test.ts`, "o registro não leva dado" | must |
-| 24 | U3 | A página Cópias diz a rodada `PARTIAL` `WAIT` como "O fornecedor pediu para esperar; a próxima continua de onde parou" | `apps/web/src/hub/copies/copy-list.test.tsx`, "a rodada que esperou" | must |
+| 24 | U3 | A página Cópias diz a rodada `PARTIAL` `WAIT` como "Esperando o fornecedor; a próxima rodada continua de onde parou" | `apps/web/src/hub/copies/copy-list.test.tsx`, "a rodada que esperou" | must |
 | 25 | U4 | `copy_propose` existe no turno quando uma conexão liberada ao Projeto é de um conector com `copy` e `readDoor` (versão 1) ou com uma leitura que declara `list` (versão 2); num Projeto só com outra conexão, não; `GrantedConnection.reads` leva, de cada leitura com `list`, a paginação, o campo de alteração e o teto | `apps/server/src/builder/connectors/copy-propose.test.ts`, "a ferramenta onde há leitura de lista" | must |
 | 26 | U4 | Propor a versão 2 confere a definição contra a leitura: a operação é uma leitura do conector com `list`; `changedSince` só com `changed`, e a coluna dela tem o `path` igual ao campo de `changed`; a entrada fixa passa pelo esquema da operação e não nomeia entrada de `paging` nem de `changed`; cada recusa é `MALFORMED` com o caminho, e nada é gravado | `apps/server/src/hub/copies/propose-v2.test.ts`, "a definição contra a leitura" | must |
 | 27 | U4 | A prova da versão 2 lê, por conexão, até 2 páginas e 100 linhas (os tetos do estudo, "como os do Airbyte"): a primeira sem filtro e, com `changedSince`, uma com a alteração do último dia; devolve só contagens (`rows`, `more`, a chave nula, a chave repetida, por coluna os nulos e os que não couberam no tipo, o total que a leitura informa, as chamadas por passada, as linhas alteradas no último dia ou nulo); recusa `KEY_NOT_UNIQUE` com chave nula ou repetida e `TYPE_MISFIT` com a coluna; cada chamada conta na conta de 50; nenhuma linha vai ao modelo nem à tabela | `propose-v2.test.ts`, "a prova conta e não mostra" | must |
@@ -240,7 +278,7 @@ skill e os documentos ~150). Total da capacidade: ~3.100 linhas, abaixo do orça
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A linha de `copy_propose` (versão 2) | "Propondo uma cópia" | não se aplica | O mesmo | "Não conseguiu propor a cópia", o detalhe com a recusa do sistema, o erro da definição, `KEY_NOT_UNIQUE` ou `TYPE_MISFIT` com a coluna | `NOT_GRANTED` como falha | `NOT_IN_ROLE` como falha, com o nome da leitura | `EXISTS` como falha, com a frase de pedir a liberação; `CALLS_SPENT` como falha |
 | O cartão da proposta na conversa | O cartão do cartão da 3, mais a leitura ("Pedidos · Mercado Livre"), as lojas e "cerca de N chamadas por passada" | não se aplica | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 |
-| Cópias, a linha de uma cópia versão 2 (`…/copies`) | Uma cópia e nenhuma outra: a linha, sem frase de primeira vez | A lista da Capacidade 2 | O esqueleto de hoje | A falha de leitura de hoje | não se aplica | Membro: a página não aparece (Capacidade 2) | A rodada `PARTIAL` `WAIT`: "O fornecedor pediu para esperar; a próxima continua de onde parou"; `COPY_SOURCE_CEILING`: a frase da falha |
+| Cópias, a linha de uma cópia versão 2 (`…/copies`) | Uma cópia e nenhuma outra: a linha, sem frase de primeira vez | A lista da Capacidade 2 | O esqueleto de hoje | A falha de leitura de hoje | não se aplica | Membro: a página não aparece (Capacidade 2) | A rodada `PARTIAL` `WAIT`: "Esperando o fornecedor; a próxima rodada continua de onde parou"; `COPY_SOURCE_CEILING`: a frase da falha |
 | Cópias, o detalhe de uma cópia versão 2 | A fonte, as lojas, o modo, a descrição da tabela, cada coluna com o tipo e a descrição, os filtros fixos | Uma coluna sem descrição: só o nome e o tipo | Como hoje | Como hoje | Como hoje | Como hoje | Como hoje |
 | Cópias, a linha **Proposta** de uma leitura de lista | A linha do cartão da 3, mais as lojas e as chamadas por passada | não se aplica | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 |
 | Ligar a proposta (o diálogo) de uma leitura de lista | A leitura e o conector no lugar da consulta, a entrada fixa, a chave, as lojas, "cerca de N chamadas por passada", o intervalo (30 minutos marcado) | não se aplica | Como no cartão da 3 | Como no cartão da 3 | Como no cartão da 3 | `NOT_IN_ROLE` com o nome da leitura | Como no cartão da 3; uma loja não `ACTIVE`: `COPY_CONNECTION_NOT_READY` |
@@ -296,7 +334,7 @@ que se lê na fonte e o que se acrescenta (as lojas e as chamadas por passada).
 │    │                    │ ml_pedidos    Pedidos · Mercado L. Em dia     14:30, 8 s    1.274   │
 │    │                    │   Loja Centro, Loja Norte · só o alterado          Vendas ML      │
 │    │                    │ ml_perguntas  Perguntas · Merc. L. Esperando  14:15         —       │
-│    │                    │   O fornecedor pediu para esperar; a próxima continua de onde parou│
+│    │                    │   Esperando o fornecedor; a próxima rodada continua de onde parou  │
 └────┴────────────────────┴──────────────────────────────────────────────────────────────────┘
 
 390 px, …/copies                         Ligar a proposta (diálogo)
@@ -327,24 +365,26 @@ escreve. "Mercado Livre" e "Pedidos" vêm do conector (o nome dele e o rótulo d
 | A espera de uma fonte (`wait_until` salvo com a posição) | Só a rodada que tem a trava escreve | Uma instrução só, com a posição | O banco do Hub fora: a rodada termina `COPY_DATABASE_UNAVAILABLE`, nada anda | `COPY_RUN_ENDED` `WAIT` | 13 |
 | O recomeço da passada de uma fonte de cursor vencido (posição nula) | Só a rodada que tem a trava | Uma instrução só; o número da passada não muda, então nada é apagado por engano | Como acima | `COPY_PASS_RESTARTED` | 14 |
 | O fim da passada de uma fonte: `DELETE` só da conta dela, o `UPDATE` de `_account_name`, a contagem; depois a passada e a marca da fonte no Hub | Só a rodada que tem a trava | As instruções do banco da empresa numa transação; a marca só anda depois; se o Hub falha entre as duas, a próxima rodada refaz a passada daquela fonte e o `DELETE` repete sem efeito novo | O banco da empresa ou o do Hub: `COPY_DATABASE_UNAVAILABLE`, a marca não anda | `COPY_RUN_ENDED` `COMPLETE` | 16, 17 |
-| A fila de uma chamada de cópia por conector (em processo, decisão 0058) | Uma por vez, as outras na ordem de chegada até o prazo delas | Uma rodada parada (o sinal) sai da fila sem chamar | Uma chamada que passa do prazo na fila: `DEADLINE`, a rodada termina `ERROR` `COPY_SOURCE_UNREACHABLE` e a posição fica | o registro de hoje da chamada | 18 |
-| Apagar uma conexão que é fonte de uma cópia (a cascata da chave estrangeira de `copy_source`) | A cascata do PostgreSQL | Uma instrução da Capacidade 2 | Como hoje | Como hoje | 22 |
+| A fila de uma chamada de cópia por conector (em processo, decisão 0058) | Uma por vez, as outras na ordem de chegada até o prazo delas | Uma rodada parada (o sinal) sai da fila sem chamar | Uma chamada que passa do prazo na fila: `DEADLINE`, a rodada termina `PARTIAL` `WAIT` sem chamar, e a posição fica | o registro de hoje da chamada; `COPY_RUN_ENDED` `WAIT` | 18 |
+| Apagar uma conexão que é fonte de uma cópia (a cascata da chave estrangeira de `copy_source`; em C, `copy_connection_fkey` não existe mais) | A cascata do PostgreSQL | Uma instrução da Capacidade 2 | Como hoje | Como hoje | 22 |
+| Tirar da tabela as linhas de uma conta sem fonte (`DELETE … WHERE _account <> ALL($refs)`, no banco da empresa, no começo da rodada) | Só a rodada que tem a trava | Uma instrução numa transação; repetível: a segunda não acha linha | O banco da empresa fora: `COPY_DATABASE_UNAVAILABLE`, nenhuma marca anda | `COPY_RUN_ENDED` com o motivo | 22 |
+| Encerrar a cópia sem fonte (C): a linha da cópia sai do Hub, como a cascata da Capacidade 2 | Só a rodada que tem a trava | Uma instrução; a cascata leva as rodadas e as liberações, como hoje | O banco do Hub fora: a rodada termina `COPY_DATABASE_UNAVAILABLE`, a seguinte encerra | `COPY_ENDED` com o id | 22 |
 
 ## A tabela de referência
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A leitura de lista declara como pagina e como filtra o que mudou | U1 | `packages/connectors/src/kernel/operation.ts:139-159` (`Operation` sem declaração de lista); `mercado-livre/operations/vendas.ts:16-25` (`offset` e `limit` como entrada, sem dizer que são a paginação); `mercado-livre/answers.ts:43-59` (`moreOf`) | `airbyte@8aed3123` `docs/platform/connector-development/connector-builder-ui/pagination.md:22-62` (Offset Increment), `:239-313` (Cursor Pagination); `airbyte-integrations/connectors/source-ebay-fulfillment/manifest.yaml:19-58` (`OffsetIncrement` e `DatetimeBasedCursor` em `lastModifiedDate`) | Quem escreve o conector declara, por lista, o paginador e o campo de alteração; a plataforma executa | embrulhado: `list` na `Operation` do kit (já registrado em [boundaries](../reference/boundaries.md), "Connectors (step 19)"), com `OFFSET`, `CURSOR` e `NONE` e `changed`; o que acrescentamos é só a declaração, sem motor declarativo | | 2026-11-10: "1. A price to win foi um exemplo deveria estar no coinector" | `packages/connectors/src/kernel/list.ts` |
+| A leitura de lista declara como pagina e como filtra o que mudou | U1 | `packages/connectors/src/kernel/operation.ts:139-159` (`Operation` sem declaração de lista); `mercado-livre/operations/vendas.ts:16-25` (`offset` e `limit` como entrada, sem dizer que são a paginação); `mercado-livre/answers.ts:43-59` (`moreOf`) | `airbyte@8aed3123` `docs/platform/connector-development/connector-builder-ui/pagination.md:22-62` (Offset Increment), `:239-313` (Cursor Pagination); `airbyte-integrations/connectors/source-ebay-fulfillment/manifest.yaml:19-58` (`OffsetIncrement` e `DatetimeBasedCursor` em `lastModifiedDate`) | Quem escreve o conector declara, por lista, o paginador e o campo de alteração; a plataforma executa | embrulhado: `list` na `Operation` do kit (a entrada de [boundaries](../reference/boundaries.md) "Connectors (step 19)" registra `defineOperation`; a U1 acrescenta a ela a declaração `list`), com `OFFSET`, `CURSOR` e `NONE` e `changed`; o que acrescentamos é só a declaração, sem motor declarativo | | 2026-11-10: "1. A price to win foi um exemplo deveria estar no coinector" | `packages/connectors/src/kernel/list.ts` |
 | Uma leitura de cópia genérica, no lugar de cada conector escrever a sua | U1 | `kernel/copy.ts:87-91` (`ConnectorCopy.read`, uma por conector); `sankhya/copy-read.ts` | `airbyte@8aed3123` `source-ebay-fulfillment/manifest.yaml:23-54` (`SimpleRetriever`, `DpathExtractor` por `field_path`, o paginador) | Uma rotina da plataforma lê qualquer stream pela declaração | embrulhado: `listInputOf` e `listPageOf`, funções puras do kit; a chamada continua pela operação e por `readThrough` | O laboratório do estudo (fora do repositório): a mesma rotina copiou pedidos e uma leitura por anúncio só lendo duas declarações | 2026-11-10 (as cópias escritas pela equipe): "não é o builder que vai construir, é a gente que vai tá fazendo" | `packages/connectors/src/kernel/list.ts` |
 | A definição versão 2: fonte `OPERATION`, `path`, `json`, chave de texto, descrições | U1 | `kernel/copy.ts:22-60` (só `QUERY`; chave só `bigint`, `:41-48`); `:16` (os tipos) | `airbyte@8aed3123` `source-ebay-fulfillment/manifest.yaml:21-22` (`primary_key`); `nango@e6c6131` `docs/guides/functions/syncs/records-cache.mdx:23-28` (o registro identificado pelo `id` que o autor dá) | A chave é de quem define; o formato não é da plataforma | nativo: Zod, `discriminatedUnion` por `version`; a versão 1 fica como está | | 2026-11-10 ("sem restringir muito") | — |
 | A posição opaca | U1, U3 | `kernel/copy.ts:69` (`after: number[]`); `hub/copies/run.ts:199-205` (`Number(...)` da chave); `hub/copies/tables.ts:64` (`position` já é `jsonb`) | `airbyte@8aed3123` `pagination.md:239-279` (o cursor que a API devolve vai na página seguinte) | A posição é o que a API devolve | remendo já aprovado ([boundaries](../reference/boundaries.md), "How far a pass has read"), com a forma nova: a união `CopyPosition` | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `run-v2.test.ts` (12, 14) | a decisão nova da página (a) | — |
-| Cada conta com o seu ponto, numa tabela só | U3 | `hub/copies/tables.ts:37-90` (uma conexão por cópia; `copy_company_id_name_key`, `:71`); `platform/copy-sql.ts:146-172` (o fim de passada sem conta) | `nango@e6c6131` `docs/guides/functions/syncs/sync-partitioning.mdx:7-17` (uma definição; cada execução com o seu checkpoint e os seus registros) | Uma definição, o estado por conexão | remendo: `copies.copy_source` e o fim de passada por `_account` | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `run-v2.test.ts` (16, 22) | a decisão nova da página (a); 2026-11-10: "a gente já tá querendo limitar como que ele vai fazer" | migração de `copy_source` |
+| Cada conta com o seu ponto, numa tabela só | U3 | `hub/copies/tables.ts:37-90` (uma conexão por cópia; `copy_company_id_name_key`, `:71`); `platform/copy-sql.ts:146-172` (o fim de passada sem conta) | `nango@e6c6131` `docs/guides/functions/syncs/sync-partitioning.mdx:7-17` (uma definição; cada execução com o seu checkpoint e os seus registros) | Uma definição, o estado por conexão | remendo: `copies.copy_source` e o fim de passada por `_account`; em C, a cópia não pende de uma conexão | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `run-v2.test.ts` (16, 22) | a decisão nova da página (a); 2026-11-10: "a gente já tá querendo limitar como que ele vai fazer" | migração de `copy_source` |
 | O nome da loja na tabela | U3 | `packages/app/skills/conexus-data/SKILL.md:50` ("never write a store's name in the code"); `hub/connectors/tables.ts:67-70` (`account_ref`, `account_label`) | — | — | nativo: `_account_name` é o nome da conexão, escrito pelo motor no fim de cada passada da fonte | | não precisa | — |
 | O 429 como espera | U3 | `hub/connectors/copy-port.ts:141-144` (`BUSY` vira `COPY_SOURCE_UNREACHABLE`); `hub/copies/run.ts:253-258` (vira `ERROR`); decisão 0058 | `airbyte@8aed3123` `connector-builder-ui/error-handling.md:15,107` (repete o 429 e pausa pelo `Retry-After`); `nango@e6c6131` `docs/guides/functions/rate-limits.mdx:15-38` (repete com espera, ou pelo cabeçalho) | A plataforma espera e retoma | remendo: `PARTIAL` `WAIT`, a posição guardada e `wait_until` por fonte; a espera dentro do prazo da chamada continua do executor (0058) | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `run-v2.test.ts` (13) | a decisão nova da página (b) | — |
 | O cursor de varredura que expira | U3 | nenhum | A documentação do Mercado Livre (estudo do Sync como serviço, 1.3): `scroll_id` vale 5 minutos | — | remendo: a validade declarada em `paging.ttlMs`; a rodada nunca manda um cursor vencido e recomeça a passada da fonte, sem precisar ler a recusa de um cursor vencido, que ninguém gravou | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `run-v2.test.ts` (14) | a decisão nova da página (b) | — |
-| Uma chamada de cópia por vez por conector de aplicativo único | U3 | `hub/connectors/limits.ts:16-60` (uma chamada por vez por conexão, em processo, 0058); `packages/connectors/src/kernel/oauth.ts:9` (`AppSource`, só `installation` hoje); `mercado-livre/definition.ts:26` | `airbyte@8aed3123` `docs/platform/connector-development/config-based/understanding-the-yaml-file/rate-limit-api-budget.md:3-30` (`HTTPAPIBudget`, as políticas de chamadas) | A plataforma limita as chamadas por janela | remendo: a mesma fila de `limits.ts`, com a chave do conector, para as leituras de cópia dos conectores cujo aplicativo é da instalação; nenhum número inventado (o Mercado Livre não publica o seu) | nenhuma biblioteca instalada faz (`@mastra/core` 1.82.0 guarda o estado só dentro de uma rodada; `drizzle-orm` 1.0.0-rc.4 só grava); `copy-lane.test.ts` (18) | a decisão nova da página (c) | `apps/server/src/hub/connectors/copy-lane.test.ts` |
+| Uma chamada de cópia por vez por conector de aplicativo único | U3 | `hub/connectors/limits.ts:16-60` (uma chamada por vez por conexão, em processo, 0058); `packages/connectors/src/kernel/oauth.ts:9` (`AppSource`, só `installation` hoje); `mercado-livre/definition.ts:26` | `airbyte@8aed3123` `docs/platform/connector-development/config-based/understanding-the-yaml-file/rate-limit-api-budget.md:3-30` (`HTTPAPIBudget`, as políticas de chamadas) | A plataforma limita as chamadas de uma conexão por janela; nada no texto soma as chamadas de várias conexões de clientes num aplicativo OAuth só | remendo: a mesma fila de `limits.ts`, com a chave do conector, para as leituras de cópia dos conectores cujo aplicativo é da instalação; nenhum número inventado (o Mercado Livre não publica o seu) | nenhum limitador instalado (`node_modules` não tem `p-limit`, `p-queue` nem `bottleneck`; só `p-retry` 7.1.1, de outro pacote, que repete e não limita); `copy-lane.test.ts` (18) | a decisão nova da página (c) | `apps/server/src/hub/connectors/copy-lane.test.ts` |
 | O teto de deslocamento de uma leitura | U1, U3 | `mercado-livre/operations/anuncios.ts:9-10` (o resumo diz 1000) | — | — | nativo no kit: `paging.ceiling`; alcançado com mais páginas, a rodada termina `ERROR` e nunca fecha | | não precisa | — |
-| As leituras do Mercado Livre dizem a verdade: pedidos pelo que mudou, a varredura que passa de mil | U2 | `mercado-livre/operations/vendas.ts:29-38` (só `order.date_created`); `anuncios.ts:22-28`, `perguntas.ts:28-36` (só `offset`) | https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/gerenciamento-de-vendas (`order.date_last_updated.from`); https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/itens-e-buscas (`search_type=scan`, `scroll_id`, 5 minutos, até 100) | Os parâmetros da própria API | nativo: as entradas da API, conferidas pelo `docs.test.ts` de hoje | | 2026-11-10: "1. A price to win ... deveria estar no coinector" | — |
+| As leituras do Mercado Livre dizem a verdade: pedidos pelo que mudou, a varredura que passa de mil | U2 | `mercado-livre/operations/vendas.ts:29-38` (só `order.date_created`); `anuncios.ts:22-28`, `perguntas.ts:28-36` (só `offset`) | https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/gerenciamento-de-vendas (`order.date_last_updated.from`); https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/itens-e-buscas (`search_type=scan`, `scroll_id`, 5 minutos, até 100) | Os parâmetros da própria API | nativo: as entradas da API; a rota de cada uma conferida pelo `docs.test.ts` de hoje, que procura só o método e o caminho na página (`mercado-livre/docs.test.ts:12-17`); os parâmetros conferidos à mão na página citada | | 2026-11-10: "1. A price to win ... deveria estar no coinector" | — |
 | O comprador fora da cópia | U2 | `mercado-livre/operations/vendas.ts:6-7` (`BUYER`); `answers.ts:61-70` (`without`) | — | — | nativo: a cópia lê pela operação, e o `omit` vale | | a decisão de 2026-10 do conector, que corta o comprador | — |
 | As descrições da tabela e das colunas | U3, U4 | `platform/copy-sql.ts:85-103` (`ensureCopyTable` sem comentário) | PostgreSQL 18, `COMMENT ON TABLE`, `COMMENT ON COLUMN`, `obj_description`, `col_description` | O catálogo guarda a descrição | nativo | | 2026-11-10 ("esse data warehouse ... dos conectores") | — |
 | A prova da versão 2 | U4 | cartão da 3, U3 (`provePage`: uma página, só a contagem) | `nango@e6c6131` `docs/guides/functions/functions-guide.mdx:235-262` (o agente roda a seco numa conexão real antes de publicar) | Uma leitura pequena contra o sistema real, antes de ligar | embrulhado: `provePage` lê até 2 páginas e 100 linhas por conexão e devolve só contagens | `propose-v2.test.ts` (27) | 2026-11-10: "como que ele vai avaliar" | — |
@@ -373,7 +413,12 @@ Capacidade 2, `e0353c36`).
   menos um dia a relê na seguinte. A ordem estável do Mercado Livre não foi medida.
 - As colunas `connection_id`, `pass`, `pass_started_at`, `position` e `watermark` de `copies.copy`
   deixam de ser lidas pela U3 e continuam escritas só na criação (a primeira conexão); a migração que as
-  tira vem depois, numa etapa seguinte ([data D6](../guides/data.md)).
+  tira vem depois, numa etapa seguinte ([data D6](../guides/data.md)). Em C, a migração da U3
+  tira a chave estrangeira `copy_connection_fkey`, para que apagar a primeira conexão não apague a
+  cópia; a coluna fica, sem ser lida, e sai com as outras depois. Nenhum código lê a restrição (D6 fala
+  da forma que o código lê), e [data D17](../guides/data.md) é o porquê: a chave impediria guardar o que
+  o dono não removeu. `drizzle-orm` 1.0.0-rc.4 não exprime `SET NULL` de uma coluna só de uma chave
+  composta (`pg-core/foreign-keys.d.ts:6`), por isso a chave sai em vez de mudar.
 - Um anúncio copiado por esta capacidade é só o id; o detalhe pede `each` (fica de fora).
 
 ## U1 O contrato da leitura de lista
@@ -402,9 +447,9 @@ conector vão ler, e a conformidade que prova uma declaração.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/connectors/src/kernel/` | Cria `list.ts`, `list.test.ts`; muda `operation.ts` (`list`), `copy.ts` (a versão 2, `CopyPosition`, `PageInput.since` nulo), `rows.ts` (`seguinte`, `total`), `conformance.ts` (`assertListsWalk`), `kernel.test.ts`, `copy.test.ts` | os conectores, `apps/server/src/hub/{connectors,copies}`, `packages/app` (os tipos das leituras) |
+| `packages/connectors/src/kernel/` | Cria `list.ts`, `list.test.ts`; muda `operation.ts` (`list`), `copy.ts` (`CopyDefinitionV2` ao lado da de hoje, `CANONICAL_CELL`, `CopyPosition`, `PageInput.since` nulo), `rows.ts` (`seguinte`, `total`), `conformance.ts` (`assertListsWalk`), `kernel.test.ts`, `copy.test.ts` | os conectores, `apps/server/src/hub/{connectors,copies}`, `packages/app` (os tipos das leituras) |
 | `packages/connectors/src/index.ts` | Muda (exporta o que é novo) | `apps/server` |
-| `packages/connectors/src/sankhya/copy-read.ts` e `copy-read.test.ts` | Muda (`since` nulo, sem filtro) | a leitura de cópia do Sankhya |
+| `packages/connectors/src/sankhya/copy-read.ts` e `copy-read.test.ts` | Muda (`since` nulo, sem filtro; o teste confere as células contra `CANONICAL_CELL`) | a leitura de cópia do Sankhya |
 
 ### Os contratos que a unidade cria
 
@@ -438,18 +483,23 @@ devolve um objeto, e quem chama passa por `requestOf`, que o parseia (`operation
 `packages/connectors/src/kernel/copy.ts`:
 
 ```ts
-export const CopyColumnType = z.enum(['text', 'numeric', 'bigint', 'date', 'timestamp', 'boolean', 'json'])
+// CopyColumnType, CopyDefinition and PageInput.definition stay as they are: the server reads them until U3.
+export const CopyColumnTypeV2 = z.enum([...CopyColumnType.options, 'json'])
+/** The canonical text of each type's cell, the one owner: list.ts and Sankhya's copy read convert to it, each tested against it. */
+export const CANONICAL_CELL: Readonly<Record<z.infer<typeof CopyColumnTypeV2>, RegExp>>
+  // text any; numeric -?\d+(\.\d+)?; bigint -?\d+; date YYYY-MM-DD; boolean true|false; json any JSON text;
+  // timestamp YYYY-MM-DDTHH:MM:SS, with fraction and offset optional (version 1 has neither, version 2 keeps the offset)
 const Dotted = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/).max(200)
 const Scalar = z.union([z.string().max(200), z.number(), z.boolean()])
 export const CopyDefinitionV2 = z.object({
   version: z.literal(2),
   source: z.object({ kind: z.literal('OPERATION'), operation: OperationId, input: z.record(z.string(), Scalar).default({}) }),
   description: z.string().trim().min(1).max(500),
-  columns: z.array(z.object({ name: CopyColumnName, type: CopyColumnType, path: Dotted, description: z.string().trim().max(200).optional() })).min(1).max(100),
+  columns: z.array(z.object({ name: CopyColumnName, type: CopyColumnTypeV2, path: Dotted, description: z.string().trim().max(200).optional() })).min(1).max(100),
   key: z.array(CopyColumnName).min(1).max(4),   // bigint or text columns
   changedSince: z.object({ column: CopyColumnName }).nullable(), // none: every pass reads the whole source
 }) // superRefine: repeated column or key, key type, changedSince type, a name starting with "_" (the engine's)
-export const CopyDefinition = z.discriminatedUnion('version', [CopyDefinitionV1, CopyDefinitionV2])
+// The union CopyDefinition = discriminatedUnion('version', [V1, V2]) is U3's, after PR 948.
 export const CopyPosition = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('KEY'), after: z.array(z.int()) }),           // version 1
   z.object({ kind: z.literal('OFFSET'), offset: z.int().min(0) }),
@@ -458,20 +508,24 @@ export const CopyPosition = z.discriminatedUnion('kind', [
 // PageInput.since becomes z.iso.date().nullable(): null on a pass with no watermark (#940)
 ```
 
-A versão 1 continua a mesma `z.object` de hoje, com o nome `CopyDefinitionV1`; o tipo `json` entra no
-enum, e a versão 1 continua recusando chave que não é `bigint`. Uma definição versão 2 não tem
-`window` (a página do fundador diz por quê).
+A `CopyDefinition` de hoje, o `CopyColumnType` dela e `PageInput.definition` não mudam nesta unidade:
+o servidor os lê em `hub/copies/{list,run,enable}.ts`, que o 948 muda, e a união no lugar deles quebra o
+typecheck desses arquivos (a leitura do cartão rodou). `PageInput.since` nulo só alarga a entrada: o
+servidor monta `since` como texto e nada nele lê o campo (conferido com o `tsc` de `apps/server`). Uma
+definição versão 2 não tem `window` (a página do fundador diz por quê).
 
 `kernel/rows.ts`: `Rows` ganha `seguinte: z.string().min(1).max(4000).optional()` (o cursor da página
 seguinte, quando a rota o devolve) e `total: z.int().min(0).optional()` (o total que a rota informa).
 
 A forma de cada coisa:
 
-- **Estados.** `ListPaging`, `CopyPosition`, `CopyDefinition` e `ListPage` discriminam por um literal
+- **Estados.** `ListPaging`, `CopyPosition` e `ListPage` discriminam por um literal
   (C21, C22); um `switch` sobre eles termina em `satisfies never`.
 - **Ids.** `OperationId` com marca na fonte (C23), parseado pela `CopyDefinition`.
 - **Donos.** A paginação de cada leitura, da declaração `list` dela; o texto canônico de cada tipo, de
-  `list.ts` (o do Sankhya fica no Sankhya, que lê SQL); os nomes de coluna proibidos (começados por
+  `CANONICAL_CELL` em `copy.ts`: `list.ts` converte o JSON da rota e `sankhya/copy-read.ts:81-110`
+  converte o SQL, e cada conversor tem um teste contra os padrões (o `CANONICAL` de
+  `copy-read.test.ts:251` passa a ser o do kit); os nomes de coluna proibidos (começados por
   `_`), da `CopyDefinitionV2` (C26).
 - **Entrada externa.** A definição, pela `CopyDefinition` (C27); a resposta da rota, pelo `answer` da
   operação, como hoje.
@@ -489,9 +543,9 @@ inteira pelo construtor e pelo revisor.
 ### A ordem do trabalho
 
 1. `rows.ts`: `seguinte` e `total`. Regras: C26.
-2. `copy.ts`: `CopyDefinitionV1` com o nome, `CopyDefinitionV2`, a união, `CopyPosition`,
-   `PageInput.since` nulo. Regras: C21, C24, C27.
-3. `list.ts`: os tipos, `listInputOf` e `listPageOf`, com o texto canônico de cada tipo; um valor que
+2. `copy.ts`: `CopyColumnTypeV2`, `CopyDefinitionV2`, `CANONICAL_CELL`, `CopyPosition`,
+   `PageInput.since` nulo; a `CopyDefinition` de hoje fica. Regras: C21, C24, C26, C27.
+3. `list.ts`: os tipos, `listInputOf` e `listPageOf`, convertendo para `CANONICAL_CELL`; um valor que
    não cabe é `MISFIT`, nunca nulo. Regras: C22, C26.
 4. `operation.ts`: `list` e as recusas de `defineOperation`. Regras: C21.
 5. `conformance.ts`: `assertListsWalk`, chamado por `runConformance` para cada leitura com `list`:
@@ -516,8 +570,8 @@ inteira pelo construtor e pelo revisor.
 
 - A entrada de uma leitura que precisa declarar `list` não for um `z.object` (um `z.preprocess`, um
   `z.union`): parar e dizer qual; a conferência das chaves muda de forma.
-- A versão 1 precisar mudar de forma para a união compilar no Hub: parar; a U1 não muda o que o motor
-  de hoje lê.
+- O `tsc` de `apps/server` falhar depois de uma mudança desta unidade: parar e dizer o arquivo; a U1
+  não muda nada que o servidor lê, e um arquivo do servidor a mudar é da U3.
 
 ## U2 As leituras do Mercado Livre declaram a lista
 
@@ -530,7 +584,9 @@ dublê e a skill.
   https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/gerenciamento-de-vendas
   (`order.date_last_updated.from`; o filtro usa até a hora). O `docs.test.ts` de hoje
   (`mercado-livre/docs.test.ts`, [boundaries](../reference/boundaries.md), "Connectors (step 19.1)")
-  confere a rota na página citada.
+  confere só a rota (o método e o caminho, `docs.test.ts:12-17`) na página citada; os parâmetros novos
+  (`order.date_last_updated.from`, `search_type=scan`, `scroll_id`) o construtor confere à mão na página e
+  o revisor também.
 - **A varredura.** `mercado-livre/operations/anuncios.ts:6-29`, `perguntas.ts:5-37`;
   `skill/references/anuncios.md` e `perguntas.md` (o teto falso). Referência:
   https://developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/itens-e-buscas
@@ -548,7 +604,7 @@ dublê e a skill.
 | `packages/connectors/src/mercado-livre/operations/` | Muda `shared.ts` (`ReadSpec.paged`), `vendas.ts`, `anuncios.ts`, `perguntas.ts`, `reclamacoes.ts`, `faturamento.ts` | o conector, o Hub |
 | `packages/connectors/src/mercado-livre/answers.ts` | Muda (`seguinte` e `total` em `rows`) | as leituras |
 | `packages/connectors/src/mercado-livre/{fake-data,fake-routes,fake-routes-more}.ts` | Muda (o filtro de alteração, a varredura com 1.300 anúncios inventados, o `scroll_id`) | `fake.ts`, os testes e o Hub de teste |
-| `packages/connectors/src/mercado-livre/recordings/` | Cria, quando a gravação for autorizada (as quatro respostas, os valores inventados) | o dublê, a conformidade |
+| `packages/connectors/src/mercado-livre/recordings/` | Cria (as quatro respostas, os valores inventados); sem a gravação, a U2 não entra no `main` | o dublê, a conformidade |
 | `packages/connectors/src/mercado-livre/skill/` | Muda `SKILL.md`, `references/anuncios.md`, `perguntas.md`, `vendas.md` | o Builder |
 
 ### Os contratos que a unidade cria
@@ -585,7 +641,8 @@ A forma de cada coisa:
 
 - `zod` (`packages/connectors`): `zod.dev/llms.txt`.
 - O `docs.test.ts` do conector, à mão, num computador ([boundaries](../reference/boundaries.md),
-  "Connectors (step 19.1)"): a página citada de cada leitura nova continua tendo a rota.
+  "Connectors (step 19.1)"): a página citada de cada leitura nova continua tendo a rota; os parâmetros
+  novos, lidos à mão na mesma página.
 
 ### A ordem do trabalho
 
@@ -594,13 +651,13 @@ A forma de cada coisa:
 3. O dublê: pedidos com 120 pedidos inventados (hoje `fake-routes.ts:80-90` devolve um) e o filtro de
    alteração, a varredura em anúncios e perguntas com `scroll_id`, 1.300 anúncios inventados. Regras: S40, T29.
 4. A skill: a varredura, o filtro de alteração, e que uma leitura com lista pode virar cópia.
-5. A gravação, quando autorizada: as quatro respostas em `recordings/`, cada uma com o serviço, a rota,
+5. A gravação, condição para a U2 entrar no `main`: as quatro respostas em `recordings/`, cada uma com o serviço, a rota,
    a data e os valores trocados por inventados; o dublê e a conformidade as importam. Regras: S40, T29.
 
 ### Como se prova
 
 - Critérios 7 a 10: `operations.test.ts` e `mercado-livre.test.ts` (a conformidade com a U1).
-- Critério 11: `fake.test.ts`, quando houver gravação.
+- Critério 11: `fake.test.ts`, com a gravação; sem ela o critério falha e a U2 não entra no `main`.
 - Falha hoje: `pedidos` não aceita `changedFrom`; a busca de anúncios para em 1.000.
 - Local: os testes tocados, `npm run typecheck`, `npm run lint`, `npm run docs`; o `docs.test.ts` à
   mão, com `MERCADO_LIVRE_DOCS_ONLINE=1`.
@@ -637,10 +694,11 @@ passada por conta e a fila entre empresas.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/` | Cria `sources.ts` (ler e salvar as fontes), `run-v2.test.ts`, `migrate-copy-source.test.ts`; muda `tables.ts` (`copySource`), `run.ts` (a rodada por fonte), `store.ts` (`CopyOutcome` com `WAIT`; a cópia lida com as fontes), `list.ts` (`Reason`, `:31`, ganha `WAIT`, ou `runOf` recusa a rodada guardada), `enable.ts` (a fonte da cópia de um modelo), `mode.ts` (a união de versões), `test-copies.ts` | o relógio (`builder/copy-clock`), `main.ts` |
+| `packages/connectors/src/kernel/copy.ts` e `copy.test.ts` | Muda (`CopyDefinitionV1` com o nome da de hoje; `CopyDefinition` passa a ser a união das duas versões; `PageInput.definition` continua `CopyDefinitionV1`, porque a leitura de cópia de um conector é da versão 1) | `apps/server/src/hub/copies`, `hub/connectors/copy-port.ts` |
+| `apps/server/src/hub/copies/` | Cria `sources.ts` (ler e salvar as fontes), `run-v2.test.ts`, `migrate-copy-source.test.ts`; muda `tables.ts` só em C (tira `copy_connection_fkey`; `copySource` vem do pull request da D11), `run.ts` (a rodada por fonte; em C, encerra a cópia sem fonte), `routes.test.ts` (a união lida por `version`), `store.ts` (`CopyOutcome` com `WAIT`; a cópia lida com as fontes), `list.ts` (`Reason`, `:31`, ganha `WAIT`, ou `runOf` recusa a rodada guardada; em C, não lista a cópia sem fonte), `enable.ts` (a fonte da cópia de um modelo), `mode.ts` (a união de versões), `test-copies.ts` | o relógio (`builder/copy-clock`), `main.ts` |
 | `apps/server/src/hub/connectors/` | Muda `copy-port.ts` (a página de `OPERATION`, `BUSY` como `WAIT`, a fila), `limits.ts` (`inCopyTurn`); cria `copy-lane.test.ts` | `hub/copies` pela porta, `conversations-of.ts` |
 | `apps/server/src/platform/copy-sql.ts`, `company-postgres.ts`, `test-company-postgres.ts` | Muda (`json`, `timestamptz` na versão 2, `_account`, `_account_name`, o fim de passada da conta, `COMMENT ON`); cria `copy-sql.test.ts` | `hub/copies` |
-| `apps/server/migrations/` | Cria a migração que dá a cada cópia de hoje a sua fonte (só dados; as tabelas e as permissões vêm no pull request da D11) | `migrate` |
+| `apps/server/migrations/` | Cria a migração que dá a cada cópia de hoje a sua fonte (dados; as tabelas e as permissões vêm no pull request da D11) e, em C, a que tira `copy_connection_fkey` | `migrate` |
 | `packages/hub-api/src/copies.ts`, `copy-failures.ts` | Muda (`CopyRun.outcome` `PARTIAL` com `WAIT`; `COPY_SOURCE_CEILING`) | `apps/server`, `apps/web` |
 | `apps/web/src/hub/copies/text.ts` | Muda (a frase de `WAIT`) | a página Cópias |
 | `docs/reference/boundaries.md` | Muda (as três peças novas na seção das cópias) | — |
@@ -696,7 +754,7 @@ export function sourcesOf(tx: ReadTx, ids: { companyId: CompanyId; copyId: CopyI
 ```ts
 export type CopyRead =
   | Readonly<{ kind: 'PAGE'; page: CopyPage; next: CopyPosition | null; total: number | null }>
-  | Readonly<{ kind: 'WAIT'; waitMs: number | null }> // the provider answered 429 (decision 0058)
+  | Readonly<{ kind: 'WAIT'; waitMs: number | null }> // the provider answered 429 (decision 0058), or the connector's lane passed its deadline (waitMs null)
   | Readonly<{ kind: 'FAILED'; code: CopySourceFailure | 'COPY_SOURCE_CEILING' }>
   | Readonly<{ kind: 'NO_CONNECTION' }>
 // readPage takes { companyId, connectionId, enabledBy, definition, position, since, windowFrom, signal }:
@@ -715,9 +773,10 @@ export type CopyRead =
 export const COPY_ACCOUNT_COLUMN = '_account'
 export const COPY_ACCOUNT_NAME_COLUMN = '_account_name'
 // CopyTable gains `accounts: boolean` (true when the connector's `account` is not `none`, so a copy of
-// one Mercado Livre store writes `_account` too), `description: string | null` and each column's
-// `description`; CopyColumnType gains 'json' (jsonb); in version 2, `timestamp` is `timestamptz`
-// (Mercado Livre's instants carry an offset; version 1 keeps `timestamp`, Sankhya's local hour). ensureCopyTable: with accounts, both columns text NOT NULL and
+// one account writes `_account` too), `instants: 'LOCAL' | 'OFFSET'` (OFFSET for a version 2 copy:
+// `timestamp` is `timestamptz`, a provider's instant keeps its offset; LOCAL keeps `timestamp`, a
+// database's local hour), `description: string | null` and each column's `description`; the
+// platform's column type gains 'json' (jsonb). ensureCopyTable: with accounts, both columns text NOT NULL and
 // PRIMARY KEY (_account, <key>); COMMENT ON TABLE and COMMENT ON COLUMN from the descriptions.
 // writePage takes `account: { ref: string; name: string } | null`; a json cell is parsed into the jsonb.
 // closePass takes the same `account`: the DELETE carries `AND _account = $ref`, then
@@ -725,14 +784,15 @@ export const COPY_ACCOUNT_NAME_COLUMN = '_account_name'
 ```
 
 A rodada (`run.ts`): a trava continua da cópia (uma rodada por vez, [boundaries](../reference/boundaries.md));
-depois dela, as fontes, primeiro as de passada aberta (posição não nula), depois as outras na ordem
+depois dela, em C, uma cópia sem fonte nenhuma sai do Hub (a linha da cópia, como a cascata da
+Capacidade 2) e a rodada termina; senão, as fontes, primeiro as de passada aberta (posição não nula), depois as outras na ordem
 de criação; antes delas, as linhas cuja `_account` não é de fonte nenhuma saem da tabela (a decisão
 nova da página, A); uma fonte com `wait_until` no futuro termina a rodada `PARTIAL`
 `WAIT` sem chamar; uma fonte `CURSOR` cuja posição tem `at` mais velho que `paging.ttlMs` volta a
 posição nula, com o registro `COPY_PASS_RESTARTED`; página a página como hoje, cada uma salva na fonte;
 `WAIT` salva `wait_until` (agora mais `waitMs`, quando veio) e termina `PARTIAL` `WAIT` sem tentar as
-outras fontes (o limite do Mercado Livre é do aplicativo, então a outra loja receberia o mesmo
-pedido); uma fonte que fechou a passada antes do `WAIT` começa uma passada nova na rodada seguinte,
+outras fontes (o limite do aplicativo do conector vale para todas as contas, então a outra receberia o
+mesmo pedido); o prazo vencido na fila do conector termina `PARTIAL` `WAIT` sem `wait_until`; uma fonte que fechou a passada antes do `WAIT` começa uma passada nova na rodada seguinte,
 depois da que ficou aberta; `more` falso
 fecha a passada da fonte (o `closePass` da conta, depois `pass + 1`, a marca no início da passada, a
 posição nula) e passa à fonte seguinte; a última fonte fechada termina `COMPLETE`. Os tetos de 200
@@ -756,8 +816,8 @@ A forma de cada coisa:
 Das linhas de [stack](../reference/stack.md) dos pacotes que a unidade toca, cada skill carregada
 inteira pelo construtor e pelo revisor.
 
-- `drizzle` (`drizzle-kit`, `apps/server`, `node_modules/drizzle-kit/skills/`): a migração de dados e a
-  tabela no `tables.ts`.
+- `drizzle` (`drizzle-kit`, `apps/server`, `node_modules/drizzle-kit/skills/`): a migração de dados e, em C, a
+  chave estrangeira tirada de `tables.ts`.
 - `neon:neon-postgres` (`@neondatabase/serverless`, `apps/server/src/platform`): `COMMENT ON`, `jsonb` e
   as instruções da página, pela porta `SqlTransport`.
 - `mastra` (`@mastra/core`): o relógio das cópias não muda; ler `builder/copy-clock` só para saber
@@ -768,17 +828,20 @@ inteira pelo construtor e pelo revisor.
 
 ### A ordem do trabalho
 
-1. A migração de dados das fontes e `copySource` em `tables.ts` (a tabela vem da D11). Regras: D5, D6,
-   D7, D30.
-2. `sources.ts` e a rodada por fonte em `run.ts`, com a trava de hoje; `FIRST_SINCE` sai. Regras: C21,
-   C65, D22, D25.
-3. `copy-port.ts`: a página de `OPERATION` por `listInputOf`, `readThrough` e `listPageOf`; `WAIT`;
+1. `copy.ts`: `CopyDefinitionV1` e a união; o servidor lê por `version` (`list.ts`, `run.ts`,
+   `enable.ts`, `mode.ts`, `routes.test.ts`). Regras: C21, C22.
+2. A migração de dados das fontes (a tabela e `copySource` em `tables.ts` vêm do pull request da D11);
+   em C, `copy_connection_fkey` sai de `tables.ts` e a migração gerada a tira. Regras: D5, D6, D7, D17,
+   D30.
+3. `sources.ts` e a rodada por fonte em `run.ts`, com a trava de hoje; `FIRST_SINCE` sai; em C, a cópia
+   sem fonte encerrada. Regras: C21, C65, D22, D25.
+4. `copy-port.ts`: a página de `OPERATION` por `listInputOf`, `readThrough` e `listPageOf`; `WAIT`;
    `COPY_SOURCE_CEILING`. Regras: C26, C49, C57.
-4. `limits.ts`: `inCopyTurn`. Regras: C57, C63 (dito em 0058: só enquanto houver um processo).
-5. `copy-sql.ts`: `json`, as colunas da conta, o fim de passada da conta, `COMMENT ON`. Regras: D20
+5. `limits.ts`: `inCopyTurn`. Regras: C57, C63 (dito em 0058: só enquanto houver um processo).
+6. `copy-sql.ts`: `json`, `instants`, as colunas da conta, o fim de passada da conta, `COMMENT ON`. Regras: D20
    (os valores ligados; os nomes por `quoted`).
-6. `CopyRun` e `COPY_SOURCE_CEILING` em `hub-api`; a frase de `WAIT` em `text.ts`. Regras: C45, C48.
-7. [Boundaries](../reference/boundaries.md): as três peças novas na seção das cópias (a fonte por
+7. `CopyRun` e `COPY_SOURCE_CEILING` em `hub-api`; a frase de `WAIT` em `text.ts`. Regras: C45, C48.
+8. [Boundaries](../reference/boundaries.md): as três peças novas na seção das cópias (a fonte por
    conta, a espera e o cursor, a fila por conector), cada uma com a linha da biblioteca, a peça, o
    porquê e a prova.
 
@@ -791,7 +854,7 @@ inteira pelo construtor e pelo revisor.
 - Critério 18: `copy-lane.test.ts`, duas empresas e dois conectores de teste, um com `app.from:
   'installation'` e um sem, com o dublê segurando a resposta para contar as chamadas abertas.
 - Critério 19: `copy-sql.test.ts`, no PostgreSQL local.
-- Critério 21: `run.test.ts` sem mudar o que vê, e `migrate-copy-source.test.ts`, que aplica as
+- Critério 21: `run.test.ts` sem mudar o que vê, `copy.test.ts` (as duas versões pela união) e `migrate-copy-source.test.ts`, que aplica as
   migrações até a da Capacidade 3, cria uma cópia com posição e aplica a da fonte.
 - Critério 24: `copy-list.test.tsx`, pelo roteador de teste da web com o Hub dublê.
 - Falha hoje: `BUSY` termina `ERROR`; não há fonte nem conta.
@@ -830,7 +893,7 @@ duas telas, com várias conexões e a conferência do papel por conexão.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/` | Cria `propose-v2.test.ts`, `accept-v2.test.ts`; muda `propose.ts` (a versão 2, várias conexões, a prova), `accept.ts` (as fontes), `tables.ts` (`copyProposalSource`, `provedCalls`), `store.ts` e `list.ts` (as fontes, a origem, a descrição), `project-view.ts` (a origem e as descrições), `public.ts` | `hub/connectors` (`propose`), `conversations-of.ts`, `main.ts` |
+| `apps/server/src/hub/copies/` | Cria `propose-v2.test.ts`, `accept-v2.test.ts`; muda `propose.ts` (a versão 2, várias conexões, a prova), `accept.ts` (as fontes), `store.ts` e `list.ts` (as fontes, a origem, a descrição), `project-view.ts` (a origem e as descrições), `public.ts` | `hub/connectors` (`propose`), `conversations-of.ts`, `main.ts` |
 | `apps/server/src/hub/connectors/` | Muda `builder-port.ts` (`GrantedConnection.copies` e `reads[].list`; `provePage` da versão 2) | `builder/connectors`, `conversations-of.ts` |
 | `apps/server/src/builder/connectors/` | Muda `copy-propose.ts` (a entrada com `connections`, as seis perguntas) e o teste | `builder/conversation` |
 | `apps/server/src/builder/app-data/context.ts` e o teste | Muda (a origem, as descrições, as colunas da conta; a regra da fonte) | o turno |
@@ -844,8 +907,8 @@ duas telas, com várias conexões e a conferência do papel por conexão.
 
 ### Os contratos que a unidade cria
 
-**Apaga do `main`, antes de acrescentar:** `CopySummary.connection` e `CopyProposalSummary.connection`
-(viram `sources`); `CopySummary.shown.query` (vira `shown.source`); a frase "today, Mercado Livre" de
+**Apaga do `main`, antes de acrescentar:** `CopySummary.connection`, `CopyProposalSummary.connection` e
+`ProposeAnswer.PROPOSED.connection` (viram `sources`); `CopySummary.shown.query` (vira `shown.source`); a frase "today, Mercado Livre" de
 `context.ts` e "today, the Mercado Livre" de `conexus-data`; a condição de oferecer `copy_propose` só
 com `copy` e `readDoor`.
 
@@ -922,7 +985,7 @@ linhas mudando por rodada, que pede a inteira; a janela é só da consulta); (6)
 tempo (o maior intervalo que a tela aguenta; a prova devolve as chamadas por passada, e uma cópia cara
 pede intervalo maior). E: os campos que o app usa viram colunas; os vizinhos óbvios (datas, status,
 ids de ligação) podem entrar; um pedaço aninhado entra como `json` só quando o app o lê; escreva a
-descrição da tabela e das colunas; o nome diz o sistema e o dado (`ml_pedidos`); as lojas de um
+descrição da tabela e das colunas; o nome diz o sistema e o dado (`<sistema>_<dado>`); as lojas de um
 mesmo conector numa cópia só, salvo quando o app pede separadas.
 
 A forma de cada coisa:
@@ -944,7 +1007,7 @@ inteira pelo construtor e pelo revisor.
 - `better-auth-best-practices`, `better-auth-security-best-practices` e
   `organization-best-practices` (`better-auth`, `apps/server/src/hub`): `mayUseEach` por conexão e
   `manageCopies`, que não mudam.
-- `drizzle` (`drizzle-kit`): a tabela das fontes da proposta no `tables.ts` (a migração vem da D11).
+- `drizzle` (`drizzle-kit`): ler a tabela das fontes da proposta, que vem com a migração do pull request da D11.
 - `router-core` e `router-plugin`: a rota `…/copies` não muda.
 - `shadcn` (`apps/web/src/ui`, usado, não mudado): a linha, o detalhe e o diálogo.
 - `tanstack.com/query/latest/llms.txt` (a consulta da lista); `zod.dev/llms.txt`.
