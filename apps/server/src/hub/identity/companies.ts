@@ -99,6 +99,7 @@ export async function readCompany(
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
         manageRoles: allows(admitted.role, 'manageRoles'),
+        viewAppData: allows(admitted.role, 'viewAppData'),
       },
     }
   })

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import { appDatabaseOf, readAppData } from './app-database.ts'
+import { appTablesOf } from './app-tables.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
@@ -14,14 +15,20 @@ import {
 } from './removal.ts'
 import type { RepairDeps } from './repair.ts'
 import { repairApps } from './repair.ts'
-import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from './routes.ts'
+import {
+  registerDataRoutes,
+  registerEdgeRoutes,
+  registerHandoffRoute,
+  registerVersionRoutes,
+} from './routes.ts'
 import { publishedRolesOf } from './versions.ts'
 
 /** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
 export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
-export type { AppRead } from '../../platform/company-postgres.ts'
+export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
+export type { AppTablesRead } from './app-tables.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
 /**
@@ -72,6 +79,7 @@ export function createApps(deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'>
     routes: (app: FastifyInstance) => {
       registerHandoffRoute(app, door)
       registerVersionRoutes(app, versions)
+      registerDataRoutes(app, deps)
     },
     edgeRoutes: (edge: FastifyInstance) => registerEdgeRoutes(edge, door),
     /** What the connectors' door asks of an app call: who, the version the session gets and its manifest (step 20). */
@@ -82,6 +90,8 @@ export function createApps(deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'>
     sendFromBuilder: versions.sendFromBuilder,
     /** What a Projeto's agents read of its app's data, and whether it has an app to read (step 24.3, U3). */
     readAppData: (input: Parameters<typeof readAppData>[1]) => readAppData(deps, input),
+    /** The app's tables with their columns, one list for the Dados page and the Construtor. */
+    appTables: (input: Parameters<typeof appTablesOf>[1]) => appTablesOf(deps, input),
     hasAppData: async (input: Parameters<typeof appDatabaseOf>[1]) =>
       (await appDatabaseOf(deps, input)) !== undefined,
   })

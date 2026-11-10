@@ -32,7 +32,7 @@ type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: Received
 
 type Admitting = Pick<SendDeps, 'identity' | 'projects'>
 
-type VersionAction = 'publishAppVersion' | 'readAppVersions' | 'sendBuilderVersion'
+type VersionAction = 'publishAppVersion' | 'readAppVersions' | 'sendBuilderVersion' | 'viewAppData'
 
 /**
  * Every member's Builder turn sends its version (step 14.1, X1), holding the membership until the
@@ -59,6 +59,11 @@ export function admitPublisher(deps: Admitting, tx: CommandTx, input: Ids & { pe
 /** Admits a member to read the versions of a Projeto not marked for deletion. */
 export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: Person }) {
   return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'readAppVersions' })
+}
+
+/** Admits a member to read the tables and rows of a Projeto not marked for deletion, holding no row. */
+export function admitDataReader(deps: Admitting, tx: ReadTx, input: Ids & { person: Person }) {
+  return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'viewAppData' })
 }
 
 /**
