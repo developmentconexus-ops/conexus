@@ -7,6 +7,7 @@ import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
+import { queryRequest } from './door.ts'
 import { sankhyaFake } from './fake.ts'
 import { buscarParceiros, buscarProdutos, buscarVendedores } from './operations/buscas.ts'
 import { estoqueDosProdutos } from './operations/buscas-estoque.ts'
@@ -63,8 +64,8 @@ test('parceiro por parte do nome: com ou sem acento, em qualquer caixa, em nome 
         nome,
       )
     }
-    // The legal name is searched too: "joao" is in the legal name of 206, and its trade name has the accent.
     assert.deepEqual(codes(await read(buscarParceiros, { nome: 'joao' }), 'codigoParceiro'), [206])
+    // The legal name is searched too: "comercio" is only in the legal name of 206, kept in mixed case with a lower-case accent.
     assert.deepEqual(
       codes(await read(buscarParceiros, { nome: 'comercio' }), 'codigoParceiro'),
       [205, 206],
@@ -100,6 +101,8 @@ test('um texto hostil ou fora de faixa é recusado antes de qualquer chamada, e 
     'a\nb',
     'a\tb',
     'a\u0000b',
+    'a\u2028b',
+    'a\u2029b',
     'x',
     'y'.repeat(61),
     ' ',
@@ -152,6 +155,8 @@ test('um texto hostil ou fora de faixa é recusado antes de qualquer chamada, e 
       assert.equal(isOneReadStatement(requestBody.sql), true, `${operation.id} ${nome}`)
     }
   }
+  // The searches build their SQL through `queryRequest`, which judges it again.
+  assert.throws(() => queryRequest('DELETE FROM TGFPAR'), z.ZodError)
 })
 
 test('a busca de parceiros combina os filtros com E: documento, papel, ativo, códigos e faixa', async () => {
@@ -217,8 +222,9 @@ test('produtos por nome, referência, lista, faixa e grupo, com o grupo e a unid
     assert.deepEqual(await ids({ nome: 'pao' }), [10, 12, 200])
     assert.deepEqual(await ids({ nome: 'ACUCAR' }), [201])
     assert.deepEqual(await ids({ referencia: 'cf-' }), [202])
-    assert.deepEqual(await ids({ codigos: [13, 10, 11] }), [10, 11, 13])
-    assert.deepEqual(await ids({ deCodigo: 10, ateCodigo: 12 }), [10, 11, 12])
+    const ten = Array.from({ length: 10 }, (_, at) => 400 + at)
+    assert.deepEqual(await ids({ codigos: ten.toReversed() }), ten)
+    assert.deepEqual(await ids({ deCodigo: 400, ateCodigo: 409 }), ten)
     assert.deepEqual(await ids({ grupos: [3] }), [203])
     assert.deepEqual(await ids({ grupos: [1, 3], ativo: true }), [200])
     const [row] = rowsOf(await read(buscarProdutos, { codigos: [202] })).linhas
@@ -256,15 +262,13 @@ test('vendedores por apelido, lista e ativo', async () => {
 
 test('o estoque de vários produtos numa chamada: o saldo, o reservado e o disponível por empresa e local', async () => {
   await withDouble(async (read) => {
-    const lines = rowsOf(await read(estoqueDosProdutos, { codigos: [11, 10] })).linhas
+    // Ten products, five with stock: a product with no line in TGFEST brings no line.
+    const lines = rowsOf(
+      await read(estoqueDosProdutos, { codigos: [400, 201, 11, 200, 10, 12, 13, 202, 203, 401] }),
+    ).linhas
     assert.deepEqual(
-      lines.map((each) => [each.codigoProduto, each.codigoEmpresa, each.codigoLocal]),
-      [
-        [10, 1, 1],
-        [10, 1, 2],
-        [11, 1, 1],
-        [11, 2, 1],
-      ],
+      lines.map((each) => `${each.codigoProduto}/${each.codigoEmpresa}/${each.codigoLocal}`),
+      ['10/1/1', '10/1/2', '11/1/1', '11/2/1', '12/1/1', '12/1/1', '200/1/1', '201/1/1'],
     )
     assert.deepEqual(lines[2], {
       codigoProduto: 11,
