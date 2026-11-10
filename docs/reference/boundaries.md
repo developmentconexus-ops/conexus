@@ -1327,3 +1327,96 @@ reference tool checks a read against its documentation.
   MODEL_ACCOUNT_KIND_OFF"; `openai/sign-in-refusals.test.ts` "tipo desligado: recusa sem chamar a
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
+
+## Mastra 1.82.0, @neondatabase/serverless 1.2.0 and PostgreSQL 18: the company's copies (Capacidade 2)
+
+Five pieces of `apps/server/src/hub/copies/run.ts` and `platform/copy-sql.ts` are ours, because no
+installed library keeps what a source outside Conexus did between one run and the next. The first
+four are the same rule seen from four sides: a pass reads the whole window, and only a complete pass
+moves the watermark or takes a row out.
+
+### How far a pass has read
+
+- **Library line.** `@mastra/core` 1.82.0 keeps a workflow's state inside one run
+  (`dist/docs/references/docs-workflows-workflow-state.md`); the schedule only knows when to fire
+  (`dist/scheduler-Me4rCjO2.js:340-372`). Nothing in `@neondatabase/serverless` 1.2.0 or in
+  PostgreSQL 18 knows what a source's last read reached.
+- **Hand-made piece.** `position` (the last key written) and `watermark` (when the last complete pass
+  began) on `copies.copy`, with `passStartedAt` (`hub/copies/tables.ts`). `saved` writes the position
+  after each page; `passed` moves the watermark to the instant the pass began, only at the end of a
+  complete one (`run.ts`). The paged read adds the dates to the guarded query
+  (`packages/connectors/src/sankhya/copy-read.ts`): the watermark less a day and the window from the
+  pass's start. The engine never compares a date that came from the source.
+- **Why.** Written to the order of the references it follows: ML-VIGIA moves its cursor only after a
+  complete pass, and Nango checkpoints inside one.
+- **Proof.** `run.test.ts` "a passada completa", "a rodada órfã e a trava perdida" and "o erro não
+  vira vazio".
+
+### One run at a time
+
+- **Library line.** `@mastra/core` 1.82.0 does not look at the previous run when a schedule fires
+  (`dist/scheduler-Me4rCjO2.js:340-372`); four runs of one schedule overlapped in the study.
+  [Data D25](../guides/data.md) forbids a session lock.
+- **Hand-made piece.** `claim` in `run.ts`: `claim_token` and `claimed_until` on the copy's row, taken
+  by one `UPDATE` that fires only on a free or expired lease (code C65). The position, the watermark
+  and the closing are written only `WHERE claim_token = $token` (`held`). A run that finds an expired
+  lease closes the open one `INTERRUPTED` and goes on from the saved position; the workflow has
+  `autoRestartActiveRuns: false`, because the library restarts an active run without fencing its
+  writes.
+- **Why.** The same lease as the Mastra Factory's per-project run (`mastracode/factory`,
+  `environment/build.ts`, read for the card at `mastra-1.82@6e8dfcb8`).
+- **Proof.** `run.test.ts` "uma rodada por vez" and "a rodada órfã e a trava perdida";
+  `builder/copy-clock/clock.test.ts` "a órfã não recomeça sozinha", which fails with
+  `autoRestartActiveRuns: true`.
+
+### A ceiling per run
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 limits a step by the pages it read.
+- **Hand-made piece.** `RUN_DEFAULTS` in `run.ts`: 200 pages or 10 minutes, checked before each page;
+  the run closes `PARTIAL` with the reason `CAP`, keeps the position, moves nothing, takes nothing out,
+  and asks the clock for another run.
+- **Proof.** `run.test.ts` "o teto", with the ceilings injected (T20).
+
+### What left the source
+
+- **Library line.** Neither `@mastra/core` 1.82.0 nor `@neondatabase/serverless` 1.2.0 nor
+  PostgreSQL 18 knows what a source deleted. The references differ: Nango deletes what a complete
+  pass did not see, Mitra never deletes.
+- **Hand-made piece.** Each row carries `_pass`, the engine's own column (`COPY_PASS_COLUMN`,
+  `platform/copy-sql.ts`; the catalog of `hub/apps/app-tables.ts` leaves it out, so no screen reads
+  it). `closePass` deletes, at the end of a complete pass only, the rows of a copy with no change date
+  that the pass did not write, or the rows inside the window that it did not write
+  (`DELETE ... WHERE <window> >= $from AND _pass <> $pass`), and counts, in one transaction. A
+  partial pass or an error never deletes; outside the window nothing is deleted.
+- **Why.** The delete is safe because the read brings the whole window on every pass, changed or not.
+- **Proof.** `run.test.ts` "a janela apaga o que sumiu" and "a janela relê o que não mudou";
+  `hub/apps/copy-data.test.ts` "Dados: as linhas de uma cópia" fails if `_pass` reaches a screen.
+- **Not proved.** A row whose change date is null is never read on the first pass
+  (https://github.com/developmentconexus-ops/conexus/issues/940).
+
+### The record of each run
+
+- **Library line.** The schedule keeps its triggers, not a run asked for at once: "Trigger history"
+  in `dist/docs/references/docs-workflows-scheduled-workflows.md:117-125` says a trigger can have no
+  run record yet, and a manual `run()` left no trigger in the study.
+- **Hand-made piece.** `copies.copy_run` (`hub/copies/tables.ts`), one open run per copy by a partial
+  unique index, the last run on the copy's row (`last_run_id`) and the newest 100 of each copy kept
+  (`KEPT_RUNS`, `run.ts`).
+- **Proof.** `run.test.ts` "a passada completa" and "o registro não leva dado" (only ids, counts, codes
+  and milliseconds, never a query, a column read or a row).
+- **Revisit when** a Mastra release records a manual run, or when a company turns off a connection
+  with copies: the foreign key's cascade removes the copy's rows and leaves its tables in `sync`.
+
+### The clock of each copy
+
+- **Library line.** `@mastra/core` 1.82.0 canonicalizes the id of a workflow schedule with a prefix and
+  looks an id without it up as an agent's; `schedules.run` publishes even when the scheduler is
+  stopped (`dist/docs/references/reference-schedules-overview.md`); after three failed publishes the
+  scheduler logs the id and calls the `scheduler.onError` it was given at creation.
+- **Hand-made piece.** `scheduleIdOf` in `builder/copy-clock/workflow.ts` names the row
+  `schedule_<copy id>`; `hub/copies/schedule.ts` refuses with `HUB_UPDATING` to create a schedule
+  while the Hub is updating; `builder/copy-clock/clock.ts` logs an unreadable row as
+  `COPY_SCHEDULE_UNREADABLE`; `schedulerOf` in `builder/mastra/mastra.ts` passes the `onError` that logs
+  `SCHEDULE_PUBLISH_FAILED`.
+- **Proof.** `builder/copy-clock/clock.test.ts` "rodar agora e o disparo", "uma agenda ilegível
+  aparece no registro" and "a empresa apagada leva as agendas".

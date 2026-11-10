@@ -8,6 +8,8 @@ import { call, codeOf } from '../identity/test-hub.ts'
 import { folder, MIGRATION, readyForVersions, send } from './test-versions.ts'
 
 const VENDAS_ROWS = 183
+/** The engine's own column of each copy row: no screen may read it. */
+const PASS_COLUMN = '_pass'
 const OWN_VENDAS = {
   id: '002_vendas',
   statements: ['CREATE TABLE vendas (id int PRIMARY KEY)', 'INSERT INTO vendas VALUES (1), (2)'],
@@ -110,6 +112,11 @@ test('Dados: as linhas de uma cópia', async (t) => {
   const page = AppRows.parse(first.json())
   assert.equal(page.rows.length, PAGE_SIZE)
   assert.ok(page.columns.length > 0)
+  assert.ok(
+    page.columns.every(({ name }) => name !== PASS_COLUMN),
+    'a passada é do motor, não chega à tela',
+  )
+  assert.ok(page.rows.every((row) => row.length === page.columns.length))
   assert.equal(page.next.kind, 'MORE', 'há outra página')
 
   let seen = page.rows.length

@@ -2,6 +2,7 @@ import type { CompanyId, PersonId, ProjectId, RowCount } from '@conexus/hub-api'
 import { AppTableName, ROW_COUNT_CAP } from '@conexus/hub-api'
 import { z } from 'zod'
 import { quoted } from '../../platform/app-sql.ts'
+import { COPY_PASS_COLUMN } from '../../platform/copy-sql.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { readAppData } from './app-database.ts'
@@ -33,6 +34,12 @@ export type TableSchema = 'APP' | 'COPY'
 /** The SQL that names each schema a table may live in; `sync` holds the company's copies. */
 const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()', COPY: "'sync'" }
 
+/** The columns of a table the catalog leaves out: a copy's pass is the engine's, not data (see `COPY_PASS_COLUMN`). */
+const HIDDEN_COLUMNS: Record<TableSchema, string> = {
+  APP: '',
+  COPY: ` and a.attname <> '${COPY_PASS_COLUMN}'`,
+}
+
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
@@ -42,7 +49,7 @@ const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()', COPY:
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
   (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname) order by a.attnum), '[]')
-     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped),
+     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped${HIDDEN_COLUMNS[schema]}),
   (select coalesce(array_agg(a.attname::text order by array_position(i.indkey::int2[], a.attnum)), '{}')
      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
     where i.indrelid = c.oid and i.indisprimary)

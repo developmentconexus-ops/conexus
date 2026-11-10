@@ -87,7 +87,7 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   Founder, 2026-10-22: "1 sim 2 A". [CI search]
 - **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus, except
   Mastra's scheduler at its fires: from the first schedule row it reads its table at start, when an
-  automation is created, resumed or moved (`wake()`), and at each fire, then sleeps until the
+  automation or a copy is created, resumed or moved (`wake()`), and at each fire, then sleeps until the
   earliest one, so the database sleeps between fires (Mastra 1.82.0; founder, 2026-11-04: "A").
   It reads again every `tickIntervalMs` (10 s) while fires are due or its last lap was busy, and
   when reading the next fire fails, so a database that does not answer is read every 10 s.
@@ -102,6 +102,10 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   action **must** live in the Builder's server skill. [PostgreSQL, dispatcher]
 - **D29.** An app's migrations **must** live in its own Git. The Hub **must** apply them with that
   app's migration login, and read them as SQL before Preview. [from step 15]
+- **D31.** A column that belongs to the engine, such as a copy's `_pass`, **must** leave in the code
+  that owns the read (the catalog of `hub/apps/app-tables.ts`), never be hidden only by a screen;
+  a read of the table itself still returns it (issue 946). Failure: Dados showed `_pass` as data.
+  [copy-data test]
 
 ## 6. Change with real data
 

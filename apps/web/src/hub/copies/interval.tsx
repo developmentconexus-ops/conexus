@@ -25,6 +25,7 @@ export function IntervalDialog(props: {
   copy: CopySummary
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSaved: () => void
 }) {
   const { companyId, copy } = props
   const [chosen, setChosen] = useState<CopyInterval>(copy.interval ?? COPY_INTERVAL_DEFAULT)
@@ -41,6 +42,7 @@ export function IntervalDialog(props: {
       { params: { companyId, copyId: copy.id }, body: { interval: chosen } },
       {
         onSuccess: () => {
+          props.onSaved()
           onOpenChange(false)
         },
         onError: (error) => setFailure(writeFailureText(error, UNCONFIRMED_ACTION)),

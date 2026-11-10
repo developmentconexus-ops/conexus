@@ -2,7 +2,6 @@ import type { CompanyId, CopyId, CopyRun } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
-import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { CodeBlock, CodeBlockContent, CodeBlockLine } from '../../ui/code-block.tsx'
@@ -12,8 +11,7 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import type { Note } from './copy-list.tsx'
-import { CopyMenu, NoteLine, RunNowButton, StateBadge } from './copy-list.tsx'
+import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import {
@@ -47,7 +45,7 @@ function RunPhoneRow({ run }: { run: CopyRun }) {
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md tabular-nums">
         <span>{`${dayAndHour(run.startedAt)} · ${durationText(run)}`}</span>
         <span className="break-words text-text-2">
-          {`${countText(run.read)} lidas · ${outcomeText(run)}`}
+          {`${countText(run.read)} lidas · ${countText(run.written)} gravadas · ${outcomeText(run)}`}
         </span>
       </div>
     </Row>
@@ -104,8 +102,9 @@ function Runs(props: {
  */
 export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?: string }) {
   const { companyId, copyId, page } = props
-  const read = useQuery(copyRunsQuery(companyId, copyId, page, useRunRequests()))
-  const [note, setNote] = useState<Note>()
+  const requests = useRunRequests()
+  const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
+  const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
@@ -153,8 +152,8 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>
         </p>
         <p className="break-words">
-          <span className="text-text-2">Janela </span>
-          {windowText(copy.shown.window)}
+          <span className="text-text-2">Releitura </span>
+          {windowText(copy.shown)}
         </p>
       </section>
       <section aria-label={RUNS_TITLE} className="flex min-w-0 flex-col gap-md">

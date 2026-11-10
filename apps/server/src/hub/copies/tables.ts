@@ -32,7 +32,7 @@ function instant(name: string) {
 /**
  * One copy of a company's data from one of its connections (founder, 2026-11-09): the definition is
  * the company's, copied from a template when it is turned on. The lease, the position and the
- * watermark are ours (the card's remendo rows): no installed library keeps them between runs.
+ * watermark are ours (docs/reference/boundaries.md): no installed library keeps them between runs.
  */
 export const copy = copies.table(
   'copy',

@@ -38,13 +38,27 @@ test('Dados: a lista', async () => {
   expect(shown).toEqual([
     'anotacoes37',
     'clientes1.284',
-    'logsmais de 10.000',
+    'logsmais de 10.000 (teto da contagem)',
     'metas0',
     'sobrasindisponível',
   ])
   expect(list.getByRole('link', { name: /^clientes/ }).getAttribute('href')).toBe(
     `${PROJECT}/data/clientes`,
   )
+})
+
+test('Dados: acima do teto a linha diz só "mais de 10.000"; o teto está no rótulo e no tooltip, e o nome não é cortado', async () => {
+  open(`${PROJECT}/data`, { tables: () => TABLES })
+  const list = within(await screen.findByRole('navigation', { name: 'Tabelas' }))
+  const link = list.getByRole('link', { name: /^logs.*mais de 10\.000.*\(teto da contagem\)$/ })
+  expect(link.textContent).toBe('logsmais de 10.000 (teto da contagem)')
+  expect(within(link).getByText('mais de 10.000').textContent).toBe(
+    'mais de 10.000 (teto da contagem)',
+  )
+  expect(link.querySelector('.truncate')).toBeNull()
+  fireEvent.mouseEnter(within(link).getByText('mais de 10.000'))
+  fireEvent.focus(within(link).getByText('mais de 10.000'))
+  expect(await screen.findByText('teto da contagem')).toBeTruthy()
 })
 
 test('Dados: a lista, um Projeto sem app e um app sem tabelas dizem cada um a sua frase', async () => {
