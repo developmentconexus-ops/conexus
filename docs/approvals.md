@@ -850,3 +850,9 @@ Cartão curto "As buscas do Sankhya" (`docs/steps/pattern-sankhya-buscas.md`) ap
 Cartão curto da Capacidade 1, O banco do app (`docs/steps/capacidade-1-o-banco-do-app.md`) aprovado em 2026-11-09 (commit bcf3ae0d782f2e74a9555e08fbe6149fdc453e05): "Aprovo"
 
 Lido pelo firstmate como a aprovação da página, depois de o fundador ler no chat o resumo dela: a página Dados, só leitura, o roteiro de seis passos, o que fica de fora e as duas unidades num só pull request de construção.
+
+## Capacidade 2, O Sync da empresa
+
+Cartão curto da Capacidade 2, O Sync da empresa (`docs/steps/capacidade-2-o-sync-da-empresa.md`) aprovado em 2026-11-09 (commit 95505a0178b114bb18953d000f950907a5f0bb4e), no desenho lido por ele no chat: "1. Aprovo Capacidade 2"
+
+A aprovação veio antes de a página ser escrita: o fundador leu no chat o desenho do parecer de arquitetura sobre o estudo (o motor do Conexus que não conhece nenhum sistema, a definição de cada cópia como dado da empresa, o conector com a leitura em páginas e os cinco modelos do Sankhya, a página Cópias com pausar, rodar agora e intervalo, e a liberação por Projeto) e aprovou esse desenho. Na mesma mensagem deixou mesclar o cartão sem ver a página antes: "2. Mesclar pode". O cartão escreve esse desenho sem acrescentar nem cortar pedido dele. As palavras que deram a forma, do mesmo dia: "A gente não pode só pensar no Sankhya ... O Sankhya é o primeiro conector, porque é o que minha empresa usa, mas não é a base do Conexus."; sobre quem vê a página: "Dono e o admnistrador e desenvolvedor"; sobre o método: "Study, scope, build." A palavra dele sobre a lista de permissões das três tabelas novas (D11) ainda falta e vem no pull request delas.
