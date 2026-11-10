@@ -6,8 +6,8 @@ import { Failure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { readAppData } from './app-database.ts'
 
-/** A column as the catalog names it; `type` is `format_type`'s text. */
-type AppColumn = { name: string; type: string }
+/** A column as the catalog names it. */
+type AppColumn = { name: string }
 /** A table the read login may read: the schema the catalog found it in, its columns in order, and its primary key's columns in key order, empty when it has none. */
 export type AppTable = { schema: string; name: AppTableName; columns: AppColumn[]; key: string[] }
 /** Why a look at the app's database gave nothing: it was silent, past its deadline, or too long a reply. */
@@ -37,13 +37,11 @@ const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
  * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
- * login that only reads). `type` is `format_type`'s text, kept for the typed columns of the Builder's
- * data block (capacity 3, approved in `docs/approvals.md`).
+ * login that only reads). `AppColumn.type` saiu: nenhum leitor, e a Capacidade 3 tira as colunas da CopyDefinition.
  */
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
-  (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname,
-      'type', format_type(a.atttypid, a.atttypmod)) order by a.attnum), '[]')
+  (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname) order by a.attnum), '[]')
      from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped),
   (select coalesce(array_agg(a.attname::text order by array_position(i.indkey::int2[], a.attnum)), '{}')
      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
@@ -56,7 +54,7 @@ where n.nspname = ${SCHEMA_SQL[schema]} and c.relkind in ('r', 'p')
 const CatalogRow = z.tuple([
   z.string(),
   AppTableName,
-  z.array(z.object({ name: z.string(), type: z.string() })),
+  z.array(z.object({ name: z.string() })),
   z.array(z.string()),
 ])
 

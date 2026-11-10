@@ -36,10 +36,7 @@ test('as tabelas do app: o Construtor lê a lista do Hub, e o que a leitura não
   })
   assert.equal(await readingAs({ kind: 'NO_APP' }), null)
   const table = TableName.parse('recado')
-  const columns = [
-    { name: 'id', type: 'bigint' },
-    { name: 'texto', type: 'text' },
-  ]
+  const columns = [{ name: 'id' }, { name: 'texto' }]
   const read: AppTablesRead = {
     kind: 'TABLES',
     tables: [{ schema: 'public', name: table, columns, key: ['id'] }],

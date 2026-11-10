@@ -15,7 +15,7 @@ import { admitDataReader } from './send.ts'
 
 export type AppDataDeps = SendDeps & {
   /** The tests' deadline for one look at the app's database; the apps' call limit by default. */
-  callDeadlineMs?: number
+  appDataDeadlineMs?: number
 }
 
 type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
@@ -37,7 +37,7 @@ export function createAppData(deps: AppDataDeps) {
       projectId,
       signal: AbortSignal.any([
         input.signal,
-        AbortSignal.timeout(deps.callDeadlineMs ?? APP_CALL_LIMITS.callDeadlineMs),
+        AbortSignal.timeout(deps.appDataDeadlineMs ?? APP_CALL_LIMITS.callDeadlineMs),
       ]),
     }
   }

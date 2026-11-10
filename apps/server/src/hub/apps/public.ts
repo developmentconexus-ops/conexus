@@ -75,7 +75,7 @@ export function createAppRemoval(deps: RemovalDeps) {
  * through the ports `main.ts` hands it (C56).
  */
 export function createApps(
-  deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'> & Pick<AppDataDeps, 'callDeadlineMs'>,
+  deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'> & Pick<AppDataDeps, 'appDataDeadlineMs'>,
 ) {
   const door = createAppDoor(deps)
   const versions = createAppVersions(deps)

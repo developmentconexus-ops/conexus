@@ -132,6 +132,8 @@ export function subjectsOf(deps: {
   tuning?: ConnectorTuning
   /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
   pruneBudgetMs?: number
+  /** The tests' deadline for one look at an app's database (`test-hub.ts`); the apps' call limit by default. */
+  appDataDeadlineMs?: number
 }) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
@@ -172,7 +174,7 @@ export function subjectsOf(deps: {
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
-    callDeadlineMs: deps.tuning?.callDeadlineMs,
+    appDataDeadlineMs: deps.appDataDeadlineMs,
   })
   const { noticeRequests } = notifications
   const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })

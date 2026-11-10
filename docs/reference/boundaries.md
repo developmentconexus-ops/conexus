@@ -338,7 +338,7 @@ rows for the five above wait on issue #458.
 ### An app's rows, 50 a page by offset (Capacidade 1)
 
 - **Library line.** `@neondatabase/serverless` 1.2.0 `sql.transaction` takes `{ text, values }` and
-  `readOnly` (`index.d.ts:489-504`); PostgreSQL 18 gives `limit` and `offset` as bound values and
+  `readOnly` (`index.d.ts:489-504`; `transaction()` at `:521-522` and `:892-893`); PostgreSQL 18 gives `limit` and `offset` as bound values and
   `left(("c")::text, n)` for the cut. Neither pages by a key's value: a table of an app may have no
   key, or a composite one of any type, and the page token is 64 characters.
 - **Hand-made piece.** `apps/server/src/hub/apps/app-rows.ts` with `pageOf` and `pageKey` of
