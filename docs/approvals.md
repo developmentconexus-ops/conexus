@@ -850,3 +850,11 @@ Cartão curto "As buscas do Sankhya" (`docs/steps/pattern-sankhya-buscas.md`) ap
 Cartão curto da Capacidade 1, O banco do app (`docs/steps/capacidade-1-o-banco-do-app.md`) aprovado em 2026-11-09 (commit bcf3ae0d782f2e74a9555e08fbe6149fdc453e05): "Aprovo"
 
 Lido pelo firstmate como a aprovação da página, depois de o fundador ler no chat o resumo dela: a página Dados, só leitura, o roteiro de seis passos, o que fica de fora e as duas unidades num só pull request de construção.
+
+## Capacidade 3, O Builder aprende o Sync
+
+Cartão curto da Capacidade 3, O Builder aprende o Sync (`docs/steps/capacidade-3-o-builder-aprende-o-sync.md`) aprovado em [data] (commit [commit]): PENDENTE: a palavra do fundador sobre a página.
+
+Em 2026-11-09, à decisão A do estudo (o Builder propõe a cópia que falta), a A1, com a lembrança de que o Sankhya é só o primeiro conector: "Só lembrando, o Sunker é só o primeiro conector, gente. Não tem que fixar e focar no Sunker. Ele investiga o sistema, né? Por exemplo, vamos supor que é um Mercado Livre. Concorda? Ele vai investigar o Mercado Livre, por exemplo." No mesmo dia, sobre o que o Builder sabe no começo da conversa e as 20 linhas de exemplo, pediu a base antes de aprovar: "Esse começo de cada conversa, ele já sabe quais cópias o projeto tem, quais colunas, o número de linhas, como que ele vai saber isso e por quê? precisa ter." e "Poucas linhas de exemplo, no máximo 20. Beleza. De onde veio isso? Faz sentido? Porque se fizer, eu aprovo."
+
+Em 2026-11-10, depois da explicação simples do parecer de arquitetura, às duas perguntas: "Pergunta 1, Okay" (o começo de cada conversa traz só os nomes e as colunas com tipo das cópias liberadas ao Projeto e os nomes das não liberadas, sem número de linhas e sem última rodada) e "Pergunta 2, Aprovado" (20 linhas e 16 KB, pelo mesmo corte que já existe). À escolha de tela do parecer, ligar uma proposta já liberar a cópia ao Projeto que a pediu: "3. Sim". Lido pelo firstmate como decisões dele no meio da etapa (delivery L6); a página do cartão as escreve como decididas. A palavra dele sobre a página, sobre a lista de permissões da tabela das propostas (D11) e sobre a chamada paga que refaz o molde da máquina do Builder (só a U4) ainda falta.
