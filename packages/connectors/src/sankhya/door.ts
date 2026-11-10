@@ -102,7 +102,8 @@ const carregar = defineOperation({
 /** One read statement: the only text `consultar` takes, so a request cannot be built from another (code C23). */
 const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('ReadSql')
 
-const QueriedRows = z
+/** What `DbExplorerSP.executeQuery` answers, its rows keyed by column: the door's `consultar` and the searches read it. */
+export const QueriedRows = z
   .object({
     fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
     rows: z.array(z.array(z.unknown())),
@@ -114,6 +115,11 @@ const QueriedRows = z
     ),
     completo: burstLimit !== true,
   }))
+
+/** The request of one read statement: the only way a request is built from SQL, so the filter has judged it (code C23). */
+export function queryRequest(sql: string): ProviderRequest {
+  return gatewayRequest(EXECUTE_QUERY, { sql: ReadSql.parse(sql) })
+}
 
 const Queried = z.object({
   linhas: z.array(z.record(z.string(), z.unknown())),

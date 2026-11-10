@@ -32,7 +32,7 @@ export const clientes = defineOperation({
   subject: 'cadastros',
   idempotent: true,
   summary:
-    'Lista os clientes do Sankhya (documento, nome, endereço e os campos AD_ da empresa), uma página por chamada, em ordem de código; a página começa em 0. Não filtra por nome nem por documento, só por página e data de alteração.',
+    'Lista os clientes do Sankhya (documento, nome, endereço e os campos AD_ da empresa), uma página por chamada, em ordem de código; a página começa em 0. Não filtra por nome nem por documento, só por página e data de alteração: para achar por nome, documento ou código, use `buscarParceiros`.',
   label: 'Clientes',
   input: z.strictObject({ page: Page(0), dataHoraAlteracao: DateTime.optional() }),
   ...rows({ list: 'clientes' }),
