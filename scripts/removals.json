@@ -2862,8 +2862,8 @@
   {
     "id": "sankhya-search-text-marks",
     "file": "packages/connectors/src/sankhya/search-sql.ts",
-    "find": "!MARKS.test(text) && ",
-    "replace": "",
+    "find": "(text) => !MARKS.test(text),",
+    "replace": "() => true,",
     "test": {
       "cwd": "packages/connectors",
       "file": "src/sankhya/search.test.ts",
