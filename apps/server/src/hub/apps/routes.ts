@@ -1,3 +1,4 @@
+import type { OfProject, Person } from '@conexus/hub-api'
 import {
   APP_OPEN_PATH,
   AppOpenQuery,
@@ -5,6 +6,8 @@ import {
   createAppFrameHandoff,
   createAppSession,
   FAILURES,
+  listAppRows,
+  listAppTables,
   listAppVersions,
   publishAppVersion,
 } from '@conexus/hub-api'
@@ -13,8 +16,12 @@ import { optionalSessionOf } from '../../platform/access.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { sendPage } from '../../platform/screens.ts'
+import { appRowsOf } from './app-rows.ts'
+import { appTablesOf, rowCountsOf, withinDeadline } from './app-tables.ts'
 import type { AppVersions } from './app-versions.ts'
 import type { AppDoor } from './handoff.ts'
+import type { SendDeps } from './send.ts'
+import { admitDataReader } from './send.ts'
 
 /**
  * The handoff answers a navigation, so a failure is never JSON: a missing session goes to sign-in
@@ -81,6 +88,66 @@ export function registerVersionRoutes(app: FastifyInstance, versions: AppVersion
   serve(app, publishAppVersion, async ({ person, params, body }) =>
     answer({ version: await versions.publish({ person, ...params, number: body.number }) }),
   )
+}
+
+/**
+ * A Projeto's app tables and rows, for who builds (capacity 1): the Hub admits the person and the
+ * live Projeto in a read-only transaction first, and only then asks the app's database. A table that
+ * is not in the catalog, or a Projeto with no app, is not found; the database silent is the failure
+ * the screen retries, and a page past the cap is too wide to show.
+ */
+export function registerDataRoutes(app: FastifyInstance, deps: SendDeps): void {
+  async function admit(person: Person, ids: OfProject) {
+    await deps.database.read(
+      { kind: 'COMPANY', companyId: ids.companyId, personId: person.id },
+      (tx) => admitDataReader(deps, tx, { person, ...ids }),
+    )
+    return { scope: { companyId: ids.companyId, personId: person.id }, projectId: ids.projectId }
+  }
+  serve(app, listAppTables, async ({ person, params, signal }) => {
+    const read = { ...(await admit(person, params)), signal: withinDeadline(signal) }
+    const found = await appTablesOf(deps, read)
+    switch (found.kind) {
+      case 'NO_APP':
+        return answer({ kind: 'NO_APP' })
+      case 'FAILED':
+        throw new Failure('APP_DATABASE_UNAVAILABLE', { details: { answer: found.code } })
+      case 'TABLES': {
+        const counts = await rowCountsOf(deps, { ...read, tables: found.tables.map((t) => t.name) })
+        return answer({
+          kind: 'TABLES',
+          tables: found.tables.map(({ name }) => ({
+            name,
+            rows: counts.get(name) ?? { kind: 'UNKNOWN' },
+          })),
+        })
+      }
+      default:
+        return found satisfies never
+    }
+  })
+  serve(app, listAppRows, async ({ person, params, query, signal }) => {
+    const read = { ...(await admit(person, params)), signal: withinDeadline(signal) }
+    const rows = await appRowsOf(deps, {
+      ...read,
+      schema: 'APP',
+      name: params.table,
+      page: query.page,
+    })
+    switch (rows.kind) {
+      case 'NONE':
+        throw new Failure('NOT_FOUND', { details: { reason: 'NO_TABLE' } })
+      case 'FAILED':
+        throw new Failure(
+          rows.code === 'APP_DATA_TOO_LARGE' ? 'APP_TABLE_TOO_WIDE' : 'APP_DATABASE_UNAVAILABLE',
+          { details: { answer: rows.code } },
+        )
+      case 'ROWS':
+        return answer({ columns: rows.columns, rows: rows.rows, next: rows.next })
+      default:
+        return rows satisfies never
+    }
+  })
 }
 
 /** The dispatcher's two calls, on the edge listener alone (security S48). */

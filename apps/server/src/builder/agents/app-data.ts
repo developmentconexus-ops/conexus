@@ -4,7 +4,7 @@ import { AGENT_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { AppRead } from '../../hub/apps/public.ts'
+import type { AppRead, AppTablesRead, SqlStatement } from '../../hub/apps/public.ts'
 import { shaped } from '../../hub/connectors/public.ts'
 
 /** What an agent asks of its Projeto's app (step 24.3, U3): the apps' door, which reads and never writes. */
@@ -13,10 +13,16 @@ export type AppDataPort = {
     scope: { companyId: CompanyId; personId: PersonId }
     projectId: ProjectId
   }): Promise<boolean>
+  /** The app's tables and their columns, which the Construtor reads as the Dados page does. */
+  tables(input: {
+    scope: { companyId: CompanyId; personId: PersonId }
+    projectId: ProjectId
+    signal: AbortSignal
+  }): Promise<AppTablesRead>
   read(input: {
     scope: { companyId: CompanyId; personId: PersonId }
     projectId: ProjectId
-    sql: string
+    statement: SqlStatement
     signal: AbortSignal
   }): Promise<AppRead>
 }
@@ -56,7 +62,7 @@ export function appDataTools(deps: {
         const deadline = AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs)
         const read = await deps.appData.read({
           ...deps,
-          sql,
+          statement: { text: sql },
           signal: abortSignal === undefined ? deadline : AbortSignal.any([abortSignal, deadline]),
         })
         switch (read.kind) {

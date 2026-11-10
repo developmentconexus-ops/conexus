@@ -101,5 +101,6 @@ export const NO_MAY = {
   manageAgents: false,
   manageAutomations: false,
   manageRoles: false,
+  viewAppData: false,
   publishUnattendedWrite: false,
 }

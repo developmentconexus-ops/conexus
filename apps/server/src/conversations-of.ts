@@ -52,9 +52,12 @@ function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
 }
 
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
-function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDataPort {
+function appDataOf(
+  apps: () => Pick<Apps, 'hasAppData' | 'readAppData' | 'appTables'>,
+): AppDataPort {
   return {
     hasApp: (input) => apps().hasAppData(input),
+    tables: (input) => apps().appTables(input),
     read: (input) => apps().readAppData(input),
   }
 }
