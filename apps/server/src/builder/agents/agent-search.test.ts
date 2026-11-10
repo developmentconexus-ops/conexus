@@ -67,12 +67,14 @@ test('a ferramenta de busca do agente do Projeto: acha por nome sem acento, pagi
   assert.match(refused?.text ?? '', /Unrecognized key.*telefone/)
 })
 
-test('o Assistente busca pelo connector_read: acha o produto sem acento, e o campo que a busca não tem volta recusado com o nome dele', async (t) => {
+test('o Assistente busca pelo connector_read: acha o produto sem acento, pagina com depoisDe através do corte de 20, e o campo que a busca não tem volta recusado com o nome dele', async (t) => {
   function search(input: object) {
     return tool(READ, { connection: 'Matriz', operation: 'sankhya.buscarProdutos', input })
   }
   const on = await assisting(t, [
     [search({ nome: 'pão' })],
+    [search({ limite: 50 })],
+    [search({ depoisDe: 411, limite: 50 })],
     [search({ nome: 'pao', preco: 10 })],
     [said('Pronto.')],
   ])
@@ -90,7 +92,26 @@ test('o Assistente busca pelo connector_read: acha o produto sem acento, e o cam
       .value.linhas.map((row) => row.codigoProduto),
     [10, 12, 200],
   )
-  const refused = on.calls[2]?.toolResults.at(-1)
+  // 50 asked: the model reads 20 (the 20th is 411), is told the answer is not whole, and goes on from there.
+  const Page = z.object({
+    complete: z.boolean(),
+    value: z.object({
+      linhas: z.array(z.object({ codigoProduto: z.number() })),
+      temMais: z.boolean(),
+    }),
+  })
+  const first = Page.parse(JSON.parse(on.calls[2]?.toolResults.at(-1)?.text ?? ''))
+  assert.deepEqual(
+    [first.value.linhas.length, first.value.linhas.at(-1)?.codigoProduto, first.complete],
+    [20, 411, false],
+  )
+  const next = Page.parse(JSON.parse(on.calls[3]?.toolResults.at(-1)?.text ?? ''))
+  assert.deepEqual(
+    next.value.linhas.map((row) => row.codigoProduto),
+    Array.from({ length: 18 }, (_, at) => 412 + at),
+  )
+  assert.deepEqual([next.value.temMais, next.complete], [false, true])
+  const refused = on.calls[4]?.toolResults.at(-1)
   assert.match(refused?.text ?? '', /INPUT_INVALID/)
   assert.match(refused?.text ?? '', /Unrecognized key.*preco/)
 })

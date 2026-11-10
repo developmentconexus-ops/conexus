@@ -143,7 +143,7 @@ test('o texto fixo: o agente e o Construtor mandam a mensagem do Conexus com a m
   }
 })
 
-test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos por cima do que o modelo mandou (e um campo fixo que ele mande é recusado, não lido); uma versão nova dela não muda o publicado; a ligação perdida responde NOT_GRANTED', async (t) => {
+test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos por cima do que o modelo mandou; uma versão nova dela não muda o publicado; a ligação perdida responde NOT_GRANTED', async (t) => {
   const asked = { page: 1, dataNegociacaoInicio: '01/11/2026' }
   const on = await agentsOn(t, [[tool(ORDERS, asked)], [], [tool(ORDERS, asked)], []])
   const inputs: unknown[] = []

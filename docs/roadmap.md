@@ -27,7 +27,7 @@ brinquedo. O mapa sai: "Deixa quieto sobre o Mapa". Este roteiro reescrito: "Pod
 ### As etapas, e o que você faz quando cada uma fecha
 
 Fechadas, com o uso nas [aprovações](approvals.md): da 1 à 20 com as subetapas, a 24.1
-à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5 e a 24.5.1. Sua empresa usa o Conexus desde
+à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5, a 24.5.1 e, na fila do molde, As buscas do Sankhya. Sua empresa usa o Conexus desde
 2026-11-02.
 
 **As capacidades que faltam aos apps.**

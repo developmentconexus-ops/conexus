@@ -1,16 +1,15 @@
 import { z } from 'zod'
-import { isOneReadStatement } from './read-only-sql.ts'
 
 /*
  * The text of a search is ours, a constant in the code of each read; what the model gives goes in
  * only as an integer (Zod makes it digits) or as one quoted literal made here. The DbExplorer of
  * the kit's request takes no bound values, so this is the one hand-made piece of the searches:
- * the kit's refusal list and `isOneReadStatement` judge the whole statement again before it leaves.
+ * `queryRequest` judges the whole statement again with `isOneReadStatement` before it leaves.
  */
 
 const ACCENTED = 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ'
 const PLAIN = 'AAAAAEEEEIIIIOOOOOUUUUC'
-const MARKS = /--|\/\*|\*\/|;|\p{Cc}/u
+const MARKS = /--|\/\*|\*\/|;|\p{Cc}|\p{Zl}|\p{Zp}/u
 
 /** The text the way the column is folded in the SQL: upper case, no accent (`TRANSLATE` takes the same two lists). */
 function fold(text: string): string {
@@ -32,19 +31,16 @@ function folded(column: string): string {
   return `TRANSLATE(UPPER(${column}), '${ACCENTED}', '${PLAIN}')`
 }
 
-/** The text a name search takes: 2 to 60 characters with no line break, comment mark or `;`, and that one literal of it passes the kit's filter. */
+/** The text a name search takes: 2 to 60 characters with no control character, line or paragraph separator, comment mark or `;`. */
 export const SearchText = z
   .string()
   .trim()
   .min(2)
   .max(60)
   .refine(
-    (text) => !MARKS.test(text) && isOneReadStatement(`SELECT '${escaped(text)}' FROM DUAL`),
+    (text) => !MARKS.test(text),
     'O texto tem um caractere que a busca não aceita: use letras, números e pontuação simples.',
   )
-
-/** A non-negative whole number: a code, a cursor, a bound of a range. */
-export const Code = z.number().int().nonnegative()
 
 /** The column holds the text, in any case and with or without accent. */
 export function containing(columns: readonly string[], text: string): string {

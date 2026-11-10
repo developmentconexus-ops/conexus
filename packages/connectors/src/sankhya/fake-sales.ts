@@ -178,6 +178,11 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       .map((letter) => pairs.find(([of]) => of === letter)?.[1] ?? letter)
       .join('')
   })
+  // Oracle's `UPPER` folds every letter and its `LIKE` heeds case; SQLite's `UPPER` folds only ASCII and its `LIKE` ignores ASCII case.
+  database.function('UPPER', { deterministic: true }, (text) =>
+    text === null ? null : String(text).toUpperCase(),
+  )
+  database.exec('PRAGMA case_sensitive_like = ON')
   tablesOf(database, set)
   registerOn(database)
   return (sql) => {

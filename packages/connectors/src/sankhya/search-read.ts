@@ -2,14 +2,16 @@ import { z } from 'zod'
 import type { Answered, ProviderAnswer } from '../kernel/operation.ts'
 import { gatewayAnswer } from './answers.ts'
 import { QueriedRows } from './door.ts'
-import { Code } from './search-sql.ts'
+import { Code } from './operations/shared.ts'
 
 /** How many rows a search returns when the input gives no `limite`: the cut the model reads (`hub/connectors/cut.ts`). */
 export const DEFAULT_LIMIT = 20
 
-export const Cursor = Code.optional()
+/** A code the model gives: a cursor, a bound of a range, a company or a place. */
+export const NonNegativeCode = Code.nonnegative()
+export const Cursor = NonNegativeCode.optional()
 export function Codes(most: number) {
-  return z.array(Code).min(1).max(most)
+  return z.array(NonNegativeCode).min(1).max(most)
 }
 export const Limit = z.number().int().min(1).max(100).optional()
 
@@ -21,7 +23,7 @@ export const Number_ = z.union([
     .regex(/^-?\d+(\.\d+)?$/)
     .transform(Number),
 ])
-export const Whole = Number_.pipe(z.number().int())
+export const Whole = Number_.pipe(Code)
 export const Text = z.string().nullable()
 export const Flag = z
   .string()

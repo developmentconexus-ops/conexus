@@ -1186,6 +1186,32 @@ reference tool checks a read against its documentation.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
 
+## Connectors (As buscas do Sankhya): the searches' SQL, with one literal we escape
+
+- **Library line.** Zod 4.6.5 validates the integers and the text of a search; it builds no SQL.
+  The kit sends Sankhya's `DbExplorerSP.executeQuery` only `{ sql }` (`queryRequest` in
+  `packages/connectors/src/sankhya/door.ts`); whether it takes bound values is not verified, because
+  the step made no call to the real Sankhya. The step's study measured `TRANSLATE`,
+  `LIKE ... ESCAPE` and `OFFSET/FETCH` on Oracle 19.0.0.0.0, without the `ROW_NUMBER()` window.
+- **Hand-made piece.** `packages/connectors/src/sankhya/search-sql.ts`. The text of each search is
+  a constant of its read (`operations/buscas.ts`, `operations/buscas-estoque.ts`); a number enters
+  only as a Zod integer; a name enters only through `SearchText` (2 to 60 characters, no control
+  character, line or paragraph separator, `--`, `/*`, `*/` or `;`) and `escaped`, which folds case
+  and accent as `TRANSLATE(UPPER(column), ...)` does, escapes `\`, `%` and `_` under `ESCAPE '\'`
+  and doubles the single quote. `queryRequest` judges the whole statement again with
+  `isOneReadStatement`. The double (`fake-sales.ts`) runs the same SQL in SQLite with Oracle's
+  `TRANSLATE`, a Unicode `UPPER` and a case-sensitive `LIKE`.
+- **Why.** The founder's choice B, 2026-11-09: one search in the connector that the Project's
+  agent, the apps and the Assistant share, and one call that returns many rows. What the model
+  writes is hostile input (S2, S15).
+- **Proof.** Removals `sankhya-search-text-marks`, `sankhya-search-like-escape` and
+  `sankhya-search-quote-doubled`, through `search.test.ts`. The check in `queryRequest` fails the
+  same file's hostile-input test without it, with no row.
+- **Not proved.** On SQL Server, `[` and `]` are wildcards in `LIKE` and `escaped` leaves them
+  (https://github.com/developmentconexus-ops/conexus/issues/929).
+- **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
+  values (then the literal goes), or the first company runs Sankhya on SQL Server.
+
 ## Mastra 1.82.0: a conversation's changing state lives in a Hub table (step 24.1)
 
 - **Library line.** At `@mastra/pg` version 1.35.0 and `@mastra/memory` version 1.41.0 (the lockfile's),
