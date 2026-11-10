@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { CompanyId, PersonId, ProjectId, AppTableName as TableName } from '@conexus/hub-api'
 import type { AppTablesRead } from '../../hub/apps/public.ts'
 import type { AppDataPort } from '../agents/public.ts'
-import { appTablesOf } from './public.ts'
+import { tablesWithColumnNamesOf } from './public.ts'
 
 const scope = {
   companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
@@ -18,7 +18,7 @@ function readingAs(read: AppTablesRead) {
     tables: async () => read,
     read: async () => ({ kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' }),
   }
-  return appTablesOf(appData)(scope)
+  return tablesWithColumnNamesOf(appData)(scope)
 }
 
 test('as tabelas do app: o banco do app que não responde ou estoura o prazo é DATABASE_UNAVAILABLE, não INTERNAL_UNEXPECTED', async () => {

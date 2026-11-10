@@ -1,4 +1,3 @@
-import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { CompanyId, PersonId, ProjectId, RowCount } from '@conexus/hub-api'
 import { AppTableName, ROW_COUNT_CAP } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -28,17 +27,19 @@ export type AppReadInput = {
   signal: AbortSignal
 }
 
+/** The schemas a table may live in: a closed union, never text from outside. */
+export type TableSchema = 'APP'
+
+/** The SQL that names each schema a table may live in. */
+const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
+
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
  * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
- * login that only reads).
+ * login that only reads). `type` is `format_type`'s text, kept for the typed columns of the Builder's
+ * data block (capacity 3, approved in `docs/approvals.md`).
  */
-export type TableSchema = 'APP'
-
-/** The SQL that names each schema a table may live in: a closed union, never text from outside. */
-const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
-
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
   (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname,
@@ -97,16 +98,25 @@ export function appTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise
   return catalogOf(deps, input, { text: `${catalogSql('APP')} order by c.relname` })
 }
 
+/** What a look at one table gives: the table, or `NONE` when the catalog has none the login may read. */
+export type AppTableRead =
+  | { kind: 'TABLE'; table: AppTable }
+  | { kind: 'NONE' }
+  | { kind: 'NO_APP' }
+  | AppDataFailed
+
 /** One table of `schema` by its name, bound as a value, or `NONE` when the catalog has none the login may read. */
 export async function appTableOf(
   deps: AppDatabaseDeps,
   input: AppReadInput & { schema: TableSchema; name: AppTableName },
-): Promise<AppTablesRead | { kind: 'NONE' }> {
+): Promise<AppTableRead> {
   const found = await catalogOf(deps, input, {
     text: `${catalogSql(input.schema)} and c.relname = $1`,
     values: [input.name],
   })
-  return found.kind === 'TABLES' && found.tables.length === 0 ? { kind: 'NONE' } : found
+  if (found.kind !== 'TABLES') return found
+  const [table] = found.tables
+  return table === undefined ? { kind: 'NONE' } : { kind: 'TABLE', table }
 }
 
 const Counted = z.array(z.tuple([AppTableName, z.coerce.number().int()]))
@@ -149,9 +159,4 @@ export async function rowCountsOf(
       rows > ROW_COUNT_CAP ? { kind: 'OVER' } : { kind: 'EXACT', rows },
     ]),
   )
-}
-
-/** The deadline of one look at the app's database, joined to the request's own signal (code C57). */
-export function withinDeadline(signal: AbortSignal): AbortSignal {
-  return AbortSignal.any([signal, AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs)])
 }

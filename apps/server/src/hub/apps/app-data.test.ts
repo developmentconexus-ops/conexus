@@ -257,6 +257,27 @@ test('dados: o banco do app não responde', async (t) => {
   assert.deepEqual([late.statusCode, codeOf(late)], [503, 'APP_DATABASE_UNAVAILABLE'])
 })
 
+test('dados: o banco do app que nunca responde cai no prazo da rota', async (t) => {
+  const on = await dataOn(t)
+  const postgres = on.hub.postgres.companyPostgres
+  // A transport that never answers: only the signal the route hands it ends the read, as the driver's does.
+  t.mock.method(
+    postgres,
+    'readApp',
+    (_read: unknown, _statement: unknown, signal: AbortSignal) =>
+      new Promise((resolve) => {
+        signal.addEventListener('abort', () =>
+          resolve({ kind: 'FAILED', code: 'APP_DATA_TIMEOUT' }),
+        )
+      }),
+  )
+  // The hub's test deadline is one second (`test-hub.ts`); without the route's own, this read hangs.
+  const answers = [await on.tables(on.ana), await on.rows(on.ana, CLIENTES)]
+  for (const response of answers) {
+    assert.deepEqual([response.statusCode, codeOf(response)], [503, 'APP_DATABASE_UNAVAILABLE'])
+  }
+})
+
 test('dados: tabela larga demais', async (t) => {
   const on = await dataOn(t, WIDE_COLUMNS)
   const response = await on.rows(on.ana, 'colunas')

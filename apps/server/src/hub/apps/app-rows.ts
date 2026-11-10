@@ -53,8 +53,7 @@ export async function appRowsOf(
   const found = await appTableOf(deps, input)
   if (found.kind === 'NO_APP' || found.kind === 'NONE') return { kind: 'NONE' }
   if (found.kind === 'FAILED') return found
-  const [table] = found.tables
-  if (table === undefined) return { kind: 'NONE' }
+  const { table } = found
   const read = await readAppData(deps, { ...input, statement: pageStatement(table, offset) })
   switch (read.kind) {
     case 'FAILED':

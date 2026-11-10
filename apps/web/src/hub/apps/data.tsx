@@ -3,7 +3,8 @@ import { ROW_COUNT_CAP } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, useParams } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
+import { List, PageTitle, Row } from '../../ui/list.tsx'
+import { SidebarMenuButton } from '../../ui/sidebar.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { appTablesQuery } from './queries.ts'
@@ -56,16 +57,20 @@ export function DataPage({
               <List>
                 {data.tables.map((table) => (
                   <Row key={table.name}>
-                    <Link
-                      to="/companies/$companyId/projects/$projectId/data/$table"
-                      params={{ companyId, projectId, table: table.name }}
-                      className={`${rowBody({ kind: 'link' })} aria-[current=page]:bg-surface-3 aria-[current=page]:font-medium`}
+                    <SidebarMenuButton
+                      className="justify-between gap-md"
+                      render={
+                        <Link
+                          to="/companies/$companyId/projects/$projectId/data/$table"
+                          params={{ companyId, projectId, table: table.name }}
+                        />
+                      }
                     >
                       <span className="min-w-0 truncate">{table.name}</span>
                       <span className="shrink-0 text-fact tabular-nums text-text-2">
                         {countText(table.rows)}
                       </span>
-                    </Link>
+                    </SidebarMenuButton>
                   </Row>
                 ))}
               </List>
