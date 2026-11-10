@@ -119,18 +119,20 @@ toda versão.
 
   Os fatos que decidem:
   - **Os arquivos em comum.** A U1 desta capacidade muda o manifesto e a checagem do app, que a U4
-    da 3 também muda (a U4 espera a sua palavra sobre o molde). A U2 muda as migrações,
-    `packages/hub-api/src/index.ts`, `main.ts` e `hub/apps/public.ts`, que a U3 da 3 muda no pull
-    request de construção da 3 (https://github.com/developmentconexus-ops/conexus/pull/948, ainda em
-    rascunho); duas migrações feitas ao mesmo tempo brigam pela mesma cadeia de `snapshot.json`. A U3
+    da 3 também muda (a U4 espera a sua palavra sobre o molde). A U2 muda `main.ts` e a linha do
+    export em `hub/apps/public.ts`, que a U3 da 3 também muda no pull request de construção da 3
+    (https://github.com/developmentconexus-ops/conexus/pull/948, ainda em rascunho); as migrações da 3
+    já entraram no `main`, e o 948 não muda mais nem elas nem `packages/hub-api/src/index.ts`. A U3
     muda a skill `conexus-data`, que a 3 muda (U1, U2 e U4). Do Sync de qualquer conector
     (https://github.com/developmentconexus-ops/conexus/pull/952): o primeiro pull request dele, a U1 e
     a U2, só mexe em `packages/connectors/` e não tem arquivo em comum com esta capacidade; o segundo,
     a U3 e a U4, divide com a U2 daqui as migrações, `main.ts` e `packages/hub-api/src/`, e com a U3
-    daqui a skill `conexus-data`.
+    daqui a skill `conexus-data`. Duas migrações feitas ao mesmo tempo, a da U2 daqui e a da U3 do
+    Sync, brigam pela mesma cadeia de `snapshot.json`.
   - **O roteiro do Conexus.** Na sua resposta "3. a" de 2026-11-10, o Sync de qualquer conector vem
-    entre a 3 e a 4. O cartão dele começa a U1 e a U2 assim que você o aprovar, ao lado do 948, e a
-    U3 e a U4 depois que o 948 entrar no `main`.
+    entre a 3 e a 4. Pela L1, o primeiro pull request dele (a U1 e a U2) só começa depois que o 948
+    entrar no `main`, ao lado do uso, dos consertos e do fechamento da 3; o cartão do Sync está sendo
+    corrigido para dizer o mesmo. A U3 e a U4 dele vêm depois.
   - **A regra de hoje** ([delivery L1](../guides/delivery.md)). Uma etapa em construção por trilho;
     esta capacidade e o Sync são do mesmo trilho, a fronteira. A etapa seguinte constrói depois do
     merge da anterior; com o cartão aprovado, as unidades dela que não tocam arquivo dos consertos da
@@ -149,8 +151,8 @@ toda versão.
     export em `packages/hub-api/src/index.ts`, e espera a U4 da 3 no `main` ou dispensada por você. A U2 e a U3 esperam qualquer conserto
     do Sync que mexa nas migrações, em `main.ts`, em `packages/hub-api/src/` ou em `conexus-data`.
     Cabe na regra de hoje, sem mudá-la.
-  - **b)** Paralelo de verdade entre o Sync e a 4. A U1 começa já, ao lado do 948 e do primeiro pull
-    request do Sync, se a U4 da 3 estiver no `main` ou for dispensada. A U2 espera o 948 no `main` e
+  - **b)** Paralelo de verdade entre o Sync e a 4. A U1 começa já, ao lado do 948, e segue ao lado do
+    primeiro pull request do Sync, se a U4 da 3 estiver no `main` ou for dispensada. A U2 espera o 948 no `main` e
     faz a migração dela uma de cada vez com a U3 do Sync. A U3 espera os consertos da 3 e a U4 do
     Sync em `conexus-data`. São duas etapas da fronteira em construção ao mesmo tempo, então a L1
     muda: antes de a 3 fechar, só com a sua etiqueta de emergência (L20); depois, num pull request só
@@ -177,9 +179,9 @@ outra, porque cada uma lê o contrato da anterior. Os arquivos que dividem com o
   `sharedOf`, `entryOf`), que a U4 da Capacidade 3 muda. Nenhum arquivo do
   https://github.com/developmentconexus-ops/conexus/pull/948; do Sync de qualquer conector, só a
   linha do export em `packages/hub-api/src/index.ts`, que a U4 dele também pode mudar.
-- **U2:** `apps/server/migrations/` (a cadeia de `snapshot.json`), `packages/hub-api/src/index.ts`,
-  `apps/server/src/main.ts` e a linha do export em `hub/apps/public.ts`, que a U3 da Capacidade 3
-  muda no 948, e as migrações, `main.ts` e `packages/hub-api/src/`, que a U3 e a U4 do Sync mudam.
+- **U2:** `apps/server/src/main.ts` e a linha do export em `hub/apps/public.ts`, que a U3 da
+  Capacidade 3 muda no 948 (lidos na cabeça dele em 2026-11-10); `apps/server/migrations/` (a cadeia
+  de `snapshot.json`), `main.ts` e `packages/hub-api/src/`, que a U3 e a U4 do Sync mudam.
   Em `hub/apps/` a 3 muda também `app-check.ts`, `app-database.ts`, `builder-data.ts` e `send.ts`,
   que a U2 não toca.
 - **U3:** `packages/app/skills/conexus-data/`, que a Capacidade 3 (U1, U2 e U4) e a U4 do Sync
