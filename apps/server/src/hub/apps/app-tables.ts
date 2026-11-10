@@ -37,7 +37,7 @@ const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()' }
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
  * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
- * login that only reads). `AppColumn.type` saiu: nenhum leitor, e a Capacidade 3 tira as colunas da CopyDefinition.
+ * login that only reads).
  */
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
