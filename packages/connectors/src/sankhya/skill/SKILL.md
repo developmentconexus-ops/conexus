@@ -16,6 +16,7 @@ The connection is read only. Never write, never ask for values to store, and nev
 - The first page is 0 on every ready operation but the finance titles (`contasAReceber`, `contasAPagar`) and the prices, where it is 1; the parameter is `page` on all but the prices, which take `pagina`. The part for the subject repeats it for each.
 - Each row comes as Sankhya sent it, field by field. A number may come as text (`"201"`), the same field may come as a number in one row and as text in another, a name may be spelled oddly (`"dataAlteracao:"`), and a list of one comes as a list. Parse the fields your code uses, in your code, and never assume a type from the field's name.
 - Use the ready operations before the read doors. They are the same routes for every company and cost one call.
+- To find a record, search; to walk a whole list, list. `buscarParceiros`, `buscarProdutos` and `buscarVendedores` take any mix of filters (name, code list or range, active, and the subject's own), answer up to 20 rows in code order and say `temMais`; the next rows are the same call with `depoisDe` set to the last code read. A name matches with no regard to case or accent. An unknown field is refused by name.
 - Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
 - Leave the HR and payroll tables alone: never read them through the read doors (tables that start with `TFP`, and employees' personal data); no ready operation covers them.
 
@@ -23,10 +24,10 @@ The connection is read only. Never write, never ask for values to store, and nev
 
 Each subject has a part you read on demand (`skill_read`, `references/<subject>.md`) with its operations, the first page, the main filters and what the documentation warns.
 
-- `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers. Read `empresas` first: other operations need a company code.
-- `produtos` (Produtos): `produtos`, `gruposProduto`. The catalog and its groups.
+- `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`, `buscarParceiros`, `buscarVendedores`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers, and the two searches that find a partner or a salesperson by name, document or code. Read `empresas` first: other operations need a company code.
+- `produtos` (Produtos): `produtos`, `gruposProduto`, `buscarProdutos`. The catalog, its groups, and the search that finds products by name, reference, code or group.
 - `vendas` (Vendas): `pedidos`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices. The taxes of an order are read through the door (`consultar`).
-- `estoque` (Estoque): `estoque`, `estoqueDoProduto`, `locaisEstoque`. Stock balances, the stock of one product and stock locations.
+- `estoque` (Estoque): `estoque`, `estoqueDoProduto`, `locaisEstoque`, `estoqueDosProdutos`. Stock balances, the stock of one product, stock locations and the stock of up to 50 products at once.
 - `financeiro` (Financeiro): `contasAReceber`, `contasAPagar`, `tiposPagamento`. Receivables, payables and payment types.
 - `precos` (Preços): `precosDoProduto`, `precosDaTabela`. Sale prices by product and by price table.
 - `logistica` (Logística): `transportadoras`, `ordensCarga`. Carriers and load orders.

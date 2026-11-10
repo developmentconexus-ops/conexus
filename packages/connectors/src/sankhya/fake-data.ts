@@ -101,28 +101,25 @@ export function loadRecords(requestBody: unknown): Response {
 }
 
 /**
- * `DbExplorerSP.executeQuery`: with a sales set's `query`, the SQL runs on its tables (`fake-sales.ts`)
- * and a query it cannot run is refused; without one, only the count of empresas answers.
+ * `DbExplorerSP.executeQuery`: the count of empresas answers on its own; any other SQL runs on the
+ * double's tables (`fake-sales.ts`), and a query they cannot run is refused.
  */
 export function executeQuery(
   requestBody: unknown,
   query?: (sql: string) => QueryAnswer | undefined,
 ): Response {
   const { sql } = z.object({ sql: z.string() }).parse(requestBody)
-  if (query !== undefined) {
-    const answered = query(sql)
-    if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
+  if (/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
     return envelope('DbExplorerSP.executeQuery', '1', {
-      fieldsMetadata: answered.fields.map((name) => ({ name })),
-      rows: answered.rows,
+      fieldsMetadata: [{ name: 'N' }],
+      rows: [[EMPRESAS.length]],
       burstLimit: false,
     })
-  }
-  if (!/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
-    return envelope('DbExplorerSP.executeQuery', '0')
+  const answered = query?.(sql)
+  if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
   return envelope('DbExplorerSP.executeQuery', '1', {
-    fieldsMetadata: [{ name: 'N' }],
-    rows: [[EMPRESAS.length]],
+    fieldsMetadata: answered.fields.map((name) => ({ name })),
+    rows: answered.rows,
     burstLimit: false,
   })
 }

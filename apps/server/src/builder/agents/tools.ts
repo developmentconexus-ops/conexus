@@ -100,7 +100,7 @@ type Deps = {
 /** The open fields of a read's or a write's own input, the ones the model fills, never one the operation says only whoever configures fixes. */
 function openOf(input: z.ZodObject, tool: PresetFrozenTool, fixed: readonly string[] = []) {
   const open = new Set(tool.open)
-  return z.object(
+  return z.strictObject(
     Object.fromEntries(
       Object.entries(input.shape).filter(([field]) => open.has(field) && !fixed.includes(field)),
     ),

@@ -18,7 +18,7 @@ import type { OrderSwitches, StoredOrder } from './fake-orders.ts'
 import { ORDERS_PATH, orderBook } from './fake-orders.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
 import type { SalesSet } from './fake-sales.ts'
-import { salesDatabase } from './fake-sales.ts'
+import { PADARIA_SOL_MATRIZ, salesDatabase } from './fake-sales.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
@@ -113,7 +113,7 @@ function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: Sankh
   return switches.nothingFound ? nothingFound(route.entity) : route.answer(url.searchParams)
 }
 
-type Query = ReturnType<typeof salesDatabase> | undefined
+type Query = ReturnType<typeof salesDatabase>
 
 /** The one POST route: the order's add, which a `refuse` of `lancarPedido` answers 403. */
 function isAdd(request: Request, url: URL): boolean {
@@ -208,10 +208,10 @@ function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | 
 /**
  * A Sankhya that answers in the shapes the real gateway sent, with invented rows. One token is one session: a
  * second call on a token while the first is unanswered gets the gateway's envelope "4" (409 on REST).
- * With `sales`, its read queries run on that set's tables.
+ * Its read queries run on the tables of `sales`, Padaria Sol's Matriz when none is given.
  */
 export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
-  const query = options.sales === undefined ? undefined : salesDatabase(options.sales)
+  const query = salesDatabase(options.sales ?? PADARIA_SOL_MATRIZ)
   const orders = orderBook()
   const switches: SankhyaSwitches = {
     refuse: new Set(),

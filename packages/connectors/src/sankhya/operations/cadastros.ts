@@ -12,7 +12,7 @@ export const empresas = defineOperation({
   summary:
     'Lista as empresas do Sankhya (código e nome), uma página por chamada; a página começa em 0.',
   label: 'Empresas',
-  input: z.object({ page: Page(0) }),
+  input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'empresas' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/empresas', { page }),
@@ -32,9 +32,9 @@ export const clientes = defineOperation({
   subject: 'cadastros',
   idempotent: true,
   summary:
-    'Lista os clientes do Sankhya (documento, nome, endereço e os campos AD_ da empresa), uma página por chamada; a página começa em 0.',
+    'Lista os clientes do Sankhya (documento, nome, endereço e os campos AD_ da empresa), uma página por chamada, em ordem de código; a página começa em 0. Não filtra por nome nem por documento, só por página e data de alteração: para achar por nome, documento ou código, use `buscarParceiros`.',
   label: 'Clientes',
-  input: z.object({ page: Page(0), dataHoraAlteracao: DateTime.optional() }),
+  input: z.strictObject({ page: Page(0), dataHoraAlteracao: DateTime.optional() }),
   ...rows({ list: 'clientes' }),
   probe: () => ({ page: 0 }),
   request: (input) =>
@@ -49,7 +49,7 @@ export const vendedores = defineOperation({
   summary:
     'Lista os vendedores (nome, gerente, comissões); a página começa em 0. `modifiedSince` traz só o que mudou depois de uma data.',
   label: 'Vendedores',
-  input: z.object({ page: Page(0), modifiedSince: DateTime.optional() }),
+  input: z.strictObject({ page: Page(0), modifiedSince: DateTime.optional() }),
   ...rows({ list: 'vendedores' }),
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/vendedores', input),
@@ -63,7 +63,7 @@ export const tiposOperacao = defineOperation({
   summary:
     'Lista os tipos de operação (TOP: código, nome, tipo de movimento); a página começa em 0. `tipoMovimento` filtra por um tipo.',
   label: 'Tipos de operação',
-  input: z.object({ page: Page(0), tipoMovimento: z.number().int().optional() }),
+  input: z.strictObject({ page: Page(0), tipoMovimento: z.number().int().optional() }),
   ...rows({ list: 'data' }),
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/tipos-operacao', input),
@@ -76,7 +76,7 @@ export const naturezas = defineOperation({
   idempotent: true,
   summary: 'Lista as naturezas financeiras (código, nome, natureza pai); a página começa em 0.',
   label: 'Naturezas',
-  input: z.object({ page: Page(0) }),
+  input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'data' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/naturezas', { page }),
@@ -89,7 +89,7 @@ export const centrosResultado = defineOperation({
   idempotent: true,
   summary: 'Lista os centros de resultado (código, nome, centro pai); a página começa em 0.',
   label: 'Centros de resultado',
-  input: z.object({ page: Page(0) }),
+  input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'data' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/centros-resultado', { page }),
