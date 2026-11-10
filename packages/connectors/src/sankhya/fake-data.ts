@@ -106,7 +106,7 @@ export function loadRecords(requestBody: unknown): Response {
  */
 export function executeQuery(
   requestBody: unknown,
-  query?: (sql: string) => QueryAnswer | undefined,
+  query: (sql: string) => QueryAnswer | undefined,
 ): Response {
   const { sql } = z.object({ sql: z.string() }).parse(requestBody)
   if (/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
@@ -115,7 +115,7 @@ export function executeQuery(
       rows: [[EMPRESAS.length]],
       burstLimit: false,
     })
-  const answered = query?.(sql)
+  const answered = query(sql)
   if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
   return envelope('DbExplorerSP.executeQuery', '1', {
     fieldsMetadata: answered.fields.map((name) => ({ name })),
