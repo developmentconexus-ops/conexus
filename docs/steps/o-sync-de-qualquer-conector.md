@@ -114,12 +114,15 @@ nesse caso não é uma loja, seria uma conta do conector." A loja aparece só no
 - **Ligar pelo botão na conversa (2).** Em 2026-11-10: "2. B". É o cartão da proposta da Capacidade
   3, que nesta capacidade passa a mostrar também a leitura, as contas e as chamadas por passada.
 - **A ordem (3).** Em 2026-11-10: "3. a": a Capacidade 3 como está, e esta logo depois, antes da 4.
-- **O que der, em paralelo.** Em 2026-11-10: "Tô querendo executar em paralelo o que der." Por isso
-  a U1 e a U2 começam assim que você aprovar esta página, ao lado do pull request 948: só mudam
-  `packages/connectors`, que o 948 não toca, e a U1 deixa a definição de cópia de hoje como está, então
-  o servidor compila igual (conferido: o contrato novo da U1 aplicado ao `main` passa no typecheck do
-  servidor e do pacote dos conectores). A U2 entra no `main` só com a gravação acima. A U3 e a U4
-  esperam o 948 (veja "Como as unidades viram pull requests").
+- **O que der, em paralelo.** Em 2026-11-10: "Tô querendo executar em paralelo o que der." O que a
+  regra deixa correr junto: uma etapa irmã só começa a construir depois que a anterior entra no
+  `main`, e então as unidades dela correm ao lado do uso, dos consertos e do fechamento da anterior
+  ([delivery L1](../guides/delivery.md)). Por isso a U1 e a U2 começam quando o pull request da U3 da
+  Capacidade 3 (o 948) entrar no `main`, ao lado do uso da Capacidade 3: só mudam
+  `packages/connectors`, e a U1 deixa a definição de cópia de hoje como está, então não tocam os
+  arquivos do servidor que os consertos da Capacidade 3 podem mudar (conferido: o contrato novo da U1
+  aplicado ao `main` passa no typecheck do servidor e do pacote dos conectores). A U2 entra no `main`
+  só com a gravação acima. A U3 e a U4 vêm depois (veja "Como as unidades viram pull requests").
 - **Várias contas do conector sem a plataforma decidir.** Em 2026-11-10, sobre uma tabela ou várias
   para as lojas: "a gente já tá querendo limitar como que ele vai fazer". O Builder escolhe em cada
   cópia: as contas numa tabela, ou uma cópia por conta. A plataforma só garante a coluna da conta, com
@@ -199,28 +202,28 @@ deles for construído.
 
 **Como as unidades viram pull requests.** A U1 (o contrato da leitura de lista, no kit) e a U2 (as
 leituras do Mercado Livre declaram a lista) vão num pull request de construção, um commit por
-unidade, e podem começar assim que você aprovar esta página: só mudam `packages/connectors`, que o
-948 não toca, e a U1 não muda a definição de cópia que o servidor lê de hoje
-([delivery L1](../guides/delivery.md)). Esse pull request entra no `main` quando a gravação da U2
+unidade, e começam quando o 948 (a U3 da Capacidade 3) entrar no `main`, ao lado do uso, dos consertos
+e do fechamento da Capacidade 3 ([delivery L1](../guides/delivery.md)): só mudam `packages/connectors`,
+e a U1 não muda a definição de cópia que o servidor lê de hoje. Esse pull request entra no `main` quando a gravação da U2
 estiver nele; se a gravação demorar, a U1 entra sozinha e a U2 segue num pull request seu. A lista
 de permissões das duas tabelas novas vai num pull request só dela, depois que a da Capacidade 3
 estiver no `main`. A U3 (o motor) e a U4 (o Builder e as telas) vão num segundo pull request de
-construção, depois que o 948 estiver no `main`, porque mudam os mesmos arquivos de `hub/copies` que a U3 da Capacidade 3 muda; é a U3 que junta as duas versões da definição numa só,
-que o servidor lê. Ao aprovar esta página você aprova também esse agrupamento.
+construção, depois que o 948 estiver no `main`, porque mudam os mesmos arquivos de `hub/copies` que
+a U3 da Capacidade 3 muda; é a U3 que junta as duas versões da definição numa só, que o servidor lê. Ao aprovar esta página você aprova também esse agrupamento.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O contrato da leitura de lista | `list` na operação do kit (como pagina: `OFFSET`, `CURSOR` ou `NONE`; por qual entrada filtra o que mudou; o teto); `Rows` ganha `seguinte` e `total`; a `CopyDefinitionV2` ao lado da `CopyDefinition` de hoje, que não muda (fonte `OPERATION`, coluna com `path` e o tipo `json` só no enum da versão 2, chave `bigint` ou `text`, descrições, sem janela); o texto canônico de cada tipo, do kit; `callLimit` na declaração do conector, com o Sankhya `ACCOUNT`; a posição opaca `CopyPosition`; a leitura de cópia genérica (`listInputOf`, `listPageOf`); a conformidade que anda todas as páginas do dublê; `PageInput.since` nulo na primeira passada, com a leitura do Sankhya sem filtro de data nesse caso (#940) | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/copy-read.ts` e o seu teste, `packages/connectors/src/sankhya/definition.ts`, `packages/connectors/src/index.ts` | [testing](../guides/testing.md) | esta página aprovada; nada do pull request 948 |
+| U1 O contrato da leitura de lista | `list` na operação do kit (como pagina: `OFFSET`, `CURSOR` ou `NONE`; por qual entrada filtra o que mudou; o teto); `Rows` ganha `seguinte` e `total`; a `CopyDefinitionV2` ao lado da `CopyDefinition` de hoje, que não muda (fonte `OPERATION`, coluna com `path` e o tipo `json` só no enum da versão 2, chave `bigint` ou `text`, descrições, sem janela); o texto canônico de cada tipo, do kit; `callLimit` na declaração do conector, com o Sankhya `ACCOUNT`; a posição opaca `CopyPosition`; a leitura de cópia genérica (`listInputOf`, `listPageOf`); a conformidade que anda todas as páginas do dublê; `PageInput.since` nulo na primeira passada, com a leitura do Sankhya sem filtro de data nesse caso (#940) | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/copy-read.ts` e o seu teste, `packages/connectors/src/sankhya/definition.ts`, `packages/connectors/src/index.ts` | [testing](../guides/testing.md) | esta página aprovada; o 948 no `main` (delivery L1) |
 | U2 As leituras do Mercado Livre declaram a lista | `pedidos` com `list` de `OFFSET` e o filtro de alteração (`order.date_last_updated.from`); `anuncios` e `perguntas` com `list` de `CURSOR` (`search_type=scan`, `scroll_id`), sem o teto falso de 1.000; `reclamacoes` e `periodosDeFaturamento` com `list` de `OFFSET` (`mensagensDoPacote` não: pede um pacote); `callLimit` `APP` na declaração do conector; o dublê pagina as cinco e anda pela conformidade; as respostas gravadas (sem elas, a U2 não entra no `main`); a skill do conector corrigida | `packages/connectors/src/mercado-livre/` | [testing](../guides/testing.md) | U1 |
 | U3 O motor versão 2 | `copies.copy_source` (cada conexão de uma cópia com a sua conta, a sua posição, a sua passada, a sua marca e a sua espera) e a migração que dá a cada cópia de hoje a sua fonte; a rodada que anda as fontes; a página de uma `OPERATION` por `readThrough` com a leitura genérica; o 429 como `PARTIAL` `WAIT`; o cursor vencido recomeça a passada da fonte; o teto como `ERROR` `COPY_SOURCE_CEILING`; a fila de uma chamada de cópia por vez por conector que declara o limite contado pelo aplicativo; no banco da empresa, o tipo `json`, a chave de texto, `_account` e `_account_name`, o fim de passada só da conta da fonte e as descrições como `COMMENT ON`; a primeira passada sem filtro de alteração (#940); a união das duas versões em `CopyDefinition`, lida pelo servidor; a cópia sem fonte encerrada pela rodada (se o fundador escolher C) | `packages/connectors/src/kernel/copy.ts`, `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/`, `apps/server/src/platform/copy-sql.ts`, `apps/server/src/platform/company-postgres.ts`, `apps/server/src/platform/test-company-postgres.ts`, `apps/server/migrations/`, `packages/hub-api/src/{copies,copy-failures}.ts`, `apps/web/src/hub/copies/text.ts`, `docs/reference/boundaries.md` | [data](../guides/data.md) | U1; o 948 no `main`; a lista de permissões, num pull request só dela (D11) |
 | U4 O Builder propõe de qualquer conector | `copy_propose` numa conexão cujo conector declara uma leitura de lista, com a definição versão 2, várias conexões e a prova maior; `copy_proposal_source` e `proved_calls`; ligar a proposta cria as fontes; `CopySummary` e `CopyProposalSummary` com as fontes, a origem e a descrição; a página Cópias, a linha Proposta, o diálogo e o cartão da conversa com a leitura, as contas e as chamadas por passada; o bloco "## Data" com a origem, as descrições e as colunas da conta; a regra da fonte sem "hoje, o Mercado Livre"; as seis perguntas na descrição de `copy_propose` e em `conexus-data` | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/{connectors,app-data,conversation}/`, `apps/server/src/{main,conversations-of}.ts`, `packages/hub-api/src/`, `packages/app/skills/conexus-data/`, `apps/web/src/hub/copies/`, `apps/web/src/builder/conversation/`, `docs/reference/{screens,builder-prompt}.md`, `docs/explanation/builder-turn.md` | [security](../guides/security.md) | U3 |
 
 **A ordem.** A U1 e a U2 vão num pull request de construção, um commit cada, nessa ordem; começam
-assim que a página for aprovada e correm ao lado do pull request 948, porque não tocam nenhum arquivo
-dele (só `packages/connectors/`, e a `CopyDefinition` que o servidor lê fica igual até a U3;
-[delivery L1](../guides/delivery.md)). Conferido no `main` em `3c6472e6`: a `CopyDefinitionV2` ao lado
+quando o 948 entrar no `main` e correm ao lado do uso, dos consertos e do fechamento da Capacidade 3
+([delivery L1](../guides/delivery.md)), sem tocar os arquivos dela (só `packages/connectors/`, e a
+`CopyDefinition` que o servidor lê fica igual até a U3). Conferido no `main` em `3c6472e6`: a `CopyDefinitionV2` ao lado
 da de hoje, `PageInput.since` nulo, `Rows.seguinte` e `Rows.total`, `Operation.list` e o Sankhya sem
 filtro com `since` nulo passam no `tsc` de `packages/connectors` e de `apps/server`; a união das duas
 versões no lugar da `CopyDefinition` quebra `hub/copies/{list,run,enable}.ts` e `routes.test.ts`,
