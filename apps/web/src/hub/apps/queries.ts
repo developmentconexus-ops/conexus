@@ -1,5 +1,11 @@
 import type { AppTableName, CompanyId, ProjectId } from '@conexus/hub-api'
-import { listAppRows, listAppTables, listAppVersions, publishAppVersion } from '@conexus/hub-api'
+import {
+  listAppRows,
+  listAppTables,
+  listAppVersions,
+  listCopyRows,
+  publishAppVersion,
+} from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 export function versionsQuery(companyId: CompanyId, projectId: ProjectId) {
@@ -19,4 +25,13 @@ export function appRowsQuery(
   page: string | undefined,
 ) {
   return hubQuery(listAppRows, { params: { companyId, projectId, table }, query: { page } })
+}
+
+export function copyRowsQuery(
+  companyId: CompanyId,
+  projectId: ProjectId,
+  table: AppTableName,
+  page: string | undefined,
+) {
+  return hubQuery(listCopyRows, { params: { companyId, projectId, table }, query: { page } })
 }

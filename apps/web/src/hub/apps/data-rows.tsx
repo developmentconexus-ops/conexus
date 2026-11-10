@@ -1,4 +1,4 @@
-import type { AppCell, AppTableName, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AppCell, AppTableName, CompanyId, ProjectId, TableSchemaName } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -9,9 +9,12 @@ import { Pager } from '../../ui/pager.tsx'
 import { Empty, RouteReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { appRowsQuery } from './queries.ts'
+import { appRowsQuery, copyRowsQuery } from './queries.ts'
 
-const NO_ROWS = 'Esta tabela ainda não tem linhas.'
+const NO_ROWS = {
+  APP: 'Esta tabela ainda não tem linhas.',
+  COPY: 'Esta cópia ainda não tem linhas.',
+} as const
 
 /** One cell: the text the database wrote, with "…" when it was cut, or a faint dash that a reader hears as "sem valor". */
 function Cell({ cell }: { cell: AppCell }) {
@@ -25,15 +28,18 @@ function Cell({ cell }: { cell: AppCell }) {
   return <span className="font-mono text-fact">{cell.cut ? `${cell.text}…` : cell.text}</span>
 }
 
-/** The rows of one table, a page at a time, the page in the address; the table has its own box to scroll sideways. */
+/** The rows of one table of the app or one copy released to the Projeto, a page at a time, the page in the address; the table has its own box to scroll sideways. */
 export function DataRows(props: {
+  schema: TableSchemaName
   companyId: CompanyId
   projectId: ProjectId
   table: AppTableName
   page: string | undefined
 }) {
-  const { companyId, projectId, table, page } = props
-  const { data } = useSuspenseQuery(appRowsQuery(companyId, projectId, table, page))
+  const { schema, companyId, projectId, table, page } = props
+  const { data } = useSuspenseQuery(
+    (schema === 'COPY' ? copyRowsQuery : appRowsQuery)(companyId, projectId, table, page),
+  )
   const phone = useIsMobile()
   // A page's rows and cells have no id of their own: their place in the page is.
   const lines = data.rows.map((row, at) => ({
@@ -72,7 +78,7 @@ export function DataRows(props: {
           ))}
         </TableBody>
       </Table>
-      {data.rows.length === 0 && <Empty>{NO_ROWS}</Empty>}
+      {data.rows.length === 0 && <Empty>{NO_ROWS[schema]}</Empty>}
       <Pager next={data.next} param="page" page={page} list={table} />
     </section>
   )

@@ -5,7 +5,7 @@ export { AppRefused } from './app-refused.tsx'
 export { DataPage } from './data.tsx'
 export { DataRows, RowsFailure } from './data-rows.tsx'
 export { Publish } from './publish.tsx'
-export { appRowsQuery, appTablesQuery } from './queries.ts'
+export { appRowsQuery, appTablesQuery, copyRowsQuery } from './queries.ts'
 export { Versions } from './versions.tsx'
 
 /** The `$table` of the Dados routes: a name the contract would never issue is the not-found page. */

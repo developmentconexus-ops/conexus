@@ -290,7 +290,11 @@ test('dados: o registro não leva dado', async (t) => {
   assert.equal((await on.tables(on.ana)).statusCode, 200)
   assert.equal((await on.rows(on.ana, CLIENTES)).statusCode, 200)
   const reads = on.hub.lines.filter(({ message }) => message === 'APP_DATA_READ')
-  assert.equal(reads.length, 4)
+  assert.equal(
+    reads.length,
+    5,
+    'the app catalog, the copies catalog, the counts, one table and its page',
+  )
   for (const { fields } of reads) {
     assert.deepEqual(Object.keys(fields).sort(), ['answer', 'companyId', 'projectId'])
     assert.equal(fields.answer, 'ROWS')
