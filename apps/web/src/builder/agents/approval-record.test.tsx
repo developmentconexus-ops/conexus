@@ -69,7 +69,8 @@ test('depois de recarregar, uma escrita que ninguém aprovou no registro não di
     writes: [rowOf('approval', { approved: false })],
   })
   expect(await screen.findByText('Pedido 98001 lançado, a confirmar.')).toBeTruthy()
-  expect(screen.queryByText('Aprovado por você')).toBeNull()
+  // While the record is read the card stays as Mastra left it, "Aprovado" included.
+  await waitFor(() => expect(screen.queryByText('Aprovado por você')).toBeNull())
 })
 
 test('depois de recarregar, a escrita sem linha no registro mostra o que o Mastra guardou, sem "Aprovado"', async () => {
@@ -202,7 +203,7 @@ test('uma escrita que lançou o erro sem linha no registro diz "Não conseguiu l
   await approvedLive([], 'connect ECONNREFUSED')
   expect(await screen.findByText('Não conseguiu lançar')).toBeTruthy()
   expect(screen.getByText('Deu um erro no Hub e o pedido não foi enviado.')).toBeTruthy()
-  expect(screen.queryByText('Aprovado por você')).toBeNull()
+  await waitFor(() => expect(screen.queryByText('Aprovado por você')).toBeNull())
   expect(screen.queryByText('Recusado')).toBeNull()
 })
 

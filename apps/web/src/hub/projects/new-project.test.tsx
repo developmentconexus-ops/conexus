@@ -62,8 +62,11 @@ function hub(answer?: () => Response | Promise<Response>) {
 }
 
 async function openDialog() {
-  const main = within(await screen.findByRole('main'))
-  fireEvent.click(await main.findByRole('button', { name: 'Novo projeto' }))
+  // The screen swaps its loading <main> for the real one: ask the page again, never keep the first <main> found.
+  const button = await waitFor(() =>
+    within(screen.getByRole('main')).getByRole('button', { name: 'Novo projeto' }),
+  )
+  fireEvent.click(button)
   return within(await screen.findByRole('dialog', { name: 'Novo projeto' }))
 }
 
