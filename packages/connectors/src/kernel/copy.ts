@@ -12,7 +12,7 @@ export const CopyName = z
 export type CopyName = z.infer<typeof CopyName>
 
 /** A column of the source as the source names it, in any case; quoted wherever it is written. */
-export const CopyColumnName = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,59}$/)
+const CopyColumnName = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,59}$/)
 export const CopyColumnType = z.enum(['text', 'numeric', 'bigint', 'date', 'timestamp', 'boolean'])
 export type CopyColumnType = z.infer<typeof CopyColumnType>
 

@@ -159,6 +159,7 @@ export {
   setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
+export * from './copies.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'

@@ -103,7 +103,8 @@ export function unreachableAnswer(): Promise<SqlAnswer> {
 
 /**
  * A company's database on the test server, as Neon makes one: its owner may create logins but is
- * no superuser. The apps' logins belong to the whole server, so they go with the database.
+ * no superuser. The apps' logins and the sync login belong to the whole server, so they go with
+ * the database; one another database still uses stays for it.
  */
 export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
   const serverUrl = readTestDatabase().ownerUrl
@@ -119,7 +120,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname ~ '^app_.*_(run|migrate|read)$'`,
+        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)

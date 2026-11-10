@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
-import { appDatabaseOf, readAppData } from './app-database.ts'
+import { appDatabaseOf, projectDatabase, readAppData } from './app-database.ts'
 import { createAppVersions } from './app-versions.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
@@ -84,5 +84,7 @@ export function createApps(deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'>
     readAppData: (input: Parameters<typeof readAppData>[1]) => readAppData(deps, input),
     hasAppData: async (input: Parameters<typeof appDatabaseOf>[1]) =>
       (await appDatabaseOf(deps, input)) !== undefined,
+    /** The Projeto's schema and logins for a copy released to it, made here when it has no app (Capacidade 2). */
+    projectDatabase: (input: Parameters<typeof projectDatabase>[1]) => projectDatabase(deps, input),
   })
 }

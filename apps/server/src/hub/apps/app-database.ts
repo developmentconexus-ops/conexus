@@ -63,6 +63,34 @@ export async function openAppDatabase(
 }
 
 /**
+ * The Projeto's schema and logins for a copy released to it (Capacidade 2, U2): the app's row made
+ * as its first send makes it, and the schema and logins by `openAppDatabase` when it has none, so
+ * the first send finds them and the Projeto's deletion drops them.
+ */
+export async function projectDatabase(
+  deps: AppDatabaseDeps,
+  input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId },
+): Promise<{ kind: 'OPEN' } | { kind: 'FAILED' }> {
+  const { companyId, projectId } = input
+  const scope = { kind: 'COMPANY', companyId, personId: input.personId } as const
+  const ready = await deps.database.command(scope, async (tx) => {
+    await tx.insert(app).values({ companyId, projectId }).onConflictDoNothing()
+    const [row] = await tx
+      .select({ ready: app.databaseReady })
+      .from(app)
+      .where(eq(app.projectId, projectId))
+    return row?.ready === true
+  })
+  if (ready) return { kind: 'OPEN' }
+  const opened = await openAppDatabase(deps, { scope, companyId, projectId, databaseReady: false })
+  if (opened.kind === 'FAILED') return { kind: 'FAILED' }
+  await deps.database.command(scope, (tx) =>
+    tx.update(app).set({ databaseReady: true }).where(eq(app.projectId, projectId)),
+  )
+  return { kind: 'OPEN' }
+}
+
+/**
  * The version's pending migrations, all or none (decision 0046); a refusal keeps its code and the
  * names it carries, never a value (code C52).
  */

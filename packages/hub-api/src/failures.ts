@@ -6,6 +6,7 @@ import { AUTOMATION_FAILURES } from './automation-failures.ts'
 import { CAPACITY } from './capacity.ts'
 import { CONNECTOR_FAILURES } from './connector-failures.ts'
 import { CONVERSATION_FAILURES } from './conversation-failures.ts'
+import { COPY_FAILURES } from './copy-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
@@ -58,6 +59,7 @@ export const FAILURES = {
   ...IDENTITY_FAILURES,
   ...CONVERSATION_FAILURES,
   ...AUTOMATION_FAILURES,
+  ...COPY_FAILURES,
   ...SOURCE_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',

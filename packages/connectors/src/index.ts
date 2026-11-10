@@ -59,6 +59,7 @@ export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
 export type { SalesSet } from './sankhya/fake-sales.ts'
 export {
+  changedOn,
   PADARIA_SOL_FILIAL,
   PADARIA_SOL_MATRIZ,
   salesDatabase,

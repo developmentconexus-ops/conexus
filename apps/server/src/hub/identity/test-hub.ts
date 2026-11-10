@@ -120,6 +120,9 @@ async function hubServing(
     },
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
+    /** What a test assembles a subject the Hub does not wire yet from (Capacidade 2, U2). */
+    apps,
+    identity: identity.ports,
     agents: subjects.agents,
     sendMail,
     notify: subjects.notifications.notify,
