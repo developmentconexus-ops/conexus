@@ -7,7 +7,12 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
-import type { AppRead, CompanyPostgres, SqlAnswer } from '../../platform/company-postgres.ts'
+import type {
+  AppRead,
+  CompanyPostgres,
+  SqlAnswer,
+  SqlStatement,
+} from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -171,7 +176,7 @@ export async function readAppData(
   input: {
     scope: { companyId: CompanyId; personId: PersonId }
     projectId: ProjectId
-    sql: string
+    statement: SqlStatement
     signal: AbortSignal
   },
 ): Promise<AppRead> {
@@ -188,7 +193,7 @@ export async function readAppData(
     return unavailable
   }
   const address = await deps.companyPostgres.readAddress(found.host, projectId)
-  let answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+  let answer = await deps.companyPostgres.readApp(address, input.statement, signal)
   if (answer.kind === 'NO_LOGIN') {
     const owner = await deps.neon.ownerConnection(found.neonProjectId)
     if (owner.kind !== 'DONE') return silent(`OWNER_${owner.kind}`)
@@ -199,7 +204,7 @@ export async function readAppData(
       return silent('READ_LOGIN_NOT_MADE')
     }
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
-    answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+    answer = await deps.companyPostgres.readApp(address, input.statement, signal)
   }
   switch (answer.kind) {
     case 'ROWS':

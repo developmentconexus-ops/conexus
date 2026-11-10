@@ -1,12 +1,11 @@
 import { z } from 'zod'
 import { AGENT_FAILURES, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
-import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
+import { APP_DATA_FAILURES, APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { ASSISTANT_FAILURES } from './assistant-failures.ts'
 import { AUTOMATION_FAILURES } from './automation-failures.ts'
 import { CAPACITY } from './capacity.ts'
 import { CONNECTOR_FAILURES } from './connector-failures.ts'
 import { CONVERSATION_FAILURES } from './conversation-failures.ts'
-import { COPY_FAILURES } from './copy-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
@@ -59,7 +58,6 @@ export const FAILURES = {
   ...IDENTITY_FAILURES,
   ...CONVERSATION_FAILURES,
   ...AUTOMATION_FAILURES,
-  ...COPY_FAILURES,
   ...SOURCE_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',
@@ -275,6 +273,7 @@ export const FAILURES = {
   ...PROJECT_FAILURES,
   ...APP_FAILURES,
   ...APP_VERSION_FAILURES,
+  ...APP_DATA_FAILURES,
   ...MODEL_ACCOUNT_FAILURES,
   ...CONNECTOR_FAILURES,
   ...ASSISTANT_FAILURES,

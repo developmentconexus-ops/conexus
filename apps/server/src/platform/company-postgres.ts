@@ -129,7 +129,7 @@ export type CompanyPostgres = {
   /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
   ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
   /** One statement as the read login, whose address `readAddress` gives: the Hub never needs the company. */
-  readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppReadAnswer>
+  readApp(read: DatabaseUrl, statement: SqlStatement, signal: AbortSignal): Promise<AppReadAnswer>
   /** The read login's address on the company's host, its password derived here and never kept. */
   readAddress(host: string, projectId: ProjectId): Promise<DatabaseUrl>
   migrate(
@@ -315,7 +315,7 @@ export function createCompanyPostgres(deps: {
   return Object.freeze({
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
-    readApp: (read, sql, signal) => readApp(context, read, sql, signal),
+    readApp: (read, statement, signal) => readApp(context, read, statement, signal),
     readAddress: (host, projectId) => readAddress(context, host, projectId),
     migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),

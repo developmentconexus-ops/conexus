@@ -39,7 +39,7 @@ const UNATTENDED = ['publishUnattendedWrite'] as const
 // What makes a person a builder: they publish apps, manage and publish agents, create automations,
 // ask the Assistant (step 24.3.4, U1) and manage the company's copies (Capacidade 2). The connections stay the administrators' (step 19, D).
 const BUILD = {
-  app: ['publish'],
+  app: ['publish', 'viewData'],
   agent: ['manage', 'publish'],
   automation: ['manage'],
   assistant: ['ask'],
@@ -73,7 +73,7 @@ export function rolesFor(kit: RoleKit) {
     modelAccount: ['manage'],
     appAccess: ['manage'],
     connection: ['manage'],
-    app: ['publish'],
+    app: ['publish', 'viewData'],
     agent: ['manage', 'publish', ...UNATTENDED],
     automation: ['manage'],
     assistant: ['ask'],

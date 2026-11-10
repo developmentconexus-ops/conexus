@@ -38,7 +38,7 @@ export function heldCompanyPostgres(config: Config) {
       owners.set(projectId, owner)
       return inner.ensureReadLogin(owner, projectId)
     },
-    readApp: (read, sql, signal) => inner.readApp(read, sql, signal),
+    readApp: (read, statement, signal) => inner.readApp(read, statement, signal),
     async readAddress(_host, projectId) {
       const owner = owners.get(projectId)
       if (owner === undefined) throw new Error('no owner address was seen for the Projeto')

@@ -113,10 +113,10 @@ const TIMED_OUT = new Set(['57014', '25P04'])
 export async function readApp(
   context: Context,
   read: DatabaseUrl,
-  sql: string,
+  statement: SqlStatement,
   signal: AbortSignal,
 ): Promise<AppReadAnswer> {
-  const answer = await context.transport(read, [{ text: sql }], signal, { readOnly: true })
+  const answer = await context.transport(read, [statement], signal, { readOnly: true })
   switch (answer.kind) {
     case 'READ':
       if (Buffer.byteLength(JSON.stringify(answer.rows)) > REPLY_CAP_BYTES) {

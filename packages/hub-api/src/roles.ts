@@ -49,6 +49,7 @@ export const CompanyMay = z.object({
   manageAutomations: z.boolean(),
   manageCopies: z.boolean(),
   manageRoles: z.boolean(),
+  viewAppData: z.boolean(),
   publishUnattendedWrite: z.boolean(),
 })
 export type CompanyMay = z.infer<typeof CompanyMay>

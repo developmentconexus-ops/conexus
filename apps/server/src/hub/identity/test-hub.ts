@@ -82,6 +82,7 @@ async function hubServing(
     ...{ ...ports, log },
     tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: clock },
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
+    appDataDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
   const { projects, apps, conversations, runs } = subjects
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })

@@ -335,6 +335,30 @@ rows for the five above wait on issue #458.
   (`crud-invites.mjs:503`), and the screen must say it expired or was accepted. The test "fora: a
   segunda página" in `companies.test.ts` reads past the first 50 rows.
 
+### An app's rows, 50 a page by offset (Capacidade 1)
+
+- **Library line.** `@neondatabase/serverless` 1.2.0 `sql.transaction` takes `{ text, values }` and
+  `readOnly` (`index.d.ts:489-504`; `transaction()` at `:521-522` and `:892-893`); PostgreSQL 18 gives `limit` and `offset` as bound values and
+  `left(("c")::text, n)` for the cut. Neither pages by a key's value: a table of an app may have no
+  key, or a composite one of any type, and the page token is 64 characters.
+- **Hand-made piece.** `apps/server/src/hub/apps/app-rows.ts` with `pageOf` and `pageKey` of
+  `platform/pages.ts`: the offset travels inside the token (`Offset`, a positive whole number of at
+  most nine digits), 51 rows are read for a page of 50, ordered by the primary key in key order or,
+  with none, by `ctid`. The table's name comes from the catalog (`app-tables.ts`), quoted, and the
+  count is a `union all` of `count(*)` over a `limit` of the cap plus one.
+- **Why.** An exception to "The lists the Hub reads itself" above: those lists are the Hub's own
+  rows, paged after the last row's id; the app's tables are the app's, and the page shows them as
+  they are. Supabase's table editor pages by offset too, ordered by the key with `ctid` as the
+  tiebreak.
+- **Proof.** "dados: páginas pela chave" and "dados: tabela sem chave" in `app-data.test.ts`. No
+  removal row: it is a read, with no protection of ours to remove.
+- **Not proved.** A page by offset shifts when a row arrives between two pages. A partitioned table
+  repeats `ctid` across partitions
+  (https://github.com/developmentconexus-ops/conexus/issues/937). The time of the count and of an
+  offset past 10,000 rows on Neon was not measured.
+- **Revisit when** the founder's use shows a page slow on a real company's table, or the Builder
+  generates `PARTITION BY`.
+
 ### Open invitations are counted under the company's lock
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:167-172`.

@@ -18,6 +18,7 @@ const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
 const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
 const PUBLISH_APP = { app: ['publish'] } as const
+const VIEW_APP_DATA = { app: ['viewData'] } as const
 const MANAGE_AGENTS = { agent: ['manage'] } as const
 const PUBLISH_AGENT = { agent: ['publish'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
@@ -40,6 +41,7 @@ type ActionRule = {
     | typeof MANAGE_APP_ACCESS
     | typeof MANAGE_CONNECTIONS
     | typeof PUBLISH_APP
+    | typeof VIEW_APP_DATA
     | typeof MANAGE_AGENTS
     | typeof PUBLISH_AGENT
     | typeof MANAGE_AUTOMATIONS
@@ -70,6 +72,9 @@ const ACTIONS = {
   // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
   publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
+  // An owner, an administrator or a developer reads the tables and rows of the Projeto's app
+  // (capacity 1, "O banco do app"); a read holds no row.
+  viewAppData: { by: 'MEMBER', statement: VIEW_APP_DATA, locks: false },
   // Withdrawing needs only the membership; `cancel` checks the person is the asker.
   requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
   cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },

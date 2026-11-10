@@ -9,7 +9,7 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
-import { appTablesOf, createConstrutor } from './builder/construtor/public.ts'
+import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
 import { COPY_WORKFLOW, copyClockOf, copyRun } from './builder/copy-clock/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
@@ -74,9 +74,12 @@ function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
 }
 
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
-function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDataPort {
+function appDataOf(
+  apps: () => Pick<Apps, 'hasAppData' | 'readAppData' | 'appTables'>,
+): AppDataPort {
   return {
     hasApp: (input) => apps().hasAppData(input),
+    tables: (input) => apps().appTables(input),
     read: (input) => apps().readAppData(input),
   }
 }
@@ -168,7 +171,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    ...{ automations: () => automations, appTables: tablesWithColumnNamesOf(appData) },
     ...machineOf(deps),
   })
   const clock = deps.automationClock
