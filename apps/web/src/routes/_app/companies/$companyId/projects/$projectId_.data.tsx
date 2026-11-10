@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { appTablesQuery, DataPage } from '../../../../../hub/apps/public.ts'
-import { projectParams, projectQuery } from '../../../../../hub/projects/public.ts'
+import { projectParams } from '../../../../../hub/projects/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 import { RouteReadFailure } from '../../../../../ui/states.tsx'
 
@@ -12,19 +12,14 @@ const LIST_FRESH_MS = 30_000
 export const Route = createFileRoute('/_app/companies/$companyId/projects/$projectId_/data')({
   staticData: { place: 'Dados' },
   params: projectParams,
-  loader: ({ context, params }) => {
-    const { queryClient } = context
-    const { companyId, projectId } = params
-    return readOrNotFound(
-      Promise.all([
-        queryClient.ensureQueryData(projectQuery(companyId, projectId)),
-        queryClient.fetchQuery({
-          ...appTablesQuery(companyId, projectId),
-          staleTime: LIST_FRESH_MS,
-        }),
-      ]),
-    )
-  },
+  // The one read: a 404 of it is a Projeto, or a person, the page is not for; the rail reads the Projeto.
+  loader: ({ context, params }) =>
+    readOrNotFound(
+      context.queryClient.fetchQuery({
+        ...appTablesQuery(params.companyId, params.projectId),
+        staleTime: LIST_FRESH_MS,
+      }),
+    ),
   errorComponent: RouteReadFailure,
   component: Data,
 })
