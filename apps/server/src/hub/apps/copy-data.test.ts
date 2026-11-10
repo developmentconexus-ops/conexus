@@ -3,12 +3,13 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Next } from '@conexus/hub-api'
 import { AppRows, AppTables, PAGE_SIZE } from '@conexus/hub-api'
-import { COPY_PASS_COLUMN } from '../../platform/copy-sql.ts'
 import { copiesOn } from '../copies/test-copies.ts'
 import { call, codeOf } from '../identity/test-hub.ts'
 import { folder, MIGRATION, readyForVersions, send } from './test-versions.ts'
 
 const VENDAS_ROWS = 183
+/** The engine's own column of each copy row: no screen may read it. */
+const PASS_COLUMN = '_pass'
 const OWN_VENDAS = {
   id: '002_vendas',
   statements: ['CREATE TABLE vendas (id int PRIMARY KEY)', 'INSERT INTO vendas VALUES (1), (2)'],
@@ -112,7 +113,7 @@ test('Dados: as linhas de uma cópia', async (t) => {
   assert.equal(page.rows.length, PAGE_SIZE)
   assert.ok(page.columns.length > 0)
   assert.ok(
-    page.columns.every(({ name }) => name !== COPY_PASS_COLUMN),
+    page.columns.every(({ name }) => name !== PASS_COLUMN),
     'a passada é do motor, não chega à tela',
   )
   assert.ok(page.rows.every((row) => row.length === page.columns.length))
