@@ -25,7 +25,7 @@ export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
 export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
 export const PROPOSAL_WORD = 'Proposta'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
-export const PROPOSAL_GONE_IN_DIALOG = `${PROPOSAL_GONE} Feche e veja a lista.`
+const PROPOSAL_GONE_IN_DIALOG = `${PROPOSAL_GONE} Feche e veja a lista.`
 export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
 /**
  * What the dialog of Ligar a proposal says of a refusal: the table's words, except the two that
