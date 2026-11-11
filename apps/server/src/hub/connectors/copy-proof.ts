@@ -1,5 +1,6 @@
 import type { CopyDefinition } from '@conexus/connectors'
 import type { ConnectionId, OfProject, PersonId } from '@conexus/hub-api'
+import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import { roleOfSpeaker } from '../identity/public.ts'
 import type { CopyRefusal } from './copy-port.ts'
 import { copyPage } from './copy-port.ts'
@@ -7,9 +8,6 @@ import type { OpenedConnection } from './executor.ts'
 import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
 import { lackedDoorRead, personSpeaker } from './speaking.ts'
-
-/** The rows of the page a proposal proves its definition with (Capacidade 3). */
-const PROOF_PAGE_ROWS = 50
 
 /** One page of a proposed copy, counted: never a row (Capacidade 3). */
 export type Proved = Readonly<{ kind: 'PROVED'; rows: number; more: boolean }>
