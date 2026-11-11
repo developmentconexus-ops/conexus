@@ -79,10 +79,10 @@ test('a 390, três arquivos anexados cabem inteiros na caixa, quebrando a fileir
     .waitFor()
   await page.locator('form input[type="file"]').setInputFiles(
     [
-      ['politica-comercial.pdf', 'application/pdf'],
-      ['precos-da-tabela-nova.xlsx', SHEET],
-      ['contrato-com-o-fornecedor.docx', WORD],
-    ].map(([name, mimeType]) => ({ name, mimeType, buffer: Buffer.from('conteudo') })),
+      { name: 'politica-comercial.pdf', mimeType: 'application/pdf' },
+      { name: 'precos-da-tabela-nova.xlsx', mimeType: SHEET },
+      { name: 'contrato-com-o-fornecedor.docx', mimeType: WORD },
+    ].map((each) => ({ ...each, buffer: Buffer.from('conteudo') })),
   )
   const chips = page
     .getByRole('group', { name: 'Arquivos anexados' })

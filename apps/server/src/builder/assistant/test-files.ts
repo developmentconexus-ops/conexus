@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { getMimeType, LocalFilesystem } from '@mastra/core/workspace'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import type { SentFile } from './test-assistant.ts'
+import type { Upload } from './test-assistant.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 
 export { kindOf, sentFilesOf } from './files.ts'
@@ -25,7 +25,7 @@ export const PNG = Buffer.from(
 /** About 24 thousand tokens of the Assistant's own words, so two of them pass the observer's 30 thousand. */
 export const LONG = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(1800)
 
-export function file(name: string, type: string, bytes: Buffer): SentFile {
+export function file(name: string, type: string, bytes: Buffer): Upload {
   return {
     filename: name,
     mediaType: type,
