@@ -914,3 +914,9 @@ Em 2026-11-10, às três perguntas do estudo de o Builder escrever o Sync de qua
 ## Mudança de método: um pull request por grupo de unidades
 
 Em 2026-11-09, como mudança de método (L20), o fundador disse: "eu queria fazer é mudar a nossa regra de toda o 1C1PR, 1CI, né? Eu acho que seria no mínimo um conjunto de 3 etapas, tipo 1, o 2, o 3. Aí sim poderia subir um PR e aí rodar CI e tudo. Lógico que o nosso teste, né? A gente faz testes, né? Tipo, do 1, a gente teria fazer e testar e validar. Mas eu falo realmente subir e utilizar o CI, sabe? Para ser mais rápido, mais efetivo." E, aprovando o formato que o firstmate propôs (o cartão segue como pull request só de documentos, aprovado antes de qualquer código; o build vai num pull request por etapa, ou por grupo de unidades quando a etapa é grande; um commit por unidade, cada uma construída, testada e validada antes do seu commit; o revisor Opus lê commit a commit; o CI roda uma vez, no fim; o merge guarda os commits): "Sim, por exemplo U1, U2 e U3 seriam um PR por exemplo". Muda a L9, a L13 e as skills `conexus-build`, `conexus-review` e o cartão leve do padrão.
+
+## Capacidade 4, As pessoas do app e o vendedor
+
+Cartão da Capacidade 4, As pessoas do app e o vendedor (`docs/steps/capacidade-4-as-pessoas-do-app-e-o-vendedor.md`) aprovado em 2026-11-10 (commit 903cf7b131c0976638227c1a4ce75dd2689e4f39): "Sim"
+
+Em 2026-11-10, à pergunta da ordem na página do cartão (a: a 3, depois o Sync de qualquer conector, depois a 4, com o paralelo que a L1 já permite; b: mudar a L1; c: sem paralelo): "A". Lido pelo firstmate como decisão dele no meio da etapa (delivery L6); o cartão a escreve como decidida. O cartão espera no seu rascunho até a Capacidade 3 fechar (L5); a verificação `second-card` vermelha nele é de propósito.

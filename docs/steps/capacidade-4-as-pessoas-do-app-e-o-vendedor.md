@@ -112,7 +112,7 @@ toda versão.
   que existe desde a etapa 18.
 - **Pergunta 2: digitar o valor. a) Digitar** (Retool, ToolJet e Budibase). Exemplo: você digita
   `10`. Em 2026-11-10: "2.a". Veredito: nativo, um campo de texto ao lado do papel.
-- **A ordem, aberta.** Você perguntou em 2026-11-10: "a capacidade 4 depende da 3? Tô querendo
+- **A ordem, decidida: a opção (a), com a sua palavra "A" de 2026-11-10.** Você perguntou em 2026-11-10: "a capacidade 4 depende da 3? Tô querendo
   executar em paralelo o que der." A ideia, não: o filtro vale para qualquer tabela que o app lê,
   cópia ou tabela do próprio app. Os arquivos, em parte. O roteiro de uso, sim: ele usa o app de
   vendedores da 3.
@@ -158,6 +158,8 @@ toda versão.
     muda: antes de a 3 fechar, só com a sua etiqueta de emergência (L20); depois, num pull request só
     de documentos com a sua palavra.
   - **c)** Sem paralelo: 3, o Sync e a 4, cada uma depois do fechamento da anterior.
+
+  Você escolheu a opção (a) em 2026-11-10: "A".
 
 **Como as unidades viram pull requests.** U1, U2 e U3 vão num só pull request de construção, um
 commit por unidade, nessa ordem, como a Capacidade 3 fez ([delivery L9, L13](../guides/delivery.md)).
