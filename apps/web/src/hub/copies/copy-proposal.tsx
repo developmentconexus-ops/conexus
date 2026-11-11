@@ -15,12 +15,12 @@ import { TableCell, TableRow } from '../../ui/table.tsx'
 import { INTERVAL_CHOICES } from './interval.tsx'
 import { sendCopyEnable, sendProposalDismiss } from './queries.ts'
 import {
+  enableFailureText,
   modeText,
   NO_SCHEDULE,
   PROPOSAL_WORD,
   provedText,
   UNCONFIRMED_ACTION,
-  UNCONFIRMED_ENABLE,
 } from './text.ts'
 
 /** A copy's query in mono, a line at a time, scrolling inside its box (the detail and the dialog). */
@@ -80,7 +80,7 @@ export function ProposalDialog(props: {
       if (decidedElsewhere(error)) {
         props.onRefused(sentenceOf(error))
         onOpenChange(false)
-      } else setFailure(writeFailureText(error, UNCONFIRMED_ENABLE))
+      } else setFailure(enableFailureText(error))
     } finally {
       sending.current = false
     }

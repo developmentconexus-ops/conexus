@@ -6,7 +6,7 @@ import type {
   CopySummary,
 } from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
-import { unconfirmedText } from '../../platform/hub.ts'
+import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
 /** The words of the Cópias screens (Capacidade 2, U4); the founder approves them at the step's end. */
 export const COPIES_TITLE = 'Cópias'
@@ -25,7 +25,24 @@ export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
 export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
 export const PROPOSAL_WORD = 'Proposta'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
+export const PROPOSAL_GONE_IN_DIALOG = `${PROPOSAL_GONE} Feche e veja a lista.`
 export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
+/**
+ * What the dialog of Ligar a proposal says of a refusal: the table's words, except the two that
+ * were written for other screens: `NOT_IN_ROLE` is about publishing a tool there, and `NOT_FOUND`
+ * tells to check an address.
+ */
+export function enableFailureText(error: unknown): string {
+  if (error instanceof HubFailure && !error.outcomeUnknown) {
+    if (error.code === 'NOT_IN_ROLE') {
+      const reading = error.operation?.replace(/\.+$/, '')
+      const named = reading === undefined ? 'a leitura da conexão' : `a leitura ${reading}`
+      return `Seu papel não pode usar ${named}, e quem liga uma cópia precisa poder ler o que ela copia. Peça a quem tem esse acesso para ligar.`
+    }
+    if (error.code === 'NOT_FOUND') return PROPOSAL_GONE_IN_DIALOG
+  }
+  return writeFailureText(error, UNCONFIRMED_ENABLE)
+}
 export const MANAGERS_ENABLE =
   'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.'
 

@@ -89,11 +89,27 @@ test('a proposta: uma recusa que não decide fica no diálogo', async () => {
   )
   const dialog = await openDialog(await rowOf('Devoluções'))
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
-  expect(await dialog.findByRole('alert')).toBeTruthy()
+  const said = (await dialog.findByRole('alert')).textContent ?? ''
+  // The sentence is for turning on a copy, not the one for publishing a tool.
+  expect(said).toMatch(/quem liga uma cópia precisa poder ler/)
+  expect(said).not.toMatch(/publicar|tire a ferramenta/)
   expect(screen.getByRole('dialog')).toBeTruthy()
   refuse = false
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+})
+
+test('a proposta que sumiu: o diálogo diz isso, sem mandar conferir o endereço', async () => {
+  openCopies(
+    server,
+    { copies: [], proposals: [proposal()], answers: { decide: () => refusal('NOT_FOUND') } },
+    LIST,
+  )
+  const dialog = await openDialog(await rowOf('Devoluções'))
+  fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
+  const said = (await dialog.findByRole('alert')).textContent ?? ''
+  expect(said).toMatch(/Esta proposta não existe mais/)
+  expect(said).not.toMatch(/endereço/)
 })
 
 test('a proposta diz o modo', async () => {
