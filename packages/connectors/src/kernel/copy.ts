@@ -86,11 +86,8 @@ export type CopyDefinition = z.infer<typeof CopyDefinition>
 export const CopyColumnTypeV2 = z.enum([...CopyColumnType.options, 'json'])
 export type CopyColumnTypeV2 = z.infer<typeof CopyColumnTypeV2>
 
-const CLOCK = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?`
-const OFFSET = String.raw`(Z|[+-]\d{2}:\d{2})`
-
 /** An instant with its offset, the one owner: a timestamp cell of version 2 and the date-time a source's filter takes. */
-export const Instant = z.string().regex(new RegExp(`^${CLOCK}${OFFSET}$`))
+export const Instant = z.iso.datetime({ offset: true })
 
 /**
  * The canonical text of each type's cell, the one owner: `list.ts` and Sankhya's copy read convert to it,
@@ -101,7 +98,7 @@ export const CANONICAL_CELL: Readonly<Record<CopyColumnTypeV2, RegExp>> = {
   numeric: /^-?\d+(\.\d+)?$/,
   bigint: /^-?\d+$/,
   date: /^\d{4}-\d{2}-\d{2}$/,
-  timestamp: new RegExp(`^${CLOCK}${OFFSET}?$`),
+  timestamp: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/,
   boolean: /^(true|false)$/,
   json: /^[\s\S]*$/,
 }
