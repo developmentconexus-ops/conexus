@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { Instant } from '../../kernel/copy.ts'
 import type { OperationId } from '../../kernel/operation.ts'
 import { get } from '../../kernel/operation.ts'
-import { chain, firstId, Instant, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
 /** The buyer is left out whole: the API sends a nickname, a name and, on some routes, an e-mail and a phone (founder, T1). */
 const BUYER = ['buyer'] as const
@@ -11,7 +12,7 @@ export const pedidos = readOf({
   subject: 'vendas',
   docs: 'pedidos-e-opinioes',
   summary:
-    'Lista os pedidos do vendedor (status, datas, valores, itens e o envio), uma página por chamada (até 50). A janela dos pedidos é de 12 meses; use o status e as datas para filtrar.',
+    'Lista os pedidos do vendedor (status, datas, valores, itens e o envio), uma página por chamada (até 50). A janela dos pedidos é de 12 meses; use o status e as datas para filtrar, ou `changedFrom` para só o que mudou desde um instante.',
   label: 'Pedidos',
   input: z.object({
     status: z
@@ -19,6 +20,7 @@ export const pedidos = readOf({
       .optional(),
     dateFrom: Instant.optional(),
     dateTo: Instant.optional(),
+    changedFrom: Instant.optional(),
     sort: z.enum(['date_asc', 'date_desc']).optional(),
     offset: Offset,
     limit: Limit(50),
@@ -32,6 +34,7 @@ export const pedidos = readOf({
       'order.status': input.status,
       'order.date_created.from': input.dateFrom,
       'order.date_created.to': input.dateTo,
+      'order.date_last_updated.from': input.changedFrom,
       sort: input.sort,
       offset: input.offset,
       limit: input.limit,
