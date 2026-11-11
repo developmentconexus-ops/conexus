@@ -6,7 +6,7 @@ import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import { endOf, messagesOf, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
-import type { SentFile } from './test-assistant.ts'
+import type { Upload } from './test-assistant.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const APP = 'propose_app'
@@ -42,7 +42,7 @@ async function proposing(
   name: string,
   place: (on: On) => object = (on) => ({ connections: [on.matriz, on.filial] }),
   builder?: Promise<void>,
-  files: SentFile[] = [],
+  files: Upload[] = [],
 ) {
   const steps = [
     [write('briefing.md', BRIEFING)],

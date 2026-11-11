@@ -13,7 +13,7 @@ import { stepped, tool } from '../conversation/test-questions.ts'
 type Block = ReturnType<typeof tool>
 
 /** A file the person sends with a message, as the screen sends it: a name, a type and a data URL. */
-export type SentFile = { filename: string; mediaType: string; data: string }
+export type Upload = { filename: string; mediaType: string; data: string }
 
 export const READ = 'connector_read'
 export const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
@@ -127,7 +127,7 @@ export async function created(hub: Hub, person: Person, assistant: string, body:
 export async function talking(t: TestContext, hub: Hub, person: Person, url: string) {
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
-  async function say(content: string, files: SentFile[] = []) {
+  async function say(content: string, files: Upload[] = []) {
     const asked =
       files.length === 0
         ? await sent(hub, person, url, content)
