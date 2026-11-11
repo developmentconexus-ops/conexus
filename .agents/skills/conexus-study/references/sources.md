@@ -29,6 +29,16 @@ Each row's "Referência" cell names the version or commit read, and says when it
 Conexus's pin. The report's search line says how each source was read (code, docs, run) and what
 was read whole, by headings, or not at all; a "nenhuma faz" counts only beside it.
 
+## The trace of a built row
+
+A built row needs the closest reference's code read end to end, not its page or a summary: the entry
+(route, tool, hook), the data shape at each hop, where state lives, the library pieces called, and
+how errors travel, each with `file:line` at the pin, labelled **lido**. For Mastra that is Mastra
+Code, Factory and the package's own source beside `dist/docs`; for the AI build flow, vibesdk. The
+maintainers' skills for every library the row touches ([stack](../../../../docs/reference/stack.md))
+are read first. A row whose cell is relay, documentado or "nenhuma faz" without the search list,
+while the code exists, goes back to research.
+
 ## Labels
 
 Every claim, and every cell of the reference table's "Como a referência faz", carries one:

@@ -927,6 +927,10 @@ Revisão de saúde do CI (L19, `docs/how-to/ci-health.md`), por quem não constr
 
 Linha de uso da Capacidade 3, O Builder aprende o Sync, em 2026-11-11: o fundador aprovou as 10 capturas do segundo QA, que andou o roteiro de uso no Hub local com os dublês, no lugar de andar ele mesmo o roteiro (na 24.5, as telas foram aprovadas por palavra, sem novas capturas): "Voltou internet, aprovo essas imagens". À pergunta "Posso fazer o merge?", sobre a https://github.com/developmentconexus-ops/conexus/pull/948: "Pode".
 
+## O Assistente do dia a dia
+
+Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit ba0eb6f1503d272465a36192d0a234536a732c43): "Aprovo"
+
 ## Mudança de método: um pull request por grupo de unidades
 
 Em 2026-11-09, como mudança de método (L20), o fundador disse: "eu queria fazer é mudar a nossa regra de toda o 1C1PR, 1CI, né? Eu acho que seria no mínimo um conjunto de 3 etapas, tipo 1, o 2, o 3. Aí sim poderia subir um PR e aí rodar CI e tudo. Lógico que o nosso teste, né? A gente faz testes, né? Tipo, do 1, a gente teria fazer e testar e validar. Mas eu falo realmente subir e utilizar o CI, sabe? Para ser mais rápido, mais efetivo." E, aprovando o formato que o firstmate propôs (o cartão segue como pull request só de documentos, aprovado antes de qualquer código; o build vai num pull request por etapa, ou por grupo de unidades quando a etapa é grande; um commit por unidade, cada uma construída, testada e validada antes do seu commit; o revisor Opus lê commit a commit; o CI roda uma vez, no fim; o merge guarda os commits): "Sim, por exemplo U1, U2 e U3 seriam um PR por exemplo". Muda a L9, a L13 e as skills `conexus-build`, `conexus-review` e o cartão leve do padrão.
@@ -934,3 +938,7 @@ Em 2026-11-09, como mudança de método (L20), o fundador disse: "eu queria faze
 ## Mudança de método: o trilho do Assistente
 
 Em 2026-11-10, como mudança de método (L20), sobre o Assistente: "Então, eu só quero deixar ela funcional para o pessoal, enquanto a gente foca no builder, igual a gente está fazendo." À pergunta se o Assistente ganha uma trilha própria na regra de entrega para construir ao lado do Builder (A) ou espera a frente do Builder (B): "A". A opção A: o Assistente vira um quarto trilho, `assistente`, ao lado da fronteira, do padrão e do desenho, com uma etapa em construção e o marcador `Trilho: assistente` no cartão (L1, L5). Muda a L1 e a L5, em https://github.com/developmentconexus-ops/conexus/pull/955.
+
+## Mudança de método: o estudo lê o código das referências
+
+Em 2026-11-11, como mudança de método (L20), depois de ver que o estudo do Assistente não abriu o código do Mastra Code e do Factory para a parte de arquivos: "Então, mas por que que você não abriu o código deles? Nosso study não tem isso de realmente utilizar e ver os repositórios de referências por dentro, ver como que eles fazem o código. Isso sempre foi uma premissa que eu achei que a gente estava seguindo. Quero que você verifique, tanto no study quanto no scope, para quando ir para o builder já ir muito bem informado de como vai ser feito. E lendo as skills nativas de acordo com o nosso stack." Antes, no mesmo dia: "vamos fazer igualzinho o Master Code faz, o Factor faz. Tem que ser igual, não é igual, né? Mas utilizar bem como referência e ver como eles fazem o código e utilizam o seu curso nativos do Master." Muda as skills `conexus-study`, `conexus-scope` e `conexus-review`: toda linha construída tem o rastro do código da referência mais próxima (`arquivo:linha`, lido), o cartão cita as linhas que cada unidade segue e as skills que o builder carrega, e a revisão devolve a falta como Bloqueia.
