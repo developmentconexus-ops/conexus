@@ -9,7 +9,7 @@ description: "Reviews a whole Conexus roadmap step at its exact commit, as the o
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
 QA, at `main` once the last unit is merged and CI is green there. The same skill reviews each unit
-commit by commit, before the merge. Later passes are a delta check (step 9).
+commit by commit. Later passes are a delta check (step 9).
 
 ## What it receives
 
@@ -20,8 +20,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
 1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
-   Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column,
-   said so.
+   Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column.
 2. Read the step's whole diff, `main` at the last group's merge against the step's first commit, and
    against each unit's section, at the exact commit; a unit review reads its commit.
 3. Try a counterexample to every acceptance criterion.
@@ -36,11 +35,11 @@ The pull request, its head commit and the card; nothing from the builders' conve
    its line; a remendo row's native candidate runs at the installed version, listed in the verdict's
    Ran, and one that serves is a Bloqueia. A changed file that no row or contract explains is a
    Bloqueia (C75); outside the card's folders it is one unless the build report declares it (L7).
-   A defect fix walks its report's rows the same way.
-   When two findings fall on one mechanism, ask whether it should exist or a library
-   already holds it.
+   A defect fix walks its report's rows too. A built row without its reference trace
+   (`file:line`, **lido**), or with a relay-only one, is a Bloqueia.
+   Two findings on one mechanism: should it exist, or does a library hold it?
    Ask of every new piece "isso já existe noutro sujeito?" (C26).
-6. Walk the checklist, sweeping each class across the whole diff, and fill its sweep table (a row
+6. Walk the checklist, sweeping each class across the diff, and fill its sweep table (a row
    per review rule: search, result). A screen: [screen](references/screen.md).
 7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Every Fechamento about
    code shape goes on the closing list, checked as done.

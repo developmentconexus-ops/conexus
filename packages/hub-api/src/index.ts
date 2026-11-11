@@ -161,6 +161,7 @@ export {
   TurnFailureCode,
 } from './conversations.ts'
 export * from './copies.ts'
+export { PROOF_PAGE_ROWS } from './copy-proof.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'

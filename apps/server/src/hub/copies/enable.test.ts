@@ -106,8 +106,11 @@ test('ligar: as recusas', async (t) => {
   await refusedWith('NOT_FOUND', () =>
     on.copies.enable({
       ...{ companyId: on.companyId, personId: on.anaId },
-      connectionId: ConnectionId.parse(randomUUID()),
-      source: { kind: 'MODEL', model: CopyName.parse('clientes') },
+      source: {
+        kind: 'MODEL',
+        connectionId: ConnectionId.parse(randomUUID()),
+        model: CopyName.parse('clientes'),
+      },
       interval: '30m',
       attemptKey: randomUUID(),
     }),
@@ -115,8 +118,7 @@ test('ligar: as recusas', async (t) => {
   await refusedWith('NOT_FOUND', () =>
     on.copies.enable({
       ...{ companyId: on.companyId, personId: PersonId.parse(on.carla.id) },
-      connectionId: on.connectionId,
-      source: { kind: 'MODEL', model: CopyName.parse('clientes') },
+      source: { kind: 'MODEL', connectionId: on.connectionId, model: CopyName.parse('clientes') },
       interval: '30m',
       attemptKey: randomUUID(),
     }),

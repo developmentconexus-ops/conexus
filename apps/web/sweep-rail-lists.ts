@@ -7,6 +7,6 @@ export function railListsPage(id: string): Replies {
   return {
     [`GET /api/companies/${id}/agents`]: ok(listAgents, { agents: [] }),
     [`GET /api/companies/${id}/automations`]: ok(listAutomations, { automations: [] }),
-    [`GET /api/companies/${id}/copies`]: ok(listCopies, { copies: [] }),
+    [`GET /api/companies/${id}/copies`]: ok(listCopies, { copies: [], proposals: [] }),
   }
 }

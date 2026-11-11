@@ -16,7 +16,7 @@ export function copiesUrl(on: CopiesOn) {
 
 /** A copy turned on by Ana through the route, its summary. */
 export async function enabled(on: CopiesOn, model: string): Promise<CopySummary> {
-  const body = { connectionId: on.connectionId, model, interval: '30m' }
+  const body = { from: 'MODEL', connectionId: on.connectionId, model, interval: '30m' }
   const made = await post(on.hub, on.ana, copiesUrl(on), body, randomUUID())
   assert.equal(made.statusCode, 201, made.body)
   return CopySummarySchema.parse(Object(made.json()).copy)

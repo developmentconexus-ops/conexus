@@ -55,15 +55,21 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   }
   assert.deepEqual(
     anthropic.chats.filter(streamed).map((each) => searches(each.tools)),
-    [['conexus_check', 'recall', 'web_fetch']],
+    [['app_data_check', 'app_data_read', 'conexus_check', 'recall', 'web_fetch']],
   )
   assert.ok(gemini.length > 0, 'Gemini was called')
   for (const tools of gemini.filter((each) => each.length > 0)) {
-    assert.deepEqual(searches(tools), ['conexus_check', 'recall', 'web_fetch'])
+    assert.deepEqual(searches(tools), [
+      'app_data_check',
+      'app_data_read',
+      'conexus_check',
+      'recall',
+      'web_fetch',
+    ])
   }
   assert.deepEqual(
     anthropic.sent.filter(streamed).map((each) => searches(each.tools)),
-    [['conexus_check', 'recall', 'web_fetch', 'web_search']],
+    [['app_data_check', 'app_data_read', 'conexus_check', 'recall', 'web_fetch', 'web_search']],
   )
 })
 

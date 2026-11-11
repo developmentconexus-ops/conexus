@@ -61,9 +61,9 @@ function Since({ at }: { at: number | undefined }) {
 }
 
 function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
-  // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
+  // A refusal the Assistant's tool answered is said by its line; a refusal with its own fields has more to say.
   const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
-  if (refusal !== undefined) return refusal === 'RECONNECT'
+  if (refusal !== undefined) return refusal !== 'SAID'
   if (status === 'error' || status === 'denied')
     return failureDetail(tool, room) !== null || asksToReconnect(tool, room)
   if (tool.output !== undefined && tool.output.length > 0) return true
@@ -116,6 +116,12 @@ function Change({ edit }: { edit: Edit }) {
 /** The heading of an open row: its sentence in Portuguese, or the readable name for a tool outside the table. */
 function titleOf(toolName: string, room: Room) {
   return specOf(toolName, room)?.done ?? readable(toolName)
+}
+
+/** What the line says beside its sentence, which the open row says whole. */
+function besideOf(tool: ToolItem, room: Room): string | undefined {
+  const presented = presentTool(tool, 'done', room)
+  return presented.beside ? presented.detail : undefined
 }
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
@@ -177,7 +183,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
     case 'program':
       return <Program tool={tool} title={title} />
     default:
-      return <Generic tool={tool} title={title} />
+      return <Generic tool={tool} title={title} said={besideOf(tool, room)} />
   }
 }
 
@@ -262,6 +268,12 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   const spec = specOf(tool.toolName, room)
   if (spec?.refusal?.(tool.result) === 'RECONNECT' || asksToReconnect(tool, room))
     return <Reconnect />
+  if (spec?.refusal?.(tool.result) === 'DETAILED')
+    return (
+      <div className="flex min-w-0 flex-col gap-xs pt-xs">
+        <Generic tool={tool} title={spec.failed} said={presentTool(tool, status, room).detail} />
+      </div>
+    )
   const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'
@@ -303,7 +315,11 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
       })
 }
 
-/** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */
+/**
+ * The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run.
+ * One line, as Mastra Studio's: the sentence never cut (step 12.1), the detail cut beside it
+ * (founder, 2026-11-02); the open row says the detail whole.
+ */
 function ToolLine({
   presented,
   status,
@@ -316,22 +332,21 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right">
+    <TraceDescription className="min-w-0 flex-1 shrink truncate text-right">
       {presented.detail}
     </TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
-      <TraceIcon className={failed ? 'mt-1' : undefined}>
+    <TraceLine status={lineStatus} className={cn(failed && !presented.beside && 'items-start')}>
+      <TraceIcon className={failed && !presented.beside ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>
       <TraceTitle
-        className={cn(
-          presented.beside && 'shrink-0 whitespace-nowrap',
-          failed && 'whitespace-normal',
-        )}
+        className={
+          presented.beside ? 'shrink-0 whitespace-nowrap' : cn(failed && 'whitespace-normal')
+        }
       >
         {presented.sentence}
       </TraceTitle>
@@ -350,13 +365,8 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
-  const line = (
-    <ToolLine
-      presented={presentTool(tool, status, room)}
-      status={status}
-      startedAt={tool.startedAt}
-    />
-  )
+  const presented = presentTool(tool, status, room)
+  const line = <ToolLine presented={presented} status={status} startedAt={tool.startedAt} />
 
   const special = specialRow(tool, status, room)
   if (special !== undefined) return special

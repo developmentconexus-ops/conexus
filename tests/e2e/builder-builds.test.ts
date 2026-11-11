@@ -236,7 +236,10 @@ async function firstVersion(chat: Page) {
   await transcriptShowed(chat, 'Montando a tabela')
   await chat.getByRole('region', { name: 'Painel de tarefas' }).waitFor({ state: 'hidden' })
   // The turn's tools in a row are one closed line that says what they did; it opens on each one.
-  await transcript.getByRole('button', { name: /\d+ ferramentas: .*rodou/ }).click()
+  await transcript
+    .getByRole('button', { name: /\d+ ferramentas/ })
+    .filter({ hasText: /rodou/ })
+    .click()
   await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
   await transcript.locator('pre', { hasText: '$ ls shared server' }).waitFor()
   await outputWith(chat, 'operations.ts').waitFor()

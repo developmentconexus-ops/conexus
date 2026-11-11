@@ -1,6 +1,6 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of the company's copies and of their runs (Capacidade 2); the last four are a run's alone. */
+/** The failures of the company's copies, of their proposals (Capacidade 3) and of their runs (Capacidade 2); the last four are a run's alone. */
 export const COPY_FAILURES = {
   COPY_NOT_FOUND: {
     category: 'USER',
@@ -32,6 +32,14 @@ export const COPY_FAILURES = {
     status: 409,
     phrase: 'A conexão precisa ser testada de novo.',
     action: 'Abra a conexão em Integrações.',
+    actionKind: 'NONE',
+  },
+  COPY_PROPOSAL_DECIDED: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Esta proposta já foi ligada ou dispensada.',
+    action: 'Veja a lista de cópias.',
     actionKind: 'NONE',
   },
   COPY_RUNNING: {

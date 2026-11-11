@@ -1,99 +1,127 @@
-import { randomUUID } from 'node:crypto'
-import type { ConnectionId, ConnectorId, CopyInterval } from '@conexus/hub-api'
-import { CopyId } from '@conexus/hub-api'
-import { and, eq, sql } from 'drizzle-orm'
+import type {
+  ConnectionId,
+  CopyId,
+  CopyInterval,
+  CopyProposalId,
+  ProjectId,
+} from '@conexus/hub-api'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import type { CommandTx } from '../../platform/database.ts'
-import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
+import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
+import { grantedInDatabase } from './grants.ts'
 import { mayCreate } from './schedule.ts'
-import type { CopiesDeps, InCompany } from './store.ts'
-import { companyOwner, parsedCopy, personScope } from './store.ts'
-import { copy } from './tables.ts'
+import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
+import { companyOwner, parsedCopy, personScope, syncOf } from './store.ts'
 
-/** What a copy's definition comes from: a template of the connection's connector (Capacidade 3 adds its own). */
-type CopySource = Readonly<{ kind: 'MODEL'; model: string }>
+/** What a copy's definition comes from: a template of the connection's connector, or the Builder's proposal (Capacidade 3). */
+type CopySource =
+  | Readonly<{ kind: 'MODEL'; connectionId: ConnectionId; model: string }>
+  | Readonly<{ kind: 'PROPOSAL'; proposalId: CopyProposalId }>
 
 export type Enabling = InCompany & {
-  connectionId: ConnectionId
   source: CopySource
   interval: CopyInterval
   attemptKey: string
 }
 
-/** The definition the source gives, from the connection's connector; none when it has no such template. */
-async function definitionOf(deps: CopiesDeps, input: Enabling) {
-  const models = await deps.connectors().models(input)
-  return models?.find((model) => model.id === input.source.model)
+/** The definition the template gives, from the connection's connector; none when it has no such template. */
+async function definitionOf(
+  deps: CopiesDeps,
+  input: InCompany & { source: Extract<CopySource, { kind: 'MODEL' }> },
+) {
+  const { connectionId, model } = input.source
+  const models = await deps.connectors().models({ companyId: input.companyId, connectionId })
+  return models?.find((each) => each.id === model)
 }
 
 type Model = NonNullable<Awaited<ReturnType<typeof definitionOf>>>
 
-/** The row an earlier attempt with this key made, if any; the same key with another body is a conflict. */
-async function earlierAttempt(tx: CommandTx, input: Enabling, bodyHash: string) {
-  const [again] = await tx
-    .select()
-    .from(copy)
-    .where(and(eq(copy.companyId, input.companyId), eq(copy.attemptKey, input.attemptKey)))
-  if (again !== undefined && again.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-  return again
+/**
+ * The hash of what the attempt asked, the key's body (code C37): a template's keeps Capacidade 2's
+ * shape, so a retry across the change still finds its row.
+ */
+function bodyHashFor(input: Enabling): string {
+  const { source, interval } = input
+  return source.kind === 'MODEL'
+    ? bodyHashOf({
+        connectionId: source.connectionId,
+        source: { kind: 'MODEL', model: source.model },
+        interval,
+      })
+    : bodyHashOf({ source, interval })
 }
 
-/** The new row, from the template's definition on the connection's connector; a name taken is `COPY_EXISTS`. */
-async function insertedCopy(
+/** Ligar from a template: the row on an ACTIVE connection of the company, with the template's definition copied into it. */
+async function fromModel(
   tx: CommandTx,
-  input: Enabling,
-  made: { connectorId: ConnectorId; model: Model; bodyHash: string },
+  input: Enabling & { source: Extract<CopySource, { kind: 'MODEL' }> },
+  made: { model: Model | undefined; bodyHash: string },
 ) {
-  const { model, bodyHash } = made
-  try {
-    const [row] = await tx
-      .insert(copy)
-      .values({
-        ...{ id: CopyId.parse(randomUUID()), companyId: input.companyId },
-        ...{ connectorId: made.connectorId, connectionId: input.connectionId },
-        ...{ name: model.id, label: model.label, model: model.id },
-        ...{ definition: model.definition, createdBy: input.personId },
-        ...{ createdAt: sql`statement_timestamp()`, attemptKey: input.attemptKey, bodyHash },
-      })
-      .returning()
-    if (row === undefined) throw new Failure('COPY_EXISTS')
-    return row
-  } catch (error) {
-    if (violatedConstraint(error) === 'copy_company_id_name_key') throw new Failure('COPY_EXISTS')
-    throw error
-  }
+  const { connectionId } = input.source
+  const linked = await connectionForCopy(tx, { companyId: input.companyId, connectionId })
+  if (linked === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
+  if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
+  if (made.model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
+  const { model } = made
+  const row = await insertedCopy(tx, input, {
+    ...{ connectorId: linked.connectorId, connectionId, name: model.id, label: model.label },
+    ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
+  })
+  return parsedCopy(row)
 }
 
 /**
- * The row, admitted and on an ACTIVE connection of the company, with the template's definition
- * copied into it; the same attempt key finds the row it made (code C37).
+ * The row, admitted, from the template or the proposal; the same attempt key finds the row it made
+ * (code C37), and a proposal's retry its Projeto again, so the release repeats.
  */
 async function recorded(deps: CopiesDeps, input: Enabling) {
-  const bodyHash = bodyHashOf({
-    connectionId: input.connectionId,
-    source: input.source,
-    interval: input.interval,
-  })
-  const model = await definitionOf(deps, input)
+  const bodyHash = bodyHashFor(input)
+  const { source } = input
+  const model = source.kind === 'MODEL' ? await definitionOf(deps, { ...input, source }) : undefined
   return deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     const again = await earlierAttempt(tx, input, bodyHash)
-    if (again !== undefined) return { fresh: false, copy: parsedCopy(again) }
-    const linked = await connectionForCopy(tx, input)
-    if (linked === undefined)
-      throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
-    if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
-    if (model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
-    const row = await insertedCopy(tx, input, { connectorId: linked.connectorId, model, bodyHash })
-    return { fresh: true, copy: parsedCopy(row) }
+    if (source.kind === 'MODEL') {
+      if (again !== undefined) return { copy: parsedCopy(again) }
+      return { copy: await fromModel(tx, { ...input, source }, { model, bodyHash }) }
+    }
+    const accepting = { ...input, proposalId: source.proposalId }
+    if (again !== undefined) {
+      const releaseTo = await acceptedProjectOf(tx, accepting)
+      return { copy: parsedCopy(again), releaseTo }
+    }
+    const accepted = await acceptedIn(deps, tx, accepting, bodyHash)
+    return { copy: accepted.copy, releaseTo: accepted.projectId }
   })
+}
+
+/** The proposal's copy released to its Projeto in the company's database: the same steps as Liberar's, repeatable. */
+async function released(
+  deps: CopiesDeps,
+  input: InCompany,
+  release: { stored: StoredCopy; projectId: ProjectId },
+) {
+  const { companyId } = input
+  const sync = await deps.database.read(personScope(input), (tx) => syncOf(deps, tx, companyId))
+  const { projectId } = release
+  const granted = await grantedInDatabase(
+    deps,
+    { ...input, projectId },
+    { name: release.stored.name, sync },
+  )
+  if (granted?.kind === 'DONE') return
+  const code =
+    granted === undefined ? 'NO_DATABASE' : granted.kind === 'REFUSED' ? granted.code : granted.kind
+  deps.log.error({ companyId, projectId, copyId: release.stored.id, code }, 'COPY_GRANT_FAILED')
+  throw new Failure('COPY_DATABASE_UNAVAILABLE')
 }
 
 /**
  * Ligar (Capacidade 2, U2): the row first, then, with no transaction open (data D22), the `sync`
- * schema, its login and the copy's table in the company's database, and last the clock. The same
+ * schema, its login and the copy's table in the company's database, a proposal's release to its
+ * Projeto (Capacidade 3), and last the clock. The same
  * attempt key takes up whatever step a cut left; the company's database silent refuses with 503 and
  * keeps the row.
  */
@@ -121,11 +149,15 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
     deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
     throw unavailable
   }
-  // A first run is asked for only when the schedule is new: a repeat, or a retry after the schedule
-  // was made, does nothing more (criterion 7); a retry after a cut before it still gets its run.
-  const scheduled = (await deps.clock().states(companyId)).has(copyId)
-  await deps.clock().set({ companyId, copyId, interval: input.interval })
-  if (!scheduled) await deps.clock().runNow(copyId)
-  if (made.fresh) deps.log.info({ companyId, copyId, model: stored.model }, 'COPY_ENABLED')
+  // The release comes before the clock: a `GRANT` that fails leaves no schedule, so the retry with
+  // the same key still gets the first run and its record (criteria 21 and 26). Only the call that
+  // made the schedule asks for the first run and records it, so concurrent repeats record once (C37).
+  if (made.releaseTo !== undefined)
+    await released(deps, input, { stored, projectId: made.releaseTo })
+  const schedule = await deps.clock().set({ companyId, copyId, interval: input.interval })
+  if (schedule === 'CREATED') {
+    await deps.clock().runNow(copyId)
+    deps.log.info({ companyId, copyId, from: input.source.kind }, 'COPY_ENABLED')
+  }
   return copyId
 }

@@ -1,6 +1,8 @@
+import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
+  boolean,
   check,
   foreignKey,
   index,
@@ -44,9 +46,10 @@ export const copy = copies.table(
     connectionId: uuid('connection_id').notNull(),
     // The table in the company's `sync` schema (`CopyName`).
     name: text('name').notNull(),
-    // What the definition came from: today a template, its id and its label.
+    // What the definition came from: a template, its id and its label, or the Builder's proposal,
+    // its label and no template (Capacity 3).
     label: text('label').notNull(),
-    model: text('model').notNull(),
+    model: text('model'),
     // `CopyDefinition` of the kit, parsed again at each run (code C27).
     definition: jsonb('definition').notNull(),
     // No foreign key to the person, as connection.linked_by: the copy is the company's.
@@ -146,6 +149,71 @@ export const projectCopy = copies.table(
       columns: [table.companyId, table.copyId],
       foreignColumns: [copy.companyId, copy.id],
     }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/**
+ * A copy the Builder proposed in a Projeto's conversation (Capacity 3): the definition it wrote, the
+ * count of one page of proof, never a row. A person who manages copies turns it on, which makes the
+ * copy and releases it to the Projeto, or dismisses it.
+ */
+export const copyProposal = copies.table(
+  'copy_proposal',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    // The connection's connector, so the row's connection is its company's (as copy).
+    connectorId: text('connector_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+    projectId: text('project_id').notNull(),
+    // The table the copy would make in the company's `sync` schema (`CopyName`).
+    name: text('name').notNull(),
+    label: text('label').notNull(),
+    // `CopyDefinition` of the kit, parsed again when the proposal is turned on (code C27).
+    definition: jsonb('definition').notNull(),
+    // No foreign key to the person, as copy.created_by.
+    proposedBy: text('proposed_by').notNull(),
+    provedRows: integer('proved_rows').notNull(),
+    provedMore: boolean('proved_more').notNull(),
+    proposedAt: instant('proposed_at').notNull(),
+    state: text('state', { enum: ['OPEN', 'ACCEPTED', 'DISMISSED'] }).notNull(),
+    // The copy it turned into; null again when that copy is deleted, a row nobody reads (data D15).
+    copyId: uuid('copy_id'),
+  },
+  (table) => [
+    foreignKey({
+      name: 'copy_proposal_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_proposal_connection_fkey',
+      columns: [table.companyId, table.connectorId, table.connectionId],
+      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_proposal_project_fkey',
+      columns: [table.companyId, table.projectId],
+      foreignColumns: [project.companyId, project.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_proposal_copy_fkey',
+      columns: [table.copyId],
+      foreignColumns: [copy.id],
+    }).onDelete('set null'),
+    check('copy_proposal_name', sql`${table.name} ~ '^[a-z][a-z0-9_]{0,39}$'`),
+    check('copy_proposal_definition', sql`jsonb_typeof(${table.definition}) = 'object'`),
+    check(
+      'copy_proposal_proved_rows',
+      sql`${table.provedRows} BETWEEN 0 AND ${sql.raw(String(PROOF_PAGE_ROWS))}`,
+    ),
+    check('copy_proposal_state', sql`${table.state} IN ('OPEN', 'ACCEPTED', 'DISMISSED')`),
+    check('copy_proposal_copy', sql`${table.state} = 'ACCEPTED' OR ${table.copyId} IS NULL`),
+    // One open proposal of a name per company.
+    uniqueIndex('copy_proposal_open_name_key')
+      .on(table.companyId, table.name)
+      .where(sql`${table.state} = 'OPEN'`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )

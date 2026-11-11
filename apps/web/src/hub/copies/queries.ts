@@ -1,6 +1,7 @@
-import type { CompanyId, CopyId, CopyRun } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopyProposalId, CopyRun } from '@conexus/hub-api'
 import {
   changeCopyInterval,
+  dismissCopyProposal,
   enableCopy,
   listCopies,
   listCopyModels,
@@ -44,7 +45,7 @@ export function requestOpen(one: RunRequest, run: Run) {
  */
 export function copiesQuery(companyId: CompanyId, requests: RunRequest[] = []) {
   return queryOptions({
-    ...hubQuery(listCopies, { params: { companyId } }),
+    ...hubQuery(listCopies, { params: { companyId }, query: {} }),
     refetchInterval: (query) =>
       query.state.data?.copies.some(
         (copy) => copy.run?.outcome.kind === 'RUNNING' || waitingFor(requests, copy.id, copy.run),
@@ -52,6 +53,11 @@ export function copiesQuery(companyId: CompanyId, requests: RunRequest[] = []) {
         ? WHILE_RUNNING
         : false,
   })
+}
+
+/** The proposals the conversation's cards name, each in the state it has now, read through the list of copies. */
+export function proposalsQuery(companyId: CompanyId, ids: readonly CopyProposalId[]) {
+  return hubQuery(listCopies, { params: { companyId }, query: { proposalId: ids.join(',') } })
 }
 
 /** The models the company's connectors offer to copy. */
@@ -81,3 +87,4 @@ export const sendCopyPause = hubMutation(pauseCopy)
 export const sendCopyResume = hubMutation(resumeCopy)
 export const sendCopyInterval = hubMutation(changeCopyInterval)
 export const sendCopyRun = hubMutation(runCopy)
+export const sendProposalDismiss = hubMutation(dismissCopyProposal)

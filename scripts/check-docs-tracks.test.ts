@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
 
-// One card per track (delivery L5): the frontier's, the pattern's and the design's.
+// One card per track (delivery L5): the frontier's, the pattern's, the design's and the Assistant's.
 const SCRIPT = resolve(import.meta.dirname, 'check-docs.ts')
 const dirs: string[] = []
 after(() => {
@@ -57,4 +57,21 @@ test('o marcador de trilho só vale nas primeiras linhas', () => {
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /second-card: docs\/steps: frontier: /)
+})
+
+test('aceita um cartão do trilho do Assistente ao lado de um da fronteira', () => {
+  const run = check({
+    'e01-a.md': 'a\n',
+    'e05-d.md': '# d\n\nTrilho: assistente\n',
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('recusa dois cartões do trilho do Assistente, nomeando o trilho', () => {
+  const run = check({
+    'e05-a.md': '# a\n\nTrilho: assistente\n',
+    'e06-b.md': '# b\n\nTrilho: assistente\n',
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /second-card: docs\/steps: assistant: /)
 })

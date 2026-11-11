@@ -7,6 +7,7 @@ import { call, codeOf, memberOn, personOn, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { copiesOn } from './test-copies.ts'
+import { definitionOf, dismiss, grantMatriz, listedBy, proposed } from './test-proposals.ts'
 import { copiesUrl, enabled, firstEnded, listed, runsPage } from './test-routes.ts'
 
 /** Every route of the copies, for a copy id, as method and address. */
@@ -109,11 +110,21 @@ async function plantRuns(on: CopiesOn, copyId: string) {
   }
 }
 
+test('a lista traz o modo', async (t) => {
+  const on = await copiesOn(t)
+  const made = await enabled(on, 'vendas')
+  const copy = await listed(on, on.ana, made.id)
+  const model = on.hub.connectors.copies.catalog().find((each) => each.model.id === 'vendas')
+  const days = model?.model.definition.window?.days
+  assert.ok(days !== undefined && model?.model.definition.changedSince !== null)
+  assert.deepEqual(copy.mode, { kind: 'WINDOW', days })
+})
+
 test('a lista e as rodadas', async (t) => {
   const on = await copiesOn(t)
   const { hub, companyId } = on
   const empty = await call(hub, on.ana, 'GET', copiesUrl(on))
-  assert.deepEqual(Object(empty.json()), { copies: [] })
+  assert.deepEqual(Object(empty.json()), { copies: [], proposals: [] })
 
   const made = await enabled(on, 'vendas')
   const first = await firstEnded(on, made.id)
@@ -218,4 +229,56 @@ test('a agenda', async (t) => {
   await hub.settle(AbortSignal.timeout(10_000))
   const stopping = await interval('6h')
   assert.deepEqual([stopping.statusCode, codeOf(stopping)], [503, 'HUB_UPDATING'])
+})
+
+test('a lista com as propostas', async (t) => {
+  const on = await copiesOn(t)
+  await grantMatriz(on)
+  const definition = definitionOf(on)
+  const open = await proposed(on)
+  const gone = await proposed(on, 'dispensada')
+  assert.equal((await dismiss(on, on.ana, gone)).statusCode, 200)
+  const { proposals } = await listedBy(on, on.ana)
+  assert.deepEqual(
+    proposals.map((each) => [each.id, each.state]),
+    [[open, 'OPEN']],
+  )
+  const [one] = proposals
+  assert.ok(one)
+  assert.deepEqual(
+    { ...one, proved: { ...one.proved, rows: one.proved.rows > 0 } },
+    {
+      id: open,
+      name: 'devolucoes',
+      label: 'Devoluções',
+      connection: { id: on.connectionId, name: 'Matriz', connector: 'sankhya' },
+      project: { id: on.projectId, name: 'Pedidos' },
+      shown: {
+        query: definition.source.sql,
+        key: definition.key,
+        changedSince: definition.changedSince,
+        window: definition.window ?? null,
+      },
+      mode: { kind: 'WINDOW', days: definition.window?.days },
+      proved: { rows: true, more: one.proved.more },
+      proposedBy: { id: on.ana.id, name: 'Ana Lima' },
+      state: 'OPEN',
+    },
+  )
+  const named = await listedBy(on, on.ana, [gone])
+  assert.deepEqual(
+    named.proposals.map((each) => [each.id, each.state]).sort(),
+    [
+      [open, 'OPEN'],
+      [gone, 'DISMISSED'],
+    ].sort(),
+  )
+  const tooMany = Array.from({ length: 21 }, () => randomUUID())
+  const refused = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${tooMany}`)
+  assert.equal(refused.statusCode, 400, refused.body)
+  for (const notUuid of ['-'.repeat(36), 'abc', `${open},`, '']) {
+    const bad = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${notUuid}`)
+    assert.equal(bad.statusCode, 400, `${notUuid}: ${bad.body}`)
+    assert.equal(codeOf(bad), 'REQUEST_MALFORMED', bad.body)
+  }
 })

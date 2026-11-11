@@ -13,6 +13,7 @@ import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
+import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
 import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
@@ -33,8 +34,9 @@ export { CopyDefinition, CopyName } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
+export type { Proposal, ProposeAnswer } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export { connectionForCopy, connectionNamesOf } from './copy-port.ts'
+export { connectionForCopy, connectionNamesOf, lackedReadOf } from './copy-port.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
@@ -64,6 +66,8 @@ export function createConnectors(deps: {
   log: FailureLog
   /** The apps' door: who an app's call is, the version its session gets and its manifest. */
   door: AppDoorPort
+  /** `hub/copies`' proposing, handed on to the Builder (Capacidade 3): it is made after the connectors. */
+  propose: () => Propose
   tuning?: ConnectorTuning
 }) {
   const origins = new Map<ConnectorId, string>()
