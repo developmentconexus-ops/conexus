@@ -5,11 +5,11 @@ conectores de API, com a definição versão 2 do motor sobre as leituras que o 
 cartão parte do estudo "o Builder escreve o Sync de qualquer conector" (a opção B: o Builder declara a
 cópia como dado sobre uma leitura que o conector declara, e o motor a executa), com os fatos do
 Mercado Livre do estudo do Sync como serviço e as palavras do fundador de 2026-11-09 e 2026-11-10.
-Esta capacidade estende a Capacidade 3, cujo cartão está aprovado (`docs/steps/capacidade-3-o-builder-aprende-o-sync.md`,
-commit `20a1fb81`, citado abaixo como "cartão da 3"): a ferramenta `copy_propose`, a tabela
+Esta capacidade estende a Capacidade 3, fechada em 2026-11-11 (https://github.com/developmentconexus-ops/conexus/pull/962; o cartão dela, no commit
+`20a1fb81`, foi apagado no fechamento e é citado abaixo como "cartão da 3"): a ferramenta `copy_propose`, a tabela
 `copy_proposal`, o cartão da proposta com **Ligar** na conversa e `copyModeOf`. A U3 da Capacidade 3
-(propor cópia) está em construção no https://github.com/developmentconexus-ops/conexus/pull/948 (lido
-em `e7f68cb7`, com a U1 e a U2 já escritas); o que este cartão cita dela são os contratos do cartão da
+(propor cópia) entrou no `main` pelo https://github.com/developmentconexus-ops/conexus/pull/948 (lido
+em `e7f68cb7`, antes de entrar); o que este cartão cita dela são os contratos do cartão da
 3, e o construtor de cada unidade reabre as linhas no `main` do dia. Cada linha do `main` citada foi
 lida em `3c6472e6`, com `@mastra/core` 1.82.0, `@neondatabase/serverless` 1.2.0, `zod` 4.6.5,
 `drizzle-orm` 1.0.0-rc.4, `better-auth` 1.7.8, `@tanstack/react-query` 5.104.0 e PostgreSQL 18.
@@ -210,15 +210,14 @@ deles for construído.
 
 **Como as unidades viram pull requests.** A U1 (o contrato da leitura de lista, no kit) e a U2 (as
 leituras do Mercado Livre declaram a lista) vão num pull request de construção, um commit por
-unidade, e começam quando o 948 (U1 a U3 da Capacidade 3) entrar no `main`, ao lado do uso, dos consertos
-e do fechamento da Capacidade 3 ([delivery L1](../guides/delivery.md)): só mudam `packages/connectors`,
+unidade, e começam agora que a página está aprovada (o 948, U1 a U3 da Capacidade 3, e o fechamento já estão no `main`; [delivery L1](../guides/delivery.md)): só mudam `packages/connectors`,
 e a U1 não muda a definição de cópia que o servidor lê de hoje. A U4 opcional da Capacidade 3, se você
 a autorizar, muda `packages/app-contract`, `packages/app`, `hub/{apps,copies}`, `main.ts` e
 `packages/hub-api`, nenhum arquivo da U1 ou da U2, então elas não esperam por ela. Esse pull request entra no `main` quando a gravação da U2
 estiver nele; se a gravação demorar, a U1 entra sozinha e a U2 segue num pull request seu. A lista
-de permissões das duas tabelas novas vai num pull request só dela, depois que a da Capacidade 3
-estiver no `main`. A U3 (o motor) e a U4 (o Builder e as telas) vão num segundo pull request de
-construção, depois que o 948 estiver no `main`, porque mudam os mesmos arquivos de `hub/copies` que
+de permissões das duas tabelas novas vai num pull request só dela, depois da da Capacidade 3,
+que já está no `main`. A U3 (o motor) e a U4 (o Builder e as telas) vão num segundo pull request de
+construção, depois do 948, que já está no `main`, porque mudam os mesmos arquivos de `hub/copies` que
 a U3 da Capacidade 3 muda; é a U3 que junta as duas versões da definição numa só, que o servidor lê. Ao aprovar esta página você aprova também esse agrupamento.
 
 ## As unidades
@@ -231,18 +230,18 @@ a U3 da Capacidade 3 muda; é a U3 que junta as duas versões da definição num
 | U4 O Builder propõe de qualquer conector | `copy_propose` numa conexão cujo conector declara uma leitura de lista, com a definição versão 2, várias conexões e a prova maior; `copy_proposal_source` e `proved_calls`; ligar a proposta cria as fontes; `CopySummary` e `CopyProposalSummary` com as fontes, a origem e a descrição; a página Cópias, a linha Proposta, o diálogo e o cartão da conversa com a leitura, as contas e as chamadas por passada; o bloco "## Data" com a origem, as descrições e as colunas da conta; a regra da fonte sem "hoje, o Mercado Livre"; as seis perguntas na descrição de `copy_propose` e em `conexus-data`; o diálogo **Desligar** que diz antes do clique o que vai sumir | `apps/server/src/hub/{copies,connectors}/`, `apps/server/src/builder/{connectors,app-data,conversation}/`, `apps/server/src/{main,conversations-of}.ts`, `packages/hub-api/src/`, `packages/app/skills/conexus-data/`, `apps/web/src/hub/copies/`, `apps/web/src/hub/connectors/`, `apps/web/src/builder/conversation/`, `docs/reference/{screens,builder-prompt}.md`, `docs/explanation/builder-turn.md` | [security](../guides/security.md) | U3 |
 
 **A ordem.** A U1 e a U2 vão num pull request de construção, um commit cada, nessa ordem; começam
-quando o 948 entrar no `main` e correm ao lado do uso, dos consertos e do fechamento da Capacidade 3
-([delivery L1](../guides/delivery.md)), sem tocar os arquivos dela (só `packages/connectors/`, e a
+quando a página for aprovada (o 948 e o fechamento da Capacidade 3 já estão no `main`;
+[delivery L1](../guides/delivery.md)), sem tocar os arquivos dela (só `packages/connectors/`, e a
 `CopyDefinition` que o servidor lê fica igual até a U3). Conferido no `main` em `3c6472e6`: a `CopyDefinitionV2` ao lado
 da de hoje, `PageInput.since` nulo, `Rows.seguinte` e `Rows.total`, `Operation.list` e o Sankhya sem
 filtro com `since` nulo passam no `tsc` de `packages/connectors` e de `apps/server`; a união das duas
 versões no lugar da `CopyDefinition` quebra `hub/copies/{list,run,enable}.ts` e `routes.test.ts`,
 arquivos que o 948 muda, e por isso é da U3. A lista de permissões de
 `copies.copy_source`, `copies.copy_table_left`, `copies.copy_proposal_source` e da coluna `proved_calls` vai num pull request só
-dela, com a palavra do fundador ([data D11](../guides/data.md)), depois que a da Capacidade 3 (a tabela
-`copy_proposal`) estiver no `main`, porque as duas mudam `apps/server/database-grants.sql` e o
+dela, com a palavra do fundador ([data D11](../guides/data.md)), depois da da Capacidade 3 (a tabela
+`copy_proposal`, já no `main`), porque as duas mudam `apps/server/database-grants.sql` e o
 `snapshot.json`. A U3 e a U4 vão num segundo pull request de construção, um commit cada, nessa ordem,
-depois que o 948 estiver no `main`: mudam `hub/copies/tables.ts`, `enable.ts`, `mode.ts`, `store.ts`,
+depois do 948, que já está no `main`: mudam `hub/copies/tables.ts`, `enable.ts`, `mode.ts`, `store.ts`,
 `hub/connectors/copy-port.ts` e `builder-port.ts`, que a U3 da Capacidade 3 muda. Nenhuma unidade
 corre em paralelo com outra do mesmo pull request: cada uma lê o contrato da anterior.
 
