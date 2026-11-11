@@ -57,7 +57,7 @@ const ControllerEvents = z.object({
 type Notifier = { requestContext?: RequestContext | undefined }
 
 /** Says `event` on the run's controller, as a tool forwards its events. */
-function emit(args: Notifier, event: QueueEvent) {
+export function emit(args: Notifier, event: QueueEvent) {
   const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
   if (controller.success) controller.data.emitEvent(event)
 }

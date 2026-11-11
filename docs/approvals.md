@@ -931,6 +931,8 @@ Linha de uso da Capacidade 3, O Builder aprende o Sync, em 2026-11-11: o fundado
 
 Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit ba0eb6f1503d272465a36192d0a234536a732c43): "Aprovo"
 
+Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit bb3fa5ab38632ef6372cf10fd47fa55b693169ef), de novo com as duas mudanças feitas na construção, às duas perguntas do firstmate (a etiqueta de emergência no pull request https://github.com/developmentconexus-ops/conexus/pull/963, e aprovar o cartão alterado: o diagrama no quadro isolado da decisão D, e o arquivo achado pelo conteúdo, porque o Mastra apaga o nome do resumo): "1. Okay 2. Okay". A aprovação de ba0eb6f1503d272465a36192d0a234536a732c43 acima fica como histórico.
+
 ## O Sync de qualquer conector
 
 Cartão de O Sync de qualquer conector (`docs/steps/o-sync-de-qualquer-conector.md`) aprovado em 2026-11-10 (commit dae09df1525b96ac52b2fd9122ab711b15e34234): "Aprovo"
@@ -952,6 +954,10 @@ Em 2026-11-10, como mudança de método (L20), sobre o Assistente: "Então, eu s
 ## Mudança de método: o estudo lê o código das referências
 
 Em 2026-11-11, como mudança de método (L20), depois de ver que o estudo do Assistente não abriu o código do Mastra Code e do Factory para a parte de arquivos: "Então, mas por que que você não abriu o código deles? Nosso study não tem isso de realmente utilizar e ver os repositórios de referências por dentro, ver como que eles fazem o código. Isso sempre foi uma premissa que eu achei que a gente estava seguindo. Quero que você verifique, tanto no study quanto no scope, para quando ir para o builder já ir muito bem informado de como vai ser feito. E lendo as skills nativas de acordo com o nosso stack." Antes, no mesmo dia: "vamos fazer igualzinho o Master Code faz, o Factor faz. Tem que ser igual, não é igual, né? Mas utilizar bem como referência e ver como eles fazem o código e utilizam o seu curso nativos do Master." Muda as skills `conexus-study`, `conexus-scope` e `conexus-review`: toda linha construída tem o rastro do código da referência mais próxima (`arquivo:linha`, lido), o cartão cita as linhas que cada unidade segue e as skills que o builder carrega, e a revisão devolve a falta como Bloqueia.
+
+## Mudança de método: o quadro de desenho do diagrama
+
+Em 2026-11-11, como mudança de método (L20), depois do estudo do diagrama sob a CSP do Hub (a recusa do `<style>` e dos atributos `style` que o `mermaid` põe na página, e as opções D, A, E e F), o fundador escolheu o quadro de desenho isolado: "D". O Hub passa a aceitar `'self'` em `frame-src`, só para o quadro de desenho da conversa, servido com a sua própria política; a página do Hub mantém `style-src 'self'`. Muda a S24 (`docs/guides/security.md`).
 
 ## Mudança de método: a revisão compara tudo o que foi construído com as referências
 

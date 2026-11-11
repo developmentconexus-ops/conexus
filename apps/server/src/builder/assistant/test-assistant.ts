@@ -7,10 +7,13 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
-import { conversing, sent, streamOf } from '../conversation/test-conversation.ts'
+import { conversing, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
+
+/** A file the person sends with a message, as the screen sends it: a name, a type and a data URL. */
+export type SentFile = { filename: string; mediaType: string; data: string }
 
 export const READ = 'connector_read'
 export const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
@@ -124,8 +127,11 @@ export async function created(hub: Hub, person: Person, assistant: string, body:
 export async function talking(t: TestContext, hub: Hub, person: Person, url: string) {
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
-  async function say(content: string) {
-    const asked = await sent(hub, person, url, content)
+  async function say(content: string, files: SentFile[] = []) {
+    const asked =
+      files.length === 0
+        ? await sent(hub, person, url, content)
+        : await post(hub, person, `${sessionUrl(url)}/messages`, { message: content, files })
     assert.equal(asked.statusCode, 200, asked.body)
     return stream.turn()
   }

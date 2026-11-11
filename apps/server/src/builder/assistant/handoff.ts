@@ -21,6 +21,8 @@ import { answer, serve } from '../../platform/http.ts'
 import { ownThread, resourceOf } from '../controller-kit/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
+import type { SentFile } from './files.ts'
+import { kindOf, sentFilesOf } from './files.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
@@ -91,7 +93,7 @@ async function proposalOf(
   deps: HandOffDeps,
   owner: Owner,
   call: { conversationId: ConversationId; toolCallId: ToolCallId; toolName: string },
-): Promise<ProposedApp> {
+): Promise<{ proposal: ProposedApp; files: SentFile[] }> {
   const { messages } = await deps.memory.recall({
     threadId: call.conversationId,
     resourceId: resourceOf('assistant', owner),
@@ -103,7 +105,7 @@ async function proposalOf(
     const { toolCallId, toolName, result } = invocation.data.toolInvocation
     if (toolCallId !== call.toolCallId || toolName !== call.toolName) continue
     const proposal = ProposedApp.safeParse(result)
-    if (proposal.success) return proposal.data
+    if (proposal.success) return { proposal: proposal.data, files: sentFilesOf(messages) }
   }
   throw new Failure('NOT_FOUND', { details: { reason: 'PROPOSAL' } })
 }
@@ -165,16 +167,38 @@ const Refusal = z.enum([
  * What the Builder receives, as Mastra's `createMessageInput` sends a text file with a message: the
  * summary, then the briefing labelled and fenced longer than any run of backticks it holds.
  */
-function contentsOf(proposal: ProposedApp): { type: 'text'; text: string }[] {
+function contentsOf(
+  proposal: ProposedApp,
+  files: readonly SentFile[],
+): { type: 'text'; text: string }[] {
   const { briefing } = proposal
-  if (briefing === undefined) return [{ type: 'text', text: proposal.summary }]
+  const sent = files.length === 0 ? [] : [{ type: 'text' as const, text: filesText(files) }]
+  if (briefing === undefined) return [{ type: 'text', text: proposal.summary }, ...sent]
   const longest = Math.max(0, ...[...briefing.content.matchAll(/`+/g)].map((run) => run[0].length))
   const fence = '`'.repeat(Math.max(3, longest + 1))
   const file = `[File: ${briefing.name}]\n${fence}\n${briefing.content}\n${fence}`
+  return [{ type: 'text', text: proposal.summary }, { type: 'text', text: file }, ...sent]
+}
+
+const SIZE = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
+
+function sizeText(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${SIZE.format(bytes / (1024 * 1024))} MB`
+  if (bytes >= 1024) return `${SIZE.format(bytes / 1024)} KB`
+  return `${bytes} bytes`
+}
+
+/**
+ * The files the person sent the Assistant, in words, with no byte of them: the screen shows a
+ * signal's text as the person's own, and the Builder reads it as it reads the summary.
+ */
+function filesText(files: readonly SentFile[]): string {
+  const lines = files.map((file) => `- ${file.name} (${kindOf(file)}, ${sizeText(file.bytes)})`)
   return [
-    { type: 'text', text: proposal.summary },
-    { type: 'text', text: file },
-  ]
+    'Arquivos que a pessoa mandou ao Assistente:',
+    ...lines,
+    'Eles ficam na conversa do Assistente; este Projeto não os tem. O que o briefing diz deles é o que o Assistente leu.',
+  ].join('\n')
 }
 
 /**
@@ -185,13 +209,14 @@ function contentsOf(proposal: ProposedApp): { type: 'text'; text: string }[] {
 async function delivered(
   session: BuilderSession,
   proposal: ProposedApp,
+  files: readonly SentFile[],
   from: { person: Person; conversationId: ConversationId },
 ): Promise<'wake' | 'deliver' | 'discard'> {
   const sent = session.sendSignal(
     {
       type: 'user',
       tagName: 'user',
-      contents: contentsOf(proposal),
+      contents: contentsOf(proposal, files),
       attributes: { source: 'assistant', assistantConversation: from.conversationId },
       author: { id: from.person.id, name: from.person.name },
     },
@@ -263,7 +288,7 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   await admitted(deps, owner, place, 'askAssistant')
   const toolName =
     place.kind === 'COMPANY' ? ASSISTANT_TOOL.proposeApp : ASSISTANT_TOOL.proposeAppChange
-  const proposal = await proposalOf(deps, owner, {
+  const { proposal, files } = await proposalOf(deps, owner, {
     conversationId,
     toolCallId: input.body.toolCallId,
     toolName,
@@ -286,7 +311,7 @@ async function handOff(deps: HandOffDeps, input: HandOffInput): Promise<HandedOf
   // A conversation that already holds a message received the proposal: never twice. A touch while
   // another's run is active is discarded by Mastra (`ifActive`): that one delivered it.
   if (input.body.deliver && !(await doors.builder.asked(owner, opened.id))) {
-    const action = await delivered(opened.session, proposal, { person, conversationId })
+    const action = await delivered(opened.session, proposal, files, { person, conversationId })
     if (action !== 'discard') {
       input.log.info({ companyId, conversationId: opened.id, projectId }, 'ASSISTANT_HANDED_OFF')
     }

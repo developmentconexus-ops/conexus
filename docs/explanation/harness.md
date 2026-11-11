@@ -98,6 +98,14 @@ into `builder/machine/sandbox-filesystem/`, because that SDK is not installed. T
 off. A Project agent with a machine also gets Mastra's code mode (`createCodeMode`) over an E2B
 transport (`builder/agents/code-mode.ts`).
 
+The files a person sends the Assistant do not travel in the model's prompt. Mastra's
+`FileUploadProcessor`, built for each model call with that step's machine
+(`builder/assistant/files.ts`), writes each non-image file to `uploads/<conversation>/` on the
+conversation's machine and leaves the model a note with the path. The stored message keeps the file.
+The model converts and reads it by parts with the machine's tools (`poppler-utils` and `pandoc` are
+in the template), and `read_file` hands it only images as media. Images stay with the model.
+Builder and agent conversations keep sending the whole file in the message.
+
 ## Tools, skills and the scorer
 
 Conexus writes its tools with `createTool`: `conexus_check`, `ask_user`, `submit_plan`, the

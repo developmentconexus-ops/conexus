@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
-import { memo } from 'react'
+import { createContext, isValidElement, memo, useContext } from 'react'
 import type { Components } from 'react-markdown'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remend from 'remend'
+import { z } from 'zod'
 import { cn } from '../../ui/cn.ts'
+import { Diagram } from './diagram.tsx'
 import { splitBlocks } from './markdown-blocks.ts'
 
 /** An address a person may open: http or https only; any other scheme is shown as text. */
@@ -65,11 +67,7 @@ const ELEMENTS: Components = {
   code: ({ children }) => (
     <code className="rounded-control bg-surface-3 px-xs font-mono text-fact">{children}</code>
   ),
-  pre: ({ children }) => (
-    <pre className="overflow-x-auto rounded-control border border-line bg-surface-3 p-md font-mono text-fact [&>code]:bg-transparent [&>code]:p-0">
-      {children}
-    </pre>
-  ),
+  pre: ({ children }) => <Pre>{children}</Pre>,
   table: ({ children }) => (
     <div className="max-w-full overflow-x-auto">
       <table className="border-collapse text-label">{children}</table>
@@ -85,12 +83,39 @@ const ELEMENTS: Components = {
   ),
 }
 
+/** Whether the block's answer is done: a block that is still arriving shows a diagram as code. */
+const Settled = createContext(true)
+
+const MermaidCode = z.object({ className: z.string(), children: z.string() })
+
+/** The code of a ```mermaid block, or nothing for any other. */
+function mermaidOf(children: ReactNode): string | undefined {
+  if (!isValidElement(children)) return undefined
+  const code = MermaidCode.safeParse(children.props)
+  return code.success && /(^| )language-mermaid( |$)/.test(code.data.className)
+    ? code.data.children.trim()
+    : undefined
+}
+
+function Pre({ children }: { children: ReactNode }) {
+  const settled = useContext(Settled)
+  const block = (
+    <pre className="overflow-x-auto rounded-control border border-line bg-surface-3 p-md font-mono text-fact [&>code]:bg-transparent [&>code]:p-0">
+      {children}
+    </pre>
+  )
+  const code = mermaidOf(children)
+  return settled && code !== undefined ? <Diagram code={code}>{block}</Diagram> : block
+}
+
 /** Keyed by the line it starts at: a content key would remount the block on every character. */
-const Block = memo(function Block({ content }: { content: string }) {
+const Block = memo(function Block({ content, settled }: { content: string; settled: boolean }) {
   return (
-    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={ELEMENTS}>
-      {content}
-    </ReactMarkdown>
+    <Settled value={settled}>
+      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={ELEMENTS}>
+        {content}
+      </ReactMarkdown>
+    </Settled>
   )
 })
 
@@ -105,7 +130,11 @@ export function Markdown({ text, streaming = false }: { text: string; streaming?
   return (
     <div className="flex min-w-0 flex-col gap-md break-words">
       {blocks.map(({ start, text }, at) => (
-        <Block key={start} content={streaming && at === last ? remend(text, REMEND) : text} />
+        <Block
+          key={start}
+          content={streaming && at === last ? remend(text, REMEND) : text}
+          settled={!(streaming && at === last)}
+        />
       ))}
     </div>
   )

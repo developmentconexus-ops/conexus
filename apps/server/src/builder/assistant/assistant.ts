@@ -34,6 +34,7 @@ import { chosenConnections } from './chosen.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, runConversation, sessionScopes } from './context.ts'
+import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import type { Speakers } from './instructions.ts'
@@ -238,6 +239,12 @@ function assistantAgent(
     const scope = await scopeOf(requestContext)
     return scope === undefined ? undefined : speakersOf(deps, scope)
   })
+  const defaults = agentDefaults(queue, parts.turns)
+  // The person's files go to the conversation's machine last, once the account's pick has chosen the model.
+  const assistantDefaults = {
+    ...defaults,
+    inputProcessors: [...defaults.inputProcessors, machineUploads({ log: deps.log })],
+  }
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
@@ -273,7 +280,7 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    ...agentDefaults(queue, parts.turns),
+    ...assistantDefaults,
     memory: parts.memory,
   })
 }
@@ -291,7 +298,13 @@ export function createAssistant(deps: Deps) {
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
   const machines = createConversationMachines(
-    { ...deps.machine, log: deps.log, hosts: PACKAGE_HOSTS, marksOf: machineMarks(scopeOf) },
+    {
+      ...deps.machine,
+      log: deps.log,
+      hosts: PACKAGE_HOSTS,
+      marksOf: machineMarks(scopeOf),
+      readMedia: READ_MEDIA,
+    },
     deps.machineTuning,
   )
   const turns = assistantTurns({ queue, scopeOf, machines })

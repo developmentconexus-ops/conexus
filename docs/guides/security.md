@@ -80,8 +80,9 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   own origin. Writes carry the exact `Origin` their access kind names, and API requests accept
   `Sec-Fetch-Site` only as `same-origin` or absent, without a CSRF token. Writes refuse form-encoded
   and multipart bodies; routes have body limits. The Hub's responses keep CSP `script-src 'self'`
-  without `unsafe-inline`, strict `Referrer-Policy`, `frame-src` only `https://*.<apps domain>` and
-  `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
+  without `unsafe-inline`, strict `Referrer-Policy`, `frame-src` only `'self'` and `https://*.<apps domain>` (`'self'`
+  is the one drawing frame of the conversation, which carries its own policy and draws the
+  diagrams a message holds) and `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
   Hub's origin in `frame-ancestors`, and the dispatcher's cookies are `__Host-`, `Secure`,
   `HttpOnly`, `SameSite=None; Partitioned` (step 14.1). Failure: a cross-site authenticated GET
   discloses the person, or a form post bypasses admission. Existing configuration and header tests

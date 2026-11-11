@@ -1,6 +1,7 @@
 import type { PostgresStore } from '@mastra/pg'
 import { conversationMemory, TITLE } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
+import { OBSERVED } from './files.ts'
 
 /**
  * The Assistant's memory: the Builder's shape (`conversationMemory`), with its title and observer
@@ -11,5 +12,6 @@ export function assistantMemory(deps: { storage: PostgresStore; queue: QueueDeps
     ...deps,
     ...TITLE.ask,
     recall: false,
+    observeAttachments: OBSERVED,
   })
 }

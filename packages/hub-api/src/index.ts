@@ -252,7 +252,7 @@ export {
   OwnerInvitation,
   registerClient,
 } from './operations.ts'
-export { PAGES, REDIRECT_PATH } from './pages.ts'
+export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,

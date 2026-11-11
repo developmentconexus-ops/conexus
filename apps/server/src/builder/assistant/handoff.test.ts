@@ -6,6 +6,7 @@ import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import { endOf, messagesOf, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
+import type { SentFile } from './test-assistant.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const APP = 'propose_app'
@@ -41,6 +42,7 @@ async function proposing(
   name: string,
   place: (on: On) => object = (on) => ({ connections: [on.matriz, on.filial] }),
   builder?: Promise<void>,
+  files: SentFile[] = [],
 ) {
   const steps = [
     [write('briefing.md', BRIEFING)],
@@ -60,7 +62,7 @@ async function proposing(
   )
   const url = await created(on.hub, on.ana, on.assistant, place(on))
   const { say } = await talking(t, on.hub, on.ana, url)
-  assert.equal(endOf(await say('Quero um app de compras')), 'complete')
+  assert.equal(endOf(await say('Quero um app de compras', files)), 'complete')
   return { on, url, toolCallId: await callIdOf(on, url, name) }
 }
 
@@ -113,6 +115,50 @@ test('a entrega: o toque cria o Projeto, libera só a ligação marcada, abre um
   assert.match(read ?? '', /source="assistant"/)
   assert.ok(read?.includes(`assistantConversation="${url.split('/').at(-1)}"`), read)
   assert.ok(read?.includes(BRIEFING), 'the briefing whole, fenced as a file')
+  assert.ok(!read?.includes('Arquivos que a pessoa mandou'), 'no file sent: no list')
+})
+
+function dataOf(type: string, bytes: Buffer): string {
+  return `data:${type};base64,${bytes.toString('base64')}`
+}
+
+test('a passagem leva a lista dos arquivos', async (t) => {
+  const pdf = {
+    filename: 'politica-comercial.pdf',
+    mediaType: 'application/pdf',
+    data: dataOf('application/pdf', Buffer.alloc(1_572_864, 7)),
+  }
+  const sheet = {
+    filename: 'precos.xlsx',
+    mediaType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    data: dataOf('application/octet-stream', Buffer.alloc(49_152, 1)),
+  }
+  const { on, url, toolCallId } = await proposing(t, APP, undefined, undefined, [pdf, sheet])
+  const body = { toolCallId, projectName: 'Compras', connections: [on.matriz], deliver: true }
+  const touched = await post(on.hub, on.ana, `${url}/handoffs`, body, randomUUID())
+  assert.equal(touched.statusCode, 201, touched.body)
+  const [read] = await handedCalls(on)
+  assert.ok(read?.includes(BRIEFING))
+  assert.ok(
+    read?.includes(
+      [
+        'Arquivos que a pessoa mandou ao Assistente:',
+        '- politica-comercial.pdf (PDF, 1,5 MB)',
+        '- precos.xlsx (planilha, 48 KB)',
+        'Eles ficam na conversa do Assistente; este Projeto não os tem. O que o briefing diz deles é o que o Assistente leu.',
+      ].join('\n'),
+    ),
+    read,
+  )
+  const builder = on.calls.filter((each) =>
+    each.texts.join('\n').includes('Arquivos que a pessoa mandou'),
+  )
+  assert.ok(builder.length > 0)
+  assert.deepEqual(
+    builder.flatMap((each) => each.media),
+    [],
+    'no byte of a file reaches the Builder',
+  )
 })
 
 /** The person's messages the Builder's conversation of a hand-off stores now. */

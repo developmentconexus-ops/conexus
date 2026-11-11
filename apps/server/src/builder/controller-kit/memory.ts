@@ -49,6 +49,8 @@ export function conversationMemory(deps: {
   observer: string
   /** Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its instructions). */
   recall: boolean
+  /** The attachment types the observer still sees; absent, Mastra's default (images and PDFs). */
+  observeAttachments?: readonly string[]
 }): Memory {
   const { storage, queue } = deps
   const modelSettings = { timeout: MODEL_TIMEOUT }
@@ -74,6 +76,9 @@ export function conversationMemory(deps: {
           previousObserverTokens: 1000,
           threadTitle: true,
           instruction: deps.observer,
+          ...(deps.observeAttachments === undefined
+            ? {}
+            : { observeAttachments: [...deps.observeAttachments] }),
         },
         reflection: {
           ...failSoft,

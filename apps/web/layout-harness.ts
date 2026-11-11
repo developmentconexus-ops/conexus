@@ -8,10 +8,13 @@ import type { Browser, LaunchOptions, Locator, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import type { z } from 'zod'
+import { APPS_DOMAIN, fileOf, headersFor } from './layout-served.ts'
 import { problemOf } from './src/platform/fixtures.ts'
 
 // The widths come from the browser's layout of the built screens; jsdom computes none.
 const ORIGIN = 'https://hub.test'
+/** The pages built for the tests: the screens, the chat pieces' page, and the diagram's page and frame. */
+const BUILT = ['index', 'pieces', 'diagram', 'diagram-frame']
 const TYPES: Record<string, string> = {
   '.css': 'text/css',
   '.js': 'text/javascript',
@@ -19,14 +22,6 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
-// The policy the edge sends with an app's page, from its one owner: a piece that needs a style
-// element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
-// The Hub's own policy adds `frame-src` for the apps' domain, which the Prévia frames, and `data:`
-// images, which a connector's logo is (apps/server/src/platform/http.ts).
-const APPS_DOMAIN = 'apps.example.test'
-const SECURITY_HEADERS = {
-  'Content-Security-Policy': `${appContentSecurityPolicy("'none'").replace("img-src 'self'", "img-src 'self' data:")}; frame-src https://*.${APPS_DOMAIN}`,
-}
 const APP_PAGE = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Encomendas</title><link rel="stylesheet" href="/app.css"></head><body><h1>Encomendas</h1><p>Maria, bolo de cenoura, sexta.</p></body></html>`
 const APP_STYLE =
   'body{font:16px system-ui;margin:0;padding:24px;background:#fffdf8;color:#222}h1{margin:0 0 12px}'
@@ -103,12 +98,6 @@ export type Harness = {
   ): Promise<Page & { seen: Seen[]; problems: string[] }>
   /** The requests no reply was given for, over the whole run. */
   unanswered: string[]
-}
-
-/** `/pieces` is the page of chat pieces, built only here, never by `npm run build`. */
-function fileOf(pathname: string): string {
-  if (pathname.startsWith('/assets/')) return pathname
-  return pathname === '/pieces' ? '/pieces.html' : '/index.html'
 }
 
 /** A script error, or any console error, which is also where the browser reports a CSP refusal. */
@@ -189,7 +178,7 @@ export function createHarness(
       return route.fulfill({
         body: readFileSync(join(outDir, file)),
         contentType: TYPES[extname(file)] ?? 'text/html',
-        headers: SECURITY_HEADERS,
+        headers: headersFor(url.pathname),
       })
     })
     await routeApp(page)
@@ -209,7 +198,7 @@ export function createHarness(
         build: {
           outDir,
           rolldownOptions: {
-            input: { index: join(root, 'index.html'), pieces: join(root, 'pieces.html') },
+            input: Object.fromEntries(BUILT.map((name) => [name, join(root, `${name}.html`)])),
           },
         },
       })

@@ -212,7 +212,10 @@ test('dependências: o npm que recusa é do app pelo código do erro, e o regist
 test('um import sem pacote no app falha em tipos, na linha do import', async (t) => {
   const root = appWith(
     t,
-    edit('src/routes/home.tsx', (text) => `import dayjs from 'dayjs'\nvoid dayjs\n${text}`),
+    edit(
+      'src/routes/home.tsx',
+      (text) => `import missing from 'conexus-package-that-does-not-exist'\nvoid missing\n${text}`,
+    ),
   )
   const report = await reportOf(contextOf(root))
   assert.equal(states(report).tipos, 'failed')

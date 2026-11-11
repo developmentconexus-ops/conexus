@@ -12,7 +12,11 @@
       "ignoreDependencies": ["@stryker-mutator/command-runner"]
     },
     "apps/web": {
-      "entry": ["src/ui/pieces-fixture.tsx"]
+      "entry": [
+        "src/ui/pieces-fixture.tsx",
+        "src/builder/conversation/diagram-fixture.tsx",
+        "src/builder/conversation/diagram-frame.ts"
+      ]
     },
     "packages/connectors": {
       "entry": ["scripts/*.ts"]
