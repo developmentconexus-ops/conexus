@@ -103,7 +103,9 @@ muda uma resposta sua anterior.
   e lê o trecho que precisa; nunca o documento inteiro na conversa. O Mastra instalado já tem a peça
   (`FileUploadProcessor`), e o Conexus só a liga à máquina de cada conversa. A base: "a gente já viu
   que o problema é nosso, como a gente considera os arquivos" e "Usando tudo que conseguirmos de
-  /mastra nativo", em 2026-11-10. As imagens continuam indo ao modelo, que as vê.
+  /mastra nativo", em 2026-11-10. As imagens continuam indo ao modelo, que as vê. Um `.csv`, um
+  `.txt` ou um `.md` mandado ao Assistente também vai para a máquina, como arquivo, e não inteiro
+  na conversa.
 - **O texto do Assistente passa a dizer como responder: na mensagem, e arquivo só quando pedido.**
   Isto muda a sua resposta de 2026-10-31 ao estudo do prompt, "sem regras de como responder (A)". O
   texto de hoje empurra para arquivo em cinco lugares e nunca diz que a mensagem é o lugar normal da
@@ -122,7 +124,8 @@ muda uma resposta sua anterior.
 - **O diagrama é desenhado na mensagem.** Em 2026-10-31, ao estudo do ecossistema, você respondeu
   "B1" (o Mermaid, então na 24.5); em 2026-11-10: "ele gera, ele, para me explicar, gera diagramas".
   O desenho vale para toda conversa que usa a mesma tela, a do Builder e a dos agentes incluídas.
-  Se a política de segurança da página recusar o desenho, a U3 para e o firstmate traz as opções.
+  Ele depende de uma prova que a U3 faz primeiro: se a política de segurança da página recusar o
+  desenho, a U3 para e o firstmate traz as opções, e o passo 4 do roteiro espera a sua escolha.
 - **O HTML ao lado fica para depois.** Decidido pelo firstmate sobre o estudo, com a sua palavra de
   2026-11-10 acima ("fazer o básico bem feito").
 
@@ -140,7 +143,7 @@ molde vem depois do merge, antes do uso. Ao aprovar esta página, você aprova t
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 Arquivos lidos | O processador nativo `FileUploadProcessor`, construído a cada passo com a máquina do passo; as imagens ficam com o modelo; o teto do arquivo igual ao da rota; `observeAttachments: false` na memória do Assistente; a estimativa de tokens da parte de arquivo, se a prova da unidade pedir; `read_file` sem PDF entre os tipos de mídia; xlsx, docx e csv aceitos no compositor do Assistente, e só nele; `poppler-utils` e `pandoc` no molde; a lista dos arquivos na passagem ao Builder | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/memory.ts`, `apps/server/src/builder/machine/conversation.ts`, `infra/e2b/template.ts`, `apps/web/src/builder/conversation/{attachments,room,composer}.ts(x)`, `docs/explanation/harness.md` | [security](../guides/security.md) | esta página aprovada; https://github.com/developmentconexus-ops/conexus/pull/955 no `main` |
+| U1 Arquivos lidos | O processador nativo `FileUploadProcessor`, construído a cada passo com a máquina do passo, que ele liga antes; as imagens ficam com o modelo; o teto do arquivo igual ao da rota; `observeAttachments: false` na memória do Assistente; a estimativa de tokens da parte de arquivo; `read_file` sem PDF entre os tipos de mídia; xlsx, docx e csv aceitos no compositor do Assistente, e só nele, e todo arquivo que não é imagem mandado dali como arquivo, não como texto; `poppler-utils` e `pandoc` no molde; a lista dos arquivos na passagem ao Builder | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/memory.ts`, `apps/server/src/builder/machine/conversation.ts`, `infra/e2b/template.ts`, `apps/web/src/builder/conversation/{attachments,room,composer}.ts(x)`, `docs/explanation/harness.md` | [security](../guides/security.md) | esta página aprovada; https://github.com/developmentconexus-ops/conexus/pull/955 no `main` |
 | U2 O texto do Assistente | `prompt/assistant.md` novo, em seções; os cinco empurrões para arquivo fora; a frase de `uploads/`; a descrição de `show_file` sem empurrão | `apps/server/src/builder/assistant/prompt/`, `apps/server/src/builder/assistant/instructions.test.ts`, `apps/server/src/builder/machine/show-file.ts` | [testing](../guides/testing.md) | U1 (a frase de `uploads/` só é verdade com ela) |
 | U3 O diagrama na mensagem | O pacote `mermaid`, carregado só quando um bloco `mermaid` fechado aparece, com `securityLevel: 'strict'`, mostrado como imagem SVG se a prova de CSP pedir; o erro de sintaxe mostra o código; a linha de `mermaid` em `stack.md` | `apps/web/src/builder/conversation/{markdown,diagram}.tsx`, `apps/web/package.json`, `package-lock.json`, `apps/web/diagram.layout.test.ts`, `docs/reference/stack.md` | [web](../guides/web.md) | esta página aprovada; o pull request https://github.com/developmentconexus-ops/conexus/pull/948 no `main` (ele muda `apps/web/package.json`) |
 | U4 O roteiro como teste | O roteiro desta página pela porta pública com o modelo dublê: a regressão do estudo (nenhum passo recebe os bytes do PDF; o arquivo achado depois da observação; o Builder com a lista), e o caso de modelo de verdade, opcional, com `opt-in:` | `apps/server/src/builder/assistant/files-journey.test.ts`, `apps/server/src/platform/recordings/mastra/` | [testing](../guides/testing.md) | U1, U2, U3 |
@@ -178,14 +181,14 @@ orçamento de [delivery L2](../guides/delivery.md).
 | 2 | U1 | O arquivo está na máquina da conversa no caminho que a nota diz, com o SHA-256 dos bytes enviados; mandar os mesmos bytes de novo não grava um segundo arquivo | `files.test.ts`, "o arquivo na máquina: o mesmo caminho para os mesmos bytes" | must |
 | 3 | U1 | A chamada do observador da memória não recebe parte de arquivo nenhuma, e o seu texto leva `[File #1: <nome>]` | `files.test.ts`, "o observador vê o marcador, não o arquivo" | must |
 | 4 | U1 | Uma imagem PNG enviada continua chegando ao modelo como imagem, e nenhuma nota é feita para ela | `files.test.ts`, "a imagem fica com o modelo" | must |
-| 5 | U1 | Um arquivo de 11 MB (acima dos 10 MB padrão do Mastra e abaixo do teto da rota) vai para a máquina, e o turno não para; a recusa acima do teto continua sendo a do compositor (`too-large`) | `files.test.ts`, "o teto é o da rota"; `apps/web/src/builder/conversation/attachments.test.tsx`, o caso de hoje | must |
-| 6 | U1 | `read_file` sobre um PDF na máquina do Assistente devolve só os metadados (caminho, tamanho, tipo), não uma parte de mídia; sobre um PNG, a imagem; a ferramenta dos agentes e do Construtor fica como hoje | `files.test.ts`, "read_file: o PDF só por metadados" | must |
-| 7 | U1 | O compositor do Assistente aceita `.xlsx`, `.docx` e `.csv`, também quando o navegador deixa o tipo vazio ou dá `application/vnd.ms-excel` a um `.csv`; o compositor do Builder e o dos agentes recusam os três com a frase de tipo de hoje | `attachments.test.tsx`, "o Assistente aceita planilha, documento e csv; o Builder e os agentes não" | must |
+| 5 | U1 | Um arquivo de 11.000.000 bytes (acima dos 10.485.760 do padrão do Mastra e abaixo do teto da rota) vai para a máquina, e o turno não para; a recusa acima do teto continua sendo a do compositor (`too-large`) | `files.test.ts`, "o teto é o da rota"; `apps/web/src/builder/conversation/attachments.test.tsx`, o caso de hoje | must |
+| 6 | U1 | `read_file` sem `encoding` sobre um PDF na máquina do Assistente devolve só os metadados (caminho, tamanho, tipo), não uma parte de mídia; sobre um PNG, a imagem; a ferramenta dos agentes e do Construtor fica como hoje | `files.test.ts`, "read_file: o PDF só por metadados" | must |
+| 7 | U1 | O compositor do Assistente aceita `.xlsx`, `.docx` e `.csv`, também quando o navegador deixa o tipo vazio ou dá `application/vnd.ms-excel` a um `.csv`; ele manda `.csv`, `.txt` e `.md` com o tipo `application/octet-stream`, para que a rota do Mastra não os ponha inteiros como texto (`createMessageInput`), e eles chegam à máquina como os outros; o compositor do Builder e o dos agentes recusam os três com a frase de tipo de hoje e mandam texto como hoje | `attachments.test.tsx`, "o Assistente aceita planilha, documento e csv; o Builder e os agentes não" | must |
 | 8 | U1 | A primeira chamada do Builder depois de uma passagem leva, além do resumo e do briefing, uma parte de texto com a lista dos arquivos que a pessoa mandou na conversa do Assistente (nome, tipo e tamanho) e nenhum byte de arquivo; sem arquivo, nenhuma parte nova | `apps/server/src/builder/assistant/handoff.test.ts`, "a passagem leva a lista dos arquivos" | must |
 | 9 | U1 | Com a mensagem do PDF já observada, a chamada seguinte leva a observação com `[File #1: <nome>]`, e o arquivo continua em `uploads/<conversa>/` na máquina, onde `execute_command` com `ls` o acha | `files.test.ts`, "o arquivo achado depois da observação" | must |
-| 10 | U1 | Se a prova da unidade pedir a estimativa: com o PDF de 200 KB e o texto do roteiro do estudo, a observação acontece no mesmo ponto em que aconteceria sem o arquivo (a parte conta como a sua nota) | `files.test.ts`, "o arquivo conta como a nota" | should |
+| 10 | U1 | Com o PDF de 200 KB e o texto do roteiro do estudo, a observação acontece no mesmo ponto em que aconteceria sem o arquivo (a parte conta como a sua nota, não como os seus bytes); sem o carimbo, ela vem antes | `files.test.ts`, "o arquivo conta como a nota" | must |
 | 11 | U1 | O molde instala `poppler-utils` e `pandoc`: na máquina refeita, `pdftotext -v` e `pandoc --version` terminam com 0 | conferido ao vivo pelo firstmate depois da chamada paga ([delivery L17](../guides/delivery.md)) | must |
-| 12 | U1 | A máquina que não liga com um arquivo do turno no pedido: o turno termina com a falha `MACHINE_UNAVAILABLE` que a tela já diz, e o arquivo não chega ao modelo | `files.test.ts`, "a máquina fora: o turno falha e o arquivo não vaza" | must |
+| 12 | U1 | A máquina que não liga com um arquivo no pedido: o turno termina com a falha `MACHINE_UNAVAILABLE` que a tela já diz, nunca com `MODEL_REFUSED`, e o arquivo não chega ao modelo | `files.test.ts`, "a máquina fora: o turno falha e o arquivo não vaza" | must |
 | 13 | U2 | A mensagem fixa do Assistente tem seções com título; diz que a resposta é a mensagem, com tabela para comparar, diagrama `mermaid` para fluxo ou estrutura e gráfico como imagem pelo `show_file`; diz que xlsx, docx e pptx são feitos só quando a pessoa pede um arquivo ou quando o resultado é um documento para levar adiante; diz que os arquivos da pessoa ficam em `uploads/` e que se lista antes de dizer que um arquivo não existe; a seção de como responder vem antes da que descreve o computador e as bibliotecas instaladas (hoje a lista de bibliotecas de escritório abre o texto); e não traz "The person sees only your messages and the files you show with show_file", "compute on your machine and show files" nem "A question, a table, a chart or a file is yours to answer" | `apps/server/src/builder/assistant/instructions.test.ts`, "o texto novo: responder na mensagem, arquivo só quando pedido" | must |
 | 14 | U2 | A mensagem fixa continua os mesmos bytes em toda conversa de toda empresa, com a sua marca de cache, antes do bloco da conversa | `instructions.test.ts`, o caso de hoje "a mensagem fixa: a mesma em toda conversa" | must |
 | 15 | U2 | A descrição de `show_file` diz só o que a ferramenta faz (abre ao lado um arquivo da pasta, para ler ou baixar) e não manda mostrar | `apps/server/src/builder/assistant/show-file.test.ts`, "a descrição diz o que a ferramenta faz" | must |
@@ -193,7 +196,7 @@ orçamento de [delivery L2](../guides/delivery.md).
 | 17 | U3 | Uma resposta acabada com um bloco ` ```mermaid ` fechado mostra o diagrama desenhado, como imagem com nome acessível "Diagrama", a 1366 e a 390 px, no tema claro e no escuro, sem erro no console e sem recusa da política de segurança | `apps/web/diagram.layout.test.ts`, "o diagrama desenhado, nos dois temas e nas duas larguras" | must |
 | 18 | U3 | Enquanto a resposta chega, o último bloco, mesmo com a cerca fechada pelo `remend`, mostra o código e não desenha; quando o turno acaba, desenha uma vez | `apps/web/src/builder/conversation/markdown.test.tsx`, "o bloco mermaid em andamento fica código" | must |
 | 19 | U3 | Um bloco `mermaid` com erro de sintaxe mostra o código como hoje e uma linha que diz que o diagrama não pôde ser desenhado, sem erro não tratado | `markdown.test.tsx`, "o mermaid inválido mostra o código"; `diagram.layout.test.ts`, o mesmo no navegador | must |
-| 20 | U3 | Um rótulo com `<img src=x onerror=…>` ou uma diretiva `click` sai como texto: nenhum script roda, nenhum pedido sai da página | `diagram.layout.test.ts`, "o diagrama não roda nem busca nada"; `harness.unanswered` vazio | must |
+| 20 | U3 | Um rótulo com `<img src=x onerror=…>`, uma diretiva `click`, uma imagem de endereço de fora ou um `url()` ou `@import` de fora num estilo: nenhum script roda, nenhum pedido sai da página, e o diagrama com endereço de fora fica código | `diagram.layout.test.ts`, "o diagrama não roda nem busca nada"; `harness.unanswered` vazio | must |
 | 21 | U3 | O pacote `mermaid` não está no pedaço de entrada da tela: é baixado só quando a primeira resposta com um bloco `mermaid` fechado é desenhada | `apps/web/vite.config.test.ts`, "mermaid fica num pedaço próprio"; `diagram.layout.test.ts`, os pedidos da página antes e depois | must |
 | 22 | U3 | As cores do diagrama saem dos tokens do tema; trocar o tema desenha de novo com as cores do outro | `diagram.layout.test.ts`, "o diagrama segue o tema" | should |
 | 23 | U4 | O roteiro desta página pela porta pública, com o modelo dublê: os três arquivos enviados, a pergunta, a observação, a pergunta do dia seguinte, o pedido do diagrama, o pedido do Excel e a passagem; em cada chamada do Assistente, nenhum byte de arquivo que não seja imagem; o Builder recebe a lista. Falha hoje (o estudo: o PDF nos passos 0 e 1, perdido no 2, o observador com o PDF, o Builder sem o nome) | `files-journey.test.ts`, "o roteiro do Assistente do dia a dia" | must |
@@ -218,7 +221,7 @@ ferramenta abrem os argumentos, o resultado e a recusa, como hoje.
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | A nota `[File uploaded to the sandbox]` no pedido ao modelo | U1, o `FileUploadProcessor` nativo, por `machineUploads` | o modelo do Assistente |
-| `providerMetadata.mastra.tokenEstimate` na parte de arquivo guardada (se a prova pedir) | U1, `machineUploads().processInput` | o contador de tokens da memória observacional |
+| `providerMetadata.mastra.tokenEstimate` na parte de arquivo guardada | U1, `machineUploads().processInput` | o contador de tokens da memória observacional |
 | `Room.files` (`MODEL` ou `MACHINE`) | U1, `room.ts` (`ASSISTANT_ROOM` `MACHINE`; `BUILDER_ROOM` e `agentRoom` `MODEL`) | U1, `composer.tsx` e `attachments.ts` (a lista aceita) |
 | `SentFile` (`name`, `mediaType`, `bytes`) | U1, `assistant/files.ts` `sentFilesOf`, das partes `file` guardadas | U1, `handoff.ts` `contentsOf` |
 | `readMedia` das máquinas de conversa | U1, `assistant.ts`, ao criar as suas máquinas | U1, `machine/conversation.ts`, a opção `mediaTypes` de `read_file` |
@@ -255,8 +258,8 @@ O erro de sintaxe (as duas larguras)
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Pôr o arquivo na máquina (`FileUploadProcessor.processLLMRequest`: `writeFiles` com nome temporário, depois `mv`), antes de cada chamada ao modelo | Uma conversa tem uma rodada por vez (o controlador do Mastra); dentro dela, o estado do processador grava cada arquivo uma vez (doc `:136`), e os mesmos bytes vão ao mesmo caminho, que a segunda vez só confere | O nome temporário e o `mv` (doc `:151`): uma gravação cortada nunca fica no caminho final, e a chamada seguinte grava de novo | A máquina que não liga, com um arquivo do turno: a falha `MACHINE_UNAVAILABLE` da partida (`machine/conversation.ts:178-187`) sobe e o turno falha; um arquivo só do histórico: a nota de falha nativa (`noteSandboxFailures`, `file-upload.ts:157`), o turno segue | `MACHINE_STARTED` e `MACHINE_UNAVAILABLE`, os de hoje; nada novo, e nunca o nome de um arquivo (S41) | 1, 2, 5, 12 |
-| Carimbar a estimativa na parte de arquivo (`processInput`, antes de o Mastra guardar a mensagem), se a prova pedir | Nenhuma gravação própria: vai na gravação da mensagem que o Mastra já faz | Como a gravação da mensagem de hoje | O banco do Mastra: a falha de turno de hoje | nada novo | 10 |
+| Pôr o arquivo na máquina (`FileUploadProcessor.processLLMRequest`: `writeFiles` com nome temporário, depois `mv`), antes de cada chamada ao modelo | Uma conversa tem uma rodada por vez (o controlador do Mastra); dentro dela, o estado do processador grava cada arquivo uma vez (doc `:136`), e os mesmos bytes vão ao mesmo caminho, que a segunda vez só confere | O nome temporário e o `mv` (doc `:151`): uma gravação cortada nunca fica no caminho final, e a chamada seguinte grava de novo | A máquina que não liga: o embrulho a liga antes de chamar o nativo (`workspace.resolveSandbox`), e a falha `MACHINE_UNAVAILABLE` da partida (`machine/conversation.ts:178-187`) sobe e o turno falha com ela, também por um arquivo só do histórico. Sem isso, o nativo troca a falha por `FileUploadError` `NO_SANDBOX` (`@mastra/core@1.82.0` `dist/agent-BP9OWM6D.js:1656-1664`), o `abort` vira um `TripWire`, e a tela diria `MODEL_REFUSED` (`conversation/turn-line.ts:8`) | `MACHINE_STARTED` e `MACHINE_UNAVAILABLE`, os de hoje; nada novo, e nunca o nome de um arquivo (S41) | 1, 2, 5, 12 |
+| Carimbar a estimativa na parte de arquivo (`processInput`, antes de o Mastra guardar a mensagem; `processInputStep` para um arquivo que chega por um sinal no meio da rodada) | Nenhuma gravação própria: vai na gravação da mensagem que o Mastra já faz | Como a gravação da mensagem de hoje | O banco do Mastra: a falha de turno de hoje | nada novo | 10 |
 | A passagem ao Builder com a lista dos arquivos (`handoff.ts`) | Nenhuma gravação nova: a mesma mensagem da passagem de hoje, com uma parte de texto a mais | Como a passagem de hoje (a chave de tentativa, `HANDOFF_NOT_DELIVERED`) | Como a passagem de hoje | os de hoje | 8 |
 | Refazer o molde da máquina (`infra/e2b`, chamada paga, pelo firstmate, com a palavra do fundador) | Um nome de molde só: a segunda construção substitui a primeira | A construção que falha deixa o molde anterior no ar, e as máquinas seguem sem os conversores: o texto do Assistente cita `pypdf` e `python-docx`, que já estão no molde | O E2B fora: nada muda nas máquinas | o registro da construção, fora do Hub | 11 |
 | A primeira máquina de uma conversa antiga depois do molde novo (`killStale`, `machine/conversation.ts:174`) | Uma partida por conversa (a fila da conversa, `conversation.ts:126-157`) | A máquina antiga morre antes da nova ligar; os arquivos dela somem uma vez; os da pessoa voltam enquanto a mensagem que os trouxe está no pedido | O E2B fora: `MACHINE_UNAVAILABLE`, como hoje | `MACHINE_STARTED` | a página do fundador |
@@ -266,20 +269,20 @@ O erro de sintaxe (as duas larguras)
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| O arquivo vai para a máquina; o modelo recebe uma nota com o caminho | U1 | `apps/web/src/builder/conversation/attachments.ts:28-35` (o arquivo inteiro como URL de dados); `apps/server/src/builder/controller-kit/factories.ts:51-75` (`agentDefaults`, nenhum processador de arquivo); `assistant/assistant.ts:304` (a máquina escolhida por pedido) | `@mastra/core@1.82.0` `dist/docs/references/reference-processors-file-upload-processor.md:7,89,128-136,150-158`; `mastra-1.82@6e8dfcb8` `packages/core/src/processors/processors/file-upload.ts:96-170`; `@mastra/core@1.82.0` `dist/processors/index.d.ts:348-349` (`ProcessLLMRequestArgs.workspace`, a máquina do passo); `claude-code@0ed9469` `CHANGELOG.md:1288`; `codex@970111f` `codex-rs/protocol/src/user_input.rs:16-52` | O Mastra grava o arquivo na máquina, `uploads/<conversa>/<sha256>.<ext>`, e troca a parte pela nota, só no pedido; o Claude Code e o Codex deixam o arquivo no disco e o agente o lê | embrulhado: o processador nativo construído a cada `processLLMRequest` com `args.workspace`, porque o construtor pede uma máquina fixa (doc `:73`) e o Conexus escolhe a máquina por pedido; o nosso são ~15 linhas | O estudo, rodado em `2e588732` com o embrulho: chamadas 1 e 2 com `pdf:0 note:true`, o caminho sob `uploads/<conversa>/` | 2026-11-10: "a gente já viu que o problema é nosso, como a gente considera os arquivos"; "Usando tudo que conseguirmos de /mastra nativo" | `apps/server/src/builder/assistant/files.ts` |
+| O arquivo vai para a máquina; o modelo recebe uma nota com o caminho | U1 | `apps/web/src/builder/conversation/attachments.ts:28-35` (o arquivo inteiro como URL de dados); `apps/server/src/builder/controller-kit/factories.ts:51-75` (`agentDefaults`, nenhum processador de arquivo); `assistant/assistant.ts:304` (a máquina escolhida por pedido) | `@mastra/core@1.82.0` `dist/docs/references/reference-processors-file-upload-processor.md:7,89,128-136,150-158`; `mastra-1.82@6e8dfcb8` `packages/core/src/processors/processors/file-upload.ts:96-170`; `@mastra/core@1.82.0` `dist/processors/index.d.ts:348-349` (`ProcessLLMRequestArgs.workspace`, a máquina do passo); `claude-code@0ed9469` `CHANGELOG.md:1288`; `codex@970111f` `codex-rs/protocol/src/user_input.rs:16-52` | O Mastra grava o arquivo na máquina, `uploads/<conversa>/<sha256>.<ext>`, e troca a parte pela nota, só no pedido; o Claude Code deixou de guardar os bytes do PDF na conversa; o Codex só põe na mensagem texto, imagem e áudio | embrulhado: o processador nativo construído a cada `processLLMRequest` com `args.workspace`, porque o `Workspace` do Conexus nasce tarde, por conversa (`machine/conversation.ts:269-299`), e não existe quando o agente é construído; a alternativa nativa, um `Workspace` com a máquina por resolvedor (`@mastra/core@1.82.0` `dist/workspace-iIUnzVkl.js:6750-6793`), pediria refazer o dono das máquinas; o nosso são ~20 linhas, com a partida da máquina antes, para a falha ser a da máquina | O estudo, rodado em `2e588732` com o embrulho: chamadas 1 e 2 com `pdf:0 note:true`, o caminho sob `uploads/<conversa>/` | 2026-11-10: "a gente já viu que o problema é nosso, como a gente considera os arquivos"; "Usando tudo que conseguirmos de /mastra nativo" | `apps/server/src/builder/assistant/files.ts` |
 | O que fica com o modelo: as imagens | U1 | `attachments.ts:9-10` (PNG, JPEG, GIF e WebP aceitos) | doc `:93-107` (`filter`, o exemplo que deixa ao modelo o que ele lê) | Um filtro por arquivo, chamado de novo a cada chamada, com a mesma resposta | nativo: `filter: ({ mimeType }) => !mimeType.startsWith('image/')` | | não precisa | (o mesmo) |
 | O teto de um arquivo | U1 | `attachments.ts:8` (`LIMITS.data`, 14.680.064 caracteres da URL de dados) | doc `:77` (`maxFileSize`, 10 MB por padrão); `@mastra/server@1.82.0` `dist/server/handlers/agent-controller.js:170-183` (o teto da rota) | O processador para o turno acima do teto | nativo: `maxFileSize` igual ao teto da rota, que é maior que qualquer arquivo decodificado que a rota aceita, então nenhum arquivo aceito é recusado aqui | | não precisa | (o mesmo) |
 | O observador sem o binário | U1 | `controller-kit/memory.ts:79-92` (a observação, sem a opção) | `@mastra/memory@1.41.0` `dist/docs/references/docs-memory-observational-memory.md:299,446-467` | `observeAttachments: false` tira os anexos e guarda `[File #1: nome]` no texto, também nos resultados de ferramenta | nativo: a opção, passada só pela memória do Assistente | O estudo: a chamada do observador com `pdf:0` e o marcador | não precisa | — |
-| A contagem de tokens da parte de arquivo | U1 | nenhuma: a parte guardada pesa como o arquivo | `docs-memory-observational-memory.md:793-823` (`providerMetadata.mastra.tokenEstimate`, `source: 'client'`) | Quem manda a parte dá a estimativa, que o contador usa como vem | embrulhado: `processInput` carimba nas partes de arquivo novas que não são imagem a estimativa da nota (`NOTE_TOKENS`), só se a prova da U1 mostrar a observação adiantada pelo arquivo | Hipótese do estudo; a prova da U1 decide (critério 10) | não precisa | (o mesmo) |
+| A contagem de tokens da parte de arquivo | U1 | nenhuma: a parte guardada pesa como o arquivo | `docs-memory-observational-memory.md:793-823` (`providerMetadata.mastra.tokenEstimate`, `source: 'client'`); `@mastra/memory@1.41.0` `dist/src-BncFunCW.js:28357-28395,28928-28944` (sem estimativa, uma parte de arquivo pesa os bytes divididos por 3 ou 4) | Quem manda a parte dá a estimativa, que o contador usa como vem | embrulhado: `processInput` e `processInputStep` carimbam nas partes de arquivo novas que não são imagem a estimativa da nota (`NOTE_TOKENS`) | Um PDF de 200 KB pesa de 50 a 67 mil tokens contra os 30 mil da observação (`controller-kit/memory.ts:87`); critério 10 | não precisa | (o mesmo) |
 | O PDF nunca inteiro por `read_file` | U1 | `machine/conversation.ts:283-296` (as ferramentas da máquina, sem `mediaTypes`) | `@mastra/core@1.82.0` `dist/docs/references/reference-workspace-workspace-class.md:488-505`; `mastra-1.82@6e8dfcb8` `packages/core/src/workspace/tools/read-file.ts:160-199`; `@mastra/e2b@0.16.1` `dist/index.js:479` (o `stat` nativo dá o tipo pelo nome) | Fora de `mediaTypes`, um binário volta só com os metadados | nativo: `mediaTypes: ['image/png', 'image/jpeg', 'image/webp']`, o padrão sem o PDF, só nas máquinas do Assistente | | não precisa | — |
-| Achar o arquivo depois da observação | U2 | `prompt/assistant.md` (não diz onde ficam os arquivos da pessoa) | doc do `FileUploadProcessor` `:128` (o caminho); `docs-memory-observational-memory.md:299` (o marcador fica); `claude-code@0ed9469` `CHANGELOG.md:1288` | O arquivo mora no disco e o agente lista a pasta | nativo: as ferramentas da máquina de hoje (`list_files`, `execute_command`) e uma frase do texto | O critério 9 (o arquivo na máquina depois da observação) | 2026-11-10: "a gente já viu que o problema é nosso" | — |
-| Aceitar xlsx, docx e csv, só onde o arquivo vai para a máquina | U1 | `attachments.ts:9-21` (uma lista para toda conversa); `room.ts:39-85` (a sala de cada conversa) | `@mastra/server@1.82.0` `agent-controller.js:170-183` (a rota aceita qualquer tipo); o leitor do cartão da harness de 2026-11-09 (a lista por quem abre o compositor, senão um agente manda xlsx ao provedor) | A lista é da tela, por conversa | nativo: `Room.files` escolhe a lista; o Assistente leva a da máquina | | não precisa | — |
+| Achar o arquivo depois da observação | U2 | `prompt/assistant.md` (não diz onde ficam os arquivos da pessoa) | doc do `FileUploadProcessor` `:128` (o caminho); `docs-memory-observational-memory.md:299` (o marcador fica); `claude-code@0ed9469` `CHANGELOG.md:1288` (os bytes do PDF citado saem da conversa) | O arquivo fica fora da conversa e o agente o abre quando precisa | nativo: as ferramentas da máquina de hoje (`list_files`, `execute_command`) e uma frase do texto | O critério 9 (o arquivo na máquina depois da observação) | 2026-11-10: "a gente já viu que o problema é nosso" | — |
+| Aceitar xlsx, docx e csv, só onde o arquivo vai para a máquina | U1 | `attachments.ts:9-21` (uma lista para toda conversa); `room.ts:39-85` (a sala de cada conversa) | `@mastra/server@1.82.0` `agent-controller.js:170-183` (a rota aceita qualquer tipo); `@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:5280-5296` (`createMessageInput` põe todo `text/*` inteiro como texto); `room.ts:88` (`agentRoom` herda a sala do Assistente) | A lista é da tela, por conversa; o tipo decide se vira texto ou arquivo | embrulhado: `Room.files` escolhe a lista; o Assistente leva a da máquina e manda os de texto como `application/octet-stream`, para virarem arquivo | | não precisa | — |
 | Os conversores na máquina | U1 | `infra/e2b/template.ts:81` (`git` e `python3-pip`) | `anthropic-skills@2c5958e` `skills/pdf/SKILL.md:191-200` (`pdftotext -f 1 -l 5`), `skills/docx/SKILL.md:15` (`pandoc -t markdown`) | Converter por comando, não ler o binário | nativo: `poppler-utils` e `pandoc` no `aptInstall` | O critério 11, ao vivo, depois da chamada paga | a chamada paga, a pedir | — |
 | A lista dos arquivos na passagem ao Builder | U1 | `assistant/handoff.ts:90-110` (`proposalOf` lê as mensagens guardadas com `recall`), `:166-180` (`contentsOf`, o resumo e o briefing) | `@mastra/core@1.82.0` `recall` (as partes guardadas mantêm o arquivo, doc do `FileUploadProcessor` `:9`); a passagem por sinal de hoje | A mensagem guardada guarda o arquivo como veio | embrulhado: `sentFilesOf` lê as partes `file` das mesmas mensagens que `proposalOf` já lê, e `contentsOf` põe uma parte de texto com nome, tipo e tamanho; nenhum byte | O estudo: `builder: mentionsPdfName:false` hoje | 2026-11-10, o roteiro | — |
 | O texto do Assistente: responder na mensagem, arquivo só quando pedido | U2 | `prompt/assistant.md` (um parágrafo; os cinco empurrões) | `codex@970111f` `codex-rs/core/gpt_5_2_prompt.md:160-230` ("Presenting your work"); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/prompts/index.ts:152` (o começo estável, pelo cache) | A resposta é a mensagem; o arquivo existe quando o trabalho é o arquivo; seções curtas | nativo: texto nosso com a estrutura dos dois, na mensagem fixa e com a marca de cache de hoje (`fixedSystem`) | O critério 16 (nenhuma sequência de seis palavras igual) | 2026-11-10: "mudar o sistema prompt"; muda "sem regras de como responder (A)" de 2026-10-31 | — |
 | A descrição de `show_file` | U2 | `machine/show-file.ts:63` ("Show the table, chart or document you made; the person sees nothing of your machine otherwise") | `codex@970111f` `gpt_5_2_prompt.md:166` (não mostrar o arquivo que a pessoa já tem) | A ferramenta diz o que faz | nativo: a descrição diz o que a ferramenta faz | | 2026-11-10: "sem eu pedir" | — |
 | A tabela na mensagem | fica de fora | `apps/web/src/builder/conversation/markdown.tsx:31,73-85` (`remark-gfm`) | `remark-gfm@4.0.1` README | Tabela do GitHub | nativo: já desenha; nada muda | | não precisa | — |
-| O diagrama na mensagem | U3 | `markdown.tsx:65-72` (`code` e `pre`: o bloco `mermaid` sai como código) | `open-webui@f7ac7ee` `src/lib/utils/index.ts:2155-2165` (`mermaid` carregado sob demanda, `securityLevel: 'loose'`), `:2305-2313` ("Mermaid renders into a live document"), `src/lib/components/chat/Messages/CodeBlock.svelte:365-377` (desenha só o bloco fechado); `open-webui@f7ac7ee` `package.json:134` (`mermaid` 11) | O bloco `mermaid` fechado vira o desenho na mensagem | embrulhado: `mermaid` sob demanda, `securityLevel: 'strict'`, desenhado só no bloco fechado de uma resposta acabada, com as cores dos tokens, e mostrado como imagem SVG se a prova pedir; o nosso é o pedaço que lê o bloco e escolhe imagem ou código | A prova de CSP da U3 no Chromium, a primeira coisa da unidade (critério 17) | 2026-10-31: "B1"; 2026-11-10: "gera diagramas" | `apps/web/src/builder/conversation/diagram.tsx` |
+| O diagrama na mensagem | U3 | `markdown.tsx:65-72` (`code` e `pre`: o bloco `mermaid` sai como código) | `open-webui@f7ac7ee` `src/lib/utils/index.ts:2155-2165` (`mermaid` carregado sob demanda, `securityLevel: 'loose'`), `:2305-2339` (analisa antes, recusa imagem e estilo de fora porque "Mermaid renders into a live document", limpa o SVG e os elementos temporários de um erro), `src/lib/components/chat/Messages/CodeBlock.svelte:365-377` (desenha só o bloco fechado); `open-webui@f7ac7ee` `package.json:134` (`mermaid` 11) | O bloco `mermaid` fechado vira o desenho na mensagem | embrulhado: `mermaid` sob demanda, `securityLevel: 'strict'`, desenhado só no bloco fechado de uma resposta acabada, com as cores dos tokens, e mostrado como imagem SVG se a prova pedir; o nosso é o pedaço que lê o bloco e escolhe imagem ou código | A prova de CSP da U3 no Chromium, a primeira coisa da unidade (critério 17) | 2026-10-31: "B1"; 2026-11-10: "gera diagramas" | `apps/web/src/builder/conversation/diagram.tsx` |
 | O gráfico | fica de fora | `machine/show-file.ts:38` (`INLINE_MEDIA`: PNG, JPEG e SVG ao lado) | o estudo, a captura do gráfico do matplotlib ao lado | Uma imagem feita por código | nativo: já mostra; o texto da U2 diz quando usar | | não precisa | — |
 | O HTML aberto ao lado | fica de fora | `security.md` S24 ("The browser leaves the Hub's origin only for an app") | `open-webui@f7ac7ee` `src/lib/components/chat/Artifacts.svelte:253-272` (`srcdoc` sem `allow-same-origin`) | Toda referência põe o HTML do agente em outra origem | nativo: nada muda; fica para uma etapa própria, com a emenda de S24 | | 2026-11-10: "fazer o básico bem feito" | — |
 | A cópia durável dos arquivos (R2) | fica de fora | `builder/git/copy` (a cópia do Builder no R2) | doc do `FileUploadProcessor` `:135` (grava de novo só enquanto a mensagem está no pedido) | — | nativo: nada muda; dívida medida | | não precisa | — |
@@ -299,6 +302,12 @@ nem desenho de diagrama (`conexus-os@e0353c36`).
 - A cada turno em que um arquivo ainda está no pedido, o processador liga a máquina antes da primeira
   chamada ao modelo, para conferir que o arquivo está lá (doc `:134`): um turno sem ferramenta paga a
   partida da máquina enquanto a mensagem do arquivo não foi resumida.
+- `read_file` com `encoding: 'base64'` ainda devolve o PDF inteiro ao modelo
+  (`mastra-1.82@6e8dfcb8` `packages/core/src/workspace/tools/read-file.ts:187-195`); o texto da U2
+  manda converter, e o critério 6 só cobre a chamada sem `encoding`.
+- O embrulho liga a máquina antes de toda chamada com um arquivo no pedido, um do histórico
+  incluído: com a máquina fora, o turno falha mesmo sem precisar do arquivo, onde o nativo deixaria
+  uma nota e seguiria.
 - O embrulho delega só `processLLMRequest`: as duas conferências antecipadas do processador nativo
   (`processInput`, `processInputStep`, `file-upload.ts:103-111`) olham só o filtro e o teto, que o
   compositor e a rota já garantem; o arquivo do turno que não puder ir à máquina ainda para o turno em
@@ -343,7 +352,8 @@ passagem e tela.
 | `apps/server/src/platform/recordings/mastra/` | Cria a gravação nativa de uma mensagem guardada com arquivo (`npm run record`) | `files.test.ts`, `handoff.test.ts` |
 | `infra/e2b/template.ts` | Muda o `aptInstall` | a construção do molde, pelo firstmate |
 | `apps/web/src/builder/conversation/{attachments,room,composer}.ts(x)` | Muda: a lista aceita vem da sala | a conversa, o Início |
-| `apps/web/src/builder/conversation/attachments.test.tsx` | Muda: os casos por sala | — |
+| `apps/web/src/builder/conversation/attachments.test.tsx` e os testes que montam uma `Room` literal | Muda: os casos por sala; `files` em cada literal | — |
+| `apps/server/src/builder/assistant/test-assistant.ts` | Muda: `talking().say` aceita arquivos, como `conversation/conversation-files.test.ts:51,114` os manda pela rota | `files.test.ts`, `files-journey.test.ts`, os testes de hoje |
 | `docs/explanation/harness.md` | Muda a seção da máquina: os arquivos da pessoa em `uploads/` | — |
 
 ### Os contratos que a unidade cria
@@ -359,7 +369,7 @@ arquivo inteiro como parte da mensagem continua sendo o do Builder e dos agentes
 const SEEN_BY_MODEL = 'image/'
 /** The route's ceiling on one file's data URL (`@mastra/server@1.82.0` `agent-controller.js:170`): no file the route took is refused here. */
 const UPLOAD_MAX_BYTES = 14_680_064
-/** What a placed file weighs in the memory's count: its note, not its bytes. */
+/** What a placed file weighs in the memory's count: its note, not its bytes (Mastra counts bytes/3 or bytes/4). */
 const NOTE_TOKENS = 100
 /** The image types `read_file` hands the model as media; a PDF is read on the machine, by its text. */
 export const READ_MEDIA = ['image/png', 'image/jpeg', 'image/webp'] as const
@@ -367,8 +377,9 @@ export const READ_MEDIA = ['image/png', 'image/jpeg', 'image/webp'] as const
 /**
  * Mastra's `FileUploadProcessor`, built for each model call with that step's machine
  * (`ProcessLLMRequestArgs.workspace`), since the Hub picks the machine per request; a call without a
- * machine with a sandbox changes nothing. Stamps the note's estimate on the new file parts only if
- * the unit's proof asks for it (criterion 10).
+ * machine with a sandbox changes nothing. Starts the machine first, so its failure is the machine's.
+ * Stamps the note's estimate on the new file parts that are not images (`processInput`,
+ * `processInputStep`; criterion 10).
  */
 export function machineUploads(): InputProcessor
 
@@ -383,7 +394,10 @@ O começo do embrulho, porque o passo não é óbvio:
 ```ts
 async processLLMRequest(args) {
   const machine = args.workspace
-  if (machine?.hasSandboxConfig() !== true) return undefined
+  if (machine?.hasSandboxConfig() !== true || !hasPlacedFile(args.prompt)) return undefined
+  // Started here, so a machine that does not start fails the turn as MACHINE_UNAVAILABLE, not as
+  // the native NO_SANDBOX tripwire that the screen reads as MODEL_REFUSED.
+  await machine.resolveSandbox({ requestContext: args.requestContext })
   const native = new FileUploadProcessor({ workspace: machine, filter, maxFileSize: () => UPLOAD_MAX_BYTES })
   return native.processLLMRequest(args)
 }
@@ -416,7 +430,11 @@ export type FilesGo = 'MODEL' | 'MACHINE'
 // Room gains `files: FilesGo`: ASSISTANT_ROOM 'MACHINE'; BUILDER_ROOM and agentRoom 'MODEL'
 export function acceptOf(files: FilesGo): string   // the input's `accept`
 export function useAttachments(draft: Draft, files: FilesGo): Attachments
-// 'MACHINE' adds text/csv, .csv, the xlsx and docx types and their extensions to today's list
+// 'MACHINE' adds text/csv, .csv, the xlsx and docx types and their extensions to today's list,
+// maps them by extension when the browser types them empty (or a .csv as application/vnd.ms-excel),
+// and sends every text type (csv, txt, md) as application/octet-stream: Mastra's route inlines any
+// text/* whole (createMessageInput), and a file part is what goes to the machine
+// 'MODEL' keeps today's list and types
 ```
 
 A forma de cada coisa:
@@ -429,8 +447,9 @@ A forma de cada coisa:
 - **Entrada externa.** A parte `file` guardada pelo Mastra, lida por um esquema Zod em
   `sentFilesOf` (tipo, dados como URL de dados ou base64, nome opcional), conferido contra a
   gravação nativa (C27, T26); o tamanho em bytes vem dos dados decodificados.
-- **Modelo.** `controller-kit/factories.ts` `workspaceMetadataLive` (um processador nosso, pequeno,
-  com `id` literal) cumpre C21, C23 e C26 e é o modelo de forma do embrulho.
+- **Modelo.** Nenhum processador de entrada do repositório faz `processLLMRequest`; a forma é a do
+  próprio nativo (`mastra-1.82@6e8dfcb8` `packages/core/src/processors/processors/file-upload.ts:85-170`:
+  `id` literal, uma falha só pelo `abort`), que cumpre C21 e C26; C23 não se aplica (nenhum id).
 
 ### As skills e a leitura
 
@@ -453,14 +472,14 @@ A forma de cada coisa:
    workspace, filter, maxFileSize })`, `processLLMRequest`. Regras: C56 (nenhum `fetch`), C57 (o
    prazo é o da partida da máquina, 120 s, `conversation.ts:24`).
 4. **O observador.** `observeAttachments` em `memory.ts` dos dois lugares. Critério 3.
-5. **A contagem, se precisar.** Rodar o critério 10 sem o carimbo. Se a observação acontecer no
-   mesmo ponto com e sem o PDF, o carimbo não entra e o relatório diz isso; se o PDF a adiantar,
-   `processInput` carimba as partes novas que não são imagem, e o critério passa. Funções:
+5. **A contagem.** O critério 10 primeiro, que falha sem o carimbo (o PDF adianta a observação);
+   depois `processInput` e `processInputStep` carimbam as partes novas que não são imagem. Funções:
    `providerMetadata.mastra.tokenEstimate` `{ v: 0, source: 'client', key: 'client', tokens }`.
 6. **`read_file`.** `readMedia` em `conversation.ts` e `READ_MEDIA` passado por `assistant.ts`.
    Critério 6.
 7. **A passagem.** `sentFilesOf` e `contentsOf`. Critério 8. Regras: S41 (nenhum nome em log).
-8. **O compositor.** `FilesGo` em `room.ts`, `acceptOf` e `useAttachments` em `attachments.ts`,
+8. **O compositor.** `FilesGo` em `room.ts`, `acceptOf`, `useAttachments` e o tipo mandado por
+   `mediaTypeOf` em `attachments.ts`,
    `composer.tsx` lendo `useRoom().files`. Critério 7. Regras: W21, C21.
 9. **O molde.** `aptInstall(['git', 'python3-pip', 'poppler-utils', 'pandoc'])`. Nenhuma construção.
 10. **Documento.** `docs/explanation/harness.md`, a seção da máquina: os arquivos que a pessoa manda
@@ -468,7 +487,8 @@ A forma de cada coisa:
 
 ### Como se prova
 
-- Critérios 1 a 6, 9, 10 e 12: `files.test.ts`, pelo Hub de teste com o modelo dublê e a máquina dublê
+- Critérios 1 a 6, 9, 10 e 12: `files.test.ts`, os arquivos mandados pela rota de mensagens como
+  `conversation/conversation-files.test.ts:51,114` faz, pelo Hub de teste com o modelo dublê e a máquina dublê
   (`assisting`, `created`, `talking` de `test-assistant.ts`, T5), as respostas do dublê vindas das
   gravações do provedor (T24); o PDF de 200 KB e o texto de 530 linhas do estudo; o observador
   respondido pelo dublê como no estudo. O critério 12 com a máquina dublê que não liga
@@ -481,16 +501,16 @@ A forma de cada coisa:
 
 ### Parar se
 
+- A falha `MACHINE_UNAVAILABLE` lançada pelo embrulho não chegar à tela com esse código (o
+  controlador a trocar por outra): parar e dizer o que chega.
+- A rota ou o provedor recusar um arquivo `application/octet-stream`, ou o Mastra deixar de guardar
+  o nome dele: parar.
 - O Mastra não guardar a mensagem depois de `processInput`, e o carimbo não chegar à parte guardada:
   parar e dizer o que guarda; o critério 10 muda de caminho.
 - A máquina dublê ou a de verdade não tiver `writeFiles` nem `executeCommand` que o processador
   aceite (doc `:151`): parar; é a premissa do embrulho.
-- A falha da partida da máquina com um arquivo só do histórico parar o turno em vez de virar a nota
-  nativa (`noteSandboxFailures`): parar e dizer o que acontece; a tabela de falhas muda.
 - O `stat` da máquina vier sem `mimeType` (o caminho de `statShell`, sem o sistema de arquivos
   nativo): `read_file` leria o PDF como texto; parar.
-- O compositor do Início (`start.tsx`, `first-message.tsx`) estiver fora do contexto da sala: parar
-  e dizer onde a sala nasce.
 - A ficha de um anexo xlsx ou docx precisar mudar `apps/web/src/ui/attachment.tsx`: parar e esperar
   a unidade de desenho ([delivery L1](../guides/delivery.md)).
 
@@ -633,10 +653,14 @@ export function Diagram(props: { code: string }): ReactNode
 cujo `code` tem `language-mermaid` desenha `Diagram` só com `settled`, e o código de hoje no resto.
 
 A configuração do `mermaid`: `startOnLoad: false`, `securityLevel: 'strict'`, `theme: 'base'`,
-`themeVariables` lidas dos tokens no momento do desenho (`getComputedStyle` da raiz; nenhum valor de
-cor no código, V3), `fontFamily` a família genérica `sans-serif` (a imagem não tem as fontes da
+`themeVariables` lidas dos tokens no momento do desenho: os tokens são `light-dark(…)`
+(`brand/tokens.css`), que o `mermaid` não lê, então a cor vem do `color` e do `background-color`
+calculados de um elemento de prova com as classes dos tokens (nenhum valor de cor no código, V3), `fontFamily` a família genérica `sans-serif` (a imagem não tem as fontes da
 página, então a medida e o desenho usam a mesma), `flowchart.htmlLabels: false` (texto SVG, que uma
-imagem desenha em todo navegador). O pacote vem por `import('mermaid')` na primeira vez.
+imagem desenha em todo navegador). O pacote vem por `import('mermaid')` na primeira vez. Antes de desenhar, como o Open WebUI
+(`utils/index.ts:2305-2339`): `mermaid.parse` (o erro vira `NOT_DRAWN`); a recusa de um diagrama
+com imagem de endereço de fora ou com `url()` e `@import` de fora num estilo (fica `NOT_DRAWN`); e,
+num erro, a remoção dos elementos temporários que o `mermaid` deixa na página.
 
 A forma de cada coisa:
 
@@ -659,9 +683,9 @@ A forma de cada coisa:
 
 1. **A prova de CSP, primeiro.** No arnês (`layout-harness.ts`), com a CSP do Hub de `http.ts`
    (`style-src 'self'`, `img-src 'self' data:`, `script-src 'self'`): desenhar um fluxo pequeno com
-   `mermaid.render` e olhar o console. O `mermaid` desenha numa página viva e põe um `<style>` dentro
-   do SVG (`open-webui@f7ac7ee` `utils/index.ts:2312`); a hipótese é que a CSP recusa esse estilo
-   durante a medida. Três saídas:
+   `mermaid.render` e olhar o console. O `mermaid` desenha numa página viva (`open-webui@f7ac7ee`
+   `utils/index.ts:2312`) e, pela leitura do estudo, põe um `<style>` dentro do SVG; a hipótese é que
+   a CSP recusa esse estilo durante a medida. Três saídas:
    - nenhuma recusa: o SVG entra como imagem (`<img src="data:image/svg+xml,…">`) e segue-se;
    - a recusa só no `<style>`, e o desenho certo como imagem: tentar `mermaid.render` num contêiner
      próprio, fora da página visível, e medir de novo; sem recusa, segue-se;
@@ -688,7 +712,7 @@ A forma de cada coisa:
 ### Parar se
 
 - A prova mostrar uma recusa da CSP que só uma mudança da política do Hub tira: parar. A política é
-  da regra S24 e da W22 e o firstmate leva ao fundador as opções: (A) `style-src` aceitar estilos em
+  a de `platform/http.ts:31-49`, sob a W22 (nenhum estilo injetado), e o firstmate leva ao fundador as opções: (A) `style-src` aceitar estilos em
   linha; (B) o diagrama feito como imagem na máquina e mostrado ao lado por `show_file`, como o
   gráfico; (C) o bloco continua código até a etapa do HTML ao lado.
 - O `mermaid` precisar de `unsafe-eval` ou de um pedido para fora da página: parar.
