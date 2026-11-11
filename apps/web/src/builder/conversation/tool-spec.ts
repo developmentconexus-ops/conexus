@@ -49,7 +49,14 @@ export type ToolBody =
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
 
 /** The icon and words of a row's line. */
-export type Presented = { icon: LucideIcon; sentence: string; detail?: string; beside: boolean }
+export type Presented = {
+  icon: LucideIcon
+  sentence: string
+  detail?: string
+  beside: boolean
+  /** The detail is a short fact to read whole (a count): it goes under the sentence rather than being cut beside it. */
+  wraps?: boolean
+}
 
 /**
  * What a result that is a refusal asks of the row: `SAID` is all the line says, `RECONNECT` adds the

@@ -322,14 +322,22 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right">
+    <TraceDescription
+      className={cn(
+        'min-w-0 flex-1',
+        presented.wraps ? 'shrink-0 text-left' : 'shrink truncate text-right',
+      )}
+    >
       {presented.detail}
     </TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+    <TraceLine
+      status={lineStatus}
+      className={cn(failed && 'items-start', presented.wraps && 'flex-wrap')}
+    >
       <TraceIcon className={failed ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>

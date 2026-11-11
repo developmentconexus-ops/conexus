@@ -14,6 +14,16 @@ function checkRefusal(result: unknown): Refusal | undefined {
   return Failed.safeParse(result).success ? 'DETAILED' : undefined
 }
 
+/** The count is a short fact the person reads whole: the line gives it room under the sentence. */
+function withCountBelow(spec: ToolSpec): ToolSpec {
+  const { present } = spec
+  if (present === undefined) return spec
+  return {
+    ...spec,
+    present: (tool, status, words) => ({ ...present(tool, status, words), wraps: true }),
+  }
+}
+
 /**
  * The rows of the tools that read the Projeto's app data: `app_data_read` is the agents' own row
  * (one name, one row), and `app_data_check` says how many rows the checked read gave.
@@ -21,22 +31,24 @@ function checkRefusal(result: unknown): Refusal | undefined {
 export const APP_DATA_SPECS: Record<(typeof APP_DATA_TOOL)[keyof typeof APP_DATA_TOOL], ToolSpec> =
   {
     [APP_DATA_TOOL.read]: AGENT_SPECS[AGENT_TOOL.appDataRead],
-    [APP_DATA_TOOL.check]: withDetail(
-      {
-        icon: ClipboardCheckIcon,
-        running: 'Conferindo uma leitura do app',
-        done: 'Conferiu uma leitura do app',
-        failed: 'Não conseguiu conferir a leitura',
-        verb: 'conferiu leitura',
-        body: 'generic',
-        groups: true,
-        refusal: checkRefusal,
-      },
-      (tool) => {
-        const counted = Counted.safeParse(tool.result)
-        return counted.success && counted.data.rows.kind !== 'UNKNOWN'
-          ? checkedRowsText(counted.data.rows)
-          : undefined
-      },
+    [APP_DATA_TOOL.check]: withCountBelow(
+      withDetail(
+        {
+          icon: ClipboardCheckIcon,
+          running: 'Conferindo uma leitura do app',
+          done: 'Conferiu uma leitura do app',
+          failed: 'Não conseguiu conferir a leitura',
+          verb: 'conferiu leitura',
+          body: 'generic',
+          groups: true,
+          refusal: checkRefusal,
+        },
+        (tool) => {
+          const counted = Counted.safeParse(tool.result)
+          return counted.success && counted.data.rows.kind !== 'UNKNOWN'
+            ? checkedRowsText(counted.data.rows)
+            : undefined
+        },
+      ),
     ),
   }
