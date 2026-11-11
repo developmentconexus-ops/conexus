@@ -10,7 +10,11 @@ seguir." Três estudos traçaram as referências (fora do repositório, base `6b
 web, Contexto e instruções do sistema, Conectores e máquina. Aos onze itens de engenharia que o
 firstmate somou deles: "Proposta sua concordo". Às escolhas de memória e de busca, no mesmo dia: "1.
 B e D 2. B e C 3. A gente via implementar o Knowledge que é um grande passo nosso e acho que já teria
-que vir, por exemplo 4. A".
+que vir, por exemplo 4. A". Depois, ao ler o estudo do harness do Claude Code (como o Claude Code
+monta o seu agente, fora do repositório, base `7c8b156f`), sobre o ajudante de pesquisa, quem escreve
+as perguntas da prova e os itens novos: "A1, porém estudar profudanmente vendo referencias e
+documentação usar context7 /mastra e o que precisar B2 Sim inclua vamos deixar nossa harness o mais
+alinhada possivel".
 
 É o segundo cartão do trilho do Assistente (delivery L1). Espera no seu rascunho até O Assistente do
 dia a dia fechar (L5); o roteiro de cima segue o fluxo da construção dos apps, que não muda. Cada linha
@@ -20,7 +24,11 @@ do `main` citada foi lida em `7c8b156f` (com o PR 963 no `main`), com `@mastra/c
 `mastra-1.82@6e8dfcb8` (Mastra Code e Factory em `mastracode/`), `codex@970111f`,
 `librechat@e6567c7`, `open-webui@f7ac7ee`, `lobe-chat@c29ef407`, `assistant-ui@437b410`,
 `activepieces@f34c43cd`, `supabase-mcp@5ab9a98`, `nango@e6c6131`, `cloudflare-agents@786d30e3`,
-`vibesdk@9da158d`.
+`vibesdk@9da158d`, `claude-code@0ed9469` (o CHANGELOG), e os tipos públicos do
+`@anthropic-ai/claude-agent-sdk@0.3.322` com as páginas públicas de code.claude.com lidas em
+2026-11-11 (salvas pelo estudo do harness; na tabela, `D/` é essa pasta, `docs-2026-11-11/`). O Context7 `/mastra-ai/mastra` lê o `main` do Mastra, não
+a 1.82: serve só para conferir a doc instalada, e conferiu (`maxSteps` padrão 50, `resolveSubagentModel`
+com a cópia do contexto).
 
 ## A página do fundador
 
@@ -28,7 +36,10 @@ do `main` citada foi lida em `7c8b156f` (com o PR 963 no `main`), com `@mastra/c
 (cargo, área e o que aprendeu com você), lembra o que a empresa guardou e o que você conversou em
 outras conversas, mostra as fontes de uma pesquisa na web, lê um PDF de um link, e os arquivos de uma
 conversa não somem mais quando o Conexus é atualizado. Você vê e corrige na tela tudo o que ele
-guarda.
+guarda. Cada comando que ele roda na máquina aparece numa frase em português, e não no comando cru;
+uma pergunta que pede muitas leituras vai para um ajudante de pesquisa, que só lê e devolve o resumo
+com os números. E o Conexus passa a ter uma prova com perguntas como as da sua equipe e um placar por
+pergunta, para medir se cada mudança no Assistente melhora ou piora as respostas.
 
 **O roteiro de uso.** Você é dono da empresa, no Hub no ar, com uma conexão Sankhya.
 
@@ -50,10 +61,17 @@ guarda.
    domínio de cada página. Mande um link de um PDF público e peça um resumo: ele lê o PDF.
 6. Escolha a conexão Sankhya e pergunte: "quantos pedidos de venda tivemos em outubro, por
    vendedor?". Ele busca a leitura certa, com os campos certos, diz quantas linhas vieram e responde
-   do arquivo inteiro. Depois do próximo Release, volte a essa conversa: o arquivo da leitura
-   continua lá.
+   do arquivo inteiro. Onde ele roda uma conta na máquina, a linha diz o que faz ("Somando os
+   pedidos de outubro por vendedor"), e o comando só aparece ao abrir a linha. Depois do próximo
+   Release, volte a essa conversa: o arquivo da leitura continua lá.
+7. Escolha também a conexão da outra filial e pergunte: "compare as vendas de outubro das duas
+   filiais por linha de produto e diga o que mudou". Aparece a linha **Pesquisando:** com o que ele
+   pediu ao ajudante; quando termina, a linha vira **Pesquisou:**, e ao abri-la você lê o resumo que
+   o ajudante devolveu. A resposta vem desse resumo, com os números.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página, com as duas decisões abaixo. Durante a U2: autoriza,
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página. Antes da U11: revisa a
+lista de perguntas da prova (na U11, marcada "para revisão do fundador"), tirando, trocando ou
+acrescentando perguntas do jeito que a sua equipe pergunta. Durante a U2: autoriza,
 quando o firstmate pedir, duas chamadas pagas pequenas: a prova da busca do Google pela sua conta
 (CLIProxy), que libera a busca na web para quem conversa com o Gemini, e uma busca de página
 (`web_fetch`) do Anthropic pela assinatura Claude, que confirma que ela funciona por assinatura e
@@ -66,6 +84,14 @@ cartão contém isso: só um arquivo do Conexus fala com o `Knowledge`; um teste
 formato, e o pull request que subir o Mastra e mudá-la falha até exportar as páginas pelo próprio
 `Knowledge` e regravá-las; as rotas de navegação do Mastra continuam desligadas (o Hub só expõe as
 suas). As instruções da empresa e as páginas continuam suas: você as vê e corrige na tela.
+
+**Outra consequência: o ajudante custa chamadas de modelo.** Cada pesquisa do ajudante faz as suas
+próprias chamadas ao modelo, na mesma conta e no mesmo modelo da conversa, como o título da conversa
+já faz: até 50 passos por pesquisa, o padrão do Mastra e do Mastra Code. As leituras dele contam nas
+mesmas 50 chamadas aos sistemas da empresa por resposta que já existem. O log do turno conta quantas
+pesquisas e quantas leituras do ajudante houve; os tokens dele ainda não, porque o Mastra não os
+informa nem o Mastra Code os conta: fica como dívida, e a prova da U11 diz se as respostas com o
+ajudante usam mais ou menos passos.
 
 **Fica de fora.**
 
@@ -85,6 +111,13 @@ suas). As instruções da empresa e as páginas continuam suas: você as vê e c
   dele.
 - **Todas as ferramentas do Assistente sob busca.** Só as leituras de conector vão sob demanda; as 28
   do núcleo pesam cerca de 4,5% da janela, abaixo do ponto em que as referências adiam ferramentas.
+- **As skills abertas voltando depois que a memória observa** (o item 5 do estudo do harness: o
+  Claude Code devolve ao modelo o texto das skills que ele abriu). Só se constrói se o placar da U11
+  mostrar respostas erradas depois de uma observação; até lá é hipótese.
+- **O ajudante escrevendo, pesquisando na web ou chamando outro ajudante.** Ele só lê as conexões da
+  conversa e os arquivos da máquina; não roda comando (um comando pode gravar), não grava, não anota
+  no caderno e não abre outro ajudante. **Um modelo mais barato para o ajudante** também fica de
+  fora: ele usa o da conversa até o placar mostrar o custo.
 - **Os avisos guardados para um cartão** (`next-card`). Este cartão toma o #971 (a máquina que morria
   a cada Release, U1), a linha "uma resposta errada porque o modelo não abriu o arquivo" do #540 (U5)
   e a linha "a base de conhecimento da empresa" do #541, na parte das definições (U9). Os outros que
@@ -92,29 +125,30 @@ suas). As instruções da empresa e as páginas continuam suas: você as vê e c
   arquivos), o #814 (quem grava no caderno), o #143 (o `web_fetch` do Mastra e os endereços NAT64,
   que fica para os provedores sem a busca nativa) e o resto do #540 e do #541.
 
-**As decisões suas nesta etapa.** As de memória e busca já têm a sua palavra (acima). Duas novas:
+**As decisões desta etapa já têm a sua palavra.** Nenhuma nova.
 
-- **Quais campos a sua conta ganha para o Assistente** (a sua escolha "b": campos preenchidos pela
-  pessoa ou pelo administrador).
-  - **A.** Cargo e área. Exemplo: "Diretor comercial", "Vendas".
-  - **B.** Cargo, área e um texto curto "sobre você".
-  - **C.** Cargo, área, telefone e região.
-
-  Recomendação: **A**. O Open WebUI põe no pedido o nome, o e-mail, os grupos, o local e um texto
-  "bio" da conta; o LibreChat, só o nome. Aqui o "sobre você" já vem pela memória que o Assistente
-  aprende e que você corrige na tela (a sua escolha "c"), e um texto livre na conta seria um segundo
-  lugar para a mesma coisa. Veredito: nativo (campos do membro no Better Auth, como o apelido da
-  empresa).
-
-- **A permissão no banco para gravar cargo e área** (a regra D11 pede a sua palavra para toda
-  permissão nova no banco, num pull request só dela). Hoje as rotas da empresa só mudam o papel de um
-  membro.
-  - **A.** As rotas da empresa gravam o cargo e a área de um membro (`UPDATE` só dessas duas
-    colunas), como gravam o apelido da empresa; a própria pessoa grava os seus pela mesma porta.
-  - **B.** Sem permissão nova: cargo e área ficam fora da conta, só na memória que o Assistente
-    aprende.
-
-  Recomendação: **A**; é o que a sua escolha "b" pede.
+- **Memória e busca** (acima): "1. B e D 2. B e C 3. A gente via implementar o Knowledge … 4. A".
+- **Os campos da conta e a permissão no banco**, em 2026-11-11, nesta página: "Decisões: A - A".
+  - A primeira **A**: a sua conta ganha **Cargo** e **Área** (exemplo: "Diretor comercial",
+    "Vendas"). O "sobre você" vem pela memória que o Assistente aprende e que você corrige na tela (a
+    sua escolha "c"), e não por um texto livre na conta. Constrói a U8.
+  - A segunda **A**: a regra D11 recebe a sua palavra para uma permissão nova no banco, `UPDATE` só
+    das colunas de cargo e área do membro, para as rotas da empresa, como o apelido da empresa; a
+    própria pessoa grava os seus pela mesma porta. Vai num pull request só dela, antes da U8.
+- **O estudo do harness do Claude Code**, em 2026-11-11: "A1, porém estudar profudanmente vendo
+  referencias e documentação usar context7 /mastra e o que precisar B2 Sim inclua vamos deixar nossa
+  harness o mais alinhada possivel".
+  - **A1**: o ajudante de pesquisa entra agora, um tipo só, que só lê (U12). O estudo profundo que
+    você pediu está na U12 e na tabela de referência: a documentação instalada do Mastra 1.82, o
+    Context7, o código do Mastra Code e os tipos do Agent SDK do Claude Code. Ele achou três coisas
+    que o cartão resolve sem a sua palavra: o ajudante do Mastra nasce sem a escolha de conta do
+    Conexus, e passa a usar a conta da conversa, como o título; as ferramentas dele precisam ser
+    montadas com a conversa de quem pergunta, porque ele não a enxerga; e a numeração dos arquivos
+    das leituras sobrescreveria a do turno, e passa a contar pelo turno.
+  - **B2**: o firstmate escreveu as perguntas da prova a partir dos roteiros dos cartões e dos usos
+    do Assistente (U11); você revisa a lista antes da U11.
+  - **"Sim inclua"**: a frase de cada comando (U10), a prova e o placar (U11), o modelo da memória
+    por pessoa (dentro da U7) e o ajudante (U12). O item 5 fica condicionado ao placar (acima).
 
 Quem escreve a memória e as instruções da empresa, como cada um vê e corrige o que é guardado, e a
 separação por empresa não pedem a sua palavra: seguem o modelo de papéis que você já aprovou e as
@@ -136,23 +170,39 @@ empresa nunca lê a memória de outra.
 | U7 As conversas antigas e o que ele aprende de você | `recall` em todas as conversas do Assistente da mesma pessoa na empresa; memória de trabalho por pessoa; a seção "O que o Assistente lembra de você" em Sua conta, com editar e apagar | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/memory.ts`, `packages/hub-api/src/`, `apps/web/src/builder/assistant/`, `apps/web/src/routes/_app/companies/$companyId_/settings/account.tsx` | [web](../guides/web.md) | U4 |
 | U8 Cargo e área na conta | Os campos do membro (Better Auth), a migração, as rotas; a pessoa edita os seus em Sua conta, o administrador os de outro em Pessoas; o bloco da conversa os diz | `apps/server/src/hub/identity/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `packages/hub-api/src/`, `apps/web/src/hub/identity/`, `apps/web/src/routes/_app/companies/$companyId_/settings/{account,people}.tsx`, `apps/server/src/builder/assistant/instructions.ts` | [data](../guides/data.md) | U7 (a mesma tela de Sua conta); o pull request da permissão no banco, com a palavra do fundador (D11) |
 | U9 A memória e as instruções da empresa | O `Knowledge` do Mastra no Assistente, escopo da empresa, instruções da empresa como página fixada; a permissão "Memória da empresa"; a página Configurações › Memória da empresa | `apps/server/src/builder/assistant/`, `apps/server/src/hub/identity/{admission,roles}.ts`, `packages/hub-api/src/`, `apps/web/src/builder/assistant/`, `apps/web/src/routes/_app/companies/$companyId_/settings/` | [security](../guides/security.md) | U7, U8 |
+| U10 A frase de cada comando | `requireDescription` no comando da máquina, para o Assistente e o Builder; a linha da conversa mostra a frase e guarda o comando para quando abre; os dois textos fixos pedem a frase em português | `apps/server/src/builder/machine/`, `apps/server/src/builder/assistant/prompt/assistant.md`, `apps/server/src/builder/conversation/prompt/builder.md`, `apps/web/src/builder/conversation/` | [web](../guides/web.md) | U1 (a mesma pasta `machine/`) |
+| U11 A prova e o placar | As perguntas revisadas pelo fundador, cada uma numa conversa nova sobre os dados de teste; o placar por pergunta (certo, chamadas, erros, repetidas, tokens do primeiro passo), com o dublê sempre e com o modelo de verdade quando o firstmate liga | `apps/server/src/builder/assistant/` (só testes e dados de teste) | [testing](../guides/testing.md) | U5; a lista revisada pelo fundador |
+| U12 O ajudante de pesquisa | O tipo `pesquisar` do `subagent` do controlador: só lê as conexões escolhidas e os arquivos da máquina; usa a conta da conversa; a linha "Pesquisando:" com o resumo; o log do turno conta as pesquisas | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/`, `apps/server/src/builder/model-accounts/processors.ts`, `apps/server/src/builder/conversation/turn-line.ts`, `packages/hub-api/src/tools.ts`, `apps/web/src/builder/conversation/` | [security](../guides/security.md) | U6 (o `connector_read` sai do agente), U11 (o placar conta o ajudante) |
 
-U1, U3 e U5 não dividem pasta e correm em paralelo; U2 vem depois da U1 (o pull request as junta em
-ordem) e a U4 depois da U2, porque o bloco da conversa e o texto fixo leem as ferramentas que a U2
-deixa. U6 lê a U4 e a U5; U7, U8 e U9 vão em fila, porque dividem o agente, a memória e a tela de
-Sua conta. A ordem do pull request: U1, U2, U3, U4, U5, U6, U7, U8, U9.
+U1, U3 e U5 não dividem pasta e correm em paralelo; U10 vem logo depois da U1, porque as duas mudam
+`machine/`, e é pequena; U2 vem depois da U1 (o pull request as junta em ordem) e a U4 depois da U2,
+porque o bloco da conversa e o texto fixo leem as ferramentas que a U2 deixa. A U11 vem antes da U6:
+o placar mede o Assistente antes das leituras tipadas e do ajudante, e cada unidade seguinte se
+compara com ele. U6 lê a U4 e a U5; a U12 vem depois da U6, porque o `connector_read` que o ajudante
+recebe precisa já ter saído das ferramentas do agente principal; U7, U8 e U9 vão em fila, porque
+dividem o agente, a memória e a tela de Sua conta. A ordem do pull request: U1, U10, U2, U3, U4, U5,
+U11, U6, U12, U7, U8, U9. Os números das unidades ficam os de quando o cartão nasceu, para não
+desencontrar os critérios já lidos.
 
 **Os trilhos.** O trilho do Assistente é dono de `apps/server/src/builder/assistant/` e de
 `apps/web/src/builder/assistant/`. As outras pastas são de uso comum: `machine/` (U1) e
 `controller-kit/` (U2) mudam também para o Builder e os agentes, de propósito: a frase dos caminhos e
 as ferramentas em paralelo valem para todos, e a máquina do Builder continua morrendo por molde,
-porque a razão dela vale; `hub/connectors/` e `builder/connectors/` (U5, U6) são do
+porque a razão dela vale; a U10 muda o comando da máquina e a linha dele para todos, também de
+propósito (a frase serve a quem não programa, no Builder como no Assistente); a U12 só acrescenta em
+`controller-kit/` e `model-accounts/` uma opção que o Builder não liga (`subagents` vazio, o
+`subagent` desligado como hoje); `hub/connectors/` e `builder/connectors/` (U5, U6) são do
 Builder também, e a U5 só acrescenta campos e troca uma frase; `hub/identity/`, `migrations/` e as
 telas de Configurações (U8, U9) são da fronteira e esperam as unidades dela que as tocam (a
 Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 
-**Orçamento de código alterado.** U1: 40. U2: 140. U3: 180. U4: 160. U5: 60. U6: 320. U7: 420. U8:
-430. U9: 880. Total da etapa: cerca de 2.630, sem testes nem gerados (delivery L2).
+**Orçamento de código alterado.** U1: 40. U2: 140. U3: 180. U4: 165. U5: 60. U6: 320. U7: 450 (com o
+modelo da memória). U8: 430. U9: 880. U10: 40. U11: 0 (cerca de 300 linhas, todas de teste e dados de
+teste). U12: 160. Total da etapa: cerca de 2.865, sem testes nem gerados (delivery L2).
+
+**Onde o cartão fica no roteiro.** No roteiro, o Assistente está em "Depois desta frente"; o trilho
+dele anda ao lado, um cartão por vez (L1). Este é o segundo: espera em rascunho até O Assistente do
+dia a dia fechar (L5), e não muda a ordem do roteiro.
 
 ## Os critérios de aceite
 
@@ -189,12 +239,28 @@ Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 | 29 | U9 | O teste prende `KNOWLEDGE_STORAGE_SCHEMA_VERSION` em 4: um Mastra que o mude falha este teste | `company-memory.test.ts`, "o formato do Knowledge" | must |
 | 30 | U9 | A página Memória da empresa nos estados da matriz, a 1366 e 390 px, nos dois temas; o membro não vê os botões de editar | `apps/web/src/builder/assistant/company-memory.test.tsx` e o seu layout | must |
 | 31 | U9 | A permissão "Memória da empresa" nasce no dono e no administrador; um papel próprio da empresa (que só recebe conectores) não a tem, e quem o tem recebe `NOT_IN_ROLE` ao gravar | `apps/server/src/hub/identity/roles.test.ts`, "a memória da empresa" | must |
+| 32 | U10 | Na máquina do Assistente e na do Builder, o esquema de `mastra_workspace_execute_command` que chega ao modelo exige `description` e a lista antes de `command`; uma chamada sem ela volta como erro de validação. Falha hoje: o esquema não tem `description` | `apps/server/src/builder/machine/command-description.test.ts`, "a frase vem antes do comando, nas duas máquinas" | must |
+| 33 | U10 | A linha de um comando mostra a frase ("Somando os pedidos por vendedor") em vez do comando; ao abrir, o comando e a saída como hoje; uma chamada guardada sem `description` (conversas antigas) mostra "Rodou um comando" e o comando, como hoje | `apps/web/src/builder/conversation/tool-registry.test.ts`, "a frase do comando" | must |
+| 34 | U10 | O texto fixo do Assistente e o do Builder pedem a frase do comando em português do Brasil; o do Assistente continua os mesmos bytes para um dono e para um membro (critério 12) | `apps/server/src/builder/assistant/instructions.test.ts` e `apps/server/src/builder/conversation/prompt.test.ts`, "a frase do comando em português" | must |
+| 35 | U11 | Com o modelo dublê, cada pergunta da lista roda numa conversa nova sobre os seus dados de teste e o placar sai certo: um turno roteirizado com uma leitura repetida e uma ferramenta que falhou dá `repeated: 1` e `errors: 1`; o placar é um JSON por pergunta gravado fora do repositório | `apps/server/src/builder/assistant/assistant.scorecard.test.ts`, "o placar conta o turno" e "cada pergunta tem os seus dados" | must |
+| 36 | U11 | Com `CONEXUS_EVAL_REAL_MODEL` ligado, as perguntas rodam no modelo de verdade, cada uma numa conversa nova, e o placar sai com os tokens do primeiro passo (`usage.promptTokens` do primeiro `usage_update`); uma resposta errada não falha o teste, só conta no placar | `assistant.scorecard.test.ts`, "o modelo de verdade, a lista inteira" | should |
+| 37 | U12 | No primeiro pedido de uma conversa do Assistente, `subagent` está entre as ferramentas com um tipo só, `pesquisar`; no do Builder e no de um agente do Projeto, não. Falha hoje: o Assistente não oferece `subagent` | `apps/server/src/builder/assistant/research.test.ts`, "o ajudante existe só no Assistente" | must |
+| 38 | U12 | O pedido do ajudante ao modelo leva exatamente `connector_read` e as quatro leituras da máquina (`mastra_workspace_read_file`, `mastra_workspace_list_files`, `mastra_workspace_file_stat`, `mastra_workspace_grep`); nenhuma escrita, comando, anotação, proposta, passagem ao Builder, `subagent` nem `ask_user`; o pedido do agente principal não leva `connector_read` | `research.test.ts`, "o ajudante só lê" | must |
+| 39 | U12 | A leitura do ajudante passa pela porta do Hub com o escopo de quem pergunta: uma leitura que o papel não permite volta `NOT_IN_ROLE`; as leituras dele contam nas 50 do turno (49 do principal e 1 dele: a segunda dele volta `CALLS_SPENT`); o arquivo dela é `reads/<turno>-<n>.json` com `n` depois dos do principal, sem sobrescrever nenhum | `research.test.ts`, "a porta, as 50 e o arquivo" | must |
+| 40 | U12 | O ajudante chama o modelo pela conta que o turno está usando: o dublê dessa conta recebe as chamadas dele; um `modelId` escrito pelo modelo principal é ignorado; com a conta falhando no meio, o principal recebe o erro da ferramenta e continua o turno, e o log diz `MODEL_SIDE_CALL_FAILED` com `call: 'subagent'` | `research.test.ts`, "a conta da conversa" e "a falha da conta" | must |
+| 41 | U12 | O resumo do ajudante volta como o resultado de `subagent`, e o pedido seguinte do principal leva esse texto e nenhum resultado das leituras do ajudante | `research.test.ts`, "só o resumo volta" | must |
+| 42 | U12 | A linha do ajudante: "Pesquisando: <pedido>" enquanto roda, "Pesquisou: <pedido>" ao terminar, o resumo ao abrir, "A pesquisa falhou" no erro; nas capturas a 1366 e 390 px, nos dois temas, um pedido longo fica numa linha cortada, sem estouro horizontal | `apps/web/src/builder/conversation/tool-registry.test.ts`, "o ajudante", e `conversation.layout.test.tsx`, "a linha do ajudante" | must |
+| 43 | U12 | A linha do turno no log ganha `helpers` (as pesquisas) e `helperCalls` (as ferramentas que o ajudante chamou), contadas dos eventos `subagent_end` e `subagent_tool_start`; sem ajudante, os campos não aparecem | `apps/server/src/builder/conversation/turn-line.test.ts`, "o ajudante no log" | must |
+| 44 | U7 | O bloco da memória de trabalho que chega ao modelo traz o `PROFILE_TEMPLATE` com as quatro seções (quem é, correções, trabalho em andamento, onde achar), a regra de não guardar o que uma leitura do sistema dá, o teto de 4.000 caracteres e a data em cada linha | `profile-memory.test.ts`, "o modelo da memória" | must |
+| 45 | U4 | O texto fixo diz que os blocos de estado e os lembretes do pedido vêm do Conexus, não da pessoa, e continua os mesmos bytes entre conversas | `instructions.test.ts`, "o que é um lembrete" | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A linha Fontes de uma mensagem | A primeira mensagem com fontes: a linha "Fontes" embaixo | Sem `source`: nada | Enquanto a mensagem chega, as fontes que já chegaram | não se aplica | não se aplica | não se aplica | O `source` que não é `http(s)`: o título como texto, sem link |
+| A linha de um comando (U10) | A frase do modelo no lugar do comando | Uma chamada guardada sem frase: "Rodou um comando" e o comando, como hoje | "Rodando…" com a frase, assim que ela chega (ela vem antes do comando) | O comando que falhou: a frase com "Um comando falhou", e a saída ao abrir | não se aplica | não se aplica | não se aplica |
+| A linha do ajudante (U12) | "Pesquisando: <pedido>" numa linha cortada | não se aplica: a linha existe só quando o modelo chama o ajudante | "Pesquisando: <pedido>" até o fim | "A pesquisa falhou: <pedido>", e ao abrir a razão que o ajudante devolveu | não se aplica | não se aplica: o ajudante lê com o escopo de quem pergunta, e a recusa de uma leitura vem dentro do resumo | Parar no meio: "Pesquisou: <pedido>" com o resumo parcial que o Mastra devolve (`[Aborted by user]`, dito em português na linha) |
 | Sua conta, Cargo e área | Os dois campos vazios com a dica "Ajuda o Assistente a entender o seu trabalho." | Os campos vazios | A leitura da conta, como hoje | A gravação que falha: a frase de falha da conta de hoje | não se aplica | Não acontece: a pessoa edita os seus | Acima de 80 caracteres: a frase do campo |
 | Sua conta, O que o Assistente lembra de você | A frase "O Assistente ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas." | A mesma frase | O texto carregando | A leitura que falha: "Não foi possível ler a memória." com Tentar de novo; a gravação que falha: a frase de falha de hoje | não se aplica | Não acontece: a pessoa vê a sua | Acima do teto de texto: a frase do campo |
 | Configurações › Pessoas, Cargo e área de outro | Os campos de cada membro, vazios | Os campos vazios | Como a lista de hoje | Como a lista de hoje | O membro que saiu: a frase de hoje | Sem a permissão de mudar papel: os campos só para ler | Acima de 80 caracteres: a frase do campo |
@@ -207,10 +273,24 @@ Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 | `ProfileMemory.text` | o modelo (`updateWorkingMemory`) e a rota `PUT` da pessoa (U7) | o pedido ao modelo (Mastra), a tela de Sua conta |
 | `CompanyMemoryPage.{path,name,body,updatedAt}` | o modelo de quem tem a permissão (`knowledge_page`, `knowledge_note`) e a rota `PUT` (U9) | todo membro pela tela; o modelo de toda conversa da empresa (`knowledge_read`, `knowledge_search`, `knowledge_list`) |
 | `CompanyInstructions.body` | a rota `PUT` (U9) e o modelo de quem tem a permissão | o pedido de toda conversa da empresa (página fixada), a tela |
+| `execute_command.args.description` | o modelo (U10, esquema nativo do Mastra) | a linha do comando |
+| `subagent.args.task`, `subagent.result.content` | o modelo principal (o pedido) e o ajudante (o resumo), U12, esquema nativo do Mastra | a linha do ajudante; o pedido seguinte do principal leva o resumo |
+| a linha do turno, `helpers`, `helperCalls` | `conversation/turn-line.ts` (U12) | o log (S41: contagens, nunca o pedido nem o resumo) |
+| o placar, por pergunta | `assistant.scorecard.test.ts` (U11) | o firstmate e o fundador, fora do repositório |
 
 **As telas.** O produto antigo não tinha nenhuma destas telas (no `e0353c36`, só o estado da
 memória no compositor). As caixas seguem as telas vizinhas de hoje (Sua conta, Pessoas e a
 transcrição); as palavras são as desta página, que o fundador aprova no fim.
+
+A linha de um comando e a do ajudante, a 1280 e a 390 px (fechadas; abertas, o comando com a saída e
+o resumo do ajudante, na caixa que a linha de um comando já abre hoje):
+
+```text
+1280                                                     390
+| >_ Somando os pedidos de outubro por vendedor   [v] |  | >_ Somando os pedidos de ... [v] |
+| ⌕  Pesquisando: compare as vendas de outubro d… [v] |  | ⌕  Pesquisando: compare a... [v] |
+| ⌕  Pesquisou: compare as vendas de outubro da…  [v] |  | ⌕  Pesquisou: compare as ... [v] |
+```
 
 A linha Fontes, a 1280 e a 390 px:
 
@@ -267,6 +347,7 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | `Knowledge.upsertPage` e `removePage` pela rota; `knowledge_page`, `knowledge_note` e `knowledge_pin` pelo modelo | Duas gravações na mesma página: o último vence (`upsertPage` não leva versão, `dist/knowledge/host-writes.d.ts:8-26`), e a tela relê depois de salvar; um `removePage` com outra gravação no meio lança `KnowledgeConflictError` (`dist/knowledge/index.d.ts:89-92`), que vira `COMPANY_MEMORY_CHANGED` (409), e a tela relê; o modelo recebe o erro da ferramenta e relê | `upsertPage` grava a página e a versão juntas; `unchanged` não grava; uma resposta cortada: o `PUT` do mesmo corpo é idempotente pelo caminho | O banco do Mastra fora: `DATABASE_UNAVAILABLE`; o armazenamento do `Knowledge` que pede reset (um Mastra novo): o teste do critério 29 falha antes de chegar ao `main` | `COMPANY_MEMORY_CHANGED` com o caminho da página, nunca o corpo (S41) | 26, 27, 28, 29 |
 | A chamada paga de busca e de leitura de página pelo provedor | Cada chamada é do provedor, dentro do turno | O turno parado corta a chamada, como hoje | O provedor fora: o erro da ferramenta vai ao modelo, como hoje | nada novo | 6, 8 |
 | A leitura tipada (a mesma porta de `connector_read`) | O contador das 50 é síncrono (`builder-port.ts:102-112`), também com as ferramentas em paralelo | Como `connector_read` hoje | Como `connector_read` hoje | nada novo | 16, 17 |
+| A pesquisa do ajudante (`subagent`, as leituras dele e o arquivo de cada uma) | Dois ajudantes no mesmo passo (as ferramentas em paralelo da U2): cada um com o seu agente; o contador das 50 é o do turno, síncrono, e conta os dois; a numeração dos arquivos conta pelo turno, não pelo contexto (U12), e dois nunca pegam o mesmo número | Parar: o Mastra corta o ajudante pelo mesmo sinal do turno e devolve o texto parcial (`@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6933-6948`); uma leitura cortada é a de hoje | A conta do modelo falha: o ajudante devolve erro ao principal (`:6963-6993`), que segue o turno sem trocar de conta; o sistema da empresa fora: o erro da leitura vai dentro do resumo | `MODEL_SIDE_CALL_FAILED` com `call: 'subagent'` (o `watched` de hoje); nunca o pedido nem o resumo (S41) | 38, 39, 40, 41 |
 
 ## A tabela de referência
 
@@ -296,6 +377,16 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | Instruções da empresa | U9 | nenhuma | `@mastra/core@1.82.0` `dist/knowledge/declarations.d.ts:44-49` (`pages` e `pinnedContext` da declaração), `dist/knowledge/pinned.d.ts` (fixadas da configuração sempre entregues, 500 tokens estimados por padrão, com a marca de corte); `dist/knowledge/index.d.ts:81-88` (`upsertPage`, só do host); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/prompts/index.ts:155-203` (instruções do host abaixo das regras) | Uma página declarada e fixada pela configuração, escrita pelo host | nativo | — | "3. A gente via implementar o Knowledge" | (o mesmo) |
 | Quem escreve a memória da empresa | U9 | `hub/identity/admission.ts:63-130` (toda escrita da empresa inteira é de dono e administrador, por permissão: conexões, contas de modelo, cópias) | `@mastra/core@1.82.0` `dist/agent-BP9OWM6D.js:62599-62624` (`knowledgeMemoryScopes`: `org` editor para toda corrida); `dist/agent-BP9OWM6D.js:73156`, `:73319`, `:73406` (editar, nota e fixar pedem papel) | O Mastra deixa todo membro editar o escopo da empresa; o nosso modelo de papéis dá a escrita da empresa por permissão | nativo (regra de acesso declarada); o nosso modelo de papéis decide | — | não precisa: o modelo de papéis aprovado | — |
 | Rotas de navegação do Mastra | U9 | `conversation/guard.ts:25-33` (lista fixa, S39) | `@mastra/core@1.82.0` `dist/docs/references/docs-studio-knowledge.md` (desligadas por padrão) | — | nativo: desligadas por padrão, ficam assim; o Hub só expõe as suas | — | não precisa | — |
+| A frase de cada comando | U10 | `machine/conversation.ts:288-298` e `machine/machines.ts:259-266` (as opções do comando, sem `requireDescription`); `apps/web/src/builder/conversation/tool-registry.ts:127-135` (`detailKey: 'command'`) | `@mastra/core@1.82.0` `dist/docs/references/reference-workspace-workspace-class.md:532-542`; `dist/workspace-iIUnzVkl.js:9456-9466` (o esquema com `description` antes de `command`); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/tool-availability.ts:96-100`; `@anthropic-ai/claude-agent-sdk@0.3.322` `sdk-tools.d.ts:814-829` (o `description` do `Bash`) | O modelo escreve antes do comando uma frase curta, e a tela a mostra no lugar do comando cru | nativo | — | "Sim inclua" (item 1) | `apps/server/src/builder/machine/command-description.test.ts` |
+| A prova e o placar | U11 | `assistant/assistant.eval.test.ts` (três casos com o dublê, `:87`, `:97`, `:111`; quatro com o modelo de verdade, `:120`, `:151`, `:214`, `:227`); `assistant/test-numbers.ts:116` (`numbersFromReads`, a conferência dos números) | `D/eng_writing-tools-for-agents.txt:67-95` (avaliar com tarefas reais e contar chamadas, erros e repetidas, artigo da Anthropic salvo pelo estudo do harness); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/context-audit.ts:1-60` (o peso de cada parte do pedido); `@mastra/evals@1.10.11` `checks` (já usado, `assistant.eval.test.ts:7`) | Um conjunto de tarefas reais e um placar por tarefa, lido a cada mudança | embrulhado: o placar é nosso, sobre as peças nativas (o dublê, os eventos `usage_update`, os `checks`) | os testes da própria unidade (critério 35) | "B2" | `apps/server/src/builder/assistant/assistant.scorecard.test.ts`, `test-scorecard.ts` |
+| O modelo da memória por pessoa | U7 | nenhum (a U7 cria o `PROFILE_TEMPLATE`) | `D/memory.md:478-566` (quatro tipos de nota, não guardar o que se lê do sistema, índice curto com teto, data em cada nota; página pública do Claude Code salva pelo estudo do harness); `@mastra/memory@1.41.0` `dist/docs/references/docs-memory-working-memory.md` (`template`) | Um modelo de texto com seções fixas e regras do que guardar | nativo (texto do `template`) | — | "Sim inclua" (item 3) | — |
+| O que é um lembrete | U4 | `assistant/prompt/assistant.md:1-58` (não diz) | `D/agent-sdk_modifying-system-prompts.md:385-410` (quem escreve o próprio texto diz ao modelo o que é um lembrete) | Uma frase no texto fixo | nativo (texto) | — | "Sim inclua" (item 3) | — |
+| O ajudante de pesquisa | U12 | `assistant/assistant.ts:57-63` (o comentário: "it calls no subagent"); `controller-kit/factories.ts:37-45` (`subagent` desligado pelo `BUILTIN`), `:82-114` (`controllerOf`, sem `subagents`) | `@mastra/core@1.82.0` `dist/docs/references/docs-harness-agent-controller.md:329-352`, `reference-agent-controller-agent-controller-class.md:111-135`; `dist/agent-controller-BDds1y5w.js:6719-6994` (`createSubagentTool`), `:8706-8730` (montado por corrida, com as ferramentas do controlador resolvidas pelo contexto do principal); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/subagents/explore.ts:4-10` (só leitura: `view`, `find_files`, `search_content`, `file_stat`), `sdk/src/index.ts:1691-1703`, `:1788-1808`; `@anthropic-ai/claude-agent-sdk@0.3.322` `sdk.d.ts:38-110` (`AgentDefinition`: `tools`, `disallowedTools`, `prompt`, `model`, `maxTurns`); `D/sub-agents.md:9-11`, `:33-47` (contexto próprio, só o resumo volta; o Explore só lê) | Um tipo de ajudante com instruções e ferramentas próprias, sem a conversa do principal; o resultado volta como o texto da ferramenta | nativo (`AgentController.subagents`) | — | "A1, porém estudar profudanmente …" | `apps/server/src/builder/assistant/research.ts`, `research.test.ts` |
+| O modelo do ajudante | U12 | `model-accounts/processors.ts:198-225` (`accountPick`: a conta sai de um processador de entrada, por passo), `:302-320` (`watched`), `:331-348` (`accountModel`, o título pela conta do turno); `turn.ts:207-210` (`calling()`, síncrono) | `@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6834-6866` (o ajudante é um `new Agent` sem processadores, e o modelo sai só de `resolveSubagentModel`, síncrono, com a cópia do contexto); `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/index.ts:1791-1808` ("Subagents resolve like the main agent: tenant credentials … come from the calling run's context") | O ajudante resolve o modelo como o agente principal, com as credenciais da corrida | embrulhado: o nosso `resolveSubagentModel` devolve o modelo da conta que o turno está usando (`turn.calling()`), pelo `watched` de hoje, como o título | `research.test.ts` (critério 40); nenhum processador roda no ajudante (`:6860-6866`), então a escolha de conta por processador não serve | não precisa | — |
+| As ferramentas do ajudante | U12 | `assistant/connector-access.ts:16-41` (as ferramentas de conector montadas por corrida com o escopo); `assistant/context.ts:51-72` (`scopeOf` lê o `resourceId` do `controller` do contexto); `controller-kit/once.ts:7-19` (memória por objeto de contexto) | `@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6830-6833` (`allowedControllerTools` copia das ferramentas do controlador), `:6840-6849` (o contexto do ajudante é um objeto novo, com `resourceId: ''`), `:6868-6876` (`allowedWorkspaceTools` pelo `prepareStep`), `:8719-8722` (as ferramentas do controlador resolvidas com o contexto do principal), `:8544-8555` (o modo filtra o principal pelo nome) | As ferramentas do ajudante são as do controlador que ele nomeia e as da máquina que ele permite | nativo: o `tools` do controlador vira uma função que monta, com a conversa do principal, o `connector_read` só de leitura; o modo do principal não o oferece, e só o ajudante o recebe | — | não precisa | — |
+| A numeração dos arquivos das leituras | U12 | `assistant/connector-access.ts:47-55` (`readsFiles`: conta por objeto de contexto; o do ajudante é outro, e o primeiro arquivo dele sobrescreveria o primeiro do turno) | `hub/connectors/builder-port.ts:101-113` (`createSpending`: o contador das 50 já conta pela chave do turno) | — | remendo de defeito nosso: contar pela chave do turno, como o contador das 50 | `@mastra/core` 1.82.0 não numera arquivos de ferramenta (o nome é nosso); `research.test.ts` (critério 39) | não precisa | — |
+| A linha do ajudante na tela | U12 | `apps/web/src/builder/conversation/tool-registry.ts` (sem `subagent`); `use-session.ts:98-111` (os eventos do controlador chegam pelo fluxo nativo) | `mastra-1.82@6e8dfcb8` `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:383-404` (o cartão do ajudante com o pedido, do início ao fim); `D/agent-sdk_subagents.md:26` | A linha mostra o pedido enquanto roda e o resumo ao terminar | nativo (a parte da ferramenta `subagent` guardada na mensagem) | — | "Pesquisando: …" (a opção A1 do estudo) | — |
+| As skills abertas depois da observação | — | `controller-kit/memory.ts:74` (a observação a partir de 30 mil tokens) | `D/context-window.md:35`, `:44` | O Claude Code recoloca o corpo das skills abertas | nativo possível (um sinal de estado, `docs-guides-context-engineering.md:251`), fica de fora até o placar da U11 mostrar respostas erradas depois de uma observação | — | "Sim inclua" com o item 5 condicionado | — |
 | Busca semântica no recall | — | — | `mastracode/sdk/src/agents/memory.ts:313-314`, `:346` (só com vetor) | — | nativo, fica de fora: pede embedder pago e pgvector | — | não precisa | — |
 | Fornecedor de busca próprio | — | — | `mastracode/sdk/src/tools/web-search.ts:180-210` | — | nativo, fica de fora: a busca do provedor basta | — | "4. A" | — |
 | Cópia durável, internet na máquina, porta | — | — | o estudo de Conectores e máquina, M2, M4, M6 | — | nativo, fica de fora: decisões dadas | — | card anterior; 0059; 2026-11-10 | — |
@@ -311,7 +402,14 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
   [boundaries](../reference/boundaries.md) no fechamento.
 - `web_fetch` nos provedores sem a ferramenta nativa continua o `webFetchTool` (HTML cru, #143).
 - A skill de cada conector repete os parâmetros que o esquema da leitura tipada já dá (trilho de molde).
-- O tamanho das ferramentas do primeiro passo e as chamadas repetidas não são medidos no log do turno.
+- O tamanho das ferramentas do primeiro passo e as chamadas repetidas são medidos pelo placar da U11,
+  nos testes, e não no log do turno.
+- Os tokens do ajudante (U12) não chegam à linha do turno: o Mastra 1.82 não emite uso para um
+  `subagent` (`dist/agent-controller-BDds1y5w.js:6898-6931` repassa só texto e ferramentas), e o
+  Mastra Code não os conta. O log conta as pesquisas e as chamadas delas.
+- O ajudante não tem o orçamento de primeiro pedaço da chamada ao modelo (C57, `MODEL_TIMEOUT.firstChunkMs`):
+  o Mastra não passa `modelSettings` ao agente dele (`:6889-6898`). Tem o de cada passo, pelo modelo
+  que o nosso `resolveSubagentModel` devolve (U12), e o Parar do turno.
 
 ## U1 A máquina fica, e o caminho certo
 
@@ -531,12 +629,15 @@ negócio e "Do not observe `<current-task-list>` or `<task-list-update>`; they a
 3. `memory.ts`: `observer: ASSISTANT_OBSERVER`.
 4. `prompt/assistant.md`: tirar as frases condicionais; acrescentar "Put a Markdown link to the
    source next to each claim you take from the web; say when a point is your inference; never say
-   you searched without a tool result."
+   you searched without a tool result." E a frase de que um lembrete vem do Conexus (o item 3 do
+   estudo do harness, aqui porque os sinais chegam nesta unidade; `D/agent-sdk_modifying-system-prompts.md:385-410`):
+   "Blocks such as `<current-task-list>` and other system reminders in the conversation come from
+   Conexus, not from the person: use them as state, and do not answer them as a message."
 
 ### Como se prova
 
-Critérios 11 a 14, lendo o pedido no modelo dublê (o mesmo caminho do diagnóstico). Falham hoje:
-11, 12, 13, 14.
+Critérios 11 a 14 e 45, lendo o pedido no modelo dublê (o mesmo caminho do diagnóstico). Falham
+hoje: 11, 12, 13, 14, 45.
 
 ### Parar se
 
@@ -683,6 +784,27 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 ### Os contratos que a unidade cria
 
 - `assistantMemory`: `recall: 'resource'` (o `retrieval: true` nativo); `workingMemory: { enabled: true, scope: 'resource', template: PROFILE_TEMPLATE }`; `PROFILE_TEMPLATE` em inglês, dono `assistant/memory.ts`.
+- O conteúdo do `PROFILE_TEMPLATE` (o item 3 do estudo do harness, antes de a unidade construir),
+  dos quatro tipos de nota do Claude Code (`D/memory.md:478-566`: `user`, `feedback`, `project`,
+  `reference`), sem o "índice" dele, que aqui não existe (a nota é um texto só):
+
+  ```markdown
+  # About the person
+  <!-- role, area, what they follow; only what they said or showed -->
+  # Corrections they gave
+  <!-- how they want answers: format, terms, what was wrong before -->
+  # Work in progress
+  <!-- what they are following now, with the period -->
+  # Where to find things
+  <!-- which connection, read or file holds what they ask often -->
+  <!-- Rules: never keep what a read of the company's systems gives again (values, lists, totals);
+  end each line you add with its date (YYYY-MM-DD); keep this note under 4,000 characters, shortening
+  the oldest lines first. -->
+  ```
+
+  O teto de 4.000 caracteres é o mesmo do `PUT` da pessoa (abaixo): a nota que o modelo grava cabe
+  na que a pessoa pode gravar. O Mastra não corta a memória de trabalho; o teto é a regra do modelo,
+  como o Claude Code faz com o índice dele (200 linhas ou 25 KB, com lembrete).
 - `getProfileMemory` (`GET /api/companies/{companyId}/assistant/profile-memory`, `access: 'session'`,
   sucesso `{ text: string | null }`), `setProfileMemory` (`PUT`, corpo `{ text: z.string().max(4000) }`,
   sucesso `{ text }`), `clearProfileMemory` (`DELETE`, 204). Falhas: `NOT_FOUND`, `SESSION_REQUIRED`,
@@ -714,7 +836,7 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 
 ### Como se prova
 
-Critérios 19 a 22. Falham hoje: não há `recall` nem memória de trabalho.
+Critérios 19 a 22 e 44. Falham hoje: não há `recall` nem memória de trabalho.
 
 ### Parar se
 
@@ -869,3 +991,299 @@ Critérios 26 a 31, com o banco real de teste e o modelo dublê. Falham hoje: n�
 - A página fixada entra antes da mensagem fixa no pedido.
 - O `Knowledge` cria tabelas fora do esquema `mastra` ou pede uma permissão que o papel do Mastra no
   banco não tem.
+
+## U10 A frase de cada comando
+
+**Base e modelo.** O commit da U1. Sonnet: uma opção nativa ligada em duas máquinas, uma frase em dois
+textos e um campo da tela.
+
+### As linhas da tabela
+
+- **A frase de cada comando.** Ligar `requireDescription` como o Mastra Code
+  (`mastracode/sdk/src/agents/tool-availability.ts:96-100`) nas opções das duas máquinas:
+  `machine/conversation.ts:288-298` (Assistente, agentes do Projeto, Construtor) e
+  `machine/machines.ts:259-266` (Builder). O esquema que o Mastra monta: `dist/workspace-iIUnzVkl.js:9456-9466`;
+  a doc: `reference-workspace-workspace-class.md:532-542`. A tela:
+  `apps/web/src/builder/conversation/tool-registry.ts:127-135`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/builder/machine/` | Muda `conversation.ts`, `machines.ts`; cria `command-description.test.ts` | todas as conversas |
+| `apps/server/src/builder/assistant/prompt/assistant.md`, `apps/server/src/builder/conversation/prompt/builder.md` | Muda: uma frase cada | — |
+| `apps/web/src/builder/conversation/` | Muda `tool-registry.ts` e a linha do comando; muda os testes dela | todas as conversas |
+
+### Os contratos que a unidade cria
+
+- `[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true }` nas duas máquinas; nada de
+  esquema nosso: o argumento `description` é o do Mastra.
+- A linha do comando: `detailKey: 'description'`, e o corpo `command` continua mostrando o comando e
+  a saída ao abrir; sem `description` (chamadas guardadas antes), o `detailKey` de hoje.
+- A frase nos dois textos fixos, em inglês como o resto deles: "Write each command's `description` in
+  Brazilian Portuguese, in a few words a colleague who does not program understands; never the
+  command itself."
+
+### As skills e a leitura
+
+`mastra` (`@mastra/core/workspace`); as linhas de `apps/web/src` em `docs/reference/stack.md`.
+
+### A ordem do trabalho
+
+1. As opções das duas máquinas. Regras: C75.
+2. As duas frases.
+3. A linha do comando e os seus testes.
+
+### Como se prova
+
+Critérios 32 a 34. Falham hoje: 32 (o esquema não tem `description`), 33 (a linha mostra o comando
+cru) e 34 (os textos não pedem a frase).
+
+### Parar se
+
+- O CLIProxy do Gemini recusa o esquema com o campo novo: relatar com o pedido capturado.
+- Um teste do Builder depende da linha com o comando cru: a linha é a mesma para todos, mudar o teste.
+
+## U11 A prova e o placar
+
+**Base e modelo.** O commit da U5, com a lista abaixo revisada pelo fundador. Sonnet.
+
+### As linhas da tabela
+
+- **A prova e o placar.** O que já existe: `assistant/assistant.eval.test.ts` (o dublê `reader`,
+  `:43-85`; os casos `:87`, `:97`, `:111`; os de modelo de verdade `:120`, `:151`, `:214`, `:227`),
+  `assistant/test-real-model.ts` (`REAL_MODEL`, `checked`, `subscribed`), `assistant/test-numbers.ts:116`
+  (`numbersFromReads`), `conversation/turn-line.ts:13-40` (`TurnTally`, que já ouve `usage_update`).
+  Seguir o método do artigo (`D/eng_writing-tools-for-agents.txt:67-95`) e o `context-audit.ts` do
+  Mastra Code (`mastracode/sdk/src/agents/context-audit.ts:1-60`) para o peso de cada parte do
+  primeiro pedido.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/builder/assistant/` | Cria `assistant.scorecard.test.ts`, `test-scorecard.ts` (as perguntas, os dados de cada uma e a contagem) e a planilha de teste gerada no próprio teste | — |
+
+### Os contratos que a unidade cria
+
+- `type Scorecard = { question: number; right: boolean; calls: number; errors: number; repeated: number; firstStepTokens: number | undefined; helpers: number }`,
+  dono `test-scorecard.ts`. `calls`: as chamadas de ferramenta do turno, as do ajudante incluídas
+  (os eventos `subagent_tool_start`, a partir da U12). `errors`: as que voltaram com erro ou recusa.
+  `repeated`: a mesma ferramenta com os mesmos argumentos mais de uma vez no turno.
+  `firstStepTokens`: o `usage.promptTokens` do primeiro `usage_update` (só no modelo de verdade; no
+  dublê, `undefined`). `right`: o juiz de cada pergunta (a coluna "Certo quando").
+- O placar é gravado num JSON por rodada na pasta temporária do teste, fora do repositório; o
+  firstmate o anexa ao pull request de cada unidade seguinte como a medida de antes e depois.
+- Uma resposta errada não falha o teste no modelo de verdade: o placar é medida. Com o dublê, o teste
+  prova a contagem (critério 35).
+
+### As perguntas, para revisão do fundador
+
+Tiradas dos roteiros dos cartões (24.1, 24.3.2, O Assistente do dia a dia e este) e dos usos do
+Assistente, do jeito que a equipe pergunta, sem dado de empresa: os dados são os dublês de teste.
+Dados: **SV** as vendas de teste do Sankhya, duas filiais, setembro de 2026 (`salesSankhya`,
+`hub/connectors/test-sales.ts:42`); **SC** o cadastro do dublê do Sankhya, com estoque e grupos
+(`registerOn`, `packages/connectors/src/sankhya/fake-register.ts:106`); **ML** o dublê do Mercado
+Livre (`packages/connectors/src/mercado-livre/fake.ts`, `fake-data.ts`, `fake-routes-more.ts`);
+**AQ** os anexos de teste (`assistant/test-files.ts`); **PL** uma planilha de metas de 3 colunas e 200
+linhas, gerada no teste; **WEB** nenhum dado: só o modelo de verdade, com a busca do provedor.
+
+| # | Pergunta | Dados | Certo quando |
+| --- | --- | --- | --- |
+| 1 | Quanto a gente vendeu em setembro, por vendedor? | SV | cada total igual ao do dublê (`numbersFromReads`) |
+| 2 | Qual vendedor vendeu mais em setembro na filial? | SV | o nome e o total do maior |
+| 3 | Compara as vendas de setembro das duas filiais e me diz a diferença | SV | os dois totais e a diferença certos (o caso do ajudante, a partir da U12) |
+| 4 | Quais os cinco produtos que mais venderam em setembro? | SV | os cinco, na ordem |
+| 5 | Quanto gastou o cliente que mais comprou em setembro? | SV | o cliente e o total |
+| 6 | Vendemos mais na primeira ou na segunda quinzena de setembro? | SV | a quinzena e os dois totais |
+| 7 | Qual foi o ticket médio dos pedidos de setembro? | SV | o valor com duas casas |
+| 8 | Quantos pedidos de venda tivemos em setembro, e quantos itens em média por pedido? | SV | as duas contas |
+| 9 | Quais produtos estão com estoque zerado? | SC | a lista inteira, nenhum a mais |
+| 10 | Quanto tem de estoque em cada grupo de produto? | SC | o total por grupo |
+| 11 | Tem produto com mais reservado do que em estoque? | SC | os produtos, ou "nenhum" se não houver |
+| 12 | Quantos anúncios ativos a gente tem no Mercado Livre? | ML | o número |
+| 13 | Quais vendas do Mercado Livre ainda não foram enviadas? | ML | as vendas sem envio |
+| 14 | Tem pergunta de comprador sem resposta no Mercado Livre? | ML | as perguntas abertas |
+| 15 | Tem reclamação aberta no Mercado Livre? Do que se trata? | ML | a reclamação e o motivo |
+| 16 | Quanto o Mercado Livre cobrou de tarifa no último faturamento? | ML | o valor |
+| 17 | Qual anúncio teve mais visitas? | ML | o anúncio |
+| 18 | Algum anúncio está em promoção agora? | ML | os anúncios, ou "nenhum" |
+| 19 | Resume esse PDF em cinco pontos | AQ | cinco pontos do texto do PDF, nenhum inventado (os `checks` de hoje) |
+| 20 | Nessa planilha, qual a soma da coluna de meta por vendedor? | PL | a soma de cada um |
+| 21 | Cruza essa planilha de metas com as vendas de setembro e diz quem bateu a meta | PL, SV | os vendedores certos (o caso do ajudante, a partir da U12) |
+| 22 | O que você consegue fazer por mim aqui? | nenhum | cita só o que as ferramentas da conversa fazem; nenhuma leitura |
+| 23 | Quanto a gente vendeu em setembro? (numa conversa sem conexão escolhida) | nenhum | diz para escolher a conexão; nenhum `connector_read` (o caso de `:111`) |
+| 24 | Monta um app para eu acompanhar as metas dos vendedores | nenhum | propõe passar ao Builder (o conjunto `EVAL_SET` de hoje) |
+| 25 | Qual a alíquota de ICMS em São Paulo para bebidas? Cita a fonte | WEB | um link de um domínio `gov.br` perto da alíquota |
+| 26 | Na conversa de antes, o que eu falei que acompanho? (entra com a U7) | uma conversa anterior gravada no teste | a frase da conversa anterior, achada pelo `recall` |
+| 27 | O que é a operação 1100 da empresa? (entra com a U9) | uma página da memória da empresa gravada no teste | a definição da página |
+
+### As skills e a leitura
+
+`mastra` (`@mastra/evals`); o guia de testes.
+
+### A ordem do trabalho
+
+1. `test-scorecard.ts`: o tipo, a contagem de um turno e os dados de cada pergunta. Regras: o guia de
+   testes (dublês, nenhum dado de empresa).
+2. `assistant.scorecard.test.ts`: o caso do dublê que prova a contagem, e o caso de modelo de verdade,
+   ligado só com `CONEXUS_EVAL_REAL_MODEL`, como os de hoje.
+3. Uma rodada com o modelo de verdade, ligada pelo firstmate pela conta que ele já usa nos casos de
+   hoje, e o placar no relatório como a medida de partida.
+
+### Como se prova
+
+Critérios 35 e 36. Falham hoje: não existe placar.
+
+### Parar se
+
+- Uma pergunta da lista revisada pede um dado que nenhum dublê tem: a pergunta sai da rodada, e o
+  relatório diz qual e por quê; nunca um dado de empresa.
+- A rodada com o modelo de verdade pede uma conta paga que o firstmate não tem autorizada.
+
+## U12 O ajudante de pesquisa
+
+**Base e modelo.** O commit da U6. Opus: o modelo da conta fora do processador, as ferramentas
+montadas com a conversa de outro contexto e a porta de acesso.
+
+### As linhas da tabela
+
+- **O ajudante de pesquisa.** A doc instalada `docs-harness-agent-controller.md:329-352`,
+  `reference-agent-controller-agent-controller-class.md:111-135`; o código
+  `dist/agent-controller-BDds1y5w.js:6719-6994` (`createSubagentTool`) e `:8706-8730` (montado em cada
+  corrida). O modelo a seguir: `mastracode/sdk/src/agents/subagents/explore.ts:4-10` (só leitura) e a
+  ligação `mastracode/sdk/src/index.ts:1691-1703`, `:1788-1808`. Do Claude Code, a forma do tipo
+  (`AgentDefinition`, `sdk.d.ts:38-110`: `description`, `tools`, `prompt`, `model`, `maxTurns`) e o
+  porquê (`D/sub-agents.md:9-11`: "the subagent does that work in its own context and returns only the
+  summary"; `:33-47`: o Explore só lê).
+- **O modelo do ajudante.** `model-accounts/processors.ts:198-225`, `:302-320`, `:331-348`;
+  `turn.ts:207-210`. O Mastra: `dist/agent-controller-BDds1y5w.js:6834-6866`.
+- **As ferramentas do ajudante.** `assistant/connector-access.ts:16-41`, `assistant/context.ts:51-72`,
+  `controller-kit/once.ts:7-19`; o Mastra: `:6830-6833`, `:6840-6849`, `:6868-6876`, `:8719-8722`,
+  `:8544-8555`.
+- **A numeração dos arquivos.** `assistant/connector-access.ts:47-55`; `hub/connectors/builder-port.ts:101-113`.
+- **A linha do ajudante.** `apps/web/src/builder/conversation/tool-registry.ts`; a Factory UI,
+  `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:383-404`.
+
+### O que o estudo achou, e como a unidade o resolve
+
+1. **O ajudante do Mastra nasce sem a escolha de conta.** O `subagent` cria um `new Agent` só com
+   instruções, modelo, ferramentas e a máquina (`:6860-6866`): nenhum processador roda nele. No
+   Conexus, a conta do modelo sai de um processador por passo (`accountPick`), então o ajudante iria
+   ao roteador de modelos sem a credencial da empresa. O gancho nativo é `resolveSubagentModel`, que
+   recebe a cópia do contexto do principal (`:6853`), como o Mastra Code faz para as credenciais da
+   corrida (`index.ts:1791-1808`). O nosso devolve o modelo da conta que o turno está usando
+   (`turn.calling()`, síncrono; o turno vai na cópia do contexto), pelo `watched` de hoje, como o
+   título da conversa: sem rodízio de conta e sem aviso; uma falha vira o erro da ferramenta ao
+   principal.
+2. **O ajudante não enxerga a conversa.** A cópia do contexto leva o `controller` com `resourceId: ''`
+   (`:6842-6849`), e o nosso `scopeOf` lê a dona da conversa desse campo, guardado por objeto de
+   contexto (`once.ts`): dentro do ajudante, toda ferramenta que lê o escopo pelo contexto não acha a
+   conversa. As ferramentas do controlador, porém, são montadas em cada corrida com o contexto do
+   principal (`:8719-8722`) e chegam ao ajudante por `allowedControllerTools` (`:6830-6833`). Então o
+   `tools` do controlador do Assistente vira uma função que monta o `connector_read` com o escopo da
+   conversa já fechado nele; o modo do principal não oferece `connector_read` (a U6 o tirou), e o
+   filtro do modo, pelo nome (`:8544-8555`), o deixa fora do pedido do principal.
+3. **Os arquivos das leituras se sobrescreveriam.** `readsFiles` numera por objeto de contexto
+   (`connector-access.ts:47-55`); o do ajudante é outro, e a primeira leitura dele gravaria
+   `reads/<turno>-1.json` por cima da primeira do turno. A numeração passa a contar pela chave do
+   turno, como o contador das 50 já conta (`builder-port.ts:101-113`). O contador das 50 já é o do
+   turno: a chave vai na cópia do contexto, e as leituras do ajudante contam nas mesmas 50.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/builder/assistant/` | Cria `research.ts` (o tipo e as ferramentas do ajudante), `research.test.ts`; muda `assistant.ts` (o comentário de `:57-63`, `AVAILABLE_TOOLS` com `subagent`, o `tools` do controlador como função, `subagents`), `connector-access.ts` (`readsFiles` pela chave do turno), `prompt/assistant.md` (quando delegar) e `assistant.test.ts` (o conjunto fechado cresce com `subagent`) | — |
+| `apps/server/src/builder/controller-kit/factories.ts` | Muda: `controllerOf` aceita `subagents` e `resolveSubagentModel`, repassados ao `AgentController`; sem eles, nada muda | Builder, Assistente, agentes do Projeto |
+| `apps/server/src/builder/model-accounts/processors.ts` | Cria `subagentModel(deps)`; `SideCall` ganha `'subagent'` | `controller-kit/`, `assistant/` |
+| `apps/server/src/builder/conversation/turn-line.ts` | Muda: `TurnTally` ouve `subagent_end` e `subagent_tool_start`; a linha ganha `helpers` e `helperCalls` | Builder, Assistente |
+| `packages/hub-api/src/tools.ts` | Cria `SUBAGENT_TOOL = 'subagent'` | `apps/server`, `apps/web` |
+| `apps/web/src/builder/conversation/` | Muda `tool-registry.ts` (a linha do ajudante e o corpo com o resumo) e os testes | todas as conversas |
+
+### Os contratos que a unidade cria
+
+- `RESEARCH: AgentControllerSubagent`, dono `assistant/research.ts`:
+  `id: 'pesquisar'`, `name: 'Pesquisa'`;
+  `description: 'Reads the company systems chosen in this conversation and the files on its machine to answer one focused question, and returns the findings with where each number came from. Writes nothing.'`;
+  `instructions` (em inglês, como os outros textos): "You answer one research task for Conexus's
+  Assistant and only read. Use `connector_read` with the connection, the reads, the fields, the period
+  and the codes the task gives; filter and count at the system (WHERE, COUNT, SUM) rather than reading
+  every row; open the saved file of a long read with the file tools. Return, in Brazilian Portuguese,
+  the findings first, then each number with the read or file it came from; say what you could not
+  read and why; mark what is your inference. You cannot see the conversation: work only from the task.";
+  `allowedControllerTools: [BUILDER_TOOL.connectorRead]`;
+  `allowedWorkspaceTools: [WORKSPACE_TOOL.readFile, WORKSPACE_TOOL.listFiles, WORKSPACE_TOOL.fileStat, WORKSPACE_TOOL.grep]`,
+  as quatro do `explore` do Mastra Code com os nossos nomes; `defaultModelId: TURN_ACCOUNT`; sem
+  `maxSteps`, `forked` nem `tools`.
+- **O teto e o custo, com a base de cada número.** Passos: os 50 do Mastra quando o tipo não diz
+  (`:6874`), os mesmos do `explore` do Mastra Code, que não diz, e do Mastra Code documentado ("defaults
+  to `50` unless `stopWhen` is set", o Context7); o Claude Code deixa `maxTurns` sem padrão no tipo.
+  Leituras: as 50 por turno de hoje (`CONNECTOR_CALLS_PER_TURN`), as mesmas para o principal e o
+  ajudante. Ajudantes por turno: nenhum teto novo; o turno já tem 100 passos (`TURN_STEPS`), e cada
+  chamada ao ajudante é um passo dele. Aninhamento: nenhum, porque as ferramentas do ajudante são só as
+  que o tipo nomeia (`:6830-6833`), e `subagent` não está entre elas; o Claude Code permite três
+  níveis por padrão (`D/agent-sdk_subagents.md`, a tabela dos limites), e aqui não é preciso. Custo:
+  as chamadas do ajudante vão na conta da conversa, a mesma do título; quanto custam, a prova da U11
+  mede em passos e chamadas.
+- `TURN_ACCOUNT = 'conexus/turn-account'`, dono `model-accounts/processors.ts`: o nome que o Mastra
+  exige para chegar ao `resolveSubagentModel` (`:6835-6840` recusa sem nenhum); o nosso resolvedor
+  ignora o nome que chega, inclusive um `modelId` que o modelo principal escreva.
+- `subagentModel(deps: QueueDeps): (modelId: string, options: { requestContext?: RequestContext }) => LanguageModel`,
+  dono `model-accounts/processors.ts`: `turnIn(requestContext)?.calling()`; com a conta,
+  `watched(deps, turn, account, 'subagent')` com o orçamento de cada passo (`MODEL_TIMEOUT.stepMs`,
+  um `AbortSignal.timeout` somado ao sinal da chamada); sem turno ou sem conta, `noAccountModel` da
+  conversa (falha na hora, sem chamar ninguém).
+- O `tools` do controlador do Assistente: `async ({ requestContext }) => ({ [ASK_USER_TOOL]: askUser, ...researchReads(requestContext) })`,
+  com `researchReads` montando, pela mesma `assistantConnectorTools` (`mayNote: false`), só o
+  `connector_read` das conexões escolhidas, com o escopo de `scopeOf(requestContext)` do principal; sem
+  escopo, só o `ask_user`.
+- `readsFiles`: a contagem por `turnKey.of(requestContext)` num `Map`, esquecendo o mais antigo depois
+  de `TURNS_KEPT`, como `createSpending`.
+- `AVAILABLE_TOOLS` ganha `SUBAGENT_TOOL`; o comentário de `assistant.ts:57-63` troca "and it calls no
+  subagent" por "and one subagent type, `pesquisar` (`research.ts`), which only reads".
+- O texto fixo do Assistente, em inglês: "When an answer needs several reads whose rows you will not
+  need again (two branches, two periods, a file against a system), give it to the `pesquisar`
+  subagent. Write `task` in Brazilian Portuguese, starting with what you want to know, because the
+  person reads it as 'Pesquisando: …'; put in it the connection, the reads and fields, the period and
+  the codes from the notes, since the subagent does not see this conversation. Answer from its
+  findings, and say where each number came from."
+- A linha da tela: `running: 'Pesquisando'`, `done: 'Pesquisou'`, `failed: 'A pesquisa falhou'`,
+  `detailKey: 'task'` numa linha cortada, corpo o `content` do resultado como texto da mensagem; o
+  texto `[Aborted by user]` do Mastra dito "Parada no meio".
+- O arquivo tomado como modelo é `assistant/connector-access.ts` com `controller-kit/factories.ts`:
+  cumpre C21 (`'subagent'` entra na união de `SideCall`), C26 (`turnKey`, um dono da chave do turno) e
+  C27 (`SUBAGENT_TOOL` no `hub-api`, o mesmo nome no servidor e na tela).
+
+### As skills e a leitura
+
+`mastra` (`@mastra/core/agent-controller`: as docs `docs-harness-agent-controller.md` e
+`reference-agent-controller-agent-controller-class.md`); as linhas de `apps/web/src` em
+`docs/reference/stack.md`.
+
+### A ordem do trabalho
+
+1. `processors.ts`: `subagentModel` e `TURN_ACCOUNT`. Regras: C57, C75.
+2. `factories.ts`: `controllerOf` com `subagents` e `resolveSubagentModel`.
+3. `connector-access.ts`: `readsFiles` pela chave do turno, com o seu teste (critério 39).
+4. `research.ts` e `assistant.ts`: o tipo, o `tools` do controlador como função, `AVAILABLE_TOOLS`, o
+   comentário e a frase do texto fixo. Regras: S36, S41.
+5. `turn-line.ts`: `helpers` e `helperCalls`.
+6. A linha da tela e as capturas a 1366 e 390, nos dois temas.
+
+### Como se prova
+
+Critérios 37 a 43, pelo modelo dublê que pede `subagent` e, dentro do ajudante, `connector_read` e
+`mastra_workspace_read_file`; o dublê da conta guarda as chamadas do ajudante (critério 40). Falham
+hoje: todos (o Assistente não oferece `subagent`).
+
+### Parar se
+
+- O `connector_read` montado pelo `tools` do controlador aparece no pedido do principal: o filtro do
+  modo não o cortou; relatar com o pedido capturado, sem trocar o nome.
+- `turn.calling()` está vazio quando o ajudante começa (o passo do principal já soltou a conta):
+  relatar; não abrir uma escolha de conta nova fora do processador.
+- O `watched` não serve a um modelo que não é `v3`, e uma conta da empresa usa esse modelo: relatar.
+- Uma ferramenta do ajudante tem união no esquema, e a conta é do CLIProxy do Gemini (o
+  `forCliProxy` roda só no processador do principal): relatar.
+- O `prepareStep` do ajudante deixa passar uma ferramenta da máquina fora das quatro.
