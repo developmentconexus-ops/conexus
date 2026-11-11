@@ -145,7 +145,12 @@ test('um nó de imagem de fora deixa o bloco como código, e a política recusa 
   const asked = outsideOf(page)
   await page.getByText('Não foi possível desenhar este diagrama.').waitFor({ timeout: 30_000 })
   assert.equal(await page.getByRole('img', DRAWN).count(), 0)
-  assert.deepEqual(page.problems, [refusal('https://evil.test/a.png')], 'only the refusal listed')
+  // The refused image fails the library's drawing, and the frame says it in its console.
+  assert.deepEqual(
+    page.problems,
+    [refusal('https://evil.test/a.png'), 'EncodingError: The source image cannot be decoded.'],
+    'only the refusal and the drawing failure it causes',
+  )
   assert.ok(asked.length > 0, 'the fetch was tried')
   for (const request of asked) {
     assert.equal(request.failure()?.errorText, 'csp', request.url())

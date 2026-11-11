@@ -50,7 +50,7 @@ const PromptFile = z.object({
   data: z.union([z.instanceof(Uint8Array), z.string()]),
 })
 
-/** Mastra's rule for what it uploads (`isInlineData`): bytes, a data URL or bare base64; a link is left to the model. */
+/** Mastra's rule for what it uploads (`isInlineData`), for what the composer sends: bytes or a data URL; a link is left to the model. */
 function isInline(data: Uint8Array | string): boolean {
   return typeof data !== 'string' || data.startsWith('data:') || !data.includes(':')
 }
@@ -105,7 +105,9 @@ function stamped(messages: readonly Stored[]): void {
  * Stamps the note's estimate on the new file parts that are not images (`processInput`,
  * `processInputStep`; criterion 10).
  */
-export function machineUploads(deps: { log: FailureLog }): InputProcessor {
+export function machineUploads(deps: {
+  log: FailureLog
+}): InputProcessor<FileUploadTripwireMetadata> {
   return {
     id: 'file-upload',
     name: 'File Upload',
@@ -119,8 +121,8 @@ export function machineUploads(deps: { log: FailureLog }): InputProcessor {
     async processLLMRequest(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>) {
       const machine = args.workspace
       if (machine?.hasSandboxConfig() !== true || !hasPlacedFile(args.prompt)) return undefined
-      // Started here, so a machine that does not start fails the turn as MACHINE_UNAVAILABLE, not as
-      // the native NO_SANDBOX tripwire that the screen reads as MODEL_REFUSED.
+      // Started here, so a machine that is out fails the turn as MACHINE_UNAVAILABLE even when the
+      // file is only in the history, where the native would leave a note and go on (the card's debt).
       if (args.requestContext !== undefined) {
         try {
           await machine.resolveSandbox({ requestContext: args.requestContext })
@@ -140,12 +142,7 @@ export function machineUploads(deps: { log: FailureLog }): InputProcessor {
         const code = MACHINE_SIDE.find((each) => each === options?.metadata?.code)
         if (!args.abortSignal?.aborted && code !== undefined) {
           deps.log.error({ reason: 'UPLOAD', code }, 'MACHINE_UNAVAILABLE')
-          throw told(
-            args.requestContext,
-            new Failure('MACHINE_UNAVAILABLE', {
-              details: { reason: 'UPLOAD', code },
-            }),
-          )
+          throw told(args.requestContext, new Failure('MACHINE_UNAVAILABLE'))
         }
         return args.abort(reason, options)
       }

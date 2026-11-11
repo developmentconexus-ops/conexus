@@ -40,10 +40,22 @@ export const READS_CALLS: Block[][] = [
 ]
 const HANDOFF_PROMPT = 'Monte um app de encomendas para uma padaria inventada.'
 /** The signal the Assistant's handoff sends (`builder/assistant/handoff.ts`): the person's words, marked as the Assistant's. */
+const HANDOFF_CONTENTS: { type: 'text'; text: string }[] = [
+  { type: 'text', text: HANDOFF_PROMPT },
+  {
+    type: 'text',
+    text: [
+      'Arquivos que a pessoa mandou ao Assistente:',
+      '- politica-comercial.pdf (PDF, 1,5 MB)',
+      '- precos.xlsx (planilha, 48 KB)',
+      'Eles ficam na conversa do Assistente; este Projeto não os tem. O que o briefing diz deles é o que o Assistente leu.',
+    ].join('\n'),
+  },
+]
 export const HANDOFF_SIGNAL = {
   type: 'user',
   tagName: 'user',
-  contents: HANDOFF_PROMPT,
+  contents: HANDOFF_CONTENTS,
   attributes: { source: 'assistant', assistantConversation: 'conversa-do-assistente' },
   author: { id: 'pessoa-inventada', name: 'Pessoa Inventada' },
 } as const

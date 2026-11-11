@@ -101,6 +101,15 @@ test('a máquina fora: o turno falha e o arquivo não vaza', async (t) => {
   assert.ok(on.hub.lines.some((line) => line.message === 'MACHINE_UNAVAILABLE'))
 })
 
+test('a máquina fora com o arquivo só do histórico: o turno falha em vez de seguir com a nota', async (t) => {
+  const on = await conversation(t)
+  assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
+  on.hub.assistantMachines.control.start = 'unreachable'
+  const events = await on.say('E os prazos?')
+  assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
+  assert.equal(on.calls.length, 1, 'the second question never reached the model')
+})
+
 test('a gravação recusada: o turno falha e o arquivo não vaza', async (t) => {
   const on = await conversation(t)
   mkdirSync(join(on.work, 'uploads'), { recursive: true })

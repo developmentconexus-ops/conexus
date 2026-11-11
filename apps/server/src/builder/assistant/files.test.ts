@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { nativeRecording } from '../../platform/test-recordings.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import type { SentFile } from './test-assistant.ts'
+import type { Upload } from './test-assistant.ts'
 import {
   COMMAND,
   conversation,
@@ -110,7 +110,7 @@ test('o arquivo achado depois da observação', async (t) => {
 })
 
 /** The turn on which the observer first ran, for a conversation of Assistant answers as long as `LONG`. */
-async function observedAt(t: TestContext, files: SentFile[]) {
+async function observedAt(t: TestContext, files: Upload[]) {
   const on = await conversation(t, (_, index) => ({ kind: 'text', text: index < 2 ? LONG : 'Li.' }))
   const big = files.map(() => file('grande.pdf', PDF_TYPE, Buffer.alloc(200_000, 'x')))
   let turn = 0
