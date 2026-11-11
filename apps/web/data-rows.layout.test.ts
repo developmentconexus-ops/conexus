@@ -81,7 +81,9 @@ for (const viewport of [DESKTOP, PHONE]) {
     )
     await page.getByRole('button', { name: /mais de 10\.000 linhas/ }).click()
     // The open row says it in words, apart from the cut line's span.
-    const said = (text: string) => page.getByText(text, { exact: true }).and(page.locator('div'))
+    function said(text: string) {
+      return page.getByText(text, { exact: true }).and(page.locator('div'))
+    }
     await said('mais de 10.000 linhas').waitFor()
     await page
       .getByRole('button', { name: /Não conseguiu propor a cópia/ })
