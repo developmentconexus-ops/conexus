@@ -152,6 +152,7 @@ function nextOf(a: {
         ? { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' }
         : { kind: 'NEXT', position: null }
     case 'OFFSET': {
+      if (size === 0) return { kind: 'NEXT', position: null } // an empty page ends the walk, as in the references
       const offset = (position?.kind === 'OFFSET' ? position.offset : 0) + size
       if (paging.ceiling !== null && offset >= paging.ceiling)
         return { kind: 'CEILING', ceiling: paging.ceiling }
@@ -172,7 +173,8 @@ function nextOf(a: {
  * One answered page as the copy's rows: each cell the canonical text of its column's type, the next
  * position and whether more follows. A value that does not fit its type is `MISFIT`, never null; a page
  * with no sign of its end, or a cursor read with more to come and no cursor, is `UNREADABLE`; an offset
- * that would reach its declared ceiling with more pages ahead is `CEILING`.
+ * that would reach its declared ceiling with more pages ahead is `CEILING`. An offset page with no rows
+ * ends the walk even when the answer says more follows (Airbyte's `OffsetIncrement`, Nango's `offset()`).
  */
 export function listPageOf(a: {
   list: ListRead
@@ -188,5 +190,11 @@ export function listPageOf(a: {
   if (more === null) return { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' }
   const next = nextOf({ paging: list.paging, position, rows, more, size: read.rows.length, at })
   if (next.kind !== 'NEXT') return next
-  return { kind: 'PAGE', rows: read.rows, more, next: next.position, total: rows.total ?? null }
+  return {
+    kind: 'PAGE',
+    rows: read.rows,
+    more: more && next.position !== null,
+    next: next.position,
+    total: rows.total ?? null,
+  }
 }

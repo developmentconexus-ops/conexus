@@ -96,8 +96,8 @@ function json(body: unknown): Response {
   return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } })
 }
 
-/** How a double misbehaves while still answering in the shape the schema reads: it ignores `offset`, or it reports a total with a row missing. */
-export type Plant = 'IGNORES_OFFSET' | 'DROPS_LAST' | null
+/** How a double misbehaves while still answering in the shape the schema reads: it ignores `offset`, reports a total with a row missing, or answers an empty page after the first while saying more follows. */
+export type Plant = 'IGNORES_OFFSET' | 'DROPS_LAST' | 'EMPTY_AFTER_FIRST' | null
 
 /** The double: `/token` gives a bearer, `/things` pages the 137 rows by `offset` and `limit`, and with `changed_from` only the rows changed since. */
 export function listingFake(plant: Plant = null): CredentialFake {
@@ -114,8 +114,9 @@ export function listingFake(plant: Plant = null): CredentialFake {
         (row) => since === null || Date.parse(row.changed) >= Date.parse(since),
       )
       const held = plant === 'DROPS_LAST' ? all.slice(0, -1) : all
+      const empty = plant === 'EMPTY_AFTER_FIRST' && offset > 0
       return json({
-        items: held.slice(offset, offset + limit),
+        items: empty ? [] : held.slice(offset, offset + limit),
         total: all.length,
         offset: Number(url.searchParams.get('offset')),
         limit,
