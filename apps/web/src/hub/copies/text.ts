@@ -25,7 +25,6 @@ export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
 export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
 export const PROPOSAL_WORD = 'Proposta'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
-const PROPOSAL_GONE_IN_DIALOG = `${PROPOSAL_GONE} Feche e veja a lista.`
 export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
 /**
  * What the dialog of Ligar a proposal says of a refusal: the table's words, except the two that
@@ -39,7 +38,7 @@ export function enableFailureText(error: unknown): string {
       const named = reading === undefined ? 'a leitura da conexão' : `a leitura ${reading}`
       return `Seu papel não pode usar ${named}, e quem liga uma cópia precisa poder ler o que ela copia. Peça a quem tem esse acesso para ligar.`
     }
-    if (error.code === 'NOT_FOUND') return PROPOSAL_GONE_IN_DIALOG
+    if (error.code === 'NOT_FOUND') return PROPOSAL_GONE
   }
   return writeFailureText(error, UNCONFIRMED_ENABLE)
 }

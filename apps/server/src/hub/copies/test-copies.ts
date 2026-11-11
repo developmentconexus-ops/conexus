@@ -99,8 +99,10 @@ function clockDouble() {
   const made = new Set<CopyId>()
   const clock: CopyClock = {
     set: async ({ copyId, interval }) => {
-      made.add(copyId)
       calls.push(`set ${copyId} ${interval}`)
+      if (made.has(copyId)) return 'UPDATED'
+      made.add(copyId)
+      return 'CREATED'
     },
     pause: async (copyId) => void calls.push(`pause ${copyId}`),
     resume: async (copyId) => void calls.push(`resume ${copyId}`),

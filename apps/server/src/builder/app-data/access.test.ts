@@ -124,6 +124,12 @@ test('Projeto sem banco: as duas ferramentas devolvem APP_DATA_NO_APP', async (t
   assert.ok(read.execute && check.execute)
   assert.deepEqual(await read.execute({ sql: 'select 1' }, {}), noApp)
   assert.deepEqual(await check.execute({ sql: 'select 1', values: [] }, {}), noApp)
+  const checked = on.hub.lines.find((line) => line.message === 'APP_DATA_CHECKED')
+  assert.deepEqual(
+    [checked?.fields.code, checked?.fields.cause],
+    ['APP_DATA_NO_APP', 'none'],
+    'o registro diz que a falha não teve causa, como o de readAppData',
+  )
 })
 
 /** A Projeto with no sent version, in a company whose `vendas` copy ran and is released to it. */

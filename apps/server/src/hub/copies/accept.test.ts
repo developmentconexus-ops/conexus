@@ -131,8 +131,13 @@ test('a mesma chave ao mesmo tempo dá a mesma cópia', async (t) => {
     [201, 201],
     `${first.body} ${second.body} ${JSON.stringify(failed)}`,
   )
-  assert.equal(Object(first.json()).copy.id, Object(second.json()).copy.id)
+  const copyId = Object(first.json()).copy.id
+  assert.equal(Object(second.json()).copy.id, copyId)
   assert.equal((await on.hub.test.asOwner('select id from copies.copy')).length, 2)
+  const enabled = on.hub.lines.filter(
+    (each) => each.message === 'COPY_ENABLED' && each.fields.copyId === copyId,
+  )
+  assert.equal(enabled.length, 1, 'um COPY_ENABLED para uma cópia')
 })
 
 test('quem liga precisa poder ler', async (t) => {

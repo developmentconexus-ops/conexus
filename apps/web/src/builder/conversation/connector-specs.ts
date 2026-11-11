@@ -105,7 +105,6 @@ function presentProposal(result: unknown, status: ToolStatus): Presented {
       sentence: spec.failed,
       detail,
       beside: detail !== undefined,
-      wraps: true,
     }
   }
   const name = Kind.extend({ name: z.string() }).safeParse(result)
