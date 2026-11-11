@@ -280,3 +280,24 @@ test('o comando que ainda diz sua saída mostra a saída, e a linha fecha quando
   view.rerender(<ToolRow tool={{ ...command, state: 'result', result: 'começo\n' }} />)
   expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
 })
+
+test.each([
+  ['app_data_check', { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42601' }],
+  ['app_data_read', { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42P01' }],
+  ['app_data_check', { kind: 'FAILED', code: 'APP_DATA_TIMEOUT' }],
+])('%s que falhou abre nos argumentos e na recusa, com o SQLSTATE (9)', (toolName, result) => {
+  const tool: ToolItem = {
+    kind: 'tool',
+    id: 't-9',
+    toolCallId: 'call-9',
+    toolName,
+    state: 'result',
+    args: { sql: 'select * from nao_existe' },
+    result,
+  }
+  render(<ToolRow tool={tool} />)
+  open(/Não conseguiu/)
+  expect(screen.getByText(/select \* from nao_existe/)).toBeTruthy()
+  const detail = 'sqlstate' in result ? result.sqlstate : result.code
+  expect(screen.getByText(new RegExp(detail))).toBeTruthy()
+})

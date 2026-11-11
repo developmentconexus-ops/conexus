@@ -53,9 +53,10 @@ export type Presented = { icon: LucideIcon; sentence: string; detail?: string; b
 
 /**
  * What a result that is a refusal asks of the row: `SAID` is all the line says, `RECONNECT` adds the
- * way to link the connection again.
+ * way to link the connection again, `DETAILED` opens on the call's arguments and the refusal's own
+ * fields (a SQLSTATE, never a value).
  */
-export type Refusal = 'SAID' | 'RECONNECT'
+export type Refusal = 'SAID' | 'RECONNECT' | 'DETAILED'
 
 /** What a row says of a connector, from the catalog the screen read; the id's own words until it arrives. */
 export type ConnectorWords = {

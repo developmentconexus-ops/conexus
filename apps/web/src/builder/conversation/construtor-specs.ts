@@ -34,7 +34,7 @@ const AppDataFailed = z.object({ kind: z.enum(['REFUSED', 'FAILED']) })
 
 /** `app_data_read` answers `REFUSED` (the query) or `FAILED` (the app's data, out of reach): both read as failed. */
 function appDataRefusal(result: unknown): Refusal | undefined {
-  return AppDataFailed.safeParse(result).success ? 'SAID' : undefined
+  return AppDataFailed.safeParse(result).success ? 'DETAILED' : undefined
 }
 
 type Tool = Parameters<NonNullable<ToolSpec['present']>>[0]

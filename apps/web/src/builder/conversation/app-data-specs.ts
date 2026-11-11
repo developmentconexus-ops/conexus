@@ -11,7 +11,7 @@ const Failed = z.object({ kind: z.enum(['REFUSED', 'FAILED']) })
 
 /** A check the database refused, or that was not a count or could not run: the row says it failed. */
 function checkRefusal(result: unknown): Refusal | undefined {
-  return Failed.safeParse(result).success ? 'SAID' : undefined
+  return Failed.safeParse(result).success ? 'DETAILED' : undefined
 }
 
 /**
