@@ -106,5 +106,5 @@ One line per document (`check-docs`).
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
-- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
+- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
