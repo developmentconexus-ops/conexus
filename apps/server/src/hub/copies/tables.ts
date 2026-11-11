@@ -1,3 +1,4 @@
+import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
@@ -151,9 +152,6 @@ export const projectCopy = copies.table(
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
-
-/** The page of proof `copy_proposal.proved_rows` counts, the size of one page of the copy read. */
-export const PROOF_PAGE_ROWS = 50
 
 /**
  * A copy the Builder proposed in a Projeto's conversation (Capacity 3): the definition it wrote, the

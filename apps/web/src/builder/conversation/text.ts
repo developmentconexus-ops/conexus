@@ -1,3 +1,4 @@
+import { ROW_COUNT_CAP } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 import { unconfirmedText } from '../../platform/hub.ts'
 import type { DictationError } from '../../ui/speech-input.tsx'
@@ -110,6 +111,13 @@ export function toolsText(count: number): string {
 
 export function automationsText(count: number): string {
   return count === 1 ? '1 automação' : `${count} automações`
+}
+
+/** How many rows a checked read gives, past the cap said as such. */
+export function checkedRowsText(rows: { kind: 'EXACT'; rows: number } | { kind: 'OVER' }): string {
+  if (rows.kind === 'OVER') return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')} linhas`
+  if (rows.rows === 0) return 'Nenhuma linha.'
+  return rows.rows === 1 ? '1 linha' : `${rows.rows.toLocaleString('pt-BR')} linhas`
 }
 
 export function tablesText(count: number): string {

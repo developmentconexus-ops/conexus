@@ -2,6 +2,8 @@ import type { ServerResponse } from 'node:http'
 import type { ConversationId } from '@conexus/hub-api'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
+import type { BuilderData } from '../../hub/apps/public.ts'
+import type { CopyService } from '../../hub/copies/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -67,13 +69,16 @@ export function createBuilderConversations(deps: {
   queue: QueueDeps
   runs: Runs
   connectors: BuilderConnectors
+  data: BuilderData
+  copies: Pick<CopyService, 'projectView'>
   log: FailureLog
 }) {
   const { database, identity, queue } = deps
   const store = createConversationStore(deps)
   const builder = createBuilder({
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
-    ...{ index: store, connectors: deps.connectors },
+    ...{ index: store, connectors: deps.connectors, data: deps.data },
+    copies: (ids) => deps.copies.projectView(ids),
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name

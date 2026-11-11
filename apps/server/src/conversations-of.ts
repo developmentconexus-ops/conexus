@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
-import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
+import type { AppDataPort } from './builder/app-data/public.ts'
 import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
@@ -16,7 +16,7 @@ import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
-import type { Apps } from './hub/apps/public.ts'
+import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
 import type { CopyService } from './hub/copies/public.ts'
@@ -65,6 +65,14 @@ function builderDoorOf(connectors: () => Connectors) {
       ids: Parameters<Connectors['builder']['saveNote']>[0],
       a: Parameters<Connectors['builder']['saveNote']>[1],
     ) => connectors().builder.saveNote(ids, a),
+    provePage: (
+      ids: Parameters<Connectors['builder']['provePage']>[0],
+      a: Parameters<Connectors['builder']['provePage']>[1],
+    ) => connectors().builder.provePage(ids, a),
+    propose: (
+      ids: Parameters<Connectors['builder']['propose']>[0],
+      a: Parameters<Connectors['builder']['propose']>[1],
+    ) => connectors().builder.propose(ids, a),
   }
 }
 
@@ -81,6 +89,31 @@ function appDataOf(
     hasApp: (input) => apps().hasAppData(input),
     tables: (input) => apps().appTables(input),
     read: (input) => apps().readAppData(input),
+  }
+}
+
+/** The apps' door as the Builder reads and checks its Projeto's data (Capacidade 3): reached when a turn calls it. */
+function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
+  return {
+    access: (ids) => apps().builderData.access(ids),
+    read: (ids, statement, signal) => apps().builderData.read(ids, statement, signal),
+    check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
+  }
+}
+
+/** The copies' view for the Builder's turn, reached when a turn starts: the copies are made after the conversations. */
+function copiesOf(
+  copies: () => Pick<CopyService, 'projectView'>,
+): Pick<CopyService, 'projectView'> {
+  return { projectView: (ids) => copies().projectView(ids) }
+}
+
+/** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
+function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+  return {
+    connectors: builderDoorOf(deps.connectors),
+    data: builderDataOf(deps.apps),
+    copies: copiesOf(deps.copies),
   }
 }
 
@@ -124,7 +157,7 @@ type ConversationsDeps = {
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
   /** The copies are made after the conversations; a run comes long after both. */
-  copies: () => Pick<CopyService, 'run'>
+  copies: () => Pick<CopyService, 'run' | 'projectView'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -183,7 +216,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
     ...{ storage, queue, runs: deps.runs },
-    connectors: builderDoorOf(deps.connectors),
+    ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
   // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and

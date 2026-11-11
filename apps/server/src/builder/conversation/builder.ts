@@ -1,10 +1,14 @@
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool } from '@mastra/core/tools'
 import type { PostgresStore } from '@mastra/pg'
+import type { BuilderData } from '../../hub/apps/public.ts'
+import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { builderAppDataTools, dataContext } from '../app-data/public.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess, connectorTools } from '../connectors/public.ts'
 import {
@@ -47,15 +51,47 @@ function grantedFor(
   })
 }
 
-/** The Builder's three connector tools, its notebook's write included. */
+/**
+ * Whether the person converses with the Builder in the Projeto, read once for the run (as the
+ * connections are) so the data tools are offered or not for the whole turn; each call is admitted again.
+ */
+function admittedFor(
+  data: BuilderData,
+  projectOf: ReturnType<typeof projectIn>,
+): (
+  requestContext: RequestContext,
+) => Promise<Parameters<typeof builderAppDataTools>[0]['ids'] | undefined> {
+  return oncePerRun(async (requestContext) => {
+    const ids = await projectOf(requestContext)
+    if (ids === undefined) return undefined
+    return (await data.access(ids)).kind === 'ADMITTED' ? ids : undefined
+  })
+}
+
+/**
+ * The "## Data" block of the turn, read once for the run: a failed read of the copies is a line in
+ * the block, never a turn that does not start, and a person not admitted gets no block.
+ */
+function dataFor(
+  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>,
+  projectOf: ReturnType<typeof projectIn>,
+): (requestContext: RequestContext) => Promise<string> {
+  return oncePerRun(async (requestContext) => {
+    const ids = await projectOf(requestContext)
+    return ids === undefined ? '' : dataContext(await copies(ids))
+  })
+}
+
+/** The Builder's connector tools, its notebook's write included, and `copy_propose` where a connector copies. */
 function builderConnectorTools(
   deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
   granted: readonly GrantedConnection[],
   ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
 ): ToolsInput {
   const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
-  const { access, save } = builderAccess(deps.connectors, granted, who, deps.log)
-  return connectorTools(access, { noteSave: true, save })
+  const { access, save, propose } = builderAccess(deps.connectors, granted, who, deps.log)
+  const copying = granted.filter((each) => each.copies)
+  return connectorTools(access, { noteSave: true, save, propose: { copying, call: propose } })
 }
 
 /** The Builder's memory words, and its recall of what the observation folded. */
@@ -74,6 +110,8 @@ export function createBuilder(deps: {
   runs: Runs
   index: ConversationIndex
   connectors: BuilderConnectors
+  data: BuilderData
+  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
@@ -81,6 +119,7 @@ export function createBuilder(deps: {
   const check = checkTool(deps.runs)
   const projectOf = projectIn(deps.index)
   const granted = grantedFor(deps.connectors, projectOf)
+  const admitted = admittedFor(deps.data, projectOf)
   const { queue } = deps
   const defaults = agentDefaults(queue, { processor: turnOf(deps) })
   const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
@@ -92,6 +131,7 @@ export function createBuilder(deps: {
       projectOf,
       projectName: deps.projectName,
       granted,
+      data: dataFor(deps.copies, projectOf),
     }),
     skills: async ({ requestContext }) => [
       ...APP_SKILLS,
@@ -103,6 +143,7 @@ export function createBuilder(deps: {
     tools: async ({ requestContext }) => {
       const ids = await projectOf(requestContext)
       const web = toolsOf(sessionModel(requestContext))
+      const conversant = await admitted(requestContext)
       // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
         web_fetch: webFetchTool,
@@ -111,6 +152,9 @@ export function createBuilder(deps: {
         ...(ids === undefined
           ? {}
           : builderConnectorTools(deps, await granted(requestContext), ids)),
+        ...(conversant === undefined
+          ? {}
+          : builderAppDataTools({ data: deps.data, ids: conversant })),
       }
     },
     ...defaults,

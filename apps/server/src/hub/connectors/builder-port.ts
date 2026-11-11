@@ -1,9 +1,19 @@
+import type { CopyDefinition } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  CopyProposed,
+  OfProject,
+  PersonId,
+  ProjectId,
+  RunId,
+} from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { Speaker } from '../identity/public.ts'
+import type { Proved } from './copy-proof.ts'
+import { provedPage } from './copy-proof.ts'
 import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
@@ -31,6 +41,8 @@ export type GrantedConnection = Readonly<{
   /** The writes the connector declares (step 24.5): an agent's tool may be one, never a read of the Builder or the Assistant. */
   writes: readonly Readonly<{ operation: string; label: string; summary: string }>[]
   notes: readonly string[]
+  /** The connector copies through its free read door (definition version 1, `QUERY`): `copy_propose` is offered (Capacidade 3). */
+  copies: boolean
 }>
 export type ShapedRead =
   | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
@@ -38,6 +50,31 @@ export type ShapedRead =
   | Readonly<{ kind: 'NOT_GRANTED' }>
   | NotInRole
 export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
+/** Why the Builder's read or proof brought nothing: the source's refusal whole, as `connector_read` gets it. */
+type BuilderReadRefusal = Exclude<ShapedRead, { kind: 'OK' }> | Spent
+
+/** What proposing a copy answers to the model (`hub/copies/propose.ts` writes it). */
+export type ProposeAnswer =
+  | CopyProposed
+  /** A copy of the company or an open proposal has the name; `releasedHere` when it is a copy released to this Projeto. */
+  | Readonly<{ kind: 'EXISTS'; name: string; releasedHere: boolean }>
+  /** `CopyDefinition`'s paths and messages, or the name's. */
+  | Readonly<{ kind: 'MALFORMED'; issues: string[] }>
+  | BuilderReadRefusal
+
+/** What proposing takes: the Projeto and the person of the turn, the run its call counts in, what the model wrote. */
+export type Proposal = Readonly<{
+  connectionId: ConnectionId
+  personId: PersonId
+  runId: RunId
+  name: string
+  label: string
+  definition: unknown
+  signal: AbortSignal
+}>
+
+/** `hub/copies` proposes; `main.ts` hands it here, since the Builder never imports `hub/copies` (C4). */
+export type Propose = (ids: OfProject, a: Proposal) => Promise<ProposeAnswer>
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>
 type Asking = OfProject & Readonly<{ personId: PersonId }>
 
@@ -52,6 +89,13 @@ export type BuilderConnectors = {
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
   ): Promise<NoteSaved | Spent>
+  /** One page of the copy read, as the person may read the connection: the count, never a row. */
+  provePage(
+    ids: OfProject,
+    a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
+  ): Promise<Proved | BuilderReadRefusal>
+  /** A copy proposed in the Projeto's conversation, proved by one page; `hub/copies` owns it. */
+  propose: Propose
 }
 
 /** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
@@ -160,13 +204,16 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         reads: reads.filter((operation) => operation.class === 'read').map(listedOf),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),
+        copies: connector.copy !== undefined && connector.readDoor !== undefined,
       },
     ]
   })
 }
 
 /** The Builder's door to the Projeto's granted connections (step 20, U3): read, notebook, and what the next turn is given. */
-export function createBuilderConnectors(deps: Deps): BuilderConnectors {
+export function createBuilderConnectors(
+  deps: Deps & { propose: () => Propose },
+): BuilderConnectors {
   const spend = createSpending()
   return {
     async granted(ids) {
@@ -217,5 +264,12 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
       const read = readerOf({ ids, ...a, speaker, opened })
       return provedAndSaved(deps, { ...a, read })
     },
+
+    async provePage(ids, a) {
+      const opened = await admit(deps, ids, a)
+      return provedPage(deps, { ...a, ids, opened, spend: () => spend(a.runId) })
+    },
+
+    propose: (ids, a) => deps.propose()(ids, a),
   }
 }

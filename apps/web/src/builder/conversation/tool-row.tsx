@@ -61,9 +61,9 @@ function Since({ at }: { at: number | undefined }) {
 }
 
 function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
-  // A refusal the Assistant's tool answered is said by its line; only a connection to link again has more to say.
+  // A refusal the Assistant's tool answered is said by its line; a connection to link again and a read of the app's data have more to say.
   const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
-  if (refusal !== undefined) return refusal === 'RECONNECT'
+  if (refusal !== undefined) return refusal !== 'SAID'
   if (status === 'error' || status === 'denied')
     return failureDetail(tool, room) !== null || asksToReconnect(tool, room)
   if (tool.output !== undefined && tool.output.length > 0) return true
@@ -262,6 +262,12 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   const spec = specOf(tool.toolName, room)
   if (spec?.refusal?.(tool.result) === 'RECONNECT' || asksToReconnect(tool, room))
     return <Reconnect />
+  if (spec?.refusal?.(tool.result) === 'DETAILED')
+    return (
+      <div className="flex min-w-0 flex-col gap-xs pt-xs">
+        <Generic tool={tool} title={spec.failed} />
+      </div>
+    )
   const body = spec?.body ?? 'generic'
   const edit = editOf(body, tool.args)
   const failed = status === 'error' || status === 'denied'
@@ -316,14 +322,22 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="min-w-0 shrink flex-1 truncate text-right">
+    <TraceDescription
+      className={cn(
+        'min-w-0 flex-1',
+        presented.wraps ? 'shrink-0 text-left' : 'shrink truncate text-right',
+      )}
+    >
       {presented.detail}
     </TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine status={lineStatus} className={failed ? 'items-start' : undefined}>
+    <TraceLine
+      status={lineStatus}
+      className={cn(failed && 'items-start', presented.wraps && 'flex-wrap')}
+    >
       <TraceIcon className={failed ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>

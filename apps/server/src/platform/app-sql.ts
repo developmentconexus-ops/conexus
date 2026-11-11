@@ -14,8 +14,11 @@ export type SqlAnswer =
   /** A read whose reply passed the cap: only a read ever gets it (code C59). */
   | { kind: 'TOO_LARGE' }
 
-/** A read-only call's first statement: the columns PostgreSQL named, whatever their names, and rows as arrays. */
-export type SqlRead = { kind: 'READ'; columns: string[]; rows: unknown[][] }
+/** One statement's answer: its columns with the type's OID, whatever their names, and its rows as arrays. */
+export type ReadResult = { columns: { name: string; typeId: number }[]; rows: unknown[][] }
+
+/** A read-only call's answer: one result for each of its statements, in order. */
+export type SqlRead = { kind: 'READ'; results: ReadResult[] }
 
 /** Runs the statements in one transaction as the URL's login, all or none; a read-only one answers with its columns. */
 export type SqlTransport = {

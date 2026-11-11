@@ -13,7 +13,6 @@ import { openAgentConversation } from './open.ts'
 export type { AgentRun } from './agent.ts'
 export { agentKey, agentRunContext } from './agent.ts'
 export type { AgentService } from './agents.ts'
-export type { AppDataPort } from './app-data.ts'
 export type { AgentReads } from './registry.ts'
 export { createRegistry } from './registry.ts'
 
