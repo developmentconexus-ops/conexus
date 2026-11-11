@@ -6,11 +6,11 @@ import type { ListRead } from './list.ts'
 import { defineOperation, get } from './operation.ts'
 import { Rows } from './rows.ts'
 
-export const FIXTURE_ROWS = 137
+const FIXTURE_ROWS = 137
 const FIRST_AT = Date.parse('2026-01-01T00:00:00.000Z')
 const MINUTE = 60_000
 /** The row each position of the double holds: an id and the instant it changed, with an offset. */
-export function rowOf(at: number) {
+function rowOf(at: number) {
   return {
     id: `r${at}`,
     changed: new Date(FIRST_AT + at * MINUTE).toISOString().replace('Z', '-03:00'),
