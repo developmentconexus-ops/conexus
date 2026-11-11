@@ -195,7 +195,7 @@ test('a marca: a máquina leva a marca que a morte procura, e a morte a acha; a 
   assert.equal(control.killed, true)
 })
 
-test('antes de ligar: a máquina da conversa feita de outro template é morta, e a do template do Hub fica (17)', async (t) => {
+test('a máquina de outro molde é retomada com os arquivos (17)', async (t) => {
   const on = await assisting(t, [[write('a.txt', 'um')], [said('Escrevi.')]])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { control } = on.hub.assistantMachines
@@ -203,8 +203,9 @@ test('antes de ligar: a máquina da conversa feita de outro template é morta, e
   control.templates[nameOf(url)] = OLD_TEMPLATE
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva')), 'complete')
-  assert.deepEqual(control.replaced, [nameOf(url)])
-  assert.deepEqual(control.attached, [], 'the machine of the old template was not attached')
+  assert.deepEqual(control.replaced, [], 'no machine was killed')
+  assert.deepEqual(control.attached, [nameOf(url)], 'the machine of the old template was resumed')
+  assert.equal(control.killed, false)
 })
 
 test('o download cancelado: o navegador que sai faz a leitura da máquina parar, e nenhum arquivo é entregue (20)', async (t) => {
@@ -226,6 +227,7 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
       ...deps,
       log: { info: () => undefined, error: () => undefined },
       hosts: PACKAGE_HOSTS,
+      otherTemplate: 'resume',
       marksOf: async () => undefined,
     },
     on.hub.assistantMachines.tuning,

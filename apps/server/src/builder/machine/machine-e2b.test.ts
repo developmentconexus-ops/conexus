@@ -196,6 +196,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
     codeMode: createE2bCodeMode(),
     log: { info: () => undefined, error: () => undefined },
     hosts: PACKAGE_HOSTS,
+    otherTemplate: 'replace',
     marksOf: async () => ({ [MARK.company]: COMPANY }),
   })
   const context = new RequestContext<unknown>([['controller', { sessionId: conversation }]])

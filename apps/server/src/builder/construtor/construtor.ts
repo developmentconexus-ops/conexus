@@ -243,7 +243,13 @@ export function createConstrutor(deps: Deps) {
   })
   const scopeOf = scopes(memory)
   const machines = createConversationMachines(
-    { ...deps.machine, log, hosts: ALLOWED_HOSTS, marksOf: machineMarks(scopeOf) },
+    {
+      ...deps.machine,
+      log,
+      hosts: ALLOWED_HOSTS,
+      otherTemplate: 'replace',
+      marksOf: machineMarks(scopeOf),
+    },
     deps.machineTuning,
   )
   const turns = sessionTurns({

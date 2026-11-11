@@ -302,6 +302,7 @@ export function createAssistant(deps: Deps) {
       ...deps.machine,
       log: deps.log,
       hosts: PACKAGE_HOSTS,
+      otherTemplate: 'resume',
       marksOf: machineMarks(scopeOf),
       readMedia: READ_MEDIA,
     },

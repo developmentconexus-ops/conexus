@@ -77,6 +77,11 @@ export type MachineTuning = { workFolder: string; toolchain: string; startMs: nu
 const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, toolchain: TOOLCHAIN, startMs: START_MS }
 
 type Deps = ConversationMachine & {
+  /**
+   * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
+   * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.
+   */
+  otherTemplate: 'resume' | 'replace'
   log: FailureLog
   /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
   hosts: readonly string[]
@@ -160,8 +165,8 @@ class Machines implements ConversationMachines {
   }
 
   /**
-   * Wakes or creates the machine, once per session; a machine from another template is killed
-   * first.
+   * Wakes or creates the machine, once per session; with `replace`, a machine from another
+   * template is killed first.
    */
   private ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)
@@ -170,10 +175,13 @@ class Machines implements ConversationMachines {
 
   private async boot(session: Session): Promise<Kit> {
     const { conversationId } = session
-    const { api, template, log } = this.deps
+    const { api, template, log, otherTemplate } = this.deps
     this.phases.get(conversationId)?.('starting')
     // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
-    const stale = session.found === undefined ? api.killStale(conversationId, template) : undefined
+    const stale =
+      session.found === undefined && otherTemplate === 'replace'
+        ? api.killStale(conversationId, template)
+        : undefined
     const starting = Promise.resolve(stale).then(() => session.kit.sandbox.start?.())
     session.starting = starting
     try {
@@ -371,7 +379,8 @@ class Machines implements ConversationMachines {
   /** The machine the provider has for the conversation, by its mark; a failed list is no answer. */
   private async found(conversationId: ConversationId): Promise<string | 'UNAVAILABLE' | undefined> {
     try {
-      return await this.deps.api.find(conversationId, this.deps.template)
+      const { api, template, otherTemplate } = this.deps
+      return await api.find(conversationId, otherTemplate === 'replace' ? template : undefined)
     } catch (cause) {
       const failure = new Failure('MACHINE_UNAVAILABLE', { cause, details: { reason: 'FIND' } })
       logFailure(this.deps.log, failure, { conversationId })
