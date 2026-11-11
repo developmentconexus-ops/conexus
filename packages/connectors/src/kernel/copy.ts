@@ -19,6 +19,17 @@ export type CopyColumnType = z.infer<typeof CopyColumnType>
 
 const DATED: ReadonlySet<CopyColumnTypeV2> = new Set(['date', 'timestamp'])
 
+/** The type of each column by name; a repeated name is an issue of the definition. */
+function typesOf<T extends string>(
+  columns: readonly Readonly<{ name: string; type: T }>[],
+  context: z.RefinementCtx,
+): ReadonlyMap<string, T> {
+  const types = new Map(columns.map(({ name, type }) => [name, type]))
+  if (types.size !== columns.length)
+    context.addIssue({ code: 'custom', path: ['columns'], message: 'A column is repeated.' })
+  return types
+}
+
 /** What a copy reads, the company's data from the moment it is turned on (version 1, one kind of source). */
 export const CopyDefinition = z
   .object({
@@ -34,9 +45,7 @@ export const CopyDefinition = z
     window: z.object({ column: CopyColumnName, days: z.int().min(1).max(90) }).optional(),
   })
   .superRefine((definition, context) => {
-    const types = new Map(definition.columns.map(({ name, type }) => [name, type]))
-    if (types.size !== definition.columns.length)
-      context.addIssue({ code: 'custom', path: ['columns'], message: 'A column is repeated.' })
+    const types = typesOf(definition.columns, context)
     if (new Set(definition.key).size !== definition.key.length)
       context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
     definition.key.forEach((name, at) => {
@@ -110,9 +119,7 @@ export const CopyDefinitionV2 = z
     changedSince: z.object({ column: CopyColumnName }).nullable(), // none: every pass reads the whole source
   })
   .superRefine((definition, context) => {
-    const types = new Map(definition.columns.map(({ name, type }) => [name, type]))
-    if (types.size !== definition.columns.length)
-      context.addIssue({ code: 'custom', path: ['columns'], message: 'A column is repeated.' })
+    const types = typesOf(definition.columns, context)
     definition.columns.forEach(({ name }, at) => {
       if (name.startsWith('_'))
         context.addIssue({

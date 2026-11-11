@@ -2,14 +2,13 @@ import assert from 'node:assert/strict'
 import { z } from 'zod'
 import { SENT_AT } from './conformance-declared.ts'
 import type { Fake, Session } from './conformance-session.ts'
-import { askOf, signIn } from './conformance-session.ts'
+import { askOf, eachProbe } from './conformance-session.ts'
 import type { CopyPosition } from './copy.ts'
 import { CopyDefinitionV2 } from './copy.ts'
 import type { Connector } from './definition.ts'
-import { inProbeOrder } from './definition.ts'
 import type { ListRead } from './list.ts'
 import { listInputOf, listPageOf, valueAt } from './list.ts'
-import type { Operation, OperationId } from './operation.ts'
+import type { Operation } from './operation.ts'
 import { listInputNames } from './operation.ts'
 import { Rows } from './rows.ts'
 
@@ -108,18 +107,11 @@ async function walkList(
 
 /** Each list read of the connector, every page of its double walked: a wrong paging declaration fails here. */
 export async function assertListsWalk(connector: Connector, fake: Fake): Promise<void> {
-  const session = await signIn(connector, fake)
-  if (session === null) return
-  const earlier = new Map<OperationId, unknown>()
-  for (const operation of inProbeOrder(connector)) {
-    const probe = operation.probe(earlier)
-    assert.notEqual(probe, null, `${operation.id} has a probe the fake can answer`)
-    const answered = operation.answer(
-      await askOf(connector, fake, session, { operation, input: probe }),
-    )
-    if (answered.kind !== 'OK') continue
-    earlier.set(operation.id, answered.value)
+  await eachProbe(connector, fake, async ({ operation, input, session }) => {
+    const answered = operation.answer(await askOf(connector, fake, session, { operation, input }))
+    if (answered.kind !== 'OK') return undefined
     if (operation.list !== undefined)
-      await walkList(connector, fake, session, { operation, list: operation.list, probe })
-  }
+      await walkList(connector, fake, session, { operation, list: operation.list, probe: input })
+    return answered.value
+  })
 }

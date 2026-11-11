@@ -5,9 +5,10 @@ import type { ClientCredentialsAuth } from './auth.ts'
 import { readToken, tokenRequest } from './auth.ts'
 import { SENT_AT } from './conformance-declared.ts'
 import type { Connector } from './definition.ts'
+import { inProbeOrder } from './definition.ts'
 import type { AppKeys, OAuth2CodeAuth } from './oauth.ts'
 import { authorizeUrl, codeRequest, readGrant } from './oauth.ts'
-import type { Account, Operation, ProviderAnswer } from './operation.ts'
+import type { Account, Operation, OperationId, ProviderAnswer } from './operation.ts'
 import { requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
 
@@ -24,7 +25,7 @@ export type OAuthFake = Serving & Readonly<{ app: AppKeys; redirectUri: string }
 
 export type Fake = CredentialFake | OAuthFake
 
-async function answerOf(response: Response): Promise<ProviderAnswer> {
+export async function answerOf(response: Response): Promise<ProviderAnswer> {
   const text = await response.text()
   return {
     status: response.status,
@@ -130,4 +131,30 @@ export async function askOf(
     session.accessToken,
   )
   return answerOf(await fake.handle(request))
+}
+
+/**
+ * Each operation of the connector in probe order, signed in once: the visitor gets the operation, the
+ * input its probe builds from what the earlier ones read, and the session, and returns the value it read
+ * (kept for the later probes) or undefined.
+ */
+export async function eachProbe(
+  connector: Connector,
+  fake: Fake,
+  visit: (a: {
+    operation: Operation<unknown, unknown>
+    input: unknown
+    session: Session
+    earlier: ReadonlyMap<OperationId, unknown>
+  }) => Promise<unknown>,
+): Promise<void> {
+  const session = await signIn(connector, fake)
+  if (session === null) return
+  const earlier = new Map<OperationId, unknown>()
+  for (const operation of inProbeOrder(connector)) {
+    const input = operation.probe(earlier)
+    assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
+    const read = await visit({ operation, input, session, earlier })
+    if (read !== undefined) earlier.set(operation.id, read)
+  }
 }

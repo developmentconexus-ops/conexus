@@ -7,6 +7,7 @@ import type { Fake, OAuthFake } from './conformance-session.ts'
 import {
   askOf,
   consent,
+  eachProbe,
   exchange,
   loginWith,
   signIn,
@@ -61,24 +62,19 @@ function assertSources(
 
 /** Each probe, in order, from the sources it declares, answered with the value its output schema reads from the body. */
 async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
-  const session = await signIn(connector, fake)
-  if (session === null) return
-  const earlier = new Map<OperationId, unknown>()
-  for (const operation of inProbeOrder(connector)) {
+  await eachProbe(connector, fake, async ({ operation, input, session, earlier }) => {
     assertSources(operation, earlier)
-    const input = operation.probe(earlier)
-    assert.notEqual(input, null, `${operation.id} has a probe the fake can answer`)
     const raw = await askOf(connector, fake, session, { operation, input })
     const answered = operation.answer(raw)
     assert.equal(answered.kind, 'OK', operation.id)
-    if (answered.kind !== 'OK') continue
+    if (answered.kind !== 'OK') return undefined
     // A ready operation's `output` reads the body itself; a door entry's is the shape of the
     // value its answer takes out of an envelope, so the value is what it must accept.
     if (connector.operations.includes(operation))
       assert.deepEqual(operation.output.parse(raw.body), answered.value, operation.id)
     else assert.ok(operation.output.safeParse(answered.value).success, operation.id)
-    earlier.set(operation.id, answered.value)
-  }
+    return answered.value
+  })
 }
 
 /** The ids, the version and the skill: one part per subject, naming each of its operations. */

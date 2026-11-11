@@ -127,6 +127,43 @@ function cellsOf(definition: CopyDefinitionV2, rows: Rows): Rowed {
   return { kind: 'ROWS', rows: read }
 }
 
+type Next =
+  | Readonly<{ kind: 'NEXT'; position: CopyPosition | null }>
+  | Exclude<ListPage, { kind: 'PAGE' | 'MISFIT' }>
+
+/** Where the pass goes after a page of `size` rows: by the paging's own rule, or why it cannot go on. */
+function nextOf(a: {
+  paging: ListPaging
+  position: CopyPosition | null
+  rows: Rows
+  more: boolean
+  size: number
+  at: Date
+}): Next {
+  const { paging, position, rows, more, size, at } = a
+  if (!more && paging.kind !== 'NONE') return { kind: 'NEXT', position: null }
+  switch (paging.kind) {
+    case 'NONE':
+      return more
+        ? { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' }
+        : { kind: 'NEXT', position: null }
+    case 'OFFSET': {
+      const offset = (position?.kind === 'OFFSET' ? position.offset : 0) + size
+      if (paging.ceiling !== null && offset >= paging.ceiling)
+        return { kind: 'CEILING', ceiling: paging.ceiling }
+      return { kind: 'NEXT', position: { kind: 'OFFSET', offset } }
+    }
+    case 'CURSOR':
+      if (rows.seguinte === undefined) return { kind: 'UNREADABLE', reason: 'NO_CURSOR' }
+      return {
+        kind: 'NEXT',
+        position: { kind: 'CURSOR', cursor: rows.seguinte, at: at.toISOString() },
+      }
+    default:
+      return paging satisfies never
+  }
+}
+
 /**
  * One answered page as the copy's rows: each cell the canonical text of its column's type, the next
  * position and whether more follows. A value that does not fit its type is `MISFIT`, never null; a page
@@ -143,38 +180,9 @@ export function listPageOf(a: {
   const { list, definition, position, rows, at } = a
   const read = cellsOf(definition, rows)
   if (read.kind === 'MISFIT') return read
-  const total = rows.total ?? null
-  const { paging } = list
   const more = rows.temMais
   if (more === null) return { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' }
-  switch (paging.kind) {
-    case 'NONE':
-      if (more) return { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' }
-      return { kind: 'PAGE', rows: read.rows, more, next: null, total }
-    case 'OFFSET': {
-      const offset = (position?.kind === 'OFFSET' ? position.offset : 0) + read.rows.length
-      if (more && paging.ceiling !== null && offset >= paging.ceiling)
-        return { kind: 'CEILING', ceiling: paging.ceiling }
-      return {
-        kind: 'PAGE',
-        rows: read.rows,
-        more,
-        next: more ? { kind: 'OFFSET', offset } : null,
-        total,
-      }
-    }
-    case 'CURSOR': {
-      if (!more) return { kind: 'PAGE', rows: read.rows, more, next: null, total }
-      if (rows.seguinte === undefined) return { kind: 'UNREADABLE', reason: 'NO_CURSOR' }
-      return {
-        kind: 'PAGE',
-        rows: read.rows,
-        more,
-        next: { kind: 'CURSOR', cursor: rows.seguinte, at: at.toISOString() },
-        total,
-      }
-    }
-    default:
-      return paging satisfies never
-  }
+  const next = nextOf({ paging: list.paging, position, rows, more, size: read.rows.length, at })
+  if (next.kind !== 'NEXT') return next
+  return { kind: 'PAGE', rows: read.rows, more, next: next.position, total: rows.total ?? null }
 }
