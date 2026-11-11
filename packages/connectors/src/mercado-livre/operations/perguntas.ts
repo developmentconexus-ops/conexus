@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { Limit, Offset, readOf, Scan, searchTypeOf, sellerOf } from './shared.ts'
+import { Limit, Offset, readOf, SCROLL_TTL_MS, Scan, searchTypeOf, sellerOf } from './shared.ts'
 
 export const perguntas = readOf({
   id: 'perguntas',
@@ -26,6 +26,13 @@ export const perguntas = readOf({
     limit: Limit(50),
   }),
   list: 'questions',
+  paged: {
+    paging: {
+      ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 50 },
+      ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
+    },
+    changed: null,
+  },
   omit: ['from'], // the asker: the question route adds their name and contact
   probe: () => ({ offset: 0, limit: 5 }),
   request: (input, account) =>
