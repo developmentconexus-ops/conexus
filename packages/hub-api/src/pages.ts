@@ -61,3 +61,14 @@ export const PAGES = [
 
 /** Where a provider sends the person back after an OAuth authorization: the Hub's redirect address is its public origin plus this (C26). */
 export const REDIRECT_PATH = '/integrations/return'
+
+/**
+ * The drawing frame of the conversation: the one page the Hub frames from its own origin. It runs
+ * the diagram library in a sandbox of an opaque origin, under its own policy, so the Hub's page
+ * keeps `style-src 'self'`; the page hears the drawn picture from it as a message (security S24).
+ */
+export const DIAGRAM_FRAME = {
+  path: '/diagram-frame.html',
+  policy:
+    "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+} as const

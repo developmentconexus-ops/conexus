@@ -1,5 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { expect, test, vi } from 'vitest'
 import { Markdown } from './markdown.tsx'
 
 const ANSWER = [
@@ -101,4 +101,85 @@ test('a tabela chegando aos poucos fecha na última linha e o bloco já assentad
   expect(screen.getByText('bo').tagName).toBe('STRONG')
   rerender(<Markdown text={`${head}Depois **bom**.`} streaming />)
   expect(container.querySelector('table')).toBe(table)
+})
+
+const MERMAID = 'Veja:\n\n```mermaid\nflowchart TD\n  A --> B\n```'
+
+/** The drawing frame the page keeps, which jsdom does not load: it answers as the frame's script would. */
+function frameOf(): HTMLIFrameElement {
+  const frame = document.querySelector('iframe')
+  if (!frame) throw new Error('no drawing frame')
+  return frame
+}
+
+function windowOf(frame: HTMLIFrameElement): Window {
+  if (!frame.contentWindow) throw new Error('the frame has no window')
+  return frame.contentWindow
+}
+
+function frameSays(frame: HTMLIFrameElement, data: object) {
+  act(() => {
+    window.dispatchEvent(new MessageEvent('message', { data, source: frame.contentWindow }))
+  })
+}
+
+test('o bloco mermaid em andamento fica código, e desenha uma vez quando a resposta acaba', async () => {
+  const { container, rerender } = render(<Markdown text={MERMAID} streaming />)
+  expect(container.querySelector('pre')?.textContent).toContain('flowchart TD')
+  expect(document.querySelector('iframe')).toBeNull()
+  expect(screen.queryByRole('img', { name: 'Diagrama' })).toBeNull()
+  rerender(<Markdown text={MERMAID} />)
+  const frame = frameOf()
+  expect(frame.getAttribute('sandbox')).toBe('allow-scripts')
+  expect(frame.getAttribute('aria-hidden')).toBe('true')
+  expect(frame.getAttribute('src')).toBe('/diagram-frame.html')
+  const asked = vi.spyOn(windowOf(frame), 'postMessage')
+  frameSays(frame, { ready: true })
+  await waitFor(() => expect(asked).toHaveBeenCalledTimes(1))
+  const [request] = asked.mock.calls[0] ?? []
+  expect(Object(request).code).toBe('flowchart TD\n  A --> B')
+  frameSays(frame, {
+    id: Object(request).id,
+    ok: true,
+    svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+  })
+  const image = await screen.findByRole('img', { name: 'Diagrama' })
+  expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/)
+  expect(container.querySelector('pre')).toBeNull()
+  rerender(<Markdown text={MERMAID} />)
+  expect(asked).toHaveBeenCalledTimes(1)
+  asked.mockRestore()
+})
+
+test('uma mensagem que não vem do quadro não desenha nada', async () => {
+  const { container } = render(<Markdown text={MERMAID} />)
+  const frame = frameOf()
+  const asked = vi.spyOn(windowOf(frame), 'postMessage')
+  frameSays(frame, { ready: true })
+  await waitFor(() => expect(asked).toHaveBeenCalled())
+  const [request] = asked.mock.calls.at(-1) ?? []
+  act(() => {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { id: Object(request).id, ok: true, svg: '<svg></svg>' },
+        source: window,
+      }),
+    )
+  })
+  expect(screen.queryByRole('img', { name: 'Diagrama' })).toBeNull()
+  expect(container.querySelector('pre')).not.toBeNull()
+  asked.mockRestore()
+})
+
+test('o mermaid inválido mostra o código e a linha que diz que não foi desenhado', async () => {
+  const { container } = render(<Markdown text={MERMAID.replace('A --> B', 'A -->')} />)
+  const frame = frameOf()
+  const asked = vi.spyOn(windowOf(frame), 'postMessage')
+  frameSays(frame, { ready: true })
+  await waitFor(() => expect(asked).toHaveBeenCalled())
+  const [request] = asked.mock.calls.at(-1) ?? []
+  frameSays(frame, { id: Object(request).id, ok: false })
+  expect(await screen.findByText('Não foi possível desenhar este diagrama.')).toBeTruthy()
+  expect(container.querySelector('pre')?.textContent).toContain('A -->')
+  asked.mockRestore()
 })

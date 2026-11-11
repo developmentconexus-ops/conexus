@@ -161,8 +161,10 @@ muda uma resposta sua anterior.
 - **O diagrama é desenhado na mensagem.** Em 2026-10-31, ao estudo do ecossistema, você respondeu
   "B1" (o Mermaid, então na 24.5); em 2026-11-10: "ele gera, ele, para me explicar, gera diagramas".
   O desenho vale para toda conversa que usa a mesma tela, a do Builder e a dos agentes incluídas.
-  Ele depende de uma prova que a U3 faz primeiro: se a política de segurança da página recusar o
-  desenho, a U3 para e o firstmate traz as opções, e o passo 4 do roteiro espera a sua escolha.
+  A prova da U3 achou que a política de segurança da página recusa o desenho; o estudo do
+  diagrama sob a política (`conexus-diagram-csp-study`, 2026-11-11) trouxe as opções D, A, E e F, e
+  você escolheu "D" em 2026-11-11: o desenho acontece num quadro isolado, servido pelo Hub com a sua
+  própria política, e a página do Hub mantém a sua. Isso muda a frase da S24 sobre `frame-src`.
 - **O HTML ao lado fica para depois.** Decidido pelo firstmate sobre o estudo, com a sua palavra de
   2026-11-10 acima ("fazer o básico bem feito").
 
@@ -182,7 +184,7 @@ molde vem depois do merge, antes do uso. Ao aprovar esta página, você aprova t
 | --- | --- | --- | --- | --- |
 | U1 Arquivos lidos | O processador nativo `FileUploadProcessor`, construído a cada passo com a máquina do passo, que ele liga antes; as imagens ficam com o modelo, como no Mastra Code; nenhum teto próprio (o da rota vale); `observeAttachments: ['image/*']` na memória do Assistente; a estimativa de tokens da parte de arquivo; `read_file` sem PDF entre os tipos de mídia; xlsx, docx e csv aceitos no compositor do Assistente, e só nele, e todo arquivo que não é imagem mandado dali como arquivo, não como texto; `poppler-utils` e `pandoc` no molde; a lista dos arquivos na passagem ao Builder | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/memory.ts`, `apps/server/src/builder/machine/conversation.ts`, `infra/e2b/template.ts`, `apps/web/src/builder/conversation/{attachments,room,composer}.ts(x)`, `apps/web/src/builder/conversation/messages.test.tsx`, `docs/explanation/harness.md` | [security](../guides/security.md) | esta página aprovada; https://github.com/developmentconexus-ops/conexus/pull/955 no `main` |
 | U2 O texto do Assistente | `prompt/assistant.md` novo, em seções; os cinco empurrões para arquivo fora; a frase de `uploads/`; a descrição de `show_file` sem empurrão | `apps/server/src/builder/assistant/prompt/`, `apps/server/src/builder/assistant/instructions.test.ts`, `apps/server/src/builder/machine/show-file.ts` | [testing](../guides/testing.md) | U1 (a frase de `uploads/` só é verdade com ela) |
-| U3 O diagrama na mensagem | O pacote `mermaid`, carregado só quando um bloco `mermaid` fechado aparece, com `securityLevel: 'strict'`, mostrado como imagem SVG; o erro de sintaxe mostra o código; a linha de `mermaid` em `stack.md` | `apps/web/src/builder/conversation/{markdown,diagram}.tsx`, `apps/web/package.json`, `package-lock.json`, `apps/web/diagram.layout.test.ts`, `docs/reference/stack.md` | [web](../guides/web.md) | esta página aprovada; o pull request https://github.com/developmentconexus-ops/conexus/pull/948 no `main` (ele muda `apps/web/package.json`) |
+| U3 O diagrama na mensagem | O `mermaid` roda só num quadro isolado (`sandbox="allow-scripts"`, origem opaca), servido pelo Hub com a sua própria política; a página manda o texto do bloco por mensagem e mostra o SVG devolvido como imagem; `frame-src` do Hub ganha `'self'`; o erro de sintaxe mostra o código; a linha de `mermaid` em `stack.md` | `apps/web/{diagram-frame.html,diagram-fixture,diagram.html}`, `apps/web/src/builder/conversation/{markdown,diagram,diagram-frame}.ts(x)`, `apps/web/{package.json,vite.config.ts,layout-harness.ts,layout-served.ts}`, `package-lock.json`, `apps/server/src/platform/{http,screens}.ts`, `packages/hub-api/src/pages.ts`, `docs/reference/stack.md`, `docs/guides/security.md` | [web](../guides/web.md), [security](../guides/security.md) | esta página aprovada; a S24 mudada pela palavra "D" (`docs/approvals.md`) |
 | U4 O roteiro como teste | O roteiro desta página pela porta pública com o modelo dublê: a regressão do estudo (nenhum passo recebe os bytes do PDF; o arquivo achado depois da observação; o Builder com a lista), e o caso de modelo de verdade, opcional, com `opt-in:` | `apps/server/src/builder/assistant/files-journey.test.ts`, `apps/server/src/platform/recordings/mastra/` | [testing](../guides/testing.md) | U1, U2, U3 |
 
 U1 e U3 não dividem arquivo e podem ser construídas em paralelo, em ramos; o pull request as junta
@@ -233,8 +235,8 @@ orçamento de [delivery L2](../guides/delivery.md).
 | 17 | U3 | Uma resposta acabada com um bloco ` ```mermaid ` fechado mostra o diagrama desenhado, como imagem com nome acessível "Diagrama", a 1366 e a 390 px, no tema claro e no escuro, sem erro no console e sem recusa da política de segurança | `apps/web/diagram.layout.test.ts`, "o diagrama desenhado, nos dois temas e nas duas larguras" | must |
 | 18 | U3 | Enquanto a resposta chega, o último bloco, mesmo com a cerca fechada pelo `remend`, mostra o código e não desenha; quando o turno acaba, desenha uma vez | `apps/web/src/builder/conversation/markdown.test.tsx`, "o bloco mermaid em andamento fica código" | must |
 | 19 | U3 | Um bloco `mermaid` com erro de sintaxe mostra o código como hoje e uma linha que diz que o diagrama não pôde ser desenhado, sem erro não tratado | `markdown.test.tsx`, "o mermaid inválido mostra o código"; `diagram.layout.test.ts`, o mesmo no navegador | must |
-| 20 | U3 | Um rótulo com `<img src=x onerror=…>`, uma diretiva `click`, uma imagem de endereço de fora ou um `url()` ou `@import` de fora num estilo: nenhum script roda e nenhum pedido sai da página (a CSP do Hub recusa a busca durante o desenho, e a imagem SVG não busca nada); o diagrama sai desenhado sem o endereço, ou fica código | `diagram.layout.test.ts`, "o diagrama não roda nem busca nada"; `harness.unanswered` vazio | must |
-| 21 | U3 | O pacote `mermaid` não está no pedaço de entrada da tela: é baixado só quando a primeira resposta com um bloco `mermaid` fechado é desenhada | `apps/web/vite.config.test.ts`, "mermaid fica num pedaço próprio"; `diagram.layout.test.ts`, os pedidos da página antes e depois | must |
+| 20 | U3 | Um rótulo com `<img src=x onerror=…>`, uma diretiva `click`, uma imagem de endereço de fora ou um `url()` ou `@import` de fora num estilo: nenhum script roda e nenhum pedido sai da página (a política do quadro recusa a busca durante o desenho, e a imagem SVG não busca nada); o diagrama sai desenhado sem o endereço, ou fica código | `diagram.layout.test.ts`, "o diagrama não roda nem busca nada"; `harness.unanswered` vazio | must |
+| 21 | U3 | O pacote `mermaid` não está em nenhum pedaço que a tela carrega: só a página do quadro o tem, e o quadro só é pedido quando a primeira resposta acabada com um bloco `mermaid` fechado é desenhada | `apps/web/vite.config.test.ts`, "mermaid fica num pedaço próprio"; `diagram.layout.test.ts`, os pedidos da página antes e depois | must |
 | 22 | U3 | As cores do diagrama saem dos tokens do tema; trocar o tema desenha de novo com as cores do outro | `diagram.layout.test.ts`, "o diagrama segue o tema" | should |
 | 23 | U4 | O roteiro desta página pela porta pública, com o modelo dublê: os três arquivos enviados, a pergunta, a observação, a pergunta do dia seguinte, o pedido do diagrama, o pedido do Excel e a passagem; em cada chamada do Assistente, nenhum byte de arquivo que não seja imagem; o Builder recebe a lista. Falha hoje (o estudo: o PDF nos passos 0 e 1, perdido no 2, o observador com o PDF, o Builder sem o nome) | `files-journey.test.ts`, "o roteiro do Assistente do dia a dia" | must |
 | 24 | U4 | Com `REAL_MODEL` e a palavra do fundador: na assinatura dele, a pergunta das regras converte e lê por partes, a pergunta do dia seguinte acha o arquivo, e nenhuma das perguntas sem pedido de arquivo faz um xlsx ou docx; sem a variável, o caso pula com `opt-in:` | `files-journey.test.ts`, "o roteiro com modelo de verdade" | should |
@@ -703,121 +705,71 @@ A forma de cada coisa:
 
 ## U3 O diagrama na mensagem
 
-**Base e modelo.** O commit da U2, com https://github.com/developmentconexus-ops/conexus/pull/948 no
-`main`. Sonnet: um pedaço de tela com uma biblioteca, depois de uma prova de navegador que decide a
-forma.
+**Base e modelo.** O commit da U2. Sonnet: um pedaço de tela com uma biblioteca, depois de uma prova de navegador que decidiu a forma.
+
+**A forma, pelo estudo do diagrama sob a política** (`conexus-diagram-csp-study/report.md`, 2026-11-11, seções 2.4 e 5; a decisão do fundador, "D", em `docs/approvals.md`). A prova da U3 achou que o `mermaid.render` põe um `<style>` e atributos `style` na página para medir, e que a política do Hub (`style-src 'self'`) os recusa: o console enche e o desenho sai errado (as setas soltas do losango, o rótulo fora do cilindro). Nenhuma opção nativa do `mermaid` resolve (`htmlLabels: false` é a forma antiga deste cartão; `securityLevel: 'sandbox'` sai vazio). As referências ou afrouxam a política (LibreChat, `style-src 'unsafe-inline'`), ou não mandam política, ou trocam o `mermaid.js` por um desenhador sem DOM (assistant-ui, lobe-ui). A escolha foi o quadro isolado: o `mermaid` roda num `<iframe sandbox="allow-scripts">` servido pelo Hub com a sua própria política, e a página mostra o SVG que volta como imagem.
 
 ### As linhas da tabela
 
-- **O diagrama.** `apps/web/src/builder/conversation/markdown.tsx` inteiro, `markdown-blocks.ts`,
-  `markdown.test.tsx`; `apps/web/src/platform/theme.ts` (o tema resolvido);
-  `apps/web/src/brand/tokens.css` (os nomes dos tokens de cor e de fonte); `apps/web/layout-harness.ts`
-  (a CSP do arnês, `:28`, e os erros do console, `:114`); `apps/server/src/platform/http.ts:31-49` (a
-  CSP do Hub, que a prova reproduz). Referência: `open-webui@f7ac7ee`
-  `src/lib/utils/index.ts:2155-2165,2305-2313`, `CodeBlock.svelte:365-377`; o README do pacote
-  `mermaid` na versão instalada.
+- **O diagrama.** `apps/web/src/builder/conversation/markdown.tsx` inteiro, `markdown-blocks.ts`, `markdown.test.tsx`; `apps/web/src/platform/theme.ts`; `apps/web/src/brand/tokens.css`; `apps/web/layout-harness.ts`; `apps/server/src/platform/{http,screens}.ts`. Referência: o estudo (acima), `open-webui@f7ac7ee` `src/lib/utils/index.ts:2155-2165,2305-2313`, `librechat@e6567c7` `client/src/hooks/Mermaid/useMermaid.ts:99-118`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
+| `apps/web/diagram-frame.html` e `src/builder/conversation/diagram-frame.ts` | Cria: a entrada do quadro, o único lugar que importa `mermaid` | o build do Vite |
 | `apps/web/src/builder/conversation/` | Cria `diagram.tsx`; muda `markdown.tsx` (o bloco `mermaid` de uma resposta acabada vira `Diagram`), `markdown.test.tsx` | toda conversa que desenha Markdown |
-| `apps/web/package.json` | Muda: `mermaid` 11, versão exata; `diagram.layout.test.ts` na lista de `test:browser` | — |
-| `package-lock.json` | Muda: `mermaid` 11 e as suas dependências | — |
-| `apps/web/diagram.layout.test.ts` | Cria | o arnês dos navegadores |
-| `apps/web/vite.config.test.ts` | Muda: o pedaço próprio do `mermaid` | — |
+| `apps/web/vite.config.ts`, `vite.config.test.ts` | Muda: a segunda entrada de HTML; o teste do pedaço do `mermaid` | — |
+| `apps/web/package.json`, `package-lock.json` | Muda: `mermaid` 11, versão exata; `diagram.layout.test.ts` na lista de `test:browser` | — |
+| `apps/web/{diagram.html,diagram-fixture.tsx,diagram.layout.test.ts,layout-served.ts,layout-harness.ts}` | Cria a página de teste do diagrama e o teste de navegador; o arnês serve o quadro com a política dele | o arnês dos navegadores |
+| `packages/hub-api/src/pages.ts` | Cria `DIAGRAM_FRAME` (o endereço e a política do quadro), de um dono só para o Hub e o arnês | `screens.ts`, `layout-served.ts` |
+| `apps/server/src/platform/{http,screens}.ts` | Muda: `frame-src 'self'`; a rota do quadro com a sua política e `X-Frame-Options: SAMEORIGIN`; `Access-Control-Allow-Origin: *` nos arquivos de `/assets/` (o quadro tem origem opaca e os pede por CORS) | toda resposta do Hub |
+| `docs/guides/security.md`, `docs/approvals.md` | Muda a S24 (a palavra "D", L20) | — |
 | `docs/reference/stack.md` | Muda: a linha de `mermaid` | `check-docs` |
 
 ### Os contratos que a unidade cria
 
-**Apaga do `main`, antes de acrescentar:** nada; o bloco `mermaid` deixa de cair no `pre` genérico
-só quando a resposta acabou.
+`DIAGRAM_FRAME` (`packages/hub-api/src/pages.ts`): `path: '/diagram-frame.html'` e `policy: "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'"`.
+
+A mensagem da página ao quadro: `{ id: number, code: string, themeVariables: Record<string, string> }`. A do quadro à página: `{ ready: true }` uma vez, e por pedido `{ id, ok: true, svg }` ou `{ id, ok: false }`. O quadro só ouve `event.source === window.parent`; a página só ouve o `contentWindow` do quadro. O quadro faz `mermaid.parse` e `mermaid.render`, só a API pública, com `startOnLoad: false`, `securityLevel: 'strict'`, `theme: 'base'`, `fontFamily: 'sans-serif'`, `htmlLabels: false`.
 
 `apps/web/src/builder/conversation/diagram.tsx`:
 
 ```ts
-/** What a mermaid block became: drawing, drawn as an image, or left as its code. */
 type Drawn =
   | { kind: 'DRAWING' }
-  | { kind: 'DRAWN'; src: string; title: string } // src: the SVG as a data URL, img-src allows data:
-  | { kind: 'NOT_DRAWN' }                          // a syntax error, or the package did not load
+  | { kind: 'DRAWN'; src: string } // src: the SVG as a data URL, img-src allows data:
+  | { kind: 'NOT_DRAWN' }          // a syntax error, a refusal, or the frame did not answer in 20 s
 
-/** A closed ```mermaid block of a settled answer: the code until it is drawn, then the image; the code and one line when it cannot be. */
-export function Diagram(props: { code: string }): ReactNode
+/** A closed ```mermaid block of a settled answer: its code (`children`) until it is drawn, then the image; the code and one line when it cannot be. */
+export function Diagram(props: { code: string; children: ReactNode }): ReactNode
 ```
 
-`markdown.tsx`: `Block` recebe `settled` (falso no último bloco enquanto a resposta chega); o `pre`
-cujo `code` tem `language-mermaid` desenha `Diagram` só com `settled`, e o código de hoje no resto.
+Um quadro por página, criado no primeiro bloco fechado de uma resposta acabada, fora da tela pelo CSSOM (nunca `hidden`, que o tira da árvore de desenho e o `mermaid` não mede), `aria-hidden`, sem foco. As cores saem do `color` e do `background-color` calculados de um elemento de prova com as classes dos tokens (nenhum valor de cor no código, V3); trocar o tema desenha de novo. A imagem tem `alt="Diagrama"`.
 
-A configuração do `mermaid`: `startOnLoad: false`, `securityLevel: 'strict'`, `theme: 'base'`,
-`themeVariables` lidas dos tokens no momento do desenho: os tokens são `light-dark(…)`
-(`brand/tokens.css`), que o `mermaid` não lê, então a cor vem do `color` e do `background-color`
-calculados de um elemento de prova com as classes dos tokens (nenhum valor de cor no código, V3), `fontFamily` a família genérica `sans-serif` (a imagem não tem as fontes da
-página, então a medida e o desenho usam a mesma), `flowchart.htmlLabels: false` (texto SVG, que uma
-imagem desenha em todo navegador). O pacote vem por `import('mermaid')` na primeira vez. Antes de desenhar,
-só pela API pública do `mermaid` (`mermaid.parse` e `mermaid.render`): `mermaid.parse` (o erro vira
-`NOT_DRAWN`); num erro, a remoção dos elementos temporários que o `mermaid` deixa na página, como o
-Open WebUI (`utils/index.ts:2334-2337`). A recusa prévia do Open WebUI a imagens e estilos de fora
-(`utils/index.ts:2314-2330`) não entra: ela lê `mermaid.mermaidAPI.getDiagramFromText` e
-`diagram.db.getVertices`, `getActors` e `getClasses`, internos de cada tipo de diagrama e fora da
-API documentada; aqui a CSP do Hub (`img-src 'self' data:`, `style-src 'self'`) recusa a busca
-durante o desenho, e o SVG mostrado como imagem não busca nada (critério 20).
-
-A forma de cada coisa:
-
-- **Estados.** `Drawn`, discriminado por `kind`, com `switch` terminado em `satisfies never` (C21).
-- **Donos.** A configuração e a leitura dos tokens só em `diagram.tsx`; o tema, de
-  `platform/theme.ts` (C26).
-- **Entrada externa.** O texto do bloco é do modelo: vai só ao `mermaid` com `strict`, e o SVG só
-  como imagem, que não roda script (C27, S2).
-- **Modelo.** `markdown.tsx` `Anchor` (uma entrada do modelo tratada na borda) cumpre C21, C23 e C26.
+`markdown.tsx`: `Block` recebe `settled` (falso no último bloco enquanto a resposta chega); o `pre` cujo `code` tem `language-mermaid` desenha `Diagram` só com `settled`.
 
 ### As skills e a leitura
 
-- `react-markdown`, `remark-gfm` e `remend`: os READMEs (sem skill), como a linha de `stack.md`.
-- `mermaid`: a linha nova de `stack.md`, o README do pacote e a página de uso da configuração na
-  versão instalada; sem skill.
+- `mermaid`: a linha nova de `stack.md`, o README do pacote; sem skill.
 - `playwright-cli` (`playwright-core`, o arnês dos navegadores) para a prova e o teste.
-- `impeccable` não se aplica: nenhum desenho novo de tela além do bloco.
 
 ### A ordem do trabalho
 
-1. **A prova de CSP, primeiro.** No arnês (`layout-harness.ts`), com a CSP do Hub de `http.ts`
-   (`style-src 'self'`, `img-src 'self' data:`, `script-src 'self'`): desenhar um fluxo pequeno com
-   `mermaid.render` e olhar o console. O `mermaid` desenha numa página viva (`open-webui@f7ac7ee`
-   `utils/index.ts:2312`) e, pela leitura do estudo, põe um `<style>` dentro do SVG; a hipótese é que
-   a CSP recusa esse estilo durante a medida. Duas saídas, porque `style-src 'self'` vale para o
-   documento inteiro, visível ou não, e a W22 proíbe estilo injetado:
-   - nenhuma recusa: o SVG entra como imagem (`<img src="data:image/svg+xml,…">`) e segue-se;
-   - uma recusa: parar (abaixo); nenhum contêiner escondido nem troca de política dentro da unidade.
-   O relatório da unidade guarda a saída do console de cada tentativa.
-2. **O pacote.** `mermaid` 11 em `apps/web/package.json`, versão exata, e a linha de `stack.md`
-   (`Used in` `apps/web/src/builder/conversation`, a referência do Open WebUI, a armadilha que a prova
-   achou). Regras: L16.
-3. **O teste primeiro.** `markdown.test.tsx`, critérios 18 e 19 (no jsdom o `mermaid` não mede, então
-   o caso do código e o do erro são observáveis ali); `diagram.layout.test.ts`, critérios 17, 19, 20,
-   21 e 22; `diagram.layout.test.ts` entra na lista explícita de `test:browser` em
-   `apps/web/package.json`, sem a qual os critérios 17 e 19 a 22 não rodam no CI (T12).
-4. **`diagram.tsx` e `markdown.tsx`.** Regras: W22, V3, V26 (nada se anima), T23.
-5. **O pedaço próprio.** Conferir no `vite build` que `mermaid` não está no pedaço de entrada.
+1. **A prova do quadro**, feita antes de escrever o código: o desenho dos doze tipos de diagrama no Chromium, no Firefox e no WebKit (`'self'` num documento de origem opaca), com a política do Hub e a do quadro: 12 de 12 desenhados nos três, nenhuma recusa na página do Hub. O arnês do repositório roda só o Chromium; Firefox e WebKit foram provados com o script da prova, fora do repositório.
+2. **O teste primeiro**: `markdown.test.tsx` (critérios 18 e 19), `diagram.layout.test.ts` (17, 19, 20, 21, 22, na lista de `test:browser`), `vite.config.test.ts` (21), `http` (a política do quadro).
+3. **O código**: `diagram-frame.ts`, `diagram.tsx`, `markdown.tsx`, a rota e a política. Regras: W22, V3, V26 (nada se anima), T23.
+4. **O pedaço próprio**: o `vite build` põe o `mermaid` só nos pedaços da página do quadro.
 
 ### Como se prova
 
-- Critérios 17, 19 a 22: `diagram.layout.test.ts` no arnês dos navegadores, a 1366 e a 390 px, nos
-  dois temas, com os erros do console e os pedidos sem resposta (`harness.unanswered`) vazios (T23).
-- Critérios 18 e 19: `markdown.test.tsx`.
-- Critério 21: `vite.config.test.ts` e os pedidos da página no arnês.
-- O critério 17 falha hoje: o bloco sai como código.
-- Local: os testes tocados, `npm run typecheck`, `npm run lint`, `node scripts/check-docs.ts`.
+- Critérios 17, 19 a 22: `diagram.layout.test.ts` no arnês dos navegadores, a 1366 e a 390 px, nos dois temas, com os erros do console vazios.
+- Critérios 18 e 19: `markdown.test.tsx`. Critério 21: `vite.config.test.ts` e os pedidos da página. A política do quadro: `diagram-frame.test.ts`.
 
 ### Parar se
 
-- A prova mostrar uma recusa da CSP que só uma mudança da política do Hub tira: parar. A política é
-  a de `platform/http.ts:31-49`, sob a W22 (nenhum estilo injetado), e o firstmate leva ao fundador as opções: (A) `style-src` aceitar estilos em
-  linha; (B) o diagrama feito como imagem na máquina e mostrado ao lado por `show_file`, como o
-  gráfico; (C) o bloco continua código até a etapa do HTML ao lado.
-- O `mermaid` precisar de `unsafe-eval` ou de um pedido para fora da página: parar.
-- O `vite build` puser `mermaid` no pedaço de entrada mesmo com `import()`: parar e dizer por quê.
+- Um navegador recusar o quadro (`'self'` num documento de origem opaca): parar e dizer qual.
+- O `vite build` puser `mermaid` num pedaço que a tela carrega: parar e dizer por quê.
 
 ## U4 O roteiro como teste
 
