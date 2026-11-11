@@ -32,6 +32,8 @@ const CASES: Record<string, string> = {
     'flowchart TD',
     '  A["<img src=x onerror=window.pwned=1>"] --> B["<script>window.pwned=1</script>"]',
     '  B --> C["fora"]',
+    '  click A call pwned()',
+    '  click B href "javascript:window.pwned=1"',
     '```',
     '',
   ].join('\n'),

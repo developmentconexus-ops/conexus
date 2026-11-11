@@ -2,6 +2,8 @@ import { DIAGRAM_FRAME } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useTheme } from '../../platform/theme.ts'
+import type { Reply } from './diagram-messages.ts'
+import { FrameMessage } from './diagram-messages.ts'
 
 /** What a mermaid block became: being drawn, drawn as an image, or left as its code. */
 type Drawn =
@@ -11,8 +13,6 @@ type Drawn =
 
 /** The frame answers in this long at the most; past it the block stays code. */
 const DRAW_TIMEOUT_MS = 20_000
-
-type Reply = { id: number; ok: boolean; svg?: string }
 
 // The tokens are `light-dark(…)`, which the library does not read, so each colour is the computed
 // one of a probe element that wears the token's own classes (no colour value in the code, V3).
@@ -74,12 +74,10 @@ function frame(): Frame {
   const ready = Promise.withResolvers<void>()
   window.addEventListener('message', (event) => {
     if (event.source !== element.contentWindow) return
-    const data: unknown = event.data
-    if (typeof data !== 'object' || data === null) return
-    if (Object(data).ready === true) return ready.resolve()
-    const { id, ok, svg } = Object(data)
-    if (typeof id !== 'number' || typeof ok !== 'boolean') return
-    waiting.get(id)?.({ id, ok, ...(typeof svg === 'string' ? { svg } : {}) })
+    const message = FrameMessage.safeParse(event.data)
+    if (!message.success) return
+    if ('ready' in message.data) return ready.resolve()
+    waiting.get(message.data.id)?.(message.data)
   })
   element.src = DIAGRAM_FRAME.path
   document.body.append(element)
