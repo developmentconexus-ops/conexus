@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { Limit, Offset, readOf, sellerOf } from './shared.ts'
+import { Limit, Offset, readOf, Scan, searchTypeOf, sellerOf } from './shared.ts'
 
 export const perguntas = readOf({
   id: 'perguntas',
@@ -22,8 +22,7 @@ export const perguntas = readOf({
       ])
       .optional(),
     offset: Offset.optional(),
-    scan: z.literal(true).optional(),
-    scrollId: z.string().min(1).max(4000).optional(),
+    ...Scan,
     limit: Limit(50),
   }),
   list: 'questions',
@@ -34,7 +33,7 @@ export const perguntas = readOf({
       seller_id: sellerOf(account),
       api_version: 4,
       status: input.status,
-      search_type: input.scan === true || input.scrollId !== undefined ? 'scan' : undefined,
+      search_type: searchTypeOf(input),
       scroll_id: input.scrollId,
       offset: input.offset,
       limit: input.limit,

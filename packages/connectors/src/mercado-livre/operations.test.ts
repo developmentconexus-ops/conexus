@@ -304,3 +304,14 @@ test('o cursor da resposta de uma varredura vai em seguinte, e a página sem lin
     value: { linhas: [{ id: 'a' }], temMais: false, total: 1 },
   })
 })
+
+test('o total e o temMais saem das mesmas contagens: sem deslocamento só o total, e um total quebrado nenhum dos dois', () => {
+  assert.deepEqual(scanned(['a'], { paging: { total: 9 } }), {
+    kind: 'OK',
+    value: { linhas: [{ id: 'a' }], temMais: null, total: 9 },
+  })
+  assert.deepEqual(scanned(['a'], { paging: { total: 9.5, offset: 0, limit: 1 } }), {
+    kind: 'OK',
+    value: { linhas: [{ id: 'a' }], temMais: null },
+  })
+})

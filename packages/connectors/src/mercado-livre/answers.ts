@@ -26,57 +26,52 @@ const Row = z.union([
   z.union([z.string(), z.number()]).transform((id) => ({ id })),
 ])
 
-const Counts = z.looseObject({ total: z.number(), offset: z.number(), limit: z.number() })
+/** What a route counts: the total always, and the offset and limit when it sends them (a scan's `paging` has no offset). */
+const Counts = z.looseObject({
+  total: z.int().min(0),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+})
+type Counted = z.infer<typeof Counts>
 
 /** The offset a route that counts at the top level keeps in `filters` (the questions search). */
 const Filtered = z.looseObject({
-  total: z.number(),
+  total: z.int().min(0),
   limit: z.number(),
   filters: z.looseObject({ offset: z.number() }),
 })
 
 /**
- * Whether another page follows, from the counts as the route sends them: `paging` (orders, claims),
- * or the top level (billing periods: `total`, `offset`, `limit`; questions: `total`, `limit` and
- * the offset in `filters`). A route that sends none says null.
+ * The counts of a page as the route sends them, the one reading `temMais` and `total` both come from:
+ * `paging` (orders, claims, a scan's), or the top level (billing periods: `total`, `offset`, `limit`;
+ * questions: `total`, `limit` and the offset in `filters`). A route that sends none says null.
  */
-function moreOf(body: unknown): boolean | null {
+function countsOf(body: unknown): Counted | null {
   const nested = z.looseObject({ paging: Counts }).safeParse(body)
-  const flat = Counts.safeParse(body)
+  if (nested.success) return nested.data.paging
   const filtered = Filtered.safeParse(body)
-  const counts = nested.success
-    ? nested.data.paging
-    : flat.success
-      ? flat.data
-      : filtered.success
-        ? {
-            total: filtered.data.total,
-            limit: filtered.data.limit,
-            offset: filtered.data.filters.offset,
-          }
-        : null
-  return counts === null ? null : counts.offset + counts.limit < counts.total
+  if (filtered.success) return { ...filtered.data, offset: filtered.data.filters.offset }
+  const flat = Counts.safeParse(body)
+  return flat.success ? flat.data : null
 }
 
-/** The total a route reports: in `paging`, at the top level, or the questions search's own. */
-function totalOf(body: unknown): number | undefined {
-  const nested = z.looseObject({ paging: z.looseObject({ total: z.number() }) }).safeParse(body)
-  const flat = z.looseObject({ total: z.number() }).safeParse(body)
-  const found = nested.success
-    ? nested.data.paging.total
-    : flat.success
-      ? flat.data.total
-      : undefined
-  return found !== undefined && Number.isInteger(found) && found >= 0 ? found : undefined
+/** Whether another page follows: null when the counts lack the offset or the limit. */
+function moreOf(counts: Counted | null): boolean | null {
+  if (counts?.offset === undefined || counts.limit === undefined) return null
+  return counts.offset + counts.limit < counts.total
 }
 
 /**
  * A scan's answer carries a `scroll_id` (the cursor of the next page); it counts nothing, so the page
  * with no rows is the end and a page with rows has more. A body with no `scroll_id` is paged by its counts.
  */
-function pagedOf(body: unknown, count: number): Pick<Rows, 'temMais' | 'seguinte'> {
+function pagedOf(
+  body: unknown,
+  count: number,
+  counts: Counted | null,
+): Pick<Rows, 'temMais' | 'seguinte'> {
   const scroll = z.looseObject({ scroll_id: z.string().min(1).max(4000) }).safeParse(body)
-  if (!scroll.success) return { temMais: moreOf(body) }
+  if (!scroll.success) return { temMais: moreOf(counts) }
   return count === 0 ? { temMais: false } : { temMais: true, seguinte: scroll.data.scroll_id }
 }
 
@@ -129,11 +124,11 @@ export function rows({
     const linhas = parsed.data.map((row) =>
       omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
     )
-    const total = totalOf(body)
+    const counts = countsOf(body)
     return Rows.safeParse({
       linhas,
-      ...pagedOf(body, linhas.length),
-      ...(total === undefined ? {} : { total }),
+      ...pagedOf(body, linhas.length, counts),
+      ...(counts === null ? {} : { total: counts.total }),
       ...(parcial ? { parcial } : {}),
     })
   }

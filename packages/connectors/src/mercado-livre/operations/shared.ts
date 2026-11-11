@@ -9,15 +9,20 @@ import { rows } from '../answers.ts'
 export const PathId = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/)
 
 export const Offset = z.number().int().min(0)
-
 export function Limit(max: number) {
   return z.number().int().min(1).max(max)
 }
 
-/** The date-time the API takes in filters: ISO 8601 with its offset. */
-export const Instant = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/)
+/** The entries of a scan read (itens and questions search): `scan` starts one, `scrollId` carries it on. */
+export const Scan = {
+  scan: z.literal(true).optional(),
+  scrollId: z.string().min(1).max(4000).optional(),
+}
+
+/** The `search_type` the route wants while a scan runs: from its first page on. */
+export function searchTypeOf(input: Readonly<{ scan?: true; scrollId?: string }>) {
+  return input.scan === true || input.scrollId !== undefined ? 'scan' : undefined
+}
 
 /** The seller's id in a path: the connection's account, which the Hub parses again when it opens the connection. */
 export function sellerOf(account: Account): string {

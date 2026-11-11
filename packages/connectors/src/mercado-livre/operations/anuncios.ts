@@ -1,6 +1,16 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { chain, ids, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import {
+  chain,
+  ids,
+  Limit,
+  Offset,
+  PathId,
+  readOf,
+  Scan,
+  searchTypeOf,
+  sellerOf,
+} from './shared.ts'
 
 export const anuncios = readOf({
   id: 'anuncios',
@@ -15,8 +25,7 @@ export const anuncios = readOf({
       .optional(),
     sku: z.string().min(1).max(100).optional(),
     offset: Offset.optional(),
-    scan: z.literal(true).optional(),
-    scrollId: z.string().min(1).max(4000).optional(),
+    ...Scan,
     limit: Limit(100),
   }),
   list: 'results',
@@ -25,7 +34,7 @@ export const anuncios = readOf({
     get(`/users/${sellerOf(account)}/items/search`, {
       status: input.status,
       seller_sku: input.sku,
-      search_type: input.scan === true || input.scrollId !== undefined ? 'scan' : undefined,
+      search_type: searchTypeOf(input),
       scroll_id: input.scrollId,
       offset: input.offset,
       limit: input.limit,

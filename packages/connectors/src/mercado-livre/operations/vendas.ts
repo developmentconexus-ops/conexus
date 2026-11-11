@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { Instant } from '../../kernel/copy.ts'
 import type { OperationId } from '../../kernel/operation.ts'
 import { get } from '../../kernel/operation.ts'
-import { chain, firstId, Instant, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
 /** The buyer is left out whole: the API sends a nickname, a name and, on some routes, an e-mail and a phone (founder, T1). */
 const BUYER = ['buyer'] as const
