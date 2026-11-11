@@ -96,19 +96,30 @@ function json(body: unknown): Response {
   return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } })
 }
 
+/** How a double misbehaves while still answering in the shape the schema reads: it ignores `offset`, or it reports a total with a row missing. */
+export type Plant = 'IGNORES_OFFSET' | 'DROPS_LAST' | null
+
 /** The double: `/token` gives a bearer, `/things` pages the 137 rows by `offset` and `limit`, and with `changed_from` only the rows changed since. */
-export const listingFake: CredentialFake = {
-  credential: { key: 'invented-key' },
-  serve: () => Promise.reject(new Error('the fixture double is never served')),
-  handle: async (request) => {
-    const url = new URL(request.url)
-    if (url.pathname === '/token') return json({ access_token: 'bearer', expires_in: 3600 })
-    const offset = Number(url.searchParams.get('offset'))
-    const limit = Number(url.searchParams.get('limit'))
-    const since = url.searchParams.get('changed_from')
-    const all = Array.from({ length: FIXTURE_ROWS }, (_, at) => rowOf(at)).filter(
-      (row) => since === null || Date.parse(row.changed) >= Date.parse(since),
-    )
-    return json({ items: all.slice(offset, offset + limit), total: all.length, offset, limit })
-  },
+export function listingFake(plant: Plant = null): CredentialFake {
+  return {
+    credential: { key: 'invented-key' },
+    serve: () => Promise.reject(new Error('the fixture double is never served')),
+    handle: async (request) => {
+      const url = new URL(request.url)
+      if (url.pathname === '/token') return json({ access_token: 'bearer', expires_in: 3600 })
+      const offset = plant === 'IGNORES_OFFSET' ? 0 : Number(url.searchParams.get('offset'))
+      const limit = Number(url.searchParams.get('limit'))
+      const since = url.searchParams.get('changed_from')
+      const all = Array.from({ length: FIXTURE_ROWS }, (_, at) => rowOf(at)).filter(
+        (row) => since === null || Date.parse(row.changed) >= Date.parse(since),
+      )
+      const held = plant === 'DROPS_LAST' ? all.slice(0, -1) : all
+      return json({
+        items: held.slice(offset, offset + limit),
+        total: all.length,
+        offset: Number(url.searchParams.get('offset')),
+        limit,
+      })
+    },
+  }
 }
