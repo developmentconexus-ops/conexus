@@ -942,3 +942,9 @@ Em 2026-11-10, como mudança de método (L20), sobre o Assistente: "Então, eu s
 ## Mudança de método: o estudo lê o código das referências
 
 Em 2026-11-11, como mudança de método (L20), depois de ver que o estudo do Assistente não abriu o código do Mastra Code e do Factory para a parte de arquivos: "Então, mas por que que você não abriu o código deles? Nosso study não tem isso de realmente utilizar e ver os repositórios de referências por dentro, ver como que eles fazem o código. Isso sempre foi uma premissa que eu achei que a gente estava seguindo. Quero que você verifique, tanto no study quanto no scope, para quando ir para o builder já ir muito bem informado de como vai ser feito. E lendo as skills nativas de acordo com o nosso stack." Antes, no mesmo dia: "vamos fazer igualzinho o Master Code faz, o Factor faz. Tem que ser igual, não é igual, né? Mas utilizar bem como referência e ver como eles fazem o código e utilizam o seu curso nativos do Master." Muda as skills `conexus-study`, `conexus-scope` e `conexus-review`: toda linha construída tem o rastro do código da referência mais próxima (`arquivo:linha`, lido), o cartão cita as linhas que cada unidade segue e as skills que o builder carrega, e a revisão devolve a falta como Bloqueia.
+
+## Capacidade 4, As pessoas do app e o vendedor
+
+Cartão da Capacidade 4, As pessoas do app e o vendedor (`docs/steps/capacidade-4-as-pessoas-do-app-e-o-vendedor.md`) aprovado em 2026-11-10 (commit 903cf7b131c0976638227c1a4ce75dd2689e4f39): "Sim"
+
+Em 2026-11-10, à pergunta da ordem na página do cartão (a: a 3, depois o Sync de qualquer conector, depois a 4, com o paralelo que a L1 já permite; b: mudar a L1; c: sem paralelo): "A". Lido pelo firstmate como decisão dele no meio da etapa (delivery L6); o cartão a escreve como decidida. O cartão espera no seu rascunho até a Capacidade 3 fechar (L5); a verificação `second-card` vermelha nele é de propósito.
