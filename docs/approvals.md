@@ -913,6 +913,10 @@ Em 2026-11-10, às três perguntas do estudo de o Builder escrever o Sync de qua
 
 Permissões da tabela das propostas da Capacidade 3 (`copies.copy_proposal` para `hub_company`: SELECT e INSERT, UPDATE só de `state` e `copy_id`, sem DELETE; migração `20261110223033_cap3_copy_proposal_grants`; D11), aprovadas em 2026-11-10 sobre https://github.com/developmentconexus-ops/conexus/pull/950, à pergunta do sim para essas permissões e para o merge com os testes verdes: "Sim"
 
+## O Assistente do dia a dia
+
+Cartão de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit ba0eb6f1503d272465a36192d0a234536a732c43): "Aprovo"
+
 ## Mudança de método: um pull request por grupo de unidades
 
 Em 2026-11-09, como mudança de método (L20), o fundador disse: "eu queria fazer é mudar a nossa regra de toda o 1C1PR, 1CI, né? Eu acho que seria no mínimo um conjunto de 3 etapas, tipo 1, o 2, o 3. Aí sim poderia subir um PR e aí rodar CI e tudo. Lógico que o nosso teste, né? A gente faz testes, né? Tipo, do 1, a gente teria fazer e testar e validar. Mas eu falo realmente subir e utilizar o CI, sabe? Para ser mais rápido, mais efetivo." E, aprovando o formato que o firstmate propôs (o cartão segue como pull request só de documentos, aprovado antes de qualquer código; o build vai num pull request por etapa, ou por grupo de unidades quando a etapa é grande; um commit por unidade, cada uma construída, testada e validada antes do seu commit; o revisor Opus lê commit a commit; o CI roda uma vez, no fim; o merge guarda os commits): "Sim, por exemplo U1, U2 e U3 seriam um PR por exemplo". Muda a L9, a L13 e as skills `conexus-build`, `conexus-review` e o cartão leve do padrão.
