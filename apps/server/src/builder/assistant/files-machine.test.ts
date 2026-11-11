@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
+import { setImmediate, setTimeout as sleep } from 'node:timers/promises'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf, sessionUrl, stopped } from '../conversation/test-conversation.ts'
@@ -126,6 +126,7 @@ type Machine = {
 test('parar no meio da gravação não é a máquina fora', async (t) => {
   const on = await conversation(t)
   const writing = Promise.withResolvers<void>()
+  const cut = Promise.withResolvers<void>()
   let box: unknown
   Object.defineProperty(on.hub.assistantMachines.control, 'sandbox', {
     configurable: true,
@@ -137,9 +138,14 @@ test('parar no meio da gravação não é a máquina fora', async (t) => {
         if (!args[1]?.startsWith("printf '%s'")) return run(command, args, options)
         writing.resolve()
         return new Promise((_, reject) =>
-          options.abortSignal.addEventListener('abort', () => reject(new Error('write cut')), {
-            once: true,
-          }),
+          options.abortSignal.addEventListener(
+            'abort',
+            () => {
+              reject(new Error('write cut'))
+              cut.resolve()
+            },
+            { once: true },
+          ),
         )
       }
     },
@@ -150,6 +156,10 @@ test('parar no meio da gravação não é a máquina fora', async (t) => {
   const events = await turn
   assert.equal(endOf(events), 'aborted')
   assert.deepEqual(failuresOf(events), [])
+  // The native writer reads the cut write after the turn has ended; its follow-up is the processor's
+  // `abort`, which would log the machine as out if the guard did not tell a stop from a failure.
+  await cut.promise
+  for (let turns = 0; turns < 20; turns += 1) await setImmediate()
   assert.equal(
     on.hub.lines.some((line) => line.message === 'MACHINE_UNAVAILABLE'),
     false,
