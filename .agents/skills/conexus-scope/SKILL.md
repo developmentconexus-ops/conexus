@@ -8,7 +8,7 @@ description: "Writes the card of a Conexus roadmap step from the study's answer:
 ## When to use
 
 After [`conexus-study`](../conexus-study/SKILL.md) answered the step's questions, in the same
-planning session; never by the session that will build the step.
+planning session, never the builder's.
 
 ## What it receives
 
@@ -17,11 +17,11 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 
 ## Steps
 
-1. Write first the sentence of use and the use script: three to six actions, written as what a
+1. Write the sentence of use first and the use script: three to six actions, written as what a
    person sees, done by the founder on the cloud installation without a terminal (a vendor's
    console is not one).
-2. List what enters and what stays out, and why. Estimate each unit's changed lines; past the budget
-   of [delivery L2](../../../docs/guides/delivery.md), split the step before the build.
+2. List what enters and what stays out, and why. Estimate each unit's changed lines; past
+   the budget of [delivery L2](../../../docs/guides/delivery.md), split the step before the build.
 3. Write the acceptance criteria, each observable from outside, refusals included; each refusal
    names the step's route that reaches it. Fill the failure table for every write the step
    adds, with its ambiguous replies (a cut reply, a 502, a 503) and the client's response; each row
@@ -29,17 +29,19 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 4. Design from zero (pstack `poteto-mode`: first principles, subtract before adding). Split the step
    into units that each end green on their own: a contract lands with its first implementer, and a
    migration that changes the catalog snapshot lands with the unit that owns `database-grants.sql`.
-   Shape a contract that crosses a module with pstack `architect` (`arena` for competing shapes);
+   Shape a contract that crosses a module with pstack `architect` (`arena` if shapes compete);
    else compare two shapes in writing. Copy the study's reference table and give every row its unit,
-   or "fica de fora" with its reason, and its new file ([card](references/card.md)).
+   or "fica de fora" with its reason, and its new file ([card](references/card.md)). A built row
+   without a traced reference goes back to the study.
 5. Fill the state matrix: each screen's states, and for each contract field who writes and who
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
    rules](../../../docs/reference/impeccable.md). A brought part passes the study rule
    ([`conexus-study`](../conexus-study/SKILL.md)).
 6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads; its
-   skills come from the rows of `docs/reference/stack.md` for its folders, never from memory.
+   skills come from the rows of `docs/reference/stack.md` for its folders, never from memory, and
+   the reference lines it follows.
 7. Write the founder's page in Portuguese, as [the template](references/card.md) says: what he
-   will do at the end and only his real decisions. An amendment rewrites the page and lists what
+   will do at the end and only his real decisions. An amendment rewrites the page, listing what
    changed; his words go to the ledger.
 7a. Write each unit's section as its build spec ([card](references/card.md)): its builder reads
    only the card's top tables and that section, so the section lists its reference table rows and
@@ -53,12 +55,12 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 ## What it produces
 
 The card in `docs/steps/` ([delivery L24](../../../docs/guides/delivery.md)), from [the
-template](references/card.md), in a pull request. Firstmate takes the founder's page to him; he
+template](references/card.md), in a pull request. Firstmate takes the founder's page to him, who
 approves only that.
 
 ## Stop and ask
 
-- An expensive choice is left without proof: go back to the study. A proof needing the founder's
+- An expensive choice lacks proof: back to the study. A proof needing the founder's
   accounts may move to a named unit, written as such on his page.
 - The sentence of use does not fit a few minutes of the founder's time.
 - A unit's spec would need a whole file or a second implementation: split the unit.

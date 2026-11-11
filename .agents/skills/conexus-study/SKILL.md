@@ -25,7 +25,9 @@ for brought code, the entry sheets and the old code at its frozen commit.
    the library's own products, the native feature and the old product, read at the installed
    version ([sources](references/sources.md)), with the options a guarantee rests on, their
    defaults, and the errors the library handles itself (code C50). Name where you searched; "none
-   found" counts only with that list.
+   found" counts only with that list. **Trace** each built row in the closest reference's source,
+   `file:line`, **lido**; Mastra rows also in Mastra Code and Factory
+   ([sources](references/sources.md)).
 3. **Run** the old product for anything it did, and one reference wherever the step changes what a
    person sees; a screen follows [screens](references/screens.md). A one-way door gets a
    [proof](references/proof.md). For every stream, stored row or tool result of a library that the

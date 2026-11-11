@@ -63,7 +63,7 @@ novo", which the card adds; the verdicts are [code C75](../../../../docs/guides/
 
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | One line | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, or "não precisa" | Path |
+| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, or "não precisa" | Path |
 
 Never one row for "o resto". A product piece no library has (our Git, the accounts queue) is a
 remendo row that cites its decision record.
@@ -74,6 +74,8 @@ What the table's shape cannot show. The study closes when each box holds.
 
 - [ ] The old product run for what it did; one reference run where behaviour changes.
 - [ ] Every library claim from the installed version, the maintainers' skill loaded.
+- [ ] Every built row traced in the closest reference's source, `file:line`, **lido**; no built row
+  rests on a relay or a docs-only line.
 - [ ] Every number and limit sourced, or dropped.
 - [ ] Every reader line reopened, or marked relay in section 4.
 - [ ] Notes, clones, captures and run outputs beside the report.
