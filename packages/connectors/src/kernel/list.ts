@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { CopyColumnTypeV2, CopyDefinitionV2, CopyPosition } from './copy.ts'
 import { CANONICAL_CELL, Instant } from './copy.ts'
 import type { ListPaging, ListRead } from './operation.ts'
@@ -58,9 +59,11 @@ function numberText(value: unknown, whole: boolean): Cell {
   return typeof value === 'string' && pattern.test(value) ? value : undefined
 }
 
+const Day = z.iso.date()
+
 function dateText(value: unknown): Cell {
   if (typeof value !== 'string') return undefined
-  if (CANONICAL_CELL.date.test(value)) return value
+  if (Day.safeParse(value).success) return value
   return Instant.safeParse(value).success ? value.slice(0, 10) : undefined
 }
 
