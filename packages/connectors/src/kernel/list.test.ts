@@ -223,6 +223,23 @@ function cellsAreCanonical() {
     if (cell !== null && type !== undefined) assert.match(cell, CANONICAL_CELL[type], `${type}`)
   })
 
+  for (const preco of [1e-7, 1e21])
+    assert.deepEqual(
+      pageOf(RIGHT, { linhas: [{ id: 'a', preco }] }, null, [
+        { name: 'preco', type: 'numeric', path: 'preco' },
+      ]),
+      { kind: 'MISFIT', column: 'preco', path: 'preco' },
+      `${preco}: sem notação de expoente`,
+    )
+  const inherited = pageOf(RIGHT, { linhas: [{ id: 'a' }] }, null, [
+    { name: 'proto', type: 'json', path: '__proto__' },
+  ])
+  assert.deepEqual(
+    inherited.kind === 'PAGE' && inherited.rows,
+    [['a', null]],
+    'só propriedades próprias',
+  )
+
   const misfit = pageOf(RIGHT, { linhas: [{ id: 'a', qtd: 'três' }] }, null, [columns[0]])
   assert.deepEqual(misfit, { kind: 'MISFIT', column: 'qtd', path: 'qtd' }, 'nunca nulo')
   assert.equal(

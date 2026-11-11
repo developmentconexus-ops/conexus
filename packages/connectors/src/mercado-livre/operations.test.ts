@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
+import { answerOf } from '../kernel/conformance-session.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { mensagensDoPacote } from './operations/mensagens.ts'
-import { ACCOUNT, answerOf, authorize, probeAll } from './test-session.ts'
+import { ACCOUNT, authorize, probeAll } from './test-session.ts'
 
 test('não marca como lida', async () => {
   const request = requestOf(mensagensDoPacote, { packId: '2000000000099' }, ACCOUNT, SENT_AT)

@@ -18,8 +18,6 @@ import type { mercadoLivreFake } from './fake.ts'
 
 type Fake = ReturnType<typeof mercadoLivreFake>
 
-export { answerOf }
-
 /** The token endpoint's answer to a request the kit built, read by the kit. */
 export async function grant(
   fake: Fake,

@@ -49,12 +49,15 @@ export type ListPage =
   | Readonly<{ kind: 'UNREADABLE'; reason: 'NO_MORE_SIGNAL' | 'NO_CURSOR' }>
   | Readonly<{ kind: 'CEILING'; ceiling: number }>
 
-/** The value at a dotted path of a row; a numeric segment indexes an array. */
+/** The value at a dotted path of a row, own properties only; a numeric segment indexes an array. */
 export function valueAt(row: unknown, path: string): unknown {
   return path
     .split('.')
     .reduce<unknown>(
-      (at, key) => (typeof at === 'object' && at !== null ? Reflect.get(at, key) : undefined),
+      (at, key) =>
+        typeof at === 'object' && at !== null && Object.hasOwn(at, key)
+          ? Reflect.get(at, key)
+          : undefined,
       row,
     )
 }
@@ -64,10 +67,11 @@ const Instant = z.iso.datetime({ offset: true })
 type Cell = string | null | undefined // undefined: not a value of the type
 
 function numberText(value: unknown, whole: boolean): Cell {
-  if (typeof value === 'number')
-    return (whole ? Number.isSafeInteger(value) : Number.isFinite(value))
-      ? String(value)
-      : undefined
+  if (typeof value === 'number') {
+    const text = String(value)
+    const fits = whole ? Number.isSafeInteger(value) : Number.isFinite(value)
+    return fits && !text.includes('e') ? text : undefined
+  }
   const pattern = CANONICAL_CELL[whole ? 'bigint' : 'numeric']
   return typeof value === 'string' && pattern.test(value) ? value : undefined
 }

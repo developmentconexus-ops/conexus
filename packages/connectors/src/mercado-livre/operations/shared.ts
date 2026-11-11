@@ -65,8 +65,6 @@ const Identity = z.union([
   z.number().int().nonnegative().transform(String),
 ])
 
-export { valueAt }
-
 /** The rows an earlier read gave. */
 function rowsOf(earlier: ReadonlyMap<OperationId, unknown>, id: OperationId) {
   return RowsOut.safeParse(earlier.get(id)).data?.linhas ?? []
