@@ -24,7 +24,7 @@ export type OAuthFake = Serving & Readonly<{ app: AppKeys; redirectUri: string }
 
 export type Fake = CredentialFake | OAuthFake
 
-export async function answerOf(response: Response): Promise<ProviderAnswer> {
+async function answerOf(response: Response): Promise<ProviderAnswer> {
   const text = await response.text()
   return {
     status: response.status,
