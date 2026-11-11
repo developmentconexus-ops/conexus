@@ -1,24 +1,19 @@
-import { randomUUID } from 'node:crypto'
 import type {
   ConnectionId,
-  ConnectorId,
   CopyId,
   CopyInterval,
   CopyProposalId,
   ProjectId,
 } from '@conexus/hub-api'
-import { and, eq, sql } from 'drizzle-orm'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import type { CommandTx } from '../../platform/database.ts'
-import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
-import { acceptedIn, acceptedProjectOf, insertedCopy } from './accept.ts'
+import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
 import { mayCreate } from './schedule.ts'
 import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
 import { companyOwner, parsedCopy, personScope, syncOf } from './store.ts'
-import { copy } from './tables.ts'
 
 /** What a copy's definition comes from: a template of the connection's connector, or the Builder's proposal (Capacidade 3). */
 type CopySource =
@@ -42,16 +37,6 @@ async function definitionOf(
 }
 
 type Model = NonNullable<Awaited<ReturnType<typeof definitionOf>>>
-
-/** The row an earlier attempt with this key made, if any; the same key with another body is a conflict. */
-async function earlierAttempt(tx: CommandTx, input: Enabling, bodyHash: string) {
-  const [again] = await tx
-    .select()
-    .from(copy)
-    .where(and(eq(copy.companyId, input.companyId), eq(copy.attemptKey, input.attemptKey)))
-  if (again !== undefined && again.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-  return again
-}
 
 /**
  * The hash of what the attempt asked, the key's body (code C37): a template's keeps Capacidade 2's
@@ -99,16 +84,16 @@ async function recorded(deps: CopiesDeps, input: Enabling) {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     const again = await earlierAttempt(tx, input, bodyHash)
     if (source.kind === 'MODEL') {
-      if (again !== undefined) return { fresh: false, copy: parsedCopy(again) }
-      return { fresh: true, copy: await fromModel(tx, { ...input, source }, { model, bodyHash }) }
+      if (again !== undefined) return { copy: parsedCopy(again) }
+      return { copy: await fromModel(tx, { ...input, source }, { model, bodyHash }) }
     }
     const accepting = { ...input, proposalId: source.proposalId }
     if (again !== undefined) {
       const releaseTo = await acceptedProjectOf(tx, accepting)
-      return { fresh: false, copy: parsedCopy(again), releaseTo }
+      return { copy: parsedCopy(again), releaseTo }
     }
     const accepted = await acceptedIn(deps, tx, accepting, bodyHash)
-    return { fresh: true, copy: accepted.copy, releaseTo: accepted.projectId }
+    return { copy: accepted.copy, releaseTo: accepted.projectId }
   })
 }
 
@@ -164,13 +149,16 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
     deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
     throw unavailable
   }
-  // A first run is asked for only when the schedule is new: a repeat, or a retry after the schedule
-  // was made, does nothing more (criterion 7); a retry after a cut before it still gets its run.
+  // The release comes before the clock: a `GRANT` that fails leaves no schedule, so the retry with
+  // the same key still gets the first run and its record (criteria 21 and 26). A first run is asked
+  // for only when the schedule is new; a repeat does nothing more (criterion 7).
   const scheduled = (await deps.clock().states(companyId)).has(copyId)
-  await deps.clock().set({ companyId, copyId, interval: input.interval })
   if (made.releaseTo !== undefined)
     await released(deps, input, { stored, projectId: made.releaseTo })
-  if (!scheduled) await deps.clock().runNow(copyId)
-  if (made.fresh) deps.log.info({ companyId, copyId, from: input.source.kind }, 'COPY_ENABLED')
+  await deps.clock().set({ companyId, copyId, interval: input.interval })
+  if (!scheduled) {
+    await deps.clock().runNow(copyId)
+    deps.log.info({ companyId, copyId, from: input.source.kind }, 'COPY_ENABLED')
+  }
   return copyId
 }

@@ -12,7 +12,7 @@ import {
   proposalRows,
   proposed,
 } from './test-proposals.ts'
-import { firstEnded } from './test-routes.ts'
+import { firstEnded, runsPage } from './test-routes.ts'
 
 /** A developer whose role reads no operation of the connection's read door. */
 async function developerWithoutReads(on: CopiesOn) {
@@ -91,6 +91,48 @@ test('dois cliques em duas abas', async (t) => {
   const dismissed = await enableProposal(on, on.ana, other)
   assert.equal(dismissed.statusCode, 409, dismissed.body)
   assert.equal(codeOf(dismissed), 'COPY_PROPOSAL_DECIDED')
+})
+
+test('o GRANT falha e a mesma chave retoma: uma rodada e um COPY_ENABLED', async (t) => {
+  const on = await copiesOn(t)
+  await grantMatriz(on)
+  const proposalId = await proposed(on)
+  const key = randomUUID()
+  const silent = t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  const failed = await enableProposal(on, on.ana, proposalId, key)
+  assert.deepEqual([failed.statusCode, codeOf(failed)], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  silent.mock.restore()
+  const retried = await enableProposal(on, on.ana, proposalId, key)
+  assert.equal(retried.statusCode, 201, retried.body)
+  const again = await enableProposal(on, on.ana, proposalId, key)
+  assert.equal(again.statusCode, 201, again.body)
+  const copyId = Object(retried.json()).copy.id
+  await firstEnded(on, copyId)
+  assert.equal((await runsPage(on, on.ana, copyId)).runs.length, 1, 'uma rodada')
+  assert.equal(on.hub.lines.filter((each) => each.message === 'COPY_ENABLED').length, 1)
+})
+
+test('a mesma chave ao mesmo tempo dá a mesma cópia', async (t) => {
+  const on = await copiesOn(t)
+  await grantMatriz(on)
+  // The Projeto's database exists already, so only the Hub's lock is left to race on.
+  assert.equal((await enableProposal(on, on.ana, await proposed(on, 'antes'))).statusCode, 201)
+  const proposalId = await proposed(on)
+  const key = randomUUID()
+  const [first, second] = await Promise.all([
+    enableProposal(on, on.ana, proposalId, key),
+    enableProposal(on, on.ana, proposalId, key),
+  ])
+  const failed = on.hub.lines.filter((each) => each.message.endsWith('_FAILED'))
+  assert.deepEqual(
+    [first.statusCode, second.statusCode],
+    [201, 201],
+    `${first.body} ${second.body} ${JSON.stringify(failed)}`,
+  )
+  assert.equal(Object(first.json()).copy.id, Object(second.json()).copy.id)
+  assert.equal((await on.hub.test.asOwner('select id from copies.copy')).length, 2)
 })
 
 test('quem liga precisa poder ler', async (t) => {

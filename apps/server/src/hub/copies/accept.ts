@@ -23,6 +23,20 @@ async function lockedProposal(tx: CommandTx, input: Accepting) {
   return row
 }
 
+/** The row an earlier attempt with this key made, if any; the same key with another body is a conflict. */
+export async function earlierAttempt(
+  tx: CommandTx,
+  input: InCompany & { attemptKey: string },
+  bodyHash: string,
+) {
+  const [again] = await tx
+    .select()
+    .from(copy)
+    .where(and(eq(copy.companyId, input.companyId), eq(copy.attemptKey, input.attemptKey)))
+  if (again !== undefined && again.bodyHash !== bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
+  return again
+}
+
 /** What a new copy row is made of, from a template or a proposal. */
 export type NewCopy = Readonly<{
   connectorId: ConnectorId
@@ -62,7 +76,7 @@ export async function insertedCopy(
 
 /**
  * Ligar a proposal, inside the Hub's transaction that admitted `manageCopies` (Capacidade 3): the
- * proposal locked and OPEN (else `COPY_PROPOSAL_DECIDED`), the role of who turns it on holding the
+ * proposal locked and OPEN (else the copy this attempt's key made, or `COPY_PROPOSAL_DECIDED`), the role of who turns it on holding the
  * connection's read door (else `NOT_IN_ROLE` with the read's name), the connection ACTIVE, the copy
  * with the proposal's definition and no template, the proposal ACCEPTED with it, and the release
  * to the proposal's Projeto. The `GRANT` follows outside, with Ligar's own steps.
@@ -74,7 +88,12 @@ export async function acceptedIn(
   bodyHash: string,
 ) {
   const proposal = await lockedProposal(tx, input)
-  if (proposal.state !== 'OPEN') throw new Failure('COPY_PROPOSAL_DECIDED')
+  if (proposal.state !== 'OPEN') {
+    // Two requests with one key: the one that waited for the lock finds the copy the other made (code C37).
+    const again = await earlierAttempt(tx, input, bodyHash)
+    if (again === undefined) throw new Failure('COPY_PROPOSAL_DECIDED')
+    return { copy: parsedCopy(again), projectId: ProjectId.parse(proposal.projectId) }
+  }
   const connectionId = ConnectionId.parse(proposal.connectionId)
   const connectorId = ConnectorId.parse(proposal.connectorId)
   const of = { companyId: input.companyId, connectionId }
