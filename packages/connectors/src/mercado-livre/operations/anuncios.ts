@@ -7,14 +7,16 @@ export const anuncios = readOf({
   subject: 'anuncios',
   docs: 'itens-e-buscas',
   summary:
-    'Lista os ids dos anúncios do vendedor, filtrando por status ou SKU, uma página por chamada (até 100). A busca lê no máximo 1000 anúncios (o limite de offset do Mercado Livre); um vendedor com mais usa os filtros de status ou SKU.',
+    'Lista os ids dos anúncios do vendedor, filtrando por status ou SKU, uma página por chamada (até 100). Com `scan` a busca é uma varredura que passa de mil: a primeira página manda `scan`, e a resposta traz o `seguinte` (o `scrollId` da próxima, que vale 5 minutos).',
   label: 'Anúncios',
   input: z.object({
     status: z
       .enum(['active', 'paused', 'closed', 'under_review', 'inactive', 'pending'])
       .optional(),
     sku: z.string().min(1).max(100).optional(),
-    offset: Offset,
+    offset: Offset.optional(),
+    scan: z.literal(true).optional(),
+    scrollId: z.string().min(1).max(4000).optional(),
     limit: Limit(100),
   }),
   list: 'results',
@@ -23,6 +25,8 @@ export const anuncios = readOf({
     get(`/users/${sellerOf(account)}/items/search`, {
       status: input.status,
       seller_sku: input.sku,
+      search_type: input.scan === true || input.scrollId !== undefined ? 'scan' : undefined,
+      scroll_id: input.scrollId,
       offset: input.offset,
       limit: input.limit,
     }),

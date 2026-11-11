@@ -59,6 +59,7 @@ export const mercadoLivre = defineConnector({
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
   logo: LOGO,
   perProject: 'many', // a Projeto may read several stores
+  callLimit: { countedBy: 'APP' }, // "per Client ID (application)": one Conexus app serves every company
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
   check: conta,

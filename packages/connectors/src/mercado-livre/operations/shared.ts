@@ -9,6 +9,7 @@ import { rows } from '../answers.ts'
 export const PathId = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/)
 
 export const Offset = z.number().int().min(0)
+
 export function Limit(max: number) {
   return z.number().int().min(1).max(max)
 }

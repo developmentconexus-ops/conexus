@@ -114,6 +114,7 @@ test('uma linha passa como o Mercado Livre a mandou, com campo a mais ou de outr
     value: {
       linhas: [{ id: 1, extra: { novo: true }, total_amount: 'dez' }],
       temMais: true,
+      total: 3,
     },
   })
 })
@@ -237,4 +238,68 @@ test('as visitas mandam as datas como a documentação mostra, só o dia', () =>
   )
   const probe = visitas.probe(new Map())
   assert.ok(visitas.input.safeParse(probe).success)
+})
+
+function scanned(results: unknown[], extra: Record<string, unknown>) {
+  return operationOf('anuncios').answer({ status: 200, body: { results, ...extra } })
+}
+
+function operationOf(id: string) {
+  const found = mercadoLivre.operations.find((operation) => operation.id === id)
+  assert.ok(found, id)
+  return found
+}
+
+test('pedidos pelo que mudou', () => {
+  const pedidos = operationOf('pedidos')
+  const changedFrom = '2026-11-09T10:00:00.000-03:00'
+  const query = requestOf(pedidos, { offset: 0, limit: 50, changedFrom }, ACCOUNT, SENT_AT).query
+  assert.equal(query['order.date_last_updated.from'], changedFrom)
+  assert.equal(query.offset, '0')
+  assert.equal(query.limit, '50')
+  assert.equal(
+    'order.date_last_updated.from' in
+      requestOf(pedidos, { offset: 0, limit: 5 }, ACCOUNT, SENT_AT).query,
+    false,
+    'sem a entrada, a leitura de hoje sai igual',
+  )
+  assert.equal(
+    pedidos.input.safeParse({ offset: 0, limit: 5, changedFrom: '2026-11-09' }).success,
+    false,
+  )
+})
+
+test('a varredura: a primeira página manda scan, as seguintes o scroll_id', () => {
+  for (const id of ['anuncios', 'perguntas']) {
+    const read = operationOf(id)
+    const first = requestOf(read, { scan: true, limit: 50 }, ACCOUNT, SENT_AT).query
+    assert.equal(first.search_type, 'scan', id)
+    assert.equal(first.scroll_id, undefined, id)
+    assert.equal(first.offset, undefined, id)
+    const next = requestOf(read, { scrollId: 'abc', limit: 50 }, ACCOUNT, SENT_AT).query
+    assert.equal(next.scroll_id, 'abc', id)
+    assert.equal(next.search_type, 'scan', id)
+    assert.equal(
+      'search_type' in requestOf(read, { offset: 0, limit: 50 }, ACCOUNT, SENT_AT).query,
+      false,
+      `${id}: por deslocamento, como hoje`,
+    )
+    assert.equal(read.input.safeParse({ scan: false, limit: 50 }).success, false, id)
+    assert.equal(read.input.safeParse({ scrollId: '', limit: 50 }).success, false, id)
+  }
+})
+
+test('o cursor da resposta de uma varredura vai em seguinte, e a página sem linhas é o fim', () => {
+  assert.deepEqual(scanned(['a', 'b'], { scroll_id: 'cursor-1', paging: { total: 9, limit: 2 } }), {
+    kind: 'OK',
+    value: { linhas: [{ id: 'a' }, { id: 'b' }], temMais: true, seguinte: 'cursor-1', total: 9 },
+  })
+  assert.deepEqual(scanned([], { scroll_id: 'cursor-2', paging: { total: 9, limit: 2 } }), {
+    kind: 'OK',
+    value: { linhas: [], temMais: false, total: 9 },
+  })
+  assert.deepEqual(scanned(['a'], { paging: { total: 1, offset: 0, limit: 5 } }), {
+    kind: 'OK',
+    value: { linhas: [{ id: 'a' }], temMais: false, total: 1 },
+  })
 })

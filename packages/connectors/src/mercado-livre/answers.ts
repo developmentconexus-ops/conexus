@@ -58,6 +58,28 @@ function moreOf(body: unknown): boolean | null {
   return counts === null ? null : counts.offset + counts.limit < counts.total
 }
 
+/** The total a route reports: in `paging`, at the top level, or the questions search's own. */
+function totalOf(body: unknown): number | undefined {
+  const nested = z.looseObject({ paging: z.looseObject({ total: z.number() }) }).safeParse(body)
+  const flat = z.looseObject({ total: z.number() }).safeParse(body)
+  const found = nested.success
+    ? nested.data.paging.total
+    : flat.success
+      ? flat.data.total
+      : undefined
+  return found !== undefined && Number.isInteger(found) && found >= 0 ? found : undefined
+}
+
+/**
+ * A scan's answer carries a `scroll_id` (the cursor of the next page); it counts nothing, so the page
+ * with no rows is the end and a page with rows has more. A body with no `scroll_id` is paged by its counts.
+ */
+function pagedOf(body: unknown, count: number): Pick<Rows, 'temMais' | 'seguinte'> {
+  const scroll = z.looseObject({ scroll_id: z.string().min(1).max(4000) }).safeParse(body)
+  if (!scroll.success) return { temMais: moreOf(body) }
+  return count === 0 ? { temMais: false } : { temMais: true, seguinte: scroll.data.scroll_id }
+}
+
 /** The row without the keys named by dotted path (`buyer`, `from.email`): the buyer's personal data never leaves the kit. */
 function without(value: unknown, path: readonly string[]): unknown {
   const [key, ...rest] = path
@@ -107,7 +129,13 @@ export function rows({
     const linhas = parsed.data.map((row) =>
       omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
     )
-    return Rows.safeParse({ linhas, temMais: moreOf(body), ...(parcial ? { parcial } : {}) })
+    const total = totalOf(body)
+    return Rows.safeParse({
+      linhas,
+      ...pagedOf(body, linhas.length),
+      ...(total === undefined ? {} : { total }),
+      ...(parcial ? { parcial } : {}),
+    })
   }
   const output = z.unknown().transform((body, context): Rows => {
     const built = build(body)
