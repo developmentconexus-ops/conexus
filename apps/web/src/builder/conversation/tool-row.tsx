@@ -118,10 +118,15 @@ function titleOf(toolName: string, room: Room) {
   return specOf(toolName, room)?.done ?? readable(toolName)
 }
 
+/** What the line says beside its sentence, which the open row says whole. */
+function besideOf(tool: ToolItem, room: Room): string | undefined {
+  const presented = presentTool(tool, 'done', room)
+  return presented.beside ? presented.detail : undefined
+}
+
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   const room = useRoom()
-  const presented = presentTool(tool, 'done', room)
-  const { detail } = presented
+  const detail = presentTool(tool, 'done', room).detail
   const title = titleOf(tool.toolName, room)
   switch (body) {
     case 'command': {
@@ -178,7 +183,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
     case 'program':
       return <Program tool={tool} title={title} />
     default:
-      return <Generic tool={tool} title={title} said={presented.beside ? detail : undefined} />
+      return <Generic tool={tool} title={title} said={besideOf(tool, room)} />
   }
 }
 
