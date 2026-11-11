@@ -62,9 +62,10 @@ export async function connectionForCopy(
 }
 
 /**
- * The label of the first read of the connection's read door the person's role does not hold, read
- * in the caller's transaction; none when the role holds them all. Who turns a proposal on must be
- * able to read what it copies (Capacidade 3).
+ * The label of the first read of the connection's read door the person's role does not hold; none
+ * when the role holds them all. The speaker is read in the caller's transaction; the role's answer
+ * (`mayUseEach`) opens a transaction of its own. Who turns a proposal on must be able to read what
+ * it copies (Capacidade 3).
  */
 export async function lackedReadOf(
   deps: Pick<Deps, 'identity'>,
