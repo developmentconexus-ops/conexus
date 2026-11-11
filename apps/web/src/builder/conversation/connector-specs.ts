@@ -58,6 +58,7 @@ export const CONNECTOR_SPECS: Record<
     body: 'generic',
     groups: false,
     present: (tool, status) => presentProposal(tool.result, status),
+    refusal: (result) => (ProposeRefused.safeParse(result).success ? 'DETAILED' : undefined),
   },
 }
 
@@ -99,7 +100,13 @@ function presentProposal(result: unknown, status: ToolStatus): Presented {
   const refused = ProposeRefused.safeParse(result)
   if (refused.success || status === 'error' || status === 'denied') {
     const detail = refused.success ? proposeRefusedText(refused.data) : undefined
-    return { icon: CircleAlertIcon, sentence: spec.failed, detail, beside: false }
+    return {
+      icon: CircleAlertIcon,
+      sentence: spec.failed,
+      detail,
+      beside: detail !== undefined,
+      wraps: true,
+    }
   }
   const name = Kind.extend({ name: z.string() }).safeParse(result)
   return {

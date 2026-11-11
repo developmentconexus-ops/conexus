@@ -301,3 +301,25 @@ test.each([
   const detail = 'sqlstate' in result ? result.sqlstate : result.code
   expect(screen.getByText(new RegExp(detail))).toBeTruthy()
 })
+
+test.each([
+  [{ kind: 'EXISTS', name: 'vendas', releasedHere: false }, /peça na página Cópias/],
+  [{ kind: 'EXISTS', name: 'vendas', releasedHere: true }, /já está liberada a este Projeto/],
+  [{ kind: 'NOT_IN_ROLE', role: 'developer', operation: 'Consulta' }, /leitura Consulta/],
+  [{ kind: 'MALFORMED', issues: ['name: Too long'] }, /name: Too long/],
+])('copy_propose recusada diz o motivo na linha, não só em JSON (19)', (result, said) => {
+  const tool: ToolItem = {
+    kind: 'tool',
+    id: 't-19',
+    toolCallId: 'call-19',
+    toolName: 'copy_propose',
+    state: 'result',
+    args: { name: 'vendas' },
+    result,
+  }
+  render(<ToolRow tool={tool} />)
+  expect(screen.getByText(said)).toBeTruthy()
+  expect(screen.getByText('Não conseguiu propor a cópia')).toBeTruthy()
+  open(/Não conseguiu propor a cópia/)
+  expect(screen.getByText('Argumentos:')).toBeTruthy()
+})
