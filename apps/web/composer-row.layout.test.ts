@@ -7,6 +7,8 @@ import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { OWNER, startsOn } from './sweep-replies.ts'
 
+const SHEET = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const WORD = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(async () => {
@@ -65,6 +67,47 @@ test('a 390, a linha da caixa do Assistente perde as palavras e guarda todos os 
       .isVisible(),
     false,
   )
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
+  await page.close()
+})
+
+test('a 390, três arquivos anexados cabem inteiros na caixa, quebrando a fileira', async () => {
+  const page = await harness.open(ASSISTANT_PATH, { viewport: PHONE, replies: ASSISTANT_REPLIES })
+  await page
+    .locator('form')
+    .getByRole('button', { name: /Memória da conversa/ })
+    .waitFor()
+  await page.locator('form input[type="file"]').setInputFiles(
+    [
+      ['politica-comercial.pdf', 'application/pdf'],
+      ['precos-da-tabela-nova.xlsx', SHEET],
+      ['contrato-com-o-fornecedor.docx', WORD],
+    ].map(([name, mimeType]) => ({ name, mimeType, buffer: Buffer.from('conteudo') })),
+  )
+  const chips = page
+    .getByRole('group', { name: 'Arquivos anexados' })
+    .locator('[data-slot="attachment"]')
+  await chips.nth(2).waitFor()
+  const form = await page.locator('form').first().boundingBox()
+  assert.ok(form)
+  const boxes = await chips.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const { x, y, width, height } = node.getBoundingClientRect()
+      return { x, y, width, height }
+    }),
+  )
+  assert.equal(boxes.length, 3)
+  for (const box of boxes) {
+    assert.ok(box.x >= form.x && box.x + box.width <= form.x + form.width, 'a chip left the box')
+  }
+  for (const name of [
+    'Tirar politica-comercial.pdf',
+    'Tirar precos-da-tabela-nova.xlsx',
+    'Tirar contrato-com-o-fornecedor.docx',
+  ]) {
+    const remove = await page.getByRole('button', { name }).boundingBox()
+    assert.ok(remove && remove.x + remove.width <= form.x + form.width, `${name} is cut`)
+  }
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   await page.close()
 })
