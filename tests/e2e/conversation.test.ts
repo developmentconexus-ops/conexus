@@ -94,7 +94,7 @@ async function firstQuestion(chat: Page, hold: () => () => void) {
     .waitFor()
   await chat
     .getByRole('log', { name: 'Conversa com o Builder' })
-    .getByText('4 ferramentas: leu página, pesquisou')
+    .getByText('4 ferramentas', { exact: true })
     .waitFor()
 }
 
@@ -182,7 +182,8 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
   assert.deepEqual(problems, [])
 })
 
-const FOLDED = '4 ferramentas: leu página, pesquisou'
+// The chat panel is narrower than the group's wide breakpoint, so the line shows the count alone.
+const FOLDED = '4 ferramentas'
 const DRAFT = 'rascunho da Ana'
 
 /** The Projeto in two regions: the Prévia and Código tabs, the conversation on the right, the Projeto's sidebar and its Sobre page. */
