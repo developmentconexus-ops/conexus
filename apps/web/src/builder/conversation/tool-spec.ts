@@ -54,8 +54,6 @@ export type Presented = {
   sentence: string
   detail?: string
   beside: boolean
-  /** The detail is a short fact to read whole (a count): it goes under the sentence rather than being cut beside it. */
-  wraps?: boolean
 }
 
 /**

@@ -61,7 +61,7 @@ function Since({ at }: { at: number | undefined }) {
 }
 
 function opens(tool: ToolItem, status: ToolStatus, room: Room): boolean {
-  // A refusal the Assistant's tool answered is said by its line; a connection to link again and a read of the app's data have more to say.
+  // A refusal the Assistant's tool answered is said by its line; a refusal with its own fields has more to say.
   const refusal = specOf(tool.toolName, room)?.refusal?.(tool.result)
   if (refusal !== undefined) return refusal !== 'SAID'
   if (status === 'error' || status === 'denied')
@@ -309,7 +309,12 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
       })
 }
 
-/** The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run. */
+/**
+ * The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run.
+ * Beside a detail the line stays one line, as Mastra's activity headline: the sentence up to 55%,
+ * the detail cut. The detail does not shrink below its own width up to 60%, so a count stays whole
+ * and the sentence yields; the open row has both whole.
+ */
 function ToolLine({
   presented,
   status,
@@ -322,31 +327,16 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription
-      className={cn(
-        'min-w-0 flex-1',
-        presented.wraps ? 'shrink-0 text-left' : 'shrink truncate text-right',
-      )}
-    >
-      {presented.detail}
-    </TraceDescription>
+    <TraceDescription className="max-w-[60%] truncate">{presented.detail}</TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine
-      status={lineStatus}
-      className={cn(failed && 'items-start', presented.wraps && 'flex-wrap')}
-    >
+    <TraceLine status={lineStatus} className={cn(failed && 'items-start')}>
       <TraceIcon className={failed ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>
-      <TraceTitle
-        className={cn(
-          presented.beside && 'shrink-0 whitespace-nowrap',
-          failed && 'whitespace-normal',
-        )}
-      >
+      <TraceTitle className={presented.beside ? 'max-w-[55%]' : cn(failed && 'whitespace-normal')}>
         {presented.sentence}
       </TraceTitle>
       {side}

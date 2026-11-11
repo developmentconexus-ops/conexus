@@ -12,24 +12,30 @@ const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(() => harness.stop())
 
-function checked(toolCallId: string, result: unknown) {
+function called(toolName: string, toolCallId: string, result: unknown) {
   return {
     type: 'tool-invocation' as const,
     toolInvocation: {
       state: 'result' as const,
       toolCallId,
-      toolName: 'app_data_check',
+      toolName,
       args: { sql: 'select * from pedidos' },
       result,
     },
   }
 }
+function checked(toolCallId: string, result: unknown) {
+  return called('app_data_check', toolCallId, result)
+}
+
+const REASON = 'definition.window: a janela pede uma coluna de data de alteração'
 
 const MESSAGES: Said[] = [
   {
     id: 'd1',
     role: 'builder',
     parts: [
+      called('copy_propose', 'p1', { kind: 'MALFORMED', issues: [REASON] }),
       checked('k1', { kind: 'COUNTED', rows: { kind: 'EXACT', rows: 0 }, columns: [], ms: 3 }),
       checked('k2', { kind: 'COUNTED', rows: { kind: 'OVER' }, columns: [], ms: 3 }),
       checked('k3', { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42601' }),
@@ -47,9 +53,10 @@ async function openChat(page: Page, width: number) {
 }
 
 // QA of Capacidade 3: in the chat panel (about 350 px at 1366) the group's title and the count of a
-// check were cut. The title is sized by the panel, and the count is read whole.
+// check were cut, and then a refused proposal's reason broke word by word, 220 px tall. Each line
+// is one line: the count whole, the reason cut and whole in the open row.
 for (const viewport of [DESKTOP, PHONE]) {
-  test(`o grupo de conferências e a contagem se leem inteiros em ${viewport.width}px`, async () => {
+  test(`as linhas de conferir e de propor ficam numa linha em ${viewport.width}px`, async () => {
     const page = await harness.open(`/companies/${COMPANY.id}/projects/${PROJECT_ID}`, {
       viewport,
       replies,
@@ -66,6 +73,16 @@ for (const viewport of [DESKTOP, PHONE]) {
       await count.waitFor()
       assert.equal(await count.evaluate((el) => el.scrollWidth > el.clientWidth), false, text)
     }
+    const heights = await page
+      .locator('[data-slot=trace-line]')
+      .evaluateAll((lines) => lines.map((line) => line.getBoundingClientRect().height))
+    const one = Math.min(...heights)
+    assert.ok(
+      heights.every((height) => height === one),
+      `every line is one line high: ${heights.join(', ')}`,
+    )
+    await page.getByRole('button', { name: /Não conseguiu propor a cópia/ }).click()
+    await page.locator('pre', { hasText: REASON }).waitFor()
     await page.close()
   })
 }
