@@ -1,15 +1,19 @@
 import { DIAGRAM_FRAME } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { z } from 'zod'
 import { useTheme } from '../../platform/theme.ts'
-import type { Reply } from './diagram-messages.ts'
-import { FrameMessage } from './diagram-messages.ts'
 
 /** What a mermaid block became: being drawn, drawn as an image, or left as its code. */
 type Drawn =
   | { kind: 'DRAWING' }
   | { kind: 'DRAWN'; src: string; width: number }
   | { kind: 'NOT_DRAWN' }
+
+/** What the frame says: that it is ready, or the answer to one request (read once, code C27). */
+const Reply = z.object({ id: z.number(), ok: z.boolean(), svg: z.string().optional() })
+type Reply = z.infer<typeof Reply>
+const FrameMessage = z.union([z.object({ ready: z.literal(true) }), Reply])
 
 /** The frame answers in this long at the most; past it the block stays code. */
 const DRAW_TIMEOUT_MS = 20_000
