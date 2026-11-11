@@ -18,12 +18,12 @@ merge.
 
 - **L1.** Product work **should** have one step in construction per track: **frontier** (the
   Builder, agents, data in apps, platform), **pattern** (connectors through the kit and other
-  work with a template, L27) and **design** (`DESIGN.md`, `apps/web/src/{brand,ui}/`). A unit touching another
-  track's file waits for that track's units on it. Study/scope of the next step and a draft method change can run beside
-  it without product code. A sibling step builds only after the previous one merges, but once a
-  card is approved (L6), its units that touch none of the files of the previous step's fixes may
-  start, built from that card's pull request, while the use, fixes and closing of the previous step
-  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim"; 2026-11-02: "A", "a". [review]
+  work with a template, L27), **design** (`DESIGN.md`, `apps/web/src/{brand,ui}/`) and **assistente** (the
+  Assistant: `apps/server/src/builder/assistant/` and its owned parts). A unit touching another
+  track's file waits for that track's units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds only after the previous one merges, but once a
+  card is approved (L6), its units touching none of the previous step's fixes' files may
+  start, built from that card's pull request, while the previous step's use, fixes and closing
+  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim"; 2026-11-02: "A", "a"; 2026-11-10: "A". [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   [review]
@@ -32,9 +32,9 @@ merge.
 
 ## 2. The card
 
-- **L5.** `docs/steps/` **must** hold one file per track: the card of the step in construction. A
-  card's track is `Trilho: desenho` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on their branches once
-  approved, and enters when that track's step closes. [check-docs]
+- **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A
+  card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
+  approved, and enters when the track's step closes. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
   2026-10-27: "3. Sim". [CI]
