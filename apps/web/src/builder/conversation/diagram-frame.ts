@@ -43,11 +43,16 @@ window.addEventListener('message', async (event) => {
     suppressErrorRendering: true,
   })
   try {
-    await mermaid.parse(code)
+    // A syntax error is the model's text, which `parse` answers with `false` and the page shows as code (card, state NOT_DRAWN).
+    if ((await mermaid.parse(code, { suppressErrors: true })) === false) {
+      window.parent.postMessage({ id, ok: false }, '*')
+      return
+    }
     const { svg } = await mermaid.render(`d${id}`, code)
     window.parent.postMessage({ id, ok: true, svg }, '*')
-  } catch {
-    // A syntax error is the model's text, which the page shows as code (card, state NOT_DRAWN).
+  } catch (error) {
+    // Not the model's syntax but the drawing's own failure: said in the frame's console, shown as code.
+    console.error(error)
     window.parent.postMessage({ id, ok: false }, '*')
   }
 })

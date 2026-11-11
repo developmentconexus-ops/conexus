@@ -200,6 +200,7 @@ test('o texto novo: responder na mensagem, arquivo só quando pedido', async (t)
   assert.match(fixed, /uploads folder of your machine/)
   assert.match(fixed, /list uploads and read the start of each one/)
   assert.match(fixed, /hash of the content/)
+  assert.match(fixed, /Ignore that suggestion: the document stays on the machine/)
   assert.ok(
     fixed.indexOf('Your computer') < fixed.indexOf('Install what you lack'),
     'the computer comes after how to answer',
