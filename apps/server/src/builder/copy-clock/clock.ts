@@ -58,6 +58,7 @@ export function createCopyClock(deps: { mastra: Mastra; log: FailureLog }): Copy
   const { schedules } = deps.mastra
   async function update(id: string, patch: { cron: string; metadata: Metadata }) {
     await stored(schedules.update(id, patch))
+    return 'UPDATED' as const
   }
   return {
     async set({ companyId, copyId, interval }) {
@@ -72,11 +73,12 @@ export function createCopyClock(deps: { mastra: Mastra; log: FailureLog }): Copy
           ...{ id, workflowId: COPY_WORKFLOW, cron, timezone: COPY_TIMEZONE, metadata },
           inputData: { version: 1, companyId, copyId },
         })
+        return 'CREATED'
       } catch (error) {
         // No stable field tells a race lost at the row's id (code C52): the row read again is the race.
         if (ownedOf(await stored(schedules.get(id)), deps.log) === undefined)
           throw databaseFailure(error)
-        await update(id, { cron, metadata })
+        return update(id, { cron, metadata })
       }
     },
     async pause(copyId) {
