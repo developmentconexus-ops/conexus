@@ -286,6 +286,8 @@ test('a varredura: a primeira página manda scan, as seguintes o scroll_id', () 
       `${id}: por deslocamento, como hoje`,
     )
     assert.equal(read.input.safeParse({ scan: false, limit: 50 }).success, false, id)
+    for (const extra of [{ scan: true }, { scrollId: 'abc' }])
+      assert.equal(read.input.safeParse({ ...extra, offset: 0, limit: 50 }).success, false, id)
     assert.equal(read.input.safeParse({ scrollId: '', limit: 50 }).success, false, id)
   }
 })

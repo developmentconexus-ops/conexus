@@ -24,6 +24,16 @@ export function searchTypeOf(input: Readonly<{ scan?: true; scrollId?: string }>
   return input.scan === true || input.scrollId !== undefined ? 'scan' : undefined
 }
 
+/** A scan pages by its cursor, not by `offset`: the two together are refused where the input is read, so no request carries both. */
+export const scanAlone = {
+  check: (input: Readonly<{ scan?: true; scrollId?: string; offset?: number }>) =>
+    searchTypeOf(input) === undefined || input.offset === undefined,
+  issue: {
+    message: 'A scan pages by scrollId; send no offset with scan or scrollId',
+    path: ['offset'],
+  },
+}
+
 /** The seller's id in a path: the connection's account, which the Hub parses again when it opens the connection. */
 export function sellerOf(account: Account): string {
   if (account.ref === null) throw new Error('Mercado Livre read without an account')

@@ -9,6 +9,7 @@ import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
 import { AccountRef, requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { Rows } from '../kernel/rows.ts'
+import { readSkill } from '../kernel/skill.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
@@ -143,6 +144,15 @@ test('só anuncios e perguntas nomeiam o cursor de varredura, no resumo, na entr
     const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, SENT_AT)
     assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} probe request`)
   }
+})
+
+test('a skill diz o mesmo que os resumos: a varredura passa de mil e o filtro de alteração existe', () => {
+  const { references } = readSkill(new URL('./skill/', import.meta.url))
+  for (const name of ['anuncios.md', 'perguntas.md'])
+    assert.match(references[name] ?? '', /`scan: true`.*`scrollId`/s, name)
+  assert.match(references['vendas.md'] ?? '', /`changedFrom`/)
+  for (const [name, text] of Object.entries(references))
+    assert.doesNotMatch(text, /no way past 1000/, name)
 })
 
 test('o conector declara que o Mercado Livre conta o limite pelo aplicativo', () => {
