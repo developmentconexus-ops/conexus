@@ -21,6 +21,27 @@ test('a conformidade anda todas as páginas do dublê de uma leitura de lista', 
     /lacks rows/,
     'um total que não bate com as linhas entregues',
   )
+  const requested: string[] = []
+  const counting = listingFake('EMPTY_AFTER_FIRST')
+  const handle = counting.handle
+  await assert.rejects(
+    assertListsWalk(listingConnector(RIGHT), {
+      ...counting,
+      handle: (request) => {
+        requested.push(new URL(request.url).search)
+        return handle(request)
+      },
+    }),
+    /lacks rows/,
+    'uma página vazia que diz ter mais termina a caminhada, sem erro e sem repetir a posição',
+  )
+  const things = requested.filter((search) => search.includes('limit=50'))
+  assert.equal(new Set(things).size, things.length, 'nenhuma leitura repetida')
+  assert.equal(
+    things.filter((search) => search.includes('offset=50')).length,
+    1,
+    'a página vazia é lida uma vez e a caminhada para',
+  )
   await assert.rejects(
     assertListsWalk(
       listingConnector({ ...RIGHT, changed: { input: 'changedFrom', field: 'ausente' } }),
