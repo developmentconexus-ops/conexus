@@ -10,23 +10,35 @@ const FLOW =
 const CASES: Record<string, string> = {
   flow: `Veja o fluxo:\n\n\`\`\`mermaid\n${FLOW}\n\`\`\`\n\nPronto.`,
   open: `\`\`\`mermaid\n${FLOW}\n\`\`\``,
+  image: [
+    'Veja:',
+    '',
+    '```mermaid',
+    'flowchart TD',
+    '  A --> C@{ img: "https://evil.test/a.png", label: "fora" }',
+    '```',
+    '',
+  ].join('\n'),
   bad: 'Veja:\n\n```mermaid\nflowchart TD\n  A --> \n```\n',
   hostile: [
     'Veja:',
     '',
     '```mermaid',
+    '%%{init: {"themeCSS": "@import url(https://evil.test/x.css); .node rect { fill: url(https://evil.test/b.png) }"}}%%',
     'flowchart TD',
     '  A["<img src=x onerror=window.pwned=1>"] --> B["<script>window.pwned=1</script>"]',
-    '  B --> C["https://evil.test/a.png"]',
-    '  click A call window.pwned()',
-    '  style A fill:#fff,stroke:#000,background:url(https://evil.test/b.png)',
+    '  B --> C["fora"]',
     '```',
     '',
   ].join('\n'),
 }
 
 applyChosenTheme()
-const name = new URLSearchParams(location.search).get('case') ?? 'flow'
-const streaming = new URLSearchParams(location.search).has('streaming')
+const params = new URLSearchParams(location.search)
+const streaming = params.has('streaming')
+const answer = <Markdown text={CASES[params.get('case') ?? 'flow'] ?? ''} streaming={streaming} />
 const root = document.getElementById('root')
-if (root) createRoot(root).render(<Markdown text={CASES[name] ?? ''} streaming={streaming} />)
+const page = root ? createRoot(root) : undefined
+// `?hold` shows the answer only when the test says so, after it has set its routes.
+if (params.has('hold')) Object.assign(window, { showAnswer: () => page?.render(answer) })
+else page?.render(answer)

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import type { Page } from 'playwright-core'
+import type { Frame, Page, Request } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 
 // The diagram of a message, drawn in the drawing frame under the Hub's policy in a real browser
@@ -59,21 +59,144 @@ test('o mermaid inválido mostra o código e uma linha que diz que não foi dese
   await page.close()
 })
 
-test('o diagrama não roda nem busca nada', async () => {
+function refusal(url: string): string {
+  return `Loading the image '${url}' violates the following Content Security Policy directive: "img-src data:". The action has been blocked.`
+}
+
+/** The requests that go outside the Hub from now on, kept to say how each one ended. */
+function outsideOf(page: Page) {
+  const asked: Request[] = []
+  page.on('request', (request) => {
+    if (!request.url().startsWith(HUB) && !request.url().startsWith('data:')) asked.push(request)
+  })
+  return asked
+}
+
+function drawingFrame(page: Page): Frame {
+  const frame = page.frames().find((each) => each.url().endsWith('/diagram-frame.html'))
+  assert.ok(frame, 'the page has no drawing frame')
+  return frame
+}
+
+test('o diagrama não roda nem busca nada: o HTML, o @import e o url() de fora', async () => {
   const page = await open('case=hostile')
-  const asked = watching(page)
-  await page
-    .getByRole('img', DRAWN)
-    .or(page.getByText('Não foi possível desenhar este diagrama.'))
-    .waitFor({ timeout: 30_000 })
+  const asked = outsideOf(page)
+  await srcOf(page)
   await page.waitForTimeout(500)
-  assert.equal(await page.evaluate(() => Object(window).pwned), undefined, 'no script ran')
-  assert.deepEqual(
-    asked.filter((url) => !url.startsWith(HUB) && !url.startsWith('data:')),
-    [],
-    'no request left the page',
+  assert.equal(await page.evaluate(() => Object(window).pwned), undefined, 'no script in the page')
+  assert.equal(
+    await drawingFrame(page).evaluate(() => Object(window).pwned),
+    undefined,
+    'no script in the frame',
   )
-  assert.ok(!page.problems.some((each) => /pwned/.test(each)), page.problems.join('\n'))
+  assert.equal(await page.locator('svg, [onerror], script:not([src])').count(), 0)
+  assert.deepEqual(page.problems, [refusal('https://evil.test/b.png')], 'only the refusals listed')
+  assert.ok(asked.length > 0, 'the fetch was tried')
+  for (const request of asked) {
+    assert.equal(request.failure()?.errorText, 'csp', request.url())
+  }
+  await page.close()
+})
+
+test('um nó de imagem de fora deixa o bloco como código, e a política recusa a busca', async () => {
+  const page = await open('case=image')
+  const asked = outsideOf(page)
+  await page.getByText('Não foi possível desenhar este diagrama.').waitFor({ timeout: 30_000 })
+  assert.equal(await page.getByRole('img', DRAWN).count(), 0)
+  assert.deepEqual(page.problems, [refusal('https://evil.test/a.png')], 'only the refusal listed')
+  assert.ok(asked.length > 0, 'the fetch was tried')
+  for (const request of asked) {
+    assert.equal(request.failure()?.errorText, 'csp', request.url())
+  }
+  await page.close()
+})
+
+test('o quadro tem origem opaca: não lê o documento da página que o emoldura', async () => {
+  const page = await open('case=flow')
+  await srcOf(page)
+  assert.equal(await page.locator('iframe').getAttribute('sandbox'), 'allow-scripts')
+  const seen = await drawingFrame(page).evaluate(() => {
+    let read: string
+    try {
+      read = typeof parent.document.body
+    } catch (error) {
+      read = String(Object(error).name)
+    }
+    return { origin: window.origin, read }
+  })
+  assert.deepEqual(seen, { origin: 'null', read: 'SecurityError' })
+  await page.close()
+})
+
+function requestOf(id: number) {
+  return { id, code: 'flowchart TD\n  A --> B', themeVariables: {} }
+}
+
+const FORGED =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect id="forged"/></svg>'
+
+test('uma mensagem forjada de outra janela à página é recusada', async () => {
+  const page = await open('case=flow&hold')
+  const released = Promise.withResolvers<void>()
+  await page.route(`${HUB}/diagram-frame.html`, async (route) => {
+    await released.promise
+    await route.fallback()
+  })
+  await page.evaluate(() => Object(window).showAnswer())
+  await page.evaluate((svg) => {
+    window.postMessage({ ready: true }, '*')
+    window.postMessage({ id: 0, ok: true, svg }, '*')
+  }, FORGED)
+  await page.waitForTimeout(500)
+  assert.equal(await page.getByRole('img', DRAWN).count(), 0, 'the forged picture was drawn')
+  assert.ok(await page.getByText('flowchart TD').isVisible(), 'the code stays')
+  released.resolve()
+  assert.doesNotMatch(await srcOf(page), /id%3D%22forged/)
+  await page.close()
+})
+
+test('uma mensagem forjada de outra janela ao quadro não tem resposta', async () => {
+  const page = await open('case=flow')
+  await srcOf(page)
+  await page.evaluate(() => {
+    const heard: unknown[] = []
+    Object.assign(window, { heard })
+    window.addEventListener('message', (event) => heard.push(event.data))
+  })
+  await page.evaluate(() => {
+    document.body.append(document.createElement('iframe'))
+  })
+  const other = page
+    .frames()
+    .find((each) => each !== page.mainFrame() && each.url() === 'about:blank')
+  assert.ok(other, 'the other window is missing')
+  // Run in the other window's own realm, so the message's source is that window, not the page.
+  function send(message: object) {
+    return other?.evaluate(
+      (sent) =>
+        parent.document
+          .querySelector<HTMLIFrameElement>('iframe[sandbox]')
+          ?.contentWindow?.postMessage(sent, '*'),
+      message,
+    )
+  }
+  await send(requestOf(99))
+  await page.evaluate((own) => {
+    document
+      .querySelector<HTMLIFrameElement>('iframe[sandbox]')
+      ?.contentWindow?.postMessage(own, '*')
+  }, requestOf(98))
+  await page.waitForFunction(
+    () => Object(window).heard.some((each: unknown) => Object(each).id === 98),
+    undefined,
+    { timeout: 30_000 },
+  )
+  await page.waitForTimeout(500)
+  const ids = await page.evaluate(() =>
+    Object(window).heard.map((each: unknown) => Object(each).id),
+  )
+  assert.ok(ids.includes(98), "the page itself, the frame's parent, is answered")
+  assert.ok(!ids.includes(99), 'a message from another window is answered')
   await page.close()
 })
 
