@@ -2,21 +2,21 @@ import assert from 'node:assert/strict'
 import { z } from 'zod'
 import { SENT_AT } from './conformance-declared.ts'
 import type { Fake, Session } from './conformance-session.ts'
-import { askOf, eachProbe } from './conformance-session.ts'
+import { answeredEach, askOf } from './conformance-session.ts'
 import type { CopyPosition } from './copy.ts'
 import { CopyDefinitionV2 } from './copy.ts'
 import type { Connector } from './definition.ts'
-import type { ListRead } from './list.ts'
-import { listInputOf, listPageOf, valueAt } from './list.ts'
-import type { Operation } from './operation.ts'
-import { listInputNames } from './operation.ts'
+import { listInputOf, listPageOf } from './list.ts'
+import type { ListRead, Operation } from './operation.ts'
+import { listInputNames, valueAt } from './operation.ts'
 import { Rows } from './rows.ts'
 
-/** The listing's reading by the fixed input of a probe: the paging and changed-since names leave it, and the copy takes the rest. */
+/** The listing's reading by the fixed input of a probe: the paging and changed-since names leave it, and the copy takes the rest, keyed by `key`, a field the double's rows have. */
 function walkDefinition(
   operation: Operation<unknown, unknown>,
   list: ListRead,
   input: unknown,
+  key: string,
 ): CopyDefinitionV2 {
   const names = listInputNames(list)
   const fixed = Object.entries(z.record(z.string(), z.unknown()).parse(input)).filter(
@@ -28,7 +28,7 @@ function walkDefinition(
     version: 2,
     source: { kind: 'OPERATION', operation: operation.id, input: Object.fromEntries(fixed) },
     description: 'Conformance walk.',
-    columns: [{ name: 'key', type: 'text', path: 'key' }, ...changed],
+    columns: [{ name: 'key', type: 'text', path: key }, ...changed],
     key: ['key'],
     changedSince: list.changed === null ? null : { column: 'changed' },
   })
@@ -76,10 +76,20 @@ async function walkList(
   connector: Connector,
   fake: Fake,
   session: Session,
-  a: Readonly<{ operation: Operation<unknown, unknown>; list: ListRead; probe: unknown }>,
+  a: Readonly<{
+    operation: Operation<unknown, unknown>
+    list: ListRead
+    probe: unknown
+    first: Rows
+  }>,
 ): Promise<void> {
-  const { operation, list } = a
-  const definition = walkDefinition(operation, list, a.probe)
+  const { operation, list, first } = a
+  const key = Object.keys(first.linhas[0] ?? {})[0]
+  if (key === undefined) {
+    assert.equal(first.total ?? 0, 0, `${operation.id} lacks rows the total counts`)
+    return
+  }
+  const definition = walkDefinition(operation, list, a.probe, key)
   const all = await walkPages(connector, fake, session, {
     operation,
     list,
@@ -107,11 +117,13 @@ async function walkList(
 
 /** Each list read of the connector, every page of its double walked: a wrong paging declaration fails here. */
 export async function assertListsWalk(connector: Connector, fake: Fake): Promise<void> {
-  await eachProbe(connector, fake, async ({ operation, input, session }) => {
-    const answered = operation.answer(await askOf(connector, fake, session, { operation, input }))
-    if (answered.kind !== 'OK') return undefined
+  await answeredEach(connector, fake, async ({ operation, input, session, value }) => {
     if (operation.list !== undefined)
-      await walkList(connector, fake, session, { operation, list: operation.list, probe: input })
-    return answered.value
+      await walkList(connector, fake, session, {
+        operation,
+        list: operation.list,
+        probe: input,
+        first: Rows.parse(value),
+      })
   })
 }

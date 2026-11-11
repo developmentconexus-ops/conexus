@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { assertListsWalk } from './conformance.ts'
+import { assertListsWalk } from './conformance-list.ts'
 import { listingConnector, listingFake, RIGHT, SWAPPED } from './list-fixture.ts'
 
 test('a conformidade anda todas as páginas do dublê de uma leitura de lista', async () => {

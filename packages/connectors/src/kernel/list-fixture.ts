@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { clientCredentials } from './auth.ts'
-import type { CredentialFake } from './conformance.ts'
+import type { CredentialFake } from './conformance-session.ts'
 import { defineConnector } from './definition.ts'
-import type { ListRead } from './list.ts'
+import type { ListRead } from './operation.ts'
 import { defineOperation, get } from './operation.ts'
 import { Rows } from './rows.ts'
 

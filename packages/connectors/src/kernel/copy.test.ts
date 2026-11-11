@@ -9,6 +9,7 @@ import {
   CopyDefinitionV2,
   CopyName,
   CopyPosition,
+  Instant,
   PageInput,
 } from './copy.ts'
 import { defineConnector } from './definition.ts'
@@ -259,6 +260,11 @@ function versionsAndPositions() {
   ] as const)
     assert.match(cell, CANONICAL_CELL[kind], kind)
   assert.doesNotMatch('2026-11-10', CANONICAL_CELL.timestamp)
+  // an instant is the timestamp cell with its offset required: one definition
+  for (const cell of ['2026-11-10T12:30:45.000-03:00', '2026-11-10T12:30:45Z'])
+    assert.ok(Instant.safeParse(cell).success && CANONICAL_CELL.timestamp.test(cell), cell)
+  for (const cell of ['2026-11-10T12:30:45', '2026-11-10'])
+    assert.equal(Instant.safeParse(cell).success, false, cell)
 
   for (const position of [
     { kind: 'KEY', after: [1] },

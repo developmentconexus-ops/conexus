@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { valueAt } from '../../kernel/list.ts'
-import { get } from '../../kernel/operation.ts'
+import { get, valueAt } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
 import { chain, firstRowWith, PathId, readOf } from './shared.ts'
 
