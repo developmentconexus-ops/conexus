@@ -4,7 +4,10 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useTheme } from '../../platform/theme.ts'
 
 /** What a mermaid block became: being drawn, drawn as an image, or left as its code. */
-type Drawn = { kind: 'DRAWING' } | { kind: 'DRAWN'; src: string } | { kind: 'NOT_DRAWN' }
+type Drawn =
+  | { kind: 'DRAWING' }
+  | { kind: 'DRAWN'; src: string; width: number }
+  | { kind: 'NOT_DRAWN' }
 
 /** The frame answers in this long at the most; past it the block stays code. */
 const DRAW_TIMEOUT_MS = 20_000
@@ -121,6 +124,17 @@ function useScheme(): string {
   return choice === 'system' ? (system ? 'dark' : 'light') : choice
 }
 
+/**
+ * The drawn size, from the `viewBox` the library draws: its SVG says `width="100%"`, which an image
+ * in a block that fits its content cannot resolve, and the picture collapses (streamdown
+ * `lib/mermaid/utils.ts` `getMermaidSvgSize`, which sizes the picture the same way).
+ */
+function widthOf(svg: string): number | undefined {
+  const box = /<svg\b[^>]*\sviewBox="[^"]*?\s([\d.]+)\s[\d.]+"/.exec(svg)
+  const width = Number(box?.[1])
+  return width > 0 ? width : undefined
+}
+
 function imageOf(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }
@@ -141,8 +155,13 @@ function Drawing({ code, children }: { code: string; children: ReactNode }): Rea
     void frame()
       .draw(code)
       .then((svg) => {
-        if (current)
-          setDrawn(svg === undefined ? { kind: 'NOT_DRAWN' } : { kind: 'DRAWN', src: imageOf(svg) })
+        if (!current) return
+        const width = svg === undefined ? undefined : widthOf(svg)
+        setDrawn(
+          svg === undefined || width === undefined
+            ? { kind: 'NOT_DRAWN' }
+            : { kind: 'DRAWN', src: imageOf(svg), width },
+        )
       })
     return () => {
       current = false
@@ -154,7 +173,7 @@ function Drawing({ code, children }: { code: string; children: ReactNode }): Rea
     case 'DRAWN':
       return (
         <div className="max-w-full overflow-x-auto rounded-control border border-line bg-surface p-md">
-          <img src={drawn.src} alt="Diagrama" className="mx-auto max-w-full" />
+          <img src={drawn.src} alt="Diagrama" width={drawn.width} className="mx-auto max-w-none" />
         </div>
       )
     case 'NOT_DRAWN':

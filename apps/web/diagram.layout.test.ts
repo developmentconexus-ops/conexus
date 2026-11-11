@@ -50,6 +50,48 @@ test('o diagrama desenhado, nos dois temas e nas duas larguras', async () => {
   }
 })
 
+/** The picture's size in the SVG's own units, from the `viewBox` the library draws. */
+function viewBoxWidth(src: string): number {
+  const svg = decodeURIComponent(src.slice(src.indexOf(',') + 1))
+  const box = /viewBox="[\d.-]+ [\d.-]+ ([\d.]+) [\d.]+"/.exec(svg)
+  assert.ok(box?.[1], 'the drawn SVG has no viewBox')
+  return Number(box[1])
+}
+
+test('o diagrama tem o tamanho do desenho, ou a largura do bloco com rolagem lateral quando é mais largo', async () => {
+  for (const viewport of [DESKTOP, PHONE]) {
+    for (const drawing of ['flow', 'wide']) {
+      const page = await open(`case=${drawing}`, viewport)
+      const wanted = viewBoxWidth(await srcOf(page))
+      const seen = await page.getByRole('img', DRAWN).evaluate((image: HTMLImageElement) => {
+        const holder = image.parentElement
+        const column = document.getElementById('column')
+        return {
+          image: image.getBoundingClientRect().width,
+          holder: holder?.getBoundingClientRect().width ?? 0,
+          scrolls: holder ? holder.scrollWidth > holder.clientWidth : false,
+          column: column?.getBoundingClientRect().width ?? 0,
+          frame: holder
+            ? holder.getBoundingClientRect().width -
+              holder.clientWidth +
+              parseFloat(getComputedStyle(holder).paddingLeft) * 2
+            : 0,
+        }
+      })
+      const label = `${drawing} ${viewport.width} ${JSON.stringify({ wanted, ...seen })}`
+      assert.ok(seen.holder >= Math.min(wanted, seen.column) - 2, `the block is narrower: ${label}`)
+      if (wanted + seen.frame <= seen.column) {
+        assert.ok(Math.abs(seen.image - wanted) <= 1, `the picture is not drawn size: ${label}`)
+        assert.equal(seen.scrolls, false, label)
+      } else {
+        assert.ok(seen.image >= wanted - 1, `the wide picture was shrunk: ${label}`)
+        assert.ok(seen.scrolls, `the block does not scroll: ${label}`)
+      }
+      await page.close()
+    }
+  }
+})
+
 test('o mermaid inválido mostra o código e uma linha que diz que não foi desenhado', async () => {
   const page = await open('case=bad')
   await page.getByText('Não foi possível desenhar este diagrama.').waitFor({ timeout: 30_000 })

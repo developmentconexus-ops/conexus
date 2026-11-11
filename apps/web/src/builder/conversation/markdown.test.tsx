@@ -141,7 +141,7 @@ test('o bloco mermaid em andamento fica código, e desenha uma vez quando a resp
   frameSays(frame, {
     id: Object(request).id,
     ok: true,
-    svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    svg: '<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 120 40" style="max-width: 120px;"></svg>',
   })
   const image = await screen.findByRole('img', { name: 'Diagrama' })
   expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/)
@@ -161,7 +161,7 @@ test('uma mensagem que não vem do quadro não desenha nada', async () => {
   act(() => {
     window.dispatchEvent(
       new MessageEvent('message', {
-        data: { id: Object(request).id, ok: true, svg: '<svg></svg>' },
+        data: { id: Object(request).id, ok: true, svg: '<svg viewBox="0 0 120 40"></svg>' },
         source: window,
       }),
     )
