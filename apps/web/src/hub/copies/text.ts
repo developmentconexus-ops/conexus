@@ -1,6 +1,12 @@
-import type { CopyInterval, CopyRun, CopySummary } from '@conexus/hub-api'
+import type {
+  CopyInterval,
+  CopyMode,
+  CopyProposalSummary,
+  CopyRun,
+  CopySummary,
+} from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
-import { unconfirmedText } from '../../platform/hub.ts'
+import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
 /** The words of the Cópias screens (Capacidade 2, U4); the founder approves them at the step's end. */
 export const COPIES_TITLE = 'Cópias'
@@ -17,6 +23,27 @@ export const RUN_REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
 export const NO_SCHEDULE = '—'
 export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
 export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
+export const PROPOSAL_WORD = 'Proposta'
+export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
+export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
+/**
+ * What the dialog of Ligar a proposal says of a refusal: the table's words, except the two that
+ * were written for other screens: `NOT_IN_ROLE` is about publishing a tool there, and `NOT_FOUND`
+ * tells to check an address.
+ */
+export function enableFailureText(error: unknown): string {
+  if (error instanceof HubFailure && !error.outcomeUnknown) {
+    if (error.code === 'NOT_IN_ROLE') {
+      const reading = error.operation?.replace(/\.+$/, '')
+      const named = reading === undefined ? 'a leitura da conexão' : `a leitura ${reading}`
+      return `Seu papel não pode usar ${named}, e quem liga uma cópia precisa poder ler o que ela copia. Peça a quem tem esse acesso para ligar.`
+    }
+    if (error.code === 'NOT_FOUND') return PROPOSAL_GONE
+  }
+  return writeFailureText(error, UNCONFIRMED_ENABLE)
+}
+export const MANAGERS_ENABLE =
+  'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.'
 
 /** The six intervals, each in its words once (the column, the detail and the dialog read these). */
 export const INTERVAL_LABEL = {
@@ -81,11 +108,32 @@ export function durationText(run: Pick<CopyRun, 'startedAt' | 'endedAt'>): strin
     : `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 }
 
-/** What each run rereads, true to the engine: with a date of change, what changed since the last pass (and the window, if any); without it, the whole source, window or not. */
-export function windowText(shown: Pick<CopySummary['shown'], 'changedSince' | 'window'>): string {
-  const { changedSince, window } = shown
-  if (changedSince === null) return 'A fonte inteira, a cada rodada.'
+/** The copy's mode in words (Capacidade 3), from `copy.mode` as the Hub classified it; the screens never classify. */
+export function modeText(mode: CopyMode): string {
+  switch (mode.kind) {
+    case 'WHOLE':
+      return 'cópia inteira'
+    case 'WINDOW':
+      return `por janela de ${mode.days} dias`
+    case 'CHANGES':
+      return 'só o alterado'
+  }
+}
+
+/** What each run rereads, as the mode says, with the window's column from `shown`. */
+export function windowText(mode: CopyMode, shown: Pick<CopySummary['shown'], 'window'>): string {
   const first = 'A primeira carga traz tudo; a cada rodada relê o que mudou desde a anterior'
-  if (window === null) return `${first}.`
-  return `${first} e ${window.column} dos últimos ${window.days} dias.`
+  switch (mode.kind) {
+    case 'WHOLE':
+      return 'A fonte inteira, a cada rodada.'
+    case 'CHANGES':
+      return `${first}.`
+    case 'WINDOW':
+      return `${first} e ${shown.window?.column ?? 'a janela'} dos últimos ${mode.days} dias.`
+  }
+}
+
+/** The page of proof in words: "teste: 50 linhas", "teste: mais de 50 linhas". */
+export function provedText(proved: CopyProposalSummary['proved']): string {
+  return `teste: ${proved.more ? 'mais de ' : ''}${countText(proved.rows)} linhas`
 }

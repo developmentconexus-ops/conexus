@@ -43,7 +43,7 @@ conversation names (`builder/agents/controller.ts`). The tools are built once pe
 - each preset read is a tool named `tool_<slug>`; the model fills only the open fields, and the
   version's bound values win;
 - `app_data_read` runs one `SELECT` on the Project's app database through its read login, when
-  the version allows it and the Project has an app (`builder/agents/app-data.ts`);
+  the version allows it and the Project has an app (`builder/app-data/tools.ts`);
 - code tools call their saved Worker, uploading it again when the Worker is missing;
 - `web_fetch`, and `web_search` where the provider offers it;
 - with a machine, `show_file` and a program tool that runs code over the agent's reads.

@@ -73,8 +73,10 @@ jobs:
         env:
           SHA: ${{ github.sha }}
         run: |
-          grep -ohE '^## U[0-9]+' docs/steps/*.md | grep -oE 'U[0-9]+' | while read -r unit; do
-            npm run radius -- "$unit" "$SHA" < /dev/null
+          for card in docs/steps/*.md; do
+            grep -ohE '^## U[0-9]+' "$card" | grep -oE 'U[0-9]+' | while read -r unit; do
+              npm run radius -- "$unit" "$SHA" "$(basename "$card")" < /dev/null
+            done
           done
       # The workflows are code a pull request from inside the organization can change, so they are
       # read by the two checkers that know them: actionlint for syntax and shell, zizmor for

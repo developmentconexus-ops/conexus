@@ -1,5 +1,5 @@
 import type { CompanyId, ConnectionId, CopyModelSummary } from '@conexus/hub-api'
-import { COPY_INTERVAL_DEFAULT, EnableCopy, FAILURES } from '@conexus/hub-api'
+import { COPY_INTERVAL_DEFAULT, EnableCopyFromModel, FAILURES } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -69,7 +69,8 @@ function CopyForm(props: {
   const { companyId, connections, models } = props
   const attempt = useAttemptKey()
   const send = useMutation(sendCopyEnable)
-  const form = useSchemaForm(EnableCopy, {
+  const form = useSchemaForm(EnableCopyFromModel, {
+    from: 'MODEL',
     connectionId: undefined,
     model: '',
     interval: COPY_INTERVAL_DEFAULT,
@@ -79,7 +80,7 @@ function CopyForm(props: {
     .filter((model) => model.connector === connector)
     .map((model) => ({ value: model.id, label: model.label }))
 
-  async function submit(values: EnableCopy) {
+  async function submit(values: EnableCopyFromModel) {
     try {
       await attempt((attemptKey) =>
         send.mutateAsync({ params: { companyId }, body: values, attemptKey }),

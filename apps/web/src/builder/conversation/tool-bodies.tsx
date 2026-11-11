@@ -35,13 +35,15 @@ function Labelled({ label, text }: { label: string; text: string }) {
   )
 }
 
-export function Generic({ tool, title }: { tool: ToolItem; title: string }) {
+/** A call's arguments and result; `said` is what its line says beside the sentence, here whole. */
+export function Generic({ tool, title, said }: { tool: ToolItem; title: string; said?: string }) {
   const args =
     typeof tool.args === 'object' && tool.args !== null && Object.keys(tool.args).length > 0
   const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
   return (
     <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
       <div className="font-sans font-semibold text-text">{title}</div>
+      {said !== undefined && <div className="font-sans text-text">{said}</div>}
       {args && <Labelled label="Argumentos:" text={textOf(tool.args) ?? ''} />}
       {result !== undefined && <Labelled label="Resultado:" text={result} />}
     </div>

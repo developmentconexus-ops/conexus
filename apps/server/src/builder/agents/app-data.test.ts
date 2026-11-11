@@ -3,6 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { appLogin, ProjectId } from '@conexus/hub-api'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
+import { releasing } from '../../hub/copies/test-released.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
 import {
   appLoginsOf,
@@ -37,14 +38,22 @@ function answering(steps: ReturnType<typeof tool>[][]): Anthropic['answer'] {
 }
 
 /** A Projeto with its app live on a company database and an agent with `appData`, in conversation. */
-async function readingOn(t: TestContext, statements: readonly string[], withApp = true) {
+async function readingOn(
+  t: TestContext,
+  statements: readonly string[],
+  withApp = true,
+  copies?: 'released',
+) {
   const asked = statements.flatMap((sql) => [[tool(READ, { sql })], []])
   const on = await agentsOn(t, answering(asked))
   const [neonProject] = on.hub.neon.projects()
   assert.ok(neonProject)
   const owner = await createCompanyDatabase(t)
   on.hub.neon.ownedBy(neonProject.id, owner)
-  if (withApp) {
+  if (copies !== undefined) {
+    // The company's database is the released copies' own; the Projeto has no sent version.
+    await releasing(t, on, { connectionId: on.matriz }, ['vendas', 'vendedores'], ['vendas'])
+  } else if (withApp) {
     const subject = { t, hub: on.hub, projects: `${on.company}/projects`, projectId: on.projectId }
     const sent = await send(subject, on.ana, folder({ migrations: [MIGRATION, SEED] }))
     assert.equal(sent.preview?.state, 'ready')
@@ -242,4 +251,25 @@ test('sem app: o agente não recebe a ferramenta; o banco da empresa fora dá AP
   const line = down.hub.lines.findLast((one) => one.message === 'APP_DATA_READ')
   assert.equal(line?.fields.code, 'APP_DATA_UNAVAILABLE')
   assert.equal(typeof line?.fields.cause, 'string', 'the silence keeps its cause in the log')
+})
+
+test('o agente lê a cópia liberada: sync.<nome> com a coluna entre aspas, sem a coluna interna, e 42501 numa cópia não liberada', async (t) => {
+  const on = await readingOn(
+    t,
+    [
+      'SELECT "CODVEND" FROM sync.vendas ORDER BY 1 LIMIT 2',
+      'SELECT * FROM sync.vendas LIMIT 1',
+      'SELECT * FROM sync.vendedores',
+    ],
+    false,
+    'released',
+  )
+  const read = JSON.parse(await on.ask())
+  assert.equal(read.kind, 'ROWS')
+  assert.deepEqual(read.columns, ['CODVEND'])
+  assert.equal(read.rows.length, 2)
+  const whole = JSON.parse(await on.ask())
+  assert.ok(!whole.columns.includes('_pass'))
+  const refused = JSON.parse(await on.ask())
+  assert.deepEqual(refused, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42501' })
 })

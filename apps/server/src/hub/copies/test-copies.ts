@@ -99,8 +99,10 @@ function clockDouble() {
   const made = new Set<CopyId>()
   const clock: CopyClock = {
     set: async ({ copyId, interval }) => {
-      made.add(copyId)
       calls.push(`set ${copyId} ${interval}`)
+      if (made.has(copyId)) return 'UPDATED'
+      made.add(copyId)
+      return 'CREATED'
     },
     pause: async (copyId) => void calls.push(`pause ${copyId}`),
     resume: async (copyId) => void calls.push(`resume ${copyId}`),
@@ -171,6 +173,7 @@ export async function copiesOn(
     ...{ database: hub.test.database, identity: hub.identity, projects: hub.projects.ports },
     ...{ neon: hub.neon.neon, companyPostgres: hub.postgres.companyPostgres },
     connectors: () => hub.connectors.copies,
+    prove: () => hub.connectors.builder.provePage,
     apps: () => hub.apps,
     clock: () => clock,
     log: { info: hubLog(hub.lines), error: hubLog(hub.lines) },
@@ -181,8 +184,8 @@ export async function copiesOn(
   /** Ligar as Ana, with a fresh attempt key unless one is given. */
   function enable(model: string, options: { key?: string; interval?: CopyInterval } = {}) {
     return copies.enable({
-      ...{ companyId, personId: anaId, connectionId },
-      source: { kind: 'MODEL', model: CopyName.parse(model) },
+      ...{ companyId, personId: anaId },
+      source: { kind: 'MODEL', connectionId, model: CopyName.parse(model) },
       interval: options.interval ?? '30m',
       attemptKey: options.key ?? randomUUID(),
     })

@@ -1,7 +1,7 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import type { Context, SqlAnswer, SqlStatement } from './app-sql.ts'
+import type { Context, ReadResult, SqlAnswer, SqlStatement } from './app-sql.ts'
 import { LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
@@ -20,7 +20,7 @@ export type AppRead =
  * model reads; a refusal carries its SQLSTATE to the model (founder, 2026-11-02).
  */
 export type AppReadAnswer =
-  | Extract<AppRead, { kind: 'ROWS' }>
+  | (Extract<AppRead, { kind: 'ROWS' }> & { results: readonly ReadResult[] })
   | Extract<AppRead, { kind: 'REFUSED' }>
   | (Extract<AppRead, { kind: 'FAILED' }> & { cause?: string })
   | { kind: 'NO_LOGIN' }
@@ -106,23 +106,36 @@ const NO_LOGIN = new Set(['28000', '28P01'])
 const TIMED_OUT = new Set(['57014', '25P04'])
 
 /**
- * One statement as the read login, in a read-only transaction. What PostgreSQL refuses is
+ * The statements as the read login, in one read-only transaction. What PostgreSQL refuses is
  * refused, whatever the refusal (a write, a command past the first, a table the login cannot
- * read): there is no filter of ours before it. The answer never carries the text or a value.
+ * read): there is no filter of ours before it. The answer never carries the text or a value; the
+ * columns and rows it names are the first statement's, and `results` holds one for each.
  */
 export async function readApp(
   context: Context,
   read: DatabaseUrl,
-  statement: SqlStatement,
+  statements: readonly SqlStatement[],
   signal: AbortSignal,
 ): Promise<AppReadAnswer> {
-  const answer = await context.transport(read, [statement], signal, { readOnly: true })
+  const answer = await context.transport(read, statements, signal, { readOnly: true })
   switch (answer.kind) {
-    case 'READ':
-      if (Buffer.byteLength(JSON.stringify(answer.rows)) > REPLY_CAP_BYTES) {
+    case 'READ': {
+      const [first] = answer.results
+      if (first === undefined) {
+        return { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE', cause: 'NO_RESULT' }
+      }
+      if (
+        Buffer.byteLength(JSON.stringify(answer.results.map(({ rows }) => rows))) > REPLY_CAP_BYTES
+      ) {
         return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
       }
-      return { kind: 'ROWS', columns: answer.columns, rows: answer.rows }
+      return {
+        kind: 'ROWS',
+        columns: first.columns.map(({ name }) => name),
+        rows: first.rows,
+        results: answer.results,
+      }
+    }
     case 'TOO_LARGE':
       return { kind: 'FAILED', code: 'APP_DATA_TOO_LARGE' }
     case 'NO_ANSWER':

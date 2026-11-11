@@ -1,4 +1,4 @@
-import type { CopyRun, CopySummary } from '@conexus/hub-api'
+import type { CopyProposalSummary, CopyRun, CopySummary } from '@conexus/hub-api'
 import { listConnections, listCopies, listCopyModels, listCopyRuns } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { failure, ok } from './layout-harness.ts'
@@ -9,13 +9,14 @@ import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
 type CopyIn = z.input<typeof CopySummary>
 type RunIn = z.input<typeof CopyRun>
+export type ProposalIn = z.input<typeof CopyProposalSummary>
 
 const COMPANY_API = `/api/companies/${COMPANY.id}`
-const PAGE = `/companies/${COMPANY.id}/copies`
+export const PAGE = `/companies/${COMPANY.id}/copies`
 const VENDAS = '11111111-1111-4111-8111-111111111111'
 const CLIENTES = '22222222-2222-4222-8222-222222222222'
 const PRODUTOS = '33333333-3333-4333-8333-333333333333'
-const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+export const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 
 const DONE: RunIn = {
   id: '44444444-4444-4444-8444-444444444444',
@@ -53,6 +54,7 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     run: DONE,
     rows: 118402,
+    mode: { kind: 'WINDOW', days: 30 },
     projects: [{ id: PROJECT_ID, name: 'Vendedores' }],
     shown: {
       query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,
@@ -64,7 +66,7 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
   }
 }
 
-const LISTED = [
+export const LISTED = [
   copyOf(VENDAS, 'vendas', 'Vendas', {}),
   copyOf(CLIENTES, 'clientes', 'Clientes', {
     run: RUNNING,
@@ -109,11 +111,11 @@ const CONNECTIONS = ok(listConnections, {
   mayManage: true,
 })
 
-function copiesPage(copies: CopyIn[]) {
+export function copiesPage(copies: CopyIn[], proposals: ProposalIn[] = []) {
   return {
     ...OWNER,
     ...projectsPage(COMPANY.id),
-    [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies }),
+    [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies, proposals }),
     [`GET ${COMPANY_API}/copy-models`]: MODELS,
     [`GET ${COMPANY_API}/connections`]: CONNECTIONS,
     // The list's links preload each copy's page.
