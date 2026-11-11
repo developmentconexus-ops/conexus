@@ -53,7 +53,7 @@ guarda.
    do arquivo inteiro. Depois do próximo Release, volte a essa conversa: o arquivo da leitura
    continua lá.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página. Durante a U2: autoriza,
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página, com as duas decisões abaixo. Durante a U2: autoriza,
 quando o firstmate pedir, duas chamadas pagas pequenas: a prova da busca do Google pela sua conta
 (CLIProxy), que libera a busca na web para quem conversa com o Gemini, e uma busca de página
 (`web_fetch`) do Anthropic pela assinatura Claude, que confirma que ela funciona por assinatura e
@@ -92,7 +92,7 @@ suas). As instruções da empresa e as páginas continuam suas: você as vê e c
   arquivos), o #814 (quem grava no caderno), o #143 (o `web_fetch` do Mastra e os endereços NAT64,
   que fica para os provedores sem a busca nativa) e o resto do #540 e do #541.
 
-**As decisões suas nesta etapa.** As de memória e busca já têm a sua palavra (acima). Uma nova:
+**As decisões suas nesta etapa.** As de memória e busca já têm a sua palavra (acima). Duas novas:
 
 - **Quais campos a sua conta ganha para o Assistente** (a sua escolha "b": campos preenchidos pela
   pessoa ou pelo administrador).
@@ -100,10 +100,21 @@ suas). As instruções da empresa e as páginas continuam suas: você as vê e c
   - **B.** Cargo, área e um texto curto "sobre você".
   - **C.** Cargo, área, telefone e região.
 
-  Recomendação: **A**. É o que as referências de chat põem no pedido a partir da conta (nome, grupo,
-  às vezes local: o Open WebUI); o "sobre você" já vem pela memória que o Assistente aprende e que você
-  corrige na tela (a sua escolha "c"), e um texto livre na conta seria um segundo lugar para a mesma
-  coisa. Veredito: nativo (campos do membro no Better Auth, como o apelido da empresa).
+  Recomendação: **A**. O Open WebUI põe no pedido o nome, o e-mail, os grupos, o local e um texto
+  "bio" da conta; o LibreChat, só o nome. Aqui o "sobre você" já vem pela memória que o Assistente
+  aprende e que você corrige na tela (a sua escolha "c"), e um texto livre na conta seria um segundo
+  lugar para a mesma coisa. Veredito: nativo (campos do membro no Better Auth, como o apelido da
+  empresa).
+
+- **A permissão no banco para gravar cargo e área** (a regra D11 pede a sua palavra para toda
+  permissão nova no banco, num pull request só dela). Hoje as rotas da empresa só mudam o papel de um
+  membro.
+  - **A.** As rotas da empresa gravam o cargo e a área de um membro (`UPDATE` só dessas duas
+    colunas), como gravam o apelido da empresa; a própria pessoa grava os seus pela mesma porta.
+  - **B.** Sem permissão nova: cargo e área ficam fora da conta, só na memória que o Assistente
+    aprende.
+
+  Recomendação: **A**; é o que a sua escolha "b" pede.
 
 Quem escreve a memória e as instruções da empresa, como cada um vê e corrige o que é guardado, e a
 separação por empresa não pedem a sua palavra: seguem o modelo de papéis que você já aprovou e as
@@ -116,14 +127,14 @@ empresa nunca lê a memória de outra.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 A máquina fica, e o caminho certo | A máquina de uma conversa é retomada pelo id, de qualquer molde; a morte por molde fica só na do Builder; a frase do sistema de arquivos diz a regra real dos caminhos | `apps/server/src/builder/machine/` | [testing](../guides/testing.md) | esta página aprovada |
+| U1 A máquina fica, e o caminho certo | A máquina de uma conversa do Assistente é retomada pelo id, de qualquer molde; a morte por molde fica no Builder, nos agentes do Projeto e no Construtor, que rodam as ferramentas do molde; a frase do sistema de arquivos diz a regra real dos caminhos | `apps/server/src/builder/machine/`, `apps/server/src/builder/assistant/{assistant,machine.test,file.test,test-files}.ts`, `apps/server/src/builder/{agents/controller,construtor/construtor}.ts` | [testing](../guides/testing.md) | esta página aprovada |
 | U2 Ferramentas em paralelo e a web do provedor | `toolCallConcurrency: { strategy: 'called' }` para todo agente; `web_search` pela fábrica do provedor, com país e fuso; `web_fetch` do Anthropic pela ferramenta do provedor, com citações; a troca de modelo tira as duas; o Google ganha a busca se a prova paga passar | `apps/server/src/builder/controller-kit/`, `apps/server/src/builder/model-accounts/processors.ts` | [security](../guides/security.md) | U1 |
 | U3 As fontes embaixo da mensagem | A linha "Fontes" com título e domínio de cada parte `source` da mensagem, só `http(s)` | `apps/web/src/builder/conversation/` | [web](../guides/web.md) | esta página aprovada |
 | U4 O contexto do Assistente | A lista de tarefas como estado (`TaskSignalProvider`); as frases de ferramenta que dependem do papel saem do texto fixo para o bloco da conversa; o dia da semana na data; o Observador com foco de negócio; o texto pede links perto de cada afirmação | `apps/server/src/builder/assistant/` | [testing](../guides/testing.md) | U2 |
 | U5 A leitura grande | A resposta cortada diz quantas linhas e quantos bytes vieram; a descrição manda abrir o arquivo e não reler; a razão própria dos 20 em `cut.ts` e dos 50 em `builder-port.ts` | `apps/server/src/hub/connectors/`, `apps/server/src/builder/connectors/connector-tools.ts` | [data](../guides/data.md) | esta página aprovada |
 | U6 As leituras tipadas sob demanda | Uma ferramenta por leitura das conexões escolhidas, com o Zod da operação; atrás do `ToolSearchProcessor` (`search_tools`, carga automática); `connector_read` sai do Assistente | `apps/server/src/builder/connectors/`, `apps/server/src/builder/assistant/` | [security](../guides/security.md) | U4, U5 |
 | U7 As conversas antigas e o que ele aprende de você | `recall` em todas as conversas do Assistente da mesma pessoa na empresa; memória de trabalho por pessoa; a seção "O que o Assistente lembra de você" em Sua conta, com editar e apagar | `apps/server/src/builder/assistant/`, `apps/server/src/builder/controller-kit/memory.ts`, `packages/hub-api/src/`, `apps/web/src/builder/assistant/`, `apps/web/src/routes/_app/companies/$companyId_/settings/account.tsx` | [web](../guides/web.md) | U4 |
-| U8 Cargo e área na conta | Os campos do membro (Better Auth), a migração, as rotas; a pessoa edita os seus em Sua conta, o administrador os de outro em Pessoas; o bloco da conversa os diz | `apps/server/src/hub/identity/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `packages/hub-api/src/`, `apps/web/src/hub/identity/`, `apps/web/src/routes/_app/companies/$companyId_/settings/{account,people}.tsx`, `apps/server/src/builder/assistant/instructions.ts` | [data](../guides/data.md) | U7 (a mesma tela de Sua conta) |
+| U8 Cargo e área na conta | Os campos do membro (Better Auth), a migração, as rotas; a pessoa edita os seus em Sua conta, o administrador os de outro em Pessoas; o bloco da conversa os diz | `apps/server/src/hub/identity/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `packages/hub-api/src/`, `apps/web/src/hub/identity/`, `apps/web/src/routes/_app/companies/$companyId_/settings/{account,people}.tsx`, `apps/server/src/builder/assistant/instructions.ts` | [data](../guides/data.md) | U7 (a mesma tela de Sua conta); o pull request da permissão no banco, com a palavra do fundador (D11) |
 | U9 A memória e as instruções da empresa | O `Knowledge` do Mastra no Assistente, escopo da empresa, instruções da empresa como página fixada; a permissão "Memória da empresa"; a página Configurações › Memória da empresa | `apps/server/src/builder/assistant/`, `apps/server/src/hub/identity/{admission,roles}.ts`, `packages/hub-api/src/`, `apps/web/src/builder/assistant/`, `apps/web/src/routes/_app/companies/$companyId_/settings/` | [security](../guides/security.md) | U7, U8 |
 
 U1, U3 e U5 não dividem pasta e correm em paralelo; U2 vem depois da U1 (o pull request as junta em
@@ -147,14 +158,14 @@ Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | Uma conversa do Assistente cuja máquina foi feita de outro molde é retomada com os arquivos: o arquivo gravado antes continua no mesmo caminho e nenhuma máquina é morta. Falha hoje: a máquina é morta e o arquivo some | `apps/server/src/builder/machine/conversation.test.ts`, "a máquina de outro molde é retomada com os arquivos" (troca o caso "é morta") | must |
-| 2 | U1 | A máquina do Builder feita de outro molde continua sendo morta e refeita | `apps/server/src/builder/machine/machines.test.ts`, "a máquina do Builder de outro molde é refeita" (o de hoje, mantido) | must |
-| 3 | U1 | O download de um arquivo acha a máquina da conversa de qualquer molde; numa conversa sem máquina, `FILE_GONE` como hoje | `apps/server/src/builder/machine/file-route.test.ts`, "o arquivo de uma máquina de outro molde baixa" | must |
+| 1 | U1 | Uma conversa do Assistente cuja máquina foi feita de outro molde é retomada com os arquivos: o arquivo gravado antes continua no mesmo caminho e nenhuma máquina é morta. Falha hoje: a máquina é morta e o arquivo some | `apps/server/src/builder/assistant/machine.test.ts`, "a máquina de outro molde é retomada com os arquivos" (troca o caso "é morta" de `:198`) | must |
+| 2 | U1 | A máquina de um agente do Projeto, a do Construtor e a do Builder feitas de outro molde continuam sendo mortas e refeitas | `apps/server/src/builder/machine/machine.test.ts:260` (o Builder, o de hoje) e `apps/server/src/builder/machine/conversation-machines.test.ts`, "com `replace`, a de outro molde é morta" | must |
+| 3 | U1 | O download de um arquivo acha a máquina da conversa de qualquer molde; numa conversa sem máquina, `FILE_GONE` como hoje | `apps/server/src/builder/assistant/file.test.ts`, "o arquivo de uma máquina de outro molde baixa" | must |
 | 4 | U1 | A frase do sistema de arquivos que o modelo recebe diz que caminho absoluto fora da pasta entra nela (`/tmp/x` vira `<pasta>/tmp/x`) e não traz `/src/index.ts` | `apps/server/src/builder/machine/sandbox-filesystem/filesystem.test.ts`, "a frase diz a regra dos caminhos" | must |
 | 5 | U2 | Duas leituras pedidas pelo modelo no mesmo passo rodam juntas: com duas ferramentas de 300 ms, o passo termina em menos de 450 ms; `ask_user` pedido sozinho continua sozinho. Falha hoje: 667 ms | `apps/server/src/builder/controller-kit/concurrency.test.ts`, "as ferramentas de um passo rodam juntas" | must |
-| 6 | U2 | Com o Anthropic, o pedido ao modelo leva `web_search_20250305` com `user_location` (`BR`, `America/Sao_Paulo`) e `web_fetch_20260209` com `citations.enabled`; com o OpenAI, `web_search` com `user_location`; com o xAI, a busca nativa sem argumentos como hoje | `apps/server/src/builder/controller-kit/model.test.ts`, "as ferramentas de web do provedor com argumentos" | must |
-| 7 | U2 | Numa troca automática de modelo no meio do turno, as duas ferramentas do provedor anterior saem do pedido seguinte | `apps/server/src/builder/model-accounts/processors.test.ts`, "a troca de modelo tira a busca e a leitura de página" | must |
-| 8 | U2 | O Google (CLIProxy) ganha `web_search` só se a prova paga passar; sem ela, o pedido ao Gemini continua sem busca, como hoje | `model.test.ts`, "o Google segue a prova" | must |
+| 6 | U2 | Com o Anthropic, o pedido ao modelo leva `web_search_20250305` com `user_location` (`BR`, `America/Sao_Paulo`) e `web_fetch_20250910` com `citations.enabled`; com o OpenAI, `web_search` com `user_location`; com o xAI, a busca nativa sem argumentos como hoje | `apps/server/src/builder/controller-kit/model.test.ts`, "as ferramentas de web do provedor com argumentos" | must |
+| 7 | U2 | Numa troca automática de modelo no meio do turno, o `web_search` do provedor anterior sai do pedido seguinte, e o `web_fetch` sai só quando o anterior era o Anthropic (a única leitura de página do provedor); vindo de outro, o `web_fetch` do Mastra, uma função, fica | `apps/server/src/builder/model-accounts/processors.test.ts`, "a troca de modelo tira a busca e a leitura de página" | must |
+| 8 | U2 | O teste prende o que a prova paga do Google decidiu: passada, o pedido ao Gemini (CLIProxy) leva `google_search`; não passada, continua sem busca, como hoje | `model.test.ts`, "o Google segue a prova" | must |
 | 9 | U3 | Uma mensagem com partes `source` mostra embaixo a linha "Fontes" com o título (ou o endereço) e o domínio de cada uma, sem repetir a mesma URL; um `source` que não é `http(s)` não vira link; sem `source`, nada aparece | `apps/web/src/builder/conversation/sources.test.tsx`, os três casos | must |
 | 10 | U3 | A linha "Fontes" passa nas capturas a 1366 e 390 px, nos dois temas, sem estouro horizontal, e cada link abre em aba nova com `rel="noopener noreferrer"` | `apps/web/src/builder/conversation/conversation.layout.test.tsx`, "as fontes" | must |
 | 11 | U4 | Depois de um `task_write`, o pedido seguinte ao modelo leva `<current-task-list>`; depois de uma observação, a lista continua no pedido. Falha hoje: some | `apps/server/src/builder/assistant/context.test.ts`, "a lista de tarefas como estado" | must |
@@ -174,7 +185,7 @@ Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 | 25 | U8 | As telas Sua conta e Pessoas mostram e editam os campos nos estados da matriz | `apps/web/src/hub/identity/member-profile.test.tsx` | must |
 | 26 | U9 | As instruções da empresa gravadas pela tela estão em todo pedido de toda conversa do Assistente da empresa, depois da mensagem fixa (que não muda de bytes); numa conversa de outra empresa, não | `apps/server/src/builder/assistant/company-memory.test.ts`, "as instruções valem para a empresa toda" e "não passam de empresa" | must |
 | 27 | U9 | Numa conversa de quem tem a permissão "Memória da empresa", o modelo cria uma página da empresa; numa conversa de um membro sem ela, a mesma escrita volta recusada pelo `Knowledge` e o bloco diz que ele não guarda memória da empresa; o membro lê a página | `company-memory.test.ts`, "quem escreve" e "o membro lê" | must |
-| 28 | U9 | As rotas da memória da empresa: todo membro lista e lê; gravar e apagar pedem a permissão (`NOT_IN_ROLE`); instruções acima do teto: `REQUEST_MALFORMED`; outra empresa: `NOT_FOUND` | `apps/server/src/builder/assistant/company-memory-routes.test.ts` | must |
+| 28 | U9 | As rotas da memória da empresa: todo membro lista e lê; gravar e apagar pedem a permissão (`NOT_IN_ROLE`); instruções acima de 2.000 caracteres: `REQUEST_MALFORMED`; apagar com outra gravação no meio: `COMPANY_MEMORY_CHANGED`; outra empresa: `NOT_FOUND` | `apps/server/src/builder/assistant/company-memory-routes.test.ts` | must |
 | 29 | U9 | O teste prende `KNOWLEDGE_STORAGE_SCHEMA_VERSION` em 4: um Mastra que o mude falha este teste | `company-memory.test.ts`, "o formato do Knowledge" | must |
 | 30 | U9 | A página Memória da empresa nos estados da matriz, a 1366 e 390 px, nos dois temas; o membro não vê os botões de editar | `apps/web/src/builder/assistant/company-memory.test.tsx` e o seu layout | must |
 | 31 | U9 | A permissão "Memória da empresa" nasce no dono e no administrador; um papel próprio da empresa (que só recebe conectores) não a tem, e quem o tem recebe `NOT_IN_ROLE` ao gravar | `apps/server/src/hub/identity/roles.test.ts`, "a memória da empresa" | must |
@@ -187,7 +198,7 @@ Capacidade 4 mexe nas pessoas do app, não nas da empresa; a ordem segue L1).
 | Sua conta, Cargo e área | Os dois campos vazios com a dica "Ajuda o Assistente a entender o seu trabalho." | Os campos vazios | A leitura da conta, como hoje | A gravação que falha: a frase de falha da conta de hoje | não se aplica | Não acontece: a pessoa edita os seus | Acima de 80 caracteres: a frase do campo |
 | Sua conta, O que o Assistente lembra de você | A frase "O Assistente ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas." | A mesma frase | O texto carregando | A leitura que falha: "Não foi possível ler a memória." com Tentar de novo; a gravação que falha: a frase de falha de hoje | não se aplica | Não acontece: a pessoa vê a sua | Acima do teto de texto: a frase do campo |
 | Configurações › Pessoas, Cargo e área de outro | Os campos de cada membro, vazios | Os campos vazios | Como a lista de hoje | Como a lista de hoje | O membro que saiu: a frase de hoje | Sem a permissão de mudar papel: os campos só para ler | Acima de 80 caracteres: a frase do campo |
-| Configurações › Memória da empresa | "As instruções e as páginas que o Assistente segue em toda conversa da empresa." e as Instruções vazias | Instruções vazias e "Nenhuma página guardada ainda." | A lista carregando | "Não foi possível ler a memória da empresa." com Tentar de novo | A página apagada por outro: "Esta página não existe mais." | O membro sem a permissão: tudo para ler, sem editar nem apagar | Instruções acima do teto: a frase com a contagem; a gravação que perde para outra ao mesmo tempo: "A página mudou enquanto você editava." com a versão nova |
+| Configurações › Memória da empresa | "As instruções e as páginas que o Assistente segue em toda conversa da empresa." e as Instruções vazias | Instruções vazias e "Nenhuma página guardada ainda." | A lista carregando | "Não foi possível ler a memória da empresa." com Tentar de novo | A página apagada por outro: "Esta página não existe mais." | O membro sem a permissão: tudo para ler, sem editar nem apagar | Instruções acima de 2.000 caracteres: a frase com a contagem; apagar uma página que outro mudou ao mesmo tempo: "A página mudou enquanto você apagava." e a lista relida |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -251,9 +262,9 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Retomar a máquina da conversa (`E2BSandbox.start` pelo id, sem matar a de outro molde) | Uma conversa tem uma rodada por vez; a retomada é a de hoje | Uma retomada cortada: a próxima mensagem retoma de novo; nenhuma máquina é criada a mais porque nada mais mata a antiga | A E2B fora: `MACHINE_UNAVAILABLE`, como hoje; a máquina sumida no download: `FILE_GONE` | `MACHINE_STARTED`, como hoje; `killStale` some do caminho das conversas | 1, 3 |
-| `updateWorkingMemory` pelo modelo e `PUT` da pessoa | Os dois gravam o texto inteiro: o último vence; a tela mostra o que ficou ao recarregar | Cortada antes do `COMMIT` do Mastra: nada mudou, e a pessoa reenvia o mesmo texto (o `PUT` é idempotente); um 502 ou 503 na resposta: a tela relê e mostra o que ficou | O banco do Mastra fora: `DATABASE_UNAVAILABLE` na rota; no turno, a falha de memória de hoje | nada novo; nunca o texto da memória (S41) | 20, 21 |
+| `updateWorkingMemory` pelo modelo, `PUT` e `DELETE` da pessoa | Os dois gravam o texto inteiro: o último vence; a tela mostra o que ficou ao recarregar | Cortada antes do `COMMIT` do Mastra: nada mudou, e a pessoa reenvia (o `PUT` e o `DELETE` são idempotentes); um 502 ou 503 na resposta: a tela relê e mostra o que ficou | O banco do Mastra fora: `DATABASE_UNAVAILABLE` na rota; no turno, a falha de memória de hoje | nada novo; nunca o texto da memória (S41) | 20, 21 |
 | Gravar cargo e área (comando do Hub, trava do membro) | A trava do membro ordena as duas; o último vence | Transação inteira ou nada; a resposta cortada: o `PUT` é idempotente e a tela relê | O banco do Hub fora: `DATABASE_UNAVAILABLE` | nada novo | 23 |
-| `Knowledge.upsertPage` e `removePage` pela rota; `knowledge_page`, `knowledge_note` e `knowledge_pin` pelo modelo | Duas gravações na mesma página: o `removePage` concorrente lança (`dist/knowledge/index.d.ts:91`), e o `KnowledgeConflictError` vira `COMPANY_MEMORY_CHANGED` (409) e a tela relê; se o teste mostrar que o `upsertPage` não recusa, o último vence e a tela relê ao salvar; o modelo recebe o erro e relê | `upsertPage` grava a página e a versão juntas; `unchanged` não grava; uma resposta cortada: o `PUT` do mesmo corpo é idempotente pelo caminho | O banco do Mastra fora: `DATABASE_UNAVAILABLE`; o armazenamento do `Knowledge` que pede reset (um Mastra novo): o teste do critério 29 falha antes de chegar ao `main` | `COMPANY_MEMORY_CHANGED` com o caminho da página, nunca o corpo (S41) | 26, 27, 28, 29 |
+| `Knowledge.upsertPage` e `removePage` pela rota; `knowledge_page`, `knowledge_note` e `knowledge_pin` pelo modelo | Duas gravações na mesma página: o último vence (`upsertPage` não leva versão, `dist/knowledge/host-writes.d.ts:8-26`), e a tela relê depois de salvar; um `removePage` com outra gravação no meio lança `KnowledgeConflictError` (`dist/knowledge/index.d.ts:89-92`), que vira `COMPANY_MEMORY_CHANGED` (409), e a tela relê; o modelo recebe o erro da ferramenta e relê | `upsertPage` grava a página e a versão juntas; `unchanged` não grava; uma resposta cortada: o `PUT` do mesmo corpo é idempotente pelo caminho | O banco do Mastra fora: `DATABASE_UNAVAILABLE`; o armazenamento do `Knowledge` que pede reset (um Mastra novo): o teste do critério 29 falha antes de chegar ao `main` | `COMPANY_MEMORY_CHANGED` com o caminho da página, nunca o corpo (S41) | 26, 27, 28, 29 |
 | A chamada paga de busca e de leitura de página pelo provedor | Cada chamada é do provedor, dentro do turno | O turno parado corta a chamada, como hoje | O provedor fora: o erro da ferramenta vai ao modelo, como hoje | nada novo | 6, 8 |
 | A leitura tipada (a mesma porta de `connector_read`) | O contador das 50 é síncrono (`builder-port.ts:102-112`), também com as ferramentas em paralelo | Como `connector_read` hoje | Como `connector_read` hoje | nada novo | 16, 17 |
 
@@ -264,18 +275,18 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | Máquina da conversa e molde novo | U1 | `apps/server/src/builder/machine/conversation.ts:176` (`killStale` antes da partida); `machine/e2b.ts:84-96` (`find` filtra por `MARK.template`), `:100-101` | `mastra-1.82@6e8dfcb8` `mastracode/factory/src/workspace.ts:841-857`, `:930-944`; `workspaces/e2b/src/factory-sandbox.ts:144-155`; `@mastra/e2b@0.16.1` `dist/index.js:1432-1470` | A sessão religa a máquina pelo id gravado; o molde só conta no `create()`; uma sessão antiga fica na máquina dela | nativo (tirar o nosso) | — | issue 971; "Proposta sua concordo" | — |
 | Frase do sistema de arquivos | U1 | `machine/sandbox-filesystem/filesystem.ts:371`; `resolveAgainst` `:144-160` | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/sandbox-filesystem.ts:1120-1122`, `:273-290`; Factory `factory/src/session/environment-state-processor.ts:138-150` | O Mastra Code diz "workspace paths" porque lá a pasta é a raiz do repositório; o Factory diz o diretório absoluto real | embrulhado: a nossa cópia do arquivo do Mastra Code, só a frase muda | o script do estudo: `/tmp/chart.png` → `/home/user/work/tmp/chart.png` | não precisa | — |
 | Ferramentas de um passo em paralelo | U2 | `controller-kit/factories.ts:65` (sem `toolCallConcurrency`); `ask_user` com `suspendSchema` (`conversation/plan-tools.ts:51`) | `@mastra/core@1.82.0` `dist/loop/types.d.ts:43-53`; `dist/agent-BP9OWM6D.js:15211-15226`, `:15248-15270`; `codex@970111f` `codex-rs/core/src/tools/handlers/mcp.rs:174-185` | A estratégia `called` faz só a ferramenta chamada decidir a fila; o Codex roda em paralelo o que declara | nativo | o laboratório do estudo: 667 ms → 311 ms | "Proposta sua concordo" | `apps/server/src/builder/controller-kit/concurrency.test.ts` |
-| `web_search` com argumentos | U2 | `controller-kit/model.ts:8-10`, `:31-36` (`webSearchTool` sem argumentos; sem Google) | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/tools.ts:135-148`; `@ai-sdk/anthropic@3.0.133` `dist/index.js:1404-1500`; `@ai-sdk/openai@3.0.130` `dist/index.js:2753-2754`; `@mastra/core@1.82.0` `dist/tools-BVDic2bB.js:857-860` (Google) | O Mastra Code usa a fábrica do provedor do AI SDK | nativo | a prova paga do Google, na U2 | "4. A" | — |
-| `web_fetch` do provedor | U2 | `controller-kit/model.ts:33` (`webFetchTool`: HTML cru, PDF ilegível, `dist/tools-BVDic2bB.js:609-791`) | `@ai-sdk/anthropic@3.0.133` `dist/index.js:1502-1552`, `:1829-1840`; `cloudflare-agents@786d30e3` `packages/agents/src/web/fetch/contract.ts:119-126` | O provedor devolve texto ou PDF como documento, com citações; a cloudflare converte para Markdown | nativo no Anthropic; nos outros, o de hoje | a chamada paga pela assinatura, na U2 | "Proposta sua concordo" | — |
+| `web_search` com argumentos | U2 | `controller-kit/model.ts:8-10`, `:31-36` (`webSearchTool` sem argumentos; sem Google) | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/tools.ts:135-148`; `@ai-sdk/anthropic@3.0.133` `dist/index.js:1490-1497` (`webSearch_20250305`); `@ai-sdk/openai@3.0.130` `dist/index.js:2753-2754`; `@mastra/core@1.82.0` `dist/tools-BVDic2bB.js:857-860` (Google) | O Mastra Code usa a fábrica do provedor do AI SDK | nativo | a prova paga do Google, na U2 | "4. A" | — |
+| `web_fetch` do provedor | U2 | `controller-kit/model.ts:33` (`webFetchTool`: HTML cru, PDF ilegível, `dist/tools-BVDic2bB.js:609-791`) | `@ai-sdk/anthropic@3.0.133` `dist/index.js:1559-1612` (`webFetch_20250910`, saída com `application/pdf` em `:1582`), `:1829-1840` (o cabeçalho beta `web-fetch-2025-09-10`); a versão `webFetch_20260209` (`:1552`, `:1847-1864`) pede o beta de execução de código, e não entra; `cloudflare-agents@786d30e3` `packages/agents/src/web/fetch/contract.ts:119-126` | O provedor devolve texto ou PDF como documento, com citações; a cloudflare converte para Markdown | nativo no Anthropic; nos outros, o de hoje | a chamada paga pela assinatura, na U2 | "Proposta sua concordo" | — |
 | Troca de modelo tira as ferramentas do provedor | U2 | `model-accounts/processors.ts:35`, `:217-219` (só `web_search`) | a mesma regra para as duas | — | embrulhado: o nosso processador da troca de modelo tira as duas, como já tira a busca | — | não precisa | — |
 | Fontes na tela | U3 | `apps/web/src/builder/conversation/rows.ts:250` (partes `source` puladas) | `assistant-ui@437b410` `examples/with-chain-of-thought/app/api/chat/route.ts:155-165`; `packages/ui/src/components/react/assistant-ui/elements/sources.aui.tsx:158` | A parte `source` (`url`, `title`) num componente de fontes embaixo da mensagem | nativo (a parte do Mastra) | — | item 3, "Proposta sua concordo" | `apps/web/src/builder/conversation/sources.tsx` |
-| Links perto da afirmação | U4 | `assistant/prompt/assistant.md` ("say where it came from") | `codex@970111f` `codex-rs/ext/web-search/web_run_description.md:57-86`; `lobe-chat@c29ef407` `packages/builtin-tool-web-browsing/src/systemRole.ts:52-54` | Só texto de prompt | nativo (texto) | — | item 3 | — |
+| Links perto da afirmação | U4 | `assistant/prompt/assistant.md` ("say where it came from") | `codex@970111f` `codex-rs/ext/web-search/web_run_description.md:57-86` | Só texto de prompt (o LobeChat usa notas de rodapé, outra forma) | nativo (texto) | — | item 3 | — |
 | Lista de tarefas como estado | U4 | `assistant/assistant.ts:248` (`new Agent` sem `signals`) | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/index.ts:1460-1467`; `sdk/src/agents/prompts/index.ts:150-153`; `@mastra/core@1.82.0` `dist/signals-CcTXkih_.js:38-52`, `dist/task-state-processor-BP8cKMCJ.js:769-845`; o Builder `conversation/builder.ts:126` | `signals: [new TaskSignalProvider()]`: o estado vai por sinal, fora do prefixo em cache, e sobrevive à observação | nativo | — | "Proposta sua concordo" | — |
 | Frases de ferramenta pelo papel | U4 | `assistant/prompt/assistant.md` ("# Notes on a connection" e automação, em prosa condicional); `assistant/instructions.ts:43-62` (`blockOf`) | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/prompts/index.ts:96-122`; `codex@970111f` `codex-rs/core/src/session/world_state.rs:81-95` | A orientação é montada com as ferramentas presentes; some a da ferramenta ausente | nativo (instruções por pedido) | — | "Proposta sua concordo" | — |
 | Dia da semana | U4 | `assistant/instructions.ts:58` | `librechat@e6567c7` `packages/data-provider/src/parsers.ts:498-507`; `open-webui@f7ac7ee` `backend/open_webui/utils/task.py:73-104` | A data com o dia da semana | nativo (texto) | — | item 7 | — |
 | Observador com foco de negócio | U4 | `controller-kit/instructions.ts:19` (`TITLE.ask.observer`, só o título) | `@mastra/memory@1.41.0` `dist/docs/references/reference-memory-observational-memory.md:64`; `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/memory.ts:188-189`, `:295-298`, `:359` | `observation.instruction` diz o que observar e o que não | nativo | — | item 8 | — |
 | Linhas e bytes na leitura cortada | U5 | `hub/connectors/cut.ts:47-70`; `builder/connectors/connector-tools.ts:196` ("run your own SQL") | `activepieces@f34c43cd` `packages/server/api/src/app/ee/agent/tools/agent-tools.ts:42`, `:672-706`; `packages/server/utils/src/agent-ai-utils.ts:366-392` | Arquivo, prévia, total e tamanho, e "processe no código, não repita a chamada" | embrulhado (o corte é nosso: o Mastra não guarda o inteiro fora) | `cut.test.ts` de hoje e os casos novos | não precisa | — |
 | A razão dos 20 e dos 50 | U5 | `cut.ts:3` (cita o Factory com 20; o Factory tem 25, `mastracode/factory/src/tools/read-tools.ts:29`); `builder-port.ts:30-31` ("o OS tinha") | — | Nenhuma referência tem teto de chamadas por turno; o nosso protege o sistema da empresa, na porta | remendo com razão própria, já existente; só o comentário muda | `@mastra/core@1.82.0`: nenhum contador nativo de chamadas por turno (`stopWhen` vê só o laço do modelo); os testes de `CALLS_SPENT` | não precisa | — |
-| Leitura tipada por operação | U6 | `builder/connectors/connector-tools.ts:209` (`input: z.record`); o Projeto já tipa (`builder/agents/tools.ts:101-119`) | `supabase-mcp@5ab9a98` `packages/mcp-utils/src/server.ts:533`, `:581-583`; `nango@e6c6131` `packages/server/lib/controllers/agent/mcp/sessionServer.ts:38-49` | Uma ferramenta por operação com o esquema; ou busca que devolve o esquema | nativo (`createTool` com o Zod da operação) | — | item 11 | `apps/server/src/builder/connectors/typed-reads.ts` |
+| Leitura tipada por operação | U6 | `builder/connectors/connector-tools.ts:209` (`input: z.record`); o Projeto já tipa (`builder/agents/tools.ts:101-119`) | `supabase-mcp@5ab9a98` `packages/mcp-utils/src/server.ts:533`, `:581-583`; `nango@e6c6131` `packages/server/lib/controllers/agent/mcp/toolSearch/schema.ts:21-34` | Uma ferramenta por operação com o esquema; ou busca que devolve o esquema | nativo (`createTool` com o Zod da operação) | — | item 11 | `apps/server/src/builder/connectors/typed-reads.ts` |
 | Descoberta sob demanda | U6 | não usada | `@mastra/core@1.82.0` `dist/docs/references/reference-processors-tool-search-processor.md:36-46`, `:200-250`; `dist/agent-BP9OWM6D.js:43554-43950`; `codex@970111f` `codex-rs/core/src/mcp_tool_exposure.rs:158-162` | `search_tools` (BM25), `autoLoad`, `storage: 'context'`, `filter` por pedido; o Codex adia só o que vem de fora | nativo | — | item 11 | — |
 | Recall das conversas da pessoa | U7 | `assistant/memory.ts:14` (`recall: false`); `controller-kit/memory.ts:69` (`retrieval: { scope: 'thread' }` só no Builder) | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/memory.ts:254-259`, `:346`; `@mastra/memory@1.41.0` `dist/docs/references/reference-memory-observational-memory.md:56`, `:795-797`; `dist/src-BncFunCW.js:31472-31490`, `:31681`, `:31715` | O Factory guarda a observação por conversa e o `recall` alcança todo o `resource`; o `recall` recusa conversa de outro `resource` | nativo | — | "1. B" | `apps/server/src/builder/assistant/recall.test.ts` |
 | Memória de trabalho por pessoa | U7 | nenhuma | `@mastra/memory@1.41.0` `dist/docs/references/docs-memory-working-memory.md:66`, `:277`, `:388-417`; `dist/index.d.ts:171`, `:235`; `librechat@e6567c7` `packages/api/src/agents/memory.ts:61-130`; `lobe-chat@c29ef407` `packages/context-engine/src/providers/UserMemoryInjector.ts:27-65`. O Mastra Code não a usa (nenhum `workingMemory` em `mastracode/`) | `workingMemory: { enabled: true, scope: 'resource', template }`, atualizada pelo modelo; o Hub lê e grava por `getWorkingMemory` e `updateWorkingMemory` | nativo | — | "2. … C" | `apps/server/src/builder/assistant/profile-memory.ts` |
@@ -304,17 +315,24 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 
 ## U1 A máquina fica, e o caminho certo
 
-**Base e modelo.** `main` no commit em que O Assistente do dia a dia fechar. Sonnet: duas mudanças
-pequenas numa pasta.
+**Base e modelo.** `main` no commit em que esta página for aprovada. Sonnet: uma opção nova numa
+porta e uma frase.
 
 ### As linhas da tabela
 
 - **Máquina da conversa e molde novo.** Ler `apps/server/src/builder/machine/conversation.ts:171-190`
-  (`boot`), `machine/e2b.ts:84-102` (`find`, `killStale`), `machine/kit.ts:176-186`. Seguir o Factory:
+  (`boot`) e `:374` (o `find` do download), `machine/e2b.ts:84-102` (`find`, `killStale`),
+  `machine/kit.ts:170-186` (`MachineApi`, `ConversationMachineApi`). Seguir o Factory:
   `mastracode/factory/src/workspace.ts:841-857` (a sessão religa pelo id), `@mastra/e2b@0.16.1`
   `dist/index.js:1432-1470` (`find`/`connect` sem conferir molde; só `create()` resolve o molde).
-- **Morte por molde no Builder.** `machine/machines.ts:124-131` fica como está: a máquina do Builder
-  é refeita do Git e precisa do SDK da versão (decisão 0051, `infra/e2b/template.ts:1-7`).
+- **Quem usa a máquina das conversas.** O Assistente (`assistant/assistant.ts`), os agentes do
+  Projeto (`agents/controller.ts`) e o Construtor (`construtor/construtor.ts`). Os dois últimos rodam
+  o pacote de ferramentas do molde (`machine/conversation.ts:21`, `TOOLCHAIN`;
+  `construtor/code-tool.ts:147-185`; `infra/e2b/template.ts:1-7`): numa máquina de molde antigo, o
+  Hub novo rodaria com as ferramentas velhas. O Assistente não usa esse pacote, e os arquivos dele só
+  existem na máquina. Por isso a retomada de outro molde vale só para o Assistente; os agentes e o
+  Construtor continuam com a morte por molde de hoje, pela mesma razão do Builder (decisão 0051).
+- **Morte por molde no Builder.** `machine/machines.ts:124-131` fica como está.
 - **Frase do sistema de arquivos.** `machine/sandbox-filesystem/filesystem.ts:144-160` (o resolvedor,
   intocado) e `:371`.
 
@@ -322,38 +340,53 @@ pequenas numa pasta.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/machine/` | Muda `conversation.ts`, `e2b.ts`, `kit.ts`, `sandbox-filesystem/filesystem.ts` e os seus testes | `builder/assistant/`, `builder/agents/`, `builder/conversation/` |
+| `apps/server/src/builder/machine/` | Muda `conversation.ts`, `e2b.ts`, `kit.ts`, `sandbox-filesystem/filesystem.ts`, `e2b-api.test.ts`, `test-machine.ts`, `test-conversation-machines.ts`; cria `sandbox-filesystem/filesystem.test.ts`, `conversation-machines.test.ts` | `builder/assistant/`, `builder/agents/`, `builder/construtor/` |
+| `apps/server/src/builder/assistant/assistant.ts` | Muda: passa `otherTemplate: 'resume'` | — |
+| `apps/server/src/builder/assistant/{machine.test.ts,file.test.ts,test-files.ts}` | Muda: o caso "é morta" vira "é retomada"; o download de outro molde | — |
+| `apps/server/src/builder/{agents/controller.ts,construtor/construtor.ts}` | Muda: só a chamada, com `otherTemplate: 'replace'` | — |
 
 ### Os contratos que a unidade cria
 
-Apaga `killStale` da porta das conversas (`ConversationMachinesApi` em `kit.ts:176-185` perde o
-método; `MachinesApi` do Builder o mantém). `find(conversationId)` deixa de receber o molde: a marca
-`MARK.template` continua gravada, para diagnóstico. Nenhum tipo novo.
+- `createConversationMachines(deps, tuning)`: `deps.otherTemplate: 'resume' | 'replace'`, sem padrão
+  (cada chamador diz o seu, C21). `'replace'` é o de hoje (agentes, Construtor); `'resume'` (o
+  Assistente) não chama `killStale` e procura a máquina sem o molde.
+- `ConversationMachineApi.find(conversationId, template: string | undefined)`: `undefined` não filtra
+  por `MARK.template`; a marca continua gravada, para diagnóstico. `MachineApi.killStale` continua (o
+  Builder, os agentes e o Construtor o usam).
+- O arquivo tomado como modelo é o próprio `conversation.ts`: cumpre C23 (`ConversationId`) e C26
+  (um dono da partida, "One owner (code C26) for start, stop, kill and read"); C21 entra com a união
+  nova.
 
 ### As skills e a leitura
 
-`mastra` (linhas de `@mastra/e2b` em `docs/reference/stack.md`); ler `node_modules/@mastra/e2b/dist/`
-nas linhas citadas.
+`mastra` (linhas de `@mastra/e2b` e `e2b` em `docs/reference/stack.md`); ler
+`node_modules/@mastra/e2b/dist/` nas linhas citadas.
 
 ### A ordem do trabalho
 
-1. `conversation.ts:176`: tirar `killStale`; a partida é `session.kit.sandbox.start?.()`. Regras: C75.
-2. `e2b.ts:84-96`: `find` sem `MARK.template`; `kit.ts`: a assinatura da porta das conversas sem o
-   molde e sem `killStale`.
-3. `filesystem.ts:371`: "File tools take paths relative to ${basePath}, or absolute paths under it.
+1. `kit.ts` e `e2b.ts`: `find` com o molde opcional. Regras: C21, C75.
+2. `conversation.ts`: `boot` chama `killStale` só com `'replace'`; o `find` do download (`:374`) passa
+   o molde só com `'replace'`.
+3. `assistant.ts`: `otherTemplate: 'resume'`; `agents/controller.ts` e `construtor/construtor.ts` não
+   mudam de comportamento, mas passam `'replace'` (eles entram no raio por essa linha: ver "Parar se").
+4. `filesystem.ts:371`: "File tools take paths relative to ${basePath}, or absolute paths under it.
    Any other absolute path is placed inside ${basePath} (/tmp/x becomes ${basePath}/tmp/x), while
    commands see the real path: keep every file a tool and a command share under ${basePath}."
-4. Testes: trocar "é morta" por "é retomada com os arquivos" com o dublê da máquina.
+5. Testes: `assistant/machine.test.ts:198` ("…de outro template é morta…") vira "é retomada com os
+   arquivos"; um caso novo nos agentes mantém "é morta"; `e2b-api.test.ts:80` ganha o `find` sem molde.
 
 ### Como se prova
 
-Critérios 1 a 4, pelo dublê da máquina de hoje (`test-files.ts`), que hoje falham em 1 e 4 (o 1
-espera a morte). `npm run test -w apps/server -- machine/`.
+Critérios 1 a 4 pelo dublê da máquina de hoje (`assistant/test-files.ts`,
+`machine/test-conversation-machines.ts`). Falham hoje: 1 (a máquina é morta), 3 (o `find` filtra o
+molde) e 4 (a frase de `/src/index.ts`). `npm run test -w apps/server -- machine/ assistant/machine`.
 
 ### Parar se
 
 - O `@mastra/e2b` 0.16.1 ainda cria uma segunda máquina quando a lista falha (o "twin machine" do
   #540): manter a guarda de hoje contra a gêmea, que não é o `killStale`, e dizer no relatório.
+- Passar `'replace'` em `agents/controller.ts` e `construtor/construtor.ts` exige mais que a linha da
+  chamada: declarar no relatório (L7).
 
 ## U2 Ferramentas em paralelo e a web do provedor
 
@@ -365,7 +398,7 @@ espera a morte). `npm run test -w apps/server -- machine/`.
   Seguir `@mastra/core@1.82.0` `dist/loop/types.d.ts:43-53` e `dist/agent-BP9OWM6D.js:15248-15270`.
 - **`web_search` e `web_fetch`.** `controller-kit/model.ts:1-40` (`toolsOf`, `SEARCH_PROVIDERS`).
   Seguir `mastracode/sdk/src/agents/tools.ts:135-148`; as fábricas em `@ai-sdk/anthropic@3.0.133`
-  `dist/index.js:1404-1552` (`webSearch_20250305`, `webFetch_20260209`) e `@ai-sdk/openai@3.0.130`
+  `dist/index.js:1490-1497` (`webSearch_20250305`) e `:1559-1612`, `:1829-1840` (`webFetch_20250910`; a de 20260209 pede o beta `code-execution-web-tools-2026-02-09`, `:1848`, e marca resultados de execução de código, `:6035-6052`: fica de fora) e `@ai-sdk/openai@3.0.130`
   `dist/index.js:2753-2754`.
 - **Troca de modelo.** `model-accounts/processors.ts:35`, `:211-219`.
 
@@ -392,7 +425,7 @@ espera a morte). `npm run test -w apps/server -- machine/`.
 
 1. `factories.ts:65`: `defaultOptions: { modelSettings: { timeout: MODEL_TIMEOUT }, toolCallConcurrency: { strategy: 'called' } }`.
 2. `model.ts`: Anthropic `anthropic.tools.webSearch_20250305({ userLocation: BR_LOCATION })` e
-   `anthropic.tools.webFetch_20260209({ citations: { enabled: true } })`; OpenAI
+   `anthropic.tools.webFetch_20250910({ citations: { enabled: true } })`; OpenAI
    `openai.tools.webSearch({ userLocation: BR_LOCATION })` e o `webFetchTool`; xAI o `webSearchTool`
    e o `webFetchTool`, como hoje.
 3. A prova paga do Google, autorizada pelo fundador: uma busca pelo Gemini via CLIProxy com o
@@ -400,7 +433,7 @@ espera a morte). `npm run test -w apps/server -- machine/`.
    `model.ts:8` sai. Não passou: fica como está e o firstmate leva ao fundador.
 4. A chamada paga do `web_fetch` do Anthropic pela assinatura Claude: anotar no relatório que
    respondeu e o preço lido na resposta.
-5. `processors.ts:217-219`: tirar `web_fetch` do provedor anterior, como já tira `web_search`.
+5. `processors.ts:217-219`: tirar `web_fetch` só quando o provedor anterior era o Anthropic; o `web_fetch` dos outros é o `webFetchTool` do Mastra, uma função, e fica.
 
 ### Como se prova
 
@@ -507,6 +540,9 @@ Critérios 11 a 14, lendo o pedido no modelo dublê (o mesmo caminho do diagnós
 
 ### Parar se
 
+- O provedor e o controlador entregam os mesmos quatro nomes `task_*` (`@mastra/core@1.82.0`
+  `dist/signals-CcTXkih_.js:38-52`; `controller-kit/factories.ts:36-45`); se o Mastra os duplicar ou
+  recusar, parar e relatar.
 - O sinal de estado das tarefas aparece na transcrição da pessoa (hoje a tela só mostra `signal` da
   pessoa, `apps/web/src/builder/conversation/messages.ts:106`).
 
@@ -564,30 +600,40 @@ modo) e a porta de acesso.
 ### As linhas da tabela
 
 - **Leitura tipada.** `builder/connectors/connector-tools.ts:100-230`; o Projeto já faz
-  (`builder/agents/tools.ts:101-119`, filtra o Zod aos campos abertos); `assistant/connector-access.ts`.
-  Seguir `supabase-mcp@5ab9a98` `packages/mcp-utils/src/server.ts:533`, `:581-583`.
+  (`builder/agents/tools.ts:101-125`: `openOf` filtra o Zod aos campos abertos, `readTool` chama a
+  porta); `assistant/connector-access.ts`. Seguir `supabase-mcp@5ab9a98`
+  `packages/mcp-utils/src/server.ts:533`, `:581-583`.
 - **Descoberta sob demanda.** A doc instalada `reference-processors-tool-search-processor.md:36-46`,
-  `:200-250`; `dist/agent-BP9OWM6D.js:43554-43950` (`processInputStep` devolve `tools`, não
-  `activeTools`, `:43943-43948`); o filtro do modo corta pelo nome
-  (`dist/agent-BP9OWM6D.js:1266`).
+  `:200-250`; `dist/agent-BP9OWM6D.js:43554-43603`: o catálogo é montado no construtor
+  (`buildToolCatalog(options.tools)`), então é estático; `includeResolvedTools` (`:43547-43553`)
+  esconderia as 28 ferramentas do núcleo, e não entra. `processInputStep` devolve `tools`, não
+  `activeTools` (`:43943-43948`); o filtro do modo corta pelo nome (`:1266`).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/connectors/` | Cria `typed-reads.ts`; muda `connector-tools.ts` (exporta o que os dois usam) | Assistente; o Builder continua com `connector_read` |
-| `apps/server/src/builder/assistant/` | Muda `assistant.ts` (`AVAILABLE_TOOLS`, processadores), `connector-access.ts`; cria `typed-reads.test.ts` | — |
+| `apps/server/src/builder/assistant/` | Muda `assistant.ts` (`AVAILABLE_TOOLS`, processadores), `connector-access.ts`, `assistant.test.ts` (o conjunto fechado cresce); cria `typed-reads.test.ts` | — |
 
 ### Os contratos que a unidade cria
 
-- `typedReadName(connector, operation): string` = `${connector}_${operation}`, dono `typed-reads.ts`;
-  `TYPED_READ_NAMES: readonly string[]` derivado do catálogo estático `CONNECTORS` na carga do
-  módulo, que entra em `AVAILABLE_TOOLS` com `search_tools` (o filtro do modo corta pelo nome).
-- `typedReads(deps, { scope, chosen, savedAt }): Record<string, Tool>`: uma por leitura que o papel
-  permite (`mayUseEach`), `inputSchema: z.object({ connection: <enum das conexões daquele conector>, ...openInputOf(operation).shape })`, `execute` pela mesma porta de `connector_read`, com o mesmo corte e o mesmo arquivo.
-- `new ToolSearchProcessor({ tools: <as leituras>, storage: 'context', search: { topK: 3, autoLoad: true }, filter })`
-  nos processadores de entrada do Assistente.
+- **O catálogo é estático, e o pedido decide pelo `filter`.** `TYPED_READS: Record<string, Tool>`,
+  uma ferramenta por leitura de cada conector do catálogo estático `CONNECTORS`, montado na carga do
+  módulo, dono `typed-reads.ts`. Nome `typedReadName(connector, operation)` =
+  `${connector}_${operation}`. `inputSchema: z.object({ connection: z.string(), ...openInputOf(operation).shape })`:
+  `connection` é o nome da ligação, não um `enum`, porque o catálogo não conhece as ligações de cada
+  conversa (e o CLIProxy do Gemini tira todo `enum`, `google/flat-unions.ts:122-127`). O `execute` lê
+  a conversa do `requestContext` (`scopeOf`, `chosenOf`, a mesma porta de `connector_read`, com o
+  mesmo corte, o mesmo arquivo e o mesmo contador) e confere a ligação contra as escolhidas
+  (`AMBIGUOUS_CONNECTION` e `NOT_GRANTED`, as recusas de hoje).
+- `new ToolSearchProcessor({ tools: TYPED_READS, storage: 'context', search: { topK: 3, autoLoad: true }, filter })`
+  nos processadores de entrada do Assistente; `filter({ toolName, requestContext })` deixa só as
+  leituras dos conectores das ligações escolhidas que o papel permite (`mayUseEach`), em toda fase.
+- `AVAILABLE_TOOLS` ganha `search_tools` e `Object.keys(TYPED_READS)`.
 - Apaga `connector_read` do Assistente (fica no Builder) e a lista de operações da descrição.
+- O arquivo tomado como modelo é `agents/tools.ts`: cumpre C21 (as recusas por `kind`), C23
+  (`ConnectionId` por parse) e C26 (`openOf`, um dono dos campos abertos).
 
 ### As skills e a leitura
 
@@ -595,9 +641,8 @@ modo) e a porta de acesso.
 
 ### A ordem do trabalho
 
-1. `typed-reads.ts` a partir do caminho do Projeto (`agents/tools.ts:101-119`). Regras: S36, C27.
-2. `assistant.ts`: as leituras saem das ferramentas e vão para o processador; `AVAILABLE_TOOLS`
-   ganha `search_tools` e `TYPED_READ_NAMES`.
+1. `typed-reads.ts` a partir de `agents/tools.ts:101-125`. Regras: S36, C23, C27.
+2. `assistant.ts`: as leituras saem das ferramentas por pedido e vão para o processador.
 3. Testes pela porta pública com o modelo dublê pedindo `search_tools`.
 
 ### Como se prova
@@ -607,6 +652,7 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 ### Parar se
 
 - Uma ferramenta carregada não chega ao pedido mesmo com o nome em `AVAILABLE_TOOLS`.
+- O `filter` não recebe o `requestContext` em alguma fase.
 - A observação dobra a busca e a ferramenta some no meio de um trabalho (o estudo marcou não
   verificado): relatar com o pedido capturado.
 
@@ -640,7 +686,18 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 - `getProfileMemory` (`GET /api/companies/{companyId}/assistant/profile-memory`, `access: 'session'`,
   sucesso `{ text: string | null }`), `setProfileMemory` (`PUT`, corpo `{ text: z.string().max(4000) }`,
   sucesso `{ text }`), `clearProfileMemory` (`DELETE`, 204). Falhas: `NOT_FOUND`, `SESSION_REQUIRED`,
-  `NOT_IN_ROLE` (sem `askAssistant`), `REQUEST_MALFORMED`, `DATABASE_UNAVAILABLE`. O `resourceId` sai
+  `NOT_IN_ROLE` (sem `askAssistant`), `REQUEST_MALFORMED`, `DATABASE_UNAVAILABLE`.
+- `updateWorkingMemory` e `getWorkingMemory` pedem `threadId` no tipo (`@mastra/memory@1.41.0`
+  `dist/index.d.ts:171`, `:235`); no escopo `resource` o Mastra não o lê (`dist/src-BncFunCW.js:40565-40577`).
+  A rota passa a conversa do Assistente mais recente da pessoa (`listThreads` pelo `resource`, uma);
+  sem nenhuma, `GET` devolve `null` e `PUT` e `DELETE` devolvem `NOT_FOUND`. O texto igual ao
+  `PROFILE_TEMPLATE` conta como vazio (`null`); `DELETE` grava o `PROFILE_TEMPLATE`.
+- O conjunto fechado de ferramentas do cartão anterior (o comentário de `assistant/memory.ts:7-9`, o
+  teste `assistant/assistant.test.ts:82-85`) cresce com `recall` e `updateWorkingMemory`; a U6 já o
+  cresceu com `search_tools` e as leituras, e a U9 o cresce com as `knowledge_*`.
+- O arquivo tomado como modelo das rotas é `hub/identity/nickname.ts` com
+  `packages/hub-api/src/nickname.ts`: cumpre C23 (`CompanyId`) e C26 (a constante `TAKEN`); C21 não
+  se aplica. O `resourceId` sai
   só da sessão (`resourceOf('assistant', { companyId, personId })`), nunca do pedido (C23).
 
 ### As skills e a leitura
@@ -695,6 +752,11 @@ Critérios 19 a 22. Falham hoje: não há `recall` nem memória de trabalho.
   Admissão: a própria pessoa por `readCompany`; outra pessoa pela permissão de `changeRole`. Falhas:
   `NOT_FOUND`, `NOT_IN_ROLE`, `REQUEST_MALFORMED`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE`.
 - `Speakers` ganha `jobTitle` e `department`, lidos no mesmo `speakersOf`.
+- A permissão no banco (D11): `GRANT UPDATE(job_title, department) ON TABLE auth.member TO hub_company`,
+  como o apelido (`database-grants.sql:192`); a própria pessoa grava pelo escopo da empresa, como hoje
+  toda rota de empresa. Vai num pull request só dela, com a palavra do fundador (decisão 2 da página),
+  antes da U8.
+- O arquivo tomado como modelo é `hub/identity/nickname.ts`: cumpre C23 e C26; C21 não se aplica.
 
 ### As skills e a leitura
 
@@ -702,7 +764,7 @@ Critérios 19 a 22. Falham hoje: não há `recall` nem memória de trabalho.
 
 ### A ordem do trabalho
 
-1. A migração e `database-grants.sql`. Regras: data D6, D11.
+1. A migração das colunas, depois do pull request da permissão (D11). Regras: data D6, D11.
 2. `member-profile.ts` e a rota.
 3. `speakersOf` e a linha `Person:`.
 4. As telas.
@@ -762,15 +824,25 @@ Critérios 23 a 25.
   }
   ```
 
-  `new Knowledge({ id: 'conexus-company', storage, scopes, tools: { read: true, write: true }, pinnedContext: true })`
-  no agente do Assistente; `scopes: ({ requestContext }) => [org:<companyId>, ...(maySaveMemory ? [writer:<companyId>] : [])]`,
-  da mesma `speakersFor`; sem a empresa, nenhum escopo (falha fechada, como `knowledge-scope.ts:35`).
+  `new Knowledge({ id: 'conexus-company', storage, scopes, tools: { read: true, write: true }, pinnedContext: { maxTokens: 1000 } })`
+  no agente do Assistente; `scopes: ({ scopes, requestContext }) => [...scopes, org:<companyId>, ...(maySaveMemory ? [writer:<companyId>] : [])]`
+  (a função troca os escopos que chegam, e os `resource:` e `thread:` precisam ficar:
+  `dist/agent/scopes.d.ts`; `mastracode/sdk/src/index.ts:1352-1359` espalha `...scopes`), da mesma
+  `speakersFor`; sem a empresa, nenhum escopo (falha fechada, como `knowledge-scope.ts:35`).
 - As rotas (`access: 'session'`): `listCompanyMemory` (`GET .../assistant/company-memory`,
   `readCompany`), `readCompanyMemoryPage` (`GET .../company-memory/pages/{path}`), `writeCompanyMemoryPage`
   (`PUT`, corpo `{ name, body }`, `manageCompanyMemory`), `removeCompanyMemoryPage` (`DELETE`,
   `manageCompanyMemory`; a página `instrucoes` não sai). Falhas: `NOT_FOUND`, `NOT_IN_ROLE`,
-  `REQUEST_MALFORMED` (instruções acima do teto de `pinnedContext.maxTokens`, estimado),
-  `COMPANY_MEMORY_CHANGED` (409, `KnowledgeConflictError`), `DATABASE_UNAVAILABLE`.
+  `REQUEST_MALFORMED` (instruções acima de 2.000 caracteres, `INSTRUCTIONS_MAX`, dono
+  `company-memory.ts`: meia página, cerca de 500 tokens, abaixo dos 1.000 de `pinnedContext.maxTokens`,
+  que não chegam a cortar), `COMPANY_MEMORY_CHANGED` (409, só no `DELETE`: o `removePage` concorrente
+  lança `KnowledgeConflictError`, `dist/knowledge/index.d.ts:89-92`), `DATABASE_UNAVAILABLE`. O `PUT`
+  não tem conferência de versão (`KnowledgeUpsertPageInput` não leva versão,
+  `dist/knowledge/host-writes.d.ts:8-26`): o último vence, e a tela relê depois de salvar.
+- O arquivo tomado como modelo das rotas é `hub/identity/nickname.ts` com `packages/hub-api/src/nickname.ts`:
+  cumpre C23 (`CompanyId`) e C26 (a constante `TAKEN`); C21 não se aplica (sem ciclo de vida). O do
+  `Knowledge` é o Mastra Code (`mastracode/sdk/src/index.ts:865-888`, `:1346-1359`); a tela segue a
+  vista do Factory (`factory/src/routes/knowledge.ts:117-161`), que é Hono e não modelo de código.
 - A leitura pela tela usa `readKnowledgePage` e `listKnowledgeTreeChildren` com
   `knowledge.readScopeFor([org:<companyId>])`, como o Factory (`knowledge.ts:152`).
 
