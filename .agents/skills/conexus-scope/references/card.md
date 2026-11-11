@@ -76,7 +76,8 @@ módulos, concorrência ou algoritmo sutil).
 ### As linhas da tabela
 
 <cada linha da tabela de referência desta unidade: o que ler na base (arquivo, símbolo, linhas), as
-linhas da referência a copiar ou adaptar, e a API nativa com as opções e o padrão>
+linhas da referência que a unidade segue (`arquivo:linha`; no Mastra, o Mastra Code e o
+Factory), e a API nativa com as opções e o padrão>
 
 ### O raio da mudança
 
@@ -102,7 +103,8 @@ constrói não lê o estudo):
 
 ### As skills e a leitura
 
-<as linhas de `docs/reference/stack.md` das pastas da unidade: cada skill, e o que ler primeiro>
+<as linhas de `docs/reference/stack.md` das pastas da unidade: as skills que o builder carrega e o
+que ler primeiro>
 
 ### A ordem do trabalho
 
@@ -121,8 +123,8 @@ mostra, e o teste que falha hoje>
 
 ## What makes a card good
 
-- Someone who did not write the code can check every criterion from outside, and each says what is
-  refused as well as what works.
+- Someone who did not write the code checks every criterion outside, and each says what is
+  refused and what works.
 - Every folder the build will touch is in a unit's blast radius, with its importers, and so is the
   owner of each contract the unit creates (the failure table, the config, its test door). A file
   outside them stops the build only as [delivery L7](../../../../docs/guides/delivery.md) says. A
@@ -168,5 +170,5 @@ The reader of step <n> answers each one with the card's line.
    shared fact its owner, every outside input its schema, and the model file its verdict on C21,
    C23 and C26?
 8. Opened at the installed version, does every cell of the reference table, and every reference
-   line a unit cites, say what the card claims? Has every row its unit or a reason to stay out, and
-   every remendo row its proof and the founder's word?
+   line a unit cites, say what the card claims? Has every row its unit or a reason to stay out, every
+   built row its trace, and every remendo row its proof and the founder's word?
