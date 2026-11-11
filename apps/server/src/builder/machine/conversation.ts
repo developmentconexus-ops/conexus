@@ -85,6 +85,8 @@ type Deps = ConversationMachine & {
    * undefined outside a conversation the user serves, which gets no machine.
    */
   marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
+  /** The media types `read_file` hands the model as media; absent, Mastra's default (a PDF included). */
+  readMedia?: readonly string[]
 }
 
 type Session = {
@@ -293,6 +295,9 @@ class Machines implements ConversationMachines {
             },
           },
           [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
+          ...(this.deps.readMedia === undefined
+            ? {}
+            : { [WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: { mediaTypes: [...this.deps.readMedia] } }),
         },
       })
       return session.workspace

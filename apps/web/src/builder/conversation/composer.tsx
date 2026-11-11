@@ -22,7 +22,7 @@ import { Label } from '../../ui/label.tsx'
 import { SpeechInput } from '../../ui/speech-input.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Outgoing } from './attachments.ts'
-import { ACCEPT, useAttachments } from './attachments.ts'
+import { acceptOf, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
 import { chipOf } from './messages.ts'
 import { FileChip } from './person-turn.tsx'
@@ -122,12 +122,13 @@ export const COMPOSER_SOFT = 'shrink-0 rounded-full bg-surface-3 hover:bg-accent
 
 /** The browser's file picker, limited to the types the Builder reads; **+** or the menu behind it opens it. */
 function FilePicker(props: { add: AddFiles; input: RefObject<HTMLInputElement | null> }) {
+  const { files } = useRoom()
   return (
     <input
       ref={props.input}
       type="file"
       multiple
-      accept={ACCEPT}
+      accept={acceptOf(files)}
       hidden
       onChange={(event) => {
         const picked = Array.from(event.currentTarget.files ?? [])
@@ -259,7 +260,8 @@ export function Composer(props: {
 }) {
   const { draft } = props
   const phone = useIsMobile()
-  const attachments = useAttachments(draft)
+  const { files } = useRoom()
+  const attachments = useAttachments(draft, files)
   const empty = draft.text.trim() === '' && attachments.files.length === 0
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 

@@ -52,3 +52,29 @@ test('o pedido que o Assistente entrega traz a origem igual ao vivo e relido; a 
   expect(originsIn(handoff.read)).toEqual(['assistant'])
   expect(originsIn(recordedRun('files').read)).toEqual([null, null])
 })
+
+const FILES_LIST = [
+  'Arquivos que a pessoa mandou ao Assistente:',
+  '- politica-comercial.pdf (PDF, 1,5 MB)',
+  '- precos.xlsx (planilha, 48 KB)',
+  'Eles ficam na conversa do Assistente; este Projeto não os tem. O que o briefing diz deles é o que o Assistente leu.',
+].join('\n')
+
+test('a lista da passagem aparece como veio', () => {
+  const { read } = recordedRun('handoff')
+  const withList = read.map((each) =>
+    messageOf(each)?.origin === 'assistant'
+      ? {
+          ...each,
+          content: {
+            ...each.content,
+            parts: [...each.content.parts, { type: 'text' as const, text: FILES_LIST }],
+          },
+        }
+      : each,
+  )
+  const [handed] = sentIn(withList)
+  expect(handed?.text.endsWith(FILES_LIST)).toBe(true)
+  expect(handed?.files).toEqual([])
+  expect(sentIn(read)[0]?.text.includes('Arquivos que a pessoa')).toBe(false)
+})
