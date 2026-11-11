@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { ListRead } from './list.ts'
 
 /** What an operation does to the provider's data (founder, M1): a grant's ceiling and an agent's approval read it. */
 export const OPERATION_CLASSES = ['read', 'write', 'destructive'] as const
@@ -136,6 +135,28 @@ export type AccountOf = Readonly<{ ref: AccountRef; label: string }>
 
 /** The connection's account as the operation sees it: `ref` is parsed again when the Hub opens the connection, and null for an account of kind `none`. */
 export type Account = Readonly<{ ref: AccountRef | null }>
+
+/** How a list read pages: by an offset, by a cursor the provider returns, or in one answer. */
+export type ListPaging =
+  | Readonly<{ kind: 'OFFSET'; offset: string; limit: string; max: number; ceiling: number | null }>
+  | Readonly<{
+      kind: 'CURSOR'
+      cursor: string
+      limit: string
+      max: number
+      start: Readonly<Record<string, string | number | boolean>>
+      ttlMs: number
+    }>
+  | Readonly<{ kind: 'NONE' }>
+
+/**
+ * What a list read declares (Airbyte's paginator and cursor field): the paging, and the input that asks
+ * only the rows changed since an instant, with the row's field that shows the change.
+ */
+export type ListRead = Readonly<{
+  paging: ListPaging
+  changed: Readonly<{ input: string; field: string }> | null
+}>
 
 export type Operation<I, O, C extends OperationClass = OperationClass> = Readonly<{
   id: OperationId

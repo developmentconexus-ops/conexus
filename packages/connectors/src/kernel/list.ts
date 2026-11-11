@@ -1,30 +1,11 @@
 import { z } from 'zod'
 import type { CopyColumnTypeV2, CopyDefinitionV2, CopyPosition } from './copy.ts'
 import { CANONICAL_CELL } from './copy.ts'
+import type { ListPaging, ListRead } from './operation.ts'
 import { listInputNames } from './operation.ts'
 import type { Rows } from './rows.ts'
 
-/** How a list read pages: by an offset, by a cursor the provider returns, or in one answer. */
-export type ListPaging =
-  | Readonly<{ kind: 'OFFSET'; offset: string; limit: string; max: number; ceiling: number | null }>
-  | Readonly<{
-      kind: 'CURSOR'
-      cursor: string
-      limit: string
-      max: number
-      start: Readonly<Record<string, string | number | boolean>>
-      ttlMs: number
-    }>
-  | Readonly<{ kind: 'NONE' }>
-
-/**
- * What a list read declares (Airbyte's paginator and cursor field): the paging, and the input that asks
- * only the rows changed since an instant, with the row's field that shows the change.
- */
-export type ListRead = Readonly<{
-  paging: ListPaging
-  changed: Readonly<{ input: string; field: string }> | null
-}>
+export type { ListPaging, ListRead }
 
 /**
  * The input of one page: the definition's fixed input, then the paging (an offset's place and size, a
