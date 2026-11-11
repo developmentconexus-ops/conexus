@@ -120,7 +120,8 @@ function titleOf(toolName: string, room: Room) {
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   const room = useRoom()
-  const detail = presentTool(tool, 'done', room).detail
+  const presented = presentTool(tool, 'done', room)
+  const { detail } = presented
   const title = titleOf(tool.toolName, room)
   switch (body) {
     case 'command': {
@@ -177,7 +178,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
     case 'program':
       return <Program tool={tool} title={title} />
     default:
-      return <Generic tool={tool} title={title} />
+      return <Generic tool={tool} title={title} said={presented.beside ? detail : undefined} />
   }
 }
 
@@ -265,7 +266,7 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   if (spec?.refusal?.(tool.result) === 'DETAILED')
     return (
       <div className="flex min-w-0 flex-col gap-xs pt-xs">
-        <Generic tool={tool} title={spec.failed} />
+        <Generic tool={tool} title={spec.failed} said={presentTool(tool, status, room).detail} />
       </div>
     )
   const body = spec?.body ?? 'generic'
@@ -311,9 +312,8 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
 
 /**
  * The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run.
- * Beside a detail the line stays one line, as Mastra's activity headline: the sentence up to 55%,
- * the detail cut. The detail does not shrink below its own width up to 60%, so a count stays whole
- * and the sentence yields; the open row has both whole.
+ * One line, as Mastra Studio's: the sentence never cut (step 12.1), the detail cut beside it
+ * (founder, 2026-11-02); the open row says the detail whole.
  */
 function ToolLine({
   presented,
@@ -327,16 +327,22 @@ function ToolLine({
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = presented.beside ? (
-    <TraceDescription className="max-w-[60%] truncate">{presented.detail}</TraceDescription>
+    <TraceDescription className="min-w-0 flex-1 shrink truncate text-right">
+      {presented.detail}
+    </TraceDescription>
   ) : status === 'running' ? (
     <Since at={startedAt} />
   ) : null
   return (
-    <TraceLine status={lineStatus} className={cn(failed && 'items-start')}>
-      <TraceIcon className={failed ? 'mt-1' : undefined}>
+    <TraceLine status={lineStatus} className={cn(failed && !presented.beside && 'items-start')}>
+      <TraceIcon className={failed && !presented.beside ? 'mt-1' : undefined}>
         <presented.icon />
       </TraceIcon>
-      <TraceTitle className={presented.beside ? 'max-w-[55%]' : cn(failed && 'whitespace-normal')}>
+      <TraceTitle
+        className={
+          presented.beside ? 'shrink-0 whitespace-nowrap' : cn(failed && 'whitespace-normal')
+        }
+      >
         {presented.sentence}
       </TraceTitle>
       {side}
@@ -354,13 +360,8 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
   // Only a command that is still saying its output shows it as it comes; the person's click rules after.
   const [chosen, setChosen] = useState<boolean>()
   const open = chosen ?? (status === 'running' && tool.output !== undefined)
-  const line = (
-    <ToolLine
-      presented={presentTool(tool, status, room)}
-      status={status}
-      startedAt={tool.startedAt}
-    />
-  )
+  const presented = presentTool(tool, status, room)
+  const line = <ToolLine presented={presented} status={status} startedAt={tool.startedAt} />
 
   const special = specialRow(tool, status, room)
   if (special !== undefined) return special
