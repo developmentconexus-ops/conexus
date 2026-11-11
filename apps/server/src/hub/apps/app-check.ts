@@ -50,7 +50,8 @@ function columnsOf(statement: SqlStatement): SqlStatement {
  * One read of the Projeto's app checked on its real data (step Capacidade 3, U1): the count and the
  * columns in one read-only transaction as the read login, with the values bound in both statements.
  * It goes the way of `readAppData`: the login, `ensureReadLogin` when the app has none, the deadline.
- * The log carries ids, the kind of answer and the time (code C50, security S41).
+ * The log carries ids, the kind of answer, the time and, as `readAppData` does, why a read failed
+ * or was refused (code C50, security S41).
  */
 export async function checkAppRead(
   deps: AppDatabaseDeps,
@@ -65,8 +66,25 @@ export async function checkAppRead(
   })
   const ms = Math.round(performance.now() - started)
   const checked = checkedOf(answer, ms)
-  deps.log.info({ companyId, projectId, answer: checked.kind, ms }, 'APP_DATA_CHECKED')
+  deps.log.info(
+    { companyId, projectId, answer: checked.kind, ms, ...whyOf(answer) },
+    'APP_DATA_CHECKED',
+  )
   return checked
+}
+
+/** Why a read did not come back with rows, as `readAppData` logs it: the SQLSTATE of a refusal, the code and cause of a failure. */
+function whyOf(answer: Awaited<ReturnType<typeof askApp>>): Record<string, string> {
+  switch (answer.kind) {
+    case 'ROWS':
+      return {}
+    case 'REFUSED':
+      return { sqlstate: answer.sqlstate }
+    case 'FAILED':
+      return { code: answer.code, cause: answer.cause ?? 'none' }
+    default:
+      return answer satisfies never
+  }
 }
 
 function checkedOf(answer: Awaited<ReturnType<typeof askApp>>, ms: number): AppCheck {

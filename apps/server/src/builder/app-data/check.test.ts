@@ -161,15 +161,33 @@ test('o registro não leva dado', async (t) => {
   )
   const lines = on.hub.lines.filter((line) => line.message === 'APP_DATA_CHECKED')
   assert.equal(lines.length, 2)
-  for (const { fields } of lines) {
-    assert.deepEqual(Object.keys(fields).sort(), ['answer', 'companyId', 'ms', 'projectId'])
-  }
+  const [counted, refused] = lines
+  assert.deepEqual(Object.keys(counted?.fields ?? {}).sort(), [
+    ...['answer', 'companyId', 'ms', 'projectId'],
+  ])
+  assert.deepEqual(Object.keys(refused?.fields ?? {}).sort(), [
+    ...['answer', 'companyId', 'ms', 'projectId', 'sqlstate'],
+  ])
   assert.deepEqual(
     lines.map(({ fields }) => fields.answer),
     ['COUNTED', 'REFUSED'],
   )
   const text = JSON.stringify(on.hub.lines)
   assert.ok(!text.includes(CELL) && !text.includes('nao_existe') && !text.includes('select a'))
+})
+
+test('o registro diz por que a conferência recusou ou falhou', async (t) => {
+  const on = await checking(t)
+  await on.check('select * from nao_existe')
+  await on.check('select pg_sleep(6)')
+  const lines = on.hub.lines.filter((line) => line.message === 'APP_DATA_CHECKED')
+  assert.deepEqual(
+    lines.map(({ fields }) => [fields.answer, fields.sqlstate, fields.code, fields.cause]),
+    [
+      ['REFUSED', '42P01', undefined, undefined],
+      ['FAILED', undefined, 'APP_DATA_TIMEOUT', '57014'],
+    ],
+  )
 })
 
 test('conferir: o banco da empresa fora é APP_DATA_UNAVAILABLE', async (t) => {
