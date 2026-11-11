@@ -129,13 +129,15 @@ function imageOf(svg: string): string {
  * A closed ```mermaid block of a settled answer: its code (`children`) until it is drawn, then the
  * image; the code and one line when it cannot be drawn.
  */
-export function Diagram({ code, children }: { code: string; children: ReactNode }): ReactNode {
-  const scheme = useScheme()
+export function Diagram(props: { code: string; children: ReactNode }): ReactNode {
+  // A new scheme mounts the block again, which draws it with the other colours.
+  return <Drawing key={useScheme()} {...props} />
+}
+
+function Drawing({ code, children }: { code: string; children: ReactNode }): ReactNode {
   const [drawn, setDrawn] = useState<Drawn>({ kind: 'DRAWING' })
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new scheme draws the block again
   useEffect(() => {
     let current = true
-    setDrawn({ kind: 'DRAWING' })
     void frame()
       .draw(code)
       .then((svg) => {
@@ -145,7 +147,7 @@ export function Diagram({ code, children }: { code: string; children: ReactNode 
     return () => {
       current = false
     }
-  }, [code, scheme])
+  }, [code])
   switch (drawn.kind) {
     case 'DRAWING':
       return children
