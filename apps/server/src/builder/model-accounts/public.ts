@@ -24,6 +24,7 @@ export {
   accountErrorProcessors,
   accountModel,
   accountPick,
+  emit,
   MAX_PROCESSOR_RETRIES,
   stabilityProcessors,
 } from './processors.ts'
