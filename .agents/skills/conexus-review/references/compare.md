@@ -5,6 +5,7 @@ Read in step 5, for every built piece.
 - Open the reference's own code at the trace (`file:line` at the shelf commit the card names), never
   a summary of it. Compare the logic: what the reference does that ours lacks (an empty page ending
   a walk, a retry, a limit), and what ours does that no reference does.
+- A built piece without a trace, or with a relay-only one, is a Bloqueia.
 - A divergence the card records and justifies holds. One it does not is a Bloqueia.
 - Parallel logic: the piece redoes, under another shape, what our own code, an installed library or
   the reference's mechanism already does. Extends "isso já existe noutro sujeito?"
