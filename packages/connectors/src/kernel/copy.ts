@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Operation } from './operation.ts'
+import { OperationId } from './operation.ts'
 
 /** The rows one page of a copy reads; the Hub's run asks for no more (decision 0063: a page stays far under the executor's cap). */
 export const PAGE_ROWS = 500
@@ -16,7 +17,40 @@ const CopyColumnName = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,59}$/)
 export const CopyColumnType = z.enum(['text', 'numeric', 'bigint', 'date', 'timestamp', 'boolean'])
 export type CopyColumnType = z.infer<typeof CopyColumnType>
 
-const DATED: ReadonlySet<CopyColumnType> = new Set(['date', 'timestamp'])
+const DATED: ReadonlySet<CopyColumnTypeV2> = new Set(['date', 'timestamp'])
+
+/** The type of each column by name; a repeated name is an issue of the definition. */
+function typesOf<T extends string>(
+  columns: readonly Readonly<{ name: string; type: T }>[],
+  context: z.RefinementCtx,
+): ReadonlyMap<string, T> {
+  const types = new Map(columns.map(({ name, type }) => [name, type]))
+  if (types.size !== columns.length)
+    context.addIssue({ code: 'custom', path: ['columns'], message: 'A column is repeated.' })
+  return types
+}
+
+/** A repeated key column is an issue of the definition. */
+function distinctKey(key: readonly string[], context: z.RefinementCtx): void {
+  if (new Set(key).size !== key.length)
+    context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
+}
+
+/** The column a `changedSince` or a `window` names is a date or timestamp column of the columns. */
+function datedColumn(
+  field: string,
+  column: string | undefined,
+  types: ReadonlyMap<string, CopyColumnTypeV2>,
+  context: z.RefinementCtx,
+): void {
+  const type = column === undefined ? undefined : types.get(column)
+  if (column !== undefined && (type === undefined || !DATED.has(type)))
+    context.addIssue({
+      code: 'custom',
+      path: [field, 'column'],
+      message: 'The column is a date or timestamp column of the columns.',
+    })
+}
 
 /** What a copy reads, the company's data from the moment it is turned on (version 1, one kind of source). */
 export const CopyDefinition = z
@@ -33,11 +67,8 @@ export const CopyDefinition = z
     window: z.object({ column: CopyColumnName, days: z.int().min(1).max(90) }).optional(),
   })
   .superRefine((definition, context) => {
-    const types = new Map(definition.columns.map(({ name, type }) => [name, type]))
-    if (types.size !== definition.columns.length)
-      context.addIssue({ code: 'custom', path: ['columns'], message: 'A column is repeated.' })
-    if (new Set(definition.key).size !== definition.key.length)
-      context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
+    const types = typesOf(definition.columns, context)
+    distinctKey(definition.key, context)
     definition.key.forEach((name, at) => {
       if (types.get(name) !== 'bigint')
         context.addIssue({
@@ -46,18 +77,98 @@ export const CopyDefinition = z
           message: 'A key column is a bigint column of the columns.',
         })
     })
-    for (const field of ['changedSince', 'window'] as const) {
-      const column = definition[field]?.column
-      const type = column === undefined ? undefined : types.get(column)
-      if (column !== undefined && (type === undefined || !DATED.has(type)))
-        context.addIssue({
-          code: 'custom',
-          path: [field, 'column'],
-          message: 'The column is a date or timestamp column of the columns.',
-        })
-    }
+    for (const field of ['changedSince', 'window'] as const)
+      datedColumn(field, definition[field]?.column, types, context)
   })
 export type CopyDefinition = z.infer<typeof CopyDefinition>
+
+/** Version 2 adds `json`, the cell of a nested value as its JSON text. */
+export const CopyColumnTypeV2 = z.enum([...CopyColumnType.options, 'json'])
+export type CopyColumnTypeV2 = z.infer<typeof CopyColumnTypeV2>
+
+/** An instant with its offset, the one owner: a timestamp cell of version 2 and the date-time a source's filter takes. */
+export const Instant = z.iso.datetime({ offset: true })
+
+/**
+ * The canonical text of each type's cell, the one owner: `list.ts` and Sankhya's copy read convert to it,
+ * each tested against it. A timestamp of version 1 has neither fraction nor offset; version 2 keeps both.
+ */
+export const CANONICAL_CELL: Readonly<Record<CopyColumnTypeV2, RegExp>> = {
+  text: /^[\s\S]*$/,
+  numeric: /^-?\d+(\.\d+)?$/,
+  bigint: /^-?\d+$/,
+  date: /^\d{4}-\d{2}-\d{2}$/,
+  timestamp: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/,
+  boolean: /^(true|false)$/,
+  json: /^[\s\S]*$/,
+}
+
+const KEYED: ReadonlySet<CopyColumnTypeV2> = new Set(['bigint', 'text'])
+const Dotted = z
+  .string()
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/)
+  .max(200)
+const Scalar = z.union([z.string().max(200), z.number(), z.boolean()])
+
+/** What a copy reads from an operation of the connector (version 2): the column's `path` is where its value sits in a row of the read. No `window`: a key it does not know is refused. */
+export const CopyDefinitionV2 = z
+  .strictObject({
+    version: z.literal(2),
+    source: z.object({
+      kind: z.literal('OPERATION'),
+      operation: OperationId,
+      input: z.record(z.string(), Scalar).default({}),
+    }),
+    description: z.string().trim().min(1).max(500),
+    columns: z
+      .array(
+        z.object({
+          name: CopyColumnName,
+          type: CopyColumnTypeV2,
+          path: Dotted,
+          description: z.string().trim().max(200).optional(),
+        }),
+      )
+      .min(1)
+      .max(100),
+    key: z.array(CopyColumnName).min(1).max(4), // bigint or text columns
+    changedSince: z.object({ column: CopyColumnName }).nullable(), // none: every pass reads the whole source
+  })
+  .superRefine((definition, context) => {
+    const types = typesOf(definition.columns, context)
+    definition.columns.forEach(({ name }, at) => {
+      if (name.startsWith('_'))
+        context.addIssue({
+          code: 'custom',
+          path: ['columns', at, 'name'],
+          message: 'A column name does not start with "_": the engine owns those.',
+        })
+    })
+    distinctKey(definition.key, context)
+    definition.key.forEach((name, at) => {
+      const type = types.get(name)
+      if (type === undefined || !KEYED.has(type))
+        context.addIssue({
+          code: 'custom',
+          path: ['key', at],
+          message: 'A key column is a bigint or text column of the columns.',
+        })
+    })
+    datedColumn('changedSince', definition.changedSince?.column, types, context)
+  })
+export type CopyDefinitionV2 = z.infer<typeof CopyDefinitionV2>
+
+/** How far a pass has read, as the source's own paging gives it: after a key (version 1), at an offset, or at a cursor and the instant it was given. */
+export const CopyPosition = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('KEY'), after: z.array(z.int()) }),
+  z.object({ kind: z.literal('OFFSET'), offset: z.int().min(0) }),
+  z.object({
+    kind: z.literal('CURSOR'),
+    cursor: z.string().min(1).max(4000),
+    at: z.iso.datetime(),
+  }),
+])
+export type CopyPosition = z.infer<typeof CopyPosition>
 
 /** A starting point a connector offers; turning a copy on copies `definition` into the company's row. */
 export type CopyModel = Readonly<{ id: CopyName; label: string; definition: CopyDefinition }>
@@ -67,7 +178,7 @@ export const PageInput = z
   .object({
     definition: CopyDefinition,
     after: z.array(z.int()).nullable(), // one per key column
-    since: z.iso.date(), // the watermark less one day, or 1900-01-01 on the first pass
+    since: z.iso.date().nullable(), // the watermark less one day; null on the first pass, which reads all (#940)
     windowFrom: z.iso.date().nullable(), // the pass's start less the window's days
     limit: z.int().min(1).max(PAGE_ROWS),
   })

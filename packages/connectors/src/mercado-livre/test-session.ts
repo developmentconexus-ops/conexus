@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
-import { z } from 'zod'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
+import { answerOf } from '../kernel/conformance-session.ts'
 import { inProbeOrder } from '../kernel/definition.ts'
 import type { GrantAnswered } from '../kernel/oauth.ts'
 import { authorizeUrl, codeRequest, readGrant } from '../kernel/oauth.ts'
@@ -17,14 +17,6 @@ import { mercadoLivre } from './definition.ts'
 import type { mercadoLivreFake } from './fake.ts'
 
 type Fake = ReturnType<typeof mercadoLivreFake>
-
-export async function answerOf(response: Response): Promise<ProviderAnswer> {
-  const text = await response.text()
-  return {
-    status: response.status,
-    body: text === '' ? undefined : z.unknown().parse(JSON.parse(text)),
-  }
-}
 
 /** The token endpoint's answer to a request the kit built, read by the kit. */
 export async function grant(

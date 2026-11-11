@@ -99,13 +99,21 @@ function kindOf(value: unknown): string {
   return value === null ? 'null' : typeof value
 }
 
+/** The value at a path of a body: dotted text, or the segments of an issue's path; own properties only, a numeric segment indexes an array. */
+export function valueAt(body: unknown, path: string | readonly PropertyKey[]): unknown {
+  return (typeof path === 'string' ? path.split('.') : path).reduce<unknown>(
+    (at, key) =>
+      typeof at === 'object' && at !== null && Object.hasOwn(at, key)
+        ? Reflect.get(at, key)
+        : undefined,
+    body,
+  )
+}
+
 /** The Zod issues of a body that did not parse, as an Unread: the type found at each path, never what it held. */
 export function shapeOf(error: z.ZodError, body: unknown): Unread {
   const issues = error.issues.slice(0, 3).map((issue) => {
-    const found = issue.path.reduce<unknown>(
-      (at, key) => (typeof at === 'object' && at !== null ? Reflect.get(at, key) : undefined),
-      body,
-    )
+    const found = valueAt(body, issue.path)
     const expected =
       issue.code === 'invalid_type'
         ? issue.expected
@@ -136,6 +144,28 @@ export type AccountOf = Readonly<{ ref: AccountRef; label: string }>
 /** The connection's account as the operation sees it: `ref` is parsed again when the Hub opens the connection, and null for an account of kind `none`. */
 export type Account = Readonly<{ ref: AccountRef | null }>
 
+/** How a list read pages: by an offset, by a cursor the provider returns, or in one answer. */
+export type ListPaging =
+  | Readonly<{ kind: 'OFFSET'; offset: string; limit: string; max: number; ceiling: number | null }>
+  | Readonly<{
+      kind: 'CURSOR'
+      cursor: string
+      limit: string
+      max: number
+      start: Readonly<Record<string, string | number | boolean>>
+      ttlMs: number
+    }>
+  | Readonly<{ kind: 'NONE' }>
+
+/**
+ * What a list read declares (Airbyte's paginator and cursor field): the paging, and the input that asks
+ * only the rows changed since an instant, with the row's field that shows the change.
+ */
+export type ListRead = Readonly<{
+  paging: ListPaging
+  changed: Readonly<{ input: string; field: string }> | null
+}>
+
 export type Operation<I, O, C extends OperationClass = OperationClass> = Readonly<{
   id: OperationId
   class: C // required, no default
@@ -150,6 +180,8 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   from: readonly OperationId[]
   // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
   fixed?: readonly string[]
+  // A read that lists rows says how it pages and what it asks to read only what changed; the copy engine reads it (class `read` only).
+  list?: ListRead
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
@@ -183,12 +215,38 @@ export function defineOperation(
   operation: Definition<unknown, unknown, OperationClass> &
     Partial<WriteDeclarations<unknown, unknown>>,
 ) {
+  assertList(operation)
   return Object.freeze({
     ...operation,
     id: OperationId.parse(operation.id),
     subject: Subject.parse(operation.subject),
     from: Object.freeze(z.array(OperationId).parse(operation.from ?? [])),
   })
+}
+
+/** The input names a declaration points at: each must be a key of the operation's `z.object` input, and a fixed input never names one. */
+export function listInputNames(list: ListRead): readonly string[] {
+  const { paging, changed } = list
+  const paged =
+    paging.kind === 'OFFSET'
+      ? [paging.offset, paging.limit]
+      : paging.kind === 'CURSOR'
+        ? [paging.cursor, paging.limit, ...Object.keys(paging.start)]
+        : []
+  return [...paged, ...(changed === null ? [] : [changed.input])]
+}
+
+/** `list` is a read's, and every input name it points at is a key of the operation's `z.object` input. */
+function assertList(
+  operation: Pick<Definition<unknown, unknown, OperationClass>, 'id' | 'class' | 'input' | 'list'>,
+): void {
+  if (operation.list === undefined) return
+  if (operation.class !== 'read') throw new Error(`List on ${operation.id}, which is not a read`)
+  if (!(operation.input instanceof z.ZodObject))
+    throw new Error(`List on ${operation.id}, whose input is not an object`)
+  for (const name of listInputNames(operation.list))
+    if (!(name in operation.input.shape))
+      throw new Error(`List of ${operation.id} names ${name}, which its input lacks`)
 }
 
 /** The read: the path with its query, a key left undefined is not sent; `headers` are fixed, public ones. */

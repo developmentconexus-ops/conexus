@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises'
 import { z } from 'zod'
-import type { CredentialFake } from '../kernel/conformance.ts'
+import type { CredentialFake } from '../kernel/conformance-session.ts'
 import { serveOnLoopback } from '../kernel/loopback.ts'
 import {
   CREDENTIAL,

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { CopyDefinition, CopyPage, PageInput } from '../kernel/copy.ts'
-import { PAGE_ROWS } from '../kernel/copy.ts'
+import { CANONICAL_CELL, PAGE_ROWS } from '../kernel/copy.ts'
 import type { Answered } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
@@ -248,15 +248,6 @@ test('o filtro de leitura', async () => {
   assert.equal(built, 0, 'nenhum pedido sai')
 })
 
-const CANONICAL: Readonly<Record<CopyDefinition['columns'][number]['type'], RegExp>> = {
-  text: /^[\s\S]*$/,
-  numeric: /^-?\d+(\.\d+)?$/,
-  bigint: /^-?\d+$/,
-  date: /^\d{4}-\d{2}-\d{2}$/,
-  timestamp: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
-  boolean: /^(true|false)$/,
-}
-
 test('os cinco modelos', async () => {
   await withDouble(async (read) => {
     assert.equal(sankhyaCopyModels.length, 5)
@@ -267,7 +258,7 @@ test('os cinco modelos', async () => {
         assert.equal(row.length, definition.columns.length, id)
         definition.columns.forEach(({ name, type }, at) => {
           const cell = row[at]
-          if (cell !== null) assert.match(cell ?? '', CANONICAL[type], `${id}.${name}`)
+          if (cell !== null) assert.match(cell ?? '', CANONICAL_CELL[type], `${id}.${name}`)
         })
       }
       assert.ok(
@@ -277,5 +268,25 @@ test('os cinco modelos', async () => {
         `${id}: a alteração vem`,
       )
     }
+  })
+})
+
+test('a primeira passada lê tudo', async () => {
+  await withDouble(async (read) => {
+    const vendas = model('vendas')
+    const first = { definition: vendas, after: null, since: null, windowFrom: '2026-10-01' }
+    const statement = pageStatement({ ...first, limit: PAGE_ROWS })
+    assert.doesNotMatch(statement, /TO_DATE/, 'sem marca, nenhum filtro de data nem de janela')
+    assert.ok(isOneReadStatement(statement))
+    assert.deepEqual(
+      nunotas(pageOf(await read(first))),
+      PADARIA_SOL_MATRIZ.notas.map((n) => n.nunota),
+      'a fonte inteira vem',
+    )
+    assert.match(
+      pageStatement({ ...first, since: '2026-10-15', limit: PAGE_ROWS }),
+      /Q\.DTALTER >= TO_DATE\('2026-10-15'/,
+      'com marca, o filtro de hoje',
+    )
   })
 })

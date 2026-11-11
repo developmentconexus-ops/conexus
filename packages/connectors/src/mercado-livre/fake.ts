@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { OAuthFake } from '../kernel/conformance.ts'
+import type { OAuthFake } from '../kernel/conformance-session.ts'
 import { serveOnLoopback } from '../kernel/loopback.ts'
 import type { Route } from './fake-data.ts'
 import { APP, REDIRECT_URI as DEFAULT_REDIRECT_URI, me, SELLER } from './fake-data.ts'

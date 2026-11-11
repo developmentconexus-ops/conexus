@@ -13,10 +13,13 @@ export function listOf<T extends z.ZodType>(item: T) {
  * What every ready read gives: the rows as the provider sent them, and whether another page follows
  * (null: the route does not say). `parcial` is there only when the provider said the answer lacks
  * fields it could not fill (Mercado Livre's 206): the rows are what it sent, some fields are missing.
+ * `seguinte` is the cursor of the next page when the route returns one, `total` the count it reports.
  */
 export const Rows = z.object({
   linhas: z.array(z.record(z.string(), z.unknown())),
   temMais: z.boolean().nullable(),
+  seguinte: z.string().min(1).max(4000).optional(),
+  total: z.int().min(0).optional(),
   parcial: z.literal(true).optional(),
 })
 export type Rows = z.infer<typeof Rows>

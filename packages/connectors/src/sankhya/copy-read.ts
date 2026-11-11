@@ -32,9 +32,9 @@ function dated(day: string): string {
   return `TO_DATE('${day}', 'YYYY-MM-DD')`
 }
 
-/** The dates of the pass: changed since the watermark, or inside the window; none when the source says no change date. */
+/** The dates of the pass: changed since the watermark, or inside the window; none when the source says no change date or the pass has no watermark yet (it reads all, so a row with no date comes too). */
 function dates({ definition, since, windowFrom }: PageInput): string | undefined {
-  if (definition.changedSince === null) return undefined
+  if (definition.changedSince === null || since === null) return undefined
   const changed = `${named(definition.changedSince.column)} >= ${dated(since)}`
   if (definition.window === undefined || windowFrom === null) return changed
   return `(${changed} OR ${named(definition.window.column)} >= ${dated(windowFrom)})`

@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { get } from '../../kernel/operation.ts'
+import { get, valueAt } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
-import { chain, firstRowWith, PathId, readOf, valueAt } from './shared.ts'
+import { chain, firstRowWith, PathId, readOf } from './shared.ts'
 
 export const tendencias = readOf({
   id: 'tendencias',
