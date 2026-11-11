@@ -150,13 +150,12 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
     throw unavailable
   }
   // The release comes before the clock: a `GRANT` that fails leaves no schedule, so the retry with
-  // the same key still gets the first run and its record (criteria 21 and 26). A first run is asked
-  // for only when the schedule is new; a repeat does nothing more (criterion 7).
-  const scheduled = (await deps.clock().states(companyId)).has(copyId)
+  // the same key still gets the first run and its record (criteria 21 and 26). Only the call that
+  // made the schedule asks for the first run and records it, so concurrent repeats record once (C37).
   if (made.releaseTo !== undefined)
     await released(deps, input, { stored, projectId: made.releaseTo })
-  await deps.clock().set({ companyId, copyId, interval: input.interval })
-  if (!scheduled) {
+  const schedule = await deps.clock().set({ companyId, copyId, interval: input.interval })
+  if (schedule === 'CREATED') {
     await deps.clock().runNow(copyId)
     deps.log.info({ companyId, copyId, from: input.source.kind }, 'COPY_ENABLED')
   }

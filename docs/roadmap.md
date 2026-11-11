@@ -27,12 +27,11 @@ brinquedo. O mapa sai: "Deixa quieto sobre o Mapa". Este roteiro reescrito: "Pod
 ### As etapas, e o que você faz quando cada uma fecha
 
 Fechadas, com o uso nas [aprovações](approvals.md): da 1 à 20 com as subetapas, a 24.1
-à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5, a 24.5.1, a Capacidade 1, a Capacidade 2 e, na fila do molde, As buscas do Sankhya. Sua empresa usa o Conexus desde
+à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5, a 24.5.1, a Capacidade 1, a Capacidade 2, a Capacidade 3 e, na fila do molde, As buscas do Sankhya. Sua empresa usa o Conexus desde
 2026-11-02.
 
 **As capacidades que faltam aos apps.**
 
-- **Capacidade 3. O Builder aprende o Sync.** Pede o acompanhamento de vendedor; o gestor vê vendas, metas e clientes de todos. O Builder vê colunas e conteúdo copiados e roda as leituras do app nos dados reais, vendo só contagens.
 - **O Sync de qualquer conector.** Logo depois da Capacidade 3 e antes da 4: a cópia de conectores de API, com a definição versão 2 do motor sobre as leituras que o conector declara. Ainda sem cartão.
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.

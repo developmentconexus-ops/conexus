@@ -37,7 +37,12 @@ export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterva
 
 /** What the clock does for a copy: the Builder implements it, and the Hub never imports the Builder. */
 export type CopyClock = {
-  set(input: { companyId: CompanyId; copyId: CopyId; interval: CopyInterval }): Promise<void>
+  /** CREATED for the one call that made the schedule, even among concurrent ones; UPDATED otherwise. */
+  set(input: {
+    companyId: CompanyId
+    copyId: CopyId
+    interval: CopyInterval
+  }): Promise<'CREATED' | 'UPDATED'>
   pause(copyId: CopyId): Promise<void>
   /** A MISSING copy is not resumed here: the service calls `set`. */
   resume(copyId: CopyId): Promise<void>
