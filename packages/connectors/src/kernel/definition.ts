@@ -54,6 +54,8 @@ export type Connector = Readonly<{
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
+  // Where the provider counts its call limit: by the Conexus app, one for every company, or by each account. Required when an operation declares `list`.
+  callLimit?: Readonly<{ countedBy: 'APP' | 'ACCOUNT' }>
   // The paged read and the templates of copies (Capacity 2): outside `operations` and the door, so no role, tool or probe sees it.
   copy?: ConnectorCopy
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
@@ -76,7 +78,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a copy read that is not 'read' or repeats an operation id, a repeated copy template id or a template the `CopyDefinition` refuses, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a copy read that is not 'read' or repeats an operation id, a repeated copy template id or a template the `CopyDefinition` refuses, a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -91,6 +93,11 @@ export function defineConnector<A extends Auth>(
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
   assertCopy(connector.copy, new Set(ids))
+  if (
+    declared.some((operation) => operation.list !== undefined) &&
+    connector.callLimit === undefined
+  )
+    throw new Error(`List read without callLimit in ${connector.id}`)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)

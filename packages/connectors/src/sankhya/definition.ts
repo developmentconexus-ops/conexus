@@ -84,6 +84,7 @@ export const sankhya = defineConnector({
   refusals,
   check: empresas,
   readDoor: sankhyaDoor,
+  callLimit: { countedBy: 'ACCOUNT' }, // each company has its own Sankhya and its own keys
   copy: { read: lerPagina, models: sankhyaCopyModels },
   skill: readSkill(SKILL),
 })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ListRead } from './list.ts'
 
 /** What an operation does to the provider's data (founder, M1): a grant's ceiling and an agent's approval read it. */
 export const OPERATION_CLASSES = ['read', 'write', 'destructive'] as const
@@ -150,6 +151,8 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   from: readonly OperationId[]
   // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
   fixed?: readonly string[]
+  // A read that lists rows says how it pages and what it asks to read only what changed; the copy engine reads it (class `read` only).
+  list?: ListRead
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
@@ -183,12 +186,38 @@ export function defineOperation(
   operation: Definition<unknown, unknown, OperationClass> &
     Partial<WriteDeclarations<unknown, unknown>>,
 ) {
+  assertList(operation)
   return Object.freeze({
     ...operation,
     id: OperationId.parse(operation.id),
     subject: Subject.parse(operation.subject),
     from: Object.freeze(z.array(OperationId).parse(operation.from ?? [])),
   })
+}
+
+/** The input names a declaration points at: each must be a key of the operation's `z.object` input, and a fixed input never names one. */
+export function listInputNames(list: ListRead): readonly string[] {
+  const { paging, changed } = list
+  const paged =
+    paging.kind === 'OFFSET'
+      ? [paging.offset, paging.limit]
+      : paging.kind === 'CURSOR'
+        ? [paging.cursor, paging.limit, ...Object.keys(paging.start)]
+        : []
+  return [...paged, ...(changed === null ? [] : [changed.input])]
+}
+
+/** `list` is a read's, and every input name it points at is a key of the operation's `z.object` input. */
+function assertList(
+  operation: Pick<Definition<unknown, unknown, OperationClass>, 'id' | 'class' | 'input' | 'list'>,
+): void {
+  if (operation.list === undefined) return
+  if (operation.class !== 'read') throw new Error(`List on ${operation.id}, which is not a read`)
+  if (!(operation.input instanceof z.ZodObject))
+    throw new Error(`List on ${operation.id}, whose input is not an object`)
+  for (const name of listInputNames(operation.list))
+    if (!(name in operation.input.shape))
+      throw new Error(`List of ${operation.id} names ${name}, which its input lacks`)
 }
 
 /** The read: the path with its query, a key left undefined is not sent; `headers` are fixed, public ones. */
