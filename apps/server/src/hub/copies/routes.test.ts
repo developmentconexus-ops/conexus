@@ -276,4 +276,9 @@ test('a lista com as propostas', async (t) => {
   const tooMany = Array.from({ length: 21 }, () => randomUUID())
   const refused = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${tooMany}`)
   assert.equal(refused.statusCode, 400, refused.body)
+  for (const notUuid of ['-'.repeat(36), 'abc', `${open},`, '']) {
+    const bad = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${notUuid}`)
+    assert.equal(bad.statusCode, 400, `${notUuid}: ${bad.body}`)
+    assert.equal(codeOf(bad), 'REQUEST_MALFORMED', bad.body)
+  }
 })

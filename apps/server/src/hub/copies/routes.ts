@@ -1,6 +1,5 @@
 import type { CompanyId, EnableCopy, Person } from '@conexus/hub-api'
 import {
-  CopyProposalId,
   changeCopyInterval,
   dismissCopyProposal,
   enableCopy,
@@ -32,8 +31,7 @@ function sourceOf(body: EnableCopy) {
 /** The company's copies; the service admits the person on each (`readCopies` or `manageCopies`, S10). */
 export function registerCopyRoutes(app: FastifyInstance, copies: CopyService): void {
   serve(app, listCopies, async (input) => {
-    const named = input.query.proposalId?.split(',').map((id) => CopyProposalId.parse(id)) ?? []
-    return answer(await copies.list({ ...inCompany(input), named }))
+    return answer(await copies.list({ ...inCompany(input), named: input.query.proposalId ?? [] }))
   })
   serve(app, listCopyModels, async (input) =>
     answer({ models: await copies.models(inCompany(input)) }),

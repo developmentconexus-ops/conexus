@@ -160,7 +160,8 @@ const OfProposal = InCompany.extend({ proposalId: CopyProposalId })
 const NamedProposals = z.object({
   proposalId: z
     .string()
-    .regex(new RegExp(`^[0-9a-fA-F-]{36}(,[0-9a-fA-F-]{36}){0,${PROPOSALS_NAMED_MAX - 1}}$`))
+    .transform((list) => list.split(','))
+    .pipe(z.array(CopyProposalId).max(PROPOSALS_NAMED_MAX))
     .optional(),
 })
 const OfRelease = InCompany.extend({ projectId: ProjectId, copyId: CopyId })
