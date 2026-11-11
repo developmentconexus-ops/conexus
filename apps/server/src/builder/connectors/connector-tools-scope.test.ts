@@ -23,6 +23,7 @@ function granted(
     reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
     writes: [],
     notes: [],
+    copies: false,
   }
 }
 
@@ -60,6 +61,8 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
   const seen: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
+    provePage: async () => ({ kind: 'NOT_GRANTED' }),
+    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (_ids, call) => {
       seen.push(call)
       return { kind: 'NOT_GRANTED' }
@@ -111,6 +114,8 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
   const calls: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
+    provePage: async () => ({ kind: 'NOT_GRANTED' }),
+    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (...args) => {
       calls.push(args)
       return { kind: 'NOT_GRANTED' }

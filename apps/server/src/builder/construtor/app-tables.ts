@@ -1,6 +1,6 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { Failure } from '../../platform/failure.ts'
-import type { AppDataPort } from '../agents/public.ts'
+import type { AppDataPort } from '../app-data/public.ts'
 import type { InProject } from '../tools/public.ts'
 
 export type TableWithColumnNames = { name: string; columns: string[] }

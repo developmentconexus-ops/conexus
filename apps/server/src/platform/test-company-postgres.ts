@@ -2,7 +2,13 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './company-postgres.ts'
+import type {
+  ReadResult,
+  SqlAnswer,
+  SqlRead,
+  SqlStatement,
+  SqlTransport,
+} from './company-postgres.ts'
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
@@ -45,7 +51,7 @@ export async function pgTransport(
     await client.connect()
     await client.query(options?.readOnly ? 'BEGIN READ ONLY' : 'BEGIN')
     const value = []
-    let read: SqlRead | undefined
+    const results: ReadResult[] = []
     for (const statement of statements) {
       const query = { text: statement.text, values: [...(statement.values ?? [])] }
       if (options?.readOnly) {
@@ -53,13 +59,16 @@ export async function pgTransport(
         // command (42601); its types do not list it.
         const config = { ...query, queryMode: 'extended', rowMode: 'array' } as const
         const result = await client.query(config)
-        read = { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+        results.push({
+          columns: result.fields.map(({ name, dataTypeID }) => ({ name, typeId: dataTypeID })),
+          rows: result.rows,
+        })
       } else {
         value.push((await client.query(query)).rows)
       }
     }
     await client.query('COMMIT')
-    return read ?? { kind: 'DONE', value }
+    return options?.readOnly ? { kind: 'READ', results } : { kind: 'DONE', value }
   } catch (error) {
     return answerOf(error instanceof pg.DatabaseError ? error : { name: errorName(error) })
   } finally {

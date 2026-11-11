@@ -1,5 +1,11 @@
 import { BUILDER_TOOL, ReadBusy, ReadCut, ReadRows } from '@conexus/hub-api'
-import { CircleAlertIcon, DatabaseIcon, NotebookPenIcon, NotebookTextIcon } from 'lucide-react'
+import {
+  CircleAlertIcon,
+  CopyPlusIcon,
+  DatabaseIcon,
+  NotebookPenIcon,
+  NotebookTextIcon,
+} from 'lucide-react'
 import { z } from 'zod'
 import type { WritesRead } from './approval-item.ts'
 import { writtenBy } from './approval-item.ts'
@@ -8,11 +14,11 @@ import { readRefusedText, refusedLabelText } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const { connectorRead, connectorNotes, connectorNoteSave } = BUILDER_TOOL
+const { connectorRead, connectorNotes, connectorNoteSave, copyPropose } = BUILDER_TOOL
 
 /** The rows of the tools of a Projeto's granted connections (card of step 20, U5). */
 export const CONNECTOR_SPECS: Record<
-  typeof connectorRead | typeof connectorNotes | typeof connectorNoteSave,
+  typeof connectorRead | typeof connectorNotes | typeof connectorNoteSave | typeof copyPropose,
   ToolSpec
 > = {
   [connectorRead]: {
@@ -42,6 +48,73 @@ export const CONNECTOR_SPECS: Record<
     body: 'generic',
     groups: true,
   },
+  // Never grouped: the proposal's card follows its row (Capacidade 3, U3).
+  [copyPropose]: {
+    icon: CopyPlusIcon,
+    running: 'Propondo uma cópia',
+    done: 'Propôs uma cópia',
+    failed: 'Não conseguiu propor a cópia',
+    verb: 'propôs cópia',
+    body: 'generic',
+    groups: false,
+    present: (tool, status) => presentProposal(tool.result, status),
+    refusal: (result) => (ProposeRefused.safeParse(result).success ? 'DETAILED' : undefined),
+  },
+}
+
+/** What `copy_propose` answered other than `PROPOSED`, as the model got it. */
+const ProposeRefused = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('MALFORMED'), issues: z.array(z.string()) }),
+  z.object({ kind: z.literal('EXISTS'), name: z.string(), releasedHere: z.boolean() }),
+  z.object({ kind: z.literal('NOT_IN_ROLE'), operation: z.string() }),
+  z.object({
+    kind: z.literal('REFUSED'),
+    native: z.object({ message: z.string().nullable() }).optional(),
+  }),
+  z.object({ kind: z.enum(['NOT_GRANTED', 'CALLS_SPENT', 'DEADLINE']) }),
+  z.object({ kind: z.literal('AMBIGUOUS_CONNECTION') }),
+])
+
+function proposeRefusedText(refused: z.infer<typeof ProposeRefused>): string | undefined {
+  switch (refused.kind) {
+    case 'MALFORMED':
+      return refused.issues.join('; ')
+    case 'EXISTS':
+      return refused.releasedHere
+        ? `A cópia ${refused.name} já está liberada a este Projeto.`
+        : `A empresa já tem ${refused.name}: peça na página Cópias que a liberem a este Projeto.`
+    case 'NOT_IN_ROLE':
+      return `Seu papel não usa a leitura ${refused.operation} desta conexão.`
+    case 'REFUSED':
+      return refused.native?.message ?? undefined
+    case 'AMBIGUOUS_CONNECTION':
+      return 'Duas conexões têm este nome.'
+    default:
+      return LOCAL_REFUSALS[refused.kind]
+  }
+}
+
+/** The line of `copy_propose`: proposing, proposed with the copy's name, or why not, from its result. */
+function presentProposal(result: unknown, status: ToolStatus): Presented {
+  const spec = CONNECTOR_SPECS[copyPropose]
+  const refused = ProposeRefused.safeParse(result)
+  if (refused.success || status === 'error' || status === 'denied') {
+    const detail = refused.success ? proposeRefusedText(refused.data) : undefined
+    return {
+      icon: CircleAlertIcon,
+      sentence: spec.failed,
+      detail,
+      beside: detail !== undefined,
+      wraps: true,
+    }
+  }
+  const name = Kind.extend({ name: z.string() }).safeParse(result)
+  return {
+    icon: spec.icon,
+    sentence: status === 'running' ? spec.running : spec.done,
+    detail: name.success ? name.data.name : undefined,
+    beside: name.success,
+  }
 }
 
 /** Why a read brought nothing: what the connection or the Hub's limits said. */

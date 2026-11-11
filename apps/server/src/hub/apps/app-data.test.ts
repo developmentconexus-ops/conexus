@@ -78,7 +78,7 @@ test('dados: a contagem que falha é indisponível', async (t) => {
     on.hub.postgres.companyPostgres,
     'readApp',
     (...args: Parameters<typeof read>): ReturnType<typeof read> =>
-      args[1].text.includes('count(*)')
+      args[1][0]?.text.includes('count(*)')
         ? Promise.resolve({ kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' })
         : read(...args),
   )
@@ -229,8 +229,8 @@ test('dados: uma contagem de forma errada é nossa', async (t) => {
     on.hub.postgres.companyPostgres,
     'readApp',
     (...args: Parameters<typeof read>): ReturnType<typeof read> =>
-      args[1].text.includes('count(*)')
-        ? Promise.resolve({ kind: 'ROWS', columns: [], rows: [['clientes', 'x']] })
+      args[1][0]?.text.includes('count(*)')
+        ? Promise.resolve({ kind: 'ROWS', columns: [], rows: [['clientes', 'x']], results: [] })
         : read(...args),
   )
   const response = await on.tables(on.ana)

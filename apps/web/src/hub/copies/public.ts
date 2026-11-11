@@ -8,6 +8,9 @@ import { copiesQuery, copyRunsQuery } from './queries.ts'
 
 export { CopyDetail } from './copy-detail.tsx'
 export { CopyList } from './copy-list.tsx'
+export { ProposalDialog } from './copy-proposal.tsx'
+export { proposalsQuery } from './queries.ts'
+export { MANAGERS_ENABLE, modeText, PROPOSAL_GONE, PROPOSAL_STATE, provedText } from './text.ts'
 
 /** The Cópias routes are for whoever manages copies; for anyone else the address is not found (web W34, S10). */
 export function manageCopiesOrNotFound({ context }: { context: { may: CompanyMay } }) {

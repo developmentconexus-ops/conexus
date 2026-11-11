@@ -5,9 +5,13 @@ import { ConnectorId as HubConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { speakerOf } from '../identity/public.ts'
+import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
+import { operationLabel } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
+import { lackedDoorRead } from './speaking.ts'
 import { connection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -17,9 +21,12 @@ type CopySourceFailure =
   | 'COPY_SOURCE_UNREACHABLE'
   | 'COPY_SOURCE_UNREADABLE'
 
+/** The read's refusal whole, as `readThrough` gave it: the run keeps the code, the Builder's proof gives it all to the model (C79). */
+export type CopyRefusal = Exclude<ReadAnswer, { kind: 'OK' }> | NotInRole
+
 export type CopyRead =
   | Readonly<{ kind: 'PAGE'; page: CopyPage }>
-  | Readonly<{ kind: 'FAILED'; code: CopySourceFailure }>
+  | Readonly<{ kind: 'FAILED'; code: CopySourceFailure; refusal: CopyRefusal }>
   /** The connection is gone, not ACTIVE, or of a connector that offers no copies. */
   | Readonly<{ kind: 'NO_CONNECTION' }>
 
@@ -52,6 +59,29 @@ export async function connectionForCopy(
   return row.state === 'ACTIVE'
     ? { kind: 'ACTIVE', connectorId: HubConnectorId.parse(row.connectorId) }
     : { kind: 'NOT_ACTIVE' }
+}
+
+/**
+ * The label of the first read of the connection's read door the person's role does not hold; none
+ * when the role holds them all. The speaker is read in the caller's transaction; the role's answer
+ * (`mayUseEach`) opens a transaction of its own. Who turns a proposal on must be able to read what
+ * it copies (Capacidade 3).
+ */
+export async function lackedReadOf(
+  deps: Pick<Deps, 'identity'>,
+  tx: ReadTx,
+  input: OfConnection & { connectorId: HubConnectorId; personId: PersonId },
+): Promise<string | undefined> {
+  const connector = connectorOf(input.connectorId)
+  const first = Object.values(connector?.readDoor ?? {})[0]
+  const speaker = await speakerOf(tx, input.companyId, input.personId)
+  if (connector === undefined || speaker === undefined)
+    return first === undefined ? input.connectorId : operationLabel(input.connectorId, first.id)
+  const lacked = await lackedDoorRead(deps, input.companyId, speaker, {
+    connectionId: input.connectionId,
+    connector,
+  })
+  return lacked === undefined ? undefined : operationLabel(input.connectorId, lacked.id)
 }
 
 /** The name and connector of each of the company's connections named; one gone is left out. */
@@ -96,9 +126,56 @@ function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }
 }
 
 /**
+ * One page of a copy through the read every other reader takes, the connection's turn, its token,
+ * the deadline and the log line, speaking as a version that declares only the paged read. The one
+ * way to `readThrough` for a copy's run and for the Builder's proof of a proposal (C26).
+ */
+export async function copyPage(
+  deps: Deps,
+  input: OfConnection & { enabledBy: PersonId; input: PageInput; signal: AbortSignal },
+): Promise<CopyRead> {
+  const found = await openedForCopy(deps, input)
+  if (found === undefined) return { kind: 'NO_CONNECTION' }
+  const { opened, read } = found
+  const answer = await readThrough(deps, {
+    by: 'copy',
+    ids: { companyId: input.companyId },
+    viewer: { person: { id: input.enabledBy }, companyId: input.companyId },
+    speaker: {
+      kind: 'VERSION',
+      declared: [{ connectionId: input.connectionId, operation: OperationId.parse(read.id) }],
+    },
+    opened,
+    operation: read,
+    input: input.input,
+    deadlineMs: deps.callDeadlineMs,
+    signal: input.signal,
+  })
+  if (answer.kind === 'OK') return { kind: 'PAGE', page: CopyPageSchema.parse(answer.value) }
+  return { kind: 'FAILED', code: sourceFailureOf(answer), refusal: answer }
+}
+
+function sourceFailureOf(answer: CopyRefusal): CopySourceFailure {
+  switch (answer.kind) {
+    case 'REFUSED':
+    case 'NOT_IN_ROLE':
+      return 'COPY_SOURCE_REFUSED'
+    case 'AUTH_REFUSED':
+      return 'COPY_SOURCE_NEEDS_REAUTH'
+    case 'UNREACHABLE':
+    case 'DEADLINE':
+    case 'BUSY':
+      return 'COPY_SOURCE_UNREACHABLE'
+    case 'UNREADABLE':
+      return 'COPY_SOURCE_UNREADABLE'
+    default:
+      return answer satisfies never
+  }
+}
+
+/**
  * The copies' door to the outside (decision 0056): the templates of each connector, and one page
- * of a copy through the read every other reader takes, the connection's turn, its token, the
- * deadline and the log line. The copy speaks as a version that declares only the paged read.
+ * of a copy (`copyPage`).
  */
 export function createCopyPort(deps: Deps) {
   return Object.freeze({
@@ -110,43 +187,8 @@ export function createCopyPort(deps: Deps) {
         (connector.copy?.models ?? []).map((model) => ({ connector: connector.id, model })),
       )
     },
-    async readPage(
+    readPage: (
       input: OfConnection & { enabledBy: PersonId; input: PageInput; signal: AbortSignal },
-    ): Promise<CopyRead> {
-      const found = await openedForCopy(deps, input)
-      if (found === undefined) return { kind: 'NO_CONNECTION' }
-      const { opened, read } = found
-      const answer = await readThrough(deps, {
-        by: 'copy',
-        ids: { companyId: input.companyId },
-        viewer: { person: { id: input.enabledBy }, companyId: input.companyId },
-        speaker: {
-          kind: 'VERSION',
-          declared: [{ connectionId: input.connectionId, operation: OperationId.parse(read.id) }],
-        },
-        opened,
-        operation: read,
-        input: input.input,
-        deadlineMs: deps.callDeadlineMs,
-        signal: input.signal,
-      })
-      switch (answer.kind) {
-        case 'OK':
-          return { kind: 'PAGE', page: CopyPageSchema.parse(answer.value) }
-        case 'REFUSED':
-        case 'NOT_IN_ROLE':
-          return { kind: 'FAILED', code: 'COPY_SOURCE_REFUSED' }
-        case 'AUTH_REFUSED':
-          return { kind: 'FAILED', code: 'COPY_SOURCE_NEEDS_REAUTH' }
-        case 'UNREACHABLE':
-        case 'DEADLINE':
-        case 'BUSY':
-          return { kind: 'FAILED', code: 'COPY_SOURCE_UNREACHABLE' }
-        case 'UNREADABLE':
-          return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
-        default:
-          return answer satisfies never
-      }
-    },
+    ): Promise<CopyRead> => copyPage(deps, input),
   })
 }

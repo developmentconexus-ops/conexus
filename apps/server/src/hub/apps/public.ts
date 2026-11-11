@@ -5,6 +5,7 @@ import { createAppData } from './app-data.ts'
 import { appDatabaseOf, projectDatabase, readAppData } from './app-database.ts'
 import { appTablesOf } from './app-tables.ts'
 import { createAppVersions } from './app-versions.ts'
+import { createBuilderData } from './builder-data.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
 import type { PublishDeps } from './live.ts'
@@ -30,7 +31,9 @@ export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
 export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
+export type { AppCheck } from './app-check.ts'
 export type { AppTablesRead } from './app-tables.ts'
+export type { BuilderData } from './builder-data.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
 /**
@@ -95,6 +98,8 @@ export function createApps(
     sendFromBuilder: versions.sendFromBuilder,
     /** What a Projeto's agents read of its app's data, and whether it has an app to read (step 24.3, U3). */
     readAppData: (input: Parameters<typeof readAppData>[1]) => readAppData(deps, input),
+    /** What the Builder reads and checks of a Projeto's app data, admitted by `useConversations` on each call (Capacidade 3). */
+    builderData: createBuilderData(deps),
     /** The app's tables with their columns, one list for the Dados page and the Construtor. */
     appTables: (input: Parameters<typeof appTablesOf>[1]) => appTablesOf(deps, input),
     hasAppData: async (input: Parameters<typeof appDatabaseOf>[1]) =>

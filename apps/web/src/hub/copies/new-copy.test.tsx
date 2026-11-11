@@ -36,6 +36,7 @@ test('Ligar: um pedido, as recusas: dois cliques mandam um pedido só, com a cha
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   expect(hub.writes()).toHaveLength(1)
   expect(hub.writes()[0]?.body).toEqual({
+    from: 'MODEL',
     connectionId: connection().id,
     model: 'vendas',
     interval: '30m',
