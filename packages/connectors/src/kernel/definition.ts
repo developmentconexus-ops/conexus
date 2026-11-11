@@ -93,11 +93,7 @@ export function defineConnector<A extends Auth>(
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
   assertCopy(connector.copy, new Set(ids))
-  if (
-    declared.some((operation) => operation.list !== undefined) &&
-    connector.callLimit === undefined
-  )
-    throw new Error(`List read without callLimit in ${connector.id}`)
+  assertCallLimit(connector, declared)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
@@ -120,6 +116,17 @@ function declaredOf(connector: Pick<Connector, 'operations' | 'readDoor' | 'writ
 function assertWritesWrite(connector: Pick<Connector, 'writes'>): void {
   for (const operation of connector.writes ?? [])
     if (operation.class !== 'write') throw new Error(`Write not write: ${operation.id}`)
+}
+
+function assertCallLimit(
+  connector: Pick<Connector, 'callLimit'> & { id: string },
+  declared: readonly Operation<unknown, unknown>[],
+): void {
+  if (
+    declared.some((operation) => operation.list !== undefined) &&
+    connector.callLimit === undefined
+  )
+    throw new Error(`List read without callLimit in ${connector.id}`)
 }
 
 function assertCopy(copy: ConnectorCopy | undefined, ids: ReadonlySet<string>): void {

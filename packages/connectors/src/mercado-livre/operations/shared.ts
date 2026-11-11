@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { valueAt } from '../../kernel/list.ts'
 import type { Account, Operation, OperationId, ProviderRequest } from '../../kernel/operation.ts'
 import { defineOperation } from '../../kernel/operation.ts'
 import type { Rows } from '../../kernel/rows.ts'
@@ -64,14 +65,7 @@ const Identity = z.union([
   z.number().int().nonnegative().transform(String),
 ])
 
-export function valueAt(row: unknown, path: string): unknown {
-  return path
-    .split('.')
-    .reduce<unknown>(
-      (at, key) => (typeof at === 'object' && at !== null ? Reflect.get(at, key) : undefined),
-      row,
-    )
-}
+export { valueAt }
 
 /** The rows an earlier read gave. */
 function rowsOf(earlier: ReadonlyMap<OperationId, unknown>, id: OperationId) {
