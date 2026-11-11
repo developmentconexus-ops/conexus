@@ -60,7 +60,7 @@ const ToModel = z.union([
 export function showFileTool(machines: Pick<ConversationMachines, 'folder' | 'serving'>) {
   return createTool({
     id: MACHINE_TOOL.showFile,
-    description: `Shows the person a file you wrote in ${machines.folder} beside the chat, to read or download. Show the table, chart or document you made; the person sees nothing of your machine otherwise.`,
+    description: `Opens a file from ${machines.folder} beside the chat, to read (Markdown, text or CSV of up to 64 KB), view (an image) or download (any other).`,
     inputSchema: ShowFileInput,
     execute: async ({ path }, { requestContext }): Promise<ShownFile> => {
       const shown = await withFile(machines, requestContext, path, async (files, found) => {
