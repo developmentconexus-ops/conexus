@@ -161,7 +161,7 @@ export async function askOf(
  * input its probe builds from what the earlier ones read, and the session, and returns the value it read
  * (kept for the later probes) or undefined.
  */
-export async function eachProbe(
+async function eachProbe(
   connector: Connector,
   fake: Fake,
   visit: (a: {
