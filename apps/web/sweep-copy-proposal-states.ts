@@ -76,6 +76,39 @@ const MESSAGES: Said[] = [
   },
 ]
 
+/** The same turn's refusals: a proposal for a name the company has, and a check the database refused. */
+const REFUSED_MESSAGES: Said[] = [
+  {
+    id: 'c2',
+    role: 'builder',
+    parts: [
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'cp2',
+          toolName: 'copy_propose',
+          args: {},
+          result: { kind: 'EXISTS', name: TABLE, releasedHere: false },
+        },
+      },
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'ck2',
+          toolName: 'app_data_check',
+          args: { sql: 'select * from nao_existe' },
+          result: { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42P01' },
+        },
+      },
+      { type: 'text', text: 'Não consegui propor nem conferir.' },
+    ],
+    model: 'anthropic/claude-sonnet-4',
+    createdAt: '2026-11-10T12:02:00.000Z',
+  },
+]
+
 const CHAT_REPLIES = {
   ...WITH_CONVERSATIONS,
   [`GET ${CHAT_API}`]: ok(readConversation, {
@@ -92,6 +125,11 @@ async function inChat(page: Page) {
     await page.getByRole('button', { name: 'Conversa', exact: true }).click()
   }
   await waitFor(page, 'Chave')
+}
+
+const REFUSED_REPLIES = {
+  ...CHAT_REPLIES,
+  ...sessionReplies(CONVERSATION_ID, { messages: REFUSED_MESSAGES }),
 }
 
 /** The screens of the Builder's copy proposal: its row in Cópias, the dialog of Ligar and its card in the conversation. */
@@ -119,6 +157,19 @@ export const COPY_PROPOSAL_STATES: State[] = [
     settle: async (p) => {
       await inChat(p)
       await p.getByRole('button', { name: 'Ligar', exact: true }).waitFor()
+    },
+  },
+  {
+    name: 'Conversa, a proposta recusada e a conferência recusada abertas',
+    path: CHAT,
+    replies: REFUSED_REPLIES,
+    settle: async (p) => {
+      if ((p.viewportSize()?.width ?? 0) < 768) {
+        await p.getByRole('button', { name: 'Conversa', exact: true }).click()
+      }
+      await waitFor(p, 'peça na página Cópias')
+      await p.getByRole('button', { name: /Não conseguiu conferir/ }).click()
+      await waitFor(p, '42P01')
     },
   },
 ]

@@ -103,21 +103,24 @@ export function ProposalDialog(props: {
             <span className="text-text-2">Modo </span>
             {modeText(proposal.mode)}
           </p>
-          <ChoiceSelect
-            label="Intervalo"
-            value={chosen}
-            items={INTERVAL_CHOICES}
-            onValueChange={(next) => setChosen(CopyIntervalSchema.parse(next))}
-          />
+          <div className="flex min-w-0 flex-wrap items-center gap-sm">
+            <span className="text-text-2">Intervalo</span>
+            <ChoiceSelect
+              label="Intervalo"
+              value={chosen}
+              items={INTERVAL_CHOICES}
+              onValueChange={(next) => setChosen(CopyIntervalSchema.parse(next))}
+            />
+          </div>
           <p className="break-words">{`Libera ao Projeto ${proposal.project.name}`}</p>
         </div>
         {failure !== undefined && <Alert tone="danger">{failure}</Alert>}
-        <div className="flex flex-wrap gap-sm">
-          <Button variant="primary" disabled={enable.isPending} onClick={() => void turnOn()}>
-            {enable.isPending ? 'Ligando…' : 'Ligar'}
-          </Button>
+        <div className="flex flex-wrap justify-end gap-sm">
           <Button disabled={enable.isPending} onClick={() => onOpenChange(false)}>
             Cancelar
+          </Button>
+          <Button variant="primary" disabled={enable.isPending} onClick={() => void turnOn()}>
+            {enable.isPending ? 'Ligando…' : 'Ligar'}
           </Button>
         </div>
       </DialogContent>
@@ -167,7 +170,11 @@ type RowProps = {
   cell: string
 }
 
-/** A proposal in the table of copies: **Proposta** in words, who proposed it, its page of proof and its Projeto. */
+/**
+ * A proposal in the table of copies, as the sketch of Capacidade 3 draws it: the Estado says
+ * **Proposta**, the Última rodada says the page of proof, and under the Dado's name, its mode and
+ * who proposed it, the two actions.
+ */
 export function ProposalTableRow({ companyId, proposal, onRefused, cell }: RowProps) {
   return (
     <TableRow>
@@ -175,29 +182,27 @@ export function ProposalTableRow({ companyId, proposal, onRefused, cell }: RowPr
         {proposal.connection.name}
       </TableCell>
       <TableCell className={`${cell} whitespace-normal`}>
-        <div className="flex flex-col">
-          <span className="font-medium">{proposal.label}</span>
-          <span className="text-text-2">{`${proposal.name} · ${modeText(proposal.mode)}`}</span>
-        </div>
-      </TableCell>
-      <TableCell className={`${cell} whitespace-normal`}>
         <div className="flex flex-col items-start gap-xs">
-          <Badge tone="neutral">{PROPOSAL_WORD}</Badge>
-          <span className="text-text-2">{`por ${proposal.proposedBy.name}`}</span>
+          <span className="font-medium">{proposal.label}</span>
+          <span className="text-text-2">
+            {`${proposal.name} · ${modeText(proposal.mode)} · por ${proposal.proposedBy.name}`}
+          </span>
+          <ProposalActions companyId={companyId} proposal={proposal} onRefused={onRefused} />
         </div>
       </TableCell>
-      <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
-      <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
-      <TableCell className={`${cell} text-right tabular-nums`}>
+      <TableCell className={cell}>
+        <Badge tone="neutral">{PROPOSAL_WORD}</Badge>
+      </TableCell>
+      <TableCell className={`${cell} whitespace-normal tabular-nums`}>
         {provedText(proposal.proved)}
       </TableCell>
+      <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
+      <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
       <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
       <TableCell className={`${cell} max-w-40 whitespace-normal`}>
         {proposal.project.name}
       </TableCell>
-      <TableCell className={cell}>
-        <ProposalActions companyId={companyId} proposal={proposal} onRefused={onRefused} />
-      </TableCell>
+      <TableCell className={cell} />
     </TableRow>
   )
 }

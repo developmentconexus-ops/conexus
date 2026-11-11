@@ -27,7 +27,7 @@ test('a proposta: ligar e dispensar', async () => {
   expect(within(row).getByText('Matriz')).toBeTruthy()
   expect(within(row).getByText(/devolucoes/)).toBeTruthy()
   expect(within(row).getByText('teste: mais de 50 linhas')).toBeTruthy()
-  expect(within(row).getByText('por Ana Lima')).toBeTruthy()
+  expect(within(row).getByText('devolucoes · cópia inteira · por Ana Lima')).toBeTruthy()
   expect(within(row).getByText('Vendedores')).toBeTruthy()
   expect(within(row).getByRole('button', { name: 'Dispensar' })).toBeTruthy()
   const dialog = await openDialog(row)
@@ -121,7 +121,7 @@ test('a proposta diz o modo', async () => {
     LIST,
   )
   const row = await rowOf('Devoluções')
-  expect(within(row).getByText('devolucoes · por janela de 7 dias')).toBeTruthy()
+  expect(within(row).getByText('devolucoes · por janela de 7 dias · por Ana Lima')).toBeTruthy()
   const dialog = await openDialog(row)
   expect(dialog.getByText('por janela de 7 dias')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))

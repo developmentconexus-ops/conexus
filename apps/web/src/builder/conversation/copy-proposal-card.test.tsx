@@ -88,7 +88,7 @@ async function conversationWithProposal(role: string, result: unknown = proposed
 }
 
 function cardOf(name: string): HTMLElement {
-  const card = screen.getAllByText(name).at(-1)?.parentElement
+  const card = screen.getAllByText(new RegExp(`^${name} · `)).at(-1)?.parentElement
   if (!(card instanceof HTMLElement)) throw new Error(`no card for ${name}`)
   return card
 }
@@ -100,9 +100,9 @@ test('o cartão da proposta: ligar pela conversa', async () => {
   expect(screen.getByText('Propôs uma cópia')).toBeTruthy()
   const card = cardOf('devolucoes')
   // The mode of the tool's result, as written by the Hub.
-  expect(within(card).getByText('Matriz · só o alterado')).toBeTruthy()
+  expect(within(card).getByText('devolucoes · Matriz · só o alterado')).toBeTruthy()
   expect(within(card).getByText('ID_DEVOLUCAO')).toBeTruthy()
-  expect(within(card).getByText('teste: 12 linhas')).toBeTruthy()
+  expect(within(card).getByText(/teste: 12 linhas/)).toBeTruthy()
   const ligar = await within(card).findByRole('button', { name: 'Ligar' })
   expect(within(card).queryByRole('button', { name: 'Dispensar' })).toBeNull()
   expect(hub.reads.some((search) => search.includes(held.id))).toBe(true)
@@ -144,7 +144,7 @@ test('o cartão de quem não gerencia cópias', async () => {
   const hub = copiesHub(proposal())
   await conversationWithProposal('member')
   const card = cardOf('devolucoes')
-  expect(within(card).getByText('Matriz · só o alterado')).toBeTruthy()
+  expect(within(card).getByText('devolucoes · Matriz · só o alterado')).toBeTruthy()
   expect(
     within(card).getByText(
       'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.',

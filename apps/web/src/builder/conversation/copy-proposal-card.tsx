@@ -30,7 +30,7 @@ function LiveState(props: { companyId: CompanyId; proposed: CopyProposed }) {
   const live = read.data.proposals.find((each) => each.id === proposed.proposalId)
   if (live === undefined) return <p className="text-text-2">{PROPOSAL_GONE}</p>
   return (
-    <>
+    <div className="flex flex-wrap items-center justify-end gap-sm">
       {live.state === 'OPEN' ? (
         <Button variant="primary" onClick={() => setOpen(true)}>
           Ligar
@@ -51,7 +51,7 @@ function LiveState(props: { companyId: CompanyId; proposed: CopyProposed }) {
         }}
         onRefused={setRefused}
       />
-    </>
+    </div>
   )
 }
 
@@ -69,16 +69,15 @@ export function CopyProposalCard({ tool }: { tool: Pick<ToolItem, 'result'> }) {
   if (!parsed.success) return null
   const proposed = parsed.data
   return (
-    <div className="flex flex-col items-start gap-sm rounded-card border border-line bg-surface p-md">
-      <p className="font-display text-title break-words">{proposed.name}</p>
-      <p className="break-words text-text-2">
-        {`${proposed.connection.name} · ${modeText(proposed.mode)}`}
+    <div className="flex flex-col gap-sm rounded-card border border-line bg-surface p-md">
+      <p className="break-words font-medium">
+        {`${proposed.name} · ${proposed.connection.name} · ${modeText(proposed.mode)}`}
       </p>
       <p className="break-words">
-        <span className="text-text-2">Chave </span>
+        <span className="text-text-2">chave </span>
         <span className="font-mono text-fact">{proposed.key.join(', ')}</span>
+        <span className="text-text-2 tabular-nums">{` · ${provedText(proposed)}`}</span>
       </p>
-      <p className="text-text-2 tabular-nums">{provedText(proposed)}</p>
       {may.manageCopies ? (
         <LiveState companyId={companyId} proposed={proposed} />
       ) : (
