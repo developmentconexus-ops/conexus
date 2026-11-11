@@ -30,6 +30,28 @@ function typesOf<T extends string>(
   return types
 }
 
+/** A repeated key column is an issue of the definition. */
+function distinctKey(key: readonly string[], context: z.RefinementCtx): void {
+  if (new Set(key).size !== key.length)
+    context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
+}
+
+/** The column a `changedSince` or a `window` names is a date or timestamp column of the columns. */
+function datedColumn(
+  field: string,
+  column: string | undefined,
+  types: ReadonlyMap<string, CopyColumnTypeV2>,
+  context: z.RefinementCtx,
+): void {
+  const type = column === undefined ? undefined : types.get(column)
+  if (column !== undefined && (type === undefined || !DATED.has(type)))
+    context.addIssue({
+      code: 'custom',
+      path: [field, 'column'],
+      message: 'The column is a date or timestamp column of the columns.',
+    })
+}
+
 /** What a copy reads, the company's data from the moment it is turned on (version 1, one kind of source). */
 export const CopyDefinition = z
   .object({
@@ -46,8 +68,7 @@ export const CopyDefinition = z
   })
   .superRefine((definition, context) => {
     const types = typesOf(definition.columns, context)
-    if (new Set(definition.key).size !== definition.key.length)
-      context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
+    distinctKey(definition.key, context)
     definition.key.forEach((name, at) => {
       if (types.get(name) !== 'bigint')
         context.addIssue({
@@ -56,22 +77,20 @@ export const CopyDefinition = z
           message: 'A key column is a bigint column of the columns.',
         })
     })
-    for (const field of ['changedSince', 'window'] as const) {
-      const column = definition[field]?.column
-      const type = column === undefined ? undefined : types.get(column)
-      if (column !== undefined && (type === undefined || !DATED.has(type)))
-        context.addIssue({
-          code: 'custom',
-          path: [field, 'column'],
-          message: 'The column is a date or timestamp column of the columns.',
-        })
-    }
+    for (const field of ['changedSince', 'window'] as const)
+      datedColumn(field, definition[field]?.column, types, context)
   })
 export type CopyDefinition = z.infer<typeof CopyDefinition>
 
 /** Version 2 adds `json`, the cell of a nested value as its JSON text. */
 export const CopyColumnTypeV2 = z.enum([...CopyColumnType.options, 'json'])
 export type CopyColumnTypeV2 = z.infer<typeof CopyColumnTypeV2>
+
+const CLOCK = String.raw`\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?`
+const OFFSET = String.raw`(Z|[+-]\d{2}:\d{2})`
+
+/** An instant with its offset, the one owner: a timestamp cell of version 2 and the date-time a source's filter takes. */
+export const Instant = z.string().regex(new RegExp(`^${CLOCK}${OFFSET}$`))
 
 /**
  * The canonical text of each type's cell, the one owner: `list.ts` and Sankhya's copy read convert to it,
@@ -82,7 +101,7 @@ export const CANONICAL_CELL: Readonly<Record<CopyColumnTypeV2, RegExp>> = {
   numeric: /^-?\d+(\.\d+)?$/,
   bigint: /^-?\d+$/,
   date: /^\d{4}-\d{2}-\d{2}$/,
-  timestamp: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/,
+  timestamp: new RegExp(`^${CLOCK}${OFFSET}?$`),
   boolean: /^(true|false)$/,
   json: /^[\s\S]*$/,
 }
@@ -128,8 +147,7 @@ export const CopyDefinitionV2 = z
           message: 'A column name does not start with "_": the engine owns those.',
         })
     })
-    if (new Set(definition.key).size !== definition.key.length)
-      context.addIssue({ code: 'custom', path: ['key'], message: 'A key column is repeated.' })
+    distinctKey(definition.key, context)
     definition.key.forEach((name, at) => {
       const type = types.get(name)
       if (type === undefined || !KEYED.has(type))
@@ -139,14 +157,7 @@ export const CopyDefinitionV2 = z
           message: 'A key column is a bigint or text column of the columns.',
         })
     })
-    const column = definition.changedSince?.column
-    const type = column === undefined ? undefined : types.get(column)
-    if (column !== undefined && (type === undefined || !DATED.has(type)))
-      context.addIssue({
-        code: 'custom',
-        path: ['changedSince', 'column'],
-        message: 'The column is a date or timestamp column of the columns.',
-      })
+    datedColumn('changedSince', definition.changedSince?.column, types, context)
   })
 export type CopyDefinitionV2 = z.infer<typeof CopyDefinitionV2>
 

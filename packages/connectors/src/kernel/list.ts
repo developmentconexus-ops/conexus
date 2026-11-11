@@ -1,11 +1,8 @@
-import { z } from 'zod'
 import type { CopyColumnTypeV2, CopyDefinitionV2, CopyPosition } from './copy.ts'
-import { CANONICAL_CELL } from './copy.ts'
+import { CANONICAL_CELL, Instant } from './copy.ts'
 import type { ListPaging, ListRead } from './operation.ts'
-import { listInputNames } from './operation.ts'
+import { listInputNames, valueAt } from './operation.ts'
 import type { Rows } from './rows.ts'
-
-export type { ListPaging, ListRead }
 
 /**
  * The input of one page: the definition's fixed input, then the paging (an offset's place and size, a
@@ -48,21 +45,6 @@ export type ListPage =
   | Readonly<{ kind: 'MISFIT'; column: string; path: string }>
   | Readonly<{ kind: 'UNREADABLE'; reason: 'NO_MORE_SIGNAL' | 'NO_CURSOR' }>
   | Readonly<{ kind: 'CEILING'; ceiling: number }>
-
-/** The value at a dotted path of a row, own properties only; a numeric segment indexes an array. */
-export function valueAt(row: unknown, path: string): unknown {
-  return path
-    .split('.')
-    .reduce<unknown>(
-      (at, key) =>
-        typeof at === 'object' && at !== null && Object.hasOwn(at, key)
-          ? Reflect.get(at, key)
-          : undefined,
-      row,
-    )
-}
-
-const Instant = z.iso.datetime({ offset: true })
 
 type Cell = string | null | undefined // undefined: not a value of the type
 

@@ -5,9 +5,8 @@ import { assertDeclaredByProvider, SENT_AT } from './conformance-declared.ts'
 import { assertListsWalk } from './conformance-list.ts'
 import type { Fake, OAuthFake } from './conformance-session.ts'
 import {
-  askOf,
+  answeredEach,
   consent,
-  eachProbe,
   exchange,
   loginWith,
   signIn,
@@ -21,9 +20,6 @@ import { authorizeUrl, codeRequest } from './oauth.ts'
 import type { Account, Operation, OperationId } from './operation.ts'
 import { OPERATION_CLASSES, requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
-
-export type { CredentialFake, Fake, OAuthFake } from './conformance-session.ts'
-export { assertListsWalk }
 
 /** Every request the probes build, as text: the URL, the headers and the body. */
 async function textOf(request: Request): Promise<string> {
@@ -62,18 +58,13 @@ function assertSources(
 
 /** Each probe, in order, from the sources it declares, answered with the value its output schema reads from the body. */
 async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
-  await eachProbe(connector, fake, async ({ operation, input, session, earlier }) => {
+  await answeredEach(connector, fake, async ({ operation, earlier, raw, value }) => {
     assertSources(operation, earlier)
-    const raw = await askOf(connector, fake, session, { operation, input })
-    const answered = operation.answer(raw)
-    assert.equal(answered.kind, 'OK', operation.id)
-    if (answered.kind !== 'OK') return undefined
     // A ready operation's `output` reads the body itself; a door entry's is the shape of the
     // value its answer takes out of an envelope, so the value is what it must accept.
     if (connector.operations.includes(operation))
-      assert.deepEqual(operation.output.parse(raw.body), answered.value, operation.id)
-    else assert.ok(operation.output.safeParse(answered.value).success, operation.id)
-    return answered.value
+      assert.deepEqual(operation.output.parse(raw.body), value, operation.id)
+    else assert.ok(operation.output.safeParse(value).success, operation.id)
   })
 }
 

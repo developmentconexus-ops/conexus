@@ -99,13 +99,21 @@ function kindOf(value: unknown): string {
   return value === null ? 'null' : typeof value
 }
 
+/** The value at a path of a body: dotted text, or the segments of an issue's path; own properties only, a numeric segment indexes an array. */
+export function valueAt(body: unknown, path: string | readonly PropertyKey[]): unknown {
+  return (typeof path === 'string' ? path.split('.') : path).reduce<unknown>(
+    (at, key) =>
+      typeof at === 'object' && at !== null && Object.hasOwn(at, key)
+        ? Reflect.get(at, key)
+        : undefined,
+    body,
+  )
+}
+
 /** The Zod issues of a body that did not parse, as an Unread: the type found at each path, never what it held. */
 export function shapeOf(error: z.ZodError, body: unknown): Unread {
   const issues = error.issues.slice(0, 3).map((issue) => {
-    const found = issue.path.reduce<unknown>(
-      (at, key) => (typeof at === 'object' && at !== null ? Reflect.get(at, key) : undefined),
-      body,
-    )
+    const found = valueAt(body, issue.path)
     const expected =
       issue.code === 'invalid_type'
         ? issue.expected

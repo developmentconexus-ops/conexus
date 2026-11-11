@@ -118,6 +118,29 @@ export async function signIn(connector: Connector, fake: Fake): Promise<Session 
   return { accessToken: granted.accessToken, account: { ref: reported.ref } }
 }
 
+/** Each probe in order, asked of the double and answered `OK`; `visit` sees the raw answer and its value, and a later probe reads the value from `earlier`. */
+export async function answeredEach(
+  connector: Connector,
+  fake: Fake,
+  visit: (a: {
+    operation: Operation<unknown, unknown>
+    input: unknown
+    session: Session
+    earlier: ReadonlyMap<OperationId, unknown>
+    raw: ProviderAnswer
+    value: unknown
+  }) => Promise<void>,
+): Promise<void> {
+  await eachProbe(connector, fake, async (probe) => {
+    const raw = await askOf(connector, fake, probe.session, probe)
+    const answered = probe.operation.answer(raw)
+    assert.equal(answered.kind, 'OK', probe.operation.id)
+    if (answered.kind !== 'OK') return undefined
+    await visit({ ...probe, raw, value: answered.value })
+    return answered.value
+  })
+}
+
 /** One call of an operation as the conformance makes it: the request the kit builds from `input`, sent to the double. */
 export async function askOf(
   connector: Connector,

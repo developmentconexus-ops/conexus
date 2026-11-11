@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { valueAt } from '../../kernel/list.ts'
 import type { Account, Operation, OperationId, ProviderRequest } from '../../kernel/operation.ts'
-import { defineOperation } from '../../kernel/operation.ts'
+import { defineOperation, valueAt } from '../../kernel/operation.ts'
 import type { Rows } from '../../kernel/rows.ts'
 import { Rows as RowsOut } from '../../kernel/rows.ts'
 import { rows } from '../answers.ts'

@@ -19,7 +19,7 @@ export {
   readToken,
   tokenRequest,
 } from './kernel/auth.ts'
-export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance.ts'
+export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance-session.ts'
 export type {
   ConnectorCopy,
   CopyColumnType,
@@ -38,7 +38,7 @@ export {
   PageInput,
 } from './kernel/copy.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
-export type { ListPage, ListPaging, ListRead } from './kernel/list.ts'
+export type { ListPage } from './kernel/list.ts'
 export { listInputOf, listPageOf } from './kernel/list.ts'
 export {
   type AppKeys,
@@ -55,6 +55,8 @@ export type {
   Account,
   AccountOf,
   Answered,
+  ListPaging,
+  ListRead,
   Native,
   Operation,
   OperationClass,
