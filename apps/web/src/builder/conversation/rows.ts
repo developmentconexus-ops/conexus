@@ -7,6 +7,8 @@ import { approvalItem } from './approval-item.ts'
 import type { Message, Suspended } from './messages.ts'
 import { parsePlan, SubmittedPlan } from './plan-parse.ts'
 import type { Running } from './session-state.ts'
+import type { CitedRow } from './sources.ts'
+import { sourcesOf } from './sources.ts'
 
 type ToolInvocationState = Extract<
   MastraMessagePart,
@@ -14,6 +16,7 @@ type ToolInvocationState = Extract<
 >['toolInvocation']['state']
 
 type TextItem = { kind: 'text'; id: string; text: string }
+
 export type ReasoningItem = {
   kind: 'reasoning'
   id: string
@@ -67,7 +70,7 @@ type ConexusItem = {
   partType: string
   data: unknown
 }
-export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem
+export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem | CitedRow
 
 /** How long each thinking took, by the key the server gives it: its message and its place in it. */
 function thoughtSeconds(parts: readonly MastraMessagePart[]): Map<string, number> {
@@ -268,6 +271,8 @@ function fromParts(
       items.push({ kind: 'conexus', id, partType: part.type, data: part.data })
     }
   }
+  const sources = sourcesOf(message.parts)
+  if (sources.length > 0) items.push({ kind: 'sources', id: `${message.id}-sources`, sources })
   return items
 }
 
