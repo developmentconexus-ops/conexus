@@ -6,7 +6,6 @@ import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { plantCodex } from '../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../platform/test-recordings.ts'
-import { ASK_USER_TOOL } from './plan-tools.ts'
 import {
   answeredOf,
   conversing,
@@ -61,7 +60,7 @@ function lunaAsking(args: object): Buffer {
         return [`event: ${event.type}\ndata: ${JSON.stringify({ ...event, arguments: json })}`]
       }
       if (event.item?.type === 'function_call') {
-        const item = { ...event.item, name: ASK_USER_TOOL }
+        const item = { ...event.item, name: 'ask_user' }
         if (item.arguments !== '') item.arguments = json
         return [`event: ${event.type}\ndata: ${JSON.stringify({ ...event, item })}`]
       }
