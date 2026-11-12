@@ -19,7 +19,7 @@ etapa está aqui.
 
 Cada linha citada foi lida no código do dia: `main` em `ac468d16` (2026-11-12, depois do PR 983), o
 ramo do PR 982 em `90a64c5e` e o ramo do Alinhamento do Assistente (PR 976) em `3372c312`, marcado
-**PR976:** onde a linha só existe nele. As versões: `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0,
+onde a linha só existe nele. As versões: `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0,
 `drizzle-orm` 1.0.0-rc.4, `zod` 4.6.5. A prateleira: `twenty@b76d0217`, `budibase@624d68a`,
 `airbyte@8aed3123`, `palantir/osdk-ts@9ca39db0`; as páginas públicas do Palantir Foundry foram lidas
 em 2026-11-12. O builder de cada unidade parte do commit que fechar o Sync, com o Alinhamento
@@ -117,8 +117,7 @@ e aprova os textos das telas.
 - **Três perguntas do G4 OS, não decididas** (o G4 só ensina estrutura): um fato que vence (lá a
   memória é confirmada, recusada, substituída, vencida ou apagada); uma memória pessoal separada da
   da empresa; e as pessoas e áreas da empresa como parte do conhecimento. Hoje existem, sem decisão
-  sua: a memória de trabalho de cada pessoa no Assistente (**PR976:**
-  `apps/server/src/builder/assistant/profile-memory.ts`) e o cargo e a área de cada membro
+  sua: a memória de trabalho de cada pessoa no Assistente (`apps/server/src/builder/assistant/profile-memory.ts`) e o cargo e a área de cada membro
   (`apps/server/src/hub/identity/tables.ts:240-241`). Esta etapa não muda nenhuma das duas.
 - **Os avisos guardados para um cartão** (`next-card`): esta etapa leva o #814 (quem grava no caderno:
   com a proposta, todo membro propõe e só "Conceitos da empresa" aprova, pela `Q1`) e o #815 (a
@@ -194,9 +193,8 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
 ### Correções aos estudos, contra o código de hoje
 
 - **Não há "Configurações › Conhecimento" nem "Atividade".** As Configurações são uma seção por
-  arquivo de rota (**PR976:** `apps/web/src/routes/_app/companies/$companyId_/settings/route.tsx:26-45`,
-  web W32); a memória da empresa é "Memória da empresa", no grupo `company` (**PR976:**
-  `settings/company-memory.tsx`). A tela nova é Configurações › Conceitos da empresa, e a revisão
+  arquivo de rota (`apps/web/src/routes/_app/companies/$companyId_/settings/route.tsx:26-45`,
+  web W32); a memória da empresa é "Memória da empresa", no grupo `company` (`settings/company-memory.tsx`). A tela nova é Configurações › Conceitos da empresa, e a revisão
   aparece em Histórico, dentro dela. Nenhuma tela do Hub mostra o Brain por área: a página `ontologia:`
   é dos agentes, e o passo 6 do roteiro a vê pela resposta do Assistente.
 - **As rotas moram em `/api/companies/{companyId}/…`**, como todas (`packages/hub-api/src/copies.ts:155`),
@@ -213,11 +211,11 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
   não tem `deferrable`). O protótipo adiava a chave das versões para a revisão entrar por último com o
   hash; aqui o servidor calcula o conjunto ativo depois da aprovação em memória, grava a revisão com o
   hash e depois as versões, numa transação.
-- **Sem a role, a admissão diz `NOT_FOUND`, não `NOT_IN_ROLE`** (`apps/server/src/hub/identity/admission.ts:326-329`,
+- **Sem a role, a admissão diz `NOT_FOUND`, não `NOT_IN_ROLE`** (`apps/server/src/hub/identity/admission.ts:333-336`,
   segurança S10). Para a tela dizer "seu papel não aprova", a rota admite como membro e confere o papel
-  depois, como a memória da empresa faz (**PR976:** `company-memory-routes.ts:26-37`).
+  depois, como a memória da empresa faz (`company-memory-routes.ts:26-37`).
 - **A página não tem `pular`.** O dublê do Sankhya roda a página só como `OFFSET 0`
-  (`packages/connectors/src/sankhya/fake-sales.ts:175-177`), e o `pageSql` do kit só escreve essa forma
+  (`packages/connectors/src/sankhya/fake-sales.ts:178-180`), e o `pageSql` do kit só escreve essa forma
   (`packages/connectors/src/sankhya/search-sql.ts:84-88`). O agente filtra ou mede, como já faz no
   `connector_read`.
 - **O compilador reusa o kit.** O protótipo escrevia os literais à mão; o kit já tem o escape de texto,
@@ -226,10 +224,10 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
 - **O motor do banco não entra no inventário.** Nenhum leitor dele neste cartão: o kit escreve a data
   do Oracle, como a leitura das cópias (`copy-read.ts:30-33`, decisão 0063). A skill já diz como achar
   o motor (`SKILL.md:59`).
-- **Os nomes das ferramentas** seguem o repositório (`packages/hub-api/src/tools.ts:51-52`, em inglês):
+- **Os nomes das ferramentas** seguem o repositório (`packages/hub-api/src/tools.ts:54-55`, em inglês):
   `concept_propose`, `concept_read`, `concept_query`, não `conceito_ler`.
 - **A frase da memória do app mudou de linha**: o #815 cita `builder.md:44`; no `main` é
-  `apps/server/src/builder/conversation/prompt/builder.md:46` (**PR976:** `:47`).
+  `apps/server/src/builder/conversation/prompt/builder.md:47`.
 - **Não há trilha de auditoria no Hub** (nenhuma tabela de `operations`, `requests` ou
   `notifications` guarda histórico de mudança). A trilha da Ontologia é a sua própria tabela de
   revisões (`P1`).
@@ -434,12 +432,12 @@ produto antigo não tem estas telas: nenhuma captura a seguir.
 | A proposta por item e em lote | U3, U4 | `copy_propose` e o cartão Ligar (`apps/server/src/hub/copies/propose.ts:214`, `tables.ts:160-185`) | Palantir, propostas "analogous to a Pull Request", uma tarefa por recurso, "one at a time or in bulk" | itens decididos um a um ou juntos | embrulhado | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): a proposta do CRM decidida item a item | `"B1"`, "Q1 / R1" | `apps/server/src/hub/ontology/propose.ts`  |
 | A prova sem linha | U3 | `notes.ts:115-151` (conta as linhas devolvidas); `app_data_check` "never a row" (`apps/server/src/builder/app-data/tools.ts:27`) | o próprio Conexus | contagem e colunas com tipo, nunca a linha | nativo | — | `"B1"` | `apps/server/src/hub/ontology/proof.ts`  |
 | A SQL do conceito no dialeto do conector | U3 | `copy-read.ts:25-60` (a consulta guardada como `Q`, `dated`, `pageSql`); `search-sql.ts:23-88` | Twenty `record-crud/json-schemas/find-tool.json-schema.ts:10-61` (filtros por campo); o protótipo do exemplo | a consulta provada como subconsulta, filtros tipados, uma linha a mais | nativo para o kit (reusa `search-sql.ts`) | — | não precisa | `packages/connectors/src/sankhya/concept-read.ts`  |
-| A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (**PR976:** `:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
+| A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (`:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
-| As telas | U4 | Configurações por arquivo de rota (**PR976:** `settings/route.tsx:26-45`); a memória da empresa (**PR976:** `apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o desenho do estudo do exemplo, seção 8.1 | lista, página, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1 | "Q1 / R1"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId_/settings/concepts.tsx`  |
-| Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:289-309` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
+| As telas | U4 | Configurações por arquivo de rota (`settings/route.tsx:26-45`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o desenho do estudo do exemplo, seção 8.1 | lista, página, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1 | "Q1 / R1"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId_/settings/concepts.tsx`  |
+| Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:312-332` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
 | O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `palantir/osdk-ts@9ca39db0` `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
-| A página projetada | U6 | **PR976:** `apps/server/src/builder/assistant/company-memory.ts:47-55` (as áreas), `:104-115` | `@mastra/core@1.82.0` `dist/knowledge/host-writes.d.ts:12-31` (`upsertPage`, `unchanged` "writes nothing"); `dist/knowledge/links.d.ts:4-11` (o nome solto resolve na área, "else to the one in the whole store") | `upsertPage` idempotente; `[[área#caminho]]` com índice | nativo, com as regras da issue 984 | — | "Pode" (issue 984) | `apps/server/src/builder/assistant/ontology-pages.ts`  |
+| A página projetada | U6 | `apps/server/src/builder/assistant/company-memory.ts:47-55` (as áreas), `:104-115` | `@mastra/core@1.82.0` `dist/knowledge/host-writes.d.ts:12-31` (`upsertPage`, `unchanged` "writes nothing"); `dist/knowledge/links.d.ts:4-11` (o nome solto resolve na área, "else to the one in the whole store") | `upsertPage` idempotente; `[[área#caminho]]` com índice | nativo, com as regras da issue 984 | — | "Pode" (issue 984) | `apps/server/src/builder/assistant/ontology-pages.ts`  |
 
 A memória em dois lugares e o contexto da empresa do G4 OS (só estrutura) ficam fora da tabela: são
 as três perguntas não decididas da página do fundador, sem unidade.
@@ -696,7 +694,7 @@ dados (D22: a chamada ao Sankhya fora da transação; D25: só a trava da transa
 1. Apagar nada. Criar `kernel/inventory.ts` e a checagem em `definition.ts`. Regras: C23, C27.
 2. `sankhya/inventory.ts`: as três fases pelas tabelas que `SKILL.md:49-51` nomeia, cada uma com
    `pageSql` e a chave da tabela; o campo próprio pela marca de `SKILL.md:50`. O dublê ganha as
-   tabelas do dicionário com linhas inventadas, coerentes com as tabelas de `fake-sales.ts:118-132`.
+   tabelas do dicionário com linhas inventadas, coerentes com as tabelas de `fake-sales.ts:121-135`.
 3. `hub/connectors/inventory-port.ts`: a leitura como versão, cópia de `readAsCopy` sem o caminho
    do lote da cópia (o Sankhya conta por conta).
 4. `hub/ontology/inventory.ts`: a rodada, com o teto e a troca. Depois de ligar (`routes.ts:49`, só
@@ -738,14 +736,13 @@ compilador de SQL é a peça de segurança da etapa.
 - A proposta por item, a prova sem linha, a SQL do conceito no dialeto do conector, os códigos com
   significado.
 - Ler: `apps/server/src/hub/connectors/notes.ts:1-162` inteiro (o que sai);
-  `apps/server/src/builder/connectors/connector-tools.ts:235-309` (**PR976:** `:258-332`);
-  `apps/server/src/builder/assistant/assistant.ts:253-275` (`mayNote`, que sai; **PR976:** `maysFor`,
-  `:212`, `:237-247`, com `note`); `apps/server/src/builder/assistant/prompt/assistant.md:45-47`
-  (**PR976:** `:51-53`);
+  `apps/server/src/builder/connectors/connector-tools.ts:258-332`;
+  `apps/server/src/builder/assistant/assistant.ts:212` (`maysFor`), `:237-247` (o `note`, que
+  sai); `apps/server/src/builder/assistant/prompt/assistant.md:60-62`;
   `apps/server/src/builder/conversation/prompt/prompt.ts:159-178` (a linha "Notebook:");
-  `apps/server/src/builder/conversation/prompt/builder.md:46` (o `source` da memória do app, #815);
+  `apps/server/src/builder/conversation/prompt/builder.md:47` (o `source` da memória do app, #815);
   `packages/connectors/src/sankhya/door.ts:102-142`; `refusals.ts:54-57`; `fake-data.ts:107-125`;
-  `fake-sales.ts:175-208`; `read-only-sql.ts:1-10` e `isOneReadStatement`; `search-sql.ts:1-88`;
+  `fake-sales.ts:178-211`; `read-only-sql.ts:1-10` e `isOneReadStatement`; `search-sql.ts:1-88`;
   `copy-read.ts:25-60`; `apps/server/src/hub/connectors/read.ts:16-32`, `:139-181`;
   `apps/server/src/hub/copies/propose.ts:214` e `builder/connectors/copy-propose.ts` (a forma da
   ferramenta que propõe e da resposta); `apps/web/src/hub/connectors/notes.tsx` (o que sai).
@@ -761,7 +758,7 @@ compilador de SQL é a peça de segurança da etapa.
 | `apps/server/migrations/` | cria a migração que copia as notas para itens `NOTE` | — |
 | `apps/server/src/builder/connectors/` | cria `concept-propose.ts`; muda `connector-tools.ts` (sai `noteSaveTool`; `notesTool` lê os itens `NOTE`) | `conversation/builder.ts`, `assistant/connector-access.ts` |
 | `apps/server/src/builder/assistant/` | muda `connector-access.ts` (sai `mayNote`), `assistant.ts`, `prompt/assistant.md` | — |
-| `apps/server/src/builder/conversation/` | muda `builder.ts:94`, `permissions.ts:31-32`, `prompt/prompt.ts:170`, `prompt/builder.md:46` | — |
+| `apps/server/src/builder/conversation/` | muda `builder.ts:94`, `permissions.ts:31-32`, `prompt/prompt.ts:170`, `prompt/builder.md:47` | — |
 | `packages/hub-api/src/` | muda `tools.ts` (sai `connectorNoteSave`, entra `conceptPropose`), `ontology.ts`, `ontology-failures.ts` | o Hub, a web |
 | `apps/web/src/hub/connectors/` | apaga `notes.tsx`; muda `connection-page.tsx`, `text.ts` | — |
 
@@ -877,9 +874,9 @@ As linhas `@mastra/core` (skill `mastra`: `createTool`), `zod`, `drizzle-orm`, `
 
 ### A ordem do trabalho
 
-1. Apagar primeiro: `noteSaveTool` (`connector-tools.ts:255-282`; **PR976:** `:278-305`), `provedAndSaved` e `save`
-   (`notes.ts:78-151`), `erase` (`:153-162`) e a rota dele, `mayNote` (`assistant.ts:260-263`; **PR976:** o `note` de
-   `maysFor`), a seção "# Notes on a connection" (`assistant.md:45-47`; **PR976:** `:51-53`), `BUILDER_TOOL.connectorNoteSave` e o
+1. Apagar primeiro: `noteSaveTool` (`connector-tools.ts:278-305`), `provedAndSaved` e `save`
+   (`notes.ts:78-151`), `erase` (`:153-162`) e a rota dele, o `note` de `maysFor`
+   (`assistant.ts:237-247`), a seção "# Notes on a connection" (`assistant.md:60-62`), `BUILDER_TOOL.connectorNoteSave` e o
    `Notebook` da página da conexão. Regras: C75, delivery L7.
 2. A saída de `consultar` com `colunas`, e o dublê com `userType` (de `INTEGER` `I`, `TEXT` `S`,
    `REAL` `F`, `DATE` `D`), com um teste que lê a resposta gravada de `refusals.ts:54-57`.
@@ -892,7 +889,7 @@ As linhas `@mastra/core` (skill `mastra`: `createTool`), `zod`, `drizzle-orm`, `
 5. `hub/ontology/propose.ts` e `proof.ts`: a prova fora da transação (D22), a proposta e os itens
    numa transação. Regras: C21, C27, C48, C49.
 6. `concept-propose.ts` nos dois agentes; a linha "Notebook:" vira "Old notes to prove again: …"
-   (U5 acrescenta "Concepts:"); `builder.md:46` manda o `source` da memória do app só para o que é do
+   (U5 acrescenta "Concepts:"); `builder.md:47` manda o `source` da memória do app só para o que é do
    app, e o código com significado para `concept_propose` (o #815).
 7. A migração das notas e `notesTool` lendo os itens `NOTE`.
 8. A skill do Sankhya, `SKILL.md:63-65`: "Record what you proved" vira "propose it with
@@ -921,15 +918,12 @@ Sonnet para as telas, se a unidade se dividir.
 
 - A proposta por item e em lote, a primeira revisão do dono e a permissão L1, a decisão com a
   revisão esperada, as telas.
-- Ler: **PR976:** `apps/server/src/hub/identity/roles.ts:24-31`, `:71-85`, `:86-110`;
-  **PR976:** `apps/server/src/hub/identity/admission.ts:27`, `:109`; `admission.ts:150` (`allows`),
-  `:326-355` (`admit`, o `NOT_FOUND` sem a role); **PR976:**
-  `apps/server/src/builder/assistant/company-memory-routes.ts:26-37` (o membro admitido, a role
+- Ler: `apps/server/src/hub/identity/roles.ts:24-31`, `:71-85`, `:86-110`;
+  `apps/server/src/hub/identity/admission.ts:27`, `:109`; `admission.ts:157` (`allows`),
+  `:333-362` (`admit`, o `NOT_FOUND` sem a role);   `apps/server/src/builder/assistant/company-memory-routes.ts:26-37` (o membro admitido, a role
   conferida depois, `NOT_IN_ROLE` com o nome da operação); `apps/server/src/hub/copies/accept.ts:19-45`
   (a linha travada, a tentativa); `apps/server/src/platform/database.ts:171` (`violatedConstraint`);
-  `packages/hub-api/src/failures.ts:265-272` (`NOT_IN_ROLE`), `:273-282`; **PR976:**
-  `packages/hub-api/src/company-memory.ts:74-108` (a forma de `defineOperation`); **PR976:**
-  `settings/route.tsx:26-45` e `settings/company-memory.tsx` (uma seção, um arquivo); o cartão do
+  `packages/hub-api/src/failures.ts:265-272` (`NOT_IN_ROLE`), `:273-282`;   `packages/hub-api/src/company-memory.ts:74-108` (a forma de `defineOperation`);   `settings/route.tsx:26-45` e `settings/company-memory.tsx` (uma seção, um arquivo); o cartão do
   `copy_propose` na conversa (`apps/web/src/builder/conversation/`, a peça que desenha o resultado
   dele).
 
@@ -949,7 +943,7 @@ Sonnet para as telas, se a unidade se dividir.
 As ações (`admission.ts`): `proposeConcepts: { by: 'MEMBER', statement: undefined, locks: true }`
 (todo membro, `Q1`; trava a linha do membro até gravar, S8) e `approveConcepts: { by: 'MEMBER',
 statement: { ontology: ['approve'] }, locks: true }`. As leituras (`GET`) admitem com
-`readCompany`, sem trava, como a memória da empresa (**PR976:** `company-memory-routes.ts:29`). O papel da empresa criado pela empresa não
+`readCompany`, sem trava, como a memória da empresa (`company-memory-routes.ts:29`). O papel da empresa criado pela empresa não
 recebe `ontology` (ele guarda só conectores, `roles.ts`, `memberBase`).
 
 As rotas, `BASE = '/api/companies/{companyId}/ontology'`:
@@ -1048,15 +1042,15 @@ da primeira gravar (código C65: provar a corrida). As telas com Vitest e a pág
 ## U5 As ferramentas
 
 **Base e modelo.** O commit da U4, com o Alinhamento fechado. Sonnet, no molde das leituras tipadas do
-Assistente (**PR976:** `apps/server/src/builder/connectors/typed-reads.ts`) e de `connector-tools.ts`.
+Assistente (`apps/server/src/builder/connectors/typed-reads.ts`) e de `connector-tools.ts`.
 
 ### As linhas da tabela
 
 - Ferramentas geradas dos metadados, o recorte do SDK (a forma).
-- Ler: `connector-tools.ts:1-120` (o acesso, `runIn`, o `NOT_GRANTED`), **PR976:** `:188-216`
+- Ler: `connector-tools.ts:1-120` (o acesso, `runIn`, o `NOT_GRANTED`), `:188-216`
   (`answerWords`, `readOn`); `assistant.ts:253-275`; `apps/server/src/hub/identity/role-statements.ts:14-24`
   (a operação de cada papel); `apps/server/src/builder/conversation/prompt/prompt.ts:159-178`;
-  **PR976:** `apps/server/src/builder/assistant/instructions.ts`; o Twenty nas linhas da tabela de
+  `apps/server/src/builder/assistant/instructions.ts`; o Twenty nas linhas da tabela de
   referência; `node_modules/zod` (`z.toJSONSchema`).
 
 ### O raio da mudança
@@ -1095,7 +1089,7 @@ U1) dá o tipo bruto de cada coluna; o tipo do campo é compatível com ele por 
 `CODE`; `S` com `TEXT`, `ID`, `CODE`, `BOOLEAN`; `D` com `DATE`; `H` com `TIMESTAMP` e `DATE`
 (`refusals.ts:54-57` grava `H` e `F`); `null` é compatível com tudo. Uma prova só tira um campo do
 descritor, nunca acrescenta: a máquina detecta e a pessoa decide (0064). O dublê manda `D` para as
-datas que guarda como texto (`fake-sales.ts:181-185`).
+datas que guarda como texto (`fake-sales.ts:184-188`).
 
 As ferramentas, em `builder/ontology/tools.ts`:
 
@@ -1137,19 +1131,18 @@ revisão gravada pela rota da U4 (T5).
 
 - Um provedor recusa o esquema das ferramentas: relatar com a resposta; não mudar a forma.
 - O dublê do Sankhya recusa uma SQL que o compilador escreve (o #819): consertar o dublê no molde de
-  `fake-sales.ts:175-208`, nunca o compilador para caber no dublê.
+  `fake-sales.ts:178-211`, nunca o compilador para caber no dublê.
 
 ## U6 O Brain
 
 **Base e modelo.** O commit da U4, com a U9 do Alinhamento fechada. Sonnet, no molde de
-`company-memory.ts` do PR976.
+`company-memory.ts`.
 
 ### As linhas da tabela
 
 - A página projetada, com as regras da issue 984.
-- Ler: **PR976:** `apps/server/src/builder/assistant/company-memory.ts:24-55` (as ferramentas só de
-  leitura, as áreas), `:104-115` (`knowledgeOf`), `:345-356` (`companyScopes`); **PR976:**
-  `company-memory-routes.ts` (as gravações de pessoa); `node_modules/@mastra/core/dist/knowledge/host-writes.d.ts:12-31`;
+- Ler: `apps/server/src/builder/assistant/company-memory.ts:24-55` (as ferramentas só de
+  leitura, as áreas), `:104-115` (`knowledgeOf`), `:345-356` (`companyScopes`);   `company-memory-routes.ts` (as gravações de pessoa); `node_modules/@mastra/core/dist/knowledge/host-writes.d.ts:12-31`;
   `dist/knowledge/links.d.ts:4-11`; `dist/knowledge/index.d.ts:78-88`; `apps/server/src/main.ts:318`
   (a tabela de comandos, `reseal`) e `apps/server/src/reseal.ts`.
 
