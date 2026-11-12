@@ -933,6 +933,8 @@ Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-
 
 Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit bb3fa5ab38632ef6372cf10fd47fa55b693169ef), de novo com as duas mudanças feitas na construção, às duas perguntas do firstmate (a etiqueta de emergência no pull request https://github.com/developmentconexus-ops/conexus/pull/963, e aprovar o cartão alterado: o diagrama no quadro isolado da decisão D, e o arquivo achado pelo conteúdo, porque o Mastra apaga o nome do resumo): "1. Okay 2. Okay". A aprovação de ba0eb6f1503d272465a36192d0a234536a732c43 acima fica como histórico.
 
+Emenda do cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovada em 2026-11-11 (commit d9db8fa18d33fd106ec591f523ddf5f75f2bbdf7), só com o texto errado corrigido (a linha do diagrama da tabela de referência, que ainda descrevia o desenho antes da decisão D, e a dívida das conferências antecipadas, que subestimava o que elas fazem), à pergunta "Entra com a emenda?": "2. Sim"
+
 ## Alinhamento do Assistente
 
 Cartão curto de Alinhamento do Assistente (`docs/steps/assistente-alinhamento-do-assistente.md`) aprovado em 2026-11-11 (commit 1b6c23ec0e575110346905ddca168d0203c2eb0e), às duas perguntas da página: "1. A aprovação da página do cartão" e "2. As perguntas da prova (U11), tirar/trocar/acrescentar ou aprovar como estão": "1. Aprovo 2. Aprovo". A lista de perguntas da U11 fica aprovada como está escrita; o cartão não muda, e a marca "para revisão do fundador" da U11 continua no texto como o registro de que a lista passou por ele.
