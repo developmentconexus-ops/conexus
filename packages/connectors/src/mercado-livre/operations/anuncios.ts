@@ -7,6 +7,7 @@ import {
   Offset,
   PathId,
   readOf,
+  SCROLL_TTL_MS,
   Scan,
   scanAlone,
   searchTypeOf,
@@ -32,6 +33,13 @@ export const anuncios = readOf({
     })
     .refine(scanAlone.check, scanAlone.issue),
   list: 'results',
+  paged: {
+    paging: {
+      ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 100 },
+      ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
+    },
+    changed: null,
+  },
   probe: () => ({ offset: 0, limit: 5 }),
   request: (input, account) =>
     get(`/users/${sellerOf(account)}/items/search`, {

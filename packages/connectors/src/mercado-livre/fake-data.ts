@@ -9,9 +9,10 @@ export const REDIRECT_URI = 'https://hub.exemplo.test/integrations/return'
 
 export const SELLER = Object.freeze({ ref: '123456789', label: 'PADARIASOL' })
 
+/** More than the 1,000 an offset search reaches: only a scan reads them all. */
 export const ITEMS = Array.from(
-  { length: 12 },
-  (_, index) => `MLB10000000${String(index + 1).padStart(2, '0')}`,
+  { length: 1300 },
+  (_, index) => `MLB1000000${String(index + 1).padStart(4, '0')}`,
 )
 export const ORDER = 2000000000001
 export const PACK = 2000000000099
@@ -47,6 +48,33 @@ export const ORDER_BODY = {
       unit_price: 44.95,
     },
   ],
+}
+
+/** 120 orders, the first `ORDER_BODY`; each changed a minute after the one before, so a changed-since filter keeps the newest. */
+export const ORDERS = Array.from({ length: 120 }, (_, index) => ({
+  ...ORDER_BODY,
+  id: ORDER + index,
+  date_last_updated: new Date(Date.UTC(2026, 8, 10, 13, index)).toISOString(),
+}))
+
+/** The rows of a scan's page: its `scroll_id` carries where the next page starts (`<route>-<offset>`). */
+export function scanOf<T>(rows: readonly T[], query: URLSearchParams, route: string) {
+  const scroll = query.get('scroll_id')
+  const offset = scroll === null ? 0 : Number(scroll.slice(route.length + 1))
+  const limit = Number(query.get('limit') ?? 50)
+  const page = rows.slice(offset, offset + limit)
+  return { rows: page, scrollId: `${route}-${offset + page.length}`, total: rows.length, limit }
+}
+
+/** A scan's cursor the double never gave. */
+export function badScroll(query: URLSearchParams, route: string): boolean {
+  const scroll = query.get('scroll_id')
+  return scroll !== null && !new RegExp(`^${route}-\\d+$`).test(scroll)
+}
+
+export const BAD_SCROLL = {
+  status: 400,
+  body: { message: 'invalid scroll_id', error: 'bad_request', status: 400 },
 }
 
 export function itemBody(id: string, index: number) {

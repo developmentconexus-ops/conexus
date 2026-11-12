@@ -1,6 +1,8 @@
 import type { Route } from './fake-data.ts'
 import {
+  BAD_SCROLL,
   BUYER,
+  badScroll,
   CLAIM,
   ITEMS,
   ORDER,
@@ -9,6 +11,7 @@ import {
   paging,
   SELLER,
   SELLER_PATH,
+  scanOf,
 } from './fake-data.ts'
 
 const QUESTIONS = Array.from({ length: 12 }, (_, index) => ({
@@ -50,6 +53,18 @@ export const MORE_ROUTES: readonly Route[] = [
     group: 'perguntas',
     pattern: /^\/questions\/search$/,
     answer: ({ query }) => {
+      if (query.get('search_type') === 'scan') {
+        if (badScroll(query, 'questions')) return BAD_SCROLL
+        const scan = scanOf(QUESTIONS, query, 'questions')
+        return {
+          body: {
+            total: scan.total,
+            limit: scan.limit,
+            questions: scan.rows,
+            scroll_id: scan.scrollId,
+          },
+        }
+      }
       const page = pageOf(QUESTIONS, query, 50)
       return {
         body: {
