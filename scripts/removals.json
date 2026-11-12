@@ -2277,14 +2277,14 @@
     }
   },
   {
-    "id": "assistant-machine-stale-killed",
+    "id": "machine-stale-killed-on-replace",
     "file": "apps/server/src/builder/machine/conversation.ts",
     "find": "session.found === undefined && otherTemplate === 'replace'",
     "replace": "false",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/machine.test.ts",
-      "name": "antes de ligar"
+      "file": "src/builder/machine/conversation-machines.test.ts",
+      "name": "com `replace`, a de outro molde é morta"
     }
   },
   {
