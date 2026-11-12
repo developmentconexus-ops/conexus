@@ -78,10 +78,12 @@ test('a saída de um comando longo chega inteira, como o Mastra a manda: nenhum 
   }
   const { hub, ana, conversations } = await conversing(t, calling(many, long))
   const { events } = await asked(t, { hub, person: ana, conversations })
-  const [fifty, single] = commandsOf(events)
+  // Both commands run in one step, so their results arrive in whichever order the machine finishes.
+  const outputs = commandsOf(events).map((command) => command.output ?? '')
   const lines = Array.from({ length: 50 }, (_, at) => String(at + 1))
-  assert.equal(fifty?.output?.trimEnd(), lines.join('\n'))
-  assert.equal(single?.output?.length, 9000)
+  assert.equal(outputs.length, 2)
+  assert.ok(outputs.some((output) => output.trimEnd() === lines.join('\n')))
+  assert.ok(outputs.some((output) => output.length === 9000))
 })
 
 /** The parts of the Builder's turn that outlive it: its tool calls and the version. */

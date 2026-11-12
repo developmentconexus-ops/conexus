@@ -2279,8 +2279,8 @@
   {
     "id": "assistant-machine-stale-killed",
     "file": "apps/server/src/builder/machine/conversation.ts",
-    "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
-    "replace": "undefined",
+    "find": "session.found === undefined && otherTemplate === 'replace'",
+    "replace": "false",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/machine.test.ts",
@@ -2301,7 +2301,7 @@
   {
     "id": "assistant-read-numbered",
     "file": "apps/server/src/builder/assistant/connector-access.ts",
-    "find": "const n = (readsOfRun.get(requestContext) ?? 0) + 1",
+    "find": "const n = (readsOfTurn.get(turn) ?? 0) + 1",
     "replace": "const n = 1",
     "test": {
       "cwd": "apps/server",
