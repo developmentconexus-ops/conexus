@@ -82,7 +82,7 @@ Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, 
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina. Medição de uso, segundo idioma. Domínio de empresa.
+Login social. Arquivos enviados por pessoas para dentro de um app (os enviados à máquina da conversa do Assistente entram no lançamento, pelo cartão de "O Assistente do dia a dia"). Medição de uso, segundo idioma. Domínio de empresa.
 
 ### As suas respostas
 

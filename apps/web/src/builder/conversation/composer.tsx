@@ -62,7 +62,7 @@ function Attached(props: { attachments: Attachments; onRemove: (index: number) =
   if (attachments.files.length === 0) return null
   return (
     <InputGroupAddon align="block-start">
-      <AttachmentGroup role="group" aria-label="Arquivos anexados">
+      <AttachmentGroup role="group" aria-label="Arquivos anexados" className="flex-wrap">
         {attachments.files.map((file, index) => (
           <FileChip
             key={file.data}

@@ -7,7 +7,7 @@ import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import type { SentFile } from './test-assistant.ts'
+import type { Upload } from './test-assistant.ts'
 import { created, talking } from './test-assistant.ts'
 import {
   COMMAND,
@@ -21,6 +21,8 @@ import {
 } from './test-files.ts'
 import { REAL_MODEL, subscribed, textOf } from './test-real-model.ts'
 
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 const WRITE = 'mastra_workspace_write_file'
 const SHOW = 'show_file'
 const PROPOSE = 'propose_app'
@@ -37,8 +39,8 @@ const QUESTIONS = {
 const MERMAID = 'Assim:\n\n```mermaid\nflowchart TD\n  A[Pedido] --> B[Entrega]\n```'
 const SUMMARY = 'A padaria registra o desconto de cada cliente.'
 
-const sheet = file('precos.xlsx', 'application/octet-stream', Buffer.alloc(4_096, 1))
-const document = file('proposta.docx', 'application/octet-stream', Buffer.alloc(4_096, 2))
+const sheet = file('precos.xlsx', XLSX_TYPE, Buffer.alloc(4_096, 1))
+const document = file('proposta.docx', DOCX_TYPE, Buffer.alloc(4_096, 2))
 const bigPdf = file('politica.pdf', PDF_TYPE, Buffer.concat([PDF, Buffer.alloc(200_000, 'x')]))
 
 /** The question of the person's turn the call belongs to, and how many tool calls that turn has made so far. */
@@ -113,7 +115,7 @@ async function proposalOf(on: Awaited<ReturnType<typeof conversation>>): Promise
 
 test('o roteiro do Assistente do dia a dia', async (t) => {
   const on = await conversation(t, journeyModel())
-  async function said(question: string, files: SentFile[] = []) {
+  async function said(question: string, files: Upload[] = []) {
     assert.equal(endOf(await on.say(question, files)), 'complete')
   }
   await said(QUESTIONS.rules, [bigPdf, sheet, document])
@@ -200,7 +202,7 @@ test('o roteiro com modelo de verdade', { timeout: 1_800_000 }, async (t) => {
     PDF_TYPE,
     readablePdf('Contrato de fornecimento: desconto de 5 por cento acima de 100 unidades.'),
   )
-  async function answered(question: string, files: SentFile[] = []) {
+  async function answered(question: string, files: Upload[] = []) {
     assert.equal(endOf(await say(question, files)), 'complete')
     const messages = await messagesOf(on.hub, on.ana, url)
     const asked = messages.findLastIndex((message) => message.role === 'person')
