@@ -3,31 +3,43 @@
 O fundador, em 2026-11-12, sobre o cartão anterior, e a régua deste: "tem que ter tudo isso, tá? Tem
 que ter, senão a gente perde as informações. E verificar como que a gente vai implementar isso".
 
-É a etapa 3 da lista "O Brain e a Ontologia" do [roteiro](../roadmap.md), no trilho de frente, logo
-depois do Sync de qualquer conector e antes da Capacidade 4 (`A1`). Espera no seu rascunho até o Sync
-fechar e o cartão da entrada conversada (PR 982) ser aprovado (delivery L5); por isso a verificação
-`second-card` fica vermelha no pull request dele, como no PR 982.
+É a etapa 3 da lista "O Brain e a Ontologia" do [roteiro](../roadmap.md), no trilho de frente,
+depois da política de dados pessoais dos conectores e antes da Capacidade 4 (`A1` e a ordem dos
+cartões de 2026-11-12). O Sync de qualquer conector fechou (PR 991). Este cartão espera no seu
+rascunho até o cartão da entrada conversada (PR 982) entrar e a política de dados pessoais fechar
+(delivery L5); até lá a verificação `second-card` fica vermelha, porque o trilho de frente tem o
+cartão da política e este.
 
-Seis estudos, fora do repositório (delivery L21), traçaram as referências: os quatro do Brain e da
+Sete estudos, fora do repositório (delivery L21), traçaram as referências: os quatro do Brain e da
 Ontologia que fundaram as decisões 0064 a 0066, o estudo da Ontologia (o princípio, a modelagem, o
-lugar no código e quem a usa) e o estudo do exemplo, que rodou um CRM sobre um ERP real de ponta a
-ponta num protótipo descartável e decidiu trinta escolhas. Os estudos do G4 OS ensinam só estrutura:
-nenhum texto dele entra aqui. O que vale para as etapas seguintes está nas decisões
-[0064](../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) e
-[0065](../decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md); o que vale para esta
-etapa está aqui.
+lugar no código e quem a usa), o estudo do exemplo, que rodou um CRM sobre um ERP real de ponta a
+ponta num protótipo descartável e decidiu trinta escolhas, e o estudo do metamodelo, que comparou
+peça por peça o Palantir (a documentação e os dois SDKs), o Fabric IQ, o OCEL 2.0, o SAP e o
+schema.org. O fundador adotou o metamodelo como a referência oficial da Ontologia ("1. Sim"). Os
+estudos do G4 OS ensinam só estrutura: nenhum texto dele entra aqui. O que vale para as etapas
+seguintes está nas decisões
+[0064](../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md),
+[0065](../decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e
+[0067](../decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md); o que vale para
+esta etapa está aqui.
 
-Cada linha citada foi lida no código do dia: `main` em `ac468d16` (2026-11-12, depois do PR 983), o
-ramo do PR 982 em `90a64c5e` e o ramo do Alinhamento do Assistente (PR 976) em `3372c312`, marcado
-onde a linha só existe nele. As versões: `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0,
-`drizzle-orm` 1.0.0-rc.4, `zod` 4.6.5. A prateleira: `twenty@b76d0217`, `budibase@624d68a`,
-`airbyte@8aed3123`, `palantir/osdk-ts@9ca39db0`; as páginas públicas do Palantir Foundry foram lidas
-em 2026-11-12. O builder de cada unidade parte do commit que fechar o Sync, com o Alinhamento
-fechado (a U5 e a U6 tocam o que ele muda: `assistant.ts`, `instructions.ts`, `company-memory.ts`,
+Cada linha citada foi lida no código do dia: `main` em `0bcea104` (2026-11-12, com o Alinhamento do
+Assistente, PR 976, e o fechamento do Sync, PR 991) e o ramo do PR 982 em `71995218`. As versões:
+`@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, `drizzle-orm` 1.0.0-rc.4, `zod` 4.6.5. A prateleira:
+`twenty@b76d0217`, `budibase@624d68a`, `airbyte@8aed3123`. Os dois SDKs do Palantir não estão na
+prateleira: os estudos os clonaram à parte, públicos (`palantir/osdk-ts@9ca39db0` no estudo da
+Ontologia, `@3371bee3` e `palantir/foundry-platform-typescript@75fe1c05` no do metamodelo); quem
+precisar reler clona o repositório público no commit citado. As páginas públicas do Palantir
+Foundry, do Fabric IQ (learn.microsoft.com), do OCEL 2.0 (ocel-standard.org e o artigo
+arxiv.org/html/2403.01975) e do schema.org foram lidas em 2026-11-12. O builder de cada unidade
+parte do commit que fechar a política de dados pessoais, com o Alinhamento fechado (a U5 e a U6
+tocam o que ele mudou: `assistant.ts`, `instructions.ts`, `company-memory.ts`,
 `connector-tools.ts`), e relê nele cada linha citada.
 
-O exemplo do CRM (Cliente, Pedido, Vendedor) ilustra; nunca é regra. Os códigos, as contagens e os
-nomes de pessoa do exemplo são inventados. Nenhum nome de tabela, coluna, código ou contagem do ERP
+O exemplo do roteiro, uma distribuidora inventada que pede um painel de vendas por representante,
+ilustra; nunca é regra. O metamodelo é genérico: nenhuma peça nasce do caso de uma empresa, e qual
+forma um papel toma numa empresa é proposta do Builder pelos dados dela (o princípio, abaixo). Os
+códigos, as contagens e os nomes de pessoa do exemplo são inventados. Nenhum nome de tabela, coluna, código ou contagem do ERP
 da empresa entra no repositório; onde um builder precisa do nome de uma tabela do dicionário do
 Sankhya, ele está na skill do conector (`packages/connectors/src/sankhya/skill/SKILL.md:45-54`).
 
@@ -62,42 +74,70 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
 - À issue 984 (o link sem área no Brain): "Pode".
 - A Ontologia é da empresa: um módulo do Hub, como as Cópias, nunca definida dentro de um app. Um app,
   depois, só declara os conceitos que lê e recebe os tipos gerados.
+- À ordem dos cartões: "Tudo o que voce recomenda" (a política de dados pessoais antes da
+  Ontologia).
+- Ao protótipo da página Conhecimento: "1. Aprovado" (uma página própria, Conhecimento, no menu da
+  esquerda depois de Cópias, aberta a todo membro, e não dentro de Configurações) e "2. Em faixas"
+  (o grafo dela abre em faixas: memória, conceitos, sistemas). Antes, sobre o protótipo que punha
+  tudo em Configurações: "o que eu queria era mais uma página, igual a gente tem a página de cópias".
+- Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
+  empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
+  especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
+  da [empresa dele]? Tipo porque está perguntando isso? Para levantar o exemplo?". Antes: "não é
+  para a gente querer criar uma ontologia dos zeros [...] Quero utilizar coisas que são validadas,
+  estudadas e consolidadas".
+- Às três perguntas do G4 que este cartão deixava abertas. Ao estudo da memória do G4: "B Sim" (a
+  nota pessoal vale na hora e a pessoa corrige na tela), "C sim" (o que vale para a empresa toda o
+  Assistente oferece no cartão `propose_company_memory`), "D Por agora não" (um fato não vence). Ao
+  estudo de vínculos: "E1a. Sim" e "E1b. Sim" (as áreas são as equipes do Better Auth; os membros
+  leem a pasta da área, e a responsável e o administrador escrevem); a E2a e a E2b, "Não, beleza,
+  eu concordo com você" e, logo depois, "Vamos fazer igual você falou, então" (o vínculo de um
+  usuário de um sistema a um membro mora numa tabela do Hub e só se constrói quando o primeiro app
+  pedir "o meu"; quem entra com a própria conta não precisa de vínculo).
 
 ## A página do fundador
 
-**No fim desta etapa** você pede um CRM ao Builder e ele propõe, com a prova, os conceitos que o CRM
-precisa (o que é um Cliente, um Pedido, um Vendedor na sua empresa, os campos, o que cada código quer
-dizer e de onde cada um é lido); você aprova numa tela, e daí em diante o Builder e o Assistente
-respondem pelos conceitos aprovados, sem reler o ERP a cada conversa.
+**No fim desta etapa** você pede um app de vendas ao Builder e ele propõe, com a prova, os conceitos
+que o app precisa: as coisas do negócio (um Parceiro, um Documento), os papéis delas (um Cliente é um
+recorte do Parceiro), os conceitos com dados próprios ligados a outro (um Representante, com o seu
+cadastro, ligado ao seu Parceiro), os campos, o que cada código quer dizer, as ligações com nome
+("veio de", "atendido por") e de onde cada um é lido. Você aprova na página Conhecimento, e daí em
+diante o Builder e o Assistente respondem pelos conceitos aprovados, sem reler o ERP a cada conversa.
 
-**O roteiro de uso**, no Hub no ar, numa empresa de teste com o Sankhya de teste ligado.
+**O roteiro de uso**, no Hub no ar, numa empresa de teste com o Sankhya de teste ligado. A empresa é
+uma distribuidora inventada; os nomes, os códigos e as contagens também.
 
 1. Na página da conexão do Sankhya aparece "Inventário: 812 tabelas, 9.310 campos, 2.140 códigos,
-   lido em 12/11 às 09:00" e o botão **Ler de novo**. Em Configurações › Conceitos da empresa:
-   "Nenhum conceito aprovado ainda."
-2. Você pede o CRM ao Builder. Ele diz que leu o inventário, pergunta só o que o dicionário não diz
-   ("o que é a operação 101 na sua empresa?") e mostra o cartão "Proposta: 3 conceitos para Um CRM",
-   com a fonte e as linhas da prova de cada um, e **Revisar e aprovar**.
-3. Em Conceitos da empresa › Para revisar, você aprova tudo menos um código ("Bonificação não é
-   pedido") e toca **Aprovar 29 e recusar 1**. A lista Conceitos mostra Cliente, Pedido e Vendedor,
-   e Histórico mostra "Revisão 1, proposta pelo Builder na conversa de Dono, aprovada por Dono".
-4. Um administrador e um membro entram. Os dois veem **Sugerir mudança** num código; o membro propõe
-   "a 101 é o pedido do representante". O membro vê "aguarda quem cuida dos conceitos" e nenhum botão
-   de aprovar; o administrador aprova, e Histórico mostra "Revisão 2, proposta por Membro, aprovada
-   por Administrador".
-5. Você pergunta ao Assistente "quantos pedidos o vendedor 42 tem neste mês, por tipo de operação?".
-   A resposta traz cada tipo com o seu significado ("101, Pedido do representante"), e o registro da
-   conversa mostra a ferramenta `concept_query`.
-6. Você pergunta ao Assistente "o que é um Pedido aqui?" e ele responde pela página do Pedido no
-   Brain: os campos, os códigos e as ligações, sem nenhum valor dos seus dados.
+   lido em 12/11 às 09:00" e o botão **Ler de novo**. No menu da esquerda, depois de Cópias, está
+   **Conhecimento**; a aba Conceitos diz "Nenhum conceito aprovado ainda."
+2. Você pede ao Builder "um painel de vendas por representante". Ele diz que leu o inventário,
+   pergunta só o que o dicionário não diz ("o que é a operação 101 na sua empresa?") e mostra o cartão
+   "Proposta: 5 conceitos para Um painel de vendas por representante" (Parceiro; Cliente, papel de
+   Parceiro; Representante, ligado ao seu Parceiro; Documento; Origem do item, a junção que diz de que
+   documento um documento veio), com a fonte e as linhas da prova de cada um, e **Revisar e aprovar**.
+3. Em Conhecimento › Para revisar, você aprova tudo menos um código ("Bonificação não é venda") e
+   toca **Aprovar 29 e recusar 1**. A aba Conceitos mostra Parceiro, "Cliente · papel de Parceiro",
+   Representante, Documento e Origem do item, e Histórico mostra "Revisão 1, proposta pelo Builder na
+   conversa de Dono, aprovada por Dono".
+4. Um administrador e um membro entram. Os dois veem Conhecimento e **Sugerir mudança** num código; o
+   membro propõe "a 101 é o pedido do representante". O membro vê "aguarda quem cuida dos conceitos"
+   e nenhum botão de aprovar; o administrador aprova, e Histórico mostra "Revisão 2, proposta por
+   Membro, aprovada por Administrador".
+5. Você pergunta ao Assistente "quantos documentos deste mês o representante 42 atendeu, por tipo de
+   operação?" e "quantos clientes temos?". A primeira traz cada tipo com o seu significado ("101,
+   Pedido do representante"); a segunda conta o papel pela fonte dele. O registro da conversa mostra
+   a ferramenta `concept_query` nas duas.
+6. Você pergunta "o que é um Cliente aqui?" e ele responde pela página do Cliente no Brain: "um papel
+   de Parceiro: o parceiro marcado como cliente", com o link para a página do Parceiro, os campos e
+   as ligações, sem nenhum valor dos seus dados.
 7. A página da conexão não mostra mais o caderno. As notas antigas estão em Para revisar como "Do
    caderno", à espera de serem refeitas com prova.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página (as palavras de que ela
-depende, `L1`, `P1`, `M`, `Q1` e `R1`, você já deu em 2026-11-12). Ao montar U1: a lista de
-permissões do banco das tabelas novas vai num pull request próprio, com a sua palavra (dados D11);
-ela é a `P1` escrita linha a linha. No fim: faz o roteiro na empresa de teste e na sua, diz o que viu
-e aprova os textos das telas.
+depende, `L1`, `P1`, `M`, `Q1`, `R1`, o metamodelo e a página Conhecimento, você já deu em
+2026-11-12). Ao montar U1: a lista de permissões do banco das tabelas novas vai num pull request
+próprio, com a sua palavra (dados D11); ela é a `P1` escrita linha a linha. No fim: faz o roteiro na
+empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 
 **Fica de fora.**
 
@@ -106,19 +146,30 @@ e aprova os textos das telas.
   login de leitura do Assistente): pela sua `M`, depois da harness do Builder e das capacidades. O
   estudo do exemplo deixou as respostas prontas para esse cartão; elas estão em "O que os estudos
   deixaram", e nada aqui as constrói.
+- **O fluxo da empresa** (os estados de um documento, as passagens e o que move cada uma, e a
+  pergunta que atravessa ligações, como "quantos orçamentos viraram pedido"): a etapa seguinte, no
+  molde do Machinery do Palantir, lida dos documentos como no OCEL. `concept_query` não atravessa
+  ligações, de propósito.
+- **O grafo da página Conhecimento** ("2. Em faixas"): quando entrar, abre em faixas. O que ele mostra
+  na tela ainda está em aberto com você, e esta etapa não o desenha: ela constrói as abas Conceitos,
+  Para revisar e Histórico, e a página abre em Conceitos.
 - **A saúde da Ontologia** (a prova refeita todo dia, o aviso no Início): a etapa 4 da lista. Esta
   etapa grava as provas que ela vai ler, e já tira dos agentes um campo cuja coluna uma prova nova viu
   mudar de tipo.
-- **Duas fontes para um conceito**, as ligações sugeridas pelo inventário e as escritas ligadas a um
-  conceito: etapas próprias.
+- **Duas fontes para um conceito**, a interface (uma forma comum a dois conceitos, como o cliente de
+  um ERP e o comprador de uma loja virtual), as ligações sugeridas pelo inventário (as ligações que o
+  dicionário declara: o estudo do metamodelo recomenda guardá-las, mas não gravou a forma das tabelas
+  de ligação do dicionário) e as escritas ligadas a um conceito: etapas próprias.
 - **A contagem de linhas por tabela no inventário.** Contar cada tabela do ERP seria uma consulta por
   tabela; nenhum estudo achou uma leitura só que dê o número. As contagens nascem com a prova de cada
   demanda. Por isso o passo 1 diz tabelas, campos e códigos, e não "com dados".
-- **Três perguntas do G4 OS, não decididas** (o G4 só ensina estrutura): um fato que vence (lá a
-  memória é confirmada, recusada, substituída, vencida ou apagada); uma memória pessoal separada da
-  da empresa; e as pessoas e áreas da empresa como parte do conhecimento. Hoje existem, sem decisão
-  sua: a memória de trabalho de cada pessoa no Assistente (`apps/server/src/builder/assistant/profile-memory.ts`) e o cargo e a área de cada membro
-  (`apps/server/src/hub/identity/tables.ts:240-241`). Esta etapa não muda nenhuma das duas.
+- **As três perguntas do G4 OS**, que você respondeu em 2026-11-12 (as suas palavras, acima): um fato
+  aprendido não vence, por agora; a memória de cada pessoa fica separada da da empresa (ela já
+  existe, `apps/server/src/builder/assistant/profile-memory.ts`); as pessoas e as áreas não são
+  conceitos da Ontologia: as áreas são as equipes do Better Auth, e o vínculo de um usuário de sistema
+  a um membro é uma tabela do Hub do primeiro app que pedir "o meu". Nada disso se constrói aqui: é
+  do cartão do Brain e do cartão dos apps. O cargo e a área de cada membro continuam onde estão
+  (`apps/server/src/hub/identity/tables.ts:240-241`).
 - **Os avisos guardados para um cartão** (`next-card`): esta etapa leva o #814 (quem grava no caderno:
   com a proposta, todo membro propõe e só "Conceitos da empresa" aprova, pela `Q1`) e o #815 (a
   memória do app guardando códigos que o caderno prova: o Builder passa a ler o código com o seu
@@ -126,8 +177,9 @@ e aprova os textos das telas.
   o cartão de cada um.
 
 **As decisões suas nesta etapa.** Nenhuma nova. As escolhas técnicas convergem nas referências e
-estão na tabela de referência; as três perguntas do G4 ficam registradas como não decididas, sem
-resposta inventada.
+estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
+conceito ligado) é proposta do Builder, provada pelos dados dela, e decisão de quem cuida dos
+conceitos, nunca uma regra do produto.
 
 ## O que os estudos deixaram para esta etapa
 
@@ -150,6 +202,60 @@ As regras de fronteira: só `hub/ontology` escreve nas tabelas `ontology.*` (C8)
 nunca conhece a Ontologia (recebe uma consulta provada, colunas e filtros tipados); o modelo nunca
 grava uma revisão (só a rota de aprovação); toda leitura de dados que nasce de um conceito roda por um
 caminho que já existe, a porta do conector e o executor único (decisão 0056).
+
+### O metamodelo
+
+A Ontologia modela as coisas, os papéis e as ligações com nome; o fluxo é a etapa seguinte. O
+metamodelo segue o Palantir no núcleo, o SAP e a herança do Fabric IQ no papel, e o OCEL 2.0 nas
+ligações de um documento; o fluxo, na etapa "O fluxo da empresa", segue o Machinery do Palantir
+(decisão [0067](../decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). O
+Palantir é a única referência com o ciclo inteiro em produção (o tipo, a ligação, o estado do tipo, a
+proposta, a ação e o fluxo); as outras completam o que ele não tem como peça.
+
+| Peça | A referência, nas suas palavras | No Conexus | Unidade |
+| --- | --- | --- | --- |
+| Conceito | Palantir, object type: "the schema definition of a real-world entity or event" (`object-link-types/object-types-overview/`) | `concept_version` | U1 |
+| Campo | Palantir, property; o valor no tempo do OCEL não, porque a Ontologia não guarda valor | `field_version` | U1 |
+| Código com significado | o Palantir não tem pronto; Twenty, `{value, label, position}` | `code_version` | U1 |
+| Ligação | Palantir, link type, "exactly two sides", por chave estrangeira ou tabela de junção (`object-link-types/create-link-type/`) | `relation_version`; uma ligação por junção pode ligar um conceito a ele mesmo | U1, U3 |
+| Ligação com dados | Palantir, object-backed link: "carries its own metadata (dates, roles, status, allocation)" (`ontology/ontology-structural-guidance/`) | a junção já é um conceito (`through`) | U1 |
+| Papel | Fabric IQ, herança: "a derived entity type has at most one base entity type" (`how-to-use-inheritance`); SAP, o papel do parceiro de negócio; Palantir, "Customer (single canonical type)" (`ontology/ontology-best-practices/`) | `concept_version.base`, nas duas formas abaixo | U1, U3 a U6 |
+| O papel numa ligação de um documento | OCEL 2.0, o qualificador, "in which role an object takes part in an event" (arxiv.org/html/2403.01975, a tabela `event_object`) | o nome de cada lado da ligação (`from_name`, `to_name`): "atendido por", "veio de" | U1 |
+| Estado do conceito | Palantir, statuses; o deprecated leva "A description for why" e "The resource that is meant to replace" (`object-link-types/metadata-statuses/`) | `state` e `replaced_by`; o prazo do Palantir não, porque nenhum app lê conceitos ainda (`M`) | U1, U4 |
+| Proposta e revisão | Palantir, "analogous to a Pull Request" (`ontologies/review-ontology-proposals/`); Fabric IQ, "a proposal-first model" | `proposal`, `revision` | U3, U4 |
+| Fonte com prova | Fabric IQ, "Source data remains in the system that owns it" (`how-to-bind-data`); Palantir, "A single datasource can only be used to back one object type" | `source_version` e `proof_run` | U1, U3 |
+| Regra em texto | Fabric IQ, rule: "Ontology doesn't run the rule against data or execute actions" (`how-to-use-rules`) | uma página do Brain que cita o conceito por link (0065) | U6, e o Brain |
+| Estado do negócio, passagem, fluxo | Palantir Machinery: os estados "must be enumerable", e as ações "are the cause of state transitions" (`machinery/core-concepts/`); OCEL, o log | a etapa "O fluxo da empresa" | depois |
+| Ação | Palantir, action type | a escrita declarada do conector (0062), ligada a um conceito depois | depois |
+| Interface, campo compartilhado, tipo de valor, grupo de tipos | Palantir (`interfaces/interface-overview/`, `shared-property-overview/`, `value-types-overview/`, `type-groups/`) | fora agora: nenhum segundo leitor; a interface reabre em "Ligações e duas fontes" | — |
+| Banco de objetos, biblioteca de consulta do SDK | Palantir, Funnel e Object Set Service; no OSDK, `where`, `fetchPage`, `$link` | fora: o banco de objetos são as cópias do Sync, e a consulta dos apps é o `db` | — |
+
+As páginas do Palantir estão sob `https://www.palantir.com/docs/foundry/`, as do Fabric IQ sob
+`https://learn.microsoft.com/en-us/fabric/iq/ontology/`. As frases do OCEL, do SAP e do schema.org
+passaram por um leitor que resume a página (o estudo do metamodelo diz o limite).
+
+**As duas formas do papel.** As referências usam duas, e o Conexus tem as duas, para qualquer
+empresa:
+
+- **O papel como recorte de um conceito base** (Fabric IQ e SAP). "Cliente, papel de Parceiro": o
+  conceito declara `base`, tem a mesma chave da base e a sua própria fonte provada, e a prova extra é
+  uma contagem: as linhas do papel sem par na base devem ser zero (`ROLE_NOT_SUBSET`). Como no Fabric,
+  ele herda o "é um", não a fonte nem as ligações: o agente segue o "é um" até a base. Não nasce um
+  segundo tipo sobre a mesma coisa, que o Palantir proíbe; nasce um recorte nomeado e provado de um
+  tipo só.
+- **O conceito com chave própria ligado a outro** (o papel com dados próprios do SAP; no Palantir, um
+  tipo distinto ligado ao canônico). "Representante": um conceito comum, com o seu cadastro, a sua
+  chave e os seus campos, e a ligação "é o parceiro" até o Parceiro. Esta forma já cabe nas peças do
+  cartão; a emenda só a nomeia.
+
+Qual forma um papel toma numa empresa sai dos dados dela, nunca do produto: o Builder propõe a forma
+que o inventário e a prova mostram (um recorte, quando o papel é uma marca ou um perfil do cadastro
+base; um conceito ligado, quando o papel tem um cadastro próprio, com a sua chave), e quem tem
+"Conceitos da empresa" aprova. Nenhum nome de papel vem pronto, e nenhuma regra do produto escolhe
+entre as duas. Três conceitos soltos para a mesma coisa seriam o que o Palantir chama de "Department
+Silos", "Each department creates their own version of shared entities", e o agente contaria a mesma
+pessoa três vezes; a interface só serve a dois tipos diferentes com uma forma comum, e hoje nenhum
+leitor a pede.
 
 ### As trinta escolhas do exemplo, e onde cada uma entra
 
@@ -192,11 +298,24 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
 
 ### Correções aos estudos, contra o código de hoje
 
-- **Não há "Configurações › Conhecimento" nem "Atividade".** As Configurações são uma seção por
-  arquivo de rota (`apps/web/src/routes/_app/companies/$companyId_/settings/route.tsx:26-45`,
-  web W32); a memória da empresa é "Memória da empresa", no grupo `company` (`settings/company-memory.tsx`). A tela nova é Configurações › Conceitos da empresa, e a revisão
-  aparece em Histórico, dentro dela. Nenhuma tela do Hub mostra o Brain por área: a página `ontologia:`
-  é dos agentes, e o passo 6 do roteiro a vê pela resposta do Assistente.
+- **A tela é a página Conhecimento, no menu da esquerda, e não uma seção de Configurações** (o
+  fundador, "1. Aprovado"; a versão anterior deste cartão a punha em Configurações › Conceitos da
+  empresa). O menu é `RailPlaces`
+  (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`); Cópias, a última, aparece só com
+  `may.manageCopies` (`:87-94`), e Conhecimento vem depois dela, sem condição: todo membro a vê. As
+  rotas novas ficam ao lado de `copies.index.tsx` e `copies.$copyId.tsx`: `knowledge.index.tsx` (as
+  abas) e `knowledge.$concept.tsx` (um conceito). Configurações continua com o que é dela (os papéis,
+  as pessoas, a Memória da empresa, `settings/route.tsx:26-45` e `settings/company-memory.tsx`).
+  Nenhuma tela do Hub mostra o Brain por área nesta etapa: a página `ontologia:` é dos agentes, e o
+  passo 6 do roteiro a vê pela resposta do Assistente.
+- **A ligação por junção era ambígua.** A versão anterior dizia "pares `[campo_de, campo_para]`" e "o
+  conceito `through`" sem dizer como os pares atravessam a junção; o "veio de" de um documento não
+  tinha como ser declarado. Com `through`, `pairs` é `[campo_de, campo_da_junção]` e `through_pairs`,
+  `[campo_da_junção, campo_para]`: o "Join table dataset relationship type" do Palantir
+  (`object-link-types/create-link-type/`).
+- **Os SDKs do Palantir não estão na prateleira** (a versão anterior citava `osdk-ts@9ca39db0` como
+  prateleira; o `MANIFEST.md` dela não tem nenhum dos dois). São clones públicos que os estudos
+  fizeram à parte, citados com o commit.
 - **As rotas moram em `/api/companies/{companyId}/…`**, como todas (`packages/hub-api/src/copies.ts:155`),
   e não em `/api/ontology/…`.
 - **A prova conta mal hoje.** O caderno grava `provedRows` como o número de linhas que a resposta
@@ -243,17 +362,20 @@ deixa vencer ou apaga; e o contexto da empresa, com áreas, documentos e pessoas
 só muda por pedido de mudança que um administrador aprova. O agente lê o contexto da empresa
 "primeiro o estado, depois só o documento que precisa". Deste cartão, o Conexus toma só o último
 ponto, e ele já é o desenho: o catálogo de uma linha por conceito no contexto, e o descritor inteiro
-só quando o agente pede (`concept_read`). As três outras peças são as perguntas não decididas da
-página do fundador.
+só quando o agente pede (`concept_read`). As três outras peças o fundador respondeu em 2026-11-12, e
+nenhuma é desta etapa (a página do fundador, "Fica de fora"). O G4 não modela o fluxo nem os papéis:
+o grafo dele é o desenho das ligações entre as fichas da memória pessoal, sem extrair entidades, e
+os "workflows" dele são texto de instrução. Ele ensina a metade do Brain (0065), e nada da metade da
+Ontologia.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 As tabelas | o esquema `ontology` em versões e visões, a política por linha, as permissões da `P1` num pull request próprio, os testes de isolamento | `apps/server/src/hub/ontology/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/platform/` | dados | o Sync fechado |
+| U1 As tabelas | o esquema `ontology` em versões e visões, o papel (`base`) e a ligação por junção (`through_pairs`), a política por linha, as permissões da `P1` num pull request próprio, os testes de isolamento | `apps/server/src/hub/ontology/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/platform/` | dados | a política de dados pessoais fechada |
 | U2 O inventário | a capacidade `inventory` no kit, o workflow sem modelo ao ligar e em **Ler de novo**, o resumo na página da conexão | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/ontology/`, `apps/web/src/hub/connectors/`, `packages/hub-api/src/` | dados | U1 |
-| U3 A proposta com prova | a prova pela porta (contagem e forma), o `conceptRead` do kit, `concept_propose` nos dois agentes no lugar de `connector_note_save`, as notas como itens `NOTE`, a saída do caderno da tela | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/assistant/`, `apps/server/src/builder/conversation/prompt/`, `apps/server/migrations/`, `apps/web/src/hub/connectors/`, `packages/hub-api/src/` | testes | U1 |
-| U4 A aprovação e as telas | a permissão "Conceitos da empresa" (`L1`), a rota de decidir, a primeira revisão do dono, **Sugerir mudança** (`Q1`, `R1`), as telas Conceitos, Para revisar, Histórico e o cartão da proposta na conversa | `apps/server/src/hub/ontology/`, `apps/server/src/hub/identity/`, `packages/hub-api/src/`, `apps/web/src/hub/ontology/`, `apps/web/src/routes/`, `apps/web/src/builder/conversation/` | web | U3 |
+| U3 A proposta com prova | a prova pela porta (contagem e forma, e o subconjunto de um papel), o `conceptRead` do kit, `concept_propose` nos dois agentes no lugar de `connector_note_save`, as notas como itens `NOTE`, a saída do caderno da tela | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/connectors/`, `apps/server/src/builder/connectors/`, `apps/server/src/builder/assistant/`, `apps/server/src/builder/conversation/prompt/`, `apps/server/migrations/`, `apps/web/src/hub/connectors/`, `packages/hub-api/src/` | testes | U1 |
+| U4 A aprovação e as telas | a permissão "Conceitos da empresa" (`L1`), a rota de decidir, a primeira revisão do dono, **Sugerir mudança** (`Q1`, `R1`), a página Conhecimento no menu com as abas Conceitos, Para revisar e Histórico, e o cartão da proposta na conversa | `apps/server/src/hub/ontology/`, `apps/server/src/hub/identity/`, `packages/hub-api/src/`, `apps/web/src/hub/ontology/`, `apps/web/src/routes/`, `apps/web/src/builder/conversation/` | web | U3 |
 | U5 As ferramentas | os descritores por turno, `concept_read` e `concept_query` no Builder e no Assistente, o catálogo no contexto | `apps/server/src/hub/ontology/`, `apps/server/src/builder/ontology/`, `apps/server/src/builder/conversation/`, `apps/server/src/builder/assistant/`, `packages/hub-api/src/` | testes | U4 e o Alinhamento fechado |
 | U6 O Brain | as páginas `ontologia:<empresa>#conceitos/…` depois de cada aprovação, as regras de link da issue 984, o comando que refaz | `apps/server/src/builder/assistant/` (o módulo único do Knowledge), `apps/server/src/hub/ontology/`, `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts` | segurança | U4 e a U9 do Alinhamento fechada |
 
@@ -264,9 +386,14 @@ da U5 se a U5 não tocar `company-memory.ts`, e não toca.
 medidos com `wc -l` no `main`: `hub/copies/tables.ts` 320 (sete tabelas), `propose.ts` 271,
 `grants.ts` 164, `notes.ts` 162, `connector-tools.ts` 309, `copy-read.ts` 166, `search-sql.ts` 89,
 `copy-clock/workflow.ts` 84).
-U1: 500. U2: 700. U3: 800. U4: 1.250. U5: 650. U6: 250. Total da etapa: cerca de 4.150, um pouco acima
-dos cerca de 4.000 da delivery L2, com esta válvula: Se o acumulado depois da U4 passar de 3.300, a U6 sai para o cartão seguinte do Brain,
-com os critérios 24 a 29, antes de construir a U5. Se a U4 passar de 1.300, ela se divide em duas (a rota e as telas) antes de seguir.
+U1: 520. U2: 700. U3: 1.000. U4: 1.275. U5: 680. U6: 260. Total da etapa: cerca de 4.450, acima dos
+cerca de 4.000 da delivery L2, com esta válvula: se o acumulado depois da U4 passar de 3.300, a U6
+sai para o cartão seguinte do Brain, com os critérios 24 a 29 e a parte da U6 do 33, antes de
+construir a U5. Se a U4 passar de 1.300, ela se divide em duas (a rota e as telas) antes de seguir.
+O metamodelo acrescentou cerca de 300 linhas (o estudo do metamodelo estima de 250 a 350: o papel, a
+junção e a prova de subconjunto), e com ele a estimativa do acumulado depois da U4 já é de cerca de
+3.500: se a medida real confirmar, a válvula manda a U6 para o cartão seguinte do Brain, e o
+fechamento diz o número.
 
 ## Os critérios de aceite
 
@@ -289,7 +416,7 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 | 13 | U4 | A primeira revisão de uma empresa recusa quem não é dono com `FIRST_REVISION_OWNER` (`POST .../ontology/proposals/{id}/decisions`), e nada se grava | `apps/server/src/hub/ontology/decide.test.ts`, "a primeira é do dono" | must |
 | 14 | U4 | Depois da primeira, um membro ou um desenvolvedor recebe `NOT_IN_ROLE` ao decidir; dono e administrador aprovam; quem propôs aprova a própria proposta, e a revisão guarda os dois nomes | `decide.test.ts`, "L1 e R1" | must |
 | 15 | U4 | Uma decisão com `expectedRevision` velha recusa com `REVISION_STALE` e não grava nada; duas decisões ao mesmo tempo sobre a mesma base: uma grava, a outra `REVISION_STALE` | `decide.test.ts`, "a revisão esperada" | must |
-| 16 | U4 | Aprovar um conceito sem a sua fonte ou sem os campos do título e da chave, um campo sem o seu conceito, um código sem o seu campo, uma ligação sem os seus conceitos, os campos dos pares ou o conceito `through`, ou um `DEPRECATE` cujo `replacedBy` não existe, nem na proposta nem no ativo, recusa com `DECISION_INCOMPLETE` e os itens; aprovar um item `NOTE` recusa com `ITEM_NOT_APPROVABLE`; um item já decidido, `ITEM_DECIDED` | `decide.test.ts`, "o conjunto fechado" | must |
+| 16 | U4 | Aprovar um conceito sem a sua fonte ou sem os campos do título e da chave, um campo sem o seu conceito, um código sem o seu campo, uma ligação sem os seus conceitos, os campos dos pares ou o conceito `through`, ou um `DEPRECATE` cujo `replacedBy` não existe, nem na proposta nem no ativo, recusa com `DECISION_INCOMPLETE` e os itens; aprovar um item `NOTE` recusa com `ITEM_NOT_APPROVABLE`; um item já decidido, `ITEM_DECIDED` (o papel e a base: o critério 31) | `decide.test.ts`, "o conjunto fechado" | must |
 | 17 | U4 | Todo membro vê **Sugerir mudança**; a sugestão de um membro vira proposta aberta com quem propôs; a mesma chave de tentativa duas vezes dá uma proposta só | `apps/server/src/hub/ontology/suggest.test.ts`; `apps/web/src/hub/ontology/suggest.test.tsx` | must |
 | 18 | U4 | Para quem não aprova, Para revisar não mostra os botões e diz "Aguarda quem cuida dos conceitos."; na primeira revisão, "Aguarda o dono." | `apps/web/src/hub/ontology/review.test.tsx` | must |
 | 19 | U5 | Um conceito recusado, um aposentado e um de outra empresa não aparecem no catálogo nem em `concept_read`; chamado assim mesmo em `concept_query`, `CONCEPT_UNKNOWN` | `apps/server/src/builder/ontology/tools.test.ts`, "o catálogo" | must |
@@ -303,17 +430,21 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 | 27 | U6 | Todo link que o servidor escreve leva área e caminho; com "Devolução" só na empresa B, nenhuma gravação do servidor nem da pessoa na empresa A deixa um `[[Devolução]]` sem área chegar ao armazenamento, e nenhuma leitura de A ou de B mostra aresta entre as duas; nenhum código chama a leitura com `read: 'all'` | `company-memory-ontology.test.ts`, "a issue 984" | must |
 | 28 | U6 | Uma página escrita por pessoa com `[[…]]` sem área, ou com a área de outra empresa, é recusada com `COMPANY_MEMORY_LINK_INVALID` | `apps/server/src/builder/assistant/company-memory-routes.test.ts`, "o link" | must |
 | 29 | U6 | Se a gravação das páginas falha depois da aprovação, a revisão fica, a falha vai ao log, e o comando `reproject-ontology` (ou a aprovação seguinte) completa as páginas | `company-memory-ontology.test.ts`, "refazer" | must |
+| 30 | U3 | `concept_propose` de um papel (`ADD_CONCEPT` com `base`) cuja fonte traz uma chave fora da fonte da base volta em `refused` com `ROLE_NOT_SUBSET` e a contagem em `detail`; com o número de campos de chave diferente do da base, `ROLE_KEY_MISMATCH`; com a base nem ativa nem na proposta, `CONCEPT_INCOMPLETE`; o papel cuja contagem dá zero é aceito, com a prova gravada | `apps/server/src/hub/ontology/propose.test.ts`, "o papel"; `packages/connectors/src/sankhya/concept-read.test.ts`, "o subconjunto" | must |
+| 31 | U4 | Aprovar um papel sem aprovar a base (nem ela estar ativa), ou aprovar um `DEPRECATE` de uma base que tem papel ativo, recusa com `DECISION_INCOMPLETE` e os itens (no segundo, os papéis), e nada se grava | `apps/server/src/hub/ontology/decide.test.ts`, "o papel e a base" | must |
+| 32 | U3, U4 | Uma ligação de Documento com Documento pela junção Origem do item, com `pairs` e `throughPairs`, é provada, aprovada e aparece no descritor com os dois nomes e a junção; sem `throughPairs` com `through`, ou com um campo de par fora da junção, volta `RELATION_INVALID` | `propose.test.ts`, "a junção"; `decide.test.ts`, "a junção" | must |
+| 33 | U5, U6 | O catálogo diz "Cliente (papel de Parceiro)", o descritor do papel traz `base`, e a página do papel no Brain começa por "Papel de [[ontologia:<empresa>#conceitos/parceiro]]", com a área e o caminho | `apps/server/src/builder/ontology/tools.test.ts`, "o papel"; `company-memory-ontology.test.ts`, "o papel" | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Página da conexão, bloco Inventário | "Lendo o inventário…" enquanto a primeira rodada corre | conector sem dicionário: "Inventário: 12 leituras declaradas" | o bloco em esqueleto (W34) | rodada `FAILED` ou `INTERRUPTED`: "Não foi possível ler o inventário." e, para quem gerencia, **Ler de novo** | a conexão que saiu: a página de não encontrado de hoje | quem não gerencia as ligações vê o resumo, sem **Ler de novo** | `PARTIAL`: "Inventário parcial: lido até o limite." e **Ler de novo** |
-| Conceitos da empresa › Conceitos | "Nenhum conceito aprovado ainda. O Builder propõe conceitos quando você pede um app." | o mesmo | a lista em esqueleto | a falha da leitura com **Tentar de novo** (W17) | — | todo membro lê | — |
-| Conceitos da empresa › página de um conceito | — | conceito sem códigos: a coluna Códigos vazia | esqueleto | **Tentar de novo** | "Este conceito não existe." e **Voltar aos conceitos** | todo membro lê e vê **Sugerir mudança** | aposentado: "Aposentado em 12/11: use Pedido." no topo |
-| Conceitos da empresa › código, **Sugerir mudança** | o formulário com "Quer dizer", "Explicação" e "Por quê" | — | o botão em espera depois do toque | a frase da falha e **Tentar de novo**, a chave guardada (W24) | o código que saiu: "Este código não existe mais." e **Voltar ao conceito** | todo membro propõe | — |
-| Conceitos da empresa › Para revisar | "Nada para revisar." | o mesmo | esqueleto | **Tentar de novo** | a proposta que fechou: "Esta proposta já foi decidida." e **Ver o histórico** | sem a permissão: "Aguarda quem cuida dos conceitos."; na primeira revisão: "Aguarda o dono." | `REVISION_STALE`: "Os conceitos mudaram enquanto você revisava." e **Ver de novo**; `DECISION_INCOMPLETE`: os itens que faltam marcados |
-| Conceitos da empresa › Histórico | "Nenhuma revisão ainda." | o mesmo | esqueleto | **Tentar de novo** | — | todo membro lê | — |
+| Conhecimento › Conceitos | "Nenhum conceito aprovado ainda. O Builder propõe conceitos quando você pede um app." | o mesmo | a lista em esqueleto | a falha da leitura com **Tentar de novo** (W17) | — | todo membro lê | — |
+| Conhecimento › página de um conceito | — | conceito sem códigos: a coluna Códigos vazia | esqueleto | **Tentar de novo** | "Este conceito não existe." e **Voltar aos conceitos** | todo membro lê e vê **Sugerir mudança** | aposentado: "Aposentado em 12/11: use Documento." no topo; um papel: "Papel de Parceiro" no topo, com o link para a base |
+| Conhecimento › código, **Sugerir mudança** | o formulário com "Quer dizer", "Explicação" e "Por quê" | — | o botão em espera depois do toque | a frase da falha e **Tentar de novo**, a chave guardada (W24) | o código que saiu: "Este código não existe mais." e **Voltar ao conceito** | todo membro propõe | — |
+| Conhecimento › Para revisar | "Nada para revisar." | o mesmo | esqueleto | **Tentar de novo** | a proposta que fechou: "Esta proposta já foi decidida." e **Ver o histórico** | sem a permissão: "Aguarda quem cuida dos conceitos."; na primeira revisão: "Aguarda o dono." | `REVISION_STALE`: "Os conceitos mudaram enquanto você revisava." e **Ver de novo**; `DECISION_INCOMPLETE`: os itens que faltam marcados |
+| Conhecimento › Histórico | "Nenhuma revisão ainda." | o mesmo | esqueleto | **Tentar de novo** | — | todo membro lê | — |
 | Conversa, cartão "Proposta: N conceitos" | os conceitos, as linhas da prova e **Revisar e aprovar** | todos os itens recusados: "Nada a propor: o Builder explica na conversa." | — | — | a proposta que fechou: "Esta proposta já foi decidida." | o mesmo cartão; o botão leva a Para revisar, onde a frase de permissão aparece | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -328,45 +459,56 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 
 ### Os desenhos de caixas
 
-A 1280 px, Configurações › Conceitos da empresa:
+A 1280 px, Conhecimento, no menu da esquerda depois de Cópias:
 
 ```
-┌ ← Voltar   Conceitos da empresa ───────────────────────────────────────────────┐
+┌ Conhecimento ────────────────────────────────────────────────────────────────────┐
 │ [ Conceitos ]  [ Para revisar  2 ]  [ Histórico ]                                │
 ├──────────────────────────────────────────────────────────────────────────────────┤
-│ Conceito    Lido de                   Campos  Códigos  Desde a revisão  Estado   │
-│ Cliente     Sankhya · parceiros          4       2           1          ativo    │
-│ Pedido      Sankhya · notas              8       5           1          ativo    │
-│ Vendedor    Sankhya · vendedores         2       0           1          ativo    │
+│ Conceito          É               Lido de                Campos  Códigos  Estado │
+│ Parceiro          —               Sankhya · parceiros       5       0     ativo  │
+│ Cliente           papel de        Sankhya · parceiros       2       0     ativo  │
+│                   Parceiro                                                       │
+│ Representante     —               Sankhya · vendedores      4       0     ativo  │
+│ Documento         —               Sankhya · cabeçalhos      9       5     ativo  │
+│ Origem do item    junção          Sankhya · origens         4       0     ativo  │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │ Revisão atual: 2, aprovada por Administrador em 12/11 · Ver o histórico          │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-A página de um conceito:
+A página de um conceito, e a de um papel:
 
 ```
-┌ Pedido ──────────────────────────────────────────────────────────────────────────┐
-│ Pedido de venda de um cliente, antes de virar nota. Um por número único.         │
-│ Também: pedido de venda, venda · chave: Número único · mostra: Número do pedido  │
-│ Lido de   Sankhya, cabeçalho da nota, só pedidos de venda · Ver a consulta       │
+┌ Documento ───────────────────────────────────────────────────────────────────────┐
+│ Um documento de venda: orçamento, pedido ou nota. Um por número único.           │
+│ Também: venda, nota · chave: Número único · mostra: Número do documento          │
+│ Lido de   Sankhya, cabeçalho dos documentos de venda · Ver a consulta            │
 │ Prova     1.240 linhas em 12/11 10:02                                            │
 │ Campo              Tipo            No sistema   Códigos                          │
 │ Número único       código          (coluna)                                      │
 │ Tipo de operação   lista           (coluna)     2 · Ver e sugerir                │
-│ Situação           lista           (coluna)     3 (do ERP)                       │
+│ Representante      código          (coluna)                                      │
 │ Valor              dinheiro (R$)   (coluna)                                      │
-│ Ligações  é de um Cliente · é de um Vendedor                                     │
+│ Ligações  é de um Parceiro · atendido por um Representante ·                     │
+│           veio de um Documento (pela Origem do item)                             │
 │                                                          [ Sugerir mudança ]     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+┌ Cliente ─────────────────────────────────────────────────────────────────────────┐
+│ Papel de Parceiro: o parceiro marcado como cliente.                              │
+│ Lido de   Sankhya, parceiros com a marca de cliente · Ver a consulta             │
+│ Prova     812 linhas, todas em Parceiro, em 12/11 10:02                          │
+│ Campos    Código do parceiro (chave) · Nome                                      │
+│ Ligações  as do Parceiro                                    [ Sugerir mudança ]  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 O código, ao tocar **Ver e sugerir**:
 
 ```
-┌ Pedido › Tipo de operação ───────────────────────────────────────────────────────┐
+┌ Documento › Tipo de operação ────────────────────────────────────────────────────┐
 │ Código  Quer dizer               Explicação                       Origem         │
-│ 100     Pedido de balcão         Venda feita na loja.             empresa        │
+│ 100     Venda de balcão          Venda feita na loja.             empresa        │
 │ 101     Pedido externo           Venda tirada fora da loja.       empresa        │
 │ ┌ Sugerir mudança no 101 ─────────────────────────────────────────────────────┐  │
 │ │ Quer dizer   [ Pedido do representante                         ]           │  │
@@ -382,15 +524,15 @@ Para revisar:
 
 ```
 ┌ Para revisar ────────────────────────────────────────────────────────────────────┐
-│ "Um CRM: clientes, pedidos e vendedores" · pelo Builder, conversa de Dono       │
+│ "Um painel de vendas por representante" · pelo Builder, conversa de Dono         │
 │ 30 itens · base: nenhuma revisão                     [ Aprovar todos ] [ Ver ]   │
-│ Pedido                                                         ☑ aprovar         │
-│   Lido de: Sankhya, cabeçalho da nota · Prova: 1.240 linhas · Ver a consulta    │
-│   Campos  Número único (chave) · Número do pedido · Data · Cliente · Vendedor ·  │
-│           Valor (R$) · Situação · Tipo de operação                               │
-│   Tipo de operação  100 Pedido de balcão  ☑ · 101 Pedido externo  ☑ ·            │
-│                     120 Bonificação  ☐ recusar: [ Não é pedido, é brinde ]       │
-│ Ligações  o Pedido é de um Cliente · o Pedido é de um Vendedor   ☑ aprovar       │
+│ Cliente · papel de Parceiro                                    ☑ aprovar         │
+│   Lido de: Sankhya, parceiros · Prova: 812 linhas, 0 fora de Parceiro            │
+│ Documento                                                      ☑ aprovar         │
+│   Lido de: Sankhya, cabeçalho · Prova: 1.240 linhas · Ver a consulta             │
+│   Tipo de operação  100 Venda de balcão  ☑ · 101 Pedido externo  ☑ ·             │
+│                     120 Bonificação  ☐ recusar: [ Não é venda, é brinde ]        │
+│ Ligações  atendido por um Representante · veio de um Documento   ☑ aprovar      │
 │                                           [ Aprovar 29 e recusar 1 ]             │
 │ ● "O 101 é o pedido do representante" · por Membro · base: revisão 1             │
 │   antes  Pedido externo · depois  Pedido do representante    [Recusar…][Aprovar] │
@@ -432,15 +574,17 @@ produto antigo não tem estas telas: nenhuma captura a seguir.
 | A proposta por item e em lote | U3, U4 | `copy_propose` e o cartão Ligar (`apps/server/src/hub/copies/propose.ts:214`, `tables.ts:160-185`) | Palantir, propostas "analogous to a Pull Request", uma tarefa por recurso, "one at a time or in bulk" | itens decididos um a um ou juntos | embrulhado | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): a proposta do CRM decidida item a item | `"B1"`, "Q1 / R1" | `apps/server/src/hub/ontology/propose.ts`  |
 | A prova sem linha | U3 | `notes.ts:115-151` (conta as linhas devolvidas); `app_data_check` "never a row" (`apps/server/src/builder/app-data/tools.ts:27`) | o próprio Conexus | contagem e colunas com tipo, nunca a linha | nativo | — | `"B1"` | `apps/server/src/hub/ontology/proof.ts`  |
 | A SQL do conceito no dialeto do conector | U3 | `copy-read.ts:25-60` (a consulta guardada como `Q`, `dated`, `pageSql`); `search-sql.ts:23-88` | Twenty `record-crud/json-schemas/find-tool.json-schema.ts:10-61` (filtros por campo); o protótipo do exemplo | a consulta provada como subconsulta, filtros tipados, uma linha a mais | nativo para o kit (reusa `search-sql.ts`) | — | não precisa | `packages/connectors/src/sankhya/concept-read.ts`  |
+| O papel como recorte provado | U1, U3 a U6 | nenhum: um conceito não diz de qual é papel | Fabric IQ, `how-to-use-inheritance` ("a derived entity type has at most one base entity type"; não herda a fonte nem as ligações); SAP, o papel do parceiro de negócio; Palantir, `ontology/ontology-best-practices/` ("Customer (single canonical type)") e "A single datasource can only be used to back one object type" | um recorte nomeado de um tipo só, com "é um" até a base | embrulhado: a prova de subconjunto é nossa, porque nenhuma referência prova o recorte contra a fonte | o estudo do metamodelo, seções 3.1 e 3.3 (fora do repositório) | "1. Sim" (o metamodelo) | — |
+| A ligação por junção, também de um conceito com ele mesmo | U1, U3 | `relation_version` com `through` e pares ambíguos (a versão anterior deste cartão) | Palantir, `object-link-types/create-link-type/` ("Join table dataset relationship type"); OCEL 2.0, a ligação objeto-objeto (`object_object`, arxiv.org/html/2403.01975, seção 6) | os pares de um lado até a junção e da junção até o outro | nativo da forma deste cartão | — | "1. Sim" (o metamodelo) | — |
 | A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (`:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
-| As telas | U4 | Configurações por arquivo de rota (`settings/route.tsx:26-45`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o desenho do estudo do exemplo, seção 8.1 | lista, página, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1 | "Q1 / R1"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId_/settings/concepts.tsx`  |
+| As telas | U4 | o menu da esquerda (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`) e a página de Cópias (`copies.index.tsx`, `copies.$copyId.tsx`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o Mastra Studio, a tela Knowledge (a página própria, que o fundador mandou); os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento | uma página no menu: lista, página do conceito, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento (fora do repositório) | "Q1 / R1", "1. Aprovado"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId/knowledge.index.tsx`, `knowledge.$concept.tsx`  |
 | Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:312-332` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
-| O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `palantir/osdk-ts@9ca39db0` `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
+| O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `palantir/osdk-ts@9ca39db0` (clone público, fora da prateleira) `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
 | A página projetada | U6 | `apps/server/src/builder/assistant/company-memory.ts:47-55` (as áreas), `:104-115` | `@mastra/core@1.82.0` `dist/knowledge/host-writes.d.ts:12-31` (`upsertPage`, `unchanged` "writes nothing"); `dist/knowledge/links.d.ts:4-11` (o nome solto resolve na área, "else to the one in the whole store") | `upsertPage` idempotente; `[[área#caminho]]` com índice | nativo, com as regras da issue 984 | — | "Pode" (issue 984) | `apps/server/src/builder/assistant/ontology-pages.ts`  |
 
 A memória em dois lugares e o contexto da empresa do G4 OS (só estrutura) ficam fora da tabela: são
-as três perguntas não decididas da página do fundador, sem unidade.
+as três perguntas que o fundador respondeu em 2026-11-12, sem unidade nesta etapa.
 
 **A medida do transplante.** Nada vem do `conexus-os`: a Ontologia não existe no produto antigo.
 
@@ -486,7 +630,7 @@ estrangeira para `auth.company` (`onDelete: 'cascade'`, como `copies.copy`) e
 `policy(SCOPE_ROLES.COMPANY, 'all', sql\`company_id = ${scoped.companyId}\`)`. Uma chave é
 `text CHECK (key ~ '^[a-z][a-z0-9_]{0,39}$')`. Toda coluna `jsonb` tem o seu esquema Zod nomeado em `packages/hub-api/src/ontology.ts`, lido na
 entrada e na saída do banco (C27): `ProofShape` (`{ column: string; type: string | null }[]`, até
-200, o tipo bruto do sistema, como `consultar` o dá; vira `FieldType` só na tabela de compatibilidade da U5), `SourceRead` (`{ kind: 'DOOR'; sql: string }`), `RelationPairs` (1 a 4 `[FieldKey, FieldKey]`),
+200, o tipo bruto do sistema, como `consultar` o dá; vira `FieldType` só na tabela de compatibilidade da U5), `SourceRead` (`{ kind: 'DOOR'; sql: string }`), `RelationPairs` (1 a 4 `[FieldKey, FieldKey]`, em `pairs` e em `through_pairs`),
 `ItemContent` (o `ProposedItem` sem `kind`, ou `NoteContent`: `{ connectionId, concept, mapping,
 provingQuery, provedAt, provedRows }`, a forma de `notes.ts:16-23`). Os limites copiam os de hoje: descrição de conceito 500
 e de campo 200 (`copy.ts:122,129`), consulta 4.000 (`notes.ts:19`), chave de 1 a 4 (`copy.ts:65`).
@@ -496,14 +640,14 @@ e de campo 200 (`copy.ts:122,129`), consulta 4.000 (`notes.ts:19`), chave de 1 a
 | `inventory_run` | `id uuid` (`InventoryRunId`); `connection_id uuid`; `started_at timestamptz` | `id`; único `(company_id, id)`; índice `(company_id, connection_id, started_at DESC)` |
 | `inventory_end` | `run_id uuid`; `ended_at timestamptz`; `outcome text` (`COMPLETE`, `PARTIAL`, `FAILED`, `INTERRUPTED`); `reason text` (`InventoryReason`: `CAP`, ou o tipo da resposta: `REFUSED`, `AUTH_REFUSED`, `UNREADABLE`, `BUSY`, `UNREACHABLE`, `DEADLINE`, `NOT_IN_ROLE`); `pages integer`; `CHECK ((reason IS NULL) = (outcome IN ('COMPLETE', 'INTERRUPTED')))` | `run_id`; estrangeira `(company_id, run_id)` com `cascade` |
 | `inventory_entry` | `run_id uuid`; `kind text` (`TABLE`, `FIELD`, `CODE`, `OPERATION`); `name text` (até 200: `TABELA`, `TABELA.CAMPO`, `TABELA.CAMPO=valor`, ou o id da operação); `type text` (até 20, o tipo do dicionário); `label text` (até 200); `custom boolean` | `(run_id, kind, name)`; estrangeira `(company_id, run_id)` com `cascade` |
-| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta); `rows bigint` (zero é uma prova: Para revisar mostra "0 linhas"); `shape jsonb` (`ProofShape`); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)`; `query_hash text` (sha-256 da consulta); índice `(company_id, connection_id, query_hash, ran_at DESC)` (a prova mais nova da mesma consulta, U5; a consulta inteira passa do limite de uma entrada de btree) |
+| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta); `rows bigint` (zero é uma prova: Para revisar mostra "0 linhas"); `shape jsonb` (`ProofShape`); `outside_base bigint` (só na prova da fonte de um papel: as linhas sem par na base, pela `subset` da U3; `NULL` nas outras); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)`; `query_hash text` (sha-256 da consulta); índice `(company_id, connection_id, query_hash, ran_at DESC)` (a prova mais nova da mesma consulta, U5; a consulta inteira passa do limite de uma entrada de btree) |
 | `proposal` | `id uuid`; `demand text` (1 a 500); `proposed_by text`; `agent text` (`builder`, `assistant` ou `NULL` pela tela ou pela migração); `conversation_id text`; `base_revision integer`; `created_at`; `state` (`OPEN`, `CLOSED`); `attempt_key text`, `body_hash text` (a tela, C37) | `id`; único `(company_id, id)`; único `(company_id, attempt_key)`; único parcial `(company_id, conversation_id) WHERE state = 'OPEN' AND conversation_id IS NOT NULL` |
 | `proposal_item` | `proposal_id uuid`; `n integer`; `kind` (`ADD_CONCEPT`, `ADD_FIELD`, `SET_CODE`, `ADD_RELATION`, `SET_SOURCE`, `RENAME_LABEL`, `DEPRECATE`, `NOTE`); `target text` (o endereço: `pedido`, `pedido.tipo_operacao`, `pedido.tipo_operacao=101`, `@pedido_vendedor`); `content jsonb`; `proof_run_id uuid`; `decision` (`PENDING`, `APPROVED`, `REFUSED`); `reason text` (até 500); `decided_by text`; `decided_at`; `CHECK ((decision = 'PENDING') = (decided_at IS NULL))` | `(proposal_id, n)`; estrangeiras para `proposal` e `proof_run` |
 | `revision` | `number integer CHECK (number >= 1)`; `proposal_id uuid`; `proposed_by text`; `approved_by text`; `approved_at`; `hash text` (sha-256 hexadecimal) | `(company_id, number)` |
-| `concept_version` | `key`; `revision`; `name` (até 80); `plural` (até 80); `description` (até 500); `synonyms text[]`; `title_field`; `key_fields text[]` (`cardinality BETWEEN 1 AND 4`); `state` (`EXPERIMENTAL`, `ACTIVE`, `DEPRECATED`); `replaced_by` | `(company_id, key, revision)`; estrangeira `(company_id, revision)` para `revision` |
+| `concept_version` | `key`; `revision`; `name` (até 80); `plural` (até 80); `description` (até 500); `synonyms text[]`; `title_field`; `key_fields text[]` (`cardinality BETWEEN 1 AND 4`); `base` (a chave do conceito de que este é um papel, ou `NULL`; `CHECK (base IS NULL OR base <> key)`); `state` (`EXPERIMENTAL`, `ACTIVE`, `DEPRECATED`); `replaced_by` | `(company_id, key, revision)`; estrangeira `(company_id, revision)` para `revision` |
 | `field_version` | `concept`; `key`; `revision`; `name` (até 80); `description` (até 200); `type` (`ID`, `TEXT`, `INTEGER`, `DECIMAL`, `MONEY`, `DATE`, `TIMESTAMP`, `BOOLEAN`, `CODE`); `currency` (`^[A-Z]{3}$`); `unit` (até 12); `column_name` (até 128); `state`; `CHECK ((type = 'MONEY') = (currency IS NOT NULL))` | `(company_id, concept, key, revision)` |
 | `code_version` | `concept`; `field`; `value` (até 40); `revision`; `label` (até 80); `description` (até 200); `origin` (`DICTIONARY`, `PERSON`); `state` (`ACTIVE`, `DEPRECATED`) | `(company_id, concept, field, value, revision)` |
-| `relation_version` | `key`; `revision`; `from_concept`; `to_concept`; `cardinality` (`MANY_TO_ONE`, `ONE_TO_ONE`, `MANY_TO_MANY`); `pairs jsonb` (1 a 4 pares `[campo_de, campo_para]`); `from_name`, `to_name`; `through`; `state`; `CHECK ((cardinality = 'MANY_TO_MANY') = (through IS NOT NULL))` | `(company_id, key, revision)` |
+| `relation_version` | `key`; `revision`; `from_concept`; `to_concept`; `cardinality` (`MANY_TO_ONE`, `ONE_TO_ONE`, `MANY_TO_MANY`); `pairs jsonb` (1 a 4 pares `[campo_de, campo_para]`; com `through`, `[campo_de, campo_da_junção]`); `from_name`, `to_name` (o nome de cada lado, que é o papel na ligação: "atendido por", "veio de"); `through`; `through_pairs jsonb` (1 a 4 pares `[campo_da_junção, campo_para]`); `state`; `CHECK ((cardinality = 'MANY_TO_MANY') = (through IS NOT NULL))`; `CHECK ((through IS NULL) = (through_pairs IS NULL))`; `from_concept = to_concept` é permitido (o "veio de" de um documento, pela junção) | `(company_id, key, revision)` |
 | `source_version` | `concept`; `revision`; `connection_id uuid`; `read jsonb` (`{ "kind": "DOOR", "sql": … }`); `proof_run_id uuid` | `(company_id, concept, revision)` |
 
 As visões atuais, com `security_invoker = true`: `concept`, `field`, `code`, `relation`, `source`,
@@ -752,7 +896,7 @@ compilador de SQL é a peça de segurança da etapa.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/connectors/src/kernel/` | cria `concepts.ts` (o contrato `ConceptRead`); muda `definition.ts` | o Sankhya; `hub/connectors` |
-| `packages/connectors/src/sankhya/` | cria `concept-read.ts` e `concept-read.test.ts`; muda `door.ts` (`colunas` na saída de `consultar`), `fake-data.ts` (o `userType`), `definition.ts`, `skill/SKILL.md` (as linhas 63-65: propor com `concept_propose`) | o Sankhya |
+| `packages/connectors/src/sankhya/` | cria `concept-read.ts` e `concept-read.test.ts`; muda `door.ts` (`colunas` na saída de `consultar`), `fake-data.ts` (o `userType`), `fake-sales.ts` (o parceiro do vendedor e a origem do item), `definition.ts`, `skill/SKILL.md` (as linhas 63-65: propor com `concept_propose`, e as duas formas do papel) | o Sankhya |
 | `apps/server/src/hub/connectors/` | apaga `notes.ts`; cria `concept-port.ts` (a prova e a consulta pela porta, `readThrough`); muda `public.ts`, `builder-port.ts`, `assistant-port.ts` | `hub/ontology`, o Builder |
 | `apps/server/src/hub/ontology/` | cria `propose.ts`, `proof.ts`, `items.ts` (os esquemas), `notebook.ts` (os itens `NOTE` para `connector_notes`) | os agentes |
 | `apps/server/migrations/` | cria a migração que copia as notas para itens `NOTE` | — |
@@ -788,6 +932,8 @@ export type ConceptRead = Readonly<{
   door: string // the door operation that runs the statements (Sankhya: 'consultar')
   count(sql: string): string
   shape(sql: string): string
+  /** The rows of a role's read with no pair in its base's read, counted; zero proves the role is a subset. Keys pair by position. */
+  subset(role: string, base: string, keys: readonly (readonly [string, string])[]): string
   compile(call: ConceptCall): string
 }>
 ```
@@ -806,7 +952,11 @@ AS "sum_<campo>" FROM (<sql>) Q WHERE … GROUP BY <groupBy>) M', order: <groupB
 `groupBy` só de colunas `ID` ou `CODE`, até 2; sem `groupBy`, uma linha só, ordem `"count"`. `more`
 é a linha `EXTRA = 'S'` ou `completo: false` da porta (`door.ts:116`). Toda saída passa por
 `isOneReadStatement` antes de sair (a porta confere de novo, `door.ts:103`). `count(sql)` é `SELECT
-COUNT(*) AS N FROM (<sql>) Q`; `shape(sql)` é a página de uma linha.
+COUNT(*) AS N FROM (<sql>) Q`; `shape(sql)` é a página de uma linha. `subset(role, base, keys)` é
+`SELECT COUNT(*) AS N FROM (<role>) R WHERE NOT EXISTS (SELECT 1 FROM (<base>) B WHERE B.<b1> = R.<r1>
+AND …)`, de 1 a 4 pares; cada coluna de chave tem de estar na forma da prova do seu lado e casar
+`^[A-Za-z_][A-Za-z0-9_]{0,127}$`, senão a função recusa antes de escrever a SQL, e a saída passa por
+`isOneReadStatement` como as outras.
 
 `consultar` (`door.ts:124-142`) responde também `colunas: { nome: string; tipo: string | null }[]`,
 de `fieldsMetadata` (`name`, `userType`).
@@ -826,10 +976,10 @@ const Name = z.string().min(1).max(80)
 export const OntologyProposalId = z.uuid().brand<'OntologyProposalId'>()
 export const ProofRunId = z.uuid().brand<'ProofRunId'>()
 export const ProposedItem = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('ADD_CONCEPT'), concept: z.object({ key: ConceptKey, name: Name, plural: Name, description: z.string().max(500), synonyms: z.array(Name).max(10), titleField: FieldKey, keyFields: z.array(FieldKey).min(1).max(4), state: z.enum(['EXPERIMENTAL', 'ACTIVE']) }) }),
+  z.object({ kind: z.literal('ADD_CONCEPT'), concept: z.object({ key: ConceptKey, name: Name, plural: Name, description: z.string().max(500), synonyms: z.array(Name).max(10), titleField: FieldKey, keyFields: z.array(FieldKey).min(1).max(4), base: ConceptKey.optional(), state: z.enum(['EXPERIMENTAL', 'ACTIVE']) }) }), // base: this concept is a role of that one
   z.object({ kind: z.literal('ADD_FIELD'), concept: ConceptKey, field: z.object({ key: FieldKey, name: Name, description: z.string().max(200), type: FieldType, currency: z.string().regex(/^[A-Z]{3}$/).optional(), unit: z.string().max(12).optional(), column: z.string().max(128) }) }),
   z.object({ kind: z.literal('SET_CODE'), concept: ConceptKey, field: FieldKey, value: z.string().min(1).max(40), label: z.string().max(80), description: z.string().max(200).optional(), dictionary: z.string().max(200).optional() }), // the inventory entry the agent cites; origin is the server's
-  z.object({ kind: z.literal('ADD_RELATION'), relation: z.object({ key: RelationKey, from: ConceptKey, to: ConceptKey, cardinality: Cardinality, pairs: RelationPairs, fromName: Name, toName: Name, through: ConceptKey.optional() }) }),
+  z.object({ kind: z.literal('ADD_RELATION'), relation: z.object({ key: RelationKey, from: ConceptKey, to: ConceptKey, cardinality: Cardinality, pairs: RelationPairs, fromName: Name, toName: Name, through: ConceptKey.optional(), throughPairs: RelationPairs.optional() }) }), // with through: pairs reach the join, throughPairs leave it
   z.object({ kind: z.literal('SET_SOURCE'), concept: ConceptKey, sql: z.string().min(1).max(4000) }),
   z.object({ kind: z.literal('RENAME_LABEL'), target: Target, name: z.string().max(80), description: z.string().max(500).optional() }),
   z.object({ kind: z.literal('DEPRECATE'), target: Target, reason: z.string().max(500), replacedBy: Target.optional() }),
@@ -841,8 +991,9 @@ A ferramenta `concept_propose` (`BUILDER_TOOL.conceptPropose = 'concept_propose'
 `{ connection, demand, items: ProposedItem[] (1 a 40) }` (o conector sai da conexão); resposta
 `{ kind: 'PROPOSED', proposalId, baseRevision, items: { n, target, proof?: { rows, columns } }[], refused: { target, reason: ItemRefusal }[] }`,
 com `ItemRefusal = 'CONCEPT_INCOMPLETE' | 'FIELD_NOT_IN_PROOF' | 'CODE_UNSEEN' | 'PROOF_FAILED' |
-'NOT_IN_ROLE' | 'RELATION_INVALID' | 'TARGET_UNKNOWN' | 'ITEM_REPEATED'` (e, para `PROOF_FAILED`, o
-tipo da resposta em `detail`), ou a recusa da conexão como ela vem (`NOT_GRANTED`,
+'NOT_IN_ROLE' | 'RELATION_INVALID' | 'TARGET_UNKNOWN' | 'ITEM_REPEATED' | 'ROLE_NOT_SUBSET' |
+'ROLE_KEY_MISMATCH'` (e, para `PROOF_FAILED`, o tipo da resposta em `detail`; para `ROLE_NOT_SUBSET`,
+a contagem das linhas fora da base), ou a recusa da conexão como ela vem (`NOT_GRANTED`,
 `DATABASE_UNAVAILABLE`). A prova roda com o papel de quem fala: um item que precisa da porta e cujo
 papel não tem `consultar` volta `NOT_IN_ROLE`, e os outros itens seguem. As regras
 de prova, em `hub/ontology/propose.ts`:
@@ -853,7 +1004,8 @@ de prova, em `hub/ontology/propose.ts`:
 | `ADD_CONCEPT` | uma fonte na proposta ou ativa; os campos da chave e do título nos itens ou no ativo | `CONCEPT_INCOMPLETE` |
 | `ADD_FIELD` | a coluna na forma da prova da fonte do conceito (a da proposta, ou a mais nova `OK` da ativa) | `FIELD_NOT_IN_PROOF` |
 | `SET_CODE` | um valor novo: a contagem `compile({ filters: [{ column, op: 'equals', value }], measure: { count: true } })` maior que zero; um valor ativo que só muda o rótulo: nenhuma chamada. A origem: `DICTIONARY` se `dictionary` nomeia uma entrada `CODE` do inventário da conexão que termina em `=<valor>`, senão `PERSON`; a sugestão pela tela é sempre `PERSON` | `CODE_UNSEEN`; `NOT_IN_ROLE` sem `consultar` |
-| `ADD_RELATION` | os dois conceitos e os campos dos pares, na proposta ou no ativo | `RELATION_INVALID` |
+| `ADD_CONCEPT` com `base` | a base ativa ou na proposta, e o mesmo número de campos de chave que ela; o `SET_SOURCE` do papel roda também `subset(sqlDoPapel, sqlDaBase, chaves)`, gravado no mesmo `proof_run` em `outside_base`, e ela tem de dar zero. A fonte da base é a da proposta ou a ativa | `CONCEPT_INCOMPLETE` sem a base; `ROLE_KEY_MISMATCH`; `ROLE_NOT_SUBSET` com a contagem |
+| `ADD_RELATION` | os dois conceitos e os campos dos pares, na proposta ou no ativo; com `through`, a junção e `throughPairs`: os campos de `pairs` são do conceito de origem e da junção, os de `throughPairs` da junção e do conceito de destino; `from` igual a `to` vale | `RELATION_INVALID` |
 | `RENAME_LABEL`, `DEPRECATE` | o alvo ativo | `TARGET_UNKNOWN` |
 | qualquer | o mesmo `target` pendente na mesma proposta | `ITEM_REPEATED` |
 
@@ -883,7 +1035,14 @@ As linhas `@mastra/core` (skill `mastra`: `createTool`), `zod`, `drizzle-orm`, `
 3. `concept-read.ts` e os testes de injeção, no molde de `read-only-sql.test.ts`: aspas, `;`,
    comentário, palavra de comando, `q'`, `%`, `_`, `\` e `[` num texto (o #929), um número com letra,
    uma data fora do formato, um código fora do enum, uma coluna que não é do conceito, `in` com 51
-   valores. Cada caso volta recusado antes de virar SQL, e a SQL boa passa por `isOneReadStatement`.
+   valores, e, na `subset`, uma coluna de chave fora da forma da prova, com aspa, espaço ou palavra
+   de comando, e 5 pares. Cada caso volta recusado antes de virar SQL, e a SQL boa passa por
+   `isOneReadStatement`.
+3a. O dublê do Sankhya ganha, com dados inventados e as colunas do esquema público do Sankhya, o que o
+   roteiro usa: o parceiro de cada vendedor (`TGFVEN.CODPARC`), alguns parceiros que não são clientes
+   (a marca `CLIENTE` de `TGFPAR` já existe, `fake-sales.ts:125-127`) e a origem de cada item
+   (`TGFVAR`: `NUNOTA`, `SEQUENCIA`, `NUNOTAORIG`, `SEQUENCIAORIG`), coerentes com as linhas de hoje
+   e com uma linha de papel fora da base para o critério 30.
 4. `hub/connectors/concept-port.ts`: `prove(opened, sql)` e `query(opened, call)`, os dois por
    `readThrough` com o `speaker` de quem fala (a pessoa, ou o papel do turno), nunca como versão.
 5. `hub/ontology/propose.ts` e `proof.ts`: a prova fora da transação (D22), a proposta e os itens
@@ -893,7 +1052,11 @@ As linhas `@mastra/core` (skill `mastra`: `createTool`), `zod`, `drizzle-orm`, `
    app, e o código com significado para `concept_propose` (o #815).
 7. A migração das notas e `notesTool` lendo os itens `NOTE`.
 8. A skill do Sankhya, `SKILL.md:63-65`: "Record what you proved" vira "propose it with
-   `concept_propose`".
+   `concept_propose`". A descrição de `concept_propose`, que vale para qualquer conector, diz as duas
+   formas do papel (o princípio): "A role is either a slice of a base concept (`base`: the same key,
+   its own read, proved a subset of the base) or a concept with its own key, linked to the other.
+   Choose by what the inventory and the proof show, never by a fixed rule; ask the person only what
+   the data cannot settle." Nenhum nome de papel entra na skill nem na descrição.
 
 ### Como se prova
 
@@ -920,10 +1083,11 @@ Sonnet para as telas, se a unidade se dividir.
   revisão esperada, as telas.
 - Ler: `apps/server/src/hub/identity/roles.ts:24-31`, `:71-85`, `:86-110`;
   `apps/server/src/hub/identity/admission.ts:27`, `:109`; `admission.ts:157` (`allows`),
-  `:333-362` (`admit`, o `NOT_FOUND` sem a role);   `apps/server/src/builder/assistant/company-memory-routes.ts:26-37` (o membro admitido, a role
+  `:333-362` (`admit`, o `NOT_FOUND` sem a role); `apps/server/src/builder/assistant/company-memory-routes.ts:26-37` (o membro admitido, a role
   conferida depois, `NOT_IN_ROLE` com o nome da operação); `apps/server/src/hub/copies/accept.ts:19-45`
   (a linha travada, a tentativa); `apps/server/src/platform/database.ts:171` (`violatedConstraint`);
-  `packages/hub-api/src/failures.ts:265-272` (`NOT_IN_ROLE`), `:273-282`;   `packages/hub-api/src/company-memory.ts:74-108` (a forma de `defineOperation`);   `settings/route.tsx:26-45` e `settings/company-memory.tsx` (uma seção, um arquivo); o cartão do
+  `packages/hub-api/src/failures.ts:265-272` (`NOT_IN_ROLE`), `:273-282`; `packages/hub-api/src/company-memory.ts:74-108` (a forma de `defineOperation`); `apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96` (`RailPlaces`, o menu) e
+  `copies.index.tsx`, `copies.$copyId.tsx` (a página de Cópias, o molde); o cartão do
   `copy_propose` na conversa (`apps/web/src/builder/conversation/`, a peça que desenha o resultado
   dele).
 
@@ -935,7 +1099,7 @@ Sonnet para as telas, se a unidade se dividir.
 | `apps/server/src/hub/ontology/` | cria `decide.ts`, `suggest.ts`, `active.ts` (o conjunto ativo e o hash), `reads.ts`; muda `routes.ts`, `public.ts` | a web; U5, U6 |
 | `packages/hub-api/src/` | muda `ontology.ts`, `ontology-failures.ts` | a web |
 | `apps/web/src/hub/ontology/` | cria a lista, a página, o código, Para revisar, Histórico, `queries.ts`, `text.ts`, `public.ts` | a rota |
-| `apps/web/src/routes/_app/companies/$companyId_/settings/` | cria `concepts.tsx`, `concepts.$concept.tsx` | o gerador de rotas (`routeTree.gen.ts`) |
+| `apps/web/src/routes/_app/companies/$companyId/` | cria `knowledge.index.tsx`, `knowledge.$concept.tsx`; muda `route.tsx` (o botão Conhecimento em `RailPlaces`, depois de Cópias, sem condição) | o gerador de rotas (`routeTree.gen.ts`) |
 | `apps/web/src/builder/conversation/` | cria o cartão do resultado de `concept_propose` | — |
 
 ### Os contratos que a unidade cria
@@ -990,7 +1154,8 @@ const items = await pendingItems(tx, proposalId, numbers) // SELECT … FOR UPDA
 const versions = versionsOf(approvedItems, current + 1) // pure; a switch on `kind`, exhaustive (C22); NOTE: ITEM_NOT_APPROVABLE
 const next = applied(await activeSet(tx), versions) // pure
 const missing = incomplete(next) // a concept with no source or no title/key field; a field with no concept; a code with no field;
-// a relation with no concepts, pair fields or `through`; a DEPRECATE whose replacedBy is not active
+// a relation with no concepts, pair fields, `through` or `throughPairs`; a DEPRECATE whose replacedBy is not active;
+// a role whose base is not active; a DEPRECATE of a base that still has an active role (the items name the roles)
 if (missing.length > 0) throw new Failure('DECISION_INCOMPLETE', { details: { items: missing } })
 if (versions.length > 0) {
   await insertRevision(tx, { number: current + 1, hash: hashOf(next), proposalId, proposedBy, approvedBy: personId })
@@ -1018,12 +1183,16 @@ web (W17, W24, W32, W34). Segurança S6, S8, S10.
 3. `decide.ts` e a rota, com os critérios 13 a 16. Regras: C38, C65, D22.
 4. `suggest.ts` e a rota, com a chave de tentativa (C37) e as regras de prova da U3 para os três
    tipos de item.
-5. As leituras e as telas: a seção `concepts.tsx` (grupo `company`, rótulo "Conceitos da empresa",
-   ordem 46, depois da memória da empresa), com a aba no endereço (`validateSearch`,
-   `?aba=conceitos|revisar|historico`) e a página de um conceito em `concepts.$concept.tsx`, o código
-   aberto por `?campo=` (web W18: cada vista tem endereço); a lista, a página, o código com **Sugerir
-   mudança**, Para revisar e Histórico, cada estado da matriz; cada "não encontrado" com **Voltar aos
-   conceitos** (W34).
+5. As leituras e as telas: a página Conhecimento, no molde de `copies.index.tsx:6-13`
+   (`createFileRoute('/_app/companies/$companyId/knowledge/')`, `staticData: { place: 'Conhecimento' }`,
+   o `loader` com a leitura de `GET ${BASE}`, `pendingComponent: Loading`, `errorComponent:
+   RouteReadFailure`), sem `beforeLoad` de permissão, porque todo membro a vê; o botão
+   `SidebarRailButton` "Conhecimento" em `RailPlaces` depois do de Cópias, fora de qualquer `may.*`.
+   A aba fica no endereço (`validateSearch`, `?aba=conceitos|revisar|historico`, `conceitos` por
+   padrão) e a página de um conceito em `knowledge.$concept.tsx`, o código aberto por `?campo=` (web
+   W18: cada vista tem endereço); a lista, a página (um papel com "Papel de <base>" e o link), o código
+   com **Sugerir mudança**, Para revisar e Histórico, cada estado da matriz; cada "não encontrado" com
+   **Voltar aos conceitos** (W34). O grafo não entra (a página do fundador).
 6. O cartão do resultado de `concept_propose` na conversa, com **Revisar e aprovar** para Para
    revisar.
 
@@ -1048,7 +1217,7 @@ Assistente (`apps/server/src/builder/connectors/typed-reads.ts`) e de `connector
 
 - Ferramentas geradas dos metadados, o recorte do SDK (a forma).
 - Ler: `connector-tools.ts:1-120` (o acesso, `runIn`, o `NOT_GRANTED`), `:188-216`
-  (`answerWords`, `readOn`); `assistant.ts:253-275`; `apps/server/src/hub/identity/role-statements.ts:14-24`
+  (`answerWords`, `readOn`); `assistant.ts:234-249` (as ferramentas por turno); `apps/server/src/hub/identity/role-statements.ts:14-24`
   (a operação de cada papel); `apps/server/src/builder/conversation/prompt/prompt.ts:159-178`;
   `apps/server/src/builder/assistant/instructions.ts`; o Twenty nas linhas da tabela de
   referência; `node_modules/zod` (`z.toJSONSchema`).
@@ -1073,8 +1242,9 @@ export type ConceptDescriptor = Readonly<{
   plural: string
   description: string
   revision: number
+  base?: ConceptKey // a role of this concept; the reader follows it for the base's relations
   fields: readonly Readonly<{ key: FieldKey; name: string; type: FieldType; codes?: readonly { value: string; meaning: string }[] }>[]
-  relations: readonly Readonly<{ key: RelationKey; to: ConceptKey; name: string; pairs: readonly [FieldKey, FieldKey][] }>[]
+  relations: readonly Readonly<{ key: RelationKey; to: ConceptKey; name: string; pairs: readonly [FieldKey, FieldKey][]; through?: Readonly<{ concept: ConceptKey; pairs: readonly [FieldKey, FieldKey][] }> }>[]
   source: Readonly<{ connectionId: ConnectionId; connector: ConnectorId; operation: OperationId; provedAt: string; rows: number }>
   state: 'EXPERIMENTAL' | 'ACTIVE'
   warning?: string // a field whose column a newer proof saw with another type is left out, by name
@@ -1107,8 +1277,11 @@ As ferramentas, em `builder/ontology/tools.ts`:
   conceito vai na resposta de `concept_read` por `z.toJSONSchema`. A lista de ferramentas não muda
   quando a Ontologia muda.
 - O catálogo: uma linha por conceito, nome, plural e descrição, no bloco "## Connections" do Builder
-  ("Concepts: Pedido, Cliente, Vendedor") e nas instruções do Assistente, saídas de uma função só
-  (`catalog.ts`, C26).
+  ("Concepts: Parceiro, Cliente (papel de Parceiro), Representante, Documento, Origem do item") e nas
+  instruções do Assistente, saídas de uma função só (`catalog.ts`, C26). Um papel diz de qual conceito
+  é papel; uma ligação por junção aparece no descritor dos dois lados, com a junção.
+- `concept_query` lê um conceito só e não atravessa ligações: a pergunta que atravessa é da etapa do
+  fluxo. Um papel se consulta pela própria fonte ("quantos clientes temos?").
 
 ### As skills e a leitura
 
@@ -1142,7 +1315,7 @@ revisão gravada pela rota da U4 (T5).
 
 - A página projetada, com as regras da issue 984.
 - Ler: `apps/server/src/builder/assistant/company-memory.ts:24-55` (as ferramentas só de
-  leitura, as áreas), `:104-115` (`knowledgeOf`), `:345-356` (`companyScopes`);   `company-memory-routes.ts` (as gravações de pessoa); `node_modules/@mastra/core/dist/knowledge/host-writes.d.ts:12-31`;
+  leitura, as áreas), `:104-115` (`knowledgeOf`), `:345-356` (`companyScopes`); `company-memory-routes.ts` (as gravações de pessoa); `node_modules/@mastra/core/dist/knowledge/host-writes.d.ts:12-31`;
   `dist/knowledge/links.d.ts:4-11`; `dist/knowledge/index.d.ts:78-88`; `apps/server/src/main.ts:318`
   (a tabela de comandos, `reseal`) e `apps/server/src/reseal.ts`.
 
@@ -1168,7 +1341,9 @@ export function projectOntology(deps: { memory: CompanyMemory; ontology: Pick<On
 Os caminhos: `conceitos/<chave>` (nome: o do conceito) e `conceitos/<chave>/<campo>` (nome: "<Conceito>:
 <Campo>") para cada campo `CODE`. O corpo: o nome, a descrição, os sinônimos, a chave e o título, os
 campos com o tipo e a descrição, o link da lista de códigos, as ligações; nunca a consulta, a prova,
-o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#conceitos/…]]`. Um conceito
+o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#conceitos/…]]`. A página de
+um papel começa por "Papel de [[ontologia:<companyId>#conceitos/<base>]]." e não repete as ligações
+da base. Um conceito
 aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`. O `upsertPage` cria a página pai `conceitos` com o nome da chave
 (`host-writes.d.ts:14-15`); a projeção a grava antes, com o nome "Conceitos" e um corpo que lista os
 conceitos. Cada página leva `description` curta (o nome e o plural), que a busca usa.

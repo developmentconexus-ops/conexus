@@ -38,11 +38,11 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
 - **Capacidade 7. Avisos e lembretes do CRM.** Recebe no CRM os avisos e lembretes de um dia de uso.
 
-**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) a [0066](decisions/0066-intake-is-the-assistant-with-a-staged-skill.md)). Na ordem:
+**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) a [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). Na ordem:
 
 1. **U7 e U9 do Alinhamento do Assistente.**
 2. **A entrada conversada**: o Assistente pergunta só o que os sistemas ligados não dizem e entrega a primeira demanda ao Builder.
-3. **A Ontologia da empresa**: o inventário dos sistemas e os conceitos da demanda, provados e aprovados por você em Para revisar.
+3. **A Ontologia da empresa**: o inventário dos sistemas e os conceitos da demanda, provados e aprovados por você na página Conhecimento.
 4. **A saúde da Ontologia**: a prova refeita todo dia e o aviso no Início.
 5. **Ligações e duas fontes** para um conceito.
 6. **O Brain do Builder e dos Projetos.**
