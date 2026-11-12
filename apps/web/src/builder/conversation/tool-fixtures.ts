@@ -120,3 +120,37 @@ export const PLAN_DENIED: Invocation = {
   toolName: 'submit_plan',
   args: { title: 'App de encomendas', plan: 'Uma tela de encomendas.' },
 }
+
+/**
+ * `ask_user` as the model sends it under OpenAI's strict mode: Mastra's schema compat makes each
+ * optional field nullable and required, so the model fills what it does not use with `null`
+ * (the recorded Luna call of `openai-refused-write-call.sse` does the same for `codigoLocalEstoque`).
+ */
+export const QUESTION_NULLED_ARGS = {
+  questions: [
+    {
+      question: 'Quem cadastra as encomendas?',
+      header: null,
+      options: [
+        { label: 'Todos (recomendado)', description: null },
+        { label: 'Só eu', description: null },
+      ],
+      multiSelect: false,
+    },
+    { question: 'Quais dias?', header: 'Dias', options: null, multiSelect: null },
+  ],
+}
+export const QUESTION_NULLED_ANSWERS = ['Só eu', ['Seg', 'Ter']]
+
+/** The call of the nulled question, asking or answered: the part keeps the arguments the model sent. */
+export function nulledQuestionPart(
+  state: 'call' | 'result',
+  args: unknown = QUESTION_NULLED_ARGS,
+): MastraMessagePart {
+  const call = { toolCallId: 'call_luna_1', toolName: 'ask_user', args }
+  const result = { content: 'User answered', answers: QUESTION_NULLED_ANSWERS }
+  return {
+    type: 'tool-invocation',
+    toolInvocation: state === 'call' ? { ...call, state } : { ...call, state, result },
+  }
+}
