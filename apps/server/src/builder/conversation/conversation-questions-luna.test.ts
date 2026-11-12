@@ -74,7 +74,10 @@ test('ask_user do GPT Luna: os argumentos guardados chegam à tela com `null`, o
   codex.typed = true
   const streams = [lunaAsking(LUNA_ARGS), recordedBody('openai-refused-write-closing')]
   codex.responses = (body) => {
-    if (JSON.parse(body).stream !== true) return { status: 500 }
+    const sent = JSON.parse(body)
+    // The Hub's title call streams too, with no tools: the double leaves it to its default.
+    if (sent.stream !== true || !Array.isArray(sent.tools) || sent.tools.length === 0)
+      return { status: 500 }
     const stream = streams.shift()
     if (stream === undefined) throw new Error('The turn asked the model more often than recorded.')
     return { status: 200, stream }

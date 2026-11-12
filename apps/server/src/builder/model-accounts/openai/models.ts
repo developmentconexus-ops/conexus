@@ -5,6 +5,10 @@
 // `createPromptCacheKeyMiddleware`). Changed: TypeScript with every body read by Zod, the token and
 // the account are the ones the queue opened for this call, no test branch, and the effort goes by
 // the queue's processor; the thread is read on every call, not at model construction.
+// `forcedStream` and `aggregated` are `buildCodexStagehandFetch` and `aggregateCodexStream` of the
+// same file: a call without streaming (the conversation's title) is sent streamed and its events
+// are gathered into the one response the AI SDK expects. Changed: every body read by Zod, and an
+// error event or a stream with no response throws.
 
 import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModelMiddleware } from 'ai'
@@ -61,6 +65,92 @@ function withoutItemIds(body: string): string {
   return JSON.stringify({ ...request.data, input })
 }
 
+const StreamFlag = z.looseObject({ stream: z.unknown().optional() })
+
+/** The request streamed: the endpoint answers `400 Stream must be set to true` to a call that is not. `streamed` says it was not, so the answer must be gathered. */
+function forcedStream(body: string): { body: string; streamed: boolean } {
+  const request = StreamFlag.safeParse(JSON.parse(body))
+  if (!request.success || request.data.stream === true) return { body, streamed: false }
+  return { body: JSON.stringify({ ...request.data, stream: true }), streamed: true }
+}
+
+const Snapshot = z.record(z.string(), z.unknown())
+const StreamEvent = z.looseObject({
+  type: z.string().optional(),
+  response: Snapshot.optional(),
+  output_index: z.number().optional(),
+  content_index: z.number().optional(),
+  delta: z.string().optional(),
+  item: z
+    .looseObject({ type: z.string().optional(), content: z.array(z.unknown()).optional() })
+    .optional(),
+})
+const StreamedText = z.looseObject({ text: z.string().optional() })
+
+/** The events of a Server-Sent Events body, each parsed from its `data:` lines; a line that is not JSON is not an event. */
+function eventsOf(text: string) {
+  return text
+    .replace(/\r\n/g, '\n')
+    .split('\n\n')
+    .flatMap((block) => {
+      const data = block
+        .split('\n')
+        .filter((line) => line.startsWith('data:'))
+        .map((line) => line.slice(5).trimStart())
+        .join('\n')
+      if (data === '' || data === '[DONE]') return []
+      try {
+        return [StreamEvent.parse(JSON.parse(data))]
+      } catch {
+        return []
+      }
+    })
+}
+
+/**
+ * The one response a streamed answer adds up to: the final snapshot, its output items as the
+ * stream closed them, and the text of each message from the deltas when the item came without it.
+ */
+function aggregated(text: string): string {
+  let created: z.infer<typeof Snapshot> | undefined
+  let completed: z.infer<typeof Snapshot> | undefined
+  const items = new Map<number, NonNullable<z.infer<typeof StreamEvent>['item']>>()
+  const deltas = new Map<string, string>()
+  for (const event of eventsOf(text)) {
+    if (
+      event.type === 'error' ||
+      event.type === 'response.error' ||
+      event.type === 'response.failed'
+    )
+      throw new Error(`Codex stream error: ${JSON.stringify(event.response ?? event)}`)
+    if (event.type === 'response.created') created = event.response ?? created
+    if (event.type === 'response.completed') completed = event.response ?? completed
+    if (
+      (event.type === 'response.output_item.added' || event.type === 'response.output_item.done') &&
+      event.output_index !== undefined &&
+      event.item !== undefined
+    )
+      items.set(event.output_index, event.item)
+    if (event.type === 'response.output_text.delta') {
+      const key = `${event.output_index}:${event.content_index ?? 0}`
+      deltas.set(key, (deltas.get(key) ?? '') + (event.delta ?? ''))
+    }
+  }
+  const base = completed ?? created
+  if (base === undefined) throw new Error('The Codex stream ended without a response')
+  const output = [...items.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([index, item]) => {
+      if (item.type !== 'message' || item.content === undefined) return item
+      const content = item.content.map((part, at) => {
+        const said = deltas.get(`${index}:${at}`)
+        return said === undefined ? part : { ...StreamedText.parse(part), text: said }
+      })
+      return { ...item, content }
+    })
+  return JSON.stringify({ ...base, output: output.length > 0 ? output : (base.output ?? []) })
+}
+
 /** The conversation a call belongs to: Mastra puts its id, lowercased, in `x-thread-id` on every model call. */
 function threadOf(headers: Record<string, string | undefined> | undefined): string | undefined {
   return headers?.['x-thread-id'] || undefined
@@ -108,8 +198,19 @@ export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'a
         headers.set('session-id', thread)
         headers.set('thread-id', thread)
       }
-      const body = typeof init?.body === 'string' ? withoutItemIds(init.body) : init?.body
-      return fetch(CODEX_ENDPOINT, { ...init, headers, body })
+      const sent =
+        typeof init?.body === 'string' ? forcedStream(withoutItemIds(init.body)) : undefined
+      if (sent?.streamed) headers.set('Accept', 'text/event-stream')
+      const answer = await fetch(CODEX_ENDPOINT, {
+        ...init,
+        headers,
+        body: sent?.body ?? init?.body,
+      })
+      if (!sent?.streamed || !answer.ok) return answer
+      return new Response(aggregated(await answer.text()), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
     },
   })
   return wrapLanguageModel({
