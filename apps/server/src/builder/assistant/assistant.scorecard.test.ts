@@ -4,9 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { mercadoLivreFake, PADARIA_SOL_MATRIZ, soldBy } from '@conexus/connectors'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import { appsOf, linkMercadoLivre } from '../../hub/connectors/test-connections.ts'
+import {
+  appsOf,
+  linkMercadoLivre,
+  mercadoLivreFake,
+} from '../../hub/connectors/test-connections.ts'
+import { PADARIA_SOL_MATRIZ, soldBy } from '../../hub/connectors/test-sales.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, reading, said, searching, talking } from './test-assistant.ts'
 import { file, pdf } from './test-files.ts'

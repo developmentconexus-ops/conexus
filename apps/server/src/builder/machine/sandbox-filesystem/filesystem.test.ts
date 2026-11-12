@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { SandboxFilesystem } from './filesystem.ts'
+import { SandboxFilesystem } from '../public.ts'
 
 test('a frase diz a regra dos caminhos', () => {
   const base = '/home/user/work'

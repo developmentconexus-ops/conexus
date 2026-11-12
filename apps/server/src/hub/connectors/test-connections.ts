@@ -6,6 +6,9 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
 import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+
+export { mercadoLivreFake }
+
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'

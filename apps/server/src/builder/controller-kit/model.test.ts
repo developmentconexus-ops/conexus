@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { ModelId } from '@conexus/hub-api'
 import { assisting, created, said, talking } from '../assistant/test-assistant.ts'
 import { endOf } from '../conversation/test-conversation.ts'
-import { BR_LOCATION, toolsOf } from './model.ts'
+import { BR_LOCATION, toolsOf } from './public.ts'
 
 const WHERE = { country: 'BR', timezone: 'America/Sao_Paulo', type: 'approximate' }
 

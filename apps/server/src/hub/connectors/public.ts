@@ -29,8 +29,9 @@ import {
 } from './routes.ts'
 import { createToolDoor } from './tool-door.ts'
 
+export type { Connector, Operation } from '@conexus/connectors'
 /** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056). */
-export { CopyDefinition, CopyName } from '@conexus/connectors'
+export { CONNECTORS, CopyDefinition, CopyName } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'

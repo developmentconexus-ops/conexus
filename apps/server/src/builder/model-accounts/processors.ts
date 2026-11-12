@@ -1,7 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import { isSubscription } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
-import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { parseModelString } from '@mastra/core/llm'
 import type {
   ErrorProcessor,

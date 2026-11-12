@@ -1,9 +1,9 @@
-import type { Connector, Operation } from '@conexus/connectors'
-import { CONNECTORS } from '@conexus/connectors'
 import type { ToolSearchProcessorOptions } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import type { Connector, Operation } from '../../hub/connectors/public.ts'
+import { CONNECTORS } from '../../hub/connectors/public.ts'
 import type { ConnectorAccess } from './connector-tools.ts'
 import { answerWords, NOT_GRANTED, readOn } from './connector-tools.ts'
 
@@ -11,7 +11,7 @@ type Read = Operation<unknown, unknown, 'read'>
 type TypedRead = Readonly<{ connector: Connector; operation: Read }>
 
 /** The tool's name for one read of a connector: `sankhya_pedidos`. */
-export function typedReadName(connector: string, operation: string): string {
+function typedReadName(connector: string, operation: string): string {
   return `${connector}_${operation}`
 }
 

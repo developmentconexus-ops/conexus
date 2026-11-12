@@ -7,7 +7,7 @@ import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import { turnDate } from '../conversation/public.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { blockOf } from './instructions.ts'
+import { blockOf } from './public.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 function read(path: string) {
