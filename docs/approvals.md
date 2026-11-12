@@ -947,6 +947,12 @@ Revisão de saúde do CI (L19, `docs/how-to/ci-health.md`), por quem não constr
 
 Linha de uso de O Assistente do dia a dia em 2026-11-12: o fundador usou a etapa no Hub no ar e disse: "Testei aprovado"
 
+## Alinhamento do Assistente
+
+Cartão curto de Alinhamento do Assistente (`docs/steps/assistente-alinhamento-do-assistente.md`) aprovado em 2026-11-11 (commit 1b6c23ec0e575110346905ddca168d0203c2eb0e), às duas perguntas da página: "1. A aprovação da página do cartão" e "2. As perguntas da prova (U11), tirar/trocar/acrescentar ou aprovar como estão": "1. Aprovo 2. Aprovo". A lista de perguntas da U11 fica aprovada como está escrita; o cartão não muda, e a marca "para revisão do fundador" da U11 continua no texto como o registro de que a lista passou por ele.
+
+Decisões do fundador antes da aprovação, que a página escreve como decididas. Em 2026-11-11, sobre os itens do alinhamento: "Proposta sua concordo"; sobre a memória, o perfil, as instruções da empresa e a busca na web: "1. B e D 2. B e C 3. A gente via implementar o Knowledge que é um grande passo nosso e acho que já teria que vir, por exemplo 4. A". Às decisões da página, os campos da conta (cargo e área) e a permissão de banco só nessas duas colunas: "Decisões: A - A". Sobre os cinco itens do estudo do harness do Claude Code (o ajudante de pesquisa ligado agora, depois de estudar as referências e a documentação; as perguntas da prova escritas pelo firstmate e revisadas por ele; os itens 1 a 4 dentro do cartão): "A1, porém estudar profudanmente vendo referencias e documentação usar context7 /mastra e o que precisar", "B2" e "Sim inclua vamos deixar nossa harness o mais alinhada possivel".
+
 ## O Sync de qualquer conector
 
 Cartão de O Sync de qualquer conector (`docs/steps/o-sync-de-qualquer-conector.md`) aprovado em 2026-11-10 (commit dae09df1525b96ac52b2fd9122ab711b15e34234): "Aprovo"
