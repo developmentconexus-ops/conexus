@@ -224,6 +224,12 @@ export {
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
+  clearProfileMemory,
+  getProfileMemory,
+  PROFILE_MEMORY_MAX,
+  setProfileMemory,
+} from './profile-memory.ts'
+export {
   ObservationalMemoryModels,
   ObservationalMemoryRole,
   readObservationalMemoryModels,

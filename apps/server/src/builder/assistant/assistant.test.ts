@@ -72,7 +72,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras e as do caderno, a escrita incluída, a visão da empresa, as da web, as de skill, a de perguntar por cartão, a do ajudante de pesquisa, as de tarefas, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
+test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras e as do caderno, a escrita incluída, a visão da empresa, as da web, as de skill, a de perguntar por cartão, a do ajudante de pesquisa, as de tarefas, a de mostrar arquivo, as da memória e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -97,6 +97,7 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
     'mastra_workspace_write_file',
     'propose_app',
     'propose_automation',
+    'recall',
     'search_tools',
     'show_file',
     'skill',
@@ -107,6 +108,7 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
     'task_complete',
     'task_update',
     'task_write',
+    'updateWorkingMemory',
     'web_fetch',
     'web_search',
   ])

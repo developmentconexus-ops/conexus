@@ -95,7 +95,7 @@ function builderConnectorTools(
 }
 
 /** The Builder's memory words, and its recall of what the observation folded. */
-const BUILDER_MEMORY = { ...TITLE.app, recall: true } as const
+const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
 
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken

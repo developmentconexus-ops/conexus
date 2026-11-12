@@ -64,16 +64,20 @@ type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']
 const MODE = 'conversa'
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
 const SEARCH_TOOLS = 'search_tools'
+/** The memory's own tools, by the ids `@mastra/memory` gives them (`listTools`). */
+const MEMORY_TOOLS = ['recall', 'updateWorkingMemory'] as const
 /**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; the save is built only for who may manage connections.
  * The typed reads come only once a search loads them. Of the controller's own tools it holds
  * `ask_user` (a card, only what it cannot decide) and the task list; the plan card stays the
  * Builder's, as the Assistant approves no plan, and one subagent type, `pesquisar`
- * (`research.ts`), which only reads.
+ * (`research.ts`), which only reads. The memory's hold the person's other conversations and what
+ * the model keeps about them (`memory.ts`).
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
+  ...MEMORY_TOOLS,
   SEARCH_TOOLS,
   ...TYPED_READ_NAMES,
   BUILDER_TOOL.connectorNotes,

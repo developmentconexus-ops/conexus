@@ -40,10 +40,10 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.ok(block?.text.startsWith('Company: Empresa Teste.'), block?.text)
     assert.doesNotMatch(fixed.text, /Prévia|preview|conexus_check|submit_plan/i)
     assert.ok(
-      mastra.every(
-        (each) =>
-          /skill|machine|task list state|search_tools/i.test(each.text) &&
-          !/recall/i.test(each.text),
+      mastra.every((each) =>
+        /skill|machine|task list state|search_tools|^WORKING_MEMORY_SYSTEM_INSTRUCTION|^## Recall/i.test(
+          each.text,
+        ),
       ),
       JSON.stringify(mastra),
     )

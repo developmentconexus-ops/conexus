@@ -39,6 +39,7 @@ import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
+import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import type { AssistantProjects } from './ports.ts'
 import { listedPage } from './search.ts'
 
@@ -309,6 +310,7 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
   registerReads(app, deps)
   registerWrites(app, deps)
   registerChanges(app, deps)
+  registerProfileMemoryRoutes(app, deps)
   registerFile(app, {
     route: ASSISTANT_FILE,
     machines: deps.machines,
