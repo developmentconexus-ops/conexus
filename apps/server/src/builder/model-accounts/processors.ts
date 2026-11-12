@@ -23,6 +23,7 @@ import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import { forCliProxy } from './google/flat-unions.ts'
+import { minusProviderTools } from './provider-tools.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { ProviderOptions } from './thinking.ts'
@@ -32,7 +33,6 @@ import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
-const WEB_SEARCH = 'web_search'
 /** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
 const TURN_STEPS = 100
 const LAST_STEP =
@@ -214,9 +214,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
-      if (turn.switched && args.activeTools !== undefined) {
-        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
-      }
+      if (turn.switched && args.activeTools !== undefined)
+        result.activeTools = minusProviderTools(args.activeTools, chosenModel(args.requestContext))
       const flat = forCliProxy(account.kind, args.tools)
       if (flat !== undefined) result.tools = flat
       return result

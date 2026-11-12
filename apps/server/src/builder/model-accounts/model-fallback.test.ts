@@ -116,7 +116,10 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   )
   assert.equal(streamedChats().length, 1)
   assert.equal(streamedChats()[0]?.bearer, groq.key)
-  assert.ok(streamedChats()[0]?.tools.includes('web_fetch'))
+  assert.ok(
+    !streamedChats()[0]?.tools.includes('web_fetch'),
+    'the Anthropic fetch went with its model',
+  )
   assert.ok(!streamedChats()[0]?.tools.includes('web_search'))
   limited.on = false
   await hub.test.asOwner(`update builder.model_account set limited_until = null`)

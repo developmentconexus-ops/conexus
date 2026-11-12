@@ -120,3 +120,22 @@ export function events(
   ]
   return all.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('')
 }
+
+/** The frames of a Chat Completions stream that ends in one `web_fetch` call, as a provider without a page fetch of its own is asked for it. */
+export function chatFetchFrames(
+  url: string,
+  chunk: (delta: object, finish: string | null) => object,
+  usage: object,
+): object[] {
+  const call = {
+    index: 0,
+    id: `call_${randomUUID().slice(0, 8)}`,
+    type: 'function',
+    function: { name: 'web_fetch', arguments: JSON.stringify({ url }) },
+  }
+  return [
+    chunk({ role: 'assistant', content: '' }, null),
+    chunk({ tool_calls: [call] }, null),
+    { ...chunk({}, 'tool_calls'), usage },
+  ]
+}

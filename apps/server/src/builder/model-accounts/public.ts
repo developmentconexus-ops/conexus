@@ -28,6 +28,7 @@ export {
   MAX_PROCESSOR_RETRIES,
   stabilityProcessors,
 } from './processors.ts'
+export { minusProviderTools } from './provider-tools.ts'
 export { isChoosable } from './providers.ts'
 export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'

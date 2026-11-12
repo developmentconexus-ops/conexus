@@ -62,7 +62,10 @@ export function agentDefaults(
     errorProcessors: accountErrorProcessors(queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
-    defaultOptions: { modelSettings: { timeout: MODEL_TIMEOUT } },
+    defaultOptions: {
+      modelSettings: { timeout: MODEL_TIMEOUT },
+      toolCallConcurrency: { strategy: 'called' },
+    },
   } satisfies Pick<
     AgentConfig,
     | 'inputProcessors'

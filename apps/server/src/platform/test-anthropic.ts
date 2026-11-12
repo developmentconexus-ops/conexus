@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { Sent } from './test-anthropic-body.ts'
 import { sentOf } from './test-anthropic-body.ts'
 import type { Block } from './test-anthropic-stream.ts'
-import { events } from './test-anthropic-stream.ts'
+import { chatFetchFrames, events } from './test-anthropic-stream.ts'
 import { isModelList } from './test-model-lists.ts'
 import { replayed } from './test-recordings.ts'
 
@@ -103,6 +103,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     ),
     // Chat Completions' tool declarations are not read into `schemas`: no test of this path needs them.
     schemas: {},
+    declared: {},
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     systems: [],
     texts,
@@ -148,13 +149,15 @@ function chatReplied(sent: Sent, reply: Reply, signal: AbortSignal | null | unde
     return { ...base, object: 'chat.completion.chunk', choices }
   }
   const frames =
-    reply.kind === 'malformed'
-      ? [chunk({ role: 'assistant', content: '' }, null), chunk({}, 'MALFORMED_FUNCTION_CALL')]
-      : [
-          chunk({ role: 'assistant', content: '' }, null),
-          chunk({ content: text }, null),
-          { ...chunk({}, 'stop'), usage },
-        ]
+    reply.kind === 'fetch'
+      ? chatFetchFrames(reply.url, chunk, usage)
+      : reply.kind === 'malformed'
+        ? [chunk({ role: 'assistant', content: '' }, null), chunk({}, 'MALFORMED_FUNCTION_CALL')]
+        : [
+            chunk({ role: 'assistant', content: '' }, null),
+            chunk({ content: text }, null),
+            { ...chunk({}, 'stop'), usage },
+          ]
   const lines = [...frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`), 'data: [DONE]\n\n']
   if (reply.kind === 'hold') {
     return new Response(heldChat(reply.until, lines), {

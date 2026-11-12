@@ -17,6 +17,8 @@ export type Sent = {
   descriptions: Record<string, string>
   /** Each offered tool's input schema, by name, as the body declares it. */
   schemas: Record<string, unknown>
+  /** Each offered tool's whole declaration, by name: the type and the arguments of a tool the provider runs. */
+  declared: Record<string, Record<string, unknown>>
   system: string
   /** The system's blocks as the body sends them, each with whether it carries a cache mark. */
   systems: { text: string; cached: boolean }[]
@@ -52,11 +54,13 @@ const Body = z.object({
   thinking: Thinking.optional(),
   tools: z
     .array(
-      z.object({
-        name: z.string(),
-        description: z.string().optional(),
-        input_schema: z.unknown().optional(),
-      }),
+      z
+        .object({
+          name: z.string(),
+          description: z.string().optional(),
+          input_schema: z.unknown().optional(),
+        })
+        .loose(),
     )
     .optional(),
   tool_choice: z.object({ type: z.string() }).optional(),
@@ -201,6 +205,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
       (body.tools ?? []).map((tool) => [tool.name, tool.description ?? '']),
     ),
     schemas: Object.fromEntries((body.tools ?? []).map((tool) => [tool.name, tool.input_schema])),
+    declared: Object.fromEntries((body.tools ?? []).map((tool) => [tool.name, tool])),
     system,
     systems,
     texts,
