@@ -1025,15 +1025,29 @@ lugar do que diverge acima ("As rotas", "A leitura pela tela", a matriz da pági
 5. **A frase de quem não pode.** Na página, para o membro sem a permissão: "Só o dono ou um
    administrador muda a memória da empresa." (W34).
 6. **B1: o que o agente aprende para a empresa só vale depois de aprovado** (fundador, 2026-11-12,
-   depois da aprovação do cartão; a resposta mais nova vale). Toda gravação de página ou nota da
-   memória da empresa feita pelo modelo (`knowledge_page`, `knowledge_note`, `knowledge_pin`) passa
-   pela confirmação de quem conversa, que vê o texto antes de gravar. A forma nativa do Mastra 1.82 é
-   `requireApproval: true` na ferramenta de gravação e o chunk `tool-call-approval`
-   (`docs/agents/human-in-the-loop.mdx`; `approveToolCall` e `declineToolCall`); a conversa do Conexus
-   já mostra a aprovação de ferramenta (`apps/web/src/builder/conversation/approval-item.ts`), então a
-   U9 usa essa mesma linha, sem cartão novo. A gravação que a pessoa faz direto na tela Memória da
-   empresa não tem esse passo. Recusada pela pessoa, nada é gravado. Critério 27 ganha: "a escrita do
-   modelo espera a confirmação e só grava depois dela" e "a escrita recusada não grava".
+   depois da aprovação do cartão; a resposta mais nova vale). O modelo **não grava** na memória da
+   empresa: ele **propõe**, e a aprovação é uma rota, nunca um prompt (decisão 0064). O `Knowledge` do
+   Mastra 1.82.0 não aceita `requireApproval` na configuração (`@mastra/core@1.82.0`
+   `dist/knowledge/config.d.ts:38-42`; as ferramentas de gravação nascem sem ele,
+   `dist/agent-BP9OWM6D.js:73432-73443`, e a ligação ao agente só repassa o que vem,
+   `:82072-82098`), e o Assistente roda com `yolo` (decisão 0053), que aprova sozinho
+   (`dist/agent-controller-BDds1y5w.js:5174-5179`, `:6382-6386`, `:8638-8643`): a aprovação nativa de
+   ferramenta não serve aqui. Decidido pelo firstmate (opção d), sem mudar a 0053 e sem remendo:
+   a. O Assistente fica só com as ferramentas de leitura do Knowledge; `knowledge_page`,
+      `knowledge_note` e `knowledge_pin` saem do conjunto fechado do Assistente (filtrando a lista na
+      montagem, sem embrulhar o comportamento delas, se a configuração não deixar escolher só a
+      leitura de forma nativa).
+   b. A ferramenta `propose_company_memory` devolve na conversa um cartão com o texto e o botão
+      Salvar, no mesmo formato do cartão de proposta de `copy_propose`
+      (`apps/web/src/builder/conversation/copy-proposal-card.tsx`). O toque chama a rota de gravação
+      da tela Memória da empresa, e o autor é a pessoa que tocou. Quem não tem a permissão vê o
+      cartão sem o botão e com a frase da W34.
+   c. O componente do cartão é escrito para a entrada conversada (a U5 de
+      https://github.com/developmentconexus-ops/conexus/pull/982, `propose_company_instructions`) só o
+      chamar.
+   A gravação direta pela tela não muda. Critério 27 ganha: "o modelo de quem tem a permissão não
+   tem ferramenta de gravação do Knowledge", "a proposta vira o cartão com o texto", "o toque grava
+   pela rota, com a pessoa como autora" e "sem o toque, nada é gravado".
 
 ## U10 A frase de cada comando
 
