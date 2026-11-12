@@ -77,6 +77,7 @@ export {
 export { toRequest } from './kernel/request.ts'
 export { CONCURRENT_CALL, Rows } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
+export { MERCADO_LIVRE_FACTS } from './mercado-livre/fake-facts.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
 export type { SalesSet } from './sankhya/fake-sales.ts'
 export {

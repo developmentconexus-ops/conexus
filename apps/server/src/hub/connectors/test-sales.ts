@@ -83,6 +83,7 @@ export async function salesSankhya(
   }
 }
 
+export type { SalesSet } from '@conexus/connectors'
 export {
   changedOn,
   PADARIA_SOL_FILIAL,

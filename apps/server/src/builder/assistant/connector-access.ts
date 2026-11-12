@@ -1,55 +1,73 @@
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import { TURNS_KEPT } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
 import { turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
+/** The Assistant's limit, as its read tools say it. */
+export const ASSISTANT_LIMIT = '50 connector calls per answer'
+
+type Conversation = { scope: SessionScope; chosen: readonly AssistantConnection[] }
+
 /**
- * The connector tools of a conversation (U1's door): the chosen connections its place offers, each
- * call counted by the turn's key; the model gets the cut, never the whole answer. The notebook's
- * write is the Builder's tool, for who may manage connections and never in an automation's run
- * (step 24.3.5).
+ * The conversation's door (U1): the chosen connections its place offers, each call counted by the
+ * turn's key; the model gets the cut, never the whole answer.
  */
-export function assistantConnectorTools(
+export function assistantAccess(
   deps: { connectors: AssistantConnectors; log: FailureLog },
-  a: {
-    scope: SessionScope
-    chosen: readonly AssistantConnection[]
-    savedAt: (requestContext: RequestContext) => string
-    mayNote: boolean
-  },
-) {
+  a: Conversation & { savedAt?: (requestContext: RequestContext) => string },
+): ConnectorAccess {
   const { scope } = a
-  const access = {
+  return {
     connections: a.chosen,
     savedAt: a.savedAt,
     log: deps.log,
     read: (call, requestContext) =>
       deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) }),
     notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-    wording: { whose: 'this conversation chose', limit: '50 connector calls per answer' },
-  } satisfies Parameters<typeof connectorTools>[0]
-  if (!a.mayNote) return connectorTools(access, { noteSave: false })
+    wording: { whose: 'this conversation chose', limit: ASSISTANT_LIMIT },
+  }
+}
+
+/**
+ * The notebook tools of a conversation: its reads are the typed ones (`typed-reads.ts`), never
+ * `connector_read`. The notebook's write is the Builder's tool, for who may manage connections and
+ * never in an automation's run (step 24.3.5).
+ */
+export function assistantConnectorTools(
+  deps: { connectors: AssistantConnectors; log: FailureLog },
+  a: Conversation & { mayNote: boolean },
+) {
+  const { scope } = a
+  const access = assistantAccess(deps, a)
+  if (!a.mayNote) return connectorTools(access, { noteSave: false, reads: false })
   return connectorTools(access, {
     noteSave: true,
+    reads: false,
     save: (call, requestContext) =>
       deps.connectors.saveNote(scope, { ...call, turn: turnKey.of(requestContext) }),
   })
 }
 
 /**
- * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the run, so one
- * turn never writes over another; the count lives with the agent, one per run.
+ * `reads/<turn>-<n>.json`: the turn's first 8 characters and the read's number in the turn, so one
+ * turn never writes over another and the helper's reads, which run on another context, number after
+ * the main agent's; the count is by the turn's key, the oldest forgotten past `TURNS_KEPT`.
  */
 export function readsFiles(): (requestContext: RequestContext) => string {
-  const readsOfRun = new WeakMap<RequestContext, number>()
+  const readsOfTurn = new Map<string, number>()
   return (requestContext) => {
     const turn = turnKey.of(requestContext)
-    const n = (readsOfRun.get(requestContext) ?? 0) + 1
-    readsOfRun.set(requestContext, n)
+    const n = (readsOfTurn.get(turn) ?? 0) + 1
+    readsOfTurn.delete(turn)
+    readsOfTurn.set(turn, n)
+    const [oldest] = readsOfTurn.keys()
+    if (readsOfTurn.size > TURNS_KEPT && oldest !== undefined) readsOfTurn.delete(oldest)
     return `reads/${turn.slice(0, 8)}-${n}.json`
   }
 }

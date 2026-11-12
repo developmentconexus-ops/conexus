@@ -44,6 +44,8 @@ export function ActionDialog(props: {
   write: Write
   onConfirm: () => void
   children?: ReactNode
+  /** A refusal the dialog says in its own words, where the table's would name a tool. */
+  ownRefusal?: (error: unknown) => string | undefined
 }) {
   const { write, trigger } = props
   function changeOpen(open: boolean) {
@@ -66,7 +68,7 @@ export function ActionDialog(props: {
       <AlertDialogContent title={props.title} description={props.description}>
         {props.children}
         {write.isError && !isGone(write.error) && (
-          <Alert tone="danger">{refusalText(write.error)}</Alert>
+          <Alert tone="danger">{props.ownRefusal?.(write.error) ?? refusalText(write.error)}</Alert>
         )}
         <div className="flex flex-wrap gap-md">
           <Button

@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { Anthropic } from '../../platform/test-anthropic.ts'
 import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -19,7 +20,7 @@ import {
 } from './test-conversation.ts'
 import { failuresOf, textsOf } from './test-parts.ts'
 import { sessionStateOf } from './test-questions.ts'
-import { printedOf, routedTo, served } from './test-research.ts'
+import { onGroq, printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
@@ -126,6 +127,19 @@ function resolvesInternally(t: TestContext, name: string) {
   })
 }
 
+/** A model that opens each address in turn with `web_fetch`, then says it could not open them. */
+function fetchingEach(addresses: string[]): Anthropic['chat'] {
+  let step = 0
+  return (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    const url = addresses[step]
+    step += 1
+    return url === undefined
+      ? { kind: 'text', text: 'Não consegui abrir.' }
+      : { kind: 'fetch', url }
+  }
+}
+
 test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento para um: recusado, e o turno segue', async (t) => {
   const internal = await served(t, (_path, response) => response.end('segredo interno'))
   const site = await served(t, (path, response) =>
@@ -141,15 +155,11 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
     'http://site.example.test/pagina',
     'http://site.example.test/cardapio',
   ]
-  let step = 0
-  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
-    if (!asked.stream) return { kind: 'text', text: 'Título' }
-    const url = addresses[step]
-    step += 1
-    return url === undefined
-      ? { kind: 'text', text: 'Não consegui abrir.' }
-      : { kind: 'fetch', url }
-  })
+  const { hub, ana, companyId, conversations, anthropic } = await conversing(t, () => ({
+    kind: 'text',
+    text: 'Título',
+  }))
+  await onGroq({ hub, ana, companyId, anthropic }, fetchingEach(addresses))
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
@@ -177,7 +187,7 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.deepEqual(site.reached, ['/pagina', '/cardapio'])
   assert.deepEqual(internal.reached, [])
   const last =
-    anthropic.sent
+    anthropic.chats
       .filter((each) => each.stream)
       .at(-1)
       ?.texts.join('\n') ?? ''

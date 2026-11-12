@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Mastra Factory's record-read default is 20 rows with a "has older" flag; 20 whole rows show the variation in real Sankhya rows.
+// 20 whole rows show the variation in real Sankhya rows; Factory lists 25.
 const CUT_ROWS = 20
 // A 50-column read measured 33 KB for 20 rows; 16 KB is about 4-5k tokens, between Mastra's 2k and Codex's 10k per tool output.
 const CUT_BYTES = 16 * 1024
@@ -37,19 +37,25 @@ function shortened(value: unknown): { value: unknown; cut: boolean } {
   return { value, cut: false }
 }
 
+export type Shaped = { value: unknown; complete: boolean; rows: number; bytes: number }
+
+function answer(value: unknown, complete: boolean, rows: number): Shaped {
+  return { value, complete, rows, bytes: size(value) }
+}
+
 /**
  * What the model reads of a read (the tool's own paged answer, never a filter over Mastra's
  * output): up to 20 whole rows, long text cut, then rows dropped from the end, the last one too,
- * until the value is at most 16 KB. `complete` is false when either cut took something or the
+ * until the value is at most 16 KB. `rows` and `bytes` size what it reads. `complete` is false when either cut took something or the
  * provider said more exists. A value that is no list of rows has its long text cut, and so is a
  * list's other fields once no row is left; either is `null` when it still passes 16 KB.
  */
-export function shaped(value: unknown): { value: unknown; complete: boolean } {
+export function shaped(value: unknown): Shaped {
   const listed = Listed.safeParse(value)
   if (!listed.success) {
     const short = shortened(value)
-    if (size(short.value) > CUT_BYTES) return { value: null, complete: false }
-    return { value: short.value, complete: !short.cut }
+    if (size(short.value) > CUT_BYTES) return answer(null, false, 0)
+    return answer(short.value, !short.cut, 0)
   }
   let rows = listed.data.linhas.slice(0, CUT_ROWS)
   let complete = rows.length === listed.data.linhas.length && listed.data.temMais !== true
@@ -66,6 +72,6 @@ export function shaped(value: unknown): { value: unknown; complete: boolean } {
     complete = false
   }
   // The fields besides the rows are the model's too: past 16 KB without a single row, nothing of it passes.
-  if (size(build(rows)) > CUT_BYTES) return { value: null, complete: false }
-  return { value: build(rows), complete }
+  if (size(build(rows)) > CUT_BYTES) return answer(null, false, 0)
+  return answer(build(rows), complete, rows.length)
 }

@@ -22,6 +22,7 @@ import {
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
+import { CompanyMemoryProposal } from './memory-proposal.tsx'
 import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
 import { EMPTY_ASSISTANT } from './text.ts'
@@ -54,6 +55,14 @@ function useAssistantRoom(held: {
       ),
       automationCard: ({ proposed, toolCallId }) => (
         <ProposalCard
+          companyId={companyId}
+          conversation={conversation}
+          proposed={proposed}
+          toolCallId={toolCallId}
+        />
+      ),
+      companyMemoryCard: ({ proposed, toolCallId }) => (
+        <CompanyMemoryProposal
           companyId={companyId}
           conversation={conversation}
           proposed={proposed}

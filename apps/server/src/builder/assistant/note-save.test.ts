@@ -66,7 +66,7 @@ test('a rodada de automação: a conversa que a automação abre não leva conne
   const before = on.calls.length
   const run = await ended(on.hub, on.ana, ran, await ranNow(on.hub, on.ana, ran))
   assert.equal(run.state.kind, 'DONE')
-  const asked = on.calls.slice(before).filter((each) => each.tools.includes('connector_read'))
+  const asked = on.calls.slice(before).filter((each) => each.tools.includes('search_tools'))
   assert.ok(asked.length > 0)
   for (const each of asked) assert.equal(each.tools.includes(SAVE), false)
 })

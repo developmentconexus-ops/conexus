@@ -7,7 +7,7 @@ import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hu
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
+import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const FILE_TURN = [[write('relatorio.csv', 'a;b\n1;2\n')], [said('Escrevi.')]]
@@ -155,6 +155,17 @@ test('o download quando a lista do provedor falha: nenhuma máquina é ligada ne
   const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
   assert.equal(got.statusCode, 200, got.body)
   assert.equal(got.body, 'a;b\n1;2\n', 'the machine the turn wrote on, with its file')
+})
+
+test('o arquivo de uma máquina de outro molde baixa', async (t) => {
+  const on = await withFile(t)
+  const { control } = on.hub.assistantMachines
+  const name = `conexus-${INSTALLATION}-${on.url.slice(on.url.lastIndexOf('/') + 1)}`
+  control.templates[name] = OLD_TEMPLATE
+  const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
+  assert.equal(got.statusCode, 200, got.body)
+  assert.equal(got.body, 'a;b\n1;2\n', 'the file of the machine made from another template')
+  assert.deepEqual(control.replaced, [], 'no machine was killed')
 })
 
 test('o download cuja pausa falha: o arquivo lido é entregue, e a pausa que falhou fica no log (F27)', async (t) => {

@@ -17,7 +17,7 @@ import {
 } from './test-conversation.ts'
 import { plantGemini } from './test-gemini.ts'
 import { partsOf } from './test-parts.ts'
-import { routedTo, served } from './test-research.ts'
+import { onGroq, routedTo, served } from './test-research.ts'
 
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) => ({
@@ -75,11 +75,8 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 
-const FETCH: Block = {
-  type: 'tool_use',
-  name: 'web_fetch',
-  input: { url: 'http://padaria.example.test/' },
-}
+const FETCH_URL = 'http://padaria.example.test/'
+const FETCH: Block = { type: 'tool_use', name: 'web_fetch', input: { url: FETCH_URL } }
 const RECALL: Block = { type: 'tool_use', name: 'recall', input: { mode: 'messages' } }
 
 /** The tool name and state of each tool part the events said, in order. */
@@ -96,11 +93,17 @@ async function calling(t: TestContext, blocks: Block[]) {
   const site = await served(t, (_path, response) => response.end('Cardápio da padaria'))
   routedTo(t, { 'padaria.example.test': site.port })
   let step = 0
-  const { hub, ana, conversations } = await conversing(t, (asked) => {
+  function reply(asked: Sent): Reply {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
     step += 1
-    return step > 1 ? { kind: 'text', text: 'Li a página.' } : { kind: 'blocks', blocks }
-  })
+    if (step > 1) return { kind: 'text', text: 'Li a página.' }
+    return fetching ? { kind: 'fetch', url: FETCH_URL } : { kind: 'blocks', blocks }
+  }
+  // Anthropic runs the page fetch on its side; Mastra's own function runs for the other providers.
+  const fetching = blocks.includes(FETCH)
+  const on = await conversing(t, fetching ? () => ({ kind: 'text', text: 'Título' }) : reply)
+  const { hub, ana, conversations } = on
+  if (fetching) await onGroq(on, reply)
   /** Every run Mastra saves waiting, as an approval leaves it, from the moment its tables exist. */
   async function recordSuspensions() {
     await hub.test.mastraPool.query(`

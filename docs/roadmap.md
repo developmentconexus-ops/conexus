@@ -31,8 +31,8 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 
 **As capacidades que faltam aos apps.**
 
-- **O Sync de qualquer conector.** Em construção.
-- **A Ontologia da empresa**, depois do Sync e antes da 4 (2026-11-12: `"A1"`). Ela e o Brain estão abaixo.
+- **A política de dados pessoais dos conectores.** Logo depois do Sync e antes da Capacidade 4 (2026-11-11, "H1"). Em Papéis, marca no papel Vendas que ele vê contato e endereço dos clientes; o app "quem comprou da gente" mostra o comprador, o Assistente responde com nomes e sem CPF, e quem é do papel Membro recebe os pedidos sem nome.
+- **A Ontologia da empresa**, depois da política de dados pessoais e antes da 4 (2026-11-12: `"A1"`). Ela e o Brain estão abaixo.
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.

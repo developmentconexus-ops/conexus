@@ -182,7 +182,8 @@ export type MachineApi = {
  * says its provider id, or none; throws when the provider fails, so a failed list is never "none".
  */
 export type ConversationMachineApi = MachineApi & {
-  find(conversationId: ConversationId, template: string): Promise<string | undefined>
+  /** `undefined` for `template` finds the machine of any template; the mark stays on it for diagnosis. */
+  find(conversationId: ConversationId, template: string | undefined): Promise<string | undefined>
 }
 
 /**

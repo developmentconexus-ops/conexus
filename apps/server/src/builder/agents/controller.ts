@@ -244,7 +244,7 @@ export function createAgentConversations(deps: Deps) {
   const resolvedOf = resolverOf(runOf, registry)
   const machines = createConversationMachines(
     {
-      ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS },
+      ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS, otherTemplate: 'replace' },
       marksOf: machineMarks(runOf, resolvedOf),
     },
     deps.machineTuning,

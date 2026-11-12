@@ -4,9 +4,19 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { approving } from '../agents/test-approval.ts'
+import { TITLE } from '../controller-kit/public.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
-import { assisting, created, publishedApp, reading, said, talking } from './test-assistant.ts'
+import {
+  assisting,
+  created,
+  publishedApp,
+  reading,
+  said,
+  searching,
+  talking,
+} from './test-assistant.ts'
+import { conversation, LONG } from './test-files.ts'
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
 
@@ -17,7 +27,13 @@ async function until(done: () => boolean) {
 }
 
 test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya vão na escolha e no Projeto dela, com a mesma chave; o turno seguinte tem outra', async (t) => {
-  const on = await assisting(t, [[reading()], [reading()], [said('Uma empresa.')], [reading()]])
+  const on = await assisting(t, [
+    [searching()],
+    [reading()],
+    [reading()],
+    [said('Uma empresa.')],
+    [reading()],
+  ])
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
     connections: [on.matriz],
@@ -25,12 +41,19 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   const { say } = await talking(t, on.hub, on.ana, url)
 
   assert.equal(endOf(await say('Quantas empresas há na Matriz?')), 'complete')
-  const first = on.calls.at(2)
+  const first = on.calls.at(3)
   const result = first?.texts.find((text) => text.includes('"kind":"OK"'))
   assert.ok(result !== undefined, first?.texts.join('\n'))
   // The model reads the cut of the answer and the file it was saved in, never the door's whole answer beside it.
   const answered = JSON.parse(result)
-  assert.deepEqual(Object.keys(answered).sort(), ['complete', 'file', 'kind', 'value'])
+  assert.deepEqual(Object.keys(answered).sort(), [
+    'bytes',
+    'complete',
+    'file',
+    'kind',
+    'rows',
+    'value',
+  ])
   assert.match(answered.file, /^reads\/[0-9a-f]{8}-1\.json$/)
   assert.equal(on.reads.length, 2)
   for (const read of on.reads) {
@@ -49,7 +72,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente da dona recebe as de conector, a escrita do caderno incluída, a visão da empresa, as da web, as de skill, a de perguntar por cartão, as de tarefas, a de mostrar arquivo e as da máquina do Builder, nenhuma a mais', async (t) => {
+test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras e as do caderno, a escrita incluída, a visão da empresa, as da web, as de skill, a de perguntar por cartão, a do ajudante de pesquisa, as de tarefas, a de mostrar arquivo, as da memória, as de ler a memória da empresa e a de propor guardar nela, e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -61,7 +84,9 @@ test('as ferramentas: o modelo do Assistente da dona recebe as de conector, a es
     'conexus_overview',
     'connector_note_save',
     'connector_notes',
-    'connector_read',
+    'knowledge_list',
+    'knowledge_read',
+    'knowledge_search',
     'mastra_workspace_delete',
     'mastra_workspace_edit_file',
     'mastra_workspace_execute_command',
@@ -75,14 +100,19 @@ test('as ferramentas: o modelo do Assistente da dona recebe as de conector, a es
     'mastra_workspace_write_file',
     'propose_app',
     'propose_automation',
+    'propose_company_memory',
+    'recall',
+    'search_tools',
     'show_file',
     'skill',
     'skill_read',
     'skill_search',
+    'subagent',
     'task_check',
     'task_complete',
     'task_update',
     'task_write',
+    'updateWorkingMemory',
     'web_fetch',
     'web_search',
   ])
@@ -251,7 +281,7 @@ test('a troca do modelo: uma resposta em andamento termina no modelo em que come
 })
 
 test('sem escrita: com uma escrita no kit e na biblioteca do Projeto, o Assistente não recebe ferramenta nem texto dela, e a leitura roda sem pedir aprovação (12)', async (t) => {
-  const on = await approving(t, [[reading()], [said('Uma empresa.')]])
+  const on = await approving(t, [[searching()], [reading()], [said('Uma empresa.')]])
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
     connections: [on.matriz],
@@ -265,4 +295,21 @@ test('sem escrita: com uma escrita no kit e na biblioteca do Projeto, o Assisten
   assert.ok(asked !== undefined)
   assert.ok(!asked.tools.some((name) => name.startsWith('tool_')), asked.tools.join())
   assert.doesNotMatch(asked.system, /lancarPedido|Lançar pedido/)
+})
+
+test('o Observador com foco de negócio', async (t) => {
+  const on = await conversation(t, (_, index) => ({ kind: 'text', text: index < 2 ? LONG : 'Li.' }))
+  for (const question of ['Quais as regras?', 'E os prazos?', 'E as multas?'])
+    assert.equal(endOf(await on.say(question)), 'complete')
+  assert.ok(on.observers.length > 0, 'the third turn, past the threshold, was observed')
+  for (const observer of on.observers) {
+    assert.ok(observer.system.includes(TITLE.ask.observer), 'the title instruction stays')
+    assert.match(observer.system, /numbers with where they came from/)
+    assert.match(observer.system, /Do not observe `<current-task-list>` or `<task-list-update>`/)
+  }
+  assert.equal(
+    TITLE.app.observer.includes('business analyst'),
+    false,
+    'the Builder’s does not change',
+  )
 })

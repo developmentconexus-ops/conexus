@@ -107,3 +107,63 @@ export function recordedRun(scenario: string): {
   }
   return { events, read }
 }
+
+const Part = z.looseObject({ type: z.string() })
+const StoredParts = z.looseObject({
+  content: z.looseObject({ parts: z.array(z.unknown()) }),
+})
+
+/**
+ * The first part of a shape in a message Mastra stored in a recording, as a fresh copy: the
+ * tool result a screen reads again, or a `source` the model cited (testing T26).
+ */
+export function recordedPart<S extends z.ZodType>(
+  scenario: string,
+  shape: S,
+  where: (part: z.output<S>) => boolean = () => true,
+): z.output<S> {
+  for (const stored of recordedRun(scenario).read) {
+    for (const part of StoredParts.parse(stored).content.parts) {
+      if (!Part.safeParse(part).success) continue
+      const found = shape.safeParse(part)
+      if (found.success && where(found.data)) return structuredClone(found.data)
+    }
+  }
+  throw new Error(`${scenario}.jsonl holds no such part`)
+}
+
+export const SourcePart = z.looseObject({
+  type: z.literal('source'),
+  source: z.looseObject({
+    sourceType: z.literal('url'),
+    id: z.string(),
+    url: z.string(),
+    title: z.string().optional(),
+  }),
+})
+export const SubagentPart = z.looseObject({
+  type: z.literal('tool-invocation'),
+  toolInvocation: z.looseObject({
+    state: z.literal('result'),
+    toolCallId: z.string(),
+    toolName: z.literal('subagent'),
+    args: z.looseObject({ agentType: z.string(), task: z.string() }),
+    result: z.looseObject({ content: z.string(), isError: z.boolean() }),
+  }),
+})
+
+/**
+ * The helper's call as Mastra stored it in the recording, as a fresh copy with the call's id and a
+ * question of the test's own; `state: 'call'` is the same call before its result arrived.
+ */
+export function recordedSubagent(
+  scenario: string,
+  toolCallId: string,
+  task: string,
+  state: 'result' | 'call' = 'result',
+) {
+  const { toolInvocation, ...part } = recordedPart(scenario, SubagentPart)
+  const { result, ...call } = toolInvocation
+  const moved = { ...call, toolCallId, args: { ...call.args, task } }
+  return { ...part, toolInvocation: state === 'call' ? { ...moved, state } : { ...moved, result } }
+}

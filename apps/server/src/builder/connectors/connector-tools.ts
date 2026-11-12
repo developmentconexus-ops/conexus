@@ -54,7 +54,7 @@ type NoteSave = (
 
 type Connection = ConnectorAccess['connections'][number]
 
-const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
+export const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
 function runIn(who: Asker, requestContext: RequestContext): RunId {
   const runId = who.runIdOf(requestContext)
@@ -188,6 +188,33 @@ function otherSystem(access: ConnectorAccess, connection: string, operation: str
 const OPERATION_MAX = 80
 const OPERATION_FORMAT = /^[a-z0-9-]+\.[A-Za-z0-9_]+$/
 
+const WHOLE_FILE =
+  'When `complete` is false and `file` is set, the whole answer is in that file: open it with Python on the machine. Do not read again to see the rest; read again only to filter what the file does not hold. When `saved` is false there is no file: filter with WHERE and COUNT.'
+
+/** What every read tool says of its answer: the cut, the file and the limit (`connector_read` and the Assistant's typed reads). */
+export function answerWords(limit: string): string {
+  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}.`
+}
+
+/** One read through the access's door: the model gets the cut, and the whole answer goes to the machine's file when there is one. */
+export async function readOn(
+  access: ConnectorAccess,
+  call: { connectionId: ConnectionId; operation: string; input: unknown },
+  context: {
+    requestContext: RequestContext
+    workspace?: { filesystem?: WorkspaceFilesystem } | undefined
+    abortSignal?: AbortSignal | undefined
+  },
+) {
+  const { requestContext, workspace, abortSignal } = context
+  const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
+  if (answered.kind !== 'OK' || !('whole' in answered)) return answered
+  const { whole, ...cut } = answered
+  if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
+  const save = { path: access.savedAt(requestContext), log: access.log }
+  return saveWhole(workspace.filesystem, save, whole, cut)
+}
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
   if (!connections.some((each) => each.reads.length > 0)) return {}
@@ -195,7 +222,7 @@ function readTool(access: ConnectorAccess): ToolsInput {
     [BUILDER_TOOL.connectorRead]: createTool({
       id: BUILDER_TOOL.connectorRead,
       description: [
-        `Reads from a company system ${access.wording.whose}, by the connection's name. The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened): to count or see more rows, run your own SQL read with WHERE and COUNT. At most ${access.wording.limit}.`,
+        `Reads from a company system ${access.wording.whose}, by the connection's name. ${answerWords(access.wording.limit)}`,
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({
@@ -218,15 +245,11 @@ function readTool(access: ConnectorAccess): ToolsInput {
         const found = named(connections, connection, connector)
         if (found === undefined) return otherSystem(access, connection, operation)
         if (requestContext === undefined) return NOT_GRANTED
-        const answered = await access.read(
-          { connectionId: found.connectionId, operation: id.join('.'), input, signal: abortSignal },
-          requestContext,
+        return readOn(
+          access,
+          { connectionId: found.connectionId, operation: id.join('.'), input },
+          { requestContext, workspace, abortSignal },
         )
-        if (answered.kind !== 'OK' || !('whole' in answered)) return answered
-        const { whole, ...cut } = answered
-        if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
-        const save = { path: access.savedAt(requestContext), log: access.log }
-        return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),
   }

@@ -9,7 +9,7 @@ import { asked, conversing, started, streamOf, title } from './test-conversation
 const PWD = {
   type: 'tool_use',
   name: 'mastra_workspace_execute_command',
-  input: { command: 'pwd' },
+  input: { description: 'Rodando um teste', command: 'pwd' },
 } as const
 
 /** The absolute paths a text names; a web address or a closing tag is none. */
@@ -38,9 +38,11 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
   assert.equal(system.includes('Local command execution'), false)
   const named = new Set(pathsIn(system).map((path) => path.replace(/[.]$/, '')))
   assert.deepEqual(
-    [...named].filter((path) => ![app, APP_FOLDER, '/opt/conexus', '/src/index.ts'].includes(path)),
+    [...named].filter(
+      (path) => ![app, APP_FOLDER, '/opt/conexus', '/tmp/x', `${app}/tmp/x`].includes(path),
+    ),
     [],
-    "the model is told of no folder but the app (the machine is this test folder), the check and the file tools' example path",
+    "the model is told of no folder but the app (the machine is this test folder), the check and the file tools' example of a path outside it",
   )
   const output = events.flatMap((event) => (event.type === 'shell_output' ? [event.output] : []))
   const exit = events.find((event) => event.type === 'command_exit')

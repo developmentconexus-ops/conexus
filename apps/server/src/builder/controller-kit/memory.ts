@@ -1,3 +1,4 @@
+import type { WorkingMemory } from '@mastra/core/memory'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Memory } from '@mastra/memory'
 import type { PostgresStore } from '@mastra/pg'
@@ -29,6 +30,12 @@ function sideTurn(queue: QueueDeps) {
   }
 }
 
+/** Mastra's `retrieval`: its default reaches the whole resource; `thread` keeps it to the conversation. */
+function retrievalOf(recall: false | 'thread' | 'resource') {
+  if (recall === false) return {}
+  return { retrieval: recall === 'thread' ? { scope: 'thread' as const } : true }
+}
+
 /**
  * The Builder's memory: its title and its observation through the turn's account, failing soft,
  * in Mastra's own database, with Mastra Code's observer context and titles
@@ -47,8 +54,13 @@ export function conversationMemory(deps: {
   /** The title's instructions and the observer's, in the words of the conversation's kind. */
   title: string
   observer: string
-  /** Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its instructions). */
-  recall: boolean
+  /**
+   * Whether the model may recall the messages the observation folded (Mastra's `recall` tool and its
+   * instructions), and how far: its own thread, or every thread of its resource.
+   */
+  recall: false | 'thread' | 'resource'
+  /** The owner's working memory, which Mastra puts in the request and the model rewrites; absent, none. */
+  workingMemory?: WorkingMemory
   /** The attachment types the observer still sees; absent, Mastra's default (images and PDFs). */
   observeAttachments?: readonly string[]
 }): Memory {
@@ -59,6 +71,7 @@ export function conversationMemory(deps: {
   return new Memory({
     storage,
     options: {
+      ...(deps.workingMemory === undefined ? {} : { workingMemory: deps.workingMemory }),
       generateTitle: {
         model: accountModel(queue, 'title', turnFor),
         instructions: deps.title,
@@ -66,7 +79,7 @@ export function conversationMemory(deps: {
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        ...(deps.recall ? { retrieval: { scope: 'thread' } } : {}),
+        ...retrievalOf(deps.recall),
         temporalMarkers: true,
         observation: {
           ...failSoft,

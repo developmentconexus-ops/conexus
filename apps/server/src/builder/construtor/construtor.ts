@@ -243,7 +243,13 @@ export function createConstrutor(deps: Deps) {
   })
   const scopeOf = scopes(memory)
   const machines = createConversationMachines(
-    { ...deps.machine, log, hosts: ALLOWED_HOSTS, marksOf: machineMarks(scopeOf) },
+    {
+      ...deps.machine,
+      log,
+      hosts: ALLOWED_HOSTS,
+      otherTemplate: 'replace',
+      marksOf: machineMarks(scopeOf),
+    },
     deps.machineTuning,
   )
   const turns = sessionTurns({
@@ -262,7 +268,7 @@ export function createConstrutor(deps: Deps) {
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },
     mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
-    tools: { [ASK_USER_TOOL]: createAskUserTool() },
+    tools: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
     initialState: { yolo: true },
   })
   turns.watch(controller)

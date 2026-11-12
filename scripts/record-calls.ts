@@ -38,6 +38,29 @@ export const READS_CALLS: Block[][] = [
     },
   ],
 ]
+export const RESEARCH_PROMPT = 'Quantos pedidos a Padaria Sol teve em outubro de 2026?'
+export const RESEARCH_TYPE = 'pesquisar'
+/** What the model does in the `research` scenarios: open the helper, the helper answers (or its call fails), then the main agent answers. */
+export const RESEARCH_CALLS: Block[][] = [
+  [
+    {
+      type: 'tool_use',
+      name: 'subagent',
+      input: {
+        agentType: RESEARCH_TYPE,
+        task: 'Quantos pedidos a Padaria Sol (Matriz) teve em outubro de 2026?',
+      },
+    },
+  ],
+  [{ type: 'text', text: 'A Matriz teve 120 pedidos em outubro de 2026.' }],
+  [{ type: 'text', text: 'A Padaria Sol teve 120 pedidos em outubro de 2026.' }],
+]
+/** The `research-failed` scenario: the helper's call is refused, so the main agent answers without it. */
+export const RESEARCH_FAILED_CALLS: Block[][] = [
+  RESEARCH_CALLS[0] ?? [],
+  [],
+  [{ type: 'text', text: 'A pesquisa não deu; sigo sem ela.' }],
+]
 const HANDOFF_PROMPT = 'Monte um app de encomendas para uma padaria inventada.'
 /** The signal the Assistant's handoff sends (`builder/assistant/handoff.ts`): the person's words, marked as the Assistant's. */
 const HANDOFF_CONTENTS: { type: 'text'; text: string }[] = [
@@ -81,3 +104,51 @@ export const APPROVAL_CALLS = {
   'approval-stopped': [[ASKED]],
   'approval-refused': [[ASKED], [{ type: 'text', text: 'O Sankhya não aceitou o pedido.' }]],
 } satisfies Record<string, Block[][]>
+
+const PLAN_FILE = '.conexus/plans/encomendas.md'
+export const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
+export const STEER = 'Só eu cadastro.'
+/** What the model does in the `plan` scenario: submit the plan, use a tool, and answer once the person's steer is in. */
+export const PLAN_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'submit_plan', input: { path: PLAN_FILE } }],
+  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Plano aprovado, começando.' } }],
+  [{ type: 'text', text: 'Pronto, o cadastro será só seu.' }],
+]
+
+export const FILES_PROMPT =
+  'Leia os arquivos e diga, em uma frase, o que a padaria inventada precisa.'
+export const MORE_FILES_PROMPT = 'Este PDF também vale.'
+/** Invented and tiny (security S40): a markdown note, a PDF and a 1×1 PNG, as the browser reads them. */
+const MARKDOWN = '# Observações\n\nSem glúten.\n'
+const PDF = '%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n'
+const PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+function dataUrl(mediaType: string, base64: string): string {
+  return `data:${mediaType};base64,${base64}`
+}
+function text64(text: string): string {
+  return Buffer.from(text).toString('base64')
+}
+export const FILES = [
+  {
+    filename: 'observacoes.md',
+    mediaType: 'text/markdown',
+    data: dataUrl('text/markdown', text64(MARKDOWN)),
+  },
+  {
+    filename: 'precos.pdf',
+    mediaType: 'application/pdf',
+    data: dataUrl('application/pdf', text64(PDF)),
+  },
+  { filename: 'logo.png', mediaType: 'image/png', data: dataUrl('image/png', PNG) },
+]
+export const MORE_FILE = {
+  filename: 'cardapio.pdf',
+  mediaType: 'application/pdf',
+  data: dataUrl('application/pdf', text64(PDF)),
+}
+/** What the model does in the `files` scenario: use its tool, and answer once the second message is in. */
+export const FILES_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Arquivos lidos.' } }],
+  [{ type: 'text', text: 'Ela precisa de pães sem glúten.' }],
+]

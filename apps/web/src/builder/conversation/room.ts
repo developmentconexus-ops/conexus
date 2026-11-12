@@ -3,6 +3,7 @@ import type {
   FailureCode,
   ProposedApp,
   ProposedAutomation,
+  ProposedCompanyMemory,
   ShownFile,
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
@@ -50,6 +51,11 @@ export type Room = {
   appCard?: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
   /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
   automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
+  /** Draws the card of what the call `toolCallId` proposed to save in the company's memory; none in the Builder's conversation. */
+  companyMemoryCard?: (proposal: {
+    proposed: ProposedCompanyMemory
+    toolCallId: string
+  }) => ReactNode
   /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line; none outside the Construtor's conversation. */
   openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
   /** The agent now open, for its row to say so; `undefined` until one is. */

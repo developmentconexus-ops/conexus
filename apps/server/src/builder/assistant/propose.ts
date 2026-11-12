@@ -9,6 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import type { SessionScope } from '../../hub/connectors/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { withFile } from '../machine/public.ts'
 
@@ -91,4 +92,19 @@ export function proposeTools(machines: Machines) {
     })
   }
   return { app: proposeTool(offs.app), change: proposeTool(offs.change) }
+}
+
+/**
+ * The hand-off to the Builder the place offers: creating an app is the company's, and a
+ * conversation inside a Projeto talks about that Projeto's app.
+ */
+export function handOffOf(
+  scope: SessionScope | undefined,
+  proposals: ReturnType<typeof proposeTools>,
+  byAutomation: boolean,
+): Record<string, ReturnType<typeof proposeTools>['app']> {
+  if (scope === undefined || byAutomation) return {}
+  return scope.place.kind === 'COMPANY'
+    ? { [ASSISTANT_TOOL.proposeApp]: proposals.app }
+    : { [ASSISTANT_TOOL.proposeAppChange]: proposals.change }
 }

@@ -25,7 +25,7 @@ import {
   title,
 } from './test-conversation.ts'
 import { dataOf, failuresOf, messagesIn, partsOf } from './test-parts.ts'
-import { routedTo } from './test-research.ts'
+import { onGroq, routedTo } from './test-research.ts'
 
 /** The page the recorded `tool-error` call asks to read, on a site that never answers. */
 const MISSING_SITE = 'padaria-inventada.example.test'
@@ -145,15 +145,16 @@ test('o pensamento de Claude, tocado da gravação: o raciocínio e o `data-cone
   assert.equal(typeof Object(kept[0]).seconds, 'number')
 })
 
-test('a ferramenta de Claude que falha, tocada da gravação: a leitura da página em erro, lida como ao vivo', async (t) => {
+test('a leitura de página que falha: o erro da ferramenta ao vivo e relido, no provedor cuja leitura é a do Mastra', async (t) => {
   routedTo(t, { [MISSING_SITE]: new Error(`getaddrinfo ENOTFOUND ${MISSING_SITE}`) })
   let calls = 0
-  const { hub, ana, conversations } = await conversing(t, (each) => {
-    const titled = title(each)
-    if (titled !== undefined) return titled
+  const on = await conversing(t, () => ({ kind: 'text', text: 'Título' }))
+  const { hub, ana, conversations } = on
+  await onGroq(on, (each) => {
+    if (!each.stream) return { kind: 'text', text: 'Título' }
     calls += 1
     return calls === 1
-      ? recorded('anthropic-tool-error')
+      ? { kind: 'fetch', url: `http://${MISSING_SITE}/` }
       : { kind: 'text', text: 'Não consegui ler a página.' }
   })
   const said = await asked(t, { hub, person: ana, conversations })

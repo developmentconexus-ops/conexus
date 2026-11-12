@@ -218,8 +218,8 @@ async function* slowly(control: Control, path: string, signal: AbortSignal | und
 }
 
 /**
- * The provider's find by the marks, as E2B's list: the conversation's machine of `template` it
- * holds, by its name, which this double uses as the provider's id; `findFails` lists that fail.
+ * The provider's find by the marks, as E2B's list: the conversation's machine of `template` (any
+ * template when undefined) it holds, by its name, which this double uses as the provider's id; `findFails` lists that fail.
  */
 export function findOf(control: Control): ConversationMachineApi['find'] {
   return async (conversationId, template) => {
@@ -231,7 +231,7 @@ export function findOf(control: Control): ConversationMachineApi['find'] {
       (name) =>
         name.endsWith(conversationId) &&
         heldBy(control, name) &&
-        (control.templates[name] ?? TEMPLATE) === template,
+        (template === undefined || (control.templates[name] ?? TEMPLATE) === template),
     )
   }
 }

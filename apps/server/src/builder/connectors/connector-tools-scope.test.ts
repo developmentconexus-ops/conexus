@@ -40,7 +40,7 @@ function accessOver(
     connections,
     read: async (call) => {
       reads.push({ connectionId: call.connectionId, operation: call.operation, input: call.input })
-      return { kind: 'OK', value: { linhas: [] }, complete: true }
+      return { kind: 'OK', value: { linhas: [] }, complete: true, rows: 0, bytes: 14 }
     },
     log: QUIET,
     notes: async (connectionId) => {
@@ -249,6 +249,8 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
     kind: 'OK',
     value: { linhas: [] },
     complete: true,
+    rows: 0,
+    bytes: 14,
     whole: { linhas: [1] },
   } as const
   const read = { connection: 'Matriz', operation: 'sankhya.consultar', input: {} }

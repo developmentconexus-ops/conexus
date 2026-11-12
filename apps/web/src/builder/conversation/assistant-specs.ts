@@ -1,6 +1,6 @@
 import type { MACHINE_TOOL } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused } from '@conexus/hub-api'
-import { BuildingIcon, RocketIcon, TimerIcon } from 'lucide-react'
+import { BookmarkIcon, BuildingIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
 
@@ -56,6 +56,15 @@ export const ASSISTANT_SPECS: Record<
     failed: 'Não conseguiu propor a automação',
     verb: 'propôs',
     body: 'automation',
+    groups: false,
+  },
+  [ASSISTANT_TOOL.proposeCompanyMemory]: {
+    icon: BookmarkIcon,
+    running: 'Preparando a proposta para a memória da empresa',
+    done: 'Propôs guardar na memória da empresa',
+    failed: 'Não conseguiu propor',
+    verb: 'propôs',
+    body: 'companyMemory',
     groups: false,
   },
 }

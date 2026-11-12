@@ -22,6 +22,7 @@ import { PreviewLine } from './preview-line.tsx'
 import { QuestionCard } from './question-card.tsx'
 import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
+import { Sources } from './sources.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
@@ -91,6 +92,8 @@ function ItemRow({
       return <CardOf item={item} />
     case 'conexus':
       return <ConexusPartRow item={item} live={streaming} onAsk={onAsk} />
+    case 'sources':
+      return <Sources sources={item.sources} />
     default:
       return item satisfies never
   }
