@@ -5,11 +5,21 @@ import { OBSERVED } from './files.ts'
 import { ASSISTANT_OBSERVER } from './instructions.ts'
 
 /**
- * The person's working memory as the model first sees it: Claude Code's four kinds of note
- * (`user`, `feedback`, `project`, `reference`) in one text, each line dated so the model knows what
- * is old, under the same 4,000 characters the person's own `PUT` takes.
+ * The person's working memory as the model first sees it and the person reads it: four headings in
+ * Portuguese (Claude Code's four kinds of note) and nothing else. The rules of what to keep, the
+ * dated lines and the 4,000 characters live in the Assistant's instructions (`prompt/assistant.md`),
+ * where the person cannot erase them.
  */
-export const PROFILE_TEMPLATE = `# About the person
+export const PROFILE_TEMPLATE = `# Sobre você
+# Correções que você deu
+# No que você está trabalhando
+# Onde achar as coisas`
+
+/**
+ * The template a note was born from before the headings were Portuguese: a note kept with it stays
+ * readable, and one never written still reads as nothing kept.
+ */
+export const LEGACY_PROFILE_TEMPLATE = `# About the person
 <!-- role, area, what they follow; only what they said or showed -->
 # Corrections they gave
 <!-- how they want answers: format, terms, what was wrong before -->

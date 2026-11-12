@@ -11,14 +11,15 @@ import {
 } from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
+import { LEGACY_PROFILE_TEMPLATE } from './memory.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
-const LEARNED = `# About the person
+const LEARNED = `# Sobre você
 Diretora comercial; acompanha a linha de bebidas. (2026-11-11)
-# Corrections they gave
+# Correções que você deu
 Valores em reais, sem centavos. (2026-11-11)
-# Work in progress
-# Where to find things`
+# No que você está trabalhando
+# Onde achar as coisas`
 
 /** The person's memory route in the company of `company`'s path. */
 function memoryOf(company: string) {
@@ -128,21 +129,18 @@ test('o modelo da memória', async (t) => {
 
   const block = workingMemoryIn(on.calls.at(0))?.text ?? ''
   const template = /<working_memory_template>\n([\s\S]*)\n<\/working_memory_template>/.exec(block)
-  const sections = template?.[1]?.match(/^# .+$/gm)
-  assert.deepEqual(sections, [
-    '# About the person',
-    '# Corrections they gave',
-    '# Work in progress',
-    '# Where to find things',
+  assert.deepEqual(template?.[1]?.match(/^# .+$/gm), [
+    '# Sobre você',
+    '# Correções que você deu',
+    '# No que você está trabalhando',
+    '# Onde achar as coisas',
   ])
-  assert.match(template?.[1] ?? '', /never keep what a read of the company's systems gives again/)
-  assert.match(template?.[1] ?? '', /end each line you add with its date \(YYYY-MM-DD\)/)
-  assert.match(template?.[1] ?? '', /under 4,000 characters/)
+  assert.doesNotMatch(template?.[1] ?? '', /<!--|never keep|YYYY|4,000/, 'no rule inside the note')
 })
 
 test('a rodada de automação lê o perfil e não o grava: o modelo não recebe a ferramenta de escrita da memória, a rodada termina e o perfil da pessoa fica como estava', async (t) => {
   const on = await automating(t, [
-    [tool('updateWorkingMemory', { memory: '# About the person\nESCRITO-PELA-RODADA' })],
+    [tool('updateWorkingMemory', { memory: '# Sobre você\nESCRITO-PELA-RODADA' })],
   ])
   const before = await readMemory(on.hub, on.ana, on.company)
   const made = await automation(on.hub, on.ana, on.automations, salesSummary([on.matriz]))
@@ -153,4 +151,33 @@ test('a rodada de automação lê o perfil e não o grava: o modelo não recebe 
   assert.ok(asked.length > 0, 'the run reads the profile and recalls')
   for (const each of asked) assert.equal(each.tools.includes('updateWorkingMemory'), false)
   assert.equal(await readMemory(on.hub, on.ana, on.company), before)
+})
+
+test('uma nota guardada com o modelo antigo continua legível, e o modelo antigo sem nada escrito conta como vazio', async (t) => {
+  const on = await assisting(t)
+  const memory = memoryOf(on.company)
+  await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const old = `${LEGACY_PROFILE_TEMPLATE.split('\n').slice(0, 2).join('\n')}\nDiretora comercial. (2026-11-01)`
+  assert.equal((await call(on.hub, on.ana, 'PUT', memory, { text: old })).statusCode, 200)
+  assert.equal(await readMemory(on.hub, on.ana, on.company), old)
+  assert.equal(
+    (await call(on.hub, on.ana, 'PUT', memory, { text: LEGACY_PROFILE_TEMPLATE })).statusCode,
+    200,
+  )
+  assert.equal(await readMemory(on.hub, on.ana, on.company), null)
+})
+
+test('as regras da nota pessoal moram nas instruções, e a nota levada à empresa passa pelo cartão', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
+  const fixed = on.calls.at(0)?.systems.at(0)?.text ?? ''
+  assert.match(fixed, /never keep what a read of the company's systems gives again/i)
+  assert.match(fixed, /end each line you add with its date \(YYYY-MM-DD\)/i)
+  assert.match(fixed, /under 4,000 characters, shortening the oldest lines first/)
+  assert.match(fixed, /the person reads and edits it on their own screen/)
+  assert.match(
+    fixed,
+    /holds for the whole company, offer it on the card of propose_company_memory and never save it for the company yourself/,
+  )
 })

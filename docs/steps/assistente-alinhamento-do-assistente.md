@@ -251,7 +251,7 @@ dia a dia fechar (L5), e não muda a ordem do roteiro.
 | 41 | U12 | O resumo do ajudante volta como o resultado de `subagent`, e o pedido seguinte do principal leva esse texto e nenhum resultado das leituras do ajudante | `research.test.ts`, "só o resumo volta" | must |
 | 42 | U12 | A linha do ajudante: "Pesquisando: <pedido>" enquanto roda, "Pesquisou: <pedido>" ao terminar, o resumo ao abrir, "A pesquisa falhou" no erro; nas capturas a 1366 e 390 px, nos dois temas, um pedido longo fica numa linha cortada, sem estouro horizontal | `apps/web/src/builder/conversation/tool-registry.test.ts`, "o ajudante", e `conversation.layout.test.tsx`, "a linha do ajudante" | must |
 | 43 | U12 | A linha do turno no log ganha `helpers` (as pesquisas) e `helperCalls` (as ferramentas que o ajudante chamou), contadas dos eventos `subagent_end` e `subagent_tool_start`; sem ajudante, os campos não aparecem | `apps/server/src/builder/conversation/turn-line.test.ts`, "o ajudante no log" | must |
-| 44 | U7 | O bloco da memória de trabalho que chega ao modelo traz o `PROFILE_TEMPLATE` com as quatro seções (quem é, correções, trabalho em andamento, onde achar), a regra de não guardar o que uma leitura do sistema dá, o teto de 4.000 caracteres e a data em cada linha | `profile-memory.test.ts`, "o modelo da memória" | must |
+| 44 | U7 | O bloco da memória de trabalho que chega ao modelo traz o `PROFILE_TEMPLATE` só com as quatro seções em português (Sobre você, Correções que você deu, No que você está trabalhando, Onde achar as coisas), sem nenhum comentário de regra; a regra de não guardar o que uma leitura do sistema dá, o teto de 4.000 caracteres, a data em cada linha e o cartão `propose_company_memory` para o que vale para a empresa toda chegam pela mensagem fixa do Assistente | `profile-memory.test.ts`, "o modelo da memória" e "as regras da nota pessoal moram nas instruções" | must |
 | 45 | U4 | O texto fixo diz que os blocos de estado e os lembretes do pedido vêm do Conexus, não da pessoa, e continua os mesmos bytes entre conversas | `instructions.test.ts`, "o que é um lembrete" | must |
 
 ## A matriz de estados
@@ -789,24 +789,19 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 
 ### Os contratos que a unidade cria
 
-- `assistantMemory`: `recall: 'resource'` (o `retrieval: true` nativo); `workingMemory: { enabled: true, scope: 'resource', template: PROFILE_TEMPLATE }`; `PROFILE_TEMPLATE` em inglês, dono `assistant/memory.ts`.
+- `assistantMemory`: `recall: 'resource'` (o `retrieval: true` nativo); `workingMemory: { enabled: true, scope: 'resource', template: PROFILE_TEMPLATE }`; `PROFILE_TEMPLATE` em português (L23: a pessoa lê a nota na tela), dono `assistant/memory.ts`; as regras ficam na mensagem fixa (`prompt/assistant.md`), onde a pessoa não as apaga (decisão do fundador de 2026-11-12: "A Okay"); o modelo em inglês da primeira versão continua sendo lido como vazio, e uma nota guardada com ele continua legível (`LEGACY_PROFILE_TEMPLATE`).
 - O conteúdo do `PROFILE_TEMPLATE` (o item 3 do estudo do harness, antes de a unidade construir),
   dos quatro tipos de nota do Claude Code (`D/memory.md:478-566`: `user`, `feedback`, `project`,
   `reference`), sem o "índice" dele, que aqui não existe (a nota é um texto só):
 
   ```markdown
-  # About the person
-  <!-- role, area, what they follow; only what they said or showed -->
-  # Corrections they gave
-  <!-- how they want answers: format, terms, what was wrong before -->
-  # Work in progress
-  <!-- what they are following now, with the period -->
-  # Where to find things
-  <!-- which connection, read or file holds what they ask often -->
-  <!-- Rules: never keep what a read of the company's systems gives again (values, lists, totals);
-  end each line you add with its date (YYYY-MM-DD); keep this note under 4,000 characters, shortening
-  the oldest lines first. -->
+  # Sobre você
+  # Correções que você deu
+  # No que você está trabalhando
+  # Onde achar as coisas
   ```
+
+  As regras (só o que a pessoa disse ou mostrou; nunca guardar o que uma leitura dos sistemas da empresa dá de novo; terminar cada linha com a data AAAA-MM-DD; manter a nota abaixo de 4.000 caracteres, encurtando as linhas mais velhas primeiro; escrever em português; oferecer o cartão `propose_company_memory` quando algo da nota vale para a empresa toda, sem nunca gravá-lo sozinho, decisão do fundador de 2026-11-12: "C sim") ficam na mensagem fixa do Assistente, na forma que o documento do Mastra manda para a memória de trabalho (as regras de atualização nas instruções do agente).
 
   A data em cada linha é decisão nossa: o Claude Code grava a data da nota sozinho, num campo `modified`, e não pede ao modelo que date cada linha; aqui a nota é um texto só, e a data por linha é o jeito de o modelo saber o que é velho. O teto de 4.000 caracteres é o mesmo do `PUT` da pessoa (abaixo): a nota que o modelo grava cabe
   na que a pessoa pode gravar. O Mastra não corta a memória de trabalho; o teto é a regra do modelo,

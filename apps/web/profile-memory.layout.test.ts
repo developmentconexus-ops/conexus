@@ -21,9 +21,9 @@ const CAPTURES = join(tmpdir(), 'conexus-u7-capturas')
 const PAGE = `/companies/${COMPANY.id}/settings/account`
 const TITLE = 'O que o Assistente lembra de você'
 const KEPT = [
-  '# About the person',
+  '# Sobre você',
   'Diretora comercial; acompanha a linha de bebidas (2026-11-10)',
-  '# Corrections they gave',
+  '# Correções que você deu',
   'Valores em reais com duas casas, sem centavos arredondados (2026-11-10)',
 ].join('\n')
 

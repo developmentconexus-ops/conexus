@@ -7,7 +7,7 @@ import { answer, serve } from '../../platform/http.ts'
 import { resourceOf } from '../controller-kit/public.ts'
 import type { Owner } from './context.ts'
 import type { assistantMemory } from './memory.ts'
-import { PROFILE_TEMPLATE } from './memory.ts'
+import { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
 import { admitted } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 
@@ -52,7 +52,8 @@ export function registerProfileMemoryRoutes(app: FastifyInstance, deps: Deps): v
     const owner = { companyId: input.params.companyId, personId: input.person.id }
     const profile = await profileOf(deps, owner)
     const text = profile === undefined ? null : await deps.memory.getWorkingMemory(profile)
-    return answer({ text: text === null || text.trim() === PROFILE_TEMPLATE ? null : text })
+    const empty = [PROFILE_TEMPLATE, LEGACY_PROFILE_TEMPLATE]
+    return answer({ text: text === null || empty.includes(text.trim()) ? null : text })
   })
 
   serve(app, setProfileMemory, async (input) => {
