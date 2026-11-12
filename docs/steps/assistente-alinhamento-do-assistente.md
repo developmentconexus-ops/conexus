@@ -979,8 +979,10 @@ para a permissão.
 ### A ordem do trabalho
 
 1. A permissão nos papéis. Regras: S8.
-2. `company-memory.ts`, a instância e o agente; o bloco da conversa diz, para quem não escreve: "You
-   cannot save company memory here: say what an owner or an administrator should save."
+2. `company-memory.ts`, a instância e o agente; o bloco da conversa diz, para quem não escreve (emenda de
+   2026-11-12, depois do B1): "You cannot save company memory here: propose it with
+   propose_company_memory and say that only an owner or an administrator saves it, with the Save
+   button of the card."
 3. As rotas e a tela.
 4. O teste do formato (`KNOWLEDGE_STORAGE_SCHEMA_VERSION === 4`).
 
