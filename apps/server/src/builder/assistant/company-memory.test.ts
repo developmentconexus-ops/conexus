@@ -24,7 +24,7 @@ import {
 } from './test-company-memory.ts'
 
 const NO_SAVE =
-  'You cannot save company memory here: say what an owner or an administrator should save.'
+  'You cannot save company memory here: propose it with propose_company_memory and say that only an owner or an administrator saves it, with the Save button of the card.'
 
 test('o formato do Knowledge: o armazenamento é o de versão 4, e as tabelas nascem no esquema do Mastra, pelo papel do Mastra', async (t) => {
   assert.equal(KNOWLEDGE_STORAGE_SCHEMA_VERSION, 4)

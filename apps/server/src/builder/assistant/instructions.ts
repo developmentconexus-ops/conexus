@@ -64,7 +64,7 @@ const NO_NOTE =
 const NO_AUTOMATION =
   "The person's role does not create automations: when what they ask repeats at a time, say in text that only the owner, the administrators and the developers create them and that the person can ask one of them, and offer no card."
 const NO_COMPANY_MEMORY =
-  'You cannot save company memory here: say what an owner or an administrator should save.'
+  'You cannot save company memory here: propose it with propose_company_memory and say that only an owner or an administrator saves it, with the Save button of the card.'
 const AUTOMATION_RUN =
   'This conversation is the run of an automation the person already created and nobody is waiting: do what the message asks and answer with the result, and never offer to create that automation again.'
 
