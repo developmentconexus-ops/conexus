@@ -87,7 +87,7 @@ const StreamEvent = z.looseObject({
 })
 const StreamedText = z.looseObject({ text: z.string().optional() })
 
-/** The events of a Server-Sent Events body, each parsed from its `data:` lines; a line that is not JSON is not an event. */
+/** The events of a Server-Sent Events body, each parsed from its `data:` lines; a payload that is not a JSON object is a keep-alive, and one that is but not an event throws. */
 function eventsOf(text: string) {
   return text
     .replace(/\r\n/g, '\n')
@@ -99,11 +99,7 @@ function eventsOf(text: string) {
         .map((line) => line.slice(5).trimStart())
         .join('\n')
       if (data === '' || data === '[DONE]') return []
-      try {
-        return [StreamEvent.parse(JSON.parse(data))]
-      } catch {
-        return []
-      }
+      return data.startsWith('{') ? [StreamEvent.parse(JSON.parse(data))] : []
     })
 }
 
