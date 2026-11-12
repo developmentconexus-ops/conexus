@@ -124,3 +124,39 @@ test('quem escreve: o toque grava pela rota, com a pessoa como autora; tocar de 
     [note.id],
   )
 })
+
+test('quem escreve: uma nota cabe em 1.000 caracteres e não em 1.001, uma página nova não tem esse teto, e sem página o nome é pedido', async (t) => {
+  const on = await assisting(
+    t,
+    stepped([
+      () => [tool('knowledge_read', {})],
+      (asked) => [tool('knowledge_read', { page: String(lastRead(asked).scopes.at(0).address) })],
+      (asked) => {
+        const page = lastRead(asked).children.find(
+          (each: { name: string }) => each.name === OPERATION_1100.name,
+        )
+        return [
+          tool(PROPOSE, { page: page.id, text: 'a'.repeat(1000) }),
+          tool(PROPOSE, { page: page.id, text: 'a'.repeat(1001) }),
+          tool(PROPOSE, { name: 'Longa', text: 'a'.repeat(1001) }),
+          tool(PROPOSE, { text: 'Sem página nem nome.' }),
+        ]
+      },
+      () => [said('Feito.')],
+    ]),
+  )
+  assert.equal(
+    (await post(on.hub, on.ana, `${memoryAt(on.companyId)}/pages`, OPERATION_1100)).statusCode,
+    201,
+  )
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Guarde')), 'complete')
+  const results = (on.calls.at(-1)?.toolResults ?? []).slice(2)
+  const refused = results.map((each) => /A note (holds|takes)/.test(each.text))
+  assert.deepEqual(refused, [false, true, false, true])
+  assert.match(
+    results.at(1)?.text ?? '',
+    /A note holds at most 1000 characters: propose a page instead\./,
+  )
+  assert.match(results.at(3)?.text ?? '', /A note takes `page`; a new page takes `name`\./)
+})

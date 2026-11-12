@@ -11,7 +11,7 @@ import {
 } from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
-import { LEGACY_PROFILE_TEMPLATE } from './memory.ts'
+import { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const LEARNED = `# Sobre você
@@ -180,4 +180,14 @@ test('as regras da nota pessoal moram nas instruções, e a nota levada à empre
     fixed,
     /holds for the whole company, offer it on the card of propose_company_memory and never save it for the company yourself/,
   )
+})
+
+test('o modelo vazio com espaços sobrando ainda conta como nada guardado', async (t) => {
+  const on = await assisting(t)
+  await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const memory = memoryOf(on.company)
+  for (const text of [`${PROFILE_TEMPLATE}\n\n`, `  ${LEGACY_PROFILE_TEMPLATE}\n`]) {
+    assert.equal((await call(on.hub, on.ana, 'PUT', memory, { text })).statusCode, 200)
+    assert.equal(await readMemory(on.hub, on.ana, on.company), null)
+  }
 })
