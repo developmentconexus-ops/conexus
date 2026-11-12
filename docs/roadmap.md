@@ -26,17 +26,29 @@ brinquedo. O mapa sai: "Deixa quieto sobre o Mapa". Este roteiro reescrito: "Pod
 
 ### As etapas, e o que você faz quando cada uma fecha
 
-Fechadas, com o uso nas [aprovações](approvals.md): da 1 à 20 com as subetapas, a 24.1
-à 24.4 com as subetapas, a Assinatura ChatGPT, Papéis da empresa, a 24.5, a 24.5.1, a Capacidade 1, a Capacidade 2, a Capacidade 3, O Sync de qualquer conector, O Assistente do dia a dia, o Alinhamento do Assistente e, na fila do molde, As buscas do Sankhya. Sua empresa usa o Conexus desde
+Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empresa usa o Conexus desde
 2026-11-02.
 
 **As capacidades que faltam aos apps.**
 
-- **A política de dados pessoais dos conectores.** Logo depois do Sync e antes da Capacidade 4 (2026-11-11, "H1"). Em Papéis, marca no papel Vendas que ele vê contato e endereço dos clientes; o app "quem comprou da gente" mostra o comprador, o Assistente responde com nomes e sem CPF, e quem é do papel Membro recebe os pedidos sem nome.
+- **A política de dados pessoais dos conectores.** Antes da Ontologia (2026-11-11, "H1"). Em Papéis, marca no papel Vendas que ele vê contato e endereço dos clientes; o app mostra o comprador, o Assistente responde com nomes e sem CPF, e o papel Membro recebe os pedidos sem nome.
+- **A Ontologia da empresa**, antes da 4 (2026-11-12: `"A1"`), abaixo.
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
 - **Capacidade 7. Avisos e lembretes do CRM.** Recebe no CRM os avisos e lembretes de um dia de uso.
+
+**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) a [0066](decisions/0066-intake-is-the-assistant-with-a-staged-skill.md)). Na ordem:
+
+1. **A entrada conversada**: o Assistente pergunta só o que os sistemas ligados não dizem e entrega a primeira demanda ao Builder.
+2. **A Ontologia da empresa**: o inventário dos sistemas e os conceitos da demanda, provados e aprovados por você.
+3. **A saúde da Ontologia**: a prova refeita todo dia, Para revisar e o aviso no Início.
+4. **Ligações e duas fontes** para um conceito.
+5. **O Brain do Builder e dos Projetos.**
+6. **Os agentes da empresa nos dois**, com a Capacidade 6.
+7. **Fontes de conhecimento**: arquivos, depois pastas por conector.
+8. **A revisão semanal**, que só propõe.
+9. **A busca por significado**, quando a medida pedir.
 
 **O fluxo de desenvolvimento, por fase.** Cada fase mapeia o que o Builder faz hoje; você a julga nos dois apps de teste.
 
@@ -68,7 +80,7 @@ O que tem molde anda numa fila de método leve (2026-10-30: "1. Sim 2. Sim 3. Si
 3. **Bling**, **Omie** (login por chave fixa) e **Conta Azul**.
 4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
 
-Em espera: 19.2 Central de Ajuda. Sai: o pg-boss; a agenda do Mastra, gatilho de toda automação, e os workflows o substituem.
+Em espera: 19.2 Central de Ajuda.
 
 ### O que você fornece, e quando
 
@@ -82,7 +94,7 @@ Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, 
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas para dentro de um app (os enviados à máquina da conversa do Assistente entram no lançamento, com "O Assistente do dia a dia"). Medição de uso, segundo idioma. Domínio de empresa.
+Login social. Arquivos enviados por pessoas para dentro de um app. Medição de uso, segundo idioma. Domínio de empresa.
 
 ### As suas respostas
 
@@ -97,7 +109,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app (os enviados �
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| Capacidades 1 a 7 | Uma por vez, na ordem | As das respostas 5 e 6; outras, no estudo | Referências e Mastra; no Sync, as lições do ML-VIGIA; na 4, `defineRoles` e `can`; na 5, Impeccable, Claude Design e o frontend-design da Anthropic |
+| Capacidades 4 a 7 | Uma por vez, na ordem | As das respostas 5 e 6; outras, no estudo | Referências e Mastra; na 4, `defineRoles` e `can`; na 5, Impeccable, Claude Design e o frontend-design da Anthropic |
 | Fluxo 1 a 5 | As capacidades, uma fase por vez | Você é a régua | vibesdk, Mastra, o estudo do Builder ideal |
 | 24.6 Workflows e automações | Esta frente | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
