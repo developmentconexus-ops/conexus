@@ -42,8 +42,8 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 
 1. **U7 e U9 do Alinhamento do Assistente.**
 2. **A entrada conversada** (trilho do Assistente): o Assistente pergunta só o que os sistemas ligados não dizem e entrega a primeira demanda ao Builder; roda na sua empresa antes da Ontologia.
-3. **A Ontologia da empresa**: o inventário dos sistemas e os conceitos da demanda, provados e aprovados por você.
-4. **A saúde da Ontologia**: a prova refeita todo dia, Para revisar e o aviso no Início.
+3. **A Ontologia da empresa**: o inventário dos sistemas e os conceitos da demanda, provados e aprovados por você em Para revisar.
+4. **A saúde da Ontologia**: a prova refeita todo dia e o aviso no Início.
 5. **Ligações e duas fontes** para um conceito.
 6. **O Brain do Builder e dos Projetos.**
 7. **Os agentes da empresa nos dois**, com a Capacidade 6.

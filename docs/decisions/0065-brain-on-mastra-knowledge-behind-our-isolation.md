@@ -2,9 +2,9 @@
 
 ## Context
 
-The Brain is the company's text for its agents: instructions, rules, what agents learned and a
-person reviewed, later documents. Mastra Knowledge 1.82 is alpha and says isolation between scopes
-is not guaranteed. The studies of [0064] traced it with n8n, lobe-chat, Dify, Open WebUI and
+The Brain is the company's text for its agents: instructions, rules, reviewed learnings, later
+documents. Mastra Knowledge 1.82 is alpha and says isolation between scopes
+is not guaranteed. The [0064] studies traced it with n8n, lobe-chat, Dify, Open WebUI and
 Palantir. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`.
 
 ## Decision
@@ -12,9 +12,11 @@ Palantir. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`.
 - Pages live in Knowledge, from the Assistant's company memory on: scopes `org:`, `ontologia:` (a
   projection the server rebuilds from [0064]), `project:`, `agente:`, `docs:`. Their names are fixed
   by the first card that writes each, since renaming takes `renameScopeDeclaration()`.
-- Scopes come only from the server; one module imports Knowledge; its routes are never mounted
-  (security S39); attack tests across companies, forged scopes and injected text run at each Mastra
-  upgrade (testing T13).
+- Scopes come only from the server; one module imports Knowledge and never reads with
+  `read: 'all'`; its routes are never mounted (security S39); attack tests across companies, forged
+  scopes, scopeless links and injected text run at each Mastra upgrade (testing T13).
+- A scopeless link resolves across the whole store (issue 984): the server writes full links
+  (`[[scope#path]]`), and a person's page with any other link is refused.
 - `B1`: an agent's note for the company waits for review (Knowledge's `contributor` and `editor`); a
   person's own memory counts at once.
 - Knowledge keeps no old text: the before and after of each change live in a Hub append-only table,
@@ -36,7 +38,7 @@ Knowledge drops its isolation warning, or a client needs a folder with mixed acc
 
 ## State
 
-Accepted 2026-11-12 (`"A1 B1 C1"`, `"E1"`).
+Accepted 2026-11-12 (`"A1 B1 C1"`, `"E1"`); amended 2026-11-12 (issue 984, "Pode").
 
 [0057]: 0057-connections-by-oauth.md
 [0064]: 0064-company-ontology-in-hub-tables-by-approved-proposals.md
