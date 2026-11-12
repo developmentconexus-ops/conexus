@@ -64,6 +64,26 @@ test('a definição contra a leitura', async (t) => {
   assert.equal((await on.propose({ definition: fixed })).kind, 'PROPOSED')
 })
 
+test('a recusa traz de uma vez a forma e as regras da leitura', async (t) => {
+  const on = await listProposalsOn(t)
+  const orders = ordersCopy(true)
+  // The shape fails (`changedSince` is a string) and the paging names sit in the fixed input: one refusal for both.
+  const definition = {
+    ...orders,
+    changedSince: 'atualizado',
+    source: { ...orders.source, input: { limit: 50, offset: 0 } },
+  }
+  const text = issuesOf(await on.propose({ definition }))
+  for (const part of [
+    'definition.changedSince: ',
+    "definition.source.input.limit: the copy's paging fills limit.",
+    "definition.source.input.offset: the copy's paging fills offset.",
+  ])
+    assert.ok(text.includes(part), `${part}\n${text}`)
+  assert.deepEqual(on.door.seen, [], 'a refused definition calls nothing')
+  assert.deepEqual(await on.proposalRows(), [])
+})
+
 test('a prova conta e não mostra', async (t) => {
   const on = await listProposalsOn(t)
   const answer = await on.propose()
