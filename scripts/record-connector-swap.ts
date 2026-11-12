@@ -118,7 +118,11 @@ export function swapped(raw: Readonly<{ body: unknown } & Seed>): Swapped {
   const latest = Math.max(...instantsOf(raw.body), ANCHOR)
   const by = ANCHOR - latest
   const body = walk(raw.body, '', [], { invented, by })
-  const account = String(invented.of(Number(raw.account), 'seller', ['seller']))
+  const account = String(
+    invented.of(/^\d+$/.test(raw.account) ? Number(raw.account) : raw.account, 'seller', [
+      'seller',
+    ]),
+  )
   const path = raw.path.replaceAll(raw.account, account)
   const left = survivors(raw.body, body)
   if (left.length > 0)

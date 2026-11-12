@@ -3,7 +3,7 @@
 // the Hub's own `bodyOf`, kept before `operation.answer` reads them, as Nango's interceptor keeps
 // `response.data` (dryrun.service.ts:468-475). The credential is a parameter and never leaves it.
 import { isAbsolute, relative, resolve } from 'node:path'
-import type { Connector } from '@conexus/connectors'
+import type { Connector, ProviderRequest } from '@conexus/connectors'
 import { AccountRef, requestOf, toRequest } from '@conexus/connectors'
 import { z } from 'zod'
 import { bodyOf } from '../apps/server/src/hub/connectors/wire.ts'
@@ -31,6 +31,7 @@ export const Raw = z.object({
 export type Raw = z.infer<typeof Raw>
 
 const PAGE_1 = 'anuncios-varredura-1'
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 /** The operation of a case and its input; the second listing page carries the first page's `scroll_id`. */
 export function inputOf(
@@ -39,7 +40,7 @@ export function inputOf(
   first: unknown,
 ): { operation: string; input: unknown } {
   if (name === 'pedidos-alterados') {
-    const week = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const week = new Date(now.getTime() - WEEK_MS)
     return {
       operation: 'pedidos',
       input: { changedFrom: week.toISOString(), offset: 0, limit: 50 },
@@ -63,6 +64,53 @@ export function assertOutside(out: string, root: string): string {
   return path
 }
 
+/** The request a case sends, as the operation declares it. */
+function requestFor(
+  connector: Connector,
+  name: Case,
+  account: string,
+  now: Date,
+  first: unknown,
+): ProviderRequest {
+  const { operation: id, input } = inputOf(name, now, first)
+  const operation = connector.operations.find((candidate) => candidate.id === id)
+  if (operation === undefined) throw new Error(`${connector.id} declares no ${id}`)
+  return requestOf(operation, input, { ref: AccountRef.parse(account) }, now)
+}
+
+/** The seller's id in a raw file that was recorded away from this machine: the file never carries it. */
+export const ACCOUNT = 'ACCOUNT'
+const PLAN_NOW = new Date('2026-01-15T12:00:00.000Z')
+
+/**
+ * The four requests as the operations declare them, for a recorder that runs where Node does not:
+ * the seller's id, the changed-from date and the first page's `scroll_id` stay as marks the other
+ * side fills. The credential is not part of it.
+ */
+export function planned(connector: Connector) {
+  const changed = new Date(PLAN_NOW.getTime() - WEEK_MS).toISOString()
+  return {
+    changedFromDaysAgo: WEEK_MS / (24 * 60 * 60 * 1000),
+    cases: CASES.map((name) => {
+      const request = requestFor(connector, name, ACCOUNT, PLAN_NOW, { scroll_id: '{scroll_id}' })
+      const query = Object.fromEntries(
+        Object.entries(request.query).map(([key, value]) => [
+          key,
+          value === changed ? '{changed_from}' : value,
+        ]),
+      )
+      return {
+        case: name,
+        method: request.method,
+        path: request.path,
+        query,
+        headers: request.headers ?? {},
+        origin: connector.origin,
+      }
+    }),
+  }
+}
+
 /**
  * Sends one case and returns what arrived. A refusal or an unreadable body is thrown by status
  * only, nothing is returned, and the credential and the account are never in the message.
@@ -78,10 +126,7 @@ export async function recorded(
     first: unknown
   }>,
 ): Promise<Raw> {
-  const { operation: id, input } = inputOf(a.name, a.now, a.first)
-  const operation = a.connector.operations.find((candidate) => candidate.id === id)
-  if (operation === undefined) throw new Error(`${a.connector.id} declares no ${id}`)
-  const request = requestOf(operation, input, { ref: AccountRef.parse(a.account) }, a.now)
+  const request = requestFor(a.connector, a.name, a.account, a.now, a.first)
   const response = await a.fetch(toRequest(a.connector, request, a.token), {
     signal: AbortSignal.timeout(60_000),
   })

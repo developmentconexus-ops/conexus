@@ -8,6 +8,9 @@
 // `... --case <case> --out <folder> --swap` replaces every value of that raw body by an invented
 // one of the same shape and saves the recording in `packages/connectors/src/<connector>/recordings/`,
 // with the service, the route, the date and the paths it replaced beside it.
+// `... --plan` prints the four requests as the operations declare them, with the seller's id, the
+// changed-from date and the first page's `scroll_id` left as marks, for `gravar_ml.py`, the same four
+// reads from a machine where only Python runs; the raw files it keeps carry `ACCOUNT` where the id was.
 // The credential comes from the environment only and never reaches a file or the output (security
 // S40): CONEXUS_RECORD_ML_TOKEN (a seller's access token) and CONEXUS_RECORD_ML_SELLER (the
 // seller's id, the account the read is for).
@@ -16,18 +19,20 @@ import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 import { CONNECTORS } from '@conexus/connectors'
 import { z } from 'zod'
-import { assertOutside, CASES, Raw, recorded } from './record-connector-calls.ts'
+import { ACCOUNT, assertOutside, CASES, planned, Raw, recorded } from './record-connector-calls.ts'
 import { swapped } from './record-connector-swap.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const Args = z.object({
   connector: z.literal('mercado-livre'),
-  case: z.enum(CASES),
-  out: z.string().min(1),
+  case: z.enum(CASES).optional(),
+  out: z.string().min(1).optional(),
   swap: z.boolean().default(false),
+  plan: z.boolean().default(false),
 })
 const Seller = z.object({ CONEXUS_RECORD_ML_SELLER: z.string().min(1) })
 const Env = Seller.extend({ CONEXUS_RECORD_ML_TOKEN: z.string().min(1) })
+const Run = z.object({ case: z.enum(CASES), out: z.string().min(1) })
 
 const { values } = parseArgs({
   options: {
@@ -35,19 +40,25 @@ const { values } = parseArgs({
     case: { type: 'string' },
     out: { type: 'string' },
     swap: { type: 'boolean' },
+    plan: { type: 'boolean' },
   },
 })
 const args = Args.parse(values)
-const out = assertOutside(args.out, ROOT)
 const connector = CONNECTORS.find((candidate) => candidate.id === args.connector)
 if (connector === undefined) throw new Error(`No connector ${args.connector}`)
+if (args.plan) {
+  console.log(JSON.stringify(planned(connector), null, 2))
+  process.exit(0)
+}
+const run = Run.parse(args)
+const out = assertOutside(run.out, ROOT)
 function rawPath(name: string) {
   return join(out, `${name}.raw.json`)
 }
 
 if (args.swap) {
-  const raw = Raw.parse(JSON.parse(readFileSync(rawPath(args.case), 'utf8')))
-  const { CONEXUS_RECORD_ML_SELLER: account } = Seller.parse(process.env)
+  const raw = Raw.parse(JSON.parse(readFileSync(rawPath(run.case), 'utf8')))
+  const account = Seller.safeParse(process.env).data?.CONEXUS_RECORD_ML_SELLER ?? ACCOUNT
   const done = swapped({ body: raw.body, account, path: raw.path })
   const folder = join(ROOT, 'packages/connectors/src', connector.id, 'recordings')
   mkdirSync(folder, { recursive: true })
@@ -66,19 +77,19 @@ if (args.swap) {
 } else {
   const env = Env.parse(process.env)
   const first =
-    args.case === 'anuncios-varredura-2'
+    run.case === 'anuncios-varredura-2'
       ? Raw.parse(JSON.parse(readFileSync(rawPath('anuncios-varredura-1'), 'utf8'))).body
       : null
   const raw = await recorded({
     fetch,
     connector,
-    name: args.case,
+    name: run.case,
     account: env.CONEXUS_RECORD_ML_SELLER,
     token: env.CONEXUS_RECORD_ML_TOKEN,
     now: new Date(),
     first,
   })
   mkdirSync(out, { recursive: true })
-  writeFileSync(rawPath(args.case), JSON.stringify(raw, null, 2))
-  console.log(`Kept ${args.case}.raw.json (status ${raw.status}) in the folder.`)
+  writeFileSync(rawPath(run.case), JSON.stringify(raw, null, 2))
+  console.log(`Kept ${run.case}.raw.json (status ${raw.status}) in the folder.`)
 }

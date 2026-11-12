@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONNECTORS } from '@conexus/connectors'
 import { z } from 'zod'
-import { assertOutside, recorded } from './record-connector-calls.ts'
+import { ACCOUNT, assertOutside, planned, recorded } from './record-connector-calls.ts'
 import { swapped } from './record-connector-swap.ts'
 
 const ML = CONNECTORS.find((connector) => connector.id === 'mercado-livre')
@@ -156,4 +156,32 @@ test('um endereço ou prefixo de credencial que sobra recusa a gravação', () =
     () => swapped({ body: { 'maria@exemplo.test': 'x' }, account: SELLER, path: '/x' }),
     /nothing is saved/,
   )
+})
+
+test('o plano traz os quatro pedidos da declaração com marcas no lugar do vendedor, da data e do scroll_id', () => {
+  const plan = planned(ML)
+  assert.deepEqual(
+    plan.cases.map((one) => `${one.method} ${one.path}`),
+    [
+      `GET /orders/search`,
+      `GET /users/${ACCOUNT}/items/search`,
+      `GET /users/${ACCOUNT}/items/search`,
+      `GET /questions/search`,
+    ],
+  )
+  assert.equal(plan.changedFromDaysAgo, 7)
+  assert.equal(plan.cases[0]?.query['order.date_last_updated.from'], '{changed_from}')
+  assert.equal(plan.cases[0]?.query.seller, ACCOUNT)
+  assert.equal(plan.cases[2]?.query.scroll_id, '{scroll_id}')
+  assert.equal(plan.cases[3]?.query.search_type, 'scan')
+})
+
+test('um arquivo cru gravado longe, com a marca no lugar do vendedor, troca o caminho sem o id real', () => {
+  const done = swapped({
+    body: { results: [{ id: 2000007654321, seller: { id: 987654321 } }] },
+    account: ACCOUNT,
+    path: `/users/${ACCOUNT}/items/search`,
+  })
+  assert.equal(done.path.includes(`${ACCOUNT}/`), false)
+  assert.match(done.path, /^\/users\/[A-Za-z0-9]+\/items\/search$/)
 })
