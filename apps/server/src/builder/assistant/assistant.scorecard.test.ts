@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
@@ -109,7 +109,8 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   assert.equal(linked.statusCode, 200, linked.body)
   const loja = String(Object(linked.json()).connection.id)
-  const folder = roundFolder(t)
+  const folder = join(REAL_MODEL, 'placar')
+  mkdirSync(folder, { recursive: true })
   const sheet = file('metas.csv', 'text/csv', Buffer.from(goalsSheet()))
   const asking = QUESTIONS.filter(
     (one) => one.enters === 'now' && (CHOSEN === undefined || CHOSEN.includes(one.n)),
