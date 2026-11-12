@@ -1,4 +1,4 @@
-import type { CopyDefinition } from '@conexus/connectors'
+import type { CopyDefinitionV1 } from '@conexus/connectors'
 import type { ConnectionId, OfProject, PersonId } from '@conexus/hub-api'
 import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import { roleOfSpeaker } from '../identity/public.ts'
@@ -20,7 +20,7 @@ type ProofAnswer =
   | Readonly<{ kind: 'CALLS_SPENT' }>
 
 /** The day a proof's window starts: today less the window's days, as a run's pass would read it. */
-function windowFromOf(definition: CopyDefinition): string | null {
+function windowFromOf(definition: CopyDefinitionV1): string | null {
   if (definition.window === undefined) return null
   const from = new Date(Date.now() - definition.window.days * 86_400_000)
   return from.toISOString().slice(0, 10)
@@ -39,7 +39,7 @@ export async function provedPage(
     opened: OpenedConnection | undefined
     connectionId: ConnectionId
     personId: PersonId
-    definition: CopyDefinition
+    definition: CopyDefinitionV1
     signal: AbortSignal
     spend: () => boolean
   }>,
@@ -74,6 +74,7 @@ export async function provedPage(
     },
   })
   if (page.kind === 'NO_CONNECTION') return { kind: 'NOT_GRANTED' }
-  if (page.kind === 'FAILED') return page.refusal
+  if (page.kind === 'REFUSED') return page.refusal
+  if (page.kind === 'IN_LINE') return { kind: 'DEADLINE' }
   return { kind: 'PROVED', rows: page.page.rows.length, more: page.page.more }
 }

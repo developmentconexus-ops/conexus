@@ -68,6 +68,19 @@ export function stateOf(copy: Pick<CopySummary, 'run' | 'schedule'>): CopyState 
   return { label: 'Aguardando a próxima rodada', tone: 'neutral' }
 }
 
+type PartialReason = Extract<CopyRun['outcome'], { kind: 'PARTIAL' }>['reason']
+
+function partialText(reason: PartialReason): string {
+  switch (reason) {
+    case 'CAP':
+      return 'Parcial; a próxima continua'
+    case 'WAIT':
+      return 'Esperando o fornecedor; a próxima rodada continua de onde parou'
+    case 'STOPPED':
+      return 'O Conexus reiniciou no meio; a próxima continua de onde parou'
+  }
+}
+
 /** How a run ended, in a sentence: a failure by its code's phrase (code C48), never "0 linhas". */
 export function outcomeText(run: CopyRun): string {
   const { outcome } = run
@@ -77,9 +90,7 @@ export function outcomeText(run: CopyRun): string {
     case 'COMPLETE':
       return 'Completa'
     case 'PARTIAL':
-      return outcome.reason === 'CAP'
-        ? 'Parcial; a próxima continua'
-        : 'O Conexus reiniciou no meio; a próxima continua de onde parou'
+      return partialText(outcome.reason)
     case 'INTERRUPTED':
       return 'O Conexus reiniciou no meio; a próxima continua de onde parou'
     case 'ERROR':

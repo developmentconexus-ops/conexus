@@ -1341,8 +1341,10 @@ moves the watermark or takes a row out.
   (`dist/docs/references/docs-workflows-workflow-state.md`); the schedule only knows when to fire
   (`dist/scheduler-Me4rCjO2.js:340-372`). Nothing in `@neondatabase/serverless` 1.2.0 or in
   PostgreSQL 18 knows what a source's last read reached.
-- **Hand-made piece.** `position` (the last key written) and `watermark` (when the last complete pass
-  began) on `copies.copy`, with `passStartedAt` (`hub/copies/tables.ts`). `saved` writes the position
+- **Hand-made piece.** `position` (where the read stopped: a key, an offset or the provider's cursor,
+  `CopyPosition` in `packages/connectors/src/kernel/copy.ts`) and `watermark` (when the last complete
+  pass began) on each source of the copy, `copies.copy_source`, with `pass_started_at`
+  (`hub/copies/tables.ts`). `saved` in `hub/copies/sources.ts` writes the position
   after each page; `passed` moves the watermark to the instant the pass began, only at the end of a
   complete one (`run.ts`). The paged read adds the dates to the guarded query
   (`packages/connectors/src/sankhya/copy-read.ts`): the watermark less a day and the window from the
@@ -1404,8 +1406,66 @@ moves the watermark or takes a row out.
   (`KEPT_RUNS`, `run.ts`).
 - **Proof.** `run.test.ts` "a passada completa" and "o registro não leva dado" (only ids, counts, codes
   and milliseconds, never a query, a column read or a row).
-- **Revisit when** a Mastra release records a manual run, or when a company turns off a connection
-  with copies: the foreign key's cascade removes the copy's rows and leaves its tables in `sync`.
+- **Revisit when** a Mastra release records a manual run.
+
+### One source per account (O Sync de qualquer conector)
+
+- **Library line.** `@mastra/core` 1.82.0 keeps a workflow's state inside one run
+  (`dist/docs/references/docs-workflows-workflow-state.md`), and `drizzle-orm` 1.0.0-rc.4 only writes
+  what it is given; nothing installed keeps a read's point per connection of one definition. Nango
+  keeps one checkpoint per execution of one sync
+  (`nango@e6c6131` `docs/guides/functions/syncs/sync-partitioning.mdx:7-17`).
+- **Hand-made piece.** `copies.copy_source` (`hub/copies/tables.ts`), one row per connection of a
+  copy with its account (`account_ref`), its pass, position, watermark and wait; the copy no longer
+  hangs from a connection. A version 2 copy's table carries `_account` and `_account_name`
+  (`platform/copy-sql.ts`); `closePass` deletes only the rows of the account whose pass ended, and
+  the run's net (`dropForeignRows`) the rows of an account that is no source's. Desligar takes the
+  account's rows out of each copy that goes on and ends, with its table, a copy whose last source it
+  was (`hub/copies/sources.ts`, `leaveCopies` and `dropEndedCopies`); a table the company's database
+  did not drop is noted in `copies.copy_table_left` and dropped on the company's next Desligar or
+  Ligar.
+- **Why.** One definition, the state per connection, as Nango partitions a sync; the founder's
+  decision to remove the rows at once (#953).
+- **Proof.** `hub/copies/run-v2.test.ts` "duas contas numa tabela" and "a conta desligada";
+  `platform/copy-sql.test.ts` "o fim da passada de uma conta não toca a outra, e o nome da conta segue
+  a conexão"; `hub/connectors/unlink-copies.test.ts` "desligar tira as linhas e a leitura do app" and
+  its three cases; `hub/copies/migrate-copy-source.test.ts` "a fonte de cada cópia de hoje".
+
+### The provider's wait and the cursor that expires (O Sync de qualquer conector)
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 or `drizzle-orm` 1.0.0-rc.4 carries a wait or a
+  cursor from one run to the next. Airbyte and Nango wait on a 429 by its `Retry-After` and go on
+  (`airbyte@8aed3123` `connector-builder-ui/error-handling.md:15,107`; `nango@e6c6131`
+  `docs/guides/functions/rate-limits.mdx:15-38`). The Mercado Livre `scroll_id` lives 5 minutes.
+- **Hand-made piece.** A 429 left after the executor's own wait inside the call's deadline (0058)
+  ends the run `PARTIAL` with the reason `WAIT`: the source keeps its position, and `wait_until`
+  when the provider said how long (`run.ts`, `sources.ts` `waiting`); the next run skips a source
+  still waiting. A list read declares its cursor's life in `paging.ttlMs`; a saved cursor older than
+  that (by the injected clock) is never sent: the source's pass starts again (`restarted`), logged
+  `COPY_PASS_RESTARTED`.
+- **Why.** The platforms wait and resume; no one recorded how a provider refuses an expired cursor,
+  so the run does not depend on reading that refusal.
+- **Proof.** `hub/copies/run-v2.test.ts` "o fornecedor pede para esperar" and its two cases, and "o
+  cursor vencido recomeça".
+
+### One copy call at a time per connector counted by the app (O Sync de qualquer conector)
+
+- **Library line.** No limiter is installed: `node_modules` has no `p-limit`, `p-queue` or
+  `bottleneck`, only `p-retry` 7.1.1 from another package, which repeats and does not limit.
+  Airbyte's `HTTPAPIBudget` limits one connection's calls per window
+  (`airbyte@8aed3123` `config-based/understanding-the-yaml-file/rate-limit-api-budget.md:3-30`);
+  nothing sums the calls of many companies' connections on one OAuth app.
+- **Hand-made piece.** `callLimit` (`countedBy` `APP` or `ACCOUNT`) on the connector's declaration
+  (`packages/connectors/src/kernel/definition.ts`; Mercado Livre `APP`, Sankhya `ACCOUNT`), and
+  `inCopyTurn` in `hub/connectors/limits.ts`: the same in-process line as each connection's calls,
+  keyed by the connector, which `copy-port.ts` takes for every copy read of a connector that counts
+  by the app. A read whose deadline passes in the line asks nothing, and the run ends `PARTIAL`
+  `WAIT` with the position kept and no `wait_until`. No number is invented: Mercado Livre publishes
+  none.
+- **Why.** Mercado Livre counts its limit "per Client ID (application)", one app for every company.
+- **Proof.** `hub/connectors/copy-lane.test.ts` "uma chamada de cópia por vez por conector" and its
+  two cases; the first and third fail when `copy-port.ts` skips the line.
+- **Revisit when** the Hub runs in more than one process (0058).
 
 ### The clock of each copy
 

@@ -28,12 +28,13 @@ export const CopySchedule = z.discriminatedUnion('kind', [
 ])
 export type CopySchedule = z.infer<typeof CopySchedule>
 
-/** Why a run ended in error: the source's four failures, or the company's database. */
+/** Why a run ended in error: the source's failures, its read's ceiling, or the company's database. */
 export const CopyRunFailureCode = z.enum([
   'COPY_SOURCE_REFUSED',
   'COPY_SOURCE_NEEDS_REAUTH',
   'COPY_SOURCE_UNREACHABLE',
   'COPY_SOURCE_UNREADABLE',
+  'COPY_SOURCE_CEILING',
   'COPY_DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[])
 export type CopyRunFailureCode = z.infer<typeof CopyRunFailureCode>
@@ -45,7 +46,8 @@ export const CopyRun = z.object({
   outcome: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('RUNNING') }),
     z.object({ kind: z.literal('COMPLETE') }),
-    z.object({ kind: z.literal('PARTIAL'), reason: z.enum(['CAP', 'STOPPED']) }),
+    // WAIT: the provider asked to wait; the next run goes on from where the source stopped.
+    z.object({ kind: z.literal('PARTIAL'), reason: z.enum(['CAP', 'STOPPED', 'WAIT']) }),
     z.object({ kind: z.literal('ERROR'), code: CopyRunFailureCode }),
     z.object({ kind: z.literal('INTERRUPTED') }),
   ]),

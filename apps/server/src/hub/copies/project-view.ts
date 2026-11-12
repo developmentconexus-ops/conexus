@@ -12,7 +12,7 @@ export type ProjectCopiesView =
       kind: 'COPIES'
       released: {
         name: CopyName
-        columns: CopyDefinition['columns']
+        columns: { name: string; type: CopyDefinition['columns'][number]['type'] }[]
         mode: CopyMode
       }[]
       unreleased: CopyName[]
@@ -44,7 +44,7 @@ export async function projectView(
     kind: 'COPIES',
     released: released.map(({ copy }) => ({
       name: copy.name,
-      columns: copy.definition.columns,
+      columns: copy.definition.columns.map(({ name, type }) => ({ name, type })),
       mode: copyModeOf(copy.definition),
     })),
     unreleased: rows.filter(({ granted }) => !granted).map(({ copy }) => copy.name),

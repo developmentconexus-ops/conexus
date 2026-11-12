@@ -5,7 +5,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 import { violatedConstraint, violatedReference } from '../../platform/database.ts'
 import type { Proposal, ProposeAnswer } from '../connectors/public.ts'
-import { CopyDefinition, CopyName, connectionNamesOf } from '../connectors/public.ts'
+import { CopyDefinitionV1, CopyName, connectionNamesOf } from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps } from './store.ts'
 import { companyScope } from './store.ts'
@@ -44,7 +44,7 @@ async function existing(deps: CopiesDeps, ids: OfProject, name: CopyName) {
 }
 
 /**
- * Propor (Capacidade 3, U3): the definition by `CopyDefinition` and the name by `CopyName`, the name
+ * Propor (Capacidade 3, U3): the definition by `CopyDefinitionV1` and the name by `CopyName`, the name
  * against the company's copies and open proposals, one page of proof through the connectors' port
  * (the count, never a row), then the row, which the partial unique index guards against a second
  * open proposal of the name. Nothing is written on any refusal.
@@ -55,7 +55,7 @@ export async function propose(
   a: Proposal,
 ): Promise<ProposeAnswer> {
   const parsedName = CopyName.safeParse(a.name)
-  const parsed = CopyDefinition.safeParse(a.definition)
+  const parsed = CopyDefinitionV1.safeParse(a.definition)
   const issues = [
     ...(parsedName.success ? [] : issuesOf(parsedName.error, 'name')),
     ...(parsed.success ? [] : issuesOf(parsed.error, 'definition')),

@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { z } from 'zod'
 import { readToken, tokenRequest } from '../kernel/auth.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
-import type { CopyDefinition, CopyPage, PageInput } from '../kernel/copy.ts'
+import type { CopyDefinitionV1, CopyPage, PageInput } from '../kernel/copy.ts'
 import { CANONICAL_CELL, PAGE_ROWS } from '../kernel/copy.ts'
 import type { Answered } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
@@ -45,7 +45,7 @@ function pageOf(answered: Answered<CopyPage>): CopyPage {
   return answered.value
 }
 
-function model(id: string): CopyDefinition {
+function model(id: string): CopyDefinitionV1 {
   const found = sankhyaCopyModels.find((each) => each.id === id)
   assert.ok(found)
   return found.definition
@@ -140,7 +140,7 @@ async function cellsOf(read: Read) {
   assert.equal(at('DTALTER'), changedOn(nota.dtneg).replace(' ', 'T'), 'carimbo ISO')
   assert.match(at('VLRNOTA') ?? '', /^\d+(\.\d+)?$/, 'decimal com ponto')
   assert.equal(at('TIPMOV'), 'V')
-  const flags: CopyDefinition = {
+  const flags: CopyDefinitionV1 = {
     version: 1,
     source: { kind: 'QUERY', sql: 'SELECT CODPARC, CGC_CPF, ATIVO FROM TGFPAR' },
     columns: [

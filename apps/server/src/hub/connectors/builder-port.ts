@@ -1,4 +1,4 @@
-import type { CopyDefinition } from '@conexus/connectors'
+import type { CopyDefinitionV1 } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -92,7 +92,7 @@ export type BuilderConnectors = {
   /** One page of the copy read, as the person may read the connection: the count, never a row. */
   provePage(
     ids: OfProject,
-    a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
+    a: Of & Readonly<{ definition: CopyDefinitionV1; signal: AbortSignal }>,
   ): Promise<Proved | BuilderReadRefusal>
   /** A copy proposed in the Projeto's conversation, proved by one page; `hub/copies` owns it. */
   propose: Propose

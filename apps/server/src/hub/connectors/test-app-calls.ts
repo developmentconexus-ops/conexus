@@ -104,7 +104,7 @@ export async function appCalls(
   const hub = await hubWithLog(
     t,
     (config) => ({ ...config, connectorOrigins: new Map([['sankhya', origin]]) }),
-    a.clock,
+    { now: a.clock },
   )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')

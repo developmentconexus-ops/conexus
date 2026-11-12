@@ -1,3 +1,4 @@
+import type { ConnectorId } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -25,6 +26,16 @@ export type Limits = {
     work: (waitedMs: number) => Promise<T>,
     signal?: AbortSignal,
   ): Promise<T | Deadline>
+  /**
+   * The same line for the copies' calls of one connector whose provider counts its limit by the app
+   * (O Sync de qualquer conector): one copy call at a time across every company, while one process runs (0058).
+   */
+  inCopyTurn<T>(
+    connector: ConnectorId,
+    deadlineMs: number,
+    work: (waitedMs: number) => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T | Deadline>
   /** The live token, or one login (the old token logged out first, while it lives). */
   token(opened: OpenedConnection, deadlineMs: number): Promise<Login>
   /** A 401 on `token`: dropped when it is still the current one. */
@@ -47,9 +58,16 @@ type Held = { seat: Seat; state: TokenState }
 
 const NONE = { kind: 'NONE' } as const
 
-/** Each connection's calls one at a time, the rest waiting in arrival order until their own deadline. */
-function createLanes(): Pick<Limits, 'inTurn'> {
-  const lanes = new Map<ConnectionId, Lane>()
+type InLane<K> = <T>(
+  key: K,
+  deadlineMs: number,
+  work: (waitedMs: number) => Promise<T>,
+  signal?: AbortSignal,
+) => Promise<T | Deadline>
+
+/** Each key's calls one at a time, the rest waiting in arrival order until their own deadline. */
+function createLanes<K>(): InLane<K> {
+  const lanes = new Map<K, Lane>()
 
   /** True when the turn is this caller's; false when its deadline passed first, and it left the line. */
   function turnOf(lane: Lane, deadlineMs: number, stopped?: AbortSignal): Promise<boolean> {
@@ -74,7 +92,7 @@ function createLanes(): Pick<Limits, 'inTurn'> {
     })
   }
 
-  function passTurn(id: ConnectionId, lane: Lane): void {
+  function passTurn(id: K, lane: Lane): void {
     const [next] = lane.waiting
     if (next === undefined) {
       lane.busy = false
@@ -85,25 +103,23 @@ function createLanes(): Pick<Limits, 'inTurn'> {
     next()
   }
 
-  return {
-    async inTurn(connection, deadlineMs, work, signal) {
-      let lane = lanes.get(connection)
-      if (lane === undefined) {
-        lane = { busy: false, waiting: new Set() }
-        lanes.set(connection, lane)
-      }
-      const started = performance.now()
-      if (!(await turnOf(lane, deadlineMs, signal))) {
-        // A caller that left an idle lane's entry behind would keep the map's key alive.
-        if (!lane.busy) lanes.delete(connection)
-        return { kind: 'DEADLINE' }
-      }
-      try {
-        return await work(performance.now() - started)
-      } finally {
-        passTurn(connection, lane)
-      }
-    },
+  return async (key, deadlineMs, work, signal) => {
+    let lane = lanes.get(key)
+    if (lane === undefined) {
+      lane = { busy: false, waiting: new Set() }
+      lanes.set(key, lane)
+    }
+    const started = performance.now()
+    if (!(await turnOf(lane, deadlineMs, signal))) {
+      // A caller that left an idle lane's entry behind would keep the map's key alive.
+      if (!lane.busy) lanes.delete(key)
+      return { kind: 'DEADLINE' }
+    }
+    try {
+      return await work(performance.now() - started)
+    } finally {
+      passTurn(key, lane)
+    }
   }
 }
 
@@ -158,7 +174,7 @@ function createTokens(
   executor: Executor,
   inTurn: Limits['inTurn'],
   log: FailureLog,
-): Omit<Limits, 'inTurn'> {
+): Omit<Limits, 'inTurn' | 'inCopyTurn'> {
   const held = new Map<ConnectionId, Held>()
   const endings = createEndings(held, executor, inTurn, log)
 
@@ -228,6 +244,10 @@ function createTokens(
 }
 
 export function createLimits(deps: { executor: Executor; log: FailureLog }): Limits {
-  const lanes = createLanes()
-  return { ...lanes, ...createTokens(deps.executor, lanes.inTurn, deps.log) }
+  const inTurn = createLanes<ConnectionId>()
+  return {
+    inTurn,
+    inCopyTurn: createLanes<ConnectorId>(),
+    ...createTokens(deps.executor, inTurn, deps.log),
+  }
 }

@@ -180,7 +180,7 @@ test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', a
 test('Desligar que o fornecedor não desfez: a frase diz, e Fechar leva à lista', async () => {
   const connection = connectionOf({ name: 'Financeiro' })
   open(viewOf({ connections: [connection] }), {
-    unlink: () => HttpResponse.json({ revocation: 'REFUSED' }),
+    unlink: () => HttpResponse.json({ revocation: 'REFUSED', tablesLeft: [] }),
   })
   fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))

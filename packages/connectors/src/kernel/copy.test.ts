@@ -6,6 +6,7 @@ import type { ConnectorCopy, CopyModel } from './copy.ts'
 import {
   CANONICAL_CELL,
   CopyDefinition,
+  CopyDefinitionV1,
   CopyDefinitionV2,
   CopyName,
   CopyPosition,
@@ -131,7 +132,7 @@ const copyRead = defineOperation({
 const MODEL: CopyModel = {
   id: CopyName.parse('modelo'),
   label: 'Modelo',
-  definition: CopyDefinition.parse(DEFINITION),
+  definition: CopyDefinitionV1.parse(DEFINITION),
 }
 
 /** A copy the types would refuse, to meet the run-time checks of `defineConnector`. */
@@ -251,7 +252,7 @@ function versionsAndPositions() {
     false,
     'json não é da versão 1',
   )
-  assert.equal(CopyDefinition.safeParse(V2).success, false, 'a versão 2 não passa pela 1')
+  assert.equal(CopyDefinitionV1.safeParse(V2).success, false, 'a versão 2 não passa pela 1')
 
   for (const [kind, cell] of [
     ['timestamp', '2026-11-10T12:30:45.000-03:00'],
@@ -283,4 +284,24 @@ function versionsAndPositions() {
 test('a versão 2', () => {
   acceptsAndRefusesV2()
   versionsAndPositions()
+})
+
+test('as duas versões', () => {
+  const v1 = CopyDefinition.parse(DEFINITION)
+  assert.equal(v1.version, 1)
+  assert.deepEqual(v1, CopyDefinitionV1.parse(DEFINITION), 'a versão 1 de hoje lida igual')
+  const v2 = CopyDefinition.parse(V2)
+  assert.equal(v2.version, 2)
+  assert.deepEqual(v2, CopyDefinitionV2.parse(V2))
+  assert.equal(CopyDefinition.safeParse({ ...V2, version: 3 }).success, false, 'versão 3')
+  assert.equal(
+    CopyDefinition.safeParse({ ...V2, window: { column: 'x', days: 1 } }).success,
+    false,
+    'a janela não é da versão 2',
+  )
+  assert.equal(
+    CopyDefinition.safeParse({ ...DEFINITION, key: ['NOME'] }).success,
+    false,
+    'as regras da versão 1 valem na união',
+  )
 })

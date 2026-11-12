@@ -5,10 +5,11 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { AccountRef } from '../connectors/public.ts'
 import { CopyDefinition, connectionForCopy, lackedReadOf } from '../connectors/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
-import { copy, copyProposal, projectCopy } from './tables.ts'
+import { copy, copyProposal, copySource, projectCopy } from './tables.ts'
 
 export type Accepting = InCompany & { proposalId: CopyProposalId; attemptKey: string }
 
@@ -37,10 +38,11 @@ export async function earlierAttempt(
   return again
 }
 
-/** What a new copy row is made of, from a template or a proposal. */
+/** What a new copy row is made of, from a template or a proposal, with its one source's account. */
 export type NewCopy = Readonly<{
   connectorId: ConnectorId
   connectionId: ConnectionId
+  accountRef: AccountRef | null
   name: string
   label: string
   model: string | null
@@ -48,7 +50,7 @@ export type NewCopy = Readonly<{
   bodyHash: string
 }>
 
-/** The new copy row under the attempt's key; a name a copy took is `COPY_EXISTS`. */
+/** The new copy row under the attempt's key, and its source; a name a copy took is `COPY_EXISTS`. */
 export async function insertedCopy(
   tx: CommandTx,
   input: InCompany & { attemptKey: string },
@@ -67,6 +69,11 @@ export async function insertedCopy(
       })
       .returning()
     if (row === undefined) throw new Failure('COPY_EXISTS')
+    await tx.insert(copySource).values({
+      ...{ companyId: input.companyId, copyId: row.id, connectorId: made.connectorId },
+      ...{ connectionId: made.connectionId, accountRef: made.accountRef },
+      createdAt: sql`statement_timestamp()`,
+    })
     return row
   } catch (error) {
     if (violatedConstraint(error) === 'copy_company_id_name_key') throw new Failure('COPY_EXISTS')
@@ -108,7 +115,7 @@ export async function acceptedIn(
   if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
   const row = await insertedCopy(tx, input, {
     ...{ connectorId, connectionId, name: proposal.name, label: proposal.label },
-    ...{ model: null, bodyHash },
+    ...{ accountRef: linked.accountRef, model: null, bodyHash },
     definition: CopyDefinition.parse(proposal.definition),
   })
   await tx

@@ -83,6 +83,18 @@ test('Cópias: um erro mostra "Com erro" e a frase do código; pausada e sem rel
   expect(within(produtos).queryByText('30 min')).toBeNull()
 })
 
+test('a rodada que esperou', async () => {
+  openCopies(
+    server,
+    { copies: [copy({ run: copyRun({ outcome: { kind: 'PARTIAL', reason: 'WAIT' } }) })] },
+    LIST,
+  )
+  const vendas = await rowOf('Vendas')
+  expect(
+    within(vendas).getByText('Esperando o fornecedor; a próxima rodada continua de onde parou'),
+  ).toBeTruthy()
+})
+
 test('Cópias: sem cópias, a frase de primeira vez e Ligar uma cópia', async () => {
   openCopies(server, { copies: [] }, LIST)
   expect(

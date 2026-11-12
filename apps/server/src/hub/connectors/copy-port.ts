@@ -1,16 +1,34 @@
-import type { ConnectorId, CopyModel, CopyPage, PageInput } from '@conexus/connectors'
-import { CONNECTORS, CopyPageSchema, connectorOf } from '@conexus/connectors'
+import type {
+  ConnectorId,
+  CopyDefinition,
+  CopyDefinitionV1,
+  CopyDefinitionV2,
+  CopyModel,
+  CopyPage,
+  CopyPosition,
+  Operation,
+  PageInput,
+} from '@conexus/connectors'
+import {
+  AccountRef,
+  CopyPageSchema,
+  connectorOf,
+  listInputOf,
+  listPageOf,
+  Rows,
+} from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId as HubConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { speakerOf } from '../identity/public.ts'
+import type { OpenedConnection } from './executor.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import { operationLabel } from './role-kit.ts'
 import type { Deps } from './rows.ts'
-import { usable } from './rows.ts'
+import { connectorIn, usable } from './rows.ts'
 import { lackedDoorRead } from './speaking.ts'
 import { connection } from './tables.ts'
 import { openedIn } from './testing.ts'
@@ -21,13 +39,25 @@ type CopySourceFailure =
   | 'COPY_SOURCE_UNREACHABLE'
   | 'COPY_SOURCE_UNREADABLE'
 
-/** The read's refusal whole, as `readThrough` gave it: the run keeps the code, the Builder's proof gives it all to the model (C79). */
+/** The read's refusal whole, as `readThrough` gave it: the Builder's proof gives it all to the model (C79). */
 export type CopyRefusal = Exclude<ReadAnswer, { kind: 'OK' }> | NotInRole
 
-export type CopyRead =
+/** One page of a version 1 copy through the connector's paged read, for the run and the Builder's proof. */
+type PagedRead =
   | Readonly<{ kind: 'PAGE'; page: CopyPage }>
-  | Readonly<{ kind: 'FAILED'; code: CopySourceFailure; refusal: CopyRefusal }>
+  | Readonly<{ kind: 'REFUSED'; refusal: CopyRefusal }>
   /** The connection is gone, not ACTIVE, or of a connector that offers no copies. */
+  | Readonly<{ kind: 'NO_CONNECTION' }>
+  | InLine
+
+/** One page of a copy's source as the run reads it. */
+export type CopyRead =
+  | Readonly<{ kind: 'PAGE'; page: CopyPage; next: CopyPosition | null; total: number | null }>
+  /** The provider answered 429 (decision 0058), or the connector's lane passed its deadline (`waitMs` null). */
+  | Readonly<{ kind: 'WAIT'; waitMs: number | null }>
+  /** The cursor is older than the read's declared validity: nothing was called, the pass starts again. */
+  | Readonly<{ kind: 'STALE' }>
+  | Readonly<{ kind: 'FAILED'; code: CopySourceFailure | 'COPY_SOURCE_CEILING' }>
   | Readonly<{ kind: 'NO_CONNECTION' }>
 
 type OfConnection = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
@@ -39,26 +69,35 @@ function connectorOfRow(deps: Deps, input: OfConnection, personId: PersonId | nu
       .select({ connector: connection.connectorId })
       .from(connection)
       .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
-    return row === undefined ? undefined : connectorOf(row.connector)
+    return row === undefined ? undefined : connectorIn(deps, row.connector)
   })
 }
 
 /**
  * The company's connection a copy is turned on from, read in the caller's transaction: its
- * connector when it is ACTIVE; none when the company has no such connection.
+ * connector and its account (none on a connector whose account is `none`) when it is ACTIVE; none
+ * when the company has no such connection.
  */
 export async function connectionForCopy(
   tx: ReadTx,
   input: OfConnection,
-): Promise<{ kind: 'ACTIVE'; connectorId: HubConnectorId } | { kind: 'NOT_ACTIVE' } | undefined> {
+): Promise<
+  | { kind: 'ACTIVE'; connectorId: HubConnectorId; accountRef: AccountRef | null }
+  | { kind: 'NOT_ACTIVE' }
+  | undefined
+> {
   const [row] = await tx
-    .select({ state: connection.state, connectorId: connection.connectorId })
+    .select({
+      state: connection.state,
+      connectorId: connection.connectorId,
+      accountRef: connection.accountRef,
+    })
     .from(connection)
     .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
   if (row === undefined) return undefined
-  return row.state === 'ACTIVE'
-    ? { kind: 'ACTIVE', connectorId: HubConnectorId.parse(row.connectorId) }
-    : { kind: 'NOT_ACTIVE' }
+  if (row.state !== 'ACTIVE') return { kind: 'NOT_ACTIVE' }
+  const accountRef = row.accountRef === null ? null : AccountRef.parse(row.accountRef)
+  return { kind: 'ACTIVE', connectorId: HubConnectorId.parse(row.connectorId), accountRef }
 }
 
 /**
@@ -99,10 +138,10 @@ export async function connectionNamesOf(
   )
 }
 
-/** The connection opened for one page when it is ACTIVE and its connector reads copies; none otherwise. */
+/** The connection opened for one page when it is ACTIVE; none otherwise. */
 function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }) {
   const scope = { kind: 'COMPANY', companyId: input.companyId, personId: input.enabledBy } as const
-  return deps.database.read(scope, async (tx) => {
+  return deps.database.read(scope, async (tx): Promise<OpenedConnection | undefined> => {
     const [row] = await tx
       .select({ id: connection.id })
       .from(connection)
@@ -115,9 +154,7 @@ function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }
       )
     if (row === undefined) return undefined
     try {
-      const opened = await openedIn(deps, tx, input)
-      const read = opened.connector.copy?.read
-      return read === undefined ? undefined : { opened, read }
+      return await openedIn(deps, tx, input)
     } catch (error) {
       if (error instanceof Failure && error.code === 'CONNECTION_NOT_FOUND') return undefined
       throw error
@@ -125,37 +162,69 @@ function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }
   })
 }
 
+type ReadOf = Readonly<{
+  input: OfConnection & { enabledBy: PersonId; signal: AbortSignal }
+  opened: OpenedConnection
+  operation: Operation<unknown, unknown, 'read'>
+  value: unknown
+}>
+
+/** The connector's copy lane passed its deadline before the call: nothing was asked. */
+type InLine = Readonly<{ kind: 'IN_LINE' }>
+
 /**
- * One page of a copy through the read every other reader takes, the connection's turn, its token,
- * the deadline and the log line, speaking as a version that declares only the paged read. The one
- * way to `readThrough` for a copy's run and for the Builder's proof of a proposal (C26).
+ * The read every other reader takes, the connection's turn, its token, the deadline and the log
+ * line, speaking as a version that declares only the operation; in the connector's copy lane first
+ * when its provider counts the limit by the app.
+ */
+async function readAsCopy(deps: Deps, a: ReadOf): Promise<ReadAnswer | NotInRole | InLine> {
+  const { input, opened, operation } = a
+  function read() {
+    return readThrough(deps, {
+      by: 'copy',
+      ids: { companyId: input.companyId },
+      viewer: { person: { id: input.enabledBy }, companyId: input.companyId },
+      speaker: {
+        kind: 'VERSION',
+        declared: [
+          { connectionId: input.connectionId, operation: OperationId.parse(operation.id) },
+        ],
+      },
+      opened,
+      operation,
+      input: a.value,
+      deadlineMs: deps.callDeadlineMs,
+      signal: input.signal,
+    })
+  }
+  if (opened.connector.callLimit?.countedBy !== 'APP') return read()
+  const turn = await deps.limits.inCopyTurn(
+    opened.connector.id,
+    deps.callDeadlineMs,
+    async () => ({ kind: 'READ', answer: await read() }) as const,
+    input.signal,
+  )
+  return turn.kind === 'READ' ? turn.answer : { kind: 'IN_LINE' }
+}
+
+/**
+ * One page of a version 1 copy through the connector's paged read. The one way to `readThrough`
+ * for a version 1 copy's run and for the Builder's proof of a proposal (C26).
  */
 export async function copyPage(
   deps: Deps,
   input: OfConnection & { enabledBy: PersonId; input: PageInput; signal: AbortSignal },
-): Promise<CopyRead> {
-  const found = await openedForCopy(deps, input)
-  if (found === undefined) return { kind: 'NO_CONNECTION' }
-  const { opened, read } = found
-  const answer = await readThrough(deps, {
-    by: 'copy',
-    ids: { companyId: input.companyId },
-    viewer: { person: { id: input.enabledBy }, companyId: input.companyId },
-    speaker: {
-      kind: 'VERSION',
-      declared: [{ connectionId: input.connectionId, operation: OperationId.parse(read.id) }],
-    },
-    opened,
-    operation: read,
-    input: input.input,
-    deadlineMs: deps.callDeadlineMs,
-    signal: input.signal,
-  })
+): Promise<PagedRead> {
+  const opened = await openedForCopy(deps, input)
+  const read = opened?.connector.copy?.read
+  if (opened === undefined || read === undefined) return { kind: 'NO_CONNECTION' }
+  const answer = await readAsCopy(deps, { input, opened, operation: read, value: input.input })
+  if (answer.kind === 'IN_LINE') return answer
   if (answer.kind === 'OK') return { kind: 'PAGE', page: CopyPageSchema.parse(answer.value) }
-  return { kind: 'FAILED', code: sourceFailureOf(answer), refusal: answer }
+  return { kind: 'REFUSED', refusal: answer }
 }
 
-function sourceFailureOf(answer: CopyRefusal): CopySourceFailure {
+function sourceFailureOf(answer: Exclude<CopyRefusal, { kind: 'BUSY' }>): CopySourceFailure {
   switch (answer.kind) {
     case 'REFUSED':
     case 'NOT_IN_ROLE':
@@ -164,7 +233,6 @@ function sourceFailureOf(answer: CopyRefusal): CopySourceFailure {
       return 'COPY_SOURCE_NEEDS_REAUTH'
     case 'UNREACHABLE':
     case 'DEADLINE':
-    case 'BUSY':
       return 'COPY_SOURCE_UNREACHABLE'
     case 'UNREADABLE':
       return 'COPY_SOURCE_UNREADABLE'
@@ -173,9 +241,106 @@ function sourceFailureOf(answer: CopyRefusal): CopySourceFailure {
   }
 }
 
+/** A refusal as the run keeps it: 429 is a wait, every other its code. */
+function refusedRead(refusal: CopyRefusal): CopyRead {
+  return refusal.kind === 'BUSY'
+    ? { kind: 'WAIT', waitMs: refusal.waitMs }
+    : { kind: 'FAILED', code: sourceFailureOf(refusal) }
+}
+
+export type SourcePage = OfConnection & {
+  enabledBy: PersonId
+  definition: CopyDefinition
+  position: CopyPosition | null
+  /** The watermark less a day: a day in version 1, an instant in version 2; null on a source's first pass (#940). */
+  since: string | null
+  windowFrom: string | null
+  limit: number
+  signal: AbortSignal
+}
+
+/** The key of the page's last row, the next page's start; the same position when the page had no row. */
+function lastKey(definition: CopyDefinitionV1, page: CopyPage, position: CopyPosition | null) {
+  const last = page.rows.at(-1)
+  if (last === undefined) return position
+  const { columns, key } = definition
+  const after = key.map((name) => Number(last[columns.findIndex((column) => column.name === name)]))
+  return { kind: 'KEY', after } as const
+}
+
+async function pageV1(deps: Deps, a: SourcePage & { definition: CopyDefinitionV1 }) {
+  const after = a.position?.kind === 'KEY' ? a.position.after : null
+  const { definition, since, windowFrom, limit } = a
+  const read = await copyPage(deps, {
+    ...a,
+    input: { definition, after, since, windowFrom, limit },
+  })
+  if (read.kind === 'NO_CONNECTION') return read
+  if (read.kind === 'IN_LINE') return { kind: 'WAIT', waitMs: null } as const
+  if (read.kind === 'REFUSED') return refusedRead(read.refusal)
+  const next = lastKey(definition, read.page, a.position)
+  return { kind: 'PAGE', page: read.page, next, total: null } as const
+}
+
+function isListRead(
+  operation: Operation<unknown, unknown>,
+  id: string,
+): operation is Operation<unknown, unknown, 'read'> {
+  return operation.id === id && operation.class === 'read' && operation.list !== undefined
+}
+
+async function pageV2(
+  deps: Deps,
+  a: SourcePage & { definition: CopyDefinitionV2 },
+): Promise<CopyRead> {
+  const opened = await openedForCopy(deps, a)
+  const { definition, position } = a
+  const operation = opened?.connector.operations.find((each) =>
+    isListRead(each, definition.source.operation),
+  )
+  const list = operation?.list
+  if (opened === undefined || operation === undefined || list === undefined)
+    return { kind: 'NO_CONNECTION' }
+  const at = deps.now()
+  if (
+    position?.kind === 'CURSOR' &&
+    list.paging.kind === 'CURSOR' &&
+    at.getTime() - Date.parse(position.at) > list.paging.ttlMs
+  )
+    return { kind: 'STALE' }
+  const value = listInputOf({ list, definition, position, since: a.since })
+  const answer = await readAsCopy(deps, { input: a, opened, operation, value })
+  if (answer.kind === 'IN_LINE') return { kind: 'WAIT', waitMs: null }
+  if (answer.kind !== 'OK') return refusedRead(answer)
+  const rows = Rows.safeParse(answer.value)
+  if (!rows.success) return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
+  const page = listPageOf({ list, definition, position, rows: rows.data, at })
+  switch (page.kind) {
+    case 'PAGE': {
+      const { rows: cells, more, next, total } = page
+      return { kind: 'PAGE', page: { rows: cells, more }, next, total }
+    }
+    case 'MISFIT':
+    case 'UNREADABLE':
+      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
+    case 'CEILING':
+      return { kind: 'FAILED', code: 'COPY_SOURCE_CEILING' }
+    default:
+      return page satisfies never
+  }
+}
+
+/** One page of a copy's source: version 1 through the connector's paged read, version 2 through the list read it names. */
+function readPage(deps: Deps, a: SourcePage): Promise<CopyRead> {
+  const { definition } = a
+  return definition.version === 1
+    ? pageV1(deps, { ...a, definition })
+    : pageV2(deps, { ...a, definition })
+}
+
 /**
  * The copies' door to the outside (decision 0056): the templates of each connector, and one page
- * of a copy (`copyPage`).
+ * of a copy's source (`readPage`).
  */
 export function createCopyPort(deps: Deps) {
   return Object.freeze({
@@ -183,12 +348,14 @@ export function createCopyPort(deps: Deps) {
       return (await connectorOfRow(deps, input, null))?.copy?.models
     },
     catalog(): readonly { connector: ConnectorId; model: CopyModel }[] {
-      return CONNECTORS.flatMap((connector) =>
+      return deps.catalog.flatMap((connector) =>
         (connector.copy?.models ?? []).map((model) => ({ connector: connector.id, model })),
       )
     },
-    readPage: (
-      input: OfConnection & { enabledBy: PersonId; input: PageInput; signal: AbortSignal },
-    ): Promise<CopyRead> => copyPage(deps, input),
+    readPage: (input: SourcePage): Promise<CopyRead> => readPage(deps, input),
+    /** Where the connector's provider counts its call limit; none when it declares no list read. */
+    countedBy(connector: string): 'APP' | 'ACCOUNT' | null {
+      return connectorIn(deps, connector)?.callLimit?.countedBy ?? null
+    },
   })
 }

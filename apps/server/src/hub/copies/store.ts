@@ -6,6 +6,7 @@ import type {
   CopyProposalSummary,
   CopyRunFailureCode,
   CopySchedule,
+  CopySummary,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
@@ -19,8 +20,8 @@ import {
   ProjectId as ProjectIdSchema,
 } from '@conexus/hub-api'
 import { and, eq, inArray, or } from 'drizzle-orm'
-import { z } from 'zod'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
+import type { CopyTable } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -63,7 +64,8 @@ type ProjectDatabase = {
 
 export type CopyOutcome =
   | { kind: 'COMPLETE' }
-  | { kind: 'PARTIAL'; reason: 'CAP' | 'STOPPED' }
+  /** WAIT: the provider answered 429, or the connector's lane passed its deadline; each source keeps its position. */
+  | { kind: 'PARTIAL'; reason: 'CAP' | 'STOPPED' | 'WAIT' }
   | { kind: 'ERROR'; code: CopyRunFailureCode }
   | { kind: 'INTERRUPTED' }
 
@@ -104,9 +106,6 @@ export function personScope(input: InCompany): Scope {
   return { kind: 'COMPANY', companyId: input.companyId, personId: input.personId }
 }
 
-/** A position: the last key written, one number per key column (code C27). */
-const Position = z.array(z.int()).nullable()
-
 /** A copy's row as the run and the release read it: the definition parsed again (code C27). */
 export async function storedCopy(tx: ReadTx, ids: { companyId: CompanyId; copyId: CopyId }) {
   const [row] = await tx
@@ -125,10 +124,22 @@ export function parsedCopy(row: typeof copy.$inferSelect) {
     createdBy: PersonIdSchema.parse(row.createdBy),
     name: CopyName.parse(row.name),
     definition: CopyDefinition.parse(row.definition),
-    position: Position.parse(row.position),
   }
 }
 export type StoredCopy = ReturnType<typeof parsedCopy>
+
+/** The copy's table as the company's database keeps it: with the account's columns when its sources have an account, and a version 2's instants with their offset. */
+export function copyTableOf(
+  stored: Pick<StoredCopy, 'name' | 'definition'>,
+  sources: readonly { accountRef: string | null }[],
+): CopyTable {
+  return {
+    name: stored.name,
+    definition: stored.definition,
+    accounts: sources.some((source) => source.accountRef !== null),
+    instants: stored.definition.version === 2 ? 'OFFSET' : 'LOCAL',
+  }
+}
 
 /**
  * The company's database owner for this act alone, with no transaction open (data D22), the host
@@ -172,6 +183,20 @@ export async function syncOf(
 }
 
 /**
+ * What the list shows of a definition: version 1's query, key and the two date filters; version 2
+ * shows no query, its source is an operation of the connector.
+ */
+export function shownOf(definition: CopyDefinition): CopySummary['shown'] {
+  const window = definition.version === 1 ? definition.window : undefined
+  return {
+    query: definition.version === 1 ? definition.source.sql : '',
+    key: definition.key,
+    changedSince: definition.changedSince,
+    window: window === undefined ? null : { column: window.column, days: window.days },
+  }
+}
+
+/**
  * The company's open proposals, and those `named` by id whatever their state (the conversation's
  * cards), as the list states them; one of a Projeto deleted or marked is left out.
  */
@@ -209,7 +234,6 @@ export async function proposalsOf(
     const definition = CopyDefinition.parse(row.definition)
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
     const linked = connections.get(connectionId)
-    const { window } = definition
     return [
       {
         id: CopyProposalIdSchema.parse(row.id),
@@ -221,12 +245,7 @@ export async function proposalsOf(
           connector: linked?.connector ?? ConnectorIdSchema.parse(row.connectorId),
         },
         project: { id: projectId, name: project },
-        shown: {
-          query: definition.source.sql,
-          key: definition.key,
-          changedSince: definition.changedSince,
-          window: window === undefined ? null : { column: window.column, days: window.days },
-        },
+        shown: shownOf(definition),
         mode: copyModeOf(definition),
         proved: { rows: row.provedRows, more: row.provedMore },
         proposedBy: { id: PersonIdSchema.parse(row.proposedBy), name: proposedByName ?? '' },

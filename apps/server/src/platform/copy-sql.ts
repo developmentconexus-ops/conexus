@@ -10,6 +10,9 @@ export const SYNC_LOGIN = 'conexus_sync'
 const SYNC_SCHEMA = quoted('sync')
 /** The column that holds the pass that last wrote each row: the engine's own. Only the Hub's catalog leaves it out; a read of the table itself still returns it (issue 946). */
 export const COPY_PASS_COLUMN = '_pass'
+/** The columns of a copy of accounts, the engine's own beside `_pass`: the provider's account and the company's name for its connection. */
+export const COPY_ACCOUNT_COLUMN = '_account'
+export const COPY_ACCOUNT_NAME_COLUMN = '_account_name'
 
 /**
  * What the company's database keeps of a copy, as the kit's parsed `CopyDefinition` gives it: the
@@ -18,14 +21,21 @@ export const COPY_PASS_COLUMN = '_pass'
 export type CopyTable = Readonly<{
   name: string
   definition: Readonly<{
-    columns: readonly Readonly<{ name: string; type: CopyColumnType }>[]
+    columns: readonly Readonly<{ name: string; type: CopyColumnType; description?: string }>[]
     key: readonly string[]
     changedSince: Readonly<{ column: string }> | null
     window?: Readonly<{ column: string }>
+    description?: string
   }>
+  /** The connector's account is not `none`: each row carries `_account` and `_account_name`, and the key starts with `_account`. */
+  accounts: boolean
+  /** OFFSET (version 2): a timestamp is `timestamptz`, a provider's instant with its offset; LOCAL (version 1) keeps a database's local hour. */
+  instants: 'LOCAL' | 'OFFSET'
 }>
-type CopyColumnType = 'text' | 'numeric' | 'bigint' | 'date' | 'timestamp' | 'boolean'
+type CopyColumnType = 'text' | 'numeric' | 'bigint' | 'date' | 'timestamp' | 'boolean' | 'json'
 export type CopyRows = readonly (readonly (string | null)[])[]
+/** The account a page or a pass belongs to, in a copy of accounts; null in one whose connector has none. */
+export type CopyAccount = Readonly<{ ref: string; name: string }> | null
 
 const SQL_TYPE: Readonly<Record<CopyColumnType, string>> = {
   text: 'text',
@@ -34,6 +44,47 @@ const SQL_TYPE: Readonly<Record<CopyColumnType, string>> = {
   date: 'date',
   timestamp: 'timestamp',
   boolean: 'boolean',
+  json: 'jsonb',
+}
+
+function sqlTypeOf(table: CopyTable, type: CopyColumnType): string {
+  return type === 'timestamp' && table.instants === 'OFFSET' ? 'timestamptz' : SQL_TYPE[type]
+}
+
+function keyOf(table: CopyTable): string[] {
+  const key = table.definition.key.map(quoted)
+  return table.accounts ? [COPY_ACCOUNT_COLUMN, ...key] : key
+}
+
+/**
+ * The descriptions as `COMMENT ON`, whose text cannot be a bound parameter: the descriptions travel
+ * bound in a setting of the transaction, and `format('%L')` quotes them (data D20).
+ */
+function commentsOf(table: CopyTable): SqlStatement[] {
+  const columns = Object.fromEntries(
+    table.definition.columns.flatMap((c) => (c.description ? [[c.name, c.description]] : [])),
+  )
+  const described = table.definition.description
+  if (described === undefined && Object.keys(columns).length === 0) return []
+  const comments = { name: table.name, table: described ?? null, columns }
+  return [
+    {
+      text: `SELECT set_config('conexus.copy_comments', $1, true)`,
+      values: [JSON.stringify(comments)],
+    },
+    {
+      text: `DO $$
+        DECLARE c jsonb := current_setting('conexus.copy_comments')::jsonb; e record;
+        BEGIN
+          IF c->>'table' IS NOT NULL THEN
+            EXECUTE format('COMMENT ON TABLE sync.%I IS %L', c->>'name', c->>'table');
+          END IF;
+          FOR e IN SELECT * FROM jsonb_each_text(c->'columns') LOOP
+            EXECUTE format('COMMENT ON COLUMN sync.%I.%I IS %L', c->>'name', e.key, e.value);
+          END LOOP;
+        END $$`,
+    },
+  ]
 }
 
 function tableOf(name: string): string {
@@ -81,18 +132,27 @@ export async function syncAddress(context: Context, host: string): Promise<Datab
   return DatabaseUrl.parse(url.toString())
 }
 
-/** The copy's table: its typed columns, its key as primary key, the pass that last wrote each row, the window's index. */
+/**
+ * The copy's table: its typed columns, the account's two columns in a copy of accounts, its key as
+ * primary key (after `_account`), the pass that last wrote each row, the window's index and the
+ * descriptions.
+ */
 export function ensureCopyTable(
   context: Context,
   sync: DatabaseUrl,
-  { name, definition }: CopyTable,
+  table: CopyTable,
 ): Promise<SqlAnswer> {
-  const columns = definition.columns.map((c) => `${quoted(c.name)} ${SQL_TYPE[c.type]}`)
+  const { name, definition } = table
+  const columns = definition.columns.map((c) => `${quoted(c.name)} ${sqlTypeOf(table, c.type)}`)
+  const accounts = table.accounts
+    ? [`${COPY_ACCOUNT_COLUMN} text NOT NULL`, `${COPY_ACCOUNT_NAME_COLUMN} text NOT NULL`]
+    : []
   const statements: SqlStatement[] = [
     {
-      text: `CREATE TABLE IF NOT EXISTS ${tableOf(name)} (${columns.join(', ')},
-        ${COPY_PASS_COLUMN} integer NOT NULL, PRIMARY KEY (${definition.key.map(quoted).join(', ')}))`,
+      text: `CREATE TABLE IF NOT EXISTS ${tableOf(name)} (${[...columns, ...accounts].join(', ')},
+        ${COPY_PASS_COLUMN} integer NOT NULL, PRIMARY KEY (${keyOf(table).join(', ')}))`,
     },
+    ...commentsOf(table),
   ]
   if (definition.window !== undefined) {
     statements.push({
@@ -104,71 +164,168 @@ export function ensureCopyTable(
 
 /**
  * One page in one transaction: the rows as a JSON array of objects read by `jsonb_to_recordset`
- * with the copy's types, each written with the pass, a row of the same key written over.
+ * with the copy's types, each written with the pass (and, in a copy of accounts, the page's account
+ * and its name), a row of the same key written over.
  */
 export async function writePage(
   context: Context,
   sync: DatabaseUrl,
-  input: CopyTable & { pass: number; rows: CopyRows },
+  input: CopyTable & { pass: number; rows: CopyRows; account: CopyAccount },
   signal: AbortSignal,
 ): Promise<SqlAnswer> {
   if (input.rows.length === 0) return { kind: 'DONE', value: [] }
   const { columns, key } = input.definition
   const names = columns.map((c) => quoted(c.name))
-  const record = columns.map((c) => `${quoted(c.name)} ${SQL_TYPE[c.type]}`)
+  // A json cell travels as its text and is cast in the SELECT: the database parses it, not the Hub.
+  const record = columns.map(
+    (c) => `${quoted(c.name)} ${c.type === 'json' ? 'text' : sqlTypeOf(input, c.type)}`,
+  )
+  const picked = columns.map((c, at) => `r.${names[at]}${c.type === 'json' ? '::jsonb' : ''}`)
   const keys = new Set(key)
+  const own = input.account === null ? [] : [COPY_ACCOUNT_COLUMN, COPY_ACCOUNT_NAME_COLUMN]
   const updated = [
     ...columns.filter((c) => !keys.has(c.name)).map((c) => quoted(c.name)),
+    ...own.slice(1),
     COPY_PASS_COLUMN,
   ].map((column) => `${column} = EXCLUDED.${column}`)
   const objects = input.rows.map((row) =>
     Object.fromEntries(columns.map((c, at) => [c.name, row[at] ?? null])),
   )
+  const accountValues = input.account === null ? [] : [input.account.ref, input.account.name]
   return context.transport(
     sync,
     [
       {
-        text: `INSERT INTO ${tableOf(input.name)} (${names.join(', ')}, ${COPY_PASS_COLUMN})
-          SELECT ${names.map((n) => `r.${n}`).join(', ')}, $2::integer
+        text: `INSERT INTO ${tableOf(input.name)} (${[...names, ...own, COPY_PASS_COLUMN].join(', ')})
+          SELECT ${[...picked, ...own.map((_, at) => `$${at + 3}::text`)].join(', ')}, $2::integer
           FROM jsonb_to_recordset($1::jsonb) AS r(${record.join(', ')})
-          ON CONFLICT (${key.map(quoted).join(', ')}) DO UPDATE SET ${updated.join(', ')}`,
-        values: [JSON.stringify(objects), input.pass],
+          ON CONFLICT (${keyOf(input).join(', ')}) DO UPDATE SET ${updated.join(', ')}`,
+        values: [JSON.stringify(objects), input.pass, ...accountValues],
       },
     ],
     budget(signal),
   )
 }
 
+/** In a copy of accounts, what a pass's close touches is its own account's rows alone. */
+function ofAccount(
+  account: CopyAccount,
+  at: number,
+): Readonly<{ where: string; values: string[] }> {
+  return account === null
+    ? { where: '', values: [] }
+    : { where: ` AND ${COPY_ACCOUNT_COLUMN} = $${at}`, values: [account.ref] }
+}
+
 /**
- * The end of a complete pass: a copy with no change date leaves every row the pass did not write;
- * one with a window, every row of the window the pass did not write; then the count.
+ * The end of a complete pass of one source: a copy with no change date leaves every row of the
+ * source's account the pass did not write; one with a window, every such row of the window; the
+ * account's rows take the connection's name as it is now; then the count of the whole table.
  */
 export async function closePass(
   context: Context,
   sync: DatabaseUrl,
-  input: CopyTable & { pass: number; windowFrom: string | null },
+  input: CopyTable & { pass: number; windowFrom: string | null; account: CopyAccount },
   signal: AbortSignal,
 ): Promise<{ kind: 'DONE'; rows: number } | Exclude<SqlAnswer, { kind: 'DONE' }>> {
   const { changedSince, window } = input.definition
+  const { account } = input
   const table = tableOf(input.name)
+  const whole = ofAccount(account, 2)
+  const windowed = ofAccount(account, 3)
   const gone: SqlStatement[] =
     changedSince === null
-      ? [{ text: `DELETE FROM ${table} WHERE ${COPY_PASS_COLUMN} <> $1`, values: [input.pass] }]
+      ? [
+          {
+            text: `DELETE FROM ${table} WHERE ${COPY_PASS_COLUMN} <> $1${whole.where}`,
+            values: [input.pass, ...whole.values],
+          },
+        ]
       : window !== undefined && input.windowFrom !== null
         ? [
             {
-              text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND ${COPY_PASS_COLUMN} <> $2`,
-              values: [input.windowFrom, input.pass],
+              text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND ${COPY_PASS_COLUMN} <> $2${windowed.where}`,
+              values: [input.windowFrom, input.pass, ...windowed.values],
             },
           ]
         : []
+  const named: SqlStatement[] =
+    account === null
+      ? []
+      : [
+          {
+            text: `UPDATE ${table} SET ${COPY_ACCOUNT_NAME_COLUMN} = $2
+              WHERE ${COPY_ACCOUNT_COLUMN} = $1 AND ${COPY_ACCOUNT_NAME_COLUMN} IS DISTINCT FROM $2`,
+            values: [account.ref, account.name],
+          },
+        ]
   const answer = await context.transport(
     sync,
-    [...gone, { text: `SELECT count(*)::text AS n FROM ${table}` }],
+    [...gone, ...named, { text: `SELECT count(*)::text AS n FROM ${table}` }],
     budget(signal),
   )
   if (answer.kind !== 'DONE') return answer
   return { kind: 'DONE', rows: Number(answer.value.at(-1)?.[0]?.n) }
+}
+
+/** SQLSTATE of no such table: a copy's table already dropped, or never made. */
+const NO_TABLE = '42P01'
+
+/** One statement as the sync login, within the call's budget. */
+function sent(context: Context, sync: DatabaseUrl, statement: SqlStatement, signal?: AbortSignal) {
+  return context.transport(sync, [statement], budget(signal))
+}
+
+/** An answer that found no table: nothing left to take out. */
+function doneWithoutTable(answer: SqlAnswer): SqlAnswer {
+  return answer.kind === 'REFUSED' && answer.code === NO_TABLE
+    ? { kind: 'DONE', value: [] }
+    : answer
+}
+
+/** Desligar: the account's rows out of a copy that goes on with other accounts; repeatable. */
+export async function dropAccountRows(
+  context: Context,
+  sync: DatabaseUrl,
+  input: { copy: string; ref: string },
+): Promise<SqlAnswer> {
+  const text = `DELETE FROM ${tableOf(input.copy)} WHERE ${COPY_ACCOUNT_COLUMN} = $1`
+  return doneWithoutTable(await sent(context, sync, { text, values: [input.ref] }))
+}
+
+/**
+ * The run's net under Desligar: the rows whose account is no source's leave, a page a run wrote while
+ * its connection was being removed; repeatable.
+ */
+export async function dropForeignRows(
+  context: Context,
+  sync: DatabaseUrl,
+  input: { copy: string; refs: readonly string[] },
+  signal: AbortSignal,
+): Promise<SqlAnswer> {
+  const text = `DELETE FROM ${tableOf(input.copy)} WHERE ${COPY_ACCOUNT_COLUMN} <> ALL($1::text[])`
+  return sent(context, sync, { text, values: [input.refs] }, signal)
+}
+
+/** The rows of one account in a copy of accounts, as Desligar tells them before the click. */
+export async function accountRows(
+  context: Context,
+  sync: DatabaseUrl,
+  input: { copy: string; ref: string },
+): Promise<{ kind: 'DONE'; rows: number } | Exclude<SqlAnswer, { kind: 'DONE' }>> {
+  const text = `SELECT count(*)::text AS n FROM ${tableOf(input.copy)} WHERE ${COPY_ACCOUNT_COLUMN} = $1`
+  const answer = await sent(context, sync, { text, values: [input.ref] })
+  if (answer.kind !== 'DONE') return answer
+  return { kind: 'DONE', rows: Number(answer.value.at(-1)?.[0]?.n) }
+}
+
+/** The table of a copy that ended: the app logins' `SELECT` goes with it; repeatable. */
+export function dropCopyTable(
+  context: Context,
+  sync: DatabaseUrl,
+  input: { copy: string },
+): Promise<SqlAnswer> {
+  return sent(context, sync, { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` })
 }
 
 /** What the sync login gives a Projeto's run and read logins, which its owner made first. */

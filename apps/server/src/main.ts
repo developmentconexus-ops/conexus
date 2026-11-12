@@ -193,6 +193,7 @@ export function subjectsOf(deps: {
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall },
     propose: () => copies.propose,
+    copies: () => copies.ofConnections,
   })
   const copies = createCopies({
     ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },

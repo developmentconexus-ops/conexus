@@ -24,13 +24,13 @@ import { pageKey, pageOf } from '../../platform/pages.ts'
 import { connectionNamesOf } from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps, CopyState, InCompany, StoredCopy } from './store.ts'
-import { parsedCopy, personScope, proposalsOf, storedCopy } from './store.ts'
+import { parsedCopy, personScope, proposalsOf, shownOf, storedCopy } from './store.ts'
 import { copy, copyRun, projectCopy } from './tables.ts'
 
 /** The runs of a copy a page holds. */
 const RUNS_PAGE = 20
 
-const Reason = z.enum(['CAP', 'STOPPED'])
+const Reason = z.enum(['CAP', 'STOPPED', 'WAIT'])
 
 /** A run's row as the contract states it; the reason of each outcome parsed again (code C27). */
 function runOf(row: typeof copyRun.$inferSelect): CopyRun {
@@ -132,7 +132,6 @@ async function summaries(
     const schedule: CopySchedule = state?.schedule ?? { kind: 'MISSING' }
     const interval: CopyInterval | null = state?.interval ?? null
     const linked = read.names.get(row.connectionId)
-    const { window } = row.definition
     return {
       id: row.id,
       name: row.name,
@@ -148,12 +147,7 @@ async function summaries(
       rows: row.rows,
       mode: copyModeOf(row.definition),
       projects: read.released.get(row.id) ?? [],
-      shown: {
-        query: row.definition.source.sql,
-        key: row.definition.key,
-        changedSince: row.definition.changedSince,
-        window: window === undefined ? null : { column: window.column, days: window.days },
-      },
+      shown: shownOf(row.definition),
     }
   })
 }

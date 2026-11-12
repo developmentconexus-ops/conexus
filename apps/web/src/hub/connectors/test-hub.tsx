@@ -135,7 +135,7 @@ function writes(
       const replaced = answers.unlink?.()
       if (replaced) return replaced
       view.connections = view.connections.filter((one) => one.id !== params.connectionId)
-      return HttpResponse.json({ revocation: 'NONE' })
+      return HttpResponse.json({ revocation: 'NONE', tablesLeft: [] })
     }),
   ]
 }
