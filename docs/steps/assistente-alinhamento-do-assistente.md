@@ -1024,6 +1024,16 @@ lugar do que diverge acima ("As rotas", "A leitura pela tela", a matriz da pági
    (`dist/knowledge/host-writes.d.ts:24`, `:36`); a tela mostra "Ana · 11/11/2026".
 5. **A frase de quem não pode.** Na página, para o membro sem a permissão: "Só o dono ou um
    administrador muda a memória da empresa." (W34).
+6. **B1: o que o agente aprende para a empresa só vale depois de aprovado** (fundador, 2026-11-12,
+   depois da aprovação do cartão; a resposta mais nova vale). Toda gravação de página ou nota da
+   memória da empresa feita pelo modelo (`knowledge_page`, `knowledge_note`, `knowledge_pin`) passa
+   pela confirmação de quem conversa, que vê o texto antes de gravar. A forma nativa do Mastra 1.82 é
+   `requireApproval: true` na ferramenta de gravação e o chunk `tool-call-approval`
+   (`docs/agents/human-in-the-loop.mdx`; `approveToolCall` e `declineToolCall`); a conversa do Conexus
+   já mostra a aprovação de ferramenta (`apps/web/src/builder/conversation/approval-item.ts`), então a
+   U9 usa essa mesma linha, sem cartão novo. A gravação que a pessoa faz direto na tela Memória da
+   empresa não tem esse passo. Recusada pela pessoa, nada é gravado. Critério 27 ganha: "a escrita do
+   modelo espera a confirmação e só grava depois dela" e "a escrita recusada não grava".
 
 ## U10 A frase de cada comando
 
