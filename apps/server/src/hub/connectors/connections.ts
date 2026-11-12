@@ -21,7 +21,16 @@ import { subjectsOf } from './catalog-subjects.ts'
 import type { BearerToken, OpenedConnection } from './executor.ts'
 import { notesOf } from './notes.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
-import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
+import {
+  admitted,
+  columns,
+  connectorIn,
+  ofCompany,
+  scopeOf,
+  sealContext,
+  sealedOf,
+  viewOf,
+} from './rows.ts'
 import { connection } from './tables.ts'
 import { opened } from './testing.ts'
 import { accessFor, statusOf } from './tokens.ts'
@@ -199,7 +208,7 @@ async function sealedText(
   return open(deps.sealKeys, sealContext(row), await sealedOf(tx, row.id)).reveal()
 }
 
-async function viewIn(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<Connection> {
+export async function viewIn(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<Connection> {
   const [row] = await tx.select(columns).from(connection).where(ofCompany(viewer, id))
   if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
   return viewOf(row)
@@ -213,7 +222,7 @@ async function revoked(deps: Deps, input: OfConnection): Promise<Revocation> {
       .from(connection)
       .where(ofCompany(input, input.connectionId)),
   )
-  const declared = row === undefined ? undefined : connectorOf(row.connector)
+  const declared = row === undefined ? undefined : connectorIn(deps, row.connector)
   if (declared === undefined || !isOAuth(declared) || declared.auth.revoke === undefined)
     return 'NONE'
   const where = whereOf(input, declared)
@@ -287,26 +296,37 @@ function whereOf(input: OfConnection, connector: Connector) {
 
 /**
  * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
- * Before, a connector that declares a revoke is asked to take the authorization back with the
- * connection's live token. The provider refusing or being down never stops the removal: the
- * company asked to disconnect. What happened comes back, and is logged by name.
+ * First the account's rows leave the company's copies, so a silent company database refuses before
+ * anything leaves the Hub or the provider (O Sync de qualquer conector). Then a connector that
+ * declares a revoke is asked to take the authorization back; the provider refusing or being down
+ * never stops the removal. Then, in one transaction, the connection's copies locked, the connection
+ * deleted with its sources and each copy left with no source ended; last their tables dropped.
  */
 export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
   await deps.database.command(scopeOf(input), (tx) =>
     admitted(deps, tx, input, 'manageConnections'),
   )
+  const { companyId, connectionId } = input
+  await deps.copies().leave({ companyId, personId: input.person.id, connectionId })
   const revocation = await revoked(deps, input)
   const removed = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
-    return tx
+    const copyIds = await deps.copies().locked(tx, { companyId, connectionId })
+    const rows = await tx
       .delete(connection)
-      .where(ofCompany(input, input.connectionId))
+      .where(ofCompany(input, connectionId))
       .returning({ id: connection.id })
+    if (rows.length === 0) return undefined
+    const ended = await deps.copies().ended(tx, { companyId, copyIds })
+    return copyIds.map((copyId) => ({ copyId, ended: ended.includes(copyId) }))
   })
-  await deps.limits.forget(input.connectionId)
+  await deps.limits.forget(connectionId)
+  const { tablesLeft } = await deps.copies().dropEnded({ companyId, personId: input.person.id })
   return {
-    removed: removed.length > 0,
-    revocation: removed.length > 0 ? revocation : ('NONE' as const),
+    removed: removed !== undefined,
+    revocation: removed === undefined ? ('NONE' as const) : revocation,
+    copies: removed ?? [],
+    tablesLeft,
   }
 }
 

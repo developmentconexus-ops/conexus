@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
+  callsText,
   MANAGERS_ENABLE,
   modeText,
   PROPOSAL_GONE,
@@ -11,6 +12,8 @@ import {
   ProposalDialog,
   proposalsQuery,
   provedText,
+  useSourceText,
+  withAccounts,
 } from '../../hub/copies/public.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
@@ -56,8 +59,9 @@ function LiveState(props: { companyId: CompanyId; proposed: CopyProposed }) {
 }
 
 /**
- * The card of a copy the Builder proposed (Capacidade 3, U3): drawn from the result of
- * `copy_propose` the conversation already holds, with the mode the Hub wrote. Whoever manages copies
+ * The card of a copy the Builder proposed (Capacidade 3, U3; O Sync de qualquer conector, U4): drawn
+ * from the result of `copy_propose` the conversation already holds, with where it reads, the
+ * accounts, the mode the Hub wrote and, for a list read, the calls a whole pass spends. Whoever manages copies
  * rereads its state through the list of copies and turns it on in the Cópias page's own dialog; anyone
  * else reads who turns it on, with no button and no read the Hub would refuse (web W34). Dismissing is
  * the Cópias page's.
@@ -65,18 +69,32 @@ function LiveState(props: { companyId: CompanyId; proposed: CopyProposed }) {
 export function CopyProposalCard({ tool }: { tool: Pick<ToolItem, 'result'> }) {
   const { companyId } = company.useParams()
   const { may } = company.useRouteContext()
+  const sourceOf = useSourceText(companyId)
   const parsed = CopyProposed.safeParse(tool.result)
   if (!parsed.success) return null
   const proposed = parsed.data
+  const origin = {
+    source: proposed.source,
+    connector: proposed.sources[0]?.connector ?? '',
+    accounts: proposed.sources.map((each) => each.name),
+  }
+  const listed = proposed.source.kind === 'OPERATION'
   return (
     <div className="flex flex-col gap-sm rounded-card border border-line bg-surface p-md">
       <p className="break-words font-medium">
-        {`${proposed.name} · ${proposed.connection.name} · ${modeText(proposed.mode)}`}
+        {listed
+          ? `${proposed.name} · ${sourceOf(origin)}`
+          : `${proposed.name} · ${sourceOf(origin)} · ${modeText(proposed.mode)}`}
       </p>
+      {listed && (
+        <p className="break-words text-text-2">{withAccounts(origin, modeText(proposed.mode))}</p>
+      )}
       <p className="break-words">
         <span className="text-text-2">chave </span>
         <span className="font-mono text-fact">{proposed.key.join(', ')}</span>
-        <span className="text-text-2 tabular-nums">{` · ${provedText(proposed)}`}</span>
+        <span className="text-text-2 tabular-nums">
+          {` · ${provedText(proposed)}${listed ? ` · ${callsText(proposed.calls)}` : ''}`}
+        </span>
       </p>
       {may.manageCopies ? (
         <LiveState companyId={companyId} proposed={proposed} />

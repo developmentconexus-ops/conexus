@@ -69,6 +69,8 @@ export async function mercadoLivreOn(
     change?: (config: Config) => Config
     /** The origin the Hub is given for the double, when something stands in front of it. */
     through?: (origin: string) => Promise<string>
+    /** The Hub's clock and catalog, when the test sets its own. */
+    tuning?: Parameters<typeof hubWithLog>[2]
   } = {},
 ) {
   const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
@@ -76,12 +78,15 @@ export async function mercadoLivreOn(
   t.after(() => served.close())
   const origin = a.through === undefined ? served.origin : await a.through(served.origin)
   const change = a.change ?? ((config: Config) => config)
-  const hub = await hubWithLog(t, (config) =>
-    change({
-      ...config,
-      connectorOrigins: new Map([['mercado-livre', origin]]),
-      connectorApps: appsOf(fake.app),
-    }),
+  const hub = await hubWithLog(
+    t,
+    (config) =>
+      change({
+        ...config,
+        connectorOrigins: new Map([['mercado-livre', origin]]),
+        connectorApps: appsOf(fake.app),
+      }),
+    a.tuning,
   )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
@@ -89,6 +94,21 @@ export async function mercadoLivreOn(
   const carla = await memberOn(hub, companyId, CARLA, 'member')
   const base = `/api/companies/${companyId}/connections`
   return { hub, fake, served, ana, bruno, carla, companyId, base }
+}
+
+/** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
+export async function mercadoLivreServed(t: TestContext) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  const served = await fake.serve()
+  t.after(() => served.close())
+  function change(config: Config): Config {
+    return {
+      ...config,
+      connectorOrigins: new Map([['mercado-livre', served.origin]]),
+      connectorApps: appsOf(fake.app),
+    }
+  }
+  return { fake, change }
 }
 
 export function startOf(hub: Hub, person: Person, companyId: string, body: object) {

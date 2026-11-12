@@ -1,6 +1,6 @@
 ---
 name: conexus-data
-description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, reading the company's connected systems (Sankhya, Mercado Livre), failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
+description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, reading the company's copies and connected systems (Sankhya, Mercado Livre), proposing a copy, failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
 ---
 
 # Server logic and saved data
@@ -44,7 +44,19 @@ An app has roles only when the plan names them, because the person said differen
 
 ## Connectors
 
-Where a connector copies the company's data, the app reads the copy through `db` (see Handlers), never the system live; if the copy it needs is missing, propose it with `copy_propose` instead of reading the system. This section covers a connector that has no copy (today, the Mercado Livre) and writing: an app reads the company's connected systems live only for those, only on the server, and only the reads the app declares. A refusal with `42501` on a listed copy means its release is still pending.
+Where a connector copies or declares a read that lists rows, the app reads the company data from the copy (`sync.<name>`, through `db`) and you propose the copy that is missing with `copy_propose`; an app reads a system live only for a connector with neither, and to write. This section covers those two cases: an app reads the company's connected systems live only on the server, and only the reads the app declares. A refusal with `42501` on a listed copy means its release is still pending.
+
+A copy of a connector that tells its accounts apart, such as the Mercado Livre's stores, keeps every account in one table, with two columns of its own before the data's: `"_account"` (the account's id in the connector) and `"_account_name"` (the connection's name in Conexus). Filter or group by `"_account_name"` to show one store, and never write a store's name in the code.
+
+Before `copy_propose`, answer six questions, in this order:
+
+1. Keep it or read it live? A list, a history, a sum or a cross of rows is a copy; a write, or a query whose parameter is not data the copy keeps, is read live.
+2. Does it exist? Look in the "## Data" block: a copy released here, use it; one not released here, ask the owner to release it; never propose a copy that exists.
+3. From which read, with which filter? The narrowest read that lists rows and covers the app; a fixed input only when the app will never want the rest.
+4. Which key? The id the system gives the row; the proof refuses a key that is null or repeated.
+5. Which mode? A read with no change filter is a whole copy; with one, only the changed rows, unless more than 10% of the rows change at each run, which asks for a whole copy. A window of days is only a query's.
+6. How often? The longest interval the screen bears: the proof answers the calls a whole pass spends, and an expensive copy asks for a longer interval.
+
 - `shared/operations.ts` exports `connectors`, made with `defineConnectors` from `@conexus/app`: each connector's id (`sankhya`, `mercado-livre`) and the list of its reads the app calls, by the ids the connector's own skill gives, such as `defineConnectors({ sankhya: ['pedidos', 'consultar'] })`. The check carries the list to the version's manifest; a read left out of it is not in the client.
 - In a handler, `connectorsOf(context, connectors)` gives the client: `await client.sankhya.pedidos({ codigoEmpresa: 1, page: 0 })`. Each read takes the input its connector's skill describes, typed: a field that does not exist, or a read not declared, fails the check. A key or the system's address never reaches the app.
 - A connector that reads several connections in one Projeto, such as the Mercado Livre's stores, takes the connection's name as the last argument. Get the names with `await client['mercado-livre'].connections()`, which answers `{ kind: 'OK', names }` or `{ kind: 'UNREACHABLE' }` or `{ kind: 'DEADLINE' }` (show the "não respondeu a tempo" sentence below for both), and go through the names; never write a store's name in the code. A connector that reads one connection per Projeto, such as the Sankhya, takes no name.

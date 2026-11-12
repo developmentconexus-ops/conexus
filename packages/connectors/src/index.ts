@@ -30,6 +30,7 @@ export type {
 export {
   CANONICAL_CELL,
   CopyDefinition,
+  CopyDefinitionV1,
   CopyDefinitionV2,
   CopyName,
   CopyPageSchema,
@@ -66,9 +67,15 @@ export type {
   Unread,
   WriteOperation,
 } from './kernel/operation.ts'
-export { AccountRef, deniesAccess, locateOf, requestOf } from './kernel/operation.ts'
+export {
+  AccountRef,
+  deniesAccess,
+  listInputNames,
+  locateOf,
+  requestOf,
+} from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
-export { CONCURRENT_CALL } from './kernel/rows.ts'
+export { CONCURRENT_CALL, Rows } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
 export type { SalesSet } from './sankhya/fake-sales.ts'

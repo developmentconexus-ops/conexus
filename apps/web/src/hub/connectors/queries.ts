@@ -5,6 +5,7 @@ import {
   getConnection,
   grantProjectConnection,
   linkConnection,
+  listConnectionCopies,
   listConnections,
   listProjectConnections,
   reconnectConnection,
@@ -24,6 +25,11 @@ export const TEST_WAIT_MS = TEST_LONGEST_MS + TEST_WAIT_MARGIN_MS
 
 export function connectionsQuery(companyId: CompanyId) {
   return hubQuery(listConnections, { params: { companyId } })
+}
+
+/** The copies that read a connection, as Desligar says before the click what each one loses. */
+export function connectionCopiesQuery(companyId: CompanyId, connectionId: ConnectionId) {
+  return hubQuery(listConnectionCopies, { params: { companyId, connectionId } })
 }
 
 export function connectionQuery(companyId: CompanyId, connectionId: ConnectionId) {

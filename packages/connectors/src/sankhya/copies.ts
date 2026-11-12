@@ -1,5 +1,5 @@
 import type { CopyColumnType, CopyModel } from '../kernel/copy.ts'
-import { CopyDefinition, CopyName } from '../kernel/copy.ts'
+import { CopyDefinitionV1, CopyName } from '../kernel/copy.ts'
 
 /*
  * The five templates, with the columns and types decision 0063 measured on a real Sankhya. No query
@@ -25,7 +25,7 @@ function model(
   return Object.freeze({
     id: CopyName.parse(id),
     label,
-    definition: CopyDefinition.parse({
+    definition: CopyDefinitionV1.parse({
       version: 1,
       source: { kind: 'QUERY', sql: definition.sql },
       columns: definition.columns.map(([name, type]) => ({ name, type })),

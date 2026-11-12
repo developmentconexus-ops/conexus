@@ -53,7 +53,7 @@ function datedColumn(
 }
 
 /** What a copy reads, the company's data from the moment it is turned on (version 1, one kind of source). */
-export const CopyDefinition = z
+export const CopyDefinitionV1 = z
   .object({
     version: z.literal(1),
     // No date filter in it: the paged read adds the dates of each pass.
@@ -80,7 +80,7 @@ export const CopyDefinition = z
     for (const field of ['changedSince', 'window'] as const)
       datedColumn(field, definition[field]?.column, types, context)
   })
-export type CopyDefinition = z.infer<typeof CopyDefinition>
+export type CopyDefinitionV1 = z.infer<typeof CopyDefinitionV1>
 
 /** Version 2 adds `json`, the cell of a nested value as its JSON text. */
 export const CopyColumnTypeV2 = z.enum([...CopyColumnType.options, 'json'])
@@ -158,6 +158,10 @@ export const CopyDefinitionV2 = z
   })
 export type CopyDefinitionV2 = z.infer<typeof CopyDefinitionV2>
 
+/** Either version, told apart by `version`: what a copy's and a proposal's row hold, parsed again where read (code C27). */
+export const CopyDefinition = z.discriminatedUnion('version', [CopyDefinitionV1, CopyDefinitionV2])
+export type CopyDefinition = z.infer<typeof CopyDefinition>
+
 /** How far a pass has read, as the source's own paging gives it: after a key (version 1), at an offset, or at a cursor and the instant it was given. */
 export const CopyPosition = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('KEY'), after: z.array(z.int()) }),
@@ -171,12 +175,12 @@ export const CopyPosition = z.discriminatedUnion('kind', [
 export type CopyPosition = z.infer<typeof CopyPosition>
 
 /** A starting point a connector offers; turning a copy on copies `definition` into the company's row. */
-export type CopyModel = Readonly<{ id: CopyName; label: string; definition: CopyDefinition }>
+export type CopyModel = Readonly<{ id: CopyName; label: string; definition: CopyDefinitionV1 }>
 
 /** One page: the definition, the last key read (none on a pass's first page), the two dates of the pass, and the size. */
 export const PageInput = z
   .object({
-    definition: CopyDefinition,
+    definition: CopyDefinitionV1, // a connector's own paged read serves version 1 alone
     after: z.array(z.int()).nullable(), // one per key column
     since: z.iso.date().nullable(), // the watermark less one day; null on the first pass, which reads all (#940)
     windowFrom: z.iso.date().nullable(), // the pass's start less the window's days

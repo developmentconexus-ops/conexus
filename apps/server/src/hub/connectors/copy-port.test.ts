@@ -61,13 +61,11 @@ test('a cópia toma a vez da conexão página a página', async (t) => {
       connectionId,
       // A member, whose role holds no operation of the connector: the copy speaks as its version.
       enabledBy: PersonId.parse(on.carla.id),
-      input: {
-        definition,
-        after,
-        since: '1900-01-01',
-        windowFrom: null,
-        limit: 50,
-      },
+      definition,
+      position: after === null ? null : { kind: 'KEY', after },
+      since: null,
+      windowFrom: null,
+      limit: 50,
       signal: new AbortController().signal,
     })
   }

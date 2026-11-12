@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
 import type { ConnectorCopy } from './copy.ts'
-import { CopyDefinition } from './copy.ts'
+import { CopyDefinitionV1 } from './copy.ts'
 import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
@@ -78,7 +78,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a copy read that is not 'read' or repeats an operation id, a repeated copy template id or a template the `CopyDefinition` refuses, a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a copy read that is not 'read' or repeats an operation id, a repeated copy template id or a template the `CopyDefinitionV1` refuses, a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -135,7 +135,7 @@ function assertCopy(copy: ConnectorCopy | undefined, ids: ReadonlySet<string>): 
   if (ids.has(copy.read.id)) throw new Error(`Copy read repeats operation id ${copy.read.id}`)
   const models = copy.models.map((model) => model.id)
   if (new Set(models).size !== models.length) throw new Error('Repeated copy template id')
-  for (const model of copy.models) CopyDefinition.parse(model.definition)
+  for (const model of copy.models) CopyDefinitionV1.parse(model.definition)
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {

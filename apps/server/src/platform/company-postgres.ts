@@ -10,9 +10,13 @@ import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } fro
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
-import type { CopyRows, CopyTable } from './copy-sql.ts'
+import type { CopyTable } from './copy-sql.ts'
 import {
+  accountRows,
   closePass,
+  dropAccountRows,
+  dropCopyTable,
+  dropForeignRows,
   ensureCopyTable,
   ensureSync,
   grantCopy,
@@ -150,6 +154,11 @@ type MigrateAnswer =
   | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
   | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' | 'TOO_LARGE' }>
 
+/** A copy act of `copy-sql.ts` with the context already given. */
+type Bound<F> = F extends (context: Context, ...rest: infer A) => infer R
+  ? (...rest: A) => R
+  : never
+
 export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
   /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
@@ -174,18 +183,18 @@ export type CompanyPostgres = {
   ensureCopyTable(sync: DatabaseUrl, table: CopyTable): Promise<SqlAnswer>
   /** Where the Hub reaches the sync login, from the host it recorded, with no call to Neon. */
   syncAddress(host: string): Promise<DatabaseUrl>
-  /** One page in one transaction, each row with the pass. */
-  writePage(
-    sync: DatabaseUrl,
-    input: CopyTable & { pass: number; rows: CopyRows },
-    signal: AbortSignal,
-  ): Promise<SqlAnswer>
+  /** One page in one transaction, each row with the pass and, in a copy of accounts, its account. */
+  writePage: Bound<typeof writePage>
   /** The end of a complete pass: what it did not see leaves, then the count. */
-  closePass(
-    sync: DatabaseUrl,
-    input: CopyTable & { pass: number; windowFrom: string | null },
-    signal: AbortSignal,
-  ): Promise<{ kind: 'DONE'; rows: number } | Exclude<SqlAnswer, { kind: 'DONE' }>>
+  closePass: Bound<typeof closePass>
+  /** Desligar: an account's rows out of a copy that goes on; repeatable. */
+  dropAccountRows: Bound<typeof dropAccountRows>
+  /** The run's net: the rows of an account that is no source's leave. */
+  dropForeignRows: Bound<typeof dropForeignRows>
+  /** One account's rows in a copy of accounts. */
+  accountRows: Bound<typeof accountRows>
+  /** The table of a copy that ended, with the app logins' read of it; repeatable. */
+  dropCopyTable: Bound<typeof dropCopyTable>
   /** A copy released to a Projeto's run and read logins. */
   grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
   /** A release taken back; `ALL`, every one of the Projeto and the schema. */
@@ -354,6 +363,10 @@ export function createCompanyPostgres(deps: {
     syncAddress: (host) => syncAddress(context, host),
     writePage: (sync, input, signal) => writePage(context, sync, input, signal),
     closePass: (sync, input, signal) => closePass(context, sync, input, signal),
+    dropAccountRows: (sync, input) => dropAccountRows(context, sync, input),
+    dropForeignRows: (sync, input, signal) => dropForeignRows(context, sync, input, signal),
+    accountRows: (sync, input) => accountRows(context, sync, input),
+    dropCopyTable: (sync, input) => dropCopyTable(context, sync, input),
     grantCopy: (sync, input) => grantCopy(context, sync, input),
     revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })

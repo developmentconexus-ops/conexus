@@ -1,4 +1,9 @@
-import { TestResult, testConnection, unlinkConnection } from '@conexus/hub-api'
+import {
+  listConnectionCopies,
+  TestResult,
+  testConnection,
+  unlinkConnection,
+} from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
 import { REFUSAL, workingOf } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -178,6 +183,27 @@ export const INTEGRATIONS_STATES: State[] = [
     path: pageOf(WORKING),
     replies: {
       ...ownerPage(WORKING),
+      [`GET /api/companies/${COMPANY.id}/connections/${WORKING.id}/copies`]: ok(
+        listConnectionCopies,
+        {
+          copies: [
+            {
+              copyId: '00000000-0000-4000-8000-0000000000c1',
+              name: 'ml_pedidos',
+              mode: { kind: 'CHANGES' },
+              last: false,
+              rows: 1274,
+            },
+            {
+              copyId: '00000000-0000-4000-8000-0000000000c2',
+              name: 'ml_perguntas',
+              mode: { kind: 'WHOLE' },
+              last: true,
+              rows: 10,
+            },
+          ],
+        },
+      ),
       [`DELETE /api/companies/${COMPANY.id}/connections/${WORKING.id}`]: {
         status: unlinkConnection.success.status,
       },

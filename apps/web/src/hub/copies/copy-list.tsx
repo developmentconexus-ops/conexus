@@ -26,6 +26,7 @@ import { NewCopy } from './new-copy.tsx'
 import type { RunRequest } from './queries.ts'
 import { copiesQuery, requestOpen, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
+import { originOf, useSourceText, withAccounts } from './source.ts'
 import {
   COPIES_TITLE,
   countText,
@@ -213,15 +214,17 @@ function CopyLink({ companyId, copy }: { companyId: CompanyId; copy: CopySummary
 function CopyTableRow(props: { companyId: CompanyId; copy: CopySummary; onNote: Props['onNote'] }) {
   const { companyId, copy } = props
   const { run } = copy
+  const origin = originOf(copy)
+  const source = useSourceText(companyId)(origin)
   return (
     <TableRow>
-      <TableCell className={`${CELL} max-w-36 truncate`} title={copy.connection.name}>
-        {copy.connection.name}
+      <TableCell className={`${CELL} max-w-36 truncate`} title={source}>
+        {source}
       </TableCell>
       <TableCell className={`${CELL} whitespace-normal`}>
         <div className="flex flex-col">
           <CopyLink companyId={companyId} copy={copy} />
-          <span className="text-text-2">{modeText(copy.mode)}</span>
+          <span className="text-text-2">{withAccounts(origin, modeText(copy.mode))}</span>
         </div>
       </TableCell>
       <TableCell className={`${CELL} whitespace-normal`}>
@@ -307,19 +310,21 @@ function CopyTable({ companyId, copies, proposals, onNote }: Props) {
 /** The phone's row: the same facts in lines that break, as the Agentes' do. */
 function CopyPhoneRow(props: { companyId: CompanyId; copy: CopySummary; onNote: Props['onNote'] }) {
   const { companyId, copy } = props
+  const origin = originOf(copy)
+  const source = useSourceText(companyId)(origin)
   return (
     <Row>
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md">
         <div className="flex min-w-0 items-center justify-between gap-md">
           <span className="min-w-0 truncate">
             <CopyLink companyId={companyId} copy={copy} />
-            <span className="text-text-2">{` · ${copy.connection.name}`}</span>
+            <span className="text-text-2">{` · ${source}`}</span>
           </span>
           <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />
         </div>
         <div className="flex flex-wrap items-center gap-x-md gap-y-xs text-text-2">
           <StateBadge copy={copy} />
-          <span>{modeText(copy.mode)}</span>
+          <span className="break-words">{withAccounts(origin, modeText(copy.mode))}</span>
           {copy.run !== null && <span>{dayAndHour(copy.run.startedAt)}</span>}
         </div>
         <RunPhrase copy={copy} />

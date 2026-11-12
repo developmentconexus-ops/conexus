@@ -12,6 +12,7 @@ import type {
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
+import { SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
 import type { Lifetime } from './test-database.ts'
@@ -314,4 +315,17 @@ export async function forgetReadLogin(owner: DatabaseUrl, projectId: ProjectId) 
   } finally {
     await client.end()
   }
+}
+
+/** The Hub's acts on a company's database over the test server, with the test's app login key. */
+export function testCompanyPostgres(key: AppLoginKey) {
+  return createCompanyPostgres({ transport: pgTransport, appLoginKey: key })
+}
+
+/** The sync login's address on the company's database: the owner's, with the login and its password. */
+export async function syncLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+  const url = new URL(owner.reveal())
+  url.username = SYNC_LOGIN
+  url.password = await appLoginPassword({ key: key.reveal(), login: SYNC_LOGIN })
+  return DatabaseUrl.parse(url.toString())
 }

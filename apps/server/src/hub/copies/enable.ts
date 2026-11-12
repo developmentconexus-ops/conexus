@@ -11,9 +11,11 @@ import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
 import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
+import { dropEndedCopies } from './leave.ts'
 import { mayCreate } from './schedule.ts'
+import { sourcesOf } from './sources.ts'
 import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
-import { companyOwner, parsedCopy, personScope, syncOf } from './store.ts'
+import { companyOwner, copyTableOf, parsedCopy, personScope, syncOf } from './store.ts'
 
 /** What a copy's definition comes from: a template of the connection's connector, or the Builder's proposal (Capacidade 3). */
 type CopySource =
@@ -66,7 +68,9 @@ async function fromModel(
   if (made.model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
   const { model } = made
   const row = await insertedCopy(tx, input, {
-    ...{ connectorId: linked.connectorId, connectionId, name: model.id, label: model.label },
+    connectorId: linked.connectorId,
+    sources: [{ connectionId, accountRef: linked.accountRef }],
+    ...{ name: model.id, label: model.label },
     ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
   })
   return parsedCopy(row)
@@ -136,13 +140,18 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
   const { companyId } = input
   const copyId = stored.id
   const answered = await deps.companyPostgres.ensureSync(owner)
+  const { tablesLeft } = await dropEndedCopies(deps, input)
+  if (tablesLeft.includes(stored.name)) throw unavailable
   const host = new URL(owner.reveal()).hostname
+  const sources = await deps.database.read(personScope(input), (tx) =>
+    sourcesOf(tx, { companyId, copyId }),
+  )
   const table =
     answered.kind === 'DONE'
-      ? await deps.companyPostgres.ensureCopyTable(await deps.companyPostgres.syncAddress(host), {
-          name: stored.name,
-          definition: stored.definition,
-        })
+      ? await deps.companyPostgres.ensureCopyTable(
+          await deps.companyPostgres.syncAddress(host),
+          copyTableOf(stored, sources),
+        )
       : answered
   if (table.kind !== 'DONE') {
     const code = table.kind === 'REFUSED' ? table.code : table.kind

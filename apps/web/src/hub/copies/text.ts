@@ -68,6 +68,19 @@ export function stateOf(copy: Pick<CopySummary, 'run' | 'schedule'>): CopyState 
   return { label: 'Aguardando a próxima rodada', tone: 'neutral' }
 }
 
+type PartialReason = Extract<CopyRun['outcome'], { kind: 'PARTIAL' }>['reason']
+
+function partialText(reason: PartialReason): string {
+  switch (reason) {
+    case 'CAP':
+      return 'Parcial; a próxima continua'
+    case 'WAIT':
+      return 'Esperando o fornecedor; a próxima rodada continua de onde parou'
+    case 'STOPPED':
+      return 'O Conexus reiniciou no meio; a próxima continua de onde parou'
+  }
+}
+
 /** How a run ended, in a sentence: a failure by its code's phrase (code C48), never "0 linhas". */
 export function outcomeText(run: CopyRun): string {
   const { outcome } = run
@@ -77,9 +90,7 @@ export function outcomeText(run: CopyRun): string {
     case 'COMPLETE':
       return 'Completa'
     case 'PARTIAL':
-      return outcome.reason === 'CAP'
-        ? 'Parcial; a próxima continua'
-        : 'O Conexus reiniciou no meio; a próxima continua de onde parou'
+      return partialText(outcome.reason)
     case 'INTERRUPTED':
       return 'O Conexus reiniciou no meio; a próxima continua de onde parou'
     case 'ERROR':
@@ -136,4 +147,16 @@ export function windowText(mode: CopyMode, shown: Pick<CopySummary['shown'], 'wi
 /** The page of proof in words: "teste: 50 linhas", "teste: mais de 50 linhas". */
 export function provedText(proved: CopyProposalSummary['proved']): string {
   return `teste: ${proved.more ? 'mais de ' : ''}${countText(proved.rows)} linhas`
+}
+
+/** The calls a whole pass of a list read spends, as the proof answered: "cerca de 6 chamadas por passada". */
+export function callsText(calls: number | null): string {
+  if (calls === null) return 'a leitura não informa o total'
+  return `cerca de ${countText(calls)} ${calls === 1 ? 'chamada' : 'chamadas'} por passada`
+}
+
+/** A list read's fixed input, each field and its value; "nenhum" when the copy reads it all. */
+export function inputText(input: Readonly<Record<string, string | number | boolean>>): string {
+  const fixed = Object.entries(input).map(([field, value]) => `${field}: ${String(value)}`)
+  return fixed.length === 0 ? 'nenhum' : fixed.join(', ')
 }

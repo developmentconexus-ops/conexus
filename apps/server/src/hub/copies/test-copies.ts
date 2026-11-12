@@ -35,6 +35,7 @@ import { createCopies } from './public.ts'
  * row of the answer left out, as a sale gone from the source.
  */
 function gateOf(t: TestContext) {
+  const statements: string[] = []
   const gate = {
     /** Pages held, by their number among every copy page asked. */
     holds: new Map<
@@ -45,6 +46,8 @@ function gateOf(t: TestContext) {
     gone: new Set<string>(),
     /** Every copy page asked, in order. */
     pages: 0,
+    /** The statement each copy page sent, in order. */
+    statements,
   }
   return {
     gate,
@@ -56,6 +59,7 @@ function gateOf(t: TestContext) {
         const isPage = body.toString('utf8').includes(' AS C0_')
         if (isPage) {
           gate.pages += 1
+          gate.statements.push(body.toString('utf8'))
           const held = gate.holds.get(gate.pages)
           if (held !== undefined) {
             held.arrived.resolve()
@@ -94,7 +98,7 @@ function gateOf(t: TestContext) {
 }
 
 /** The clock as a double that notes each call (T20): the run is called directly by the test. */
-function clockDouble() {
+export function clockDouble() {
   const calls: string[] = []
   const made = new Set<CopyId>()
   const clock: CopyClock = {
@@ -201,7 +205,7 @@ export async function copiesOn(
 
 export type CopiesOn = Awaited<ReturnType<typeof copiesOn>>
 
-function hubLog(lines: { fields: Record<string, unknown>; message: string }[]) {
+export function hubLog(lines: { fields: Record<string, unknown>; message: string }[]) {
   return (fields: Record<string, unknown>, message: string) => {
     lines.push({ fields, message })
   }
@@ -214,15 +218,31 @@ export function holdPage(on: CopiesOn, nth = 1) {
   return { arrived: held.arrived.promise, release: () => held.released.resolve() }
 }
 
-/** As the Hub's owner: a copy's row set as a test needs it (the pass's start, a lease another left). */
-export async function plantCopy(on: CopiesOn, copyId: CopyId, set: string, values: unknown[] = []) {
+/** As the Hub's owner: a row of `table` of the copy set as a test needs it. */
+async function plantRow(
+  on: CopiesOn,
+  table: 'copy' | 'copy_source',
+  where: string,
+  set: string,
+  values: unknown[],
+) {
   const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
   await client.connect()
   try {
-    await client.query(`update copies.copy set ${set} where id = $1`, [copyId, ...values])
+    await client.query(`update copies.${table} set ${set} where ${where} = $1`, values)
   } finally {
     await client.end()
   }
+}
+
+/** As the Hub's owner: a copy's row set as a test needs it (a lease another left). */
+export function plantCopy(on: CopiesOn, copyId: CopyId, set: string, values: unknown[] = []) {
+  return plantRow(on, 'copy', 'id', set, [copyId, ...values])
+}
+
+/** As the Hub's owner: every source of a copy set as a test needs it (the pass's start, a wait). */
+export function plantSource(on: CopiesOn, copyId: CopyId, set: string, values: unknown[] = []) {
+  return plantRow(on, 'copy_source', 'copy_id', set, [copyId, ...values])
 }
 
 /** As the sync login, which the owner holds by SET alone: the copies' tables are its own. */
@@ -252,13 +272,14 @@ export function syncRows(owner: DatabaseUrl, name: string, key: readonly string[
   })
 }
 
-/** The copy's row in the Hub, as the run left it. */
+/** The copy's row in the Hub with its one source's pass, as the run left them: a key position as its keys. */
 export async function copyRowOf(on: CopiesOn, copyId: CopyId) {
   const result = await on.hub.test.database.read(
     { kind: 'COMPANY', companyId: on.companyId, personId: null },
     (tx) =>
       tx.execute(
-        sql`select pass, position, watermark, pass_started_at, rows, claim_token, last_run_id from copies.copy where id = ${copyId}`,
+        sql`select s.pass, s.position->'after' as position, s.watermark, s.pass_started_at, c.rows, c.claim_token, c.last_run_id
+            from copies.copy c join copies.copy_source s on s.copy_id = c.id where c.id = ${copyId}`,
       ),
   )
   return Object(result.rows[0])
