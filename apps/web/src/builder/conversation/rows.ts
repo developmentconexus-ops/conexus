@@ -1,11 +1,12 @@
-import type { Answer } from '@conexus/hub-api'
-import { CARD_TOOLS, Question, TASK_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
+import type { Answer, Question } from '@conexus/hub-api'
+import { CARD_TOOLS, TASK_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
 import type { ApprovalCardItem, Seen } from './approval-item.ts'
 import { approvalItem } from './approval-item.ts'
 import type { Message, Suspended } from './messages.ts'
 import { parsePlan, SubmittedPlan } from './plan-parse.ts'
+import { parseQuestions } from './question-parse.ts'
 import type { Running } from './session-state.ts'
 import type { CitedRow } from './sources.ts'
 import { sourcesOf } from './sources.ts'
@@ -81,19 +82,6 @@ function thoughtSeconds(parts: readonly MastraMessagePart[]): Map<string, number
     if (data.success) seconds.set(data.data.id, data.data.seconds)
   }
   return seconds
-}
-
-const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
-
-function parseQuestions(input: unknown): Question[] {
-  const parsed = z.object({ questions: z.array(QuestionItemSchema) }).safeParse(input)
-  if (!parsed.success) return []
-  return parsed.data.questions.map((q) => ({
-    question: q.question,
-    header: q.header,
-    options: q.options ?? [],
-    multiSelect: q.multiSelect ?? false,
-  }))
 }
 
 const Answered = z.object({ answers: z.array(z.union([z.string(), z.array(z.string())])) })

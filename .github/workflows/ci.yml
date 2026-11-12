@@ -180,6 +180,19 @@ jobs:
       - run: npm run test:browser -w @conexus/web
       - run: npm run build
 
+  # The sweep of every screen (apps/web/sweep.test.ts) is most of the browser time and grows with
+  # each screen, so it runs beside `web`, not in it.
+  web-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
+      - run: npm run test:sweep -w @conexus/web
+
   packages:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -376,7 +389,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server-plan, server, web, packages, sankhya-docs, e2e, removals-plan, removals, image]
+    needs: [check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -388,7 +401,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
