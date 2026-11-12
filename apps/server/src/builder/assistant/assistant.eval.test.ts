@@ -10,7 +10,7 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf, title, turnNotices } from '../conversation/test-conversation.ts'
-import { assisting, created, READ, talking } from './test-assistant.ts'
+import { assisting, created, READ, SEARCH, talking } from './test-assistant.ts'
 import { EVAL_SET, HAND_OFF_CASES, ROUNDS, verdictOf } from './test-handoff.ts'
 import { numbersFromReads } from './test-numbers.ts'
 import type { Subscribed } from './test-real-model.ts'
@@ -60,14 +60,18 @@ function reader() {
         text: 'Esta conversa não tem sistema escolhido: escolha um na barra da conversa, ou ligue um em Integrações.',
       }
     }
-    if (!chosen.includes(wanted) || !call.tools.includes(READ)) {
+    const offered = call.tools.includes(READ) || call.tools.includes(SEARCH)
+    if (!chosen.includes(wanted) || !offered) {
       return { kind: 'text', text: `A ${wanted} não está nesta conversa.` }
     }
-    const input = {
-      connection: wanted,
-      operation: 'sankhya.consultar',
-      input: { sql: SOLD_BY_SELLER },
+    // The reads come on demand: a search loads the typed one, then the model reads.
+    if (!call.tools.includes(READ)) {
+      return {
+        kind: 'blocks',
+        blocks: [{ type: 'tool_use', name: SEARCH, input: { query: READ } }],
+      }
     }
+    const input = { connection: wanted, sql: SOLD_BY_SELLER }
     return { kind: 'blocks', blocks: [{ type: 'tool_use', name: READ, input }] }
   }
 }

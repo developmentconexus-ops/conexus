@@ -10,7 +10,6 @@ import {
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
-import { ToolSearchProcessor } from '@mastra/core/processors'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
@@ -19,6 +18,7 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import { TYPED_READ_NAMES } from '../connectors/public.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
 import {
   admitAsker,
@@ -28,19 +28,12 @@ import {
   sessionModel,
   toolsOf,
 } from '../controller-kit/public.ts'
-import type { AccessOf } from '../connectors/public.ts'
-import { offersRead, TYPED_READ_NAMES, typedReads } from '../connectors/public.ts'
 import { ASK_USER_TOOL, createAskUserTool, skillOf } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
-import {
-  ASSISTANT_LIMIT,
-  assistantAccess,
-  assistantConnectorTools,
-  readsFiles,
-} from './connector-access.ts'
+import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, runConversation, sessionScopes } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
@@ -59,6 +52,7 @@ import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { assistantTurns, turnEnd } from './turn.ts'
+import { typedSearch } from './typed-search.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -253,31 +247,16 @@ function assistantAgent(
     return scope === undefined ? undefined : speakersOf(deps, scope)
   })
   const maysFor = maysOf(deps.identity, speakersFor, automationRun)
-  const accessOf: AccessOf = async (requestContext) => {
-    const scope = await scopeOf(requestContext)
-    if (scope === undefined) return undefined
-    return assistantAccess(deps, { scope, chosen: await chosenOf(requestContext), savedAt })
-  }
-  // The catalog is the same for every request; each request sees the reads of its chosen
-  // connections that the role allows, in every phase.
-  const typedSearch = new ToolSearchProcessor({
-    tools: typedReads(accessOf, ASSISTANT_LIMIT),
-    storage: 'context',
-    search: { topK: 3, autoLoad: true },
-    filter: async ({ toolName, requestContext }) =>
-      requestContext !== undefined && offersRead(toolName, await chosenOf(requestContext)),
-  })
   const defaults = agentDefaults(queue, parts.turns)
-  const { processor: turnProcessor } = parts.turns
-  // The loaded reads join the step after the turn and before the account's pick, which flattens
-  // them for CLIProxy's Google path; the person's files go to the machine last, once the pick has
-  // chosen the model.
   const assistantDefaults = {
     ...defaults,
+    // The turn's processor first, then the search that loads the reads (before the account's pick,
+    // which flattens them for CLIProxy's Google path); the person's files go to the machine last,
+    // once the pick has chosen the model.
     inputProcessors: [
-      turnProcessor,
-      typedSearch,
-      ...defaults.inputProcessors.filter((each) => each !== turnProcessor),
+      parts.turns.processor,
+      typedSearch(deps, { scopeOf, chosenOf, savedAt }),
+      ...defaults.inputProcessors.filter((each) => each !== parts.turns.processor),
       machineUploads({ log: deps.log }),
     ],
   }

@@ -41,7 +41,9 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.doesNotMatch(fixed.text, /Prévia|preview|conexus_check|submit_plan/i)
     assert.ok(
       mastra.every(
-        (each) => /skill|machine|task list state/i.test(each.text) && !/recall/i.test(each.text),
+        (each) =>
+          /skill|machine|task list state|search_tools/i.test(each.text) &&
+          !/recall/i.test(each.text),
       ),
       JSON.stringify(mastra),
     )
@@ -73,7 +75,7 @@ test('o bloco da conversa: a empresa, a pessoa e o papel, hoje e o fuso, o lugar
     on.calls.at(1)?.systems.at(1)?.text,
     `Company: Empresa Teste. Person: Ana Lima (owner). ${today} Place: Projeto "Encomendas", which reads only the connections it received. Connections in this conversation: Matriz (sankhya).`,
   )
-  assert.ok(on.calls.at(1)?.tools.includes('connector_read'))
+  assert.ok(on.calls.at(1)?.tools.includes('search_tools'))
   assert.match(String(on.calls.at(1)?.system), /<name>conexus-sankhya<\/name>/)
 
   const changed = await call(on.hub, on.ana, 'PUT', `${inProject}/connections`, { connections: [] })

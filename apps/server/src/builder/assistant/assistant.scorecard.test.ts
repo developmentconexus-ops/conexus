@@ -8,7 +8,7 @@ import { mercadoLivreFake, PADARIA_SOL_MATRIZ, soldBy } from '@conexus/connector
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { appsOf, linkMercadoLivre } from '../../hub/connectors/test-connections.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { assisting, created, READ, reading, said, talking } from './test-assistant.ts'
+import { assisting, created, READ, reading, said, searching, talking } from './test-assistant.ts'
 import { file, pdf } from './test-files.ts'
 import { REAL_MODEL, subscribed } from './test-real-model.ts'
 import type { Question, Scorecard } from './test-scorecard.ts'
@@ -23,6 +23,7 @@ function roundFolder(t: TestContext): string {
 
 test('o placar conta o turno: uma leitura repetida e uma ferramenta que falhou dão repeated 1 e errors 1, e o placar vai num JSON por pergunta fora do repositório', async (t) => {
   const on = await assisting(t, [
+    [searching()],
     [reading('Matriz')],
     [reading('Matriz')],
     [reading('Inexistente')],
@@ -38,7 +39,7 @@ test('o placar conta o turno: uma leitura repetida e uma ferramenta que falhou d
   assert.deepEqual(card, {
     question: 1,
     right: true,
-    calls: 3,
+    calls: 4,
     errors: 1,
     repeated: 1,
     firstStepTokens: card.firstStepTokens,

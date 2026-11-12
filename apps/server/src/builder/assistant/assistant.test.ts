@@ -46,7 +46,14 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.ok(result !== undefined, first?.texts.join('\n'))
   // The model reads the cut of the answer and the file it was saved in, never the door's whole answer beside it.
   const answered = JSON.parse(result)
-  assert.deepEqual(Object.keys(answered).sort(), ['complete', 'file', 'kind', 'value'])
+  assert.deepEqual(Object.keys(answered).sort(), [
+    'bytes',
+    'complete',
+    'file',
+    'kind',
+    'rows',
+    'value',
+  ])
   assert.match(answered.file, /^reads\/[0-9a-f]{8}-1\.json$/)
   assert.equal(on.reads.length, 2)
   for (const read of on.reads) {

@@ -120,10 +120,7 @@ function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: str
  * the same for every request; who may see one decides per request (`offersRead`), and each read
  * goes through the conversation's door, with its cut, its file and its count.
  */
-export function typedReads(
-  accessOf: AccessOf,
-  limit: string,
-): ToolSearchProcessorOptions['tools'] {
+export function typedReads(accessOf: AccessOf, limit: string): ToolSearchProcessorOptions['tools'] {
   return Object.fromEntries(
     [...CATALOG].map(([name, read]) => [name, typedTool(name, read, accessOf, limit)]),
   )

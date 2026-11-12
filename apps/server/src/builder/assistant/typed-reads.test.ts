@@ -143,12 +143,18 @@ test('a carga sobrevive ao reinício', async (t) => {
     [said('Li.')],
   ])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Ache os pedidos')), 'complete')
+  assert.equal(
+    endOf(await (await talking(t, on.hub, on.ana, url)).say('Ache os pedidos')),
+    'complete',
+  )
   assert.ok(on.calls.at(-1)?.tools.includes(PEDIDOS))
 
   const restarted = await hubBeside(t, on.hub)
   const before = on.calls.length
-  assert.equal(endOf(await (await talking(t, restarted, on.ana, url)).say('E agora leia')), 'complete')
+  assert.equal(
+    endOf(await (await talking(t, restarted, on.ana, url)).say('E agora leia')),
+    'complete',
+  )
   const [asked, answered] = on.calls.slice(before)
   assert.ok(asked?.tools.includes(PEDIDOS), 'loaded while the search is in the messages')
   assert.ok(answered?.texts.some((text) => text.includes('"kind":"OK"')))

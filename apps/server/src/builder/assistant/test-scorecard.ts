@@ -178,13 +178,14 @@ function invocationsOf(parts: readonly MastraMessagePart[]): Invocation[] {
   return parts.flatMap((part) => (part.type === 'tool-invocation' ? [part.toolInvocation] : []))
 }
 
-/** Mastra's own rule for a tool that failed (`checks.noToolErrors`). */
+/** Mastra's own rule for a tool that failed (`checks.noToolErrors`), and a refusal: a result whose `kind` is not `OK`. */
 function failed(call: Invocation): boolean {
   return (
     call.state === 'call' ||
     call.state === 'output-error' ||
     call.isError === true ||
-    Boolean(Object(call.result).error)
+    Boolean(Object(call.result).error) ||
+    (Object(call.result).kind !== undefined && Object(call.result).kind !== 'OK')
   )
 }
 
@@ -222,7 +223,12 @@ export function judged(
   truth: readonly number[],
 ): boolean {
   const text = textOf([...parts])
-  const readOnce = invocationsOf(parts).some((call) => call.toolName === read)
+  const readOnce = invocationsOf(parts).some(
+    (call) =>
+      call.toolName === read ||
+      call.toolName.startsWith('sankhya_') ||
+      call.toolName.startsWith('mercado-livre_'),
+  )
   if (asked.noRead === true && readOnce) return false
   if (!(asked.says ?? []).every((says) => says.test(text))) return false
   if (asked.noRead === true) return true

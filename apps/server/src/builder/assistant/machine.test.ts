@@ -18,7 +18,7 @@ import {
 import { tool } from '../conversation/test-questions.ts'
 import { createConversationMachines, PACKAGE_HOSTS } from '../machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../machine/test-machine.ts'
-import { assisting, COUNT, created, reading, said, talking } from './test-assistant.ts'
+import { assisting, COUNT, created, reading, said, searching, talking } from './test-assistant.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const READ_FILE = 'mastra_workspace_read_file'
