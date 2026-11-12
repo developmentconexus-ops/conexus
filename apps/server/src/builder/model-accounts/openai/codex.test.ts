@@ -181,6 +181,27 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
   )
 })
 
+test('o bloco de cada modelo vai pelo id exato: o Luna leva o seu depois do texto comum, um modelo sem bloco leva só o texto comum', async (t) => {
+  const codex = plantCodex(t)
+  codex.responses = () => ({ status: 400 })
+  const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'Oi' }] }]
+  for (const name of ['gpt-6-luna', 'gpt-5.2', 'gpt-6-luna-mini']) {
+    const model = codexModel(name, { access: ACCESS, accountId: ACCOUNT_ID })
+    await assert.rejects(async () => model.doStream({ prompt }))
+  }
+  const [luna, other, near] = codex.calls.map((made) =>
+    String(Object(JSON.parse(String(made.body))).instructions),
+  )
+  assert.match(
+    luna ?? '',
+    /^You are an assistant[\s\S]*Reading is always allowed[\s\S]*<autonomy_and_persistence>/,
+  )
+  assert.match(luna ?? '', /check each part of it against what you found/)
+  assert.match(other ?? '', /Reading is always allowed/)
+  assert.doesNotMatch(other ?? '', /<autonomy_and_persistence>/)
+  assert.equal(near, other, 'a name that only starts like the model gets no block')
+})
+
 test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recusada e o turno diz o nome', async (t) => {
   const f = await subscribed(t, 3600)
   f.codex.responses = () => ({ status: 401 })

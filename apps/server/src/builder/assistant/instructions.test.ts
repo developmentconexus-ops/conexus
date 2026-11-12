@@ -199,10 +199,12 @@ test('o texto novo: responder na mensagem, arquivo só quando pedido', async (t)
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, home)).say('Oi')), 'complete')
   const fixed = on.calls[0]?.systems.at(0)?.text ?? ''
   const headings = [...fixed.matchAll(/^# (.+)$/gm)].map((each) => each[1])
-  assert.ok(headings.length >= 8, headings.join(', '))
-  assert.ok(
-    headings.indexOf('How you answer') >= 0 &&
-      headings.indexOf('How you answer') < headings.indexOf('Your computer'),
+  const order = `Who you are,Environment,Tools,How you work,Evidence,Autonomy and persistence,When a call fails,When to ask the person,How you answer`
+  assert.equal(headings.filter((each) => order.split(',').includes(each ?? '')).join(), order)
+  assert.match(fixed, /\*\*search_tools\*\*[\s\S]*Read a connection's skill before your first read/)
+  assert.match(
+    fixed,
+    /Reading is always allowed[\s\S]*A failed read is information about what you asked, not a refusal[\s\S]*A denial of access is final[\s\S]*Before asking, check: can a read settle it\?/,
   )
   assert.match(fixed, /The answer is the message/)
   assert.match(fixed, /a table to compare/i)

@@ -22,9 +22,9 @@ const CODEX_ENDPOINT = 'https://chatgpt.com/backend-api/codex/responses'
 
 /**
  * The endpoint answers only a request that carries instructions; the Hub's prompt stays in `input`.
- * OpenAI's own agent prompts for its models (the Codex CLI's `instructions_template`) and Mastra
- * Code's `<autonomy_and_persistence>` block tell the model to keep going and to ask only what it
- * cannot find out; these are our words for the Assistant, whose reading is always allowed.
+ * OpenAI's own agent prompts for its models (the Codex CLI's `instructions_template`, one per model)
+ * and Mastra Code's `<autonomy_and_persistence>` block tell the model to keep going and to ask only
+ * what it cannot find out; these are our words for the Hub's agents, whose reading is always allowed.
  */
 const CODEX_INSTRUCTIONS = `You are an assistant that helps people build and run business apps, and you work for them until what they asked for is fully handled.
 
@@ -40,6 +40,29 @@ const CODEX_INSTRUCTIONS = `You are an assistant that helps people build and run
 - Do not ask the person for a file or a report you can fetch yourself.
 
 Be concise and direct in what you write to the person.`
+
+/**
+ * The block of one model, by its exact id, after the shared instructions: Mastra Code's
+ * `modelSpecificPrompts` (`mastracode/sdk/src/agents/prompts/model.ts`, chosen by exact id in
+ * `prompts/index.ts:146-148`). The Luna models are the small ones, measured giving up on a partial
+ * answer after a read that fell short; a model without a block gets the shared text alone.
+ */
+const LUNA = `<autonomy_and_persistence>
+Before you end the turn, go back to the request and check each part of it against what you found. A part without its answer is unfinished work, not a limit to report: read again with another operation, another filter or the next page, and compute what is left.
+When a read returns fewer rows or fields than the answer needs (a record without its items, a total without its parts), find the read that has them, as the instructions and skills you received say, before you call the answer partial.
+Say that something could not be confirmed only after you tried the other ways, and name them.
+</autonomy_and_persistence>`
+
+const MODEL_BLOCKS: Readonly<Record<string, string>> = {
+  'gpt-6-luna': LUNA,
+  'gpt-5.6-luna': LUNA,
+}
+
+/** The instructions a call to `name` carries: the shared text, then the model's block, if it has one. */
+export function codexInstructions(name: string): string {
+  const block = MODEL_BLOCKS[name]
+  return block === undefined ? CODEX_INSTRUCTIONS : `${CODEX_INSTRUCTIONS}\n\n${block}`
+}
 /** A ChatGPT subscription's sealed tokens: the account is what the endpoint needs beside the token. */
 export const CodexTokens = SubscriptionTokens.required({ accountId: true })
 export type CodexTokens = z.infer<typeof CodexTokens>
@@ -153,26 +176,30 @@ function threadOf(headers: Record<string, string | undefined> | undefined): stri
 }
 
 /**
- * `instructions` and `store: false`, which the endpoint requires, beside the options the queue set;
- * and the conversation as the prompt cache key, so its steps land where its prompt prefix is cached.
+ * `instructions` for the model `name` and `store: false`, which the endpoint requires, beside the
+ * options the queue set; and the conversation as the prompt cache key, so its steps land where its
+ * prompt prefix is cached.
  */
-const codexMiddleware: LanguageModelMiddleware = {
-  specificationVersion: 'v3',
-  transformParams: async ({ params }) => {
-    const thread = threadOf(params.headers)
-    return {
-      ...params,
-      providerOptions: {
-        ...params.providerOptions,
-        openai: {
-          ...(thread ? { promptCacheKey: thread } : {}),
-          ...params.providerOptions?.openai,
-          instructions: CODEX_INSTRUCTIONS,
-          store: false,
+function codexMiddleware(name: string): LanguageModelMiddleware {
+  const instructions = codexInstructions(name)
+  return {
+    specificationVersion: 'v3',
+    transformParams: async ({ params }) => {
+      const thread = threadOf(params.headers)
+      return {
+        ...params,
+        providerOptions: {
+          ...params.providerOptions,
+          openai: {
+            ...(thread ? { promptCacheKey: thread } : {}),
+            ...params.providerOptions?.openai,
+            instructions,
+            store: false,
+          },
         },
-      },
-    }
-  },
+      }
+    },
+  }
 }
 
 /**
@@ -211,6 +238,6 @@ export function codexModel(name: string, tokens: Pick<CodexTokens, 'access' | 'a
   })
   return wrapLanguageModel({
     model: provider.responses(name),
-    middleware: [codexMiddleware, bodylessMiddleware],
+    middleware: [codexMiddleware(name), bodylessMiddleware],
   })
 }
