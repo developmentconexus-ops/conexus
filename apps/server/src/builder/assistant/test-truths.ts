@@ -1,5 +1,5 @@
-import type { SalesSet } from '@conexus/connectors'
-import { MERCADO_LIVRE_FACTS } from '@conexus/connectors'
+import { MERCADO_LIVRE_FACTS } from '../../hub/connectors/test-connections.ts'
+import type { SalesSet } from '../../hub/connectors/test-sales.ts'
 import {
   PADARIA_SOL_FILIAL,
   PADARIA_SOL_MATRIZ,

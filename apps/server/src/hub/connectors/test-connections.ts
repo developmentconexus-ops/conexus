@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
-import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import { MERCADO_LIVRE_FACTS, mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
 
-export { mercadoLivreFake }
+export { MERCADO_LIVRE_FACTS, mercadoLivreFake }
 
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
