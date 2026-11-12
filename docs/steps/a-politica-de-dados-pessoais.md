@@ -5,7 +5,7 @@ anterior do caminho dos dados (seções 5, 8 e 9), com as respostas do fundador 
 seria uma capabilidade para criar e selecionar POR EXEMPLO PARA DAR PARA OUTRO cargo"; "B1, okay, mas
 como vamos tratar isso [...] Qual que seria a lógica [...] Vale a pena? É uma gambiarra? Referências
 fazem?"; "`C1` porém mesma coisa de B"; "`D1`"; "E Só vai vir depois". Cada linha do `main` foi lida em
-`7c8b156f`, com `better-auth` 1.7.8, `@mastra/core` 1.82.0, `zod` 4.6.5,
+`7c8b156f`, e as que o Sync mexeu foram lidas de novo em `22702f99` (2026-11-12, `main` depois do fechamento do Sync), com `better-auth` 1.7.8, `@mastra/core` 1.82.0, `zod` 4.6.5,
 `@brazilian-utils/brazilian-utils` 2.5.0 e PostgreSQL 18. As referências: n8n `2e855356`, twenty
 `b76d0217`, Airbyte `8aed3123`, PostgREST `d42ae9d`.
 
@@ -147,9 +147,9 @@ apareceram ao desenhar o app e a porta.
   nada disso". A porta fica fora desta política por decisão sua: nenhuma trava nova nela, e o RH segue
   fora só pela frase da skill (`D1`), como hoje. Por ela, o Assistente ainda pode ler CPF e nome de
   clientes do Sankhya com SQL.
-- **H. Onde entra no roteiro.** Você: "H1". Logo depois do Sync e antes da Capacidade 4. Pelo método
-  (delivery L5), o cartão espera o Sync fechar num pull request rascunho; o Sync não precisa esperar,
-  porque a cópia já nasce sem dado pessoal (veja "O Sync" abaixo).
+- **H. Onde entra no roteiro.** Você: "H1". Logo depois do Sync e antes da Capacidade 4. O Sync fechou em
+  2026-11-12 (https://github.com/developmentconexus-ops/conexus/pull/991), então o cartão sai de rascunho;
+  a cópia já nasce sem dado pessoal (veja "O Sync" abaixo).
 
 **Como funciona no código** (a sua pergunta em F1). Uma leitura passa por cinco lugares, sempre os
 mesmos, para qualquer conector:
@@ -175,23 +175,25 @@ mesmos, para qualquer conector:
 Um conector novo, escrito pela equipe ou pelo Builder, só faz o passo 1; os passos 2 a 5 já valem para
 ele.
 
-**O Sync.** O cartão do Sync supõe o corte: a linha 47 ("a leitura do conector já o corta") e o
-critério 10 ("o `omit` da leitura vale para a cópia"). Com esta política, a cópia lê pela mesma
-leitura comum como uma versão que não declara tipo nenhum, então continua sem dado pessoal: o critério
-10 passa a ser "a cópia sem tipo liberado não recebe valor pessoal" e muda de dono na U2 desta etapa
-(delivery L7). A coluna pessoal na cópia (`C1`) entra na U5, depois do motor do Sync.
+**O Sync.** O Sync fechado supõe o corte: a cópia lê pela leitura do conector, e o `omit` dela vale para a
+cópia (`operations-list.test.ts:272`, "o comprador não chega à cópia"). Com esta política, a cópia lê
+pela mesma leitura comum (`readAsCopy`, `copy-port.ts:106`, por onde passam a rodada das versões 1 e 2 e
+a prova do Builder) como uma versão que não declara tipo nenhum, então continua sem dado pessoal: esse
+teste, que lê a operação sem o Hub, deixa de valer quando o `omit` sai, e muda de dono na U2 desta
+etapa para o critério 13 (delivery L7). A coluna pessoal na cópia (`C1`) entra na U5, que já pode começar:
+o motor do Sync está em `main`.
 
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 Os tipos nos papéis | a lista `PERSONAL_KINDS` no kit; o recurso `personal` nos `Statements`; dono e administrador com três tipos; `RoleView.personal`, `RoleCreate.personal`, `RoleChange.personal`; `personalKinds` na identidade; o registro da troca | `packages/connectors/src/kernel/`, `apps/server/src/hub/identity/`, `apps/server/src/hub/connectors/role-kit.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/{company-roles,failures}.ts` | [security](../guides/security.md) | esta página |
-| U2 A declaração e a aplicação num ponto | `personal` na operação; `findUndeclared`; a conformidade; as declarações do Mercado Livre e do Sankhya, com o `omit`, o `BUYER` e o `without` apagados; `shapePersonal` em `readThrough`; `Speaker` `VERSION` com `personal`; menos documento para `assistant` e `builder`; os escalares em `CONNECTOR_CALLED` | `packages/connectors/src/{kernel,mercado-livre,sankhya}/`, `packages/connectors/package.json`, `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/may-use.ts`, `apps/server/src/builder/agents/` | [security](../guides/security.md) | U1; a U2b do Sync no `main` (pasta do Mercado Livre, L1); entra junto com a U3 |
+| U2 A declaração e a aplicação num ponto | `personal` na operação; `findUndeclared`; a conformidade; as declarações do Mercado Livre e do Sankhya, com o `omit`, o `BUYER` e o `without` apagados; `shapePersonal` em `readThrough`; `Speaker` `VERSION` com `personal`; menos documento para `assistant` e `builder`; os escalares em `CONNECTOR_CALLED` | `packages/connectors/src/{kernel,mercado-livre,sankhya}/`, `packages/connectors/package.json`, `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/may-use.ts`, `apps/server/src/builder/agents/` | [security](../guides/security.md) | U1; entra junto com a U3 (a U2b do Sync já está em `main`) |
 | U3 O app declara os tipos | `personal` no manifesto por conector; a conferência de Publicar; `sentBy` na chamada do app e a versão anterior ao campo; a skill `conexus-data` | `packages/app-contract/src/manifest.ts`, `packages/hub-api/src/{apps,failures}.ts`, `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/{publish-check,app-calls}.ts`, `packages/app/skills/conexus-data/` | [security](../guides/security.md) | U2 |
 | U4 A tela de Papéis | a seção **Dados pessoais de clientes** no editor, criar e abrir | `apps/web/src/hub/identity/` | [web](../guides/web.md) | U1 |
-| U5 A coluna pessoal na cópia | o tipo de cada coluna, derivado do caminho; Ligar confere o papel; o `GRANT SELECT (colunas)` ao Projeto; Desligar apaga as colunas pessoais | `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/copy-port.ts`, `apps/server/src/platform/copy-sql.ts` | [data](../guides/data.md) | U2; as U3 e U4 do Sync no `main` |
+| U5 A coluna pessoal na cópia | o tipo de cada coluna, derivado do caminho; Ligar confere o papel; o `GRANT SELECT (colunas)` ao Projeto | `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/copy-port.ts`, `apps/server/src/platform/copy-sql.ts` | [data](../guides/data.md) | U2 |
 
-U4 corre ao lado de U2 e U3, porque não divide pasta com elas. U5 espera o Sync. Todas entram no
+U4 corre ao lado de U2 e U3, porque não divide pasta com elas. U5 vem depois da U2. Todas entram no
 mesmo pull request da etapa, então o `main` nunca vê a U2 sem a U3.
 
 **Orçamento de código alterado.** U1: 200. U2: 360. U3: 160. U4: 150. U5: 200. Total:
@@ -215,12 +217,12 @@ Cada um falha hoje: não há `personal` no kit, nem recurso `personal` nos papé
 | 10 | U2 | `buscarParceiros` pelo Assistente de um membro não traz `documento` nem `nome` | `connectors/personal-read.test.ts`, "Sankhya pelo membro" | must |
 | 11 | U2 | A porta genérica do Sankhya (`consultar`, `carregar`) responde como hoje: as mesmas linhas para o dono e para o membro (fora da política, G) | `connectors/personal-read.test.ts`, "a porta fica como hoje" | must |
 | 12 | U2 | Cada `CONNECTOR_CALLED` de uma leitura que declara tipos traz `personal` (os tipos entregues) e `withheld` (os tirados), e nenhuma linha do registro traz o valor plantado | `connectors/personal-read.test.ts`, "o registro sem o valor" | must |
-| 13 | U2 | Uma página de cópia (`by: 'copy'`) de `pedidos` não traz o nome plantado em célula nenhuma (o critério 10 do Sync, na forma nova) | `connectors/copy-port.test.ts`, "a cópia sem tipo" | must |
+| 13 | U2 | Uma página de cópia (`by: 'copy'`) de `pedidos` não traz o nome plantado em célula nenhuma (o teste "o comprador não chega à cópia" do Sync, na forma nova: sai de `operations-list.test.ts` e passa a ler pelo Hub) | `connectors/copy-port.test.ts`, "a cópia sem tipo" | must |
 | 14 | U2 | `grep -rn "omit" packages/connectors/src/mercado-livre` não acha nada | revisão | must |
 | 15 | U3 | Publicar uma versão que declara `personal: ['contato']` num conector, por quem não tem contato, é recusado com o tipo; por quem tem, publica | `connectors/publish.test.ts`, "tipo que o papel não tem" | must |
 | 16 | U3 | Uma versão publicada antes do campo lê com os tipos do papel de quem a enviou (`sentBy`), lido a cada chamada; se essa pessoa saiu da empresa, sem tipo nenhum | `connectors/app-calls.test.ts`, "versão anterior ao campo" | must |
 | 17 | U4 | Em Papéis, Membro mostra os três tipos desmarcáveis; Dono mostra os três marcados e travados; salvar marca o tipo e a lista seguinte o mostra; sensível não aparece | `apps/web/src/hub/identity/roles-personal.test.tsx` | must |
-| 18 | U5 | Uma cópia ligada por quem tem contato guarda a coluna `buyer.nickname`; o Projeto liberado por quem não tem contato não lê essa coluna (42501); desligar a ligação apaga a coluna | `copies/personal-columns.test.ts` | must |
+| 18 | U5 | Uma cópia ligada por quem tem contato guarda a coluna `buyer.nickname`; o Projeto liberado por quem não tem contato não lê essa coluna (42501), e lê as colunas do motor (`_account`, `_account_name`); desligar a ligação apaga na hora as linhas da conta, e a tabela quando era a última fonte (o Desligar do Sync): o valor pessoal não fica | `copies/personal-columns.test.ts` | must |
 | 19 | U5 | Ligar uma proposta com coluna de um tipo que o papel de quem liga não tem é recusado com o tipo | `copies/accept-v2.test.ts`, "tipo que quem liga não tem" | must |
 
 ## A matriz de estados
@@ -247,8 +249,7 @@ A tela muda uma seção de um editor que existe; o desenho segue `role-unattende
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio | Uma dependência fora | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | `updateOrgRole` e `createOrgRole` com `personal` (better-auth) | a trava da empresa de hoje (`lockCompany`) | a biblioteca recusa: nada gravado, a transação desfaz | `DATABASE_UNAVAILABLE` de hoje | `ROLE_UPDATED` (`company-routes.ts:257-265`), com os tipos em `added`/`removed` | 6, 7 |
-| `GRANT SELECT (colunas)` ao Projeto (U5) | repete sem efeito | a liberação desfeita, como `undoRelease` (`copies/grants.ts:33-48`) | `COPY_DATABASE_UNAVAILABLE` | `COPY_GRANT_FAILED` de hoje | 18 |
-| `ALTER TABLE ... DROP COLUMN` das colunas pessoais ao Desligar (U5) | a trava da cópia | a coluna fica e é apagada no próximo Desligar ou Ligar, como `copy_table_left` do Sync | anotada para depois | `COPY_PERSONAL_DROP_FAILED` | 18 |
+| `GRANT SELECT (colunas)` ao Projeto (U5) | repete sem efeito | a liberação desfeita, como `undoRelease` (`copies/grants.ts:34-48`) | `COPY_DATABASE_UNAVAILABLE` | `COPY_GRANT_FAILED` de hoje | 18 |
 
 As leituras não gravam nada novo; o escalar do registro não é gravação.
 
@@ -257,7 +258,7 @@ As leituras não gravam nada novo; o escalar do registro não é gravação.
 | Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | A lista fixa de tipos | U1 | nada | Shopify (níveis de campo do cliente, documentado); LGPD art. 5º II e art. 11 (sensível à parte) | poucos níveis fixos, liberados à parte | embrulhado: `PERSONAL_KINDS` no kit | conformidade (crit. 4) | A1, `D1` | `packages/connectors/src/kernel/personal.ts` |
-| O conector declara caminho e tipo | U2 | `mercado-livre/operations/shared.ts:47` (`omit`, sem tipo); o Sankhya sem nada | n8n `interfaces.ts:3245-3251`, `FormTriggerV2.node.ts:100`, `FormTriggerV2.node.test.ts:651-661` | o nó declara caminhos com ponto; a plataforma oculta | embrulhado: `personal` na `Operation` no lugar do `omit` | crit. 1, 3 | B1 ("a lógica") | — |
+| O conector declara caminho e tipo | U2 | `mercado-livre/operations/shared.ts:67` (`omit`, sem tipo); o Sankhya sem nada | n8n `interfaces.ts:3245-3251`, `FormTriggerV2.node.ts:100`, `FormTriggerV2.node.test.ts:651-661` | o nó declara caminhos com ponto; a plataforma oculta | embrulhado: `personal` na `Operation` no lugar do `omit` | crit. 1, 3 | B1 ("a lógica") | — |
 | A conferência das formas não declaradas | U2 | nada | nenhuma (procurado em n8n, Airbyte, nango, twenty) | — | remendo: só no teste, com `isValidCpf`, `isValidEmail`, `isValidPhone` da biblioteca instalada | crit. 2, com `@brazilian-utils/brazilian-utils@2.5.0`; entrada em `docs/reference/boundaries.md` | B1 ("vale a pena? referências fazem?"): esta página | — |
 | Os tipos como permissão do papel | U1 | `identity/roles.ts:68-82` (recursos e ações), `role-statements.ts`, `company-roles.ts:237-244` | better-auth 1.7.8 `createAccessControl`, `hasPermission`, `createOrgRole`/`updateOrgRole` (o editor de hoje); twenty `field-permission.entity.ts:65-66` | uma ação no papel, lida a cada chamada | nativo: recurso `personal` com as ações `contato`, `endereco`, `documento`, `sensivel` | — | A1 ("para dar para outro cargo") | — |
 | Aplicação num ponto | U2 | o corte dentro de `mercado-livre/answers.ts:101-126`, antes do papel | twenty `common-select-fields-builder.ts:46-52`; n8n `node-defined-field-redaction.strategy.ts:44-69` | um filtro único sobre o resultado | embrulhado: `shapePersonal`, função pura, chamada em `readThrough` depois de `answerOf` | crit. 8 | — | `apps/server/src/hub/connectors/personal.ts` |
@@ -265,8 +266,8 @@ As leituras não gravam nada novo; o escalar do registro não é gravação.
 | O registro sem o valor | U2 | `read.ts:189-204` (`CONNECTOR_CALLED`, escalares) | n8n `execution-redaction.service.ts:250` (o evento da revelação; as recusas em `:133,145,168`); Mercado Livre "registro de acesso" (documentado) | um evento por revelação | embrulhado: dois escalares na linha que já existe (security S41) | crit. 12 | — | — |
 | O app declara os tipos | U3 | `app-contract/src/manifest.ts:46-57`; `publish-check.ts:35-61` (`C1`) | Shopify (a liberação é do app); a `C1` da etapa 20 | o app pede o nível; a plataforma confere | nativo: estende o manifesto e a conferência de Publicar | — | F | — |
 | A tela de Papéis | U4 | `apps/web/src/hub/identity/role-editor.tsx:152`, `role-unattended.tsx` | a seção Agentes do mesmo editor | uma caixa por ação | nativo | — | A1 | `apps/web/src/hub/identity/role-personal.tsx` |
-| A cópia guarda só o liberado | U5 | o critério 10 do Sync; `copies/grants.ts` (`GRANT` da tabela) | Airbyte `docs/platform/using-airbyte/mappings.md:7` (por conexão); PostgREST `privileges.sql:55` | por conexão; coluna liberada por `GRANT` | nativo: `GRANT SELECT (colunas)` | — | `C1` | — |
-| Apagar ao desligar | U5 | o Desligar do Sync U3 (`copy_table_left`) | Mercado Livre (termos e segurança, documentado) | apagar as cópias e a PII | embrulhado: no mesmo Desligar | crit. 18 | `C1` | — |
+| A cópia guarda só o liberado | U5 | `operations-list.test.ts:272` (o `omit` vale para a cópia); `platform/copy-sql.ts` `grantCopy` (`GRANT SELECT` da tabela inteira); `copies/grants.ts` | Airbyte `docs/platform/using-airbyte/mappings.md:7` (por conexão); PostgREST `privileges.sql:55` | por conexão; coluna liberada por `GRANT` | nativo: `GRANT SELECT (colunas)` | — | `C1` | — |
+| Apagar ao desligar | U5 | o Desligar do Sync: `copies/leave.ts` apaga as linhas da conta (`dropAccountRows`) e a tabela da última fonte (`endedSourceless`, `dropEndedCopies`, `copy_table_left`) | Mercado Livre (termos e segurança, documentado) | apagar as cópias e a PII | nativo: o Desligar do Sync já apaga o valor; a U5 não soma `DROP COLUMN` | crit. 18 | `C1` | — |
 
 **Ficam fora da tabela, com a razão.** RH e dados sensíveis (`SKILL.md:21`, LGPD art. 11): `D1`, só pela frase da skill. A porta genérica do Sankhya (`sankhya/door.ts:69-145`): fora da política por decisão do fundador (G, 2026-11-11), sem trava nova. A detecção por modelo (o `PIIDetector` do Mastra): a declaração é determinística e mais barata; o detector fica como rede opcional para texto livre, num cartão futuro.
 
@@ -354,11 +355,11 @@ modelo; o registro.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/connectors/src/kernel/` | muda `personal.ts` (`PersonalField`, `findUndeclared`), `operation.ts`, `conformance.ts`, `index.ts` | todo conector; o servidor |
-| `packages/connectors/src/mercado-livre/` | apaga `omit`, `BUYER` de `vendas.ts`, `without` e o corte de `rows()` (`answers.ts:78-126`, `shared.ts:47,56-61`); declara `personal`; troca os `summary` que dizem que o comprador não vem (`envios.ts:12`, `faturamento.ts:55`) e a skill; planta a cidade da entrega no dublê | o kit |
+| `packages/connectors/src/mercado-livre/` | apaga `omit`, `BUYER` de `vendas.ts`, `without` e o corte de `rows()` (`answers.ts:78-126`, `shared.ts:67,76-82`); declara `personal`; troca os `summary` que dizem que o comprador não vem (`envios.ts:12`, `faturamento.ts:59`) e a skill; planta a cidade da entrega no dublê, e troca o teste do `omit` do Sync (`operations-list.test.ts:272`) | o kit |
 | `packages/connectors/src/sankhya/` | declara `personal` em `operations/{buscas,cadastros}.ts`; `door.ts` e `read-only-sql.ts` não mudam (G) | o kit |
 | `packages/connectors/package.json` | acrescenta `@brazilian-utils/brazilian-utils` (já no lock, pelo `hub-api`) | — |
 | `apps/server/src/hub/connectors/` | cria `personal.ts`; muda `read.ts`, `rows.ts` (`Deps.identity`), `test-write.ts:113` | `app-calls.ts`, `builder-port.ts`, `assistant-port.ts`, `copy-port.ts`, `notes.ts` |
-| `apps/server/src/hub/identity/may-use.ts` | `Speaker` `VERSION` ganha `personal: readonly PersonalKind[]` | passam `[]`: `builder/agents/tools.ts:184`, `agent.ts:207,242`, `frozen.ts:145,234` (escritas de agente), `copy-port.ts:145`, e os testes `role-doors.test.ts`, `code-tool.test.ts`, `publish.test.ts`, `registry-line.test.ts`; `app-calls.ts:105` muda na U3 |
+| `apps/server/src/hub/identity/may-use.ts` | `Speaker` `VERSION` ganha `personal: readonly PersonalKind[]` | passam `[]`: `builder/agents/tools.ts:184`, `agent.ts:207,242`, `frozen.ts:145,234` (escritas de agente), `copy-port.ts:114`, e os testes `role-doors.test.ts`, `code-tool.test.ts`, `publish.test.ts`, `registry-line.test.ts`; `app-calls.ts:105` muda na U3 |
 
 ### Os contratos que a unidade cria
 
@@ -417,14 +418,14 @@ Regras: S40, S41, C21, T5.
 
 Critérios 1 a 4 com `node --test` nos arquivos do kit (o crit. 3 tira `buyer` de `pedidos` num teste
 e espera a falha); critérios 8 a 14 pelas portas públicas do Assistente, do Builder e da cópia, com o
-dublê que planta o comprador (`mercado-livre/fake-data.ts:21-29`). Falha hoje: `personal` não existe,
+dublê que planta o comprador (`mercado-livre/fake-data.ts:24-32`). Falha hoje: `personal` não existe,
 e o membro e o dono recebem a mesma linha.
 
 ### Parar se
 
 O dublê de uma leitura que declara um caminho não o planta: plantar no dublê (T29), nunca tirar a
 declaração. Uma forma pega um id que não é pessoal: estreitar a forma e dizer no relatório. Uma porta
-chama `readThrough` sem uma pessoa nem uma versão: parar. O teste do critério 10 do Sync quebra por
+chama `readThrough` sem uma pessoa nem uma versão: parar. O teste "o comprador não chega à cópia" do Sync quebra por
 outro motivo que não o `omit`: parar e relatar.
 
 ## U3 O app declara os tipos
@@ -518,20 +519,19 @@ Um texto da tela muda o sentido da página: volta ao fundador.
 
 ## U5 A coluna pessoal na cópia
 
-**Base e modelo.** U2 e as U3 e U4 do Sync no `main`. Opus: banco da empresa, `GRANT` de coluna e
-Desligar.
+**Base e modelo.** U2; o Sync está em `main`. Opus: banco da empresa e `GRANT` de coluna.
 
 ### As linhas da tabela
 
-A cópia guarda só o liberado; apagar ao desligar.
+A cópia guarda só o liberado; apagar ao desligar (já feito pelo Sync).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/` | `accept.ts` (Ligar), `grants.ts` (liberar), o Desligar | a página Cópias, o Builder |
-| `apps/server/src/hub/connectors/copy-port.ts` | o `Speaker` da cópia com os tipos dela | a rodada |
-| `apps/server/src/platform/copy-sql.ts` | `GRANT SELECT (colunas)`, `DROP COLUMN` | `grants.ts` |
+| `apps/server/src/hub/copies/` | `accept.ts` (Ligar), `grants.ts` (liberar); `leave.ts` (o Desligar) não muda | a página Cópias, o Builder |
+| `apps/server/src/hub/connectors/copy-port.ts` | `readAsCopy` (`:106`) ganha os tipos da cópia | a rodada (`copyPage`, `listAnswer`) e a prova do Builder (`list-proof.ts`) |
+| `apps/server/src/platform/copy-sql.ts` | `grantCopy` (`:332`) dá `GRANT SELECT (colunas)` | `grants.ts` |
 
 ### Os contratos que a unidade cria
 
@@ -540,9 +540,12 @@ A cópia guarda só o liberado; apagar ao desligar.
 export function personalColumnsOf(definition: CopyDefinitionV2, operation: Operation<unknown, unknown, 'read'>): ReadonlyMap<string, PersonalKind>
 ```
 
-Ligar confere os tipos das colunas contra `personalKinds` de quem liga (recusa com o tipo). A rodada
-fala como `VERSION` com esses tipos. Liberar ao Projeto dá `GRANT SELECT` nas colunas sem tipo e nas
-de tipo que quem libera tem. O Desligar apaga as colunas pessoais (o resto segue a regra do Sync).
+Ligar confere os tipos das colunas contra `personalKinds` de quem liga (recusa com o tipo); numa cópia
+de várias fontes (`copy_source`), cada fonte tem o seu `path` e a sua operação, e `personalColumnsOf` roda
+por fonte. A rodada fala como `VERSION` com esses tipos; a prova do Builder, cujas linhas vão ao modelo,
+fala com nenhum (B1: documento nunca vai ao modelo). Liberar ao Projeto dá `GRANT SELECT` nas colunas
+do motor (`_account`, `_account_name`, `_pass`), nas sem tipo e nas de tipo que quem libera tem. O Desligar
+não muda: ele já apaga as linhas da conta e a tabela da última fonte (`leave.ts`), e com elas o valor pessoal.
 
 ### As skills e a leitura
 
@@ -550,13 +553,12 @@ de tipo que quem libera tem. O Desligar apaga as colunas pessoais (o resto segue
 
 ### A ordem do trabalho
 
-1. `personalColumnsOf`. 2. Ligar. 3. `copy-port.ts`. 4. `grants.ts` e `copy-sql.ts`. 5. Desligar.
-Regras: D11, D22.
+1. `personalColumnsOf`. 2. Ligar. 3. `copy-port.ts`. 4. `grants.ts` e `copy-sql.ts`. Regras: D11, D22.
 
 ### Como se prova
 
-Critérios 18 e 19, com o PostgreSQL de teste (o login do Projeto lê e recebe 42501 na coluna negada).
+Critérios 18 e 19, com o PostgreSQL de teste (o login do Projeto lê e recebe 42501 na coluna negada) e o Desligar do Sync (`unlink-copies.test.ts`).
 
 ### Parar se
 
-O motor do Sync no `main` não guarda o `path` de cada coluna: parar; a U5 volta ao cartão.
+O `path` de uma coluna de `CopyDefinitionV2` (`kernel/copy.ts:114-130`) não cobre o caminho pessoal que a contém: parar; a U5 volta ao cartão.
