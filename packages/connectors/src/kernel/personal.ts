@@ -28,7 +28,7 @@ export function personalHolding(
 ): readonly PersonalField[] {
   return declared
     .filter((field) => path === field.path || path.startsWith(`${field.path}.`))
-    .toSorted((a, b) => b.path.length - a.path.length)
+    .sort((a, b) => b.path.length - a.path.length)
 }
 
 /** A CPF may come as a JSON number: an integer of up to 11 digits is read as its 11 digits. */

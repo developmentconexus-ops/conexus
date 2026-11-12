@@ -24,7 +24,7 @@ function personalColumnsOf(
 }
 
 /** The kinds a copy keeps: the ones its columns hold. */
-export function keptKindsOf(
+function keptKindsOf(
   definition: CopyDefinitionV2,
   operation: Pick<Operation<unknown, unknown, 'read'>, 'personal'>,
 ): PersonalKind[] {
