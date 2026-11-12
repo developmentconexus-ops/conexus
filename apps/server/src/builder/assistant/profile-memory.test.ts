@@ -11,8 +11,14 @@ import {
 } from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
-import { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
-import { assisting, created, said, talking } from './test-assistant.ts'
+import {
+  assisting,
+  created,
+  LEGACY_PROFILE_TEMPLATE,
+  PROFILE_TEMPLATE,
+  said,
+  talking,
+} from './test-assistant.ts'
 
 const LEARNED = `# Sobre você
 Diretora comercial; acompanha a linha de bebidas. (2026-11-11)

@@ -13,6 +13,9 @@ import { stepped, tool } from '../conversation/test-questions.ts'
 type Block = ReturnType<typeof tool>
 
 /** A file the person sends with a message, as the screen sends it: a name, a type and a data URL. */
+/** The note's two templates, for the tests that read what a person keeps. */
+export { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
+
 export type Upload = { filename: string; mediaType: string; data: string }
 
 /** Sankhya's SQL read as the Assistant's typed tool. */
