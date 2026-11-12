@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import type { Account, Operation, OperationId, ProviderRequest } from '../../kernel/operation.ts'
+import type {
+  Account,
+  ListRead,
+  Operation,
+  OperationId,
+  ProviderRequest,
+} from '../../kernel/operation.ts'
 import { defineOperation, valueAt } from '../../kernel/operation.ts'
 import type { Rows } from '../../kernel/rows.ts'
 import { Rows as RowsOut } from '../../kernel/rows.ts'
@@ -19,9 +25,22 @@ export const Scan = {
   scrollId: z.string().min(1).max(4000).optional(),
 }
 
+/** A scan's `scroll_id` lives 5 minutes (itens-e-buscas): the copy never sends an older one. */
+export const SCROLL_TTL_MS = 300_000
+
 /** The `search_type` the route wants while a scan runs: from its first page on. */
 export function searchTypeOf(input: Readonly<{ scan?: true; scrollId?: string }>) {
   return input.scan === true || input.scrollId !== undefined ? 'scan' : undefined
+}
+
+/** A scan pages by its cursor, not by `offset`: the two together are refused where the input is read, so no request carries both. */
+export const scanAlone = {
+  check: (input: Readonly<{ scan?: true; scrollId?: string; offset?: number }>) =>
+    searchTypeOf(input) === undefined || input.offset === undefined,
+  issue: {
+    message: 'A scan pages by scrollId; send no offset with scan or scrollId',
+    path: ['offset'],
+  },
 }
 
 /** The seller's id in a path: the connection's account, which the Hub parses again when it opens the connection. */
@@ -44,6 +63,7 @@ type ReadSpec<I> = Readonly<{
   label: string
   input: z.ZodType<I>
   list: string | null // where the rows are: a key of the body, or the body itself
+  paged?: ListRead // how the list pages and asks only what changed: the copy engine reads it as the operation's `list`
   omit?: readonly string[] // the buyer's personal data, by dotted path
   emptyNotFound?: string // the start of the message of the 404 that means the seller has no data yet
   from?: readonly string[]
@@ -53,9 +73,10 @@ type ReadSpec<I> = Readonly<{
 
 /** A read of Mercado Livre: idempotent by class, answered as rows by the API's own table (`rows`). */
 export function readOf<I>(spec: ReadSpec<I>): Operation<I, Rows, 'read'> {
-  const { docs, list, omit, emptyNotFound, ...operation } = spec
+  const { docs, list, omit, emptyNotFound, paged, ...operation } = spec
   const defined = defineOperation({
     ...operation,
+    ...(paged === undefined ? {} : { list: paged }),
     class: 'read' as const,
     idempotent: true,
     ...rows({ list, omit, emptyNotFound }),

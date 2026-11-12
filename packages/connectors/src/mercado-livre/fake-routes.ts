@@ -1,17 +1,22 @@
 import type { Route } from './fake-data.ts'
 import {
+  BAD_SCROLL,
   BUYER,
+  badScroll,
   ITEMS,
   itemBody,
   ORDER,
   ORDER_BODY,
+  ordersOf,
   pageOf,
   paging,
   SELLER,
   SELLER_PATH,
   SHIPMENT,
+  scanOf,
 } from './fake-data.ts'
 import { MORE_ROUTES } from './fake-routes-more.ts'
+import { envelope } from './recordings.ts'
 
 /** The routes of the double, by permission group; the order is the order they are tried. */
 export const ROUTES: readonly Route[] = [
@@ -20,6 +25,19 @@ export const ROUTES: readonly Route[] = [
     group: 'anuncios',
     pattern: new RegExp(`^/users/${SELLER_PATH}/items/search$`),
     answer: ({ query }) => {
+      if (query.get('search_type') === 'scan') {
+        if (badScroll(query, 'items')) return BAD_SCROLL
+        const scan = scanOf(ITEMS, query, 'items')
+        return {
+          body: {
+            ...envelope('anuncios-varredura-1', 'results'),
+            seller_id: SELLER.ref,
+            results: scan.rows,
+            scroll_id: scan.scrollId,
+            paging: { total: scan.total, limit: scan.limit },
+          },
+        }
+      }
       const page = pageOf(ITEMS, query, 50)
       return {
         body: {
@@ -84,9 +102,21 @@ export const ROUTES: readonly Route[] = [
     name: 'pedidos',
     group: 'vendas',
     pattern: /^\/orders\/search$/,
-    answer: ({ query }) => ({
-      body: { results: [ORDER_BODY], paging: paging(1, query), sort: { id: 'date_desc' } },
-    }),
+    answer: ({ query }) => {
+      const from = query.get('order.date_last_updated.from')
+      const changed =
+        from === null
+          ? ordersOf()
+          : ordersOf().filter((order) => Date.parse(order.date_last_updated) >= Date.parse(from))
+      const page = pageOf(changed, query, 50)
+      return {
+        body: {
+          ...envelope('pedidos-alterados', 'results'),
+          results: page.rows,
+          paging: paging(page.total, query),
+        },
+      }
+    },
   },
   {
     name: 'pedido',
