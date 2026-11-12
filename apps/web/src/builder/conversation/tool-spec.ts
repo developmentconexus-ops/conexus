@@ -5,6 +5,7 @@ import type {
   ClosedTool,
   CONSTRUTOR_TOOL,
   MACHINE_TOOL,
+  SUBAGENT_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
@@ -16,6 +17,7 @@ export type RowTool =
   | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
   | (typeof MACHINE_TOOL)[keyof typeof MACHINE_TOOL]
   | (typeof AGENT_TOOL)[keyof typeof AGENT_TOOL]
+  | typeof SUBAGENT_TOOL
   | ConstrutorRowTool
 
 /** The Construtor's tools that draw a row; the draft ones draw the agent's card (step 24.3, U5). */
@@ -43,6 +45,7 @@ export type ToolBody =
   | 'agent'
   | 'library'
   | 'answer'
+  | 'research'
   | 'program'
   | 'generic'
 

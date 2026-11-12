@@ -4,6 +4,7 @@ import {
   CLOSED_TOOLS,
   CONSTRUTOR_TOOL,
   MACHINE_TOOL,
+  SUBAGENT_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -196,6 +197,7 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
     CONSTRUTOR_TOOL.agentSet,
     CONSTRUTOR_TOOL.agentTest,
     MACHINE_TOOL.codeMode,
+    SUBAGENT_TOOL,
   ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
   for (const name of drawn) {

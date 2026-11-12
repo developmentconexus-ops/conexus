@@ -268,7 +268,7 @@ export function createConstrutor(deps: Deps) {
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },
     mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
-    tools: { [ASK_USER_TOOL]: createAskUserTool() },
+    tools: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
     initialState: { yolo: true },
   })
   turns.watch(controller)

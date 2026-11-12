@@ -177,7 +177,9 @@ export function createBuilder(deps: {
       return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
     },
     // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).
-    tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
+    tools: {
+      fixed: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
+    },
     initialState: TOOL_CLOSURE.initialState,
   })
   return { controller, memory, agent, queue: deps.queue }

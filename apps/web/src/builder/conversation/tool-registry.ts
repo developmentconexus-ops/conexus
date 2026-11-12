@@ -19,6 +19,7 @@ import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
 import { CONSTRUTOR_SPECS, slugToolSpec, writeToolSpec } from './construtor-specs.ts'
 import { MACHINE_SPECS } from './machine-specs.ts'
+import { RESEARCH_SPECS } from './research-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
@@ -196,6 +197,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
   ...CONNECTOR_SPECS,
   ...ASSISTANT_SPECS,
   ...MACHINE_SPECS,
+  ...RESEARCH_SPECS,
   ...CONSTRUTOR_SPECS,
   ...APP_DATA_SPECS,
   [skill]: {

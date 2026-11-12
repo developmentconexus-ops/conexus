@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ASSISTANT_ROOM, BUILDER_ROOM } from './room.ts'
-import { presentTool } from './tool-registry.ts'
+import { presentTool, toolStatus } from './tool-registry.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
 const PHRASE = 'Somando os pedidos por vendedor'
@@ -20,5 +20,30 @@ test('a frase do comando', () => {
       'Rodou um comando ls',
       'a call stored without the phrase reads as before',
     )
+  }
+})
+
+const TASK = 'Quantos pedidos a Matriz teve em outubro, por vendedor, comparando com setembro?'
+
+test('o ajudante', () => {
+  for (const room of [BUILDER_ROOM, ASSISTANT_ROOM]) {
+    const args = { agentType: 'pesquisar', task: TASK }
+    const running = presentTool({ toolName: 'subagent', args }, 'running', room)
+    assert.equal(running.sentence, 'Pesquisando')
+    assert.equal(running.detail, TASK, 'the question, cut beside the sentence by the line')
+    assert.equal(running.beside, true)
+    const done = presentTool({ toolName: 'subagent', args }, 'done', room)
+    assert.equal(done.sentence, 'Pesquisou')
+    assert.equal(done.detail, TASK)
+    const failed = presentTool({ toolName: 'subagent', args }, 'error', room)
+    assert.equal(failed.sentence, 'A pesquisa falhou')
+    assert.equal(failed.detail, TASK)
+    assert.equal(failed.beside, true, 'a failed line is cut too')
+
+    const found = { content: 'Outubro teve 120 pedidos.', isError: false }
+    const lost = { content: 'Subagent "Pesquisa" failed: sem conta', isError: true }
+    const call = { toolName: 'subagent', state: 'result' as const, isError: undefined }
+    assert.equal(toolStatus({ ...call, result: found }, room), 'done')
+    assert.equal(toolStatus({ ...call, result: lost }, room), 'error')
   }
 })

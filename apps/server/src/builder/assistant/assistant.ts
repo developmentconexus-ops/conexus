@@ -5,6 +5,7 @@ import {
   ASSISTANT_TOOL,
   BUILDER_TOOL,
   SKILL_TOOLS,
+  SUBAGENT_TOOL,
   TASK_TOOLS,
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
@@ -24,6 +25,7 @@ import {
   admitAsker,
   agentDefaults,
   controllerOf,
+  MODEL_TIMEOUT,
   oncePerRun,
   sessionModel,
   toolsOf,
@@ -32,6 +34,7 @@ import { ASK_USER_TOOL, createAskUserTool, skillOf } from '../conversation/publi
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
+import { subagentModel } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
@@ -44,12 +47,13 @@ import { assistantInstructions } from './instructions.ts'
 import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
-import { admitted, asked, automationOf, openConversation } from './open.ts'
+import { admitted, asked, automationRunFor, openConversation } from './open.ts'
 import { overviewTool } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
-import { proposeTools } from './propose.ts'
+import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { releaseConversations } from './release.ts'
+import { RESEARCH, researchOnly, researchReads } from './research.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import { assistantTurns, turnEnd } from './turn.ts'
 import { typedSearch } from './typed-search.ts'
@@ -65,7 +69,8 @@ const SEARCH_TOOLS = 'search_tools'
  * controller filters the agent's tools by it; the save is built only for who may manage connections.
  * The typed reads come only once a search loads them. Of the controller's own tools it holds
  * `ask_user` (a card, only what it cannot decide) and the task list; the plan card stays the
- * Builder's, as the Assistant approves no plan, and it calls no subagent.
+ * Builder's, as the Assistant approves no plan, and one subagent type, `pesquisar`
+ * (`research.ts`), which only reads.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
@@ -78,6 +83,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.webSearch,
   ...SKILL_TOOLS,
   ASK_USER_TOOL,
+  SUBAGENT_TOOL,
   ...TASK_TOOLS,
 ]
 
@@ -164,37 +170,7 @@ function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'co
 }
 
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
-
-/**
- * Whether an automation's run opened the run's conversation, from its thread's marks, read once per
- * run: nobody sees a button there, so no hand-off to the Builder is offered.
- */
-function automationRunFor(memory: ReturnType<typeof assistantMemory>) {
-  return oncePerRun(async (requestContext) => {
-    const run = runConversation(requestContext)
-    if (run === undefined) return false
-    const thread = await memory.getThreadById({
-      threadId: run.sessionId,
-      resourceId: run.resourceId,
-    })
-    return automationOf(thread?.metadata) !== null
-  })
-}
-
-/**
- * The hand-off to the Builder the place offers: creating an app is the company's, and a
- * conversation inside a Projeto talks about that Projeto's app.
- */
-function handOffOf(
-  scope: SessionScope | undefined,
-  proposals: ReturnType<typeof proposeTools>,
-  byAutomation: boolean,
-): Record<string, ReturnType<typeof proposeTools>['app']> {
-  if (scope === undefined || byAutomation) return {}
-  return scope.place.kind === 'COMPANY'
-    ? { [ASSISTANT_TOOL.proposeApp]: proposals.app }
-    : { [ASSISTANT_TOOL.proposeAppChange]: proposals.change }
-}
+type ChosenOf = (requestContext: RequestContext) => Promise<AssistantConnection[]>
 
 /**
  * What the run's place offers, each with whether the conversation chose it, read once per run (as
@@ -218,15 +194,13 @@ function assistantAgent(
     turns: ReturnType<typeof assistantTurns>
     machines: ConversationMachines
     scopeOf: ScopeOf
+    offeredOf: Offered
+    chosenOf: ChosenOf
+    savedAt: ReturnType<typeof readsFiles>
   },
 ) {
   const { queue } = deps
-  const { scopeOf } = parts
-  const offeredOf = offeredFor(deps, scopeOf)
-  const savedAt = readsFiles()
-  async function chosenOf(requestContext: RequestContext) {
-    return (await offeredOf(requestContext)).filter((each) => each.chosen)
-  }
+  const { scopeOf, offeredOf, chosenOf, savedAt } = parts
   const overview = overviewTool({
     scopeOf,
     projectsOf: (scope) => projectsOf(deps, scope),
@@ -256,6 +230,8 @@ function assistantAgent(
     inputProcessors: [
       parts.turns.processor,
       typedSearch(deps, { scopeOf, chosenOf, savedAt }),
+      // Before the account's pick, which flattens the step's tools, so it flattens the closed one.
+      researchOnly,
       ...defaults.inputProcessors.filter((each) => each !== parts.turns.processor),
       machineUploads({ log: deps.log }),
     ],
@@ -316,11 +292,25 @@ export function createAssistant(deps: Deps) {
     deps.machineTuning,
   )
   const turns = assistantTurns({ queue, scopeOf, machines })
-  const agent = assistantAgent(deps, { memory, turns, scopeOf, machines })
+  const offeredOf = offeredFor(deps, scopeOf)
+  async function chosenOf(requestContext: RequestContext) {
+    return (await offeredOf(requestContext)).filter((each) => each.chosen)
+  }
+  const savedAt = readsFiles()
+  const agent = assistantAgent(deps, {
+    ...{ memory, turns, scopeOf, machines },
+    ...{ offeredOf, chosenOf, savedAt },
+  })
   const controller = controllerOf({
     ...{ kind: 'assistant', storage, memory, agent },
     mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
-    tools: { [ASK_USER_TOOL]: createAskUserTool() },
+    // The helper's `connector_read` is made for each run, closed on the conversation's scope: the
+    // helper's own context cannot find the conversation (`research.ts`).
+    tools: {
+      fixed: { [ASK_USER_TOOL]: createAskUserTool() },
+      perRun: researchReads(deps, { scopeOf, chosenOf, savedAt }),
+    },
+    subagents: { types: [RESEARCH], model: subagentModel(queue, MODEL_TIMEOUT.stepMs) },
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: ({ requestContext }) => machines.workspace(requestContext),
     // Decision 0053: nothing waits to be approved; the systems get no write.

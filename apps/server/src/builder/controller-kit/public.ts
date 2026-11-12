@@ -1,5 +1,5 @@
 export { admitAsker, agentManagerAdmission } from './admission.ts'
-export { agentDefaults, controllerOf } from './factories.ts'
+export { agentDefaults, controllerOf, MODEL_TIMEOUT } from './factories.ts'
 export { fixedSystem, TITLE } from './instructions.ts'
 export type { ControllerKind, Owner } from './kinds.ts'
 export { CONTROLLER_KINDS, ownerOfResource, resourceOf } from './kinds.ts'

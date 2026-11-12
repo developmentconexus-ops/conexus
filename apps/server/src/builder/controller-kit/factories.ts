@@ -1,9 +1,10 @@
-import type { Agent, AgentConfig } from '@mastra/core/agent'
+import type { Agent, AgentConfig, ToolsInput } from '@mastra/core/agent'
 import type { AgentControllerConfig, BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor, OutputProcessor } from '@mastra/core/processors'
 import { CyberRefusalHandler } from '@mastra/core/processors'
+import type { RequestContext } from '@mastra/core/request-context'
 import type { PostgresStore } from '@mastra/pg'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
@@ -80,7 +81,9 @@ export function agentDefaults(
 /**
  * The controller of a conversation kind, under its key, on the Hub's store, with one mode. A tool
  * of the controller's own is off unless the mode offers it and the conversation brings none of the
- * same id: the conversation's own `tools` replace the native ones under their ids.
+ * same id: the conversation's own `tools.fixed` replace the native ones under their ids. The
+ * `tools.perRun` ones are made for each run, with its context, and never carry a native id: the
+ * ids are known before any run only from `fixed`.
  */
 export function controllerOf(input: {
   kind: ControllerKind
@@ -90,12 +93,20 @@ export function controllerOf(input: {
   /** A mode without `availableTools` filters nothing: its agent's tools are the closed set. */
   mode: { id: string; availableTools?: readonly string[] }
   workspace?: AgentControllerConfig['workspace']
-  tools?: AgentControllerConfig['tools']
+  tools?: {
+    fixed: ToolsInput
+    perRun?: (input: { requestContext: RequestContext }) => Promise<ToolsInput>
+  }
+  /** The types of helper the `subagent` tool may start, and the model each one's calls go to. */
+  subagents?: {
+    types: NonNullable<AgentControllerConfig['subagents']>
+    model: NonNullable<AgentControllerConfig['resolveSubagentModel']>
+  }
   initialState: Record<string, unknown>
 }): AgentController {
   const { availableTools } = input.mode
   const offered = new Set(availableTools)
-  const own = new Set(Object.keys(input.tools ?? {}))
+  const own = new Set(Object.keys(input.tools?.fixed ?? {}))
   const off = Object.keys(BUILTIN).filter(
     (id): id is BuiltinToolId => Object.hasOwn(BUILTIN, id) && (!offered.has(id) || own.has(id)),
   )
@@ -111,7 +122,20 @@ export function controllerOf(input: {
     ],
     ...(input.workspace === undefined ? {} : { workspace: input.workspace }),
     disableBuiltinTools: off,
-    ...(input.tools === undefined ? {} : { tools: input.tools }),
+    ...(input.tools === undefined ? {} : { tools: toolsOfRun(input.tools) }),
+    ...(input.subagents === undefined
+      ? {}
+      : { subagents: input.subagents.types, resolveSubagentModel: input.subagents.model }),
     initialState: input.initialState,
+  })
+}
+
+/** The controller's `tools`: the fixed ones alone, or a function that adds each run's. */
+function toolsOfRun(tools: NonNullable<Parameters<typeof controllerOf>[0]['tools']>) {
+  const { fixed, perRun } = tools
+  if (perRun === undefined) return fixed
+  return async (run: { requestContext: RequestContext }): Promise<ToolsInput> => ({
+    ...fixed,
+    ...(await perRun(run)),
   })
 }

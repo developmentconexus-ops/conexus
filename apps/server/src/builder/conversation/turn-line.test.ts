@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import {
+  assisting,
+  created,
+  helperReading,
+  researching,
+  said,
+  talking,
+} from '../assistant/test-assistant.ts'
 import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
 import { failuresIn, failuresOf } from './test-parts.ts'
 
@@ -79,4 +87,23 @@ test('uma recusa do modelo termina o turno com MODEL_REFUSED, sem o texto do for
   assert.deepEqual(failuresIn(kept.flatMap((message) => message.parts)), ['MODEL_REFUSED'])
   // Mastra's `error` event carries the provider's message to the browser, which does not draw it.
   assert.doesNotMatch(JSON.stringify(lines) + JSON.stringify(kept), /content filter|stopped/i)
+})
+
+test('o ajudante no log: a linha do turno leva helpers e helperCalls dos eventos do ajudante, e a de um turno sem ajudante não leva os campos', async (t) => {
+  const on = await assisting(t, [
+    [researching()],
+    [helperReading(), helperReading()],
+    [said('Há 2 empresas.')],
+    [said('Há 2 empresas.')],
+    [said('Oi.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Quantas empresas?')), 'complete')
+  assert.equal(endOf(await say('E um oi?')), 'complete')
+  const [helped, alone] = on.lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(helped?.fields.helpers, 1)
+  assert.equal(helped?.fields.helperCalls, 2)
+  assert.equal('helpers' in (alone?.fields ?? {}), false)
+  assert.equal('helperCalls' in (alone?.fields ?? {}), false)
 })

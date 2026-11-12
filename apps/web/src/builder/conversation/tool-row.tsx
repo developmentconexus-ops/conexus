@@ -36,6 +36,7 @@ import {
   Library,
   Program,
   Reason,
+  Research,
   textOf,
 } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
@@ -180,6 +181,8 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
         <Generic tool={tool} title={title} />
       )
     }
+    case 'research':
+      return <Research tool={tool} title={title} />
     case 'program':
       return <Program tool={tool} title={title} />
     default:

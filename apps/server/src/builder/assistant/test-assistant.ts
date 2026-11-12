@@ -30,6 +30,20 @@ export function reading(connection = 'Matriz', sql = COUNT): Block {
   return tool(READ, { connection, sql })
 }
 
+/** The main agent asks the helper for a research, as the Assistant's text tells it to (U12). */
+export function researching(task = 'Quantas empresas a Matriz tem?', more: object = {}): Block {
+  return tool('subagent', { agentType: 'pesquisar', task, ...more })
+}
+
+/** The helper's read of the Matriz through `connector_read`. */
+export function helperReading(sql = COUNT): Block {
+  return tool('connector_read', {
+    connection: 'Matriz',
+    operation: 'sankhya.consultar',
+    input: { sql },
+  })
+}
+
 /** The kit's Sankhya double, both connections on it with the same credential. */
 async function kitSankhya(t: TestContext): Promise<Sankhyas> {
   const fake = await servedSankhya(t)
