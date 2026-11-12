@@ -256,12 +256,7 @@ export {
   registerClient,
 } from './operations.ts'
 export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
-export {
-  clearProfileMemory,
-  getProfileMemory,
-  PROFILE_MEMORY_MAX,
-  setProfileMemory,
-} from './profile-memory.ts'
+export * from './profile-memory.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,
