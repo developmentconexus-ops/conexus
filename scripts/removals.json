@@ -2587,7 +2587,7 @@
   {
     "id": "assistant-without-automation-tool-for-member",
     "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "        ...(mayAutomate\n          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }\n          : {}),",
+    "find": "        ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),",
     "replace": "        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),",
     "test": {
       "cwd": "apps/server",
@@ -2608,7 +2608,7 @@
   },
   {
     "id": "assistant-note-never-in-automation-run",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "file": "apps/server/src/builder/assistant/mays.ts",
     "find": "        !byAutomation &&\n",
     "replace": "",
     "test": {
@@ -2619,8 +2619,8 @@
   },
   {
     "id": "assistant-note-never-for-those-who-do-not-manage-connections",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "deps.identity.allows(speakers.role, 'manageConnections')",
+    "file": "apps/server/src/builder/assistant/mays.ts",
+    "find": "identity.allows(speakers.role, 'manageConnections')",
     "replace": "true",
     "test": {
       "cwd": "apps/server",
