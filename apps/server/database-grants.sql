@@ -206,6 +206,10 @@ GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
 GRANT SELECT,DELETE ON TABLE auth.member TO hub_operator;
 GRANT UPDATE(role) ON TABLE auth.member TO hub_company;
 GRANT UPDATE(created_at) ON TABLE auth.member TO hub_company;
+-- Alinhamento do Assistente, U8, founder 2026-11-11 ("Decisões: A - A"): a company's routes write a
+-- member's job title and department, the person's own and, for an administrator, another member's.
+GRANT UPDATE(job_title) ON TABLE auth.member TO hub_company;
+GRANT UPDATE(department) ON TABLE auth.member TO hub_company;
 -- Step Papéis da empresa, U1, founder 2026-11-06 ("Aprovo tudo"): a company's routes read, create,
 -- change and delete the roles of their company, and the Central seeds a new company's two editable roles.
 GRANT SELECT,INSERT,DELETE ON TABLE auth.organization_role TO hub_company;
