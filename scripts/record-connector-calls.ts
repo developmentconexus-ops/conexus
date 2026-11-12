@@ -34,11 +34,7 @@ const PAGE_1 = 'anuncios-varredura-1'
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 /** The operation of a case and its input; the second listing page carries the first page's `scroll_id`. */
-function inputOf(
-  name: Case,
-  now: Date,
-  first: unknown,
-): { operation: string; input: unknown } {
+function inputOf(name: Case, now: Date, first: unknown): { operation: string; input: unknown } {
   if (name === 'pedidos-alterados') {
     const week = new Date(now.getTime() - WEEK_MS)
     return {
