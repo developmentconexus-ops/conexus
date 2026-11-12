@@ -303,6 +303,7 @@ class Machines implements ConversationMachines {
             },
           },
           [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
+          [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true },
           ...(this.deps.readMedia === undefined
             ? {}
             : { [WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: { mediaTypes: [...this.deps.readMedia] } }),

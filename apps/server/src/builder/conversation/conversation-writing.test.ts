@@ -10,7 +10,7 @@ const VALUE = 'abc123'
 const WRITE = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
 const RUN = {
   name: 'mastra_workspace_execute_command',
-  input: { command: `echo token=${VALUE}; echo pronto` },
+  input: { description: 'Rodando um teste', command: `echo token=${VALUE}; echo pronto` },
 }
 
 /** One step with the given tools, then an answer. */
@@ -71,8 +71,11 @@ test('um turno que escreve: ferramentas com os argumentos, saída do comando sem
 })
 
 test('a saída de um comando longo chega inteira, como o Mastra a manda: nenhum corte no servidor (5)', async (t) => {
-  const many = { name: RUN.name, input: { command: 'seq 1 50' } }
-  const long = { name: RUN.name, input: { command: 'yes x | head -c 9000 | tr "\\n" " "' } }
+  const many = { name: RUN.name, input: { description: 'Rodando um teste', command: 'seq 1 50' } }
+  const long = {
+    name: RUN.name,
+    input: { description: 'Rodando um teste', command: 'yes x | head -c 9000 | tr "\\n" " "' },
+  }
   const { hub, ana, conversations } = await conversing(t, calling(many, long))
   const { events } = await asked(t, { hub, person: ana, conversations })
   const [fifty, single] = commandsOf(events)
@@ -117,7 +120,10 @@ test('o que dura do turno fica depois do fim e ao reabrir: cada ferramenta e a v
 })
 
 test('a saída de um comando chega enquanto ele roda, sem código de saída, antes do fim', async (t) => {
-  const slow = { name: RUN.name, input: { command: 'echo começo; sleep 2; echo fim' } }
+  const slow = {
+    name: RUN.name,
+    input: { description: 'Rodando um teste', command: 'echo começo; sleep 2; echo fim' },
+  }
   const { hub, ana, conversations } = await conversing(t, calling(slow))
   const { events } = await asked(t, { hub, person: ana, conversations })
   function at(type: string) {
@@ -143,10 +149,16 @@ test('ler um arquivo é uma ferramenta com o caminho nos argumentos', async (t) 
 test('a saída relida é o resultado como o Mastra o guarda, sem corte do servidor (5)', async (t) => {
   const failing = {
     name: RUN.name,
-    input: { command: `echo um; echo token=${VALUE} >&2; exit 2` },
+    input: { description: 'Rodando um teste', command: `echo um; echo token=${VALUE} >&2; exit 2` },
   } as const
-  const silent = { name: RUN.name, input: { command: 'true' } } as const
-  const many = { name: RUN.name, input: { command: 'seq 1 3000' } } as const
+  const silent = {
+    name: RUN.name,
+    input: { description: 'Rodando um teste', command: 'true' },
+  } as const
+  const many = {
+    name: RUN.name,
+    input: { description: 'Rodando um teste', command: 'seq 1 3000' },
+  } as const
   const { hub, ana, conversations } = await conversing(t, calling(failing, silent, many))
   const { url } = await asked(t, { hub, person: ana, conversations })
   const read = invocationsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? [])

@@ -21,7 +21,7 @@ const CHECK = { type: 'tool_use', name: 'conexus_check', input: {} } as const
 const FIX = {
   type: 'tool_use',
   name: 'mastra_workspace_execute_command',
-  input: { command: 'echo y >> a.ts' },
+  input: { description: 'Rodando um teste', command: 'echo y >> a.ts' },
 } as const
 
 const PASSED: CheckReport = {

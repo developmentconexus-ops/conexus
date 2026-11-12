@@ -63,7 +63,7 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
   const write = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
   const model = calling(write, {
     name: 'mastra_workspace_execute_command',
-    input: { command: 'echo oi' },
+    input: { description: 'Rodando um teste', command: 'echo oi' },
   })
   const { hub, ana, conversations } = await conversing(t, model.answer)
   /** Every run Mastra saves waiting, as an approval leaves it, from the moment its tables exist. */

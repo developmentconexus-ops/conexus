@@ -89,6 +89,11 @@ export type ToolSpec = {
   verb: string
   /** The argument the sentence names: a path, a pattern, a URL. */
   detailKey?: string
+  /**
+   * An argument the model wrote as the row's own sentence, in place of the table's words and the
+   * detail; a call stored without it reads as before. The detail stays what the open row shows.
+   */
+  phraseKey?: string
   /** The argument shows beside the sentence, cut, instead of after it (the web's long URLs and queries). */
   detailBeside?: true
   body: ToolBody

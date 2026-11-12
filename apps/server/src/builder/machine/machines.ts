@@ -263,6 +263,7 @@ class BuilderMachines implements Machines {
           },
         },
         [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
+        [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true },
       },
     })
   }

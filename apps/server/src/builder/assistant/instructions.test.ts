@@ -219,3 +219,12 @@ test('o texto novo: responder na mensagem, arquivo só quando pedido', async (t)
   assert.doesNotMatch(fixed, /A question, a table, a chart or a file is yours to answer/)
   assert.doesNotMatch(fixed, SHOUTED)
 })
+
+test('a frase do comando em português', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
+  const fixed = on.calls.at(0)?.systems[0]?.text
+  assert.equal(fixed, FIXED)
+  assert.match(fixed ?? '', /Write each command's `description` in Brazilian Portuguese/)
+})

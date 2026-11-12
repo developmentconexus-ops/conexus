@@ -131,6 +131,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     failed: 'Um comando falhou',
     verb: 'rodou',
     detailKey: 'command',
+    phraseKey: 'description',
     body: 'command',
     groups: true,
   },
@@ -299,6 +300,11 @@ export function presentTool(
   if (spec === undefined) return unknownTool(tool.toolName, status)
   if (spec.present !== undefined) return spec.present(tool, status, room.connectors)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
+  const phrase = spec.phraseKey === undefined ? undefined : stringArg(tool.args, spec.phraseKey)
+  if (phrase !== undefined) {
+    const sentence = failed ? `${spec.failed}: ${phrase}` : phrase
+    return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside: false }
+  }
   const head = headOf(spec, status)
   const beside = spec.detailBeside === true && !failed && detail !== undefined
   const sentence = detail === undefined || beside ? head : `${head} ${detail}`

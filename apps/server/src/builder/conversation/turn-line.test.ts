@@ -17,7 +17,13 @@ function ranWithPlanted() {
     const command = `echo ${TEXT} ${CPF}`
     return {
       kind: 'blocks',
-      blocks: [{ type: 'tool_use', name: 'mastra_workspace_execute_command', input: { command } }],
+      blocks: [
+        {
+          type: 'tool_use',
+          name: 'mastra_workspace_execute_command',
+          input: { description: 'Rodando um teste', command },
+        },
+      ],
     }
   }
 }
