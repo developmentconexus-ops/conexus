@@ -79,6 +79,16 @@ test('cada pergunta tem os seus dados: as 27 do fundador, numeradas, cada uma co
   assert.equal(goalsSheet().split('\n')[0]?.split(',').length, 3)
 })
 
+/**
+ * The vendor the real run goes through (`claude`, the default, or `openai`) and the questions it
+ * asks (numbers split by commas, all by default), so the ChatGPT model production runs, with the
+ * questions that gave up on it, is measured on its own.
+ */
+// biome-ignore lint/style/noProcessEnv: the switches of this one opt-in case, not the app's configuration
+const { CONEXUS_EVAL_PROVIDER: PROVIDER, CONEXUS_EVAL_QUESTIONS: ONLY } = process.env
+const VENDOR = PROVIDER === 'openai' ? 'openai' : 'claude'
+const CHOSEN = ONLY?.split(',').map((each) => Number(each.trim()))
+
 test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o placar com os tokens do primeiro passo, e a resposta errada só conta', {
   timeout: 10_800_000,
 }, async (t) => {
@@ -91,7 +101,7 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const ml = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   const served = await ml.serve()
   t.after(() => served.close())
-  const on = await subscribed(t, REAL_MODEL, 'claude', (config) => ({
+  const on = await subscribed(t, REAL_MODEL, VENDOR, (config) => ({
     ...config,
     connectorOrigins: new Map([['mercado-livre', served.origin]]),
     connectorApps: appsOf(ml.app),
@@ -101,7 +111,10 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const loja = String(Object(linked.json()).connection.id)
   const folder = roundFolder(t)
   const sheet = file('metas.csv', 'text/csv', Buffer.from(goalsSheet()))
-  for (const each of QUESTIONS.filter((one) => one.enters === 'now')) {
+  const asking = QUESTIONS.filter(
+    (one) => one.enters === 'now' && (CHOSEN === undefined || CHOSEN.includes(one.n)),
+  )
+  for (const each of asking) {
     const connections = each.bare === true ? [] : [on.matriz, on.filial, loja]
     const url = await created(on.hub, on.ana, on.assistant, { connections })
     const files = attached(each, sheet)
@@ -112,8 +125,11 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
     const right = endOf(events) === 'complete' && judged(each, parts, READ)
     const card = scoreOf({ question: each.n, parts, events, right })
     writeFileSync(join(folder, `pergunta-${each.n}.json`), JSON.stringify(card, null, 2))
+    // What the model finally said, beside the card, to tell an answer from a give-up.
+    const said = parts.findLast((part) => part.type === 'text')
+    writeFileSync(join(folder, `pergunta-${each.n}.txt`), said?.type === 'text' ? said.text : '')
   }
-  assert.equal(readdirSync(folder).length, QUESTIONS.filter((one) => one.enters === 'now').length)
+  assert.equal(readdirSync(folder).filter((name) => name.endsWith('.json')).length, asking.length)
   process.stdout.write(`placar em ${folder}\n`)
 })
 
