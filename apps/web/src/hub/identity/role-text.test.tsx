@@ -30,6 +30,7 @@ function role(kind: RoleView['kind'], held: string[]) {
     kind,
     connectors: { sankhya: held },
     unattended: false,
+    personal: [],
     members: 0,
   })
 }
