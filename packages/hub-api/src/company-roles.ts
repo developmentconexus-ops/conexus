@@ -21,6 +21,12 @@ export type RoleKind = z.infer<typeof RoleKind>
 
 export const ROLE_LABEL_MAX = 40
 
+/** A kind of personal data of customers, the kit's own id (`packages/connectors/src/kernel/personal.ts`); the server checks it against the kit. */
+export const PersonalKindText = z.string().regex(/^[a-z]{1,20}$/)
+
+/** The kinds a role may hold: the kit's four less `sensivel`, which no role holds. */
+const PERSONAL_HELD_MAX = 3
+
 export const RoleView = z.object({
   role: Role,
   label: z.string(),
@@ -28,6 +34,8 @@ export const RoleView = z.object({
   connectors: RoleConnectors,
   /** Whether the role publishes an agent whose write runs without asking (step 24.5, D1-a): the owner and the administrator always, the developer when the company's row adds it, no other role. */
   unattended: z.boolean(),
+  /** The kinds of personal data of customers the role sees in the connectors' reads: the owner and the administrator always the three. */
+  personal: z.array(PersonalKindText),
   members: z.number().int().nonnegative(),
 })
 export type RoleView = z.infer<typeof RoleView>
@@ -35,12 +43,14 @@ export type RoleView = z.infer<typeof RoleView>
 export const RoleCreate = z.object({
   label: z.string().trim().min(1).max(ROLE_LABEL_MAX),
   connectors: RoleConnectors,
+  personal: z.array(PersonalKindText).max(PERSONAL_HELD_MAX).optional(),
 })
 export type RoleCreate = z.infer<typeof RoleCreate>
 
 export const RoleChange = z.object({
   connectors: RoleConnectors,
   unattended: z.boolean().optional(),
+  personal: z.array(PersonalKindText).max(PERSONAL_HELD_MAX).optional(),
 })
 export type RoleChange = z.infer<typeof RoleChange>
 

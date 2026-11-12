@@ -1,3 +1,5 @@
+import type { PersonalKind } from '@conexus/connectors'
+import { PERSONAL_KINDS } from '@conexus/connectors'
 import type {
   CompanyId,
   ConnectionId,
@@ -128,5 +130,26 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
       }),
     )
   }
-  return { mayUse, mayUseEach, mayPublishUnattended }
+
+  /** The kinds of personal data the person's role holds, read now as `mayUse` reads (one read of the roles for the whole list). */
+  async function personalKinds(
+    companyId: CompanyId,
+    speaker: PersonSpeaker,
+  ): Promise<readonly PersonalKind[]> {
+    const context = await auth.$context
+    return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
+      const held: PersonalKind[] = []
+      for (const [index, kind] of PERSONAL_KINDS.entries()) {
+        const may = await permitted(context, {
+          organizationId: companyId,
+          role: speaker.role,
+          useMemoryCache: index > 0,
+          permissions: { personal: [kind] },
+        })
+        if (may) held.push(kind)
+      }
+      return held
+    })
+  }
+  return { mayUse, mayUseEach, mayPublishUnattended, personalKinds }
 }

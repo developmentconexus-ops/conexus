@@ -111,6 +111,7 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
     kind: 'CUSTOM',
     connectors: { sankhya: ['pedidos'] },
     unattended: false,
+    personal: [],
     members: 0,
   })
   const again = await post(w.hub, w.admin, `${w.base}/roles`, {

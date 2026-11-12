@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { operationLabel, roleKit } from './public.ts'
 
 test('o kit dos papéis: cada conector vira o recurso connector_<id>, com a porta de leitura do Sankhya entre as operações', () => {
-  const kit = roleKit()
+  const kit = roleKit().connectors
   assert.deepEqual(
     kit.map(({ id, resource }) => [id, resource]),
     [
@@ -19,7 +19,7 @@ test('o kit dos papéis: cada conector vira o recurso connector_<id>, com a port
 })
 
 test('o kit dos papéis traz as escritas do conector, com a classe write e o rótulo do kit', () => {
-  const sankhya = roleKit().find(({ id }) => id === 'sankhya')
+  const sankhya = roleKit().connectors.find(({ id }) => id === 'sankhya')
   assert.deepEqual(
     sankhya?.operations.filter((operation) => operation.class === 'write'),
     [{ id: 'lancarPedido', class: 'write' }],
@@ -28,7 +28,7 @@ test('o kit dos papéis traz as escritas do conector, com a classe write e o ró
 })
 
 test('um conector sem escritas não ganha nenhuma operação a mais no kit dos papéis', () => {
-  const operations = roleKit().find(({ id }) => id === 'mercado-livre')?.operations ?? []
+  const operations = roleKit().connectors.find(({ id }) => id === 'mercado-livre')?.operations ?? []
   assert.ok(operations.length > 0)
   assert.ok(
     operations.every((operation) => operation.class !== 'write' && operation.id !== undefined),

@@ -74,6 +74,7 @@ export {
   locateOf,
   requestOf,
 } from './kernel/operation.ts'
+export { PERSONAL_KINDS, type PersonalKind } from './kernel/personal.ts'
 export { toRequest } from './kernel/request.ts'
 export { CONCURRENT_CALL, Rows } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
