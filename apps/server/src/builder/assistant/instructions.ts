@@ -4,8 +4,14 @@ import { fixedNameOf } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
-import { fixedSystem } from '../controller-kit/public.ts'
+import { fixedSystem, TITLE } from '../controller-kit/public.ts'
 import { turnDate } from '../conversation/public.ts'
+
+/**
+ * The Assistant's observer: the conversation's title and what a business conversation keeps, never
+ * the task list, which the signals rebuild at each step (card of the alignment, U4).
+ */
+export const ASSISTANT_OBSERVER = `${TITLE.ask.observer} Observe as a business analyst: keep numbers with where they came from (which connection, which read, which file), the codes and meanings the person taught, the filters and periods asked, the files made or received and what they hold, and what was handed to the Builder. Do not observe \`<current-task-list>\` or \`<task-list-update>\`; they are rebuilt.`
 
 /**
  * The fixed message, the same bytes in every conversation of every company (criterion 13a): what
@@ -39,10 +45,46 @@ export type Speakers = {
   projectName: string | undefined
 }
 
-/** The conversation's block: the company, the person, today, the place and the chosen connections; no rule of how to answer. */
+/**
+ * What the person's role and the run allow of the tools that depend on them, read once per run by
+ * the one that builds the tools: the block says in words what the tools leave out.
+ */
+export type Mays = { note: boolean; automate: boolean; byAutomation: boolean }
+
+const NO_NOTE =
+  'You cannot note on a connection here: write the concept, the mapping and the query, ready for an owner or an administrator to note, and say that you did not note it.'
+const NO_AUTOMATION =
+  "The person's role does not create automations: when what they ask repeats at a time, say in text that only the owner, the administrators and the developers create them and that the person can ask one of them, and offer no card."
+const AUTOMATION_RUN =
+  'This conversation is the run of an automation the person already created and nobody is waiting: do what the message asks and answer with the result, and never offer to create that automation again.'
+
+/** The sentences of the tools this run lacks, so the fixed message stays the same for everyone. */
+function toolSentences(may: Mays): string[] {
+  return [
+    ...(may.note ? [] : [NO_NOTE]),
+    ...(may.automate ? [] : [NO_AUTOMATION]),
+    ...(may.byAutomation ? [AUTOMATION_RUN] : []),
+  ]
+}
+
+/** The weekday in English with the date, as Sao Paulo counts it: the model reads the date, not the calendar. */
+function dated(): string {
+  const date = turnDate()
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(
+    new Date(`${date}T12:00:00Z`),
+  )
+  return `${date} (${weekday})`
+}
+
+/**
+ * The conversation's block: the company, the person, today, the place and the chosen connections,
+ * and what the tools this run lacks leave unsaid; no other rule of how to answer. `may` is the
+ * Assistant's: the agents and the Construtor have no such tools.
+ */
 export function blockOf(
   speakers: Speakers,
   chosen: readonly { name: string; connector: string }[],
+  may?: Mays,
 ): string {
   const place =
     speakers.projectName === undefined
@@ -55,9 +97,10 @@ export function blockOf(
   return [
     `Company: ${speakers.company}.`,
     `Person: ${speakers.person} (${roleWord(speakers.role)}).`,
-    `Today: ${turnDate()}, America/Sao_Paulo.`,
+    `Today: ${dated()}, America/Sao_Paulo.`,
     `Place: ${place}.`,
     `Connections in this conversation: ${connections}.`,
+    ...(may === undefined ? [] : toolSentences(may)),
   ].join(' ')
 }
 
@@ -70,11 +113,13 @@ export function assistantInstructions(deps: {
     requestContext: RequestContext,
   ) => Promise<readonly { name: string; connector: string; chosen: boolean }[]>
   speakersOf: (requestContext: RequestContext) => Promise<Speakers | undefined>
+  maysOf: (requestContext: RequestContext) => Promise<Mays>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const [speakers, offered] = await Promise.all([
+    const [speakers, offered, may] = await Promise.all([
       deps.speakersOf(requestContext),
       deps.offeredOf(requestContext),
+      deps.maysOf(requestContext),
     ])
     if (speakers === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', {
@@ -84,7 +129,7 @@ export function assistantInstructions(deps: {
     const chosen = offered.filter((each) => each.chosen)
     return [
       fixedSystem(FIXED),
-      { role: 'system', content: blockOf(speakers, chosen) },
+      { role: 'system', content: blockOf(speakers, chosen, may) },
     ] satisfies AgentInstructions
   }
 }

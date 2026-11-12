@@ -4,9 +4,11 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { approving } from '../agents/test-approval.ts'
+import { TITLE } from '../controller-kit/public.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
 import { assisting, created, publishedApp, reading, said, talking } from './test-assistant.ts'
+import { conversation, LONG } from './test-files.ts'
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
 
@@ -265,4 +267,21 @@ test('sem escrita: com uma escrita no kit e na biblioteca do Projeto, o Assisten
   assert.ok(asked !== undefined)
   assert.ok(!asked.tools.some((name) => name.startsWith('tool_')), asked.tools.join())
   assert.doesNotMatch(asked.system, /lancarPedido|Lançar pedido/)
+})
+
+test('o Observador com foco de negócio', async (t) => {
+  const on = await conversation(t, (_, index) => ({ kind: 'text', text: index < 2 ? LONG : 'Li.' }))
+  for (const question of ['Quais as regras?', 'E os prazos?', 'E as multas?'])
+    assert.equal(endOf(await on.say(question)), 'complete')
+  assert.ok(on.observers.length > 0, 'the third turn, past the threshold, was observed')
+  for (const observer of on.observers) {
+    assert.ok(observer.system.includes(TITLE.ask.observer), 'the title instruction stays')
+    assert.match(observer.system, /numbers with where they came from/)
+    assert.match(observer.system, /Do not observe `<current-task-list>` or `<task-list-update>`/)
+  }
+  assert.equal(
+    TITLE.app.observer.includes('business analyst'),
+    false,
+    'the Builder’s does not change',
+  )
 })

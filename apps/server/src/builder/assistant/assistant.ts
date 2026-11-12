@@ -10,6 +10,7 @@ import {
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
+import { TaskSignalProvider } from '@mastra/core/signals'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
@@ -39,6 +40,7 @@ import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
+import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, automationOf, openConversation } from './open.ts'
@@ -239,6 +241,7 @@ function assistantAgent(
     const scope = await scopeOf(requestContext)
     return scope === undefined ? undefined : speakersOf(deps, scope)
   })
+  const maysFor = maysOf(deps.identity, speakersFor, automationRun)
   const defaults = agentDefaults(queue, parts.turns)
   // The person's files go to the conversation's machine last, once the account's pick has chosen the model.
   const assistantDefaults = {
@@ -248,30 +251,21 @@ function assistantAgent(
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
-    instructions: assistantInstructions({ offeredOf, speakersOf: speakersFor }),
+    instructions: assistantInstructions({ offeredOf, speakersOf: speakersFor, maysOf: maysFor }),
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
-      const speakers = await speakersFor(requestContext)
-      const byAutomation = await automationRun(requestContext)
-      const mayAutomate =
-        speakers !== undefined && deps.identity.allows(speakers.role, 'manageAutomations')
-      const mayNote =
-        speakers !== undefined &&
-        !byAutomation &&
-        deps.identity.allows(speakers.role, 'manageConnections')
+      const { byAutomation, automate, note } = await maysFor(requestContext)
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
-        ...(mayAutomate
-          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }
-          : {}),
+        ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),
         ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : assistantConnectorTools(deps, { scope, chosen, savedAt, mayNote })),
+          : assistantConnectorTools(deps, { scope, chosen, savedAt, mayNote: note })),
       }
     },
     skills: async ({ requestContext }) => [
@@ -281,6 +275,7 @@ function assistantAgent(
       ),
     ],
     ...assistantDefaults,
+    signals: [new TaskSignalProvider()],
     memory: parts.memory,
   })
 }
