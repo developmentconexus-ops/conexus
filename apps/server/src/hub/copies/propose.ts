@@ -184,6 +184,26 @@ async function readIssuesOf(deps: CopiesDeps, ids: OfProject, a: Proposal): Prom
   return deps.connectors().sourceIssues(connector, raw.data.source)
 }
 
+/** The refusal for a name, a definition or connections that fail their schema: each path's message, and the read rules the definition still fails. */
+async function malformed(
+  deps: CopiesDeps,
+  ids: OfProject,
+  a: Proposal,
+  parts: Record<'name' | 'definition' | 'connections', z.ZodSafeParseResult<unknown>>,
+): Promise<ProposeAnswer> {
+  const { name, definition, connections } = parts
+  const read = definition.success || !connections.success ? [] : await readIssuesOf(deps, ids, a)
+  return {
+    kind: 'MALFORMED',
+    issues: [
+      ...(name.success ? [] : issuesOf(name.error, 'name')),
+      ...(definition.success ? [] : issuesOf(definition.error, 'definition')),
+      ...(connections.success ? [] : issuesOf(connections.error, 'connections')),
+      ...read,
+    ],
+  }
+}
+
 /**
  * Propor (Capacidade 3, U3; O Sync de qualquer conector, U4): the definition by `CopyDefinition` and
  * the name by `CopyName`, the name against the company's copies and open proposals, the connections
@@ -199,18 +219,8 @@ export async function propose(
   const parsedName = CopyName.safeParse(a.name)
   const parsed = CopyDefinition.safeParse(a.definition)
   const named = Connections.safeParse(a.connections)
-  if (!parsedName.success || !parsed.success || !named.success) {
-    const read = parsed.success || !named.success ? [] : await readIssuesOf(deps, ids, a)
-    return {
-      kind: 'MALFORMED',
-      issues: [
-        ...(parsedName.success ? [] : issuesOf(parsedName.error, 'name')),
-        ...(parsed.success ? [] : issuesOf(parsed.error, 'definition')),
-        ...(named.success ? [] : issuesOf(named.error, 'connections')),
-        ...read,
-      ],
-    }
-  }
+  if (!parsedName.success || !parsed.success || !named.success)
+    return malformed(deps, ids, a, { name: parsedName, definition: parsed, connections: named })
   const name = parsedName.data
   const definition = parsed.data
   const taken = await existing(deps, ids, name)
