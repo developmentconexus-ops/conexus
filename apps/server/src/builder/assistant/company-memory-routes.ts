@@ -6,6 +6,7 @@ import {
   readCompanyMemoryPage,
   removeCompanyMemoryNote,
   removeCompanyMemoryPage,
+  writeCompanyMemoryInstructions,
   writeCompanyMemoryNote,
   writeCompanyMemoryPage,
 } from '@conexus/hub-api'
@@ -61,6 +62,21 @@ function authored<T extends { writer: PersonId | null; updatedAt: Date }>(item: 
   }
 }
 
+/** The instructions as the screen reads them: the instant is `null` while nobody has written them. */
+async function shownInstructions(
+  deps: Deps,
+  owner: Owner,
+  instructions: Awaited<ReturnType<CompanyMemory['list']>>['instructions'],
+) {
+  const names = await namesOf(deps, owner, [instructions])
+  const { writer, updatedAt, ...rest } = instructions
+  return {
+    ...rest,
+    updatedAt: updatedAt === null ? null : updatedAt.toISOString(),
+    author: (writer === null ? undefined : names.get(writer)) ?? null,
+  }
+}
+
 async function shownPage(deps: Deps, owner: Owner, page: Page) {
   const names = await namesOf(deps, owner, [page, ...page.notes])
   const { notes, ...entry } = page
@@ -80,10 +96,17 @@ export function registerCompanyMemoryRoutes(app: FastifyInstance, deps: Deps): v
     const { instructions, pages } = await memory.list(owner.companyId)
     const names = await namesOf(deps, owner, pages)
     return answer({
-      instructions: await shownPage(deps, owner, instructions),
+      instructions: await shownInstructions(deps, owner, instructions),
       pages: pages.map((each) => authored(each, names)),
       mayManage: may,
     })
+  })
+
+  serve(app, writeCompanyMemoryInstructions, async (input) => {
+    const owner = { companyId: input.params.companyId, personId: input.person.id }
+    const writer = await admitWriter(deps, owner)
+    const written = await memory.writeInstructions(owner.companyId, input.body.body, writer)
+    return answer({ instructions: await shownInstructions(deps, owner, written) })
   })
 
   serve(app, readCompanyMemoryPage, async (input) => {
@@ -128,8 +151,12 @@ export function registerCompanyMemoryRoutes(app: FastifyInstance, deps: Deps): v
     await memory.removeNote(owner.companyId, input.params.noteId, writer)
     return answer(undefined)
   })
+  registerProposalSaves(app, deps)
+}
 
-  // A proposal's card saves: a new page or a note, the person who tapped its author (B1).
+/** A proposal's card saves: a new page or a note, the person who tapped its author (B1). */
+function registerProposalSaves(app: FastifyInstance, deps: Deps): void {
+  const memory = deps.company
   serve(app, createCompanyMemoryPage, async (input) => {
     const owner = { companyId: input.params.companyId, personId: input.person.id }
     const writer = await admitWriter(deps, owner)

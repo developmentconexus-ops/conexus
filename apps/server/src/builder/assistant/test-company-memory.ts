@@ -31,17 +31,8 @@ export async function memoryOf(hub: Hub, person: Person, companyId: string) {
   return Object(listed.json())
 }
 
-/** The company's instructions saved by `person` on the screen, against the version it read. */
+/** The company's instructions saved by `person` on the screen. */
 export async function instructed(hub: Hub, person: Person, companyId: string, body: string) {
-  const { instructions } = await memoryOf(hub, person, companyId)
-  const saved = await call(
-    hub,
-    person,
-    'PUT',
-    `${memoryAt(companyId)}/pages/${instructions.pageId}`,
-    {
-      ...{ name: instructions.name, body, version: instructions.version },
-    },
-  )
+  const saved = await call(hub, person, 'PUT', `${memoryAt(companyId)}/instructions`, { body })
   assert.equal(saved.statusCode, 200, saved.body)
 }

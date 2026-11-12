@@ -37,9 +37,10 @@ const CHANGED_SAVING = 'A página mudou enquanto você salvava.'
 const UNSAVED = unconfirmedText('se a página foi salva', 'Confira o texto e tente de novo.')
 const UNSAVED_NOTE = unconfirmedText('se a nota foi salva', 'Confira o texto e tente de novo.')
 
-/** Who wrote last and when, as "Ana · 11/11/2026"; the Assistant's own writes name no person. */
+/** Who wrote last and when, as "Ana · 11/11/2026"; with no name to give (the Hub does not know the person), only the day: the model writes nothing here (B1). */
 export function bylineOf(item: { author: string | null; updatedAt: string }): string {
-  return `${item.author ?? 'Assistente'} · ${dayOf(item.updatedAt)}`
+  const day = dayOf(item.updatedAt)
+  return item.author === null ? day : `${item.author} · ${day}`
 }
 
 /** A text box of a form, with its label, its refusal and, given `max`, the count against it. */

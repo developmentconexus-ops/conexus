@@ -1,4 +1,4 @@
-import type { CompanyId, CompanyMemoryPage, listCompanyMemory } from '@conexus/hub-api'
+import type { CompanyId, CompanyInstructions, listCompanyMemory } from '@conexus/hub-api'
 import { COMPANY_INSTRUCTIONS_MAX } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
@@ -11,7 +11,7 @@ import { SettingsSection } from '../../ui/settings-section.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { bylineOf, PageDetail, READ_FAILED, TextBox } from './company-memory-page.tsx'
-import { companyMemoryQuery, sendCompanyMemoryPage } from './queries.ts'
+import { companyMemoryQuery, sendCompanyInstructions } from './queries.ts'
 import { ONLY_MANAGERS_MEMORY } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/company-memory')
@@ -28,19 +28,15 @@ type Memory = z.infer<typeof listCompanyMemory.success.body>
 /** The instructions in their box; who may not change them reads the same box, with no button. */
 function Instructions(props: {
   companyId: CompanyId
-  instructions: CompanyMemoryPage
+  instructions: CompanyInstructions
   may: boolean
 }) {
   const { instructions } = props
-  const send = useMutation(sendCompanyMemoryPage)
+  const send = useMutation(sendCompanyInstructions)
   const form = useSchemaForm(InstructionsFields, { body: instructions.body })
   async function submit({ body }: { body: string }) {
     try {
-      const params = { companyId: props.companyId, pageId: instructions.pageId }
-      await send.mutateAsync({
-        params,
-        body: { name: instructions.name, body, version: instructions.version },
-      })
+      await send.mutateAsync({ params: { companyId: props.companyId }, body: { body } })
     } catch (error) {
       setWriteError(form, error, UNSAVED)
     }
@@ -105,7 +101,7 @@ function Loaded({ companyId, memory }: { companyId: CompanyId; memory: Memory })
         description={may ? undefined : ONLY_MANAGERS_MEMORY}
       >
         <Instructions
-          key={`${memory.instructions.version}:${memory.instructions.body}`}
+          key={`${memory.instructions.updatedAt}:${memory.instructions.body}`}
           companyId={companyId}
           instructions={memory.instructions}
           may={may}

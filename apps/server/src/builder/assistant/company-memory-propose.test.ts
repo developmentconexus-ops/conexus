@@ -16,7 +16,7 @@ function lastRead(asked: Sent) {
   return Object(JSON.parse(asked.toolResults.at(-1)?.text ?? '{}'))
 }
 
-test('quem escreve: o modelo de quem tem a permissão, como o de um membro, não tem ferramenta de gravação do Knowledge nem a instrução de gravar, e os dois têm a proposta', async (t) => {
+test('quem escreve: o modelo de quem tem a permissão, como o de um membro, não tem ferramenta de gravação do Knowledge, e nenhum bloco do pedido manda usar uma ferramenta que ele não tem (knowledge_pin, knowledge_page, knowledge_note), e os dois têm a proposta', async (t) => {
   const on = await assisting(t, [[said('Oi.')], [said('Oi, Bruno.')]])
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   for (const person of [on.ana, bruno]) {
@@ -28,8 +28,15 @@ test('quem escreve: o modelo de quem tem a permissão, como o de um membro, não
     const knowledge = asked.tools.filter((name) => name.startsWith('knowledge_')).sort()
     assert.deepEqual(knowledge, ['knowledge_list', 'knowledge_read', 'knowledge_search'])
     assert.ok(asked.tools.includes(PROPOSE))
-    const systems = asked.systems.map((each) => each.text).join('\n')
-    assert.doesNotMatch(systems, /When you write to Knowledge/)
+    // The pinned-context block is the library's own text, which has no option (a debt of the card).
+    const systems = asked.systems
+      .map((each) => each.text)
+      .filter((text) => !text.startsWith('Pinned knowledge may appear'))
+      .join('\n')
+    assert.doesNotMatch(
+      systems,
+      /When you write to Knowledge|knowledge_pin|knowledge_page|knowledge_note/,
+    )
   }
 })
 

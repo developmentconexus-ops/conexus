@@ -107,6 +107,8 @@ function knowledgeOf(storage: PostgresStore) {
     storage,
     scopes: SCOPES,
     tools: { read: true, write: false },
+    // Mastra's own option: the block of the read tools alone, without the write and pin ones the model lacks.
+    instructions: ({ read }) => read,
     pinnedContext: { maxTokens: 1000 },
   })
 }
@@ -142,52 +144,67 @@ async function pageOf(knowledge: Held, companyId: CompanyId, pageId: CompanyMemo
   return { shown, instructions: found.page.key === INSTRUCTIONS.key }
 }
 
-/** The instructions and the pages under the company's scope, its first level. */
-async function listOf(knowledge: Held, companyId: CompanyId) {
-  await ensure(knowledge, companyId)
+/** The instructions as the screen reads them: empty until a person writes them, and reading creates nothing. */
+async function instructionsOf(knowledge: Held, companyId: CompanyId) {
   const { store, read } = await view(knowledge, companyId)
   const [scope] = await store.getScopesByAddress([org(companyId)])
-  const instructions =
+  const page =
     scope === undefined
       ? null
       : await store.getPageByPath({ scopeId: scope.id, path: [INSTRUCTIONS.key], read })
-  if (scope === undefined || instructions === null) return gone('COMPANY_SCOPE')
+  return {
+    name: INSTRUCTIONS.name,
+    body: page?.body ?? '',
+    updatedAt: page?.updatedAt ?? null,
+    writer: page === null ? null : writerOf(page.updatedBy),
+  }
+}
+
+/** The instructions and the pages under the company's scope, its first level; none before the scope exists. */
+async function listOf(knowledge: Held, companyId: CompanyId) {
+  const instructions = await instructionsOf(knowledge, companyId)
+  const { store, read } = await view(knowledge, companyId)
+  const [scope] = await store.getScopesByAddress([org(companyId)])
+  if (scope === undefined) return { instructions, pages: [] }
   const level = await listKnowledgeTreeChildren(store, { parentId: scope.id, read, limit: LISTED })
-  const pages = level.pages.filter((each) => !each.isScope && each.id !== instructions.id)
-  const shown = await pageOf(knowledge, companyId, CompanyMemoryPageId.parse(instructions.id))
-  return { instructions: shown.shown, pages: pages.map(entryOf) }
+  const pages = level.pages.filter((each) => !each.isScope && each.key !== INSTRUCTIONS.key)
+  return { instructions, pages: pages.map(entryOf) }
+}
+
+/** Replaces the instructions as Mastra's host writes them (the last wins, under their ceiling); the first write creates the scope. */
+async function writeInstructions(
+  knowledge: Held,
+  companyId: CompanyId,
+  body: string,
+  writer: PersonId,
+) {
+  if (body.length > COMPANY_INSTRUCTIONS_MAX) {
+    throw new Failure('REQUEST_MALFORMED', { details: { reason: 'INSTRUCTIONS_MAX' } })
+  }
+  await knowledge.upsertPage({
+    ...{ scope: org(companyId), path: INSTRUCTIONS.key, name: INSTRUCTIONS.name },
+    ...{ body, author: `${PERSON}${writer}` },
+  })
+  return instructionsOf(knowledge, companyId)
 }
 
 type PageChange = { pageId: CompanyMemoryPageId; name: string; body: string; version: number }
 
-/**
- * Replaces a page; the instructions as Mastra's host writes them (the last wins, under their
- * ceiling), any other page against the version read.
- */
+/** Replaces a page against the version read; the instructions have their own door. */
 async function writePage(
   knowledge: Held,
   companyId: CompanyId,
   input: PageChange,
   writer: PersonId,
 ) {
-  const author = `${PERSON}${writer}`
-  if ((await pageOf(knowledge, companyId, input.pageId)).instructions) {
-    if (input.body.length > COMPANY_INSTRUCTIONS_MAX) {
-      throw new Failure('REQUEST_MALFORMED', { details: { reason: 'INSTRUCTIONS_MAX' } })
-    }
-    await knowledge.upsertPage({
-      ...{ scope: org(companyId), path: INSTRUCTIONS.key, name: INSTRUCTIONS.name },
-      ...{ body: input.body, author },
+  if ((await pageOf(knowledge, companyId, input.pageId)).instructions) return gone('PAGE')
+  const { store } = await view(knowledge, companyId)
+  await store
+    .updatePage({
+      ...{ id: input.pageId, expectedVersion: input.version },
+      ...{ name: input.name, body: input.body, provenance: { author: `${PERSON}${writer}` } },
     })
-  } else {
-    const { store } = await view(knowledge, companyId)
-    await store
-      .updatePage({
-        ...{ id: input.pageId, expectedVersion: input.version },
-        ...{ name: input.name, body: input.body, provenance: { author } },
-      })
-      .catch((error: unknown) => changed(error, input.pageId))
-  }
+    .catch((error: unknown) => changed(error, input.pageId))
   return (await pageOf(knowledge, companyId, input.pageId)).shown
 }
 
@@ -276,8 +293,12 @@ export function companyMemory(storage: PostgresStore) {
     knowledge,
     ensure: (companyId: CompanyId) => ensure(knowledge, companyId),
     list: (companyId: CompanyId) => listOf(knowledge, companyId),
-    page: async (companyId: CompanyId, pageId: CompanyMemoryPageId) =>
-      (await pageOf(knowledge, companyId, pageId)).shown,
+    page: async (companyId: CompanyId, pageId: CompanyMemoryPageId) => {
+      const found = await pageOf(knowledge, companyId, pageId)
+      return found.instructions ? gone('PAGE') : found.shown
+    },
+    writeInstructions: (companyId: CompanyId, body: string, writer: PersonId) =>
+      writeInstructions(knowledge, companyId, body, writer),
     writePage: (companyId: CompanyId, input: PageChange, writer: PersonId) =>
       writePage(knowledge, companyId, input, writer),
     removePage: (

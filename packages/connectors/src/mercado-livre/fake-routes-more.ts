@@ -18,7 +18,7 @@ import { envelope, rowsOf } from './recordings.ts'
 let questionsKept: readonly Record<string, unknown>[] | undefined
 
 /** 12 questions shaped as the recorded one, every fourth answered as it was; the asker's name and e-mail are planted for the kit to drop. */
-function questionsOf() {
+export function questionsOf() {
   const recorded = rowsOf('perguntas-varredura', 'questions')
   questionsKept ??= Array.from({ length: 12 }, (_, index) => ({
     ...recorded[0],
@@ -32,7 +32,7 @@ function questionsOf() {
   return questionsKept
 }
 
-const PERIODS = Array.from({ length: 14 }, (_, index) => {
+export const PERIODS = Array.from({ length: 14 }, (_, index) => {
   const month = String(index + 1).padStart(2, '0')
   return {
     key: `2025-${month}-01`,
@@ -45,9 +45,9 @@ const PERIODS = Array.from({ length: 14 }, (_, index) => {
 })
 
 /** The reason of the double's one open claim. */
-const CLAIM_REASON = 'PNR'
+export const CLAIM_REASON = 'PNR'
 /** The one promotion of the double: still a candidate, it starts on 1 October 2026. */
-const PROMOTION = {
+export const PROMOTION = {
   id: 'P-MLB1000',
   type: 'DEAL',
   status: 'candidate',
@@ -56,21 +56,7 @@ const PROMOTION = {
   finish_date: '2026-10-07T23:59:59',
 }
 /** The visits of the double: one total, none by listing. */
-const TOTAL_VISITS = 321
-
-/** What the double holds, for a test to check an answer against: computed from the very rows its routes send. */
-export const MERCADO_LIVRE_FACTS = {
-  /** Every listing of the double is active. */
-  activeListings: ITEMS.length,
-  unansweredQuestions: questionsOf().filter((each) => each.status === 'UNANSWERED').length,
-  openClaims: 1,
-  claimReason: CLAIM_REASON,
-  /** The newest billing period's amount, and the one the period's details give. */
-  lastPeriodAmount: PERIODS.at(-1)?.amount ?? 0,
-  periodDetailsAmount: 120.5,
-  totalVisits: TOTAL_VISITS,
-  promotion: { name: PROMOTION.name, status: PROMOTION.status },
-}
+export const TOTAL_VISITS = 321
 
 const NEEDS_DOCUMENT_TYPE = {
   status: 400,

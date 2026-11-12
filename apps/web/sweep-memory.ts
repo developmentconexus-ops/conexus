@@ -11,8 +11,8 @@ export function memoryPages(id: string, mayManage: boolean): Replies {
     [`GET /api/companies/${id}/assistant/profile-memory`]: ok(getProfileMemory, { text: null }),
     [`GET /api/companies/${id}/assistant/company-memory`]: ok(listCompanyMemory, {
       instructions: {
-        ...{ pageId: '01M77190XASM4QGT4DFDJ6K1Y4', name: 'Instruções da empresa', body: '' },
-        ...{ updatedAt: '2026-11-11T15:00:00.000Z', author: null, version: 1, notes: [] },
+        ...{ name: 'Instruções da empresa', body: '' },
+        ...{ updatedAt: '2026-11-11T15:00:00.000Z', author: null },
       },
       pages: [],
       mayManage,

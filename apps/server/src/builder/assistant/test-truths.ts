@@ -1,5 +1,5 @@
+import type { SalesSet } from '@conexus/connectors'
 import { MERCADO_LIVRE_FACTS } from '@conexus/connectors'
-import type { SalesSet } from '../../hub/connectors/test-sales.ts'
 import {
   PADARIA_SOL_FILIAL,
   PADARIA_SOL_MATRIZ,
@@ -88,14 +88,26 @@ function registerRows(sql: string): unknown[][] {
 function sales(n: number): Expected | undefined {
   const all = septemberNotes(SETS)
   const filial = septemberNotes([PADARIA_SOL_FILIAL])
-  const bySeller = grouped(all, (nota) => nota.seller, (nota) => nota.total)
-  const byFilial = grouped(filial, (nota) => nota.seller, (nota) => nota.total)
+  const bySeller = grouped(
+    all,
+    (nota) => nota.seller,
+    (nota) => nota.total,
+  )
+  const byFilial = grouped(
+    filial,
+    (nota) => nota.seller,
+    (nota) => nota.total,
+  )
   const byProduct = grouped(
     all.flatMap((nota) => nota.lines),
     (line) => line.product,
     (line) => line.total,
   )
-  const byCustomer = grouped(all, (nota) => nota.customer, (nota) => nota.total)
+  const byCustomer = grouped(
+    all,
+    (nota) => nota.customer,
+    (nota) => nota.total,
+  )
   const first = sum(all.filter((nota) => nota.day <= 15).map((nota) => nota.total))
   const second = sum(all.filter((nota) => nota.day > 15).map((nota) => nota.total))
   const totals = SETS.map((set) => sum([...soldBy(set, SEPTEMBER).values()]))
@@ -135,7 +147,10 @@ function register(n: number): Expected | undefined {
       const stocked = registerRows(
         `select p.DESCRPROD ${owned} and exists (select 1 from TGFEST e where e.CODPROD = p.CODPROD and e.TIPO = 'P' and e.ESTOQUE > 0)`,
       )
-      return { names: empty.map(([name]) => String(name)), forbidden: stocked.map(([name]) => String(name)) }
+      return {
+        names: empty.map(([name]) => String(name)),
+        forbidden: stocked.map(([name]) => String(name)),
+      }
     }
     case 10: {
       const groups = registerRows(
@@ -147,9 +162,7 @@ function register(n: number): Expected | undefined {
       const over = registerRows(
         `select p.DESCRPROD from TGFEST e join TGFPRO p on p.CODPROD = e.CODPROD where e.RESERVADO > e.ESTOQUE`,
       )
-      return over.length === 0
-        ? { anyOf: [NONE] }
-        : { names: over.map(([name]) => String(name)) }
+      return over.length === 0 ? { anyOf: [NONE] } : { names: over.map(([name]) => String(name)) }
     }
     default:
       return undefined
@@ -196,7 +209,8 @@ function goals(month: string): [string, number][] {
   const sums = new Map<string, number>()
   for (const line of goalsSheet().split('\n').slice(1)) {
     const [seller = '', on = '', meta = '0'] = line.split(',')
-    if (month === 'all' || on.startsWith(month)) sums.set(seller, (sums.get(seller) ?? 0) + Number(meta))
+    if (month === 'all' || on.startsWith(month))
+      sums.set(seller, (sums.get(seller) ?? 0) + Number(meta))
   }
   return [...sums.entries()]
 }
@@ -206,15 +220,20 @@ function files(n: number): Expected | undefined {
     case 19:
       return { points: 5 }
     case 20:
-      return { figures: goals('all').map(([, total]) => total), names: goals('all').map(([name]) => name) }
+      return {
+        figures: goals('all').map(([, total]) => total),
+        names: goals('all').map(([name]) => name),
+      }
     case 21: {
       const sold = new Map(
-        grouped(septemberNotes(SETS), (nota) => nota.seller, (nota) => nota.total),
+        grouped(
+          septemberNotes(SETS),
+          (nota) => nota.seller,
+          (nota) => nota.total,
+        ),
       )
       const hit = goals('09').filter(([seller, meta]) => (sold.get(seller) ?? 0) >= meta)
-      return hit.length === 0
-        ? { anyOf: [NONE] }
-        : { names: hit.map(([seller]) => seller) }
+      return hit.length === 0 ? { anyOf: [NONE] } : { names: hit.map(([seller]) => seller) }
     }
     default:
       return undefined
@@ -240,18 +259,20 @@ export function shows(text: string, value: number): boolean {
 /** Whether the answer meets every part of what it must hold. */
 export function meets(text: string, expected: Expected): boolean {
   const plain = keyOf(text)
-  const at = (name: string) => plain.indexOf(keyOf(name))
   const names = expected.names ?? []
-  const places = names.map(at)
-  const ordered = expected.ordered === undefined || places.every((place, i) => i === 0 || place > (places[i - 1] ?? 0))
+  const places = names.map((name) => plain.indexOf(keyOf(name)))
+  const ordered =
+    expected.ordered === undefined ||
+    places.every((place, i) => i === 0 || place > (places[i - 1] ?? 0))
   return (
     (expected.figures ?? []).every((value) => shows(text, value)) &&
     (expected.anyFigure === undefined || expected.anyFigure.some((value) => shows(text, value))) &&
     places.every((place) => place >= 0) &&
     ordered &&
-    (expected.forbidden ?? []).every((name) => at(name) < 0) &&
+    (expected.forbidden ?? []).every((name) => !plain.includes(keyOf(name))) &&
     (expected.anyOf === undefined || expected.anyOf.some((pattern) => pattern.test(text))) &&
     (expected.points === undefined ||
-      text.split('\n').filter((line) => /^\s*(?:[-*•]|\d+[.)])\s+/.test(line)).length === expected.points)
+      text.split('\n').filter((line) => /^\s*(?:[-*•]|\d+[.)])\s+/.test(line)).length ===
+        expected.points)
   )
 }

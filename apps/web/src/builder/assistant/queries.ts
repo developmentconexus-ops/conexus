@@ -17,6 +17,7 @@ import {
   setAssistantConnections,
   setAssistantModel,
   setProfileMemory,
+  writeCompanyMemoryInstructions,
   writeCompanyMemoryNote,
   writeCompanyMemoryPage,
 } from '@conexus/hub-api'
@@ -89,6 +90,7 @@ export function companyMemoryPageQuery(companyId: CompanyId, pageId: CompanyMemo
   return hubQuery(readCompanyMemoryPage, { params: { companyId, pageId } })
 }
 
+export const sendCompanyInstructions = hubMutation(writeCompanyMemoryInstructions)
 export const sendCompanyMemoryPage = hubMutation(writeCompanyMemoryPage)
 export const sendCompanyMemoryPageRemoval = hubMutation(removeCompanyMemoryPage)
 export const sendCompanyMemoryNote = hubMutation(writeCompanyMemoryNote)

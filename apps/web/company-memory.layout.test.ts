@@ -22,13 +22,10 @@ const PAGE = `/companies/${COMPANY.id}/settings/company-memory`
 const MEMORY = `/api/companies/${COMPANY.id}/assistant/company-memory`
 const DAY = '2026-11-11T15:00:00.000Z'
 const INSTRUCTIONS = {
-  pageId: '01M77190XASM4QGT4DFDJ6K1Y4',
   name: 'Instruções da empresa',
   updatedAt: DAY,
   author: 'Ana Lima',
   body: 'Valores em reais com duas casas. A semana comercial começa na segunda. Chame cliente pelo nome fantasia.',
-  version: 2,
-  notes: [],
 }
 const OPERATION = {
   pageId: '01M771918E4B2GA6D4KYHGY5TW',
@@ -52,7 +49,7 @@ function repliesOf(role: 'owner' | 'member', pages: boolean): Replies {
   return {
     ...(role === 'owner' ? OWNER : MEMBER),
     [`GET ${MEMORY}`]: ok(listCompanyMemory, {
-      instructions: pages ? INSTRUCTIONS : { ...INSTRUCTIONS, body: '', author: null, version: 1 },
+      instructions: pages ? INSTRUCTIONS : { ...INSTRUCTIONS, body: '', author: null },
       pages: pages ? [entry] : [],
       mayManage: role === 'owner',
     }),

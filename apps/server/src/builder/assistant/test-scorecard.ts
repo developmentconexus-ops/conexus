@@ -208,7 +208,11 @@ export function scoreOf(turn: {
  * read nothing when it must not, and what the doubles' own data makes the right answer
  * (`test-truths.ts`).
  */
-export function judged(asked: Question, parts: readonly MastraMessagePart[], read: string): boolean {
+export function judged(
+  asked: Question,
+  parts: readonly MastraMessagePart[],
+  read: string,
+): boolean {
   const text = textOf([...parts])
   const readOnce = invocationsOf(parts).some(
     (call) =>

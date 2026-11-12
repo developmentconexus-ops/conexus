@@ -1,5 +1,5 @@
 import type { CompanyMemoryPage } from '@conexus/hub-api'
-import { readCompanyMemoryPage } from '@conexus/hub-api'
+import { CompanyInstructions, readCompanyMemoryPage } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { HttpResponseResolver } from 'msw'
@@ -14,14 +14,11 @@ const PATH = `*/api/companies/${COMPANY.id}/assistant/company-memory`
 const DAY = '2026-11-11T15:00:00.000Z'
 const Page = readCompanyMemoryPage.success.body.shape.page
 
-const INSTRUCTIONS = Page.parse({
-  pageId: '01M77190XASM4QGT4DFDJ6K1Y4',
+const INSTRUCTIONS = CompanyInstructions.parse({
   name: 'Instruções da empresa',
   updatedAt: DAY,
   author: null,
   body: '',
-  version: 1,
-  notes: [],
 })
 
 const OPERATION = Page.parse({
@@ -38,7 +35,7 @@ const OPERATION = Page.parse({
 
 /** What the Hub holds and what reached it: how often the list was read, and every write. */
 type Held = {
-  instructions: CompanyMemoryPage
+  instructions: CompanyInstructions
   pages: CompanyMemoryPage[]
   lists: number
   writes: { method: string; path: string; body: unknown }[]
@@ -74,11 +71,16 @@ function memoryHandlers(held: Held, mayManage: boolean, answers: Answers) {
       const page = found(info.params.pageId)
       return page === undefined ? refusal('NOT_FOUND') : HttpResponse.json({ page })
     }),
+    http.put(`${PATH}/instructions`, async ({ request }) => {
+      await wrote('PUT', request)
+      const { body } = Object(await request.json())
+      Object.assign(held.instructions, { body })
+      return HttpResponse.json({ instructions: held.instructions })
+    }),
     http.put(`${PATH}/pages/:pageId`, async ({ request, params }) => {
       await wrote('PUT', request)
       const { name, body } = Object(await request.json())
-      const page =
-        params.pageId === held.instructions.pageId ? held.instructions : found(params.pageId)
+      const page = found(params.pageId)
       if (page === undefined) return refusal('NOT_FOUND')
       Object.assign(page, { name, body, version: page.version + 1 })
       return HttpResponse.json({ page })
@@ -197,7 +199,7 @@ test('com páginas: o nome e "Ana · 11/11/2026"; Ver abre o texto e as notas, c
   expect(await shown.findByText(OPERATION.body)).toBeTruthy()
   const notes = within(shown.getByRole('list', { name: `Notas de ${OPERATION.name}` }))
   expect(notes.getByText('Vale desde 2026.')).toBeTruthy()
-  expect(notes.getByText('Assistente · 11/11/2026')).toBeTruthy()
+  expect(notes.getByText('11/11/2026')).toBeTruthy()
   fireEvent.click(shown.getByRole('button', { name: `Fechar ${OPERATION.name}` }))
   await waitFor(() => expect(shown.queryByText(OPERATION.body)).toBeNull())
 })
@@ -215,7 +217,7 @@ test('sem permissão: o membro lê as instruções, as páginas e as notas, com 
   }
 })
 
-test('salvar as instruções: o PUT leva o nome, o texto e a versão lida, e a caixa mostra o que ficou', async () => {
+test('salvar as instruções: o PUT leva o texto, e a caixa mostra o que ficou', async () => {
   const held = openMemory()
   fireEvent.change(await box(), { target: { value: RULE } })
   const shown = await memorySection()
@@ -224,8 +226,8 @@ test('salvar as instruções: o PUT leva o nome, o texto e a versão lida, e a c
   await waitFor(() => expect(held.writes).toHaveLength(1))
   expect(held.writes[0]).toEqual({
     method: 'PUT',
-    path: `/pages/${INSTRUCTIONS.pageId}`,
-    body: { name: INSTRUCTIONS.name, body: RULE, version: 1 },
+    path: '/instructions',
+    body: { body: RULE },
   })
   await waitFor(() => expect(held.lists).toBeGreaterThan(1))
   expect((await box()).value).toBe(RULE)

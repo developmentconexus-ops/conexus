@@ -3,6 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { COMPANY_INSTRUCTIONS_MAX } from '@conexus/hub-api'
 import {
+  ANA_OWNER,
   BRUNO,
   CARLA,
   call,
@@ -12,8 +13,15 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { assisting } from './test-assistant.ts'
-import { memoryAt, memoryOf, NOTE, OPERATION_1100, savedThe1100 } from './test-company-memory.ts'
+import { assisting, said } from './test-assistant.ts'
+import {
+  instructed,
+  memoryAt,
+  memoryOf,
+  NOTE,
+  OPERATION_1100,
+  savedThe1100,
+} from './test-company-memory.ts'
 
 /** Empresa Teste with the 1100 Ana saved from a proposal's card; Bruno a member, Carla an administrator. */
 async function saved(t: TestContext) {
@@ -56,26 +64,36 @@ test('as rotas: todo membro lista e lê; gravar e apagar pedem a permissão Mem�
   assert.deepEqual(Object((await call(on.hub, on.ana, 'GET', on.pagePath)).json()).page, on.page)
 })
 
-test('as rotas: as instruções vão até 2.000 caracteres e não se apagam', async (t) => {
+test('as rotas: as instruções vão até 2.000 caracteres, o último a gravar vale, e não se leem nem se apagam por id', async (t) => {
   const on = await saved(t)
-  const { instructions } = await memoryOf(on.hub, on.ana, on.companyId)
-  const path = `${on.memory}/pages/${instructions.pageId}`
-  const long = { name: instructions.name, version: instructions.version }
+  const path = `${on.memory}/instructions`
   const over = await call(on.hub, on.ana, 'PUT', path, {
-    ...long,
     body: 'a'.repeat(COMPANY_INSTRUCTIONS_MAX + 1),
   })
   assert.equal(over.statusCode, 400, over.body)
-  assert.equal(codeOf(over), 'REQUEST_MALFORMED')
   const at = await call(on.hub, on.carla, 'PUT', path, {
-    ...long,
     body: 'a'.repeat(COMPANY_INSTRUCTIONS_MAX),
   })
   assert.equal(at.statusCode, 200, at.body)
-  assert.equal(Object(at.json()).page.author, CARLA.name)
-  const removed = await call(on.hub, on.ana, 'DELETE', `${path}?version=${instructions.version}`)
-  assert.equal(removed.statusCode, 400, removed.body)
-  assert.equal(codeOf(removed), 'REQUEST_MALFORMED')
+  assert.equal(Object(at.json()).instructions.author, CARLA.name)
+  const { instructions, pages } = await memoryOf(on.hub, on.ana, on.companyId)
+  assert.equal(instructions.body.length, COMPANY_INSTRUCTIONS_MAX)
+  assert.equal(
+    pages.some((each: { name: string }) => each.name === instructions.name),
+    false,
+  )
+})
+
+test('as rotas: ler a lista não grava nada: a empresa sem conversa vê as instruções vazias e nenhuma página, de novo e de novo', async (t) => {
+  const on = await assisting(t, [[said('Oi.')]])
+  for (const _ of [1, 2]) {
+    const { instructions, pages } = await memoryOf(on.hub, on.ana, on.companyId)
+    assert.deepEqual([instructions.body, instructions.updatedAt, pages], ['', null, []])
+  }
+  await instructed(on.hub, on.ana, on.companyId, 'Valores em reais.')
+  const { instructions } = await memoryOf(on.hub, on.ana, on.companyId)
+  assert.equal(instructions.body, 'Valores em reais.')
+  assert.equal(instructions.author, ANA_OWNER.name)
 })
 
 test('as rotas: apagar ou gravar com outra gravação no meio volta COMPANY_MEMORY_CHANGED, e nada se perde', async (t) => {

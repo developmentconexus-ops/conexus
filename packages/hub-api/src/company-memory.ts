@@ -34,6 +34,15 @@ const Entry = z.object({
   author: Author,
 })
 
+/** The company's instructions: the text, empty until a person writes it. */
+export const CompanyInstructions = z.object({
+  name: z.string(),
+  body: z.string(),
+  updatedAt: z.iso.datetime().nullable(),
+  author: Author,
+})
+export type CompanyInstructions = z.infer<typeof CompanyInstructions>
+
 export const CompanyMemoryPage = Entry.extend({
   body: z.string(),
   /** What a change compares with, so a change made meanwhile is refused (code C38). */
@@ -89,12 +98,25 @@ export const listCompanyMemory = defineOperation({
   success: {
     status: 200,
     body: z.object({
-      instructions: CompanyMemoryPage,
+      instructions: CompanyInstructions,
       pages: z.array(Entry),
       mayManage: z.boolean(),
     }),
   },
   failures: READS,
+})
+
+export const writeCompanyMemoryInstructions = defineOperation({
+  id: 'writeCompanyMemoryInstructions',
+  summary:
+    'Replaces the instructions the Assistant follows in every conversation of the company; the last write wins, and the first one creates them.',
+  access: 'session',
+  method: 'PUT',
+  path: `${BASE}/instructions`,
+  bodyLimit: 16 * 1024,
+  input: { params: InCompany, body: z.object({ body: z.string().max(COMPANY_INSTRUCTIONS_MAX) }) },
+  success: { status: 200, body: z.object({ instructions: CompanyInstructions }) },
+  failures: [...WRITES].filter((code) => code !== 'COMPANY_MEMORY_CHANGED'),
 })
 
 export const readCompanyMemoryPage = defineOperation({

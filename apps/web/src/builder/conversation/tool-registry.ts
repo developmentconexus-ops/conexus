@@ -304,7 +304,8 @@ export function presentTool(
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
   const phrase = spec.phraseKey === undefined ? undefined : stringArg(tool.args, spec.phraseKey)
   if (phrase !== undefined) {
-    const sentence = failed ? `${spec.failed}: ${phrase}` : phrase
+    const ongoing = status === 'running' ? `Rodando… ${phrase}` : phrase
+    const sentence = failed ? `${spec.failed}: ${phrase}` : ongoing
     return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside: false }
   }
   const head = headOf(spec, status)
