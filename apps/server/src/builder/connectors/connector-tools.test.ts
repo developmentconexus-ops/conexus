@@ -62,7 +62,7 @@ function tools() {
     const found = Object(set)[name]
     return found.execute(input, { requestContext: new RequestContext() })
   }
-  return { run, seen }
+  return { run, seen, set }
 }
 
 test('duas ligações de mesmo nome em conectores diferentes: o caderno e a anotação vão à do conector dito', async () => {
@@ -105,7 +105,14 @@ function savingTo(files: { writeFile(path: string, content: string): Promise<voi
     connections: [granted('sankhya', SANKHYA)],
     read: async (call) => {
       signals.push(call.signal)
-      return { kind: 'OK', value: { linhas: [] }, complete: true, whole: { linhas: [] } }
+      return {
+        kind: 'OK',
+        value: { linhas: [] },
+        complete: true,
+        rows: 0,
+        bytes: 14,
+        whole: { linhas: [] },
+      }
     },
     savedAt: () => 'reads/aaaa-1.json',
     log: {
@@ -162,7 +169,7 @@ test('a ligação de um sistema com a leitura de outro: a ferramenta recusa dize
     connections: [granted('sankhya', SANKHYA, 'Sankhya'), granted('mercado-livre', LOJA, 'Loja')],
     read: async (call) => {
       reads.push(call)
-      return { kind: 'OK', value: {}, complete: true }
+      return { kind: 'OK', value: {}, complete: true, rows: 0, bytes: 2 }
     },
     log: {
       info: (fields, message) => logged.push({ fields, message }),
@@ -201,7 +208,7 @@ test('uma operação que o papel não tem chega à porta e o modelo recebe NOT_I
     read: async (call) => {
       asked.push(call.operation)
       return call.operation === 'pedidos'
-        ? { kind: 'OK', value: {}, complete: true }
+        ? { kind: 'OK', value: {}, complete: true, rows: 0, bytes: 2 }
         : { kind: 'NOT_IN_ROLE', role: 'atendente', operation: call.operation }
     },
     log: { info: () => undefined, error: () => undefined },
@@ -248,4 +255,17 @@ test('uma operação que não tem a forma conector.operação é erro de esquema
   }
   assert.deepEqual(asked, [])
   assert.ok(!logged.join('').includes('xxxxx'))
+})
+
+test('a frase do arquivo: o que está inteiro no arquivo não se lê de novo, e sem arquivo se filtra', () => {
+  const { set } = tools()
+  const description = String(Object(Object(set).connector_read).description)
+  assert.match(
+    description,
+    /`complete` is false and `file` is set, the whole answer is in that file/,
+  )
+  assert.match(description, /open it with Python on the machine/)
+  assert.match(description, /Do not read again to see the rest/)
+  assert.match(description, /`saved` is false there is no file: filter with WHERE and COUNT/)
+  assert.doesNotMatch(description, /run your own SQL/)
 })

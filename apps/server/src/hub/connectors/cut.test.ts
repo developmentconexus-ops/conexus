@@ -40,11 +40,21 @@ test('o corte: passa de 16 KB, o texto longo é cortado com reticências antes d
 test('o corte: uma linha que sozinha passa de 16 KB, e um valor sem linhas que passa, não chegam ao modelo; ele lê complete falso', () => {
   const wide = Object.fromEntries(Array.from({ length: 100 }, (_, n) => [`c${n}`, 'x'.repeat(500)]))
   const row = shaped({ linhas: [wide], temMais: false })
-  assert.deepEqual(row, { value: { linhas: [], temMais: false }, complete: false })
+  assert.deepEqual(row, {
+    value: { linhas: [], temMais: false },
+    complete: false,
+    rows: 0,
+    bytes: Buffer.byteLength('{"linhas":[],"temMais":false}'),
+  })
   const many = shaped(Array.from({ length: 4_000 }, (_, n) => `valor ${n}`))
-  assert.deepEqual(many, { value: null, complete: false })
+  assert.deepEqual(many, { value: null, complete: false, rows: 0, bytes: 4 })
   const short = shaped({ total: 3 })
-  assert.deepEqual(short, { value: { total: 3 }, complete: true })
+  assert.deepEqual(short, {
+    value: { total: 3 },
+    complete: true,
+    rows: 0,
+    bytes: Buffer.byteLength('{"total":3}'),
+  })
 })
 
 test('o corte: uma leitura cujos campos fora das linhas passam de 16 KB não chega ao modelo, nem sem nenhuma linha', () => {
@@ -52,9 +62,23 @@ test('o corte: uma leitura cujos campos fora das linhas passam de 16 KB não che
   assert.deepEqual(shaped({ linhas: [row(1)], temMais: false, colunas }), {
     value: null,
     complete: false,
+    rows: 0,
+    bytes: 4,
   })
   assert.deepEqual(shaped({ linhas: [], temMais: false, colunas }), {
     value: null,
     complete: false,
+    rows: 0,
+    bytes: 4,
   })
+})
+
+test('o corte diz linhas e bytes: as linhas da resposta lida e o seu tamanho em JSON', () => {
+  const cut = shaped({ linhas: Array.from({ length: 500 }, (_, n) => row(n)), temMais: false })
+  assert.equal(cut.rows, 20)
+  assert.equal(cut.bytes, Buffer.byteLength(JSON.stringify(cut.value)))
+  const small = shaped({ linhas: [row(1), row(2)], temMais: false })
+  assert.deepEqual([small.rows, small.complete], [2, true])
+  const none = shaped({ codigo: 1 })
+  assert.deepEqual([none.rows, none.bytes], [0, Buffer.byteLength('{"codigo":1}')])
 })

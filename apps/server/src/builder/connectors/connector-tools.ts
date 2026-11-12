@@ -186,6 +186,9 @@ function otherSystem(access: ConnectorAccess, connection: string, operation: str
 const OPERATION_MAX = 80
 const OPERATION_FORMAT = /^[a-z0-9-]+\.[A-Za-z0-9_]+$/
 
+const WHOLE_FILE =
+  'When `complete` is false and `file` is set, the whole answer is in that file: open it with Python on the machine. Do not read again to see the rest; read again only to filter what the file does not hold. When `saved` is false there is no file: filter with WHERE and COUNT.'
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
   if (!connections.some((each) => each.reads.length > 0)) return {}
@@ -193,7 +196,7 @@ function readTool(access: ConnectorAccess): ToolsInput {
     [BUILDER_TOOL.connectorRead]: createTool({
       id: BUILDER_TOOL.connectorRead,
       description: [
-        `Reads from a company system ${access.wording.whose}, by the connection's name. The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened): to count or see more rows, run your own SQL read with WHERE and COUNT. At most ${access.wording.limit}.`,
+        `Reads from a company system ${access.wording.whose}, by the connection's name. The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${access.wording.limit}.`,
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({
