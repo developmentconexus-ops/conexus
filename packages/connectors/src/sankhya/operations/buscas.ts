@@ -63,6 +63,11 @@ export const buscarParceiros = defineOperation({
   label: 'Buscar parceiros',
   input: ParceiroInput,
   ...foundIn(Parceiro),
+  personal: [
+    { path: 'documento', kind: 'documento' },
+    { path: 'nome', kind: 'contato' },
+    { path: 'razaoSocial', kind: 'contato' },
+  ],
   probe: (): z.infer<typeof ParceiroInput> => ({ limite: 1 }),
   request: (input) =>
     queryRequest(

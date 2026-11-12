@@ -104,6 +104,7 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
       const speaker = {
         kind: 'VERSION',
         declared: [{ connectionId: opened.id, operation: OperationId.parse(operation.id) }],
+        personal: [],
       } as const
       const answered = await readThrough(deps, {
         by: 'app',

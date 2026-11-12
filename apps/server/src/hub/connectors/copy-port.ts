@@ -115,6 +115,8 @@ async function readAsCopy(deps: Deps, a: ReadOf): Promise<ReadAnswer | NotInRole
         declared: [
           { connectionId: input.connectionId, operation: OperationId.parse(operation.id) },
         ],
+        // A copy declares no kind yet: its rows keep no personal data (the column per kind is U5's).
+        personal: [],
       },
       opened,
       operation,

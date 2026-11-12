@@ -117,7 +117,10 @@ test('a prova do caderno pelo papel: sem consultar, gravar e ler o caderno dá N
 test('o funil: uma versão publicada lê só o que declara, e a que não declarou a consulta livre recebe NOT_IN_ROLE sem pedido ao dublê', async (t) => {
   const on = await atendenteOn(t)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('pedidos') }]
-  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const version = {
+    ...on.scope(),
+    agentVersion: { kind: 'VERSION', declared, personal: [] },
+  } as const
   const before = on.called()
   const free = await on.ask('consultar', { sql: QUERY }, version)
   assert.deepEqual(free, { kind: 'NOT_IN_ROLE', role: null, operation: 'consultar' })
@@ -194,7 +197,10 @@ test('a versão publicada roda para quem conversa sem a operação: a que declar
   const on = await atendenteOn(t)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('empresas') }]
   assert.equal((await on.ask('empresas')).kind, 'NOT_IN_ROLE')
-  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const version = {
+    ...on.scope(),
+    agentVersion: { kind: 'VERSION', declared, personal: [] },
+  } as const
   const answered = await on.ask('empresas', { page: 0 }, version)
   assert.equal(answered.kind, 'OK')
   assert.equal(on.called(), 1)

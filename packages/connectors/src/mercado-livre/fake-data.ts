@@ -1,7 +1,6 @@
 import { rowsOf } from './recordings.ts'
 
-// Invented values only (S40). The buyer's name, e-mail, phone, address and CPF are here on
-// purpose: the kit must drop them (`operations.test.ts`, "sem dados do comprador").
+// Invented values only (S40), the buyer's personal data included on purpose.
 
 export const APP = Object.freeze({
   clientId: 'fake-app-1234567890',
@@ -143,7 +142,12 @@ export function me(account: { ref: string; label: string }) {
     user_type: 'normal',
     permalink: `https://perfil.exemplo.test/${account.label}`,
     registration_date: '2020-01-01T00:00:00.000-03:00',
+    first_name: 'Joana',
+    last_name: 'Exemplo',
     email: 'dono@exemplo.test',
     phone: { area_code: '11', number: '900000001' },
+    alternative_phone: { area_code: '11', phone: '900000002' },
+    address: { address: 'Rua da Loja 1', city: 'Cidade', state: 'BR-SP', zip_code: '00000000' },
+    identification: { type: 'CPF', number: '11144477735' },
   }
 }

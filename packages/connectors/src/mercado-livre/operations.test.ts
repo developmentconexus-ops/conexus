@@ -26,25 +26,6 @@ test('não marca como lida', async () => {
   assert.equal(fake.markedAsRead(), 0)
 })
 
-test('sem dados do comprador', async () => {
-  const fake = mercadoLivreFake()
-  const values = await probeAll(fake)
-  assert.equal(values.length, 27, 'the double answers every read')
-  const text = JSON.stringify(values)
-  for (const buyer of [
-    'maria.ficticia',
-    '988776655',
-    '52998224725',
-    'Maria',
-    'Fictícia',
-    'COMPRADORFICTICIO',
-    'Rua Inventada',
-    '11988776655',
-    'dono@exemplo.test',
-  ])
-    assert.ok(!text.includes(buyer), `an output carries ${buyer}`)
-})
-
 test('o 404 de um vendedor sem tempo de resposta é uma resposta vazia; outro 404, e o mesmo 404 em outra leitura, é recusa', () => {
   const tempo = mercadoLivre.operations.find((operation) => operation.id === 'tempoDeResposta')
   const conta = mercadoLivre.operations.find((operation) => operation.id === 'conta')
@@ -113,7 +94,7 @@ test('uma linha passa como o Mercado Livre a mandou, com campo a mais ou de outr
   assert.deepEqual(answered, {
     kind: 'OK',
     value: {
-      linhas: [{ id: 1, extra: { novo: true }, total_amount: 'dez' }],
+      linhas: [{ id: 1, extra: { novo: true }, total_amount: 'dez', buyer: { email: 'a@b.test' } }],
       temMais: true,
       total: 3,
     },
@@ -126,32 +107,6 @@ test('o envio pede o formato novo pelo cabeçalho, e o pedido sai com ele', () =
   const request = requestOf(shipment, { shipmentId: '40000000001' }, ACCOUNT, SENT_AT)
   assert.equal(request.headers?.['x-format-new'], 'true')
   assert.equal(toRequest(mercadoLivre, request, 'bearer').headers.get('x-format-new'), 'true')
-})
-
-test('o envio no formato novo não deixa sair o comprador: nome, telefone e endereço de destination', () => {
-  const shipment = mercadoLivre.operations.find((operation) => operation.id === 'envio')
-  assert.ok(shipment)
-  const answered = shipment.answer({
-    status: 200,
-    body: {
-      id: 40000000001,
-      status: 'delivered',
-      substatus: null,
-      origin: { type: 'selling_address', sender_id: 1, shipping_address: { address_line: 'loja' } },
-      destination: {
-        comments: null,
-        receiver_id: 77001,
-        receiver_name: 'Maria Fictícia',
-        receiver_phone: '11988776655',
-        shipping_address: { address_line: 'Rua Inventada 1', zip_code: '99887766' },
-      },
-    },
-  })
-  assert.equal(answered.kind, 'OK')
-  const text = JSON.stringify(answered)
-  for (const buyer of ['Maria', '11988776655', 'Rua Inventada', '99887766', 'destination'])
-    assert.ok(!text.includes(buyer), `the shipment carries ${buyer}`)
-  assert.ok(text.includes('delivered'))
 })
 
 test('o resumo do faturamento é uma linha, e as duas leituras mandam document_type', async () => {

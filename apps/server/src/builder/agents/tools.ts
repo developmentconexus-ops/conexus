@@ -181,7 +181,7 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
   }
   const declared = deps.scope.agentVersion?.declared ?? []
   const { agentId, number } = deps.author
-  return { ...asked, speaker: { kind: 'VERSION', declared }, agentId, number }
+  return { ...asked, speaker: { kind: 'VERSION', declared, personal: [] }, agentId, number }
 }
 
 /**

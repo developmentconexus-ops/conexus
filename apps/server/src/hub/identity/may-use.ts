@@ -26,6 +26,8 @@ export type Speaker =
   | Readonly<{
       kind: 'VERSION'
       declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
+      /** The kinds of personal data the version shows, checked at publishing like `declared`. */
+      personal: readonly PersonalKind[]
     }>
 
 export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>

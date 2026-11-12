@@ -60,6 +60,8 @@ export const TEST_KIT = {
         { id: 'anuncios', class: 'read' },
         { id: 'pedidos', class: 'read' },
         { id: 'perguntas', class: 'read' },
+        { id: 'envio', class: 'read' },
+        { id: 'notaFiscalDoPedido', class: 'read' },
       ],
     },
   ],
