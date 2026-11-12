@@ -45,8 +45,9 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
   aqui. A palavra "J1" também aparece, de uma etapa antiga, no comentário do caderno
   (`apps/server/src/hub/connectors/notes.ts:16`, "names and codes, never a value"): é outra J.
 - Ao estudo da Ontologia: "L1" (uma permissão nova, "Conceitos da empresa", de dono e administrador,
-  aprova as revisões depois da primeira); "P1" (o Hub lê e acrescenta; muda só o estado e a decisão;
-  uma revisão e uma prova nunca mudam); e, sobre a M: "Pare de focar nos apps, primeiro vamos fazer a
+  aprova as revisões depois da primeira); "P1" (o Hub lê e acrescenta; muda só o estado e a decisão; uma
+  revisão e uma prova nunca mudam nem saem; o inventário se troca por rodada; nada se apaga, salvo
+  na saída da empresa); e, sobre a M: "Pare de focar nos apps, primeiro vamos fazer a
   harness completa do builder e suas capacidades, e temos até isso no roadmap, temos as capacidades a
   implementar e depois de acordo com estudos profundo que fizemso de Kiro, Mitra e outros
   desenvolvimentos montar como realmente vamos utilizar a harness do builder para construção de apps
@@ -78,7 +79,7 @@ respondem pelos conceitos aprovados, sem reler o ERP a cada conversa.
    ("o que é a operação 101 na sua empresa?") e mostra o cartão "Proposta: 3 conceitos para Um CRM",
    com a fonte e as linhas da prova de cada um, e **Revisar e aprovar**.
 3. Em Conceitos da empresa › Para revisar, você aprova tudo menos um código ("Bonificação não é
-   pedido") e toca **Aprovar 31 e recusar 1**. A lista Conceitos mostra Cliente, Pedido e Vendedor,
+   pedido") e toca **Aprovar 29 e recusar 1**. A lista Conceitos mostra Cliente, Pedido e Vendedor,
    e Histórico mostra "Revisão 1, proposta pelo Builder na conversa de Dono, aprovada por Dono".
 4. Um administrador e um membro entram. Os dois veem **Sugerir mudança** num código; o membro propõe
    "a 101 é o pedido do representante". O membro vê "aguarda quem cuida dos conceitos" e nenhum botão
@@ -227,8 +228,8 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
   o motor (`SKILL.md:59`).
 - **Os nomes das ferramentas** seguem o repositório (`packages/hub-api/src/tools.ts:51-52`, em inglês):
   `concept_propose`, `concept_read`, `concept_query`, não `conceito_ler`.
-- **A frase da memória do app mudou de linha**: o #815 cita `builder.md:44`; hoje é
-  `apps/server/src/builder/conversation/prompt/builder.md:46`.
+- **A frase da memória do app mudou de linha**: o #815 cita `builder.md:44`; no `main` é
+  `apps/server/src/builder/conversation/prompt/builder.md:46` (**PR976:** `:47`).
 - **Não há trilha de auditoria no Hub** (nenhuma tabela de `operations`, `requests` ou
   `notifications` guarda histórico de mudança). A trilha da Ontologia é a sua própria tabela de
   revisões (`P1`).
@@ -262,10 +263,12 @@ Nenhuma corre em paralelo: U2 a U5 dividem `apps/server/src/hub/ontology/`. A U6
 da U5 se a U5 não tocar `company-memory.ts`, e não toca.
 
 **Orçamento de código alterado** (sem testes nem gerados; a base são os arquivos parecidos de hoje,
-medidos com `wc -l`: `hub/copies/tables.ts` 230, `propose.ts` 229, `grants.ts` 164, `notes.ts` 162,
-`connector-tools.ts` 309, `copy-read.ts` 140, `search-sql.ts` 89, `copy-clock/workflow.ts` 90).
-U1: 450. U2: 600. U3: 750. U4: 1.250. U5: 650. U6: 250. Total da etapa: cerca de 3.950, no teto da
-delivery L2. Se a U4 passar de 1.300, ela se divide em duas (a rota e as telas) antes de seguir.
+medidos com `wc -l` no `main`: `hub/copies/tables.ts` 320 (sete tabelas), `propose.ts` 271,
+`grants.ts` 164, `notes.ts` 162, `connector-tools.ts` 309, `copy-read.ts` 166, `search-sql.ts` 89,
+`copy-clock/workflow.ts` 84).
+U1: 500. U2: 700. U3: 800. U4: 1.250. U5: 650. U6: 250. Total da etapa: cerca de 4.150, no teto da
+delivery L2. Se o acumulado depois da U4 passar de 3.300, a U6 sai para o cartão seguinte do Brain,
+com os critérios 24 a 29, antes de construir a U5. Se a U4 passar de 1.300, ela se divide em duas (a rota e as telas) antes de seguir.
 
 ## Os critérios de aceite
 
@@ -273,22 +276,22 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | Como `hub_company`, com as outras camadas desligadas, `UPDATE` e `DELETE` numa revisão, numa prova, numa versão de conceito, campo, código, ligação ou fonte, e `UPDATE` do conteúdo de um item, recusam com `42501`; só `proposal.state` e as quatro colunas de decisão de `proposal_item` mudam | `apps/server/src/platform/isolation-ontology.test.ts`, "a P1 no banco" | must |
+| 1 | U1 | Como `hub_company`, com as outras camadas desligadas, `UPDATE` e `DELETE` numa revisão, numa prova, numa versão de conceito, campo, código, ligação ou fonte, `UPDATE` do conteúdo de um item e `UPDATE` de qualquer linha do inventário, recusam com `42501`; só `proposal.state` e as quatro colunas de decisão de `proposal_item` mudam, e só as três tabelas do inventário aceitam `DELETE` | `apps/server/src/platform/isolation-ontology.test.ts`, "a P1 no banco" | must |
 | 2 | U1 | A empresa B não lista, não lê e não grava conceito, proposta, item, revisão, prova nem inventário da A, pelo banco com a política por linha (`new row violates row-level security`) e pelas rotas (`NOT_FOUND`) | `isolation-ontology.test.ts`, "a B não vê a A" | must |
-| 3 | U1 | A visão de um elemento devolve a versão mais nova de cada chave, e a Ontologia "como estava na revisão N" sai de uma consulta só às versões | `apps/server/src/hub/ontology/tables.test.ts`, "o atual e o da revisão N" | must |
+| 3 | U1 | A visão de um elemento devolve a versão mais nova de cada chave, e a Ontologia "como estava na revisão N" sai de uma consulta só às versões | `apps/server/src/platform/isolation-ontology.test.ts`, "o atual e o da revisão N" (entra como `hub_company`, como os outros testes de isolamento; a U4 repete pela rota de decidir) | must |
 | 4 | U2 | Ligar o Sankhya do dublê grava um inventário `COMPLETE` sem conta de modelo, com tabelas, campos (o próprio da empresa marcado) e códigos com o rótulo do dicionário, e nenhum valor de linha; a página da conexão mostra as três contagens e a data | `apps/server/src/hub/ontology/inventory.test.ts`, "ao ligar"; `apps/web/src/hub/connectors/inventory.test.tsx` | must |
 | 5 | U2 | **Ler de novo** troca o inventário: a rodada nova `COMPLETE` fica, as antigas da conexão saem; pedido por quem não gerencia as ligações, `POST .../inventories/{connectionId}/runs` responde `NOT_FOUND`; com uma rodada aberta, `INVENTORY_RUNNING` | `inventory.test.ts`, "ler de novo" | must |
-| 6 | U2 | Um conector sem dicionário (o Mercado Livre) tem inventário só das suas declarações, sem nenhuma chamada ao fornecedor | `inventory.test.ts`, "das declarações" | must |
-| 7 | U2 | O dicionário que a porta recusa, ou que cai no meio, termina a rodada `FAILED` com o tipo da resposta, e o inventário anterior continua o que a página mostra; o teto de páginas termina `PARTIAL` com `CAP` | `inventory.test.ts`, "recusa e teto" | must |
+| 6 | U2 | Um conector sem dicionário (o Mercado Livre) tem inventário só das suas declarações, sem nenhuma chamada ao fornecedor; `inventory_search` devolve ao Builder e ao Assistente as entradas do inventário da conexão que casam com o texto, com o tipo, o rótulo e a marca de campo próprio, e `NOT_GRANTED` para uma conexão fora do acesso | `inventory.test.ts`, "das declarações"; `apps/server/src/builder/ontology/inventory-tool.test.ts` | must |
+| 7 | U2 | O dicionário que a porta recusa, ou que cai no meio, termina a rodada `FAILED` com o tipo da resposta, e o inventário anterior continua o que a página mostra; o teto de páginas termina `PARTIAL` com `CAP`; uma rodada aberta há mais de 15 minutos sem fim (o processo caiu) não impede **Ler de novo**, e fica `INTERRUPTED` | `inventory.test.ts`, "recusa, teto e prazo" | must |
 | 8 | U3 | `concept_propose` com uma fonte grava uma prova com a contagem e a forma (nome e tipo de cada coluna) e nenhuma linha, conferida contra os dados inventados do dublê | `apps/server/src/hub/ontology/propose.test.ts`, "a prova sem linha" | must |
 | 9 | U3 | Um campo cuja coluna não está na forma da prova volta em `refused` com `FIELD_NOT_IN_PROOF`; um código que a contagem não acha, com `CODE_UNSEEN`; uma prova que a porta recusa, com `PROOF_FAILED` e o tipo da resposta; o mesmo alvo pendente duas vezes, com `ITEM_REPEATED` | `propose.test.ts`, "as recusas por item" | must |
 | 10 | U3 | Toda nota do caderno vira um item `NOTE` pendente, com a mesma consulta, o mapeamento e quem escreveu; nenhuma vale antes de uma decisão, e nenhum código lê `connection.notes` depois da U3 | `apps/server/src/hub/ontology/notebook-import.test.ts`; `git grep` no critério da revisão | must |
 | 11 | U3 | A SQL que o `conceptRead` compila passa por `isOneReadStatement`, e cada injeção no texto, num código, num número ou numa data volta recusada antes de virar SQL | `packages/connectors/src/sankhya/concept-read.test.ts`, "injeções" | must |
-| 12 | U3 | Um membro sem `manageConnections` propõe pelo Builder e pelo Assistente (o #814); numa rodada de automação o Assistente não tem `concept_propose` | `apps/server/src/builder/connectors/concept-propose.test.ts` | must |
+| 12 | U3 | Um membro sem `manageConnections`, num papel da empresa que tem `consultar` do Sankhya, propõe pelo Builder e pelo Assistente (o #814); um membro de papel sem `consultar` propõe um `RENAME_LABEL`, e um `SET_SOURCE` dele volta em `refused` com `NOT_IN_ROLE` (a prova nunca lê o que o papel não lê); numa rodada de automação o Assistente não tem `concept_propose`; `origin` de um código é `DICTIONARY` só quando a entrada citada está no inventário com o valor, nunca pelo que o modelo diz | `apps/server/src/builder/connectors/concept-propose.test.ts` | must |
 | 13 | U4 | A primeira revisão de uma empresa recusa quem não é dono com `FIRST_REVISION_OWNER` (`POST .../ontology/proposals/{id}/decisions`), e nada se grava | `apps/server/src/hub/ontology/decide.test.ts`, "a primeira é do dono" | must |
 | 14 | U4 | Depois da primeira, um membro ou um desenvolvedor recebe `NOT_IN_ROLE` ao decidir; dono e administrador aprovam; quem propôs aprova a própria proposta, e a revisão guarda os dois nomes | `decide.test.ts`, "L1 e R1" | must |
 | 15 | U4 | Uma decisão com `expectedRevision` velha recusa com `REVISION_STALE` e não grava nada; duas decisões ao mesmo tempo sobre a mesma base: uma grava, a outra `REVISION_STALE` | `decide.test.ts`, "a revisão esperada" | must |
-| 16 | U4 | Aprovar um conceito sem a sua fonte, um campo sem o seu conceito ou um código sem o seu campo, nem na proposta nem no ativo, recusa com `DECISION_INCOMPLETE` e os itens; aprovar um item `NOTE` recusa com `ITEM_NOT_APPROVABLE`; um item já decidido, `ITEM_DECIDED` | `decide.test.ts`, "o conjunto fechado" | must |
+| 16 | U4 | Aprovar um conceito sem a sua fonte ou sem os campos do título e da chave, um campo sem o seu conceito, um código sem o seu campo, uma ligação sem os seus conceitos, os campos dos pares ou o conceito `through`, ou um `DEPRECATE` cujo `replacedBy` não existe, nem na proposta nem no ativo, recusa com `DECISION_INCOMPLETE` e os itens; aprovar um item `NOTE` recusa com `ITEM_NOT_APPROVABLE`; um item já decidido, `ITEM_DECIDED` | `decide.test.ts`, "o conjunto fechado" | must |
 | 17 | U4 | Todo membro vê **Sugerir mudança**; a sugestão de um membro vira proposta aberta com quem propôs; a mesma chave de tentativa duas vezes dá uma proposta só | `apps/server/src/hub/ontology/suggest.test.ts`; `apps/web/src/hub/ontology/suggest.test.tsx` | must |
 | 18 | U4 | Para quem não aprova, Para revisar não mostra os botões e diz "Aguarda quem cuida dos conceitos."; na primeira revisão, "Aguarda o dono." | `apps/web/src/hub/ontology/review.test.tsx` | must |
 | 19 | U5 | Um conceito recusado, um aposentado e um de outra empresa não aparecem no catálogo nem em `concept_read`; chamado assim mesmo em `concept_query`, `CONCEPT_UNKNOWN` | `apps/server/src/builder/ontology/tools.test.ts`, "o catálogo" | must |
@@ -307,18 +310,18 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Página da conexão, bloco Inventário | "Lendo o inventário…" enquanto a primeira rodada corre | conector sem dicionário: "Inventário: 12 leituras declaradas" | o bloco em esqueleto (W34) | rodada `FAILED`: "Não foi possível ler o inventário." e, para quem gerencia, **Ler de novo** | a conexão que saiu: a página de não encontrado de hoje | quem não gerencia as ligações vê o resumo, sem **Ler de novo** | `PARTIAL`: "Inventário parcial: lido até o limite." e **Ler de novo** |
+| Página da conexão, bloco Inventário | "Lendo o inventário…" enquanto a primeira rodada corre | conector sem dicionário: "Inventário: 12 leituras declaradas" | o bloco em esqueleto (W34) | rodada `FAILED` ou `INTERRUPTED`: "Não foi possível ler o inventário." e, para quem gerencia, **Ler de novo** | a conexão que saiu: a página de não encontrado de hoje | quem não gerencia as ligações vê o resumo, sem **Ler de novo** | `PARTIAL`: "Inventário parcial: lido até o limite." e **Ler de novo** |
 | Conceitos da empresa › Conceitos | "Nenhum conceito aprovado ainda. O Builder propõe conceitos quando você pede um app." | o mesmo | a lista em esqueleto | a falha da leitura com **Tentar de novo** (W17) | — | todo membro lê | — |
-| Conceitos da empresa › página de um conceito | — | conceito sem códigos: a coluna Códigos vazia | esqueleto | **Tentar de novo** | "Este conceito não existe." | todo membro lê e vê **Sugerir mudança** | aposentado: "Aposentado em 12/11: use Pedido." no topo |
-| Conceitos da empresa › código, **Sugerir mudança** | o formulário com "Quer dizer", "Explicação" e "Por quê" | — | o botão em espera depois do toque | a frase da falha e **Tentar de novo**, a chave guardada (W24) | o código que saiu: "Este código não existe mais." | todo membro propõe | — |
-| Conceitos da empresa › Para revisar | "Nada para revisar." | o mesmo | esqueleto | **Tentar de novo** | a proposta que fechou: "Esta proposta já foi decidida." | sem a permissão: "Aguarda quem cuida dos conceitos."; na primeira revisão: "Aguarda o dono." | `REVISION_STALE`: "Os conceitos mudaram enquanto você revisava." e **Ver de novo**; `DECISION_INCOMPLETE`: os itens que faltam marcados |
+| Conceitos da empresa › página de um conceito | — | conceito sem códigos: a coluna Códigos vazia | esqueleto | **Tentar de novo** | "Este conceito não existe." e **Voltar aos conceitos** | todo membro lê e vê **Sugerir mudança** | aposentado: "Aposentado em 12/11: use Pedido." no topo |
+| Conceitos da empresa › código, **Sugerir mudança** | o formulário com "Quer dizer", "Explicação" e "Por quê" | — | o botão em espera depois do toque | a frase da falha e **Tentar de novo**, a chave guardada (W24) | o código que saiu: "Este código não existe mais." e **Voltar ao conceito** | todo membro propõe | — |
+| Conceitos da empresa › Para revisar | "Nada para revisar." | o mesmo | esqueleto | **Tentar de novo** | a proposta que fechou: "Esta proposta já foi decidida." e **Ver o histórico** | sem a permissão: "Aguarda quem cuida dos conceitos."; na primeira revisão: "Aguarda o dono." | `REVISION_STALE`: "Os conceitos mudaram enquanto você revisava." e **Ver de novo**; `DECISION_INCOMPLETE`: os itens que faltam marcados |
 | Conceitos da empresa › Histórico | "Nenhuma revisão ainda." | o mesmo | esqueleto | **Tentar de novo** | — | todo membro lê | — |
 | Conversa, cartão "Proposta: N conceitos" | os conceitos, as linhas da prova e **Revisar e aprovar** | todos os itens recusados: "Nada a propor: o Builder explica na conversa." | — | — | a proposta que fechou: "Esta proposta já foi decidida." | o mesmo cartão; o botão leva a Para revisar, onde a frase de permissão aparece | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `inventory_run`, `inventory_entry` | o workflow do inventário (U2) | o resumo da conexão (U2), `concept_propose` pela descrição da ferramenta e a skill (U3) |
-| `proof_run` | a prova da proposta (U3) | a decisão (U4), o descritor (U5), a etapa da saúde |
+| `inventory_run`, `inventory_end`, `inventory_entry` | a abertura e o workflow do inventário (U2) | o resumo da conexão e `inventory_search` (U2), a origem de um código em `concept_propose` (U3) |
+| `proof_run` | a prova da proposta (U3) | Para revisar e a página do conceito (linhas e quando, U4), o descritor (a forma mais nova, U5), a etapa da saúde |
 | `proposal`, `proposal_item` | `concept_propose` (U3), **Sugerir mudança** (U4), a migração das notas (U3) | Para revisar e o cartão (U4), `connector_notes` (U3) |
 | `proposal_item.decision`, `reason`, `decided_by`, `decided_at`; `proposal.state` | a rota de decidir (U4) | Para revisar, Histórico (U4) |
 | `revision` | a rota de decidir (U4) | Conceitos e Histórico (U4), os descritores (U5), as páginas (U6) |
@@ -335,7 +338,7 @@ A 1280 px, Configurações › Conceitos da empresa:
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │ Conceito    Lido de                   Campos  Códigos  Desde a revisão  Estado   │
 │ Cliente     Sankhya · parceiros          4       2           1          ativo    │
-│ Pedido      Sankhya · notas              9       5           1          ativo    │
+│ Pedido      Sankhya · notas              8       5           1          ativo    │
 │ Vendedor    Sankhya · vendedores         2       0           1          ativo    │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │ Revisão atual: 2, aprovada por Administrador em 12/11 · Ver o histórico          │
@@ -382,7 +385,7 @@ Para revisar:
 ```
 ┌ Para revisar ────────────────────────────────────────────────────────────────────┐
 │ "Um CRM: clientes, pedidos e vendedores" · pelo Builder, conversa de Dono       │
-│ 32 itens · base: nenhuma revisão                     [ Aprovar todos ] [ Ver ]   │
+│ 30 itens · base: nenhuma revisão                     [ Aprovar todos ] [ Ver ]   │
 │ Pedido                                                         ☑ aprovar         │
 │   Lido de: Sankhya, cabeçalho da nota · Prova: 1.240 linhas · Ver a consulta    │
 │   Campos  Número único (chave) · Número do pedido · Data · Cliente · Vendedor ·  │
@@ -390,7 +393,7 @@ Para revisar:
 │   Tipo de operação  100 Pedido de balcão  ☑ · 101 Pedido externo  ☑ ·            │
 │                     120 Bonificação  ☐ recusar: [ Não é pedido, é brinde ]       │
 │ Ligações  o Pedido é de um Cliente · o Pedido é de um Vendedor   ☑ aprovar       │
-│                                           [ Aprovar 31 e recusar 1 ]             │
+│                                           [ Aprovar 29 e recusar 1 ]             │
 │ ● "O 101 é o pedido do representante" · por Membro · base: revisão 1             │
 │   antes  Pedido externo · depois  Pedido do representante    [Recusar…][Aprovar] │
 │ ○ Do caderno: "vendas" · por Membro · nota antiga, a refazer com prova [Recusar…]│
@@ -406,7 +409,8 @@ produto antigo não tem estas telas: nenhuma captura a seguir.
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| A rodada do inventário (workflow do Mastra) | a segunda vê a rodada aberta da conexão e termina `INVENTORY_RUNNING` (índice único parcial) | a porta recusa uma página: a rodada termina `FAILED` com o tipo; as entradas da rodada ficam invisíveis, a anterior vale | o Sankhya fora: `FAILED` com `UNREACHABLE` ou `DEADLINE`; o banco fora: o passo do workflow falha e o Mastra registra a rodada com erro | `ONTOLOGY_INVENTORY_ENDED` com a conexão, o resultado e as páginas | 4, 5, 7 |
+| A rodada do inventário (workflow do Mastra) | a abertura é única por conexão (a trava da transação e o prazo de 15 minutos); a segunda abertura responde `RUNNING` | a porta recusa uma página: a rodada termina `FAILED` com o tipo; a página continua mostrando a rodada anterior | o Sankhya fora: `FAILED` com `UNREACHABLE` ou `DEADLINE`; o banco ou o processo fora: a rodada fica sem fim, e a abertura seguinte, passado o prazo, a fecha `INTERRUPTED` | `ONTOLOGY_INVENTORY_ENDED` com a conexão, o resultado e as páginas | 4, 5, 7 |
+| A abertura da rodada ao ligar | — | a abertura falha: a ligação responde como hoje, a falha vai ao log, e **Ler de novo** abre depois | o relógio não inicia o workflow: a rodada aberta vence em 15 minutos e fica `INTERRUPTED` | `ONTOLOGY_INVENTORY_STARTED` | 4, 7 |
 | **Ler de novo** (rota) | duas rodadas: a segunda, `INVENTORY_RUNNING` (409) | — | o banco fora: `DATABASE_UNAVAILABLE`, a tela diz e oferece **Tentar de novo** | `ONTOLOGY_INVENTORY_STARTED` | 5 |
 | A prova (`proof_run`) | duas provas da mesma consulta gravam duas linhas; a decisão usa a da proposta | a contagem passa e a página da forma falha: a prova é `FAILED` com o tipo, o item volta `PROOF_FAILED` | o Sankhya fora: `PROOF_FAILED` com `UNREACHABLE`; a chamada fora da transação (D22) | `ONTOLOGY_PROOF_RAN` com a conexão, o resultado e as linhas | 8, 9 |
 | `concept_propose` (ferramenta) | duas chamadas na mesma conversa acrescentam à mesma proposta aberta; o mesmo alvo pendente, `ITEM_REPEATED` | um item recusado não impede os outros; a resposta lista os dois | o banco fora: a ferramenta responde `DATABASE_UNAVAILABLE` e o modelo diz que não propôs | `ONTOLOGY_PROPOSED` com os números de itens | 8, 9, 12 |
@@ -430,7 +434,7 @@ produto antigo não tem estas telas: nenhuma captura a seguir.
 | A proposta por item e em lote | U3, U4 | `copy_propose` e o cartão Ligar (`apps/server/src/hub/copies/propose.ts:214`, `tables.ts:160-185`) | Palantir, propostas "analogous to a Pull Request", uma tarefa por recurso, "one at a time or in bulk" | itens decididos um a um ou juntos | embrulhado | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): a proposta do CRM decidida item a item | `"B1"`, "Q1 / R1" | `apps/server/src/hub/ontology/propose.ts`  |
 | A prova sem linha | U3 | `notes.ts:115-151` (conta as linhas devolvidas); `app_data_check` "never a row" (`apps/server/src/builder/app-data/tools.ts:27`) | o próprio Conexus | contagem e colunas com tipo, nunca a linha | nativo | — | `"B1"` | `apps/server/src/hub/ontology/proof.ts`  |
 | A SQL do conceito no dialeto do conector | U3 | `copy-read.ts:25-60` (a consulta guardada como `Q`, `dated`, `pageSql`); `search-sql.ts:23-88` | Twenty `record-crud/json-schemas/find-tool.json-schema.ts:10-61` (filtros por campo); o protótipo do exemplo | a consulta provada como subconsulta, filtros tipados, uma linha a mais | nativo para o kit (reusa `search-sql.ts`) | — | não precisa | `packages/connectors/src/sankhya/concept-read.ts`  |
-| A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (**PR976:** `:24-31`, `companyMemory: ['manage']`) | `twenty@b76d0217` `useSetNextOnboardingStatus.ts:74` (só o criador); Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
+| A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (**PR976:** `:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
 | As telas | U4 | Configurações por arquivo de rota (**PR976:** `settings/route.tsx:26-45`); a memória da empresa (**PR976:** `apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o desenho do estudo do exemplo, seção 8.1 | lista, página, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1 | "Q1 / R1"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId_/settings/concepts.tsx`  |
 | Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:289-309` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
@@ -444,6 +448,9 @@ as três perguntas não decididas da página do fundador, sem unidade.
 
 **A dívida.**
 
+- Desligar uma conexão deixa o inventário, as provas e a fonte dela: o conceito some do catálogo
+  (a interseção da U5) e a rota do inventário responde `NOT_FOUND`; apagar essas linhas fica para a
+  etapa da saúde, que já lê as provas.
 - A ferramenta `connector_notes` fica enquanto houver item `NOTE` aberto; sai num fechamento depois
   que a empresa do fundador não tiver nenhum.
 - A coluna `connectors.connection.notes` sai por uma migração posterior (dados D6), depois que nenhum
@@ -473,21 +480,25 @@ as três perguntas não decididas da página do fundador, sem unidade.
 | `apps/server/migrations/` | cria a migração das tabelas e, no pull request próprio, a das permissões | o Hub ao subir |
 | `apps/server/database-grants.sql` | muda: o dono do esquema e das tabelas, as permissões da `P1` | `apps/server/src/platform/catalog.test.ts` |
 | `apps/server/src/platform/` | cria `isolation-ontology.test.ts` | — |
-| `apps/server/drizzle.config.ts` | muda: o esquema `ontology` na lista, se a lista existe | `drizzle-kit` |
 
 ### Os contratos que a unidade cria
 
 O esquema `ontology` no banco do Hub. Toda tabela tem `company_id text NOT NULL` com chave
 estrangeira para `auth.company` (`onDelete: 'cascade'`, como `copies.copy`) e
 `policy(SCOPE_ROLES.COMPANY, 'all', sql\`company_id = ${scoped.companyId}\`)`. Uma chave é
-`text CHECK (key ~ '^[a-z][a-z0-9_]{0,39}$')`. Os limites copiam os de hoje: descrição de conceito 500
+`text CHECK (key ~ '^[a-z][a-z0-9_]{0,39}$')`. Toda coluna `jsonb` tem o seu esquema Zod nomeado em `packages/hub-api/src/ontology.ts`, lido na
+entrada e na saída do banco (C27): `ProofShape` (`{ column: string; type: FieldType | null }[]`, até
+200), `SourceRead` (`{ kind: 'DOOR'; sql: string }`), `RelationPairs` (1 a 4 `[FieldKey, FieldKey]`),
+`ItemContent` (o `ProposedItem` sem `kind`, ou `NoteContent`: `{ connectionId, concept, mapping,
+provingQuery, provedAt, provedRows }`, a forma de `notes.ts:16-23`). Os limites copiam os de hoje: descrição de conceito 500
 e de campo 200 (`copy.ts:122,129`), consulta 4.000 (`notes.ts:19`), chave de 1 a 4 (`copy.ts:65`).
 
 | Tabela | Colunas, com restrição | Chave |
 | --- | --- | --- |
-| `inventory_run` | `id uuid`; `connection_id uuid`; `connector_version text`; `started_at`, `ended_at timestamptz`; `outcome text` (`NULL` aberta, `COMPLETE`, `PARTIAL`, `FAILED`); `reason text` (`CAP`, ou o tipo da resposta: `REFUSED`, `AUTH_REFUSED`, `UNREADABLE`, `BUSY`, `UNREACHABLE`, `DEADLINE`, `NOT_IN_ROLE`); `pages integer`; `CHECK ((ended_at IS NULL) = (outcome IS NULL))` | `id`; único `(company_id, id)`; único parcial `(connection_id) WHERE ended_at IS NULL` |
+| `inventory_run` | `id uuid` (`InventoryRunId`); `connection_id uuid`; `started_at timestamptz` | `id`; único `(company_id, id)`; índice `(company_id, connection_id, started_at DESC)` |
+| `inventory_end` | `run_id uuid`; `ended_at timestamptz`; `outcome text` (`COMPLETE`, `PARTIAL`, `FAILED`, `INTERRUPTED`); `reason text` (`InventoryReason`: `CAP`, ou o tipo da resposta: `REFUSED`, `AUTH_REFUSED`, `UNREADABLE`, `BUSY`, `UNREACHABLE`, `DEADLINE`, `NOT_IN_ROLE`); `pages integer`; `CHECK ((reason IS NULL) = (outcome IN ('COMPLETE', 'INTERRUPTED')))` | `run_id`; estrangeira `(company_id, run_id)` com `cascade` |
 | `inventory_entry` | `run_id uuid`; `kind text` (`TABLE`, `FIELD`, `CODE`, `OPERATION`); `name text` (até 200: `TABELA`, `TABELA.CAMPO`, `TABELA.CAMPO=valor`, ou o id da operação); `type text` (até 20, o tipo do dicionário); `label text` (até 200); `custom boolean` | `(run_id, kind, name)`; estrangeira `(company_id, run_id)` com `cascade` |
-| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta, ou `NO_ROWS`); `rows bigint`; `shape jsonb` (`[{ "column", "type" }]`, `type` pode ser `null`); `connector_version text`; `ran_by text` (o id da pessoa); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)` |
+| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta); `rows bigint` (zero é uma prova: Para revisar mostra "0 linhas"); `shape jsonb` (`ProofShape`); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)`; índice `(company_id, connection_id, query, ran_at DESC)` (a prova mais nova da mesma consulta, U5) |
 | `proposal` | `id uuid`; `demand text` (1 a 500); `proposed_by text`; `agent text` (`builder`, `assistant` ou `NULL` pela tela ou pela migração); `conversation_id text`; `base_revision integer`; `created_at`; `state` (`OPEN`, `CLOSED`); `attempt_key text`, `body_hash text` (a tela, C37) | `id`; único `(company_id, id)`; único `(company_id, attempt_key)`; único parcial `(company_id, conversation_id) WHERE state = 'OPEN' AND conversation_id IS NOT NULL` |
 | `proposal_item` | `proposal_id uuid`; `n integer`; `kind` (`ADD_CONCEPT`, `ADD_FIELD`, `SET_CODE`, `ADD_RELATION`, `SET_SOURCE`, `RENAME_LABEL`, `DEPRECATE`, `NOTE`); `target text` (o endereço: `pedido`, `pedido.tipo_operacao`, `pedido.tipo_operacao=101`, `pedido_vendedor`); `content jsonb`; `proof_run_id uuid`; `decision` (`PENDING`, `APPROVED`, `REFUSED`); `reason text` (até 500); `decided_by text`; `decided_at`; `CHECK ((decision = 'PENDING') = (decided_at IS NULL))` | `(proposal_id, n)`; estrangeiras para `proposal` e `proof_run` |
 | `revision` | `number integer CHECK (number >= 1)`; `proposal_id uuid`; `proposed_by text`; `approved_by text`; `approved_at`; `hash text` (sha-256 hexadecimal) | `(company_id, number)` |
@@ -505,15 +516,20 @@ As permissões (`P1`), no pull request próprio, como linhas do catálogo:
 
 ```sql
 GRANT USAGE ON SCHEMA ontology TO hub_company;
-GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA ontology TO hub_company;  -- as onze tabelas, uma linha cada no catálogo
+-- One line per table in the catalog, never ALL TABLES: that would grant INSERT on the five views.
+GRANT SELECT, INSERT ON ontology.inventory_run, ontology.inventory_end, ontology.inventory_entry,
+  ontology.proof_run, ontology.proposal, ontology.proposal_item, ontology.revision,
+  ontology.concept_version, ontology.field_version, ontology.code_version,
+  ontology.relation_version, ontology.source_version TO hub_company;
 GRANT SELECT ON ontology.concept, ontology.field, ontology.code, ontology.relation, ontology.source TO hub_company;
 GRANT UPDATE (state) ON ontology.proposal TO hub_company;
 GRANT UPDATE (decision, reason, decided_by, decided_at) ON ontology.proposal_item TO hub_company;
--- The inventory is replaced by run (P1): the older runs of a connection go when a new one completes.
-GRANT DELETE ON ontology.inventory_run, ontology.inventory_entry TO hub_company;
+-- The inventory is replaced by run (P1, "o inventário se troca por rodada"): the older runs go.
+GRANT DELETE ON ontology.inventory_run, ontology.inventory_end, ontology.inventory_entry TO hub_company;
 ```
 
-Nenhuma outra permissão de `UPDATE` ou `DELETE`; a saída da empresa apaga por `cascade` a partir de
+Nenhuma outra permissão de `UPDATE` ou `DELETE`: a rodada do inventário fecha por um `INSERT` em
+`inventory_end`, nunca por `UPDATE`; a saída da empresa apaga por `cascade` a partir de
 `auth.company`, como as cópias.
 
 Os tipos exportados, em `apps/server/src/hub/ontology/public-tables.ts`: as tabelas para as
@@ -581,7 +597,8 @@ cópias.
 | `packages/connectors/src/sankhya/` | cria `inventory.ts`; muda `definition.ts`; o dublê ganha as tabelas do dicionário com linhas inventadas (`fake-sales.ts`) | o Sankhya |
 | `apps/server/src/hub/connectors/` | cria `inventory-port.ts` (a leitura como versão); muda `public.ts` e `routes.ts` (depois de ligar, `inventory().start`) | `hub/ontology` |
 | `apps/server/src/hub/ontology/` | cria `inventory.ts`, `routes.ts`; muda `public.ts` | `main.ts` |
-| `apps/server/src/builder/ontology/` | cria `inventory-workflow.ts`, `public.ts` | `conversations-of.ts` |
+| `apps/server/src/builder/ontology/` | cria `inventory-workflow.ts`, `inventory-tool.ts`, `public.ts` | `conversations-of.ts`, `conversation/builder.ts`, `assistant/assistant.ts` |
+| `apps/server/src/builder/conversation/`, `apps/server/src/builder/assistant/` | muda: `inventory_search` nas ferramentas por turno e em `permissions.ts` | — |
 | `apps/server/src/main.ts`, `conversations-of.ts` | muda: a ligação tardia do relógio do inventário | — |
 | `packages/hub-api/src/` | cria `ontology.ts` (as rotas do inventário), `ontology-failures.ts`; muda `index.ts`, `failures.ts` | o Hub, a web |
 | `apps/web/src/hub/connectors/` | cria `inventory.tsx`; muda `connection-page.tsx` | — |
@@ -615,46 +632,64 @@ campos, opções), cada uma em ordem de chave com `pageSql` e `PAGE_ROWS`; o `cu
 No Hub, `hub/ontology/public.ts` exporta:
 
 ```ts
-export type InventoryClock = { start(input: { companyId: CompanyId; connectionId: ConnectionId }): Promise<void> }
+export const InventoryRunId = z.uuid().brand<'InventoryRunId'>() // packages/hub-api/src/ontology.ts
+export type InventoryReason = 'CAP' | 'REFUSED' | 'AUTH_REFUSED' | 'UNREADABLE' | 'BUSY' | 'UNREACHABLE' | 'DEADLINE' | 'NOT_IN_ROLE'
+/** Starts the workflow of a run already opened; a failure to start is logged, and the run's lease ends it. */
+export type InventoryClock = { start(input: { companyId: CompanyId; connectionId: ConnectionId; runId: InventoryRunId }): Promise<void> }
+export type Opened = Readonly<{ kind: 'OPENED'; runId: InventoryRunId }> | Readonly<{ kind: 'RUNNING' }>
 export type Ontology = {
   inventory: {
-    run(input: { companyId: CompanyId; connectionId: ConnectionId }, signal: AbortSignal): Promise<InventoryEnd>
+    /** In one transaction: `pg_advisory_xact_lock` on the connection, an open run inside its lease answers RUNNING, else a run row. */
+    open(input: { companyId: CompanyId; connectionId: ConnectionId }): Promise<Opened>
+    run(input: { companyId: CompanyId; runId: InventoryRunId }, signal: AbortSignal): Promise<InventoryEnd>
   }
   routes(app: FastifyInstance): void
 }
 export type InventoryEnd =
   | Readonly<{ kind: 'COMPLETE' | 'PARTIAL'; entries: number }>
-  | Readonly<{ kind: 'FAILED'; reason: string }>
-  | Readonly<{ kind: 'RUNNING' | 'GONE' }>
+  | Readonly<{ kind: 'FAILED'; reason: InventoryReason }>
+  | Readonly<{ kind: 'GONE' }> // the connection or the run left
 ```
 
-A rodada: abre `inventory_run` (o índice parcial recusa a segunda: `RUNNING`), lê as páginas por
+A abertura e o prazo: uma rodada está aberta enquanto não tem linha em `inventory_end` e
+`started_at` tem menos de 15 minutos (o teto de 10 de `run.ts:17` mais folga; nenhuma renovação, porque
+a rodada para sozinha no teto). A trava `pg_advisory_xact_lock` é da transação, não da sessão (D25).
+Uma rodada vencida sem fim conta como `INTERRUPTED`: a abertura seguinte grava o `inventory_end` dela
+antes de abrir a nova. A rota de ligar e **Ler de novo** abrem a rodada e só então chamam o relógio,
+então o 409 sai da rota.
+
+A rodada: lê as páginas por
 `hub/connectors` (falando como versão que declara só a leitura do inventário, com `viewer` a pessoa
 que ligou, `connection.linked_by`, como `readAsCopy`), grava as entradas de cada página, para no
-teto de `run.ts:16-17` (`PARTIAL`, `CAP`), e na transação final marca o resultado e, se `COMPLETE`,
-apaga as rodadas anteriores da conexão. Um conector sem `inventory` grava `declaredInventory` numa
+teto de `run.ts:16-17` (`PARTIAL`, `CAP`), e na transação final grava o `inventory_end`. Um fim
+`COMPLETE` apaga todas as rodadas anteriores da conexão; um `PARTIAL` apaga as anteriores que não são
+`COMPLETE`; um `FAILED` não apaga nada. A página mostra a `COMPLETE` mais nova, ou, se não há, a
+`PARTIAL` mais nova, e diz em uma linha o estado da última rodada. Um conector sem `inventory` grava `declaredInventory` numa
 rodada só.
 
 O workflow `conexus-source-inventory` (nome guardado, como `COPY_WORKFLOW`): um passo que lê
-`{ version: 1, companyId, connectionId }` com Zod e chama `ontology.inventory.run`;
+`{ version: 1, companyId, runId }` com Zod e chama `ontology.inventory.run`;
 `autoRestartActiveRuns: false`. O relógio faz `createRun()` e `startAsync({ inputData })`.
 
 As rotas, em `packages/hub-api/src/ontology.ts`, `BASE = '/api/companies/{companyId}/ontology'`:
 
 | Método e caminho | Acesso | Saída | Falhas |
 | --- | --- | --- | --- |
-| `GET ${BASE}/inventories/{connectionId}` | todo membro (`readConnections`) | `{ inventory: { readAt, outcome, reason, tables, fields, codes, operations } \| null, running: boolean, mayRead: boolean }` | `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE` |
+| `GET ${BASE}/inventories/{connectionId}` | todo membro (`readConnections`) | `{ inventory: { readAt, outcome, reason, tables, fields, codes, operations } \| null, last: { outcome, reason } \| null, running: boolean, mayRun: boolean }` | `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE` |
 | `POST ${BASE}/inventories/{connectionId}/runs` | `manageConnections` | `202 { started: true }` | as de cima, `INVENTORY_RUNNING` (409) |
 
+Sem `Idempotency-Key` (web W24 se cumpre pela abertura única: a segunda tentativa recebe 409 e a
+tela relê o estado).
+
 Os códigos de falha (C48), em `packages/hub-api/src/ontology-failures.ts`, espalhados em `FAILURES`
-(`failures.ts:279-287`): `INVENTORY_RUNNING` (`USER`, 409, "O inventário desta conexão já está
+(`failures.ts:273-282`): `INVENTORY_RUNNING` (`USER`, 409, "O inventário desta conexão já está
 sendo lido.", "Espere terminar.").
 
 ### As skills e a leitura
 
 As linhas `@mastra/core` (skill `mastra`, `node_modules/@mastra/core/dist/docs/`), `zod`, `fastify`
 (`fastify-best-practices`), `react` e `@tanstack/react-query` de `docs/reference/stack.md`. O guia de
-dados (D22: a chamada ao Sankhya fora da transação; D25: nenhuma trava de sessão).
+dados (D22: a chamada ao Sankhya fora da transação; D25: só a trava da transação, e o prazo da rodada).
 
 ### A ordem do trabalho
 
@@ -665,11 +700,19 @@ dados (D22: a chamada ao Sankhya fora da transação; D25: nenhuma trava de sess
 3. `hub/connectors/inventory-port.ts`: a leitura como versão, cópia de `readAsCopy` sem o caminho
    do lote da cópia (o Sankhya conta por conta).
 4. `hub/ontology/inventory.ts`: a rodada, com o teto e a troca. Depois de ligar (`routes.ts:49`, só
-   quando `made.created`) e em **Ler de novo**, `deps.inventory().start(...)`; a falha do `start` vai
-   ao log com `logFailure` e a ligação responde como hoje.
+   quando `made.created`) e em **Ler de novo**, `ontology.inventory.open(...)` e, aberta,
+   `deps.inventory().start({ ..., runId })`; ao ligar, a falha de qualquer dos dois vai ao log com
+   `logFailure` e a ligação responde como hoje.
 5. O workflow e o relógio em `builder/ontology/`, ligados em `conversations-of.ts` como o
    `copyClockOf`.
 6. A rota e o bloco Inventário na página da conexão.
+7. A ferramenta `inventory_search` nos dois agentes (o leitor do inventário): entrada `{ connection,
+   text: SearchText, kind?: 'TABLE' | 'FIELD' | 'CODE' | 'OPERATION', limit: 1 a 50 }`; resposta
+   `{ kind: 'OK', readAt, entries: InventoryEntry[], more }`, ou `NOT_GRANTED` e `INVENTORY_EMPTY`
+   (nenhuma rodada `COMPLETE` ou `PARTIAL`). O acesso é o mesmo de `connector_notes` (`runIn`,
+   `connector-tools.ts`), sem chamada ao sistema. A skill do Sankhya passa a dizer "read the inventory
+   first; ask the person only what it does not say". `BUILDER_TOOL.inventorySearch`, no `READ` de
+   `permissions.ts`.
 
 ### Como se prova
 
@@ -694,8 +737,10 @@ compilador de SQL é a peça de segurança da etapa.
 - A proposta por item, a prova sem linha, a SQL do conceito no dialeto do conector, os códigos com
   significado.
 - Ler: `apps/server/src/hub/connectors/notes.ts:1-162` inteiro (o que sai);
-  `apps/server/src/builder/connectors/connector-tools.ts:235-309`; `apps/server/src/builder/assistant/assistant.ts:253-275`
-  (`mayNote`, que sai); `apps/server/src/builder/assistant/prompt/assistant.md:45-47`;
+  `apps/server/src/builder/connectors/connector-tools.ts:235-309` (**PR976:** `:258-332`);
+  `apps/server/src/builder/assistant/assistant.ts:253-275` (`mayNote`, que sai; **PR976:** `maysFor`,
+  `:212`, `:237-247`, com `note`); `apps/server/src/builder/assistant/prompt/assistant.md:45-47`
+  (**PR976:** `:51-53`);
   `apps/server/src/builder/conversation/prompt/prompt.ts:159-178` (a linha "Notebook:");
   `apps/server/src/builder/conversation/prompt/builder.md:46` (o `source` da memória do app, #815);
   `packages/connectors/src/sankhya/door.ts:102-142`; `refusals.ts:54-57`; `fake-data.ts:107-125`;
@@ -750,11 +795,17 @@ export type ConceptRead = Readonly<{
 ```
 
 `Connector` ganha `conceptRead?: ConceptRead`. O Sankhya (`concept-read.ts`): a consulta entra como
-`(<sql>) Q`; um número sai de `Number.isInteger` ou `Number.isFinite` e nunca é texto; um código passa
-pelo enum do esquema antes (U5) e aqui só por `digits` ou pelo escape de `search-sql.ts:23-27`; uma
-data, por `z.iso.date()` e `dated`; um texto, por `SearchText` e `containing` (`search-sql.ts:35-48`);
-um `in`, por `inList` (até 50); a página, por `pageSql` com a ordem da chave; a medida, `COUNT(*) AS
-"count"`, `SUM(Q.X) AS "sum_<campo>"`, `GROUP BY` só de colunas `ID` ou `CODE`. Toda saída passa por
+`(<sql>) Q`; um número sai de `Number.isInteger` ou `Number.isFinite` e nunca é texto; um código, que é
+texto exato (o `escaped` de `search-sql.ts:23-27` dobra a caixa e tira o acento, feito para `LIKE`, e
+não serve), por uma função nova do kit em `search-sql.ts`, `exact(value)`: `CodeText` (1 a 40
+caracteres de `[\p{L}\p{N} ._/-]`, sem `MARKS`) e a aspa dobrada, e `inExact(column, values)` para o
+`in` de texto; `inList` (`search-sql.ts:51-53`) fica para números. Uma data, por `z.iso.date()` e
+`dated`; um texto, por `SearchText` e `containing` (`search-sql.ts:35-48`). Sem medida, a página é
+`pageSql({ from: '(<sql>) Q', order: <as colunas da chave> })`. Com medida, a agregação vira o
+`from` da página: `pageSql({ select: ['M.*'], from: '(SELECT <groupBy>, COUNT(*) AS "count", SUM(Q.X)
+AS "sum_<campo>" FROM (<sql>) Q WHERE … GROUP BY <groupBy>) M', order: <groupBy, ou "count"> })`;
+`groupBy` só de colunas `ID` ou `CODE`, até 2; sem `groupBy`, uma linha só, ordem `"count"`. `more`
+é a linha `EXTRA = 'S'` ou `completo: false` da porta (`door.ts:116`). Toda saída passa por
 `isOneReadStatement` antes de sair (a porta confere de novo, `door.ts:103`). `count(sql)` é `SELECT
 COUNT(*) AS N FROM (<sql>) Q`; `shape(sql)` é a página de uma linha.
 
@@ -764,35 +815,45 @@ de `fieldsMetadata` (`name`, `userType`).
 No Hub, os itens, em `packages/hub-api/src/ontology.ts` (uma união pelo campo `kind`, C21):
 
 ```ts
-export const ConceptKey = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/).brand<'ConceptKey'>()
-export const FieldKey = ConceptKey.brand<'FieldKey'>() // same pattern, its own brand
-export const RelationKey = ConceptKey.brand<'RelationKey'>()
+const Key = z.string().regex(/^[a-z][a-z0-9_]{0,39}$/) // no brand: each key brands it once
+export const ConceptKey = Key.brand<'ConceptKey'>()
+export const FieldKey = Key.brand<'FieldKey'>()
+export const RelationKey = Key.brand<'RelationKey'>()
+export const FieldType = z.enum(['ID', 'TEXT', 'INTEGER', 'DECIMAL', 'MONEY', 'DATE', 'TIMESTAMP', 'BOOLEAN', 'CODE'])
+export const Cardinality = z.enum(['MANY_TO_ONE', 'ONE_TO_ONE', 'MANY_TO_MANY'])
+/** The address of an active element: `pedido`, `pedido.tipo_operacao`, `pedido.tipo_operacao=101`, `@pedido_vendedor`. */
+export const Target = z.string().max(130).regex(/^(@[a-z][a-z0-9_]{0,39}|[a-z][a-z0-9_]{0,39}(\.[a-z][a-z0-9_]{0,39}(=[^\s]{1,40})?)?)$/).brand<'OntologyTarget'>()
+const Name = z.string().min(1).max(80)
 export const OntologyProposalId = z.uuid().brand<'OntologyProposalId'>()
 export const ProofRunId = z.uuid().brand<'ProofRunId'>()
 export const ProposedItem = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('ADD_CONCEPT'), concept: z.object({ key: ConceptKey, name, plural, description, synonyms, titleField: FieldKey, keyFields: z.array(FieldKey).min(1).max(4) }) }),
-  z.object({ kind: z.literal('ADD_FIELD'), concept: ConceptKey, field: z.object({ key: FieldKey, name, description, type: FieldType, currency: z.string().regex(/^[A-Z]{3}$/).optional(), unit: z.string().max(12).optional(), column: z.string().max(128) }) }),
-  z.object({ kind: z.literal('SET_CODE'), concept: ConceptKey, field: FieldKey, value: z.string().min(1).max(40), label: z.string().max(80), description: z.string().max(200).optional(), origin: z.enum(['DICTIONARY', 'PERSON']) }),
-  z.object({ kind: z.literal('ADD_RELATION'), relation: z.object({ key: RelationKey, from: ConceptKey, to: ConceptKey, cardinality, pairs: z.array(z.tuple([FieldKey, FieldKey])).min(1).max(4), fromName, toName, through: ConceptKey.optional() }) }),
+  z.object({ kind: z.literal('ADD_CONCEPT'), concept: z.object({ key: ConceptKey, name: Name, plural: Name, description: z.string().max(500), synonyms: z.array(Name).max(10), titleField: FieldKey, keyFields: z.array(FieldKey).min(1).max(4), state: z.enum(['EXPERIMENTAL', 'ACTIVE']) }) }),
+  z.object({ kind: z.literal('ADD_FIELD'), concept: ConceptKey, field: z.object({ key: FieldKey, name: Name, description: z.string().max(200), type: FieldType, currency: z.string().regex(/^[A-Z]{3}$/).optional(), unit: z.string().max(12).optional(), column: z.string().max(128) }) }),
+  z.object({ kind: z.literal('SET_CODE'), concept: ConceptKey, field: FieldKey, value: z.string().min(1).max(40), label: z.string().max(80), description: z.string().max(200).optional(), dictionary: z.string().max(200).optional() }), // the inventory entry the agent cites; origin is the server's
+  z.object({ kind: z.literal('ADD_RELATION'), relation: z.object({ key: RelationKey, from: ConceptKey, to: ConceptKey, cardinality: Cardinality, pairs: RelationPairs, fromName: Name, toName: Name, through: ConceptKey.optional() }) }),
   z.object({ kind: z.literal('SET_SOURCE'), concept: ConceptKey, sql: z.string().min(1).max(4000) }),
   z.object({ kind: z.literal('RENAME_LABEL'), target: Target, name: z.string().max(80), description: z.string().max(500).optional() }),
-  z.object({ kind: z.literal('DEPRECATE'), target: Target, reason: z.string().max(500), replacedBy: z.string().optional() }),
+  z.object({ kind: z.literal('DEPRECATE'), target: Target, reason: z.string().max(500), replacedBy: Target.optional() }),
 ])
 // NOTE is written only by the migration; no tool or route accepts it.
 ```
 
 A ferramenta `concept_propose` (`BUILDER_TOOL.conceptPropose = 'concept_propose'`): entrada
-`{ connection, connector, demand, items: ProposedItem[] (1 a 40) }`; resposta
-`{ kind: 'PROPOSED', proposalId, baseRevision, items: { n, target, proof?: { rows, columns } }[], refused: { target, reason }[] }`
-ou a recusa da porta como ela vem (`NOT_GRANTED`, `NOT_IN_ROLE`, `DATABASE_UNAVAILABLE`). As regras
+`{ connection, demand, items: ProposedItem[] (1 a 40) }` (o conector sai da conexão); resposta
+`{ kind: 'PROPOSED', proposalId, baseRevision, items: { n, target, proof?: { rows, columns } }[], refused: { target, reason: ItemRefusal }[] }`,
+com `ItemRefusal = 'CONCEPT_INCOMPLETE' | 'FIELD_NOT_IN_PROOF' | 'CODE_UNSEEN' | 'PROOF_FAILED' |
+'NOT_IN_ROLE' | 'RELATION_INVALID' | 'TARGET_UNKNOWN' | 'ITEM_REPEATED'` (e, para `PROOF_FAILED`, o
+tipo da resposta em `detail`), ou a recusa da conexão como ela vem (`NOT_GRANTED`,
+`DATABASE_UNAVAILABLE`). A prova roda com o papel de quem fala: um item que precisa da porta e cujo
+papel não tem `consultar` volta `NOT_IN_ROLE`, e os outros itens seguem. As regras
 de prova, em `hub/ontology/propose.ts`:
 
 | Item | A prova | A recusa |
 | --- | --- | --- |
-| `SET_SOURCE` | `count` e `shape` pela porta, gravados num `proof_run` | `PROOF_FAILED` com o tipo da resposta |
+| `SET_SOURCE` | `count` e `shape` pela porta, gravados num `proof_run` | `PROOF_FAILED` com o tipo da resposta; `NOT_IN_ROLE` sem `consultar` |
 | `ADD_CONCEPT` | uma fonte na proposta ou ativa; os campos da chave e do título nos itens ou no ativo | `CONCEPT_INCOMPLETE` |
 | `ADD_FIELD` | a coluna na forma da prova da fonte do conceito (a da proposta, ou a mais nova `OK` da ativa) | `FIELD_NOT_IN_PROOF` |
-| `SET_CODE` | um valor novo: a contagem `compile({ filters: [{ column, op: 'equals', value }], measure: { count: true } })` maior que zero; um valor ativo que só muda o rótulo: nenhuma chamada | `CODE_UNSEEN` |
+| `SET_CODE` | um valor novo: a contagem `compile({ filters: [{ column, op: 'equals', value }], measure: { count: true } })` maior que zero; um valor ativo que só muda o rótulo: nenhuma chamada. A origem: `DICTIONARY` se `dictionary` nomeia uma entrada `CODE` do inventário da conexão que termina em `=<valor>`, senão `PERSON`; a sugestão pela tela é sempre `PERSON` | `CODE_UNSEEN`; `NOT_IN_ROLE` sem `consultar` |
 | `ADD_RELATION` | os dois conceitos e os campos dos pares, na proposta ou no ativo | `RELATION_INVALID` |
 | `RENAME_LABEL`, `DEPRECATE` | o alvo ativo | `TARGET_UNKNOWN` |
 | qualquer | o mesmo `target` pendente na mesma proposta | `ITEM_REPEATED` |
@@ -814,9 +875,9 @@ As linhas `@mastra/core` (skill `mastra`: `createTool`), `zod`, `drizzle-orm`, `
 
 ### A ordem do trabalho
 
-1. Apagar primeiro: `noteSaveTool` (`connector-tools.ts:255-282`), `provedAndSaved` e `save`
-   (`notes.ts:78-151`), `erase` (`:153-162`) e a rota dele, `mayNote` (`assistant.ts:260-263`), a
-   seção "# Notes on a connection" (`assistant.md:45-47`), `BUILDER_TOOL.connectorNoteSave` e o
+1. Apagar primeiro: `noteSaveTool` (`connector-tools.ts:255-282`; **PR976:** `:278-305`), `provedAndSaved` e `save`
+   (`notes.ts:78-151`), `erase` (`:153-162`) e a rota dele, `mayNote` (`assistant.ts:260-263`; **PR976:** o `note` de
+   `maysFor`), a seção "# Notes on a connection" (`assistant.md:45-47`; **PR976:** `:51-53`), `BUILDER_TOOL.connectorNoteSave` e o
    `Notebook` da página da conexão. Regras: C75, delivery L7.
 2. A saída de `consultar` com `colunas`, e o dublê com `userType` (de `INTEGER` `I`, `TEXT` `S`,
    `REAL` `F`, `DATE` `D`), com um teste que lê a resposta gravada de `refusals.ts:54-57`.
@@ -864,7 +925,7 @@ Sonnet para as telas, se a unidade se dividir.
   `apps/server/src/builder/assistant/company-memory-routes.ts:26-37` (o membro admitido, a role
   conferida depois, `NOT_IN_ROLE` com o nome da operação); `apps/server/src/hub/copies/accept.ts:19-45`
   (a linha travada, a tentativa); `apps/server/src/platform/database.ts:171` (`violatedConstraint`);
-  `packages/hub-api/src/failures.ts:270-277` (`NOT_IN_ROLE`), `:279-287`; **PR976:**
+  `packages/hub-api/src/failures.ts:265-272` (`NOT_IN_ROLE`), `:273-282`; **PR976:**
   `packages/hub-api/src/company-memory.ts:74-108` (a forma de `defineOperation`); **PR976:**
   `settings/route.tsx:26-45` e `settings/company-memory.tsx` (uma seção, um arquivo); o cartão do
   `copy_propose` na conversa (`apps/web/src/builder/conversation/`, a peça que desenha o resultado
@@ -878,33 +939,48 @@ Sonnet para as telas, se a unidade se dividir.
 | `apps/server/src/hub/ontology/` | cria `decide.ts`, `suggest.ts`, `active.ts` (o conjunto ativo e o hash), `reads.ts`; muda `routes.ts`, `public.ts` | a web; U5, U6 |
 | `packages/hub-api/src/` | muda `ontology.ts`, `ontology-failures.ts` | a web |
 | `apps/web/src/hub/ontology/` | cria a lista, a página, o código, Para revisar, Histórico, `queries.ts`, `text.ts`, `public.ts` | a rota |
-| `apps/web/src/routes/_app/companies/$companyId_/settings/` | cria `concepts.tsx` | o gerador de rotas (`routeTree.gen.ts`) |
+| `apps/web/src/routes/_app/companies/$companyId_/settings/` | cria `concepts.tsx`, `concepts.$concept.tsx` | o gerador de rotas (`routeTree.gen.ts`) |
 | `apps/web/src/builder/conversation/` | cria o cartão do resultado de `concept_propose` | — |
 
 ### Os contratos que a unidade cria
 
 As ações (`admission.ts`): `proposeConcepts: { by: 'MEMBER', statement: undefined, locks: true }`
 (todo membro, `Q1`; trava a linha do membro até gravar, S8) e `approveConcepts: { by: 'MEMBER',
-statement: { ontology: ['approve'] }, locks: true }`. O papel da empresa criado pela empresa não
+statement: { ontology: ['approve'] }, locks: true }`. As leituras (`GET`) admitem com
+`readCompany`, sem trava, como a memória da empresa (**PR976:** `company-memory-routes.ts:29`). O papel da empresa criado pela empresa não
 recebe `ontology` (ele guarda só conectores, `roles.ts`, `memberBase`).
 
 As rotas, `BASE = '/api/companies/{companyId}/ontology'`:
 
 | Método e caminho | Acesso | Entrada | Saída | Falhas |
 | --- | --- | --- | --- | --- |
-| `GET ${BASE}` | todo membro | — | `{ revision: { number, hash, proposedBy, approvedBy, approvedAt } \| null, concepts: ConceptRow[], toReview: number, mayApprove: boolean, awaits: 'OWNER' \| 'APPROVER' \| null }` | `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE` |
+| `GET ${BASE}` | todo membro (`readCompany`) | — | `{ revision: { number, hash, proposedBy, approvedBy, approvedAt } \| null, concepts: ConceptRow[], toReview: number, mayApprove: boolean, awaits: 'OWNER' \| 'APPROVER' \| null }` | `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE` |
 | `GET ${BASE}/concepts/{concept}` | todo membro | — | o conceito com campos, códigos, ligações, a fonte (a conexão pelo nome, a consulta, a prova: linhas e quando) | as de cima |
 | `GET ${BASE}/proposals` | todo membro | `?state=OPEN` | as propostas com os itens, o antes e o depois de cada um | as de cima |
 | `GET ${BASE}/revisions` | todo membro | — | as revisões, mais nova primeiro, com quem propôs e quem aprovou | as de cima |
-| `POST ${BASE}/proposals` | todo membro (`proposeConcepts`) | `Idempotency-Key`; `{ why: 1 a 500, items: (SET_CODE \| RENAME_LABEL \| DEPRECATE)[] (1 a 10) }` | `201 { proposalId }` | as de cima, `REQUEST_MALFORMED`, `IDEMPOTENCY_CONFLICT`, `CODE_UNSEEN`, `TARGET_UNKNOWN` |
-| `POST ${BASE}/proposals/{proposalId}/decisions` | `proposeConcepts`, e o papel conferido depois | `{ approved: int[], refused: { n, reason }[], expectedRevision: int }`, ao menos um item | `200 { revision: number \| null }` | as de cima, `FIRST_REVISION_OWNER` (403), `NOT_IN_ROLE` (409), `REVISION_STALE` (412), `DECISION_INCOMPLETE` (422, com os itens), `ITEM_NOT_APPROVABLE` (409), `ITEM_DECIDED` (409) |
+| `POST ${BASE}/proposals` | todo membro (`proposeConcepts`) | `Idempotency-Key`; `{ why: 1 a 500, items: (SET_CODE \| RENAME_LABEL \| DEPRECATE)[] (1 a 10) }` | `201 { proposalId }` | as de cima, `REQUEST_MALFORMED`, `IDEMPOTENCY_CONFLICT`, `CODE_UNSEEN`, `TARGET_UNKNOWN`, e as da porta para um código novo: `NOT_IN_ROLE`, `NOT_GRANTED`, `PROOF_FAILED` |
+| `POST ${BASE}/proposals/{proposalId}/decisions` | `proposeConcepts`, e o papel conferido depois | `{ approved: int[], refused: { n, reason }[], expectedRevision: int }`, ao menos um item | `200 { revision: number \| null }`; sem `Idempotency-Key`: `expectedRevision` e `ITEM_DECIDED` tornam a repetição inofensiva (web W24) | as de cima, `FIRST_REVISION_OWNER` (403), `NOT_IN_ROLE` (409), `REVISION_STALE` (412), `DECISION_INCOMPLETE` (422, com os itens), `ITEM_NOT_APPROVABLE` (409), `ITEM_DECIDED` (409) |
 
-Os códigos novos (C48), com a frase: `FIRST_REVISION_OWNER` "Só o dono aprova a primeira revisão
-dos conceitos."; `REVISION_STALE` "Os conceitos mudaram enquanto você revisava.", "Veja de novo.";
-`DECISION_INCOMPLETE` "Falta aprovar o que estes itens precisam."; `ITEM_NOT_APPROVABLE` "Uma nota do
-caderno não se aprova: o Builder a refaz com prova."; `ITEM_DECIDED` "Este item já foi decidido.";
-`CODE_UNSEEN` "Este código não aparece no sistema."; `TARGET_UNKNOWN` "Isto não existe mais nos
-conceitos.". O `NOT_IN_ROLE` leva `operation` "os conceitos da empresa".
+Os códigos novos (C48), em `ontology-failures.ts`, todos `settles: true` e `actionKind: 'NONE'`
+salvo `REVISION_STALE` (`'RETRY'`, a tela relê):
+
+| Código | Categoria, status | Frase | Ação |
+| --- | --- | --- | --- |
+| `INVENTORY_RUNNING` | `USER`, 409 | O inventário desta conexão já está sendo lido. | Espere terminar. |
+| `INVENTORY_EMPTY` | `USER`, 409 | Esta conexão ainda não tem inventário. | Peça para ler o inventário. |
+| `FIRST_REVISION_OWNER` | `USER`, 403 | Só o dono aprova a primeira revisão dos conceitos. | Peça ao dono. |
+| `REVISION_STALE` | `USER`, 412 | Os conceitos mudaram enquanto você revisava. | Veja de novo. |
+| `DECISION_INCOMPLETE` | `USER`, 422 | Falta aprovar o que estes itens precisam. | Aprove ou recuse os itens marcados. |
+| `ITEM_NOT_APPROVABLE` | `USER`, 409 | Uma nota do caderno não se aprova: o Builder a refaz com prova. | Recuse a nota. |
+| `ITEM_DECIDED` | `USER`, 409 | Este item já foi decidido. | Veja de novo. |
+| `CODE_UNSEEN` | `USER`, 422 | Este código não aparece no sistema. | Confira o valor. |
+| `TARGET_UNKNOWN` | `USER`, 404 | Isto não existe mais nos conceitos. | Veja de novo. |
+| `PROOF_FAILED` | `THIRD_PARTY`, 502 | Não foi possível provar no sistema. | Tente de novo. |
+| `CONCEPT_UNKNOWN` | `USER`, 404 | Este conceito não existe para você. | Leia o catálogo. |
+
+O `NOT_IN_ROLE` leva `operation` "os conceitos da empresa". Os outros motivos de item
+(`CONCEPT_INCOMPLETE`, `FIELD_NOT_IN_PROOF`, `RELATION_INVALID`, `ITEM_REPEATED`) só voltam dentro
+de `refused` da ferramenta, para o modelo, e não são falhas de rota.
 
 A decisão, em `decide.ts`, numa transação (`database.command(companyScope(...))`):
 
@@ -918,7 +994,8 @@ if (current !== input.expectedRevision) throw new Failure('REVISION_STALE')
 const items = await pendingItems(tx, proposalId, numbers) // SELECT … FOR UPDATE; a decided one: ITEM_DECIDED
 const versions = versionsOf(approvedItems, current + 1) // pure; a switch on `kind`, exhaustive (C22); NOTE: ITEM_NOT_APPROVABLE
 const next = applied(await activeSet(tx), versions) // pure
-const missing = incomplete(next) // a concept with no source, a field with no concept, a code with no field
+const missing = incomplete(next) // a concept with no source or no title/key field; a field with no concept; a code with no field;
+// a relation with no concepts, pair fields or `through`; a DEPRECATE whose replacedBy is not active
 if (missing.length > 0) throw new Failure('DECISION_INCOMPLETE', { details: { items: missing } })
 if (versions.length > 0) {
   await insertRevision(tx, { number: current + 1, hash: hashOf(next), proposalId, proposedBy, approvedBy: personId })
@@ -947,8 +1024,11 @@ web (W17, W24, W32, W34). Segurança S6, S8, S10.
 4. `suggest.ts` e a rota, com a chave de tentativa (C37) e as regras de prova da U3 para os três
    tipos de item.
 5. As leituras e as telas: a seção `concepts.tsx` (grupo `company`, rótulo "Conceitos da empresa",
-   ordem 46, depois da memória da empresa), a lista, a página, o código com **Sugerir mudança**, Para
-   revisar e Histórico, cada estado da matriz.
+   ordem 46, depois da memória da empresa), com a aba no endereço (`validateSearch`,
+   `?aba=conceitos|revisar|historico`) e a página de um conceito em `concepts.$concept.tsx`, o código
+   aberto por `?campo=` (web W18: cada vista tem endereço); a lista, a página, o código com **Sugerir
+   mudança**, Para revisar e Histórico, cada estado da matriz; cada "não encontrado" com **Voltar aos
+   conceitos** (W34).
 6. O cartão do resultado de `concept_propose` na conversa, com **Revisar e aprovar** para Para
    revisar.
 
@@ -1001,11 +1081,20 @@ export type ConceptDescriptor = Readonly<{
   fields: readonly Readonly<{ key: FieldKey; name: string; type: FieldType; codes?: readonly { value: string; meaning: string }[] }>[]
   relations: readonly Readonly<{ key: RelationKey; to: ConceptKey; name: string; pairs: readonly [FieldKey, FieldKey][] }>[]
   source: Readonly<{ connectionId: ConnectionId; connector: ConnectorId; operation: OperationId; provedAt: string; rows: number }>
+  state: 'EXPERIMENTAL' | 'ACTIVE'
   warning?: string // a field whose column a newer proof saw with another type is left out, by name
 }>
 /** The active concepts the reader reaches: active revision ∩ the role holds the source's door operation ∩ (in a Projeto) the connection is released to it. */
 export function descriptorsFor(input: { companyId: CompanyId; speaker: Speaker; connections: readonly ConnectionId[] }): Promise<ConceptDescriptor[]>
 ```
+
+A coluna que mudou: a prova mais nova da mesma `(connection_id, query)` da fonte ativa (o índice da
+U1) dá o tipo bruto de cada coluna; o tipo do campo é compatível com ele por uma tabela só, em
+`descriptors.ts`: `I` com `ID`, `INTEGER`, `CODE`, `BOOLEAN`; `F` com `DECIMAL`, `MONEY`, `INTEGER`,
+`CODE`; `S` com `TEXT`, `ID`, `CODE`, `BOOLEAN`; `D` com `DATE`; `H` com `TIMESTAMP` e `DATE`
+(`refusals.ts:54-57` grava `H` e `F`); `null` é compatível com tudo. Uma prova só tira um campo do
+descritor, nunca acrescenta: a máquina detecta e a pessoa decide (0064). O dublê manda `D` para as
+datas que guarda como texto (`fake-sales.ts:181-185`).
 
 As ferramentas, em `builder/ontology/tools.ts`:
 
@@ -1086,7 +1175,9 @@ Os caminhos: `conceitos/<chave>` (nome: o do conceito) e `conceitos/<chave>/<cam
 <Campo>") para cada campo `CODE`. O corpo: o nome, a descrição, os sinônimos, a chave e o título, os
 campos com o tipo e a descrição, o link da lista de códigos, as ligações; nunca a consulta, a prova,
 o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#conceitos/…]]`. Um conceito
-aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`.
+aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`. O `upsertPage` cria a página pai `conceitos` com o nome da chave
+(`host-writes.d.ts:17-19`); a projeção a grava antes, com o nome "Conceitos" e um corpo que lista os
+conceitos. Cada página leva `description` curta (o nome e o plural), que a busca usa.
 
 A área, em `SCOPES`: `'ontologia:$orgId': { access: [{ principal: 'self', role: 'viewer' }] }`;
 `companyScopes` acrescenta `ontologia:<companyId>`. A regra de link da pessoa (`company-memory-routes.ts`,
@@ -1106,7 +1197,10 @@ A linha `@mastra/core` (skill `mastra`: Knowledge, `upsertPage`, as áreas) de
 2. `projectOntology`: lê o ativo, `upsertPage` de cada página, `removePage` nenhuma (o aposentado
    fica); a falha de uma página vai ao log com `logFailure` e as outras seguem; a linha
    `ONTOLOGY_PROJECTED`.
-3. A ligação tardia no `decide.ts` e o comando `reproject-ontology` (todas as empresas com revisão).
+3. A ligação tardia no `decide.ts` e o comando `reproject-ontology` (todas as empresas com revisão),
+   na tabela `COMMANDS` de `main.ts:315-319`; como `runReseal` (`apps/server/src/reseal.ts:8-11`), o
+   comando abre o banco (`openDatabase`) e o `PostgresStore` ele mesmo, fora de `runServer`, e monta
+   `CompanyMemory` e `projectOntology` com eles.
 4. A recusa do link nas gravações de pessoa, e o teste de ataque da issue 984.
 
 ### Como se prova

@@ -12,7 +12,7 @@ demand. Founder, 2026-11-12: `"A1 B1 C1"`, `"F1"`, "D Aprovado", then "L1", "P1"
   revisions, with the row policy [0039]. Names and codes, never values. Not in Knowledge (no typed
   fields) nor Mastra's database [0010].
 - `P1`: each element is an immutable version written by a revision; the current one is a view. The
-  Hub only reads and inserts, but a proposal's state and an item's decision.
+  Hub only inserts, but a proposal's state, an item's decision and the inventory, replaced by run.
 - An agent, app or Projeto gets a narrowing slice: read tools generated as data (Twenty's
   `DatabaseToolProvider`), run through the connector's door [0056].
 - `B1`: nothing counts before a person approves it, through a route (Palantir's proposals). `Q1`: any
