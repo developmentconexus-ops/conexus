@@ -126,7 +126,7 @@ export const PLAN_DENIED: Invocation = {
  * optional field nullable and required, so the model fills what it does not use with `null`
  * (the recorded Luna call of `openai-refused-write-call.sse` does the same for `codigoLocalEstoque`).
  */
-export const QUESTION_NULLED_ARGS = {
+const QUESTION_NULLED_ARGS = {
   questions: [
     {
       question: 'Quem cadastra as encomendas?',
