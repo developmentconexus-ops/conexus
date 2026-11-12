@@ -2,6 +2,7 @@ import {
   DraftRef,
   ProposedApp,
   ProposedAutomation,
+  ProposedCompanyMemory,
   ShownFile,
   TestedResult,
   ToolSearchResult,
@@ -36,6 +37,7 @@ import {
   Library,
   Program,
   Reason,
+  Research,
   textOf,
 } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
@@ -180,6 +182,8 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
         <Generic tool={tool} title={title} />
       )
     }
+    case 'research':
+      return <Research tool={tool} title={title} />
     case 'program':
       return <Program tool={tool} title={title} />
     default:
@@ -296,6 +300,10 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
     body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
+  const memory =
+    body === 'companyMemory' ? ProposedCompanyMemory.safeParse(tool.result).data : undefined
+  if (memory !== undefined)
+    return room.companyMemoryCard?.({ proposed: memory, toolCallId: tool.toolCallId })
   const draft = body === 'agent' ? DraftRef.safeParse(tool.result).data : undefined
   if (draft !== undefined)
     return (

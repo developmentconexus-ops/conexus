@@ -140,7 +140,7 @@ test('máquina: duas ferramentas do Workspace no primeiro passo esperam a sement
   const tools = await createWorkspaceTools(workspace)
   const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
   assert.ok(command, 'the workspace offers execute_command')
-  const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
+  const head = { description: 'Lendo o HEAD', command: `cat ${join(folder, 'app')}/.git/HEAD` }
   const first = command.execute(head, { workspace })
   // The second arrives while the machine already says `running` and the seed is still coming.
   while (control.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, memberOn } from '../../hub/identity/test-hub.ts'
-import { reading } from '../assistant/test-assistant.ts'
+import { reading, searching } from '../assistant/test-assistant.ts'
 import { automating, created, ended, ranNow, salesSummary } from './test-automations.ts'
 
 const DIEGO = { name: 'Diego Reis', email: 'diego@example.test' }
 
 test('a automação roda pelo papel do dono: o modelo recebe só o que o papel do dono lê, e a consulta que o papel dele não tem não chega ao dublê', async (t) => {
-  const on = await automating(t, [[reading('Matriz')]])
+  const on = await automating(t, [[searching('pedidos')], [reading('Matriz')]])
   const diego = await memberOn(on.hub, on.companyId, DIEGO, 'developer')
   const without = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
     connectors: { sankhya: ['pedidos'] },
@@ -20,7 +20,7 @@ test('a automação roda pelo papel do dono: o modelo recebe só o que o papel d
   const run = await ended(on.hub, diego, url, await ranNow(on.hub, diego, url))
   assert.equal(run.state.kind, 'DONE')
   const answered = JSON.stringify(on.calls[1])
-  assert.ok(answered.includes('sankhya.pedidos'), 'the model is offered what the owner may read')
-  assert.ok(!answered.includes('sankhya.empresas'))
+  assert.ok(answered.includes('sankhya_pedidos'), 'the model is offered what the owner may read')
+  assert.ok(!answered.includes('sankhya_empresas'))
   assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, 0)
 })

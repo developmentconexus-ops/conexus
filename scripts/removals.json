@@ -2277,14 +2277,14 @@
     }
   },
   {
-    "id": "assistant-machine-stale-killed",
+    "id": "machine-stale-killed-on-replace",
     "file": "apps/server/src/builder/machine/conversation.ts",
-    "find": "session.found === undefined ? api.killStale(conversationId, template) : undefined",
-    "replace": "undefined",
+    "find": "session.found === undefined && otherTemplate === 'replace'",
+    "replace": "false",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/machine.test.ts",
-      "name": "antes de ligar"
+      "file": "src/builder/machine/conversation-machines.test.ts",
+      "name": "com `replace`, a de outro molde é morta"
     }
   },
   {
@@ -2301,7 +2301,7 @@
   {
     "id": "assistant-read-numbered",
     "file": "apps/server/src/builder/assistant/connector-access.ts",
-    "find": "const n = (readsOfRun.get(requestContext) ?? 0) + 1",
+    "find": "const n = (readsOfTurn.get(turn) ?? 0) + 1",
     "replace": "const n = 1",
     "test": {
       "cwd": "apps/server",
@@ -2587,7 +2587,7 @@
   {
     "id": "assistant-without-automation-tool-for-member",
     "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "        ...(mayAutomate\n          ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) }\n          : {}),",
+    "find": "        ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),",
     "replace": "        [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen),",
     "test": {
       "cwd": "apps/server",
@@ -2608,7 +2608,7 @@
   },
   {
     "id": "assistant-note-never-in-automation-run",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "file": "apps/server/src/builder/assistant/mays.ts",
     "find": "        !byAutomation &&\n",
     "replace": "",
     "test": {
@@ -2619,8 +2619,8 @@
   },
   {
     "id": "assistant-note-never-for-those-who-do-not-manage-connections",
-    "file": "apps/server/src/builder/assistant/assistant.ts",
-    "find": "deps.identity.allows(speakers.role, 'manageConnections')",
+    "file": "apps/server/src/builder/assistant/mays.ts",
+    "find": "identity.allows(speakers.role, 'manageConnections')",
     "replace": "true",
     "test": {
       "cwd": "apps/server",
@@ -2890,6 +2890,39 @@
       "cwd": "packages/connectors",
       "file": "src/sankhya/search.test.ts",
       "name": "nunca vira curinga"
+    }
+  },
+  {
+    "id": "company-memory-permission",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  manageCompanyMemory: { by: 'MEMBER', statement: MANAGE_COMPANY_MEMORY, locks: false },\n",
+    "replace": "  manageCompanyMemory: { by: 'MEMBER', statement: undefined, locks: false },\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/roles-memory.test.ts",
+      "name": "a memória da empresa"
+    }
+  },
+  {
+    "id": "company-memory-read-only",
+    "file": "apps/server/src/builder/assistant/company-memory.ts",
+    "find": "  'knowledge_list',\n] as const",
+    "replace": "  'knowledge_list',\n  'knowledge_pin',\n] as const",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/company-memory-propose.test.ts",
+      "name": "não tem ferramenta de gravação do Knowledge"
+    }
+  },
+  {
+    "id": "company-memory-proposal",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "        [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/company-memory-propose.test.ts",
+      "name": "os dois têm a proposta"
     }
   }
 ]

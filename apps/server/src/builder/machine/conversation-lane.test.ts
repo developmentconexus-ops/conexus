@@ -47,6 +47,7 @@ function machinesOf(
       kit: replace.kit?.(doubles.deps.kit) ?? doubles.deps.kit,
       log,
       hosts: PACKAGE_HOSTS,
+      otherTemplate: 'replace',
       marksOf: async () => ({ [MARK.company]: COMPANY }),
     },
     { ...doubles.tuning, ...tuning },

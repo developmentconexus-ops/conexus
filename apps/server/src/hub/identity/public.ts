@@ -23,6 +23,7 @@ import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
 import { createMayUse } from './may-use.ts'
+import { memberProfileOf } from './member-profile.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
@@ -123,6 +124,7 @@ export function createIdentity(deps: {
       companyNicknameOf,
       liveHubSession,
       personNameOf,
+      memberProfileOf,
       mailOwnerInvitation: ownerMailer(deps),
     }),
     // The Builder's release and the Projetos' apps come with the routes: identity exists before

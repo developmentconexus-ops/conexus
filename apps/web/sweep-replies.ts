@@ -98,6 +98,7 @@ function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name 
       role: 'owner',
       mayRemove: false,
       mayChangeTo: [],
+      ...{ jobTitle: null, department: null, mayEditProfile: false },
       invitationsSent: 0,
     },
     {
@@ -107,6 +108,7 @@ function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name 
       role: 'member',
       mayRemove: true,
       mayChangeTo: ['admin', 'developer'],
+      ...{ jobTitle: null, department: null, mayEditProfile: true },
       invitationsSent: 1,
     },
   ] as const

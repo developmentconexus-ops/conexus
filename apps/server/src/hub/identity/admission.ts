@@ -24,8 +24,10 @@ const PUBLISH_AGENT = { agent: ['publish'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
 const MANAGE_COPIES = { copy: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
+const MANAGE_COMPANY_MEMORY = { companyMemory: ['manage'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
+const PROFILE_OF_ANOTHER = 'o cargo e a área de outra pessoa'
 const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
@@ -47,6 +49,7 @@ type ActionRule = {
     | typeof MANAGE_AUTOMATIONS
     | typeof MANAGE_COPIES
     | typeof ASK_ASSISTANT
+    | typeof MANAGE_COMPANY_MEMORY
     | typeof REQUEST_PUBLISH
     | typeof DECIDE_REQUEST
     | typeof MANAGE_ROLES
@@ -100,6 +103,10 @@ const ACTIONS = {
   manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
   // Every member asks the Assistant (step 24.3.4, "5"). Reading holds no row.
   askAssistant: { by: 'MEMBER', statement: ASK_ASSISTANT, locks: false },
+  // The company's memory and instructions are an owner's or an administrator's, as every write that
+  // holds for the whole company (alignment of the Assistant, U9); every member reads them. They live
+  // in Mastra's store, admitted in a read-only transaction, which cannot hold the role.
+  manageCompanyMemory: { by: 'MEMBER', statement: MANAGE_COMPANY_MEMORY, locks: false },
   // A Projeto's agents and the company's tools are an owner's, an administrator's or a developer's
   // (step 24.3, 3.A, and 24.3.4): reading holds no row, a change holds the role until it commits.
   readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },
@@ -359,6 +366,24 @@ export async function admit(input: CompanyInput & { action: MemberAction }): Pro
  */
 export async function admitAppUser(tx: ReadTx, input: { companyId: CompanyId }): Promise<void> {
   await refuseIfDeleting({ tx, companyId: input.companyId })
+}
+
+/**
+ * Admits the writer of a member's job title and department: the person for themselves, as any
+ * member reads the company; for another, a member whose role may change roles, or the operator.
+ */
+export async function admitProfileWriter(
+  input: CompanyInput & { owner: PersonId },
+): Promise<CompanyProof> {
+  if (input.owner === input.personId) return await admit({ ...input, action: 'readCompany' })
+  try {
+    return await admitCompany({ ...input, action: 'changeRole' })
+  } catch (error) {
+    if (error instanceof Failure && error.details.reason === 'FORBIDDEN') {
+      throw new Failure('NOT_IN_ROLE', { named: { operation: PROFILE_OF_ANOTHER } })
+    }
+    throw error
+  }
 }
 
 /**

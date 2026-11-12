@@ -13,11 +13,11 @@ import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { openSession, resourceOf } from '../controller-kit/public.ts'
+import { oncePerRun, openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { Owner } from './context.ts'
-import { SESSION_MARK } from './context.ts'
+import { runConversation, SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
@@ -155,4 +155,20 @@ export async function asked(
     perPage: 1,
   })
   return messages.length > 0
+}
+
+/**
+ * Whether an automation's run opened the run's conversation, from its thread's marks, read once per
+ * run: nobody sees a button there, so no hand-off to the Builder is offered.
+ */
+export function automationRunFor(memory: ReturnType<typeof assistantMemory>) {
+  return oncePerRun(async (requestContext) => {
+    const run = runConversation(requestContext)
+    if (run === undefined) return false
+    const thread = await memory.getThreadById({
+      threadId: run.sessionId,
+      resourceId: run.resourceId,
+    })
+    return automationOf(thread?.metadata) !== null
+  })
 }

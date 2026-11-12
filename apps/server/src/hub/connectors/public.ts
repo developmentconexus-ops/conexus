@@ -31,9 +31,11 @@ import type { ConnectionCopies } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
+export type { Connector, Operation } from '@conexus/connectors'
 /** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056). */
 export {
   AccountRef,
+  CONNECTORS,
   CopyDefinition,
   CopyDefinitionV2,
   CopyName,
@@ -43,6 +45,7 @@ export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
+export { TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
 export {
   connectionForCopy,

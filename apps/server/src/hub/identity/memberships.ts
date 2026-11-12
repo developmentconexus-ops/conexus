@@ -28,6 +28,8 @@ const Listed = Member.pick({ personId: true, name: true }).extend({
   email: Email,
   role: Role,
   invitationsSent: z.number().int().nonnegative(),
+  jobTitle: z.string().nullable(),
+  department: z.string().nullable(),
 })
 type Listed = z.infer<typeof Listed>
 
@@ -38,6 +40,8 @@ const columns = {
   name: user.name,
   email: user.email,
   role: member.role,
+  jobTitle: member.jobTitle,
+  department: member.department,
   invitationsSent: sql<number>`(select count(*)::int from ${invitation}
     where ${invitation.organizationId} = ${member.organizationId}
     and ${invitation.inviterId} = ${member.userId}
@@ -46,7 +50,7 @@ const columns = {
 
 /** What the viewer may do to a row, from the rank table that decides it on the write (code C26). */
 function viewOf(
-  viewer: { actor: Actor; personId: PersonId; roles: readonly Role[] },
+  viewer: { actor: Actor; personId: PersonId; roles: readonly Role[]; editsOthers: boolean },
   row: Listed,
 ): Member {
   const { id: _id, ...shown } = row
@@ -56,6 +60,7 @@ function viewOf(
     mayChangeTo: viewer.roles.filter(
       (next) => next !== row.role && rankAllows(viewer.actor, row.role, next),
     ),
+    mayEditProfile: viewer.personId === row.personId || viewer.editsOthers,
   }
 }
 
@@ -65,7 +70,32 @@ async function rolesOf(tx: ReadTx, companyId: CompanyId): Promise<Role[]> {
 }
 
 async function viewerOf(tx: ReadTx, admitted: CompanyProof, personId: PersonId) {
-  return { actor: actorOf(admitted), personId, roles: await rolesOf(tx, admitted.companyId) }
+  return {
+    actor: actorOf(admitted),
+    personId,
+    roles: await rolesOf(tx, admitted.companyId),
+    editsOthers: admitted.kind === 'COMPANY_OPERATOR' || allows(admitted.role, 'changeRole'),
+  }
+}
+
+/** The company's member the person is, as the listing's columns read them; none if they are not one. */
+async function memberRow(tx: ReadTx, input: { companyId: CompanyId; personId: PersonId }) {
+  const [found] = await tx
+    .select(columns)
+    .from(member)
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
+  return Listed.optional().parse(found)
+}
+
+/** The member as the viewer, whom `admitted` proves, sees them in the caller's transaction. */
+export async function memberViewed(
+  tx: ReadTx,
+  input: { admitted: CompanyProof; viewerId: PersonId; personId: PersonId },
+): Promise<Member | undefined> {
+  const row = await memberRow(tx, { companyId: input.admitted.companyId, personId: input.personId })
+  if (row === undefined) return undefined
+  return viewOf(await viewerOf(tx, input.admitted, input.viewerId), row)
 }
 
 export function readMembers(
@@ -174,12 +204,7 @@ async function admittedTarget(
     companyId: input.companyId,
     action: input.action,
   })
-  const [found] = await tx
-    .select(columns)
-    .from(member)
-    .innerJoin(user, eq(member.userId, user.id))
-    .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
-  return { admitted, target: Listed.optional().parse(found) }
+  return { admitted, target: await memberRow(tx, input) }
 }
 
 /**

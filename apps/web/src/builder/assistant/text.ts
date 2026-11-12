@@ -115,3 +115,15 @@ export const UNCONFIRMED_HANDOFF = unconfirmedText('o envio ao Builder', 'Tente 
 export const RETRY = 'Tentar de novo'
 export const OPEN_BUILDER = 'Abrir a conversa do Builder'
 export const NAME_HINT = `Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`
+
+/** The words of the card of what the Assistant proposed to save in the company's memory (U9). */
+export const ONLY_MANAGERS_MEMORY = 'Só o dono ou um administrador muda a memória da empresa.'
+export const MEMORY_PROPOSAL_KIND = {
+  INSTRUCTIONS: 'Proposta para as instruções da empresa',
+  PAGE: 'Proposta de página para a memória da empresa',
+  NOTE: 'Proposta de nota para a memória da empresa',
+} as const
+export const SAVE = 'Salvar'
+export const SAVING = 'Salvando…'
+export const MEMORY_SAVED = 'Salvo na memória da empresa.'
+export const UNCONFIRMED_MEMORY_SAVE = unconfirmedText('se foi salvo', 'Toque de novo.')

@@ -159,7 +159,10 @@ test('a conversa guardou uma linha e outra conversa a mudou depois: o turno segu
 
 test('o guardar falhou numa máquina viva: o turno seguinte ainda tem o trabalho, e a versão dele o leva', async (t) => {
   function command(line: string): Tool {
-    return { name: 'mastra_workspace_execute_command', input: { command: line } }
+    return {
+      name: 'mastra_workspace_execute_command',
+      input: { description: 'Rodando um teste', command: line },
+    }
   }
   const { repository, git } = await twoTurns(
     t,
