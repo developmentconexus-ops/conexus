@@ -11,8 +11,8 @@ const SYNC_SCHEMA = quoted('sync')
 /** The column that holds the pass that last wrote each row: the engine's own. Only the Hub's catalog leaves it out; a read of the table itself still returns it (issue 946). */
 export const COPY_PASS_COLUMN = '_pass'
 /** The columns of a copy of accounts, the engine's own beside `_pass`: the provider's account and the company's name for its connection. */
-export const COPY_ACCOUNT_COLUMN = '_account'
-export const COPY_ACCOUNT_NAME_COLUMN = '_account_name'
+const COPY_ACCOUNT_COLUMN = '_account'
+const COPY_ACCOUNT_NAME_COLUMN = '_account_name'
 
 /**
  * What the company's database keeps of a copy, as the kit's parsed `CopyDefinition` gives it: the
