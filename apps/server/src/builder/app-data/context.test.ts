@@ -168,7 +168,7 @@ test('a origem e as descrições', async (t) => {
   const ids = { companyId: on.companyId, projectId: on.projectId }
   const first = dataContext(await on.hub.copies.projectView(ids))
   for (const part of [
-    '- `sync.ml_pedidos` (only what changed',
+    '- `sync.ml_pedidos` [your proposal, turned on] (only what changed',
     'from the read `pedidos` (Pedidos) of `mercado-livre`, fixed input {"status":"paid"}.',
     'Os pedidos de cada loja.',
     `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text, "atualizado" timestamp`,

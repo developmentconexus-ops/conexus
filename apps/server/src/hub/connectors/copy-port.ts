@@ -332,7 +332,10 @@ export function createCopyPort(deps: Deps) {
      * The read rules a source fails whatever else is wrong with its definition: the same issues
      * `proposable` gives for the operation and the fixed input, so a refusal for the shape carries them too.
      */
-    sourceIssues(connector: string, source: { operation: string; input: Readonly<Record<string, unknown>> }) {
+    sourceIssues(
+      connector: string,
+      source: { operation: string; input: Readonly<Record<string, unknown>> },
+    ) {
       const kit = connectorIn(deps, connector)
       return kit === undefined ? [] : sourceIssuesOf(kit, source)
     },

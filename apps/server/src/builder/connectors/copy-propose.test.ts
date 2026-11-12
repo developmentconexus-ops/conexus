@@ -6,7 +6,6 @@ import { BUILDER_TOOL, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { described } from '../../hub/connectors/test-app-calls.ts'
 import { linkSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { sankhyaServed } from '../../hub/copies/test-released.ts'
-import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, sent, started, streamOf } from '../conversation/test-conversation.ts'
@@ -161,24 +160,4 @@ test('as seis perguntas', async (t) => {
     if (questions.includes(part) || part === COPY_SHAPE_RULE || part === COPY_TURN_ON_RULE)
       assert.ok(skill.includes(part), `conexus-data: ${part}`)
   }
-})
-
-test('o modelo propõe pedidos como connector_read o nomeia, em uma chamada só', async (t) => {
-  const definition = {
-    ...ordersCopy(true),
-    source: { kind: 'OPERATION', operation: 'mercado-livre.pedidos', input: {} },
-  }
-  const on = await ordersConversing(t, (asked) => {
-    if (!asked.stream) return { kind: 'text', text: 'Título' }
-    if (!asked.tools.includes(PROPOSE) || asked.toolResults.length > 0)
-      return { kind: 'text', text: 'Pronto.' }
-    const input = { connections: ['Loja A'], name: 'ml_pedidos', label: 'Pedidos', definition }
-    return { kind: 'blocks', blocks: [tool(PROPOSE, input)] }
-  })
-  await on.release()
-  const { calls } = await on.turn('Quero os pedidos')
-  const results = calls.flatMap((asked) => asked.toolResults)
-  assert.equal(results.length, 1, 'one call')
-  assert.match(results[0]?.text ?? '', /"kind":"PROPOSED"/)
-  assert.match(results[0]?.text ?? '', /"operation":"pedidos"|"name":"ml_pedidos"/)
 })

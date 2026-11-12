@@ -60,7 +60,9 @@ function pagingText(list: NonNullable<Copying['reads'][number]['list']>): string
 function listReads(connections: readonly Copying[]): string {
   const lines = connections.flatMap((each) => {
     const listed = each.reads.flatMap((read) =>
-      read.list === null ? [] : [`  - ${each.connector}.${read.operation} (${read.label}): ${pagingText(read.list)}`],
+      read.list === null
+        ? []
+        : [`  - ${each.connector}.${read.operation} (${read.label}): ${pagingText(read.list)}`],
     )
     return listed.length === 0
       ? []
