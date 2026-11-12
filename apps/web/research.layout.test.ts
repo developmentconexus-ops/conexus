@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
+import { recordedSubagent } from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
@@ -28,25 +29,6 @@ const CAPTURES = join(tmpdir(), 'conexus-u12-capturas')
 // saves what it saw in CAPTURES, outside the repository (testing T23).
 const ASKED =
   'Quantos pedidos a Matriz e a Filial tiveram em outubro de 2026, por vendedor, comparados com setembro, separando os cancelados e os devolvidos e dizendo de onde veio cada número'
-const FOUND = [
-  'A Matriz teve **120** pedidos em outubro e a Filial **87**.',
-  '',
-  '- Matriz: 120 pedidos (leitura `pedidos`, página 0)',
-  '- Filial: 87 pedidos (leitura `pedidos`, página 0)',
-].join('\n')
-
-function researched(toolCallId: string, result: unknown) {
-  return {
-    type: 'tool-invocation' as const,
-    toolInvocation: {
-      state: 'result' as const,
-      toolCallId,
-      toolName: 'subagent',
-      args: { agentType: 'pesquisar', task: ASKED },
-      result,
-    },
-  }
-}
 
 const RESEARCH_MESSAGES: Said[] = [
   MESSAGES[0] ?? { id: 'p', role: 'person', parts: [], createdAt: '2026-10-19T12:00:00.000Z' },
@@ -54,20 +36,9 @@ const RESEARCH_MESSAGES: Said[] = [
     id: 'r1',
     role: 'builder',
     parts: [
-      {
-        type: 'tool-invocation',
-        toolInvocation: {
-          state: 'call',
-          toolCallId: 'pending',
-          toolName: 'subagent',
-          args: { agentType: 'pesquisar', task: ASKED },
-        },
-      },
-      researched('found', { content: FOUND, isError: false }),
-      researched('lost', {
-        content: 'Subagent "Pesquisa" failed: a conta da conversa não respondeu',
-        isError: true,
-      }),
+      recordedSubagent('research', 'pending', ASKED, 'call'),
+      recordedSubagent('research', 'found', ASKED),
+      recordedSubagent('research-failed', 'lost', ASKED),
     ],
     createdAt: '2026-10-19T12:01:00.000Z',
   },

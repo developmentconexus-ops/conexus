@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ASSISTANT_ROOM, BUILDER_ROOM } from './room.ts'
+import { recordedPart, SubagentPart } from './test-recorded.ts'
 import { presentTool, toolStatus } from './tool-registry.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
@@ -12,6 +13,8 @@ test('a frase do comando', () => {
     const done = presentTool({ toolName: COMMAND, args }, 'done', room)
     assert.equal(done.sentence, PHRASE)
     assert.equal(done.detail, 'python soma.py', 'the open row keeps the command')
+    const running = presentTool({ toolName: COMMAND, args }, 'running', room)
+    assert.equal(running.sentence, `Rodando… ${PHRASE}`, 'the matrix: Rodando… with the phrase')
     const failed = presentTool({ toolName: COMMAND, args }, 'error', room)
     assert.equal(failed.sentence, `Um comando falhou: ${PHRASE}`)
     const stored = presentTool({ toolName: COMMAND, args: { command: 'ls' } }, 'done', room)
@@ -40,8 +43,9 @@ test('o ajudante', () => {
     assert.equal(failed.detail, TASK)
     assert.equal(failed.beside, true, 'a failed line is cut too')
 
-    const found = { content: 'Outubro teve 120 pedidos.', isError: false }
-    const lost = { content: 'Subagent "Pesquisa" failed: sem conta', isError: true }
+    // What Mastra's `subagent` returned when the helper answered, and when its model call failed.
+    const found = recordedPart('research', SubagentPart).toolInvocation.result
+    const lost = recordedPart('research-failed', SubagentPart).toolInvocation.result
     const call = { toolName: 'subagent', state: 'result' as const, isError: undefined }
     assert.equal(toolStatus({ ...call, result: found }, room), 'done')
     assert.equal(toolStatus({ ...call, result: lost }, room), 'error')
