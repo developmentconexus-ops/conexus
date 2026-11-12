@@ -53,6 +53,8 @@ Todas de 2026-11-12, na ordem em que vieram.
 - Ao quarto estudo: "H1" (a conversa da entrada pergunta só o que vale para a empresa inteira, e logo a
   primeira demanda) e "I1" (uma pergunta que o dono não sabe responder fica em aberto, mostrando o que
   ela desliga, no Início, sem código novo além dessa lista).
+- Às duas decisões deste cartão: `"J1 K1"` (a entrada ganha o passo "Ligue seus sistemas", com cinco
+  passos; a tabela "Em aberto" ganha a sua permissão no banco). A aprovação da página ainda não veio.
 - E o que ele quer: "um intake de informação para uma empresa que começa do zero, guiado em etapas,
   que se adapte a qualquer conector", com o Conexus oferecendo implantação como serviço, à moda dos
   Forward-Deployed Engineers do Palantir.
@@ -89,8 +91,8 @@ você.
 7. O seu fechamento: o mesmo na sua empresa, pelo endereço da entrada que o firstmate manda, com o
    registro lido junto com ele.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e dá as duas palavras abaixo
-(`J` e `K`). No fim: faz o roteiro, diz o que viu e aprova os textos das telas.
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página (as duas palavras abaixo,
+`J` e `K`, você já deu em 2026-11-12: `"J1 K1"`). No fim: faz o roteiro, diz o que viu e aprova os textos das telas.
 
 **Fica de fora.**
 
@@ -119,11 +121,11 @@ você.
   leva essa diferença a você antes da U9 ser construída; nesta etapa, a entrada nunca grava sem o
   toque.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Respondidas em 2026-11-12: `"J1 K1"`.
 
 - **`J`. A entrada ganha o passo "Ligue seus sistemas".** Hoje o guia diz que a entrada tem quatro
   passos (web W33), e mudar um guia pede a sua palavra (delivery L20).
-  - **`J1` (recomendo).** Cinco passos: o novo é o quarto, pode ser pulado com **Fazer depois**, e o
+  - **`J1` (recomendei; escolhida em 2026-11-12).** Cinco passos: o novo é o quarto, pode ser pulado com **Fazer depois**, e o
     que for pulado vira **Sistemas: falta** no cartão do Início, como a conta de modelo e a equipe.
     Exemplo: quem não tem o usuário do ERP à mão segue e liga depois. Veredito: nativo; o como: o
     passo reusa a janela **Ligar** das Integrações, e o cartão conta as conexões ativas, como já conta
@@ -133,14 +135,14 @@ você.
     para quem já ligou algo.
 - **`K`. Uma permissão nova no banco para a lista "Em aberto".** A lista precisa de uma tabela nova,
   e a lista de permissões do banco só muda num pull request próprio, com a sua palavra (dados D11).
-  - **`K1` (recomendo).** O Hub lê e acrescenta perguntas, e muda só o estado, a resposta e quem
+  - **`K1` (recomendei; escolhida em 2026-11-12).** O Hub lê e acrescenta perguntas, e muda só o estado, a resposta e quem
     respondeu. Exemplo: a pergunta "quem decide os descontos no comercial?" entra quando você diz "não
     sei" e sai quando você responde. Veredito: nativo (uma tabela e uma rota do Hub, como as outras);
     nenhuma biblioteca guarda perguntas em aberto.
   - **`K2`.** Sem tabela: as perguntas ficam só no briefing, e o Início não as mostra. Contraria a
     `I1`.
 
-As outras escolhas desta etapa já têm a sua palavra (`A1`, `B1`, `C1`, `E1`, `F1`, `D`, `H1`, `I1`) ou
+As outras escolhas desta etapa já têm a sua palavra (`A1`, `B1`, `C1`, `E1`, `F1`, `D`, `H1`, `I1`, `J1`, `K1`) ou
 são técnicas, onde as referências convergem (a seção seguinte).
 
 ## O que os estudos deixaram para esta etapa
@@ -262,7 +264,7 @@ o que se perguntou de novo (falha).
    `skill_read`: `docs-skills.md:49`). O caminho certo: a conversa da entrada fica marcada no Hub, o
    bloco da conversa diz o lugar, e o texto fixo manda carregar a skill nesse lugar (U3).
 3. **A entrada tem uma regra de guia.** Os estudos põem o passo "Sistemas" sem notar que o web W33 fixa
-   quatro passos: a mudança pede a palavra do fundador (`J`) e um pull request de documentos antes da
+   quatro passos: a mudança pede a palavra do fundador (`J`, dada em 2026-11-12: `J1`) e um pull request de documentos antes da
    U1 (L20).
 4. **A frase do Builder** que o estudo cita em `builder.md:62` está em `:64`.
 5. **O critério da pergunta respondível pelos dados** não se prova com o modelo dublê: o dublê diz o que
