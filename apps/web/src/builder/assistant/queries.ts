@@ -1,13 +1,16 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
+  clearProfileMemory,
   createAssistantConversation,
   deleteAssistantConversation,
+  getProfileMemory,
   listAssistantConnections,
   listAssistantConversations,
   readAssistantConversation,
   renameAssistantConversation,
   setAssistantConnections,
   setAssistantModel,
+  setProfileMemory,
 } from '@conexus/hub-api'
 import type { QueryKey } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -60,3 +63,11 @@ export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantModel = hubMutation(setAssistantModel)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)
 export const sendAssistantRename = hubMutation(renameAssistantConversation)
+
+/** What the Assistant keeps about the person in the company, across their conversations. */
+export function profileMemoryQuery(companyId: CompanyId) {
+  return hubQuery(getProfileMemory, { params: { companyId } })
+}
+
+export const sendProfileMemory = hubMutation(setProfileMemory)
+export const sendProfileMemoryClear = hubMutation(clearProfileMemory)

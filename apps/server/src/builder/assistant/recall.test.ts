@@ -73,7 +73,10 @@ test('não lê a de outro', async (t) => {
   others.push(idOf(his), await started(on.hub, on.ana, on.conversations))
 
   const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, mine)).say('E a do Bruno?')), 'complete')
+  assert.equal(
+    endOf(await (await talking(t, on.hub, on.ana, mine)).say('E a do Bruno?')),
+    'complete',
+  )
 
   const refused = (on.calls.at(1)?.texts ?? []).filter((text) =>
     text.includes('Thread does not belong to the active resource'),

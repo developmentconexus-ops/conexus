@@ -37,7 +37,8 @@ async function profileOf(deps: Deps, owner: Owner) {
 
 async function written(deps: Deps, owner: Owner, workingMemory: string) {
   const profile = await profileOf(deps, owner)
-  if (profile === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONVERSATION' } })
+  if (profile === undefined)
+    throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONVERSATION' } })
   await deps.memory.updateWorkingMemory({ ...profile, workingMemory })
 }
 

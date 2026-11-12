@@ -39,8 +39,8 @@ import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
-import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import type { AssistantProjects } from './ports.ts'
+import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import { listedPage } from './search.ts'
 
 /**

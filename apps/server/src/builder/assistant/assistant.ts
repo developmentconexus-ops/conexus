@@ -35,6 +35,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
+import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
@@ -236,6 +237,7 @@ function assistantAgent(
       typedSearch(deps, { scopeOf, chosenOf, savedAt }),
       // Before the account's pick, which flattens the step's tools, so it flattens the closed one.
       researchOnly,
+      profileReadOnlyInRuns(automationRun),
       ...defaults.inputProcessors.filter((each) => each !== parts.turns.processor),
       machineUploads({ log: deps.log }),
     ],

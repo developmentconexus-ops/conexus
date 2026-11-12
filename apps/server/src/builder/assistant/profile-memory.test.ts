@@ -2,6 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { BRUNO, CARLA, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
+import {
+  automating,
+  created as automation,
+  ended,
+  ranNow,
+  salesSummary,
+} from '../automations/test-automations.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
@@ -131,4 +138,19 @@ test('o modelo da memória', async (t) => {
   assert.match(template?.[1] ?? '', /never keep what a read of the company's systems gives again/)
   assert.match(template?.[1] ?? '', /end each line you add with its date \(YYYY-MM-DD\)/)
   assert.match(template?.[1] ?? '', /under 4,000 characters/)
+})
+
+test('a rodada de automação lê o perfil e não o grava: o modelo não recebe a ferramenta de escrita da memória, a rodada termina e o perfil da pessoa fica como estava', async (t) => {
+  const on = await automating(t, [
+    [tool('updateWorkingMemory', { memory: '# About the person\nESCRITO-PELA-RODADA' })],
+  ])
+  const before = await readMemory(on.hub, on.ana, on.company)
+  const made = await automation(on.hub, on.ana, on.automations, salesSummary([on.matriz]))
+  const url = `${on.automations}/${made.id}`
+  const run = await ended(on.hub, on.ana, url, await ranNow(on.hub, on.ana, url))
+  assert.equal(run.state.kind, 'DONE')
+  const asked = on.calls.filter((each) => each.tools.includes('recall'))
+  assert.ok(asked.length > 0, 'the run reads the profile and recalls')
+  for (const each of asked) assert.equal(each.tools.includes('updateWorkingMemory'), false)
+  assert.equal(await readMemory(on.hub, on.ana, on.company), before)
 })
