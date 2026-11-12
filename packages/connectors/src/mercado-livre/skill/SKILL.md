@@ -12,7 +12,8 @@ The connection is read only. There is no operation that writes, and a refusal is
 ## Rules for every read
 
 - Every read answers `{ linhas, temMais }`: the rows as Mercado Livre sent them (a field the kit does not know passes, and one object comes as a list of one), and whether another page follows (`temMais` is `null` when the route does not say). The app parses the fields it uses at its own boundary, never the kit.
-- One page per call. A list ends when `offset + limit` reaches `total` (`paging`, or the same counts at the top of the answer), and `temMais` says so. Read the next page only when the person's question needs it.
+- One page per call. A list ends when `offset + limit` reaches `total` (`paging`, or the same counts at the top of the answer), and `temMais` says so; a scan (`anuncios`, `perguntas`) gives the next page's cursor in `seguinte` and ends on a page with no rows. Read the next page only when the person's question needs it.
+- `pedidos`, `anuncios`, `perguntas`, `reclamacoes` and `periodosDeFaturamento` declare how their list pages (and `pedidos`, how it asks only what changed), so each can become a copy the Conexus keeps in the company's database: for data an app reads again and again, propose the copy instead of paging live.
 - Each list has its own page size cap and its own window; the part for the subject gives them.
 - A refusal comes with what Mercado Livre answered. A permission the app lacks (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) refuses only that group of reads; the others still work.
 - An answer Mercado Livre could not fill whole (a partial `206`, on an order) is read, and carries `parcial: true`: some fields are missing, and Mercado Livre says the rest usually suffices. Say so when a missing field matters to the question.

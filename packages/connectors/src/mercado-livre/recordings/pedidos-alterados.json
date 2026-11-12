@@ -1,0 +1,438 @@
+{
+  "service": "Mercado Livre",
+  "connector": "mercado-livre",
+  "case": "pedidos-alterados",
+  "route": {
+    "method": "GET",
+    "path": "/orders/search",
+    "query": [
+      "limit",
+      "offset",
+      "order.date_last_updated.from",
+      "seller"
+    ]
+  },
+  "recordedAt": "2026-11-12",
+  "status": 200,
+  "replaced": [
+    "available_sorts.id",
+    "available_sorts.name",
+    "query",
+    "results.buyer.id",
+    "results.buyer.nickname",
+    "results.cancel_detail.application_id",
+    "results.cancel_detail.date",
+    "results.cancel_detail.description",
+    "results.context.site",
+    "results.coupon.amount",
+    "results.currency_id",
+    "results.date_closed",
+    "results.date_created",
+    "results.date_last_updated",
+    "results.expiration_date",
+    "results.id",
+    "results.last_updated",
+    "results.mediations.id",
+    "results.order_items.currency_id",
+    "results.order_items.element_id",
+    "results.order_items.gross_price",
+    "results.order_items.item.category_id",
+    "results.order_items.item.id",
+    "results.order_items.item.seller_custom_field",
+    "results.order_items.item.seller_sku",
+    "results.order_items.item.title",
+    "results.order_items.item.variation_attributes.id",
+    "results.order_items.item.variation_attributes.name",
+    "results.order_items.item.variation_attributes.value_id",
+    "results.order_items.item.variation_attributes.value_name",
+    "results.order_items.item.warranty",
+    "results.order_items.listing_type_id",
+    "results.order_items.sale_fee",
+    "results.order_items.unit_price",
+    "results.pack_id",
+    "results.paid_amount",
+    "results.payments.authorization_code",
+    "results.payments.available_actions",
+    "results.payments.card_id",
+    "results.payments.collector.id",
+    "results.payments.coupon_amount",
+    "results.payments.currency_id",
+    "results.payments.date_approved",
+    "results.payments.date_created",
+    "results.payments.date_last_modified",
+    "results.payments.id",
+    "results.payments.installment_amount",
+    "results.payments.issuer_id",
+    "results.payments.order_id",
+    "results.payments.overpaid_amount",
+    "results.payments.payer_id",
+    "results.payments.payment_method_id",
+    "results.payments.reason",
+    "results.payments.shipping_cost",
+    "results.payments.site_id",
+    "results.payments.taxes_amount",
+    "results.payments.total_paid_amount",
+    "results.payments.transaction_amount",
+    "results.payments.transaction_amount_refunded",
+    "results.seller.id",
+    "results.seller.nickname",
+    "results.shipping.id",
+    "results.total_amount",
+    "seller",
+    "sort.id",
+    "sort.name"
+  ],
+  "body": {
+    "query": "Texto inventado 1",
+    "results": [
+      {
+        "payments": [
+          {
+            "reason": "Texto inventado 2",
+            "status_code": null,
+            "total_paid_amount": 32.05,
+            "operation_type": "regular_payment",
+            "transaction_amount": 32.05,
+            "transaction_amount_refunded": 6,
+            "date_approved": "2026-08-04T06:40:50.000-04:00",
+            "collector": {
+              "id": 200000005
+            },
+            "coupon_id": null,
+            "installments": 1,
+            "authorization_code": null,
+            "taxes_amount": 6,
+            "id": 200000000006,
+            "date_last_modified": "2026-08-04T06:40:50.000-04:00",
+            "coupon_amount": 6,
+            "available_actions": [
+              "refund"
+            ],
+            "shipping_cost": 6,
+            "installment_amount": null,
+            "date_created": "2026-08-04T06:40:50.000-04:00",
+            "activation_uri": null,
+            "overpaid_amount": 6,
+            "card_id": null,
+            "status_detail": "accredited",
+            "issuer_id": "000007",
+            "payment_method_id": "ACCOUNTMONEY000008",
+            "payment_type": "account_money",
+            "deferred_period": null,
+            "atm_transfer_reference": {
+              "transaction_id": null,
+              "company_id": null
+            },
+            "site_id": "MLB000009",
+            "payer_id": 200000010,
+            "order_id": 2000000000000011,
+            "currency_id": "BRL000012",
+            "status": "approved",
+            "transaction_order_id": null
+          }
+        ],
+        "fulfilled": true,
+        "taxes": {
+          "amount": null,
+          "currency_id": null,
+          "id": null
+        },
+        "order_request": {
+          "change": null,
+          "return": null
+        },
+        "expiration_date": "2026-09-01T06:40:51.000-04:00",
+        "feedback": {
+          "buyer": null,
+          "seller": null
+        },
+        "shipping": {
+          "id": 20000000013
+        },
+        "date_closed": "2026-08-04T06:40:51.000-04:00",
+        "id": 2000000000000011,
+        "manufacturing_ending_date": null,
+        "order_items": [
+          {
+            "item": {
+              "id": "MLB0000000014",
+              "title": "Texto inventado 2",
+              "category_id": "MLB000015",
+              "variation_id": null,
+              "seller_custom_field": "000016",
+              "global_price": null,
+              "net_weight": null,
+              "variation_attributes": [
+                {
+                  "name": "Texto inventado 17",
+                  "id": "COLOR000018",
+                  "value_id": "000019",
+                  "value_name": "Texto inventado 20"
+                },
+                {
+                  "name": "Texto inventado 21",
+                  "id": "FINISH000022",
+                  "value_id": "0000023",
+                  "value_name": "Texto inventado 24"
+                }
+              ],
+              "warranty": "Texto inventado 25",
+              "condition": "new",
+              "seller_sku": "000016"
+            },
+            "quantity": 2,
+            "unit_price": 201.1,
+            "gross_price": 32.05,
+            "currency_id": "BRL000012",
+            "manufacturing_days": null,
+            "picked_quantity": null,
+            "requested_quantity": {
+              "measure": "unit",
+              "value": 2
+            },
+            "sale_fee": 208.45,
+            "listing_type_id": "GOLDSPECIAL000028",
+            "base_exchange_rate": null,
+            "base_currency_id": null,
+            "bundle": null,
+            "element_id": 31
+          }
+        ],
+        "date_last_updated": "2026-09-01T10:54:52+00:00",
+        "last_updated": "2026-09-01T06:54:51.000-04:00",
+        "comment": null,
+        "pack_id": 2000000000000030,
+        "coupon": {
+          "amount": 6,
+          "id": null
+        },
+        "shipping_cost": null,
+        "date_created": "2026-08-04T06:40:48.000-04:00",
+        "date_created_ttl": null,
+        "pickup_id": null,
+        "status_detail": null,
+        "tags": [
+          "catalog",
+          "paid",
+          "delivered",
+          "pack_order"
+        ],
+        "static_tags": [
+          "pack_order"
+        ],
+        "buyer": {
+          "id": 200000010,
+          "nickname": "Texto inventado 31"
+        },
+        "seller": {
+          "id": 200000005,
+          "nickname": "Texto inventado 32"
+        },
+        "total_amount": 32.05,
+        "paid_amount": 32.05,
+        "currency_id": "BRL000012",
+        "status": "paid",
+        "context": {
+          "application": null,
+          "product_id": null,
+          "channel": "marketplace",
+          "site": "MLB000009",
+          "flows": [
+            "catalog"
+          ]
+        }
+      },
+      {
+        "payments": [
+          {
+            "reason": "Texto inventado 33",
+            "status_code": null,
+            "total_paid_amount": 259.9,
+            "operation_type": "regular_payment",
+            "transaction_amount": 259.9,
+            "transaction_amount_refunded": 259.9,
+            "date_approved": "2026-08-18T07:59:23.000-04:00",
+            "collector": {
+              "id": 200000005
+            },
+            "coupon_id": null,
+            "installments": 1,
+            "authorization_code": "Texto inventado 35",
+            "taxes_amount": 6,
+            "id": 200000000036,
+            "date_last_modified": "2026-09-04T02:09:53.000-04:00",
+            "coupon_amount": 6,
+            "available_actions": [
+              "Texto inventado 1"
+            ],
+            "shipping_cost": 6,
+            "installment_amount": 259.9,
+            "date_created": "2026-08-18T07:59:21.000-04:00",
+            "activation_uri": null,
+            "overpaid_amount": 6,
+            "card_id": 2000000037,
+            "status_detail": "bpp_refunded",
+            "issuer_id": "000038",
+            "payment_method_id": "MASTER000039",
+            "payment_type": "credit_card",
+            "deferred_period": null,
+            "atm_transfer_reference": {
+              "transaction_id": null,
+              "company_id": null
+            },
+            "site_id": "MLB000009",
+            "payer_id": 2000000040,
+            "order_id": 2000000000000041,
+            "currency_id": "BRL000012",
+            "status": "refunded",
+            "transaction_order_id": null
+          }
+        ],
+        "fulfilled": false,
+        "taxes": {
+          "amount": null,
+          "currency_id": null,
+          "id": null
+        },
+        "order_request": {
+          "change": null,
+          "return": null
+        },
+        "expiration_date": "2026-09-15T08:00:00.000-04:00",
+        "feedback": {
+          "buyer": null,
+          "seller": null
+        },
+        "shipping": {
+          "id": 20000000042
+        },
+        "date_closed": "2026-08-18T08:00:00.000-04:00",
+        "id": 2000000000000041,
+        "manufacturing_ending_date": null,
+        "order_items": [
+          {
+            "item": {
+              "id": "MLB0000000043",
+              "title": "Texto inventado 33",
+              "category_id": "MLB000044",
+              "variation_id": null,
+              "seller_custom_field": "000045",
+              "global_price": null,
+              "net_weight": null,
+              "variation_attributes": [
+                {
+                  "name": "Texto inventado 17",
+                  "id": "COLOR000018",
+                  "value_id": "0000046",
+                  "value_name": "Texto inventado 47"
+                },
+                {
+                  "name": "Texto inventado 21",
+                  "id": "FINISH000022",
+                  "value_id": "000048",
+                  "value_name": "Texto inventado 49"
+                }
+              ],
+              "warranty": "Texto inventado 25",
+              "condition": "new",
+              "seller_sku": null
+            },
+            "quantity": 1,
+            "unit_price": 259.9,
+            "gross_price": 259.9,
+            "currency_id": "BRL000012",
+            "manufacturing_days": null,
+            "picked_quantity": null,
+            "requested_quantity": {
+              "measure": "unit",
+              "value": 1
+            },
+            "sale_fee": 377.5,
+            "listing_type_id": "GOLDSPECIAL000028",
+            "base_exchange_rate": null,
+            "base_currency_id": null,
+            "bundle": null,
+            "element_id": 31
+          }
+        ],
+        "date_last_updated": "2026-09-06T06:21:43+00:00",
+        "last_updated": "2026-09-04T02:09:54.000-04:00",
+        "comment": null,
+        "pack_id": 2000000000000051,
+        "coupon": {
+          "amount": 6,
+          "id": null
+        },
+        "shipping_cost": null,
+        "date_created": "2026-08-18T07:59:20.000-04:00",
+        "date_created_ttl": null,
+        "pickup_id": null,
+        "status_detail": null,
+        "tags": [
+          "catalog",
+          "delivered",
+          "not_paid",
+          "d2c",
+          "one_shot",
+          "pack_order"
+        ],
+        "static_tags": [
+          "d2c",
+          "one_shot",
+          "pack_order"
+        ],
+        "buyer": {
+          "id": 2000000040,
+          "nickname": "Texto inventado 52"
+        },
+        "seller": {
+          "id": 200000005,
+          "nickname": "Texto inventado 32"
+        },
+        "total_amount": 259.9,
+        "paid_amount": 6,
+        "mediations": [
+          {
+            "id": 2000000053
+          }
+        ],
+        "currency_id": "BRL000012",
+        "status": "cancelled",
+        "cancel_detail": {
+          "group": "mediations",
+          "code": "mediations",
+          "description": "Texto inventado 54",
+          "requested_by": "meli",
+          "date": "2026-09-04T02:09:54.000-04:00",
+          "application_id": "0000000000000055"
+        },
+        "context": {
+          "application": null,
+          "product_id": null,
+          "channel": "marketplace",
+          "site": "MLB000009",
+          "flows": [
+            "catalog"
+          ]
+        }
+      }
+    ],
+    "sort": {
+      "id": "DATEASC000056",
+      "name": "Texto inventado 57"
+    },
+    "available_sorts": [
+      {
+        "id": "DATEDESC000058",
+        "name": "Texto inventado 59"
+      }
+    ],
+    "filters": [],
+    "paging": {
+      "total": 2,
+      "offset": 0,
+      "limit": 50
+    },
+    "display": "complete"
+  }
+}

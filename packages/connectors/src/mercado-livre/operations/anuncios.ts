@@ -7,7 +7,9 @@ import {
   Offset,
   PathId,
   readOf,
+  SCROLL_TTL_MS,
   Scan,
+  scanAlone,
   searchTypeOf,
   sellerOf,
 } from './shared.ts'
@@ -19,17 +21,26 @@ export const anuncios = readOf({
   summary:
     'Lista os ids dos anúncios do vendedor, filtrando por status ou SKU, uma página por chamada (até 100). Com `scan` a busca é uma varredura que passa de mil: a primeira página manda `scan`, e a resposta traz o `seguinte` (o `scrollId` da próxima, que vale 5 minutos).',
   label: 'Anúncios',
-  input: z.object({
-    status: z
-      .enum(['active', 'paused', 'closed', 'under_review', 'inactive', 'pending'])
-      .optional(),
-    sku: z.string().min(1).max(100).optional(),
-    offset: Offset.optional(),
-    ...Scan,
-    limit: Limit(100),
-  }),
+  input: z
+    .object({
+      status: z
+        .enum(['active', 'paused', 'closed', 'under_review', 'inactive', 'pending'])
+        .optional(),
+      sku: z.string().min(1).max(100).optional(),
+      offset: Offset.optional(),
+      ...Scan,
+      limit: Limit(100),
+    })
+    .refine(scanAlone.check, scanAlone.issue),
   list: 'results',
-  probe: () => ({ offset: 0, limit: 5 }),
+  paged: {
+    paging: {
+      ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 100 },
+      ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
+    },
+    changed: null,
+  },
+  probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get(`/users/${sellerOf(account)}/items/search`, {
       status: input.status,
