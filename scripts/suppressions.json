@@ -1,7 +1,7 @@
 {
   ".github/actions/test-database/action.yml": 1,
   ".github/workflows/ci-budget.yml": 1,
-  ".github/workflows/ci.yml": 14,
+  ".github/workflows/ci.yml": 15,
   ".github/workflows/publish.yml": 3,
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/assistant/test-handoff.ts": 1,
