@@ -86,7 +86,34 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     )
   }
 
-  /** Each target answered in one short transaction of the library's, with one read of the roles for the whole list. */
+  /**
+   * Each permission answered for the company's role in one short transaction of the library's: the
+   * first reads the roles and the library keeps them for the company, the rest of this call take that
+   * read, so a long list is one read, and the next call reads again.
+   */
+  function permittedEach(
+    companyId: CompanyId,
+    role: Role,
+    permissions: readonly Record<string, string[]>[],
+  ): Promise<boolean[]> {
+    return auth.$context.then((context) =>
+      command({ kind: 'COMPANY', companyId, personId: null }, async () => {
+        const answers: boolean[] = []
+        for (const [index, asked] of permissions.entries()) {
+          answers.push(
+            await permitted(context, {
+              organizationId: companyId,
+              role,
+              useMemoryCache: index > 0,
+              permissions: asked,
+            }),
+          )
+        }
+        return answers
+      }),
+    )
+  }
+
   async function mayUseEach(
     companyId: CompanyId,
     speaker: Speaker,
@@ -94,23 +121,11 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
   ): Promise<boolean[]> {
     if (speaker.kind === 'VERSION') return targets.map((target) => declares(speaker, target))
     if (targets.length === 0) return []
-    const context = await auth.$context
-    return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
-      const answers: boolean[] = []
-      for (const [index, target] of targets.entries()) {
-        answers.push(
-          await permitted(context, {
-            organizationId: companyId,
-            role: speaker.role,
-            // The first target reads the roles and the library keeps them for the company; the rest of
-            // this call take that read, so a long list is one read, and the next call reads again.
-            useMemoryCache: index > 0,
-            permissions: { [`connector_${target.connectorId}`]: [target.operationId] },
-          }),
-        )
-      }
-      return answers
-    })
+    return permittedEach(
+      companyId,
+      speaker.role,
+      targets.map((target) => ({ [`connector_${target.connectorId}`]: [target.operationId] })),
+    )
   }
 
   async function mayUse(companyId: CompanyId, speaker: Speaker, target: Target): Promise<boolean> {
@@ -120,15 +135,8 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
 
   /** Whether the role publishes a write that runs without asking (step 24.5), read now as `mayUse` reads. */
   async function mayPublishUnattended(companyId: CompanyId, role: Role): Promise<boolean> {
-    const context = await auth.$context
-    return command({ kind: 'COMPANY', companyId, personId: null }, () =>
-      permitted(context, {
-        organizationId: companyId,
-        role,
-        useMemoryCache: false,
-        permissions: { agent: ['publishUnattendedWrite'] },
-      }),
-    )
+    const [answer] = await permittedEach(companyId, role, [{ agent: ['publishUnattendedWrite'] }])
+    return answer === true
   }
 
   /** The kinds of personal data the person's role holds, read now as `mayUse` reads (one read of the roles for the whole list). */
@@ -136,20 +144,12 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     companyId: CompanyId,
     speaker: PersonSpeaker,
   ): Promise<readonly string[]> {
-    const context = await auth.$context
-    return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
-      const held: string[] = []
-      for (const [index, kind] of roles.personalKinds.entries()) {
-        const may = await permitted(context, {
-          organizationId: companyId,
-          role: speaker.role,
-          useMemoryCache: index > 0,
-          permissions: { personal: [kind] },
-        })
-        if (may) held.push(kind)
-      }
-      return held
-    })
+    const answers = await permittedEach(
+      companyId,
+      speaker.role,
+      roles.personalKinds.map((kind) => ({ personal: [kind] })),
+    )
+    return roles.personalKinds.filter((_, at) => answers[at])
   }
   return { mayUse, mayUseEach, mayPublishUnattended, personalKinds }
 }

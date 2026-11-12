@@ -84,6 +84,22 @@ test('dois papéis, duas respostas', async (t) => {
   assert.ok(owned.includes('Campinas') && owned.includes('receiver_name'), 'the owner sees it')
 })
 
+test('o caminho mais específico vence nas duas direções: contato sem endereço', async (t) => {
+  const on = await shopOn(t, ML_READS)
+  const company = `/api/companies/${on.companyId}`
+  const changed = await call(on.hub, on.ana, 'PUT', `${company}/roles/member`, {
+    connectors: ML_READS,
+    personal: ['contato'],
+  })
+  assert.equal(changed.statusCode, 200, changed.body)
+  const shipment = JSON.stringify(
+    await on.read({ kind: 'assistant', person: on.carla }, 'envio', { shipmentId: '40000000001' }),
+  )
+  assert.ok(shipment.includes('receiver_name'), 'the receiver comes, the role holds contato')
+  for (const gone of ['Campinas', 'street_name', 'comments'])
+    assert.ok(!shipment.includes(gone), `the shipment carries ${gone} without endereco`)
+})
+
 test('documento não vai ao modelo', async (t) => {
   const on = await shopOn(t, ML_READS)
   for (const kind of ['assistant', 'builder'] as const) {

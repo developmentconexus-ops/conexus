@@ -60,7 +60,7 @@ function assertSources(
 /** Each declared personal path is in a row of the double's answer, and no CPF, e-mail or phone sits outside them. */
 export function assertPersonal(operation: Operation<unknown, unknown>, value: unknown): void {
   const declared = operation.personal ?? []
-  const rows = personalRowsOf(value)
+  const { rows } = personalRowsOf(value)
   for (const { path } of declared)
     assert.ok(
       rows.some((row) => valueAt(row, path) !== undefined),

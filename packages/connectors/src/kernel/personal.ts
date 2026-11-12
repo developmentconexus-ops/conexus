@@ -9,13 +9,26 @@ export type PersonalField = Readonly<{ path: string; kind: PersonalKind }>
 
 type Undeclared = Readonly<{ path: string; kind: 'documento' | 'contato' }>
 
-/** The rows a declaration's paths are relative to: each of `linhas`, or the value itself. */
-export function personalRowsOf(value: unknown): readonly unknown[] {
+/** The rows a declaration's paths are relative to (each of `linhas`, or the value itself) and the answer rebuilt from them once shaped. */
+export function personalRowsOf(value: unknown) {
   if (typeof value === 'object' && value !== null && 'linhas' in value) {
     const { linhas } = value
-    if (Array.isArray(linhas)) return linhas
+    if (Array.isArray(linhas)) {
+      const rows: unknown[] = linhas
+      return { rows, rebuilt: (shaped: unknown[]): unknown => ({ ...value, linhas: shaped }) }
+    }
   }
-  return [value]
+  return { rows: [value], rebuilt: (shaped: unknown[]): unknown => shaped[0] }
+}
+
+/** The declared fields that hold a column's or leaf's path: the field's own path or one above it, the most specific first. */
+export function personalHolding(
+  declared: readonly PersonalField[],
+  path: string,
+): readonly PersonalField[] {
+  return declared
+    .filter((field) => path === field.path || path.startsWith(`${field.path}.`))
+    .toSorted((a, b) => b.path.length - a.path.length)
 }
 
 /** A CPF may come as a JSON number: an integer of up to 11 digits is read as its 11 digits. */
@@ -45,13 +58,10 @@ export function findUndeclared(
   value: unknown,
   declared: readonly PersonalField[],
 ): readonly Undeclared[] {
-  function covered(path: string) {
-    return declared.some((field) => path === field.path || path.startsWith(`${field.path}.`))
-  }
   const seen = new Map<string, Undeclared>()
-  for (const row of personalRowsOf(value))
+  for (const row of personalRowsOf(value).rows)
     for (const { path, leaf } of leavesOf(row, '', [])) {
-      const kind = covered(path) ? null : knownShapeOf(leaf)
+      const kind = personalHolding(declared, path).length > 0 ? null : knownShapeOf(leaf)
       if (kind !== null) seen.set(`${path}:${kind}`, { path, kind })
     }
   return [...seen.values()]

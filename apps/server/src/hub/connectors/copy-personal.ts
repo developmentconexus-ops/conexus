@@ -1,4 +1,5 @@
 import type { Connector, CopyDefinitionV2, Operation, PersonalKind } from '@conexus/connectors'
+import { personalHolding } from '@conexus/connectors'
 import { listReadOf } from './list-read.ts'
 
 /**
@@ -13,10 +14,7 @@ function personalColumnsOf(
   const declared = operation.personal ?? []
   const kinds = new Map<string, PersonalKind>()
   for (const { name, path } of definition.columns) {
-    const holding = declared
-      .filter((field) => path === field.path || path.startsWith(`${field.path}.`))
-      .toSorted((a, b) => b.path.length - a.path.length)
-    const [deepest] = holding
+    const [deepest] = personalHolding(declared, path)
     if (deepest !== undefined) kinds.set(name, deepest.kind)
   }
   return kinds
