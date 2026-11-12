@@ -187,7 +187,7 @@ o motor do Sync está em `main`.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 Os tipos nos papéis | a lista `PERSONAL_KINDS` no kit; o recurso `personal` nos `Statements`; dono e administrador com três tipos; `RoleView.personal`, `RoleCreate.personal`, `RoleChange.personal`; `personalKinds` na identidade; o registro da troca | `packages/connectors/src/kernel/`, `apps/server/src/hub/identity/`, `apps/server/src/hub/connectors/role-kit.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/company-roles.ts` | [security](../guides/security.md) | esta página |
+| U1 Os tipos nos papéis | a lista `PERSONAL_KINDS` no kit; o recurso `personal` nos `Statements`; dono e administrador com três tipos; `RoleView.personal`, `RoleCreate.personal`, `RoleChange.personal`; `personalKinds` na identidade; o registro da troca | `packages/connectors/src/kernel/`, `apps/server/src/hub/identity/`, `apps/server/src/hub/connectors/role-kit.ts`, `apps/server/src/main.ts`, `packages/hub-api/src/{company-roles,failures}.ts` | [security](../guides/security.md) | esta página |
 | U2 A declaração e a aplicação num ponto | `personal` na operação; `findUndeclared`; a conformidade; as declarações do Mercado Livre e do Sankhya, com o `omit`, o `BUYER` e o `without` apagados; `shapePersonal` em `readThrough`; `Speaker` `VERSION` com `personal`; menos documento para `assistant` e `builder`; os escalares em `CONNECTOR_CALLED` | `packages/connectors/src/{kernel,mercado-livre,sankhya}/`, `packages/connectors/package.json`, `apps/server/src/hub/connectors/`, `apps/server/src/hub/identity/may-use.ts`, `apps/server/src/builder/agents/` | [security](../guides/security.md) | U1; entra junto com a U3 (a U2b do Sync já está em `main`) |
 | U3 O app declara os tipos | `personal` no manifesto por conector; a conferência de Publicar; `sentBy` na chamada do app e a versão anterior ao campo; a skill `conexus-data` | `packages/app-contract/src/manifest.ts`, `packages/hub-api/src/{apps,failures}.ts`, `apps/server/src/hub/apps/`, `apps/server/src/hub/connectors/{publish-check,app-calls}.ts`, `packages/app/skills/conexus-data/` | [security](../guides/security.md) | U2 |
 | U4 A tela de Papéis | a seção **Dados pessoais de clientes** no editor, criar e abrir | `apps/web/src/hub/identity/` | [web](../guides/web.md) | U1 |
@@ -210,7 +210,7 @@ Cada um falha hoje: não há `personal` no kit, nem recurso `personal` nos papé
 | 3 | U2 | O Mercado Livre e o Sankhya passam a conformidade com as declarações; tirar `buyer` de `pedidos` a faz falhar | `mercado-livre/mercado-livre.test.ts`, `sankhya/sankhya.test.ts` | must |
 | 4 | U2 | Um `kind` fora dos quatro não compila nem passa em `defineOperation` | `kernel/kernel.test.ts`, "tipo desconhecido" | must |
 | 5 | U1 | `GET /api/companies/{companyId}/roles` dá a dono e administrador `personal: ['contato','endereco','documento']`, e a desenvolvedor, membro e papel novo `[]` | `identity/roles-personal.test.ts`, "os tipos de cada papel" | must |
-| 6 | U1 | `PUT .../roles/member` com `personal: ['contato']` é 200, e a leitura seguinte do membro recebe contato; com `['sensivel']` é 400 `REQUEST_MALFORMED` (`PERSONAL_KIND_UNKNOWN`); em `owner` é 409 `ROLE_FIXED` | `identity/roles-personal.test.ts`, "marcar contato no membro", "sensível recusado" | must |
+| 6 | U1 | `PUT .../roles/member` com `personal: ['contato']` é 200, e a leitura seguinte do membro recebe contato; com `['sensivel']` é 422 `REQUEST_MALFORMED` (`PERSONAL_KIND_UNKNOWN`); em `owner` é 409 `ROLE_FIXED` | `identity/roles-personal.test.ts`, "marcar contato no membro", "sensível recusado" | must |
 | 7 | U1 | `POST .../roles` cria "Vendas" com `personal: ['contato','endereco']` e a resposta os traz | `identity/roles-personal.test.ts`, "papel novo com tipos" | must |
 | 8 | U2 | Pela porta do Assistente, a mesma leitura `pedidos` do dublê: o dono recebe `buyer` com o nome plantado e sem `billing_info`; o membro recebe a linha sem `buyer`; em `envio`, o membro não recebe `destination` (nem `receiver_id` nem `comments`) | `connectors/personal-read.test.ts`, "dois papéis, duas respostas" | must |
 | 9 | U2 | Pelo Assistente e pelo Builder, nem `pedidos` (`buyer.billing_info`) nem `notaFiscalDoPedido` (`recipient`) trazem o CPF plantado, nem para o dono (B1); pelo app de uma versão que declara documento, trazem | `connectors/personal-read.test.ts`, "documento não vai ao modelo" | must |
@@ -229,7 +229,7 @@ Cada um falha hoje: não há `personal` no kit, nem recurso `personal` nos papé
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Papéis, seção Dados pessoais de clientes | os três desmarcados em Desenvolvedor, Membro e papel novo | não existe: os três tipos sempre aparecem | a do editor de hoje | o `FormAlert` de hoje, com a frase de `REQUEST_MALFORMED` | `ROLE_NOT_FOUND` de hoje | quem não gere papéis não chega (`manageRoles`) | Dono e Administrador: marcados e travados |
+| Papéis, seção Dados pessoais de clientes | os três desmarcados em Desenvolvedor, Membro e papel novo | não existe: os três tipos sempre aparecem | a do editor de hoje | o `FormAlert` de hoje, com `PERSONAL_KIND_UNKNOWN` | `ROLE_NOT_FOUND` de hoje | quem não gere papéis não chega (`manageRoles`) | Dono e Administrador: marcados e travados |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -291,7 +291,7 @@ A lista fixa de tipos (só a constante); os tipos como permissão do papel.
 | `packages/connectors/src/kernel/personal.ts`, `index.ts` | cria a lista `PERSONAL_KINDS` | o servidor, pelo `RoleKit` |
 | `apps/server/src/hub/identity/` | muda `roles.ts`, `role-statements.ts`, `company-roles.ts`, `may-use.ts`, `public.ts` | `connectors/read.ts` (U2), `publish-check.ts` (U3) |
 | `apps/server/src/hub/connectors/role-kit.ts`, `apps/server/src/main.ts` | o kit entrega os tipos à identidade (S36) | a identidade |
-| `packages/hub-api/src/company-roles.ts` | `personal` em `RoleView`, `RoleCreate`, `RoleChange` | a tela (U4) |
+| `packages/hub-api/src/{company-roles,failures}.ts` | `personal` em `RoleView`, `RoleCreate`, `RoleChange`; o texto de `PERSONAL_KIND_UNKNOWN` | a tela (U4) |
 
 ### Os contratos que a unidade cria
 
