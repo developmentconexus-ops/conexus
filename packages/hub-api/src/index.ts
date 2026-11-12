@@ -98,6 +98,7 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export * from './company-memory.ts'
 export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,

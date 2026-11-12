@@ -278,14 +278,20 @@ test('Pessoas, acima de 80 caracteres: a frase do campo na janela, e nada é env
   expect(hubbed.writes).toEqual([])
 })
 
-test('Pessoas, a gravação recusada: a frase do código na janela, que continua aberta', async () => {
-  hub('owner', PEOPLE_OWNER, () => refusal('REQUEST_MALFORMED'))
-  const { dialog, job } = await openDavi()
-  fireEvent.change(job, { target: { value: 'Outro cargo' } })
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
-  expect(await within(dialog).findByText(sentenceOfCode('REQUEST_MALFORMED'))).toBeTruthy()
-  expect(job.value).toBe('Outro cargo')
-})
+test.each([
+  ['REQUEST_MALFORMED', sentenceOfCode('REQUEST_MALFORMED')],
+  ['NOT_IN_ROLE', 'Só quem pode mudar papéis muda o cargo e a área de outra pessoa.'],
+] as const)(
+  'Pessoas, a gravação recusada (%s): a frase na janela, que continua aberta',
+  async (code, sentence) => {
+    hub('owner', PEOPLE_OWNER, () => refusal(code))
+    const { dialog, job } = await openDavi()
+    fireEvent.change(job, { target: { value: 'Outro cargo' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+    expect(await within(dialog).findByText(sentence)).toBeTruthy()
+    expect(job.value).toBe('Outro cargo')
+  },
+)
 
 test('Pessoas, o membro que saiu: a janela fecha e a lista é lida de novo', async () => {
   const hubbed = hub('owner', PEOPLE_OWNER, () => refusal('NOT_FOUND'))

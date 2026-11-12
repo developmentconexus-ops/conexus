@@ -35,6 +35,8 @@ import type { ConversationMachines } from '../machine/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
+import type { CompanyMemory } from './company-memory.ts'
+import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'
 import type { Owner } from './context.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
@@ -57,6 +59,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
+  company: CompanyMemory
   machines: ConversationMachines
   chosen: ChosenConnections
   log: FailureLog
@@ -311,6 +314,7 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
   registerWrites(app, deps)
   registerChanges(app, deps)
   registerProfileMemoryRoutes(app, deps)
+  registerCompanyMemoryRoutes(app, deps)
   registerFile(app, {
     route: ASSISTANT_FILE,
     machines: deps.machines,

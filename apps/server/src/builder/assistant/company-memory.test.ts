@@ -1,11 +1,27 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { KNOWLEDGE_STORAGE_SCHEMA_VERSION } from '@mastra/core/knowledge'
-import { BRUNO, CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
+import {
+  BRUNO,
+  CARLA,
+  call,
+  memberOn,
+  personOn,
+  plantCompany,
+  post,
+} from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { endOf, KEY, MODEL } from '../conversation/test-conversation.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
+import {
+  instructed,
+  memoryAt,
+  memoryOf,
+  NOTE,
+  OPERATION_1100,
+  savingThe1100,
+} from './test-company-memory.ts'
 
 const NO_SAVE =
   'You cannot save company memory here: say what an owner or an administrator should save.'
@@ -25,7 +41,7 @@ test('o formato do Knowledge: o armazenamento é o de versão 4, e as tabelas na
   assert.deepEqual(rows, [{ schema: 'mastra', owner: 'mastra_runtime' }])
 })
 
-test('quem escreve: o bloco do dono e do administrador não diz nada; o do desenvolvedor, do membro e de um papel próprio diz que ele não guarda memória da empresa', async (t) => {
+test('quem escreve, o bloco: o do dono e do administrador não diz nada; o do desenvolvedor, do membro e de um papel próprio diz que ele não guarda memória da empresa', async (t) => {
   const on = await assisting(t)
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
   const dora = await memberOn(
@@ -61,4 +77,135 @@ test('quem escreve: o bloco do dono e do administrador não diz nada; o do desen
     const block = on.calls.at(at)?.systems.at(1)?.text ?? ''
     assert.equal(block.includes(NO_SAVE), refused, role)
   }
+})
+
+const RULE = 'Responda sempre citando o número da operação.'
+
+test('as instruções valem para a empresa toda: gravadas pela tela, estão em todo pedido de toda conversa da empresa, depois da mensagem fixa, que não muda', async (t) => {
+  const on = await assisting(t, [
+    [said('Oi.')],
+    [tool('knowledge_read', {})],
+    [said('Pronto.')],
+    [said('Oi, Bruno.')],
+  ])
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
+  const before = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, before)).say('Oi')), 'complete')
+  await instructed(on.hub, on.ana, on.companyId, RULE)
+  for (const person of [on.ana, bruno]) {
+    const url = await created(on.hub, person, on.assistant, { connections: [] })
+    assert.equal(endOf(await (await talking(t, on.hub, person, url)).say('Oi')), 'complete')
+  }
+  assert.equal(on.calls.length, 4)
+  const [first, ...after] = on.calls
+  assert.equal(
+    first?.texts.some((text) => text.includes(RULE)),
+    false,
+  )
+  for (const asked of after) {
+    assert.equal(asked.texts.filter((text) => text.includes(RULE)).length, 1)
+    assert.equal(asked.systems.at(0)?.text, first?.systems.at(0)?.text)
+  }
+})
+
+test('não passam de empresa: a conversa de outra empresa não recebe as instruções nem enxerga a memória desta', async (t) => {
+  const on = await assisting(t, [[tool('knowledge_read', {})], [said('Nada.')]])
+  await instructed(on.hub, on.ana, on.companyId, RULE)
+  const carla = await personOn(on.hub, CARLA)
+  const other = await plantCompany(on.hub.test, carla.id, 'Outra')
+  const company = `/api/companies/${other}`
+  const account = { owner: 'company', provider: 'anthropic', label: 'Outra', key: KEY }
+  assert.equal((await post(on.hub, carla, `${company}/model-accounts`, account)).statusCode, 201)
+  const model = { model: MODEL, effort: 'off' }
+  assert.equal(
+    (await call(on.hub, carla, 'PUT', `${company}/default-model`, model)).statusCode,
+    200,
+  )
+  const url = await created(on.hub, carla, `${company}/assistant/conversations`, {
+    connections: [],
+  })
+  assert.equal(endOf(await (await talking(t, on.hub, carla, url)).say('Oi')), 'complete')
+  for (const asked of on.calls) assert.equal(asked.texts.join('\n').includes(RULE), false)
+  const read = JSON.parse(on.calls.at(1)?.toolResults.at(0)?.text ?? '{}')
+  assert.deepEqual(read, { scopes: [{ address: `org:${other}`, name: `org:${other}` }] })
+})
+
+test('quem escreve: o modelo de quem tem a permissão cria a página da empresa; o de um membro sem ela volta recusado pelo Knowledge', async (t) => {
+  const refused = savingThe1100().slice(0, 2)
+  const on = await assisting(
+    t,
+    stepped([...savingThe1100(), () => [said('Guardei.')], ...refused, () => [said('Não pude.')]]),
+  )
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
+  for (const person of [on.ana, bruno]) {
+    const url = await created(on.hub, person, on.assistant, { connections: [] })
+    assert.equal(
+      endOf(await (await talking(t, on.hub, person, url)).say('Guarde a 1100')),
+      'complete',
+    )
+  }
+  const saved = on.calls.at(3)?.toolResults ?? []
+  assert.deepEqual(
+    saved.map((each) => each.error),
+    [false, false, false],
+  )
+  const denied = on.calls.at(6)?.toolResults ?? []
+  assert.deepEqual(
+    denied.map((each) => each.error),
+    [false, true],
+  )
+  const memory = await memoryOf(on.hub, on.ana, on.companyId)
+  assert.deepEqual(
+    memory.pages.map((each: { name: string; author: unknown }) => [each.name, each.author]),
+    [[OPERATION_1100.name, null]],
+  )
+})
+
+test('o membro lê: a página que o Assistente guardou está na tela e no Knowledge da conversa de um membro', async (t) => {
+  let scope = ''
+  const on = await assisting(
+    t,
+    stepped([
+      ...savingThe1100(),
+      () => [said('Guardei.')],
+      () => [tool('knowledge_read', {})],
+      (asked) => {
+        scope = String(JSON.parse(asked.toolResults.at(-1)?.text ?? '{}').scopes.at(0).address)
+        return [tool('knowledge_read', { page: scope })]
+      },
+      (asked) => {
+        const { children } = JSON.parse(asked.toolResults.at(-1)?.text ?? '{}')
+        const page = children.find((each: { name: string }) => each.name === OPERATION_1100.name)
+        return [tool('knowledge_read', { page: page.ref })]
+      },
+      () => [said('A 1100 é a venda à vista.')],
+    ]),
+  )
+  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
+  const ana = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(
+    endOf(await (await talking(t, on.hub, on.ana, ana)).say('Guarde a 1100')),
+    'complete',
+  )
+  const url = await created(on.hub, bruno, on.assistant, { connections: [] })
+  assert.equal(
+    endOf(await (await talking(t, on.hub, bruno, url)).say('O que é a 1100?')),
+    'complete',
+  )
+  const read = JSON.parse(on.calls.at(-1)?.toolResults.at(-1)?.text ?? '{}')
+  assert.equal(read.page.body, OPERATION_1100.body)
+  assert.deepEqual(
+    read.notes.map((each: { text: string }) => each.text),
+    [NOTE],
+  )
+  const memory = await memoryOf(on.hub, bruno, on.companyId)
+  assert.equal(memory.mayManage, false)
+  const pageId = memory.pages.at(0).pageId
+  const shown = await call(on.hub, bruno, 'GET', `${memoryAt(on.companyId)}/pages/${pageId}`)
+  assert.equal(shown.statusCode, 200, shown.body)
+  const { page } = Object(shown.json())
+  assert.deepEqual(
+    [page.body, page.notes.map((each: { body: string }) => each.body)],
+    [OPERATION_1100.body, [NOTE]],
+  )
 })

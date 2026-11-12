@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, CompanyMemoryPageId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
   clearProfileMemory,
   createAssistantConversation,
@@ -6,11 +6,17 @@ import {
   getProfileMemory,
   listAssistantConnections,
   listAssistantConversations,
+  listCompanyMemory,
   readAssistantConversation,
+  readCompanyMemoryPage,
+  removeCompanyMemoryNote,
+  removeCompanyMemoryPage,
   renameAssistantConversation,
   setAssistantConnections,
   setAssistantModel,
   setProfileMemory,
+  writeCompanyMemoryNote,
+  writeCompanyMemoryPage,
 } from '@conexus/hub-api'
 import type { QueryKey } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -71,3 +77,17 @@ export function profileMemoryQuery(companyId: CompanyId) {
 
 export const sendProfileMemory = hubMutation(setProfileMemory)
 export const sendProfileMemoryClear = hubMutation(clearProfileMemory)
+
+/** The company's instructions and pages, with whether the person may change them (U9). */
+export function companyMemoryQuery(companyId: CompanyId) {
+  return hubQuery(listCompanyMemory, { params: { companyId } })
+}
+
+export function companyMemoryPageQuery(companyId: CompanyId, pageId: CompanyMemoryPageId) {
+  return hubQuery(readCompanyMemoryPage, { params: { companyId, pageId } })
+}
+
+export const sendCompanyMemoryPage = hubMutation(writeCompanyMemoryPage)
+export const sendCompanyMemoryPageRemoval = hubMutation(removeCompanyMemoryPage)
+export const sendCompanyMemoryNote = hubMutation(writeCompanyMemoryNote)
+export const sendCompanyMemoryNoteRemoval = hubMutation(removeCompanyMemoryNote)

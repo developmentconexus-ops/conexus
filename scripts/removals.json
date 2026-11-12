@@ -2891,5 +2891,27 @@
       "file": "src/sankhya/search.test.ts",
       "name": "nunca vira curinga"
     }
+  },
+  {
+    "id": "company-memory-permission",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  manageCompanyMemory: { by: 'MEMBER', statement: MANAGE_COMPANY_MEMORY, locks: false },\n",
+    "replace": "  manageCompanyMemory: { by: 'MEMBER', statement: undefined, locks: false },\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/roles-memory.test.ts",
+      "name": "a memória da empresa"
+    }
+  },
+  {
+    "id": "company-memory-writer-scope",
+    "file": "apps/server/src/builder/assistant/company-memory.ts",
+    "find": "...(companyMemory ? [`writer:${scope.companyId}`] : [])",
+    "replace": "`writer:${scope.companyId}`",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/company-memory.test.ts",
+      "name": "quem escreve: o modelo"
+    }
   }
 ]

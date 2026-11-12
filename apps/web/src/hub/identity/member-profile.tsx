@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
 import { FormProvider } from 'react-hook-form'
-import { unconfirmedText } from '../../platform/hub.ts'
+import { HubFailure, unconfirmedText } from '../../platform/hub.ts'
 import { FieldGroup } from '../../ui/field.tsx'
 import {
   Form,
@@ -24,6 +24,8 @@ const route = getRouteApi('/_app/companies/$companyId_/settings/account')
 
 const ID = 'job-profile'
 const READ_FAILED = 'Não foi possível ler o seu cargo e a sua área.'
+/** The permission to change roles lost while the dialog was open (U8, the card's amendment). */
+const NOT_ALLOWED = 'Só quem pode mudar papéis muda o cargo e a área de outra pessoa.'
 const UNSAVED = unconfirmedText(
   'se o cargo e a área foram salvos',
   'Confira os campos e tente de novo.',
@@ -119,6 +121,9 @@ export function EditProfile({ companyId, member }: { companyId: CompanyId; membe
       confirm={{ label: 'Salvar', pending: 'Salvando…' }}
       write={send}
       onConfirm={() => void confirm()}
+      ownRefusal={(error) =>
+        error instanceof HubFailure && error.code === 'NOT_IN_ROLE' ? NOT_ALLOWED : undefined
+      }
     >
       <FormProvider {...form}>
         <FieldGroup>

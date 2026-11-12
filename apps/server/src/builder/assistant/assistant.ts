@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { CompanyId, ConversationId, Overview, Person } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
@@ -37,7 +37,7 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
-import { COMPANY_MEMORY_TOOLS, companyKnowledge, companyScopes } from './company-memory.ts'
+import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, sessionScopes } from './context.ts'
@@ -50,7 +50,7 @@ import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, automationRunFor, openConversation } from './open.ts'
-import { overviewTool } from './overview.ts'
+import { overviewTool, projectsOf } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
@@ -155,28 +155,6 @@ export function speakersOf(
   })
 }
 
-/**
- * The live Projetos of the company with their app, published or not, a page of them and whether
- * there are more.
- */
-function projectsOf(deps: Deps, scope: SessionScope): Promise<Omit<Overview, 'connections'>> {
-  return deps.database.read(readerScope(scope), async (tx) => {
-    await admitAsker(deps.identity, tx, scope)
-    const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
-    const ids = live.projects.map((each) => each.projectId)
-    const published = await deps.projects.publishedVersionsOf(tx, ids)
-    const projects = live.projects.map((each) => {
-      const version = published.get(each.projectId)
-      const app =
-        version === undefined
-          ? ({ kind: 'NOT_PUBLISHED' } as const)
-          : ({ kind: 'PUBLISHED', version: String(version) } as const)
-      return { ...each, app }
-    })
-    return { projects, moreProjects: live.more }
-  })
-}
-
 type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
 type ChosenOf = (requestContext: RequestContext) => Promise<AssistantConnection[]>
 
@@ -199,6 +177,7 @@ function assistantAgent(
   deps: Deps,
   parts: {
     memory: ReturnType<typeof assistantMemory>
+    company: ReturnType<typeof companyMemory>
     turns: ReturnType<typeof assistantTurns>
     machines: ConversationMachines
     scopeOf: ScopeOf
@@ -274,8 +253,7 @@ function assistantAgent(
     ...assistantDefaults,
     signals: [new TaskSignalProvider()],
     memory: parts.memory,
-    knowledge: companyKnowledge(deps.storage),
-    scopes: companyScopes({ scopeOf, maysOf: maysFor }),
+    ...companyScopes({ memory: parts.company, scopeOf, maysOf: maysFor }),
   })
 }
 
@@ -289,6 +267,7 @@ function assistantAgent(
 export function createAssistant(deps: Deps) {
   const { storage, queue } = deps
   const memory = assistantMemory({ storage, queue })
+  const company = companyMemory(storage)
   const chosen = chosenConnections(deps.database)
   const scopeOf = sessionScopes({ chosenOf: chosen.of })
   const machines = createConversationMachines(
@@ -309,7 +288,7 @@ export function createAssistant(deps: Deps) {
   }
   const savedAt = readsFiles()
   const agent = assistantAgent(deps, {
-    ...{ memory, turns, scopeOf, machines },
+    ...{ memory, company, turns, scopeOf, machines },
     ...{ offeredOf, chosenOf, savedAt },
   })
   const controller = controllerOf({
@@ -364,7 +343,7 @@ export function createAssistant(deps: Deps) {
     /** Whether the conversation already holds a question (`open.ts`). */
     asked: (owner: Owner, conversationId: ConversationId) => asked(memory, owner, conversationId),
     routes: (app: FastifyInstance) => {
-      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines })
+      registerAssistantRoutes(app, { ...deps, controller, memory, chosen, machines, company })
       registerHandOff(app, { ...deps, memory, chosen, doors: deps.handOffs })
     },
   } as const)
