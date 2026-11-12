@@ -1,6 +1,7 @@
 import closeWithGrace from 'close-with-grace'
 import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
+import pino from 'pino'
 import type { Config } from './config.ts'
 import { Failure, logFailure } from './failure.ts'
 
@@ -14,13 +15,24 @@ export const TURN_SETTLE_MS = 180_000
 /** The Mastra deployer's default `drainTimeout` (`deployer/src/server/index.ts:590`, 1.78). */
 const DRAIN_MS = 5_000
 
+const destinations = new Map<number, ReturnType<typeof pino.destination>>()
+
 /**
- * The first-person command logs to stderr: its stdout is the terminal of infra/first-person.sh,
- * where the link goes.
+ * The one synchronous destination of the Hub's logs, per file descriptor: `bootLog` and the Hub's
+ * own logger share it, so their lines reach the pipe in the order they were emitted, and none is
+ * left in a queue when `close-with-grace` calls `process.exit`. `process.stdout` is not that:
+ * on a full pipe Node queues the rest asynchronously and the exit drops it. The first-person
+ * command logs to stderr: its stdout is the terminal of infra/first-person.sh, where the link goes.
  */
+export function logDestination(command = process.argv[2]) {
+  const fd = command === 'first-person' ? 2 : 1
+  const found = destinations.get(fd) ?? pino.destination({ dest: fd, sync: true })
+  destinations.set(fd, found)
+  return found
+}
+
 export function bootLog(level: Config['logLevel'], command = process.argv[2]) {
-  const stream = command === 'first-person' ? process.stderr : process.stdout
-  return Fastify({ logger: { level, stream } }).log
+  return Fastify({ logger: { level, stream: logDestination(command) } }).log
 }
 
 /** Fastify's own listening line is prose; the Hub logs its code once both listeners are up (C50). */

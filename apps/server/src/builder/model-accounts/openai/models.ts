@@ -126,47 +126,60 @@ function eventsOf(text: string) {
     })
 }
 
+type StreamItem = NonNullable<z.infer<typeof StreamEvent>['item']>
+
+const FAILED_EVENTS = new Set(['error', 'response.error', 'response.failed'])
+const ITEM_EVENTS = new Set(['response.output_item.added', 'response.output_item.done'])
+
+type Collected = {
+  created?: z.infer<typeof Snapshot>
+  completed?: z.infer<typeof Snapshot>
+  items: Map<number, StreamItem>
+  deltas: Map<string, string>
+}
+
+/** One event of a stream added to what the stream said so far; a failure event throws. */
+function take(into: Collected, event: z.infer<typeof StreamEvent>): void {
+  const type = event.type ?? ''
+  if (FAILED_EVENTS.has(type))
+    throw new Error(`Codex stream error: ${JSON.stringify(event.response ?? event)}`)
+  if (type === 'response.created') into.created = event.response ?? into.created
+  if (type === 'response.completed') into.completed = event.response ?? into.completed
+  if (ITEM_EVENTS.has(type) && event.output_index !== undefined && event.item !== undefined)
+    into.items.set(event.output_index, event.item)
+  if (type === 'response.output_text.delta') {
+    const key = `${event.output_index}:${event.content_index ?? 0}`
+    into.deltas.set(key, (into.deltas.get(key) ?? '') + (event.delta ?? ''))
+  }
+}
+
+/** What the events of a stream said: the snapshots, the output items by index and the text deltas by position. */
+function collected(text: string) {
+  const into: Collected = { items: new Map(), deltas: new Map() }
+  for (const event of eventsOf(text)) take(into, event)
+  return { base: into.completed ?? into.created, items: into.items, deltas: into.deltas }
+}
+
+/** An item as the stream closed it, its message parts carrying the text the deltas said when the item came without it. */
+function withDeltas(index: number, item: StreamItem, deltas: Map<string, string>) {
+  if (item.type !== 'message' || item.content === undefined) return item
+  const content = item.content.map((part, at) => {
+    const said = deltas.get(`${index}:${at}`)
+    return said === undefined ? part : { ...StreamedText.parse(part), text: said }
+  })
+  return { ...item, content }
+}
+
 /**
  * The one response a streamed answer adds up to: the final snapshot, its output items as the
  * stream closed them, and the text of each message from the deltas when the item came without it.
  */
 function aggregated(text: string): string {
-  let created: z.infer<typeof Snapshot> | undefined
-  let completed: z.infer<typeof Snapshot> | undefined
-  const items = new Map<number, NonNullable<z.infer<typeof StreamEvent>['item']>>()
-  const deltas = new Map<string, string>()
-  for (const event of eventsOf(text)) {
-    if (
-      event.type === 'error' ||
-      event.type === 'response.error' ||
-      event.type === 'response.failed'
-    )
-      throw new Error(`Codex stream error: ${JSON.stringify(event.response ?? event)}`)
-    if (event.type === 'response.created') created = event.response ?? created
-    if (event.type === 'response.completed') completed = event.response ?? completed
-    if (
-      (event.type === 'response.output_item.added' || event.type === 'response.output_item.done') &&
-      event.output_index !== undefined &&
-      event.item !== undefined
-    )
-      items.set(event.output_index, event.item)
-    if (event.type === 'response.output_text.delta') {
-      const key = `${event.output_index}:${event.content_index ?? 0}`
-      deltas.set(key, (deltas.get(key) ?? '') + (event.delta ?? ''))
-    }
-  }
-  const base = completed ?? created
+  const { base, items, deltas } = collected(text)
   if (base === undefined) throw new Error('The Codex stream ended without a response')
   const output = [...items.entries()]
     .sort(([a], [b]) => a - b)
-    .map(([index, item]) => {
-      if (item.type !== 'message' || item.content === undefined) return item
-      const content = item.content.map((part, at) => {
-        const said = deltas.get(`${index}:${at}`)
-        return said === undefined ? part : { ...StreamedText.parse(part), text: said }
-      })
-      return { ...item, content }
-    })
+    .map(([index, item]) => withDeltas(index, item, deltas))
   return JSON.stringify({ ...base, output: output.length > 0 ? output : (base.output ?? []) })
 }
 

@@ -31,8 +31,8 @@ import type { ConnectionCopies } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
-export type { Connector, Operation } from '@conexus/connectors'
-/** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056). */
+export type { Connector, Native, Operation } from '@conexus/connectors'
+/** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056), and `deniesAccess`, which tells a 403 from a request to correct. */
 export {
   AccountRef,
   CONNECTORS,
@@ -40,6 +40,7 @@ export {
   CopyDefinitionV2,
   CopyName,
   CopyPosition,
+  deniesAccess,
 } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
