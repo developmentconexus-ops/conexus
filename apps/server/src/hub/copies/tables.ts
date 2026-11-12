@@ -41,7 +41,8 @@ export const copy = copies.table(
   {
     id: uuid('id').primaryKey(),
     companyId: text('company_id').notNull(),
-    // The connection's connector, so the row's connection is its company's (as project_connection).
+    // The first connection it was turned on from: the list's connection; each connection the copy
+    // reads is a row of copy_source.
     connectorId: text('connector_id').notNull(),
     connectionId: uuid('connection_id').notNull(),
     // The table in the company's `sync` schema (`CopyName`).
@@ -61,7 +62,8 @@ export const copy = copies.table(
     // The lease of one run (data D25): who holds it and until when.
     claimToken: uuid('claim_token'),
     claimedUntil: instant('claimed_until'),
-    // The pass: its number, when it began, the last key written, and when the last complete pass began.
+    // The pass before the sources (copy_source holds each source's): moved there by the migration, read
+    // by nothing since, dropped later with connection_id (data D6).
     pass: integer('pass').notNull().default(0),
     passStartedAt: instant('pass_started_at'),
     position: jsonb('position'),
@@ -80,11 +82,8 @@ export const copy = copies.table(
       columns: [table.companyId],
       foreignColumns: [company.id],
     }).onDelete('cascade'),
-    foreignKey({
-      name: 'copy_connection_fkey',
-      columns: [table.companyId, table.connectorId, table.connectionId],
-      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
-    }).onDelete('cascade'),
+    // No foreign key to the connection (decision C): a copy reads its connections by copy_source, and
+    // ends with its last source, not with the connection it was turned on from.
     check('copy_claim', sql`(${table.claimToken} IS NULL) = (${table.claimedUntil} IS NULL)`),
     check('copy_name', sql`${table.name} ~ '^[a-z][a-z0-9_]{0,39}$'`),
     check('copy_definition', sql`jsonb_typeof(${table.definition}) = 'object'`),

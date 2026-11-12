@@ -1,4 +1,4 @@
-import { AccountRef, connectorOf } from '@conexus/connectors'
+import { AccountRef } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, Person, TestResult } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
@@ -8,7 +8,16 @@ import type { Checked } from './check.ts'
 import { checked } from './check.ts'
 import type { OpenedConnection } from './executor.ts'
 import type { Deps, OfConnection } from './rows.ts'
-import { admitted, columns, ofCompany, scopeOf, sealContext, sealedOf, viewOf } from './rows.ts'
+import {
+  admitted,
+  columns,
+  connectorIn,
+  ofCompany,
+  scopeOf,
+  sealContext,
+  sealedOf,
+  viewOf,
+} from './rows.ts'
 import { connection } from './tables.ts'
 import { accessFor } from './tokens.ts'
 
@@ -40,7 +49,7 @@ export async function openedIn(
     .from(connection)
     .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
   if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
-  const connector = connectorOf(row.connector)
+  const connector = connectorIn(deps, row.connector)
   // A connector the kit no longer has cannot rebuild its seal's context: the seal does not open.
   if (connector === undefined)
     throw new Failure('SEAL_REFUSED', { details: { reason: 'connector gone' } })

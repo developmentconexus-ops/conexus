@@ -14,8 +14,12 @@ import { ChoiceSelect } from '../../ui/select.tsx'
 import { TableCell, TableRow } from '../../ui/table.tsx'
 import { INTERVAL_CHOICES } from './interval.tsx'
 import { sendCopyEnable, sendProposalDismiss } from './queries.ts'
+import type { Origin } from './source.ts'
+import { originOf, useSourceText, withAccounts } from './source.ts'
 import {
+  callsText,
   enableFailureText,
+  inputText,
   modeText,
   NO_SCHEDULE,
   PROPOSAL_WORD,
@@ -24,7 +28,7 @@ import {
 } from './text.ts'
 
 /** A copy's query in mono, a line at a time, scrolling inside its box (the detail and the dialog). */
-export function QueryBlock({ query }: { query: string }) {
+function QueryBlock({ query }: { query: string }) {
   return (
     <CodeBlock>
       <CodeBlockContent>
@@ -39,13 +43,46 @@ export function QueryBlock({ query }: { query: string }) {
   )
 }
 
+/** A labelled fact of the dialog or the detail, its value breaking where it must. */
+function Fact(props: { label: string; children: string }) {
+  return (
+    <p className="break-words">
+      <span className="text-text-2">{`${props.label} `}</span>
+      {props.children}
+    </p>
+  )
+}
+
+/**
+ * What a copy reads, before its key: a query in mono; a list read by its label and connector, its
+ * fixed input, the accounts and, for a proposal, the calls a whole pass spends.
+ */
+export function ReadFacts(props: { origin: Origin; source: string; calls?: number | null }) {
+  const { origin } = props
+  if (origin.source.kind === 'QUERY')
+    return (
+      <>
+        <span className="text-text-2">Consulta</span>
+        <QueryBlock query={origin.source.query} />
+      </>
+    )
+  return (
+    <>
+      <Fact label="Leitura">{props.source}</Fact>
+      <Fact label="Filtros">{inputText(origin.source.input)}</Fact>
+      <Fact label="Contas">{origin.accounts.join(', ')}</Fact>
+      {props.calls !== undefined && <p className="break-words">{callsText(props.calls)}</p>}
+    </>
+  )
+}
+
 /** A refusal that closes the dialog: the proposal was decided elsewhere, and the list or the card reads it again. */
 function decidedElsewhere(error: unknown) {
   return error instanceof HubFailure && error.code === 'COPY_PROPOSAL_DECIDED'
 }
 
 /**
- * **Ligar a proposta** (Capacidade 3): the query in mono, the key, the mode, the interval (30 minutes
+ * **Ligar a proposta** (Capacidade 3; O Sync de qualquer conector, U4): what it reads, the key, the mode, the interval (30 minutes
  * marked) and the Projeto it is released to. The Cópias row and the conversation's card open this one
  * dialog, which calls `enableCopy` from the proposal; one request per attempt (web W24). A proposal
  * decided elsewhere closes it with the phrase, through `onRefused`; any other refusal stays inside.
@@ -86,15 +123,16 @@ export function ProposalDialog(props: {
     }
   }
 
+  const origin = originOf(proposal)
+  const source = useSourceText(companyId)(origin)
   return (
     <Dialog open={props.open} onOpenChange={onOpenChange}>
       <DialogContent
         title={`Ligar a cópia ${proposal.name}`}
-        description={`${proposal.label}, de ${proposal.connection.name}. O Conexus copia o dado para o banco da empresa e o atualiza no intervalo.`}
+        description={`${proposal.label}, de ${source}. O Conexus copia o dado para o banco da empresa e o atualiza no intervalo.`}
       >
         <div className="flex min-w-0 flex-col gap-md">
-          <span className="text-text-2">Consulta</span>
-          <QueryBlock query={proposal.shown.query} />
+          <ReadFacts origin={origin} source={source} calls={proposal.proved.calls} />
           <p className="break-words">
             <span className="text-text-2">Chave </span>
             <span className="font-mono text-fact">{proposal.shown.key.join(', ')}</span>
@@ -163,6 +201,19 @@ function ProposalActions(props: {
   )
 }
 
+/** Under the Dado's name: the accounts of a list read, the name, the mode and who proposed it. */
+function byLine(origin: Origin, proposal: CopyProposalSummary): string {
+  const line = `${proposal.name} · ${modeText(proposal.mode)} · por ${proposal.proposedBy.name}`
+  return withAccounts(origin, line)
+}
+
+/** The page of proof and, for a list read, the calls a whole pass spends. */
+function proofText(origin: Origin, proposal: CopyProposalSummary): string {
+  const proved = provedText(proposal.proved)
+  if (origin.source.kind === 'QUERY') return proved
+  return `${proved} · ${callsText(proposal.proved.calls)}`
+}
+
 type RowProps = {
   companyId: CompanyId
   proposal: CopyProposalSummary
@@ -176,17 +227,17 @@ type RowProps = {
  * who proposed it, the two actions.
  */
 export function ProposalTableRow({ companyId, proposal, onRefused, cell }: RowProps) {
+  const origin = originOf(proposal)
+  const source = useSourceText(companyId)(origin)
   return (
     <TableRow>
-      <TableCell className={`${cell} max-w-36 truncate`} title={proposal.connection.name}>
-        {proposal.connection.name}
+      <TableCell className={`${cell} max-w-36 truncate`} title={source}>
+        {source}
       </TableCell>
       <TableCell className={`${cell} whitespace-normal`}>
         <div className="flex flex-col items-start gap-xs">
           <span className="font-medium">{proposal.label}</span>
-          <span className="text-text-2">
-            {`${proposal.name} · ${modeText(proposal.mode)} · por ${proposal.proposedBy.name}`}
-          </span>
+          <span className="text-text-2">{byLine(origin, proposal)}</span>
           <ProposalActions companyId={companyId} proposal={proposal} onRefused={onRefused} />
         </div>
       </TableCell>
@@ -194,7 +245,7 @@ export function ProposalTableRow({ companyId, proposal, onRefused, cell }: RowPr
         <Badge tone="neutral">{PROPOSAL_WORD}</Badge>
       </TableCell>
       <TableCell className={`${cell} whitespace-normal tabular-nums`}>
-        {provedText(proposal.proved)}
+        {proofText(origin, proposal)}
       </TableCell>
       <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
       <TableCell className={cell}>{NO_SCHEDULE}</TableCell>
@@ -209,21 +260,21 @@ export function ProposalTableRow({ companyId, proposal, onRefused, cell }: RowPr
 
 /** A proposal on a phone: the same facts in lines that break, as the copies' rows do. */
 export function ProposalPhoneRow({ companyId, proposal, onRefused }: Omit<RowProps, 'cell'>) {
+  const origin = originOf(proposal)
+  const source = useSourceText(companyId)(origin)
   return (
     <Row>
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-md">
           <span className="min-w-0 break-words">
             <span className="font-medium">{proposal.label}</span>
-            <span className="text-text-2">{` · ${proposal.connection.name}`}</span>
+            <span className="text-text-2">{` · ${source}`}</span>
           </span>
           <Badge tone="neutral">{PROPOSAL_WORD}</Badge>
         </div>
-        <p className="break-words text-text-2">
-          {`${proposal.name} · ${modeText(proposal.mode)} · por ${proposal.proposedBy.name}`}
-        </p>
+        <p className="break-words text-text-2">{byLine(origin, proposal)}</p>
         <p className="break-words text-text-2 tabular-nums">
-          {`${provedText(proposal.proved)} · ${proposal.project.name}`}
+          {`${proofText(origin, proposal)} · ${proposal.project.name}`}
         </p>
         <ProposalActions companyId={companyId} proposal={proposal} onRefused={onRefused} />
       </div>

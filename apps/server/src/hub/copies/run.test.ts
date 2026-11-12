@@ -8,7 +8,7 @@ import {
   copiesOn,
   copyRowOf,
   holdPage,
-  plantCopy,
+  plantSource,
   runsOf,
   syncRows,
   TEST_TUNING,
@@ -55,6 +55,22 @@ test('a passada completa', async (t) => {
   assert.equal(again.length, NOTAS.length, 'gravar de novo não duplica')
   assert.equal(Number((await copyRowOf(on, copyId)).rows), NOTAS.length)
   assert.equal((await copyRowOf(on, copyId)).pass, 2)
+})
+
+test('a primeira passada sem filtro', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
+  const first = on.gate.statements.splice(0)
+  assert.ok(
+    first.length > 0 && first.every((sent) => !sent.includes('TO_DATE')),
+    'sem marca, sem data',
+  )
+  assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
+  assert.ok(
+    on.gate.statements.every((sent) => sent.includes('DTALTER >= TO_DATE')),
+    'com marca',
+  )
 })
 
 test('uma rodada por vez', async (t) => {
@@ -123,7 +139,7 @@ function notaOf(day: string, seller = 0) {
 /** The first pass as of 31 October, the second as of 1 November: the window from 1 and 2 October. */
 async function twoPasses(on: CopiesOn, model: 'vendas' | 'itens_venda') {
   const copyId = await on.enable(model)
-  await plantCopy(on, copyId, 'pass_started_at = $2', ['2026-10-31T12:00:00Z'])
+  await plantSource(on, copyId, 'pass_started_at = $2', ['2026-10-31T12:00:00Z'])
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
   return copyId
 }
@@ -139,7 +155,7 @@ test('a janela apaga o que sumiu', async (t) => {
   const before = await syncRows(on.owner, 'vendas', key)
   on.gate.gone.add(String(notaOf(GONE_IN_WINDOW)))
   on.gate.gone.add(String(notaOf(GONE_OUTSIDE)))
-  await plantCopy(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
+  await plantSource(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
   on.fake.switches.refuse.add('consultar')
   assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED' })
   assert.deepEqual(await syncRows(on.owner, 'vendas', key), before, 'com erro nada sai')
@@ -161,7 +177,7 @@ test('a janela relê o que não mudou', async (t) => {
       model === 'vendas' ? NOTAS.length : ITENS.length,
     )
     on.gate.gone.add(String(notaOf(GONE_IN_WINDOW, 1)))
-    await plantCopy(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
+    await plantSource(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
     assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
     const rows = await syncRows(on.owner, model, key)
     const kept = rows.filter((row) => Number(row[0]) === notaOf(KEPT_IN_WINDOW))

@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { copy, DEVOLUCOES, LIST, onPhone, openCopies, proposal } from './test-hub.tsx'
+import { ORDERS_SHOWN, STORES } from './test-sources.ts'
 
 // Cópias: the Builder's proposals, Ligar and Dispensar (Capacidade 3, criteria 27, 28 and 35).
 const server = hubServer()
@@ -145,4 +146,39 @@ test('no celular', async () => {
     expect(within(row).getByRole('button', { name: 'Dispensar' })).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
   })
+})
+
+test('a proposta de uma leitura de lista', async () => {
+  const listed = proposal({
+    ...{ name: 'ml_pedidos', label: 'Pedidos das lojas', sources: STORES, shown: ORDERS_SHOWN },
+    ...{ mode: { kind: 'CHANGES' }, proved: { rows: 50, more: true, calls: 6 } },
+  })
+  const untold = proposal({
+    id: CopyProposalId.parse('88888888-8888-4888-8888-888888888888'),
+    ...{ name: 'ml_semtotal', label: 'Sem total', sources: STORES, shown: ORDERS_SHOWN },
+    ...{ mode: { kind: 'CHANGES' }, proved: { rows: 3, more: false, calls: null } },
+  })
+  openCopies(server, { copies: [], proposals: [listed, untold] }, LIST)
+  const row = await rowOf('Pedidos das lojas')
+  expect(await within(row).findByText('Pedidos · Mercado Livre')).toBeTruthy()
+  expect(
+    within(row).getByText('Loja A, Loja B · ml_pedidos · só o alterado · por Ana Lima'),
+  ).toBeTruthy()
+  expect(
+    within(row).getByText('teste: mais de 50 linhas · cerca de 6 chamadas por passada'),
+  ).toBeTruthy()
+  expect(
+    within(await rowOf('Sem total')).getByText('teste: 3 linhas · a leitura não informa o total'),
+  ).toBeTruthy()
+  const dialog = await openDialog(row)
+  expect(dialog.queryByText('Consulta')).toBeNull()
+  const facts: [string, string][] = [
+    ['Leitura', 'Pedidos · Mercado Livre'],
+    ['Filtros', 'status: paid'],
+    ['Contas', 'Loja A, Loja B'],
+  ]
+  for (const [label, value] of facts)
+    expect(dialog.getByText(value).closest('p')?.textContent).toBe(`${label} ${value}`)
+  expect(dialog.getByText('cerca de 6 chamadas por passada')).toBeTruthy()
+  expect(dialog.getByText('id')).toBeTruthy()
 })

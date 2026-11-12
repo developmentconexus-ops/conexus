@@ -26,16 +26,21 @@ const PROPOSAL: ProposalIn = {
   id: PROPOSAL_ID,
   name: TABLE,
   label: 'Devoluções de pedidos de venda da filial com um rótulo bem comprido que precisa quebrar',
-  connection: { id: CONNECTION, name: LONG_CONNECTION, connector: 'sankhya' },
+  sources: [{ connection: { id: CONNECTION, name: LONG_CONNECTION, connector: 'sankhya' } }],
   project: { id: PROJECT_ID, name: 'Vendedores com um nome de Projeto bem comprido também' },
   shown: {
-    query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'D' AND CODEMP IN (1, 2, 3) ORDER BY NUNOTA`,
+    source: {
+      kind: 'QUERY',
+      query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'D' AND CODEMP IN (1, 2, 3) ORDER BY NUNOTA`,
+    },
     key: ['NUNOTA'],
     changedSince: { column: 'DTALTER' },
     window: { column: 'DTNEG', days: 30 },
+    description: null,
+    columns: [],
   },
   mode: WINDOW,
-  proved: { rows: 50, more: true },
+  proved: { rows: 50, more: true, calls: null },
   proposedBy: {
     id: '77777777-7777-4777-8777-777777777777',
     name: 'Ana Maria da Silva Pereira de Albuquerque',
@@ -48,11 +53,14 @@ const PROPOSED = {
   kind: 'PROPOSED',
   proposalId: PROPOSAL_ID,
   name: TABLE,
-  connection: { name: LONG_CONNECTION, connector: 'sankhya' },
+  source: PROPOSAL.shown.source,
+  sources: [{ name: LONG_CONNECTION, connector: 'sankhya' }],
   key: ['NUMERO_UNICO_DA_NOTA_FISCAL', 'CODIGO_DA_EMPRESA_DE_ORIGEM_DA_VENDA'],
   mode: WINDOW,
   rows: 50,
   more: true,
+  calls: null,
+  counts: [],
 } satisfies z.input<typeof CopyProposed>
 
 const MESSAGES: Said[] = [

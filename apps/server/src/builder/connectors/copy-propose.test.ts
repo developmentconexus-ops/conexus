@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { described } from '../../hub/connectors/test-app-calls.ts'
 import { linkSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { sankhyaServed } from '../../hub/copies/test-released.ts'
@@ -9,8 +10,10 @@ import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, sent, started, streamOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
+import { ordersConversing } from './test-orders-turn.ts'
 
 const PROPOSE = BUILDER_TOOL.copyPropose
+const SKILL = new URL('../../../../../packages/app/skills/conexus-data/SKILL.md', import.meta.url)
 
 /** A conversation whose model proposes the copy `devolucoes` from the double's sales query, once. */
 async function proposing(t: TestContext) {
@@ -25,7 +28,7 @@ async function proposing(t: TestContext) {
       calls.push(asked)
       if (!asked.tools.includes(PROPOSE) || asked.toolResults.length > 0)
         return { kind: 'text', text: 'Pronto.' }
-      const input = { connection: 'Matriz', name: 'devolucoes', label: 'Devoluções' }
+      const input = { connections: ['Matriz'], name: 'devolucoes', label: 'Devoluções' }
       return {
         kind: 'blocks',
         blocks: [tool(PROPOSE, { ...input, definition: definitionOf.current })],
@@ -57,7 +60,7 @@ async function proposing(t: TestContext) {
   return { ...on, release, turn }
 }
 
-test('a ferramenta só onde se copia', async (t) => {
+test('a ferramenta onde se copia por consulta', async (t) => {
   const on = await proposing(t)
   // No connection released to the Projeto: no connector tool, `copy_propose` neither.
   const [unreleased] = await on.turn()
@@ -69,7 +72,43 @@ test('a ferramenta só onde se copia', async (t) => {
   assert.ok(result && !result.error, JSON.stringify(result))
   assert.match(result.text, /"kind":"PROPOSED"/)
   assert.match(result.text, /"rows":\d+/)
-  // Only a connector that copies through its read door marks its connection: Mercado Livre does not.
+})
+
+test('a ferramenta onde há leitura de lista', async (t) => {
+  const on = await ordersConversing(t, () => ({ kind: 'text', text: 'Pronto.' }))
+  const before = await on.turn('Quero os pedidos')
+  assert.ok(
+    before.calls.every((asked) => !asked.tools.includes(PROPOSE)),
+    'nothing released',
+  )
+  await on.release()
+  const [first] = (await on.turn('Quero os pedidos')).calls
+  assert.ok(first?.tools.includes(PROPOSE), 'offered on a connector that declares a list read')
+  const description = first?.descriptions[PROPOSE] ?? ''
+  for (const part of [
+    'Reads that list rows:',
+    '- Connection "Loja A" (mercado-livre):',
+    '  - pedidos (Pedidos): pages by offset, changes by `date_last_updated`',
+    '  - anuncios (Anúncios): pages by cursor, no change filter',
+  ])
+    assert.ok(description.includes(part), `${part}\n${description}`)
+  const granted = await on.hub.connectors.builder.granted({
+    companyId: CompanyId.parse(on.companyId),
+    projectId: ProjectId.parse(on.projectId),
+    personId: PersonId.parse(on.ana.id),
+  })
+  const reads = granted.flatMap((each) => each.reads)
+  assert.deepEqual(reads.find((read) => read.operation === 'pedidos')?.list, {
+    paging: 'OFFSET',
+    changed: 'date_last_updated',
+    ceiling: null,
+  })
+  assert.deepEqual(reads.find((read) => read.operation === 'anuncios')?.list, {
+    paging: 'CURSOR',
+    changed: null,
+    ceiling: null,
+  })
+  // A connector copies by its read door or by a list read; the kit's two do, each its own way.
   function row(connector: string) {
     return { id: crypto.randomUUID(), connector, name: 'Loja', notes: {} }
   }
@@ -78,22 +117,44 @@ test('a ferramenta só onde se copia', async (t) => {
     marked.map((each) => [each.connector, each.copies]),
     [
       ['sankhya', true],
-      ['mercado-livre', false],
+      ['mercado-livre', true],
     ],
   )
 })
 
-test('a regra do modo', async (t) => {
-  const on = await proposing(t)
+test('as seis perguntas', async (t) => {
+  const on = await ordersConversing(t, () => ({ kind: 'text', text: 'Pronto.' }))
   await on.release()
-  const [first] = await on.turn()
+  const [first] = (await on.turn('Quero os pedidos')).calls
   const description = first?.descriptions[PROPOSE] ?? ''
+  const questions = [
+    '1. Keep it or read it live?',
+    '2. Does it exist?',
+    '3. From which read, with which filter?',
+    '4. Which key?',
+    '5. Which mode?',
+    '6. How often?',
+  ]
+  const at = questions.map((question) => description.indexOf(question))
+  assert.ok(
+    at.every((index) => index >= 0),
+    description,
+  )
+  assert.deepEqual(
+    at,
+    [...at].sort((a, b) => a - b),
+    'in order',
+  )
+  const skill = readFileSync(SKILL, 'utf8')
   for (const part of [
-    'a whole copy (the definition without `changedSince`) when more than 10% of the rows change at each run',
-    'Measure the fraction with `connector_read`: count the rows whose change date falls within one interval of the copy against the total',
-    'With no column of the change date, the copy is whole',
+    ...questions,
+    'A read with no change filter is a whole copy',
+    'unless more than 10% of the rows change at each run',
+    'the proof answers the calls a whole pass spends',
     'Say which mode you chose and why',
     'The proposal appears in this conversation and on the Cópias page, and whoever may turn copies on turns it on there',
-  ])
+  ]) {
     assert.ok(description.includes(part), part)
+    if (questions.includes(part)) assert.ok(skill.includes(part), `conexus-data: ${part}`)
+  }
 })

@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, CopyId } from '@conexus/hub-api'
 import { CopyRunId } from '@conexus/hub-api'
 import { and, desc, eq, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
-import type { DatabaseUrl } from '../../platform/database.ts'
-import type { CopiesDeps, CopyOutcome, CopyRunEnd, CopyTuning, StoredCopy } from './store.ts'
-import { companyScope, parsedCopy, syncOf } from './store.ts'
+import { connectionNamesOf } from '../connectors/public.ts'
+import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
+import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
+import type { StoredSource } from './sources.ts'
+import { datedPasses, sourcesOf } from './sources.ts'
+import type { CopiesDeps, CopyOutcome, CopyRunEnd, CopyTuning } from './store.ts'
+import { companyScope, copyTableOf, parsedCopy, syncOf } from './store.ts'
 import { copy, copyRun } from './tables.ts'
 
 /** Production's ceilings of one run (code C26): 500 rows a page, 200 pages or 10 minutes, a lease of 10 minutes renewed at each page. */
@@ -17,13 +20,6 @@ export const RUN_DEFAULTS = {
 
 /** The newest runs of each copy kept; older ones go when a run ends. */
 const KEPT_RUNS = 100
-const DAY_MS = 86_400_000
-/** Before any change date a source keeps: the first pass reads it all. */
-const FIRST_SINCE = '1900-01-01'
-
-type Ids = { companyId: CompanyId; copyId: CopyId }
-type Claimed = { copy: StoredCopy; token: string; runId: CopyRunId; sync: DatabaseUrl | undefined }
-type Counts = { pages: number; read: number; written: number }
 
 function leaseFrom(deps: CopiesDeps) {
   return sql`statement_timestamp() + ${deps.tuning.leaseMs} * interval '1 millisecond'`
@@ -32,7 +28,7 @@ function leaseFrom(deps: CopiesDeps) {
 /**
  * The lease taken in one Hub transaction (data D25): only when none is held or it ran out, decided
  * by the `UPDATE` itself (code C65). The open run a lost holder left ends `INTERRUPTED`, and the new
- * one begins; the pass keeps the instant it began.
+ * one begins; each source's open pass keeps the instant it began, and one with none begins now.
  */
 async function claim(deps: CopiesDeps, ids: Ids) {
   const token = randomUUID()
@@ -40,11 +36,7 @@ async function claim(deps: CopiesDeps, ids: Ids) {
   return deps.database.command(companyScope(ids.companyId), async (tx) => {
     const [row] = await tx
       .update(copy)
-      .set({
-        claimToken: token,
-        claimedUntil: leaseFrom(deps),
-        passStartedAt: sql`coalesce(${copy.passStartedAt}, statement_timestamp())`,
-      })
+      .set({ claimToken: token, claimedUntil: leaseFrom(deps) })
       .where(
         and(same, or(isNull(copy.claimedUntil), lt(copy.claimedUntil, sql`statement_timestamp()`))),
       )
@@ -59,61 +51,24 @@ async function claim(deps: CopiesDeps, ids: Ids) {
       .where(and(eq(copyRun.copyId, ids.copyId), isNull(copyRun.endedAt)))
     const runId = CopyRunId.parse(randomUUID())
     await tx.insert(copyRun).values({ id: runId, ...ids, startedAt: sql`statement_timestamp()` })
+    await datedPasses(tx, ids)
+    const sources = await sourcesOf(tx, ids)
     const claimed: Claimed = {
       copy: parsedCopy(row),
-      token,
-      runId,
+      holder: { ...ids, token, runId },
       sync: await syncOf(deps, tx, ids.companyId),
+      sources,
+      names: await connectionNamesOf(tx, {
+        companyId: ids.companyId,
+        ids: sources.map((source) => source.connectionId),
+      }),
     }
     return { kind: 'CLAIMED', ...claimed } as const
   })
 }
 
 function held(claimed: Claimed) {
-  return and(eq(copy.id, claimed.copy.id), eq(copy.claimToken, claimed.token))
-}
-
-/** The page saved in the Hub while the lease is ours: the last key written, the lease renewed, the run's counts. */
-async function saved(
-  deps: CopiesDeps,
-  claimed: Claimed,
-  input: { position: readonly number[] | null; rows: number },
-): Promise<boolean> {
-  return deps.database.command(companyScope(claimed.copy.companyId), async (tx) => {
-    const [row] = await tx
-      .update(copy)
-      .set({ position: input.position, claimedUntil: leaseFrom(deps) })
-      .where(held(claimed))
-      .returning({ id: copy.id })
-    if (row === undefined) return false
-    await tx
-      .update(copyRun)
-      .set({
-        pages: sql`${copyRun.pages} + 1`,
-        read: sql`${copyRun.read} + ${input.rows}`,
-        written: sql`${copyRun.written} + ${input.rows}`,
-      })
-      .where(eq(copyRun.id, claimed.runId))
-    return true
-  })
-}
-
-/** The pass done in the Hub: the watermark moves to when it began, the next pass starts from nothing. */
-async function passed(deps: CopiesDeps, claimed: Claimed, rows: number): Promise<boolean> {
-  return deps.database.command(companyScope(claimed.copy.companyId), async (tx) => {
-    const [row] = await tx
-      .update(copy)
-      .set({
-        watermark: sql`${copy.passStartedAt}`,
-        pass: sql`${copy.pass} + 1`,
-        passStartedAt: null,
-        position: null,
-        rows,
-      })
-      .where(held(claimed))
-      .returning({ id: copy.id })
-    return row !== undefined
-  })
+  return and(eq(copy.id, claimed.holder.copyId), eq(copy.claimToken, claimed.holder.token))
 }
 
 function reasonOf(outcome: CopyOutcome): string | null {
@@ -130,13 +85,6 @@ function reasonOf(outcome: CopyOutcome): string | null {
   }
 }
 
-/** A run that lost its lease to another: it writes nothing more, and the other ends this run's row. */
-function lost(deps: CopiesDeps, claimed: Claimed): CopyRunEnd {
-  const { companyId, id: copyId } = claimed.copy
-  deps.log.error({ companyId, copyId, runId: claimed.runId }, 'COPY_CLAIM_LOST')
-  return { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } }
-}
-
 /** The end: the lease let go, the run's row closed and pointed at, the runs past the newest 100 gone. */
 async function ended(
   deps: CopiesDeps,
@@ -148,7 +96,7 @@ async function ended(
   const done = await deps.database.command(companyScope(companyId), async (tx) => {
     const [row] = await tx
       .update(copy)
-      .set({ claimToken: null, claimedUntil: null, lastRunId: claimed.runId })
+      .set({ claimToken: null, claimedUntil: null, lastRunId: claimed.holder.runId })
       .where(held(claimed))
       .returning({ id: copy.id })
     if (row === undefined) return false
@@ -159,7 +107,7 @@ async function ended(
         outcome: outcome.kind,
         reason: reasonOf(outcome),
       })
-      .where(eq(copyRun.id, claimed.runId))
+      .where(eq(copyRun.id, claimed.holder.runId))
     const kept = tx
       .select({ id: copyRun.id })
       .from(copyRun)
@@ -174,7 +122,7 @@ async function ended(
   const reason = reasonOf(outcome)
   deps.log.info(
     {
-      ...{ companyId, copyId, runId: claimed.runId, outcome: outcome.kind },
+      ...{ companyId, copyId, runId: claimed.holder.runId, outcome: outcome.kind },
       ...(reason === null ? {} : { reason }),
       ...{ pages, read, written, ms: Math.round(performance.now() - counts.started) },
     },
@@ -183,115 +131,20 @@ async function ended(
   return { kind: 'ENDED', outcome }
 }
 
-function dayOf(instant: number): string {
-  return new Date(instant).toISOString().slice(0, 10)
-}
-
-/** The two dates of the pass, the same on each of its pages: the watermark less a day, the window from the pass's start. */
-function datesOf(stored: StoredCopy) {
-  const since = stored.watermark === null ? FIRST_SINCE : dayOf(stored.watermark.getTime() - DAY_MS)
-  const { window } = stored.definition
-  const began = stored.passStartedAt?.getTime() ?? Date.now()
-  const windowFrom = window === undefined ? null : dayOf(began - window.days * DAY_MS)
-  return { since, windowFrom }
-}
-
-/** The key of the page's last row, the next page's start; the same when the page had no row. */
-function lastKey(stored: StoredCopy, rows: readonly (readonly (string | null)[])[]) {
-  const last = rows.at(-1)
-  if (last === undefined) return stored.position
-  const { columns, key } = stored.definition
-  return key.map((name) => Number(last[columns.findIndex((column) => column.name === name)]))
-}
-
-const DATABASE_DOWN = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' } as const
-
-type Pass = {
-  deps: CopiesDeps
-  ids: Ids
-  signal: AbortSignal
-  claimed: Claimed
-  sync: DatabaseUrl
-  counts: Counts & { started: number }
-  end: (outcome: CopyOutcome) => Promise<CopyRunEnd>
-}
-
-/** The Hub's stop, or a ceiling, reached before the next page: the run's end; none when it goes on. */
-async function halted(pass: Pass): Promise<CopyRunEnd | undefined> {
-  const { deps, signal, counts } = pass
-  if (deps.updating() || signal.aborted) return pass.end({ kind: 'PARTIAL', reason: 'STOPPED' })
-  const capped =
-    counts.pages >= deps.tuning.runPages || performance.now() - counts.started >= deps.tuning.runMs
-  if (!capped) return undefined
-  const result = await pass.end({ kind: 'PARTIAL', reason: 'CAP' })
-  if (result.kind === 'ENDED' && result.outcome.kind === 'PARTIAL')
-    await deps.clock().runNow(pass.ids.copyId)
-  return result
-}
-
-type Step =
-  | { kind: 'END'; end: CopyRunEnd }
-  | { kind: 'PAGE'; position: StoredCopy['position']; more: boolean }
-
-/** One page: read from the source, written in the company's database, saved in the Hub. */
-async function pageOf(
-  pass: Pass,
-  position: StoredCopy['position'],
-  dates: ReturnType<typeof datesOf>,
-): Promise<Step> {
-  const { deps, ids, signal, claimed, sync, counts } = pass
-  const stored = claimed.copy
-  const { definition, name, pass: passId } = stored
-  const read = await deps.connectors().readPage({
-    companyId: ids.companyId,
-    connectionId: stored.connectionId,
-    enabledBy: stored.createdBy,
-    input: { definition, after: position, ...dates, limit: deps.tuning.pageRows },
-    signal,
-  })
-  if (read.kind === 'NO_CONNECTION')
-    return { kind: 'END', end: await pass.end({ kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' }) }
-  if (read.kind === 'FAILED') {
-    const outcome: CopyOutcome = signal.aborted
-      ? { kind: 'PARTIAL', reason: 'STOPPED' }
-      : { kind: 'ERROR', code: read.code }
-    return { kind: 'END', end: await pass.end(outcome) }
-  }
-  const { rows, more } = read.page
-  const written = await deps.companyPostgres.writePage(
-    sync,
-    { name, definition, pass: passId, rows },
-    signal,
-  )
-  if (written.kind !== 'DONE') return { kind: 'END', end: await pass.end(DATABASE_DOWN) }
-  const next = lastKey(stored, rows) ?? position
-  if (!(await saved(deps, claimed, { position: next, rows: rows.length })))
-    return { kind: 'END', end: lost(deps, claimed) }
-  counts.pages += 1
-  counts.read += rows.length
-  counts.written += rows.length
-  return { kind: 'PAGE', position: next, more }
-}
-
-/** The pass's close, once its last page is written: the rows the window no longer holds go, and the pass is counted. */
-async function closedPass(pass: Pass, windowFrom: string | null): Promise<CopyRunEnd> {
-  const { deps, claimed, sync, signal } = pass
-  const { definition, name, pass: passId } = claimed.copy
-  const closed = await deps.companyPostgres.closePass(
-    sync,
-    { name, definition, pass: passId, windowFrom },
-    signal,
-  )
-  if (closed.kind !== 'DONE') return pass.end(DATABASE_DOWN)
-  if (!(await passed(deps, claimed, closed.rows))) return lost(deps, claimed)
-  return pass.end({ kind: 'COMPLETE' })
+/** The sources in a run's order: those with a pass open first, then the others as they were made. */
+function inRunOrder(sources: readonly StoredSource[]): StoredSource[] {
+  return [
+    ...sources.filter((source) => source.position !== null),
+    ...sources.filter((source) => source.position === null),
+  ]
 }
 
 /**
- * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then page after page
- * read from the source, written in the company's database and saved in the Hub, until the pass
- * ends, a ceiling, the Hub's stop or a failure. A failure keeps the position and never moves the
- * watermark nor takes a row out.
+ * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then the rows of an
+ * account that is no source's out of the table (Desligar's net), then each source's pass. A source
+ * the provider asked to wait ends the run when the provider counts its limit by the app, which every
+ * account shares; by the account, the run goes on to the next source and ends `PARTIAL` `WAIT`. The
+ * last source closed ends it `COMPLETE`; the ceilings hold for the whole run.
  */
 export async function runCopy(
   deps: CopiesDeps,
@@ -307,15 +160,18 @@ export async function runCopy(
   }
   const { sync } = claimed
   if (sync === undefined) return end(DATABASE_DOWN)
-  const pass: Pass = { deps, ids, signal, claimed: held, sync, counts, end }
-  const { since, windowFrom } = datesOf(held.copy)
-  let position = held.copy.position
-  for (;;) {
-    const stopped = await halted(pass)
-    if (stopped !== undefined) return stopped
-    const step = await pageOf(pass, position, { since, windowFrom })
+  const table = copyTableOf(held.copy, held.sources)
+  const run: Run = { deps, ids, signal, claimed: held, sync, table, counts, end }
+  if (!(await netDropped(run))) return end(DATABASE_DOWN)
+  const byApp = deps.connectors().countedBy(held.copy.connectorId) === 'APP'
+  let waited = false
+  for (const source of inRunOrder(held.sources)) {
+    const step: SourceStep = source.waits ? { kind: 'WAIT' } : await sourcePass(run, source)
     if (step.kind === 'END') return step.end
-    position = step.position
-    if (!step.more) return closedPass(pass, windowFrom)
+    if (step.kind === 'WAIT') {
+      if (byApp) return end(WAIT)
+      waited = true
+    }
   }
+  return end(waited ? WAIT : { kind: 'COMPLETE' })
 }

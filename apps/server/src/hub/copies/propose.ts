@@ -1,20 +1,30 @@
 import { randomUUID } from 'node:crypto'
-import type { OfProject } from '@conexus/hub-api'
+import type { ConnectionId, ConnectorId, OfProject, ProveCounts } from '@conexus/hub-api'
 import { CopyProposalId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
-import type { z } from 'zod'
+import { z } from 'zod'
 import { violatedConstraint, violatedReference } from '../../platform/database.ts'
 import type { Proposal, ProposeAnswer } from '../connectors/public.ts'
-import { CopyDefinition, CopyName, connectionNamesOf } from '../connectors/public.ts'
+import {
+  CopyDefinition,
+  CopyName,
+  connectionNamesOf,
+  lackedSourceReadOf,
+} from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps } from './store.ts'
-import { companyScope } from './store.ts'
-import { copy, copyProposal, projectCopy } from './tables.ts'
+import { companyScope, originOf } from './store.ts'
+import { copy, copyProposal, copyProposalSource, projectCopy } from './tables.ts'
 
 /** The schema's refusal as the model can act on it: each path with the schema's message, no value. */
 function issuesOf(error: z.ZodError, prefix: string): string[] {
   return error.issues.map((issue) => `${[prefix, ...issue.path].join('.')}: ${issue.message}`)
 }
+
+const Connections = z
+  .array(z.string())
+  .min(1)
+  .refine((list) => new Set(list).size === list.length, 'A connection is named once.')
 
 /** A copy of the company or an open proposal that has the name; a copy says whether this Projeto has it released. */
 async function existing(deps: CopiesDeps, ids: OfProject, name: CopyName) {
@@ -43,11 +53,117 @@ async function existing(deps: CopiesDeps, ids: OfProject, name: CopyName) {
   })
 }
 
+type Named = Readonly<{ id: ConnectionId; name: string; connector: ConnectorId }>
+type Sourced =
+  | Readonly<{ kind: 'SOURCES'; connector: ConnectorId; sources: readonly Named[] }>
+  | Extract<ProposeAnswer, { kind: 'MALFORMED' | 'NOT_GRANTED' | 'NOT_IN_ROLE' }>
+
+/** A version 2 definition against the connector's list read, and several connections only on a connector with an account. */
+function listIssuesOf(
+  deps: CopiesDeps,
+  a: {
+    connector: ConnectorId
+    definition: Extract<CopyDefinition, { version: 2 }>
+    connections: number
+  },
+): string[] {
+  const checked = deps.connectors().proposable(a.connector, a.definition)
+  if (!checked.accountless || a.connections === 1) return [...checked.issues]
+  const apart = `connections: ${a.connector} has no account to tell connections apart; name one.`
+  return [...checked.issues, apart]
+}
+
 /**
- * Propor (Capacidade 3, U3): the definition by `CopyDefinition` and the name by `CopyName`, the name
- * against the company's copies and open proposals, one page of proof through the connectors' port
- * (the count, never a row), then the row, which the partial unique index guards against a second
- * open proposal of the name. Nothing is written on any refusal.
+ * The proposal's connections as the company has them, all of one connector; a version 2 definition
+ * against that connector's list read, several connections only on a connector with an account, and
+ * the role of who proposes using the read on each (one `mayUseEach` entry per connection).
+ */
+async function sourcesOf(
+  deps: CopiesDeps,
+  ids: OfProject,
+  a: Proposal & { definition: CopyDefinition },
+): Promise<Sourced> {
+  const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: a.personId } as const
+  return deps.database.read(scope, async (tx) => {
+    const names = await connectionNamesOf(tx, { companyId: ids.companyId, ids: a.connections })
+    const sources = a.connections.flatMap((id) => {
+      const found = names.get(id)
+      return found === undefined ? [] : [{ id, ...found }]
+    })
+    const [first] = sources
+    if (first === undefined || sources.length < a.connections.length) return { kind: 'NOT_GRANTED' }
+    const { connector } = first
+    if (sources.some((each) => each.connector !== connector))
+      return { kind: 'MALFORMED', issues: ['connections: every connection is of one connector.'] }
+    const { definition } = a
+    if (definition.version === 1) {
+      if (sources.length === 1) return { kind: 'SOURCES', connector, sources }
+      return { kind: 'MALFORMED', issues: ['connections: a copy of a query reads one connection.'] }
+    }
+    const issues = listIssuesOf(deps, { connector, definition, connections: sources.length })
+    if (issues.length > 0) return { kind: 'MALFORMED', issues }
+    const lacked = await lackedSourceReadOf(deps, tx, {
+      ...{ companyId: ids.companyId, personId: a.personId, connectorId: connector },
+      ...{ operation: definition.source.operation, connections: a.connections },
+    })
+    return lacked ?? { kind: 'SOURCES', connector, sources }
+  })
+}
+
+type Proofs =
+  | Readonly<{ kind: 'PROVED'; rows: number; more: boolean; counts: ProveCounts[] }>
+  | Exclude<ProposeAnswer, { kind: 'PROPOSED' | 'EXISTS' | 'MALFORMED' }>
+
+/**
+ * The proof of each connection in turn, through the connectors' port: the first refusal stops the
+ * rest and comes back whole (C79). A key cell null or repeated, or a cell that does not fit its type,
+ * refuses with the connection's name and the counts alone.
+ */
+async function proofs(
+  deps: CopiesDeps,
+  ids: OfProject,
+  a: Proposal & { definition: CopyDefinition; sources: readonly Named[] },
+): Promise<Proofs> {
+  const counts: ProveCounts[] = []
+  let rows = 0
+  let more = false
+  for (const source of a.sources) {
+    const proved = await deps.prove()(ids, {
+      ...{ connectionId: source.id, personId: a.personId, runId: a.runId },
+      ...{ definition: a.definition, signal: a.signal },
+    })
+    if (proved.kind === 'MISFIT') return { ...proved, kind: 'TYPE_MISFIT', connection: source.name }
+    if (proved.kind !== 'PROVED') return proved
+    const { counts: of } = proved
+    if (of !== null && (of.keyNull > 0 || of.keyRepeated > 0)) {
+      const { keyNull, keyRepeated } = of
+      return { kind: 'KEY_NOT_UNIQUE', connection: source.name, keyNull, keyRepeated }
+    }
+    if (of !== null) counts.push(of)
+    // The proposal keeps one page's count: the most a connection's page brought, and whether any had more.
+    rows = Math.max(rows, proved.rows)
+    more ||= proved.more
+  }
+  return { kind: 'PROVED', rows, more, counts }
+}
+
+/** The calls a whole pass spends over every connection; null when a read does not tell its total, or the copy is a query's. */
+function callsOf(definition: CopyDefinition, counts: readonly ProveCounts[]): number | null {
+  if (definition.version === 1) return null
+  let sum = 0
+  for (const each of counts) {
+    if (each.callsPerPass === null) return null
+    sum += each.callsPerPass
+  }
+  return sum
+}
+
+/**
+ * Propor (Capacidade 3, U3; O Sync de qualquer conector, U4): the definition by `CopyDefinition` and
+ * the name by `CopyName`, the name against the company's copies and open proposals, the connections
+ * and the definition against the read, the proof of each connection (counts, never a row), then the
+ * row and its sources in one transaction, which the partial unique index guards against a second open
+ * proposal of the name. Nothing is written on any refusal.
  */
 export async function propose(
   deps: CopiesDeps,
@@ -56,51 +172,58 @@ export async function propose(
 ): Promise<ProposeAnswer> {
   const parsedName = CopyName.safeParse(a.name)
   const parsed = CopyDefinition.safeParse(a.definition)
+  const named = Connections.safeParse(a.connections)
   const issues = [
     ...(parsedName.success ? [] : issuesOf(parsedName.error, 'name')),
     ...(parsed.success ? [] : issuesOf(parsed.error, 'definition')),
+    ...(named.success ? [] : issuesOf(named.error, 'connections')),
   ]
-  if (!parsedName.success || !parsed.success) return { kind: 'MALFORMED', issues }
+  if (!parsedName.success || !parsed.success || !named.success) return { kind: 'MALFORMED', issues }
   const name = parsedName.data
   const definition = parsed.data
   const taken = await existing(deps, ids, name)
   if (taken !== undefined) return taken
-  const { connectionId, personId, runId, signal } = a
-  const proved = await deps.prove()(ids, { connectionId, personId, runId, definition, signal })
+  const sourced = await sourcesOf(deps, ids, { ...a, definition })
+  if (sourced.kind !== 'SOURCES') return sourced
+  const { sources, connector } = sourced
+  const proved = await proofs(deps, ids, { ...a, definition, sources })
   if (proved.kind !== 'PROVED') return proved
+  const { rows, more, counts } = proved
+  const calls = callsOf(definition, counts)
   const id = CopyProposalId.parse(randomUUID())
-  const scope = { kind: 'COMPANY', companyId: ids.companyId, personId } as const
-  const linked = await deps.database.command(scope, async (tx) => {
-    const named = await connectionNamesOf(tx, { companyId: ids.companyId, ids: [connectionId] })
-    const connection = named.get(connectionId)
-    if (connection === undefined) return undefined
+  const [first] = sources
+  if (first === undefined) return { kind: 'NOT_GRANTED' }
+  const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: a.personId } as const
+  const saved = await deps.database.command(scope, async (tx) => {
     try {
       await tx.insert(copyProposal).values({
-        ...{ id, companyId: ids.companyId, connectorId: connection.connector, connectionId },
+        ...{ id, companyId: ids.companyId, connectorId: connector, connectionId: first.id },
         ...{ projectId: ids.projectId, name, label: a.label, definition },
-        ...{ proposedBy: personId, provedRows: proved.rows, provedMore: proved.more },
+        ...{ proposedBy: a.personId, provedRows: rows, provedMore: more, provedCalls: calls },
         ...{ proposedAt: sql`statement_timestamp()`, state: 'OPEN' as const },
       })
+      await tx.insert(copyProposalSource).values(
+        sources.map((source) => ({
+          ...{ companyId: ids.companyId, proposalId: id },
+          ...{ connectorId: connector, connectionId: source.id },
+        })),
+      )
     } catch (error) {
       if (violatedConstraint(error) === 'copy_proposal_open_name_key') return 'TAKEN' as const
-      // The Projeto or the connection was deleted after the proof: the proposal has nowhere to live.
-      if (violatedReference(error) !== undefined) return undefined
+      // The Projeto or a connection was deleted after the proof: the proposal has nowhere to live.
+      if (violatedReference(error) !== undefined) return 'GONE' as const
       throw error
     }
-    return connection
+    return 'SAVED' as const
   })
-  if (linked === 'TAKEN') return { kind: 'EXISTS', name, releasedHere: false }
-  if (linked === undefined) return { kind: 'NOT_GRANTED' }
-  const { rows, more } = proved
-  deps.log.info({ ...ids, proposalId: id, connectionId, rows, more }, 'COPY_PROPOSED')
+  if (saved === 'TAKEN') return { kind: 'EXISTS', name, releasedHere: false }
+  if (saved === 'GONE') return { kind: 'NOT_GRANTED' }
+  const connectionIds = sources.map((source) => source.id).join(',')
+  const logged = { ...ids, proposalId: id, connectionIds, rows, more }
+  deps.log.info(calls === null ? logged : { ...logged, calls }, 'COPY_PROPOSED')
   return {
-    kind: 'PROPOSED',
-    proposalId: id,
-    name,
-    connection: linked,
-    key: definition.key,
-    mode: copyModeOf(definition),
-    rows,
-    more,
+    ...{ kind: 'PROPOSED', proposalId: id, name, source: originOf(connector, definition) },
+    sources: sources.map((source) => ({ name: source.name, connector })),
+    ...{ key: definition.key, mode: copyModeOf(definition), rows, more, calls, counts },
   }
 }

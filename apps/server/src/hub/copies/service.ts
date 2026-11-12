@@ -1,4 +1,11 @@
-import type { CompanyId, CopyId, CopyProposalId, OfProject, ProjectId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConnectionId,
+  CopyId,
+  CopyProposalId,
+  OfProject,
+  ProjectId,
+} from '@conexus/hub-api'
 import type { SqlAnswer } from '../../platform/company-postgres.ts'
 import type { Proposal } from '../connectors/public.ts'
 import type { Accepting } from './accept.ts'
@@ -7,6 +14,13 @@ import type { Enabling } from './enable.ts'
 import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
 import { applyGrants, grantCopy, revokeAllOf, revokeCopy } from './grants.ts'
+import {
+  copiesOfConnection,
+  dropEndedCopies,
+  endedSourceless,
+  leaveCopies,
+  lockedCopiesOf,
+} from './leave.ts'
 import { listed, models, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
 import { propose } from './propose.ts'
@@ -55,6 +69,15 @@ export function createCopyService(
     /** After an app's logins are made: every release of the Projeto granted again (repair only). */
     applyGrants: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer> =>
       applyGrants(full, input),
+    /** What Desligar asks of the copies, through the connectors' lazy port (O Sync de qualquer conector). */
+    ofConnections: Object.freeze({
+      copiesOf: (input: InCompany & { connectionId: ConnectionId }) =>
+        copiesOfConnection(full, input),
+      leave: (input: InCompany & { connectionId: ConnectionId }) => leaveCopies(full, input),
+      locked: lockedCopiesOf,
+      ended: endedSourceless,
+      dropEnded: (input: InCompany) => dropEndedCopies(full, input),
+    }),
   })
 }
 export type CopyService = ReturnType<typeof createCopyService>

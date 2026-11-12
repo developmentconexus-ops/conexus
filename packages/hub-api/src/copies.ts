@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import { ConnectorId } from './company-roles.ts'
 import { ConnectionId } from './connectors.ts'
+import { CopyShown, CopySource } from './copy-shown.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
 import { ProjectId } from './library-ids.ts'
@@ -28,12 +29,13 @@ export const CopySchedule = z.discriminatedUnion('kind', [
 ])
 export type CopySchedule = z.infer<typeof CopySchedule>
 
-/** Why a run ended in error: the source's four failures, or the company's database. */
+/** Why a run ended in error: the source's failures, its read's ceiling, or the company's database. */
 export const CopyRunFailureCode = z.enum([
   'COPY_SOURCE_REFUSED',
   'COPY_SOURCE_NEEDS_REAUTH',
   'COPY_SOURCE_UNREACHABLE',
   'COPY_SOURCE_UNREADABLE',
+  'COPY_SOURCE_CEILING',
   'COPY_DATABASE_UNAVAILABLE',
 ] as const satisfies readonly FailureCode[])
 export type CopyRunFailureCode = z.infer<typeof CopyRunFailureCode>
@@ -45,7 +47,8 @@ export const CopyRun = z.object({
   outcome: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('RUNNING') }),
     z.object({ kind: z.literal('COMPLETE') }),
-    z.object({ kind: z.literal('PARTIAL'), reason: z.enum(['CAP', 'STOPPED']) }),
+    // WAIT: the provider asked to wait; the next run goes on from where the source stopped.
+    z.object({ kind: z.literal('PARTIAL'), reason: z.enum(['CAP', 'STOPPED', 'WAIT']) }),
     z.object({ kind: z.literal('ERROR'), code: CopyRunFailureCode }),
     z.object({ kind: z.literal('INTERRUPTED') }),
   ]),
@@ -66,9 +69,10 @@ export const CopySummary = z.object({
   id: CopyId,
   // The table, `sync.<name>`.
   name: z.string(),
-  // The label of what the definition came from (a template now).
+  // The label of what the definition came from: a template, or the Builder's proposal.
   label: z.string(),
-  connection: z.object({ id: ConnectionId, name: z.string(), connector: ConnectorId }),
+  // Each connection the copy reads, in the order its sources were made.
+  sources: z.array(CopySource).min(1),
   // None when the schedule is MISSING.
   interval: CopyInterval.nullable(),
   schedule: CopySchedule,
@@ -79,13 +83,7 @@ export const CopySummary = z.object({
   // How a pass reads the source, from the definition alone.
   mode: CopyMode,
   projects: z.array(z.object({ id: ProjectId, name: z.string() })),
-  shown: z.object({
-    query: z.string(),
-    key: z.array(z.string()),
-    // What a pass rereads: the rows changed since the last one, and the window; both none reads the whole source.
-    changedSince: z.object({ column: z.string() }).nullable(),
-    window: z.object({ column: z.string(), days: z.int() }).nullable(),
-  }),
+  shown: CopyShown,
 })
 export type CopySummary = z.infer<typeof CopySummary>
 
@@ -125,13 +123,15 @@ export const CopyProposalSummary = z.object({
   // The table it would make, `sync.<name>`.
   name: z.string(),
   label: z.string(),
-  connection: z.object({ id: ConnectionId, name: z.string(), connector: ConnectorId }),
+  // Each connection the proposal reads; one deleted since is left out.
+  sources: z.array(CopySource),
   project: z.object({ id: ProjectId, name: z.string() }),
-  shown: CopySummary.shape.shown,
+  shown: CopyShown,
   // The same words as a copy's own row, from the definition alone.
   mode: CopyMode,
-  // The page of proof: its rows, never one of them, and whether more followed.
-  proved: z.object({ rows: z.int().min(0), more: z.boolean() }),
+  // The proof: its rows, never one of them, whether more followed, and the calls a whole pass
+  // spends over every connection (null when a read does not tell its total).
+  proved: z.object({ rows: z.int().min(0), more: z.boolean(), calls: z.int().min(0).nullable() }),
   proposedBy: z.object({ id: PersonId, name: z.string() }),
   state: CopyProposalState,
 })
@@ -139,19 +139,6 @@ export type CopyProposalSummary = z.infer<typeof CopyProposalSummary>
 
 /** The most proposals one list may name by id (the conversation's cards). */
 export const PROPOSALS_NAMED_MAX = 20
-
-/** What `copy_propose` answers when the proposal is saved: the card in the conversation is drawn from it. */
-export const CopyProposed = z.object({
-  kind: z.literal('PROPOSED'),
-  proposalId: CopyProposalId,
-  name: z.string(),
-  connection: z.object({ name: z.string(), connector: ConnectorId }),
-  key: z.array(z.string()),
-  mode: CopyMode,
-  rows: z.int().min(0),
-  more: z.boolean(),
-})
-export type CopyProposed = z.infer<typeof CopyProposed>
 
 const InCompany = z.object({ companyId: CompanyId })
 const OfCopy = InCompany.extend({ copyId: CopyId })

@@ -55,7 +55,11 @@ export const TEST_KIT = [
   {
     id: 'mercado-livre',
     resource: 'connector_mercado-livre',
-    operations: [{ id: 'anuncios', class: 'read' }],
+    operations: [
+      { id: 'anuncios', class: 'read' },
+      { id: 'pedidos', class: 'read' },
+      { id: 'perguntas', class: 'read' },
+    ],
   },
 ] as const satisfies RoleKit
 export const TEST_ROLES = rolesFor(TEST_KIT)

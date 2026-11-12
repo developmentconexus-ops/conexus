@@ -82,6 +82,14 @@ export const COPY_FAILURES = {
     action: 'A próxima rodada tenta de novo.',
     actionKind: 'NONE',
   },
+  COPY_SOURCE_CEILING: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'A leitura chegou ao máximo de linhas que o sistema entrega.',
+    action: 'A cópia precisa de um filtro que leia menos linhas.',
+    actionKind: 'NONE',
+  },
   COPY_SOURCE_UNREADABLE: {
     category: 'THIRD_PARTY',
     settles: true,

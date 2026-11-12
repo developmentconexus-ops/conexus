@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import type { CopyProposalId, PersonId } from '@conexus/hub-api'
+import type { ConnectionId, CopyProposalId, PersonId } from '@conexus/hub-api'
 import {
   CopyProposalId as CopyProposalIdSchema,
   listCopies,
@@ -35,12 +35,13 @@ export function proposeAs(
     runId?: RunId
     name?: string
     definition?: unknown
+    connections?: readonly ConnectionId[]
   } = {},
 ) {
   return on.hub.connectors.builder.propose(
     { companyId: on.companyId, projectId: on.projectId },
     {
-      connectionId: on.connectionId,
+      connections: options.connections ?? [on.connectionId],
       personId: options.personId ?? PersonIdSchema.parse(on.ana.id),
       runId: options.runId ?? RunId.parse(randomUUID()),
       name: options.name ?? 'devolucoes',

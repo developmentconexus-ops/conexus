@@ -8,10 +8,10 @@ import type { Connectors } from '../../hub/connectors/public.ts'
 
 type ProposeAnswer = Awaited<ReturnType<Connectors['builder']['propose']>>
 
-/** The proposal's call as the Builder's access sends it: the connection, the name, the label and the definition. */
+/** The proposal's call as the Builder's access sends it: the connections, the name, the label and the definition. */
 export type ProposeCall = (
   call: {
-    connectionId: ConnectionId
+    connections: readonly ConnectionId[]
     name: string
     label: string
     definition: unknown
@@ -20,43 +20,81 @@ export type ProposeCall = (
   requestContext: RequestContext,
 ) => Promise<ProposeAnswer>
 
-type Copying = Readonly<{ connectionId: ConnectionId; connector: string; name: string }>
+type Granted = Awaited<ReturnType<Connectors['builder']['granted']>>[number]
+type Copying = Pick<Granted, 'connectionId' | 'connector' | 'name' | 'reads'>
 
 /**
- * What the model is told: investigate first, choose the mode by the rule of thumb and measure it,
- * say which mode and why; the proof keeps a count; the proposal is turned on by a person, in the
- * conversation's card or on the Cópias page. No system is named: the connection's skill says how.
+ * The six questions the Builder answers before it proposes (Nango's "For agents": paging, the
+ * incremental filter, what is deleted, how often), in order, then how a definition is written. No
+ * system is named: the reads below and the connection's skill say how each one lists.
  */
 const COPY_PROPOSE_DESCRIPTION = [
-  'Proposes a copy of company data the app needs and the Projeto has no copy of: a definition the company keeps, read from the connection into `sync.<name>`, which the app then reads.',
-  "Investigate the connection's system with `connector_read` first: the source query, its columns and types, a bigint key, and a column with the date each row changed.",
-  'Choose the mode by the rule of thumb: a whole copy (the definition without `changedSince`) when more than 10% of the rows change at each run; a window of days (`changedSince` and `window`) or only the changed rows (`changedSince` alone) otherwise.',
-  'Measure the fraction with `connector_read`: count the rows whose change date falls within one interval of the copy against the total. With no column of the change date, the copy is whole. Say which mode you chose and why.',
-  'Proposing runs one page of proof through the copy read and keeps only the count of its rows, never a row.',
-  'The proposal appears in this conversation and on the Cópias page, and whoever may turn copies on turns it on there; you never turn it on. Tell the person the proposal is there and go on with what does not depend on it.',
+  'Proposes a copy of company data the app needs: a definition the company keeps, read from the connections into `sync.<name>`, which the app then reads through `db`. Answer six questions first, in this order.',
+  '1. Keep it or read it live? A list, a history, a sum or a cross of rows is a copy; a write, or a query whose parameter is not data the copy keeps, is read live.',
+  '2. Does it exist? Look in the "## Data" block: a copy released here, use it; one not released here, ask the owner to release it; never propose a copy that exists.',
+  '3. From which read, with which filter? The narrowest read that lists rows and covers the app (below); a fixed input only when the app will never want the rest.',
+  '4. Which key? The id the system gives the row; the proof refuses a key that is null or repeated.',
+  "5. Which mode? A read with no change filter is a whole copy (the definition without `changedSince`); with one, only the changed rows (`changedSince` on the column whose `path` is the read's change field), unless more than 10% of the rows change at each run, which asks for a whole copy. Measure the fraction with `connector_read`: count the rows whose change date falls within one interval of the copy against the total. A window of days is only a query's. Say which mode you chose and why.",
+  '6. How often? The longest interval the screen bears: the proof answers the calls a whole pass spends, and an expensive copy asks for a longer interval.',
+  'The fields the app uses become columns; the obvious neighbours (dates, status, linking ids) may come along; a nested part enters as `json` only when the app reads it. Write the description of the table and of each column. Name it after the system and the data (`<system>_<data>`). The accounts of one connector go in one copy, each connection in `connections`, unless the app asks for them apart.',
+  'A read that lists rows takes version 2: { version: 2, source: { kind: "OPERATION", operation, input }, description, columns: [{ name, type, path, description }], key, changedSince }. A connector that copies by query takes version 1: { version: 1, source: { kind: "QUERY", sql }, columns, key, changedSince, window }, on one connection.',
+  'Proposing proves each connection with a page or two of the read and keeps only counts, never a row. The proposal appears in this conversation and on the Cópias page, and whoever may turn copies on turns it on there; you never turn it on. Tell the person the proposal is there and go on with what does not depend on it.',
 ].join('\n')
 
-/** The connection a name says; the connector too when the call names one, since two systems may share a name. */
-function named(connections: readonly Copying[], name: string, connector?: string) {
-  const same = connections.filter((each) => each.name === name)
-  if (connector === undefined && same.length > 1) return 'AMBIGUOUS' as const
-  return same.find((each) => connector === undefined || each.connector === connector)
+function pagingText(list: NonNullable<Copying['reads'][number]['list']>): string {
+  const ceiling = list.ceiling === null ? '' : `, at most ${list.ceiling} rows`
+  const changed = list.changed === null ? 'no change filter' : `changes by \`${list.changed}\``
+  return `pages by ${list.paging.toLowerCase()}${ceiling}, ${changed}`
+}
+
+/** The reads that list rows, by connection, as the model writes `source.operation` from them. */
+function listReads(connections: readonly Copying[]): string {
+  const lines = connections.flatMap((each) => {
+    const listed = each.reads.flatMap((read) =>
+      read.list === null ? [] : [`  - ${read.operation} (${read.label}): ${pagingText(read.list)}`],
+    )
+    return listed.length === 0
+      ? []
+      : [`- Connection "${each.name}" (${each.connector}):`, ...listed]
+  })
+  return lines.length === 0 ? '' : ['Reads that list rows:', ...lines].join('\n')
+}
+
+/** The connections the names say, of one connector; the connector named when two systems share a name. */
+function named(connections: readonly Copying[], names: readonly string[], connector?: string) {
+  const found: Copying[] = []
+  for (const name of names) {
+    const same = connections.filter(
+      (each) => each.name === name && (connector === undefined || each.connector === connector),
+    )
+    if (same.length > 1) return 'AMBIGUOUS' as const
+    const [one] = same
+    if (one === undefined) return undefined
+    found.push(one)
+  }
+  return found
 }
 
 /**
- * `copy_propose` (Capacidade 3, U3), offered only when a granted connection's connector copies; {}
- * otherwise. The definition reaches the Hub as written, `z.unknown()`, so `CopyDefinition`'s own
- * paths and messages come back to the model.
+ * `copy_propose` (Capacidade 3, U3; O Sync de qualquer conector, U4), offered only when a granted
+ * connection's connector copies or declares a read that lists rows; {} otherwise. The definition
+ * reaches the Hub as written, `z.unknown()`, so `CopyDefinition`'s own paths and messages come back
+ * to the model.
  */
 export function copyProposeTool(connections: readonly Copying[], propose: ProposeCall): ToolsInput {
   const [first, ...rest] = [...new Set(connections.map((each) => each.name))]
   if (first === undefined) return {}
+  const reads = listReads(connections)
   return {
     [BUILDER_TOOL.copyPropose]: createTool({
       id: BUILDER_TOOL.copyPropose,
-      description: COPY_PROPOSE_DESCRIPTION,
+      description:
+        reads === '' ? COPY_PROPOSE_DESCRIPTION : `${COPY_PROPOSE_DESCRIPTION}\n${reads}`,
       inputSchema: z.object({
-        connection: z.enum([first, ...rest]).describe("The connection's name, exactly as listed"),
+        connections: z
+          .array(z.enum([first, ...rest]))
+          .min(1)
+          .describe("The connections' names, exactly as listed, all of one connector"),
         connector: z
           .string()
           .optional()
@@ -66,22 +104,19 @@ export function copyProposeTool(connections: readonly Copying[], propose: Propos
           .max(40)
           .describe('The table in `sync`: lowercase letters, digits and _, starting with a letter'),
         label: z.string().min(1).max(120).describe('What the copy holds, in the person’s words'),
-        definition: z
-          .unknown()
-          .describe(
-            'The copy definition: version 1, source { kind: "QUERY", sql }, columns, key, changedSince, window',
-          ),
+        definition: z.unknown().describe('The copy definition, version 2 or version 1 as above'),
       }),
       execute: async (
-        { connection, connector, name, label, definition },
+        { connections: names, connector, name, label, definition },
         { requestContext, abortSignal },
       ) => {
-        const found = named(connections, connection, connector)
+        const found = named(connections, names, connector)
         if (found === 'AMBIGUOUS') return { kind: 'AMBIGUOUS_CONNECTION' } as const
         if (found === undefined || requestContext === undefined)
           return { kind: 'NOT_GRANTED' } as const
+        const ids = found.map((each) => each.connectionId)
         return propose(
-          { connectionId: found.connectionId, name, label, definition, signal: abortSignal },
+          { connections: ids, name, label, definition, signal: abortSignal },
           requestContext,
         )
       },

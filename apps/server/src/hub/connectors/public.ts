@@ -1,5 +1,5 @@
-import type { ConnectorId } from '@conexus/connectors'
-import { connectorOf } from '@conexus/connectors'
+import type { Connector, ConnectorId } from '@conexus/connectors'
+import { CONNECTORS } from '@conexus/connectors'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
@@ -27,16 +27,29 @@ import {
   registerConnectionRoutes,
   registerToolCallRoutes,
 } from './routes.ts'
+import type { ConnectionCopies } from './rows.ts'
+import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
 /** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056). */
-export { CopyDefinition, CopyName } from '@conexus/connectors'
+export {
+  AccountRef,
+  CopyDefinition,
+  CopyDefinitionV2,
+  CopyName,
+  CopyPosition,
+} from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export { connectionForCopy, connectionNamesOf, lackedReadOf } from './copy-port.ts'
+export {
+  connectionForCopy,
+  connectionNamesOf,
+  lackedReadOf,
+  lackedSourceReadOf,
+} from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
@@ -48,8 +61,15 @@ export type { WriteRequest, Written } from './write-record.ts'
 export { markOf } from './write-record.ts'
 export type { Returned } from './wrote.ts'
 
-/** What tests change: a shorter deadline, and the clock a write is dated by (production's is the machine's). */
-export type ConnectorTuning = { callDeadlineMs?: number; now?: (() => Date) | undefined }
+/**
+ * What tests change: a shorter deadline, the clock a write and a cursor are dated by (production's
+ * is the machine's), and the catalog, with a connector of the test's own beside the kit's.
+ */
+export type ConnectorTuning = {
+  callDeadlineMs?: number
+  now?: (() => Date) | undefined
+  catalog?: readonly Connector[] | undefined
+}
 
 export type Connectors = ReturnType<typeof createConnectors>
 
@@ -68,11 +88,15 @@ export function createConnectors(deps: {
   door: AppDoorPort
   /** `hub/copies`' proposing, handed on to the Builder (Capacidade 3): it is made after the connectors. */
   propose: () => Propose
+  /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
+  copies: () => ConnectionCopies
   tuning?: ConnectorTuning
 }) {
+  const catalog = deps.tuning?.catalog ?? CONNECTORS
+  const now = deps.tuning?.now ?? (() => new Date())
   const origins = new Map<ConnectorId, string>()
   for (const [id, origin] of deps.config.connectorOrigins ?? []) {
-    const connector = connectorOf(id)
+    const connector = connectorIn({ catalog }, id)
     if (connector === undefined)
       throw new Failure('CONFIG_INVALID', {
         details: { variables: 'HUB_CONNECTOR_ORIGINS', reason: 'unknown connector' },
@@ -81,7 +105,7 @@ export function createConnectors(deps: {
   }
   const apps = new Map<ConnectorId, ConnectorApp>()
   for (const [id, app] of deps.config.connectorApps ?? []) {
-    const connector = connectorOf(id)
+    const connector = connectorIn({ catalog }, id)
     if (connector === undefined || !isOAuth(connector))
       throw new Failure('CONFIG_INVALID', {
         details: { variables: 'HUB_CONNECTOR_APPS_FILE', reason: 'not an OAuth connector' },
@@ -92,7 +116,7 @@ export function createConnectors(deps: {
     fetch,
     origins,
     log: deps.log,
-    now: deps.tuning?.now ?? (() => new Date()),
+    now,
   })
   const limits = createLimits({ executor, log: deps.log })
   const routeDeps = {
@@ -105,6 +129,8 @@ export function createConnectors(deps: {
     limits,
     log: deps.log,
     callDeadlineMs: deps.tuning?.callDeadlineMs ?? CALL_DEADLINE_MS,
+    catalog,
+    now,
   }
   const appCalls = createAppCalls(routeDeps, deps.door)
   // One door for the agents and the saved tools they call, so a turn's 50 reads count both.
