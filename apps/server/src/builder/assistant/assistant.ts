@@ -54,6 +54,7 @@ import { overviewTool, projectsOf } from './overview.ts'
 import type { AssistantProjects } from './ports.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
+import { proposeCompanyMemoryTool } from './propose-company-memory.ts'
 import { releaseConversations } from './release.ts'
 import { RESEARCH, researchOnly, researchReads } from './research.ts'
 import { registerAssistantRoutes } from './routes.ts'
@@ -200,6 +201,7 @@ function assistantAgent(
       })),
   })
   const showFile = showFileTool(parts.machines)
+  const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(parts.machines)
   const automationRun = automationRunFor(parts.memory)
   // The prompt's block and the tools read the speaker's role together, once per run.
@@ -237,6 +239,7 @@ function assistantAgent(
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
         [ASSISTANT_TOOL.showFile]: showFile,
+        [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
         ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),
         ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
@@ -253,7 +256,7 @@ function assistantAgent(
     ...assistantDefaults,
     signals: [new TaskSignalProvider()],
     memory: parts.memory,
-    ...companyScopes({ memory: parts.company, scopeOf, maysOf: maysFor }),
+    ...companyScopes({ memory: parts.company, scopeOf }),
   })
 }
 

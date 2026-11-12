@@ -2,6 +2,7 @@ import {
   DraftRef,
   ProposedApp,
   ProposedAutomation,
+  ProposedCompanyMemory,
   ShownFile,
   TestedResult,
   ToolSearchResult,
@@ -299,6 +300,10 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
     body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
   if (automation !== undefined)
     return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
+  const memory =
+    body === 'companyMemory' ? ProposedCompanyMemory.safeParse(tool.result).data : undefined
+  if (memory !== undefined)
+    return room.companyMemoryCard?.({ proposed: memory, toolCallId: tool.toolCallId })
   const draft = body === 'agent' ? DraftRef.safeParse(tool.result).data : undefined
   if (draft !== undefined)
     return (

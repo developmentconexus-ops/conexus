@@ -42,6 +42,7 @@ export type ToolBody =
   | 'shown'
   | 'proposal'
   | 'automation'
+  | 'companyMemory'
   | 'agent'
   | 'library'
   | 'answer'

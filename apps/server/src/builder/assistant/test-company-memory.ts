@@ -1,36 +1,22 @@
 import assert from 'node:assert/strict'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { call } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { tool } from '../conversation/test-questions.ts'
-
-type Block = ReturnType<typeof tool>
+import { call, post } from '../../hub/identity/test-hub.ts'
 
 export const OPERATION_1100 = { name: 'Operação 1100', body: 'A 1100 é a venda à vista.' }
 export const NOTE = 'Vale desde janeiro de 2026.'
 
-/** What the model read last, as the tool's result gave it. */
-function lastRead(asked: Sent) {
-  return Object(JSON.parse(asked.toolResults.at(-1)?.text ?? '{}'))
-}
-
 /**
- * The model's steps to save the 1100 in the company (T28: each argument is one it read): it lists
- * the scopes it holds, creates the page in the company's, then adds a note on the page it made.
+ * The 1100 saved as a proposal's card saves it: `person` taps Salvar on the page, then on a note
+ * on it; each answer as the routes give it.
  */
-export function savingThe1100(): ((asked: Sent) => Block[])[] {
-  let scope = ''
-  return [
-    () => [tool('knowledge_read', {})],
-    (asked) => {
-      scope = String(lastRead(asked).scopes.at(0).address)
-      return [tool('knowledge_page', { op: 'write', scope, ...OPERATION_1100 })]
-    },
-    (asked) => {
-      const page = String(lastRead(asked).page.ref)
-      return [tool('knowledge_note', { op: 'add', page, scope: [scope], text: NOTE })]
-    },
-  ]
+export async function savedThe1100(hub: Hub, person: Person, companyId: string) {
+  const created = await post(hub, person, `${memoryAt(companyId)}/pages`, OPERATION_1100)
+  assert.equal(created.statusCode, 201, created.body)
+  const { page } = Object(created.json())
+  const notes = `${memoryAt(companyId)}/pages/${page.pageId}/notes`
+  const added = await post(hub, person, notes, { body: NOTE })
+  assert.equal(added.statusCode, 201, added.body)
+  return { page, note: Object(added.json()).note }
 }
 
 /** The company's memory, at its path. */

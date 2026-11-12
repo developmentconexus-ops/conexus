@@ -2904,14 +2904,25 @@
     }
   },
   {
-    "id": "company-memory-writer-scope",
+    "id": "company-memory-read-only",
     "file": "apps/server/src/builder/assistant/company-memory.ts",
-    "find": "...(companyMemory ? [`writer:${scope.companyId}`] : [])",
-    "replace": "`writer:${scope.companyId}`",
+    "find": "    tools: { read: true, write: false },\n",
+    "replace": "    tools: { read: true, write: true },\n",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/company-memory.test.ts",
-      "name": "quem escreve: o modelo"
+      "file": "src/builder/assistant/company-memory-propose.test.ts",
+      "name": "não tem ferramenta de gravação do Knowledge"
+    }
+  },
+  {
+    "id": "company-memory-proposal",
+    "file": "apps/server/src/builder/assistant/assistant.ts",
+    "find": "        [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/assistant/company-memory-propose.test.ts",
+      "name": "os dois têm a proposta"
     }
   }
 ]

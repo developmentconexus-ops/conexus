@@ -1,5 +1,7 @@
 import type { PersonId } from '@conexus/hub-api'
 import {
+  addCompanyMemoryNote,
+  createCompanyMemoryPage,
   listCompanyMemory,
   readCompanyMemoryPage,
   removeCompanyMemoryNote,
@@ -125,5 +127,26 @@ export function registerCompanyMemoryRoutes(app: FastifyInstance, deps: Deps): v
     const writer = await admitWriter(deps, owner)
     await memory.removeNote(owner.companyId, input.params.noteId, writer)
     return answer(undefined)
+  })
+
+  // A proposal's card saves: a new page or a note, the person who tapped its author (B1).
+  serve(app, createCompanyMemoryPage, async (input) => {
+    const owner = { companyId: input.params.companyId, personId: input.person.id }
+    const writer = await admitWriter(deps, owner)
+    const { attemptKey } = input
+    const page = await memory.createPage(owner.companyId, { attemptKey, ...input.body }, writer)
+    return answer({ page: await shownPage(deps, owner, page) })
+  })
+
+  serve(app, addCompanyMemoryNote, async (input) => {
+    const owner = { companyId: input.params.companyId, personId: input.person.id }
+    const writer = await admitWriter(deps, owner)
+    const added = {
+      attemptKey: input.attemptKey,
+      pageId: input.params.pageId,
+      text: input.body.body,
+    }
+    const note = await memory.addNote(owner.companyId, added, writer)
+    return answer({ note: authored(note, await namesOf(deps, owner, [note])) })
   })
 }

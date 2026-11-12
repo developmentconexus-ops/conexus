@@ -10,20 +10,15 @@ import {
   memberOn,
   personOn,
   plantCompany,
+  post,
 } from '../../hub/identity/test-hub.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { stepped } from '../conversation/test-questions.ts'
-import { assisting, created, said, talking } from './test-assistant.ts'
-import { memoryAt, memoryOf, NOTE, OPERATION_1100, savingThe1100 } from './test-company-memory.ts'
+import { assisting } from './test-assistant.ts'
+import { memoryAt, memoryOf, NOTE, OPERATION_1100, savedThe1100 } from './test-company-memory.ts'
 
-/** Empresa Teste with the 1100 the Assistant saved in Ana's conversation; Bruno a member, Carla an administrator. */
+/** Empresa Teste with the 1100 Ana saved from a proposal's card; Bruno a member, Carla an administrator. */
 async function saved(t: TestContext) {
-  const on = await assisting(t, stepped([...savingThe1100(), () => [said('Guardei.')]]))
-  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  assert.equal(
-    endOf(await (await talking(t, on.hub, on.ana, url)).say('Guarde a 1100')),
-    'complete',
-  )
+  const on = await assisting(t)
+  await savedThe1100(on.hub, on.ana, on.companyId)
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
   const memory = memoryAt(on.companyId)
@@ -112,7 +107,7 @@ test('as rotas: apagar ou gravar com outra gravação no meio volta COMPANY_MEMO
 test('as rotas: as notas se corrigem e se apagam, com o autor', async (t) => {
   const on = await saved(t)
   const [held] = on.page.notes
-  assert.deepEqual([held.body, held.author], [NOTE, null])
+  assert.deepEqual([held.body, held.author], [NOTE, 'Ana Lima'])
   const note = `${on.memory}/notes/${held.id}`
   const corrected = await call(on.hub, on.ana, 'PUT', note, { body: 'Vale desde março.' })
   assert.equal(corrected.statusCode, 200, corrected.body)
@@ -149,6 +144,10 @@ test('as rotas: outra empresa não acha a página nem a nota, e quem não é mem
     assert.equal(refused.statusCode, 404, `${method} ${url} ${refused.body}`)
     assert.equal(codeOf(refused), 'NOT_FOUND')
   }
+  const noted = await post(on.hub, on.carla, `${theirs}/pages/${pageId}/notes`, {
+    body: 'De fora.',
+  })
+  assert.deepEqual([noted.statusCode, codeOf(noted)], [404, 'NOT_FOUND'], noted.body)
   assert.deepEqual((await memoryOf(on.hub, on.carla, other)).pages, [])
   const davi = await personOn(on.hub, { name: 'Davi Cruz', email: 'davi@example.test' })
   const outsider = await call(on.hub, davi, 'GET', on.memory)

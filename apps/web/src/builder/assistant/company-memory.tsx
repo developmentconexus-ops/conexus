@@ -12,12 +12,12 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { bylineOf, PageDetail, READ_FAILED, TextBox } from './company-memory-page.tsx'
 import { companyMemoryQuery, sendCompanyMemoryPage } from './queries.ts'
+import { ONLY_MANAGERS_MEMORY } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/company-memory')
 
 const INSTRUCTIONS_ID = 'company-instructions'
 const NO_PAGES = 'Nenhuma página guardada ainda.'
-const ONLY_MANAGERS = 'Só o dono ou um administrador muda a memória da empresa.'
 const TOO_LONG = `Escreva até ${COMPANY_INSTRUCTIONS_MAX.toLocaleString('pt-BR')} caracteres.`
 const UNSAVED = unconfirmedText('se as instruções foram salvas', 'Confira o texto e tente de novo.')
 
@@ -102,7 +102,7 @@ function Loaded({ companyId, memory }: { companyId: CompanyId; memory: Memory })
       <SettingsSection
         id={INSTRUCTIONS_ID}
         title={memory.instructions.name}
-        description={may ? undefined : ONLY_MANAGERS}
+        description={may ? undefined : ONLY_MANAGERS_MEMORY}
       >
         <Instructions
           key={`${memory.instructions.version}:${memory.instructions.body}`}

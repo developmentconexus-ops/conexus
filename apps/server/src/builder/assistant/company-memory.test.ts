@@ -20,7 +20,7 @@ import {
   memoryOf,
   NOTE,
   OPERATION_1100,
-  savingThe1100,
+  savedThe1100,
 } from './test-company-memory.ts'
 
 const NO_SAVE =
@@ -130,44 +130,11 @@ test('não passam de empresa: a conversa de outra empresa não recebe as instru�
   assert.deepEqual(read, { scopes: [{ address: `org:${other}`, name: `org:${other}` }] })
 })
 
-test('quem escreve: o modelo de quem tem a permissão cria a página da empresa; o de um membro sem ela volta recusado pelo Knowledge', async (t) => {
-  const refused = savingThe1100().slice(0, 2)
-  const on = await assisting(
-    t,
-    stepped([...savingThe1100(), () => [said('Guardei.')], ...refused, () => [said('Não pude.')]]),
-  )
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  for (const person of [on.ana, bruno]) {
-    const url = await created(on.hub, person, on.assistant, { connections: [] })
-    assert.equal(
-      endOf(await (await talking(t, on.hub, person, url)).say('Guarde a 1100')),
-      'complete',
-    )
-  }
-  const saved = on.calls.at(3)?.toolResults ?? []
-  assert.deepEqual(
-    saved.map((each) => each.error),
-    [false, false, false],
-  )
-  const denied = on.calls.at(6)?.toolResults ?? []
-  assert.deepEqual(
-    denied.map((each) => each.error),
-    [false, true],
-  )
-  const memory = await memoryOf(on.hub, on.ana, on.companyId)
-  assert.deepEqual(
-    memory.pages.map((each: { name: string; author: unknown }) => [each.name, each.author]),
-    [[OPERATION_1100.name, null]],
-  )
-})
-
-test('o membro lê: a página que o Assistente guardou está na tela e no Knowledge da conversa de um membro', async (t) => {
+test('o membro lê: a página que o dono salvou está na tela e no Knowledge da conversa de um membro', async (t) => {
   let scope = ''
   const on = await assisting(
     t,
     stepped([
-      ...savingThe1100(),
-      () => [said('Guardei.')],
       () => [tool('knowledge_read', {})],
       (asked) => {
         scope = String(JSON.parse(asked.toolResults.at(-1)?.text ?? '{}').scopes.at(0).address)
@@ -181,12 +148,8 @@ test('o membro lê: a página que o Assistente guardou está na tela e no Knowle
       () => [said('A 1100 é a venda à vista.')],
     ]),
   )
+  await savedThe1100(on.hub, on.ana, on.companyId)
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  const ana = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  assert.equal(
-    endOf(await (await talking(t, on.hub, on.ana, ana)).say('Guarde a 1100')),
-    'complete',
-  )
   const url = await created(on.hub, bruno, on.assistant, { connections: [] })
   assert.equal(
     endOf(await (await talking(t, on.hub, bruno, url)).say('O que é a 1100?')),

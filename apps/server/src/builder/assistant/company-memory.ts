@@ -21,16 +21,16 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { PostgresStore } from '@mastra/pg'
 import { Failure } from '../../platform/failure.ts'
 import type { ScopeOf } from './context.ts'
-import type { Mays } from './instructions.ts'
 
-/** Its tools, by the ids Mastra gives them: reading, writing and pinning the company's pages. */
+/**
+ * Its tools, by the ids Mastra gives them: reading only (B1, decision 0064). `tools: { write: false }`
+ * leaves out `knowledge_page` and `knowledge_note` (`@mastra/core@1.82.0` `dist/knowledge/index.js:1231-1247`);
+ * `knowledge_pin` comes with any pinned context (`:1236`), and this closed set leaves it out.
+ */
 export const COMPANY_MEMORY_TOOLS = [
   'knowledge_search',
   'knowledge_read',
   'knowledge_list',
-  'knowledge_page',
-  'knowledge_note',
-  'knowledge_pin',
 ] as const
 
 /** The page every company holds from its first conversation, pinned into each of them. */
@@ -40,20 +40,15 @@ const INSTRUCTIONS = { key: 'instrucoes', name: 'Instruções da empresa' } as c
 const LISTED = 100
 
 /**
- * Who reads and writes what (Mastra Code `sdk/src/index.ts:865-888`): a run reads its own thread and
- * resource and its company's scope; only a run that also holds `writer:` edits the company's, as
- * only an owner or an administrator writes what holds for the whole company. Mastra's own
- * `knowledgeMemoryScopes` makes every run an editor of its tenant, which the roles do not allow.
+ * Who reads what (Mastra Code `sdk/src/index.ts:865-888`): a run reads its own thread and resource
+ * and its company's scope, and writes none (B1): the model proposes, and a person who may saves from
+ * the card. Mastra's own `knowledgeMemoryScopes` makes every run an editor of its tenant.
  */
 const SCOPES = {
   'thread:$threadId': { access: [{ principal: 'self', role: 'viewer' }] },
   'resource:$resourceId': { access: [{ principal: 'self', role: 'viewer' }] },
-  'writer:$orgId': {},
   'org:$orgId': {
-    access: [
-      { principal: 'self', role: 'viewer' },
-      { principal: 'writer:$orgId', role: 'editor' },
-    ],
+    access: [{ principal: 'self', role: 'viewer' }],
     pages: [INSTRUCTIONS],
     pinnedContext: [`org:$orgId#${INSTRUCTIONS.key}`],
   },
@@ -111,7 +106,7 @@ function knowledgeOf(storage: PostgresStore) {
     id: 'conexus-company',
     storage,
     scopes: SCOPES,
-    tools: { read: true, write: true },
+    tools: { read: true, write: false },
     pinnedContext: { maxTokens: 1000 },
   })
 }
@@ -216,6 +211,53 @@ async function removePage(
     .catch((error: unknown) => changed(error, input.pageId))
 }
 
+/**
+ * A new page under the company's scope, saved from a proposal's card: its path is the save's attempt
+ * key, so a repeated save finds the page it made and leaves it as it is now.
+ */
+async function createPage(
+  knowledge: Held,
+  companyId: CompanyId,
+  input: { attemptKey: string; name: string; body: string },
+  writer: PersonId,
+) {
+  await ensure(knowledge, companyId)
+  const { store, read } = await view(knowledge, companyId)
+  const [scope] = await store.getScopesByAddress([org(companyId)])
+  if (scope === undefined) return gone('COMPANY_SCOPE')
+  const path = [input.attemptKey]
+  const page =
+    (await store.getPageByPath({ scopeId: scope.id, path, read })) ??
+    (
+      await knowledge.upsertPage({
+        ...{ scope: org(companyId), path: input.attemptKey, name: input.name, body: input.body },
+        author: `${PERSON}${writer}`,
+      })
+    ).page
+  return (await pageOf(knowledge, companyId, CompanyMemoryPageId.parse(page.id))).shown
+}
+
+/** A note on a page of the company, saved from a proposal's card; the attempt key is its id. */
+async function addNote(
+  knowledge: Held,
+  companyId: CompanyId,
+  input: { attemptKey: string; pageId: CompanyMemoryPageId; text: string },
+  writer: PersonId,
+) {
+  await pageOf(knowledge, companyId, input.pageId)
+  const { store, read } = await view(knowledge, companyId)
+  const [scope] = await store.getScopesByAddress([org(companyId)])
+  if (scope === undefined) return gone('COMPANY_SCOPE')
+  const id = input.attemptKey
+  const note =
+    (await store.getNote({ id, read })) ??
+    (await store.addNote({
+      ...{ id, pageId: input.pageId, text: input.text, stampScopeIds: [scope.id], mentions: [] },
+      provenance: { author: `${PERSON}${writer}` },
+    }))
+  return noteOf(note)
+}
+
 /** A note of the company, else `NOT_FOUND`: another company's note is not found. */
 async function held(knowledge: Held, companyId: CompanyId, noteId: CompanyMemoryNoteId) {
   const { store, read } = await view(knowledge, companyId)
@@ -253,6 +295,16 @@ export function companyMemory(storage: PostgresStore) {
       await held(knowledge, companyId, noteId)
       return noteOf(await knowledge.updateNote({ id: noteId, text, author: `${PERSON}${writer}` }))
     },
+    createPage: (
+      companyId: CompanyId,
+      input: { attemptKey: string; name: string; body: string },
+      writer: PersonId,
+    ) => createPage(knowledge, companyId, input, writer),
+    addNote: (
+      companyId: CompanyId,
+      input: { attemptKey: string; pageId: CompanyMemoryPageId; text: string },
+      writer: PersonId,
+    ) => addNote(knowledge, companyId, input, writer),
     async removeNote(companyId: CompanyId, noteId: CompanyMemoryNoteId, writer: PersonId) {
       await held(knowledge, companyId, noteId)
       const removed = await knowledge.removeNote({ id: noteId, author: `${PERSON}${writer}` })
@@ -264,23 +316,17 @@ export function companyMemory(storage: PostgresStore) {
 export type CompanyMemory = ReturnType<typeof companyMemory>
 
 /**
- * The agent's `knowledge` and `scopes`. The run's scopes: the incoming ones, which hold its thread and resource, then its company and, for
- * who may save the company's memory, its writer. The company's scope exists before the model is
- * first asked, so it finds where to write. Outside a conversation, no company: the run reads only
- * what is its own (fail closed, as Mastra Code's `knowledge-scope.ts:35`).
+ * The agent's `knowledge` and `scopes`: the incoming scopes, which hold the run's thread and
+ * resource, then its company's, which exists before the model is first asked. Outside a
+ * conversation, no company: the run reads only what is its own (fail closed, as Mastra Code's
+ * `knowledge-scope.ts:35`).
  */
-export function companyScopes(deps: {
-  memory: CompanyMemory
-  scopeOf: ScopeOf
-  maysOf: (requestContext: RequestContext) => Promise<Mays>
-}) {
+export function companyScopes(deps: { memory: CompanyMemory; scopeOf: ScopeOf }) {
   async function scopes(input: { scopes: string[]; requestContext: RequestContext }) {
     const scope = await deps.scopeOf(input.requestContext)
     if (scope === undefined) return input.scopes
     await deps.memory.ensure(scope.companyId)
-    const { companyMemory } = await deps.maysOf(input.requestContext)
-    const company = `org:${scope.companyId}`
-    return [...input.scopes, company, ...(companyMemory ? [`writer:${scope.companyId}`] : [])]
+    return [...input.scopes, org(scope.companyId)]
   }
   return { knowledge: deps.memory.knowledge, scopes }
 }

@@ -1,7 +1,9 @@
 import type { CompanyId, CompanyMemoryPageId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
+  addCompanyMemoryNote,
   clearProfileMemory,
   createAssistantConversation,
+  createCompanyMemoryPage,
   deleteAssistantConversation,
   getProfileMemory,
   listAssistantConnections,
@@ -91,3 +93,5 @@ export const sendCompanyMemoryPage = hubMutation(writeCompanyMemoryPage)
 export const sendCompanyMemoryPageRemoval = hubMutation(removeCompanyMemoryPage)
 export const sendCompanyMemoryNote = hubMutation(writeCompanyMemoryNote)
 export const sendCompanyMemoryNoteRemoval = hubMutation(removeCompanyMemoryNote)
+export const sendCompanyMemoryPageCreation = hubMutation(createCompanyMemoryPage)
+export const sendCompanyMemoryNoteAddition = hubMutation(addCompanyMemoryNote)
