@@ -21,6 +21,7 @@ function role(
     kind,
     connectors: { sankhya: ids },
     unattended: kind === 'ALL',
+    personal: kind === 'ALL' ? ['contato', 'endereco', 'documento'] : [],
     members,
   }
 }

@@ -33,6 +33,7 @@ function viewOf(
   return RoleView.parse({
     ...{ role, label, kind, connectors: { sankhya: ops }, members },
     unattended: kind === 'ALL',
+    personal: kind === 'ALL' ? ['contato', 'endereco', 'documento'] : [],
   })
 }
 

@@ -53,7 +53,9 @@ test('criar um papel: o dono cria "Atendente", marca Vendas, deixa só Pedidos, 
   )
   fireEvent.click(screen.getByRole('button', { name: 'Criar papel' }))
   expect(await screen.findByText('Sankhya: 1 operação de Vendas')).toBeTruthy()
-  expect(bodies).toEqual([{ label: 'Atendente', connectors: { sankhya: ['pedidos'] } }])
+  expect(bodies).toEqual([
+    { label: 'Atendente', connectors: { sankhya: ['pedidos'] }, personal: [] },
+  ])
   expect(screen.queryByText('Sua empresa ainda não criou papéis.')).toBeNull()
 })
 
@@ -117,7 +119,9 @@ test('mudar o Membro: desmarca Financeiro e a Porta de leitura e salva só os co
   fireEvent.click(sankhya.getByRole('checkbox', { name: /Porta de leitura/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
   await waitFor(() =>
-    expect(bodies).toEqual([{ connectors: { sankhya: ['pedidos'] }, unattended: false }]),
+    expect(bodies).toEqual([
+      { connectors: { sankhya: ['pedidos'] }, unattended: false, personal: [] },
+    ]),
   )
 })
 
