@@ -266,8 +266,8 @@ da U5 se a U5 não tocar `company-memory.ts`, e não toca.
 medidos com `wc -l` no `main`: `hub/copies/tables.ts` 320 (sete tabelas), `propose.ts` 271,
 `grants.ts` 164, `notes.ts` 162, `connector-tools.ts` 309, `copy-read.ts` 166, `search-sql.ts` 89,
 `copy-clock/workflow.ts` 84).
-U1: 500. U2: 700. U3: 800. U4: 1.250. U5: 650. U6: 250. Total da etapa: cerca de 4.150, no teto da
-delivery L2. Se o acumulado depois da U4 passar de 3.300, a U6 sai para o cartão seguinte do Brain,
+U1: 500. U2: 700. U3: 800. U4: 1.250. U5: 650. U6: 250. Total da etapa: cerca de 4.150, um pouco acima
+dos cerca de 4.000 da delivery L2, com esta válvula: Se o acumulado depois da U4 passar de 3.300, a U6 sai para o cartão seguinte do Brain,
 com os critérios 24 a 29, antes de construir a U5. Se a U4 passar de 1.300, ela se divide em duas (a rota e as telas) antes de seguir.
 
 ## Os critérios de aceite
@@ -487,8 +487,8 @@ O esquema `ontology` no banco do Hub. Toda tabela tem `company_id text NOT NULL`
 estrangeira para `auth.company` (`onDelete: 'cascade'`, como `copies.copy`) e
 `policy(SCOPE_ROLES.COMPANY, 'all', sql\`company_id = ${scoped.companyId}\`)`. Uma chave é
 `text CHECK (key ~ '^[a-z][a-z0-9_]{0,39}$')`. Toda coluna `jsonb` tem o seu esquema Zod nomeado em `packages/hub-api/src/ontology.ts`, lido na
-entrada e na saída do banco (C27): `ProofShape` (`{ column: string; type: FieldType | null }[]`, até
-200), `SourceRead` (`{ kind: 'DOOR'; sql: string }`), `RelationPairs` (1 a 4 `[FieldKey, FieldKey]`),
+entrada e na saída do banco (C27): `ProofShape` (`{ column: string; type: string | null }[]`, até
+200, o tipo bruto do sistema, como `consultar` o dá; vira `FieldType` só na tabela de compatibilidade da U5), `SourceRead` (`{ kind: 'DOOR'; sql: string }`), `RelationPairs` (1 a 4 `[FieldKey, FieldKey]`),
 `ItemContent` (o `ProposedItem` sem `kind`, ou `NoteContent`: `{ connectionId, concept, mapping,
 provingQuery, provedAt, provedRows }`, a forma de `notes.ts:16-23`). Os limites copiam os de hoje: descrição de conceito 500
 e de campo 200 (`copy.ts:122,129`), consulta 4.000 (`notes.ts:19`), chave de 1 a 4 (`copy.ts:65`).
@@ -498,9 +498,9 @@ e de campo 200 (`copy.ts:122,129`), consulta 4.000 (`notes.ts:19`), chave de 1 a
 | `inventory_run` | `id uuid` (`InventoryRunId`); `connection_id uuid`; `started_at timestamptz` | `id`; único `(company_id, id)`; índice `(company_id, connection_id, started_at DESC)` |
 | `inventory_end` | `run_id uuid`; `ended_at timestamptz`; `outcome text` (`COMPLETE`, `PARTIAL`, `FAILED`, `INTERRUPTED`); `reason text` (`InventoryReason`: `CAP`, ou o tipo da resposta: `REFUSED`, `AUTH_REFUSED`, `UNREADABLE`, `BUSY`, `UNREACHABLE`, `DEADLINE`, `NOT_IN_ROLE`); `pages integer`; `CHECK ((reason IS NULL) = (outcome IN ('COMPLETE', 'INTERRUPTED')))` | `run_id`; estrangeira `(company_id, run_id)` com `cascade` |
 | `inventory_entry` | `run_id uuid`; `kind text` (`TABLE`, `FIELD`, `CODE`, `OPERATION`); `name text` (até 200: `TABELA`, `TABELA.CAMPO`, `TABELA.CAMPO=valor`, ou o id da operação); `type text` (até 20, o tipo do dicionário); `label text` (até 200); `custom boolean` | `(run_id, kind, name)`; estrangeira `(company_id, run_id)` com `cascade` |
-| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta); `rows bigint` (zero é uma prova: Para revisar mostra "0 linhas"); `shape jsonb` (`ProofShape`); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)`; índice `(company_id, connection_id, query, ran_at DESC)` (a prova mais nova da mesma consulta, U5) |
+| `proof_run` | `id uuid`; `connection_id uuid`; `query text` (até 4.000); `ran_at`; `outcome` (`OK`, `FAILED`); `reason` (os tipos da resposta); `rows bigint` (zero é uma prova: Para revisar mostra "0 linhas"); `shape jsonb` (`ProofShape`); `CHECK ((outcome = 'OK') = (reason IS NULL))` | `id`; único `(company_id, id)`; `query_hash text` (sha-256 da consulta); índice `(company_id, connection_id, query_hash, ran_at DESC)` (a prova mais nova da mesma consulta, U5; a consulta inteira passa do limite de uma entrada de btree) |
 | `proposal` | `id uuid`; `demand text` (1 a 500); `proposed_by text`; `agent text` (`builder`, `assistant` ou `NULL` pela tela ou pela migração); `conversation_id text`; `base_revision integer`; `created_at`; `state` (`OPEN`, `CLOSED`); `attempt_key text`, `body_hash text` (a tela, C37) | `id`; único `(company_id, id)`; único `(company_id, attempt_key)`; único parcial `(company_id, conversation_id) WHERE state = 'OPEN' AND conversation_id IS NOT NULL` |
-| `proposal_item` | `proposal_id uuid`; `n integer`; `kind` (`ADD_CONCEPT`, `ADD_FIELD`, `SET_CODE`, `ADD_RELATION`, `SET_SOURCE`, `RENAME_LABEL`, `DEPRECATE`, `NOTE`); `target text` (o endereço: `pedido`, `pedido.tipo_operacao`, `pedido.tipo_operacao=101`, `pedido_vendedor`); `content jsonb`; `proof_run_id uuid`; `decision` (`PENDING`, `APPROVED`, `REFUSED`); `reason text` (até 500); `decided_by text`; `decided_at`; `CHECK ((decision = 'PENDING') = (decided_at IS NULL))` | `(proposal_id, n)`; estrangeiras para `proposal` e `proof_run` |
+| `proposal_item` | `proposal_id uuid`; `n integer`; `kind` (`ADD_CONCEPT`, `ADD_FIELD`, `SET_CODE`, `ADD_RELATION`, `SET_SOURCE`, `RENAME_LABEL`, `DEPRECATE`, `NOTE`); `target text` (o endereço: `pedido`, `pedido.tipo_operacao`, `pedido.tipo_operacao=101`, `@pedido_vendedor`); `content jsonb`; `proof_run_id uuid`; `decision` (`PENDING`, `APPROVED`, `REFUSED`); `reason text` (até 500); `decided_by text`; `decided_at`; `CHECK ((decision = 'PENDING') = (decided_at IS NULL))` | `(proposal_id, n)`; estrangeiras para `proposal` e `proof_run` |
 | `revision` | `number integer CHECK (number >= 1)`; `proposal_id uuid`; `proposed_by text`; `approved_by text`; `approved_at`; `hash text` (sha-256 hexadecimal) | `(company_id, number)` |
 | `concept_version` | `key`; `revision`; `name` (até 80); `plural` (até 80); `description` (até 500); `synonyms text[]`; `title_field`; `key_fields text[]` (`cardinality BETWEEN 1 AND 4`); `state` (`EXPERIMENTAL`, `ACTIVE`, `DEPRECATED`); `replaced_by` | `(company_id, key, revision)`; estrangeira `(company_id, revision)` para `revision` |
 | `field_version` | `concept`; `key`; `revision`; `name` (até 80); `description` (até 200); `type` (`ID`, `TEXT`, `INTEGER`, `DECIMAL`, `MONEY`, `DATE`, `TIMESTAMP`, `BOOLEAN`, `CODE`); `currency` (`^[A-Z]{3}$`); `unit` (até 12); `column_name` (até 128); `state`; `CHECK ((type = 'MONEY') = (currency IS NOT NULL))` | `(company_id, concept, key, revision)` |
@@ -708,8 +708,9 @@ dados (D22: a chamada ao Sankhya fora da transação; D25: só a trava da transa
 6. A rota e o bloco Inventário na página da conexão.
 7. A ferramenta `inventory_search` nos dois agentes (o leitor do inventário): entrada `{ connection,
    text: SearchText, kind?: 'TABLE' | 'FIELD' | 'CODE' | 'OPERATION', limit: 1 a 50 }`; resposta
-   `{ kind: 'OK', readAt, entries: InventoryEntry[], more }`, ou `NOT_GRANTED` e `INVENTORY_EMPTY`
-   (nenhuma rodada `COMPLETE` ou `PARTIAL`). O acesso é o mesmo de `connector_notes` (`runIn`,
+   `{ kind: 'OK', readAt, entries: InventoryEntry[], more }`, ou `NOT_GRANTED`, ou
+   `{ kind: 'EMPTY' }` (nenhuma rodada `COMPLETE` ou `PARTIAL`), um resultado da ferramenta e não
+   uma falha de rota. O acesso é o mesmo de `connector_notes` (`runIn`,
    `connector-tools.ts`), sem chamada ao sistema. A skill do Sankhya passa a dizer "read the inventory
    first; ask the person only what it does not say". `BUILDER_TOOL.inventorySearch`, no `READ` de
    `permissions.ts`.
@@ -798,7 +799,8 @@ export type ConceptRead = Readonly<{
 `(<sql>) Q`; um número sai de `Number.isInteger` ou `Number.isFinite` e nunca é texto; um código, que é
 texto exato (o `escaped` de `search-sql.ts:23-27` dobra a caixa e tira o acento, feito para `LIKE`, e
 não serve), por uma função nova do kit em `search-sql.ts`, `exact(value)`: `CodeText` (1 a 40
-caracteres de `[\p{L}\p{N} ._/-]`, sem `MARKS`) e a aspa dobrada, e `inExact(column, values)` para o
+caracteres de `[\p{L}\p{N} ._/-]`, sem `MARKS`) e a aspa dobrada (um código com outro caractere
+volta como recusa do item, `CODE_UNSEEN`, e é um caso do teste "injeções"), e `inExact(column, values)` para o
 `in` de texto; `inList` (`search-sql.ts:51-53`) fica para números. Uma data, por `z.iso.date()` e
 `dated`; um texto, por `SearchText` e `containing` (`search-sql.ts:35-48`). Sem medida, a página é
 `pageSql({ from: '(<sql>) Q', order: <as colunas da chave> })`. Com medida, a agregação vira o
@@ -967,7 +969,6 @@ salvo `REVISION_STALE` (`'RETRY'`, a tela relê):
 | Código | Categoria, status | Frase | Ação |
 | --- | --- | --- | --- |
 | `INVENTORY_RUNNING` | `USER`, 409 | O inventário desta conexão já está sendo lido. | Espere terminar. |
-| `INVENTORY_EMPTY` | `USER`, 409 | Esta conexão ainda não tem inventário. | Peça para ler o inventário. |
 | `FIRST_REVISION_OWNER` | `USER`, 403 | Só o dono aprova a primeira revisão dos conceitos. | Peça ao dono. |
 | `REVISION_STALE` | `USER`, 412 | Os conceitos mudaram enquanto você revisava. | Veja de novo. |
 | `DECISION_INCOMPLETE` | `USER`, 422 | Falta aprovar o que estes itens precisam. | Aprove ou recuse os itens marcados. |
@@ -1176,7 +1177,7 @@ Os caminhos: `conceitos/<chave>` (nome: o do conceito) e `conceitos/<chave>/<cam
 campos com o tipo e a descrição, o link da lista de códigos, as ligações; nunca a consulta, a prova,
 o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#conceitos/…]]`. Um conceito
 aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`. O `upsertPage` cria a página pai `conceitos` com o nome da chave
-(`host-writes.d.ts:17-19`); a projeção a grava antes, com o nome "Conceitos" e um corpo que lista os
+(`host-writes.d.ts:14-15`); a projeção a grava antes, com o nome "Conceitos" e um corpo que lista os
 conceitos. Cada página leva `description` curta (o nome e o plural), que a busca usa.
 
 A área, em `SCOPES`: `'ontologia:$orgId': { access: [{ principal: 'self', role: 'viewer' }] }`;
@@ -1198,7 +1199,7 @@ A linha `@mastra/core` (skill `mastra`: Knowledge, `upsertPage`, as áreas) de
    fica); a falha de uma página vai ao log com `logFailure` e as outras seguem; a linha
    `ONTOLOGY_PROJECTED`.
 3. A ligação tardia no `decide.ts` e o comando `reproject-ontology` (todas as empresas com revisão),
-   na tabela `COMMANDS` de `main.ts:315-319`; como `runReseal` (`apps/server/src/reseal.ts:8-11`), o
+   na tabela `COMMANDS` de `main.ts:316-320`; como `runReseal` (`apps/server/src/reseal.ts:8-11`), o
    comando abre o banco (`openDatabase`) e o `PostgresStore` ele mesmo, fora de `runServer`, e monta
    `CompanyMemory` e `projectOntology` com eles.
 4. A recusa do link nas gravações de pessoa, e o teste de ataque da issue 984.
