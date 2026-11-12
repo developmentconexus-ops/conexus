@@ -19,6 +19,7 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
+import type { Config } from '../../platform/config.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { publishedApp } from './test-assistant.ts'
 
@@ -214,12 +215,17 @@ export async function subscribed(
   t: TestContext,
   folder: string,
   provider: 'claude' | 'openai' = 'claude',
+  /** What the Hub's configuration also carries, besides the Sankhya double (the scorecard adds Mercado Livre). */
+  change: (config: Config) => Config = (same) => same,
 ) {
   const sankhya = await salesSankhya(t)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', sankhya.origin]]),
-  }))
+  const hub = await hubWithLog(t, (config) => {
+    const named = change(config)
+    return {
+      ...named,
+      connectorOrigins: new Map([...(named.connectorOrigins ?? []), ['sankhya', sankhya.origin]]),
+    }
+  })
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
   const company = `/api/companies/${companyId}`
