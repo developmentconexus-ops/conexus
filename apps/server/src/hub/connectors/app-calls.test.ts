@@ -104,3 +104,49 @@ test('o app recebe só status, código e mensagem da recusa do sistema, nunca o 
   assert.deepEqual(Object.keys(answer.native).sort(), ['code', 'message', 'status'])
   assert.deepEqual(answer.native, { status: 403, code: 'NO_ACCESS', message: 'Sem permissão' })
 })
+
+const PARTNER = { codigos: [202] }
+
+async function partnersRead(on: Awaited<ReturnType<typeof appCalls>>) {
+  const read = await on.read({ operation: 'buscarParceiros', input: PARTNER })
+  assert.equal(read.statusCode, 200, read.body)
+  return JSON.stringify(read.json())
+}
+
+test('versão anterior ao campo: lê com os tipos do papel de quem a enviou, a cada chamada', async (t) => {
+  const on = await appCalls(t, {
+    declared: [{ connector: 'sankhya', operations: ['buscarParceiros'] }],
+  })
+  await on.connect('Matriz')
+  function sentBy(person: string) {
+    return on.hub.test.asOwner('update apps.app_version set sent_by = $1', [person])
+  }
+  assert.ok((await partnersRead(on)).includes('"documento"'), 'the owner sent it: document comes')
+  await sentBy(on.carla.id)
+  const byMember = await partnersRead(on)
+  assert.ok(byMember.includes('"codigoParceiro"') && !byMember.includes('"documento"'))
+  assert.ok(!byMember.includes('"nome"'), 'a member sent it: no name')
+  await sentBy(on.bruno.id)
+  assert.ok((await partnersRead(on)).includes('"documento"'), 'the role is read at each call')
+  await on.hub.test.asOwner("update auth.member set role = 'member' where user_id = $1", [
+    on.bruno.id,
+  ])
+  assert.ok(!(await partnersRead(on)).includes('"documento"'), 'the role changed: no kind')
+  await on.hub.test.asOwner('delete from auth.member where user_id = $1', [on.bruno.id])
+  assert.ok(!(await partnersRead(on)).includes('"documento"'), 'who sent it left: no kind')
+})
+
+test('versão que declara os tipos: lê com o que declara, não com o papel de quem a enviou', async (t) => {
+  function declared(personal: string[]) {
+    return [{ connector: 'sankhya', operations: ['buscarParceiros'], personal }]
+  }
+  const none = await appCalls(t, { declared: declared([]) })
+  await none.connect('Matriz')
+  const bare = await partnersRead(none)
+  assert.ok(bare.includes('"codigoParceiro"') && !bare.includes('"documento"'))
+  assert.ok(!bare.includes('"nome"'))
+  const some = await appCalls(t, { declared: declared(['documento', 'contato']) })
+  await some.connect('Matriz')
+  const full = await partnersRead(some)
+  assert.ok(full.includes('"documento"') && full.includes('"nome"'))
+})

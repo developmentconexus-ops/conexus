@@ -26,10 +26,31 @@ export type Ungranted = (
   readonly {
     connector: string
     operation: string | null
-    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE'
+    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE' | 'PERSONAL_NOT_IN_ROLE'
     label?: string
+    kind?: string
   }[]
 >
+
+function refusal(lacking: Awaited<ReturnType<Ungranted>>[number]): Failure {
+  const details = { connector: lacking.connector, operation: lacking.operation ?? '' }
+  switch (lacking.reason) {
+    case 'NOT_IN_ROLE':
+      return new Failure('NOT_IN_ROLE', {
+        details,
+        named: { operation: lacking.label ?? lacking.operation ?? '' },
+      })
+    case 'PERSONAL_NOT_IN_ROLE':
+      return new Failure('PERSONAL_NOT_IN_ROLE', {
+        details: { ...details, kind: lacking.kind ?? '' },
+        named: { operation: lacking.kind ?? '' },
+      })
+    case 'NOT_GRANTED':
+      return new Failure('CONNECTOR_NOT_GRANTED', { details })
+    default:
+      return lacking.reason satisfies never
+  }
+}
 
 export type PublishInput = {
   companyId: CompanyId
@@ -62,13 +83,7 @@ export async function publishIn(
     Manifest.parse(row.manifest).connectors ?? [],
     input.by,
   )
-  if (lacking !== undefined)
-    throw new Failure(lacking.reason === 'NOT_IN_ROLE' ? 'NOT_IN_ROLE' : 'CONNECTOR_NOT_GRANTED', {
-      details: { connector: lacking.connector, operation: lacking.operation ?? '' },
-      ...(lacking.reason === 'NOT_IN_ROLE'
-        ? { named: { operation: lacking.label ?? lacking.operation ?? '' } }
-        : {}),
-    })
+  if (lacking !== undefined) throw refusal(lacking)
   const view = versionView(row, { ...held, publishedVersionId: row.id })
   if (held.publishedVersionId === row.id) return view
   await tx.update(app).set({ publishedVersionId: row.id }).where(eq(app.projectId, projectId))

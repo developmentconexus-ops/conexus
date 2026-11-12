@@ -117,8 +117,8 @@ test('o registro sem o valor', async (t) => {
 })
 
 /** Empresa A's Sankhya, the member's role holding the search and the door. */
-async function sankhyaOn(t: TestContext) {
-  const on = await appCalls(t)
+async function sankhyaOn(t: TestContext, declared?: readonly object[]) {
+  const on = await appCalls(t, { declared })
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
@@ -167,4 +167,26 @@ test('a porta fica como hoje', async (t) => {
     assert.deepEqual(await on.ask(on.carla, operation, input), byOwner, operation)
   }
   assert.ok(JSON.stringify(await on.ask(on.carla, 'consultar', { sql })).includes('11122233344'))
+})
+
+test('documento não vai ao modelo, e vai ao app de uma versão que o declara', async (t) => {
+  function personal(kinds: string[]) {
+    return [{ connector: 'sankhya', operations: ['buscarParceiros'], personal: kinds }]
+  }
+  const on = await sankhyaOn(t, personal(['contato', 'documento']))
+  const byAssistant = JSON.stringify(await on.ask(on.ana, 'buscarParceiros', PARTNER))
+  assert.ok(byAssistant.includes('MARIA APARECIDA') && !byAssistant.includes('11122233344'))
+  const byApp = await on.read({ operation: 'buscarParceiros', input: PARTNER })
+  assert.ok(
+    JSON.stringify(byApp.json()).includes('11122233344'),
+    'the app that declares it gets it',
+  )
+  await on.hub.test.asOwner(
+    `update apps.app_version set manifest = jsonb_set(manifest, '{connectors}', $1::jsonb)`,
+    [JSON.stringify(personal(['contato']))],
+  )
+  const without = JSON.stringify(
+    (await on.read({ operation: 'buscarParceiros', input: PARTNER })).json(),
+  )
+  assert.ok(without.includes('MARIA APARECIDA') && !without.includes('11122233344'))
 })

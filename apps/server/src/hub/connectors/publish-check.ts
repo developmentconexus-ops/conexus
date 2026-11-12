@@ -1,3 +1,4 @@
+import type { Manifest } from '@conexus/app-contract'
 import type { PersonId } from '@conexus/hub-api'
 import { ConnectionId, ConnectorId, OperationId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
@@ -10,15 +11,17 @@ import { projectConnection } from './tables.ts'
 export type UngrantedBy = (
   tx: Parameters<typeof ungranted>[0],
   ids: Parameters<typeof ungranted>[1],
-  declared: Parameters<typeof ungranted>[2],
+  declared: NonNullable<Manifest['connectors']>,
   by: PersonId,
 ) => Promise<
   readonly {
     connector: string
     operation: string | null
-    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE'
+    reason: 'NOT_GRANTED' | 'NOT_IN_ROLE' | 'PERSONAL_NOT_IN_ROLE'
     /** The operation's label in the kit, which the refusal says to the person. */
     label?: string
+    /** The personal kind the role of who publishes does not hold (`PERSONAL_NOT_IN_ROLE`). */
+    kind?: string
   }[]
 >
 
@@ -32,7 +35,9 @@ function refusedByRole(each: { connector: string; operation: string | null }) {
   return { ...each, reason: 'NOT_IN_ROLE' as const, ...(label === undefined ? {} : { label }) }
 }
 
-export function ungrantedBy(identity: Pick<IdentityPorts, 'mayUseEach'>): UngrantedBy {
+export function ungrantedBy(
+  identity: Pick<IdentityPorts, 'mayUseEach' | 'personalKinds'>,
+): UngrantedBy {
   return async (tx, ids, declared, by) => {
     const lacking = await ungranted(tx, ids, declared)
     if (lacking.length > 0)
@@ -56,6 +61,13 @@ export function ungrantedBy(identity: Pick<IdentityPorts, 'mayUseEach'>): Ungran
       })),
     )
     const refused = targets.filter((_, index) => !answers[index])
-    return refused.slice(0, 1).map(refusedByRole)
+    if (refused.length > 0) return refused.slice(0, 1).map(refusedByRole)
+    const held = new Set<string>(await identity.personalKinds(ids.companyId, speaker))
+    const unheld = declared.flatMap((one) =>
+      (one.personal ?? [])
+        .filter((kind) => !held.has(kind))
+        .map((kind) => ({ connector: one.connector, operation: null, kind })),
+    )
+    return unheld.slice(0, 1).map((each) => ({ ...each, reason: 'PERSONAL_NOT_IN_ROLE' as const }))
   }
 }

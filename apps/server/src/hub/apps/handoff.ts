@@ -206,6 +206,8 @@ export type ConnectorCall = Readonly<{
   caller: AppCaller
   versionId: AppVersionId
   manifest: Manifest
+  /** Who sent the version: a version before `personal` reads with the kinds of this person's role. */
+  sentBy: PersonId
 }>
 
 /**
@@ -220,7 +222,7 @@ async function connectorCall(
   const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: caller.personId } as const
   const [row] = await deps.database.read(scope, (tx) =>
     tx
-      .select({ id: appVersion.id, manifest: appVersion.manifest })
+      .select({ id: appVersion.id, manifest: appVersion.manifest, sentBy: appVersion.sentBy })
       .from(app)
       .innerJoin(
         appVersion,
@@ -237,6 +239,7 @@ async function connectorCall(
     caller,
     versionId: AppVersionId.parse(row.id),
     manifest: Manifest.parse(row.manifest),
+    sentBy: PersonId.parse(row.sentBy),
   }
 }
 
