@@ -879,6 +879,9 @@ Critérios 19 a 22 e 44. Falham hoje: não há `recall` nem memória de trabalho
   toda rota de empresa. Vai num pull request só dela, com a palavra do fundador (decisão 2 da página),
   antes da U8.
 - O arquivo tomado como modelo é `hub/identity/nickname.ts`: cumpre C23 e C26; C21 não se aplica.
+- A falha `NOT_IN_ROLE` desta rota tem frase própria (emenda de 2026-11-12, decidida pelo firstmate
+  pela L9): "Só quem pode mudar papéis muda o cargo e a área de outra pessoa." A tela esconde o botão de
+  quem não pode; a frase aparece só com a permissão vencida no meio.
 
 ### As skills e a leitura
 
@@ -991,6 +994,36 @@ Critérios 26 a 31, com o banco real de teste e o modelo dublê. Falham hoje: n�
 - A página fixada entra antes da mensagem fixa no pedido.
 - O `Knowledge` cria tabelas fora do esquema `mastra` ou pede uma permissão que o papel do Mastra no
   banco não tem.
+
+### Emenda técnica da U9 (2026-11-12)
+
+Achada ao construir o passo 3 e decidida pelo firstmate pela L9, sem mudar o que o fundador vê. Vale no
+lugar do que diverge acima ("As rotas", "A leitura pela tela", a matriz da página e o critério 28).
+
+1. **Páginas por id.** No `knowledge_page` o `key` é opcional (`@mastra/core@1.82.0`
+   `dist/agent-BP9OWM6D.js:73110`, `:73179`): uma página criada pelo modelo pode não ter caminho, e
+   `upsertPage` e `removePage` só endereçam por `scope#path` (`dist/knowledge/host-writes.d.ts:8-26`;
+   `dist/knowledge/index.d.ts:85-95`). As rotas de página passam a endereçar por `pageId`:
+   `readCompanyMemoryPage` (`GET .../company-memory/pages/{pageId}`) lê com `readKnowledgePage`
+   (`dist/knowledge/explorer-pages.d.ts:61`); `writeCompanyMemoryPage` (`PUT`) e
+   `removeCompanyMemoryPage` (`DELETE`) usam `updatePage` e `deletePage` do armazenamento
+   (`dist/storage/domains/knowledge/base.d.ts:93-96`) com `expectedVersion`, e o
+   `KnowledgeConflictError` vira `COMPANY_MEMORY_CHANGED` (409) também no `PUT`. O `upsertPage` fica só
+   para a página `instrucoes`, que tem caminho declarado.
+2. **Notas.** O texto de uso do Mastra manda uma nota por fato (`dist/knowledge/instructions.d.ts:10`),
+   então o que se pede "para a empresa" tende a virar nota. `CompanyMemoryPage` ganha `notes:
+   { id, body, updatedAt, author }[]`; a tela mostra as notas de cada página e o membro com a
+   permissão corrige ou apaga uma (`updateNote`, `removeNote`, `dist/knowledge/index.d.ts:109-121`),
+   com as mesmas falhas.
+3. **O escopo da empresa existe desde a primeira conversa.** O escopo `org:<empresa>` só nasce na
+   primeira gravação, e o id da empresa não aparece no pedido: o modelo não acharia onde gravar. O
+   host cria o escopo e a página `instrucoes` vazia, de forma idempotente (`upsertPage` com o corpo
+   vazio), na primeira conversa da empresa, antes do primeiro pedido ao modelo. Uma página fixada só
+   é entregue com corpo (`dist/knowledge/pinned.d.ts`); vazia, não entra no pedido.
+4. **O autor.** `CompanyMemoryPage.author` e `CompanyNote.author` vêm do `author` que o host já grava
+   (`dist/knowledge/host-writes.d.ts:24`, `:36`); a tela mostra "Ana · 11/11/2026".
+5. **A frase de quem não pode.** Na página, para o membro sem a permissão: "Só o dono ou um
+   administrador muda a memória da empresa." (W34).
 
 ## U10 A frase de cada comando
 
