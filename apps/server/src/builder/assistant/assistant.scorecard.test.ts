@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { REDIRECT_PATH } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import {
   appsOf,
@@ -11,6 +12,7 @@ import {
   mercadoLivreFake,
 } from '../../hub/connectors/test-connections.ts'
 import { PADARIA_SOL_MATRIZ, soldBy } from '../../hub/connectors/test-sales.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, reading, said, searching, talking } from './test-assistant.ts'
 import { file, pdf } from './test-files.ts'
@@ -85,7 +87,7 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
     )
     return
   }
-  const ml = mercadoLivreFake()
+  const ml = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   const served = await ml.serve()
   t.after(() => served.close())
   const on = await subscribed(t, REAL_MODEL, 'claude', (config) => ({
@@ -94,7 +96,7 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
     connectorApps: appsOf(ml.app),
   }))
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
-  assert.equal(linked.statusCode, 201, linked.body)
+  assert.equal(linked.statusCode, 200, linked.body)
   const loja = String(Object(linked.json()).connection.id)
   const folder = roundFolder(t)
   const truth = [...soldBy(PADARIA_SOL_MATRIZ, '2026-09').values()]
