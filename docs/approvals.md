@@ -933,6 +933,8 @@ Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-
 
 Cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovado em 2026-11-11 (commit bb3fa5ab38632ef6372cf10fd47fa55b693169ef), de novo com as duas mudanças feitas na construção, às duas perguntas do firstmate (a etiqueta de emergência no pull request https://github.com/developmentconexus-ops/conexus/pull/963, e aprovar o cartão alterado: o diagrama no quadro isolado da decisão D, e o arquivo achado pelo conteúdo, porque o Mastra apaga o nome do resumo): "1. Okay 2. Okay". A aprovação de ba0eb6f1503d272465a36192d0a234536a732c43 acima fica como histórico.
 
+Emenda do cartão curto de O Assistente do dia a dia (`docs/steps/assistente-o-assistente-do-dia-a-dia.md`) aprovada em 2026-11-11 (commit d9db8fa18d33fd106ec591f523ddf5f75f2bbdf7), só com o texto errado corrigido (a linha do diagrama da tabela de referência, que ainda descrevia o desenho antes da decisão D, e a dívida das conferências antecipadas, que subestimava o que elas fazem), à pergunta "Entra com a emenda?": "2. Sim"
+
 ## O Sync de qualquer conector
 
 Cartão de O Sync de qualquer conector (`docs/steps/o-sync-de-qualquer-conector.md`) aprovado em 2026-11-10 (commit dae09df1525b96ac52b2fd9122ab711b15e34234): "Aprovo"
