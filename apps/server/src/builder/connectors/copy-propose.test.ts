@@ -10,7 +10,7 @@ import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, sent, started, streamOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { COPY_SHAPE_RULE, COPY_TURN_ON_RULE } from './copy-propose.ts'
+import { COPY_SHAPE_RULE, COPY_TURN_ON_RULE } from './public.ts'
 import { ordersConversing } from './test-orders-turn.ts'
 
 const PROPOSE = BUILDER_TOOL.copyPropose
