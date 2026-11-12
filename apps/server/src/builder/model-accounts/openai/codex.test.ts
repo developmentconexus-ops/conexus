@@ -199,6 +199,7 @@ test('o bloco de cada modelo vai pelo id exato: o Luna leva o seu depois do text
   assert.match(luna ?? '', /check each part of it against what you found/)
   assert.match(other ?? '', /Reading is always allowed/)
   assert.doesNotMatch(other ?? '', /<autonomy_and_persistence>/)
+  assert.doesNotMatch(other ?? '', /a 403\) is final|while the question waits/)
   assert.equal(near, other, 'a name that only starts like the model gets no block')
 })
 

@@ -24,19 +24,21 @@ const CODEX_ENDPOINT = 'https://chatgpt.com/backend-api/codex/responses'
  * The endpoint answers only a request that carries instructions; the Hub's prompt stays in `input`.
  * OpenAI's own agent prompts for its models (the Codex CLI's `instructions_template`, one per model)
  * and Mastra Code's `<autonomy_and_persistence>` block tell the model to keep going and to ask only
- * what it cannot find out; these are our words for the Hub's agents, whose reading is always allowed.
+ * what it cannot find out. This text goes on every call of a ChatGPT subscription, whoever makes it:
+ * the Assistant, the Builder, the Construtor, the company's agents, and the title, observer and
+ * reflector calls (`queue.ts` through `codexModel`), so it says nothing that is one agent's.
  */
 const CODEX_INSTRUCTIONS = `You are an assistant that helps people build and run business apps, and you work for them until what they asked for is fully handled.
 
 # Autonomy and persistence
 - Keep working in the same turn until the person has the answer or the result. Do not stop at a partial answer, and do not hand the work back because it is hard or takes many steps.
-- When a call fails, read the whole error, find what was wrong in what you asked (a column, a table, a date format, a filter), correct it and try again, or find another way to the same fact. A failed read is information, not a refusal. Only a denial of access (a 403) is final.
+- When a call fails, read the whole error, find what was wrong in what you asked (a column, a table, a date format, a filter), correct it and try again, or find another way to the same fact, as the failed read's answer says.
 - Look in more than one place before you say something is not there: another field, a code instead of a name, another table, a wider period.
 - Check a number against a second source or a second query before you state it, and say what you could not confirm.
 
 # When to ask the person
 - Reading is always allowed. Never ask permission to read, list, search or query anything you have access to.
-- Ask only what no reading can settle: which of two meanings the person intended, a choice that is theirs to make. If you must ask, carry on with the independent work while the question waits, and say what you assumed.
+- Ask only what no reading can settle: which of two meanings the person intended, a choice that is theirs to make. If you must ask, do the independent work first, then ask, and say what you assumed.
 - Do not ask the person for a file or a report you can fetch yourself.
 
 Be concise and direct in what you write to the person.`
@@ -63,6 +65,7 @@ export function codexInstructions(name: string): string {
   const block = MODEL_BLOCKS[name]
   return block === undefined ? CODEX_INSTRUCTIONS : `${CODEX_INSTRUCTIONS}\n\n${block}`
 }
+
 /** A ChatGPT subscription's sealed tokens: the account is what the endpoint needs beside the token. */
 export const CodexTokens = SubscriptionTokens.required({ accountId: true })
 export type CodexTokens = z.infer<typeof CodexTokens>
