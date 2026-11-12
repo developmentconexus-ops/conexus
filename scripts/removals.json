@@ -2906,8 +2906,8 @@
   {
     "id": "company-memory-read-only",
     "file": "apps/server/src/builder/assistant/company-memory.ts",
-    "find": "    tools: { read: true, write: false },\n",
-    "replace": "    tools: { read: true, write: true },\n",
+    "find": "  'knowledge_list',\n] as const",
+    "replace": "  'knowledge_list',\n  'knowledge_pin',\n] as const",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/assistant/company-memory-propose.test.ts",

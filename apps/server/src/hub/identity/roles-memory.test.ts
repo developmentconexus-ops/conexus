@@ -25,9 +25,8 @@ test('a memória da empresa: a permissão nasce no dono e no administrador; o de
     assert.equal(listed.statusCode, 200, listed.body)
     assert.equal(Object(listed.json()).mayManage, may, role)
   }
-  const { instructions } = Object((await call(w.hub, eva, 'GET', memory)).json())
-  const change = { name: instructions.name, body: 'Fale baixo.', version: instructions.version }
-  const path = `${memory}/pages/${instructions.pageId}`
+  const change = { body: 'Fale baixo.' }
+  const path = `${memory}/instructions`
   const refused = await call(w.hub, eva, 'PUT', path, change)
   assert.equal(refused.statusCode, 409, refused.body)
   assert.equal(codeOf(refused), 'NOT_IN_ROLE')

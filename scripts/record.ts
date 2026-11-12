@@ -71,7 +71,7 @@ const OWNER = 'recording'
 /** The deltas an `abort` scenario lets through before the session stops, as a person's stop would. */
 const ABORT_AFTER = 4
 
-const PROMPTS = {
+const PROMPTS: Record<string, string> = {
   cited:
     'Pesquise na web duas receitas de pão de queijo e diga, em duas frases, o que cada uma usa, citando as fontes.',
   thinking:
@@ -211,7 +211,9 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       await session.sendMessage({ content: asked.get(scenario) ?? '' })
       await ended.promise
     } else {
-      await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
+      await session.sendMessage({
+        content: scenario === 'plan' ? PLAN_PROMPT : (PROMPTS[scenario] ?? ''),
+      })
     }
     if (scenario === 'plan') {
       if (suspended === undefined) throw new Error('The plan was not parked on the person.')
