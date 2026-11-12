@@ -55,6 +55,18 @@ const CHOICES = {
   openai: { model: 'openai/gpt-5.6-luna', effort: 'low' },
 }
 
+/**
+ * The model and effort a run takes instead of the defaults above, both or neither: production's
+ * ChatGPT model is `openai/gpt-6-luna` at `high`, which the defaults do not measure.
+ */
+function chosenIn(provider: 'claude' | 'openai'): { model: string; effort: string } {
+  // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
+  const { CONEXUS_EVAL_MODEL: model, CONEXUS_EVAL_EFFORT: effort } = process.env
+  if ((model === undefined) !== (effort === undefined))
+    throw new Error('Set CONEXUS_EVAL_MODEL and CONEXUS_EVAL_EFFORT together, or neither.')
+  return model === undefined || effort === undefined ? CHOICES[provider] : { model, effort }
+}
+
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
 const env = process.env
@@ -251,7 +263,7 @@ export async function subscribed(
     const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
     assert.equal(linked.statusCode, 201, linked.body)
   }
-  const model = CHOICES[provider]
+  const model = chosenIn(provider)
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
   const connections = `${company}/connections`
   const ids = []

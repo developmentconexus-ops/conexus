@@ -63,14 +63,22 @@ const ENTITY_ROWS: Record<string, Record<string, string>[]> = {
   })),
 }
 
-export function envelope(service: string, status: string, responseBody?: unknown): Response {
+export function envelope(
+  service: string,
+  status: string,
+  responseBody?: unknown,
+  statusMessage = 'Serviço recusado',
+): Response {
   return json({
     serviceName: service,
     status,
     pendingPrinting: 'false',
-    ...(responseBody === undefined ? { statusMessage: 'Serviço recusado' } : { responseBody }),
+    ...(responseBody === undefined ? { statusMessage } : { responseBody }),
   })
 }
+
+/** What Sankhya's query door says of an SQL the database cannot run: the database's own error, in Oracle's words, not a refusal of the service. */
+const UNRUNNABLE_SQL = 'ORA-00933: comando SQL não encerrado corretamente'
 
 const LoadRecordsBody = z.object({
   dataSet: z
@@ -102,7 +110,7 @@ export function loadRecords(requestBody: unknown): Response {
 
 /**
  * `DbExplorerSP.executeQuery`: the count of empresas answers on its own; any other SQL runs on the
- * double's tables (`fake-sales.ts`), and a query they cannot run is refused.
+ * double's tables (`fake-sales.ts`), and a query they cannot run answers an Oracle error, as Sankhya does.
  */
 export function executeQuery(
   requestBody: unknown,
@@ -116,7 +124,8 @@ export function executeQuery(
       burstLimit: false,
     })
   const answered = query(sql)
-  if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
+  if (answered === undefined)
+    return envelope('DbExplorerSP.executeQuery', '0', undefined, UNRUNNABLE_SQL)
   return envelope('DbExplorerSP.executeQuery', '1', {
     fieldsMetadata: answered.fields.map((name) => ({ name })),
     rows: answered.rows,

@@ -17,6 +17,7 @@ import type { AppsDomain, Config } from './config.ts'
 import { databaseFailure } from './database.ts'
 import type { FailureLog, Named } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
+import { logDestination } from './lifecycle.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
 import { partsOf } from './request-parts.ts'
 import { installPages, sendPage } from './screens.ts'
@@ -157,12 +158,16 @@ export function installErrorHandling(app: FastifyInstance, page: { built: boolea
   app.addHook('onResponse', async (request, reply) => logServed(request, reply))
 }
 
-/** The Fastify instance both listeners share: its limits, its logs and its failure output. */
+/**
+ * The Fastify instance both listeners share: its limits, its logs and its failure output. Its log
+ * goes to the destination `bootLog` uses (`logDestination`): left to pino's default, it would buffer
+ * in a `SonicBoom` of its own, and a line of the Hub could reach the pipe after a later line of `bootLog`.
+ */
 export async function baseServer(config: Config): Promise<FastifyInstance> {
   const options = helmetOptions(config.appsDomain)
   const securityHeaders = helmet(options)
   const app: FastifyInstance = Fastify({
-    logger: { level: config.logLevel },
+    logger: { level: config.logLevel, stream: logDestination() },
     logController: new LogController({ disableRequestLogging: true, requestIdLogLabel: 'traceId' }),
     genReqId: () => randomUUID(),
     trustProxy: false,

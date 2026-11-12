@@ -5,7 +5,8 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
-import type { Connectors } from '../../hub/connectors/public.ts'
+import type { Connectors, Native } from '../../hub/connectors/public.ts'
+import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { ProposeCall } from './copy-propose.ts'
@@ -196,6 +197,21 @@ export function answerWords(limit: string): string {
   return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}.`
 }
 
+/**
+ * What the model reads of a read the provider refused for any reason but withholding access
+ * (`deniesAccess`): a 400, 404, 409 or 422 says the request was wrong, so it is an error to correct,
+ * not a refusal to accept. The contract and the log keep `REFUSED`; only this text changes.
+ */
+function failedRead(answered: { native: Native }) {
+  const said =
+    answered.native.message === null ? '' : ` The provider said: ${answered.native.message}`
+  return {
+    kind: 'READ_FAILED',
+    native: answered.native,
+    reason: `The read failed.${said} This is an error in what was asked, not a refusal of access: read the message, correct the request and try another way.`,
+  } as const
+}
+
 /** One read through the access's door: the model gets the cut, and the whole answer goes to the machine's file when there is one. */
 export async function readOn(
   access: ConnectorAccess,
@@ -208,6 +224,7 @@ export async function readOn(
 ) {
   const { requestContext, workspace, abortSignal } = context
   const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
+  if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
   if (answered.kind !== 'OK' || !('whole' in answered)) return answered
   const { whole, ...cut } = answered
   if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut

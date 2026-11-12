@@ -13,6 +13,7 @@ import {
   RENEWED_ACCESS,
   RENEWED_REFRESH,
 } from '../../../platform/test-openai-codex.ts'
+import { recordedBody } from '../../../platform/test-recordings.ts'
 import { testOpened } from '../../../platform/test-seal.ts'
 import {
   asked,
@@ -93,7 +94,9 @@ test('o pedido que sai', async (t) => {
   assert.equal(made?.headers.get('thread-id'), request.prompt_cache_key)
   assert.equal(request.store, false)
   assert.equal(typeof request.instructions, 'string')
-  assert.ok(request.instructions.length > 0)
+  assert.match(request.instructions, /Autonomy and persistence/)
+  assert.match(request.instructions, /Reading is always allowed/)
+  assert.doesNotMatch(request.instructions, /^You are an assistant[^\n]*Be concise and direct\.$/)
   assert.equal(request.reasoning.effort, 'medium')
   assert.ok(Array.isArray(request.input) && request.input.length > 0)
   for (const item of request.input) assert.equal('id' in item, false)
@@ -260,4 +263,23 @@ test('404 do Codex: o modelo não é atendido, a conta segue pronta e sem lista'
     `select served_models from builder.model_account where label = 'ChatGPT'`,
   )
   assert.equal(Object(row).served_models, null)
+})
+
+test('o título da conversa pela assinatura: a chamada sem streaming sai com stream true e o texto juntado do SSE vira o título, sem erro no log', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.codex.responses = (body) =>
+    JSON.parse(body).stream === true
+      ? { status: 200, stream: recordedBody('openai-refused-write-closing') }
+      : { status: 400, body: { detail: 'Stream must be set to true' } }
+  const { url } = await asked(t, f.where)
+  let title: unknown = null
+  for (let wait = 0; wait < 30 && title === null; wait++) {
+    title = Object((await call(f.hub, f.ana, 'GET', url)).json()).conversation.title
+    if (title === null) await sleep(100)
+  }
+  assert.match(String(title), /^Não foi possível lançar o pedido/)
+  for (const made of responses(f)) assert.equal(JSON.parse(String(made.body)).stream, true)
+  assert.ok(responses(f).length >= 2, 'the turn and the title both went through the endpoint')
+  assert.ok(!f.hub.lines.some((line) => line.message === 'MASTRA_ERROR'))
+  assert.ok(!f.hub.lines.some((line) => line.message === 'MODEL_SIDE_CALL_FAILED'))
 })
