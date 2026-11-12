@@ -41,7 +41,7 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
     assert.doesNotMatch(fixed.text, /Prévia|preview|conexus_check|submit_plan/i)
     assert.ok(
       mastra.every((each) =>
-        /skill|machine|task list state|search_tools|^WORKING_MEMORY_SYSTEM_INSTRUCTION|^## Recall/i.test(
+        /skill|machine|task list state|search_tools|^WORKING_MEMORY_SYSTEM_INSTRUCTION|^## Recall|^Pinned knowledge|^Use the Knowledge tools/i.test(
           each.text,
         ),
       ),
@@ -290,10 +290,20 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
     department: null,
     projectName: undefined,
   }
-  const noteOnly = blockOf(speakers, [], { note: false, automate: true, byAutomation: false })
+  const noteOnly = blockOf(speakers, [], {
+    note: false,
+    automate: true,
+    byAutomation: false,
+    companyMemory: true,
+  })
   assert.match(noteOnly, /You cannot note/)
   assert.doesNotMatch(noteOnly, /does not create automations|run of an automation/)
-  const run = blockOf(speakers, [], { note: false, automate: true, byAutomation: true })
+  const run = blockOf(speakers, [], {
+    note: false,
+    automate: true,
+    byAutomation: true,
+    companyMemory: true,
+  })
   assert.match(run, /run of an automation the person already created/)
 })
 

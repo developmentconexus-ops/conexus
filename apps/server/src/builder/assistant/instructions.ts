@@ -52,12 +52,19 @@ export type Speakers = {
  * What the person's role and the run allow of the tools that depend on them, read once per run by
  * the one that builds the tools: the block says in words what the tools leave out.
  */
-export type Mays = { note: boolean; automate: boolean; byAutomation: boolean }
+export type Mays = {
+  note: boolean
+  automate: boolean
+  byAutomation: boolean
+  companyMemory: boolean
+}
 
 const NO_NOTE =
   'You cannot note on a connection here: write the concept, the mapping and the query, ready for an owner or an administrator to note, and say that you did not note it.'
 const NO_AUTOMATION =
   "The person's role does not create automations: when what they ask repeats at a time, say in text that only the owner, the administrators and the developers create them and that the person can ask one of them, and offer no card."
+const NO_COMPANY_MEMORY =
+  'You cannot save company memory here: say what an owner or an administrator should save.'
 const AUTOMATION_RUN =
   'This conversation is the run of an automation the person already created and nobody is waiting: do what the message asks and answer with the result, and never offer to create that automation again.'
 
@@ -66,6 +73,7 @@ function toolSentences(may: Mays): string[] {
   return [
     ...(may.note ? [] : [NO_NOTE]),
     ...(may.automate ? [] : [NO_AUTOMATION]),
+    ...(may.companyMemory ? [] : [NO_COMPANY_MEMORY]),
     ...(may.byAutomation ? [AUTOMATION_RUN] : []),
   ]
 }

@@ -37,6 +37,7 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
+import { COMPANY_MEMORY_TOOLS, companyKnowledge, companyScopes } from './company-memory.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, sessionScopes } from './context.ts'
@@ -74,11 +75,12 @@ const MEMORY_TOOLS = ['recall', 'updateWorkingMemory'] as const
  * `ask_user` (a card, only what it cannot decide) and the task list; the plan card stays the
  * Builder's, as the Assistant approves no plan, and one subagent type, `pesquisar`
  * (`research.ts`), which only reads. The memory's hold the person's other conversations and what
- * the model keeps about them (`memory.ts`).
+ * the model keeps about them (`memory.ts`); the company's, what it keeps (`company-memory.ts`).
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
   ...MEMORY_TOOLS,
+  ...COMPANY_MEMORY_TOOLS,
   SEARCH_TOOLS,
   ...TYPED_READ_NAMES,
   BUILDER_TOOL.connectorNotes,
@@ -272,6 +274,8 @@ function assistantAgent(
     ...assistantDefaults,
     signals: [new TaskSignalProvider()],
     memory: parts.memory,
+    knowledge: companyKnowledge(deps.storage),
+    scopes: companyScopes({ scopeOf, maysOf: maysFor }),
   })
 }
 
