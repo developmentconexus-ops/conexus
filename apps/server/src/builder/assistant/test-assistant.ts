@@ -15,12 +15,19 @@ type Block = ReturnType<typeof tool>
 /** A file the person sends with a message, as the screen sends it: a name, a type and a data URL. */
 export type Upload = { filename: string; mediaType: string; data: string }
 
-export const READ = 'connector_read'
+/** Sankhya's SQL read as the Assistant's typed tool. */
+export const READ = 'sankhya_consultar'
+export const SEARCH = 'search_tools'
 export const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
-/** A `connector_read` of `connection` with a query. */
+/** A search for the typed reads, loaded for the model's next step; by the read's own name it finds that read first. */
+export function searching(query = READ): Block {
+  return tool(SEARCH, { query })
+}
+
+/** A read of `connection` with a query, through the typed tool `searching` loads. */
 export function reading(connection = 'Matriz', sql = COUNT): Block {
-  return tool(READ, { connection, operation: 'sankhya.consultar', input: { sql } })
+  return tool(READ, { connection, sql })
 }
 
 /** The kit's Sankhya double, both connections on it with the same credential. */

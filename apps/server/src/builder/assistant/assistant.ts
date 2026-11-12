@@ -10,6 +10,7 @@ import {
 } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
+import { ToolSearchProcessor } from '@mastra/core/processors'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
@@ -27,12 +28,19 @@ import {
   sessionModel,
   toolsOf,
 } from '../controller-kit/public.ts'
+import type { AccessOf } from '../connectors/public.ts'
+import { offersRead, TYPED_READ_NAMES, typedReads } from '../connectors/public.ts'
 import { ASK_USER_TOOL, createAskUserTool, skillOf } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { chosenConnections } from './chosen.ts'
-import { assistantConnectorTools, readsFiles } from './connector-access.ts'
+import {
+  ASSISTANT_LIMIT,
+  assistantAccess,
+  assistantConnectorTools,
+  readsFiles,
+} from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, runConversation, sessionScopes } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
@@ -56,16 +64,19 @@ type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
 const MODE = 'conversa'
+/** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
+const SEARCH_TOOLS = 'search_tools'
 /**
  * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
  * controller filters the agent's tools by it; the save is built only for who may manage connections.
- * Of the controller's own tools it holds `ask_user` (a card, only what it cannot decide) and the
- * task list; the plan card stays the Builder's, as the Assistant approves no plan, and it calls no
- * subagent.
+ * The typed reads come only once a search loads them. Of the controller's own tools it holds
+ * `ask_user` (a card, only what it cannot decide) and the task list; the plan card stays the
+ * Builder's, as the Assistant approves no plan, and it calls no subagent.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...Object.values(WORKSPACE_TOOL),
-  BUILDER_TOOL.connectorRead,
+  SEARCH_TOOLS,
+  ...TYPED_READ_NAMES,
   BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.connectorNoteSave,
   ...Object.values(ASSISTANT_TOOL),
@@ -242,11 +253,33 @@ function assistantAgent(
     return scope === undefined ? undefined : speakersOf(deps, scope)
   })
   const maysFor = maysOf(deps.identity, speakersFor, automationRun)
+  const accessOf: AccessOf = async (requestContext) => {
+    const scope = await scopeOf(requestContext)
+    if (scope === undefined) return undefined
+    return assistantAccess(deps, { scope, chosen: await chosenOf(requestContext), savedAt })
+  }
+  // The catalog is the same for every request; each request sees the reads of its chosen
+  // connections that the role allows, in every phase.
+  const typedSearch = new ToolSearchProcessor({
+    tools: typedReads(accessOf, ASSISTANT_LIMIT),
+    storage: 'context',
+    search: { topK: 3, autoLoad: true },
+    filter: async ({ toolName, requestContext }) =>
+      requestContext !== undefined && offersRead(toolName, await chosenOf(requestContext)),
+  })
   const defaults = agentDefaults(queue, parts.turns)
-  // The person's files go to the conversation's machine last, once the account's pick has chosen the model.
+  const { processor: turnProcessor } = parts.turns
+  // The loaded reads join the step after the turn and before the account's pick, which flattens
+  // them for CLIProxy's Google path; the person's files go to the machine last, once the pick has
+  // chosen the model.
   const assistantDefaults = {
     ...defaults,
-    inputProcessors: [...defaults.inputProcessors, machineUploads({ log: deps.log })],
+    inputProcessors: [
+      turnProcessor,
+      typedSearch,
+      ...defaults.inputProcessors.filter((each) => each !== turnProcessor),
+      machineUploads({ log: deps.log }),
+    ],
   }
   return new Agent({
     id: ASSISTANT_CONTROLLER,
@@ -265,7 +298,7 @@ function assistantAgent(
         ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : assistantConnectorTools(deps, { scope, chosen, savedAt, mayNote: note })),
+          : assistantConnectorTools(deps, { scope, chosen, mayNote: note })),
       }
     },
     skills: async ({ requestContext }) => [

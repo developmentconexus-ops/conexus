@@ -88,6 +88,7 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
 
 test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json, responde o corte com o caminho, um código lê o arquivo; o segundo turno grava outro e o primeiro fica (18)', async (t) => {
   const on = await assisting(t, [
+    [searching()],
     [reading('Matriz', COUNT)],
     [said('Uma.')],
     [reading('Matriz', COUNT)],
@@ -100,7 +101,7 @@ test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json,
   assert.ok(turn !== undefined)
   const first = `${turn.turn.slice(0, 8)}-1.json`
   assert.deepEqual(readdirSync(reads), [first])
-  const answered = on.calls[1]?.texts.findLast((text) => text.includes('"kind":"OK"'))
+  const answered = on.calls[2]?.texts.findLast((text) => text.includes('"kind":"OK"'))
   assert.ok(answered?.includes(`reads/${first}`), answered)
   assert.ok(answered?.includes('"complete"'), answered)
   assert.equal(answered?.includes('"whole"'), false, 'the whole answer is not in the model’s copy')
@@ -112,12 +113,12 @@ test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json,
 })
 
 test('a leitura na máquina: a máquina que não liga deixa a leitura responder o corte com saved: false e a falha (18)', async (t) => {
-  const on = await assisting(t, [[reading('Matriz', COUNT)], [said('Não salvei.')]])
+  const on = await assisting(t, [[searching()], [reading('Matriz', COUNT)], [said('Não salvei.')]])
   on.hub.assistantMachines.control.start = 'unreachable'
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Quantas empresas?')), 'complete')
-  const answered = on.calls[1]?.texts.findLast((text) => text.includes('"kind":"OK"'))
+  const answered = on.calls[2]?.texts.findLast((text) => text.includes('"kind":"OK"'))
   assert.match(String(answered), /"saved":false/)
   assert.match(String(answered), /MACHINE_UNAVAILABLE/)
 })
@@ -144,6 +145,7 @@ test('a leitura grande: o arquivo guarda a resposta inteira e um código do mesm
   const on = await assisting(
     t,
     [
+      [searching()],
       [reading('Matriz', 'SELECT N, NOME FROM TSIEMP')],
       [tool('mastra_workspace_execute_command', { command: `grep -o '${PLANTED}' reads/*.json` })],
       [said('Achei.')],
@@ -153,12 +155,13 @@ test('a leitura grande: o arquivo guarda a resposta inteira e um código do mesm
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Liste as empresas')), 'complete')
-  assert.equal(on.calls[1]?.texts.join('\n').includes(PLANTED), false, 'the cut leaves it out')
-  assert.ok(on.calls[2]?.texts.join('\n').includes(PLANTED), 'the code read it in the saved file')
+  assert.equal(on.calls[2]?.texts.join('\n').includes(PLANTED), false, 'the cut leaves it out')
+  assert.ok(on.calls[3]?.texts.join('\n').includes(PLANTED), 'the code read it in the saved file')
 })
 
 test('a leitura: cada leitura do turno grava o seu arquivo, numerado na ordem, e nenhuma sobrescreve outra (18)', async (t) => {
   const on = await assisting(t, [
+    [searching()],
     [reading('Matriz', COUNT), reading('Matriz', COUNT)],
     [reading('Matriz', COUNT)],
     [reading('Matriz', COUNT)],
