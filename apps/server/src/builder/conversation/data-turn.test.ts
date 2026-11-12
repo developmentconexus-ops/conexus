@@ -99,7 +99,7 @@ test('o app lê a cópia de qualquer conector', async (t) => {
 const PROPOSE = BUILDER_TOOL.copyPropose
 const CONNECTION = /^- Connection "(?<name>[^"]+)" \((?<connector>[^)]+)\):$/m
 const CHANGING =
-  /^ {2}- (?<operation>\w+) \([^)]+\): pages by \w+[^,\n]*, changes by `(?<field>[^`]+)`$/m
+  /^ {2}- (?<operation>[\w-]+\.\w+) \([^)]+\): pages by \w+[^,\n]*, changes by `(?<field>[^`]+)`$/m
 
 /** `copy_propose`'s input from its own description alone: the connection, and the read that changes, by name (T28). */
 function proposalFrom(description: string) {

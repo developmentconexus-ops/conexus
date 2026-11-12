@@ -2,7 +2,7 @@ import { BUILDER_TOOL } from '@conexus/hub-api'
 import { z } from 'zod'
 
 /** A number as the answer wrote it: its value at the places shown, its scale (mil, milhão) and whether it is a percentage. */
-type Shown = { text: string; value: number; places: number; scale: number; percent: boolean }
+export type Shown = { text: string; value: number; places: number; scale: number; percent: boolean }
 
 export type NumbersVerdict =
   | { ok: true }
@@ -41,7 +41,7 @@ function parsed(digits: string): { value: number; places: number } {
 }
 
 /** The numbers of a text, in the Brazilian way ("8.072,70") and the plain one ("8072.7"), without its dates and hours. */
-function shownIn(text: string): Shown[] {
+export function shownIn(text: string): Shown[] {
   const figures = NOT_FIGURES.reduce((left, pattern) => left.replace(pattern, ' '), text)
   return [...figures.matchAll(NUMBER)].map((match) => {
     const [whole, digits = '', scale, percent] = match

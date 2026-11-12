@@ -1,5 +1,5 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -11,7 +11,9 @@
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
 // is called and no credential is read; every prompt is invented (security S40). `reads` is the
 // Assistant's turn: a `connector_read` that runs its SQL on the Sankhya double's Padaria Sol (Matriz),
-// then an answer with its numbers (step 24.1, criterion 11a). `tool-error` is no scenario: its recording holds one model call and the turn asks a second.
+// then an answer with its numbers (step 24.1, criterion 11a). `research` and `research-failed` are the
+// Assistant's helper (U12): Mastra's `subagent` tool of type `pesquisar` runs its own model call, which
+// answers in `research` and is refused by the provider in `research-failed`. `tool-error` is no scenario: its recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Agent } from '@mastra/core/agent'
@@ -27,7 +29,6 @@ import {
 import { Memory } from '@mastra/memory'
 import { z } from 'zod'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
-import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import { events as streamed } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import type { NativeHeader } from '../apps/server/src/platform/test-recordings.ts'
 import {
@@ -43,10 +44,22 @@ import {
   APPROVAL_CALLS,
   APPROVAL_PROMPT,
   APPROVAL_TOOL,
+  FILES,
+  FILES_CALLS,
+  FILES_PROMPT,
   HANDOFF_CALLS,
   HANDOFF_SIGNAL,
+  MORE_FILE,
+  MORE_FILES_PROMPT,
+  PLAN_CALLS,
+  PLAN_PROMPT,
   READS_CALLS,
   READS_PROMPT,
+  RESEARCH_CALLS,
+  RESEARCH_FAILED_CALLS,
+  RESEARCH_PROMPT,
+  RESEARCH_TYPE,
+  STEER,
   TASKS_CALLS,
   TASKS_PROMPT,
 } from './record-calls.ts'
@@ -58,7 +71,7 @@ const OWNER = 'recording'
 /** The deltas an `abort` scenario lets through before the session stops, as a person's stop would. */
 const ABORT_AFTER = 4
 
-const PROMPTS = {
+const PROMPTS: Record<string, string> = {
   cited:
     'Pesquise na web duas receitas de pão de queijo e diga, em duas frases, o que cada uma usa, citando as fontes.',
   thinking:
@@ -74,55 +87,10 @@ const Scenario = z.enum([
   'tasks',
   'reads',
   'handoff',
+  'research',
+  'research-failed',
   ...approval.APPROVALS,
 ])
-
-const PLAN_FILE = '.conexus/plans/encomendas.md'
-const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
-const STEER = 'Só eu cadastro.'
-/** What the model does in the `plan` scenario: submit the plan, use a tool, and answer once the person's steer is in. */
-const PLAN_CALLS: Block[][] = [
-  [{ type: 'tool_use', name: 'submit_plan', input: { path: PLAN_FILE } }],
-  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Plano aprovado, começando.' } }],
-  [{ type: 'text', text: 'Pronto, o cadastro será só seu.' }],
-]
-
-const FILES_PROMPT = 'Leia os arquivos e diga, em uma frase, o que a padaria inventada precisa.'
-const MORE_FILES_PROMPT = 'Este PDF também vale.'
-/** Invented and tiny (security S40): a markdown note, a PDF and a 1×1 PNG, as the browser reads them. */
-const MARKDOWN = '# Observações\n\nSem glúten.\n'
-const PDF = '%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n'
-const PNG =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
-function dataUrl(mediaType: string, base64: string): string {
-  return `data:${mediaType};base64,${base64}`
-}
-function text64(text: string): string {
-  return Buffer.from(text).toString('base64')
-}
-const FILES = [
-  {
-    filename: 'observacoes.md',
-    mediaType: 'text/markdown',
-    data: dataUrl('text/markdown', text64(MARKDOWN)),
-  },
-  {
-    filename: 'precos.pdf',
-    mediaType: 'application/pdf',
-    data: dataUrl('application/pdf', text64(PDF)),
-  },
-  { filename: 'logo.png', mediaType: 'image/png', data: dataUrl('image/png', PNG) },
-]
-const MORE_FILE = {
-  filename: 'cardapio.pdf',
-  mediaType: 'application/pdf',
-  data: dataUrl('application/pdf', text64(PDF)),
-}
-/** What the model does in the `files` scenario: use its tool, and answer once the second message is in. */
-const FILES_CALLS: Block[][] = [
-  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Arquivos lidos.' } }],
-  [{ type: 'text', text: 'Ela precisa de pães sem glúten.' }],
-]
 
 const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
 const orders = orderBook()
@@ -166,8 +134,28 @@ const CALLS = {
   tasks: TASKS_CALLS,
   reads: READS_CALLS,
   handoff: HANDOFF_CALLS,
+  research: RESEARCH_CALLS,
+  'research-failed': RESEARCH_FAILED_CALLS,
   ...APPROVAL_CALLS,
 }
+
+/** The prompt of each scenario that sends one message and waits for the run to end. */
+const asked = new Map<string, string>([
+  ['tasks', TASKS_PROMPT],
+  ['reads', READS_PROMPT],
+  ['research', RESEARCH_PROMPT],
+  ['research-failed', RESEARCH_PROMPT],
+])
+
+/** The helper's own model call in `research-failed`: the provider refuses it, as an account that does not answer. */
+const REFUSED: Answer = () =>
+  new Response(
+    JSON.stringify({
+      type: 'error',
+      error: { type: 'invalid_request_error', message: 'a conta da conversa não respondeu' },
+    }),
+    { status: 400, headers: { 'content-type': 'application/json' } },
+  )
 
 /** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
 async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
@@ -187,10 +175,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     if (scenario === 'files' && event.type === 'tool_start' && event.toolName === 'anotar')
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
     if (
-      (scenario === 'files' ||
-        scenario === 'tasks' ||
-        scenario === 'reads' ||
-        scenario === 'handoff') &&
+      (scenario === 'files' || asked.has(scenario) || scenario === 'handoff') &&
       event.type === 'agent_end'
     )
       ended.resolve()
@@ -210,6 +195,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
           ),
       )
     : [(signal) => replayed(`anthropic-${scenario}`, signal)]
+  if (scenario === 'research-failed') answers[1] = REFUSED
   const restore = replaying(answers)
   try {
     if (scenario === 'files') {
@@ -221,11 +207,13 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     } else if (approval.isApproval(scenario)) {
       await session.sendMessage({ content: APPROVAL_PROMPT })
       await ended.promise
-    } else if (scenario === 'tasks' || scenario === 'reads') {
-      await session.sendMessage({ content: scenario === 'tasks' ? TASKS_PROMPT : READS_PROMPT })
+    } else if (asked.has(scenario)) {
+      await session.sendMessage({ content: asked.get(scenario) ?? '' })
       await ended.promise
     } else {
-      await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
+      await session.sendMessage({
+        content: scenario === 'plan' ? PLAN_PROMPT : (PROMPTS[scenario] ?? ''),
+      })
     }
     if (scenario === 'plan') {
       if (suspended === undefined) throw new Error('The plan was not parked on the person.')
@@ -272,6 +260,15 @@ const RECORDED_TOOLS = {
   }),
 }
 
+/** The Assistant's helper type (`builder/assistant/research.ts`), with no tools of its own here. */
+const RESEARCH_HELPER = {
+  id: RESEARCH_TYPE,
+  name: 'Pesquisa',
+  description: 'Reads one focused question and returns the findings.',
+  instructions: 'Answer the task in Brazilian Portuguese.',
+  defaultModelId: `anthropic/${CLAUDE}`,
+}
+
 async function record(scenario: z.infer<typeof Scenario>) {
   const planned = Scripted.safeParse(scenario).success
   const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
@@ -302,6 +299,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     memory,
     agent,
     modes: [{ id: 'conversa' }],
+    subagents: [RESEARCH_HELPER],
     // As the Builder runs its tools (decision 0053): without asking; the agents' controller asks about a write.
     initialState: { yolo: !approval.isApproval(scenario) },
   })

@@ -5,7 +5,7 @@ import { CompanyId, listRoles, PersonId } from '@conexus/hub-api'
 import { hasPermission } from 'better-auth/plugins'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import { silent, testConfig } from '../../platform/test-database.ts'
-import { libraryCommandOn } from './auth.ts'
+import { libraryCommandOn, organizationAdapter } from './auth.ts'
 import { organizationWith } from './organization.ts'
 import { createAuth } from './public.ts'
 import type { Person } from './test-hub.ts'
@@ -94,6 +94,26 @@ export async function memberMay(database: TestDatabase, companyId: string, owner
         endpoint,
       ),
     )
+}
+
+/** Makes the member an administrator through the plugin's own adapter, which answers the row with its extra fields. */
+export async function promoteThroughPlugin(w: World, personId: string) {
+  const auth = createAuth({
+    roles: TEST_ROLES,
+    database: w.hub.test.database,
+    config: testConfig(w.hub.test.runtimeUrl),
+    log: silent,
+  })
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse(w.companyId),
+    personId: PersonId.parse(w.ana.id),
+  } as const
+  return await libraryCommandOn(auth, w.hub.test.database)(scope, async () => {
+    const adapter = await organizationAdapter(auth)
+    const found = await adapter.findMemberByOrgId({ userId: personId, organizationId: w.companyId })
+    return await adapter.updateMember(String(found?.id), 'admin')
+  })
 }
 
 /** What a person who may do nothing of the company's actions reads of `may`. */

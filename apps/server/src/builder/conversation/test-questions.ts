@@ -18,9 +18,15 @@ const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
 /** How long a test waits for the card a turn parks, which the double answers at once. */
 const CARD_DEADLINE_MS = 15_000
 
-/** A tool call of the model's. */
+const COMMAND_TOOL = 'mastra_workspace_execute_command'
+
+/**
+ * A tool call of the model's. The machine's command asks for its phrase (card of the alignment,
+ * U10): a test that is not about the phrase gets a placeholder, so each need not carry one.
+ */
 export function tool(name: string, input: object): Block {
-  return { type: 'tool_use', name, input }
+  const filled = name === COMMAND_TOOL ? { description: 'Rodando um teste', ...input } : input
+  return { type: 'tool_use', name, input: filled }
 }
 
 /** An `ask_user` call with these questions. */

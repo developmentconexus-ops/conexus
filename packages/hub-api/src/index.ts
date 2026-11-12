@@ -91,7 +91,6 @@ export {
   listCompanies,
   listInvitations,
   listMembers,
-  Member,
   Membership,
   Next,
   PAGE_SIZE,
@@ -99,6 +98,7 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export * from './company-memory.ts'
 export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,
@@ -183,6 +183,8 @@ export {
 } from './identity.ts'
 export * from './library-ids.ts'
 export * from './machine.ts'
+export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'
+export { Member } from './members.ts'
 export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
@@ -255,6 +257,7 @@ export {
   registerClient,
 } from './operations.ts'
 export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
+export * from './profile-memory.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,

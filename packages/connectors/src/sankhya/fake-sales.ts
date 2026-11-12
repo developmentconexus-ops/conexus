@@ -14,6 +14,9 @@ type Note = {
   itens: Item[]
 }
 
+/** A form of a read the double does not run, which the provider would refuse. */
+class DoubleRefusal extends Error {}
+
 /** One company's sales as Sankhya keeps them: the notes with their items, the sellers, customers and products. */
 export type SalesSet = {
   codemp: number
@@ -207,7 +210,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
   // Oracle's `TO_DATE` in the one form the paged read writes (`YYYY-MM-DD`): the day, as the double keeps dates.
   database.function('TO_DATE', { deterministic: true }, (text, format) => {
     if (format !== 'YYYY-MM-DD' || !/^\d{4}-\d{2}-\d{2}$/.test(String(text)))
-      throw new Error('The double reads only TO_DATE(day, YYYY-MM-DD).')
+      throw new DoubleRefusal('The double reads only TO_DATE(day, YYYY-MM-DD).')
     return String(text)
   })
   database.exec('PRAGMA case_sensitive_like = ON')
@@ -227,15 +230,21 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
     const columns = statement.columns()
     const fields = columns.map((column) => column.name)
     const dated = columns.map((column) => column.type === 'DATE')
+    let read: ReturnType<typeof statement.all>
+    try {
+      read = statement.all()
+    } catch (error) {
+      // Sankhya refuses a query it cannot run; the double refuses the forms it does not read.
+      if (error instanceof DoubleRefusal) return undefined
+      throw error
+    }
     return {
       fields,
-      rows: statement
-        .all()
-        .map((row) =>
-          Object.values(row).map((cell, at) =>
-            dated[at] && cell !== null ? asSankhyaDate(cell) : cell,
-          ),
+      rows: read.map((row) =>
+        Object.values(row).map((cell, at) =>
+          dated[at] && cell !== null ? asSankhyaDate(cell) : cell,
         ),
+      ),
     }
   }
 }

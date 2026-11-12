@@ -53,7 +53,7 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
 })
 
 // The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
-// and `plan`, `files`, `tasks` and `reads`, whose model calls are streamed by the test double's Messages API stream.
+// and `plan`, `files`, `tasks`, `reads`, `research` and `research-failed`, whose model calls are streamed by the test double's Messages API stream.
 const NATIVE = [
   'abort',
   'approval',
@@ -66,6 +66,8 @@ const NATIVE = [
   'handoff',
   'plan',
   'reads',
+  'research',
+  'research-failed',
   'tasks',
   'thinking',
 ]
@@ -74,6 +76,8 @@ const STREAMED = new Set([
   'files',
   'tasks',
   'reads',
+  'research',
+  'research-failed',
   'handoff',
   'approval',
   'approval-declined',

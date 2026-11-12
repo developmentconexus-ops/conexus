@@ -49,7 +49,8 @@ test('o detalhe não mostra o JSON: a escrita que o sistema recusou diz que não
     }),
     writes: [rowOf('approval-refused', { state: 'REFUSED', approved: false, message: REFUSAL })],
   })
-  fireEvent.click(await screen.findByText(WRITE_FAILED))
+  // The line opens once the record's read has come: before it, a failed write has nothing to add.
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(WRITE_FAILED) }))
   expect(await screen.findByText('O Sankhya não aceitou. Nada foi lançado.')).toBeTruthy()
   expect(screen.getByText(REFUSAL)).toBeTruthy()
   expect(screen.queryByText(/"kind"|frase que o modelo leu/)).toBeNull()

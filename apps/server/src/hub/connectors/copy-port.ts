@@ -16,7 +16,7 @@ import { OperationId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
 import type { OpenedConnection } from './executor.ts'
-import { listIssuesOf, listReadOf } from './list-read.ts'
+import { listIssuesOf, listReadOf, sourceIssuesOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
@@ -327,6 +327,17 @@ export function createCopyPort(deps: Deps) {
       if (kit === undefined)
         return { issues: [`connector: ${connector} is not in the kit.`], accountless: true }
       return { issues: listIssuesOf(kit, definition), accountless: kit.account.kind === 'none' }
+    },
+    /**
+     * The read rules a source fails whatever else is wrong with its definition: the same issues
+     * `proposable` gives for the operation and the fixed input, so a refusal for the shape carries them too.
+     */
+    sourceIssues(
+      connector: string,
+      source: { operation: string; input: Readonly<Record<string, unknown>> },
+    ) {
+      const kit = connectorIn(deps, connector)
+      return kit === undefined ? [] : sourceIssuesOf(kit, source)
     },
     /** Where the connector's provider counts its call limit; none when it declares no list read. */
     countedBy(connector: string): 'APP' | 'ACCOUNT' | null {

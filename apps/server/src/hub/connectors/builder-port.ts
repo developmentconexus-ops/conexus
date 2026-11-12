@@ -29,7 +29,7 @@ import { mayUseNotebook, personSpeaker, visibleTo } from './speaking.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
-/** One conversation turn reads and saves at most this many times (the OS's `connector_fetch`: 50 per run); the Builder counts by run, the Assistant by turn. */
+/** One conversation turn reads and saves at most this many times; it protects the company's system, counted at the Hub's door, also for code mode. The Builder counts by run, the Assistant by turn. */
 export const CONNECTOR_CALLS_PER_TURN = 50
 export const TURNS_KEPT = 1000
 
@@ -60,7 +60,7 @@ type ListShown = Readonly<{
   ceiling: number | null
 }>
 export type ShapedRead =
-  | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
+  | Readonly<{ kind: 'OK'; value: unknown; complete: boolean; rows: number; bytes: number }>
   | Exclude<ReadAnswer, { kind: 'OK' }>
   | Readonly<{ kind: 'NOT_GRANTED' }>
   | NotInRole

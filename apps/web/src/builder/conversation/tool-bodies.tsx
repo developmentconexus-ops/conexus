@@ -6,6 +6,7 @@ import { cn } from '../../ui/cn.ts'
 import { failureDetail, thrownOf } from './connector-specs.ts'
 import { ProgramSuccess } from './machine-specs.ts'
 import { Markdown } from './markdown.tsx'
+import { Researched, STOPPED } from './research-specs.ts'
 import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -106,6 +107,20 @@ export function Answer({ text, called }: { text: string; called: number }) {
     <div className="flex min-w-0 flex-col gap-xs">
       <Markdown text={text} />
       {called > 0 && <p className="text-fact text-text-2">{calledText(called)}</p>}
+    </div>
+  )
+}
+
+/** The findings of the helper that read: its message, or that the person stopped it, with what it had said. */
+export function Research({ tool, title }: { tool: ToolItem; title: string }) {
+  const content = Researched.safeParse(tool.result).data?.content
+  if (content === undefined) return <Generic tool={tool} title={title} />
+  if (!content.startsWith(STOPPED)) return <Markdown text={content} />
+  const partial = content.slice(STOPPED.length).replace(/^\s*Partial output:\s*/, '')
+  return (
+    <div className="flex min-w-0 flex-col gap-xs">
+      <p className="font-semibold text-text">Parada no meio</p>
+      {partial.trim() !== '' && <Markdown text={partial} />}
     </div>
   )
 }

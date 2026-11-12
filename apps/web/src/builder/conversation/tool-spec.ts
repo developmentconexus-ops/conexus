@@ -5,6 +5,7 @@ import type {
   ClosedTool,
   CONSTRUTOR_TOOL,
   MACHINE_TOOL,
+  SUBAGENT_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
@@ -16,6 +17,7 @@ export type RowTool =
   | (typeof ASSISTANT_TOOL)[keyof typeof ASSISTANT_TOOL]
   | (typeof MACHINE_TOOL)[keyof typeof MACHINE_TOOL]
   | (typeof AGENT_TOOL)[keyof typeof AGENT_TOOL]
+  | typeof SUBAGENT_TOOL
   | ConstrutorRowTool
 
 /** The Construtor's tools that draw a row; the draft ones draw the agent's card (step 24.3, U5). */
@@ -40,9 +42,11 @@ export type ToolBody =
   | 'shown'
   | 'proposal'
   | 'automation'
+  | 'companyMemory'
   | 'agent'
   | 'library'
   | 'answer'
+  | 'research'
   | 'program'
   | 'generic'
 
@@ -89,6 +93,11 @@ export type ToolSpec = {
   verb: string
   /** The argument the sentence names: a path, a pattern, a URL. */
   detailKey?: string
+  /**
+   * An argument the model wrote as the row's own sentence, in place of the table's words and the
+   * detail; a call stored without it reads as before. The detail stays what the open row shows.
+   */
+  phraseKey?: string
   /** The argument shows beside the sentence, cut, instead of after it (the web's long URLs and queries). */
   detailBeside?: true
   body: ToolBody

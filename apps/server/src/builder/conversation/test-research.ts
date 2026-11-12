@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import http from 'node:http'
 import type { TestContext } from 'node:test'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
+import { GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 
 /**
  * Everything the process prints on stdout and stderr while the test runs, still printed: by the
@@ -137,4 +140,21 @@ export function citing(): Anthropic['answer'] {
       ],
     }
   }
+}
+
+/**
+ * Moves the company to Groq, whose answers are `chat`: a provider with no page fetch of its own,
+ * so the model's `web_fetch` is Mastra's function (Anthropic's is the provider's, run on its side).
+ */
+export async function onGroq(
+  where: { hub: Hub; ana: Person; companyId: string; anthropic: Anthropic },
+  chat: Anthropic['chat'],
+) {
+  const { hub, ana, companyId } = where
+  const base = `/api/companies/${companyId}`
+  const account = { owner: 'company', provider: 'groq', label: 'Groq 1', key: 'gsk-fetch-key-0001' }
+  assert.equal((await post(hub, ana, `${base}/model-accounts`, account)).statusCode, 201)
+  const model = { model: GROQ_MODEL, effort: 'off' }
+  assert.equal((await call(hub, ana, 'PUT', `${base}/default-model`, model)).statusCode, 200)
+  where.anthropic.chat = chat
 }

@@ -80,12 +80,19 @@ export function createE2bApi(
     }
     return killed
   }
-  /** The first machine of the conversation and `template`, running or paused; a failed list throws. */
-  async function find(conversationId: ConversationId, template: string) {
+  /**
+   * The first machine of the conversation and `template` (any template when undefined), running or
+   * paused; a failed list throws.
+   */
+  async function find(conversationId: ConversationId, template: string | undefined) {
     const pages = Sandbox.list({
       ...where,
       query: {
-        metadata: { ...mark, [MARK.conversation]: conversationId, [MARK.template]: template },
+        metadata: {
+          ...mark,
+          [MARK.conversation]: conversationId,
+          ...(template === undefined ? {} : { [MARK.template]: template }),
+        },
       },
     })
     while (pages.hasNext) {

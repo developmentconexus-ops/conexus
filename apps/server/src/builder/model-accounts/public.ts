@@ -28,10 +28,12 @@ export {
   MAX_PROCESSOR_RETRIES,
   stabilityProcessors,
 } from './processors.ts'
+export { minusProviderTools } from './provider-tools.ts'
 export { isChoosable } from './providers.ts'
 export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'
 export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
+export { subagentModel, TURN_ACCOUNT } from './side-calls.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, setTurn, Turn, turnContext, turnIn } from './turn.ts'
 

@@ -19,6 +19,7 @@ import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
 import { CONSTRUTOR_SPECS, slugToolSpec, writeToolSpec } from './construtor-specs.ts'
 import { MACHINE_SPECS } from './machine-specs.ts'
+import { RESEARCH_SPECS } from './research-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
@@ -131,6 +132,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     failed: 'Um comando falhou',
     verb: 'rodou',
     detailKey: 'command',
+    phraseKey: 'description',
     body: 'command',
     groups: true,
   },
@@ -195,6 +197,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
   ...CONNECTOR_SPECS,
   ...ASSISTANT_SPECS,
   ...MACHINE_SPECS,
+  ...RESEARCH_SPECS,
   ...CONSTRUTOR_SPECS,
   ...APP_DATA_SPECS,
   [skill]: {
@@ -288,6 +291,14 @@ function unknownTool(toolName: string, status: ToolStatus) {
   return { icon, sentence, beside: false }
 }
 
+/** The row of a tool whose own sentence is the phrase it was given: "Rodando…" while it runs. */
+function phrased(spec: ToolSpec, phrase: string, status: ToolStatus, detail: string | undefined) {
+  const failed = status === 'error' || status === 'denied'
+  const ongoing = status === 'running' ? `Rodando… ${phrase}` : phrase
+  const sentence = failed ? `${spec.failed}: ${phrase}` : ongoing
+  return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside: false }
+}
+
 /** The row's icon and sentence by its status; the readable name for a tool outside the set. */
 export function presentTool(
   tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
@@ -299,6 +310,8 @@ export function presentTool(
   if (spec === undefined) return unknownTool(tool.toolName, status)
   if (spec.present !== undefined) return spec.present(tool, status, room.connectors)
   const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
+  const phrase = spec.phraseKey === undefined ? undefined : stringArg(tool.args, spec.phraseKey)
+  if (phrase !== undefined) return phrased(spec, phrase, status, detail)
   const head = headOf(spec, status)
   const beside = spec.detailBeside === true && !failed && detail !== undefined
   const sentence = detail === undefined || beside ? head : `${head} ${detail}`

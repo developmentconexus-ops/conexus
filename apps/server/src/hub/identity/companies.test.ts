@@ -40,6 +40,24 @@ async function join(hub: Hub, companyId: string, personId: string, role: string)
   )
 }
 
+/** The two people as Bruno, a member, reads them: he edits only his own job title and department. */
+function peopleSeenBy(who: { ana: Person; bruno: Person }) {
+  const unwritten = { jobTitle: null, department: null, invitationsSent: 0 }
+  return {
+    members: [
+      {
+        ...{ personId: who.ana.id, name: 'Ana Lima', email: 'ana@example.test', role: 'owner' },
+        ...{ mayRemove: false, mayChangeTo: [], mayEditProfile: false, ...unwritten },
+      },
+      {
+        ...{ personId: who.bruno.id, name: 'Bruno Reis', email: 'bruno@example.test' },
+        ...{ role: 'member', mayRemove: true, mayChangeTo: [], mayEditProfile: true, ...unwritten },
+      },
+    ],
+    next: { kind: 'END' },
+  }
+}
+
 test('fora: o membro lê a empresa e as pessoas; os convites, só dono e administrador; outra empresa, id desconhecido ou malformado, o mesmo 404', async (t) => {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ANA_OWNER)
@@ -60,29 +78,7 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
   const owner = await call(hub, ana, 'GET', `/api/companies/${companyId}`)
   assert.deepEqual(Object(owner.json()).mayInviteAs, ['owner', 'admin', 'developer', 'member'])
   const members = await call(hub, bruno, 'GET', `/api/companies/${companyId}/members`)
-  assert.deepEqual(members.json(), {
-    members: [
-      {
-        personId: ana.id,
-        name: 'Ana Lima',
-        email: 'ana@example.test',
-        role: 'owner',
-        mayRemove: false,
-        mayChangeTo: [],
-        invitationsSent: 0,
-      },
-      {
-        personId: bruno.id,
-        name: 'Bruno Reis',
-        email: 'bruno@example.test',
-        role: 'member',
-        mayRemove: true,
-        mayChangeTo: [],
-        invitationsSent: 0,
-      },
-    ],
-    next: { kind: 'END' },
-  })
+  assert.deepEqual(members.json(), peopleSeenBy({ ana, bruno }))
   const invitations = await call(hub, ana, 'GET', `/api/companies/${companyId}/invitations`)
   assert.deepEqual(invitations.json(), { invitations: [], next: { kind: 'END' } })
   await hub.test.asOwner(`update auth.member set role = 'admin' where user_id = $1`, [bruno.id])

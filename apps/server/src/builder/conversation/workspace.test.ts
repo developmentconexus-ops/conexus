@@ -55,7 +55,7 @@ test('pela rota, a escrita vai para o Projeto da conversa e não para o vizinho'
 test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async (t) => {
   const link = {
     name: 'mastra_workspace_execute_command',
-    input: { command: 'ln -s .. saida' },
+    input: { description: 'Rodando um teste', command: 'ln -s .. saida' },
   }
   const model = steps(
     [write('a.ts', 'um\n')],

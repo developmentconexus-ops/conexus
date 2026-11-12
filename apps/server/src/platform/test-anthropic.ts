@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { Sent } from './test-anthropic-body.ts'
 import { sentOf } from './test-anthropic-body.ts'
 import type { Block } from './test-anthropic-stream.ts'
-import { events } from './test-anthropic-stream.ts'
+import { chatFetchFrames, events, widthOf } from './test-anthropic-stream.ts'
 import { isModelList } from './test-model-lists.ts'
 import { replayed } from './test-recordings.ts'
 
@@ -32,7 +32,7 @@ type Settled =
   | { kind: 'fetch'; url: string }
   | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' | 'refusal' }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string>; cyber?: true }
-  | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
+  | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string; before?: Block[] }
   | { kind: 'reset' }
   | { kind: 'recorded'; name: string }
   | { kind: 'malformed' }
@@ -103,6 +103,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     ),
     // Chat Completions' tool declarations are not read into `schemas`: no test of this path needs them.
     schemas: {},
+    declared: {},
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     systems: [],
     texts,
@@ -148,13 +149,15 @@ function chatReplied(sent: Sent, reply: Reply, signal: AbortSignal | null | unde
     return { ...base, object: 'chat.completion.chunk', choices }
   }
   const frames =
-    reply.kind === 'malformed'
-      ? [chunk({ role: 'assistant', content: '' }, null), chunk({}, 'MALFORMED_FUNCTION_CALL')]
-      : [
-          chunk({ role: 'assistant', content: '' }, null),
-          chunk({ content: text }, null),
-          { ...chunk({}, 'stop'), usage },
-        ]
+    reply.kind === 'fetch'
+      ? chatFetchFrames(reply.url, chunk, usage)
+      : reply.kind === 'malformed'
+        ? [chunk({ role: 'assistant', content: '' }, null), chunk({}, 'MALFORMED_FUNCTION_CALL')]
+        : [
+            chunk({ role: 'assistant', content: '' }, null),
+            chunk({ content: text }, null),
+            { ...chunk({}, 'stop'), usage },
+          ]
   const lines = [...frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`), 'data: [DONE]\n\n']
   if (reply.kind === 'hold') {
     return new Response(heldChat(reply.until, lines), {
@@ -174,14 +177,19 @@ function heldStream(
   until: Promise<void>,
   text?: string,
   rest?: string,
+  before: Block[] = [],
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
-  const frames = events(MODEL, [{ type: 'text', text: text ?? '' }], 'end_turn').split('\n\n')
-  // The message's start, its text block's start and its text; then its end.
-  const cut = text === undefined ? 0 : 3
+  const frames = events(MODEL, [...before, { type: 'text', text: text ?? '' }], 'end_turn').split(
+    '\n\n',
+  )
+  // The message's start, the blocks before the text, its text block's start and its text; then its end.
+  const ahead = events(MODEL, before, 'end_turn').split('\n\n').length - 4
+  const cut = text === undefined ? 0 : 1 + ahead + 2
   const head = frames.slice(0, cut)
   const tail = frames.slice(cut)
-  const more = { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: rest } }
+  const index = before.reduce((sum, block) => sum + widthOf(block), 0)
+  const more = { type: 'content_block_delta', index, delta: { type: 'text_delta', text: rest } }
   return new ReadableStream({
     async start(controller) {
       controller.enqueue(encoder.encode(`${head.join('\n\n')}\n\n`))
@@ -227,7 +235,7 @@ function replied(sent: Sent, reply: Settled, signal: AbortSignal | null | undefi
     return new Response(JSON.stringify(error), { status: reply.status, headers })
   }
   if (reply.kind === 'hold') {
-    return new Response(heldStream(reply.until, reply.text, reply.rest), {
+    return new Response(heldStream(reply.until, reply.text, reply.rest, reply.before), {
       headers: { 'content-type': 'text/event-stream' },
     })
   }

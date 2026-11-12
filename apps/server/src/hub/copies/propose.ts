@@ -158,6 +158,52 @@ function callsOf(definition: CopyDefinition, counts: readonly ProveCounts[]): nu
   return sum
 }
 
+const RawSource = z.object({
+  version: z.literal(2),
+  source: z.object({
+    operation: z.string(),
+    input: z.record(z.string(), z.unknown()).default({}),
+  }),
+})
+
+/**
+ * What a version 2 definition that fails the shape still fails against its connector's read, when
+ * its operation and fixed input can be read: the refusal then names every issue at once, not one
+ * layer a round. Nothing when the connections are not one connector the company has.
+ */
+async function readIssuesOf(deps: CopiesDeps, ids: OfProject, a: Proposal): Promise<string[]> {
+  const raw = RawSource.safeParse(a.definition)
+  if (!raw.success) return []
+  const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: a.personId } as const
+  const connectors = await deps.database.read(scope, async (tx) => {
+    const names = await connectionNamesOf(tx, { companyId: ids.companyId, ids: a.connections })
+    return new Set(a.connections.flatMap((id) => names.get(id)?.connector ?? []))
+  })
+  const [connector, ...others] = connectors
+  if (connector === undefined || others.length > 0) return []
+  return deps.connectors().sourceIssues(connector, raw.data.source)
+}
+
+/** The refusal for a name, a definition or connections that fail their schema: each path's message, and the read rules the definition still fails. */
+async function malformed(
+  deps: CopiesDeps,
+  ids: OfProject,
+  a: Proposal,
+  parts: Record<'name' | 'definition' | 'connections', z.ZodSafeParseResult<unknown>>,
+): Promise<ProposeAnswer> {
+  const { name, definition, connections } = parts
+  const read = definition.success || !connections.success ? [] : await readIssuesOf(deps, ids, a)
+  return {
+    kind: 'MALFORMED',
+    issues: [
+      ...(name.success ? [] : issuesOf(name.error, 'name')),
+      ...(definition.success ? [] : issuesOf(definition.error, 'definition')),
+      ...(connections.success ? [] : issuesOf(connections.error, 'connections')),
+      ...read,
+    ],
+  }
+}
+
 /**
  * Propor (Capacidade 3, U3; O Sync de qualquer conector, U4): the definition by `CopyDefinition` and
  * the name by `CopyName`, the name against the company's copies and open proposals, the connections
@@ -173,12 +219,8 @@ export async function propose(
   const parsedName = CopyName.safeParse(a.name)
   const parsed = CopyDefinition.safeParse(a.definition)
   const named = Connections.safeParse(a.connections)
-  const issues = [
-    ...(parsedName.success ? [] : issuesOf(parsedName.error, 'name')),
-    ...(parsed.success ? [] : issuesOf(parsed.error, 'definition')),
-    ...(named.success ? [] : issuesOf(named.error, 'connections')),
-  ]
-  if (!parsedName.success || !parsed.success || !named.success) return { kind: 'MALFORMED', issues }
+  if (!parsedName.success || !parsed.success || !named.success)
+    return malformed(deps, ids, a, { name: parsedName, definition: parsed, connections: named })
   const name = parsedName.data
   const definition = parsed.data
   const taken = await existing(deps, ids, name)

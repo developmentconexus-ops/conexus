@@ -1,7 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import { isSubscription } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
-import type { LanguageModel } from '@mastra/core/llm'
 import { parseModelString } from '@mastra/core/llm'
 import type {
   ErrorProcessor,
@@ -23,8 +22,11 @@ import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import { forCliProxy } from './google/flat-unions.ts'
+import { minusProviderTools } from './provider-tools.ts'
 import type { QueueDeps } from './queue.ts'
-import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import { markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import type { SideCall } from './side-calls.ts'
+import { noAccountModel, watched } from './side-calls.ts'
 import type { ProviderOptions } from './thinking.ts'
 import { providerOptionsOf } from './thinking.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
@@ -32,7 +34,6 @@ import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
-const WEB_SEARCH = 'web_search'
 /** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
 const TURN_STEPS = 100
 const LAST_STEP =
@@ -118,21 +119,6 @@ function until(date: Date): string {
   return TIME.format(date).replace(':', 'h')
 }
 
-/** A model the queue answers with when no account is left: it fails here and calls no one. */
-function noAccountModel(modelId: ModelId) {
-  function fail(): Promise<never> {
-    return Promise.reject(new Failure('MODEL_NO_ACCOUNT'))
-  }
-  return callModel({
-    specificationVersion: 'v2',
-    provider: providerOf(modelId),
-    modelId,
-    supportedUrls: {},
-    doGenerate: fail,
-    doStream: fail,
-  })
-}
-
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
 function sayRefused(args: Notifier, turn: Turn, next: Picked) {
   for (const label of turn.unsaid.splice(0)) {
@@ -214,9 +200,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
-      if (turn.switched && args.activeTools !== undefined) {
-        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
-      }
+      if (turn.switched && args.activeTools !== undefined)
+        result.activeTools = minusProviderTools(args.activeTools, chosenModel(args.requestContext))
       const flat = forCliProxy(account.kind, args.tools)
       if (flat !== undefined) result.tools = flat
       return result
@@ -292,33 +277,6 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
   return { retry: true }
 }
 
-/** Mastra's own calls in a turn that are not the agent's: what the log names a failed one by. */
-type SideCall = 'title' | 'observer' | 'reflection'
-
-/**
- * The model with its failures logged by call and account, since Mastra's own log line carries
- * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
- */
-function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
-  const model = account.models.system
-  if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
-  function report(error: unknown): never {
-    const fields = { companyId: turn.companyId, accountId: account.id, call }
-    deps.log.info({ ...fields, failure: callFailureOf(error).kind }, 'MODEL_SIDE_CALL_FAILED')
-    throw error
-  }
-  type Options = Parameters<typeof model.doGenerate>[0]
-  return {
-    specificationVersion: 'v3',
-    provider: model.provider,
-    modelId: model.modelId,
-    supportedUrls: model.supportedUrls,
-    id: model.id,
-    doGenerate: (options: Options) => Promise.resolve(model.doGenerate(options)).catch(report),
-    doStream: (options: Options) => Promise.resolve(model.doStream(options)).catch(report),
-  }
-}
-
 /**
  * The model of Mastra's own calls in a turn: the title's is the turn's account. The observer's and
  * the reflector's are the company's choice, read when the turn opened (`Turn.memoryModels`), picked
@@ -330,7 +288,7 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
  */
 export function accountModel(
   deps: QueueDeps,
-  call: SideCall,
+  call: Exclude<SideCall, 'subagent'>,
   turnFor: (requestContext: RequestContext) => Promise<Turn | undefined>,
 ) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
@@ -350,7 +308,7 @@ export function accountModel(
 /** The account of a side call in `turn`; `requestContext` is where its notices are said, if anywhere. */
 async function modelOf(
   deps: QueueDeps,
-  call: SideCall,
+  call: Exclude<SideCall, 'subagent'>,
   turn: Turn,
   requestContext: RequestContext | undefined,
 ) {

@@ -251,7 +251,7 @@ dia a dia fechar (L5), e não muda a ordem do roteiro.
 | 41 | U12 | O resumo do ajudante volta como o resultado de `subagent`, e o pedido seguinte do principal leva esse texto e nenhum resultado das leituras do ajudante | `research.test.ts`, "só o resumo volta" | must |
 | 42 | U12 | A linha do ajudante: "Pesquisando: <pedido>" enquanto roda, "Pesquisou: <pedido>" ao terminar, o resumo ao abrir, "A pesquisa falhou" no erro; nas capturas a 1366 e 390 px, nos dois temas, um pedido longo fica numa linha cortada, sem estouro horizontal | `apps/web/src/builder/conversation/tool-registry.test.ts`, "o ajudante", e `conversation.layout.test.tsx`, "a linha do ajudante" | must |
 | 43 | U12 | A linha do turno no log ganha `helpers` (as pesquisas) e `helperCalls` (as ferramentas que o ajudante chamou), contadas dos eventos `subagent_end` e `subagent_tool_start`; sem ajudante, os campos não aparecem | `apps/server/src/builder/conversation/turn-line.test.ts`, "o ajudante no log" | must |
-| 44 | U7 | O bloco da memória de trabalho que chega ao modelo traz o `PROFILE_TEMPLATE` com as quatro seções (quem é, correções, trabalho em andamento, onde achar), a regra de não guardar o que uma leitura do sistema dá, o teto de 4.000 caracteres e a data em cada linha | `profile-memory.test.ts`, "o modelo da memória" | must |
+| 44 | U7 | O bloco da memória de trabalho que chega ao modelo traz o `PROFILE_TEMPLATE` só com as quatro seções em português (Sobre você, Correções que você deu, No que você está trabalhando, Onde achar as coisas), sem nenhum comentário de regra; a regra de não guardar o que uma leitura do sistema dá, o teto de 4.000 caracteres, a data em cada linha e o cartão `propose_company_memory` para o que vale para a empresa toda chegam pela mensagem fixa do Assistente | `profile-memory.test.ts`, "o modelo da memória" e "as regras da nota pessoal moram nas instruções" | must |
 | 45 | U4 | O texto fixo diz que os blocos de estado e os lembretes do pedido vêm do Conexus, não da pessoa, e continua os mesmos bytes entre conversas | `instructions.test.ts`, "o que é um lembrete" | must |
 
 ## A matriz de estados
@@ -334,7 +334,7 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | +-----------------------------------------------+ |      | 312 / 2000  [Salvar]   |
 |                                         [Salvar]  |      | Páginas                |
 | Páginas                                           |      | CODTIPOPER 1100        |
-| CODTIPOPER 1100   Ana · 11/11/2026   [Ver] [⋯]    |      |  Ana · 11/11/2026  [⋯] |
+| CODTIPOPER 1100   Ana · 11/11/2026   [Ver]        |      |  Ana · 11/11/2026 [Ver]|
 ```
 
 ## A tabela de falhas
@@ -345,6 +345,8 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
 | `updateWorkingMemory` pelo modelo, `PUT` e `DELETE` da pessoa | Os dois gravam o texto inteiro: o último vence; a tela mostra o que ficou ao recarregar | Cortada antes do `COMMIT` do Mastra: nada mudou, e a pessoa reenvia (o `PUT` e o `DELETE` são idempotentes); um 502 ou 503 na resposta: a tela relê e mostra o que ficou | O banco do Mastra fora: `DATABASE_UNAVAILABLE` na rota; no turno, a falha de memória de hoje | nada novo; nunca o texto da memória (S41) | 20, 21 |
 | Gravar cargo e área (comando do Hub, trava do membro) | A trava do membro ordena as duas; o último vence | Transação inteira ou nada; a resposta cortada: o `PUT` é idempotente e a tela relê | O banco do Hub fora: `DATABASE_UNAVAILABLE` | nada novo | 23 |
 | `Knowledge.upsertPage` e `removePage` pela rota; `knowledge_page`, `knowledge_note` e `knowledge_pin` pelo modelo | Duas gravações na mesma página: o último vence (`upsertPage` não leva versão, `dist/knowledge/host-writes.d.ts:8-26`), e a tela relê depois de salvar; um `removePage` com outra gravação no meio lança `KnowledgeConflictError` (`dist/knowledge/index.d.ts:89-92`), que vira `COMPANY_MEMORY_CHANGED` (409), e a tela relê; o modelo recebe o erro da ferramenta e relê | `upsertPage` grava a página e a versão juntas; `unchanged` não grava; uma resposta cortada: o `PUT` do mesmo corpo é idempotente pelo caminho | O banco do Mastra fora: `DATABASE_UNAVAILABLE`; o armazenamento do `Knowledge` que pede reset (um Mastra novo): o teste do critério 29 falha antes de chegar ao `main` | `COMPANY_MEMORY_CHANGED` com o caminho da página, nunca o corpo (S41) | 26, 27, 28, 29 |
+| Salvar pelo cartão de uma proposta (`createPage` com `upsertPage`, `addNote` com `store.addNote`) e gravar as instruções (`PUT .../instructions`, `upsertPage`) | Dois toques no mesmo cartão: a chave da tentativa é o caminho da página e o id da nota, então o segundo toque acha o que o primeiro gravou e devolve o mesmo; dois processos gravando a mesma nota ao mesmo tempo dão a chave primária duplicada do armazenamento, que sobe como erro do servidor e a tela relê (nada a mais é gravado) | A resposta cortada: o mesmo toque devolve a página ou a nota já gravada; a gravação e a versão da página vão juntas | O banco do Mastra fora: `DATABASE_UNAVAILABLE`; o do Hub fora, na admissão: `DATABASE_UNAVAILABLE` antes de gravar | nada novo, nunca o texto (S41) | 26, 27, 30 |
+| A permissão "Memória da empresa" e a do perfil, conferidas no Hub e a gravação no banco do Mastra | Dois bancos, nenhuma transação comum (S8): a admissão lê o papel numa transação de leitura do Hub e a gravação vem depois, no banco do Mastra; um papel tirado entre as duas não para essa gravação, que já estava admitida | A admissão negada para antes de qualquer gravação; a gravação cortada deixa a página como estava | O banco do Hub fora: `DATABASE_UNAVAILABLE` | nada novo | 26, 27, 23 |
 | A chamada paga de busca e de leitura de página pelo provedor | Cada chamada é do provedor, dentro do turno | O turno parado corta a chamada, como hoje | O provedor fora: o erro da ferramenta vai ao modelo, como hoje | nada novo | 6, 8 |
 | A leitura tipada (a mesma porta de `connector_read`) | O contador das 50 é síncrono (`builder-port.ts:102-112`), também com as ferramentas em paralelo | Como `connector_read` hoje | Como `connector_read` hoje | nada novo | 16, 17 |
 | A pesquisa do ajudante (`subagent`, as leituras dele e o arquivo de cada uma) | Dois ajudantes no mesmo passo (as ferramentas em paralelo da U2): cada um com o seu agente; o contador das 50 é o do turno, síncrono, e conta os dois; a numeração dos arquivos conta pelo turno, não pelo contexto (U12), e dois nunca pegam o mesmo número | Parar: o Mastra corta o ajudante pelo mesmo sinal do turno e devolve o texto parcial (`@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6933-6948`); uma leitura cortada é a de hoje | A conta do modelo falha: o ajudante devolve erro ao principal (`:6963-6993`), que segue o turno sem trocar de conta; o sistema da empresa fora: o erro da leitura vai dentro do resumo | `MODEL_SIDE_CALL_FAILED` com `call: 'subagent'` (o `watched` de hoje); nunca o pedido nem o resumo (S41). Um ajudante que chega aos 50 passos sem texto devolve conteúdo vazio (`:6949`): o `execute` do `researchOnly` troca o vazio por "The research ended without findings: answer from what you have or say it could not be done." | 38, 39, 40, 41 |
@@ -400,6 +402,10 @@ Configurações › Memória da empresa, a 1280 e a 390 px:
   `KNOWLEDGE_STORAGE_SCHEMA_VERSION` exporta as páginas (`readKnowledgePage` e
   `listKnowledgeTreeChildren`) e as regrava com `upsertPage` depois do reset. Vai para
   [boundaries](../reference/boundaries.md) no fechamento.
+- O texto fixado da biblioteca (`PinnedStateProcessor`, `dist/agent-BP9OWM6D.js:73833-73840`) ainda
+  manda o modelo "passar a ref e a versão a `knowledge_page`", que ele não tem depois do B1: o Mastra
+  1.82 não dá opção para esse texto (a opção `instructions` troca só o bloco de uso). O placar da
+  U11 diz se isso custa respostas erradas.
 - `web_fetch` nos provedores sem a ferramenta nativa continua o `webFetchTool` (HTML cru, #143).
 - A skill de cada conector repete os parâmetros que o esquema da leitura tipada já dá (trilho de molde).
 - O tamanho das ferramentas do primeiro passo e as chamadas repetidas são medidos pelo placar da U11,
@@ -783,24 +789,19 @@ Critérios 16 a 18. Falham hoje: `connector_read` com `input` livre.
 
 ### Os contratos que a unidade cria
 
-- `assistantMemory`: `recall: 'resource'` (o `retrieval: true` nativo); `workingMemory: { enabled: true, scope: 'resource', template: PROFILE_TEMPLATE }`; `PROFILE_TEMPLATE` em inglês, dono `assistant/memory.ts`.
+- `assistantMemory`: `recall: 'resource'` (o `retrieval: true` nativo); `workingMemory: { enabled: true, scope: 'resource', template: PROFILE_TEMPLATE }`; `PROFILE_TEMPLATE` em português (L23: a pessoa lê a nota na tela), dono `assistant/memory.ts`; as regras ficam na mensagem fixa (`prompt/assistant.md`), onde a pessoa não as apaga (decisão do fundador de 2026-11-12: "A Okay"); o modelo em inglês da primeira versão continua sendo lido como vazio, e uma nota guardada com ele continua legível (`LEGACY_PROFILE_TEMPLATE`).
 - O conteúdo do `PROFILE_TEMPLATE` (o item 3 do estudo do harness, antes de a unidade construir),
   dos quatro tipos de nota do Claude Code (`D/memory.md:478-566`: `user`, `feedback`, `project`,
   `reference`), sem o "índice" dele, que aqui não existe (a nota é um texto só):
 
   ```markdown
-  # About the person
-  <!-- role, area, what they follow; only what they said or showed -->
-  # Corrections they gave
-  <!-- how they want answers: format, terms, what was wrong before -->
-  # Work in progress
-  <!-- what they are following now, with the period -->
-  # Where to find things
-  <!-- which connection, read or file holds what they ask often -->
-  <!-- Rules: never keep what a read of the company's systems gives again (values, lists, totals);
-  end each line you add with its date (YYYY-MM-DD); keep this note under 4,000 characters, shortening
-  the oldest lines first. -->
+  # Sobre você
+  # Correções que você deu
+  # No que você está trabalhando
+  # Onde achar as coisas
   ```
+
+  As regras (só o que a pessoa disse ou mostrou; nunca guardar o que uma leitura dos sistemas da empresa dá de novo; terminar cada linha com a data AAAA-MM-DD; manter a nota abaixo de 4.000 caracteres, encurtando as linhas mais velhas primeiro; escrever em português; oferecer o cartão `propose_company_memory` quando algo da nota vale para a empresa toda, sem nunca gravá-lo sozinho, decisão do fundador de 2026-11-12: "C sim"); a nota continua valendo na hora e a pessoa corrige na tela, sem confirmar cada coisa, como já diz a decisão 0065 (decisão do fundador de 2026-11-12: "Tudo o que voce recomenda") ficam na mensagem fixa do Assistente, na forma que o documento do Mastra manda para a memória de trabalho (as regras de atualização nas instruções do agente).
 
   A data em cada linha é decisão nossa: o Claude Code grava a data da nota sozinho, num campo `modified`, e não pede ao modelo que date cada linha; aqui a nota é um texto só, e a data por linha é o jeito de o modelo saber o que é velho. O teto de 4.000 caracteres é o mesmo do `PUT` da pessoa (abaixo): a nota que o modelo grava cabe
   na que a pessoa pode gravar. O Mastra não corta a memória de trabalho; o teto é a regra do modelo,
@@ -879,6 +880,9 @@ Critérios 19 a 22 e 44. Falham hoje: não há `recall` nem memória de trabalho
   toda rota de empresa. Vai num pull request só dela, com a palavra do fundador (decisão 2 da página),
   antes da U8.
 - O arquivo tomado como modelo é `hub/identity/nickname.ts`: cumpre C23 e C26; C21 não se aplica.
+- A falha `NOT_IN_ROLE` desta rota tem frase própria (emenda de 2026-11-12, decidida pelo firstmate
+  pela L9): "Só quem pode mudar papéis muda o cargo e a área de outra pessoa." A tela esconde o botão de
+  quem não pode; a frase aparece só com a permissão vencida no meio.
 
 ### As skills e a leitura
 
@@ -976,8 +980,10 @@ para a permissão.
 ### A ordem do trabalho
 
 1. A permissão nos papéis. Regras: S8.
-2. `company-memory.ts`, a instância e o agente; o bloco da conversa diz, para quem não escreve: "You
-   cannot save company memory here: say what an owner or an administrator should save."
+2. `company-memory.ts`, a instância e o agente; o bloco da conversa diz, para quem não escreve (emenda de
+   2026-11-12, depois do B1): "You cannot save company memory here: propose it with
+   propose_company_memory and say that only an owner or an administrator saves it, with the Save
+   button of the card."
 3. As rotas e a tela.
 4. O teste do formato (`KNOWLEDGE_STORAGE_SCHEMA_VERSION === 4`).
 
@@ -991,6 +997,78 @@ Critérios 26 a 31, com o banco real de teste e o modelo dublê. Falham hoje: n�
 - A página fixada entra antes da mensagem fixa no pedido.
 - O `Knowledge` cria tabelas fora do esquema `mastra` ou pede uma permissão que o papel do Mastra no
   banco não tem.
+
+### Emenda técnica da U9 (2026-11-12)
+
+Achada ao construir o passo 3 e decidida pelo firstmate pela L9, sem mudar o que o fundador vê. Vale no
+lugar do que diverge acima ("As rotas", "A leitura pela tela", a matriz da página e o critério 28).
+
+1. **Páginas por id.** No `knowledge_page` o `key` é opcional (`@mastra/core@1.82.0`
+   `dist/agent-BP9OWM6D.js:73110`, `:73179`): uma página criada pelo modelo pode não ter caminho, e
+   `upsertPage` e `removePage` só endereçam por `scope#path` (`dist/knowledge/host-writes.d.ts:8-26`;
+   `dist/knowledge/index.d.ts:85-95`). As rotas de página passam a endereçar por `pageId`:
+   `readCompanyMemoryPage` (`GET .../company-memory/pages/{pageId}`) lê com `readKnowledgePage`
+   (`dist/knowledge/explorer-pages.d.ts:61`); `writeCompanyMemoryPage` (`PUT`) e
+   `removeCompanyMemoryPage` (`DELETE`) usam `updatePage` e `deletePage` do armazenamento
+   (`dist/storage/domains/knowledge/base.d.ts:93-96`) com `expectedVersion`, e o
+   `KnowledgeConflictError` vira `COMPANY_MEMORY_CHANGED` (409) também no `PUT`. O `upsertPage` fica só
+   para a página `instrucoes`, que tem caminho declarado.
+2. **Notas.** O texto de uso do Mastra manda uma nota por fato (`dist/knowledge/instructions.d.ts:10`),
+   então o que se pede "para a empresa" tende a virar nota. `CompanyMemoryPage` ganha `notes:
+   { id, body, updatedAt, author }[]`; a tela mostra as notas de cada página e o membro com a
+   permissão corrige ou apaga uma (`updateNote`, `removeNote`, `dist/knowledge/index.d.ts:109-121`),
+   com as mesmas falhas.
+3. **O escopo da empresa existe desde a primeira conversa.** O escopo `org:<empresa>` só nasce na
+   primeira gravação, e o id da empresa não aparece no pedido: o modelo não acharia onde gravar. O
+   host cria o escopo e a página `instrucoes` vazia, de forma idempotente (`upsertPage` com o corpo
+   vazio), na primeira conversa da empresa, antes do primeiro pedido ao modelo. Uma página fixada só
+   é entregue com corpo (`dist/knowledge/pinned.d.ts`); vazia, não entra no pedido.
+4. **O autor.** `CompanyMemoryPage.author` e `CompanyNote.author` vêm do `author` que o host já grava
+   (`dist/knowledge/host-writes.d.ts:24`, `:36`); a tela mostra "Ana · 11/11/2026".
+5. **A frase de quem não pode.** Na página, para o membro sem a permissão: "Só o dono ou um
+   administrador muda a memória da empresa." (W34).
+6. **B1: o que o agente aprende para a empresa só vale depois de aprovado** (fundador, 2026-11-12,
+   depois da aprovação do cartão; a resposta mais nova vale). O modelo **não grava** na memória da
+   empresa: ele **propõe**, e a aprovação é uma rota, nunca um prompt (decisão 0064). O `Knowledge` do
+   Mastra 1.82.0 não aceita `requireApproval` na configuração (`@mastra/core@1.82.0`
+   `dist/knowledge/config.d.ts:38-42`; as ferramentas de gravação nascem sem ele,
+   `dist/agent-BP9OWM6D.js:73432-73443`, e a ligação ao agente só repassa o que vem,
+   `:82072-82098`), e o Assistente roda com `yolo` (decisão 0053), que aprova sozinho
+   (`dist/agent-controller-BDds1y5w.js:5174-5179`, `:6382-6386`, `:8638-8643`): a aprovação nativa de
+   ferramenta não serve aqui. Decidido pelo firstmate (opção d), sem mudar a 0053 e sem remendo:
+   a. O Assistente fica só com as ferramentas de leitura do Knowledge; `knowledge_page`,
+      `knowledge_note` e `knowledge_pin` saem do conjunto fechado do Assistente (filtrando a lista na
+      montagem, sem embrulhar o comportamento delas, se a configuração não deixar escolher só a
+      leitura de forma nativa).
+   b. A ferramenta `propose_company_memory` devolve na conversa um cartão com o texto e o botão
+      Salvar, no mesmo formato do cartão de proposta de `copy_propose`
+      (`apps/web/src/builder/conversation/copy-proposal-card.tsx`). O toque chama a rota de gravação
+      da tela Memória da empresa, e o autor é a pessoa que tocou. Quem não tem a permissão vê o
+      cartão sem o botão e com a frase da W34.
+   c. O componente do cartão é escrito para a entrada conversada (a U5 de
+      https://github.com/developmentconexus-ops/conexus/pull/982, `propose_company_instructions`) só o
+      chamar.
+   A gravação direta pela tela não muda. Critério 27 ganha: "o modelo de quem tem a permissão não
+   tem ferramenta de gravação do Knowledge", "a proposta vira o cartão com o texto", "o toque grava
+   pela rota, com a pessoa como autora" e "sem o toque, nada é gravado".
+
+7. **As instruções têm porta própria e a lista só lê.** A lista de uma empresa que ainda não tem o
+   escopo (nenhuma conversa, nenhuma gravação) devolve as instruções vazias e nenhuma página, sem
+   criar nada (C36). O texto das instruções grava pelo caminho declarado, `PUT
+   .../company-memory/instructions` (`writeCompanyMemoryInstructions`, `upsertPage`, o último
+   vence, até 2.000 caracteres), e a primeira gravação cria o escopo; a tela não lê nem apaga as
+   instruções por id. Isto vale no lugar de "o `GET` cria a página das instruções" do item 3: o
+   escopo nasce na primeira conversa (o host) ou na primeira gravação das instruções.
+8. **A nota grava pelo armazenamento, com o id da tentativa.** O `addNote` do host
+   (`dist/knowledge/index.d.ts:105`) não aceita id e só endereça por `scope#path`; a nota do cartão
+   precisa do id da tentativa para que tocar duas vezes grave uma só (C37), e a página dela é a que o
+   modelo leu, por id. Por isso a gravação fica em `store.addNote`, com `mentions: []`: um
+   `[[escopo#caminho]]` escrito na nota fica texto, sem vínculo. A criação de página segue o
+   `upsertPage` do host.
+9. **A linha da página.** A tela tem **Ver**; Editar e Apagar ficam dentro da página aberta, como
+   o esboço acima agora mostra (o `[⋯]` do esboço antigo não existe). O fundador aprova no uso.
+10. **Sem autor.** O Assistente não grava na memória da empresa (B1): quando o Hub não acha o nome de
+   quem gravou, a tela mostra só a data, nunca "Assistente".
 
 ## U10 A frase de cada comando
 

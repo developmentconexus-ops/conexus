@@ -18,7 +18,7 @@ import { envelope, rowsOf } from './recordings.ts'
 let questionsKept: readonly Record<string, unknown>[] | undefined
 
 /** 12 questions shaped as the recorded one, every fourth answered as it was; the asker's name and e-mail are planted for the kit to drop. */
-function questionsOf() {
+export function questionsOf() {
   const recorded = rowsOf('perguntas-varredura', 'questions')
   questionsKept ??= Array.from({ length: 12 }, (_, index) => ({
     ...recorded[0],
@@ -32,7 +32,7 @@ function questionsOf() {
   return questionsKept
 }
 
-const PERIODS = Array.from({ length: 14 }, (_, index) => {
+export const PERIODS = Array.from({ length: 14 }, (_, index) => {
   const month = String(index + 1).padStart(2, '0')
   return {
     key: `2025-${month}-01`,
@@ -43,6 +43,20 @@ const PERIODS = Array.from({ length: 14 }, (_, index) => {
     period_status: 'CLOSED',
   }
 })
+
+/** The reason of the double's one open claim. */
+export const CLAIM_REASON = 'PNR'
+/** The one promotion of the double: still a candidate, it starts on 1 October 2026. */
+export const PROMOTION = {
+  id: 'P-MLB1000',
+  type: 'DEAL',
+  status: 'candidate',
+  name: 'Semana do Pão',
+  start_date: '2026-10-01T00:00:00',
+  finish_date: '2026-10-07T23:59:59',
+}
+/** The visits of the double: one total, none by listing. */
+export const TOTAL_VISITS = 321
 
 const NEEDS_DOCUMENT_TYPE = {
   status: 400,
@@ -130,7 +144,7 @@ export const MORE_ROUTES: readonly Route[] = [
             status: query.get('status') ?? 'opened',
             type: 'mediations',
             stage: 'claim',
-            reason_id: 'PNR',
+            reason_id: CLAIM_REASON,
             date_created: '2026-09-12T09:00:00.000-03:00',
             last_updated: '2026-09-12T10:00:00.000-03:00',
             players: [{ role: 'respondent', type: 'seller', user_id: Number(SELLER.ref) }],
@@ -152,7 +166,7 @@ export const MORE_ROUTES: readonly Route[] = [
         status: 'opened',
         type: 'mediations',
         stage: 'claim',
-        reason_id: 'PNR',
+        reason_id: CLAIM_REASON,
         date_created: '2026-09-12T09:00:00.000-03:00',
         last_updated: '2026-09-12T10:00:00.000-03:00',
         resolution: null,
@@ -180,16 +194,7 @@ export const MORE_ROUTES: readonly Route[] = [
     pattern: new RegExp(`^/seller-promotions/users/${SELLER_PATH}$`),
     answer: () => ({
       body: {
-        results: [
-          {
-            id: 'P-MLB1000',
-            type: 'DEAL',
-            status: 'candidate',
-            name: 'Semana do Pão',
-            start_date: '2026-10-01T00:00:00',
-            finish_date: '2026-10-07T23:59:59',
-          },
-        ],
+        results: [PROMOTION],
         paging: { total: 1 },
       },
     }),
@@ -202,8 +207,8 @@ export const MORE_ROUTES: readonly Route[] = [
       body: {
         date_from: query.get('date_from'),
         date_to: query.get('date_to'),
-        total_visits: 321,
-        visits_detail: [{ company: 'mercadolibre', quantity: 321 }],
+        total_visits: TOTAL_VISITS,
+        visits_detail: [{ company: 'mercadolibre', quantity: TOTAL_VISITS }],
       },
     }),
   },

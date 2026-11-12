@@ -45,6 +45,14 @@ test('pedidos pelo que mudou', () => {
   )
 })
 
+test('pedidos lê sem deslocamento nem tamanho, e a API usa o seu padrão', () => {
+  const pedidos = operationOf('pedidos')
+  assert.equal(pedidos.input.safeParse({ status: 'paid' }).success, true)
+  const query = requestOf(pedidos, { status: 'paid' }, ACCOUNT, SENT_AT).query
+  assert.equal('offset' in query, false)
+  assert.equal('limit' in query, false)
+})
+
 test('a varredura: a primeira página manda scan, as seguintes o scroll_id', () => {
   for (const id of ['anuncios', 'perguntas']) {
     const read = operationOf(id)

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { assisting, created, READ, said, talking } from '../assistant/test-assistant.ts'
+import { assisting, created, said, searching, talking } from '../assistant/test-assistant.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { madeTool, publishedAgent, talkedTo } from './test-agents.ts'
@@ -67,11 +67,12 @@ test('a ferramenta de busca do agente do Projeto: acha por nome sem acento, pagi
   assert.match(refused?.text ?? '', /Unrecognized key.*telefone/)
 })
 
-test('o Assistente busca pelo connector_read: acha o produto sem acento, pagina com depoisDe através do corte de 20, e o campo que a busca não tem volta recusado com o nome dele', async (t) => {
+test('o Assistente busca pela leitura tipada: acha o produto sem acento, pagina com depoisDe através do corte de 20, e o campo que a busca não tem volta recusado com o nome dele', async (t) => {
   function search(input: object) {
-    return tool(READ, { connection: 'Matriz', operation: 'sankhya.buscarProdutos', input })
+    return tool('sankhya_buscarProdutos', { connection: 'Matriz', ...input })
   }
   const on = await assisting(t, [
+    [searching('buscarProdutos')],
     [search({ nome: 'pão' })],
     [search({ limite: 50 })],
     [search({ depoisDe: 411, limite: 50 })],
@@ -84,7 +85,7 @@ test('o Assistente busca pelo connector_read: acha o produto sem acento, pagina 
   })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Qual o código do pão?')), 'complete')
-  const found = on.calls[1]?.texts.find((text) => text.includes('"kind":"OK"')) ?? ''
+  const found = on.calls[2]?.texts.find((text) => text.includes('"kind":"OK"')) ?? ''
   assert.deepEqual(
     z
       .object({ value: z.object({ linhas: z.array(z.object({ codigoProduto: z.number() })) }) })
@@ -100,18 +101,18 @@ test('o Assistente busca pelo connector_read: acha o produto sem acento, pagina 
       temMais: z.boolean(),
     }),
   })
-  const first = Page.parse(JSON.parse(on.calls[2]?.toolResults.at(-1)?.text ?? ''))
+  const first = Page.parse(JSON.parse(on.calls[3]?.toolResults.at(-1)?.text ?? ''))
   assert.deepEqual(
     [first.value.linhas.length, first.value.linhas.at(-1)?.codigoProduto, first.complete],
     [20, 411, false],
   )
-  const next = Page.parse(JSON.parse(on.calls[3]?.toolResults.at(-1)?.text ?? ''))
+  const next = Page.parse(JSON.parse(on.calls[4]?.toolResults.at(-1)?.text ?? ''))
   assert.deepEqual(
     next.value.linhas.map((row) => row.codigoProduto),
     Array.from({ length: 18 }, (_, at) => 412 + at),
   )
   assert.deepEqual([next.value.temMais, next.complete], [false, true])
-  const refused = on.calls[4]?.toolResults.at(-1)
-  assert.match(refused?.text ?? '', /INPUT_INVALID/)
+  const refused = on.calls[5]?.toolResults.at(-1)
+  assert.match(refused?.text ?? '', /validation failed/)
   assert.match(refused?.text ?? '', /Unrecognized key.*preco/)
 })
