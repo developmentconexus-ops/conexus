@@ -34,7 +34,7 @@ const PAGE_1 = 'anuncios-varredura-1'
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 /** The operation of a case and its input; the second listing page carries the first page's `scroll_id`. */
-export function inputOf(
+function inputOf(
   name: Case,
   now: Date,
   first: unknown,
