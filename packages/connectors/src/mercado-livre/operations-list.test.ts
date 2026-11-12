@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { z } from 'zod'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { answerOf } from '../kernel/conformance-session.ts'
 import type { CopyDefinitionV2, CopyPosition } from '../kernel/copy.ts'
@@ -12,6 +13,7 @@ import { Rows } from '../kernel/rows.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { mensagensDoPacote } from './operations/mensagens.ts'
+import { recording } from './recordings.ts'
 import { ACCOUNT, authorize } from './test-session.ts'
 
 function scanned(results: unknown[], extra: Record<string, unknown>) {
@@ -59,18 +61,39 @@ test('a varredura: a primeira página manda scan, as seguintes o scroll_id', () 
       `${id}: por deslocamento, como hoje`,
     )
     assert.equal(read.input.safeParse({ scan: false, limit: 50 }).success, false, id)
+    for (const extra of [{ scan: true }, { scrollId: 'abc' }])
+      assert.equal(read.input.safeParse({ ...extra, offset: 0, limit: 50 }).success, false, id)
     assert.equal(read.input.safeParse({ scrollId: '', limit: 50 }).success, false, id)
   }
 })
 
-test('o cursor da resposta de uma varredura vai em seguinte, e a página sem linhas é o fim', () => {
-  assert.deepEqual(scanned(['a', 'b'], { scroll_id: 'cursor-1', paging: { total: 9, limit: 2 } }), {
+test('o cursor da resposta gravada de uma varredura vai em seguinte, e a página sem linhas é o fim', () => {
+  const page = recording('anuncios-varredura-1').body
+  const ids = z.array(z.string()).parse(page.results)
+  assert.deepEqual(operationOf('anuncios').answer({ status: 200, body: page }), {
     kind: 'OK',
-    value: { linhas: [{ id: 'a' }, { id: 'b' }], temMais: true, seguinte: 'cursor-1', total: 9 },
+    value: {
+      linhas: ids.map((id) => ({ id })),
+      temMais: true,
+      seguinte: z.string().parse(page.scroll_id),
+      total: ids.length,
+    },
   })
-  assert.deepEqual(scanned([], { scroll_id: 'cursor-2', paging: { total: 9, limit: 2 } }), {
-    kind: 'OK',
-    value: { linhas: [], temMais: false, total: 9 },
+  assert.deepEqual(
+    operationOf('anuncios').answer({ status: 200, body: recording('anuncios-varredura-2').body }),
+    { kind: 'OK', value: { linhas: [], temMais: false, total: ids.length } },
+    'a página sem linhas traz o scroll_id e é o fim',
+  )
+  const questions = recording('perguntas-varredura').body
+  const asked = operationOf('perguntas').answer({ status: 200, body: questions })
+  assert.equal(asked.kind, 'OK')
+  if (asked.kind !== 'OK') return
+  const { linhas, ...rest } = Rows.parse(asked.value)
+  assert.equal(linhas.length, 1)
+  assert.deepEqual(rest, {
+    temMais: true,
+    seguinte: z.string().parse(questions.scroll_id),
+    total: z.number().parse(questions.total),
   })
   assert.deepEqual(scanned(['a'], { paging: { total: 1, offset: 0, limit: 5 } }), {
     kind: 'OK',

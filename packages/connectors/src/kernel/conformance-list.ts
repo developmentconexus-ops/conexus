@@ -11,7 +11,7 @@ import type { ListRead, Operation } from './operation.ts'
 import { listInputNames, valueAt } from './operation.ts'
 import { Rows } from './rows.ts'
 
-/** The listing's reading by the fixed input of a probe: the paging and changed-since names leave it, and the copy takes the rest, keyed by `key`, a field the double's rows have. */
+/** The listing's reading by the fixed input of a probe: the paging and changed-since names leave it, and the copy takes the rest, keyed by `key`, a scalar field the double's rows have. */
 function walkDefinition(
   operation: Operation<unknown, unknown>,
   list: ListRead,
@@ -84,7 +84,9 @@ async function walkList(
   }>,
 ): Promise<void> {
   const { operation, list, first } = a
-  const key = Object.keys(first.linhas[0] ?? {})[0]
+  const key = Object.entries(first.linhas[0] ?? {}).find(
+    ([, value]) => typeof value === 'string' || typeof value === 'number',
+  )?.[0]
   if (key === undefined) {
     assert.equal(first.total ?? 0, 0, `${operation.id} lacks rows the total counts`)
     return

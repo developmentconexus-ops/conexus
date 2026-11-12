@@ -1,0 +1,117 @@
+{
+  "service": "Mercado Livre",
+  "connector": "mercado-livre",
+  "case": "perguntas-varredura",
+  "route": {
+    "method": "GET",
+    "path": "/questions/search",
+    "query": [
+      "api_version",
+      "limit",
+      "search_type",
+      "seller_id"
+    ]
+  },
+  "recordedAt": "2026-11-12",
+  "status": 200,
+  "replaced": [
+    "available_filters.id",
+    "available_filters.name",
+    "available_filters.values",
+    "filters.api_version",
+    "filters.caller",
+    "filters.search_type",
+    "filters.seller",
+    "questions.answer.date_created",
+    "questions.answer.status",
+    "questions.answer.text",
+    "questions.date_created",
+    "questions.from.id",
+    "questions.id",
+    "questions.item_id",
+    "questions.seller_id",
+    "questions.status",
+    "questions.text",
+    "scroll_id",
+    "seller"
+  ],
+  "body": {
+    "total": 1,
+    "limit": 50,
+    "questions": [
+      {
+        "date_created": "2026-09-05T10:12:28.003-04:00",
+        "item_id": "MLB0000000001",
+        "seller_id": 200000002,
+        "status": "Texto inventado 3",
+        "text": "Texto inventado 4",
+        "tags": [],
+        "ai_categories": [],
+        "id": 20000000005,
+        "answer": {
+          "text": "Texto inventado 6",
+          "status": "Texto inventado 7",
+          "date_created": "2026-09-15T08:00:00.000-04:00"
+        },
+        "from": {
+          "id": 200000008
+        },
+        "hold": false,
+        "deleted_from_listing": false
+      }
+    ],
+    "scroll_id": "YWNJZXNZX0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009",
+    "filters": {
+      "limit": 50,
+      "offset": 0,
+      "api_version": "Texto inventado 10",
+      "is_admin": false,
+      "sorts": [],
+      "caller": 200000002,
+      "seller": 200000002,
+      "search_type": "Texto inventado 11"
+    },
+    "available_filters": [
+      {
+        "id": "ITEM000012",
+        "name": "Texto inventado 13",
+        "type": "text"
+      },
+      {
+        "id": "FROM000014",
+        "name": "Texto inventado 15",
+        "type": "number"
+      },
+      {
+        "id": "TOTALDIVISIONS000016",
+        "name": "Texto inventado 17",
+        "type": "number"
+      },
+      {
+        "id": "DIVISION000018",
+        "name": "Texto inventado 19",
+        "type": "number"
+      },
+      {
+        "id": "STATUS000020",
+        "name": "Texto inventado 21",
+        "type": "text",
+        "values": [
+          "Texto inventado 3",
+          "Texto inventado 22",
+          "Texto inventado 23",
+          "Texto inventado 24",
+          "Texto inventado 25",
+          "Texto inventado 26",
+          "Texto inventado 27"
+        ]
+      }
+    ],
+    "available_sorts": [
+      "item_id",
+      "from_id",
+      "date_created",
+      "seller_id"
+    ]
+  }
+}

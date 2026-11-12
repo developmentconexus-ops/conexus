@@ -7,7 +7,7 @@ import {
   itemBody,
   ORDER,
   ORDER_BODY,
-  ORDERS,
+  ordersOf,
   pageOf,
   paging,
   SELLER,
@@ -16,6 +16,7 @@ import {
   scanOf,
 } from './fake-data.ts'
 import { MORE_ROUTES } from './fake-routes-more.ts'
+import { envelope } from './recordings.ts'
 
 /** The routes of the double, by permission group; the order is the order they are tried. */
 export const ROUTES: readonly Route[] = [
@@ -29,6 +30,7 @@ export const ROUTES: readonly Route[] = [
         const scan = scanOf(ITEMS, query, 'items')
         return {
           body: {
+            ...envelope('anuncios-varredura-1', 'results'),
             seller_id: SELLER.ref,
             results: scan.rows,
             scroll_id: scan.scrollId,
@@ -104,14 +106,14 @@ export const ROUTES: readonly Route[] = [
       const from = query.get('order.date_last_updated.from')
       const changed =
         from === null
-          ? ORDERS
-          : ORDERS.filter((order) => Date.parse(order.date_last_updated) >= Date.parse(from))
+          ? ordersOf()
+          : ordersOf().filter((order) => Date.parse(order.date_last_updated) >= Date.parse(from))
       const page = pageOf(changed, query, 50)
       return {
         body: {
+          ...envelope('pedidos-alterados', 'results'),
           results: page.rows,
           paging: paging(page.total, query),
-          sort: { id: 'date_desc' },
         },
       }
     },

@@ -27,6 +27,7 @@
     "removals": "node scripts/removals.ts",
     "record": "node scripts/record.ts",
     "record-provider": "node scripts/record-provider.ts",
+    "record-connector": "node scripts/record-connector.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
     "boundaries": "node scripts/check-boundaries.ts",
