@@ -41,6 +41,9 @@ export type Speakers = {
   company: string
   person: string
   role: Role
+  /** What the person wrote of their work in the company; `null` while they wrote nothing. */
+  jobTitle: string | null
+  department: string | null
   /** The Projeto's name in a Projeto's conversation; none on the Início. */
   projectName: string | undefined
 }
@@ -76,6 +79,11 @@ function dated(): string {
   return `${date} (${weekday})`
 }
 
+/** What the person wrote of their work, "<job title>, <department>" or the one they wrote. */
+function workOf(speakers: Pick<Speakers, 'jobTitle' | 'department'>): string {
+  return [speakers.jobTitle, speakers.department].filter((part) => part !== null).join(', ')
+}
+
 /**
  * The conversation's block: the company, the person, today, the place and the chosen connections,
  * and what the tools this run lacks leave unsaid; no other rule of how to answer. `may` is the
@@ -96,7 +104,7 @@ export function blockOf(
       : chosen.map((each) => `${each.name} (${each.connector})`).join(', ')
   return [
     `Company: ${speakers.company}.`,
-    `Person: ${speakers.person} (${roleWord(speakers.role)}).`,
+    `Person: ${speakers.person} (${[roleWord(speakers.role), workOf(speakers)].filter(Boolean).join('; ')}).`,
     `Today: ${dated()}, America/Sao_Paulo.`,
     `Place: ${place}.`,
     `Connections in this conversation: ${connections}.`,

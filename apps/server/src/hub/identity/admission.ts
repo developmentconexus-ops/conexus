@@ -26,6 +26,7 @@ const MANAGE_COPIES = { copy: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
+const PROFILE_OF_ANOTHER = 'o cargo e a área de outra pessoa'
 const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
@@ -359,6 +360,24 @@ export async function admit(input: CompanyInput & { action: MemberAction }): Pro
  */
 export async function admitAppUser(tx: ReadTx, input: { companyId: CompanyId }): Promise<void> {
   await refuseIfDeleting({ tx, companyId: input.companyId })
+}
+
+/**
+ * Admits the writer of a member's job title and department: the person for themselves, as any
+ * member reads the company; for another, a member whose role may change roles, or the operator.
+ */
+export async function admitProfileWriter(
+  input: CompanyInput & { owner: PersonId },
+): Promise<CompanyProof> {
+  if (input.owner === input.personId) return await admit({ ...input, action: 'readCompany' })
+  try {
+    return await admitCompany({ ...input, action: 'changeRole' })
+  } catch (error) {
+    if (error instanceof Failure && error.details.reason === 'FORBIDDEN') {
+      throw new Failure('NOT_IN_ROLE', { named: { operation: PROFILE_OF_ANOTHER } })
+    }
+    throw error
+  }
 }
 
 /**

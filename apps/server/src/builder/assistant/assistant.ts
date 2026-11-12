@@ -124,8 +124,8 @@ function readerScope(scope: SessionScope) {
 }
 
 /**
- * The company, the person with their role, and the Projeto the conversation lives in, for its
- * block.
+ * The company, the person with their role, job title and department, and the Projeto the
+ * conversation lives in, for its block.
  */
 export function speakersOf(
   deps: Pick<Deps, 'database' | 'identity'> & {
@@ -138,6 +138,7 @@ export function speakersOf(
     const { companyId } = scope
     const company = await deps.identity.companyNameOf(tx, { admitted, companyId })
     const person = await deps.identity.personNameOf(tx, scope.personId)
+    const profile = await deps.identity.memberProfileOf(tx, { companyId, personId: scope.personId })
     const project =
       scope.place.kind === 'PROJECT'
         ? await deps.projects.liveProjectOf(tx, { companyId, projectId: scope.place.projectId })
@@ -148,7 +149,7 @@ export function speakersOf(
     if (scope.place.kind === 'PROJECT' && project === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_PROJECT_GONE' } })
     }
-    return { company, person, role: admitted.role, projectName: project?.name }
+    return { company, person, role: admitted.role, ...profile, projectName: project?.name }
   })
 }
 

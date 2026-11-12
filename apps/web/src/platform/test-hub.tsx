@@ -48,11 +48,17 @@ type MemberFields = {
   email: string
   role: string
   mayChangeTo?: string[]
-} & Partial<Pick<MemberRow, 'mayRemove' | 'invitationsSent'>>
+} & Partial<
+  Pick<MemberRow, 'mayRemove' | 'invitationsSent' | 'jobTitle' | 'department' | 'mayEditProfile'>
+>
 
 /** A person of a company as the Hub lists them: nothing to do to them unless the test says so. */
 export function memberView(person: MemberFields) {
-  return Member.parse({ mayRemove: false, mayChangeTo: [], invitationsSent: 0, ...person })
+  return Member.parse({
+    ...{ mayRemove: false, mayChangeTo: [], invitationsSent: 0 },
+    ...{ jobTitle: null, department: null, mayEditProfile: false },
+    ...person,
+  })
 }
 
 /** The company page's reads: the company as `role` sees it, and its members. */

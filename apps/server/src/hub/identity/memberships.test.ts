@@ -226,6 +226,7 @@ test('papel: a resposta é a pessoa como quem muda a vê; o papel velho, 412; o 
       role: 'admin',
       mayRemove: true,
       mayChangeTo: ['developer', 'member'],
+      ...{ jobTitle: null, department: null, mayEditProfile: true },
       invitationsSent: 0,
     },
   })

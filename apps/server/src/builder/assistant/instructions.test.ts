@@ -255,7 +255,10 @@ test('o dia da semana', async (t) => {
   )
   assert.ok(block.includes(`Today: ${turnDate()} (${weekdayOf(turnDate())}), America/Sao_Paulo.`))
   const quarta = blockOf(
-    { company: 'E', person: 'P', role: Role.parse('owner'), projectName: undefined },
+    {
+      ...{ company: 'E', person: 'P', role: Role.parse('owner') },
+      ...{ jobTitle: null, department: null, projectName: undefined },
+    },
     [],
   )
   assert.ok(quarta.includes(`(${weekdayOf(turnDate())})`))
@@ -283,6 +286,8 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
     company: 'E',
     person: 'P',
     role: Role.parse('developer'),
+    jobTitle: null,
+    department: null,
     projectName: undefined,
   }
   const noteOnly = blockOf(speakers, [], { note: false, automate: true, byAutomation: false })
