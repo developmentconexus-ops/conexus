@@ -12,14 +12,14 @@ const ANCHOR = Date.parse('2026-09-15T12:00:00.000Z')
 const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
 
 /** Keys whose number is an identity or an amount: replaced. Paging counts and quantities stay. */
-const NUMBER_KEY = /(^|_)id$|^id$|seller|buyer|number|price|amount|cost|fee|tax/i
+const NUMBER_KEY = /(^|_)id$|^id$|seller|buyer|caller|number|price|amount|cost|fee|tax/i
 /** Keys whose text is a person's, a seller's or a listing's own words: always replaced, whatever it looks like. */
 const TEXT_KEY =
   /name|nick|title|text|email|phone|address|street|city|zip|permalink|thumbnail|picture|sku|seller_custom_field|document|number|comment|description|identification/i
 /** Keys whose text names a state of the service, not a person or a thing: kept when it looks like a code. */
 const CODE = /^[a-z][a-z0-9_]{0,40}$/
 /** Keys whose text is an identity: replaced by one of the same shape. */
-const ID_KEY = /(^|_)id$|^id$|scroll|seller|buyer/i
+const ID_KEY = /(^|_)id$|^id$|scroll|seller|buyer|caller/i
 
 export type Swapped = Readonly<{ body: unknown; replaced: readonly string[]; path: string }>
 

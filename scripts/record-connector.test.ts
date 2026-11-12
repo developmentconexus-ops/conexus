@@ -151,6 +151,21 @@ test('o mesmo valor real vira o mesmo inventado, e a ordem das datas fica', () =
   )
 })
 
+test('o id da conta que chama, ecoado nos filtros, vira o mesmo inventado do vendedor', () => {
+  const done = swapped({
+    body: { seller_id: 987654321, filters: { caller: 987654321, seller: 987654321, limit: 50 } },
+    account: '987654321',
+    path: '/questions/search',
+  })
+  assert.equal(JSON.stringify(done.body).includes('987654321'), false)
+  const body = z
+    .object({ seller_id: z.number(), filters: z.object({ caller: z.number(), limit: z.number() }) })
+    .parse(done.body)
+  assert.equal(body.filters.caller, body.seller_id)
+  assert.equal(body.filters.limit, 50)
+  assert.ok(done.replaced.includes('filters.caller'))
+})
+
 test('um endereço ou prefixo de credencial que sobra recusa a gravação', () => {
   assert.throws(
     () => swapped({ body: { 'maria@exemplo.test': 'x' }, account: SELLER, path: '/x' }),
