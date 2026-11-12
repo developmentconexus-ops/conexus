@@ -26,6 +26,10 @@ export const pedidos = readOf({
     limit: Limit(50),
   }),
   list: 'results',
+  paged: {
+    paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 50, ceiling: null },
+    changed: { input: 'changedFrom', field: 'date_last_updated' },
+  },
   omit: BUYER,
   probe: () => ({ offset: 0, limit: 5 }),
   request: (input, account) =>

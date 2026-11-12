@@ -19,6 +19,10 @@ export const periodosDeFaturamento = readOf({
     limit: Limit(12).optional(),
   }),
   list: 'results',
+  paged: {
+    paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 12, ceiling: null },
+    changed: null,
+  },
   probe: () => ({}),
   request: (input) =>
     get('/billing/integration/monthly/periods', {

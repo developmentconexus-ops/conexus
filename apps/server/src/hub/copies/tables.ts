@@ -176,6 +176,9 @@ export const copyProposal = copies.table(
     proposedBy: text('proposed_by').notNull(),
     provedRows: integer('proved_rows').notNull(),
     provedMore: boolean('proved_more').notNull(),
+    // The calls a whole pass would spend, summed over the proposal's connections; null when a read
+    // does not tell its total (O Sync de qualquer conector, U4).
+    provedCalls: integer('proved_calls'),
     proposedAt: instant('proposed_at').notNull(),
     state: text('state', { enum: ['OPEN', 'ACCEPTED', 'DISMISSED'] }).notNull(),
     // The copy it turned into; null again when that copy is deleted, a row nobody reads (data D15).
@@ -214,6 +217,105 @@ export const copyProposal = copies.table(
     uniqueIndex('copy_proposal_open_name_key')
       .on(table.companyId, table.name)
       .where(sql`${table.state} = 'OPEN'`),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/**
+ * Each connection a copy reads, with its account, where its pass stands and until when the provider
+ * asked it to wait (O Sync de qualquer conector): a copy of two accounts keeps, for each, how far it
+ * has read. The position, the watermark and the wait are ours (docs/reference/boundaries.md).
+ */
+export const copySource = copies.table(
+  'copy_source',
+  {
+    companyId: text('company_id').notNull(),
+    copyId: uuid('copy_id').notNull(),
+    // The connection's connector, so the row's connection is its company's (as copy).
+    connectorId: text('connector_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+    // The connection's `AccountRef`; null on a connector whose account is `none`.
+    accountRef: text('account_ref'),
+    pass: integer('pass').notNull().default(0),
+    passStartedAt: instant('pass_started_at'),
+    // `CopyPosition` of the kit, parsed again at each run (code C27).
+    position: jsonb('position'),
+    watermark: instant('watermark'),
+    // The provider asked to wait: no call before this instant.
+    waitUntil: instant('wait_until'),
+    createdAt: instant('created_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.copyId, table.connectionId] }),
+    unique('copy_source_copy_id_account_ref_key').on(table.copyId, table.accountRef),
+    foreignKey({
+      name: 'copy_source_copy_fkey',
+      columns: [table.companyId, table.copyId],
+      foreignColumns: [copy.companyId, copy.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_source_connection_fkey',
+      columns: [table.companyId, table.connectorId, table.connectionId],
+      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
+    }).onDelete('cascade'),
+    check(
+      'copy_source_position',
+      sql`${table.position} IS NULL OR jsonb_typeof(${table.position}) = 'object'`,
+    ),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/**
+ * The table of a copy that ended while the company's database did not answer: written in the
+ * transaction that ended the copy, and gone once its table is dropped. No foreign key to the copy,
+ * which has already left.
+ */
+export const copyTableLeft = copies.table(
+  'copy_table_left',
+  {
+    companyId: text('company_id').notNull(),
+    copyId: uuid('copy_id').notNull(),
+    // The table in the company's `sync` schema (`CopyName`).
+    name: text('name').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.companyId, table.copyId] }),
+    foreignKey({
+      name: 'copy_table_left_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    check('copy_table_left_name', sql`${table.name} ~ '^[a-z][a-z0-9_]{0,39}$'`),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/**
+ * Each connection a proposal reads (O Sync de qualquer conector, U4). The proposal's own connection
+ * stays its first; deleting another connection takes only its row.
+ */
+export const copyProposalSource = copies.table(
+  'copy_proposal_source',
+  {
+    companyId: text('company_id').notNull(),
+    proposalId: uuid('proposal_id').notNull(),
+    // The connection's connector, so the row's connection is its company's (as copy_proposal).
+    connectorId: text('connector_id').notNull(),
+    connectionId: uuid('connection_id').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.proposalId, table.connectionId] }),
+    foreignKey({
+      name: 'copy_proposal_source_proposal_fkey',
+      columns: [table.proposalId],
+      foreignColumns: [copyProposal.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_proposal_source_connection_fkey',
+      columns: [table.companyId, table.connectorId, table.connectionId],
+      foreignColumns: [connection.companyId, connection.connectorId, connection.id],
+    }).onDelete('cascade'),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
