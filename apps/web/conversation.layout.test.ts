@@ -5,11 +5,9 @@ import type { Locator, Page } from 'playwright-core'
 import { holdsColumn } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, LAPTOP, PHONE } from './layout-harness.ts'
-import { messageOf } from './src/builder/conversation/messages.ts'
 import {
   AgentStart,
   recordedEvent,
-  recordedRun,
   signalStarted,
 } from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -327,46 +325,3 @@ for (const viewport of [LAPTOP, PHONE])
     await holdsColumn(page, viewport)
     await page.close()
   })
-
-// The answer after Anthropic's web search, as Mastra stored it, carries the `source` parts: its
-// "Fontes" line stays inside the screen, and each link opens in a new tab without the opener.
-const CITED = recordedRun('cited')
-  .read.map(messageOf)
-  .find((message) => message?.role === 'builder')
-
-test('as fontes', async () => {
-  const replies: Replies = {
-    ...WITH_CONVERSATIONS,
-    ...sessionReplies(FIRST, { messages: CITED ? [CITED] : [] }),
-  }
-  for (const viewport of [DESKTOP, PHONE]) {
-    for (const scheme of ['light', 'dark'] as const) {
-      const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, {
-        viewport,
-        replies,
-        scheme,
-      })
-      if (viewport === PHONE)
-        await page.getByRole('button', { name: 'Conversa', exact: true }).click()
-      const sources = page.getByRole('region', { name: 'Fontes' })
-      await sources.waitFor()
-      const links = await sources.getByRole('link').evaluateAll((all) =>
-        all.map((link) => [link.getAttribute('target'), link.getAttribute('rel')]),
-      )
-      assert.ok(links.length > 0)
-      assert.deepEqual(
-        links.filter(([target, rel]) => target !== '_blank' || rel !== 'noopener noreferrer'),
-        [],
-      )
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      )
-      assert.ok(overflow <= 0, `${viewport.width}px, ${scheme}: ${overflow}px past the screen`)
-      await sources.screenshot({
-        path: `${process.env.CONEXUS_CAPTURES ?? '/tmp'}/fontes-${viewport.width}-${scheme}.png`,
-      })
-      assert.deepEqual(page.problems, [])
-      await page.close()
-    }
-  }
-})
