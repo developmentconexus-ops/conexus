@@ -93,6 +93,21 @@ export async function mercadoLivreOn(
   return { hub, fake, served, ana, bruno, carla, companyId, base }
 }
 
+/** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
+export async function mercadoLivreServed(t: TestContext) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  const served = await fake.serve()
+  t.after(() => served.close())
+  function change(config: Config): Config {
+    return {
+      ...config,
+      connectorOrigins: new Map([['mercado-livre', served.origin]]),
+      connectorApps: appsOf(fake.app),
+    }
+  }
+  return { fake, change }
+}
+
 export function startOf(hub: Hub, person: Person, companyId: string, body: object) {
   return post(hub, person, `/api/companies/${companyId}/connection-sign-ins`, body)
 }

@@ -148,3 +148,15 @@ export function windowText(mode: CopyMode, shown: Pick<CopySummary['shown'], 'wi
 export function provedText(proved: CopyProposalSummary['proved']): string {
   return `teste: ${proved.more ? 'mais de ' : ''}${countText(proved.rows)} linhas`
 }
+
+/** The calls a whole pass of a list read spends, as the proof answered: "cerca de 6 chamadas por passada". */
+export function callsText(calls: number | null): string {
+  if (calls === null) return 'a leitura não informa o total'
+  return `cerca de ${countText(calls)} ${calls === 1 ? 'chamada' : 'chamadas'} por passada`
+}
+
+/** A list read's fixed input, each field and its value; "nenhum" when the copy reads it all. */
+export function inputText(input: Readonly<Record<string, string | number | boolean>>): string {
+  const fixed = Object.entries(input).map(([field, value]) => `${field}: ${String(value)}`)
+  return fixed.length === 0 ? 'nenhum' : fixed.join(', ')
+}

@@ -45,11 +45,15 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     id,
     name,
     label,
-    connection: {
-      id: CONNECTION,
-      name: 'Matriz com um nome bem comprido da filial',
-      connector: 'sankhya',
-    },
+    sources: [
+      {
+        connection: {
+          id: CONNECTION,
+          name: 'Matriz com um nome bem comprido da filial',
+          connector: 'sankhya',
+        },
+      },
+    ],
     interval: '30m',
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     run: DONE,
@@ -57,10 +61,15 @@ function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>
     mode: { kind: 'WINDOW', days: 30 },
     projects: [{ id: PROJECT_ID, name: 'Vendedores' }],
     shown: {
-      query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,
+      source: {
+        kind: 'QUERY',
+        query: `SELECT NUNOTA, CODPARC, VLRNOTA, DTNEG FROM TGFCAB WHERE TIPMOV = 'V' ORDER BY NUNOTA`,
+      },
       key: ['NUNOTA'],
       changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
+      description: null,
+      columns: [],
     },
     ...fields,
   }

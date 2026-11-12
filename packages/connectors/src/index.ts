@@ -67,7 +67,13 @@ export type {
   Unread,
   WriteOperation,
 } from './kernel/operation.ts'
-export { AccountRef, deniesAccess, locateOf, requestOf } from './kernel/operation.ts'
+export {
+  AccountRef,
+  deniesAccess,
+  listInputNames,
+  locateOf,
+  requestOf,
+} from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
 export { CONCURRENT_CALL, Rows } from './kernel/rows.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'

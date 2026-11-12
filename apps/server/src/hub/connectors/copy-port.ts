@@ -6,30 +6,21 @@ import type {
   CopyModel,
   CopyPage,
   CopyPosition,
+  ListRead,
   Operation,
   PageInput,
 } from '@conexus/connectors'
-import {
-  AccountRef,
-  CopyPageSchema,
-  connectorOf,
-  listInputOf,
-  listPageOf,
-  Rows,
-} from '@conexus/connectors'
+import { CopyPageSchema, listInputOf, listPageOf, Rows } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
-import { ConnectorId as HubConnectorId, OperationId } from '@conexus/hub-api'
-import { and, eq, inArray } from 'drizzle-orm'
-import type { ReadTx } from '../../platform/database.ts'
+import { OperationId } from '@conexus/hub-api'
+import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
-import { speakerOf } from '../identity/public.ts'
 import type { OpenedConnection } from './executor.ts'
+import { listIssuesOf, listReadOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
-import { operationLabel } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { connectorIn, usable } from './rows.ts'
-import { lackedDoorRead } from './speaking.ts'
 import { connection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -71,71 +62,6 @@ function connectorOfRow(deps: Deps, input: OfConnection, personId: PersonId | nu
       .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
     return row === undefined ? undefined : connectorIn(deps, row.connector)
   })
-}
-
-/**
- * The company's connection a copy is turned on from, read in the caller's transaction: its
- * connector and its account (none on a connector whose account is `none`) when it is ACTIVE; none
- * when the company has no such connection.
- */
-export async function connectionForCopy(
-  tx: ReadTx,
-  input: OfConnection,
-): Promise<
-  | { kind: 'ACTIVE'; connectorId: HubConnectorId; accountRef: AccountRef | null }
-  | { kind: 'NOT_ACTIVE' }
-  | undefined
-> {
-  const [row] = await tx
-    .select({
-      state: connection.state,
-      connectorId: connection.connectorId,
-      accountRef: connection.accountRef,
-    })
-    .from(connection)
-    .where(and(eq(connection.id, input.connectionId), eq(connection.companyId, input.companyId)))
-  if (row === undefined) return undefined
-  if (row.state !== 'ACTIVE') return { kind: 'NOT_ACTIVE' }
-  const accountRef = row.accountRef === null ? null : AccountRef.parse(row.accountRef)
-  return { kind: 'ACTIVE', connectorId: HubConnectorId.parse(row.connectorId), accountRef }
-}
-
-/**
- * The label of the first read of the connection's read door the person's role does not hold; none
- * when the role holds them all. The speaker is read in the caller's transaction; the role's answer
- * (`mayUseEach`) opens a transaction of its own. Who turns a proposal on must be able to read what
- * it copies (Capacidade 3).
- */
-export async function lackedReadOf(
-  deps: Pick<Deps, 'identity'>,
-  tx: ReadTx,
-  input: OfConnection & { connectorId: HubConnectorId; personId: PersonId },
-): Promise<string | undefined> {
-  const connector = connectorOf(input.connectorId)
-  const first = Object.values(connector?.readDoor ?? {})[0]
-  const speaker = await speakerOf(tx, input.companyId, input.personId)
-  if (connector === undefined || speaker === undefined)
-    return first === undefined ? input.connectorId : operationLabel(input.connectorId, first.id)
-  const lacked = await lackedDoorRead(deps, input.companyId, speaker, {
-    connectionId: input.connectionId,
-    connector,
-  })
-  return lacked === undefined ? undefined : operationLabel(input.connectorId, lacked.id)
-}
-
-/** The name and connector of each of the company's connections named; one gone is left out. */
-export async function connectionNamesOf(
-  tx: ReadTx,
-  input: { companyId: CompanyId; ids: readonly ConnectionId[] },
-): Promise<Map<string, { name: string; connector: HubConnectorId }>> {
-  if (input.ids.length === 0) return new Map()
-  const rows = await tx
-    .select({ id: connection.id, name: connection.name, connector: connection.connectorId })
-    .from(connection)
-    .where(and(eq(connection.companyId, input.companyId), inArray(connection.id, [...input.ids])))
-  return new Map(
-    rows.map((row) => [row.id, { name: row.name, connector: HubConnectorId.parse(row.connector) }]),
-  )
 }
 
 /** The connection opened for one page when it is ACTIVE; none otherwise. */
@@ -282,25 +208,32 @@ async function pageV1(deps: Deps, a: SourcePage & { definition: CopyDefinitionV1
   return { kind: 'PAGE', page: read.page, next, total: null } as const
 }
 
-function isListRead(
-  operation: Operation<unknown, unknown>,
-  id: string,
-): operation is Operation<unknown, unknown, 'read'> {
-  return operation.id === id && operation.class === 'read' && operation.list !== undefined
-}
+type ListAsked = Readonly<{
+  input: OfConnection & { enabledBy: PersonId; signal: AbortSignal }
+  definition: CopyDefinitionV2
+  position: CopyPosition | null
+  since: string | null
+  /** The page's rows at most, below the read's own size; null asks the read's size. */
+  rows: number | null
+}>
 
-async function pageV2(
-  deps: Deps,
-  a: SourcePage & { definition: CopyDefinitionV2 },
-): Promise<CopyRead> {
-  const opened = await openedForCopy(deps, a)
-  const { definition, position } = a
-  const operation = opened?.connector.operations.find((each) =>
-    isListRead(each, definition.source.operation),
-  )
-  const list = operation?.list
-  if (opened === undefined || operation === undefined || list === undefined)
-    return { kind: 'NO_CONNECTION' }
+/** What one page of a list read answered, before the copy reads it: the run's page and the Builder's proof share it (C26). */
+export type ListAnswer =
+  | Readonly<{ kind: 'ROWS'; rows: Rows; list: ListRead; at: Date }>
+  | Readonly<{ kind: 'REFUSED'; refusal: CopyRefusal }>
+  /** A 2xx whose body is not the kit's rows. */
+  | Readonly<{ kind: 'NOT_ROWS' }>
+  | Readonly<{ kind: 'STALE' }>
+  | Readonly<{ kind: 'NO_CONNECTION' }>
+  | InLine
+
+/** One page of the list read a version 2 definition names, through the copies' own read (`readAsCopy`). */
+export async function listAnswer(deps: Deps, a: ListAsked): Promise<ListAnswer> {
+  const opened = await openedForCopy(deps, a.input)
+  const found = opened === undefined ? undefined : listReadOf(opened.connector, a.definition)
+  if (opened === undefined || found === undefined) return { kind: 'NO_CONNECTION' }
+  const { operation, list } = found
+  const { position } = a
   const at = deps.now()
   if (
     position?.kind === 'CURSOR' &&
@@ -308,13 +241,44 @@ async function pageV2(
     at.getTime() - Date.parse(position.at) > list.paging.ttlMs
   )
     return { kind: 'STALE' }
-  const value = listInputOf({ list, definition, position, since: a.since })
-  const answer = await readAsCopy(deps, { input: a, opened, operation, value })
-  if (answer.kind === 'IN_LINE') return { kind: 'WAIT', waitMs: null }
-  if (answer.kind !== 'OK') return refusedRead(answer)
+  const value = listInputOf({ list, definition: a.definition, position, since: a.since })
+  if (a.rows !== null && list.paging.kind !== 'NONE')
+    value[list.paging.limit] = Math.min(a.rows, list.paging.max)
+  const answer = await readAsCopy(deps, { input: a.input, opened, operation, value })
+  if (answer.kind === 'IN_LINE') return answer
+  if (answer.kind !== 'OK') return { kind: 'REFUSED', refusal: answer }
   const rows = Rows.safeParse(answer.value)
-  if (!rows.success) return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
-  const page = listPageOf({ list, definition, position, rows: rows.data, at })
+  return rows.success ? { kind: 'ROWS', rows: rows.data, list, at } : { kind: 'NOT_ROWS' }
+}
+
+async function pageV2(
+  deps: Deps,
+  a: SourcePage & { definition: CopyDefinitionV2 },
+): Promise<CopyRead> {
+  const { definition, position } = a
+  const read = await listAnswer(deps, {
+    input: a,
+    definition,
+    position,
+    since: a.since,
+    rows: null,
+  })
+  switch (read.kind) {
+    case 'NO_CONNECTION':
+    case 'STALE':
+      return read
+    case 'IN_LINE':
+      return { kind: 'WAIT', waitMs: null }
+    case 'REFUSED':
+      return refusedRead(read.refusal)
+    case 'NOT_ROWS':
+      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
+    case 'ROWS':
+      break
+    default:
+      return read satisfies never
+  }
+  const page = listPageOf({ list: read.list, definition, position, rows: read.rows, at: read.at })
   switch (page.kind) {
     case 'PAGE': {
       const { rows: cells, more, next, total } = page
@@ -353,6 +317,17 @@ export function createCopyPort(deps: Deps) {
       )
     },
     readPage: (input: SourcePage): Promise<CopyRead> => readPage(deps, input),
+    /**
+     * What a version 2 definition fails against the connector's list read, a path and a message each
+     * (none when it fits), and whether its account is `none`: such a connector's copy reads one
+     * connection (O Sync de qualquer conector, U4).
+     */
+    proposable(connector: string, definition: CopyDefinitionV2) {
+      const kit = connectorIn(deps, connector)
+      if (kit === undefined)
+        return { issues: [`connector: ${connector} is not in the kit.`], accountless: true }
+      return { issues: listIssuesOf(kit, definition), accountless: kit.account.kind === 'none' }
+    },
     /** Where the connector's provider counts its call limit; none when it declares no list read. */
     countedBy(connector: string): 'APP' | 'ACCOUNT' | null {
       return connectorIn(deps, connector)?.callLimit?.countedBy ?? null

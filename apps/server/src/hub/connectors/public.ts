@@ -35,7 +35,6 @@ import { createToolDoor } from './tool-door.ts'
 export {
   AccountRef,
   CopyDefinition,
-  CopyDefinitionV1,
   CopyDefinitionV2,
   CopyName,
   CopyPosition,
@@ -45,7 +44,12 @@ export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export { connectionForCopy, connectionNamesOf, lackedReadOf } from './copy-port.ts'
+export {
+  connectionForCopy,
+  connectionNamesOf,
+  lackedReadOf,
+  lackedSourceReadOf,
+} from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'

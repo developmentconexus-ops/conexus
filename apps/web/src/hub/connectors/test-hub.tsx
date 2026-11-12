@@ -1,7 +1,13 @@
-import type { Connection, ConnectionNote, ConnectorEntry, TestResult } from '@conexus/hub-api'
+import type {
+  Connection,
+  ConnectionNote,
+  ConnectorEntry,
+  CopyOfConnection,
+  TestResult,
+} from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, ConnectionDetail, ConnectionList } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import { z } from 'zod'
@@ -22,6 +28,11 @@ export type View = {
   role?: 'owner' | 'admin' | 'member'
   connectors?: ConnectorEntry[]
   notes?: ConnectionNote[]
+  /** The copies that read each connection, by its id; none unless the test says. */
+  copies?: Record<string, CopyOfConnection[]>
+  /** While set, the read of a connection's copies waits for it; then it answers this instead, when given. */
+  copiesHeld?: Promise<void>
+  copiesAnswer?: () => Response
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -47,6 +58,11 @@ function reads(view: View): HttpHandler[] {
         }),
       ),
     ),
+    http.get(`${BASE}/connections/:connectionId/copies`, async ({ params }) => {
+      await view.copiesHeld
+      const copies = view.copies?.[String(params.connectionId)] ?? []
+      return view.copiesAnswer?.() ?? HttpResponse.json({ copies })
+    }),
     http.get(`${BASE}/connections/:connectionId`, ({ params }) => {
       const connection = view.connections.find((one) => one.id === params.connectionId)
       if (!connection) return refusal('CONNECTION_NOT_FOUND')
@@ -198,4 +214,13 @@ export function fill(name?: string) {
 export async function openForm() {
   fireEvent.click(await screen.findByRole('button', { name: 'Ligar Sankhya' }))
   return screen.findByRole('dialog', { name: 'Ligar Sankhya' })
+}
+
+/** Clicks Desligar in its dialog once the read of the connection's copies has let it on. */
+export async function confirmUnlink(dialog: HTMLElement) {
+  const button = within(dialog).getByRole('button', { name: 'Desligar' })
+  await waitFor(() => {
+    if (button.hasAttribute('disabled')) throw new Error('Desligar is still waiting for the copies')
+  })
+  fireEvent.click(button)
 }

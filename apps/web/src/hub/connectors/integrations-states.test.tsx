@@ -7,7 +7,14 @@ import { sentenceOfCode } from '../../platform/hub.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connectionOf } from './fixtures.ts'
 import type { Answers, View } from './test-hub.tsx'
-import { connectionsHub, mount, openIntegrations, pageOf, viewOf } from './test-hub.tsx'
+import {
+  confirmUnlink,
+  connectionsHub,
+  mount,
+  openIntegrations,
+  pageOf,
+  viewOf,
+} from './test-hub.tsx'
 
 const server = hubServer()
 
@@ -131,7 +138,7 @@ test('Desligar que o Hub não confirma: a frase no diálogo, a página fica', as
   fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
   const dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+  await confirmUnlink(dialog)
   expect(
     await within(dialog).findByText('Não confirmamos o desligamento. Veja a lista.'),
   ).toBeTruthy()
@@ -171,7 +178,7 @@ test('Desligar confirma pelo nome e volta à lista; Cancelar não manda nada', a
   fireEvent.click(screen.getByRole('button', { name: 'Mais ações' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
   dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+  await confirmUnlink(dialog)
   expect(await screen.findByRole('heading', { name: 'Integrações' })).toBeTruthy()
   expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
@@ -185,7 +192,7 @@ test('Desligar que o fornecedor não desfez: a frase diz, e Fechar leva à lista
   fireEvent.click(await screen.findByRole('button', { name: 'Mais ações' }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
   const dialog = await screen.findByRole('alertdialog')
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+  await confirmUnlink(dialog)
   expect(
     await within(dialog).findByText(/o fornecedor não aceitou retirar a autorização do Conexus/),
   ).toBeTruthy()

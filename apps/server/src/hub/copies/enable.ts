@@ -68,7 +68,8 @@ async function fromModel(
   if (made.model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
   const { model } = made
   const row = await insertedCopy(tx, input, {
-    ...{ connectorId: linked.connectorId, connectionId, accountRef: linked.accountRef },
+    connectorId: linked.connectorId,
+    sources: [{ connectionId, accountRef: linked.accountRef }],
     ...{ name: model.id, label: model.label },
     ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
   })

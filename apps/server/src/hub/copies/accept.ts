@@ -1,15 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import type { CopyProposalId } from '@conexus/hub-api'
 import { ConnectionId, ConnectorId, CopyId, ProjectId } from '@conexus/hub-api'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AccountRef } from '../connectors/public.ts'
-import { CopyDefinition, connectionForCopy, lackedReadOf } from '../connectors/public.ts'
+import {
+  CopyDefinition,
+  connectionForCopy,
+  lackedReadOf,
+  lackedSourceReadOf,
+} from '../connectors/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
-import { copy, copyProposal, copySource, projectCopy } from './tables.ts'
+import { copy, copyProposal, copyProposalSource, copySource, projectCopy } from './tables.ts'
 
 export type Accepting = InCompany & { proposalId: CopyProposalId; attemptKey: string }
 
@@ -38,11 +43,13 @@ export async function earlierAttempt(
   return again
 }
 
-/** What a new copy row is made of, from a template or a proposal, with its one source's account. */
+/** One connection a new copy reads, with its account. */
+type NewSource = Readonly<{ connectionId: ConnectionId; accountRef: AccountRef | null }>
+
+/** What a new copy row is made of, from a template or a proposal, with each source's account; the first is the copy's own connection. */
 export type NewCopy = Readonly<{
   connectorId: ConnectorId
-  connectionId: ConnectionId
-  accountRef: AccountRef | null
+  sources: readonly [NewSource, ...NewSource[]]
   name: string
   label: string
   model: string | null
@@ -50,7 +57,7 @@ export type NewCopy = Readonly<{
   bodyHash: string
 }>
 
-/** The new copy row under the attempt's key, and its source; a name a copy took is `COPY_EXISTS`. */
+/** The new copy row under the attempt's key, and its sources in order; a name a copy took is `COPY_EXISTS`. */
 export async function insertedCopy(
   tx: CommandTx,
   input: InCompany & { attemptKey: string },
@@ -61,7 +68,7 @@ export async function insertedCopy(
       .insert(copy)
       .values({
         ...{ id: CopyId.parse(randomUUID()), companyId: input.companyId },
-        ...{ connectorId: made.connectorId, connectionId: made.connectionId },
+        ...{ connectorId: made.connectorId, connectionId: made.sources[0].connectionId },
         ...{ name: made.name, label: made.label, model: made.model },
         ...{ definition: made.definition, createdBy: input.personId },
         ...{ createdAt: sql`statement_timestamp()`, attemptKey: input.attemptKey },
@@ -69,11 +76,14 @@ export async function insertedCopy(
       })
       .returning()
     if (row === undefined) throw new Failure('COPY_EXISTS')
-    await tx.insert(copySource).values({
-      ...{ companyId: input.companyId, copyId: row.id, connectorId: made.connectorId },
-      ...{ connectionId: made.connectionId, accountRef: made.accountRef },
-      createdAt: sql`statement_timestamp()`,
-    })
+    // Each source a microsecond after the one before: the run reads them in the order they were made.
+    await tx.insert(copySource).values(
+      made.sources.map((source, at) => ({
+        ...{ companyId: input.companyId, copyId: row.id, connectorId: made.connectorId },
+        ...{ connectionId: source.connectionId, accountRef: source.accountRef },
+        createdAt: sql`statement_timestamp() + ${at} * interval '1 microsecond'`,
+      })),
+    )
     return row
   } catch (error) {
     if (violatedConstraint(error) === 'copy_company_id_name_key') throw new Failure('COPY_EXISTS')
@@ -81,12 +91,77 @@ export async function insertedCopy(
   }
 }
 
+/** The proposal's connections, its own first; one deleted since is no longer a source. */
+async function proposalConnections(tx: CommandTx, proposal: typeof copyProposal.$inferSelect) {
+  const rows = await tx
+    .select({ connectionId: copyProposalSource.connectionId })
+    .from(copyProposalSource)
+    .where(eq(copyProposalSource.proposalId, proposal.id))
+    .orderBy(
+      desc(sql`${copyProposalSource.connectionId} = ${proposal.connectionId}`),
+      asc(copyProposalSource.connectionId),
+    )
+  return rows.map((row) => ConnectionId.parse(row.connectionId))
+}
+
 /**
- * Ligar a proposal, inside the Hub's transaction that admitted `manageCopies` (Capacidade 3): the
- * proposal locked and OPEN (else the copy this attempt's key made, or `COPY_PROPOSAL_DECIDED`), the role of who turns it on holding the
- * connection's read door (else `NOT_IN_ROLE` with the read's name), the connection ACTIVE, the copy
- * with the proposal's definition and no template, the proposal ACCEPTED with it, and the release
- * to the proposal's Projeto. The `GRANT` follows outside, with Ligar's own steps.
+ * The role of who turns the proposal on, reading what it copies: version 1, the connection's read
+ * door; version 2, the list read on each connection. `NOT_IN_ROLE` names the read.
+ */
+async function mayReadSources(
+  deps: Pick<CopiesDeps, 'identity'>,
+  tx: CommandTx,
+  input: Accepting & {
+    connectorId: ConnectorId
+    definition: CopyDefinition
+    connections: readonly ConnectionId[]
+  },
+) {
+  const { companyId, personId, connectorId, definition, connections } = input
+  const [first] = connections
+  if (first === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
+  const lacked =
+    definition.version === 1
+      ? await lackedReadOf(deps, tx, { companyId, connectionId: first, connectorId, personId })
+      : (
+          await lackedSourceReadOf(deps, tx, {
+            ...{ companyId, personId, connectorId, connections },
+            operation: definition.source.operation,
+          })
+        )?.operation
+  if (lacked !== undefined)
+    throw new Failure('NOT_IN_ROLE', {
+      details: { connectionId: first, reason: 'READ_DOOR' },
+      named: { operation: lacked },
+    })
+}
+
+/** Each connection ACTIVE, with its account, in the proposal's order. */
+async function activeSources(
+  tx: CommandTx,
+  companyId: InCompany['companyId'],
+  connections: readonly ConnectionId[],
+) {
+  const sources: { connectionId: ConnectionId; accountRef: AccountRef | null }[] = []
+  for (const connectionId of connections) {
+    const linked = await connectionForCopy(tx, { companyId, connectionId })
+    if (linked === undefined)
+      throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
+    if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
+    sources.push({ connectionId, accountRef: linked.accountRef })
+  }
+  const [first, ...rest] = sources
+  if (first === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
+  return [first, ...rest] as const
+}
+
+/**
+ * Ligar a proposal, inside the Hub's transaction that admitted `manageCopies` (Capacidade 3; O Sync
+ * de qualquer conector, U4): the proposal locked and OPEN (else the copy this attempt's key made, or
+ * `COPY_PROPOSAL_DECIDED`), the role of who turns it on reading what it copies on each connection
+ * (else `NOT_IN_ROLE` with the read's name), each connection ACTIVE, the copy with the proposal's
+ * definition and no template, one source per connection, the proposal ACCEPTED with it, and the
+ * release to the proposal's Projeto. The `GRANT` follows outside, with Ligar's own steps.
  */
 export async function acceptedIn(
   deps: Pick<CopiesDeps, 'identity'>,
@@ -101,22 +176,14 @@ export async function acceptedIn(
     if (again === undefined) throw new Failure('COPY_PROPOSAL_DECIDED')
     return { copy: parsedCopy(again), projectId: ProjectId.parse(proposal.projectId) }
   }
-  const connectionId = ConnectionId.parse(proposal.connectionId)
   const connectorId = ConnectorId.parse(proposal.connectorId)
-  const of = { companyId: input.companyId, connectionId }
-  const lacked = await lackedReadOf(deps, tx, { ...of, connectorId, personId: input.personId })
-  if (lacked !== undefined)
-    throw new Failure('NOT_IN_ROLE', {
-      details: { connectionId, reason: 'READ_DOOR' },
-      named: { operation: lacked },
-    })
-  const linked = await connectionForCopy(tx, of)
-  if (linked === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
-  if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
+  const definition = CopyDefinition.parse(proposal.definition)
+  const connections = await proposalConnections(tx, proposal)
+  await mayReadSources(deps, tx, { ...input, connectorId, definition, connections })
+  const sources = await activeSources(tx, input.companyId, connections)
   const row = await insertedCopy(tx, input, {
-    ...{ connectorId, connectionId, name: proposal.name, label: proposal.label },
-    ...{ accountRef: linked.accountRef, model: null, bodyHash },
-    definition: CopyDefinition.parse(proposal.definition),
+    ...{ connectorId, sources, name: proposal.name, label: proposal.label },
+    ...{ model: null, bodyHash, definition },
   })
   await tx
     .update(copyProposal)

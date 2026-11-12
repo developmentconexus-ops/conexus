@@ -27,6 +27,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import { CATALOG } from './test-sources.ts'
 
 export const VENDAS = CopyId.parse('11111111-1111-4111-8111-111111111111')
 export const CLIENTES = CopyId.parse('22222222-2222-4222-8222-222222222222')
@@ -58,7 +59,7 @@ export function copy(fields: Partial<CopySummary> = {}): CopySummary {
     id: VENDAS,
     name: 'vendas',
     label: 'Vendas',
-    connection: { id: MATRIZ, name: 'Matriz', connector: SANKHYA },
+    sources: [{ connection: { id: MATRIZ, name: 'Matriz', connector: SANKHYA } }],
     interval: '30m',
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     run: copyRun(),
@@ -66,10 +67,12 @@ export function copy(fields: Partial<CopySummary> = {}): CopySummary {
     mode: { kind: 'WINDOW', days: 30 },
     projects: [{ id: PEDIDOS.id, name: 'Vendedores' }],
     shown: {
-      query: 'SELECT NUNOTA, CODPARC\nFROM TGFCAB',
+      source: { kind: 'QUERY', query: 'SELECT NUNOTA, CODPARC\nFROM TGFCAB' },
       key: ['NUNOTA'],
       changedSince: { column: 'DTALTER' },
       window: { column: 'DTNEG', days: 30 },
+      description: null,
+      columns: [],
     },
     ...fields,
   })
@@ -81,16 +84,18 @@ export function proposal(fields: Partial<CopyProposalSummary> = {}): CopyProposa
     id: DEVOLUCOES,
     name: 'devolucoes',
     label: 'Devoluções',
-    connection: { id: MATRIZ, name: 'Matriz', connector: SANKHYA },
+    sources: [{ connection: { id: MATRIZ, name: 'Matriz', connector: SANKHYA } }],
     project: { id: PEDIDOS.id, name: 'Vendedores' },
     shown: {
-      query: 'SELECT ID_DEVOLUCAO\nFROM DEVOLUCOES',
+      source: { kind: 'QUERY', query: 'SELECT ID_DEVOLUCAO\nFROM DEVOLUCOES' },
       key: ['ID_DEVOLUCAO'],
       changedSince: null,
       window: null,
+      description: null,
+      columns: [],
     },
     mode: { kind: 'WHOLE' },
-    proved: { rows: 50, more: true },
+    proved: { rows: 50, more: true, calls: null },
     proposedBy: { id: PersonId.parse('person-ana'), name: 'Ana Lima' },
     state: 'OPEN',
     ...fields,
@@ -221,7 +226,7 @@ function copiesHub(
     http.get(`${BASE}/copy-models`, () => HttpResponse.json({ models: held.models ?? MODELS })),
     http.get(`${BASE}/connections`, () =>
       HttpResponse.json({
-        connectors: [],
+        connectors: CATALOG,
         connections: held.connections ?? [connection()],
         mayManage: true,
       }),

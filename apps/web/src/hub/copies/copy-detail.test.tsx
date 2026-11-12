@@ -66,7 +66,12 @@ test('a cópia e as rodadas: um id que o contrato nunca daria é não encontrado
   expect(await screen.findByText('Não encontramos o que você procurou.')).toBeTruthy()
 })
 
-const SHOWN = { query: 'SELECT CODPARC FROM TGFPAR', key: ['CODPARC'] }
+const SHOWN = {
+  source: { kind: 'QUERY', query: 'SELECT CODPARC FROM TGFPAR' } as const,
+  key: ['CODPARC'],
+  description: null,
+  columns: [],
+}
 
 test('a releitura, só com a data de alteração: o que mudou desde a anterior', async () => {
   const shown = { ...SHOWN, changedSince: { column: 'DTALTER' }, window: null }

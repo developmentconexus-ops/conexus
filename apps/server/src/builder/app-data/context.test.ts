@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CopyMode } from '@conexus/hub-api'
+import { ConnectorId, CopyId } from '@conexus/hub-api'
 import { CopyName } from '../../hub/connectors/public.ts'
+import { listProposalsOn } from '../../hub/copies/test-list-proposals.ts'
 import {
   copiesWithoutHubDatabase,
   releasing,
   sankhyaServed,
 } from '../../hub/copies/test-released.ts'
+import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
-import { dataContext } from './public.ts'
+import { dataContext, SOURCE_RULE } from './public.ts'
 
 type View = Extract<Parameters<typeof dataContext>[0], { kind: 'COPIES' }>
 
@@ -20,8 +23,12 @@ function copy(
 ): View['released'][number] {
   return {
     name: CopyName.parse(name),
+    connector: ConnectorId.parse('sankhya'),
+    source: { kind: 'QUERY', query: 'SELECT 1' },
+    description: null,
     mode,
-    columns: columns.map(([column, type]) => ({ name: column, type })),
+    accounts: false,
+    columns: columns.map(([column, type]) => ({ name: column, type, description: null })),
   }
 }
 
@@ -75,14 +82,9 @@ test('o bloco diz o modo', () => {
 
 test('o bloco traz a regra da fonte', () => {
   const block = dataContext(viewOf([copy('c', [['ID', 'bigint']])]))
-  for (const part of [
-    'through `db`',
-    '`copy_propose`',
-    '`connector_read`',
-    'Mercado Livre',
-    '`42501`',
-  ])
+  for (const part of ['through `db`', '`copy_propose`', '`connector_read`', SOURCE_RULE, '`42501`'])
     assert.ok(block.includes(part), part)
+  assert.ok(!block.includes('Mercado Livre'))
 })
 
 test('o teto do bloco: passados 8 KB, as cópias seguintes só pelo nome', () => {
@@ -143,4 +145,48 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   const after = dataContext(await on.hub.copies.projectView({ companyId, projectId }))
   assert.notEqual(after, first)
   assert.ok(after.includes('- `sync.vendedores`'))
+})
+
+test('a origem e as descrições', async (t) => {
+  const on = await listProposalsOn(t)
+  const fixed = ordersCopy(true)
+  const definition = { ...fixed, source: { ...fixed.source, input: { status: 'paid' } } }
+  const proposed = await on.propose({ definition })
+  assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
+  const made = await on.enable(on.ana, Object(proposed).proposalId)
+  assert.equal(made.statusCode, 201, made.body)
+  const ids = { companyId: on.companyId, projectId: on.projectId }
+  const first = dataContext(await on.hub.copies.projectView(ids))
+  for (const part of [
+    '- `sync.ml_pedidos` (only what changed',
+    'from the read `pedidos` (Pedidos) of `mercado-livre`, fixed input {"status":"paid"}.',
+    'Os pedidos de cada loja.',
+    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text, "atualizado" timestamp`,
+  ])
+    assert.ok(first.includes(part), `${part}\n${first}`)
+  const copyId = CopyId.parse(Object(made.json()).copy.id)
+  const again = await on.hub.copies.run(
+    { companyId: on.companyId, copyId },
+    AbortSignal.timeout(60_000),
+  )
+  assert.notEqual(again.kind, 'GONE')
+  assert.equal(dataContext(await on.hub.copies.projectView(ids)), first, 'a run changes nothing')
+  // A query's copy names no SQL; three copies of 25 described columns fit in the 8 KB.
+  function described(at: number) {
+    return {
+      ...copy(`c${at}`, []),
+      description: 'Os dados que o app lê desta cópia',
+      accounts: true,
+      columns: Array.from({ length: 25 }, (_, n) => ({
+        name: `coluna_${n}`,
+        type: 'text',
+        description: `O campo ${n} como o sistema o chama`,
+      })),
+    }
+  }
+  const block = dataContext(viewOf([described(1), described(2), described(3)]))
+  assert.ok(block.includes('from the query of `sankhya`.'))
+  assert.ok(!block.includes('SELECT 1'))
+  assert.ok(new TextEncoder().encode(block).length <= 8 * 1024)
+  for (const at of [1, 2, 3]) assert.ok(block.includes(`- \`sync.c${at}\``), `c${at} listed`)
 })

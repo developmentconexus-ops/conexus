@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { CLIENTES, copy, copyRun, LIST, onPhone, openCopies, PRODUTOS } from './test-hub.tsx'
+import { ORDERS_SHOWN, STORES } from './test-sources.ts'
 
 // Cópias: the rail, the list and the actions of a row (Capacidade 2, criteria 30, 31, 33 and 35).
 const server = hubServer()
@@ -199,4 +200,44 @@ test('o modo da cópia', async () => {
   expect(within(await rowOf('Vendas')).getByText('por janela de 30 dias')).toBeTruthy()
   expect(within(await rowOf('Clientes')).getByText('só o alterado')).toBeTruthy()
   expect(within(await rowOf('Produtos')).getByText('cópia inteira')).toBeTruthy()
+})
+
+test('a origem da cópia', async () => {
+  const orders = copy({
+    ...{ name: 'ml_pedidos', label: 'Pedidos das lojas', sources: STORES },
+    ...{ shown: ORDERS_SHOWN, mode: { kind: 'CHANGES' }, interval: null },
+  })
+  openCopies(server, { copies: [orders], runs: [] }, LIST)
+  const row = await rowOf('Pedidos das lojas')
+  // The read's label and the connector's name, from the catalog; the accounts before the mode.
+  expect(await within(row).findByText('Pedidos · Mercado Livre')).toBeTruthy()
+  expect(within(row).getByText('Loja A, Loja B · só o alterado')).toBeTruthy()
+  fireEvent.click(within(row).getByRole('link', { name: 'Pedidos das lojas' }))
+  const copied = within(await screen.findByRole('region', { name: 'O que é copiado' }))
+  expect(copied.getByText('Os pedidos de cada loja')).toBeTruthy()
+  expect(copied.getByText('Pedidos · Mercado Livre')).toBeTruthy()
+  expect(copied.getByText('status: paid')).toBeTruthy()
+  expect(copied.getByText('Loja A, Loja B')).toBeTruthy()
+  const columns = within(copied.getByRole('list', { name: 'Colunas' }))
+  expect(columns.getByText(/O número do pedido/)).toBeTruthy()
+  // A column with no description: its name and type alone.
+  const plain = columns.getByText('atualizado').closest('li')
+  expect(plain?.textContent).toBe('atualizado timestamp')
+})
+
+test('a origem da cópia: no telefone, as contas quebram a linha', async () => {
+  const orders = copy({
+    ...{ name: 'ml_pedidos', label: 'Pedidos das lojas', sources: STORES },
+    ...{ shown: ORDERS_SHOWN, mode: { kind: 'CHANGES' } },
+  })
+  await onPhone(async () => {
+    openCopies(server, { copies: [orders] }, LIST)
+    const row = await rowOf('Pedidos das lojas')
+    expect(
+      await within(row).findByText(' · Pedidos · Mercado Livre', { normalizer: (text) => text }),
+    ).toBeTruthy()
+    expect(within(row).getByText('Loja A, Loja B · só o alterado').className).toContain(
+      'break-words',
+    )
+  })
 })

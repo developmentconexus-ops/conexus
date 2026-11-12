@@ -13,6 +13,7 @@ export { SignInReturn } from './sign-in-return.tsx'
 export {
   ASK_MANAGER,
   busyText,
+  connectorName,
   GRANT,
   grantText,
   LINK_IN_COMPANY,

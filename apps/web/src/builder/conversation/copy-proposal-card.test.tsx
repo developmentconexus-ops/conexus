@@ -1,5 +1,11 @@
 import type { CopyProposalSummary } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, BUILDER_TOOL, EnableCopy, listCopies } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  BUILDER_TOOL,
+  ConnectorEntry,
+  EnableCopy,
+  listCopies,
+} from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -14,17 +20,22 @@ const server = hubServer()
 const { openConversation } = screens(server)
 const COPIES = `*/api/companies/${COMPANY.id}/copies`
 const MATRIZ = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', name: 'Matriz', connector: 'sankhya' }
-const SHOWN = { query: 'SELECT ID_DEVOLUCAO\nFROM DEVOLUCOES', key: ['ID_DEVOLUCAO'] }
+const SHOWN = {
+  source: { kind: 'QUERY', query: 'SELECT ID_DEVOLUCAO\nFROM DEVOLUCOES' },
+  key: ['ID_DEVOLUCAO'],
+  description: null,
+  columns: [],
+}
 
 /** The proposal as the Hub lists it: the Builder's `devolucoes` of the Matriz, for the Projeto Vendedores. */
 function proposal(): CopyProposalSummary {
   return listCopies.success.body.shape.proposals.element.parse({
     id: '55555555-5555-4555-8555-555555555555',
-    ...{ name: 'devolucoes', label: 'Devoluções', connection: MATRIZ },
+    ...{ name: 'devolucoes', label: 'Devoluções', sources: [{ connection: MATRIZ }] },
     project: { id: PEDIDOS.id, name: 'Vendedores' },
     shown: { ...SHOWN, changedSince: { column: 'DTALTER' }, window: null },
     mode: { kind: 'CHANGES' },
-    proved: { rows: 12, more: false },
+    proved: { rows: 12, more: false, calls: null },
     proposedBy: { id: 'person-ana', name: 'Ana Lima' },
     state: 'OPEN',
   })
@@ -34,7 +45,7 @@ function proposal(): CopyProposalSummary {
 function madeOf(held: CopyProposalSummary) {
   return listCopies.success.body.shape.copies.element.parse({
     id: '66666666-6666-4666-8666-666666666666',
-    ...{ name: held.name, label: held.label, connection: MATRIZ, interval: '30m' },
+    ...{ name: held.name, label: held.label, sources: held.sources, interval: '30m' },
     schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
     ...{ run: null, rows: null, mode: held.mode, shown: held.shown, projects: [held.project] },
   })
@@ -47,11 +58,17 @@ function proposed() {
     kind: 'PROPOSED',
     proposalId: held.id,
     name: held.name,
-    connection: { name: held.connection.name, connector: held.connection.connector },
+    source: held.shown.source,
+    sources: held.sources.map(({ connection }) => ({
+      name: connection.name,
+      connector: connection.connector,
+    })),
     key: held.shown.key,
     mode: { kind: 'CHANGES' },
     rows: 12,
     more: false,
+    calls: null,
+    counts: [],
   }
 }
 
@@ -162,4 +179,38 @@ test('a linha da proposta recusada: a frase, e nenhum cartão', async () => {
   expect(screen.getByText('Não conseguiu propor a cópia')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
   expect(hub.reads.filter((search) => search.includes('proposalId'))).toHaveLength(0)
+})
+
+const MERCADO_LIVRE = ConnectorEntry.parse({
+  ...{ id: 'mercado-livre', name: 'Mercado Livre', version: '1.0.0', category: 'Marketplace' },
+  ...{ summary: 'Resumo.', auth: 'oauth2_code', subjects: [], fields: [] },
+  logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28"/></svg>',
+})
+
+test('o cartão de uma leitura de lista', async () => {
+  const stores = [
+    { name: 'Loja A', connector: 'mercado-livre' },
+    { name: 'Loja B', connector: 'mercado-livre' },
+  ]
+  const source = { kind: 'OPERATION', operation: 'pedidos', label: 'Pedidos', input: {} }
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+      HttpResponse.json({ connectors: [MERCADO_LIVRE], connections: [], mayManage: false }),
+    ),
+  )
+  copiesHub(proposal())
+  const result = {
+    ...proposed(),
+    name: 'ml_pedidos',
+    ...{ source, sources: stores, key: ['id'], rows: 50, more: true, calls: 6 },
+  }
+  await conversationWithProposal('member', result)
+  const card = cardOf('ml_pedidos')
+  expect(await within(card).findByText('ml_pedidos · Pedidos · Mercado Livre')).toBeTruthy()
+  expect(within(card).getByText('Loja A, Loja B · só o alterado')).toBeTruthy()
+  expect(within(card).getByText('id')).toBeTruthy()
+  expect(
+    within(card).getByText(/teste: mais de 50 linhas · cerca de 6 chamadas por passada/),
+  ).toBeTruthy()
+  expect(within(card).queryByRole('button')).toBeNull()
 })

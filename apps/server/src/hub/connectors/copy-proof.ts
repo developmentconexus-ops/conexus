@@ -9,8 +9,8 @@ import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
 import { lackedDoorRead, personSpeaker } from './speaking.ts'
 
-/** One page of a proposed copy, counted: never a row (Capacidade 3). */
-export type Proved = Readonly<{ kind: 'PROVED'; rows: number; more: boolean }>
+/** One page of a proposed version 1 copy, counted: never a row (Capacidade 3). */
+export type Proved = Readonly<{ kind: 'PROVED'; rows: number; more: boolean; counts: null }>
 
 type ProofAnswer =
   | Proved
@@ -76,5 +76,5 @@ export async function provedPage(
   if (page.kind === 'NO_CONNECTION') return { kind: 'NOT_GRANTED' }
   if (page.kind === 'REFUSED') return page.refusal
   if (page.kind === 'IN_LINE') return { kind: 'DEADLINE' }
-  return { kind: 'PROVED', rows: page.page.rows.length, more: page.page.more }
+  return { kind: 'PROVED', rows: page.page.rows.length, more: page.page.more, counts: null }
 }

@@ -31,7 +31,9 @@ export type Asker = OfProject & {
  * limit. The tools never decide what may be read: the door behind `read` and `notes` does.
  */
 export type ConnectorAccess = {
-  connections: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
+  connections: readonly (Pick<GrantedConnection, 'connectionId' | 'connector' | 'name'> & {
+    reads: readonly Pick<GrantedConnection['reads'][number], 'operation' | 'label' | 'summary'>[]
+  })[]
   read(
     call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
@@ -290,7 +292,7 @@ export function connectorTools(
     reads?: false
     /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
     propose?: {
-      copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name'>[]
+      copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
       call: ProposeCall
     }
   },

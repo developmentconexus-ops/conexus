@@ -1,4 +1,4 @@
-import type { CopyDefinitionV1 } from '@conexus/connectors'
+import type { CopyDefinition, ListRead, Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import type {
   CompanyId,
@@ -17,6 +17,8 @@ import { provedPage } from './copy-proof.ts'
 import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
+import type { ListMisfit, ListProved } from './list-proof.ts'
+import { provedList } from './list-proof.ts'
 import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -37,12 +39,25 @@ export type GrantedConnection = Readonly<{
   name: string
   perProject: 'one' | 'many'
   skill: Readonly<{ name: string; content: string; references: Readonly<Record<string, string>> }>
-  reads: readonly Readonly<{ operation: string; label: string; summary: string }>[]
+  /** Each read, and how it lists rows when it declares a list (a copy of version 2 reads it). */
+  reads: readonly Readonly<{
+    operation: string
+    label: string
+    summary: string
+    list: ListShown | null
+  }>[]
   /** The writes the connector declares (step 24.5): an agent's tool may be one, never a read of the Builder or the Assistant. */
   writes: readonly Readonly<{ operation: string; label: string; summary: string }>[]
   notes: readonly string[]
-  /** The connector copies through its free read door (definition version 1, `QUERY`): `copy_propose` is offered (Capacidade 3). */
+  /** The connector copies through its free read door (version 1) or declares a read that lists rows (version 2): `copy_propose` is offered. */
   copies: boolean
+}>
+
+/** How a read lists rows, as the model is told: its paging, the row's field it filters changes by, and its ceiling. */
+type ListShown = Readonly<{
+  paging: ListRead['paging']['kind']
+  changed: string | null
+  ceiling: number | null
 }>
 export type ShapedRead =
   | Readonly<{ kind: 'OK'; value: unknown; complete: boolean }>
@@ -56,6 +71,10 @@ type BuilderReadRefusal = Exclude<ShapedRead, { kind: 'OK' }> | Spent
 /** What proposing a copy answers to the model (`hub/copies/propose.ts` writes it). */
 export type ProposeAnswer =
   | CopyProposed
+  /** The proof of a connection found a key cell null or a key repeated in its rows. */
+  | Readonly<{ kind: 'KEY_NOT_UNIQUE'; connection: string; keyNull: number; keyRepeated: number }>
+  /** The proof of a connection found cells of `column` that do not fit its type. */
+  | Readonly<{ kind: 'TYPE_MISFIT'; connection: string; column: string; count: number }>
   /** A copy of the company or an open proposal has the name; `releasedHere` when it is a copy released to this Projeto. */
   | Readonly<{ kind: 'EXISTS'; name: string; releasedHere: boolean }>
   /** `CopyDefinition`'s paths and messages, or the name's. */
@@ -64,7 +83,8 @@ export type ProposeAnswer =
 
 /** What proposing takes: the Projeto and the person of the turn, the run its call counts in, what the model wrote. */
 export type Proposal = Readonly<{
-  connectionId: ConnectionId
+  /** One or more, of one connector; the first is the proposal's own. */
+  connections: readonly ConnectionId[]
   personId: PersonId
   runId: RunId
   name: string
@@ -89,11 +109,11 @@ export type BuilderConnectors = {
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
   ): Promise<NoteSaved | Spent>
-  /** One page of the copy read, as the person may read the connection: the count, never a row. */
+  /** The proof of one connection, as the person may read it: the counts, never a row. */
   provePage(
     ids: OfProject,
-    a: Of & Readonly<{ definition: CopyDefinitionV1; signal: AbortSignal }>,
-  ): Promise<Proved | BuilderReadRefusal>
+    a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
+  ): Promise<Proved | ListProved | ListMisfit | BuilderReadRefusal>
   /** A copy proposed in the Projeto's conversation, proved by one page; `hub/copies` owns it. */
   propose: Propose
 }
@@ -189,6 +209,19 @@ function listedOf(operation: { id: string; label: string; summary: string }) {
   return { operation: operation.id, label: operation.label, summary: operation.summary }
 }
 
+function readOfKit(operation: Operation<unknown, unknown>) {
+  const { list } = operation
+  const shown =
+    list === undefined
+      ? null
+      : {
+          paging: list.paging.kind,
+          changed: list.changed?.field ?? null,
+          ceiling: list.paging.kind === 'OFFSET' ? list.paging.ceiling : null,
+        }
+  return { ...listedOf(operation), list: shown }
+}
+
 export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedConnection[] {
   return rows.flatMap((row) => {
     const connector = connectorOf(row.connector)
@@ -201,10 +234,12 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         name: row.name,
         perProject: connector.perProject,
         skill: { name: `conexus-${connector.id}`, ...connector.skill },
-        reads: reads.filter((operation) => operation.class === 'read').map(listedOf),
+        reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),
-        copies: connector.copy !== undefined && connector.readDoor !== undefined,
+        copies:
+          (connector.copy !== undefined && connector.readDoor !== undefined) ||
+          connector.operations.some((operation) => operation.list !== undefined),
       },
     ]
   })
@@ -267,7 +302,11 @@ export function createBuilderConnectors(
 
     async provePage(ids, a) {
       const opened = await admit(deps, ids, a)
-      return provedPage(deps, { ...a, ids, opened, spend: () => spend(a.runId) })
+      const { definition } = a
+      const proving = { ...a, ids, opened, spend: () => spend(a.runId) }
+      return definition.version === 1
+        ? provedPage(deps, { ...proving, definition })
+        : provedList(deps, { ...proving, definition })
     },
 
     propose: (ids, a) => deps.propose()(ids, a),

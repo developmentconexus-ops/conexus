@@ -1,4 +1,4 @@
-import type { CompanyId, CopyId, CopyRun } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopyRun, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
@@ -11,9 +11,10 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
-import { QueryBlock } from './copy-proposal.tsx'
+import { ReadFacts } from './copy-proposal.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
+import { originOf, useSourceText } from './source.ts'
 import {
   BACK_TO_COPIES,
   COPIED_TITLE,
@@ -26,6 +27,21 @@ import {
   RUNS_TITLE,
   windowText,
 } from './text.ts'
+
+/** A list read's columns: each name in mono, its type, and its description when the definition gives one. */
+function ColumnList({ columns }: { columns: CopySummary['shown']['columns'] }) {
+  return (
+    <ul aria-label="Colunas" className="flex min-w-0 flex-col gap-xs">
+      {columns.map((column) => (
+        <li key={column.name} className="break-words">
+          <span className="font-mono text-fact">{column.name}</span>
+          <span className="text-text-2">{` ${column.type}`}</span>
+          {column.description !== null && <span>{` · ${column.description}`}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function RunRow({ run }: { run: CopyRun }) {
   return (
@@ -98,18 +114,22 @@ function Runs(props: {
 
 /**
  * **Uma cópia** (Capacidade 2, U4; web W29, W34): what it copies (the query in mono, scrolling inside
- * its box; the key; the window it rereads), its actions, and its runs, newest first, 20 to a page.
+ * its box, or a list read with its fixed input, the accounts, the descriptions and the columns; the
+ * key; the window it rereads), its actions, and its runs, newest first, 20 to a page.
  * The route's loader has already refused a copy the Hub does not have.
  */
 export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?: string }) {
   const { companyId, copyId, page } = props
   const requests = useRunRequests()
   const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
+  const sourceOf = useSourceText(companyId)
   const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
+  const origin = originOf(copy)
+  const source = sourceOf(origin)
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <Link
@@ -126,8 +146,8 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <StateBadge copy={copy} />
           <span className="text-text-2">
             {copy.interval === null
-              ? copy.connection.name
-              : `${copy.connection.name} · a cada ${INTERVAL_LABEL[copy.interval]}`}
+              ? source
+              : `${source} · a cada ${INTERVAL_LABEL[copy.interval]}`}
           </span>
         </div>
         <div className="flex items-center gap-sm">
@@ -138,7 +158,8 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
       {note !== undefined && <NoteLine note={note} />}
       <section aria-label={COPIED_TITLE} className="flex min-w-0 flex-col gap-md">
         <SectionTitle>{COPIED_TITLE}</SectionTitle>
-        <QueryBlock query={copy.shown.query} />
+        {copy.shown.description !== null && <p className="break-words">{copy.shown.description}</p>}
+        <ReadFacts origin={origin} source={source} />
         <p className="break-words">
           <span className="text-text-2">Chave </span>
           <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>
@@ -151,6 +172,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
           <span className="text-text-2">Releitura </span>
           {windowText(copy.mode, copy.shown)}
         </p>
+        {origin.source.kind === 'OPERATION' && <ColumnList columns={copy.shown.columns} />}
       </section>
       <section aria-label={RUNS_TITLE} className="flex min-w-0 flex-col gap-md">
         <SectionTitle>{RUNS_TITLE}</SectionTitle>

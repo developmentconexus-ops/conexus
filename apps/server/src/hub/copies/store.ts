@@ -1,37 +1,44 @@
 import type {
   CompanyId,
+  ConnectionId,
   CopyId,
   CopyInterval,
+  CopyOrigin,
   CopyProposalId,
   CopyProposalSummary,
   CopyRunFailureCode,
   CopySchedule,
-  CopySummary,
+  CopyShown,
+  CopySource,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
-  ConnectorId as ConnectorIdSchema,
   CopyId as CopyIdSchema,
   CopyProposalId as CopyProposalIdSchema,
   PersonId as PersonIdSchema,
   ProjectId as ProjectIdSchema,
 } from '@conexus/hub-api'
-import { and, eq, inArray, or } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, or, sql } from 'drizzle-orm'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { CopyTable } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { Connectors } from '../connectors/public.ts'
-import { CopyDefinition, CopyName, connectionNamesOf } from '../connectors/public.ts'
+import {
+  CopyDefinition,
+  CopyName,
+  connectionNamesOf,
+  operationLabel,
+} from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
 import { copyModeOf } from './mode.ts'
-import { copy, copyProposal } from './tables.ts'
+import { copy, copyProposal, copyProposalSource } from './tables.ts'
 
 /** What the clock holds for a copy: its schedule, and the interval it was set with. */
 export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterval }>
@@ -182,18 +189,75 @@ export async function syncOf(
   return ready?.host == null ? undefined : deps.companyPostgres.syncAddress(ready.host)
 }
 
-/**
- * What the list shows of a definition: version 1's query, key and the two date filters; version 2
- * shows no query, its source is an operation of the connector.
- */
-export function shownOf(definition: CopyDefinition): CopySummary['shown'] {
+/** What a copy reads, as the list and the model read it: version 1's query, or version 2's list read by its label, with its fixed input. */
+export function originOf(connector: string, definition: CopyDefinition): CopyOrigin {
+  if (definition.version === 1) return { kind: 'QUERY', query: definition.source.sql }
+  const { operation, input } = definition.source
+  return { kind: 'OPERATION', operation, label: operationLabel(connector, operation), input }
+}
+
+/** What the list shows of a definition: where it reads, its key, the two date filters, and the descriptions. */
+export function shownOf(connector: string, definition: CopyDefinition): CopyShown {
   const window = definition.version === 1 ? definition.window : undefined
   return {
-    query: definition.version === 1 ? definition.source.sql : '',
+    source: originOf(connector, definition),
     key: definition.key,
     changedSince: definition.changedSince,
     window: window === undefined ? null : { column: window.column, days: window.days },
+    description: definition.version === 2 ? definition.description : null,
+    columns:
+      definition.version === 1
+        ? definition.columns.map(({ name, type }) => ({ name, type, description: null }))
+        : definition.columns.map(({ name, type, description }) => ({
+            ...{ name, type },
+            description: description ?? null,
+          })),
   }
+}
+
+/** Each connection of the rows named, by the name the company gave it, in the order given; one gone is left out. */
+export async function sourcesNamed(
+  tx: ReadTx,
+  companyId: CompanyId,
+  rows: readonly { of: string; connectionId: ConnectionId }[],
+): Promise<Map<string, CopySource[]>> {
+  const names = await connectionNamesOf(tx, { companyId, ids: rows.map((row) => row.connectionId) })
+  const sources = new Map<string, CopySource[]>()
+  for (const row of rows) {
+    const id = row.connectionId
+    const named = names.get(id)
+    if (named === undefined) continue
+    const connection = { id, name: named.name, connector: named.connector }
+    sources.set(row.of, [...(sources.get(row.of) ?? []), { connection }])
+  }
+  return sources
+}
+
+/** Each proposal's connections, its own first. */
+async function proposalSources(tx: ReadTx, companyId: CompanyId, ids: readonly string[]) {
+  if (ids.length === 0) return new Map<string, CopySource[]>()
+  const rows = await tx
+    .select({
+      of: copyProposalSource.proposalId,
+      connectionId: copyProposalSource.connectionId,
+    })
+    .from(copyProposalSource)
+    .innerJoin(copyProposal, eq(copyProposal.id, copyProposalSource.proposalId))
+    .where(
+      and(
+        eq(copyProposalSource.companyId, companyId),
+        inArray(copyProposalSource.proposalId, [...ids]),
+      ),
+    )
+    .orderBy(
+      desc(sql`${copyProposalSource.connectionId} = ${copyProposal.connectionId}`),
+      asc(copyProposalSource.connectionId),
+    )
+  const parsed = rows.map((row) => ({
+    ...row,
+    connectionId: ConnectionIdSchema.parse(row.connectionId),
+  }))
+  return sourcesNamed(tx, companyId, parsed)
 }
 
 /**
@@ -223,31 +287,26 @@ export async function proposalsOf(
     companyId,
     ids: rows.map(({ row }) => ProjectIdSchema.parse(row.projectId)),
   })
-  const connections = await connectionNamesOf(tx, {
+  const sources = await proposalSources(
+    tx,
     companyId,
-    ids: rows.map(({ row }) => ConnectionIdSchema.parse(row.connectionId)),
-  })
+    rows.map(({ row }) => row.id),
+  )
   return rows.flatMap(({ row, proposedByName }) => {
     const projectId = ProjectIdSchema.parse(row.projectId)
     const project = projects.get(projectId)
     if (project === undefined) return []
     const definition = CopyDefinition.parse(row.definition)
-    const connectionId = ConnectionIdSchema.parse(row.connectionId)
-    const linked = connections.get(connectionId)
     return [
       {
         id: CopyProposalIdSchema.parse(row.id),
         name: row.name,
         label: row.label,
-        connection: {
-          id: connectionId,
-          name: linked?.name ?? '',
-          connector: linked?.connector ?? ConnectorIdSchema.parse(row.connectorId),
-        },
+        sources: sources.get(row.id) ?? [],
         project: { id: projectId, name: project },
-        shown: shownOf(definition),
+        shown: shownOf(row.connectorId, definition),
         mode: copyModeOf(definition),
-        proved: { rows: row.provedRows, more: row.provedMore },
+        proved: { rows: row.provedRows, more: row.provedMore, calls: row.provedCalls },
         proposedBy: { id: PersonIdSchema.parse(row.proposedBy), name: proposedByName ?? '' },
         state: row.state,
       },

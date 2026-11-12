@@ -28,7 +28,8 @@ test('propor: prova uma página e guarda só a contagem', async (t) => {
   assert.ok(answer.rows > 0 && answer.rows <= 50)
   // Only the counts leave: the answer's keys, and the row keeps the definition, never a row of the source.
   assert.deepEqual(Object.keys(answer).sort(), [
-    'connection',
+    'calls',
+    'counts',
     'key',
     'kind',
     'mode',
@@ -36,11 +37,14 @@ test('propor: prova uma página e guarda só a contagem', async (t) => {
     'name',
     'proposalId',
     'rows',
+    'source',
+    'sources',
   ])
+  assert.deepEqual([answer.calls, answer.counts], [null, []])
   assert.deepEqual(row.definition, definition)
   assert.deepEqual(answer.mode, { kind: 'WINDOW', days: definition.window?.days ?? 0 })
   assert.deepEqual(answer.key, definition.key)
-  assert.equal(answer.connection.connector, 'sankhya')
+  assert.deepEqual(answer.sources, [{ name: 'Matriz', connector: 'sankhya' }])
 })
 
 test('propor: a prova conta na conta de 50 da rodada', async (t) => {
@@ -167,7 +171,7 @@ test('o registro não leva dado', async (t) => {
   assert.ok(line)
   assert.deepEqual(Object.keys(line.fields).sort(), [
     'companyId',
-    'connectionId',
+    'connectionIds',
     'more',
     'projectId',
     'proposalId',
