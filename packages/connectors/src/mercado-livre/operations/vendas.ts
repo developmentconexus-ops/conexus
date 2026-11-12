@@ -22,8 +22,8 @@ export const pedidos = readOf({
     dateTo: Instant.optional(),
     changedFrom: Instant.optional(),
     sort: z.enum(['date_asc', 'date_desc']).optional(),
-    offset: Offset,
-    limit: Limit(50),
+    offset: Offset.optional(),
+    limit: Limit(50).optional(),
   }),
   list: 'results',
   paged: {
