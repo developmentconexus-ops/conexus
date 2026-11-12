@@ -44,6 +44,34 @@ const PERIODS = Array.from({ length: 14 }, (_, index) => {
   }
 })
 
+/** The reason of the double's one open claim. */
+const CLAIM_REASON = 'PNR'
+/** The one promotion of the double: still a candidate, it starts on 1 October 2026. */
+const PROMOTION = {
+  id: 'P-MLB1000',
+  type: 'DEAL',
+  status: 'candidate',
+  name: 'Semana do Pão',
+  start_date: '2026-10-01T00:00:00',
+  finish_date: '2026-10-07T23:59:59',
+}
+/** The visits of the double: one total, none by listing. */
+const TOTAL_VISITS = 321
+
+/** What the double holds, for a test to check an answer against: computed from the very rows its routes send. */
+export const MERCADO_LIVRE_FACTS = {
+  /** Every listing of the double is active. */
+  activeListings: ITEMS.length,
+  unansweredQuestions: questionsOf().filter((each) => each.status === 'UNANSWERED').length,
+  openClaims: 1,
+  claimReason: CLAIM_REASON,
+  /** The newest billing period's amount, and the one the period's details give. */
+  lastPeriodAmount: PERIODS.at(-1)?.amount ?? 0,
+  periodDetailsAmount: 120.5,
+  totalVisits: TOTAL_VISITS,
+  promotion: { name: PROMOTION.name, status: PROMOTION.status },
+}
+
 const NEEDS_DOCUMENT_TYPE = {
   status: 400,
   body: { message: 'document_type is required', error: 'bad_request', status: 400 },
@@ -130,7 +158,7 @@ export const MORE_ROUTES: readonly Route[] = [
             status: query.get('status') ?? 'opened',
             type: 'mediations',
             stage: 'claim',
-            reason_id: 'PNR',
+            reason_id: CLAIM_REASON,
             date_created: '2026-09-12T09:00:00.000-03:00',
             last_updated: '2026-09-12T10:00:00.000-03:00',
             players: [{ role: 'respondent', type: 'seller', user_id: Number(SELLER.ref) }],
@@ -152,7 +180,7 @@ export const MORE_ROUTES: readonly Route[] = [
         status: 'opened',
         type: 'mediations',
         stage: 'claim',
-        reason_id: 'PNR',
+        reason_id: CLAIM_REASON,
         date_created: '2026-09-12T09:00:00.000-03:00',
         last_updated: '2026-09-12T10:00:00.000-03:00',
         resolution: null,
@@ -180,16 +208,7 @@ export const MORE_ROUTES: readonly Route[] = [
     pattern: new RegExp(`^/seller-promotions/users/${SELLER_PATH}$`),
     answer: () => ({
       body: {
-        results: [
-          {
-            id: 'P-MLB1000',
-            type: 'DEAL',
-            status: 'candidate',
-            name: 'Semana do Pão',
-            start_date: '2026-10-01T00:00:00',
-            finish_date: '2026-10-07T23:59:59',
-          },
-        ],
+        results: [PROMOTION],
         paging: { total: 1 },
       },
     }),
@@ -202,8 +221,8 @@ export const MORE_ROUTES: readonly Route[] = [
       body: {
         date_from: query.get('date_from'),
         date_to: query.get('date_to'),
-        total_visits: 321,
-        visits_detail: [{ company: 'mercadolibre', quantity: 321 }],
+        total_visits: TOTAL_VISITS,
+        visits_detail: [{ company: 'mercadolibre', quantity: TOTAL_VISITS }],
       },
     }),
   },

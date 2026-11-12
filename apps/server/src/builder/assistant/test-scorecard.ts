@@ -1,9 +1,14 @@
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
-import { numbersFromReads } from './test-numbers.ts'
 import { textOf } from './test-real-model.ts'
+import { expectedOf, meets } from './test-truths.ts'
 
-/** What one question cost the Assistant, counted from its turn (card U11). */
+/**
+ * What one question cost the Assistant, counted from its turn (card U11). `errors` counts every
+ * refusal of a read too, and most refusals of the Sankhya questions come from the double, not from
+ * the Assistant: its SQLite does not run the Oracle SQL (`TO_CHAR`, `EXTRACT`, `FROM DUAL`) that the
+ * real Sankhya accepts. `helpers` counts the helpers that ended, as the turn's log line does.
+ */
 export type Scorecard = {
   question: number
   right: boolean
@@ -37,8 +42,6 @@ export type Question = {
   says?: RegExp[]
   /** The turn must not read a connection. */
   noRead?: true
-  /** The figures the reads must give come from the September sales. */
-  september?: true
 }
 
 function q(
@@ -53,10 +56,7 @@ function q(
 
 /** The 27 questions the founder approved on 2026-11-11, in the card's order. */
 export const QUESTIONS: readonly Question[] = [
-  q(1, 'Quanto a gente vendeu em setembro, por vendedor?', ['SV'], 'cada total igual ao do dublê', {
-    september: true,
-    says: [/JOAO/],
-  }),
+  q(1, 'Quanto a gente vendeu em setembro, por vendedor?', ['SV'], 'cada total igual ao do dublê'),
   q(2, 'Qual vendedor vendeu mais em setembro na filial?', ['SV'], 'o nome e o total do maior'),
   q(
     3,
@@ -89,9 +89,7 @@ export const QUESTIONS: readonly Question[] = [
     ['SC'],
     'os produtos, ou "nenhum" se não houver',
   ),
-  q(12, 'Quantos anúncios ativos a gente tem no Mercado Livre?', ['ML'], 'o número', {
-    says: [/\b12\b/],
-  }),
+  q(12, 'Quantos anúncios ativos a gente tem no Mercado Livre?', ['ML'], 'o número'),
   q(13, 'Quais vendas do Mercado Livre ainda não foram enviadas?', ['ML'], 'as vendas sem envio'),
   q(14, 'Tem pergunta de comprador sem resposta no Mercado Livre?', ['ML'], 'as perguntas abertas'),
   q(
@@ -162,16 +160,6 @@ export const QUESTIONS: readonly Question[] = [
   }),
 ]
 
-/** A goals sheet of 3 columns and 200 rows, as the test generates it (invented names). */
-export function goalsSheet(): string {
-  const sellers = ['JOAO', 'MARIA', 'PEDRO', 'LUCIA']
-  const rows = Array.from({ length: 200 }, (_, at) => {
-    const seller = sellers[at % sellers.length] ?? 'JOAO'
-    return `${seller},${String(1 + (at % 12)).padStart(2, '0')}/2026,${1000 + (at % 7) * 100}`
-  })
-  return ['vendedor,mes,meta', ...rows].join('\n')
-}
-
 type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
 
 function invocationsOf(parts: readonly MastraMessagePart[]): Invocation[] {
@@ -211,17 +199,16 @@ export function scoreOf(turn: {
     errors: calls.filter(failed).length,
     repeated: [...seen.values()].filter((times) => times > 1).length,
     firstStepTokens: first?.type === 'usage_update' ? first.usage.promptTokens : undefined,
-    helpers: helperCalls,
+    helpers: turn.events.filter((event) => event.type === 'subagent_end').length,
   }
 }
 
-/** Whether the answer is right for the question, by its column "Certo quando". */
-export function judged(
-  asked: Question,
-  parts: readonly MastraMessagePart[],
-  read: string,
-  truth: readonly number[],
-): boolean {
+/**
+ * Whether the answer is right for the question, by its column "Certo quando": what it says, that it
+ * read nothing when it must not, and what the doubles' own data makes the right answer
+ * (`test-truths.ts`).
+ */
+export function judged(asked: Question, parts: readonly MastraMessagePart[], read: string): boolean {
   const text = textOf([...parts])
   const readOnce = invocationsOf(parts).some(
     (call) =>
@@ -231,7 +218,6 @@ export function judged(
   )
   if (asked.noRead === true && readOnce) return false
   if (!(asked.says ?? []).every((says) => says.test(text))) return false
-  if (asked.noRead === true) return true
-  const verdict = numbersFromReads({ question: asked.text, parts, truth })
-  return verdict.ok
+  const expected = expectedOf(asked.n)
+  return expected === undefined || meets(text, expected)
 }
