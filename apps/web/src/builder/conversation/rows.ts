@@ -240,6 +240,23 @@ function toolItem(inv: Parameters<typeof approvalItem>[0], view: View) {
   )
 }
 
+/** The row of one part that is not text: a thinking, a tool call, or a Conexus `data-*` part. */
+function partItem(
+  part: Message['parts'][number],
+  id: string,
+  seconds: number | null,
+  view: View,
+): TranscriptItem | undefined {
+  if (part.type === 'reasoning')
+    return { kind: 'reasoning', id, reasoning: part.reasoning, seconds, streaming: false }
+  if (part.type === 'tool-invocation') return toolItem(part.toolInvocation, view) ?? undefined
+  // Mastra's own `data-*` parts (the memory's) are not rows, and must not split a run of tools.
+  const conexus = part.type.startsWith('data-conexus-') && part.type !== 'data-conexus-thought'
+  if (conexus && 'data' in part)
+    return { kind: 'conexus', id, partType: part.type, data: part.data }
+  return undefined
+}
+
 function fromParts(
   message: Message,
   thoughts: ReadonlyMap<string, number>,
@@ -251,25 +268,8 @@ function fromParts(
     const id = `${message.id}-${index}`
     if (part.type === 'text') run = addText(items, id, part.text, run)
     else if (part.type !== 'source') run = false
-    if (part.type === 'reasoning')
-      items.push({
-        kind: 'reasoning',
-        id,
-        reasoning: part.reasoning,
-        seconds: thoughts.get(`${message.id}.${index}`) ?? null,
-        streaming: false,
-      })
-    else if (part.type === 'tool-invocation') {
-      const item = toolItem(part.toolInvocation, view)
-      if (item) items.push(item)
-    } else if (
-      part.type.startsWith('data-conexus-') &&
-      part.type !== 'data-conexus-thought' &&
-      'data' in part
-    ) {
-      // Mastra's own `data-*` parts (the memory's) are not rows, and must not split a run of tools.
-      items.push({ kind: 'conexus', id, partType: part.type, data: part.data })
-    }
+    const item = partItem(part, id, thoughts.get(`${message.id}.${index}`) ?? null, view)
+    if (item) items.push(item)
   }
   const sources = sourcesOf(message.parts)
   if (sources.length > 0) items.push({ kind: 'sources', id: `${message.id}-sources`, sources })

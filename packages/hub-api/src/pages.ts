@@ -44,6 +44,7 @@ export const PAGES = [
   '/companies/$companyId/settings/roles',
   '/companies/$companyId/settings/model-accounts',
   '/companies/$companyId/settings/observational-memory',
+  '/companies/$companyId/settings/company-memory',
   '/companies/$companyId/settings/defaults',
   '/companies/$companyId/welcome',
   '/companies/$companyId/welcome/company',
