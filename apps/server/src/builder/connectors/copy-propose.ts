@@ -23,6 +23,14 @@ export type ProposeCall = (
 type Granted = Awaited<ReturnType<Connectors['builder']['granted']>>[number]
 type Copying = Pick<Granted, 'connectionId' | 'connector' | 'name' | 'reads'>
 
+/** How `source` and `changedSince` are written, the same sentence here and in `conexus-data`: the read is named as `connector_read` names it, `changedSince` has its one literal shape, and the paging is the copy's. */
+export const COPY_SHAPE_RULE =
+  'Write `source.operation` as `connector_read` names the read (`<connector>.<read>`); `changedSince` is `{ column: "<name of the column whose path is the read\'s change field>" }` or null; `source.input` holds fixed filters only, never `limit` nor `offset` nor any paging field, which the copy fills.'
+
+/** What the proposal becomes, the same sentence here and in `conexus-data`: the card in this conversation, and who turns it on. */
+export const COPY_TURN_ON_RULE =
+  'The proposal shows as a card in this conversation; whoever may turn copies on turns it on with the card\'s Ligar (the Cópias page shows it too), and you never turn it on. Once it is on, it is listed in the "## Data" block: read that block on the next turn, and never write in the plan or the code that the data waits for activation without checking it.'
+
 /**
  * The six questions the Builder answers before it proposes (Nango's "For agents": paging, the
  * incremental filter, what is deleted, how often), in order, then how a definition is written. No
@@ -34,11 +42,12 @@ const COPY_PROPOSE_DESCRIPTION = [
   '2. Does it exist? Look in the "## Data" block: a copy released here, use it; one not released here, ask the owner to release it; never propose a copy that exists.',
   '3. From which read, with which filter? The narrowest read that lists rows and covers the app (below); a fixed input only when the app will never want the rest.',
   '4. Which key? The id the system gives the row; the proof refuses a key that is null or repeated.',
-  "5. Which mode? A read with no change filter is a whole copy (the definition without `changedSince`); with one, only the changed rows (`changedSince` on the column whose `path` is the read's change field), unless more than 10% of the rows change at each run, which asks for a whole copy. Measure the fraction with `connector_read`: count the rows whose change date falls within one interval of the copy against the total. A window of days is only a query's. Say which mode you chose and why.",
+  "5. Which mode? A read with no change filter is a whole copy (the definition without `changedSince`); with one, only the changed rows (`changedSince` on the column named by its `column`, the one whose `path` is the read's change field), unless more than 10% of the rows change at each run, which asks for a whole copy. Measure the fraction with `connector_read`: count the rows whose change date falls within one interval of the copy against the total. A window of days is only a query's. Say which mode you chose and why.",
   '6. How often? The longest interval the screen bears: the proof answers the calls a whole pass spends, and an expensive copy asks for a longer interval.',
   'The fields the app uses become columns; the obvious neighbours (dates, status, linking ids) may come along; a nested part enters as `json` only when the app reads it. Write the description of the table and of each column. Name it after the system and the data (`<system>_<data>`). The accounts of one connector go in one copy, each connection in `connections`, unless the app asks for them apart.',
   'A read that lists rows takes version 2: { version: 2, source: { kind: "OPERATION", operation, input }, description, columns: [{ name, type, path, description }], key, changedSince }. A connector that copies by query takes version 1: { version: 1, source: { kind: "QUERY", sql }, columns, key, changedSince, window }, on one connection.',
-  'Proposing proves each connection with a page or two of the read and keeps only counts, never a row. The proposal appears in this conversation and on the Cópias page, and whoever may turn copies on turns it on there; you never turn it on. Tell the person the proposal is there and go on with what does not depend on it.',
+  COPY_SHAPE_RULE,
+  `Proposing proves each connection with a page or two of the read and keeps only counts, never a row. ${COPY_TURN_ON_RULE} Tell the person the proposal is there and go on with what does not depend on it.`,
 ].join('\n')
 
 function pagingText(list: NonNullable<Copying['reads'][number]['list']>): string {
@@ -51,7 +60,9 @@ function pagingText(list: NonNullable<Copying['reads'][number]['list']>): string
 function listReads(connections: readonly Copying[]): string {
   const lines = connections.flatMap((each) => {
     const listed = each.reads.flatMap((read) =>
-      read.list === null ? [] : [`  - ${read.operation} (${read.label}): ${pagingText(read.list)}`],
+      read.list === null
+        ? []
+        : [`  - ${each.connector}.${read.operation} (${read.label}): ${pagingText(read.list)}`],
     )
     return listed.length === 0
       ? []
@@ -73,6 +84,22 @@ function named(connections: readonly Copying[], names: readonly string[], connec
     found.push(one)
   }
   return found
+}
+
+/**
+ * The definition with `source.operation` as the Hub keeps it, the read's own id: the model writes
+ * it as `connector_read` names it, `<connector>.<read>`, and the connector's prefix leaves here.
+ * Anything else goes through as written, for the Hub's own refusal.
+ */
+function withReadId(definition: unknown, connector: string): unknown {
+  if (typeof definition !== 'object' || definition === null || !('source' in definition))
+    return definition
+  const { source } = definition
+  if (typeof source !== 'object' || source === null || !('operation' in source)) return definition
+  const { operation } = source
+  const prefix = `${connector}.`
+  if (typeof operation !== 'string' || !operation.startsWith(prefix)) return definition
+  return { ...definition, source: { ...source, operation: operation.slice(prefix.length) } }
 }
 
 /**
@@ -115,8 +142,12 @@ export function copyProposeTool(connections: readonly Copying[], propose: Propos
         if (found === undefined || requestContext === undefined)
           return { kind: 'NOT_GRANTED' } as const
         const ids = found.map((each) => each.connectionId)
+        const [first] = found
         return propose(
-          { connections: ids, name, label, definition, signal: abortSignal },
+          {
+            ...{ connections: ids, name, label, signal: abortSignal },
+            definition: first === undefined ? definition : withReadId(definition, first.connector),
+          },
           requestContext,
         )
       },

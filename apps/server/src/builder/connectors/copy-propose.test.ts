@@ -10,6 +10,7 @@ import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, sent, started, streamOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
+import { COPY_SHAPE_RULE, COPY_TURN_ON_RULE } from './public.ts'
 import { ordersConversing } from './test-orders-turn.ts'
 
 const PROPOSE = BUILDER_TOOL.copyPropose
@@ -88,8 +89,8 @@ test('a ferramenta onde há leitura de lista', async (t) => {
   for (const part of [
     'Reads that list rows:',
     '- Connection "Loja A" (mercado-livre):',
-    '  - pedidos (Pedidos): pages by offset, changes by `date_last_updated`',
-    '  - anuncios (Anúncios): pages by cursor, no change filter',
+    '  - mercado-livre.pedidos (Pedidos): pages by offset, changes by `date_last_updated`',
+    '  - mercado-livre.anuncios (Anúncios): pages by cursor, no change filter',
   ])
     assert.ok(description.includes(part), `${part}\n${description}`)
   const granted = await on.hub.connectors.builder.granted({
@@ -152,9 +153,11 @@ test('as seis perguntas', async (t) => {
     'unless more than 10% of the rows change at each run',
     'the proof answers the calls a whole pass spends',
     'Say which mode you chose and why',
-    'The proposal appears in this conversation and on the Cópias page, and whoever may turn copies on turns it on there',
+    COPY_SHAPE_RULE,
+    COPY_TURN_ON_RULE,
   ]) {
     assert.ok(description.includes(part), part)
-    if (questions.includes(part)) assert.ok(skill.includes(part), `conexus-data: ${part}`)
+    if (questions.includes(part) || part === COPY_SHAPE_RULE || part === COPY_TURN_ON_RULE)
+      assert.ok(skill.includes(part), `conexus-data: ${part}`)
   }
 })
