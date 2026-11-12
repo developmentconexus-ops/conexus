@@ -203,7 +203,7 @@ export const enableCopy = defineOperation({
     ...READ_FAILURES,
     ...(['IDEMPOTENCY_CONFLICT', 'COPY_EXISTS', 'COPY_MODEL_UNKNOWN'] as const),
     ...(['COPY_CONNECTION_NOT_READY', 'COPY_DATABASE_UNAVAILABLE', 'HUB_UPDATING'] as const),
-    ...(['COPY_PROPOSAL_DECIDED', 'NOT_IN_ROLE'] as const),
+    ...(['COPY_PROPOSAL_DECIDED', 'NOT_IN_ROLE', 'PERSONAL_NOT_IN_ROLE'] as const),
   ],
 })
 

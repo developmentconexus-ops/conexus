@@ -10,7 +10,7 @@ import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { connectionForCopy } from '../connectors/public.ts'
 import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
-import { grantedInDatabase } from './grants.ts'
+import { grantedInDatabase, releaseOf } from './grants.ts'
 import { dropEndedCopies } from './leave.ts'
 import { mayCreate } from './schedule.ts'
 import { sourcesOf } from './sources.ts'
@@ -108,13 +108,12 @@ async function released(
   release: { stored: StoredCopy; projectId: ProjectId },
 ) {
   const { companyId } = input
-  const sync = await deps.database.read(personScope(input), (tx) => syncOf(deps, tx, companyId))
+  const { sync, shown } = await deps.database.read(personScope(input), async (tx) => ({
+    sync: await syncOf(deps, tx, companyId),
+    shown: await releaseOf(deps, tx, { companyId, stored: release.stored, by: input.personId }),
+  }))
   const { projectId } = release
-  const granted = await grantedInDatabase(
-    deps,
-    { ...input, projectId },
-    { name: release.stored.name, sync },
-  )
+  const granted = await grantedInDatabase(deps, { ...input, projectId }, { ...shown, sync })
   if (granted?.kind === 'DONE') return
   const code =
     granted === undefined ? 'NO_DATABASE' : granted.kind === 'REFUSED' ? granted.code : granted.kind

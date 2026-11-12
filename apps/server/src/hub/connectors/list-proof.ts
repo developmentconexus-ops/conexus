@@ -129,7 +129,7 @@ export async function provedList(
     return { kind: 'NOT_GRANTED' }
   }
   const input = { companyId: ids.companyId, connectionId, enabledBy: a.personId, signal: a.signal }
-  const asked = { input, definition, position: null, rows: PROOF_PAGE_ROWS }
+  const asked = { input, definition, position: null, rows: PROOF_PAGE_ROWS, forModel: true }
   if (!a.spend()) return { kind: 'CALLS_SPENT' }
   const first = await listAnswer(deps, { ...asked, since: null })
   if (first.kind !== 'ROWS') return refusalOf(first)

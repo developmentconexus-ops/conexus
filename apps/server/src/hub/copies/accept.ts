@@ -12,6 +12,7 @@ import {
   lackedReadOf,
   lackedSourceReadOf,
 } from '../connectors/public.ts'
+import { speakerOf } from '../identity/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
 import { copy, copyProposal, copyProposalSource, copySource, projectCopy } from './tables.ts'
@@ -136,6 +137,30 @@ async function mayReadSources(
     })
 }
 
+/**
+ * The kinds of personal data the copy's columns hold (the connector's declared paths), which the
+ * role of who turns it on must hold too: the first it lacks is `PERSONAL_NOT_IN_ROLE`.
+ */
+async function mayKeepPersonal(
+  deps: Pick<CopiesDeps, 'identity' | 'connectors'>,
+  tx: CommandTx,
+  input: Accepting & { connectorId: ConnectorId; definition: CopyDefinition },
+) {
+  const { companyId, personId, connectorId, definition } = input
+  if (definition.version === 1) return
+  const kept = new Set(deps.connectors().personalColumns(connectorId, definition).values())
+  const speaker = await speakerOf(tx, companyId, personId)
+  const held = new Set<string>(
+    speaker === undefined ? [] : await deps.identity.personalKinds(companyId, speaker),
+  )
+  const lacked = [...kept].find((kind) => !held.has(kind))
+  if (lacked !== undefined)
+    throw new Failure('PERSONAL_NOT_IN_ROLE', {
+      details: { connectorId },
+      named: { operation: lacked },
+    })
+}
+
 /** Each connection ACTIVE, with its account, in the proposal's order. */
 async function activeSources(
   tx: CommandTx,
@@ -164,7 +189,7 @@ async function activeSources(
  * release to the proposal's Projeto. The `GRANT` follows outside, with Ligar's own steps.
  */
 export async function acceptedIn(
-  deps: Pick<CopiesDeps, 'identity'>,
+  deps: Pick<CopiesDeps, 'identity' | 'connectors'>,
   tx: CommandTx,
   input: Accepting,
   bodyHash: string,
@@ -180,6 +205,7 @@ export async function acceptedIn(
   const definition = CopyDefinition.parse(proposal.definition)
   const connections = await proposalConnections(tx, proposal)
   await mayReadSources(deps, tx, { ...input, connectorId, definition, connections })
+  await mayKeepPersonal(deps, tx, { ...input, connectorId, definition })
   const sources = await activeSources(tx, input.companyId, connections)
   const row = await insertedCopy(tx, input, {
     ...{ connectorId, sources, name: proposal.name, label: proposal.label },

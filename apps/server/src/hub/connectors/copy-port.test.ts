@@ -98,7 +98,7 @@ test('a cópia toma a vez da conexão página a página', async (t) => {
   )
 })
 
-test('a cópia sem tipo', async (t) => {
+async function pageOf(t: TestContext, columns: readonly object[]) {
   const on = await mercadoLivreOn(t)
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   const connectionId = ConnectionId.parse(Object(linked.json()).connection.id)
@@ -106,20 +106,14 @@ test('a cópia sem tipo', async (t) => {
   const definition = CopyDefinitionV2.parse({
     version: 2,
     source: { kind: 'OPERATION', operation: 'pedidos', input: {} },
-    description: 'Os pedidos com o comprador',
-    columns: [
-      { name: 'id', type: 'bigint', path: 'id' },
-      { name: 'comprador', type: 'json', path: 'buyer' },
-      { name: 'nome', type: 'text', path: 'buyer.first_name' },
-      { name: 'status', type: 'text', path: 'status' },
-    ],
+    description: 'Os pedidos',
+    columns,
     key: ['id'],
     changedSince: null,
   })
   const read = await on.hub.connectors.copies.readPage({
     companyId: CompanyId.parse(on.companyId),
     connectionId,
-    // The owner holds every kind: the copy still speaks as a version that declares none.
     enabledBy: PersonId.parse(on.ana.id),
     definition,
     position: null,
@@ -129,11 +123,25 @@ test('a cópia sem tipo', async (t) => {
     signal: new AbortController().signal,
   })
   assert.equal(read.kind, 'PAGE')
-  if (read.kind !== 'PAGE') return
-  assert.ok(read.page.rows.length > 0)
-  const text = JSON.stringify(read.page.rows)
-  for (const value of ['Maria', 'Fictícia', 'maria.ficticia', '52998224725', 'COMPRADORFICTICIO'])
-    assert.ok(!text.includes(value), `a cópia guarda ${value}`)
-  assert.ok(read.page.rows.every((row) => row[1] === null && row[2] === null))
+  return read.kind === 'PAGE' ? JSON.stringify(read.page.rows) : ''
+}
+
+const PLANTED_BUYER = ['Maria', 'Fictícia', 'maria.ficticia', '52998224725', 'COMPRADORFICTICIO']
+
+test('a cópia sem tipo', async (t) => {
+  const text = await pageOf(t, [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'status', type: 'text', path: 'status' },
+  ])
   assert.ok(text.includes('paid'), 'the order itself is copied')
+  for (const value of PLANTED_BUYER) assert.ok(!text.includes(value), `a cópia guarda ${value}`)
+})
+
+test('a cópia com o tipo da coluna: o que o Ligar conferiu entra, e o documento nunca', async (t) => {
+  const text = await pageOf(t, [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'comprador', type: 'json', path: 'buyer' },
+  ])
+  assert.ok(text.includes('COMPRADORFICTICIO'), 'the column of kind contato holds the buyer')
+  assert.ok(!text.includes('52998224725'), 'the document is a kind no column holds')
 })

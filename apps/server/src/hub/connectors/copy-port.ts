@@ -9,12 +9,14 @@ import type {
   ListRead,
   Operation,
   PageInput,
+  PersonalKind,
 } from '@conexus/connectors'
 import { CopyPageSchema, listInputOf, listPageOf, Rows } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
+import { keptKindsOf, personalColumnsIn } from './copy-personal.ts'
 import type { OpenedConnection } from './executor.ts'
 import { listIssuesOf, listReadOf, sourceIssuesOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -93,6 +95,8 @@ type ReadOf = Readonly<{
   opened: OpenedConnection
   operation: Operation<unknown, unknown, 'read'>
   value: unknown
+  /** The kinds the copy keeps: the ones its columns hold, which Ligar checked against who turned it on. */
+  personal: readonly PersonalKind[]
 }>
 
 /** The connector's copy lane passed its deadline before the call: nothing was asked. */
@@ -115,8 +119,7 @@ async function readAsCopy(deps: Deps, a: ReadOf): Promise<ReadAnswer | NotInRole
         declared: [
           { connectionId: input.connectionId, operation: OperationId.parse(operation.id) },
         ],
-        // A copy declares no kind yet: its rows keep no personal data (the column per kind is U5's).
-        personal: [],
+        personal: a.personal,
       },
       opened,
       operation,
@@ -146,7 +149,10 @@ export async function copyPage(
   const opened = await openedForCopy(deps, input)
   const read = opened?.connector.copy?.read
   if (opened === undefined || read === undefined) return { kind: 'NO_CONNECTION' }
-  const answer = await readAsCopy(deps, { input, opened, operation: read, value: input.input })
+  const answer = await readAsCopy(deps, {
+    ...{ input, opened, operation: read, value: input.input },
+    personal: [],
+  })
   if (answer.kind === 'IN_LINE') return answer
   if (answer.kind === 'OK') return { kind: 'PAGE', page: CopyPageSchema.parse(answer.value) }
   return { kind: 'REFUSED', refusal: answer }
@@ -217,6 +223,8 @@ type ListAsked = Readonly<{
   since: string | null
   /** The page's rows at most, below the read's own size; null asks the read's size. */
   rows: number | null
+  /** The rows go to a model (the Builder's proof): they carry no personal data, whatever the copy keeps (B1). */
+  forModel: boolean
 }>
 
 /** What one page of a list read answered, before the copy reads it: the run's page and the Builder's proof share it (C26). */
@@ -246,7 +254,8 @@ export async function listAnswer(deps: Deps, a: ListAsked): Promise<ListAnswer> 
   const value = listInputOf({ list, definition: a.definition, position, since: a.since })
   if (a.rows !== null && list.paging.kind !== 'NONE')
     value[list.paging.limit] = Math.min(a.rows, list.paging.max)
-  const answer = await readAsCopy(deps, { input: a.input, opened, operation, value })
+  const personal = a.forModel ? [] : keptKindsOf(a.definition, operation)
+  const answer = await readAsCopy(deps, { input: a.input, opened, operation, value, personal })
   if (answer.kind === 'IN_LINE') return answer
   if (answer.kind !== 'OK') return { kind: 'REFUSED', refusal: answer }
   const rows = Rows.safeParse(answer.value)
@@ -264,6 +273,7 @@ async function pageV2(
     position,
     since: a.since,
     rows: null,
+    forModel: false,
   })
   switch (read.kind) {
     case 'NO_CONNECTION':
@@ -319,6 +329,9 @@ export function createCopyPort(deps: Deps) {
       )
     },
     readPage: (input: SourcePage): Promise<CopyRead> => readPage(deps, input),
+    /** The kind of each column of a version 2 definition, from the connector's declared personal paths; none for a connector the kit lacks. */
+    personalColumns: (connector: string, definition: CopyDefinitionV2) =>
+      personalColumnsIn(connectorIn(deps, connector), definition),
     /**
      * What a version 2 definition fails against the connector's list read, a path and a message each
      * (none when it fits), and whether its account is `none`: such a connector's copy reads one

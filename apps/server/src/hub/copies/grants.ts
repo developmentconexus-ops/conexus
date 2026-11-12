@@ -1,10 +1,13 @@
 import type { CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
+import { PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { SqlAnswer } from '../../platform/company-postgres.ts'
 import type { DatabaseUrl, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { CopiesDeps, InCompany } from './store.ts'
-import { companyScope, personScope, storedCopy, syncOf } from './store.ts'
+import { speakerOf } from '../identity/public.ts'
+import { sourcesOf } from './sources.ts'
+import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
+import { companyScope, copyTableOf, parsedCopy, personScope, storedCopy, syncOf } from './store.ts'
 import { copy, projectCopy } from './tables.ts'
 
 export type OfRelease = InCompany & { projectId: ProjectId; copyId: CopyId }
@@ -47,6 +50,38 @@ async function undoRelease(deps: CopiesDeps, input: OfRelease): Promise<void> {
   }
 }
 
+/** What a release tells the company's database: the copy's table, and the columns the Projeto's logins read. */
+export type Released = Readonly<{ name: string; columns: readonly string[]; accounts: boolean }>
+
+/**
+ * The copy's own columns less those of a kind the role of who releases lacks (decision `C1`): the
+ * Projeto's logins read what that person may see, the engine's columns besides. Read in the
+ * caller's transaction.
+ */
+export async function releaseOf(
+  deps: CopiesDeps,
+  tx: ReadTx,
+  input: { companyId: CompanyId; stored: StoredCopy; by: PersonId },
+): Promise<Released> {
+  const { companyId, stored } = input
+  const speaker = await speakerOf(tx, companyId, input.by)
+  const held = new Set<string>(
+    speaker === undefined ? [] : await deps.identity.personalKinds(companyId, speaker),
+  )
+  const kinds =
+    stored.definition.version === 2
+      ? deps.connectors().personalColumns(stored.connectorId, stored.definition)
+      : new Map<string, string>()
+  const columns = stored.definition.columns
+    .map(({ name }) => name)
+    .filter((name) => {
+      const kind = kinds.get(name)
+      return kind === undefined || held.has(kind)
+    })
+  const sources = await sourcesOf(tx, { companyId, copyId: stored.id })
+  return { name: stored.name, columns, accounts: copyTableOf(stored, sources).accounts }
+}
+
 /**
  * The release in the company's database, with no transaction open (data D22): the Projeto's schema
  * and logins by their owner, `hub/apps`, then the `GRANT`, which repeats safely. None when the
@@ -55,14 +90,12 @@ async function undoRelease(deps: CopiesDeps, input: OfRelease): Promise<void> {
 export async function grantedInDatabase(
   deps: CopiesDeps,
   input: InCompany & { projectId: ProjectId },
-  release: { name: string; sync: DatabaseUrl | undefined },
+  release: Released & { sync: DatabaseUrl | undefined },
 ): Promise<SqlAnswer | undefined> {
   const opened = await deps.apps().projectDatabase(input)
-  if (opened.kind !== 'OPEN' || release.sync === undefined) return undefined
-  return deps.companyPostgres.grantCopy(release.sync, {
-    name: release.name,
-    projectId: input.projectId,
-  })
+  const { sync, ...released } = release
+  if (opened.kind !== 'OPEN' || sync === undefined) return undefined
+  return deps.companyPostgres.grantCopy(sync, { ...released, projectId: input.projectId })
 }
 
 /**
@@ -72,7 +105,7 @@ export async function grantedInDatabase(
  * the list does not show; doing it again starts over. A row an earlier act made stays.
  */
 export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<void> {
-  const { name, sync, made } = await deps.database.command(personScope(input), async (tx) => {
+  const { released, sync, made } = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     const found = await bothOf(deps, tx, input)
     const inserted = await tx
@@ -84,13 +117,13 @@ export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<voi
       .onConflictDoNothing()
       .returning({ copyId: projectCopy.copyId })
     return {
-      name: found.name,
+      released: await releaseOf(deps, tx, { ...input, stored: found, by: input.personId }),
       sync: await syncOf(deps, tx, input.companyId),
       made: inserted.length > 0,
     }
   })
   const unavailable = new Failure('COPY_DATABASE_UNAVAILABLE')
-  const granted = await grantedInDatabase(deps, input, { name, sync })
+  const granted = await grantedInDatabase(deps, input, { ...released, sync })
   if (granted?.kind !== 'DONE') {
     if (made) await undoRelease(deps, input)
     if (granted === undefined) throw unavailable
@@ -126,17 +159,27 @@ export async function revokeCopy(deps: CopiesDeps, input: OfRelease): Promise<vo
 
 type OfProject = { companyId: CompanyId; projectId: ProjectId }
 
-/** The names of the copies released to the Projeto, and where the sync login is reached. */
+/** What each copy released to the Projeto tells the database, as the person who released it may see, and where the sync login is reached. */
 function releasesOf(deps: CopiesDeps, input: OfProject) {
   return deps.database.read(companyScope(input.companyId), async (tx) => {
     const rows = await tx
-      .select({ name: copy.name })
+      .select({ row: copy, by: projectCopy.grantedBy })
       .from(projectCopy)
       .innerJoin(copy, eq(copy.id, projectCopy.copyId))
       .where(eq(projectCopy.projectId, input.projectId))
     if (rows.length === 0) return undefined
     const sync = await syncOf(deps, tx, input.companyId)
-    return sync === undefined ? undefined : { names: rows.map((row) => row.name), sync }
+    if (sync === undefined) return undefined
+    const releases: Released[] = []
+    for (const { row, by } of rows)
+      releases.push(
+        await releaseOf(deps, tx, {
+          companyId: input.companyId,
+          stored: parsedCopy(row),
+          by: PersonId.parse(by),
+        }),
+      )
+    return { releases, sync }
   })
 }
 
@@ -153,9 +196,9 @@ export async function revokeAllOf(deps: CopiesDeps, input: OfProject): Promise<S
 export async function applyGrants(deps: CopiesDeps, input: OfProject): Promise<SqlAnswer> {
   const found = await releasesOf(deps, input)
   if (found === undefined) return NOTHING
-  for (const name of found.names) {
+  for (const released of found.releases) {
     const granted = await deps.companyPostgres.grantCopy(found.sync, {
-      name,
+      ...released,
       projectId: input.projectId,
     })
     if (granted.kind !== 'DONE') return granted
