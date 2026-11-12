@@ -1,3 +1,5 @@
+import { rowsOf } from './recordings.ts'
+
 // Invented values only (S40). The buyer's name, e-mail, phone, address and CPF are here on
 // purpose: the kit must drop them (`operations.test.ts`, "sem dados do comprador").
 
@@ -50,12 +52,19 @@ export const ORDER_BODY = {
   ],
 }
 
-/** 120 orders, the first `ORDER_BODY`; each changed a minute after the one before, so a changed-since filter keeps the newest. */
-export const ORDERS = Array.from({ length: 120 }, (_, index) => ({
-  ...ORDER_BODY,
-  id: ORDER + index,
-  date_last_updated: new Date(Date.UTC(2026, 8, 10, 13, index)).toISOString(),
-}))
+let ordersKept: readonly (Record<string, unknown> & { date_last_updated: string })[] | undefined
+
+/** 120 orders, each shaped as a recorded one with the planted buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
+export function ordersOf() {
+  const recorded = rowsOf('pedidos-alterados', 'results')
+  ordersKept ??= Array.from({ length: 120 }, (_, index) => ({
+    ...recorded[index % recorded.length],
+    buyer: BUYER,
+    id: ORDER + index,
+    date_last_updated: new Date(Date.UTC(2026, 8, 10, 13, index)).toISOString(),
+  }))
+  return ordersKept
+}
 
 /** The rows of a scan's page: its `scroll_id` carries where the next page starts (`<route>-<offset>`). */
 export function scanOf<T>(rows: readonly T[], query: URLSearchParams, route: string) {

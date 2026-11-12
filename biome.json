@@ -13,6 +13,7 @@
       "!apps/web/src/routeTree.gen.ts",
       "!apps/web/src/builder/model-accounts/marks",
       "!packages/connectors/src/*/logo.svg",
+      "!packages/connectors/src/*/recordings",
       "!packages/app/starter",
       "!packages/app/skills"
     ]

@@ -40,7 +40,7 @@ export const anuncios = readOf({
     },
     changed: null,
   },
-  probe: () => ({ offset: 0, limit: 5 }),
+  probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get(`/users/${sellerOf(account)}/items/search`, {
       status: input.status,

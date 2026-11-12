@@ -13,22 +13,24 @@ import {
   SELLER_PATH,
   scanOf,
 } from './fake-data.ts'
+import { envelope, rowsOf } from './recordings.ts'
 
-const QUESTIONS = Array.from({ length: 12 }, (_, index) => ({
-  id: 9000000001 + index,
-  text: `Tem na cor azul? (${index + 1})`,
-  status: 'UNANSWERED',
-  date_created: '2026-09-11T09:00:00.000-03:00',
-  item_id: ITEMS[0],
-  seller_id: Number(SELLER.ref),
-  from: {
-    id: BUYER.id,
-    answered_questions: 3,
-    nickname: BUYER.nickname,
-    email: BUYER.email,
-  },
-  answer: null,
-}))
+let questionsKept: readonly Record<string, unknown>[] | undefined
+
+/** 12 questions shaped as the recorded one, every fourth answered as it was; the asker's name and e-mail are planted for the kit to drop. */
+function questionsOf() {
+  const recorded = rowsOf('perguntas-varredura', 'questions')
+  questionsKept ??= Array.from({ length: 12 }, (_, index) => ({
+    ...recorded[0],
+    id: 9000000001 + index,
+    text: `Tem na cor azul? (${index + 1})`,
+    ...(index % 4 === 3 ? {} : { status: 'UNANSWERED', answer: null }),
+    item_id: ITEMS[0],
+    seller_id: Number(SELLER.ref),
+    from: { id: BUYER.id, answered_questions: 3, nickname: BUYER.nickname, email: BUYER.email },
+  }))
+  return questionsKept
+}
 
 const PERIODS = Array.from({ length: 14 }, (_, index) => {
   const month = String(index + 1).padStart(2, '0')
@@ -55,9 +57,10 @@ export const MORE_ROUTES: readonly Route[] = [
     answer: ({ query }) => {
       if (query.get('search_type') === 'scan') {
         if (badScroll(query, 'questions')) return BAD_SCROLL
-        const scan = scanOf(QUESTIONS, query, 'questions')
+        const scan = scanOf(questionsOf(), query, 'questions')
         return {
           body: {
+            ...envelope('perguntas-varredura', 'questions'),
             total: scan.total,
             limit: scan.limit,
             questions: scan.rows,
@@ -65,7 +68,7 @@ export const MORE_ROUTES: readonly Route[] = [
           },
         }
       }
-      const page = pageOf(QUESTIONS, query, 50)
+      const page = pageOf(questionsOf(), query, 50)
       return {
         body: {
           total: page.total,

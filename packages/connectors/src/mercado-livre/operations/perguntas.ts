@@ -45,7 +45,7 @@ export const perguntas = readOf({
     changed: null,
   },
   omit: ['from'], // the asker: the question route adds their name and contact
-  probe: () => ({ offset: 0, limit: 5 }),
+  probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get('/questions/search', {
       seller_id: sellerOf(account),
