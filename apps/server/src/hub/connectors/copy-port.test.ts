@@ -98,7 +98,7 @@ test('a cópia toma a vez da conexão página a página', async (t) => {
   )
 })
 
-async function pageOf(t: TestContext, columns: readonly object[]) {
+async function pageOf(t: TestContext, columns: readonly object[], by: 'ana' | 'carla' = 'ana') {
   const on = await mercadoLivreOn(t)
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   const connectionId = ConnectionId.parse(Object(linked.json()).connection.id)
@@ -114,7 +114,7 @@ async function pageOf(t: TestContext, columns: readonly object[]) {
   const read = await on.hub.connectors.copies.readPage({
     companyId: CompanyId.parse(on.companyId),
     connectionId,
-    enabledBy: PersonId.parse(on.ana.id),
+    enabledBy: PersonId.parse(on[by].id),
     definition,
     position: null,
     since: null,
@@ -144,4 +144,14 @@ test('a cópia com o tipo da coluna: o que o Ligar conferiu entra, e o documento
   ])
   assert.ok(text.includes('COMPRADORFICTICIO'), 'the column of kind contato holds the buyer')
   assert.ok(!text.includes('52998224725'), 'the document is a kind no column holds')
+})
+
+test('a cópia ligada antes da conferência guarda só o que o papel de quem ligou vê agora', async (t) => {
+  const columns = [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'comprador', type: 'json', path: 'buyer' },
+  ]
+  const byMember = await pageOf(t, columns, 'carla')
+  assert.match(byMember, /\d{8,}/, 'the orders are read, by their ids')
+  assert.ok(!byMember.includes('COMPRADORFICTICIO'), 'who turned it on lacks contato: no buyer')
 })

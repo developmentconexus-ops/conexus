@@ -91,6 +91,22 @@ test('a cópia guarda a coluna pessoal de quem liga com o tipo, e o Projeto libe
     'the engine columns stay readable',
   )
 
+  const { readLogin, runLogin } = appLogin(on.projectId)
+  await asSync(on.owner, (client) =>
+    client.query(`GRANT SELECT ON sync.ml_comprador TO "${readLogin}", "${runLogin}"`),
+  )
+  assert.ok(
+    ((await asApp(on, 'select comprador from sync.ml_comprador')).rows ?? 0) > 0,
+    'a release made before the step holds the whole table',
+  )
+  const repaired = await on.copies.applyGrants({
+    companyId: on.companyId,
+    projectId: on.projectId,
+  })
+  assert.equal(repaired.kind, 'DONE')
+  assert.deepEqual(await asApp(on, 'select comprador from sync.ml_comprador'), { refused: '42501' })
+  assert.ok(((await asApp(on, 'select id, status from sync.ml_comprador')).rows ?? 0) > 0)
+
   for (const ref of [STORE_A.ref, STORE_B.ref]) {
     const gone = await call(on.hub, on.ana, 'DELETE', `${on.base}/${on.store(ref)}`)
     assert.equal(gone.statusCode, 200, gone.body)

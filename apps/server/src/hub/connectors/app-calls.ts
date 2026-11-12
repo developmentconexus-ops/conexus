@@ -5,12 +5,11 @@ import { CALL_DEADLINE_MS, ConnectionId, OperationId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { ConnectorCall } from '../apps/public.ts'
-import { speakerOf } from '../identity/public.ts'
 import { readOf } from './grants.ts'
 import type { ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
-import { scopeOf, usable } from './rows.ts'
+import { personalKindsOf, scopeOf, usable } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -55,12 +54,8 @@ async function kindsOfVersion(
   declared: readonly string[] | undefined,
 ): Promise<readonly string[]> {
   if (declared !== undefined) return PERSONAL_KINDS.filter((kind) => declared.includes(kind))
-  const { companyId } = call.ids
-  const speaker = await deps.database.read(
-    scopeOf({ person: { id: call.caller.personId }, companyId }),
-    (tx) => speakerOf(tx, companyId, call.sentBy),
-  )
-  return speaker === undefined ? [] : deps.identity.personalKinds(companyId, speaker)
+  const viewer = { person: { id: call.caller.personId }, companyId: call.ids.companyId }
+  return personalKindsOf(deps, viewer, call.sentBy)
 }
 
 /** The Projeto's connections of a connector that are ACTIVE, oldest first. */

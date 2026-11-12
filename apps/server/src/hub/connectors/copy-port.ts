@@ -16,7 +16,7 @@ import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
-import { keptKindsOf, personalColumnsIn } from './copy-personal.ts'
+import { keptNow, personalColumnsIn } from './copy-personal.ts'
 import type { OpenedConnection } from './executor.ts'
 import { listIssuesOf, listReadOf, sourceIssuesOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -254,7 +254,9 @@ export async function listAnswer(deps: Deps, a: ListAsked): Promise<ListAnswer> 
   const value = listInputOf({ list, definition: a.definition, position, since: a.since })
   if (a.rows !== null && list.paging.kind !== 'NONE')
     value[list.paging.limit] = Math.min(a.rows, list.paging.max)
-  const personal = a.forModel ? [] : keptKindsOf(a.definition, operation)
+  const personal = a.forModel
+    ? []
+    : await keptNow(deps, { ...a.input, definition: a.definition, operation })
   const answer = await readAsCopy(deps, { input: a.input, opened, operation, value, personal })
   if (answer.kind === 'IN_LINE') return answer
   if (answer.kind !== 'OK') return { kind: 'REFUSED', refusal: answer }
