@@ -4,6 +4,7 @@ import type { TestContext } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
+import type { Block } from '../../apps/server/src/platform/test-anthropic-stream.ts'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { createProject, personWithPassword, plantCompany, waitForHome } from './live-hub.ts'
 import { enter, linkKey, pickModel } from './model-accounts-journey.ts'
@@ -85,29 +86,34 @@ export function plantJourney(t: TestContext, pageUrl: string) {
     holding: undefined,
     splitting: false,
   }
-  /** Thinking, the provider's search and three pages read at once, as a comparison asks for. */
-  function tour(): Reply {
+  /** Thinking, the provider's search and its three page reads, as a comparison asks for, all before the answer. */
+  function tour(): Block[] {
     const fetches = TOUR_PAGES.map((page) => ({
-      type: 'tool_use' as const,
-      name: 'web_fetch',
-      input: { url: new URL(page, pageUrl).href },
+      type: 'fetch' as const,
+      url: new URL(page, pageUrl).href,
+      title: 'App Um',
+      text: MARKER,
     }))
     const results = [{ url: pageUrl, title: 'App Um' }]
     const search = { type: 'search' as const, query: 'apps de encomenda de padaria', results }
     const thinking = { type: 'thinking' as const, thinking: 'Vou comparar os dois apps.' }
-    return { kind: 'blocks', blocks: [thinking, ...fetches, search] }
+    return [thinking, ...fetches, search]
   }
-  function answer(text: string): Reply {
-    if (state.holding === undefined) return { kind: 'text', text }
-    if (!state.splitting || text !== ANSWER) return { kind: 'hold', until: state.holding, text }
-    return { kind: 'hold', until: state.holding, text: ANSWER_HEAD, rest: ANSWER_TAIL }
+  function answer(text: string, before: Block[] = []): Reply {
+    if (state.holding === undefined) {
+      return before.length === 0
+        ? { kind: 'text', text }
+        : { kind: 'blocks', blocks: [...before, { type: 'text', text }] }
+    }
+    if (!state.splitting || text !== ANSWER)
+      return { kind: 'hold', until: state.holding, text, before }
+    return { kind: 'hold', until: state.holding, text: ANSWER_HEAD, rest: ANSWER_TAIL, before }
   }
   const anthropic = plantAnthropic(t, (sent) => {
     if (sent.key === KEYS.refused) return { kind: 'refuse', status: 401 }
     if (!sent.stream) return { kind: 'text', text: 'Apps de encomenda de padaria' }
     const read = sent.texts.some((text) => text.includes(MARKER))
-    if (state.reads && !read) return tour()
-    return answer(ANSWER)
+    return answer(ANSWER, state.reads && !read ? tour() : [])
   })
   anthropic.chat = () => answer(SECOND_ANSWER)
   /** Holds the turns that follow until the returned function is called. */

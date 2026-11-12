@@ -45,7 +45,10 @@ const SCRIPT: (Call[] | string)[] = [
     {
       type: 'tool_use',
       name: RUN,
-      input: { command: 'echo começo; sleep 3; echo página escrita' },
+      input: {
+        description: 'Conferindo a página escrita',
+        command: 'echo começo; sleep 3; echo página escrita',
+      },
     },
   ],
   'Escrevi a página.',
@@ -73,7 +76,7 @@ async function lastingShown(chat: Page, version: RegExp) {
   const transcript = transcriptOf(chat)
   assert.ok(await transcript.getByText(version).isVisible(), 'the version line is gone')
   // The command's row closes once it ends, and opens again on its output.
-  await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
+  await transcript.getByRole('button', { name: 'Conferindo a página escrita' }).click()
   await outputWith(chat, 'página escrita').waitFor()
 }
 
