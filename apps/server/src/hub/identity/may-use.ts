@@ -1,5 +1,3 @@
-import type { PersonalKind } from '@conexus/connectors'
-import { PERSONAL_KINDS } from '@conexus/connectors'
 import type {
   CompanyId,
   ConnectionId,
@@ -27,7 +25,7 @@ export type Speaker =
       kind: 'VERSION'
       declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
       /** The kinds of personal data the version shows, checked at publishing like `declared`. */
-      personal: readonly PersonalKind[]
+      personal: readonly string[]
     }>
 
 export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>
@@ -137,11 +135,11 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
   async function personalKinds(
     companyId: CompanyId,
     speaker: PersonSpeaker,
-  ): Promise<readonly PersonalKind[]> {
+  ): Promise<readonly string[]> {
     const context = await auth.$context
     return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
-      const held: PersonalKind[] = []
-      for (const [index, kind] of PERSONAL_KINDS.entries()) {
+      const held: string[] = []
+      for (const [index, kind] of roles.personalKinds.entries()) {
         const may = await permitted(context, {
           organizationId: companyId,
           role: speaker.role,

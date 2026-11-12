@@ -1,5 +1,5 @@
 import type { Answered, Native, Operation, PersonalKind } from '@conexus/connectors'
-import { CONCURRENT_CALL } from '@conexus/connectors'
+import { CONCURRENT_CALL, PERSONAL_KINDS } from '@conexus/connectors'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
@@ -138,7 +138,11 @@ async function personalKindsOf(deps: Deps, a: ReadRequest): Promise<ReadonlySet<
     a.speaker.kind === 'PERSON'
       ? await deps.identity.personalKinds(a.ids.companyId, a.speaker)
       : a.speaker.personal
-  return new Set(held.filter((kind) => kind !== 'documento' || !readsForModel(a.by)))
+  return new Set(
+    PERSONAL_KINDS.filter(
+      (kind) => held.includes(kind) && (kind !== 'documento' || !readsForModel(a.by)),
+    ),
+  )
 }
 
 /**

@@ -1,5 +1,4 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
-import type { PersonalKind } from '@conexus/connectors'
 import { connectorOf, PERSONAL_KINDS } from '@conexus/connectors'
 import type { HostLabel } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId, OperationId } from '@conexus/hub-api'
@@ -54,7 +53,7 @@ async function kindsOfVersion(
   deps: Deps,
   call: ConnectorCall,
   declared: readonly string[] | undefined,
-): Promise<readonly PersonalKind[]> {
+): Promise<readonly string[]> {
   if (declared !== undefined) return PERSONAL_KINDS.filter((kind) => declared.includes(kind))
   const { companyId } = call.ids
   const speaker = await deps.database.read(
