@@ -77,7 +77,10 @@ ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE copies.copy OWNER TO test_owner;
 ALTER TABLE copies.copy_proposal OWNER TO test_owner;
+ALTER TABLE copies.copy_proposal_source OWNER TO test_owner;
 ALTER TABLE copies.copy_run OWNER TO test_owner;
+ALTER TABLE copies.copy_source OWNER TO test_owner;
+ALTER TABLE copies.copy_table_left OWNER TO test_owner;
 ALTER TABLE copies.project_copy OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
@@ -341,7 +344,9 @@ GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company
 -- Capacity 2, U2, with the founder's word in the pull request of its own (data D11): a company's
 -- routes and its copies' runs turn a copy on, hold its run's lease and save where its pass stands,
 -- record each run and keep the newest, and release a copy to a Projeto and take it back.
-GRANT SELECT,INSERT ON TABLE copies.copy TO hub_company;
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11):
+-- Desligar ends, in the transaction that deletes the connection, the copy left with no source.
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(claim_token) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(claimed_until) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(pass) ON TABLE copies.copy TO hub_company;
@@ -356,6 +361,9 @@ GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
 GRANT SELECT,INSERT ON TABLE copies.copy_proposal TO hub_company;
 GRANT UPDATE(state) ON TABLE copies.copy_proposal TO hub_company;
 GRANT UPDATE(copy_id) ON TABLE copies.copy_proposal TO hub_company;
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): the
+-- Builder's run proposes a copy over several connections; a proposal's source leaves by cascade.
+GRANT SELECT,INSERT ON TABLE copies.copy_proposal_source TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;
@@ -363,6 +371,17 @@ GRANT UPDATE(reason) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(pages) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(read) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(written) ON TABLE copies.copy_run TO hub_company;
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): a
+-- copy's runs read and save where each of its connections stands and until when the provider asked
+-- it to wait; a source leaves by cascade. Desligar writes down the table of a copy that ended while
+-- the company's database did not answer, and drains the row once the table is dropped.
+GRANT SELECT,INSERT ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(pass) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(pass_started_at) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE("position") ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(watermark) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(wait_until) ON TABLE copies.copy_source TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_table_left TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
