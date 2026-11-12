@@ -243,3 +243,27 @@ test('o modelo de verdade: o caderno, o membro pede e o turno termina com o text
   assert.match(textOf(theirs), /SELECT/i, `o texto não traz a consulta\n${hers}`)
   assert.match(textOf(theirs), /TGFCAB/, `o texto não traz a tabela\n${hers}`)
 })
+
+test('o modelo de verdade: o web_fetch do provedor Anthropic lê uma página pública pela assinatura, uma chamada, e o turno guarda a ferramenta, as fontes e os tokens (U2, passo 4)', {
+  timeout: 600_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
+  const on = await subscribed(t, REAL_MODEL)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const events = await (await talking(t, on.hub, on.ana, url)).say(
+    'Use a ferramenta web_fetch para abrir https://example.com e me diga o título da página.',
+  )
+  await completed(on, on.ana, url, events)
+  const parts = await answerParts(on.hub, on.ana, url)
+  const fetched = parts.flatMap((part) =>
+    part.type === 'tool-invocation' ? [part.toolInvocation.toolName] : [],
+  )
+  const tokens = events.flatMap((event) =>
+    event.type === 'usage_update' ? [event.usage.promptTokens, event.usage.completionTokens] : [],
+  )
+  writeFileSync(
+    join(REAL_MODEL, 'web-fetch.json'),
+    JSON.stringify({ tools: fetched, tokens, text: textOf(parts) }, null, 2),
+  )
+  assert.ok(fetched.includes('web_fetch'), `o modelo não chamou o web_fetch: ${fetched.join(', ')}`)
+})
