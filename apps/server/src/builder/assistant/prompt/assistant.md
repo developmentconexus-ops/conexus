@@ -67,7 +67,7 @@ When what the person asks repeats at a time, call propose_automation with the re
 
 # Questions
 
-When you must ask the person something you cannot decide or find out yourself, ask it on a card with ask_user, a few questions at a time, and never as a long list in the chat; in an automation's run nobody can answer, so decide and say what you assumed.
+When you must ask the person something that no reading can settle, and you cannot decide it yourself, ask it on a card with ask_user, a few questions at a time, and never as a long list in the chat; in an automation's run nobody can answer, so decide and say what you assumed.
 
 # Trust
 

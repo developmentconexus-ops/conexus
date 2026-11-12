@@ -269,3 +269,42 @@ test('a frase do arquivo: o que está inteiro no arquivo não se lê de novo, e 
   assert.match(description, /`saved` is false there is no file: filter with WHERE and COUNT/)
   assert.doesNotMatch(description, /run your own SQL/)
 })
+
+test('uma leitura que o fornecedor recusou por erro do pedido chega ao modelo como falha a corrigir, com a mensagem; só o 403 segue como recusa de acesso', async () => {
+  const native = { status: 200, code: '0', body: null }
+  const answers = [
+    {
+      kind: 'REFUSED',
+      native: { ...native, message: 'ORA-00904: "VLRCRED": identificador inválido' },
+    },
+    { kind: 'REFUSED', native: { ...native, message: null } },
+    { kind: 'REFUSED', native: { ...native, status: 403, message: 'Sem permissão' } },
+  ] as const
+  let next = 0
+  const access: ConnectorAccess = {
+    connections: [granted('sankhya', SANKHYA)],
+    read: async () => answers[next++] ?? { kind: 'NOT_GRANTED' },
+    log: { info: () => undefined, error: () => undefined },
+    notes: async () => null,
+    wording: { whose: 'x', limit: 'y' },
+  }
+  const read = Object(connectorTools(access, { noteSave: false })).connector_read
+  function ask() {
+    return read.execute(
+      { connection: 'Matriz', operation: 'sankhya.consultar', input: {} },
+      { requestContext: new RequestContext() },
+    )
+  }
+  const failed = await ask()
+  assert.equal(failed.kind, 'READ_FAILED')
+  assert.match(failed.reason, /The read failed\. The provider said: ORA-00904: "VLRCRED"/)
+  assert.match(failed.reason, /not a refusal of access/)
+  assert.match(failed.reason, /try another way/)
+  const silent = await ask()
+  assert.equal(silent.kind, 'READ_FAILED')
+  assert.doesNotMatch(silent.reason, /provider said/)
+  assert.deepEqual(await ask(), {
+    kind: 'REFUSED',
+    native: { ...native, status: 403, message: 'Sem permissão' },
+  })
+})
