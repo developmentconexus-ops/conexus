@@ -2,6 +2,9 @@
 
 Trilho: desenho
 
+Este cartão ocupa a vaga do desenho só porque é um cartão curto fora da ordem do roteiro e nenhuma
+outra trilha o recebe; ele não mexe no desenho (`DESIGN.md`, `brand`, `ui`).
+
 Cartão curto, fora da ordem do roteiro. O pedido do fundador, em 2026-11-13: "Títulos A+C aprovado",
 sobre a investigação de uma conversa que ficava como "Conversa de 12/11/2026, 21:47" em vez de ganhar
 um nome. Lido em `main` `98db31a7`, com `@mastra/core` 1.82.0 e `@mastra/memory` 1.41.0. Referências:

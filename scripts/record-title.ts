@@ -7,9 +7,6 @@ import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts
 
 export const TITLES = ['title', 'title-observer'] as const
 type Title = (typeof TITLES)[number]
-export function isTitle(scenario: string): scenario is Title {
-  return TITLES.some((each) => each === scenario)
-}
 
 const PROMPT = 'Quero automatizar o pagamento das contas de uma padaria inventada.'
 const TURN: Block[] = [
@@ -36,9 +33,13 @@ export const CALLS: Record<Title, Block[][]> = {
   'title-observer': [[{ type: 'text', text: OBSERVATION }], TURN],
 }
 
-/** Mastra's call that names the conversation is not streamed: the Messages API answers it as one body. */
+/**
+ * Mastra's call that names the conversation is not streamed: the Messages API answers it as one
+ * body, written here (as `REFUSED` in `record.ts` is), not by `test-anthropic-stream.ts`, which the
+ * header of the recording names as its source for the turn.
+ */
 export function answer(
-  scenario: Title,
+  scenario: string,
   answers: Array<(signal: AbortSignal | null | undefined) => Response>,
 ) {
   if (scenario !== 'title') return

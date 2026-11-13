@@ -17,14 +17,17 @@ const { at } = assistantScreens(server)
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
 const UNTITLED = /^Conversa de /
 
-async function namedBy(event: () => object, title: string) {
+/** The Assistant's conversation without a title, the run going; `when` says if Mastra's tell comes after the run ended or in the middle of it. */
+async function namedBy(event: () => object, title: string, when: 'after' | 'during') {
   const opened = assistantConversation({ title: null })
   const hub = at(OPEN, { conversations: [opened] })
   expect(await screen.findByRole('heading', { name: UNTITLED })).toBeTruthy()
   const line = await running(hub)
-  line.emit(agentEnd())
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
-  // The title is saved after the answer, as Mastra does; the header still says the date.
+  if (when === 'after') {
+    line.emit(agentEnd())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
+  }
+  // The title is saved before Mastra says so; the header still says the date.
   opened.conversation.title = title
   expect(screen.getByRole('heading', { name: UNTITLED })).toBeTruthy()
   line.emit(event())
@@ -34,9 +37,9 @@ async function namedBy(event: () => object, title: string) {
 }
 
 test('a conversa sem título ganha o nome na tela quando o Mastra avisa que o criou', async () => {
-  await namedBy(titleUpdated, 'Automatizar pagamento de contas')
+  await namedBy(titleUpdated, 'Automatizar pagamento de contas', 'after')
 })
 
-test('o título que o observador troca aparece na tela quando ele avisa', async () => {
-  await namedBy(observerTitleUpdated, 'Pagamento de contas automático')
+test('o título que o observador troca aparece na tela quando ele avisa, com o turno ainda rodando como na gravação', async () => {
+  await namedBy(observerTitleUpdated, 'Pagamento de contas automático', 'during')
 })

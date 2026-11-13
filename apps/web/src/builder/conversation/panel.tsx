@@ -1,6 +1,6 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER } from '@conexus/hub-api'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useLocation } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
@@ -33,7 +33,6 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 /** The Builder's conversation: the screen of `chat.tsx` on the Builder's controller, with the model's button. */
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
-  const queryClient = useQueryClient()
   return (
     <Chat
       companyId={companyId}
@@ -41,11 +40,6 @@ function BuilderChat(params: Params) {
       place={{ controller: BUILDER_CONTROLLER, projectId }}
       conversationKey={conversationQuery(companyId, projectId, conversationId).queryKey}
       listKeys={[allConversationsQueryKey(companyId, projectId)]}
-      onGone={() =>
-        void queryClient.invalidateQueries({
-          queryKey: allConversationsQueryKey(companyId, projectId),
-        })
-      }
       empty={EMPTY_CONVERSATION}
       picker={({ session, providers, onError }) => (
         <ModelChoice

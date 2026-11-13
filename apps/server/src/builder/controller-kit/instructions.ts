@@ -53,4 +53,4 @@ export const TITLE = {
     observer:
       'Escreva o título da conversa em português do Brasil, sobre o agente que a pessoa quer montar ou mudar.',
   }),
-}
+} as const

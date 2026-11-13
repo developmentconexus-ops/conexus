@@ -1,5 +1,5 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -200,7 +200,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       )
     : [(signal) => replayed(`anthropic-${scenario}`, signal)]
   if (scenario === 'research-failed') answers[1] = REFUSED
-  if (title.isTitle(scenario)) title.answer(scenario, answers)
+  title.answer(scenario, answers)
   const restore = replaying(answers)
   try {
     if (scenario === 'files') {

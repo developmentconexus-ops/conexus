@@ -109,8 +109,8 @@ function heard(hooks: Hooks, event: AgentControllerEvent): void {
   }
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
-  // Mastra names the conversation after the answer ended, and the observer renames it later: the
-  // server's reads own the title, as the Mastra Code TUI reads it again at these two events.
+  // Mastra names the conversation after the answer ended, and the observer renames it later. The
+  // Mastra Code TUI and the Factory act on these two events; here the server's read stays the owner.
   if (event.type === 'thread_title_updated' || event.type === 'om_thread_title_updated')
     hooks.onTitled()
 }
