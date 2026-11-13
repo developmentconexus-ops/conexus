@@ -237,6 +237,39 @@ test('400, 500 e 529: o turno falha como MODEL_CALL_FAILED, sem troca e sem o te
   }
 })
 
+const CREDIT_LOW =
+  'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.'
+
+test('400 de saldo: a conta ganha o limite do crédito, a próxima assume e o log diz o motivo', async (t) => {
+  const f = await fleet(t, { 'Time 1': { kind: 'refuse', status: 400, message: CREDIT_LOW } })
+  await f.add('Dois')
+  const before = Date.now()
+  const { url, events } = await f.ask()
+  assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
+  assert.match(
+    (await turnNotices(f.hub, f.ana, url))[0] ?? '',
+    /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/,
+  )
+  assert.equal(endOf(events), 'complete')
+  const until = (await f.states())['Time 1']?.limitedUntil ?? 0
+  assert.ok(Math.abs(until - (before + 6 * 60 * MINUTE)) < 30_000, `${until - before}`)
+  const refused = f.lines.find((line) => line.message === 'MODEL_CALL_REFUSED')
+  assert.equal(Object(refused?.fields).kind, 'quota')
+  assert.ok(!JSON.stringify(f.lines).includes(CREDIT_LOW))
+})
+
+test('400 de formato: o turno falha, sem troca, e o log traz o tipo fechado', async (t) => {
+  const message = 'messages: text content blocks must be non-empty'
+  const f = await fleet(t, { 'Time 1': { kind: 'refuse', status: 400, message } })
+  await f.add('Dois')
+  const { events } = await f.ask()
+  assert.deepEqual(failuresOf(events), ['MODEL_CALL_FAILED'])
+  assert.ok(!f.calls().includes('Dois'))
+  const failed = f.lines.find((line) => line.message === 'MODEL_CALL_FAILED')
+  assert.equal(Object(failed?.fields).kind, 'invalid_request')
+  assert.ok(!JSON.stringify(f.lines).includes('non-empty'))
+})
+
 test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim com erro', async (t) => {
   const f = await fleet(t, {
     'Time 1': { kind: 'refuse', status: 429 },
