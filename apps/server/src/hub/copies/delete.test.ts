@@ -87,7 +87,8 @@ test('só ela: a outra cópia, a posição dela e a conexão ficam', async (t) =
   )
   const kept = await call(on.hub, on.ana, 'GET', `${on.connections}/${on.connectionId}`)
   assert.equal(kept.statusCode, 200)
-  assert.ok(on.hub.lines.some((line) => line.message === 'COPY_DELETED'))
+  const logged = on.hub.lines.find((line) => line.message === 'COPY_DELETED')
+  assert.deepEqual(logged?.fields, { companyId: on.companyId, copyId: vendas, ended: true })
 })
 
 test('o que sai: nenhuma linha da cópia, e a proposta fica sem ela', async (t) => {
@@ -225,4 +226,32 @@ test('religar: o mesmo nome começa vazio e sem a leitura do app', async (t) => 
   assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42501' })
   const [fresh] = await owner(on, 'select rows from copies.copy where id = $1', [again])
   assert.equal(fresh?.rows, null)
+})
+
+test('relógio calado: a cópia sai mesmo assim e a agenda fica, registrada', async (t) => {
+  const on = await copiesOn(t)
+  const vendas = await enabled(on, 'vendas')
+  await firstEnded(on, vendas.id)
+  const silent = t.mock.method(on.hub.mastra.schedules, 'delete', async () => {
+    throw new Error('clock down')
+  })
+  const done = await apagar(on, vendas.id)
+  assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: [] }])
+  assert.equal((await rowsOf(on, vendas.id)).copy, 0)
+  assert.equal((await schedulesOf(on)).length, 1)
+  const left = on.hub.lines.find((line) => line.message === 'COPY_SCHEDULE_LEFT')
+  assert.equal(left?.fields.copyId, vendas.id)
+  assert.equal(typeof left?.fields.reason, 'string')
+  silent.mock.restore()
+})
+
+test('sem banco da empresa: a cópia sai sem REVOKE e a tabela fica anotada', async (t) => {
+  const on = await copiesOn(t)
+  const vendas = await released(on, 'vendas')
+  const revoke = t.mock.method(on.hub.postgres.companyPostgres, 'revokeCopy')
+  await owner(on, 'update projects.company_database set host = null')
+  const done = await apagar(on, vendas)
+  assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: ['vendas'] }])
+  assert.equal(revoke.mock.callCount(), 0)
+  assert.equal((await rowsOf(on, vendas)).copy, 0)
 })

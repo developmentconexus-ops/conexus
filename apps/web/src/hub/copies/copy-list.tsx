@@ -183,7 +183,11 @@ export function CopyMenu(props: {
               Intervalo
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={busy} onClick={() => setDeleting(true)}>
+            <DropdownMenuItem
+              className="text-danger"
+              disabled={busy}
+              onClick={() => setDeleting(true)}
+            >
               Apagar
             </DropdownMenuItem>
           </DropdownMenuGroup>

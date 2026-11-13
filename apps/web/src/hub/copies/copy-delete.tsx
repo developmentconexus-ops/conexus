@@ -41,8 +41,8 @@ export function CopyDeleteDialog(props: {
   const [kept, setKept] = useState<string[] | undefined>()
 
   function finish() {
-    void queryClient.invalidateQueries()
     props.onDeleted()
+    void queryClient.invalidateQueries()
   }
 
   function changeOpen(next: boolean) {

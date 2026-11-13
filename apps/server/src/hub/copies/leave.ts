@@ -86,27 +86,18 @@ function syncIn(deps: CopiesDeps, input: InCompany) {
 async function takeReadAway(
   deps: CopiesDeps,
   input: InCompany,
-  copies: readonly { id: CopyId; name: string }[],
+  copyIds: readonly CopyId[],
 ): Promise<void> {
-  if (copies.length === 0) return
+  if (copyIds.length === 0) return
   const { sync, released } = await deps.database.read(personScope(input), async (tx) => ({
     sync: await syncOf(deps, tx, input.companyId),
     released: await tx
-      .select({ copyId: projectCopy.copyId, projectId: projectCopy.projectId })
+      .select({ copyId: copy.id, name: copy.name, projectId: projectCopy.projectId })
       .from(projectCopy)
-      .where(
-        and(
-          eq(projectCopy.companyId, input.companyId),
-          inArray(
-            projectCopy.copyId,
-            copies.map((each) => each.id),
-          ),
-        ),
-      ),
+      .innerJoin(copy, eq(copy.id, projectCopy.copyId))
+      .where(and(eq(projectCopy.companyId, input.companyId), inArray(copy.id, [...copyIds]))),
   }))
-  for (const { copyId, projectId } of released) {
-    const name = copies.find((each) => each.id === copyId)?.name
-    if (name === undefined) continue
+  for (const { copyId, name, projectId } of released) {
     await revokedInDatabase(
       deps,
       { ...input, copyId: CopyIdSchema.parse(copyId), projectId: ProjectIdSchema.parse(projectId) },
@@ -127,7 +118,7 @@ export async function leaveCopies(deps: CopiesDeps, input: OfConnection): Promis
   await takeReadAway(
     deps,
     input,
-    readers.filter(({ last }) => last).map(({ stored }) => ({ id: stored.id, name: stored.name })),
+    readers.filter(({ last }) => last).map(({ stored }) => stored.id),
   )
   const accounts = readers.flatMap(({ stored, ref }) =>
     ref === null ? [] : [{ copy: stored.name, ref }],
@@ -224,14 +215,14 @@ export async function deleteCopy(
   const found = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     return tx
-      .select({ id: copy.id, name: copy.name })
+      .select({ id: copy.id })
       .from(copy)
       .where(and(eq(copy.companyId, companyId), eq(copy.id, copyId)))
   })
   await takeReadAway(
     deps,
     input,
-    found.map((row) => ({ id: CopyIdSchema.parse(row.id), name: row.name })),
+    found.map((row) => CopyIdSchema.parse(row.id)),
   )
   const ended = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
@@ -271,7 +262,9 @@ function droppedTable(
 /**
  * The schedule of each ended copy taken out of the clock, paused or not: a paused one never fires, so
  * it never finds the copy gone and deletes itself. Doing it again changes nothing; a clock that does
- * not answer is logged and the schedule stays for the fire that finds the copy gone.
+ * not answer is logged (`COPY_SCHEDULE_LEFT`) and the copy ends all the same: an active schedule is
+ * deleted by its next fire, which finds the copy gone, a paused one stays in the clock, harmless, until
+ * the clock is cleared by hand.
  */
 async function removeSchedules(deps: CopiesDeps, companyId: CompanyId, copyIds: readonly CopyId[]) {
   for (const copyId of copyIds) {
