@@ -29,8 +29,8 @@ quando o Assistente precisa dela para uma ferramenta. Ela continua pausando no f
 - Deixar a máquina ligada alguns minutos depois de cada turno (a opção A do estudo). Palavra do
   fundador: "2. Não". O critério 21 da etapa 24.1 (a máquina pausa no fim do turno) fica como está.
 - Os outros agentes (Builder, Construtor, agentes da empresa): não colocam arquivos na máquina.
-- A issue ao Mastra com o pedido de uma opção pública (chamada a serviço de fora: é do firstmate ou
-  do fundador).
+- A issue ao Mastra com o pedido de uma opção pública, já aberta com a palavra do fundador:
+  https://github.com/mastra-ai/mastra/issues/30366.
 
 **As decisões suas nesta etapa.** Nenhuma nova. Ele já disse "1. Aprovo" à forma recomendada: o
 arquivo colocado num turno anterior vira a nota sem ligar a máquina (B com B1), e com a máquina fora
