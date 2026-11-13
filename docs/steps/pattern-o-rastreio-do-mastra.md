@@ -83,6 +83,11 @@ E1, o SQL Editor do Neon com a consulta pronta. As outras letras ficam abaixo co
     dias couberem em 0,5 GB, quer dizer, se o turno medido ficar abaixo de cerca de 600 KB, fica A2.
     Se não couber, a U1 para e volta a você com o número: A2 no Neon pago (o armazenamento custa US$ 0,35 por GB por mês no
     Launch) ou A3.
+  - **O resultado da regra (2026-11-13).** A medida estourou: um turno do Assistente com leitura grava
+    cerca de 1,5 MB, e o do Builder com uma ferramenta cerca de 430 KB. No pico, 58 turnos por dia
+    durante 14 dias dão cerca de 1,2 GB, cerca de US$ 0,42 por mês. O Neon do Hub já está no plano
+    pago Launch desde 2026-11-12, então não há o limite de 0,5 GB. Você respondeu "Sim": fica **A2
+    no Neon pago**, com o rastro inteiro, sem `spanFilter` e sem mudar `maxArrayLength`.
 - **B. Por quanto tempo.** **B1 (recomendada): 14 dias**, como o Mastra Code faz no rastro local dele.
   B2: 30 dias. Uma rotina do Mastra roda uma vez por dia, de madrugada, e apaga o que passou do
   prazo; o banco acorda alguns segundos para isso (regra D27).
@@ -154,6 +159,9 @@ Nenhuma tela nova nem mudada.
 | Os logs junto do rastro | U1 | `BuilderLogger` próprio, só escalares (`builder/mastra/logger.ts:32-58`) | `observability/logging.mdx` (prateleira); `@mastra/core` `dist/logger-BwbmRqfc.js:3-5,30-43,198-200` | um logger próprio sem o gancho cai na escrita dupla obsoleta; o nativo é `__attachObservability` e `getLogSink()`, nível mínimo `warn` | nativo pelo gancho; o `PinoLogger` de `@mastra/loggers` fica fora, porque o log do contêiner é o pino do Hub com destino síncrono (`stack.md`, linha `pino`) | — | não precisa | — |
 | A limpeza (B) | U1 | — | `reference-storage-retention.md:7-11,38-42,131` (`@mastra/core` docs); `dist/index.js:21903-21972`; Mastra Code `mastracode/sdk/src/utils/local-observability.ts:9-17`; workflow com `schedule` (`docs-workflows-scheduled-workflows.md:9-40`) | `retention.observability` na loja e `prune()` por uma rotina; o Mastra nunca roda sozinho | nativo | — | a letra B | — |
 | O esvaziar ao fechar | U1 | `hub-mastra.ts:118-125` chama `mastra.shutdown()` | `dist/mastra-D4MXu5BN.js:5671` | `shutdown` chama `observability.shutdown()` antes de fechar a loja | nativo | — | não precisa | — |
+| A conta que atendeu, no trecho | U1 | — | `@mastra/core` `dist/observability/types/core.d.ts:84-96`; `dist/docs/references/reference-processors-processor-interface.md:150-156` | o processador atualiza o trecho em curso por `args.tracing.currentSpan.update` | nativo | — | não precisa | — |
+| Os trechos de pedaços do modelo | U1 | — | `observability/mastra/src/config.ts` (`serializationOptions`, `excludeSpanTypes`) | `excludeSpanTypes: [MODEL_CHUNK]`: o pedaço de texto que chega não vira trecho; o passo guarda o resultado | nativo | — | 2026-11-13 ("2. SIm") | — |
+| O limite de mensagens por passo | U1 | — | `observability/mastra/src/spans/serialization.ts:43-49` | `serializationOptions.maxArrayLength: 500`: um passo guarda até 500 mensagens em vez de 50 | nativo | — | 2026-11-13 ("2. SIm") | — |
 | A telemetria de uso do Mastra | — | `MASTRA_TELEMETRY_DISABLED` (`infra/compose.yaml`) | — | é outra coisa: não é o rastro | nativo; fica de fora e continua desligada | — | — | — |
 | A plataforma da Mastra | — | — | `docs-mastra-platform-observability.md:87-107,167,211` | sai dos EUA por padrão | nativo; fica de fora pela palavra do fundador | — | 2026-11-13 | — |
 
@@ -203,8 +211,9 @@ o `copyRun` de `conversations-of.ts`, registrado do mesmo jeito.
    Builder (`conversation/conversation-recorded.test.ts`) e um do Assistente. Conte as linhas e os
    bytes (`pg_total_relation_size` das tabelas `mastra_*_events`). Escreva no corpo do pull request:
    bytes por turno, vezes 58 turnos por dia (o pico medido), vezes 14. A regra A decide: acima de
-   0,5 GB (cerca de 600 KB por turno, na média do Builder e do Assistente pesada pelo uso), pare e
-   volte ao fundador.
+   600 KB por turno (na média do Builder e do Assistente pesada pelo uso), pare e volte ao
+   fundador. O Neon do Hub é o plano pago Launch (2026-11-12): a regra é o aviso ao fundador, não o
+   limite de 0,5 GB do plano grátis.
 2. `conversation/storage.ts`: `new PostgresStoreVNext({ id, pool, schemaName: 'mastra',
    observability: { pool }, retention: { observability: { spans, logs, metrics: { maxAge } } } })`.
    Regras: data D27, decisão 0010 (o login `mastra_runtime` é dono das tabelas que cria; nada muda em

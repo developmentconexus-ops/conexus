@@ -1,6 +1,6 @@
 import { classifyProviderError, providerRequestId } from '@mastra/core/error'
 import type { LoggerAdapterContext } from '@mastra/core/logger'
-import { buildLogRecordData, MastraLogger } from '@mastra/core/logger'
+import { buildLogRecordData, exportTrackedException, MastraLogger } from '@mastra/core/logger'
 import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { causeChain } from '../../platform/failure.ts'
 
@@ -76,7 +76,7 @@ export class BuilderLogger extends MastraLogger {
 
   trackException(error: Error): void {
     this.#log.error({ source: 'mastra', ...fieldsOf([error]), ...this.#traceIds() }, 'MASTRA_ERROR')
-    this.#export('error', error.message, [error])
+    exportTrackedException(this.#observability, error)
   }
 
   #traceIds() {

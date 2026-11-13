@@ -1,8 +1,21 @@
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { createStep, createWorkflow } from '@mastra/core/workflows'
 import { z } from 'zod'
+import { Failure } from '../../platform/failure.ts'
 
 /** Mastra keeps the schedule under this workflow id: a new id is a new schedule. */
 export const RETENTION_WORKFLOW = 'conexus-retention-prune'
+
+/** The store the Hub runs Mastra on; its absence is one failure wherever it is found. */
+export function storageOf(mastra: {
+  getStorage(): MastraCompositeStore | undefined
+}): MastraCompositeStore {
+  const storage = mastra.getStorage()
+  if (storage === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MASTRA_STORAGE_MISSING' } })
+  }
+  return storage
+}
 
 const Pruned = z.object({ done: z.boolean() })
 
@@ -11,9 +24,7 @@ const prune = createStep({
   inputSchema: z.object({}).optional(),
   outputSchema: Pruned,
   async execute({ mastra }) {
-    const storage = mastra.getStorage()
-    if (storage === undefined) throw new Error('the Hub runs Mastra on a store')
-    const results = await storage.prune({ maxRows: 50_000 })
+    const results = await storageOf(mastra).prune({ maxRows: 50_000 })
     return { done: results.every((each) => each.done) }
   },
 })

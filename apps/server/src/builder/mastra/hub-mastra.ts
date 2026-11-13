@@ -3,13 +3,12 @@ import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, ReleaseScope } from '../controller-kit/public.ts'
 import { CONTROLLER_KINDS } from '../controller-kit/public.ts'
 import type { MayApprove, Watched, WriteOf } from '../conversation/public.ts'
 import { watchRuns } from '../conversation/public.ts'
 import { createMastra } from './mastra.ts'
-import { RETENTION_WORKFLOW, retentionRun } from './retention.ts'
+import { RETENTION_WORKFLOW, retentionRun, storageOf } from './retention.ts'
 
 /** A conversation controller on the one `Mastra`, with what the Hub does to its conversations. */
 type Part = {
@@ -88,16 +87,13 @@ export function createHubMastra(deps: {
     },
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare(): Promise<void> {
-      const storage = mastra.getStorage()
-      if (storage === undefined) {
-        throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MASTRA_STORAGE_MISSING' } })
-      }
-      await storage.init()
+      await storageOf(mastra).init()
       log.info({}, 'MASTRA_STORAGE_READY')
     },
     /**
      * Mastra's workers, after every subject is made: the orchestration that runs the workflows,
-     * and the scheduler only if a schedule row exists (`NM:mastra-D4MXu5BN.js:4424-4439,5135-5150`).
+     * and the scheduler, which starts since the retention workflow always leaves a schedule row
+     * (`NM:mastra-D4MXu5BN.js:4424-4439,5135-5150`).
      */
     async start(): Promise<void> {
       for (const part of parts) await part.beforeWorkers?.()

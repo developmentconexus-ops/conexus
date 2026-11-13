@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { PostgresStore } from '@mastra/pg'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { createTestDatabase } from '../../platform/test-database.ts'
 import { agentsOn, madeAgent, talkedTo } from '../agents/test-agents.ts'
 import { created } from '../assistant/test-assistant.ts'
+import { createMastraStorage } from '../conversation/public.ts'
 import {
-  answeredOf,
   asked,
   conversing,
-  hubBeside,
+  endOf,
   messagesOf,
   sent,
   started,
@@ -61,6 +63,33 @@ test('um turno do Builder deixa o seu rastro', async (t) => {
       `${String(span.spanType)} resourceId includes company:`,
     )
   }
+})
+
+test('um turno do Builder com uma ferramenta deixa o seu tool_call', async (t) => {
+  let step = 0
+  const on = await conversing(t, (each: Sent) => {
+    const titled = title(each)
+    if (titled !== undefined) return titled
+    step += 1
+    return step === 1
+      ? {
+          kind: 'blocks',
+          blocks: [{ type: 'tool_use', name: 'recall', input: { mode: 'messages' } }],
+        }
+      : { kind: 'text', text: 'Li a conversa.' }
+  })
+  const { hub, ana, conversations } = on
+
+  const { url } = await asked(t, { hub, person: ana, conversations })
+  await hub.close()
+
+  const spans = await spansOf(hub.test.mastraPool, idOf(url))
+  const calls = spans.filter((s) => s.spanType === 'tool_call')
+  assert.deepEqual(
+    calls.map((s) => s.name),
+    ["tool: 'recall'"],
+  )
+  assert.equal(calls[0]?.threadId, idOf(url))
 })
 
 test('cada controlador é rastreado pelo registro único', async (t) => {
@@ -149,7 +178,29 @@ test('a recusa do provedor fica no rastro com o corpo', async (t) => {
   const { hub, ana, conversations } = on
 
   await hub.mastra.getStorage()?.init()
-  const { url } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const told = (await messagesOf(hub, ana, url)).flatMap((message) =>
+    message.parts.flatMap((part) => (part.type === 'error' ? [part] : [])),
+  )
+  assert.equal(endOf(events), 'error', 'the turn ends in an error, as without the trace')
+  assert.deepEqual(
+    told.map((part) => ({ ...Object(part.error), createdAt: undefined })),
+    [
+      {
+        name: 'AI_APICallError',
+        message: 'planted refusal SECRET-PLANTED-TEXT',
+        statusCode: 400,
+        responseBody: JSON.stringify({
+          type: 'error',
+          error: { type: 'invalid_request_error', message: 'planted refusal SECRET-PLANTED-TEXT' },
+        }),
+        modelId: 'claude-sonnet-4-6',
+        codes: ['invalid_request_error'],
+        createdAt: undefined,
+      },
+    ],
+    'what the client reads of the refusal is what it read before the trace',
+  )
   await hub.close()
 
   const spans = await spansOf(hub.test.mastraPool, idOf(url))
@@ -242,39 +293,34 @@ test('fechar o Hub não perde o último turno', async (t) => {
   )
 })
 
-test('a loja nova sobe sobre o banco de hoje', async (t) => {
-  const on = await conversing(t, (each: Sent) => title(each) ?? { kind: 'text', text: 'Olá!' })
-  const { hub, ana, conversations } = on
+test('a loja nova sobe sobre o banco de hoje: as tabelas novas aparecem e a conversa de antes continua lida', async (t) => {
+  const { mastraPool: pool } = await createTestDatabase(t)
+  // Today's store, as `main` makes it: one `PostgresStore`, no observability domain.
+  const today = new PostgresStore({ id: 'conexus-mastra', pool, schemaName: 'mastra' })
+  await today.init()
+  const memory = await today.getStore('memory')
+  assert.ok(memory !== undefined, "today's store has its memory")
+  const threadId = randomUUID()
+  await memory.saveThread({
+    thread: {
+      id: threadId,
+      resourceId: 'company:planted',
+      title: 'conversa de antes',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  })
+  const spansTable = `SELECT to_regclass('mastra.mastra_span_events') AS made`
+  assert.equal((await pool.query<{ made: string | null }>(spansTable)).rows[0]?.made, null)
 
-  await hub.mastra.getStorage()?.init()
-  const { url } = await asked(t, { hub, person: ana, conversations })
+  const next = createMastraStorage(pool)
+  t.after(() => next.close())
+  await next.init()
 
-  // Confirm messages exist before reinit.
-  const before = await answeredOf(hub, ana, url)
-  assert.ok(before.length >= 2, 'messages exist before reinit')
-
-  await hub.close()
-
-  // A second Hub opens on the same databases and calls init() again.
-  const hub2 = await hubBeside(t, hub)
-  await hub2.mastra.getStorage()?.init()
-
-  const pool = hub2.test.mastraPool
-
-  // The span tables were created by the first init and still exist.
-  const tableCheck = await pool.query<{ exists: boolean }>(
-    `SELECT EXISTS (
-       SELECT 1 FROM information_schema.tables
-       WHERE table_schema = 'mastra' AND table_name = 'mastra_span_events'
-     ) AS exists`,
+  assert.equal(
+    (await pool.query<{ made: string | null }>(spansTable)).rows[0]?.made,
+    'mastra.mastra_span_events',
   )
-  assert.ok(tableCheck.rows[0]?.exists, 'mastra_span_events table exists after second init')
-
-  // Existing conversations are still readable.
-  const after = await messagesOf(hub2, ana, url)
-  assert.ok(after.length >= 2, 'conversations are still readable after second init')
-
-  // Spans from the first run are still in the database.
-  const spans = await spansOf(pool, idOf(url))
-  assert.ok(spans.length > 0, 'spans from first run survive reinit')
+  const nextMemory = await next.getStore('memory')
+  assert.equal((await nextMemory?.getThreadById({ threadId }))?.title, 'conversa de antes')
 })
