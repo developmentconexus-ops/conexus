@@ -30,7 +30,6 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 
 **As capacidades que faltam aos apps.**
 
-- **A política de dados pessoais dos conectores.** Antes da Ontologia (2026-11-11, "H1"). Em Papéis, marca no papel Vendas que ele vê contato e endereço dos clientes; o app mostra o comprador, o Assistente responde com nomes e sem CPF, e o papel Membro recebe os pedidos sem nome.
 - **A Ontologia da empresa**, antes da 4 (2026-11-12: `"A1"`), abaixo.
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
