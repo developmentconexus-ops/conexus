@@ -820,7 +820,7 @@ dados: D1, D6, D11, D12. O código C8, C21, C23, C26.
 
 ### A ordem do trabalho
 
-1. `tables.ts`: as doze tabelas e as cinco visões, como acima. Quem não tem chave própria para `auth.company` a recebe pela chave composta do pai (o inventário, o item e as versões); toda chave interna, a de prova e a de proposta também, apaga por `cascade`. Regras: C8, C21, dados D1.
+1. `tables.ts`: as onze tabelas e as cinco visões, como acima. Regras: C8, C21, dados D1.
 2. A migração das tabelas pelo `drizzle-kit generate`; conferir o SQL das visões (`security_invoker`).
    Regra: D6 (só acrescenta).
 3. Num pull request próprio, com a palavra do fundador (`P1`, 2026-11-12, citada no comentário da
