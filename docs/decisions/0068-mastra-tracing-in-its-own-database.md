@@ -34,8 +34,8 @@ Not run.
 ## Consequences
 
 Mastra's database holds person-written text and connector rows as the model saw them, after
-`readThrough`, for the chosen age. Deleting a company leaves its spans until they age out. Each turn
-adds writes while it runs.
+`readThrough`, for 14 days, open only to us. A deleted company's spans age out; each turn adds
+writes.
 
 ## Reopens when
 
@@ -44,9 +44,8 @@ traces, or 21.1 sends spans out.
 
 ## State
 
-Accepted 2026-11-13: "A A2 B B1 E E1", then "1. Aprovo 2. Aprovo" (the card's page, and the S41
-exception: full content, what the model read included, in Mastra's database in Brazil, 14 days,
-only our access). Supersedes [0052].
+Accepted 2026-11-13: "A A2 B B1 E E1"; "1. Aprovo 2. Aprovo" (the page; the S41 exception).
+Supersedes [0052].
 
 [0010]: 0010-mastra-tables-own-database.md
 [0032]: 0032-data-leaving-brazil-told.md
