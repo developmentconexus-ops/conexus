@@ -39,7 +39,16 @@ test('o nível pedido chega a cada fornecedor na forma que o dado de raciocínio
     [
       'anthropic/claude-opus-4-7',
       'xhigh',
-      { anthropic: { thinking: { type: 'adaptive', display: 'summarized' }, effort: 'xhigh' } },
+      {
+        anthropic: {
+          thinking: {
+            type: 'adaptive',
+            display: 'summarized',
+            blockBinding: { prefixMismatchBehavior: 'drop_block' },
+          },
+          effort: 'xhigh',
+        },
+      },
     ],
     ['google/gemini-2.5-pro', 'medium', { google: { thinkingConfig: { thinkingBudget: 8192 } } }],
     ['google/gemini-2.5-flash', 'max', { google: { thinkingConfig: { thinkingBudget: 24576 } } }],
@@ -71,7 +80,16 @@ test('"Desligado" chega ao fornecedor como o dado do Mastra diz que o modelo par
     ['anthropic/claude-haiku-5-5', { anthropic: { thinking: { type: 'disabled' } } }],
     [
       'anthropic/claude-sonnet-5-5',
-      { anthropic: { thinking: { type: 'adaptive', display: 'summarized' }, effort: 'low' } },
+      {
+        anthropic: {
+          thinking: {
+            type: 'adaptive',
+            display: 'summarized',
+            blockBinding: { prefixMismatchBehavior: 'drop_block' },
+          },
+          effort: 'low',
+        },
+      },
     ],
     ['openai/gpt-5.1', { openai: { reasoningEffort: 'none' } }],
     ['google/gemini-2.5-flash', { google: { thinkingConfig: { thinkingBudget: 0 } } }],
@@ -182,6 +200,21 @@ test('"Desligado" na Anthropic manda `thinking: disabled` ao modelo que aceita, 
     assert.equal(levels(`anthropic/${name}`).includes('off'), false, `${name} always reasons`)
   for (const name of ['claude-haiku-5-5', 'claude-opus-5', 'claude-opus-4-7', 'claude-sonnet-4-5'])
     assert.equal(levels(`anthropic/${name}`)[0], 'off', `${name} can stop`)
+})
+
+test('o modelo de pensamento adaptativo larga o bloco preso a outra lista de ferramentas; o de orçamento não leva o controle', () => {
+  assert.deepEqual(asked('anthropic/claude-opus-5-5', 'max'), {
+    anthropic: {
+      thinking: {
+        type: 'adaptive',
+        display: 'summarized',
+        blockBinding: { prefixMismatchBehavior: 'drop_block' },
+      },
+      effort: 'max',
+    },
+  })
+  const budget = Object(asked('anthropic/claude-sonnet-4-5', 'high')).anthropic.thinking
+  assert.equal('blockBinding' in budget, false)
 })
 
 test('o nível com que a conversa começa é o guardado, o mais alto aceito abaixo dele, ou o mais baixo do modelo', () => {
