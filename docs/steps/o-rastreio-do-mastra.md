@@ -170,7 +170,7 @@ Todas as linhas construídas da tabela de referência.
 | `apps/server/src/builder/conversation/storage.ts` | Muda a classe da loja e a `retention` | `conversations-of.ts` |
 | `apps/server/src/builder/mastra/` | Muda `mastra.ts` (o `observability`), `logger.ts` (o gancho); cria `retention.ts` (o workflow da limpeza) e os testes | `hub-mastra.ts` |
 | `apps/server/src/conversations-of.ts` | Registra o workflow da limpeza ao lado dos outros dois | `main.ts` |
-| `docs/how-to/rastro-de-uma-conversa.md` | Cria a consulta do roteiro, em português | o fundador |
+| `docs/how-to/rastro-de-uma-conversa.md`, `docs/index.md` | Cria a consulta do roteiro, em português, e a linha dela no mapa (L24) | o fundador, `check-docs` |
 | `infra/compose.yaml` | Só com A3: o serviço `clickhouse` e o segredo `hub_clickhouse_password` (`*_FILE`) | o servidor |
 
 ### Os contratos que a unidade cria
@@ -178,7 +178,8 @@ Todas as linhas construídas da tabela de referência.
 Nenhuma rota, coluna do Hub nem tipo exportado. Uma constante: `RETENTION_WORKFLOW` (o id do workflow
 da limpeza), dona em `builder/mastra/retention.ts`. O prazo da letra B mora uma vez, em
 `conversation/storage.ts`, na `retention` da loja; o workflow chama `storage.prune()` sem repetir o
-prazo.
+prazo. Nenhum arquivo é tomado como modelo: a unidade não cria forma nova de módulo; o workflow segue
+o `copyRun` de `conversations-of.ts`, registrado do mesmo jeito.
 
 ### As skills e a leitura
 
@@ -212,7 +213,8 @@ prazo.
    registrado em `conversations-of.ts`.
 6. `docs/how-to/rastro-de-uma-conversa.md`: a consulta por `"threadId"` em `mastra.mastra_span_events`,
    em ordem de `startedAt`, com `spanType`, `name`, `model`, a duração, os tokens, `input`, `output` e
-   `error`; e a variante por empresa (`"resourceId" LIKE '%company:<id>:%'`).
+   `error`; e a variante por empresa (`"resourceId" LIKE '%company:<id>:%'`). A linha dele entra em
+   `docs/index.md`.
 
 ### Como se prova
 
