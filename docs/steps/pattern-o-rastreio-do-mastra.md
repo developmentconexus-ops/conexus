@@ -162,39 +162,6 @@ Nenhuma tela nova nem mudada.
 **A dívida.** Nenhuma nova; a linha "Trace ids are Fastify's request ids until 21.1" da arquitetura
 continua, porque o trecho do Hub é da 21.1.
 
-## O que a construção mudou no cartão
-
-Escrito na construção (delivery L7), sem mudar o que o fundador vê nem as letras dele:
-
-- **A medida.** Um turno gravado com uma ferramenta gravou cerca de 330 KB de trechos
-  (`pg_column_size`) e 650 KB de tabela, contando as primeiras páginas das partições do dia, que se
-  pagam uma vez por dia. 58 turnos por dia durante 14 dias dão cerca de 270 MB: A2 fica.
-- **A loja.** O domínio v-next do Postgres (`ObservabilityStoragePostgresVNext`) entra pela loja
-  composta do Mastra (`MastraCompositeStore`, `default` e `domains.observability`), no mesmo pool,
-  como o guia de observabilidade do Mastra mostra. O `PostgresStoreVNext` faz o mesmo, mas imprime
-  um aviso cru quando o pool é o mesmo (`@mastra/pg` 1.35.0 `dist/index.js:27620-27669`), que o log
-  do contêiner e o relator dos testes recusam. Os tipos `PostgresStore` dos donos da loja viram
-  `MastraCompositeStore`, sem outra mudança, inclusive em `builder/assistant/` (só o tipo).
-- **O que o diagnóstico do 400 pediu** (firstmate, 2026-11-13). O trecho que falha (`model_step`,
-  `model_inference`, `model_generation`, `agent_run`) guarda `statusCode`, `url`, `isRetryable` e o
-  `responseBody` inteiro (`@mastra/observability` 1.23.1 `dist/index.js:3905-3918`); o cabeçalho
-  `request-id` não é guardado (a mesma função não lê cabeçalhos), e um `request_id` que venha no
-  corpo fica, porque o corpo fica inteiro. O pedido do passo está no `input` do `model_step`, e o
-  pedido já convertido para o provedor (com as partes de raciocínio) no trecho `llm request processor:
-  provider-history-compat`, campo `prompt`. Os tokens do passo estão em `attributes.usage`
-  (`inputTokens`, `outputTokens`, `inputDetails.cacheRead`). Uma lista guarda só os primeiros 50
-  itens (`dist/index.js:455-460`), o que cortaria as mensagens mais novas de uma conversa longa:
-  `serializationOptions.maxArrayLength` passa a 500; um texto continua cortado em 128 KB (131.072
-  caracteres). Os trechos de cada pedaço do stream (`model_chunk`) saem, como o exportador da
-  plataforma do Mastra já faz.
-- **A conta que atendeu.** O provedor e o modelo vêm no trecho, mas uma chave da Anthropic e a
-  assinatura do Claude dizem os dois `anthropic`. O `conexus-account-pick`
-  (`model-accounts/processors.ts`) grava no próprio trecho, pelo `args.tracing.currentSpan.update`
-  nativo, o id, o tipo e o modelo da conta escolhida.
-- **A limpeza** mora no `Mastra` do Hub (`hub-mastra.ts`), sem passar por `conversations-of.ts`.
-  Com ela a agenda do Mastra liga sempre e dorme até as 03:30: o caso de `scheduler.test.ts` sem
-  automação passa a provar isso, e nenhuma leitura entre os disparos (D27).
-
 ## U1 O rastreio ligado
 
 **Base e modelo.** O `main` em `f01afd98`. Sonnet: a configuração é nativa e as linhas estão aqui.
