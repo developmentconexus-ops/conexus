@@ -1100,3 +1100,7 @@ Decisões de método da análise do gargalo, à lista de treze decisões, em pul
 A frase do fundador de 2026-10-16, "Só na C que a parte tecnica eu quero sim saber e decidir", fica substituída pela decisão 12 acima, de 2026-11-13: o técnico reversível é do firstmate em todo trilho.
 
 Palavras do fundador movidas do modelo do cartão para este registro (L21), em 2026-11-13: a linha de cada gravação na tabela de falhas, "A-A" (2026-10-15).
+
+## Mudança de método: o Stryker deixa de rodar por unidade
+
+Em 2026-11-13, como mudança de método (L20), sobre o Stryker em toda revisão de unidade, o fundador disse: "avalia sua real necessidade, motivo e quais dados comprovados que vale a pena continuar ou, por exemplo apenas no final da etapa. Porque a cada U demora muito". À recomendação (parar a mutação automática do Stryker por unidade e no fechamento da etapa; manter as mutações à mão das linhas-chave na revisão e na construção; deixar o Stryker só como ferramenta manual opcional): "Aprovo recomendação". A evidência: em 95 relatórios nenhum sobrevivente do Stryker era defeito de produção, as execuções levam de 40 a 60 minutos ou mais, e nenhuma referência roda mutação por pull request. Mudam o T27, o passo 4 da skill `conexus-review`, o passo 6 da skill `conexus-build` e `scripts/quality.ts` (a mutação só com `--mutate`; `--fast` segue aceito).
