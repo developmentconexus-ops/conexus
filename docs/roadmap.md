@@ -42,7 +42,7 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 2. **O fluxo da empresa**: os estados e as passagens, lidos dos documentos ou do histórico; entre dois sistemas, sem ligação.
 3. **A saúde da Ontologia**: a prova refeita todo dia e o aviso no Início.
 4. **Ligações e duas fontes**; sobe antes da saúde se o próximo cliente tiver dois sistemas no fluxo principal.
-5. **O Brain do Builder e dos Projetos.**
+5. **O Brain do Builder e dos Projetos**, com o Mapa da página Conhecimento ("2 Okay").
 6. **A entrada conversada**, o onboarding que aprende o começo: "quando tiver definido a ontologia, o brand".
 7. **Os agentes da empresa nos dois**, com a Capacidade 6.
 8. **Fontes de conhecimento**: arquivos, depois pastas por conector.

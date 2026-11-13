@@ -3,8 +3,7 @@
 ## Context
 
 The Brain is the company's text for its agents: instructions, rules, reviewed learnings, later
-documents. Mastra 1.82 marks Knowledge `@experimental`: alpha, without isolation between
-scopes. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`; 2026-11-13: "Fecho na A".
+documents. Mastra 1.82 marks Knowledge only `@experimental`; "alpha, isolation not guaranteed" is our reading. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`; 2026-11-13: "Fecho na A".
 
 ## Decision
 
