@@ -235,8 +235,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   the piece, and a verdict. **Nativo** uses the library's public API as is; **embrulhado** adds our
   code to it, and one line says what ours adds; **remendo** is our own mechanism, and needs the
   proof that no reference serves, its [boundaries](../reference/boundaries.md) entry naming the
-  package version, and the founder's word. Every remendo row new in a step reaches him with the
-  native how beside it; one already approved returns only when its library's version changes.
+  package version, and its decision ([delivery L6](delivery.md)). Every remendo row new in a step
+  reaches its decider with the native how beside it; one already decided returns only when its
+  library's version changes.
   Founder, 2026-10-22: "A"; 2026-10-25: "1. A". Code that no row or contract explains, or a row
   without its proof, is a Bloqueia in review. A correct native solution stays when a guide
   conflicts: record the conflict for closing; ask the founder when behavior or scope changes

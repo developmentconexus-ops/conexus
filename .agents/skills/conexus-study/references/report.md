@@ -16,7 +16,7 @@ commit, a short verbatim snippet.
 
 What a person will do and see at the end, with an example; what the references do, in plain words;
 what we build. Decisions only where they are really his: a product choice, references diverging on
-what a person sees, or a remendo row (code C75). Each one lettered, with a recommendation, its
+what a person sees, or a remendo row that is his ([delivery L6](../../../../docs/guides/delivery.md)). Each one lettered, with a recommendation, its
 verdict, and the native how in one plain line, never theory alone.
 
 ## 2. The question and its premise
@@ -61,9 +61,9 @@ Only for a step with a screen: old and new side by side, per state, with the cap
 The one artifact from study to review. The study fills every column but "Unidade" and "Arquivo
 novo", which the card adds; the verdicts are [code C75](../../../../docs/guides/code.md)'s.
 
-| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
+| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, or "não precisa" | Path |
+| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, firstmate's with how to undo it (delivery L6), or "não precisa" | Path |
 
 Never one row for "o resto". A product piece no library has (our Git, the accounts queue) is a
 remendo row that cites its decision record.

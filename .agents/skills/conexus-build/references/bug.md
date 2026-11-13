@@ -8,8 +8,8 @@ these steps win.
    Then take the native step ([code C75](../../../../docs/guides/code.md)): for each piece the fix
    adds or changes that a library emits or could do, write one reference row (the installed
    `package@version` with `file:line`, how the library does it, and the verdict). A remendo row
-   needs its [boundaries](../../../../docs/reference/boundaries.md) entry and the founder's word in
-   the same pull request.
+   needs its [boundaries](../../../../docs/reference/boundaries.md) entry and its decision
+   ([delivery L6](../../../../docs/guides/delivery.md)) in the same pull request.
 3. Write the test that fails because of the defect, through the public door, and see it fail.
 4. Fix the cause, not the symptom: no guard that silences a crash, no retry over a race.
 5. See the test pass, then search for the same cause elsewhere and list each place.
