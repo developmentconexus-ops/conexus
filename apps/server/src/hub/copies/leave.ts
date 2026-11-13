@@ -5,7 +5,7 @@ import { and, asc, eq, inArray, notExists, sql } from 'drizzle-orm'
 import type { CommandTx, DatabaseUrl, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { AccountRef, CopyName } from '../connectors/public.ts'
-import { revokeCopy } from './grants.ts'
+import { revokedInDatabase } from './grants.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy, personScope, syncOf } from './store.ts'
@@ -79,13 +79,56 @@ function syncIn(deps: CopiesDeps, input: InCompany) {
 }
 
 /**
+ * The apps' read of each given copy taken back before the copy ends, outside any transaction (data
+ * D22): the `REVOKE` of Tirar (`revokedInDatabase`) once per Projeto the copy is released to. A
+ * silent company database answers 503 with nothing changed in the Hub; doing it again repeats safely.
+ */
+async function takeReadAway(
+  deps: CopiesDeps,
+  input: InCompany,
+  copies: readonly { id: CopyId; name: string }[],
+): Promise<void> {
+  if (copies.length === 0) return
+  const { sync, released } = await deps.database.read(personScope(input), async (tx) => ({
+    sync: await syncOf(deps, tx, input.companyId),
+    released: await tx
+      .select({ copyId: projectCopy.copyId, projectId: projectCopy.projectId })
+      .from(projectCopy)
+      .where(
+        and(
+          eq(projectCopy.companyId, input.companyId),
+          inArray(
+            projectCopy.copyId,
+            copies.map((each) => each.id),
+          ),
+        ),
+      ),
+  }))
+  for (const { copyId, projectId } of released) {
+    const name = copies.find((each) => each.id === copyId)?.name
+    if (name === undefined) continue
+    await revokedInDatabase(
+      deps,
+      { ...input, copyId: CopyIdSchema.parse(copyId), projectId: ProjectIdSchema.parse(projectId) },
+      { name, sync },
+    )
+  }
+}
+
+/**
  * Before the provider's revoke and the Hub's DELETE in `unlink`, outside any transaction (data D22):
- * the account's rows out of every copy of the connection that has `_account`. It drops no table:
- * which copies end is known only in the DELETE. A silent company database refuses Desligar with
+ * the apps' read taken back from each copy this connection is the last source of (they end with
+ * it), then the account's rows out of every copy of the connection that has `_account`. It drops no
+ * table: which copies end is known only in the DELETE. A silent company database refuses Desligar with
  * nothing changed in the Hub; Desligar again finds nothing left to do there.
  */
 export async function leaveCopies(deps: CopiesDeps, input: OfConnection): Promise<void> {
   const readers = await deps.database.read(personScope(input), (tx) => readersOf(tx, input))
+  await takeReadAway(
+    deps,
+    input,
+    readers.filter(({ last }) => last).map(({ stored }) => ({ id: stored.id, name: stored.name })),
+  )
   const accounts = readers.flatMap(({ stored, ref }) =>
     ref === null ? [] : [{ copy: stored.name, ref }],
   )
@@ -168,8 +211,7 @@ export async function endedSourceless(
 
 /**
  * Apagar: the copy ends alone, the connection and the other copies as they were. First, outside any
- * transaction (data D22), the apps' read is taken back by Tirar's own command, once per Projeto it
- * is released to: a silent company database answers 503 with nothing changed. Then one transaction
+ * transaction (data D22), the apps' read is taken back (`takeReadAway`, Tirar's own `REVOKE`): a silent company database answers 503 with nothing changed. Then one transaction
  * ends the copy (`endCopies`) and `dropEndedCopies` drops its table and its schedule; a table the
  * database did not drop is answered, the copy gone all the same. Doing it again, or for another
  * company's copy, finds nothing (S10) and answers the same.
@@ -179,15 +221,18 @@ export async function deleteCopy(
   input: InCompany & { copyId: CopyId },
 ): Promise<{ tablesLeft: string[] }> {
   const { companyId, copyId } = input
-  const released = await deps.database.command(personScope(input), async (tx) => {
+  const found = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     return tx
-      .select({ projectId: projectCopy.projectId })
-      .from(projectCopy)
-      .where(and(eq(projectCopy.companyId, companyId), eq(projectCopy.copyId, copyId)))
+      .select({ id: copy.id, name: copy.name })
+      .from(copy)
+      .where(and(eq(copy.companyId, companyId), eq(copy.id, copyId)))
   })
-  for (const { projectId } of released)
-    await revokeCopy(deps, { ...input, projectId: ProjectIdSchema.parse(projectId) })
+  await takeReadAway(
+    deps,
+    input,
+    found.map((row) => ({ id: CopyIdSchema.parse(row.id), name: row.name })),
+  )
   const ended = await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     return endCopies(tx, companyId, eq(copy.id, copyId))
