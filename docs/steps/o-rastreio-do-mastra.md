@@ -6,7 +6,7 @@ assistente, do builder ... É nativo do Master, é fácil de habilitar"; e, logo
 vai utilizar a plataforma do master, a gente vai guardar no nosso banco." No mesmo dia um turno do
 Assistente falhou com 400 da Anthropic e o Hub guardou só o número. A decisão é a
 [0068](../decisions/0068-mastra-tracing-in-its-own-database.md), que substitui a 0052. Lido em `main`
-`68230aad`, com `@mastra/core` 1.82.0 e `@mastra/pg` 1.35.0 instalados (os `dist/docs` deles) e a
+`f01afd98`, com `@mastra/core` 1.82.0 e `@mastra/pg` 1.35.0 instalados (os `dist/docs` deles) e a
 prateleira `mastra-1.82` (tag `@mastra/core@1.82.0`, commit `6e8dfcb8`, com `@mastra/observability`
 1.23.1, o Mastra Code e o Factory em `mastracode/`). Referências que o fundador mandou: as páginas
 `observability/overview`, `observability/tracing/overview`, `observability/logging`,
@@ -14,6 +14,11 @@ prateleira `mastra-1.82` (tag `@mastra/core@1.82.0`, commit `6e8dfcb8`, com `@ma
 `integrations/databases/neon` e `ai-agent-observability` do mastra.ai, conferidas na versão
 instalada. Nada foi rodado: os números de volume abaixo são estimativa, e a primeira coisa da U1 é
 medi-los.
+
+O trilho de frente já tem o cartão da Ontologia da empresa. Pela regra L5 este cartão vive no seu
+pull request, em rascunho, e entra em `docs/steps/` quando aquele sair no fechamento; até lá a
+verificação `second-card` de `check-docs` fica vermelha nele de propósito. Com as unidades da
+Ontologia, a U1 divide só `conversations-of.ts`, onde ela soma um workflow à lista (L1).
 
 ## A página do fundador
 
@@ -155,7 +160,7 @@ continua, porque o trecho do Hub é da 21.1.
 
 ## U1 O rastreio ligado
 
-**Base e modelo.** O `main` em `68230aad`. Sonnet: a configuração é nativa e as linhas estão aqui.
+**Base e modelo.** O `main` em `f01afd98`. Sonnet: a configuração é nativa e as linhas estão aqui.
 
 ### As linhas da tabela
 
