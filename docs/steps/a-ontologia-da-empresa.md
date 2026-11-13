@@ -90,6 +90,13 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
 - Às duas decisões do Mapa, em 2026-11-13: "1. Não gostei de nenhum tudo ficou muito básico, sem
   design" (as direções A, B e C saem, e o desenho do Mapa volta para uma rodada nova) e "2 Okay" (o
   Mapa se constrói com o cartão do Brain).
+- À galeria de capturas reais, em 2026-11-13: "Cara, sobre os grafos de ontologia e de brain, vamos
+  seguir o que a gente tinha, né, pensado pra gente e colocar do brain. Eu gostaria de pôr o Master
+  Studio, se a gente conseguir fazer. Eu acho muito legal o conceito deles ali." (o Mapa toma o
+  desenho do Knowledge do Mastra Studio, a imagem 01 da galeria, e guarda o que este cartão já
+  decidiu). Depois do estudo do Knowledge, sobre como uma área existe: "Fecho na A" (cada área é um
+  espaço do Knowledge, filho da empresa, ligado à equipe do Better Auth, com o acesso pelas regras do
+  Knowledge). A cor ficou sem resposta: começa pela regra do Studio.
 - Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
   empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
   especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
@@ -167,14 +174,19 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
   área, e, na página de um conceito, as páginas que o citam. Entra com o cartão do Brain, que leva
   para ela a memória da empresa de Configurações. Esta etapa constrói a metade "Como a empresa é"
   (as abas Conceitos, Para revisar e Histórico, e o lugar do fluxo, vazio), e a página abre nela.
-- **O Mapa**, a tela que abre Conhecimento, construído com o cartão do Brain ("2 Okay"). É um grafo de
-  tudo o que a empresa é e sabe. As coisas da Ontologia ficam entre as áreas que as citam, e as
-  páginas do Brain ficam dentro da ilha da sua área, cada tipo com o seu ponto. As ligações levam o
-  "um" e o "muitos". O primeiro toque abre a lente da coisa (os papéis, as ligações, os códigos e o
-  lugar do fluxo, vazio), e o segundo abre a tela v3 dela. O Mapa chega inteiro com o cartão do
-  Brain, que traz as páginas e as áreas. Esta etapa não o constrói e não muda nada do que já
-  constrói: a página continua abrindo em "Como a empresa é". O desenho está em "Os desenhos de
-  caixas", e ele substitui o "2. Em faixas".
+- **O Mapa**, a tela que abre Conhecimento, construído com o cartão do Brain ("2 Okay"), no desenho
+  do Knowledge do Mastra Studio (a sua escolha de 2026-11-13). É um grafo de tudo o que a empresa é e
+  sabe: uma página no centro, as vizinhas em volta como círculos com nome, em anéis, e as mais longe
+  como pontos na cor do seu ramo. A cor segue o ramo e muda quando o centro muda, como no Studio;
+  fixar uma cor por área é decisão sua, se a troca incomodar. Cada área é um espaço do Knowledge,
+  filho da empresa e ligado à equipe do Better Auth ("Fecho na A"): quem não é da área não a vê no
+  Mapa, na busca nem no Assistente. As coisas da Ontologia entram pelas suas páginas no Brain. O
+  primeiro toque põe no centro e, numa coisa, abre a lente (os papéis, as ligações com o "um" e o
+  "muitos", os códigos e o lugar do fluxo, vazio); o segundo abre a tela v3 dela. Grafo e Página, a
+  legenda do que está na tela e o zoom vêm do Studio. O Mapa chega inteiro com o cartão do Brain,
+  que traz as páginas e as áreas. Esta etapa não o constrói e não muda nada do que já constrói: a
+  página continua abrindo em "Como a empresa é". O desenho está em "Os desenhos de caixas", e ele
+  substitui o "2. Em faixas".
 - **A saúde da Ontologia** (a prova refeita todo dia, o aviso no Início): a etapa 4 da lista. Esta
   etapa grava as provas que ela vai ler, e já tira dos agentes um campo cuja coluna uma prova nova viu
   mudar de tipo.
@@ -197,7 +209,8 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 - **As três perguntas do G4 OS**, que você respondeu em 2026-11-12 (as suas palavras, acima): um fato
   aprendido não vence, por agora; a memória de cada pessoa fica separada da da empresa (ela já
   existe, `apps/server/src/builder/assistant/profile-memory.ts`); as pessoas e as áreas não são
-  conceitos da Ontologia: as áreas são as equipes do Better Auth, e o vínculo de um usuário de sistema
+  conceitos da Ontologia: as áreas são as equipes do Better Auth, cada uma um espaço do Knowledge
+  ("Fecho na A"), e o vínculo de um usuário de sistema
   a um membro é uma tabela do Hub do primeiro app que pedir "o meu". Nada disso se constrói aqui: é
   do cartão do Brain e do cartão dos apps. O cargo e a área de cada membro continuam onde estão
   (`apps/server/src/hub/identity/tables.ts:240-241`).
@@ -212,18 +225,23 @@ alinhamento): a página Conhecimento ganha as duas metades e o lugar do fluxo, v
 passo 1); o fluxo, que fica de fora, se lê também do histórico do sistema; o cartão não espera mais o
 da entrada conversada, só a política de dados pessoais. Depois, ao desenho v3: o Mapa, a tela que
 abre Conhecimento, desenhado aqui e construído com o Brain. Em 2026-11-13, as suas respostas às duas
-decisões do Mapa: o Mapa se constrói com o cartão do Brain, e as direções A, B e C saem.
+decisões do Mapa: o Mapa se constrói com o cartão do Brain, e as direções A, B e C saem. Depois, no
+mesmo dia: o Mapa no desenho do Knowledge do Studio, e cada área um espaço do Knowledge ligado à sua
+equipe ("Fecho na A").
 
 **As decisões suas nesta etapa.** Uma, sobre o Mapa, e ela não muda o que esta etapa constrói.
 
-- **Qual desenho.** Em aberto: você recusou as direções A (Linhas), B (Arquipélago) e C (Roda)
-  ("tudo ficou muito básico, sem design"), e as novas direções chegam numa rodada própria. Qualquer
-  uma guarda a verdade dos dados: uma coisa não tem setor, só a página tem área.
+- **A cor.** Em aberto: o protótipo começa pela regra do Studio (a cor do ramo, que muda com o
+  centro); se a troca incomodar, você decide fixar uma cor por área.
+- **Qual desenho: decidido**, o Knowledge do Mastra Studio (2026-11-13), depois de você recusar as
+  direções A, B e C ("tudo ficou muito básico, sem design"). Ele guarda a verdade dos dados: uma
+  coisa não tem setor, só a página tem área.
 - **Quando ele se constrói: decidido**, com o cartão do Brain ("2 Okay", 2026-11-13). Sem as
   páginas e as áreas, o Mapa desta etapa seria cinco pontos soltos, e esta etapa não ganha uma U6.
 
-O three.js volta a ser opção na rodada nova, se a direção pedir e o Mapa continuar legível e
-acessível, no celular também.
+Onde o Studio e este cartão não batem (o nome da área no círculo, as coisas dois níveis abaixo do
+centro, o tipo de cada página, a citação a uma página que quem lê não abre) está listado ao lado do
+protótipo, fora do repositório; nenhum ponto muda esta etapa, e o cartão do Brain os leva a você.
 
 As escolhas técnicas convergem nas referências e
 estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
@@ -598,55 +616,63 @@ produto antigo não tem estas telas: nenhuma captura a seguir. O protótipo v3 c
 (fora do repositório) desenha também a metade "O que a empresa sabe" e as duas junções, para o
 cartão do Brain e para a etapa do fluxo.
 
-O Mapa, desenhado aqui e construído com o cartão do Brain (a decisão do fundador, acima), no
-desenho B. A 1280 px, Conhecimento ganha um terceiro segmento, **Mapa**, antes das duas metades, e
-abre nele. As duas camadas ligam e desligam, e uma área escolhida põe as outras em cinza:
+O Mapa, desenhado aqui e construído com o cartão do Brain (as decisões do fundador, acima), no
+desenho do Knowledge do Mastra Studio. A 1280 px, Conhecimento ganha um terceiro segmento, **Mapa**,
+antes das duas metades, e abre nele. A árvore fica à esquerda, a legenda explica só o que está na
+tela, e os botões redondos são os do Studio (Voltar, Todas as ligações, Contagem). Com a empresa no
+centro, para o dono:
 
 ```
 ┌ Conhecimento ────────────────────────────────────────────────────────────────────────┐
 │ [ Mapa ] [ Como a empresa é ] [ O que a empresa sabe ]                               │
-│ Camadas (● Como a empresa é 9) (▪ O que a empresa sabe 10)   Áreas (Comercial) …     │
-│                                                                     [ − ][ + ][ ⛶ ]  │
-├──────────────────────────────────────────────────────────────────────────────────────┤
-│   COMERCIAL                                                  FINANCEIRO              │
-│   ▪ Comissão do representante    ● Representante             ▪ Prazo de pagamento    │
-│   ▪ Bonificação não é venda      1│        ○ Cliente          ▪ Cobrança de atraso   │
-│   ▪ Tabela de preços             N⋔                 ● Título a receber               │
-│                               ● Documento ────⋔──── ● Parceiro                       │
-│   EMPRESA                     ◇ Origem do item           ┊           ESTOQUE         │
-│   ▪ Como vendemos                              ○ Fornecedor       ▪ Quando comprar   │
-│   ▪ Regras de cadastro             ● Produto ────⋔──── ● Saldo   ▪ Inventário mensal │
-├──────────────────────────────────────────────────────────────────────────────────────┤
-│ Legenda  ● coisa  ○ papel  ◇ junção  ▪ página, na cor da área  ─⋔ o "muitos"         │
-│          ╌ a página cita a coisa   ◌ o fluxo: chega com a etapa O fluxo da empresa   │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+│ [ Buscar no conhecimento                        ]  [ Grafo | Página ]  [ Assistente ]│
+├──────────────────┬───────────────────────────────────────────────────────────────────┤
+│ ▾ Empresa        │ ┌ Legenda ─────────────┐    · · · ·                        ( ← ) │
+│   ▾ Comercial    │ │ ○ espaço  ○ página   │       ╲│╱        · ·               ( ⛓ ) │
+│     Comissão do… │ │ · debaixo de Comerc. │    ( COMERCIAL )   ╱               ( # ) │
+│     Tabela de p… │ │ · debaixo de Financ. │          ┆   ( FINANCEIRO )─ · · ·       │
+│   ▸ Financeiro   │ │ · debaixo de Estoque │  ( ONTOLOGIA ) ┆  ╱                     │
+│   ▸ Estoque      │ │ ╌> mãe → filha       │      · ─┘ (( EMPRESA )) ── ( ESTOQUE )   │
+│   Instruções…    │ └──────────────────────┘    ╱      ┆       ╲          ╲ · · ·    │
+│ ▾ Como a empresa │              ( Como vendemos ) ( Instruções ) ( Regras de cadastro ) │
+│   é              │ [ + ]                                                             │
+│   ▸ Conceitos    │ [ − ]    os pontos de cada ramo na cor dele; a cor muda com o centro │
+│                  │ [ ⛶ ]                                                             │
+└──────────────────┴───────────────────────────────────────────────────────────────────┘
 ```
 
-O primeiro toque numa coisa abre a lente e o painel; o segundo, ou **Abrir em Como a empresa é**,
-abre a página v3 da coisa. Numa página, o segundo toque abre a página em "O que a empresa sabe":
+O primeiro toque põe a página no centro, a mãe sobe ao alto, as filhas viram círculos, as páginas
+que ela cita chegam perto, e o resto recua. Numa coisa da Ontologia, o mesmo toque abre a lente no
+lugar da árvore; o segundo toque, ou **Abrir em Como a empresa é**, abre a página v3 da coisa, e numa
+página abre a vista Página:
 
 ```
 ┌ Mapa · Documento escolhido ──────────────────────────────────────────────────────────┐
-│                 ● Representante              │ Documento                             │
-│                 1│ atende                    │ Coisa · lido de Sankhya · cabeçalhos  │
-│    ╭╌╌ fluxo: na etapa O fluxo da empresa ╌╮ │ 9 campos · 2 códigos · 1.240 linhas   │
-│    ┆            N⋔        cobra um          ┆ │ Ligações e papéis                    │
-│    ┆          ◉ Documento ──⋔── ● Título    ┆ │   é de um Parceiro            N : 1  │
-│    ┆   é de um │N                           ┆ │   ligado por Representante    N : 1  │
-│    ╰╌╌╌╌╌╌╌╌╌╌╌⋔╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ │   veio de um Origem do item   1 : N   │
-│  (100 · Venda de balcão)  1┼ ● Parceiro      │ Códigos  100 Venda de balcão          │
-│  (101 · Pedido do repr.)   ◇ Origem do item  │          101 Pedido do representante  │
-│             (o resto do mapa recua)          │ O que a empresa sabe: 3 páginas       │
-│                                              │ ┆ Fluxo. Ainda sem fluxo.          ┆  │
-│                                              │ [ Abrir em Como a empresa é ]         │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+│ ┌ Legenda ──────────────┐   · ·        ( MÃE  Conceitos )    ·  │ Documento            │
+│ │ → saem da escolhida   │     ↖              │             ↗    │ Como a empresa é ·   │
+│ │ ╌> chegam nela        │        ↖           ▼          ↗       │ coisa                │
+│ │ ━> mãe da escolhida   │   ( Como vendemos )╌╌> (( Documento ))│ [ Abrir em Como a    │
+│ └───────────────────────┘                   ┆ ↖╌╌ ·             │   empresa é ]        │
+│                                ( Documento: Tipo de operação )  │ Papéis  Pedido       │
+│                                             ┆                   │ Ligações             │
+│                                   ( Bonificação não é venda )   │  é de um Parceiro N:1│
+│ [ + ][ − ][ ⛶ ]                                                 │  atendido por um     │
+│                                                                 │  Representante   N:1 │
+│                                                                 │ Códigos 100 · 101    │
+│                                                                 │ ┆ Fluxo: ainda sem ┆ │
+└─────────────────────────────────────────────────────────────────┴──────────────────────┘
 ```
 
-A 390 px, o mapa fica em retrato, com as áreas empilhadas, a barra de camadas e áreas vira uma
-linha que rola, a legenda fica fechada num botão, e o painel desce sob o mapa. Os códigos ficam só no
-painel. Com movimento reduzido o mapa chega parado. Sem ele, o conhecimento nasce no centro e se
-espalha até as suas áreas, com a câmera parada. O protótipo do Mapa e as suas capturas estão fora do
-repositório, ao lado do v3.
+Cada pessoa vê só o que lê. Um membro da Comercial não tem o Financeiro no Mapa, na busca nem no
+Assistente; numa página dele que cita uma do Financeiro, a citação aparece como o Knowledge a mostra a
+quem não a abre: o endereço tracejado, sem link. Uma mudança que o Assistente propõe numa página
+aparece nela com o antes e o depois, à espera de quem edita a área. Os códigos ficam só na lente,
+nunca como rótulo no mapa.
+
+A 390 px, como no Studio: a busca, depois **Árvore**, **Grafo** e **Página**; a legenda no alto do
+grafo; a lente desce sob o grafo; a página v3 troca a tabela de campos por linhas "Nome · tipo". Com
+movimento reduzido, o grafo troca de centro sem deslizar. O protótipo do Mapa e as suas capturas
+estão fora do repositório, ao lado do v3.
 
 ## A tabela de falhas
 
@@ -680,7 +706,7 @@ repositório, ao lado do v3.
 | A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (`:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
 | As telas | U4 | o menu da esquerda (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`) e a página de Cópias (`copies.index.tsx`, `copies.$copyId.tsx`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o Mastra Studio, a tela Knowledge (a página própria, que o fundador mandou); os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento, o v3 com as duas metades | uma página no menu, em duas metades: lista, página do conceito, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento (fora do repositório) | "Q1 / R1", "1. Aprovado", "2. A"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId/knowledge.index.tsx`, `knowledge.$concept.tsx`  |
-| O Mapa (desenhado aqui, construído com o cartão do Brain) | nenhuma | nenhum grafo no `apps/web`; o `mermaid` 11.17.2 já traz `d3-force` 3.0.1 em `node_modules` | Mastra Studio 1.82, Knowledge (`mastra-1.82@6e8dfcb8`): o layout com d3-force, semente em espiral e 300 passos (`packages/playground-ui/src/domains/knowledge/lib/layout.ts:42-112`), a forma a partir do foco (`lib/graphShape.ts:104`), a legenda do que está na tela (`components/KnowledgePageGraph.tsx:587-812`), o primeiro toque escolhe e o segundo abre (`:1424-1430`), o React Flow sem arrastar nem ligar (`:1511-1540`), `@xyflow/react` ^12.12.0 e `d3-force` ^3.0.0 (`packages/playground-ui/package.json:206`, `:226`); Obsidian e Quartz, os grafos de notas; Palantir Vertex, o painel do objeto clicado | um grafo de forças: as coisas da Ontologia entre as áreas que as citam e as páginas na ilha da sua área; a lente da coisa escolhida; o foco numa área; a entrada do centro para as áreas | nativo (`d3-force` para o layout e `@xyflow/react` para mover, aproximar, clicar e o teclado, como o Studio); entram em `docs/reference/stack.md` com o cartão do Brain; o three.js, o sigma.js e o cosmos.gl, avaliados e deixados de fora | o protótipo do Mapa ao lado do v3 (fora do repositório), com o `d3-force` 3.0.1 embutido, as capturas em claro e escuro, a 1280 e a 390 px, e a entrada quadro a quadro | o pedido do Mapa ao desenho v3 (2026-11-12); o desenho e quando se constrói, as duas decisões da página | o cartão do Brain |
+| O Mapa (desenhado aqui, construído com o cartão do Brain) | nenhuma | nenhum grafo no `apps/web` (`apps/web/package.json`) nem em `docs/reference/stack.md` | Mastra Studio 1.82, Knowledge (`mastra-1.82@6e8dfcb8`, `packages/playground-ui/src/domains/knowledge/`): o grafo em anéis a partir do centro (`lib/graphShape.ts:253-394`), e o `d3-force` chamado com zero passos, só a semente e o afastamento do que se sobrepõe (`components/KnowledgePageGraph.tsx:1035-1045`, `lib/layout.ts:42-162`); a forma a partir do foco e os dois níveis desenhados (`lib/graphShape.ts:104-178`, `:501-620`); a cor do ramo, na ordem dos ramos (`:396-416`); a legenda do que está na tela (`components/KnowledgePageGraph.tsx:587-812`); o primeiro toque escolhe e o segundo abre (`:1424-1430`); Grafo, Página e, no estreito, Árvore (`components/KnowledgePageExplorer.tsx:981-1007`); o React Flow sem arrastar nem ligar, com o zoom (`KnowledgePageGraph.tsx:1511-1540`); `@xyflow/react` ^12.12.0 e `d3-force` ^3.0.0 (`packages/playground-ui/package.json:206`, `:226`); as leituras que nunca mostram uma página escondida (`packages/core/src/storage/domains/knowledge/pages.ts:766-783`); Palantir Vertex, o painel do objeto clicado | o desenho do Studio: um centro, os vizinhos em círculos e o resto em pontos na cor do ramo; cada área um espaço `area:$orgId:$teamId`, filho de `org:` ("Fecho na A"), e o grafo de cada pessoa só com as áreas que ela lê; a lente da coisa escolhida, com os papéis, as ligações e os códigos, que nunca viram rótulo no mapa | nativo: os componentes do Knowledge do Studio (Apache-2.0) com `@xyflow/react` e `d3-force`, que entram em `docs/reference/stack.md` com o cartão do Brain; as rotas do Studio, que leem tudo, nunca (0065); o three.js, o sigma.js e o cosmos.gl, avaliados e deixados de fora | o protótipo do Mapa ao lado do v3 (fora do repositório), com os próprios arquivos do Studio, as visões de três pessoas, as capturas em claro e escuro, a 1280 e a 390 px, e onde o Studio e este cartão não batem | o pedido do Mapa ao desenho v3 (2026-11-12); "2 Okay", o Studio e "Fecho na A" (2026-11-13); a cor, em aberto | o cartão do Brain |
 | Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:312-332` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
 | O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `osdk-ts@2e21feec` `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
 
@@ -1479,9 +1505,12 @@ aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada grava�
 conceitos. Cada página leva `description` curta (o nome e o plural), que a busca usa.
 
 A área, em `SCOPES`: `'ontologia:$orgId': { access: [{ principal: 'self', role: 'viewer' }] }`;
-`companyScopes` acrescenta `ontologia:<companyId>`. A regra de link da pessoa (`company-memory-routes.ts`,
+`companyScopes` acrescenta `ontologia:<companyId>`. As áreas da empresa ("Fecho na A") entram no
+mesmo `SCOPES` como `'area:$orgId:$teamId'`, com `belongsTo: 'org:$orgId'`, pelo id da equipe do
+Better Auth, que não muda ao renomear; o acesso segue a E1b (os membros da equipe leem, a responsável
+e o administrador escrevem), e `companyScopes` dá a cada pessoa só as áreas dela (ao dono e ao administrador, todas). A regra de link da pessoa (`company-memory-routes.ts`,
 nas gravações de página e de nota): cada `[[…]]` do corpo (`knowledgeBodyLinkRefs`, `links.d.ts:3`)
-tem de começar por `org:<companyId>#` ou `ontologia:<companyId>#`; senão `COMPANY_MEMORY_LINK_INVALID`
+tem de começar por `org:<companyId>#`, `area:<companyId>:` ou `ontologia:<companyId>#`; senão `COMPANY_MEMORY_LINK_INVALID`
 (`USER`, 422, "Um link precisa dizer a área da sua empresa.").
 
 ### As skills e a leitura
