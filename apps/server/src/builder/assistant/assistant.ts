@@ -41,7 +41,7 @@ import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-me
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { Owner, ScopeOf } from './context.ts'
 import { machineMarks, sessionScopes } from './context.ts'
-import { machineUploads, READ_MEDIA } from './files.ts'
+import { forgetPlaced, machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import type { Speakers } from './instructions.ts'
@@ -223,7 +223,7 @@ function assistantAgent(
       researchOnly,
       profileReadOnlyInRuns(automationRun),
       ...defaults.inputProcessors.filter((each) => each !== parts.turns.processor),
-      machineUploads({ log: deps.log }),
+      machineUploads({ log: deps.log, memory: parts.memory }),
     ],
   }
   return new Agent({
@@ -281,6 +281,7 @@ export function createAssistant(deps: Deps) {
       otherTemplate: 'resume',
       marksOf: machineMarks(scopeOf),
       readMedia: READ_MEDIA,
+      recycled: (requestContext) => forgetPlaced(memory, requestContext),
     },
     deps.machineTuning,
   )

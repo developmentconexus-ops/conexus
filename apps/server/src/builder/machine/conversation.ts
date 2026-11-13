@@ -92,6 +92,11 @@ type Deps = ConversationMachine & {
   marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
   /** The media types `read_file` hands the model as media; absent, Mastra's default (a PDF included). */
   readMedia?: readonly string[]
+  /**
+   * A turn's start made a new machine, which holds none of the files the conversation placed
+   * before: the one that keeps a record of them forgets it. Absent, nothing keeps one.
+   */
+  recycled?(requestContext: RequestContext): Promise<void>
 }
 
 type Session = {
@@ -116,6 +121,8 @@ type Session = {
    * The provider's id of the machine a download found: its start reattaches it, never makes one.
    */
   found: string | undefined
+  /** The turn's request context, for what a new machine must tell the turn; none for a download. */
+  requestContext: RequestContext | undefined
 }
 
 const Controller = z.object({ sessionId: ConversationIdSchema })
@@ -207,6 +214,8 @@ class Machines implements ConversationMachines {
    */
   private async started(session: Session, outcome: string | undefined): Promise<void> {
     if (outcome === 'connected') await session.kit.closeNetwork()
+    if (outcome === 'created' && session.requestContext !== undefined)
+      await this.deps.recycled?.(session.requestContext)
     const made = await session.kit.sandbox.executeCommand?.('mkdir', ['-p', this.folder], {
       cwd: '/',
     })
@@ -246,6 +255,7 @@ class Machines implements ConversationMachines {
     conversationId: ConversationId,
     marks: Record<string, string>,
     found?: string,
+    requestContext?: RequestContext,
   ): Session {
     const { installation, template, mark } = this.deps
     const name = `conexus-${installation}-${conversationId}`
@@ -270,6 +280,7 @@ class Machines implements ConversationMachines {
       ready: undefined,
       starting: undefined,
       found,
+      requestContext,
       workspace: undefined,
       files: this.filesystem(conversationId, kit, () => this.ensure(session)),
     }
@@ -286,7 +297,7 @@ class Machines implements ConversationMachines {
     return this.inLane(conversationId, async () => {
       const opened = this.sessions.get(conversationId)?.workspace
       if (opened !== undefined) return opened
-      const session = this.open(conversationId, marks)
+      const session = this.open(conversationId, marks, undefined, requestContext)
       this.sessions.set(conversationId, session)
       session.workspace = new Workspace({
         sandbox: async () => (await this.ensure(session)).sandbox,

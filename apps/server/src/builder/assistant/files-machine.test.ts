@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { setImmediate, setTimeout as sleep } from 'node:timers/promises'
@@ -12,6 +12,7 @@ import { tool } from '../conversation/test-questions.ts'
 import type { Control } from '../machine/test-machine.ts'
 import { assisting, created } from './test-assistant.ts'
 import {
+  COMMAND,
   conversation,
   documentsIn,
   file,
@@ -101,13 +102,56 @@ test('a máquina fora: o turno falha e o arquivo não vaza', async (t) => {
   assert.ok(on.hub.lines.some((line) => line.message === 'MACHINE_UNAVAILABLE'))
 })
 
-test('a máquina fora com o arquivo só do histórico: o turno falha em vez de seguir com a nota', async (t) => {
+test('a máquina fora com o arquivo só do histórico: o turno segue com a nota', async (t) => {
   const on = await conversation(t)
   assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
+  const [first] = on.calls
+  assert.ok(first)
   on.hub.assistantMachines.control.start = 'unreachable'
-  const events = await on.say('E os prazos?')
-  assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
-  assert.equal(on.calls.length, 1, 'the second question never reached the model')
+  assert.equal(endOf(await on.say('E os prazos?')), 'complete')
+  assert.equal(on.calls.length, 2, 'the second question reached the model')
+  assert.deepEqual(notesOf(on.calls[1] ?? first), notesOf(first), 'with the same note')
+})
+
+test('o arquivo de um turno anterior vira nota sem ligar a máquina', async (t) => {
+  const on = await conversation(t)
+  const { control } = on.hub.assistantMachines
+  assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
+  assert.equal(control.names.length, 1, 'the PDF turn started the machine')
+  assert.equal(endOf(await on.say('Oi')), 'complete')
+  assert.equal(endOf(await on.say('Obrigado')), 'complete')
+  assert.equal(control.names.length, 1, 'later turns never woke it')
+  const [first, second, third] = on.calls
+  assert.ok(first && second && third)
+  assert.equal(notesOf(first).length, 1)
+  assert.deepEqual(notesOf(second), notesOf(first))
+  assert.deepEqual(notesOf(third), notesOf(first))
+  assert.deepEqual(placed(on.work).length, 1, 'the file was written once')
+})
+
+test('a máquina nova esquece onde o arquivo estava e o nativo o grava de novo', async (t) => {
+  const on = await conversation(t, (_asked, index) =>
+    index === 1
+      ? { kind: 'blocks', blocks: [tool(COMMAND, { command: 'ls' })] }
+      : { kind: 'text', text: 'Li.' },
+  )
+  const { control } = on.hub.assistantMachines
+  assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
+  const [first] = on.calls
+  assert.ok(first)
+  rmSync(join(on.work, 'uploads'), { recursive: true })
+  // The machine of the turn is a new one (the double reports `created`): its start forgets the place.
+  assert.equal(endOf(await on.say('Liste a pasta.')), 'complete')
+  assert.equal(control.names.length, 2, 'the command started a machine')
+  assert.equal(placed(on.work).length, 1, 'the native wrote the file again')
+  const after = on.calls.at(-1)
+  assert.ok(after)
+  assert.deepEqual(notesOf(after), notesOf(first))
+  const calls = on.calls.length
+  control.discoverable = [control.names[0] ?? '']
+  assert.equal(endOf(await on.say('Oi')), 'complete')
+  assert.equal(control.names.length, 2, 'the place was recorded again: no start')
+  assert.equal(on.calls.length, calls + 1)
 })
 
 test('a gravação recusada: o turno falha e o arquivo não vaza', async (t) => {
