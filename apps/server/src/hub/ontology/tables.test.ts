@@ -218,8 +218,9 @@ test('ontologia: a saída da empresa apaga o que ela tem, também item e fonte q
     '${PROOF}', 'PENDING');
     insert into ontology.source_version(company_id, concept, revision, connection_id, read, proof_run_id)
     values ('${A}', 'pedido', 1, '${CONNECTION}', '{}', '${PROOF}')`)
-  const count = async (table: string) =>
-    (await test.asOwner(`select count(*)::int as n from ontology.${table}`))[0]?.n
+  async function count(table: string) {
+    return (await test.asOwner(`select count(*)::int as n from ontology.${table}`))[0]?.n
+  }
   const tables = ['proof_run', 'proposal', 'proposal_item', 'revision', 'source_version']
   for (const table of tables) assert.equal(await count(table), 1, table)
   await test.asOwner(`delete from auth.company where id = '${A}'`)
