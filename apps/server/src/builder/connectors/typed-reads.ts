@@ -85,6 +85,14 @@ function notChosen(access: ConnectorAccess, read: TypedRead) {
   }
 }
 
+/**
+ * One tool for one read. `strict: false`: a read's optional fields are really optional, and some are
+ * exclusive (`offset` against `scan` and `scrollId`). Mastra's OpenAI compatibility layer, which
+ * makes every field required and nullable, never reaches a tool that `search_tools` loads (the loop
+ * converts it without the model), so OpenAI's default strict mode would force the model to fill
+ * every field, and it fills the exclusive ones. Not strict, the model omits what it does not need,
+ * as Claude does.
+ */
 function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: string) {
   const { connector, operation } = read
   const open = openInputOf(operation)
@@ -94,6 +102,7 @@ function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: str
   return createTool({
     id: name,
     description: `${operation.summary} (${connector.name}, by the connection's name.) ${answerWords(limit)}`,
+    strict: false,
     inputSchema: z.strictObject({
       connection: z.string().describe("The connection's name, exactly as listed"),
       ...open.shape,
