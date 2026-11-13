@@ -370,9 +370,8 @@ function ToolLine({
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
-  // Only a command that is still saying its output shows it as it comes; the person's click rules after.
-  const [chosen, setChosen] = useState<boolean>()
-  const open = chosen ?? (status === 'running' && tool.output !== undefined)
+  // Closed until the person opens it, running or not: the line already names the tool in progress.
+  const [open, setOpen] = useState(false)
   const presented = presentTool(tool, status, room)
   const line = <ToolLine presented={presented} status={status} startedAt={tool.startedAt} />
 
@@ -382,7 +381,7 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
   if (!opens(tool, status, room)) return line
 
   return (
-    <TraceCollapsible open={open} onOpenChange={setChosen}>
+    <TraceCollapsible open={open} onOpenChange={setOpen}>
       <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
       <TraceCollapsibleContent>
         <Body tool={tool} status={status} />

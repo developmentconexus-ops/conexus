@@ -17,9 +17,9 @@ import { ToolRow } from './tool-row.tsx'
 import { summaryOfTools } from './tool-summary.ts'
 
 /**
- * Three tools or more in a row, as one line (Criterion 9). While the answer still works it names the tool in
- * progress and how many are done, open; once it moves on it says what they did, closed. A person's
- * own opening or closing wins over both.
+ * Three tools or more in a row, as one line (Criterion 9, changed by the founder, 2026-11-13). While the answer
+ * still works it names the tool in progress and how many are done; once it moves on it says what they did.
+ * Closed in both: only the person's own click opens it.
  */
 export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   const { tools, working } = props
@@ -45,7 +45,7 @@ export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   }).length
 
   return (
-    <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen} className="@container">
+    <TraceCollapsible open={chosen ?? false} onOpenChange={setChosen} className="@container">
       <TraceCollapsibleTrigger>
         <TraceLine status={working ? 'running' : failed ? 'error' : undefined}>
           {working && activePresentation ? (
