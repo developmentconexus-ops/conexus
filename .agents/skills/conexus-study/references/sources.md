@@ -3,6 +3,9 @@
 The failures this prevents: Mastra 1.69 cited for a 1.78 pin; Conexus OS read at a checkout's HEAD
 instead of its frozen commit; lines cited from clones that vanished with a worktree; our own code
 taken as a reference; a warning that sat on an option's reference page, never in the overview.
+Also a reference read in another situation and cited as if it were ours: Airbyte's database discover
+cited for every connector kind, and sync schedules, data-health checks and token renewal cited as
+the limits of a different check.
 
 ## Where each source is read
 
@@ -49,7 +52,29 @@ Every claim, and every cell of the reference table's "Como a referência faz", c
 **herdado** (our own code or decision: it describes, never justifies), **hipótese**, **não
 verificado**.
 
+## The situation
+
+Each reference in a "Referência" cell names the situation it solves (what input, which user, what
+trigger) and carries one match label:
+
+- **mesma situação**: with the `file:line` **lido**, or the docs URL and the quoted sentence.
+- **situação diferente: <a diferença>**: it shows a shape, never grounds a verdict, an option or a
+  recommendation, and the founder's page never says "a referência faz" for it.
+- **não faz**: with where it was searched.
+
+A claim with no `file:line` and no quoted sentence is **não verificado** and never reaches the
+founder's page or an option table.
+
 ## Readers
 
 A reader gets one source and the fixed questions. Its lines are reopened by the author before they
 enter the report, or carried as **relay**. Its notes stay beside the report.
+
+## The verification pass
+
+Before the report is final, a reader that wrote none of it (another agent) gets the rows that ground
+a verdict, an option or the founder's page, and nothing else from the author. For each it reopens
+every cited `file:line` or docs quote and answers two questions: does the source say what the cell
+claims, and is the situation label right. A row that fails either is fixed and checked again, or
+dropped with what rested on it. The report records the pass: the reader, the rows checked, fixed
+and dropped.
