@@ -17,6 +17,14 @@ import { connection } from './tables.ts'
 type CopiesOf = Readonly<{ companyId: CompanyId; personId: PersonId; connectionId: ConnectionId }>
 
 /**
+ * What the Ontology does for a connection that was just linked, or asked to be read again (U2): it
+ * opens the inventory's run and starts its workflow. Made after the connectors, so the port is lazy.
+ */
+export type InventoryLaunch = Readonly<{
+  launch(input: { companyId: CompanyId; connectionId: ConnectionId }): Promise<{ kind: string }>
+}>
+
+/**
  * What Desligar asks of the company's copies (O Sync de qualquer conector): `hub/copies` answers it,
  * made after the connectors, so the port is lazy and this subject never imports that one.
  */
@@ -54,6 +62,7 @@ export type Deps = {
   /** The machine's clock; a test injects its own (T20). */
   now: () => Date
   copies: () => ConnectionCopies
+  inventory: () => InventoryLaunch
 }
 
 /** The catalog's connector of an id; none when the catalog has no such connector. */

@@ -36,15 +36,21 @@ export async function connectionsOn(
   t: TestContext,
   /** The origin the Hub is given for the double, when something stands in front of it. */
   through: (origin: string) => Promise<string> = async (origin) => origin,
+  /** The Hub's clock and catalog, and the inventory's ceilings, when the test sets its own. */
+  tuning?: Parameters<typeof hubWithLog>[2],
 ) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
   const origin = await through(served.origin)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', origin]]),
-  }))
+  const hub = await hubWithLog(
+    t,
+    (config) => ({
+      ...config,
+      connectorOrigins: new Map([['sankhya', origin]]),
+    }),
+    tuning,
+  )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
   const bruno = await memberOn(hub, companyId, BRUNO, 'admin')

@@ -1,3 +1,4 @@
+import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import {
   callAppConnector,
   callToolConnector,
@@ -17,6 +18,8 @@ import {
   unlinkConnection,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { AppCalls } from './app-calls.ts'
 import { copiesOfConnection } from './connection-copies.ts'
@@ -33,6 +36,25 @@ function ended(
   native: { status: number; code: string | null } | null,
 ): Record<string, string | number> {
   return native === null ? {} : { status: native.status, code: native.code ?? '-' }
+}
+
+/** A connection just linked has its inventory read; a failure only reaches the log, and the link answers as before (U2). */
+async function readInventory(
+  deps: Deps,
+  ids: { companyId: CompanyId; connectionId: ConnectionId },
+  log: FailureLog,
+): Promise<void> {
+  try {
+    await deps.inventory().launch(ids)
+  } catch (error) {
+    logFailure(
+      log,
+      new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'INVENTORY_OPEN' }, cause: error }),
+      {
+        connectionId: ids.connectionId,
+      },
+    )
+  }
 }
 
 export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void {
@@ -54,6 +76,11 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
         connector: made.connection.connector,
       }
       log.info(fields, 'CONNECTION_LINKED')
+      await readInventory(
+        deps,
+        { companyId: params.companyId, connectionId: made.connection.id },
+        log,
+      )
     }
     return answer({ connection: made.connection })
   })

@@ -13,6 +13,7 @@ import type {
 import { CopyPageSchema, listInputOf, listPageOf, Rows } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
+import type { SQL } from 'drizzle-orm'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
 import { personalColumnsIn } from './copy-personal.ts'
@@ -52,7 +53,7 @@ export type CopyRead =
   | Readonly<{ kind: 'FAILED'; code: CopySourceFailure | 'COPY_SOURCE_CEILING' }>
   | Readonly<{ kind: 'NO_CONNECTION' }>
 
-type OfConnection = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
+export type OfConnection = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
 
 function connectorOfRow(deps: Deps, input: OfConnection, personId: PersonId | null) {
   const scope = { kind: 'COMPANY', companyId: input.companyId, personId } as const
@@ -65,8 +66,15 @@ function connectorOfRow(deps: Deps, input: OfConnection, personId: PersonId | nu
   })
 }
 
-/** The connection opened for one page when it is ACTIVE; none otherwise. */
-function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }) {
+/**
+ * The connection opened for one page when it is ACTIVE; none otherwise. The inventory reads a
+ * connection just linked, which no test has made ACTIVE yet, and passes no state.
+ */
+export function openedForCopy(
+  deps: Deps,
+  input: OfConnection & { enabledBy: PersonId },
+  state: SQL | null = usable,
+) {
   const scope = { kind: 'COMPANY', companyId: input.companyId, personId: input.enabledBy } as const
   return deps.database.read(scope, async (tx): Promise<OpenedConnection | undefined> => {
     const [row] = await tx
@@ -76,7 +84,7 @@ function openedForCopy(deps: Deps, input: OfConnection & { enabledBy: PersonId }
         and(
           eq(connection.id, input.connectionId),
           eq(connection.companyId, input.companyId),
-          usable,
+          state ?? undefined,
         ),
       )
     if (row === undefined) return undefined
@@ -97,14 +105,14 @@ type ReadOf = Readonly<{
 }>
 
 /** The connector's copy lane passed its deadline before the call: nothing was asked. */
-type InLine = Readonly<{ kind: 'IN_LINE' }>
+export type InLine = Readonly<{ kind: 'IN_LINE' }>
 
 /**
  * The read every other reader takes, the connection's turn, its token, the deadline and the log
  * line, speaking as a version that declares only the operation; in the connector's copy lane first
  * when its provider counts the limit by the app.
  */
-async function readAsCopy(deps: Deps, a: ReadOf): Promise<ReadAnswer | NotInRole | InLine> {
+export async function readAsCopy(deps: Deps, a: ReadOf): Promise<ReadAnswer | NotInRole | InLine> {
   const { input, opened, operation } = a
   function read() {
     return readThrough(deps, {

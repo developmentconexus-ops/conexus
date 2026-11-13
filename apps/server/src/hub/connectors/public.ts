@@ -19,6 +19,7 @@ import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
 import { grant, mayGrant } from './grants.ts'
+import { createInventoryPort } from './inventory-port.ts'
 import { createLimits } from './limits.ts'
 import { ungrantedBy } from './publish-check.ts'
 import { reseal } from './reseal.ts'
@@ -27,7 +28,7 @@ import {
   registerConnectionRoutes,
   registerToolCallRoutes,
 } from './routes.ts'
-import type { ConnectionCopies } from './rows.ts'
+import type { ConnectionCopies, InventoryLaunch } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
@@ -56,6 +57,7 @@ export {
 } from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
+export type { InventoryRead, InventorySource } from './inventory-port.ts'
 export { withheldKinds } from './read.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
 export type { SessionScope } from './scope.ts'
@@ -95,6 +97,8 @@ export function createConnectors(deps: {
   propose: () => Propose
   /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
   copies: () => ConnectionCopies
+  /** What the Ontology does for a connection once it is linked: reached when a route calls it, as it is made after the connectors. */
+  inventory: () => InventoryLaunch
   tuning?: ConnectorTuning
 }) {
   const catalog = deps.tuning?.catalog ?? CONNECTORS
@@ -162,6 +166,8 @@ export function createConnectors(deps: {
     },
     /** The copies' templates and their paged read (Capacidade 2, U2). */
     copies: createCopyPort(routeDeps),
+    /** The inventory of what a connection's system declares, read for the Ontology's runs (U2). */
+    inventory: createInventoryPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

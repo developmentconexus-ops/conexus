@@ -1,5 +1,7 @@
 import { z } from 'zod'
+import { CompanyId } from './companies.ts'
 import { ConnectionId } from './connectors.ts'
+import { defineOperation } from './operation.ts'
 
 // The company's Ontology (A Ontologia da empresa): the contracts the Hub's `ontology` tables read
 // and write. Every `jsonb` column has its schema here, parsed at the database's boundary (code C27).
@@ -31,6 +33,7 @@ const Name = z.string().min(1).max(80)
 export const OntologyProposalId = z.uuid().brand<'OntologyProposalId'>()
 export const ProofRunId = z.uuid().brand<'ProofRunId'>()
 export const InventoryRunId = z.uuid().brand<'InventoryRunId'>()
+export type InventoryRunId = z.infer<typeof InventoryRunId>
 
 /** One to four pairs of fields, as the key of a copy has one to four columns. */
 export const RelationPairs = z
@@ -146,3 +149,65 @@ export const ItemContent = z.union([
   NoteContent,
 ])
 export type ItemContent = z.infer<typeof ItemContent>
+
+/** Why a run of the inventory did not finish: the cap, or the type of the system's answer. */
+export const InventoryReason = z.enum([
+  'CAP',
+  'REFUSED',
+  'AUTH_REFUSED',
+  'UNREADABLE',
+  'BUSY',
+  'UNREACHABLE',
+  'DEADLINE',
+  'NOT_IN_ROLE',
+])
+export type InventoryReason = z.infer<typeof InventoryReason>
+export const InventoryOutcome = z.enum(['COMPLETE', 'PARTIAL', 'FAILED', 'INTERRUPTED'])
+export type InventoryOutcome = z.infer<typeof InventoryOutcome>
+
+const BASE = '/api/companies/{companyId}/ontology'
+const OfInventory = z.object({ companyId: CompanyId, connectionId: ConnectionId })
+
+/** What the connection's page shows of its inventory: the counts and the date of the newest finished run, and the state of the last one. */
+export const InventoryView = z.object({
+  inventory: z
+    .object({
+      readAt: z.iso.datetime(),
+      outcome: z.enum(['COMPLETE', 'PARTIAL']),
+      reason: InventoryReason.nullable(),
+      tables: z.int().nonnegative(),
+      fields: z.int().nonnegative(),
+      codes: z.int().nonnegative(),
+      operations: z.int().nonnegative(),
+    })
+    .nullable(),
+  last: z.object({ outcome: InventoryOutcome, reason: InventoryReason.nullable() }).nullable(),
+  running: z.boolean(),
+  mayRun: z.boolean(),
+})
+export type InventoryView = z.infer<typeof InventoryView>
+
+export const getInventory = defineOperation({
+  id: 'getInventory',
+  summary:
+    "Shows what the connection's system declares about itself: the counts of its newest finished reading and the state of the last one.",
+  access: 'session',
+  method: 'GET',
+  path: `${BASE}/inventories/{connectionId}`,
+  bodyLimit: 1024,
+  input: { params: OfInventory },
+  success: { status: 200, body: InventoryView },
+  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+})
+
+export const runInventory = defineOperation({
+  id: 'runInventory',
+  summary: "Reads the connection's system again, unless a reading of it is running.",
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/inventories/{connectionId}/runs`,
+  bodyLimit: 1024,
+  input: { params: OfInventory },
+  success: { status: 202, body: z.object({ started: z.literal(true) }) },
+  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE', 'INVENTORY_RUNNING'],
+})

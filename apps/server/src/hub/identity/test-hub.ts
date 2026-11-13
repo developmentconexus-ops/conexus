@@ -22,6 +22,7 @@ import {
 import { mailServer, testMail } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import type { ConnectorTuning } from '../connectors/public.ts'
+import type { InventoryTuning } from '../ontology/inventory.ts'
 import { createStatus } from '../status/public.ts'
 import { seededRoles } from './company-roles.ts'
 import { TEST_ROLES, testIdentity } from './test-kit.ts'
@@ -41,7 +42,7 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
-type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'>
+type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'> & { inventory?: InventoryTuning }
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -83,6 +84,7 @@ async function hubServing(
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
     tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: tuning.now, catalog: tuning.catalog },
+    inventoryTuning: tuning.inventory,
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
     appDataDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
@@ -123,6 +125,7 @@ async function hubServing(
     },
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
+    ontology: subjects.ontology,
     apps,
     ...{ identity: identity.ports, agents: subjects.agents, sendMail },
     notify: subjects.notifications.notify,

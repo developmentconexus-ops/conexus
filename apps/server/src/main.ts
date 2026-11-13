@@ -9,6 +9,7 @@ import {
   openGoogleCalls,
   signInFlows,
 } from './builder/model-accounts/public.ts'
+import { createInventoryClock } from './builder/ontology/public.ts'
 import type {
   ConversationMachine,
   MachinesOf,
@@ -26,6 +27,8 @@ import { createCopies } from './hub/copies/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
+import type { InventoryTuning } from './hub/ontology/inventory.ts'
+import { createOntology } from './hub/ontology/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
@@ -83,7 +86,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.copies],
+    ...[deps.requests, deps.copies, deps.ontology],
   ]) {
     part.routes(app)
   }
@@ -131,6 +134,8 @@ export function subjectsOf(deps: {
   copy: GitCopy
   log: FailureLog
   tuning?: ConnectorTuning
+  /** The tests' ceilings for one inventory run; production's by default. */
+  inventoryTuning?: InventoryTuning
   /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
   pruneBudgetMs?: number
   /** The tests' deadline for one look at an app's database (`test-hub.ts`); the apps' call limit by default. */
@@ -161,6 +166,7 @@ export function subjectsOf(deps: {
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     copies: lateCopies,
+    ontology: () => ontology.inventory,
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release
@@ -194,6 +200,7 @@ export function subjectsOf(deps: {
     ...{ ...deps, identity, door: apps.connectorCall },
     propose: () => copies.propose,
     copies: () => copies.ofConnections,
+    inventory: () => ontology.inventory,
   })
   const copies = createCopies({
     ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
@@ -202,9 +209,24 @@ export function subjectsOf(deps: {
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })
+  const ontology = createOntology({
+    ...{ database, log, identity },
+    connectors: () => connectors.inventory,
+    clock: () => createInventoryClock({ mastra: conversations.mastra }),
+    tuning: deps.inventoryTuning,
+  })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors, copies },
+    ...{
+      conversations,
+      assistant,
+      automations,
+      agents,
+      notifications,
+      connectors,
+      copies,
+      ontology,
+    },
   }
 }
 
