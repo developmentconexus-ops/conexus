@@ -94,9 +94,7 @@ test('o pedido que sai', async (t) => {
   assert.equal(made?.headers.get('thread-id'), request.prompt_cache_key)
   assert.equal(request.store, false)
   assert.equal(typeof request.instructions, 'string')
-  assert.match(request.instructions, /Autonomy and persistence/)
-  assert.match(request.instructions, /Reading is always allowed/)
-  assert.doesNotMatch(request.instructions, /^You are an assistant[^\n]*Be concise and direct\.$/)
+  assert.match(request.instructions, /^You help people build and run business apps\./)
   assert.equal(request.reasoning.effort, 'medium')
   assert.ok(Array.isArray(request.input) && request.input.length > 0)
   for (const item of request.input) assert.equal('id' in item, false)
@@ -178,6 +176,22 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
   assert.deepEqual(
     request.input.filter((item: object) => 'id' in item),
     [],
+  )
+})
+
+test('o transporte leva o mesmo texto fixo curto para todo modelo, sem regra de agente nem bloco de modelo', async (t) => {
+  const codex = plantCodex(t)
+  codex.responses = () => ({ status: 400 })
+  const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'Oi' }] }]
+  for (const name of ['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.2']) {
+    const model = codexModel(name, { access: ACCESS, accountId: ACCOUNT_ID })
+    await assert.rejects(async () => model.doStream({ prompt }))
+  }
+  const sent = codex.calls.map((made) => String(Object(JSON.parse(String(made.body))).instructions))
+  assert.equal(new Set(sent).size, 1, 'one text for every model')
+  assert.doesNotMatch(
+    sent[0] ?? '',
+    /autonomy_and_persistence|Reading is always allowed|failed read|ask the person/i,
   )
 })
 
