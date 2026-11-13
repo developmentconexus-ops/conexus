@@ -157,13 +157,10 @@ function placedIn(messageList: ProcessLLMRequestArgs['messageList']): Map<string
   return found
 }
 
-/**
- * Fills the native's cache with the files of earlier turns, so it writes their notes and calls no
- * machine for them; returns the cache it made, or nothing when no file of the history was placed.
- */
-function seeded(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>): z.infer<typeof Cache> | undefined {
+/** Fills the native's cache with the files of earlier turns, so it writes their notes and calls no machine for them. */
+function seeded(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>): void {
   const known = placedIn(args.messageList)
-  if (known.size === 0) return undefined
+  if (known.size === 0) return
   const cache = {
     paths: new Map<string, string>(),
     digests: new Map<string | Uint8Array, { hash: string; size: number }>(),
@@ -181,15 +178,6 @@ function seeded(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>): z.infe
     }
   }
   args.state.uploads = cache
-  return cache
-}
-
-/** Takes off the native's cache what `seeded` put there, keeping what the native wrote itself. */
-function unseeded(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>, seed: z.infer<typeof Cache>): void {
-  const cache = Cache.safeParse(args.state.uploads)
-  if (!cache.success) return
-  for (const key of seed.paths.keys()) cache.data.paths.delete(key)
-  for (const key of seed.digests.keys()) cache.data.digests.delete(key)
 }
 
 /**
@@ -309,13 +297,13 @@ export function machineUploads(deps: {
       const { requestContext, state } = args
       const recycled = requestContext?.get(RECYCLED) === true
       if (recycled) delete state.uploads
-      const seed = recycled ? undefined : seeded(args)
+      else seeded(args)
       let result = await native.processLLMRequest({ ...args, abort })
-      // The machine was made new while the native wrote a file of this turn (`boot` marked it): the
-      // seeded files of the history are not on it. They leave the cache and the native writes them.
+      // The machine was made new while the native placed a file of this turn (`boot` marked it): the
+      // seeded files of the history are not on it. The cache starts empty and the native places all.
       const renewed = !recycled && requestContext?.get(RECYCLED) === true
-      if (renewed && seed !== undefined) {
-        unseeded(args, seed)
+      if (renewed) {
+        delete state.uploads
         result = await native.processLLMRequest({ ...args, abort })
       }
       requestContext?.delete(RECYCLED)
