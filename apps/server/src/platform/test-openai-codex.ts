@@ -14,6 +14,29 @@ export type CodexReply = {
   headers?: Record<string, string>
 }
 
+/**
+ * A recorded text stream whose one `sentence` is `text`: the recorded sentence replaced in the events that
+ * hold it whole, and its many text deltas cut to one that says `text`. The events are as sent.
+ */
+export function titledStream(recorded: Buffer, sentence: string, text: string): Buffer {
+  let said = false
+  const events = recorded
+    .toString('utf8')
+    .split('\n\n')
+    .filter((event) => {
+      if (!event.includes('response.output_text.delta')) return true
+      const first = !said
+      said = true
+      return first
+    })
+    .map((event) =>
+      event.includes('response.output_text.delta')
+        ? event.replace(/"delta":"[^"]*"/, `"delta":"${text}"`)
+        : event.replaceAll(sentence, text),
+    )
+  return Buffer.from(events.join('\n\n'))
+}
+
 /** A call the process made to the vendor: which endpoint, and what it sent. */
 export type CodexCall = {
   endpoint: 'usercode' | 'device-token' | 'token' | 'refresh' | 'responses'

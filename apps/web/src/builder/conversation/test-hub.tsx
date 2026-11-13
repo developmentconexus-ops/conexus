@@ -169,9 +169,10 @@ export type Answers = Partial<
   >
 >
 
-function listRead(view: View) {
-  return http.get(BASE, () =>
-    HttpResponse.json(
+function listRead(view: View, reads: number[]) {
+  return http.get(BASE, () => {
+    reads.push(Date.now())
+    return HttpResponse.json(
       listConversations.success.body.parse({
         conversations: view.conversations.map(({ id, title, createdAt }) => ({
           id,
@@ -180,8 +181,8 @@ function listRead(view: View) {
         })),
         next: { kind: 'END' },
       }),
-    ),
-  )
+    )
+  })
 }
 
 function conversationHub(view: View, answers: Answers = {}) {
@@ -189,6 +190,7 @@ function conversationHub(view: View, answers: Answers = {}) {
   const lines: Line[] = []
   const reads: number[] = []
   const conversationReads: number[] = []
+  const listReads: number[] = []
   return {
     sent,
     lines,
@@ -200,6 +202,8 @@ function conversationHub(view: View, answers: Answers = {}) {
     },
     reads,
     conversationReads,
+    /** The Hub's reads of the list of conversations. */
+    listReads,
     handlers: [
       ...projectsRead({
         projects: view.projects ?? [PEDIDOS],
@@ -208,7 +212,7 @@ function conversationHub(view: View, answers: Answers = {}) {
         role: view.role,
       }),
       ...accountsRead(view),
-      listRead(view),
+      listRead(view, listReads),
       http.get(`${SESSION}/stream`, async () => {
         const replaced = await answers.stream?.()
         if (replaced) return replaced

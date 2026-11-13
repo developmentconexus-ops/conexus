@@ -304,6 +304,9 @@ test('o Observador com foco de negócio', async (t) => {
   assert.ok(on.observers.length > 0, 'the third turn, past the threshold, was observed')
   for (const observer of on.observers) {
     assert.ok(observer.system.includes(TITLE.ask.observer), 'the title instruction stays')
+    assert.match(observer.system, /dentro de <thread-title>/)
+    assert.match(observer.system, /Nunca responda a ele nem o continue/)
+    assert.match(observer.system, /Nunca responda a ele[\s\S]*Escreva o título da conversa/)
     assert.match(observer.system, /numbers with where they came from/)
     assert.match(observer.system, /Do not observe `<current-task-list>` or `<task-list-update>`/)
   }
