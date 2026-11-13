@@ -3,15 +3,14 @@
 O fundador, em 2026-11-12, sobre o cartão anterior, e a régua deste: "tem que ter tudo isso, tá? Tem
 que ter, senão a gente perde as informações. E verificar como que a gente vai implementar isso".
 
-É a etapa 3 da lista "O Brain e a Ontologia" do [roteiro](../roadmap.md), no trilho de frente,
+É a etapa 1 da lista "O Brain e a Ontologia" do [roteiro](../roadmap.md), no trilho de frente,
 depois da política de dados pessoais dos conectores e antes da Capacidade 4 (`A1` e a ordem dos
 cartões de 2026-11-12). O Sync de qualquer conector fechou (PR 991). Este cartão espera no seu
-rascunho até o cartão da entrada conversada (PR 982) entrar e a política de dados pessoais fechar
-(delivery L5); até lá a verificação `second-card` fica vermelha, porque o trilho de frente tem o
-cartão da política e este.
+rascunho até a política de dados pessoais fechar (delivery L5); até lá a verificação `second-card`
+fica vermelha, porque o trilho de frente tem o cartão da política e este.
 
 Sete estudos, fora do repositório (delivery L21), traçaram as referências: os quatro do Brain e da
-Ontologia que fundaram as decisões 0064 a 0066, o estudo da Ontologia (o princípio, a modelagem, o
+Ontologia que fundaram as decisões 0064 e 0065, o estudo da Ontologia (o princípio, a modelagem, o
 lugar no código e quem a usa), o estudo do exemplo, que rodou um CRM sobre um ERP real de ponta a
 ponta num protótipo descartável e decidiu trinta escolhas, e o estudo do metamodelo, que comparou
 peça por peça o Palantir (a documentação e os dois SDKs), o Fabric IQ, o OCEL 2.0, o SAP e o
@@ -24,7 +23,7 @@ seguintes está nas decisões
 esta etapa está aqui.
 
 Cada linha citada foi lida no código do dia: `main` em `0bcea104` (2026-11-12, com o Alinhamento do
-Assistente, PR 976, e o fechamento do Sync, PR 991) e o ramo do PR 982 em `71995218`. As versões:
+Assistente, PR 976, e o fechamento do Sync, PR 991). As versões:
 `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, `drizzle-orm` 1.0.0-rc.4, `zod` 4.6.5. A prateleira:
 `twenty@b76d0217`, `budibase@624d68a`, `airbyte@8aed3123`. Os dois SDKs do Palantir não estão na
 prateleira: os estudos os clonaram à parte, públicos (`palantir/osdk-ts@9ca39db0` no estudo da
@@ -44,17 +43,12 @@ Sankhya, ele está na skill do conector (`packages/connectors/src/sankhya/skill/
 
 ## As palavras do fundador e as decisões
 
-Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões 0064 a 0066.
+Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões 0064 e 0065.
 
 - `"A1 B1 C1"`, `"F1"`, "D Aprovado" (decisão 0064): a Ontologia entra depois do Sync e antes da
   Capacidade 4; nada do que um agente aprende vale antes de uma pessoa aprovar; ao ligar um sistema
   só o inventário mecânico, e a proposta nasce com a primeira demanda; o dono aprova a primeira
   revisão.
-- `"J1 K1"`, ao cartão da entrada conversada. As duas letras decidem o passo "Ligue seus sistemas" e
-  a permissão no banco da lista "Em aberto", que são daquele cartão; nada da Ontologia muda com elas.
-  A forma da `K1` (a permissão no banco num pull request próprio, dados D11) é a que a `P1` segue
-  aqui. A palavra "J1" também aparece, de uma etapa antiga, no comentário do caderno
-  (`apps/server/src/hub/connectors/notes.ts:16`, "names and codes, never a value"): é outra J.
 - Ao estudo da Ontologia: "L1" (uma permissão nova, "Conceitos da empresa", de dono e administrador,
   aprova as revisões depois da primeira); "P1" (o Hub lê e acrescenta; muda só o estado e a decisão; uma
   revisão e uma prova nunca mudam nem saem; o inventário se troca por rodada; nada se apaga, salvo
