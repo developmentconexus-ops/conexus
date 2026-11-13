@@ -16,7 +16,10 @@ export type CodexReply = {
 
 /**
  * A recorded text stream whose one `sentence` is `text`: the recorded sentence replaced in the events that
- * hold it whole, and its many text deltas cut to one that says `text`. The events are as sent.
+ * hold it whole, and its many text deltas cut to one that says `text`. The events are as sent; only the
+ * words differ. No recording of the vendor naming a conversation exists, because `npm run record-provider`
+ * needs a call to the real service that nobody has authorized: until one is recorded, this changes the
+ * content of a recorded stream and nothing of its envelope. `text` must hold no quote or backslash.
  */
 export function titledStream(recorded: Buffer, sentence: string, text: string): Buffer {
   let said = false
