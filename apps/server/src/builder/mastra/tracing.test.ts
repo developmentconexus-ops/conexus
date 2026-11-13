@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import type { Hub } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
-import type { MastraPool } from '../../platform/database.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { agentsOn, madeAgent, talkedTo } from '../agents/test-agents.ts'
 import { created } from '../assistant/test-assistant.ts'
@@ -21,7 +21,7 @@ import {
 type Row = Record<string, unknown>
 
 /** Spans of `threadId` in `mastra_span_events`, ordered by start time. */
-async function spansOf(pool: MastraPool, threadId: string): Promise<Row[]> {
+async function spansOf(pool: Hub['test']['mastraPool'], threadId: string): Promise<Row[]> {
   const result = await pool.query<Row>(
     `SELECT "spanType", "name", "threadId", "resourceId", "error", "input", "attributes", "metadataRaw" AS "metadata"
      FROM mastra.mastra_span_events
@@ -111,7 +111,12 @@ test('cada controlador é rastreado pelo registro único', async (t) => {
 
   const pool = hub.test.mastraPool
 
-  const cases: { kind: string; url: string; poolToUse: MastraPool; prefix: string }[] = [
+  const cases: {
+    kind: string
+    url: string
+    poolToUse: Hub['test']['mastraPool']
+    prefix: string
+  }[] = [
     { kind: 'builder', url: builderUrl, poolToUse: pool, prefix: 'company:' },
     { kind: 'assistant', url: assistantUrl, poolToUse: pool, prefix: 'assistant:company:' },
     { kind: 'construtor', url: constUrl, poolToUse: pool, prefix: 'construtor:company:' },
