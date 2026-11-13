@@ -94,9 +94,7 @@ test('o pedido que sai', async (t) => {
   assert.equal(made?.headers.get('thread-id'), request.prompt_cache_key)
   assert.equal(request.store, false)
   assert.equal(typeof request.instructions, 'string')
-  assert.match(request.instructions, /Autonomy and persistence/)
-  assert.match(request.instructions, /Reading is always allowed/)
-  assert.doesNotMatch(request.instructions, /^You are an assistant[^\n]*Be concise and direct\.$/)
+  assert.match(request.instructions, /^You help people build and run business apps\./)
   assert.equal(request.reasoning.effort, 'medium')
   assert.ok(Array.isArray(request.input) && request.input.length > 0)
   for (const item of request.input) assert.equal('id' in item, false)
@@ -181,30 +179,20 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
   )
 })
 
-test('o bloco de cada modelo vai pelo id exato: o Luna leva o seu depois do texto comum, um modelo sem bloco leva só o texto comum', async (t) => {
+test('o transporte leva o mesmo texto fixo curto para todo modelo, sem regra de agente nem bloco de modelo', async (t) => {
   const codex = plantCodex(t)
   codex.responses = () => ({ status: 400 })
   const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'Oi' }] }]
-  for (const name of ['gpt-6-luna', 'gpt-5.2', 'gpt-6-luna-mini', 'gpt-5.6-luna']) {
+  for (const name of ['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.2']) {
     const model = codexModel(name, { access: ACCESS, accountId: ACCOUNT_ID })
     await assert.rejects(async () => model.doStream({ prompt }))
   }
-  const [luna, other, near, older] = codex.calls.map((made) =>
-    String(Object(JSON.parse(String(made.body))).instructions),
+  const sent = codex.calls.map((made) => String(Object(JSON.parse(String(made.body))).instructions))
+  assert.equal(new Set(sent).size, 1, 'one text for every model')
+  assert.doesNotMatch(
+    sent[0] ?? '',
+    /autonomy_and_persistence|Reading is always allowed|failed read|ask the person/i,
   )
-  assert.match(
-    luna ?? '',
-    /^You are an assistant[\s\S]*Reading is always allowed[\s\S]*<autonomy_and_persistence>/,
-  )
-  assert.match(luna ?? '', /check each part of it against what you found/)
-  assert.equal(older, luna, 'the older Luna gets the same block')
-  assert.match(
-    other ?? '',
-    /another way to the same fact, as the failed read's answer says[\s\S]*Reading is always allowed/,
-  )
-  assert.doesNotMatch(other ?? '', /<autonomy_and_persistence>/)
-  assert.doesNotMatch(other ?? '', /a 403\) is final|while the question waits/)
-  assert.equal(near, other, 'a name that only starts like the model gets no block')
 })
 
 test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recusada e o turno diz o nome', async (t) => {
