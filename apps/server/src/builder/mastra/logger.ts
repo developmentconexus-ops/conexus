@@ -1,3 +1,4 @@
+import { classifyProviderError, providerRequestId } from '@mastra/core/error'
 import { MastraLogger } from '@mastra/core/logger'
 import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { causeChain } from '../../platform/failure.ts'
@@ -10,6 +11,10 @@ function fieldsOf(args: unknown[]): Record<string, Scalar> {
   const fields: Record<string, Scalar> = {}
   for (const arg of args) {
     const start: unknown = arg instanceof Error ? arg : Object(arg).error
+    const kind = classifyProviderError(start)
+    if (kind !== 'unknown') fields.kind ??= kind
+    const requestId = providerRequestId(start)
+    if (requestId !== undefined) fields.requestId ??= requestId
     for (const found of causeChain(start)) {
       if (!(found instanceof Error)) break
       fields.name ??= found.name
