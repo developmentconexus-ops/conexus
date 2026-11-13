@@ -5,7 +5,7 @@
 [0052] kept one tracing path, OpenTelemetry to Grafana at 21.1, and no Builder span in a database.
 On 2026-11-13 an Assistant turn failed with a 400 and the Hub kept only the status. The founder:
 "vamos habilitar o Master Traces"; then "a gente não vai utilizar a plataforma do master, a gente
-vai guardar no nosso banco." The card is `docs/steps/o-rastreio-do-mastra.md`.
+vai guardar no nosso banco." The card is `docs/steps/pattern-o-rastreio-do-mastra.md`.
 
 ## Decision
 
@@ -14,8 +14,8 @@ vai guardar no nosso banco." The card is `docs/steps/o-rastreio-do-mastra.md`.
   agent.
 - One exporter, `MastraStorageExporter`, into Mastra's database [0010]. No platform exporter, no
   token: nothing leaves Brazil, and [0032] gains no line.
-- Spans keep input, output and error, the provider's answer body included. Security S41 admits that
-  content only in Mastra's spans in Mastra's database.
+- Spans keep input, output and error, the provider's answer body included. This is the one exception to
+  security S41; the guide takes the sentence at the card's closing (L20).
 - Mastra's defaults: sampling `always`, `SensitiveDataFilter`, serialization limits.
 - Spans expire by age through Mastra's `retention` and `prune()`; the card names the store and the
   age, each with the founder's word.

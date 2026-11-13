@@ -15,10 +15,10 @@ prateleira `mastra-1.82` (tag `@mastra/core@1.82.0`, commit `6e8dfcb8`, com `@ma
 instalada. Nada foi rodado: os números de volume abaixo são estimativa, e a primeira coisa da U1 é
 medi-los.
 
-O trilho de frente já tem o cartão da Ontologia da empresa. Pela regra L5 este cartão vive no seu
-pull request, em rascunho, e entra em `docs/steps/` quando aquele sair no fechamento; até lá a
-verificação `second-card` de `check-docs` fica vermelha nele de propósito. Com as unidades da
-Ontologia, a U1 divide só `conversations-of.ts`, onde ela soma um workflow à lista (L1).
+Este cartão ocupa a vaga do trilho de padrão (o `pattern-` do nome, L5) só porque é um cartão curto
+fora da ordem do roteiro e a vaga está livre: a frente tem a Ontologia, o assistente e o desenho
+têm os seus. Ele não mexe no kit de conectores nem nos moldes. Com as unidades da Ontologia, a U1
+divide só `conversations-of.ts`, onde soma um workflow à lista, e espera por elas nesse arquivo (L1).
 
 ## A página do fundador
 
@@ -55,7 +55,8 @@ fora pela sua palavra.
   CPF ao Assistente, pela sua decisão G. Então o rastro guarda dado pessoal da empresa, no Brasil,
   dentro do banco do Mastra, pelo prazo da letra B. A regra S41 do guia de segurança (nada de texto
   de pessoa em log nem em trecho) passa a valer para o log e para o que sai; o rastro do Mastra no
-  banco dele fica de fora dela. A linha 21.1 do roteiro dizia "as ferramentas de conector sem entrada
+  banco dele fica de fora dela, pela decisão 0068. A frase entra no guia no fechamento desta etapa,
+  porque um guia não muda com uma etapa em construção (L20). A linha 21.1 do roteiro dizia "as ferramentas de conector sem entrada
   e saída no span" (da etapa 20): ela valia para o que sai para o Grafana, e continua valendo lá.
 - **Apagar uma empresa** não apaga os rastros dela: eles saem pelo prazo.
 - **Chaves e senhas** que aparecem com nome de chave (`token`, `apiKey`, `password` e afins) saem
@@ -75,9 +76,10 @@ fora pela sua palavra.
     numa máquina de 2 vCPU e 7,9 GiB, com senha nova e sem cópia de segurança, e o rastro só aparece
     quando o turno termina. O ClickHouse Cloud tem São Paulo (`sa-east-1`), mas é mais um fornecedor
     pago.
-  - **A regra.** A U1 mede um turno gravado do Builder e um do Assistente. Se o rastro de 14 dias,
-    pelo número de turnos por dia de hoje, couber em 0,5 GB, fica A2. Se não couber, a U1 para e
-    volta a você com o número: A2 no Neon pago (o armazenamento custa US$ 0,35 por GB por mês no
+  - **A regra.** A U1 mede um turno gravado do Builder e um do Assistente. O Hub no ar teve no pico 58
+    mensagens de pessoa num dia (12/11, contagem dos últimos 14 dias). Se 58 turnos por dia durante 14
+    dias couberem em 0,5 GB, quer dizer, se o turno medido ficar abaixo de cerca de 600 KB, fica A2.
+    Se não couber, a U1 para e volta a você com o número: A2 no Neon pago (o armazenamento custa US$ 0,35 por GB por mês no
     Launch) ou A3.
 - **B. Por quanto tempo.** **B1 (recomendada): 14 dias**, como o Mastra Code faz no rastro local dele.
   B2: 30 dias. Uma rotina do Mastra roda uma vez por dia, de madrugada, e apaga o que passou do
@@ -198,8 +200,9 @@ o `copyRun` de `conversations-of.ts`, registrado do mesmo jeito.
    `MastraStorageExporter` sobre o `PostgresStoreVNext` no banco de teste e rode um turno gravado do
    Builder (`conversation/conversation-recorded.test.ts`) e um do Assistente. Conte as linhas e os
    bytes (`pg_total_relation_size` das tabelas `mastra_*_events`). Escreva no corpo do pull request:
-   bytes por turno, vezes os turnos por dia do Hub no ar (o firstmate traz a contagem), vezes 14. A
-   regra A decide; se passar de 0,5 GB, pare e volte ao fundador.
+   bytes por turno, vezes 58 turnos por dia (o pico medido), vezes 14. A regra A decide: acima de
+   0,5 GB (cerca de 600 KB por turno, na média do Builder e do Assistente pesada pelo uso), pare e
+   volte ao fundador.
 2. `conversation/storage.ts`: `new PostgresStoreVNext({ id, pool, schemaName: 'mastra',
    observability: { pool }, retention: { observability: { spans, logs, metrics: { maxAge } } } })`.
    Regras: data D27, decisão 0010 (o login `mastra_runtime` é dono das tabelas que cria; nada muda em
