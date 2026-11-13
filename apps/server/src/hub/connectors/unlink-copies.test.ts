@@ -4,11 +4,13 @@ import { test } from 'node:test'
 import type { CopyId, ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword, ConnectionId } from '@conexus/hub-api'
 import pg from 'pg'
+import { COPY_WORKFLOW } from '../../builder/copy-clock/public.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { copiesOn, TEST_APP_LOGIN_KEY } from '../copies/test-copies.ts'
+import { copiesUrl, enabled, firstEnded } from '../copies/test-routes.ts'
 import type { StoresOn } from '../copies/test-sources.ts'
 import { ordersCopy, STORE_A, STORE_B, storesOn } from '../copies/test-sources.ts'
-import { call, codeOf } from '../identity/test-hub.ts'
+import { call, codeOf, post } from '../identity/test-hub.ts'
 import { CopyName } from './public.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
 
@@ -99,6 +101,24 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
   )
   const [empty] = await on.hub.test.asOwner('select rows from copies.copy where id = $1', [again])
   assert.equal(empty?.rows, null, 'e vazia')
+})
+
+function schedulesOf(on: CopiesOn) {
+  return on.hub.mastra.schedules.list({ workflowId: COPY_WORKFLOW })
+}
+
+test('desligar tira a agenda da cópia que acaba, pausada também', async (t) => {
+  const on = await copiesOn(t)
+  const active = await enabled(on, 'vendas')
+  const paused = await enabled(on, 'clientes')
+  await firstEnded(on, active.id)
+  await firstEnded(on, paused.id)
+  const pause = await post(on.hub, on.ana, `${copiesUrl(on)}/${paused.id}/pause`, {})
+  assert.equal(pause.statusCode, 200)
+  assert.equal((await schedulesOf(on)).length, 2)
+  assert.equal((await unlink(on, on.connections, on.connectionId)).statusCode, 200)
+  assert.deepEqual(await copiesLeft(on), [])
+  assert.equal((await schedulesOf(on)).length, 0)
 })
 
 /** Two stores' copy of orders, run once and released to the Projeto Pedidos. */

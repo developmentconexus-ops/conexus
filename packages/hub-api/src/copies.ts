@@ -267,6 +267,22 @@ export const runCopy = defineOperation({
   failures: [...ONE_FAILURES, 'COPY_RUNNING', 'HUB_UPDATING'],
 })
 
+export const deleteCopy = defineOperation({
+  id: 'deleteCopy',
+  summary:
+    "Deletes a copy with its table: the apps' read taken back first, then the copy ended alone; doing it again answers the same.",
+  access: 'session',
+  method: 'DELETE',
+  path: `${BASE}/{copyId}`,
+  bodyLimit: 1024,
+  input: { params: OfCopy },
+  // tablesLeft: the table the company's database did not drop yet; the copy is gone all the same,
+  // and the next Apagar, Desligar or Ligar drops it.
+  success: { status: 200, body: z.object({ tablesLeft: z.array(z.string()) }) },
+  // COPY_DATABASE_UNAVAILABLE: the company's database did not answer before anything changed.
+  failures: [...READ_FAILURES, 'COPY_DATABASE_UNAVAILABLE'],
+})
+
 export const listCopyRuns = defineOperation({
   id: 'listCopyRuns',
   summary: 'Lists the runs of a copy, newest first, 20 to a page.',

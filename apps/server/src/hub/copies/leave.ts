@@ -1,13 +1,15 @@
 import type { CompanyId, ConnectionId, CopyId, CopyOfConnection } from '@conexus/hub-api'
-import { CopyId as CopyIdSchema } from '@conexus/hub-api'
+import { CopyId as CopyIdSchema, ProjectId as ProjectIdSchema } from '@conexus/hub-api'
+import type { SQL } from 'drizzle-orm'
 import { and, asc, eq, inArray, notExists, sql } from 'drizzle-orm'
 import type { CommandTx, DatabaseUrl, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { AccountRef, CopyName } from '../connectors/public.ts'
+import { revokeCopy } from './grants.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy, personScope, syncOf } from './store.ts'
-import { copy, copySource, copyTableLeft } from './tables.ts'
+import { copy, copySource, copyTableLeft, projectCopy } from './tables.ts'
 
 type OfConnection = InCompany & { connectionId: ConnectionId }
 
@@ -123,36 +125,76 @@ export async function lockedCopiesOf(
 }
 
 /**
+ * The one end of a copy, in the caller's transaction: the company's copies matching `where` deleted
+ * (their sources, runs and releases go in cascade, the proposal keeps no copy) and each one's table
+ * noted in `copy_table_left` for `dropEndedCopies`.
+ */
+async function endCopies(tx: CommandTx, companyId: CompanyId, where: SQL | undefined) {
+  const ended = await tx
+    .delete(copy)
+    .where(and(eq(copy.companyId, companyId), where))
+    .returning({ id: copy.id, name: copy.name })
+  if (ended.length > 0)
+    await tx
+      .insert(copyTableLeft)
+      .values(ended.map((row) => ({ companyId, copyId: row.id, name: row.name })))
+      .onConflictDoNothing()
+  return ended.map((row) => CopyIdSchema.parse(row.id))
+}
+
+/**
  * In the same transaction, after the DELETE took the sources in cascade: each locked copy left with
- * no source ends, with its runs and releases (the cascade), and its table is noted in
- * `copy_table_left` for `dropEndedCopies`.
+ * no source ends (`endCopies`).
  */
 export async function endedSourceless(
   tx: CommandTx,
   input: { companyId: CompanyId; copyIds: readonly CopyId[] },
 ): Promise<CopyId[]> {
   if (input.copyIds.length === 0) return []
-  const ended = await tx
-    .delete(copy)
-    .where(
-      and(
-        eq(copy.companyId, input.companyId),
-        inArray(copy.id, [...input.copyIds]),
-        notExists(
-          tx
-            .select({ one: sql`1` })
-            .from(copySource)
-            .where(and(eq(copySource.companyId, copy.companyId), eq(copySource.copyId, copy.id))),
-        ),
+  return endCopies(
+    tx,
+    input.companyId,
+    and(
+      inArray(copy.id, [...input.copyIds]),
+      notExists(
+        tx
+          .select({ one: sql`1` })
+          .from(copySource)
+          .where(and(eq(copySource.companyId, copy.companyId), eq(copySource.copyId, copy.id))),
       ),
-    )
-    .returning({ id: copy.id, name: copy.name })
-  if (ended.length > 0)
-    await tx
-      .insert(copyTableLeft)
-      .values(ended.map((row) => ({ companyId: input.companyId, copyId: row.id, name: row.name })))
-      .onConflictDoNothing()
-  return ended.map((row) => CopyIdSchema.parse(row.id))
+    ),
+  )
+}
+
+/**
+ * Apagar: the copy ends alone, the connection and the other copies as they were. First, outside any
+ * transaction (data D22), the apps' read is taken back by Tirar's own command, once per Projeto it
+ * is released to: a silent company database answers 503 with nothing changed. Then one transaction
+ * ends the copy (`endCopies`) and `dropEndedCopies` drops its table and its schedule; a table the
+ * database did not drop is answered, the copy gone all the same. Doing it again, or for another
+ * company's copy, finds nothing (S10) and answers the same.
+ */
+export async function deleteCopy(
+  deps: CopiesDeps,
+  input: InCompany & { copyId: CopyId },
+): Promise<{ tablesLeft: string[] }> {
+  const { companyId, copyId } = input
+  const released = await deps.database.command(personScope(input), async (tx) => {
+    await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
+    return tx
+      .select({ projectId: projectCopy.projectId })
+      .from(projectCopy)
+      .where(and(eq(projectCopy.companyId, companyId), eq(projectCopy.copyId, copyId)))
+  })
+  for (const { projectId } of released)
+    await revokeCopy(deps, { ...input, projectId: ProjectIdSchema.parse(projectId) })
+  const ended = await deps.database.command(personScope(input), async (tx) => {
+    await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
+    return endCopies(tx, companyId, eq(copy.id, copyId))
+  })
+  const { tablesLeft } = await dropEndedCopies(deps, input)
+  deps.log.info({ companyId, copyId, ended: ended.length > 0 }, 'COPY_DELETED')
+  return { tablesLeft }
 }
 
 /**
@@ -182,10 +224,27 @@ function droppedTable(
 }
 
 /**
+ * The schedule of each ended copy taken out of the clock, paused or not: a paused one never fires, so
+ * it never finds the copy gone and deletes itself. Doing it again changes nothing; a clock that does
+ * not answer is logged and the schedule stays for the fire that finds the copy gone.
+ */
+async function removeSchedules(deps: CopiesDeps, companyId: CompanyId, copyIds: readonly CopyId[]) {
+  for (const copyId of copyIds) {
+    try {
+      await deps.clock().remove(copyId)
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : 'UNKNOWN'
+      deps.log.error({ companyId, copyId, reason }, 'COPY_SCHEDULE_LEFT')
+    }
+  }
+}
+
+/**
  * Drains the company's rows of `copy_table_left`, written in the transaction that ended each copy:
- * each table dropped under its row's lock, then the row deleted. No REVOKE: the privileges go with
- * the table. Called after every Desligar's DELETE and before `ensureCopyTable` in every Ligar; a
- * silent company database leaves the rows for the next call and answers their names.
+ * each copy's schedule taken out, each table dropped under its row's lock, then the row deleted. No
+ * REVOKE: the privileges go with the table. Called after every Desligar's and Apagar's end of copies
+ * and before `ensureCopyTable` in every Ligar; a silent company database leaves the rows for the next
+ * call and answers their names.
  */
 export async function dropEndedCopies(
   deps: CopiesDeps,
@@ -199,6 +258,11 @@ export async function dropEndedCopies(
       .orderBy(asc(copyTableLeft.name)),
   )
   if (left.length === 0) return { tablesLeft: [] }
+  await removeSchedules(
+    deps,
+    input.companyId,
+    left.map((row) => CopyIdSchema.parse(row.copyId)),
+  )
   const sync = await syncIn(deps, input)
   const stayed: { copyId: CopyId; name: string }[] = []
   for (const row of left) {
