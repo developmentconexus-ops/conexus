@@ -7,6 +7,7 @@ import type {
   ProviderRequest,
 } from '../../kernel/operation.ts'
 import { defineOperation, valueAt } from '../../kernel/operation.ts'
+import type { PersonalField } from '../../kernel/personal.ts'
 import type { Rows } from '../../kernel/rows.ts'
 import { Rows as RowsOut } from '../../kernel/rows.ts'
 import { rows } from '../answers.ts'
@@ -64,7 +65,7 @@ type ReadSpec<I> = Readonly<{
   input: z.ZodType<I>
   list: string | null // where the rows are: a key of the body, or the body itself
   paged?: ListRead // how the list pages and asks only what changed: the copy engine reads it as the operation's `list`
-  omit?: readonly string[] // the buyer's personal data, by dotted path
+  personal?: readonly PersonalField[]
   emptyNotFound?: string // the start of the message of the 404 that means the seller has no data yet
   from?: readonly string[]
   probe(earlier: ReadonlyMap<OperationId, unknown>): NoInfer<I> | null
@@ -73,13 +74,13 @@ type ReadSpec<I> = Readonly<{
 
 /** A read of Mercado Livre: idempotent by class, answered as rows by the API's own table (`rows`). */
 export function readOf<I>(spec: ReadSpec<I>): Operation<I, Rows, 'read'> {
-  const { docs, list, omit, emptyNotFound, paged, ...operation } = spec
+  const { docs, list, emptyNotFound, paged, ...operation } = spec
   const defined = defineOperation({
     ...operation,
     ...(paged === undefined ? {} : { list: paged }),
     class: 'read' as const,
     idempotent: true,
-    ...rows({ list, omit, emptyNotFound }),
+    ...rows({ list, emptyNotFound }),
   })
   DOCS.set(defined.id, docs)
   return defined

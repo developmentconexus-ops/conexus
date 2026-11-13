@@ -17,7 +17,7 @@ The connection is read only. There is no operation that writes, and a refusal is
 - Each list has its own page size cap and its own window; the part for the subject gives them.
 - A refusal comes with what Mercado Livre answered. A permission the app lacks (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) refuses only that group of reads; the others still work.
 - An answer Mercado Livre could not fill whole (a partial `206`, on an order) is read, and carries `parcial: true`: some fields are missing, and Mercado Livre says the rest usually suffices. Say so when a missing field matters to the question.
-- Never ask for, show or guess a buyer's name, e-mail, phone, address, CPF or CNPJ. The operations do not carry them.
+- A buyer's name, e-mail, phone and address come only to whoever may see that kind of data, and a CPF or CNPJ never comes to you: the Hub leaves out of the answer what the reader may not see. Never ask for or guess what is not in the answer.
 - Reading messages never marks them as read.
 
 ## The ready operations, by subject

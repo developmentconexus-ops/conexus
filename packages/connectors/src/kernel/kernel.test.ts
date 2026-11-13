@@ -59,6 +59,13 @@ test('a classe é obrigatória', () => {
   assert.equal(defineOperation({ ...base, ...writing, class: 'write' }).class, 'write')
 })
 
+test('tipo desconhecido', () => {
+  const read = { ...base, class: 'read', personal: [{ path: 'buyer', kind: 'contato' }] } as const
+  assert.deepEqual(defineOperation(read).personal, read.personal)
+  // @ts-expect-error a kind outside the four does not compile
+  assert.throws(() => defineOperation({ ...read, personal: [{ path: 'buyer', kind: 'cpf' }] }))
+})
+
 test('a porta de leitura só aceita operações read', () => {
   const read = defineOperation({ ...base, class: 'read' })
   const write = defineOperation({ ...base, ...writing, id: 'poke', class: 'write' })

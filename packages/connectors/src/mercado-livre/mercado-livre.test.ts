@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { connectorOf } from '../index.ts'
-import { runConformance } from '../kernel/conformance.ts'
+import { assertPersonal, runConformance } from '../kernel/conformance.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { inProbeOrder } from '../kernel/definition.ts'
 import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
@@ -13,7 +13,7 @@ import { readSkill } from '../kernel/skill.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
-import { authorize, getWith, grant, startSignIn } from './test-session.ts'
+import { authorize, getWith, grant, probeAll, startSignIn } from './test-session.ts'
 
 runConformance(mercadoLivre, mercadoLivreFake())
 
@@ -153,6 +153,19 @@ test('a skill diz o mesmo que os resumos: a varredura passa de mil e o filtro de
   assert.match(references['vendas.md'] ?? '', /`changedFrom`/)
   for (const [name, text] of Object.entries(references))
     assert.doesNotMatch(text, /no way past 1000/, name)
+})
+
+test('tirar buyer de pedidos faz a conformidade falhar', async () => {
+  const read = (await probeAll(mercadoLivreFake())).find(
+    ({ operation }) => operation.id === 'pedidos',
+  )
+  assert.ok(read)
+  assertPersonal(read.operation, read.value)
+  const personal = read.operation.personal?.filter((field) => field.path !== 'buyer')
+  assert.throws(
+    () => assertPersonal({ ...read.operation, personal }, read.value),
+    /pedidos carries what it does not declare: contato at buyer\.email/,
+  )
 })
 
 test('o conector declara que o Mercado Livre conta o limite pelo aplicativo', () => {

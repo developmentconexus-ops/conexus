@@ -4,4 +4,4 @@
 - `pedido`: one order by id, with its items, its `pack_id` and its shipping id.
 - `pacote`: one pack (several orders of one buyer shipped together). Only orders with a `pack_id` have one.
 
-The buyer is not in the answer.
+The buyer (`buyer`) is in the answer for whoever may see contacts; its `billing_info` (the CPF) only for whoever may see documents.

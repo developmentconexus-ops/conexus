@@ -1,5 +1,5 @@
-import type { Answered, Native, Operation } from '@conexus/connectors'
-import { CONCURRENT_CALL } from '@conexus/connectors'
+import type { Answered, Native, Operation, PersonalKind } from '@conexus/connectors'
+import { CONCURRENT_CALL, PERSONAL_KINDS } from '@conexus/connectors'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
@@ -7,6 +7,7 @@ import type { z } from 'zod'
 import type { Speaker } from '../identity/public.ts'
 import { roleOfSpeaker } from '../identity/public.ts'
 import type { Login, OpenedConnection } from './executor.ts'
+import { shapePersonal } from './personal.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -117,6 +118,43 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
   return deps.executor.call(a.opened, again.token, a.operation, input, left())
 }
 
+/**
+ * The kinds a reader never receives: a document (a CPF) never goes to a model, nor to a copy, which
+ * a model reads later, whoever the person is (B1). The one rule of the step; the Ligar reads it too.
+ */
+export function withheldKinds(by: ReadBy): readonly PersonalKind[] {
+  switch (by) {
+    case 'assistant':
+    case 'builder':
+    case 'copy':
+      return ['documento']
+    case 'app':
+      return []
+    default:
+      return by satisfies never
+  }
+}
+
+/**
+ * The answer as its reader may see it, and the kinds the log line names, given and withheld, never
+ * a value (S41); a read that declares no personal path passes as it came.
+ */
+function personalOf(
+  a: ReadRequest,
+  answer: ReadAnswer,
+): Readonly<{ result: ReadAnswer; logged: Record<string, string> }> {
+  const declared = a.operation.personal ?? []
+  if (declared.length === 0) return { result: answer, logged: {} }
+  if (answer.kind !== 'OK') return { result: answer, logged: { personal: '', withheld: '' } }
+  const withheld = withheldKinds(a.by)
+  const allowed = new Set(PERSONAL_KINDS.filter((kind) => !withheld.includes(kind)))
+  const shaped = shapePersonal(answer.value, declared, allowed)
+  return {
+    result: { ...answer, value: shaped.value },
+    logged: { personal: shaped.given.join(), withheld: shaped.withheld.join() },
+  }
+}
+
 function isStopped(a: ReadRequest): boolean {
   return a.signal?.aborted === true
 }
@@ -132,9 +170,10 @@ function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
 
 /**
  * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
- * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call
- * leaves one `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated)
- * its own error line (#470).
+ * repeat on a token the provider ended. No database connection is held meanwhile (D22). The one place
+ * personal data is withheld from whoever may not see it (`shapePersonal`). Each call leaves one
+ * `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated) its own
+ * error line (#470).
  */
 export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswer | NotInRole> {
   if (isStopped(a)) return stopped(deps, a)
@@ -178,7 +217,10 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswe
   )
   const answered = 'kind' in turn && turn.kind === 'DEADLINE' ? null : turn
   if (answered === null && isStopped(a)) return stopped(deps, a)
-  const result: ReadAnswer = answered === null ? { kind: 'DEADLINE' } : answerOf(answered)
+  const { result, logged } = personalOf(
+    a,
+    answered === null ? { kind: 'DEADLINE' } : answerOf(answered),
+  )
   if (answered?.kind === 'UNREADABLE' && answered.native.code === CONCURRENT_CALL)
     deps.log.error(
       { connectionId: a.opened.id, connector: a.opened.connector.id },
@@ -199,6 +241,7 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswe
       ms,
       queuedMs,
       bytes: result.kind === 'OK' ? Buffer.byteLength(JSON.stringify(result.value) ?? '') : 0,
+      ...logged,
     },
     'CONNECTOR_CALLED',
   )

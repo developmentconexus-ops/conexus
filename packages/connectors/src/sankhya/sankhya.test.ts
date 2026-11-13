@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONCURRENT_CALL, CONNECTORS, connectorOf, loggedOutBy } from '../index.ts'
-import { runConformance } from '../kernel/conformance.ts'
+import { assertPersonal, runConformance } from '../kernel/conformance.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
+import { answeredEach } from '../kernel/conformance-session.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { sankhya } from './definition.ts'
@@ -23,6 +24,19 @@ function operation(id: string): Operation<unknown, unknown> {
 function answer(id: string, status: number, body: unknown) {
   return operation(id).answer({ status, body })
 }
+
+test('tirar email de clientes faz a conformidade falhar', async () => {
+  const clientes = operation('clientes')
+  const values = new Map<string, unknown>()
+  await answeredEach(sankhya, sankhyaFake(), async (read) => {
+    values.set(read.operation.id, read.value)
+  })
+  const personal = clientes.personal?.filter((field) => field.path !== 'email')
+  assert.throws(
+    () => assertPersonal({ ...clientes, personal }, values.get('clientes')),
+    /clientes carries what it does not declare: contato at email/,
+  )
+})
 
 function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }

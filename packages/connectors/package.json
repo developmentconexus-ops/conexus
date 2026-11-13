@@ -14,6 +14,7 @@
     "test:docs:mercado-livre": "MERCADO_LIVRE_DOCS_ONLINE=1 node --test --test-reporter=../../scripts/test-reporter.ts src/mercado-livre/docs.test.ts"
   },
   "dependencies": {
+    "@brazilian-utils/brazilian-utils": "2.5.0",
     "zod": "4.6.5"
   }
 }

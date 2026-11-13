@@ -36,6 +36,13 @@ export const clientes = defineOperation({
   label: 'Clientes',
   input: z.strictObject({ page: Page(0), dataHoraAlteracao: DateTime.optional() }),
   ...rows({ list: 'clientes' }),
+  personal: [
+    { path: 'cnpjCpf', kind: 'documento' },
+    { path: 'nome', kind: 'contato' },
+    { path: 'razao', kind: 'contato' },
+    { path: 'email', kind: 'contato' },
+    { path: 'endereco', kind: 'endereco' },
+  ],
   probe: () => ({ page: 0 }),
   request: (input) =>
     get('/v1/parceiros/clientes', { ...input, sort_by: 'codigoCliente', sort_order: 'ASC' }),

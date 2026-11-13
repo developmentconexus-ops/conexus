@@ -5,7 +5,7 @@ import { CopyProposalId, listCopyRuns } from '@conexus/hub-api'
 import { call, codeOf, memberOn } from '../identity/test-hub.ts'
 import type { ListProposalsOn } from './test-list-proposals.ts'
 import { listProposalsOn } from './test-list-proposals.ts'
-import { STORE_A, STORE_B, tableOf } from './test-sources.ts'
+import { ordersCopy, STORE_A, STORE_B, tableOf } from './test-sources.ts'
 
 const RUN_DEADLINE_MS = 60_000
 
@@ -95,4 +95,24 @@ test('ligar a proposta de uma leitura de lista: as recusas', async (t) => {
   const [row] = await on.proposalRows()
   assert.equal(row?.state, 'OPEN')
   assert.deepEqual(await on.hub.test.asOwner('select id from copies.copy'), [])
+})
+
+async function proposed(on: ListProposalsOn, name: string, column: object) {
+  const id = { name: 'id', type: 'bigint', path: 'id' }
+  const definition = { ...ordersCopy(false), columns: [id, column] }
+  const answer = await on.propose({ name, definition })
+  assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
+  return CopyProposalId.parse(Object(answer).proposalId)
+}
+
+test('uma cópia não guarda documento: o Ligar recusa a coluna de documento, e liga a de contato', async (t) => {
+  const on = await listProposalsOn(t)
+  const cpf = { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' }
+  const refused = await on.enable(on.ana, await proposed(on, 'ml_documento', cpf))
+  assert.equal(codeOf(refused), 'COPY_PERSONAL_NOT_KEPT', refused.body)
+  const nickname = { name: 'comprador', type: 'text', path: 'buyer.nickname' }
+  assert.equal(
+    (await on.enable(on.ana, await proposed(on, 'ml_comprador', nickname))).statusCode,
+    201,
+  )
 })

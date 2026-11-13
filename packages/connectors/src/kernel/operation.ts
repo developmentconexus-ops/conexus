@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { PersonalField } from './personal.ts'
+import { PERSONAL_KINDS } from './personal.ts'
 
 /** What an operation does to the provider's data (founder, M1): a grant's ceiling and an agent's approval read it. */
 export const OPERATION_CLASSES = ['read', 'write', 'destructive'] as const
@@ -182,6 +184,8 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   fixed?: readonly string[]
   // A read that lists rows says how it pages and what it asks to read only what changed; the copy engine reads it (class `read` only).
   list?: ListRead
+  // Where each personal datum of the answer sits and its kind; the Hub withholds what the reader may not see.
+  personal?: readonly PersonalField[]
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
   probe(earlier: ReadonlyMap<OperationId, unknown>): I | null
@@ -204,6 +208,8 @@ type Definition<I, O, C extends OperationClass> = Omit<Operation<I, O, C>, 'id' 
   from?: readonly string[]
 }
 
+const Personal = z.array(z.object({ path: z.string().min(1), kind: z.enum(PERSONAL_KINDS) }))
+
 /** Takes `id` as a plain string and brands it (throws on a bad one), so a definition writes `id: 'pedidos'`; `from` is empty unless given. A `write` that does not declare `uncertain`, `mark` and `idOf` does not compile. */
 export function defineOperation<I, O>(
   operation: Definition<I, O, 'write'> & WriteDeclarations<I, O>,
@@ -216,6 +222,7 @@ export function defineOperation(
     Partial<WriteDeclarations<unknown, unknown>>,
 ) {
   assertList(operation)
+  Personal.parse(operation.personal ?? [])
   return Object.freeze({
     ...operation,
     id: OperationId.parse(operation.id),

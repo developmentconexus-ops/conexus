@@ -44,7 +44,7 @@ export const perguntas = readOf({
     },
     changed: null,
   },
-  omit: ['from'], // the asker: the question route adds their name and contact
+  personal: [{ path: 'from', kind: 'contato' }],
   probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get('/questions/search', {
