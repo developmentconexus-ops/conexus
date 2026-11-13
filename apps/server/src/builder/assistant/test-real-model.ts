@@ -52,19 +52,9 @@ export async function checked(parts: MastraMessagePart[], scorers: readonly Chec
 /** The models the real cases run on: the least the company uses (founder, 2026-11-03: "no minimo sonnet 5.5 low"), and the ChatGPT subscription's model the step 24.4 measure ran on (the starter since 24.5, `openai/gpt-5.6-luna`; the old `openai/gpt-5` the endpoint refused for a ChatGPT account). */
 const CHOICES = {
   claude: { model: 'anthropic/claude-sonnet-5-5', effort: 'low' },
+  // The API key's case: a model that thinks adaptively, whose thinking blocks the API binds to the tools list.
+  key: { model: 'anthropic/claude-opus-5-5', effort: 'max' },
   openai: { model: 'openai/gpt-5.6-luna', effort: 'low' },
-}
-
-/**
- * The model and effort a run takes instead of the defaults above, both or neither: production's
- * ChatGPT model is `openai/gpt-6-luna` at `high`, which the defaults do not measure.
- */
-function chosenIn(provider: 'claude' | 'openai'): { model: string; effort: string } {
-  // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-  const { CONEXUS_EVAL_MODEL: model, CONEXUS_EVAL_EFFORT: effort } = process.env
-  if ((model === undefined) !== (effort === undefined))
-    throw new Error('Set CONEXUS_EVAL_MODEL and CONEXUS_EVAL_EFFORT together, or neither.')
-  return model === undefined || effort === undefined ? CHOICES[provider] : { model, effort }
 }
 
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
@@ -77,6 +67,39 @@ const LOGIN_FILES = {
   openai: env.CONEXUS_EVAL_OPENAI_CREDENTIAL,
 }
 export const OPENAI_LOGIN = LOGIN_FILES.openai
+/** The file that holds an Anthropic API key, named by its switch, outside the repository; its content is never printed. */
+export const API_KEY_FILE = env.CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE
+/** A small spreadsheet of sales by seller the API key's case attaches, outside the repository. */
+export const XLSX_FILE = env.CONEXUS_EVAL_XLSX
+
+/**
+ * The switches of the scorecard run, read from the same `env`: the vendor the real run goes through
+ * (`claude`, the default, or `openai`) and the questions it asks (numbers split by commas, all by
+ * default), so the ChatGPT model production runs, with the questions that gave up on it, is
+ * measured on its own. A value that is not one of these fails the run, instead of choosing nothing.
+ */
+const Switches = z.object({
+  CONEXUS_EVAL_PROVIDER: z.enum(['claude', 'openai']).default('claude'),
+  CONEXUS_EVAL_QUESTIONS: z
+    .string()
+    .regex(/^\d+(\s*,\s*\d+)*$/, 'numbers split by commas')
+    .transform((each) => each.split(',').map(Number))
+    .optional(),
+})
+const SWITCHES = Switches.parse(env)
+export const EVAL_PROVIDER = SWITCHES.CONEXUS_EVAL_PROVIDER
+export const EVAL_QUESTIONS = SWITCHES.CONEXUS_EVAL_QUESTIONS
+
+/**
+ * The model and effort a run takes instead of the defaults, both or neither: production's
+ * ChatGPT model is `openai/gpt-6-luna` at `high`, which the defaults do not measure.
+ */
+function chosenIn(provider: 'claude' | 'openai' | 'key'): { model: string; effort: string } {
+  const { CONEXUS_EVAL_MODEL: model, CONEXUS_EVAL_EFFORT: effort } = env
+  if ((model === undefined) !== (effort === undefined))
+    throw new Error('Set CONEXUS_EVAL_MODEL and CONEXUS_EVAL_EFFORT together, or neither.')
+  return model === undefined || effort === undefined ? CHOICES[provider] : { model, effort }
+}
 
 /** The sign-in code firstmate writes after opening the link, read once and deleted; never printed. */
 async function codeFrom(folder: string): Promise<string> {
@@ -222,25 +245,26 @@ async function polled(hub: Hub, ana: Person, company: string, folder: string, ke
   throw new Error('The ChatGPT sign-in was not finished in fifteen minutes.')
 }
 
-/** A Hub that calls the real model, through a Claude or ChatGPT subscription signed in by the routes, as a person signs in. */
-export async function subscribed(
-  t: TestContext,
-  folder: string,
-  provider: 'claude' | 'openai' = 'claude',
-  /** What the Hub's configuration also carries, besides the Sankhya double (the scorecard adds Mercado Livre). */
-  change: (config: Config) => Config = (same) => same,
-) {
-  const sankhya = await salesSankhya(t)
-  const hub = await hubWithLog(t, (config) => {
-    const named = change(config)
-    return {
-      ...named,
-      connectorOrigins: new Map([...(named.connectorOrigins ?? []), ['sankhya', sankhya.origin]]),
-    }
-  })
-  const ana = await personOn(hub, ANA_OWNER)
-  const companyId = await plantCompany(hub.test, ana.id)
-  const company = `/api/companies/${companyId}`
+/** An Anthropic API key company account, the key read from the file the switch names and never printed. */
+async function linkKey(hub: Hub, ana: Person, company: string) {
+  if (API_KEY_FILE === undefined) throw new Error('Set CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE.')
+  const key = readFileSync(API_KEY_FILE, 'utf8').trim()
+  const body = { owner: 'company', provider: 'anthropic', label: 'Chave', key }
+  const linked = await post(hub, ana, `${company}/model-accounts`, body)
+  assert.equal(linked.statusCode, 201, linked.body.replaceAll(key, '***'))
+}
+
+/** A subscription's account, linked as the web does. */
+async function signIn(on: {
+  t: TestContext
+  hub: Hub
+  ana: Person
+  company: string
+  companyId: string
+  folder: string
+  provider: 'claude' | 'openai'
+}) {
+  const { t, hub, ana, company, companyId, folder, provider } = on
   const kind = provider === 'claude' ? 'claude_subscription' : 'openai_codex'
   await hub.test.asOwner(
     `insert into builder.company_account_kind (company_id, kind) values ($1, $2)`,
@@ -263,6 +287,29 @@ export async function subscribed(
     const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
     assert.equal(linked.statusCode, 201, linked.body)
   }
+}
+
+/** A Hub that calls the real model, through a Claude or ChatGPT subscription signed in by the routes, as a person signs in. */
+export async function subscribed(
+  t: TestContext,
+  folder: string,
+  provider: 'claude' | 'openai' | 'key' = 'claude',
+  /** What the Hub's configuration also carries, besides the Sankhya double (the scorecard adds Mercado Livre). */
+  change: (config: Config) => Config = (same) => same,
+) {
+  const sankhya = await salesSankhya(t)
+  const hub = await hubWithLog(t, (config) => {
+    const named = change(config)
+    return {
+      ...named,
+      connectorOrigins: new Map([...(named.connectorOrigins ?? []), ['sankhya', sankhya.origin]]),
+    }
+  })
+  const ana = await personOn(hub, ANA_OWNER)
+  const companyId = await plantCompany(hub.test, ana.id)
+  const company = `/api/companies/${companyId}`
+  if (provider === 'key') await linkKey(hub, ana, company)
+  else await signIn({ t, hub, ana, company, companyId, folder, provider })
   const model = chosenIn(provider)
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
   const connections = `${company}/connections`

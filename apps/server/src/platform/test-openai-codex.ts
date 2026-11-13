@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 const ISSUER = 'https://auth.openai.com'
@@ -14,9 +16,23 @@ export type CodexReply = {
   headers?: Record<string, string>
 }
 
+const TurnCall = z.object({
+  stream: z.boolean().optional(),
+  tools: z.array(z.unknown()).optional(),
+})
+
+/** Whether a request body is a call of the turn: streamed and carrying tools. The Hub's title call streams too, but carries none, and the double leaves it to its default. */
+export function ofTurn(body: string): boolean {
+  const sent = TurnCall.parse(JSON.parse(body))
+  return sent.stream === true && (sent.tools?.length ?? 0) > 0
+}
+
 /**
  * A recorded text stream whose one `sentence` is `text`: the recorded sentence replaced in the events that
- * hold it whole, and its many text deltas cut to one that says `text`. The events are as sent.
+ * hold it whole, and its many text deltas cut to one that says `text`. The events are as sent; only the
+ * words differ. No recording of the vendor naming a conversation exists, because `npm run record-provider`
+ * needs a call to the real service that nobody has authorized: until one is recorded, this changes the
+ * content of a recorded stream and nothing of its envelope. `text` must hold no quote or backslash.
  */
 export function titledStream(recorded: Buffer, sentence: string, text: string): Buffer {
   let said = false

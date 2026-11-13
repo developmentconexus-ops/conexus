@@ -28,6 +28,8 @@ export type Sent = {
   media: Media[]
   /** The extended thinking the call asked for, as the Messages API body names it, or none. */
   thinking: Thinking | null
+  /** The `anthropic-beta` header the call carried, or none. */
+  betas?: string | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
   cached: Cached[]
   /** The `tool_use` parts of the conversation's messages, in order, with the `input` each went out with. */
@@ -43,7 +45,11 @@ export type ToolUse = { name: string; input: unknown }
 /** A `tool_result` of the conversation as the model read it: its text and whether the provider marks it a failure (`is_error`). */
 export type ToolResultSent = { text: string; error: boolean }
 
-const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
+const Thinking = z.object({
+  type: z.string(),
+  budget_tokens: z.number().optional(),
+  block_binding: z.object({ prefix_mismatch_behavior: z.string() }).optional(),
+})
 type Thinking = z.infer<typeof Thinking>
 
 const CacheControl = z.object({ type: z.literal('ephemeral'), ttl: z.string().optional() })
@@ -211,6 +217,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     texts,
     media,
     thinking: body.thinking ?? null,
+    betas: headers.get('anthropic-beta'),
     cached: cachedOf(body),
     toolUses: toolUsesOf(body),
     toolResults: toolResultsOf(body),
