@@ -57,7 +57,7 @@ flowchart LR
 | Neon | Every row: the Hub's, the Builder's, Mastra's and each company's | No |
 | Cloudflare | Each request to the Hub and to an app; the apps' code | Request path only |
 | E-mail service | Invitation and automation e-mails [0017] | Yes |
-| Company system | Read-only queries through a connector [0031] | Depends on the company |
+| Company system | Read-only queries through a connector [0056] | Depends on the company |
 | R2 bucket | Each app's Git bundle [0051] | Request path only |
 
 Each company is told in writing, before entering, what leaves Brazil [0032].
