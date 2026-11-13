@@ -25,10 +25,8 @@ esta etapa está aqui.
 Cada linha citada foi lida no código do dia: `main` em `0bcea104` (2026-11-12, com o Alinhamento do
 Assistente, PR 976, e o fechamento do Sync, PR 991). As versões:
 `@mastra/core` 1.82.0, `@mastra/pg` 1.35.0, `drizzle-orm` 1.0.0-rc.4, `zod` 4.6.5. A prateleira:
-`twenty@b76d0217`, `budibase@624d68a`, `airbyte@8aed3123`. Os dois SDKs do Palantir não estão na
-prateleira: os estudos os clonaram à parte, públicos (`palantir/osdk-ts@9ca39db0` no estudo da
-Ontologia, `@3371bee3` e `palantir/foundry-platform-typescript@75fe1c05` no do metamodelo); quem
-precisar reler clona o repositório público no commit citado. As páginas públicas do Palantir
+`twenty@b76d0217`, `budibase@624d68a`, `airbyte@8aed3123` e os dois SDKs do Palantir,
+`osdk-ts@2e21feec` e `foundry-platform-typescript@75fe1c05`. As páginas públicas do Palantir
 Foundry, do Fabric IQ (learn.microsoft.com), do OCEL 2.0 (ocel-standard.org e o artigo
 arxiv.org/html/2403.01975) e do schema.org foram lidas em 2026-11-12. O builder de cada unidade
 parte do commit que fechar a política de dados pessoais, com o Alinhamento fechado (a U5 toca o que ele
@@ -73,6 +71,15 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
   esquerda depois de Cópias, aberta a todo membro, e não dentro de Configurações) e "2. Em faixas"
   (o grafo dela abre em faixas: memória, conceitos, sistemas). Antes, sobre o protótipo que punha
   tudo em Configurações: "o que eu queria era mais uma página, igual a gente tem a página de cópias".
+- Ao estudo do alinhamento, que testou o metamodelo em seis tipos de empresa: "1. A" e "2. A". A
+  primeira mantém a ordem (esta etapa, depois o fluxo, depois a saúde): a etapa do fluxo marca a
+  passagem entre dois sistemas como sem ligação (`NONE`), e "Ligações e duas fontes" vem logo depois
+  da saúde, subindo antes dela se o próximo cliente tiver dois sistemas no fluxo principal. A
+  segunda organiza a página Conhecimento em duas metades, "Como a empresa é" e "O que a empresa
+  sabe", juntas no conceito e no passo do fluxo; o desenho já tem o lugar do fluxo, vazio até a
+  etapa do fluxo, e esta etapa constrói as abas que já tinha. A terceira pergunta do estudo (se a
+  entrada escreve um mapa da empresa) espera a entrada conversada, que volta depois do Brain e da
+  Ontologia.
 - Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
   empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
   especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
@@ -102,7 +109,8 @@ uma distribuidora inventada; os nomes, os códigos e as contagens também.
 
 1. Na página da conexão do Sankhya aparece "Inventário: 812 tabelas, 9.310 campos, 2.140 códigos,
    lido em 12/11 às 09:00" e o botão **Ler de novo**. No menu da esquerda, depois de Cópias, está
-   **Conhecimento**; a aba Conceitos diz "Nenhum conceito aprovado ainda."
+   **Conhecimento**, aberta na metade **Como a empresa é**: o lugar dos fluxos diz "Nenhum fluxo
+   ainda.", e a aba Conceitos diz "Nenhum conceito aprovado ainda."
 2. Você pede ao Builder "um painel de vendas por representante". Ele diz que leu o inventário,
    pergunta só o que o dicionário não diz ("o que é a operação 101 na sua empresa?") e mostra o cartão
    "Proposta: 5 conceitos para Um painel de vendas por representante" (Parceiro; Cliente, papel de
@@ -127,8 +135,8 @@ uma distribuidora inventada; os nomes, os códigos e as contagens também.
    caderno", à espera de serem refeitas com prova.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página (as palavras de que ela
-depende, `L1`, `P1`, `M`, `Q1`, `R1`, o metamodelo e a página Conhecimento, você já deu em
-2026-11-12). Ao montar U1: a lista de permissões do banco das tabelas novas vai num pull request
+depende, `L1`, `P1`, `M`, `Q1`, `R1`, o metamodelo, a página Conhecimento e as duas metades
+dela, você já deu em 2026-11-12). Ao montar U1: a lista de permissões do banco das tabelas novas vai num pull request
 próprio, com a sua palavra (dados D11); ela é a `P1` escrita linha a linha. No fim: faz o roteiro na
 empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 
@@ -139,13 +147,18 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
   login de leitura do Assistente): pela sua `M`, depois da harness do Builder e das capacidades. O
   estudo do exemplo deixou as respostas prontas para esse cartão; elas estão em "O que os estudos
   deixaram", e nada aqui as constrói.
-- **O fluxo da empresa** (os estados de um documento, as passagens e o que move cada uma, e a
+- **O fluxo da empresa** (os estados de uma coisa, as passagens e o que move cada uma, e a
   pergunta que atravessa ligações, como "quantos orçamentos viraram pedido"): a etapa seguinte, no
-  molde do Machinery do Palantir, lida dos documentos como no OCEL. `concept_query` não atravessa
-  ligações, de propósito.
-- **O grafo da página Conhecimento** ("2. Em faixas"): quando entrar, abre em faixas. O que ele mostra
-  na tela ainda está em aberto com você, e esta etapa não o desenha: ela constrói as abas Conceitos,
-  Para revisar e Histórico, e a página abre em Conceitos.
+  molde do Machinery do Palantir. A passagem se lê dos documentos, como no OCEL, ou do histórico de
+  mudanças do sistema, onde o estado muda no mesmo registro; uma coisa pode ter mais de um fluxo, e
+  cada passagem diz em palavras o que a move (até a data). Esta etapa só desenha o lugar do fluxo,
+  vazio. `concept_query` não atravessa ligações, de propósito.
+- **A metade "O que a empresa sabe"** da página Conhecimento ("2. A"): as páginas do Brain por
+  área, e, na página de um conceito, as páginas que o citam. Entra com o cartão do Brain, que leva
+  para ela a memória da empresa de Configurações. Esta etapa constrói a metade "Como a empresa é"
+  (as abas Conceitos, Para revisar e Histórico, e o lugar do fluxo, vazio), e a página abre nela.
+- **O grafo da página Conhecimento** ("2. Em faixas"): a página não se organiza por ele ("2. A");
+  quando entrar, abre em faixas, e esta etapa não o desenha.
 - **A saúde da Ontologia** (a prova refeita todo dia, o aviso no Início): a etapa 4 da lista. Esta
   etapa grava as provas que ela vai ler, e já tira dos agentes um campo cuja coluna uma prova nova viu
   mudar de tipo.
@@ -177,6 +190,11 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
   memória do app guardando códigos que o caderno prova: o Builder passa a ler o código com o seu
   significado pelo conceito). Os outros são de cópias, apps, papéis, ferramentas e da 24.6, e esperam
   o cartão de cada um.
+
+**O que mudou nesta versão** (2026-11-12, as suas respostas "1. A" e "2. A" ao estudo do
+alinhamento): a página Conhecimento ganha as duas metades e o lugar do fluxo, vazio (o roteiro, o
+passo 1); o fluxo, que fica de fora, se lê também do histórico do sistema; o cartão não espera mais o
+da entrada conversada, só a política de dados pessoais.
 
 **As decisões suas nesta etapa.** Nenhuma nova. As escolhas técnicas convergem nas referências e
 estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
@@ -227,7 +245,7 @@ proposta, a ação e o fluxo); as outras completam o que ele não tem como peça
 | Proposta e revisão | Palantir, "analogous to a Pull Request" (`ontologies/review-ontology-proposals/`); Fabric IQ, "a proposal-first model" | `proposal`, `revision` | U3, U4 |
 | Fonte com prova | Fabric IQ, "Source data remains in the system that owns it" (`how-to-bind-data`); Palantir, "A single datasource can only be used to back one object type" | `source_version` e `proof_run` | U1, U3 |
 | Regra em texto | Fabric IQ, rule: "Ontology doesn't run the rule against data or execute actions" (`how-to-use-rules`) | uma página do Brain que cita o conceito por link (0065) | o Brain, depois |
-| Estado do negócio, passagem, fluxo | Palantir Machinery: os estados "must be enumerable", e as ações "are the cause of state transitions" (`machinery/core-concepts/`); OCEL, o log | a etapa "O fluxo da empresa" | depois |
+| Estado do negócio, passagem, fluxo | Palantir Machinery: os estados "must be enumerable", e as ações "are the cause of state transitions"; o que não cabe num estado só, "a process hierarchy" (`machinery/core-concepts/`), e o histórico de mudanças como fonte; OCEL, o log | a etapa "O fluxo da empresa": a passagem lida dos documentos ou do histórico, mais de um fluxo por conceito, o que move cada passagem em palavras | depois |
 | Ação | Palantir, action type | a escrita declarada do conector (0062), ligada a um conceito depois | depois |
 | Interface, campo compartilhado, tipo de valor, grupo de tipos | Palantir (`interfaces/interface-overview/`, `shared-property-overview/`, `value-types-overview/`, `type-groups/`) | fora agora: nenhum segundo leitor; a interface reabre em "Ligações e duas fontes" | — |
 | Banco de objetos, biblioteca de consulta do SDK | Palantir, Funnel e Object Set Service; no OSDK, `where`, `fetchPage`, `$link` | fora: o banco de objetos são as cópias do Sync, e a consulta dos apps é o `db` | — |
@@ -315,9 +333,9 @@ publicação; inteiros e decimais chegam como texto, um código como a união do
   tinha como ser declarado. Com `through`, `pairs` é `[campo_de, campo_da_junção]` e `through_pairs`,
   `[campo_da_junção, campo_para]`: o "Join table dataset relationship type" do Palantir
   (`object-link-types/create-link-type/`).
-- **Os SDKs do Palantir não estão na prateleira** (a versão anterior citava `osdk-ts@9ca39db0` como
-  prateleira; o `MANIFEST.md` dela não tem nenhum dos dois). São clones públicos que os estudos
-  fizeram à parte, citados com o commit.
+- **Os SDKs do Palantir estão na prateleira** desde o estudo do alinhamento: `osdk-ts@2e21feec` e
+  `foundry-platform-typescript@75fe1c05`. As versões anteriores deste cartão citavam clones à parte
+  (`osdk-ts@9ca39db0` e `@3371bee3`).
 - **As rotas moram em `/api/companies/{companyId}/…`**, como todas (`packages/hub-api/src/copies.ts:155`),
   e não em `/api/ontology/…`.
 - **A prova conta mal hoje.** O caderno grava `provedRows` como o número de linhas que a resposta
@@ -432,6 +450,7 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Página da conexão, bloco Inventário | "Lendo o inventário…" enquanto a primeira rodada corre | conector sem dicionário: "Inventário: 12 leituras declaradas" | o bloco em esqueleto (W34) | rodada `FAILED` ou `INTERRUPTED`: "Não foi possível ler o inventário." e, para quem gerencia, **Ler de novo** | a conexão que saiu: a página de não encontrado de hoje | quem não gerencia as ligações vê o resumo, sem **Ler de novo** | `PARTIAL`: "Inventário parcial: lido até o limite." e **Ler de novo** |
+| Conhecimento › o lugar do fluxo (no alto de Conceitos e na página de um conceito) | "Nenhum fluxo ainda." e, embaixo, "Os estados, as passagens e o que move cada uma entram com a etapa O fluxo da empresa." | o mesmo, até a etapa do fluxo | — | — | — | todo membro lê | — |
 | Conhecimento › Conceitos | "Nenhum conceito aprovado ainda. O Builder propõe conceitos quando você pede um app." | o mesmo | a lista em esqueleto | a falha da leitura com **Tentar de novo** (W17) | — | todo membro lê | — |
 | Conhecimento › página de um conceito | — | conceito sem códigos: a coluna Códigos vazia | esqueleto | **Tentar de novo** | "Este conceito não existe." e **Voltar aos conceitos** | todo membro lê e vê **Sugerir mudança** | aposentado: "Aposentado em 12/11: use Documento." no topo; um papel: "Papel de Parceiro" no topo, com o link para a base |
 | Conhecimento › código, **Sugerir mudança** | o formulário com "Quer dizer", "Explicação" e "Por quê" | — | o botão em espera depois do toque | a frase da falha e **Tentar de novo**, a chave guardada (W24) | o código que saiu: "Este código não existe mais." e **Voltar ao conceito** | todo membro propõe | — |
@@ -451,12 +470,19 @@ Todos falham hoje: o esquema `ontology`, as rotas e as ferramentas não existem.
 
 ### Os desenhos de caixas
 
-A 1280 px, Conhecimento, no menu da esquerda depois de Cópias:
+A 1280 px, Conhecimento, no menu da esquerda depois de Cópias, aberta na metade "Como a empresa é"
+("2. A"). A troca para "O que a empresa sabe" entra com o cartão do Brain; até lá, o nome da metade
+fica sobre as abas, sem troca:
 
 ```
 ┌ Conhecimento ────────────────────────────────────────────────────────────────────┐
+│ Como a empresa é                                                                 │
 │ [ Conceitos ]  [ Para revisar  2 ]  [ Histórico ]                                │
 ├──────────────────────────────────────────────────────────────────────────────────┤
+│ ┌╌ Fluxos ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │
+│ ╎ (  ) ── (  ) ── (  )   Nenhum fluxo ainda. Os estados, as passagens e o que  ╎ │
+│ ╎                        move cada uma entram com a etapa O fluxo da empresa.  ╎ │
+│ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │
 │ Conceito          É               Lido de                Campos  Códigos  Estado │
 │ Parceiro          —               Sankhya · parceiros       5       0     ativo  │
 │ Cliente           papel de        Sankhya · parceiros       2       0     ativo  │
@@ -477,6 +503,9 @@ A página de um conceito, e a de um papel:
 │ Também: venda, nota · chave: Número único · mostra: Número do documento          │
 │ Lido de   Sankhya, cabeçalho dos documentos de venda · Ver a consulta            │
 │ Prova     1.240 linhas em 12/11 10:02                                            │
+│ ┌╌ Fluxo do Documento ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │
+│ ╎ Nenhum fluxo ainda. (o mesmo lugar, vazio)                                   ╎ │
+│ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │
 │ Campo              Tipo            No sistema   Códigos                          │
 │ Número único       código          (coluna)                                      │
 │ Tipo de operação   lista           (coluna)     2 · Ver e sugerir                │
@@ -532,10 +561,13 @@ Para revisar:
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-A 390 px, as mesmas telas em uma coluna: as abas viram um seletor; cada conceito, um cartão com nome,
+A 390 px, as mesmas telas em uma coluna: o lugar do fluxo fica no alto, com a frase sob os passos
+vazios; as abas viram um seletor; cada conceito, um cartão com nome,
 fonte e as três contagens; a tabela de campos vira uma lista de linhas "Nome · tipo"; em Para
 revisar, cada item é um cartão com a sua caixa de marcar, e o botão de decidir fica fixo no pé. O
-produto antigo não tem estas telas: nenhuma captura a seguir.
+produto antigo não tem estas telas: nenhuma captura a seguir. O protótipo v3 com as duas metades
+(fora do repositório) desenha também a metade "O que a empresa sabe" e as duas junções, para o
+cartão do Brain e para a etapa do fluxo.
 
 ## A tabela de falhas
 
@@ -568,9 +600,9 @@ produto antigo não tem estas telas: nenhuma captura a seguir.
 | A ligação por junção, também de um conceito com ele mesmo | U1, U3 | `relation_version` com `through` e pares ambíguos (a versão anterior deste cartão) | Palantir, `object-link-types/create-link-type/` ("Join table dataset relationship type"); OCEL 2.0, a ligação objeto-objeto (`object_object`, arxiv.org/html/2403.01975, seção 6) | os pares de um lado até a junção e da junção até o outro | nativo da forma deste cartão | — | "1. Sim" (o metamodelo) | — |
 | A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (`:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
-| As telas | U4 | o menu da esquerda (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`) e a página de Cópias (`copies.index.tsx`, `copies.$copyId.tsx`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o Mastra Studio, a tela Knowledge (a página própria, que o fundador mandou); os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento | uma página no menu: lista, página do conceito, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento (fora do repositório) | "Q1 / R1", "1. Aprovado"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId/knowledge.index.tsx`, `knowledge.$concept.tsx`  |
+| As telas | U4 | o menu da esquerda (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`) e a página de Cópias (`copies.index.tsx`, `copies.$copyId.tsx`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o Mastra Studio, a tela Knowledge (a página própria, que o fundador mandou); os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento, o v3 com as duas metades | uma página no menu, em duas metades: lista, página do conceito, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento (fora do repositório) | "Q1 / R1", "1. Aprovado", "2. A"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId/knowledge.index.tsx`, `knowledge.$concept.tsx`  |
 | Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:312-332` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
-| O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `palantir/osdk-ts@9ca39db0` (clone público, fora da prateleira) `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
+| O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `osdk-ts@2e21feec` `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
 
 A memória em dois lugares e o contexto da empresa do G4 OS (só estrutura) ficam fora da tabela: são
 as três perguntas que o fundador respondeu em 2026-11-12, sem unidade nesta etapa.
@@ -1181,7 +1213,10 @@ web (W17, W24, W32, W34). Segurança S6, S8, S10.
    padrão) e a página de um conceito em `knowledge.$concept.tsx`, o código aberto por `?campo=` (web
    W18: cada vista tem endereço); a lista, a página (um papel com "Papel de <base>" e o link), o código
    com **Sugerir mudança**, Para revisar e Histórico, cada estado da matriz; cada "não encontrado" com
-   **Voltar aos conceitos** (W34). O grafo não entra (a página do fundador).
+   **Voltar aos conceitos** (W34). A página abre na metade "Como a empresa é" (o nome da metade
+   sobre as abas, "2. A"), com o lugar do fluxo, vazio, no alto de Conceitos e na página de um
+   conceito, a frase da matriz; a troca para "O que a empresa sabe" e as páginas do Brain que citam
+   o conceito são do cartão do Brain. O grafo não entra (a página do fundador).
 6. O cartão do resultado de `concept_propose` na conversa, com **Revisar e aprovar** para Para
    revisar.
 

@@ -3,9 +3,8 @@
 ## Context
 
 The Brain is the company's text for its agents: instructions, rules, reviewed learnings, later
-documents. Mastra Knowledge 1.82 is alpha and says isolation between scopes
-is not guaranteed. The [0064] studies traced it with n8n, lobe-chat, Dify, Open WebUI and
-Palantir. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`.
+documents. Mastra 1.82 marks Knowledge only `@experimental`; we treat it as alpha, without isolation
+between scopes. The [0064] studies traced it with n8n, lobe-chat, Dify, Open WebUI and Palantir. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`.
 
 ## Decision
 
@@ -21,7 +20,7 @@ Palantir. Founder, 2026-11-12: `"A1 B1 C1"`, `"E1"`.
   person's own memory counts at once.
 - Knowledge keeps no old text: the before and after of each change live in a Hub append-only table,
   and Knowledge is rebuilt from it after a storage schema change.
-- `C1`: company documents only with keyword search and those attack tests while Knowledge is alpha.
+- `C1`: company documents only with keyword search and those attack tests while Knowledge is experimental.
   `E1`: Conexus redeclares access by folder and area; no source's per-file permissions. Connector data
   never enters the Brain.
 - Search by meaning waits for the ten questions of `docs/approvals.md` to fail on keywords.
@@ -34,7 +33,7 @@ retention of pages a source deleted.
 
 ## Reopens when
 
-Knowledge drops its isolation warning, or a client needs a folder with mixed access (`E2` or `E3`).
+Knowledge leaves `@experimental`, or a client needs a folder with mixed access (`E2` or `E3`).
 
 ## State
 
