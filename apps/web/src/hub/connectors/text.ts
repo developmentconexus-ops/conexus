@@ -258,3 +258,31 @@ export const COPIES_UNREAD = 'Não conseguiu ler as cópias desta conta.'
 export function tableLeftText(name: string): string {
   return `A conexão foi removida. A tabela da cópia ${name} ainda não saiu do banco da empresa; o Conexus a apaga no próximo Desligar ou quando uma cópia for ligada.`
 }
+
+export const READING_INVENTORY = 'Lendo o inventário…'
+export const INVENTORY_FAILED = 'Não foi possível ler o inventário.'
+export const INVENTORY_PARTIAL = 'Inventário parcial: lido até o limite.'
+export const READ_AGAIN = 'Ler de novo'
+
+function counted(n: number, one: string, many: string): string {
+  return `${n.toLocaleString('pt-BR')} ${n === 1 ? one : many}`
+}
+
+/** "Inventário: 812 tabelas, 9.310 campos, 2.140 códigos, lido em 12/11 às 09:00"; for a system with no dictionary, "Inventário: 12 leituras declaradas". */
+export function inventoryText(inventory: {
+  readAt: string
+  tables: number
+  fields: number
+  codes: number
+  operations: number
+}): string {
+  const { tables, fields, codes, operations } = inventory
+  if (tables + fields + codes === 0)
+    return `Inventário: ${counted(operations, 'leitura declarada', 'leituras declaradas')}`
+  const counts = [
+    counted(tables, 'tabela', 'tabelas'),
+    counted(fields, 'campo', 'campos'),
+    counted(codes, 'código', 'códigos'),
+  ].join(', ')
+  return `Inventário: ${counts}, lido em ${dayAndMonth(inventory.readAt)} às ${clockOf(inventory.readAt)}`
+}

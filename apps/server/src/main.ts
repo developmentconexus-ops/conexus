@@ -2,45 +2,33 @@ import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { FAILURES, getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
   signInFlows,
 } from './builder/model-accounts/public.ts'
-import { createInventoryClock } from './builder/ontology/public.ts'
-import type {
-  ConversationMachine,
-  MachinesOf,
-  MachineTuning,
-  RepositoryOf,
-} from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { conversationsOf } from './conversations-of.ts'
 import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
-import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
+import type { Connectors } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
-import type { InventoryTuning } from './hub/ontology/inventory.ts'
-import { createOntology } from './hub/ontology/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
-import type { CloudflareApps } from './platform/cloudflare.ts'
+import { ontologyOf } from './ontology-of.ts'
 import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
-import type { CompanyPostgres } from './platform/company-postgres.ts'
 import { createCompanyPostgres, neonTransport } from './platform/company-postgres.ts'
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
-import type { Database, MastraPool } from './platform/database.ts'
 import {
   assertMigrated,
   assertRuntimeLogin,
@@ -50,19 +38,17 @@ import {
 } from './platform/database.ts'
 import { createEdgeServer } from './platform/edge-server.ts'
 import { createEdgeTools } from './platform/edge-tools.ts'
-import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
-import type { SendMail } from './platform/mail.ts'
 import { createMail } from './platform/mail.ts'
 import { watchMemory } from './platform/memory.ts'
 import { migrate, migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
-import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
 import { runReseal } from './reseal.ts'
+import type { SubjectsDeps } from './subjects-deps.ts'
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 
@@ -115,41 +101,15 @@ export async function createEdgeHub(
  * Builder's model accounts reach identity the same way, with the installation's seal keys, and its
  * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
  */
-export function subjectsOf(deps: {
-  database: Database
-  config: Config
-  identity: Identity
-  sendMail: SendMail
-  neon: NeonProjects
-  companyPostgres: CompanyPostgres
-  cloudflare: CloudflareApps
-  /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
-  cloudflareTools: CloudflareApps
-  mastraPool: MastraPool
-  machinesOf: MachinesOf
-  conversationMachine: ConversationMachine
-  /** The tests' folder and start deadline for the conversations' machines (`test-runs.ts`). */
-  machineTuning?: MachineTuning
-  repository: RepositoryOf
-  copy: GitCopy
-  log: FailureLog
-  tuning?: ConnectorTuning
-  /** The tests' ceilings for one inventory run; production's by default. */
-  inventoryTuning?: InventoryTuning
-  /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
-  pruneBudgetMs?: number
-  /** The tests' deadline for one look at an app's database (`test-hub.ts`); the apps' call limit by default. */
-  appDataDeadlineMs?: number
-}) {
+export function subjectsOf(deps: SubjectsDeps) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
-  const appsDomain = config.appsDomain
+  const { appsDomain, sealKeys } = config
   // The copies are made below, after the apps their release and removal reach; both come long after.
   function lateCopies() {
     return copies
   }
   const appRemoval = createAppRemoval({ ...deps, copies: lateCopies })
-  const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
   const machines = deps.machinesOf()
@@ -209,24 +169,14 @@ export function subjectsOf(deps: {
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })
-  const ontology = createOntology({
-    ...{ database, log, identity },
-    connectors: () => connectors.inventory,
-    clock: () => createInventoryClock({ mastra: conversations.mastra }),
-    tuning: deps.inventoryTuning,
+  const ontology = ontologyOf({
+    ...{ database, log, identity, inventory: deps.inventory },
+    ...{ connectors: () => connectors.inventory, mastra: () => conversations.mastra },
   })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{
-      conversations,
-      assistant,
-      automations,
-      agents,
-      notifications,
-      connectors,
-      copies,
-      ontology,
-    },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, copies },
+    ontology,
   }
 }
 

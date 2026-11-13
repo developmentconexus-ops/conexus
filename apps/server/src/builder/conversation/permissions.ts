@@ -30,6 +30,7 @@ const READ = new Set<string>([
   BUILDER_TOOL.connectorRead,
   BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.connectorNoteSave,
+  BUILDER_TOOL.inventorySearch,
   BUILDER_TOOL.appDataRead,
   BUILDER_TOOL.appDataCheck,
   // It writes a proposal row and never turns a copy on: a person does (decision 0053).

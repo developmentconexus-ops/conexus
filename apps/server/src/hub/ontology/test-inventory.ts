@@ -8,14 +8,21 @@ import { connectionsOn, forward, linkSankhya } from '../connectors/test-connecti
 import type { Hub } from '../identity/test-hub.ts'
 import type { InventoryTuning } from './inventory.ts'
 
-/** A Hub with the Sankhya double behind a door that can start spoiling the dictionary's pages after some calls. */
-export async function inventoryOn(t: TestContext, inventory?: InventoryTuning) {
-  const door = { asked: 0, spoilAfter: Number.POSITIVE_INFINITY }
+/** What passed through a door in front of a connector double, and when its dictionary reads start to be spoiled. */
+export type Door = { calls: number; asked: number; spoilAfter: number }
+
+/** In front of a double: every call counted, and each dictionary query past `spoilAfter` answered with a page that is not JSON. */
+export function doorOf(t: TestContext): {
+  door: Door
+  through: (origin: string) => Promise<string>
+} {
+  const door: Door = { calls: 0, asked: 0, spoilAfter: Number.POSITIVE_INFINITY }
   async function through(origin: string) {
     const server = createServer(async (incoming, outgoing) => {
       const chunks: Buffer[] = []
       for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
       const body = incoming.method === 'GET' ? undefined : Buffer.concat(chunks)
+      door.calls += 1
       if (incoming.url?.includes('executeQuery')) {
         door.asked += 1
         if (door.asked > door.spoilAfter) {
@@ -39,7 +46,13 @@ export async function inventoryOn(t: TestContext, inventory?: InventoryTuning) {
     const { port } = z.object({ port: z.number() }).parse(server.address())
     return `http://127.0.0.1:${port}`
   }
-  const on = await connectionsOn(t, through, { inventory })
+  return { door, through }
+}
+
+/** A Hub with the Sankhya double behind a door that can start spoiling the dictionary's pages after some calls. */
+export async function inventoryOn(t: TestContext, inventory?: InventoryTuning) {
+  const { door, through } = doorOf(t)
+  const on = await connectionsOn(t, through, { inventory: inventory ?? {} })
   return { ...on, door }
 }
 

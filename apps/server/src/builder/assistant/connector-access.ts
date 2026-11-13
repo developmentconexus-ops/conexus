@@ -4,6 +4,7 @@ import { TURNS_KEPT } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
+import type { InventoryAsk, InventoryDoor } from '../ontology/public.ts'
 import { turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
@@ -40,15 +41,18 @@ export function assistantAccess(
  * never in an automation's run (step 24.3.5).
  */
 export function assistantConnectorTools(
-  deps: { connectors: AssistantConnectors; log: FailureLog },
+  deps: { connectors: AssistantConnectors; inventory: InventoryDoor; log: FailureLog },
   a: Conversation & { mayNote: boolean },
 ) {
   const { scope } = a
   const access = assistantAccess(deps, a)
-  if (!a.mayNote) return connectorTools(access, { noteSave: false, reads: false })
+  const inventory: InventoryAsk = (call) =>
+    deps.inventory.search({ companyId: scope.companyId, ...call })
+  if (!a.mayNote) return connectorTools(access, { noteSave: false, reads: false, inventory })
   return connectorTools(access, {
     noteSave: true,
     reads: false,
+    inventory,
     save: (call, requestContext) =>
       deps.connectors.saveNote(scope, { ...call, turn: turnKey.of(requestContext) }),
   })

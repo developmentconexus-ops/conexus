@@ -53,6 +53,7 @@ export const BUILDER_TOOL = {
   connectorRead: 'connector_read',
   connectorNotes: 'connector_notes',
   connectorNoteSave: 'connector_note_save',
+  inventorySearch: 'inventory_search',
   appDataRead: APP_DATA_TOOL.read,
   appDataCheck: APP_DATA_TOOL.check,
   copyPropose: 'copy_propose',

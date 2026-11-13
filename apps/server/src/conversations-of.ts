@@ -15,11 +15,8 @@ import { COPY_WORKFLOW, copyClockOf, copyRun } from './builder/copy-clock/public
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
-import {
-  createInventoryClock,
-  INVENTORY_WORKFLOW,
-  inventoryRun,
-} from './builder/ontology/public.ts'
+import type { InventoryDoor } from './builder/ontology/public.ts'
+import { INVENTORY_WORKFLOW, inventoryRun } from './builder/ontology/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
@@ -114,10 +111,18 @@ function copiesOf(
   return { projectView: (ids) => copies().projectView(ids) }
 }
 
+/** The Ontology's inventory search as the agents' turns reach it: reached when a turn calls it. */
+function inventoryDoorOf(ontology: ConversationsDeps['ontology']): InventoryDoor {
+  return { search: (input) => ontology().search(input) }
+}
+
 /** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
-function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+function builderDoorsOf(
+  deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies' | 'ontology'>,
+) {
   return {
     connectors: builderDoorOf(deps.connectors),
+    inventory: inventoryDoorOf(deps.ontology),
     data: builderDataOf(deps.apps),
     copies: copiesOf(deps.copies),
   }
@@ -178,7 +183,7 @@ type ConversationsDeps = {
   /** The copies are made after the conversations; a run comes long after both. */
   copies: () => Pick<CopyService, 'run' | 'projectView'>
   /** The Ontology is made after the conversations; an inventory run comes long after both. */
-  ontology: () => Pick<Ontology['inventory'], 'run'>
+  ontology: () => Pick<Ontology['inventory'], 'run' | 'search'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -209,6 +214,7 @@ export function conversationsOf(deps: ConversationsDeps) {
     ...{ storage, database, identity, queue, log },
     ...machineOf(deps),
     connectors: door,
+    inventory: inventoryDoorOf(deps.ontology),
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
     handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
   })

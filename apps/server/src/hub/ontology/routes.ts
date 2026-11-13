@@ -10,10 +10,9 @@ export function registerOntologyRoutes(app: FastifyInstance, inventory: Inventor
   serve(app, getInventory, async ({ person, params }) =>
     answer(await inventory.view(ofPerson(person, params))),
   )
-  serve(app, runInventory, async ({ person, params, log }) => {
+  serve(app, runInventory, async ({ person, params }) => {
     const opened = await inventory.rerun(ofPerson(person, params))
     if (opened.kind === 'RUNNING') throw new Failure('INVENTORY_RUNNING')
-    log.info({ by: person.id, ...params }, 'INVENTORY_REQUESTED')
     return answer({ started: true as const })
   })
 }

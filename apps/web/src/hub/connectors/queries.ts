@@ -3,6 +3,7 @@ import {
   completeConnectionSignIn,
   deleteConnectionNote,
   getConnection,
+  getInventory,
   grantProjectConnection,
   linkConnection,
   listConnectionCopies,
@@ -10,6 +11,7 @@ import {
   listProjectConnections,
   reconnectConnection,
   revokeProjectConnection,
+  runInventory,
   startConnectionSignIn,
   TEST_LONGEST_MS,
   testConnection,
@@ -31,6 +33,13 @@ export function connectionsQuery(companyId: CompanyId) {
 export function connectionCopiesQuery(companyId: CompanyId, connectionId: ConnectionId) {
   return hubQuery(listConnectionCopies, { params: { companyId, connectionId } })
 }
+
+/** What a connection's system declares about itself, as the page's Inventário block shows it. */
+export function inventoryQuery(companyId: CompanyId, connectionId: ConnectionId) {
+  return hubQuery(getInventory, { params: { companyId, connectionId } })
+}
+
+export const sendInventoryRun = hubMutation(runInventory)
 
 export function connectionQuery(companyId: CompanyId, connectionId: ConnectionId) {
   return hubQuery(getConnection, { params: { companyId, connectionId } })

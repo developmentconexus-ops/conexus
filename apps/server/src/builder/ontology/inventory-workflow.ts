@@ -13,12 +13,11 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 export const INVENTORY_WORKFLOW = 'conexus-source-inventory'
 
 /** What a run's input keeps, parsed when the step runs (code C27). */
-export const InventoryInput = z.object({
+const InventoryInput = z.object({
   version: z.literal(1),
   companyId: CompanyIdSchema,
   runId: InventoryRunIdSchema,
 })
-export type InventoryInput = z.infer<typeof InventoryInput>
 
 const Ended = z.object({
   kind: z.enum(['COMPLETE', 'PARTIAL', 'FAILED', 'GONE', 'INPUT_UNREADABLE']),

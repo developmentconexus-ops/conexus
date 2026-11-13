@@ -51,7 +51,7 @@ The meaning lives in the dictionary, which `consultar` reads:
 - `TDDOPC`: what each value of a coded field means, by `NUCAMPO`. A company can add options.
 - `TDDINS`: the instance names `carregar` takes as `entidade`.
 
-Search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. Custom fields start with `AD_`. Never change the dictionary.
+Read the inventory first (`inventory_search`, when you have it): it keeps the tables, the fields and the meaning of each coded value, read when the connection was linked, and asks the system nothing; ask the person only what it does not say. Otherwise search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. Custom fields start with `AD_`. Never change the dictionary.
 
 ## Investigate in stages
 

@@ -108,7 +108,7 @@ export async function hubBeside(t: TestContext, hub: Hub, log: FailureLog = sile
   )
   const subjects = subjectsOf({
     ...{ mastraPool: test.mastraPool, database: test.database, config, identity, sendMail },
-    ...{ ...ports, log },
+    ...{ ...ports, log, inventory: 'off' },
   })
   const status = createStatus({ version: config.version, database: test.database })
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })

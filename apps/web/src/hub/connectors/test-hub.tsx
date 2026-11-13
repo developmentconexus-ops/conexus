@@ -3,6 +3,7 @@ import type {
   ConnectionNote,
   ConnectorEntry,
   CopyOfConnection,
+  InventoryView,
   TestResult,
 } from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, ConnectionDetail, ConnectionList } from '@conexus/hub-api'
@@ -33,6 +34,27 @@ export type View = {
   /** While set, the read of a connection's copies waits for it; then it answers this instead, when given. */
   copiesHeld?: Promise<void>
   copiesAnswer?: () => Response
+  /** The inventory the connection's page shows, and what **Ler de novo** answers; a complete one, for who manages, unless the test says. */
+  inventory?: InventoryView
+  inventoryRun?: () => Response
+}
+
+/** The Hub's answer about a connection's inventory, with the one the tests most often want. */
+export const COUNTS = {
+  readAt: '2026-11-12T12:00:00.000Z',
+  outcome: 'COMPLETE',
+  reason: null,
+  tables: 812,
+  fields: 9310,
+  codes: 2140,
+  operations: 0,
+} as const
+
+export const INVENTORY: InventoryView = {
+  inventory: COUNTS,
+  last: { outcome: 'COMPLETE', reason: null },
+  running: false,
+  mayRun: true,
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -57,6 +79,13 @@ function reads(view: View): HttpHandler[] {
           mayManage: view.mayManage,
         }),
       ),
+    ),
+    http.get(`${BASE}/ontology/inventories/:connectionId`, () =>
+      HttpResponse.json({ ...(view.inventory ?? INVENTORY), mayRun: view.mayManage }),
+    ),
+    http.post(
+      `${BASE}/ontology/inventories/:connectionId/runs`,
+      () => view.inventoryRun?.() ?? HttpResponse.json({ started: true }, { status: 202 }),
     ),
     http.get(`${BASE}/connections/:connectionId/copies`, async ({ params }) => {
       await view.copiesHeld

@@ -82,9 +82,8 @@ async function hubServing(
   const ports = testAppPorts(config, { neon, cloudflare, postgres, tools })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
-    ...{ ...ports, log },
+    ...{ ...ports, log, inventory: tuning.inventory ?? 'off' },
     tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: tuning.now, catalog: tuning.catalog },
-    inventoryTuning: tuning.inventory,
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
     appDataDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
@@ -124,8 +123,7 @@ async function hubServing(
       folder: ports.folder,
     },
     assistantMachines: ports.assistantMachines,
-    connectors: subjects.connectors,
-    ontology: subjects.ontology,
+    ...{ connectors: subjects.connectors, ontology: subjects.ontology },
     apps,
     ...{ identity: identity.ports, agents: subjects.agents, sendMail },
     notify: subjects.notifications.notify,

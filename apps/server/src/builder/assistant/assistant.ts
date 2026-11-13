@@ -35,6 +35,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
+import type { InventoryDoor } from '../ontology/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
 import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
@@ -86,6 +87,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...TYPED_READ_NAMES,
   BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.connectorNoteSave,
+  BUILDER_TOOL.inventorySearch,
   ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
@@ -109,6 +111,7 @@ type Deps = {
   database: Database
   identity: IdentityPorts
   connectors: AssistantConnectors
+  inventory: InventoryDoor
   projects: AssistantProjects
   queue: QueueDeps
   /**

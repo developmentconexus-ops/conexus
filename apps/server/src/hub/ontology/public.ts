@@ -1,9 +1,16 @@
 import type { FastifyInstance } from 'fastify'
 import type { InventoryDeps } from './inventory.ts'
+import { searchInventory } from './inventory-search.ts'
 import { createInventoryService } from './inventory-service.ts'
 import { registerOntologyRoutes } from './routes.ts'
 
-export type { InventoryClock, InventoryConnectors, InventoryEnd, Opened } from './inventory.ts'
+export type {
+  InventoryClock,
+  InventoryConnectors,
+  InventoryEnd,
+  InventoryTuning,
+} from './inventory.ts'
+export type { InventorySearch, InventorySearchInput } from './inventory-search.ts'
 
 /**
  * The company's Ontology (A Ontologia da empresa): today the inventory of what each connection's
@@ -13,7 +20,13 @@ export type { InventoryClock, InventoryConnectors, InventoryEnd, Opened } from '
 export function createOntology(deps: InventoryDeps) {
   const inventory = createInventoryService(deps)
   return Object.freeze({
-    inventory: { open: inventory.open, run: inventory.run, launch: inventory.launch },
+    inventory: {
+      open: inventory.open,
+      run: inventory.run,
+      launch: inventory.launch,
+      search: (input: Parameters<typeof searchInventory>[1]) =>
+        searchInventory(deps.database, input),
+    },
     routes: (app: FastifyInstance) => registerOntologyRoutes(app, inventory),
   })
 }

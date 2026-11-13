@@ -3,6 +3,7 @@ import {
   CircleAlertIcon,
   CopyPlusIcon,
   DatabaseIcon,
+  ListTreeIcon,
   NotebookPenIcon,
   NotebookTextIcon,
 } from 'lucide-react'
@@ -14,11 +15,16 @@ import { readRefusedText, refusedLabelText } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const { connectorRead, connectorNotes, connectorNoteSave, copyPropose } = BUILDER_TOOL
+const { connectorRead, connectorNotes, connectorNoteSave, inventorySearch, copyPropose } =
+  BUILDER_TOOL
 
 /** The rows of the tools of a Projeto's granted connections (card of step 20, U5). */
 export const CONNECTOR_SPECS: Record<
-  typeof connectorRead | typeof connectorNotes | typeof connectorNoteSave | typeof copyPropose,
+  | typeof connectorRead
+  | typeof connectorNotes
+  | typeof connectorNoteSave
+  | typeof inventorySearch
+  | typeof copyPropose,
   ToolSpec
 > = {
   [connectorRead]: {
@@ -45,6 +51,15 @@ export const CONNECTOR_SPECS: Record<
     done: 'Anotou no caderno do sistema',
     failed: 'Não conseguiu anotar no caderno',
     verb: 'anotou',
+    body: 'generic',
+    groups: true,
+  },
+  [inventorySearch]: {
+    icon: ListTreeIcon,
+    running: 'Procurando no inventário do sistema',
+    done: 'Procurou no inventário do sistema',
+    failed: 'Não conseguiu procurar no inventário',
+    verb: 'procurou inventário',
     body: 'generic',
     groups: true,
   },

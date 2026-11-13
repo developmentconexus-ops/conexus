@@ -12,7 +12,7 @@ import { connection } from './tables.ts'
 export type InventorySource = Readonly<{
   linkedBy: PersonId
   connector: ConnectorId
-  /** The connector reads a dictionary; when false, `declared` is the whole inventory. */
+  /** The connector reads a dictionary on top of `declared`; when false, `declared` is the whole inventory. */
   dictionary: boolean
   declared: readonly InventoryEntry[]
 }>

@@ -9,6 +9,8 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { InventoryAsk } from '../ontology/public.ts'
+import { inventorySearchTool } from '../ontology/public.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
 
@@ -332,6 +334,8 @@ export function connectorTools(
   access: ConnectorAccess,
   include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & {
     reads?: false
+    /** `inventory_search` on the connections of the scope, reading what the inventory kept. */
+    inventory?: InventoryAsk
     /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
     propose?: {
       copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
@@ -343,6 +347,15 @@ export function connectorTools(
   return {
     ...(include.reads === false ? {} : readTool(access)),
     ...notesTool(access),
+    ...(include.inventory === undefined
+      ? {}
+      : inventorySearchTool({
+          connection: connectionField(access.connections),
+          connector: CONNECTOR_FIELD,
+          resolve: (connection, connector) => inNotebook(access.connections, connection, connector),
+          notGranted: NOT_GRANTED,
+          ask: include.inventory,
+        })),
     ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
     ...(include.propose === undefined
       ? {}

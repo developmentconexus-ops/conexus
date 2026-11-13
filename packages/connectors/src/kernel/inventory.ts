@@ -1,11 +1,13 @@
 import { z } from 'zod'
-import type { Connector } from './definition.ts'
-import { inProbeOrder } from './definition.ts'
 import type { Operation } from './operation.ts'
 
-export const InventoryKind = z.enum(['TABLE', 'FIELD', 'CODE', 'OPERATION'])
+const InventoryKind = z.enum(['TABLE', 'FIELD', 'CODE', 'OPERATION'])
 
-/** One thing a system declares about itself: names, types and labels, never a row of the company's data. */
+/**
+ * One thing a system declares about itself: names, types and labels, never a row of the company's data.
+ * TABLE is what the source keeps (a table, an API object, a sheet), FIELD a column or property, CODE one
+ * value a field allows, OPERATION the id of a declared operation.
+ */
 export const InventoryEntrySchema = z.object({
   kind: InventoryKind,
   name: z.string().min(1).max(200), // TABELA, TABELA.CAMPO, TABELA.CAMPO=valor, or the operation's id
@@ -27,18 +29,7 @@ export const InventoryInput = z.object({
   limit: z.number().int().min(1).max(500),
 })
 
-/** One read of a system's dictionary, paged; outside `operations`, so no role, tool or probe sees it (as `copy`). */
+/** What the source says of itself (a dictionary, a database catalog or a metadata endpoint), read in pages; outside `operations`, so no role, tool or probe sees it (as `copy`). */
 export type ConnectorInventory = Readonly<{
   read: Operation<{ cursor: string | null; limit: number }, InventoryPage, 'read'>
 }>
-
-/** The entries of a connector with no dictionary: its declared operations, no call. */
-export function declaredInventory(connector: Connector): InventoryEntry[] {
-  return [...inProbeOrder(connector), ...(connector.writes ?? [])].map((operation) => ({
-    kind: 'OPERATION',
-    name: operation.id,
-    type: operation.class,
-    label: operation.label.slice(0, 200),
-    custom: false,
-  }))
-}

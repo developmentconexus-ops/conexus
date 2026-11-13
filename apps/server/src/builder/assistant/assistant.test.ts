@@ -84,6 +84,7 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
     'conexus_overview',
     'connector_note_save',
     'connector_notes',
+    'inventory_search',
     'knowledge_list',
     'knowledge_read',
     'knowledge_search',

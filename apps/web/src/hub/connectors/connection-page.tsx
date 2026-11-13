@@ -21,6 +21,7 @@ import {
 } from '../../ui/dropdown-menu.tsx'
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
+import { Inventory } from './inventory.tsx'
 import { ReconnectButton } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { Notebook } from './notes.tsx'
@@ -330,6 +331,7 @@ export function ConnectionPage() {
         answer={test.data}
       />
       <Facts name={name} connection={connection} />
+      <Inventory companyId={companyId} connectionId={connectionId} />
       <Notebook
         companyId={companyId}
         connectionId={connectionId}

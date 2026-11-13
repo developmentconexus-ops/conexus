@@ -1,5 +1,3 @@
-import type { InventoryEntry } from '@conexus/connectors'
-import { PAGE_ROWS } from '@conexus/connectors'
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import {
   ConnectionId as ConnectionIdSchema,
@@ -11,12 +9,13 @@ import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import type { InventoryRead, InventorySource } from '../connectors/public.ts'
+import type { InventoryEntry, InventoryRead, InventorySource } from '../connectors/public.ts'
+import { PAGE_ROWS } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { inventoryEnd, inventoryEntry, inventoryRun } from './tables.ts'
 
 /** Production's ceilings of one run, the copies' (`hub/copies/run.ts`): 500 rows a page, 200 pages or 10 minutes. */
-export const INVENTORY_DEFAULTS = {
+const INVENTORY_DEFAULTS = {
   pageRows: PAGE_ROWS,
   runPages: 200,
   runMs: 10 * 60_000,
@@ -24,7 +23,7 @@ export const INVENTORY_DEFAULTS = {
 /** A run with no end is open for 15 minutes: the ceiling of the run plus slack, with no renewal (the run stops by itself at the ceiling). */
 export const INVENTORY_LEASE_MS = 15 * 60_000
 
-export type InventoryTuning = Partial<typeof INVENTORY_DEFAULTS>
+export type InventoryTuning = { pageRows?: number; runPages?: number; runMs?: number }
 export type Ids = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
 type RunIds = Readonly<{ companyId: CompanyId; runId: InventoryRunId }>
 
@@ -183,10 +182,10 @@ async function openRun(database: Database, ids: Ids): Promise<Opened> {
 
 async function finish(deps: InventoryDeps, ids: Ids & { runId: InventoryRunId }, final: Final) {
   await deps.database.command(companyScope(ids.companyId), (tx) => close(tx, ids, final))
-  deps.log.info({ ...ids, ...final, reason: final.reason ?? '-' }, 'INVENTORY_ENDED')
+  deps.log.info({ ...ids, ...final, reason: final.reason ?? '-' }, 'ONTOLOGY_INVENTORY_ENDED')
 }
 
-type Ceilings = typeof INVENTORY_DEFAULTS
+type Ceilings = Required<InventoryTuning>
 
 /** The dictionary read page by page until it ends or the ceiling of the run stops it (`PARTIAL`, `CAP`). */
 async function readDictionary(
@@ -198,7 +197,7 @@ async function readDictionary(
   const started = Date.now()
   let cursor: string | null = null
   let pages = 0
-  let entries = 0
+  let entries = source.declared.length
   while (true) {
     const read = await deps.connectors().page({
       ...{ ...ids, enabledBy: source.linkedBy, cursor, signal: at.signal },
@@ -233,8 +232,8 @@ export function createInventory(deps: InventoryDeps) {
     const ids = { ...input, connectionId: ConnectionIdSchema.parse(found.connectionId) }
     const source = await deps.connectors().sourceOf(ids)
     if (source === undefined) return { kind: 'GONE' }
-    if (source.dictionary) return readDictionary(deps, tuning, { ids, source, signal })
     await writeEntries(deps.database, ids, source.declared)
+    if (source.dictionary) return readDictionary(deps, tuning, { ids, source, signal })
     await finish(deps, ids, { outcome: 'COMPLETE', reason: null, pages: 1 })
     return { kind: 'COMPLETE', entries: source.declared.length }
   }
@@ -245,6 +244,7 @@ export function createInventory(deps: InventoryDeps) {
     if (opened.kind === 'OPENED')
       try {
         await deps.clock().start({ ...ids, runId: opened.runId })
+        deps.log.info({ ...ids, runId: opened.runId }, 'ONTOLOGY_INVENTORY_STARTED')
       } catch (error) {
         const failure = new Failure('INTERNAL_UNEXPECTED', {
           details: { reason: 'INVENTORY_START' },
