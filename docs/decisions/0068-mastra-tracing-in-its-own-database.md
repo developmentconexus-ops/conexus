@@ -2,34 +2,33 @@
 
 ## Context
 
-[0052] kept one tracing path, OpenTelemetry to Grafana at 21.1, and no Builder span in a database.
-On 2026-11-13 an Assistant turn failed with a 400 and the Hub kept only the status. The founder:
+[0052] kept one tracing path, OpenTelemetry to Grafana at 21.1. On 2026-11-13 an Assistant turn
+failed with a 400 and the Hub kept only the status. The founder:
 "vamos habilitar o Master Traces"; then "a gente não vai utilizar a plataforma do master, a gente
 vai guardar no nosso banco." The card is `docs/steps/pattern-o-rastreio-do-mastra.md`.
 
 ## Decision
 
-- One `Observability` (`@mastra/observability` 1.23.1, released with `@mastra/core` 1.82.0) on the
-  Hub's one `Mastra`: every controller and workflow is traced by that registration, with no code per
-  agent.
+- One `Observability` (`@mastra/observability` 1.23.1, of `@mastra/core` 1.82.0) on the Hub's
+  `Mastra` traces every controller and workflow, with no code per agent.
 - One exporter, `MastraStorageExporter`, into Mastra's database [0010]. No platform exporter, no
   token: nothing leaves Brazil, and [0032] gains no line.
-- Spans keep input, output and error, the provider's answer body included. This is the one exception to
-  security S41; the guide takes the sentence at the card's closing (L20).
-- Mastra's defaults: sampling `always`, `SensitiveDataFilter`, serialization limits.
-- The store is `PostgresStoreVNext` in Mastra's database (A2), while a measured turn stays under
-  about 600 KB at the peak of 58 turns a day. Spans expire after 14 days (B1) through Mastra's
-  `retention` and a daily `prune()`. A trace is read in Neon's SQL Editor by conversation (E1).
+- Spans keep input, output and error, the provider's answer body included: the one exception to
+  security S41, written into the guide at the card's closing (L20).
+- Sampling `always` and `SensitiveDataFilter`; no chunk spans; a step keeps 500 messages.
+- The store is Mastra's v-next Postgres domain (A2), while a turn stays under about 600 KB at the
+  peak of 58 turns a day. Spans expire after 14 days (B1) by `retention` and a daily `prune()`.
+  Neon's SQL Editor reads a trace by conversation (E1).
 - OpenTelemetry stays open for 21.1 as one more exporter; S42 governs what leaves.
 
 ## Criterion
 
-The card's criteria. Stop rule: a recorded Builder turn whose spans, projected to today's turns per
-day and the chosen age, pass the card's storage bound returns to the founder before the merge.
+The card's criteria; a turn over the card's storage bound returns to the founder.
 
 ## Result
 
-Not run.
+A recorded one-tool turn wrote about 330 KB of spans; 58 turns a day for 14 days project
+about 270 MB, under the bound.
 
 ## Consequences
 

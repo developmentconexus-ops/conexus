@@ -1,4 +1,4 @@
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { conversationMemory, TITLE } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { OBSERVED } from './files.ts'
@@ -36,7 +36,7 @@ the oldest lines first. -->`
  * written for a conversation, the recall of every conversation of the same person in the company
  * (its resource), and that person's working memory.
  */
-export function assistantMemory(deps: { storage: PostgresStore; queue: QueueDeps }) {
+export function assistantMemory(deps: { storage: MastraCompositeStore; queue: QueueDeps }) {
   return conversationMemory({
     ...deps,
     ...TITLE.ask,

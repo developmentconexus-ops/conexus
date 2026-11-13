@@ -1,7 +1,7 @@
 import type { WorkingMemory } from '@mastra/core/memory'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
-import type { PostgresStore } from '@mastra/pg'
 import { z } from 'zod'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { accountModel, memoryModelsFor, Turn } from '../model-accounts/public.ts'
@@ -49,7 +49,7 @@ function retrievalOf(recall: false | 'thread' | 'resource') {
  * Mastra clears them when it is off, so they went with it.
  */
 export function conversationMemory(deps: {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   queue: QueueDeps
   /** The title's instructions and the observer's, in the words of the conversation's kind. */
   title: string

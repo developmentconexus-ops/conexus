@@ -18,7 +18,7 @@ import {
   readKnowledgePage,
 } from '@mastra/core/knowledge'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Failure } from '../../platform/failure.ts'
 import type { ScopeOf } from './context.ts'
 
@@ -101,7 +101,7 @@ function org(companyId: CompanyId) {
   return `org:${companyId}`
 }
 
-function knowledgeOf(storage: PostgresStore) {
+function knowledgeOf(storage: MastraCompositeStore) {
   return new Knowledge({
     id: 'conexus-company',
     storage,
@@ -287,7 +287,7 @@ async function held(knowledge: Held, companyId: CompanyId, noteId: CompanyMemory
  * Factory does (`factory/src/routes/knowledge.ts:117-161`), by the company's scope alone; it writes
  * pages and notes by id, since a page the model makes may have no path.
  */
-export function companyMemory(storage: PostgresStore) {
+export function companyMemory(storage: MastraCompositeStore) {
   const knowledge = knowledgeOf(storage)
   return Object.freeze({
     knowledge,

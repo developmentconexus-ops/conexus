@@ -1,7 +1,7 @@
 import type { CompanyId, ConnectionId, ConversationId, Person, PersonId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'
-import type { PostgresStore } from '@mastra/pg'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, ReleaseScope } from '../controller-kit/public.ts'
@@ -9,6 +9,7 @@ import { CONTROLLER_KINDS } from '../controller-kit/public.ts'
 import type { MayApprove, Watched, WriteOf } from '../conversation/public.ts'
 import { watchRuns } from '../conversation/public.ts'
 import { createMastra } from './mastra.ts'
+import { RETENTION_WORKFLOW, retentionRun } from './retention.ts'
 
 /** A conversation controller on the one `Mastra`, with what the Hub does to its conversations. */
 type Part = {
@@ -46,7 +47,7 @@ type Part = {
  * order of removal and of `close`.
  */
 export function createHubMastra(deps: {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   log: FailureLog
   parts: readonly Part[]
   workflows: Readonly<Record<string, AnyWorkflow>>
@@ -58,7 +59,8 @@ export function createHubMastra(deps: {
 }) {
   const { parts, log } = deps
   const mastra = createMastra({
-    ...{ storage: deps.storage, log, workflows: deps.workflows },
+    ...{ storage: deps.storage, log },
+    workflows: { ...deps.workflows, [RETENTION_WORKFLOW]: retentionRun },
     controllers: Object.fromEntries(
       parts.map((part) => [CONTROLLER_KINDS[part.kind].id, part.controller]),
     ),

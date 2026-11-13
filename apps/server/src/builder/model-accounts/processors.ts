@@ -193,6 +193,10 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       await keepNotices(args, turn)
       if (account === undefined)
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
+      // The trace names which account answered each step (decision 0068): the pick's own span.
+      args.tracing?.currentSpan?.update({
+        metadata: { accountId: account.id, accountKind: account.kind, modelId: account.modelId },
+      })
       const result: ProcessInputStepResult = {
         ...lastStep(args),
         model: account.models.conversation,
