@@ -1,9 +1,6 @@
 import type { Connector, CopyDefinitionV2, Operation, PersonalKind } from '@conexus/connectors'
 import { personalHolding } from '@conexus/connectors'
-import type { CompanyId, PersonId } from '@conexus/hub-api'
 import { listReadOf } from './list-read.ts'
-import type { Deps } from './rows.ts'
-import { personalKindsOf } from './rows.ts'
 
 /**
  * The kind of each column of a version 2 definition: the one of the most specific declared path
@@ -23,14 +20,6 @@ function personalColumnsOf(
   return kinds
 }
 
-/** The kinds a copy keeps: the ones its columns hold. */
-function keptKindsOf(
-  definition: CopyDefinitionV2,
-  operation: Pick<Operation<unknown, unknown, 'read'>, 'personal'>,
-): PersonalKind[] {
-  return [...new Set(personalColumnsOf(definition, operation).values())]
-}
-
 /** The kind of each column in a connector of the kit's; none when the connector or its list read is not there. */
 export function personalColumnsIn(
   kit: Connector | undefined,
@@ -38,25 +27,4 @@ export function personalColumnsIn(
 ): ReadonlyMap<string, PersonalKind> {
   const found = kit === undefined ? undefined : listReadOf(kit, definition)
   return found === undefined ? new Map() : personalColumnsOf(definition, found.operation)
-}
-
-/**
- * The kinds the copy keeps that its owner's role holds now, read at each page, as an app's version
- * before the field reads (decision F1): a copy bound before the Ligar checked the kinds never keeps
- * more than who bound it sees, and none when that person left.
- */
-export async function keptNow(
-  deps: Deps,
-  a: {
-    companyId: CompanyId
-    enabledBy: PersonId
-    definition: CopyDefinitionV2
-    operation: Pick<Operation<unknown, unknown, 'read'>, 'personal'>
-  },
-): Promise<PersonalKind[]> {
-  const kept = keptKindsOf(a.definition, a.operation)
-  if (kept.length === 0) return kept
-  const { companyId, enabledBy } = a
-  const held = await personalKindsOf(deps, { person: { id: enabledBy }, companyId }, enabledBy)
-  return kept.filter((kind) => held.includes(kind))
 }

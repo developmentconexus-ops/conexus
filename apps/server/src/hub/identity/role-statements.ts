@@ -1,4 +1,4 @@
-import type { RoleConnectors, RoleView } from '@conexus/hub-api'
+import type { RoleConnectors } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { RoleSet, Statements } from './roles.ts'
@@ -35,23 +35,6 @@ export function connectorsOf(set: RoleSet, permission: Statements): RoleConnecto
   return connectors
 }
 
-/**
- * The kinds of personal data a stored permission holds, in the kit's order. `sensivel` is never
- * held by a role (founder `D1`), so a stored one is not read.
- */
-export function personalOf(set: RoleSet, permission: Statements): string[] {
-  const held = new Set(permission.personal)
-  return set.personalKinds.filter((kind) => kind !== SENSITIVE && held.has(kind))
-}
-
-/** The statements a role's personal kinds become; the unknown kind and `sensivel` are refused (code C23). */
-export function personalStatements(set: RoleSet, kinds: readonly string[]): Statements {
-  const known = new Set(set.personalKinds)
-  if (kinds.some((kind) => kind === SENSITIVE || !known.has(kind)))
-    throw malformed('PERSONAL_KIND_UNKNOWN')
-  return kinds.length > 0 ? { personal: [...new Set(kinds)] } : {}
-}
-
 /** The statements a company's own role holds: the member's base besides its connectors. */
 export function customStatements(set: RoleSet, connectors: RoleConnectors): Statements {
   const base: Statements = Object.fromEntries(
@@ -63,21 +46,5 @@ export function customStatements(set: RoleSet, connectors: RoleConnectors): Stat
   }
 }
 
-const SENSITIVE = 'sensivel'
-
 /** The action that publishes an agent whose write runs without asking (step 24.5, decision D1-a): the owner's and the administrator's, and the developer's when the company's row for it adds it. */
 export const UNATTENDED_ACTION = 'publishUnattendedWrite'
-
-function marksOf(view: RoleView | undefined) {
-  return [...(view?.unattended === true ? [UNATTENDED_ACTION] : []), ...(view?.personal ?? [])]
-}
-
-/** The actions a change added or took, as ids (S41): the unattended mark and the personal kinds. */
-export function actionsOf(before: RoleView | undefined, after: RoleView) {
-  const was = new Set(marksOf(before))
-  const now = new Set(marksOf(after))
-  return {
-    added: [...now].filter((id) => !was.has(id)),
-    removed: [...was].filter((id) => !now.has(id)),
-  }
-}

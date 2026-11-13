@@ -43,31 +43,27 @@ export const SANKHYA_READS = [
  * The kit the test Hub starts with, written out: two connectors, the door's reads and the
  * Financeiro subject among them, so a test never moves when the real kit grows (T6).
  */
-export const TEST_KIT = {
-  connectors: [
-    {
-      id: 'sankhya',
-      resource: 'connector_sankhya',
-      operations: [
-        ...SANKHYA_READS.map((id) => ({ id, class: 'read' })),
-        { id: 'lancarPedido', class: 'write' },
-      ],
-    },
-    {
-      id: 'mercado-livre',
-      resource: 'connector_mercado-livre',
-      operations: [
-        { id: 'anuncios', class: 'read' },
-        { id: 'pedidos', class: 'read' },
-        { id: 'perguntas', class: 'read' },
-        { id: 'envio', class: 'read' },
-        { id: 'notaFiscalDoPedido', class: 'read' },
-      ],
-    },
-  ],
-  // Written out like the kit's list (T6).
-  personalKinds: ['contato', 'endereco', 'documento', 'sensivel'],
-} as const satisfies RoleKit
+export const TEST_KIT = [
+  {
+    id: 'sankhya',
+    resource: 'connector_sankhya',
+    operations: [
+      ...SANKHYA_READS.map((id) => ({ id, class: 'read' })),
+      { id: 'lancarPedido', class: 'write' },
+    ],
+  },
+  {
+    id: 'mercado-livre',
+    resource: 'connector_mercado-livre',
+    operations: [
+      { id: 'anuncios', class: 'read' },
+      { id: 'pedidos', class: 'read' },
+      { id: 'perguntas', class: 'read' },
+      { id: 'envio', class: 'read' },
+      { id: 'notaFiscalDoPedido', class: 'read' },
+    ],
+  },
+] as const satisfies RoleKit
 export const TEST_ROLES = rolesFor(TEST_KIT)
 
 /** The identity a test Hub starts with: the test kit, and no log. */

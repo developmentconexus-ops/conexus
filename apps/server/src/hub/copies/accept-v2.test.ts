@@ -97,29 +97,22 @@ test('ligar a proposta de uma leitura de lista: as recusas', async (t) => {
   assert.deepEqual(await on.hub.test.asOwner('select id from copies.copy'), [])
 })
 
-test('tipo que quem liga não tem: a coluna de um tipo que o papel não tem recusa o Ligar com o tipo', async (t) => {
-  const on = await listProposalsOn(t)
-  const definition = {
-    ...ordersCopy(false),
-    columns: [
-      { name: 'id', type: 'bigint', path: 'id' },
-      { name: 'comprador', type: 'text', path: 'buyer.nickname' },
-    ],
-  }
-  const answer = await on.propose({ name: 'ml_comprador', definition })
+async function proposed(on: ListProposalsOn, name: string, column: object) {
+  const id = { name: 'id', type: 'bigint', path: 'id' }
+  const definition = { ...ordersCopy(false), columns: [id, column] }
+  const answer = await on.propose({ name, definition })
   assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
-  const proposalId = CopyProposalId.parse(Object(answer).proposalId)
-  const who = { name: 'Davi Costa', email: 'davi@example.test' }
-  const developer = await memberOn(on.hub, on.companyId, who, 'developer')
-  const role = `/api/companies/${on.companyId}/roles/developer`
-  const given = { connectors: { 'mercado-livre': ['pedidos'] }, unattended: false }
-  assert.equal((await call(on.hub, on.ana, 'PUT', role, given)).statusCode, 200)
-  const refused = await on.enable(developer, proposalId)
-  assert.equal(codeOf(refused), 'PERSONAL_NOT_IN_ROLE', refused.body)
-  assert.equal(Object(refused.json()).operation, 'contato')
+  return CopyProposalId.parse(Object(answer).proposalId)
+}
+
+test('uma cópia não guarda documento: o Ligar recusa a coluna de documento, e liga a de contato', async (t) => {
+  const on = await listProposalsOn(t)
+  const cpf = { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' }
+  const refused = await on.enable(on.ana, await proposed(on, 'ml_documento', cpf))
+  assert.equal(codeOf(refused), 'COPY_PERSONAL_NOT_KEPT', refused.body)
+  const nickname = { name: 'comprador', type: 'text', path: 'buyer.nickname' }
   assert.equal(
-    (await call(on.hub, on.ana, 'PUT', role, { ...given, personal: ['contato'] })).statusCode,
-    200,
+    (await on.enable(on.ana, await proposed(on, 'ml_comprador', nickname))).statusCode,
+    201,
   )
-  assert.equal((await on.enable(developer, proposalId)).statusCode, 201)
 })

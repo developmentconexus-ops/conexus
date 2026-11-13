@@ -51,12 +51,6 @@ export const Manifest = z
             .array(z.string().regex(/^[a-z][a-zA-Z0-9]{1,39}$/))
             .min(1)
             .max(100),
-          // The personal kinds the app shows from this connector (decision F1); a version without
-          // the field reads with the kinds of who sent it.
-          personal: z
-            .array(z.string().regex(/^[a-z]{1,20}$/))
-            .max(3)
-            .optional(),
         }),
       )
       .max(20)

@@ -20,17 +20,14 @@ import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
 import { replayOf } from './role-attempt.ts'
 import {
-  actionsOf,
   connectorsOf,
   customStatements,
   malformed,
-  personalOf,
-  personalStatements,
   statementsOf,
   UNATTENDED_ACTION,
 } from './role-statements.ts'
 import type { RoleSet } from './roles.ts'
-import { FIXED_PERSONAL, Statements } from './roles.ts'
+import { Statements } from './roles.ts'
 import { invitation, member, organizationRole } from './tables.ts'
 
 /**
@@ -113,7 +110,6 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
       connectors,
       unattended:
         all || (name === 'developer' && permission.agent?.includes(UNATTENDED_ACTION) === true),
-      personal: all ? [...FIXED_PERSONAL] : personalOf(set, permission),
       members: members.get(name) ?? 0,
     }
   })
@@ -126,7 +122,6 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
         kind: 'CUSTOM',
         connectors: connectorsOf(set, Statements.parse(JSON.parse(row.permission))),
         unattended: false,
-        personal: personalOf(set, Statements.parse(JSON.parse(row.permission))),
         members: members.get(row.role) ?? 0,
       }),
     )
@@ -206,10 +201,7 @@ export function createRoleCommand(deps: Deps) {
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, body, attemptKey } = input
       await admitted(tx, input)
-      const wanted = {
-        ...customStatements(deps.roles, body.connectors),
-        ...personalStatements(deps.roles, body.personal ?? []),
-      }
+      const wanted = customStatements(deps.roles, body.connectors)
       const replayed = await replayOf(tx, { companyId, attemptKey, label: body.label, wanted })
       if (replayed !== undefined) {
         return { role: await viewOf(deps.roles, tx, companyId, replayed), created: false }
@@ -248,10 +240,16 @@ function permissionOf(deps: Deps, role: Role, body: RoleChange): Statements {
   const connectors = isFixedRole(role)
     ? statementsOf(deps.roles, body.connectors)
     : customStatements(deps.roles, body.connectors)
-  const personal = personalStatements(deps.roles, body.personal ?? [])
-  return unattended
-    ? { ...connectors, ...personal, agent: [UNATTENDED_ACTION] }
-    : { ...connectors, ...personal }
+  return unattended ? { ...connectors, agent: [UNATTENDED_ACTION] } : connectors
+}
+
+/** The actions a change added or took, as ids (S41): the one action of this step, when its mark changed. */
+function actionsOf(before: boolean, after: boolean) {
+  const changed = before !== after
+  return {
+    added: changed && after ? [UNATTENDED_ACTION] : [],
+    removed: changed && !after ? [UNATTENDED_ACTION] : [],
+  }
 }
 
 /** Changes what a role uses of each connector; the owner and the administrator never change. */
@@ -271,8 +269,10 @@ export function updateRoleCommand(deps: Deps) {
           }),
         ROLE_REFUSALS,
       )
-      const after = await viewOf(deps.roles, tx, companyId, role)
-      return { role: after, actions: actionsOf(before, after) }
+      return {
+        role: await viewOf(deps.roles, tx, companyId, role),
+        actions: actionsOf(before?.unattended === true, body.unattended === true),
+      }
     })
 }
 

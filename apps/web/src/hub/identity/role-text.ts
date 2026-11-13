@@ -14,14 +14,6 @@ export const NO_USE = 'Não usa'
 export const UNATTENDED_ACTION = 'Publicar agente que escreve sozinho'
 export const UNATTENDED_HINT =
   'Quem tem esta ação deixa um agente publicado lançar uma escrita sem pedir “Aprovar?”.'
-export const PERSONAL_TITLE = 'Dados pessoais de clientes'
-export const PERSONAL_HINT =
-  'Quem tem o papel vê esse tipo de dado nas leituras dos conectores. Documento nunca vai ao Assistente nem ao Builder.'
-export const PERSONAL_KINDS_SHOWN = [
-  { kind: 'contato', label: 'Contato (nome, e-mail, telefone)' },
-  { kind: 'endereco', label: 'Endereço' },
-  { kind: 'documento', label: 'Documento (CPF)' },
-] as const
 const SUBJECTS_NAMED = 2
 
 type Kit = readonly Pick<ConnectorEntry, 'id' | 'name' | 'subjects'>[]

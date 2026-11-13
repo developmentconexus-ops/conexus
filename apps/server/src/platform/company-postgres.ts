@@ -196,7 +196,7 @@ export type CompanyPostgres = {
   /** The table of a copy that ended, with the app logins' read of it; repeatable. */
   dropCopyTable: Bound<typeof dropCopyTable>
   /** A copy released to a Projeto's run and read logins. */
-  grantCopy: Bound<typeof grantCopy>
+  grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
   /** A release taken back; `ALL`, every one of the Projeto and the schema. */
   revokeCopy(
     sync: DatabaseUrl,

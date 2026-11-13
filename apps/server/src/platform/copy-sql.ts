@@ -328,29 +328,19 @@ export function dropCopyTable(
   return sent(context, sync, { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` })
 }
 
-/**
- * What the sync login gives a Projeto's run and read logins, which its owner made first: `SELECT`
- * on the columns named, the engine's own besides, and on no other (a column of a kind the one who
- * releases lacks stays unreadable, `42501`). The earlier grant is taken back first, so a release
- * made again never keeps a column it no longer gives.
- */
+/** What the sync login gives a Projeto's run and read logins, which its owner made first. */
 export function grantCopy(
   context: Context,
   sync: DatabaseUrl,
-  input: { name: string; projectId: ProjectId; columns: readonly string[]; accounts: boolean },
+  input: { name: string; projectId: ProjectId },
 ): Promise<SqlAnswer> {
   const { runLogin, readLogin } = appLogin(input.projectId)
   const logins = [runLogin, readLogin].map(quoted).join(', ')
-  const engine = input.accounts
-    ? [COPY_ACCOUNT_COLUMN, COPY_ACCOUNT_NAME_COLUMN, COPY_PASS_COLUMN]
-    : [COPY_PASS_COLUMN]
-  const readable = [...input.columns.map(quoted), ...engine].join(', ')
   return context.transport(
     sync,
     [
       { text: `GRANT USAGE ON SCHEMA ${SYNC_SCHEMA} TO ${logins}` },
-      { text: `REVOKE SELECT ON ${tableOf(input.name)} FROM ${logins}` },
-      { text: `GRANT SELECT (${readable}) ON ${tableOf(input.name)} TO ${logins}` },
+      { text: `GRANT SELECT ON ${tableOf(input.name)} TO ${logins}` },
     ],
     budget(),
   )

@@ -98,7 +98,7 @@ test('a cópia toma a vez da conexão página a página', async (t) => {
   )
 })
 
-async function pageOf(t: TestContext, columns: readonly object[], by: 'ana' | 'carla' = 'ana') {
+async function pageOf(t: TestContext, columns: readonly object[]) {
   const on = await mercadoLivreOn(t)
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   const connectionId = ConnectionId.parse(Object(linked.json()).connection.id)
@@ -114,7 +114,7 @@ async function pageOf(t: TestContext, columns: readonly object[], by: 'ana' | 'c
   const read = await on.hub.connectors.copies.readPage({
     companyId: CompanyId.parse(on.companyId),
     connectionId,
-    enabledBy: PersonId.parse(on[by].id),
+    enabledBy: PersonId.parse(on.ana.id),
     definition,
     position: null,
     since: null,
@@ -143,15 +143,14 @@ test('a cópia com o tipo da coluna: o que o Ligar conferiu entra, e o documento
     { name: 'comprador', type: 'json', path: 'buyer' },
   ])
   assert.ok(text.includes('COMPRADORFICTICIO'), 'the column of kind contato holds the buyer')
-  assert.ok(!text.includes('52998224725'), 'the document is a kind no column holds')
+  assert.ok(!text.includes('52998224725'), 'the document is withheld from a copy')
 })
 
-test('a cópia ligada antes da conferência guarda só o que o papel de quem ligou vê agora', async (t) => {
-  const columns = [
+test('uma cópia antiga com coluna de documento: a rodada grava a coluna sem valor', async (t) => {
+  const text = await pageOf(t, [
     { name: 'id', type: 'bigint', path: 'id' },
-    { name: 'comprador', type: 'json', path: 'buyer' },
-  ]
-  const byMember = await pageOf(t, columns, 'carla')
-  assert.match(byMember, /\d{8,}/, 'the orders are read, by their ids')
-  assert.ok(!byMember.includes('COMPRADORFICTICIO'), 'who turned it on lacks contato: no buyer')
+    { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' },
+  ])
+  assert.match(text, /\d{8,}/, 'the orders are read, by their ids')
+  assert.ok(!text.includes('52998224725'), 'the document is never kept')
 })

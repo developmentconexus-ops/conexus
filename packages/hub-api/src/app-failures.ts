@@ -104,14 +104,6 @@ export const APP_VERSION_FAILURES = {
     action: 'Libere em Integrações do Projeto.',
     actionKind: 'NONE',
   },
-  PERSONAL_NOT_IN_ROLE: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Seu papel não pode mostrar dados de {operation} num app.',
-    action: 'Peça a quem tem esse acesso para publicar, ou tire esse dado do app.',
-    actionKind: 'NONE',
-  },
   APP_VERSION_NOT_FOUND: {
     category: 'USER',
     settles: true,

@@ -206,7 +206,6 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       agentVersion: {
         kind: 'VERSION',
         declared: declaredOf(tools),
-        personal: [],
       },
     }
     return {

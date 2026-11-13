@@ -1,5 +1,5 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
-import { connectorOf, PERSONAL_KINDS } from '@conexus/connectors'
+import { connectorOf } from '@conexus/connectors'
 import type { HostLabel } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId, OperationId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
@@ -9,7 +9,7 @@ import { readOf } from './grants.ts'
 import type { ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
-import { personalKindsOf, scopeOf, usable } from './rows.ts'
+import { scopeOf, usable } from './rows.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -42,20 +42,6 @@ function cutForApp(answered: Exclude<ReadAnswer, { kind: 'NOT_IN_ROLE' }>): Conn
     default:
       return answered
   }
-}
-
-/**
- * The kinds the app reads with (decision F1): the ones its version declares; a version before the
- * field reads with the kinds of the role of who sent it, read now, and none when that person left.
- */
-async function kindsOfVersion(
-  deps: Deps,
-  call: ConnectorCall,
-  declared: readonly string[] | undefined,
-): Promise<readonly string[]> {
-  if (declared !== undefined) return PERSONAL_KINDS.filter((kind) => declared.includes(kind))
-  const viewer = { person: { id: call.caller.personId }, companyId: call.ids.companyId }
-  return personalKindsOf(deps, viewer, call.sentBy)
 }
 
 /** The Projeto's connections of a connector that are ACTIVE, oldest first. */
@@ -118,7 +104,6 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
       const speaker = {
         kind: 'VERSION',
         declared: [{ connectionId: opened.id, operation: OperationId.parse(operation.id) }],
-        personal: await kindsOfVersion(deps, call, declared.personal),
       } as const
       const answered = await readThrough(deps, {
         by: 'app',

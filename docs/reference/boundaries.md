@@ -1238,10 +1238,10 @@ reference tool checks a read against its documentation.
 
 ## Connectors (A política de dados pessoais): the personal data a read does not declare
 
-- **Library line.** None serves it. n8n declares sensitive paths on its node
-  (`packages/workflow/src/interfaces.ts:3245-3251` at `2e855356`) and hides them, but finds nothing
-  undeclared; Airbyte, nango and twenty have no such check either. `@brazilian-utils/brazilian-utils`
-  2.5.0 gives the validators: `isValidCpf`, `isValidEmail` and `isValidPhone`.
+- **Library line.** None serves it. No reference finds a personal datum a connector forgot to
+  declare (n8n's `sensitiveOutputFields` is for credentials and nothing reads it for a CPF; Airbyte,
+  nango and twenty have no such check). `@brazilian-utils/brazilian-utils` 2.5.0 gives the
+  validators: `isValidCpf`, `isValidEmail` and `isValidPhone`.
 - **Hand-made piece.** `findUndeclared` in `packages/connectors/src/kernel/personal.ts`, run only by
   the conformance (`assertPersonal` in `kernel/conformance.ts`) on each ready read's answer from its
   double. It reports, by path and kind and never by value, a valid CPF in a text or in an integer of
@@ -1249,7 +1249,8 @@ reference tool checks a read against its documentation.
   outside every declared path. The read door's entries are not checked: their answer depends on the
   query.
 - **Why.** The founder's B1, 2026-11-11 ("vale a pena? referências fazem?"): a new connector that
-  forgets where a CPF sits fails the CI, not the company.
+  forgets where a CPF sits fails the CI, not the company. The one rule it serves: a document never
+  goes to a model or to a copy (`withheldKinds`, `hub/connectors/read.ts`).
 - **Proof.** `kernel/personal.test.ts`, "forma conhecida não declarada"; and
   `mercado-livre/mercado-livre.test.ts`, "tirar buyer de pedidos faz a conformidade falhar".
 - **Not proved.** A phone with a mask or a country code, a CNPJ, and a name or an address: none is a

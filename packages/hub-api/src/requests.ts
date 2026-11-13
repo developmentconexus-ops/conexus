@@ -89,7 +89,6 @@ export const decidePublishRequest = defineOperation({
     'APP_VERSION_NOT_FOUND',
     'CONNECTOR_NOT_GRANTED',
     'NOT_IN_ROLE',
-    'PERSONAL_NOT_IN_ROLE',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

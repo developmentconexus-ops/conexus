@@ -12,20 +12,14 @@ export const Statements = z.record(z.string(), z.array(z.string()))
 export type Statements = z.infer<typeof Statements>
 
 /**
- * What the kit offers a role: each connector's resource and its operations by the ids the kit gives them, and the kinds of personal data.
+ * What a connector offers a role: its resource and its operations by the ids the kit gives them.
  * The server's start hands the list over, so the identity never imports the kit (security S36).
  */
-export type RoleKit = Readonly<{
-  connectors: readonly {
-    id: string
-    resource: string
-    operations: readonly { id: string; class: string }[]
-  }[]
-  personalKinds: readonly string[]
-}>
-
-// The kinds of personal data of customers the owner and the administrator see, always; `sensivel` no role holds.
-export const FIXED_PERSONAL = ['contato', 'endereco', 'documento'] as const
+export type RoleKit = readonly {
+  id: string
+  resource: string
+  operations: readonly { id: string; class: string }[]
+}[]
 
 const MANAGE_COMPANY = {
   project: ['create', 'delete'],
@@ -62,7 +56,7 @@ const BUILD = {
  * owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
-export function rolesFor({ connectors: kit, personalKinds }: RoleKit) {
+export function rolesFor(kit: RoleKit) {
   const allOperations: Record<string, string[]> = Object.fromEntries(
     kit.map((connector) => [connector.resource, connector.operations.map(({ id }) => id)]),
   )
@@ -88,7 +82,6 @@ export function rolesFor({ connectors: kit, personalKinds }: RoleKit) {
     copy: ['manage'],
     request: ['create', 'decide'],
     companyMemory: ['manage'],
-    personal: [...personalKinds],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.
@@ -97,7 +90,6 @@ export function rolesFor({ connectors: kit, personalKinds }: RoleKit) {
       ...MANAGE_COMPANY,
       ...BUILD,
       agent: [...BUILD.agent, ...UNATTENDED],
-      personal: FIXED_PERSONAL,
       ...allOperations,
       company: ['nickname'],
     }),
@@ -106,7 +98,6 @@ export function rolesFor({ connectors: kit, personalKinds }: RoleKit) {
       ...MANAGE_COMPANY,
       ...BUILD,
       agent: [...BUILD.agent, ...UNATTENDED],
-      personal: FIXED_PERSONAL,
       ...allOperations,
     }),
     developer: ac.newRole({
@@ -124,19 +115,11 @@ export function rolesFor({ connectors: kit, personalKinds }: RoleKit) {
   }
   // A role of the company's own holds the member's base besides its connectors (founder, B1); the
   // developer and the member keep theirs in the fixed role, so they store connectors only.
-  return {
-    kit,
-    personalKinds,
-    ac,
-    roles,
-    allOperations,
-    allReads,
-    memberBase: roles.member.statements,
-  }
+  return { kit, ac, roles, allOperations, allReads, memberBase: roles.member.statements }
 }
 
 export type RoleSet = ReturnType<typeof rolesFor>
 
 /** The roles with no connector: `allows` reads only actions that name none (code C26). */
-export const NO_KIT_ROLES = rolesFor({ connectors: [], personalKinds: [] })
+export const NO_KIT_ROLES = rolesFor([])
 export const COMPANY_ROLES = NO_KIT_ROLES.roles

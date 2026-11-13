@@ -8,7 +8,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
-import { personNameColumn, speakerOf } from '../identity/public.ts'
+import { personNameColumn } from '../identity/public.ts'
 import type { ConnectorApps } from './apps.ts'
 import type { Executor } from './executor.ts'
 import type { Limits } from './limits.ts'
@@ -123,18 +123,6 @@ export function viewOf(found: unknown): Connection {
 
 export function scopeOf(viewer: Viewer): Scope {
   return { kind: 'COMPANY', companyId: viewer.companyId, personId: viewer.person.id }
-}
-
-/** The kinds of personal data the role of a person holds, read now; none when the person left the company. */
-export async function personalKindsOf(
-  deps: Pick<Deps, 'database' | 'identity'>,
-  viewer: Viewer,
-  personId: PersonId,
-): Promise<readonly string[]> {
-  const speaker = await deps.database.read(scopeOf(viewer), (tx) =>
-    speakerOf(tx, viewer.companyId, personId),
-  )
-  return speaker === undefined ? [] : deps.identity.personalKinds(viewer.companyId, speaker)
 }
 
 export function admitted(

@@ -26,6 +26,14 @@ export const COPY_FAILURES = {
     action: 'Escolha outro modelo.',
     actionKind: 'NONE',
   },
+  COPY_PERSONAL_NOT_KEPT: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Uma cópia não guarda Documento.',
+    action: 'Tire essa coluna da cópia; o app que precisa dele lê direto do sistema.',
+    actionKind: 'NONE',
+  },
   COPY_CONNECTION_NOT_READY: {
     category: 'USER',
     settles: true,

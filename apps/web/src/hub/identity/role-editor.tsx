@@ -20,7 +20,6 @@ import {
 import { PageTitle } from '../../ui/list.tsx'
 import { changeCompanyRole, createCompanyRole } from './queries.ts'
 import { DeleteRole } from './role-delete.tsx'
-import { PersonalKinds } from './role-personal.tsx'
 import { ConnectorPicker } from './role-picker.tsx'
 import { UnattendedAction } from './role-unattended.tsx'
 
@@ -80,7 +79,6 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
   const form = useSchemaForm(createRole.input.body, {
     label: '',
     connectors: {},
-    personal: [],
   })
   return (
     <div className="flex flex-col gap-lg">
@@ -108,7 +106,6 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
           invalid={`Escreva o nome do papel, com até ${ROLE_LABEL_MAX} letras.`}
         />
         <Picked kit={kit} readOnly={false} logo={logo} />
-        <PersonalKinds readOnly={false} />
         <FormAlert />
         <SubmitButton idle="Criar papel" pending="Criando…" />
       </Form>
@@ -125,7 +122,6 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
       Object.entries(role.connectors).map(([id, operations]) => [id, [...operations]]),
     ),
     unattended: role.unattended,
-    personal: [...role.personal],
   })
   return (
     <div className="flex flex-col gap-lg">
@@ -145,7 +141,6 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
               body: {
                 connectors: RoleConnectors.parse(values.connectors),
                 unattended: values.unattended,
-                personal: values.personal,
               },
             })
             onDone()
@@ -155,7 +150,6 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
         }}
       >
         <Picked kit={kit} readOnly={fixed} logo={logo} />
-        <PersonalKinds readOnly={fixed} />
         {role.role !== 'member' && role.kind !== 'CUSTOM' && <UnattendedAction readOnly={fixed} />}
         <FormAlert />
         {!fixed && <SubmitButton idle="Salvar" pending="Salvando…" />}

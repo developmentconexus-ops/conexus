@@ -11,8 +11,8 @@ import {
   connectionForCopy,
   lackedReadOf,
   lackedSourceReadOf,
+  withheldKinds,
 } from '../connectors/public.ts'
-import { speakerOf } from '../identity/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
 import { copy, copyProposal, copyProposalSource, copySource, projectCopy } from './tables.ts'
@@ -138,27 +138,21 @@ async function mayReadSources(
 }
 
 /**
- * The kinds of personal data the copy's columns hold (the connector's declared paths), which the
- * role of who turns it on must hold too: the first it lacks is `PERSONAL_NOT_IN_ROLE`.
+ * A copy never keeps a kind a copy is withheld (`withheldKinds`, the one rule of the step: a
+ * document): a column whose declared path holds one is refused here, before the copy exists.
  */
-async function mayKeepPersonal(
-  deps: Pick<CopiesDeps, 'identity' | 'connectors'>,
-  tx: CommandTx,
-  input: Accepting & { connectorId: ConnectorId; definition: CopyDefinition },
+function mayKeepPersonal(
+  deps: Pick<CopiesDeps, 'connectors'>,
+  input: { connectorId: ConnectorId; definition: CopyDefinition },
 ) {
-  const { companyId, personId, connectorId, definition } = input
+  const { connectorId, definition } = input
   if (definition.version === 1) return
-  const kept = new Set(deps.connectors().personalColumns(connectorId, definition).values())
-  const speaker = await speakerOf(tx, companyId, personId)
-  const held = new Set<string>(
-    speaker === undefined ? [] : await deps.identity.personalKinds(companyId, speaker),
+  const withheld = withheldKinds('copy')
+  const refused = [...deps.connectors().personalColumns(connectorId, definition).values()].find(
+    (kind) => withheld.includes(kind),
   )
-  const lacked = [...kept].find((kind) => !held.has(kind))
-  if (lacked !== undefined)
-    throw new Failure('PERSONAL_NOT_IN_ROLE', {
-      details: { connectorId },
-      named: { operation: lacked },
-    })
+  if (refused !== undefined)
+    throw new Failure('COPY_PERSONAL_NOT_KEPT', { details: { connectorId, kind: refused } })
 }
 
 /** Each connection ACTIVE, with its account, in the proposal's order. */
@@ -205,7 +199,7 @@ export async function acceptedIn(
   const definition = CopyDefinition.parse(proposal.definition)
   const connections = await proposalConnections(tx, proposal)
   await mayReadSources(deps, tx, { ...input, connectorId, definition, connections })
-  await mayKeepPersonal(deps, tx, { ...input, connectorId, definition })
+  mayKeepPersonal(deps, { connectorId, definition })
   const sources = await activeSources(tx, input.companyId, connections)
   const row = await insertedCopy(tx, input, {
     ...{ connectorId, sources, name: proposal.name, label: proposal.label },

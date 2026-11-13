@@ -43,21 +43,19 @@ const HIDDEN_COLUMNS: Record<TableSchema, string> = {
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
- * `has_any_column_privilege` filters, and a table granted by column lists only the columns the login
- * may read (`has_column_privilege`), as PostgREST's catalog does (`information_schema.columns` hides
- * it too, but shows no key to a login that only reads).
+ * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
+ * login that only reads).
  */
 function catalogSql(schema: TableSchema) {
   return `select n.nspname::text, c.relname,
   (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname) order by a.attnum), '[]')
-     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
-       and has_column_privilege(c.oid, a.attnum, 'SELECT')${HIDDEN_COLUMNS[schema]}),
+     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped${HIDDEN_COLUMNS[schema]}),
   (select coalesce(array_agg(a.attname::text order by array_position(i.indkey::int2[], a.attnum)), '{}')
      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
     where i.indrelid = c.oid and i.indisprimary)
 from pg_class c join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = ${SCHEMA_SQL[schema]} and c.relkind in ('r', 'p')
-  and has_any_column_privilege(c.oid, 'SELECT')`
+  and has_table_privilege(c.oid, 'SELECT')`
 }
 
 const CatalogRow = z.tuple([
