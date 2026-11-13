@@ -6,20 +6,12 @@ import { z } from 'zod'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Codex } from '../../platform/test-openai-codex.ts'
-import { plantCodex } from '../../platform/test-openai-codex.ts'
+import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../platform/test-recordings.ts'
 import { approving } from './test-approval.ts'
 
-const Sent = z.object({
-  stream: z.boolean().optional(),
-  tools: z.array(z.unknown()).optional(),
-  input: z.array(z.unknown()),
-})
+const Sent = z.object({ input: z.array(z.unknown()) })
 
-/** A call of the turn: the Hub's title call goes streamed too, but carries no tools. */
-function ofTurn(sent: z.infer<typeof Sent>): boolean {
-  return sent.stream === true && (sent.tools?.length ?? 0) > 0
-}
 const Output = z.looseObject({
   type: z.literal('function_call_output'),
   call_id: z.string(),
@@ -34,7 +26,7 @@ const Output = z.looseObject({
 function playing(codex: Codex, names: readonly string[]) {
   const left = [...names]
   codex.responses = (body) => {
-    if (!ofTurn(Sent.parse(JSON.parse(body)))) return { status: 500 }
+    if (!ofTurn(body)) return { status: 500 }
     const name = left.shift()
     if (name === undefined) throw new Error('The turn asked the model more often than recorded.')
     return { status: 200, stream: recordedBody(name) }
@@ -78,8 +70,8 @@ export async function approvingOnOpenai(t: TestContext, recordings: readonly str
   function outputs() {
     const streamed = codex.calls
       .filter((made) => made.endpoint === 'responses')
+      .filter((made) => ofTurn(made.body))
       .map((made) => Sent.parse(JSON.parse(made.body)))
-      .filter(ofTurn)
     return (streamed.at(-1)?.input ?? []).flatMap((item) => {
       const output = Output.safeParse(item)
       return output.success ? [output.data] : []

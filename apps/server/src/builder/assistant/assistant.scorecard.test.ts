@@ -16,7 +16,7 @@ import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, reading, said, searching, talking } from './test-assistant.ts'
 import { file, pdf } from './test-files.ts'
-import { REAL_MODEL, subscribed } from './test-real-model.ts'
+import { EVAL_PROVIDER, EVAL_QUESTIONS, REAL_MODEL, subscribed } from './test-real-model.ts'
 import type { Question, Scorecard } from './test-scorecard.ts'
 import { judged, QUESTIONS, scoreOf } from './test-scorecard.ts'
 import { goalsSheet } from './test-truths.ts'
@@ -79,16 +79,6 @@ test('cada pergunta tem os seus dados: as 27 do fundador, numeradas, cada uma co
   assert.equal(goalsSheet().split('\n')[0]?.split(',').length, 3)
 })
 
-/**
- * The vendor the real run goes through (`claude`, the default, or `openai`) and the questions it
- * asks (numbers split by commas, all by default), so the ChatGPT model production runs, with the
- * questions that gave up on it, is measured on its own.
- */
-// biome-ignore lint/style/noProcessEnv: the switches of this one opt-in case, not the app's configuration
-const { CONEXUS_EVAL_PROVIDER: PROVIDER, CONEXUS_EVAL_QUESTIONS: ONLY } = process.env
-const VENDOR = PROVIDER === 'openai' ? 'openai' : 'claude'
-const CHOSEN = ONLY?.split(',').map((each) => Number(each.trim()))
-
 test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o placar com os tokens do primeiro passo, e a resposta errada só conta', {
   timeout: 10_800_000,
 }, async (t) => {
@@ -101,7 +91,7 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const ml = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   const served = await ml.serve()
   t.after(() => served.close())
-  const on = await subscribed(t, REAL_MODEL, VENDOR, (config) => ({
+  const on = await subscribed(t, REAL_MODEL, EVAL_PROVIDER, (config) => ({
     ...config,
     connectorOrigins: new Map([['mercado-livre', served.origin]]),
     connectorApps: appsOf(ml.app),
@@ -109,11 +99,13 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   assert.equal(linked.statusCode, 200, linked.body)
   const loja = String(Object(linked.json()).connection.id)
-  const folder = join(REAL_MODEL, 'placar')
-  mkdirSync(folder, { recursive: true })
+  // One folder for each run: the cards of an earlier run, with other questions, never mix with this one.
+  mkdirSync(REAL_MODEL, { recursive: true })
+  const folder = mkdtempSync(join(REAL_MODEL, 'placar-'))
   const sheet = file('metas.csv', 'text/csv', Buffer.from(goalsSheet()))
   const asking = QUESTIONS.filter(
-    (one) => one.enters === 'now' && (CHOSEN === undefined || CHOSEN.includes(one.n)),
+    (one) =>
+      one.enters === 'now' && (EVAL_QUESTIONS === undefined || EVAL_QUESTIONS.includes(one.n)),
   )
   for (const each of asking) {
     const connections = each.bare === true ? [] : [on.matriz, on.filial, loja]
