@@ -12,6 +12,7 @@ ALTER SCHEMA copies OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA notifications OWNER TO test_owner;
+ALTER SCHEMA ontology OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
 ALTER SCHEMA projects OWNER TO test_owner;
 ALTER SCHEMA requests OWNER TO test_owner;
@@ -87,6 +88,23 @@ ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE notifications.notification OWNER TO test_owner;
 ALTER TABLE notifications.request_notice OWNER TO test_owner;
+ALTER TABLE ontology.code_version OWNER TO test_owner;
+ALTER VIEW ontology.code OWNER TO test_owner;
+ALTER TABLE ontology.concept_version OWNER TO test_owner;
+ALTER VIEW ontology.concept OWNER TO test_owner;
+ALTER TABLE ontology.field_version OWNER TO test_owner;
+ALTER VIEW ontology.field OWNER TO test_owner;
+ALTER TABLE ontology.inventory_end OWNER TO test_owner;
+ALTER TABLE ontology.inventory_entry OWNER TO test_owner;
+ALTER TABLE ontology.inventory_run OWNER TO test_owner;
+ALTER TABLE ontology.proof_run OWNER TO test_owner;
+ALTER TABLE ontology.proposal OWNER TO test_owner;
+ALTER TABLE ontology.proposal_item OWNER TO test_owner;
+ALTER TABLE ontology.relation_version OWNER TO test_owner;
+ALTER VIEW ontology.relation OWNER TO test_owner;
+ALTER TABLE ontology.revision OWNER TO test_owner;
+ALTER TABLE ontology.source_version OWNER TO test_owner;
+ALTER VIEW ontology.source OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER TABLE projects.app_access OWNER TO test_owner;
@@ -126,6 +144,7 @@ GRANT USAGE ON SCHEMA copies TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
+GRANT USAGE ON SCHEMA ontology TO hub_company;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_operator;
 GRANT USAGE ON SCHEMA projects TO hub_company;
@@ -399,6 +418,35 @@ GRANT UPDATE(read_at) ON TABLE notifications.notification TO hub_company;
 -- leave by cascade, never by the Hub.
 GRANT SELECT,INSERT ON TABLE notifications.request_notice TO hub_company;
 GRANT UPDATE(read_at) ON TABLE notifications.request_notice TO hub_company;
+-- A Ontologia da empresa, U1, with the founder's word in the pull request of its own (data D11; P1,
+-- 2026-11-12, in the card of the step): a company's routes read and write the inventory, the proofs,
+-- the proposals and their items, the revisions and the versions of the concepts, fields, codes,
+-- relations and sources, and read the five views of what is current. A revision, a proof and a
+-- version are never changed or deleted; of a proposal only its state changes, and of an item only
+-- its decision, its reason, who decided and when. The inventory is replaced by run, so its three
+-- tables also delete. Everything else leaves by the cascade from the company.
+GRANT SELECT,INSERT ON TABLE ontology.code_version TO hub_company;
+GRANT SELECT ON TABLE ontology.code TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.concept_version TO hub_company;
+GRANT SELECT ON TABLE ontology.concept TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.field_version TO hub_company;
+GRANT SELECT ON TABLE ontology.field TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_end TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_entry TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_run TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proof_run TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proposal TO hub_company;
+GRANT UPDATE(state) ON TABLE ontology.proposal TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decision) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(reason) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decided_by) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decided_at) ON TABLE ontology.proposal_item TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.relation_version TO hub_company;
+GRANT SELECT ON TABLE ontology.relation TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.revision TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.source_version TO hub_company;
+GRANT SELECT ON TABLE ontology.source TO hub_company;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
