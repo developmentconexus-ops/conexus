@@ -91,7 +91,8 @@ function notChosen(access: ConnectorAccess, read: TypedRead) {
  * makes every field required and nullable, never reaches a tool that `search_tools` loads (the loop
  * converts it without the model), so OpenAI's default strict mode would force the model to fill
  * every field, and it fills the exclusive ones. Not strict, the model omits what it does not need,
- * as Claude does.
+ * as Claude does. Mastra defect, still in 1.83.0 and 1.84.0-alpha.0: `llm-execution-step.ts`
+ * (1.82, lines 1899-1920) calls `makeProcessorCoreTool` without `model`.
  */
 function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: string) {
   const { connector, operation } = read
