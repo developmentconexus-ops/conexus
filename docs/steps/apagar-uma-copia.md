@@ -80,16 +80,23 @@ Airbyte vem o aviso de que religar copia tudo do zero; do Mitra, a confirmação
 Recomendo A1. Você apaga para que ninguém mais leia os dados, e a A2 deixa um app lendo exatamente
 quando o banco falha.
 
+**Emenda do fundador, 2026-11-13: "Desligar entra junto no apagar".** O **Desligar** da conexão recebe a
+A1 nesta mesma etapa: antes da transação, tira a leitura dos apps de cada cópia que acaba com ele (a
+cópia da qual a conexão é a última fonte), pelo mesmo comando do **Tirar** e no mesmo dono do fim de
+cópia (`leave.ts`), sem segundo caminho. Se o banco da empresa não responde, o Desligar recusa com a
+mesma frase (503) e nada muda, como já recusa ao tirar as linhas da conta. Isto substitui o "Desligar
+fica como está" do pedido anterior.
+
 ## As unidades
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 O Apagar no Hub | `deleteCopy` no dono do fim de cópia (`leave.ts`), a rota `DELETE …/copies/{copyId}`, a agenda tirada pelo mesmo dono (Desligar incluído) | `apps/server/src/hub/copies/`, `packages/hub-api/src/copies.ts` | [data](../guides/data.md) | nada |
+| U1 O Apagar no Hub | `deleteCopy` no dono do fim de cópia (`leave.ts`), a rota `DELETE …/copies/{copyId}`, a agenda tirada pelo mesmo dono (Desligar incluído) e, pela emenda, a leitura dos apps tirada antes do fim também no Desligar | `apps/server/src/hub/copies/`, `packages/hub-api/src/copies.ts` | [data](../guides/data.md) | nada |
 | U2 O Apagar na tela | o item **Apagar** do menu, a janela de confirmação, a volta à lista | `apps/web/src/hub/copies/` | [web](../guides/web.md) | U1 |
 
 Correm em sequência: U2 usa o contrato da U1.
 
-**Orçamento de código alterado.** U1: cerca de 110 linhas. U2: cerca de 130. Total: cerca de 240, muito
+**Orçamento de código alterado.** U1: cerca de 110 linhas (mais cerca de 30 da emenda). U2: cerca de 130. Total: cerca de 240, muito
 abaixo do limite de delivery L2.
 
 ## Os critérios de aceite
@@ -107,11 +114,13 @@ abaixo do limite de delivery L2.
 | 9 | U1 | Religar com o mesmo nome depois do Apagar começa vazio e sem leitura do app (`42501`) | `copies/delete.test.ts`, "religar" | should |
 | 10 | U2 | O menu de cada cópia tem **Apagar**; a janela mostra as linhas, cada Projeto liberado e o aviso de copiar do zero; **Apagar** espera a resposta; o sucesso tira a cópia da lista e, no detalhe, volta para a lista | `copies/copy-delete.test.tsx` | must |
 | 11 | U2 | Um 503 mostra a frase do Hub e deixa a janela aberta; um `tablesLeft` mostra o texto da tabela anotada antes de fechar | `copies/copy-delete.test.tsx`, "falhas" | must |
+| 12 | U1 | (Emenda) O Desligar com o banco da empresa calado no `REVOKE`: 503 `COPY_DATABASE_UNAVAILABLE`, a conexão e a cópia continuam; com o banco de volta o Desligar dá certo e nenhum app lê a tabela (`42P01`); com o banco calado só no `DROP`, a tabela fica anotada e o app recebe `42501` | `connectors/unlink-copies.test.ts`, "calado na leitura dos apps" e "depois do Hub" | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| Janela Desligar (`unlink-dialog.tsx`, sem mudança de tela) | como hoje | como hoje | como hoje | o 503 já mostra a frase do Hub, agora também quando a leitura dos apps não saiu | como hoje | como hoje | como hoje |
 | Janela Apagar | a janela com as linhas, os Projetos e o aviso | cópia sem Projeto: só as linhas e o aviso; `rows` nulo: "As linhas desta cópia saem…" | "Apagando…", os botões desligados | a frase do Hub (503), a janela aberta | a resposta é 200 também: a cópia sai da lista | a recusa de admissão do Hub, na janela | `tablesLeft`: o texto da tabela anotada, depois **Fechar** |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -127,6 +136,7 @@ O desenho de caixas e as capturas: a janela segue a do Desligar (`unlink-dialog.
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | A1: `REVOKE` da leitura de cada Projeto (`companyPostgres.revokeCopy`) | repete sem dano (`NOTHING_TO_REVOKE`, `copy-sql.ts:353`) | o app pode ter perdido a leitura de um Projeto e a cópia continua: o novo Apagar repete | 503 `COPY_DATABASE_UNAVAILABLE`, nada muda no Hub | `COPY_GRANT_FAILED` (o de hoje) | 7 |
+| (Emenda) o mesmo `REVOKE`, no Desligar (`leaveCopies`) | repete sem dano | o app pode ter perdido a leitura e a conexão continua: o novo Desligar repete | 503 `COPY_DATABASE_UNAVAILABLE`, nada muda no Hub | `COPY_GRANT_FAILED` | 12 |
 | `DELETE FROM copy … RETURNING` com a nota em `copy_table_left`, numa transação | a segunda espera a trava da linha e não acha nada: `[]` | a transação inteira volta | o banco do Hub fora: 503 do Hub, nada muda | nada novo | 1, 2, 3, 5 |
 | `DROP TABLE IF EXISTS` (`dropEndedCopies`) | a trava da linha de `copy_table_left` serializa (`leave.ts:165-182`); o Ligar do mesmo nome espera (`enable.ts:143-144`) | a linha volta a `copy_table_left` | `tablesLeft: [nome]` | `COPY_TABLES_LEFT` (o de hoje) | 8, 9 |
 | `clock.remove` (`schedules.delete` do Mastra) | sem efeito na segunda (`schedules.ts:645-650` volta se não há linha) | fica a rede de hoje: a agenda ativa que dispara acha `GONE` e se apaga (`workflow.ts:59-61`) | o Mastra fora: a cópia já saiu, a agenda órfã fica para o próximo disparo | `COPY_DELETED` com `companyId`, `copyId`, `ended` (S41) | 6 |
@@ -171,6 +181,7 @@ agenda, a rodada em andamento e o registro. Ler antes: `leave.ts` inteiro, `conn
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
+| `apps/server/src/hub/copies/grants.ts` | muda (emenda): `revokedInDatabase`, o `REVOKE` do Tirar sem a admissão nem a linha, que Tirar, Apagar e Desligar usam | `leave.ts` |
 | `apps/server/src/hub/copies/leave.ts` | muda: um `endCopies(tx, companyId, where)` interno serve `endedSourceless` e `deleteCopy`; a agenda sai no mesmo dono | `service.ts`, `connectors/connections.ts:314-324` (pela porta `ofConnections`) |
 | `apps/server/src/hub/copies/service.ts`, `routes.ts` | muda: `delete` | `main.ts:196`, os testes |
 | `packages/hub-api/src/copies.ts` | cria `deleteCopy` | `apps/web/src/hub/copies/queries.ts` (U2) |
@@ -217,6 +228,9 @@ As linhas de `docs/reference/stack.md` para `apps/server` (Fastify, Drizzle, Mas
    Projeto, o `revokeCopy` do banco da empresa, fora de transação, e 503 se ele não responder; numa
    transação, `endCopies` com `eq(copy.id, copyId)`; depois `dropEndedCopies`; depois `clock().remove`
    de cada cópia acabada; log `COPY_DELETED`. Regras: data D22, security S10, S41.
+2a. (Emenda) `takeReadAway(deps, input, copies)` em `leave.ts`, que `deleteCopy` e `leaveCopies` usam: o
+   `REVOKE` de cada liberação das cópias dadas, por `revokedInDatabase`; `leaveCopies` o chama para as
+   cópias de que a conexão é a última fonte, antes de tirar as linhas da conta.
 3. A agenda no mesmo dono: a porta `ofConnections.dropEnded` (ou um passo depois dela) tira a agenda
    das cópias que o Desligar acabou, para a cópia pausada não ficar com agenda órfã.
 4. `service.ts`, `routes.ts`, `hub-api`: a rota.
