@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Auth } from './auth.ts'
 import type { ConnectorCopy } from './copy.ts'
 import { CopyDefinitionV1 } from './copy.ts'
+import type { ConnectorInventory } from './inventory.ts'
 import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
@@ -58,6 +59,8 @@ export type Connector = Readonly<{
   callLimit?: Readonly<{ countedBy: 'APP' | 'ACCOUNT' }>
   // The paged read and the templates of copies (Capacity 2): outside `operations` and the door, so no role, tool or probe sees it.
   copy?: ConnectorCopy
+  // The paged read of the system's own dictionary (the Ontology's inventory): outside `operations` too, so no role, tool or probe sees it.
+  inventory?: ConnectorInventory
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
   writes?: readonly WriteOperation<unknown, unknown>[]
   // The refusals recorded from the real service (see `RecordedRefusal`); the conformance reads each one through its operation.
@@ -93,6 +96,7 @@ export function defineConnector<A extends Auth>(
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
   assertCopy(connector.copy, new Set(ids))
+  assertInventory(connector.inventory, new Set(ids), connector.copy)
   assertCallLimit(connector, declared)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
@@ -136,6 +140,18 @@ function assertCopy(copy: ConnectorCopy | undefined, ids: ReadonlySet<string>): 
   const models = copy.models.map((model) => model.id)
   if (new Set(models).size !== models.length) throw new Error('Repeated copy template id')
   for (const model of copy.models) CopyDefinitionV1.parse(model.definition)
+}
+
+function assertInventory(
+  inventory: ConnectorInventory | undefined,
+  ids: ReadonlySet<string>,
+  copy: ConnectorCopy | undefined,
+): void {
+  if (inventory === undefined) return
+  const { read } = inventory
+  if (read.class !== 'read') throw new Error(`Inventory read not read: ${read.id}`)
+  if (ids.has(read.id) || read.id === copy?.read.id)
+    throw new Error(`Inventory read repeats operation id ${read.id}`)
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {

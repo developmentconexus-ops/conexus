@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
+import { dictionaryOf } from './fake-dictionary.ts'
 import { inserter, registerOn } from './fake-register.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
@@ -215,6 +216,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
   })
   database.exec('PRAGMA case_sensitive_like = ON')
   tablesOf(database, set)
+  dictionaryOf(database)
   registerOn(database)
   return (sql) => {
     let statement: ReturnType<DatabaseSync['prepare']>

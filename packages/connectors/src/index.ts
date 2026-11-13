@@ -39,6 +39,8 @@ export {
   PageInput,
 } from './kernel/copy.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
+export type { ConnectorInventory, InventoryEntry, InventoryPage } from './kernel/inventory.ts'
+export { declaredInventory, InventoryEntrySchema, InventoryPageSchema } from './kernel/inventory.ts'
 export type { ListPage } from './kernel/list.ts'
 export { listInputOf, listPageOf } from './kernel/list.ts'
 export {
