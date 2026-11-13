@@ -46,8 +46,9 @@ Be concise and direct in what you write to the person.`
 /**
  * The block of one model, by its exact id, after the shared instructions: Mastra Code's
  * `modelSpecificPrompts` (`mastracode/sdk/src/agents/prompts/model.ts`, chosen by exact id in
- * `prompts/index.ts:146-148`). The Luna models are the small ones, measured giving up on a partial
- * answer after a read that fell short; a model without a block gets the shared text alone.
+ * `prompts/index.ts:146-148`). The Luna models are the small ones: `gpt-6-luna` was measured giving up
+ * on a partial answer after a read that fell short, in the Assistant's scorecard only; `gpt-5.6-luna`
+ * gets the same block unmeasured. A model without a block gets the shared text alone.
  */
 const LUNA = `<autonomy_and_persistence>
 Before you end the turn, go back to the request and check each part of it against what you found. A part without its answer is unfinished work, not a limit to report: read again with another operation, another filter or the next page, and compute what is left.
@@ -61,7 +62,7 @@ const MODEL_BLOCKS: Readonly<Record<string, string>> = {
 }
 
 /** The instructions a call to `name` carries: the shared text, then the model's block, if it has one. */
-export function codexInstructions(name: string): string {
+function codexInstructions(name: string): string {
   const block = MODEL_BLOCKS[name]
   return block === undefined ? CODEX_INSTRUCTIONS : `${CODEX_INSTRUCTIONS}\n\n${block}`
 }

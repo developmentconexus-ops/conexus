@@ -298,7 +298,10 @@ test('uma leitura que o fornecedor recusou por erro do pedido chega ao modelo co
   const failed = await ask()
   assert.equal(failed.kind, 'READ_FAILED')
   assert.match(failed.reason, /The read failed\. The provider said: ORA-00904: "VLRCRED"/)
-  assert.match(failed.reason, /does not show a refusal of access/)
+  assert.match(
+    failed.reason,
+    /does not show a refusal of access: read the message, correct the request and try another way/,
+  )
   assert.match(failed.reason, /try another way/)
   const silent = await ask()
   assert.equal(silent.kind, 'READ_FAILED')

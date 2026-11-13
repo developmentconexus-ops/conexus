@@ -185,11 +185,11 @@ test('o bloco de cada modelo vai pelo id exato: o Luna leva o seu depois do text
   const codex = plantCodex(t)
   codex.responses = () => ({ status: 400 })
   const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'Oi' }] }]
-  for (const name of ['gpt-6-luna', 'gpt-5.2', 'gpt-6-luna-mini']) {
+  for (const name of ['gpt-6-luna', 'gpt-5.2', 'gpt-6-luna-mini', 'gpt-5.6-luna']) {
     const model = codexModel(name, { access: ACCESS, accountId: ACCOUNT_ID })
     await assert.rejects(async () => model.doStream({ prompt }))
   }
-  const [luna, other, near] = codex.calls.map((made) =>
+  const [luna, other, near, older] = codex.calls.map((made) =>
     String(Object(JSON.parse(String(made.body))).instructions),
   )
   assert.match(
@@ -197,7 +197,11 @@ test('o bloco de cada modelo vai pelo id exato: o Luna leva o seu depois do text
     /^You are an assistant[\s\S]*Reading is always allowed[\s\S]*<autonomy_and_persistence>/,
   )
   assert.match(luna ?? '', /check each part of it against what you found/)
-  assert.match(other ?? '', /Reading is always allowed/)
+  assert.equal(older, luna, 'the older Luna gets the same block')
+  assert.match(
+    other ?? '',
+    /another way to the same fact, as the failed read's answer says[\s\S]*Reading is always allowed/,
+  )
   assert.doesNotMatch(other ?? '', /<autonomy_and_persistence>/)
   assert.doesNotMatch(other ?? '', /a 403\) is final|while the question waits/)
   assert.equal(near, other, 'a name that only starts like the model gets no block')

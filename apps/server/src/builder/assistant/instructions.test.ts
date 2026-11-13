@@ -204,7 +204,7 @@ test('o texto novo: responder na mensagem, arquivo só quando pedido', async (t)
   assert.match(fixed, /\*\*search_tools\*\*[\s\S]*Read a connection's skill before your first read/)
   assert.match(
     fixed,
-    /Reading is always allowed[\s\S]*what the failed read's answer says to do with it[\s\S]*Before asking, check: can a read settle it\?[\s\S]*first, then ask, and say what you assumed/,
+    /Look in more than one place[\s\S]*Check that each read answered what you asked[\s\S]*read the same fact another way[\s\S]*Reading is always allowed[\s\S]*what the failed read's answer says to do with it[\s\S]*access was refused, that is the answer[\s\S]*Before asking, check: can a read settle it\?[\s\S]*first, then ask, and say what you assumed/,
   )
   assert.match(fixed, /The answer is the message/)
   assert.match(fixed, /a table to compare/i)
