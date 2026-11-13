@@ -75,38 +75,19 @@ function pagedOf(
   return count === 0 ? { temMais: false } : { temMais: true, seguinte: scroll.data.scroll_id }
 }
 
-/** The row without the keys named by dotted path (`buyer`, `from.email`): the buyer's personal data never leaves the kit. */
-function without(value: unknown, path: readonly string[]): unknown {
-  const [key, ...rest] = path
-  if (key === undefined || typeof value !== 'object' || value === null || Array.isArray(value))
-    return value
-  if (rest.length === 0) return Object.fromEntries(Object.entries(value).filter(([k]) => k !== key))
-  return Object.fromEntries(
-    Object.entries(value).map(([k, v]) => [k, k === key ? without(v, rest) : v]),
-  )
-}
-
 type Built = { success: true; data: Rows } | { success: false; error: z.ZodError }
 
 /**
  * A ready read: the envelope checked (the list under `list`, or the body itself when it is the list
- * or one object, read as a list of one), the paging, and every row as Mercado Livre sent it minus
- * the `omit` keys. 401 is an expired access token (the Hub renews once and repeats), 403 a
- * permission the app lacks, and a 206 is an order the API could not fill whole (`X-Content-Missing`):
- * it says in its docs that the rest usually suffices, so the rows are read and carry `parcial`.
+ * or one object, read as a list of one), the paging, and every row as Mercado Livre sent it. 401
+ * is an expired access token (the Hub renews once and repeats), 403 a permission the app lacks,
+ * and a 206 is an order the API could not fill whole (`X-Content-Missing`): it says in its docs
+ * that the rest usually suffices, so the rows are read and carry `parcial`.
  * Any other status is the kernel's table, except the one 404 a read declares in `emptyNotFound`
  * (the start of its `message`, with `error: "not_found"`): the seller has no data yet, so it reads
  * as an empty answer; any other 404 stays a refusal.
  */
-export function rows({
-  list,
-  omit = [],
-  emptyNotFound,
-}: {
-  list: string | null
-  omit?: readonly string[]
-  emptyNotFound?: string
-}) {
+export function rows({ list, emptyNotFound }: { list: string | null; emptyNotFound?: string }) {
   const NothingFound = z.looseObject({
     error: z.literal('not_found'),
     message: z.string().startsWith(emptyNotFound ?? ''),
@@ -121,9 +102,7 @@ export function rows({
   function build(body: unknown, parcial = false): Built {
     const parsed = Found.safeParse(body)
     if (!parsed.success) return { success: false, error: parsed.error }
-    const linhas = parsed.data.map((row) =>
-      omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
-    )
+    const linhas = parsed.data
     const counts = countsOf(body)
     return Rows.safeParse({
       linhas,

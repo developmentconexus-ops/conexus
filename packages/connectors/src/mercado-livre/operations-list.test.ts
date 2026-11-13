@@ -268,26 +268,3 @@ test('as outras listas por deslocamento, e as mensagens de um pacote sem lista',
     'reclamacoes',
   ])
 })
-
-test('o comprador não chega à cópia', async () => {
-  const personal = ['maria.ficticia', '988776655', '52998224725', 'Fictícia', 'COMPRADORFICTICIO']
-  for (const id of ['pedidos', 'perguntas']) {
-    const operation = operationOf(id)
-    const fields = ['id', 'buyer', 'from', 'status', 'order_items', 'text', 'date_created']
-    const columns = [
-      { name: 'id', type: 'bigint', path: 'id' },
-      ...fields.slice(1).map((field) => ({ name: field, type: 'json', path: field })),
-    ]
-    const all = await walked(operation, definitionOf(operation, columns))
-    assert.ok(all.cells.length > 0, id)
-    const text = JSON.stringify(all.cells)
-    for (const value of personal) assert.ok(!text.includes(value), `${id} copia ${value}`)
-    function at(name: string) {
-      return columns.findIndex((column) => column.name === name)
-    }
-    assert.ok(
-      all.cells.every((row) => row[at(id === 'pedidos' ? 'buyer' : 'from')] === null),
-      `${id}: o objeto cortado é nulo`,
-    )
-  }
-})

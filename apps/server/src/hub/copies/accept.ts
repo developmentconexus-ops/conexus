@@ -11,6 +11,7 @@ import {
   connectionForCopy,
   lackedReadOf,
   lackedSourceReadOf,
+  withheldKinds,
 } from '../connectors/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
@@ -136,6 +137,24 @@ async function mayReadSources(
     })
 }
 
+/**
+ * A copy never keeps a kind a copy is withheld (`withheldKinds`, the one rule of the step: a
+ * document): a column whose declared path holds one is refused here, before the copy exists.
+ */
+function mayKeepPersonal(
+  deps: Pick<CopiesDeps, 'connectors'>,
+  input: { connectorId: ConnectorId; definition: CopyDefinition },
+) {
+  const { connectorId, definition } = input
+  if (definition.version === 1) return
+  const withheld = withheldKinds('copy')
+  const refused = [...deps.connectors().personalColumns(connectorId, definition).values()].find(
+    (kind) => withheld.includes(kind),
+  )
+  if (refused !== undefined)
+    throw new Failure('COPY_PERSONAL_NOT_KEPT', { details: { connectorId, kind: refused } })
+}
+
 /** Each connection ACTIVE, with its account, in the proposal's order. */
 async function activeSources(
   tx: CommandTx,
@@ -164,7 +183,7 @@ async function activeSources(
  * release to the proposal's Projeto. The `GRANT` follows outside, with Ligar's own steps.
  */
 export async function acceptedIn(
-  deps: Pick<CopiesDeps, 'identity'>,
+  deps: Pick<CopiesDeps, 'identity' | 'connectors'>,
   tx: CommandTx,
   input: Accepting,
   bodyHash: string,
@@ -180,6 +199,7 @@ export async function acceptedIn(
   const definition = CopyDefinition.parse(proposal.definition)
   const connections = await proposalConnections(tx, proposal)
   await mayReadSources(deps, tx, { ...input, connectorId, definition, connections })
+  mayKeepPersonal(deps, { connectorId, definition })
   const sources = await activeSources(tx, input.companyId, connections)
   const row = await insertedCopy(tx, input, {
     ...{ connectorId, sources, name: proposal.name, label: proposal.label },

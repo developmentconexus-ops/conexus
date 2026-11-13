@@ -11,15 +11,15 @@ export const conta = readOf({
   label: 'Conta',
   input: z.object({}),
   list: null,
-  // The owner's own contact data is not what any read needs.
-  omit: [
-    'email',
-    'phone',
-    'alternative_phone',
-    'first_name',
-    'last_name',
-    'identification',
-    'address',
+  // The seller may be a person: their own contact, address and document.
+  personal: [
+    { path: 'email', kind: 'contato' },
+    { path: 'phone', kind: 'contato' },
+    { path: 'alternative_phone', kind: 'contato' },
+    { path: 'first_name', kind: 'contato' },
+    { path: 'last_name', kind: 'contato' },
+    { path: 'address', kind: 'endereco' },
+    { path: 'identification', kind: 'documento' },
   ],
   probe: () => ({}),
   request: () => get('/users/me'),
