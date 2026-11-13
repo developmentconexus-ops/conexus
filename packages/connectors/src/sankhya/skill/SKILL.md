@@ -5,9 +5,9 @@ description: Reads a company's Sankhya through the Sankhya connector. Every comp
 
 # Sankhya
 
-The tables and columns are the same in every company. What they mean is not: which operation types (TOP) are a sale, which date counts, which status means done, which custom fields carry the real rule. Find each of these in this company's data, ask the person what the data cannot settle, and never take a code or a meaning from other companies, public examples or a field's name alone.
+The tables and columns are the same in every company. What they mean is not: which operation types (TOP) are a sale, which date counts, which status means done, which custom fields carry the real rule. Find each of these in this company's data, ask the person only what reading cannot settle, and never take a code or a meaning from other companies, public examples or a field's name alone.
 
-The connection is read only. Never write, never ask for values to store, and never look for a way around a refusal: a refusal is the answer.
+The connection is read only. Never write, never ask for values to store, and never look for a way around a refusal of access: that refusal is the answer. A read that fails with an error (a column that does not exist, an SQL the database cannot run) is not a refusal: read the message, correct the query and try another way.
 
 ## Rules for every read
 

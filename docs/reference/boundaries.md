@@ -1349,6 +1349,69 @@ reference tool checks a read against its documentation.
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
 
+## Mastra 1.82.0: the company's memory through one file (Alinhamento do Assistente)
+
+- **Library line.** `Knowledge` is experimental in `@mastra/core` 1.82.0: the API can change without
+  notice, its storage has no migration (`KNOWLEDGE_STORAGE_SCHEMA_VERSION` 4,
+  `dist/knowledge/`), a new Mastra that changes the format asks to drop its tables, and
+  `knowledgeMemoryScopes` (`dist/agent-BP9OWM6D.js:62599-62624`) makes every run an editor of its
+  tenant. The library's pinned text still names the write tool
+  (`PinnedStateProcessor`, `dist/agent-BP9OWM6D.js:73833-73840`); its `instructions` option changes
+  only the usage block.
+- **Hand-made piece.** `apps/server/src/builder/assistant/company-memory.ts` is the only file that
+  talks to `Knowledge`. Its scopes make a run a viewer of its thread, its resource and its company
+  (`org:$orgId`), and the tool set is the closed `COMPANY_MEMORY_TOOLS` (search, read, list: the
+  model never writes, it proposes with `propose_company_memory` and a person who may saves from the
+  card, decision 0064). The company's instructions are a page declared and pinned by the
+  configuration, written by the host through `PUT .../instructions`. The Mastra navigation routes
+  stay off by default and the Hub exposes only its own (`conversation/guard.ts`, S39). The
+  permission "Memória da empresa" is the Hub's, in `hub/identity/admission.ts`.
+- **Why.** A model that may write to the company's memory by the library's own tools would bypass
+  the roles; one file and one test keep an experimental storage from spreading.
+- **Proof.** `company-memory.test.ts` "o formato do Knowledge" (fails when a Mastra changes the
+  schema version: export the pages with `readKnowledgePage` and `listKnowledgeTreeChildren`,
+  write them back with `upsertPage` after the reset); removal rows `company-memory-read-only`,
+  `company-memory-permission` and `company-memory-proposal`.
+- **Revisit when** Mastra takes `Knowledge` out of experimental, or adds a migration or a way to
+  rewrite the pinned text.
+
+## Mastra 1.82.0: the research helper's account, tools and numbered files (Alinhamento do Assistente)
+
+- **Library line.** `AgentController` runs a subagent as a new `Agent` with no processors; its model
+  comes only from the synchronous `resolveSubagentModel`, its context is a new object with an empty
+  `resourceId`, and the controller's tools are copied from the main agent's
+  (`@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6830-6866`, `:6719-6994`). Mastra's own
+  `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
+  itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
+- **Hand-made piece.** `apps/server/src/builder/assistant/research.ts`: the one type `pesquisar`
+  with the four read tools of the machine and `connector_read`; `researchOnly`, a processor that
+  closes the `subagent` tool to `agentType` and `task` and always calls Mastra's `execute` not
+  forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
+  whoever asks, through the same door as the main agent (the 50 calls count by the turn);
+  `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
+  `controller-kit/factories.ts`) returns the model of the account the turn is calling, as the
+  conversation's title does; and
+  `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
+  helper's context is another object and its first file would overwrite the turn's first.
+- **Why.** The helper must read with the asker's scope and the turn's account, write nothing and never
+  open another helper; a count per context object loses the file of one of them.
+- **Proof.** `research.test.ts` "o ajudante só lê", "a porta, as 50 e o arquivo", "a conta da
+  conversa" and "a falha da conta". No removal row protects it.
+- **Revisit when** Mastra lets a subagent run the input processors, take its tools from the asker's
+  context, or report its usage (today a subagent emits none, `:6898-6931`).
+
+## The ceiling of 50 reads per answer (Alinhamento do Assistente)
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 counts a turn's calls to a system outside the
+  model: `stopWhen` sees only the model's loop, and no reference has such a ceiling.
+- **Hand-made piece.** `CONNECTOR_CALLS_PER_TURN` and `createSpending` (`hub/connectors/builder-port.ts`):
+  a synchronous counter by key (a run for the Builder, a turn for the Assistant), the oldest key
+  forgotten past `TURNS_KEPT`, at the Hub's door. It counts the typed reads, the notebook's saves and
+  the research helper's reads together, with the tools in parallel.
+- **Why.** It protects the company's system; the door is where every read passes.
+- **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
+  helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
+
 ## Mastra 1.82.0, @neondatabase/serverless 1.2.0 and PostgreSQL 18: the company's copies (Capacidade 2)
 
 Five pieces of `apps/server/src/hub/copies/run.ts` and `platform/copy-sql.ts` are ours, because no
