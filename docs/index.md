@@ -34,7 +34,7 @@ One line per document (`check-docs`).
 - [design](guides/design.md): how screens look, move and speak.
 - [web](guides/web.md): how the Hub's screens are organized.
 
-## Decisions: one choice expensive to undo per file
+## Decisions: one costly choice per file
 
 - [0001](decisions/0001-new-repository-by-transplant.md) transplant.
 - [0002](decisions/0002-typescript-node-24-run-directly.md) TypeScript, Node, React, Vite.
@@ -94,11 +94,7 @@ One line per document (`check-docs`).
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
-- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
-- [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
-- [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
-- [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
-- [0063](decisions/0063-copy-models-proof.md) copy proof.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries; [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI; [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope; [0062](decisions/0062-a-write-declares-its-provider-facts.md) writes; [0063](decisions/0063-copy-models-proof.md) proofs; [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) Ontologia; [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) Brain; [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md) metamodel.
 
 ## Skills
 
