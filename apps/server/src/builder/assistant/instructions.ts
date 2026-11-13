@@ -4,7 +4,7 @@ import { fixedNameOf } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
-import { fixedSystem, TITLE } from '../controller-kit/public.ts'
+import { fixedSystem, sessionModel, TITLE } from '../controller-kit/public.ts'
 import { turnDate } from '../conversation/public.ts'
 
 /**
@@ -23,6 +23,20 @@ const FIXED = [
 ]
   .map((text) => text.trim())
   .join('\n\n')
+
+/**
+ * The block of one model, by the turn's model id with its provider, after the fixed message: Mastra
+ * Code's `modelSpecificPrompts` (`mastracode/sdk/src/agents/prompts/model.ts`, chosen by exact id in
+ * `prompts/index.ts:146-148`, a section of the agent's prompt at `:211`). It reaches the model by any
+ * account, the ChatGPT subscription or an OpenAI key. `gpt-6-luna` was measured giving up on a
+ * partial answer after a read that fell short, in the Assistant's scorecard; `gpt-5.6-luna` gets the
+ * same block unmeasured. A model without a block gets the fixed message alone.
+ */
+const LUNA = readFileSync(new URL('./prompt/openai-luna.md', import.meta.url), 'utf8').trim()
+const MODEL_BLOCKS: Readonly<Record<string, string>> = {
+  'openai/gpt-6-luna': LUNA,
+  'openai/gpt-5.6-luna': LUNA,
+}
 
 const ROLE_WORDS = {
   owner: 'owner',
@@ -121,8 +135,9 @@ export function blockOf(
 }
 
 /**
- * Two system messages (`P1`, `L1`): the fixed one with its own cache mark, then the conversation's
- * block, which the Hub marks as the last one; resolved again on each call of the agent.
+ * The system messages (`P1`, `L1`): the fixed one with its own cache mark, the turn's model's block
+ * when it has one, then the conversation's block, which the Hub marks as the last one; resolved again
+ * on each call of the agent.
  */
 export function assistantInstructions(deps: {
   offeredOf: (
@@ -143,8 +158,10 @@ export function assistantInstructions(deps: {
       })
     }
     const chosen = offered.filter((each) => each.chosen)
+    const model = MODEL_BLOCKS[sessionModel(requestContext)]
     return [
       fixedSystem(FIXED),
+      ...(model === undefined ? [] : [{ role: 'system' as const, content: model }]),
       { role: 'system', content: blockOf(speakers, chosen, may) },
     ] satisfies AgentInstructions
   }

@@ -199,8 +199,10 @@ export function answerWords(limit: string): string {
 
 /**
  * What the model reads of a read the provider refused for any reason but withholding access
- * (`deniesAccess`): a 400, 404, 409 or 422 says the request was wrong, so it is an error to correct,
- * not a refusal to accept. The contract and the log keep `REFUSED`; only this text changes.
+ * (`deniesAccess`): what it proves is only that access was not shown to be withheld (a Sankhya
+ * refusal comes as HTTP 200 in an envelope), so it says no more. It is the one place the model is told
+ * how to treat a failed read; the prompts and the skills point here. The contract and the log keep
+ * `REFUSED`; only this text changes.
  */
 function failedRead(answered: { native: Native }) {
   const said =
@@ -208,7 +210,7 @@ function failedRead(answered: { native: Native }) {
   return {
     kind: 'READ_FAILED',
     native: answered.native,
-    reason: `The read failed.${said} This is an error in what was asked, not a refusal of access: read the message, correct the request and try another way.`,
+    reason: `The read failed.${said} This does not show a refusal of access: read the message, correct the request and try another way.`,
   } as const
 }
 

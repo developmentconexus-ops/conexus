@@ -1,6 +1,7 @@
 import type { CompanyId, EnableCopy, Person } from '@conexus/hub-api'
 import {
   changeCopyInterval,
+  deleteCopy,
   dismissCopyProposal,
   enableCopy,
   grantProjectCopy,
@@ -66,6 +67,9 @@ export function registerCopyRoutes(app: FastifyInstance, copies: CopyService): v
     await copies.runNow({ ...inCompany(input), copyId: input.params.copyId })
     return answer({})
   })
+  serve(app, deleteCopy, async (input) =>
+    answer(await copies.delete({ ...inCompany(input), copyId: input.params.copyId })),
+  )
   serve(app, listCopyRuns, async (input) =>
     answer(
       await copies.runs({
