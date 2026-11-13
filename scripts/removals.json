@@ -2924,5 +2924,60 @@
       "file": "src/builder/assistant/company-memory-propose.test.ts",
       "name": "os dois têm a proposta"
     }
+  },
+  {
+    "id": "ontology-company-policy",
+    "file": "apps/server/migrations/20261113184033_ontology/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"ontology\".\"proposal\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));",
+    "replace": "CREATE POLICY \"company_all\" ON \"ontology\".\"proposal\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true);",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a B não vê a A"
+    }
+  },
+  {
+    "id": "ontology-view-invoker",
+    "file": "apps/server/migrations/20261113184033_ontology/migration.sql",
+    "find": "CREATE VIEW \"ontology\".\"concept\" WITH (security_invoker = true) AS",
+    "replace": "CREATE VIEW \"ontology\".\"concept\" AS",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: o atual e o da revisão N"
+    }
+  },
+  {
+    "id": "ontology-grant-update-revision",
+    "file": "apps/server/migrations/20261113184110_ontology_grants/migration.sql",
+    "find": "GRANT SELECT ON TABLE ontology.concept,",
+    "replace": "GRANT UPDATE ON TABLE ontology.revision TO hub_company;\n--> statement-breakpoint\nGRANT SELECT ON TABLE ontology.concept,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a P1 no banco"
+    }
+  },
+  {
+    "id": "ontology-grant-delete-revision",
+    "file": "apps/server/migrations/20261113184110_ontology_grants/migration.sql",
+    "find": "GRANT SELECT ON TABLE ontology.concept,",
+    "replace": "GRANT DELETE ON TABLE ontology.revision TO hub_company;\n--> statement-breakpoint\nGRANT SELECT ON TABLE ontology.concept,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a P1 no banco"
+    }
+  },
+  {
+    "id": "ontology-grant-update-item-content",
+    "file": "apps/server/migrations/20261113184110_ontology_grants/migration.sql",
+    "find": "GRANT UPDATE (decision, reason, decided_by, decided_at) ON TABLE ontology.proposal_item",
+    "replace": "GRANT UPDATE ON TABLE ontology.proposal_item",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a P1 no banco"
+    }
   }
 ]

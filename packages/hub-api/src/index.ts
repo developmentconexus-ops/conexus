@@ -233,6 +233,7 @@ export {
   readObservationalMemoryModels,
   setObservationalMemoryModel,
 } from './observational-memory.ts'
+export * from './ontology.ts'
 export * from './open-writes.ts'
 export {
   type AccessKind,
