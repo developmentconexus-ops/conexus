@@ -11,8 +11,8 @@ import {
 import type { AgentInstructions } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
-import type { PostgresStore } from '@mastra/pg'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
@@ -82,7 +82,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
 const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
 
 type Deps = {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   database: Database
   identity: IdentityPorts
   queue: QueueDeps

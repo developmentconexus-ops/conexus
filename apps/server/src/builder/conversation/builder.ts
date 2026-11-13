@@ -3,8 +3,8 @@ import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
-import type { PostgresStore } from '@mastra/pg'
 import type { BuilderData } from '../../hub/apps/public.ts'
 import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -105,7 +105,7 @@ const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
  * machine, and the task list's signal with `memory`.
  */
 export function createBuilder(deps: {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   queue: QueueDeps
   runs: Runs
   index: ConversationIndex

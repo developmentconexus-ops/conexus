@@ -7,8 +7,8 @@ import {
 import { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
-import type { PostgresStore } from '@mastra/pg'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
@@ -201,7 +201,7 @@ async function draftAgentOf(deps: Deps & { memories: AgentDeps['memories'] }, ru
 }
 
 type Deps = {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   database: Database
   identity: IdentityPorts
   queue: QueueDeps

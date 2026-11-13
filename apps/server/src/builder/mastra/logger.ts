@@ -1,5 +1,6 @@
 import { classifyProviderError, providerRequestId } from '@mastra/core/error'
-import { MastraLogger } from '@mastra/core/logger'
+import type { LoggerAdapterContext } from '@mastra/core/logger'
+import { buildLogRecordData, exportTrackedException, MastraLogger } from '@mastra/core/logger'
 import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { causeChain } from '../../platform/failure.ts'
 
@@ -39,14 +40,20 @@ function fieldsOf(args: unknown[]): Record<string, Scalar> {
 /**
  * Mastra's logger, made of the program's (code C50): its warnings and errors reach our log with
  * scalar fields only, never its message, which may carry a provider's answer or a person's text
- * (security S41). Its debug and info lines are dropped.
+ * (security S41). Its debug and info lines are dropped. Through Mastra's adapter hook the same
+ * warnings and errors go to the trace whole (decision 0068), and our line carries the trace's ids.
  */
 export class BuilderLogger extends MastraLogger {
   readonly #log: FailureLog
+  #observability: LoggerAdapterContext | undefined
 
   constructor(log: FailureLog) {
     super({ name: 'builder', level: 'warn' })
     this.#log = log
+  }
+
+  __attachObservability(context: LoggerAdapterContext): void {
+    this.#observability = context
   }
 
   debug(): void {
@@ -57,15 +64,30 @@ export class BuilderLogger extends MastraLogger {
     return
   }
 
-  warn(_message: string, ...args: unknown[]): void {
-    this.#log.info({ source: 'mastra', ...fieldsOf(args) }, 'MASTRA_WARNING')
+  warn(message: string, ...args: unknown[]): void {
+    this.#log.info({ source: 'mastra', ...fieldsOf(args), ...this.#traceIds() }, 'MASTRA_WARNING')
+    this.#export('warn', message, args)
   }
 
-  error(_message: string, ...args: unknown[]): void {
-    this.#log.error({ source: 'mastra', ...fieldsOf(args) }, 'MASTRA_ERROR')
+  error(message: string, ...args: unknown[]): void {
+    this.#log.error({ source: 'mastra', ...fieldsOf(args), ...this.#traceIds() }, 'MASTRA_ERROR')
+    this.#export('error', message, args)
   }
 
   trackException(error: Error): void {
-    this.#log.error({ source: 'mastra', ...fieldsOf([error]) }, 'MASTRA_ERROR')
+    this.#log.error({ source: 'mastra', ...fieldsOf([error]), ...this.#traceIds() }, 'MASTRA_ERROR')
+    exportTrackedException(this.#observability, error)
+  }
+
+  #traceIds() {
+    return this.#observability?.options.correlation
+      ? this.#observability.resolveTraceFields()
+      : undefined
+  }
+
+  #export(level: 'warn' | 'error', message: string, args: unknown[]): void {
+    if (this.#observability?.options.export) {
+      this.#observability.getLogSink()?.[level](message, buildLogRecordData(args))
+    }
   }
 }

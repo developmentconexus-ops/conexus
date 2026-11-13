@@ -102,8 +102,9 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
   assert.equal(empty?.rows, null, 'e vazia')
 })
 
+/** The copies' schedules, not the Hub's own daily trace cleanup. */
 function schedulesOf(on: CopiesOn) {
-  return on.hub.mastra.schedules.list()
+  return on.hub.mastra.schedules.list({ workflowId: 'conexus-copy-run' })
 }
 
 test('desligar tira a agenda da cópia que acaba, pausada também', async (t) => {
