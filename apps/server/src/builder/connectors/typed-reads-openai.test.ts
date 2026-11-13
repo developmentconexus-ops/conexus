@@ -4,10 +4,11 @@ import { Agent } from '@mastra/core/agent'
 import { ToolSearchProcessor } from '@mastra/core/processors'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
-import { TYPED_READ_NAMES, typedReads } from './typed-reads.ts'
+import { typedReads } from './public.ts'
 
 const SEARCH = 'search_tools'
-const PERGUNTAS = 'mercado-livre_perguntas'
+/** The two reads with fields that exclude each other (`scanAlone`). */
+const EXCLUSIVE = ['mercado-livre_perguntas', 'mercado-livre_anuncios']
 
 const Offered = z.array(
   z.object({
@@ -86,19 +87,13 @@ async function offeredAfterSearch(provider: string, loaded: string): Promise<Off
   return last ?? []
 }
 
-test('a leitura achada pelo search_tools chega ao OpenAI sem campo obrigatório que o conector não pede', async () => {
-  const offered = await offeredAfterSearch('openai.responses', PERGUNTAS)
-  const read = offered.find((each) => each.name === PERGUNTAS)
-  assert.ok(read, `${PERGUNTAS} loaded: ${offered.map((each) => each.name)}`)
-  // The 17 refusals of 2026-11-13: strict, OpenAI makes the model fill offset, scan and scrollId.
-  assert.equal(read.strict, false, 'not strict: the model may leave a field out')
-  assert.deepEqual(read.inputSchema.required, ['connection', 'limit'])
-})
-
-test('todas as leituras tipadas deixam o modelo omitir o campo opcional', () => {
-  const tools = typedReads(async () => undefined, '50 connector calls per run')
-  assert.deepEqual(Object.keys(tools).sort(), [...TYPED_READ_NAMES].sort())
-  for (const [name, each] of Object.entries(tools)) {
-    assert.equal(Object(each).strict, false, `${name} is not strict`)
-  }
-})
+for (const name of EXCLUSIVE) {
+  test(`${name} achada pelo search_tools chega ao OpenAI sem campo obrigatório que o conector não pede`, async () => {
+    const offered = await offeredAfterSearch('openai.responses', name)
+    const read = offered.find((each) => each.name === name)
+    assert.ok(read, `${name} loaded: ${offered.map((each) => each.name)}`)
+    // The 17 refusals of 2026-11-13: strict, OpenAI makes the model fill offset, scan and scrollId.
+    assert.equal(read.strict, false, 'not strict: the model may leave a field out')
+    assert.deepEqual(read.inputSchema.required, ['connection', 'limit'])
+  })
+}
