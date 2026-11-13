@@ -25,9 +25,12 @@ procura em mais de um lugar, refaz a leitura que falhou de outro jeito, confere 
 dizer, e diz de onde ele veio. Ele só pergunta o que nenhuma leitura resolve, e antes de perguntar faz o
 trabalho que não depende da resposta. O texto fixo passa a ter as seções que as referências têm, na ordem delas: quem ele
 é, onde está, cada ferramenta e quando usar, como trabalha, evidência, autonomia, o que fazer quando
-uma chamada falha, quando perguntar, como responder. E os modelos Luna, na assinatura do ChatGPT,
-recebem um bloco próprio, escolhido pelo nome exato do modelo, no texto que acompanha toda chamada
-dessa assinatura.
+uma chamada falha, quando perguntar, como responder. E os modelos Luna da OpenAI recebem um bloco
+próprio no texto do Assistente, escolhido pelo modelo da conversa, como o Mastra Code faz, pela
+assinatura do ChatGPT ou por uma chave da OpenAI. O texto que vai em toda chamada da assinatura do
+ChatGPT fica curto e sem regra de agente, como no Mastra Code (sua escolha B, de 2026-11-13): as regras
+de autonomia ficam só no texto do Assistente, e o Builder, o Construtor e as chamadas de título e de
+memória deixam de recebê-las por esse caminho.
 
 **O roteiro de uso.**
 
@@ -63,10 +66,10 @@ roda; nenhum sistema real da empresa é lido. Os números estão na seção "A m
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 | O texto fixo reescrito no molde das referências, o bloco por modelo do Luna escolhido pelo nome exato, os testes do contrato do texto | `apps/server/src/builder/assistant/`, `apps/server/src/builder/model-accounts/openai/`, `apps/server/src/builder/connectors/connector-tools.ts`, `apps/server/src/builder/connectors/connector-tools.test.ts`, `packages/connectors/src/sankhya/skill/SKILL.md` | testing | https://github.com/developmentconexus-ops/conexus/pull/996 |
+| U1 | O texto fixo reescrito no molde das referências, o bloco do Luna no prompt do Assistente, escolhido pelo modelo do turno, e o texto curto e fixo do transporte do ChatGPT, os testes do contrato do texto | `apps/server/src/builder/assistant/`, `apps/server/src/builder/model-accounts/openai/`, `apps/server/src/builder/connectors/connector-tools.ts`, `apps/server/src/builder/connectors/connector-tools.test.ts`, `packages/connectors/src/sankhya/skill/SKILL.md` | testing | https://github.com/developmentconexus-ops/conexus/pull/996 |
 
-**Orçamento de código alterado.** U1: cerca de 30 linhas de código em `models.ts` e 120 linhas de
-texto em `assistant.md`, fora os testes.
+**Orçamento de código alterado.** U1: cerca de 20 linhas de código em `instructions.ts` e `models.ts`,
+que encolhe, e 130 linhas de texto em `assistant.md` e `openai-luna.md`, fora os testes.
 
 ## Os critérios de aceite
 
@@ -75,8 +78,8 @@ texto em `assistant.md`, fora os testes.
 | 1 | U1 | O texto fixo tem, nesta ordem, Who you are, Environment, Tools, How you work, Evidence, Autonomy and persistence, When a call fails, When to ask the person, How you answer, e continua sem ordens em maiúsculas | `assistant/instructions.test.ts`, "o texto novo: responder na mensagem, arquivo só quando pedido" | must |
 | 2 | U1 | O texto fixo diz que ler é sempre permitido, que diante de uma leitura que falhou se faz o que o resultado dela diz, que uma recusa de acesso é a resposta, e o teste antes de perguntar; o resultado da leitura que falhou diz que ela não mostra recusa de acesso | o mesmo teste | must |
 | 3 | U1 | O texto fixo continua os mesmos bytes para um dono e para um membro; o que o papel não permite segue no bloco da conversa | `assistant/instructions.test.ts`, "as frases de ferramenta vão no bloco, com o papel" | must |
-| 4 | U1 | Uma chamada ao `gpt-6-luna` pela assinatura do ChatGPT leva o texto comum e depois o bloco `<autonomy_and_persistence>` do Luna; o `gpt-5.2` leva só o texto comum; um nome que só começa como o do Luna não leva o bloco | `model-accounts/openai/codex.test.ts`, "o bloco de cada modelo vai pelo id exato…" | must |
-| 5 | U1 | O pedido ao Codex continua com `Autonomy and persistence` e `Reading is always allowed` no `instructions` | `model-accounts/openai/codex.test.ts`, "o pedido que sai" | must |
+| 4 | U1 | Um turno do Assistente em `openai/gpt-6-luna` pela assinatura do ChatGPT, e em `openai/gpt-5.6-luna` por uma chave da OpenAI, leva o bloco `<autonomy_and_persistence>` do Luna nas mensagens do prompt; um turno em `openai/gpt-5.2` ou num modelo da Anthropic não o leva | `assistant/model-block.test.ts` | must |
+| 5 | U1 | O `instructions` do pedido ao Codex é o mesmo texto curto para todo modelo, sem regra de agente nem bloco de modelo | `model-accounts/openai/codex.test.ts`, "o transporte leva o mesmo texto fixo curto…" e "o pedido que sai"; `assistant/model-block.test.ts` | must |
 | 6 | U1 | No modelo de verdade, `openai/gpt-6-luna` e `anthropic/claude-opus-5-5` altos, P10 e P4 em três repetições cada, contadas as desistências e as chamadas, e o placar inteiro, antes e depois. Aberto: o depois do Luna, sem cota | o placar (`assistant.scorecard.test.ts`, com `CONEXUS_EVAL_REAL_MODEL`), números em "A medição" | should |
 
 ## A matriz de estados
@@ -85,7 +88,8 @@ Nenhuma tela nova nem mudada.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `instructions` do pedido ao Codex | `codexInstructions(name)`, `model-accounts/openai/models.ts` | o endpoint do ChatGPT |
+| `instructions` do pedido ao Codex | `CODEX_INSTRUCTIONS`, `model-accounts/openai/models.ts`, o mesmo para todo modelo | o endpoint do ChatGPT |
+| A mensagem de sistema do bloco do modelo | `assistantInstructions`, `assistant/instructions.ts`, pelo modelo do turno | o modelo, por qualquer conta |
 
 ## A tabela de falhas
 
@@ -97,14 +101,14 @@ Nenhuma escrita nova.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Quem é, com o padrão do resultado | U1 | `assistant/prompt/assistant.md:1-3` ("colleague … has a computer") | `mastra-1.82@6e8dfcb8` `packages/core/src/coding-agent/prompt.ts:36`; `codex@970111f` `codex-rs/models-manager/models.json:524` (`gpt-6-luna`, `instructions_template`, linha 1 do molde, e "Personality" 3-5); `L/Notion/notion-ai.md:1-5`; `L/Perplexity/perplexity-search.md:3-5`; `L/Anthropic/claude-code/claude-code-opus-5.5.md:12-14` | Uma ou duas frases: o papel, com quem trabalha e até onde vai o trabalho; depois a postura (julgamento próprio, discorda com evidência) | nativo (texto) | — | "tem que agir como especialista" | — |
 | Onde está | U1 | o bloco da conversa (`assistant/instructions.ts:100-121`), sem explicação no texto fixo | `prompt.ts:38-44` (`# Environment`, montado por pedido); `L/Anthropic/claude-cowork/claude-cowork.md:604-617`; `L/Perplexity/perplexity-search.md:99`, `:229-272` | O ambiente vem por pedido, e o texto fixo diz o que cada linha significa e o que o agente não vê | nativo (texto) | — | "tem que saber onde está" | — |
-| Cada ferramenta, quando usar | U1 | espalhado: `assistant.md:29`, `:41`, `:62`, `:66`, `:70` | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/prompts/tool-guidance.ts:25-30` (nomes exatos), `:167`, `:198`, `:209`, `:244` (um bloco `**nome** — para quê` por ferramenta); `L/Notion/notion-ai.md:498-515`; `L/Anthropic/claude-opus-5.5.md:1364-1368` (as ferramentas internas antes da web para dados da empresa) | Uma linha por ferramenta, com o nome exato, para quê e quando, e a ordem entre as fontes | nativo (texto) | — | "como usar as tools sobre conexus" | — |
+| Cada ferramenta, quando usar | U1 | espalhado: `assistant.md:29`, `:41`, `:62`, `:66`, `:70` | `mastra-1.82@6e8dfcb8` `mastracode/sdk/src/agents/prompts/tool-guidance.ts:25-30` (nomes exatos), `:167`, `:198`, `:209`, `:244` (um bloco `**nome** — para quê` por ferramenta); `L/Notion/notion-ai.md:498-515`; `L/Anthropic/claude-opus-5.5.md:1364-1368` (as ferramentas internas antes da web para dados da empresa) | Uma linha por ferramenta, com o nome exato, para quê e quando, e a ordem entre as fontes | nativo (texto). A referência monta a lista no código a partir das constantes das ferramentas; aqui ela é texto, para o texto fixo seguir os mesmos bytes para todo papel (critério 3), e `assistant/prompt-tools.test.ts` confere cada nome contra as ferramentas que o Assistente oferece | — | "como usar as tools sobre conexus" | — |
 | Como trabalha: entender, achar, ler, calcular, conferir, responder | U1 | `assistant.md:29` ("Check a number before you state it") | `mastracode/sdk/src/agents/prompts/build.ts:46-56` (o laço Understand, Implement, Verify, Prove); `prompt.ts:54-59` ("Start by Understanding"), `:116-119` (nunca adivinhar); `L/Anthropic/claude-for-excel.md:19-57` | Um laço numerado, um passo verificado antes do próximo | nativo (texto) | — | "Ele tem que investigar, não assumir" | — |
 | Evidência | U1 | `assistant.md:29` (fonte da web, inferência) | `L/Anthropic/claude-for-excel.md:55-57` (relatar só o que conferiu; "todos" só se leu todos); `L/OpenAI/gpt-5.6-sol.md:1655` (o que a fonte não sustenta); `L/Perplexity/perplexity-search.md:133-145`, `:186`; `L/Anthropic/claude-cowork/claude-cowork.md:232-238` | Todo fato com a sua fonte, o que é inferência marcado, o que falta dito | nativo (texto) | — | "fatos evidencias" | — |
 | Autonomia e persistência | U1 | `model-accounts/openai/models.ts:29-42` (só nos modelos da OpenAI, pelo pull request 996) | `codex@970111f` `models.json:524` (molde do Luna, "Autonomy and persistence", linhas 31-41); `codex-rs/core/gpt_5_2_prompt.md:29-31`, `:111`; `prompt.ts:125-158` ("Autonomy First") | Ir até o fim no mesmo turno, sem resposta parcial; agir com o padrão sensato e dizer o que supôs | nativo (texto) | — | "ser pro ativo", "sem deixar ele frouxo" | — |
 | Quando uma chamada falha | U1 | `models.ts:33` (só OpenAI); `packages/connectors/src/sankhya/skill/SKILL.md:10` | `mastracode/sdk/src/agents/prompts/build.ts:69-76` ("Error Recovery": ler o erro inteiro, a causa, corrigir, rodar de novo, só depois explicar o bloqueio); `L/Anthropic/claude-code/claude-code-opus-5.5.md:21` (não repetir igual) | Passos numerados; a recusa de acesso é o fim | nativo (texto) | — | "ser pro ativo" | — |
 | Quando perguntar | U1 | `assistant.md:68-70` ("# Questions") | `prompt.ts:139-171` (as quatro perguntas antes de perguntar; quando deve e quando não deve); `models.json:524` (molde do Luna, "When to ask the user for permission", 19-29, e "Working with the user", 49); `L/OpenAI/chatgpt-gpt-5-agent-mode.md:75-90`; `L/Anthropic/claude-for-excel.md:23-41` | Um teste curto antes de perguntar; perguntar só o que bloqueia, continuar o trabalho independente | nativo (texto) | — | "Ele tem que investigar, não assumir" | — |
 | Como responder | U1 | `assistant.md:5-11` | `models.json:524` (molde do Luna, "Writing style" 7-17, "Final answer" 67-94); `prompt.ts:173-178`; `L/Perplexity/perplexity-search.md:177-206`; `L/Notion/notion-ai.md:360-427` | O resultado primeiro, palavras simples, um ponto por parágrafo, tabela para comparar | nativo (texto) | — | — | — |
-| Bloco por modelo, pelo nome exato | U1 | `models.ts:29-42` (um texto só para todo modelo da OpenAI) | `mastracode/sdk/src/agents/prompts/model.ts:1-18` (`modelSpecificPrompts`, blocos para `openai/gpt-5.4` e `openai/gpt-5.5`, nenhum da Anthropic); `prompts/index.ts:146-148` (escolhido por id exato, com o provedor), `:207-213` (no prompt do agente, depois do texto do host); `codex@970111f` `models.json:177`, `:524` (um molde por modelo); `codex-rs/core/src/client.rs:1032-1040` | Um mapa do id exato do modelo para o seu bloco; o modelo sem bloco recebe só o texto comum | embrulhado: a escolha por id exato é a da referência, o lugar não. Aqui o bloco vai no `instructions` da assinatura do ChatGPT (`models.ts`), escolhido pelo nome sem provedor, antes do texto do Hub, que segue em `input`, e em toda chamada dessa assinatura: Assistente, Builder, Construtor, título, observador e refletor. Uma conta da OpenAI por chave de API não o recebe. Onde o bloco mora é decisão do fundador, pendente | o teste do id exato em `codex.test.ts` | "ter o especifoc do codex como mastra code e factory tem" | — |
+| Bloco por modelo, pelo modelo do turno | U1 | `models.ts:29-42` (um texto só no transporte para todo modelo da OpenAI) | `mastracode/sdk/src/agents/prompts/model.ts:1-18` (`modelSpecificPrompts`, blocos para `openai/gpt-5.4` e `openai/gpt-5.5`, nenhum da Anthropic); `prompts/index.ts:146-148` (escolhido pelo id exato, com o provedor), `:211` (uma seção do prompt do agente, depois do texto do host); `providers/openai-codex.ts:48-51` (o transporte com duas linhas fixas); `codex@970111f` `models.json:177`, `:524` (um molde por modelo) | Um mapa do id do modelo, com o provedor, para o seu bloco, numa mensagem de sistema do agente; o modelo sem bloco recebe só o texto do agente; o transporte fica fixo e curto | nativo (texto): `assistantInstructions` já é uma função do `requestContext`, e o Mastra 1.82 aceita uma lista de mensagens de sistema (`reference-agents-agent.md:558`) | — | "ter o especifoc do codex como mastra code e factory tem"; "2. B" (2026-11-13) | `assistant/prompt/openai-luna.md` |
 | O resultado da leitura que falhou, dono único | U1 | `connectors/connector-tools.ts` (`failedRead`), `packages/connectors/src/sankhya/skill/SKILL.md:10` | `mastracode/sdk/src/agents/prompts/build.ts:69-76` (o agente lê o erro e corrige) | Uma regra, um dono: o resultado diz que a falha não mostra recusa de acesso e o que fazer; o texto fixo, o do ChatGPT e a skill mandam ler esse resultado (Fechamentos 3 e 4 da revisão do pull request 996) | nativo (texto) | — | — | — |
 | O texto do produto acima do motor | U1 | `assistant/instructions.ts:20-25` (`conexus.md` e `assistant.md`, os mesmos bytes para todos) | `mastra-1.82@6e8dfcb8` `mastracode/factory/src/factory.ts:1464` (`hostInstructions`, o que o produto acrescenta ao agente do Mastra Code), `prompts/index.ts:205-209` | O produto acrescenta só o que é dele, sobre o mesmo molde | nativo | — | "somente adicionando do conexus" | — |
 
@@ -119,9 +123,10 @@ Todas as linhas da tabela de referência.
 | Arquivo | O que muda | Fora |
 | --- | --- | --- |
 | `apps/server/src/builder/assistant/prompt/assistant.md` | Reescrito nas seções das referências; as regras de antes que continuam valendo (arquivos, Builder, memória, caderno, automações, confiança) ficam com as mesmas frases | `conversation/prompt/conexus.md` (é do Builder também) |
-| `apps/server/src/builder/model-accounts/openai/models.ts` | `codexInstructions(name)`: o texto comum e o bloco do modelo pelo id exato; o middleware é feito por modelo | o resto da ligação com o Codex |
+| `apps/server/src/builder/model-accounts/openai/models.ts` | `CODEX_INSTRUCTIONS` fica curto e fixo, sem regra de agente, como o do Mastra Code | o resto da ligação com o Codex |
+| `apps/server/src/builder/assistant/instructions.ts`, `apps/server/src/builder/assistant/prompt/openai-luna.md` | O bloco do Luna, escolhido pelo modelo do turno, numa mensagem de sistema entre o texto fixo e o bloco da conversa | o texto fixo, que segue os mesmos bytes para todos |
 | `apps/server/src/builder/connectors/connector-tools.ts`, `packages/connectors/src/sankhya/skill/SKILL.md` | A frase do resultado da leitura que falhou, dono único da regra; a skill manda ler esse resultado | o resto das ferramentas e do conector |
-| `apps/server/src/builder/assistant/instructions.test.ts`, `apps/server/src/builder/assistant/prompt-tools.test.ts`, `apps/server/src/builder/model-accounts/openai/codex.test.ts`, `apps/server/src/builder/connectors/connector-tools.test.ts` | O contrato do texto novo, os nomes da seção Tools contra as ferramentas oferecidas, o bloco por modelo e a frase do resultado | — |
+| `apps/server/src/builder/assistant/instructions.test.ts`, `apps/server/src/builder/assistant/prompt-tools.test.ts`, `apps/server/src/builder/assistant/model-block.test.ts`, `apps/server/src/builder/model-accounts/openai/codex.test.ts`, `apps/server/src/builder/connectors/connector-tools.test.ts` | O contrato do texto novo, os nomes da seção Tools contra as ferramentas oferecidas, o bloco por modelo e a frase do resultado | — |
 
 ### Como se prova
 
@@ -142,7 +147,11 @@ o commit medido: a primeira série do Luna, `fde69ba4` com duas linhas de `assis
 commit; o P4 e o P10 do Opus, `1d25d22f`; os placares inteiros e a segunda série do Luna, `4245bef3`.
 A rodada de conserto da revisão do pull request 1002 mudou depois duas linhas do texto fixo (a linha das
 conexões sem o rótulo do bloco, e as leituras tipadas no lugar de `connector_read`, que o Assistente não
-tem) e não foi medida. As chamadas vêm dos eventos do turno
+tem) e não foi medida. Todas as séries daqui rodaram com o bloco do Luna no transporte do ChatGPT, antes
+da escolha B; e as cópias de "antes" liam os pacotes `@conexus/*` (a skill do Sankhya e os dublês) do
+branch, não os do commit de antes. A medição do Luna depois da escolha B, o placar inteiro numa rodada
+com o `main` como antes e o head como depois, cada um com os seus próprios pacotes, está no corpo do
+pull request, com o commit medido. As chamadas vêm dos eventos do turno
 (`tool_start`), porque no ChatGPT as mensagens guardadas não trazem as chamadas (ver "Achados").
 "Completa" é uma resposta com o ranking ou o total pedido; "desistiu" é "não consegui" sem ranking.
 
