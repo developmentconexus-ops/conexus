@@ -139,7 +139,7 @@ O desenho de caixas e as capturas: a janela segue a do Desligar (`unlink-dialog.
 | (Emenda) o mesmo `REVOKE`, no Desligar (`leaveCopies`) | repete sem dano | o app pode ter perdido a leitura e a conexão continua: o novo Desligar repete | 503 `COPY_DATABASE_UNAVAILABLE`, nada muda no Hub | `COPY_GRANT_FAILED` | 12 |
 | `DELETE FROM copy … RETURNING` com a nota em `copy_table_left`, numa transação | a segunda espera a trava da linha e não acha nada: `[]` | a transação inteira volta | o banco do Hub fora: 503 do Hub, nada muda | nada novo | 1, 2, 3, 5 |
 | `DROP TABLE IF EXISTS` (`dropEndedCopies`) | a trava da linha de `copy_table_left` serializa (`leave.ts:165-182`); o Ligar do mesmo nome espera (`enable.ts:143-144`) | a linha volta a `copy_table_left` | `tablesLeft: [nome]` | `COPY_TABLES_LEFT` (o de hoje) | 8, 9 |
-| `clock.remove` (`schedules.delete` do Mastra) | sem efeito na segunda (`schedules.ts:645-650` volta se não há linha) | fica a rede de hoje: a agenda ativa que dispara acha `GONE` e se apaga (`workflow.ts:59-61`) | o Mastra fora: a cópia já saiu; a agenda ativa órfã se apaga no próximo disparo, a pausada fica no relógio, sem efeito | `COPY_SCHEDULE_LEFT` com `companyId`, `copyId`, `reason`; `COPY_DELETED` com `companyId`, `copyId`, `ended` (S41) | 6 |
+| `clock.remove` (`schedules.delete` do Mastra) | sem efeito na segunda (`schedules.ts:645-650` volta se não há linha) | fica a rede de hoje: a agenda ativa que dispara acha `GONE` e se apaga (`workflow.ts:59-61`) | o Mastra fora: a cópia já saiu, a agenda órfã fica para o próximo disparo | `COPY_DELETED` com `companyId`, `copyId`, `ended` (S41) | 6 |
 
 ## A tabela de referência
 
