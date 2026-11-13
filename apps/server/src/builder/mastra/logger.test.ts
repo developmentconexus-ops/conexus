@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { ErrorCategory, ErrorDomain, MastraError } from '@mastra/core/error'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, title } from '../conversation/test-conversation.ts'
-import { BuilderLogger } from './logger.ts'
+import { BuilderLogger } from './public.ts'
 
 test('o erro do Mastra num turno vai ao rastro com o texto, e o log do contêiner fica com escalares e os ids do rastro', async (t) => {
   const on = await conversing(t, (each: Sent) => title(each) ?? { kind: 'refuse', status: 400 })
