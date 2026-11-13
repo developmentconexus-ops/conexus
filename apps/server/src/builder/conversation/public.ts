@@ -1,6 +1,6 @@
 import type { ServerResponse } from 'node:http'
 import type { ConversationId } from '@conexus/hub-api'
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
 import type { BuilderData } from '../../hub/apps/public.ts'
 import type { CopyService } from '../../hub/copies/public.ts'
@@ -65,7 +65,7 @@ export function createBuilderConversations(deps: {
   database: Database
   identity: IdentityPorts
   projects: Pick<ProjectPorts, 'liveProjectOf'>
-  storage: PostgresStore
+  storage: MastraCompositeStore
   queue: QueueDeps
   runs: Runs
   connectors: BuilderConnectors

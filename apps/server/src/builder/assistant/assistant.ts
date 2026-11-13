@@ -12,7 +12,7 @@ import {
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -105,7 +105,7 @@ const CONEXUS_SKILL = skillOf({
 export type Assistant = ReturnType<typeof createAssistant>
 
 type Deps = {
-  storage: PostgresStore
+  storage: MastraCompositeStore
   database: Database
   identity: IdentityPorts
   connectors: AssistantConnectors

@@ -112,7 +112,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app. Medição de 
 | Fluxo 1 a 5 | As capacidades, uma fase por vez | Você é a régua | vibesdk, Mastra, o estudo do Builder ideal |
 | 24.6 Workflows e automações | Esta frente | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
 | 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
-| 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | Um só caminho OTel (0052). O uso por empresa. As ferramentas de conector sem entrada e saída no span (veio da 20, critério 29) |
+| 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | O OTel como mais um destino ao lado do rastro do Mastra no banco dele (0068). O uso por empresa. As ferramentas de conector sem entrada e saída no span (veio da 20, critério 29) |
 | 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
 | 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |

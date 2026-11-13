@@ -5,7 +5,7 @@ import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor, OutputProcessor } from '@mastra/core/processors'
 import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -87,7 +87,7 @@ export function agentDefaults(
  */
 export function controllerOf(input: {
   kind: ControllerKind
-  storage: PostgresStore
+  storage: MastraCompositeStore
   memory: MastraMemory
   agent: Agent
   /** A mode without `availableTools` filters nothing: its agent's tools are the closed set. */

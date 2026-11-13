@@ -47,18 +47,17 @@ async function scheduleReads(hub: Hub): Promise<number> {
   return Number(read.rows[0]?.n)
 }
 
-test('sem automação, a agenda não liga: nenhum trabalhador scheduler, nenhuma leitura da agenda depois da partida, e o pool do Mastra chega a zero', {
+test('sem automação, a agenda só tem a limpeza diária do rastro e dorme até ela: nenhuma leitura da agenda depois da partida, e o pool do Mastra chega a zero', {
   timeout: 90_000,
 }, async (t) => {
   const on = await automating(t)
-  assert.equal(on.hub.mastra.getWorker('scheduler'), undefined)
   const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))
   const deleted = await call(on.hub, on.ana, 'DELETE', `${on.automations}/${automation.id}`)
   assert.equal(deleted.statusCode, 204, deleted.body)
   await on.hub.mastra.getWorker('scheduler')?.stop()
 
   const back = await hubBeside(t, on.hub)
-  assert.equal(back.mastra.getWorker('scheduler'), undefined)
+  assert.equal(back.mastra.getWorker('scheduler')?.isRunning, true)
   await sleep(QUIET_MS)
   assert.equal(await mastraOpen(on.hub), 0)
   const reads = await scheduleReads(on.hub)
