@@ -62,7 +62,9 @@ fora pela sua palavra.
 - **Chaves e senhas** que aparecem com nome de chave (`token`, `apiKey`, `password` e afins) saem
   como `[REDACTED]`; o filtro do Mastra já vem ligado e olha o nome da chave, não o texto.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Escolhidas por você em 2026-11-13: "A A2 B B1 E E1". A2, o
+`PostgresStoreVNext`, com a regra dos cerca de 600 KB por turno no pico de 58 por dia; B1, 14 dias;
+E1, o SQL Editor do Neon com a consulta pronta. As outras letras ficam abaixo como foram postas.
 
 - **A. Onde o rastro mora.** (Nativo nas três; a medida da U1 decide entre A2 e A3 pela regra
   abaixo, que você aprova agora.)

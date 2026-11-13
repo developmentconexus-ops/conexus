@@ -17,8 +17,9 @@ vai guardar no nosso banco." The card is `docs/steps/pattern-o-rastreio-do-mastr
 - Spans keep input, output and error, the provider's answer body included. This is the one exception to
   security S41; the guide takes the sentence at the card's closing (L20).
 - Mastra's defaults: sampling `always`, `SensitiveDataFilter`, serialization limits.
-- Spans expire by age through Mastra's `retention` and `prune()`; the card names the store and the
-  age, each with the founder's word.
+- The store is `PostgresStoreVNext` in Mastra's database (A2), while a measured turn stays under
+  about 600 KB at the peak of 58 turns a day. Spans expire after 14 days (B1) through Mastra's
+  `retention` and a daily `prune()`. A trace is read in Neon's SQL Editor by conversation (E1).
 - OpenTelemetry stays open for 21.1 as one more exporter; S42 governs what leaves.
 
 ## Criterion
@@ -43,7 +44,7 @@ traces, or 21.1 sends spans out.
 
 ## State
 
-Proposed 2026-11-13. Supersedes [0052].
+Proposed 2026-11-13; founder, the same day: "A A2 B B1 E E1". Supersedes [0052].
 
 [0010]: 0010-mastra-tables-own-database.md
 [0032]: 0032-data-leaving-brazil-told.md
