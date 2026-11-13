@@ -20,10 +20,10 @@ The pull request, its head commit and the card; nothing from the builders' conve
 1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
-   Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column.
+   Record reads and commit; an unloaded skill is read from its `stack.md` docs column.
 2. A unit review reads every file of its commit against its section. The step review
    ([delivery L9](../../../docs/guides/delivery.md)) reads only the whole reference table and the
-   seams between pull requests (what two touch), its diff in steps 5 and 6; never an approved one.
+   seams between pull requests, its diff in steps 5 and 6; never an approved one.
 3. Try a counterexample to each acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test
@@ -35,11 +35,13 @@ The pull request, its head commit and the card; nothing from the builders' conve
    nativo row uses the named API; an embrulhado row adds only its line; a remendo row's native
    candidate runs at the installed version, listed in Ran, and one that serves is a Bloqueia. A
    changed file no row or contract explains is a Bloqueia (C75), outside the card's folders unless
-   the build report declares it (L7). A defect fix walks its report's rows. Then compare each built
-   piece with the reference's code ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or
-   does a library hold it?
-6. Walk the checklist, sweeping each class across the diff, and fill its sweep table (a row
-   per review rule: search, result). A screen: [screen](references/screen.md).
+   the build report declares it (L7). A row on a reference not **mesma situação** in the study's
+   [verification pass](../conexus-study/references/sources.md) is a finding. A defect fix walks its
+   report's rows. Then compare each built piece with the reference's code
+   ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or does a
+   library hold it?
+6. Walk the checklist across the diff; fill its sweep table (a row per rule: search, result). A
+   screen: [screen](references/screen.md).
 7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Every Fechamento about
    code shape goes on the closing list, checked as done.
 8. Write one verdict; an unfinished step is no verdict.
@@ -80,7 +82,7 @@ Only a Bloqueia holds the merge ([delivery L12](../../../docs/guides/delivery.md
 
 ## Stop and ask
 
-The card and a guide contradict each other: report both lines, choose neither.
+The card contradicts a guide: report both lines, choose neither.
 
 ## When it closes
 
