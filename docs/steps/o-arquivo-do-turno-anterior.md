@@ -98,7 +98,7 @@ As quatro primeiras da tabela acima. O builder abre `file-upload.ts:144-160,346-
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `assistant/files.ts` | apaga a partida antecipada; cria `seeded`, `recorded`, `forgetPlaced`, `RECYCLED`; `machineUploads` recebe `memory` | `assistant/assistant.ts` |
+| `assistant/files.ts` | apaga a partida antecipada; cria `seeded`, `recorded`, `forgetPlaced` e a marca `RECYCLED`, que não sai do arquivo; `machineUploads` recebe `memory` | `assistant/assistant.ts` |
 | `assistant/assistant.ts` | muda: passa `memory` ao processador e `recycled` às máquinas | — |
 | `machine/conversation.ts` | muda: `Deps.recycled`, `Session.requestContext`, `started` chama `recycled` na máquina nova | `assistant.ts` (os outros donos não passam `recycled`) |
 | `assistant/files-machine.test.ts` | inverte o caso da máquina fora; cria os casos 1 e 3 | — |
@@ -109,7 +109,6 @@ As quatro primeiras da tabela acima. O builder abre `file-upload.ts:144-160,346-
 // machine/conversation.ts, em Deps
 recycled?(requestContext: RequestContext): Promise<void>
 // assistant/files.ts
-export const RECYCLED: string
 export function forgetPlaced(memory: Memory, requestContext: RequestContext): Promise<void>
 export function machineUploads(deps: { log: FailureLog; memory: Memory }): InputProcessor<FileUploadTripwireMetadata>
 ```
