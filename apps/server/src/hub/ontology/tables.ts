@@ -30,7 +30,7 @@ const KEY = '^[a-z][a-z0-9_]{0,39}$'
 export const COMPANY_ROW = sql`company_id = ${scoped.companyId}`
 export const STATES = ['EXPERIMENTAL', 'ACTIVE', 'DEPRECATED'] as const
 
-export function instant(name: string) {
+function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
 
@@ -38,7 +38,7 @@ export function keyCheck(name: string, column: AnyPgColumn) {
   return check(name, sql`${column} ~ ${KEY}`)
 }
 
-export function companyFk(name: string, companyId: AnyPgColumn) {
+function companyFk(name: string, companyId: AnyPgColumn) {
   return foreignKey({ name, columns: [companyId], foreignColumns: [company.id] }).onDelete(
     'cascade',
   )
@@ -261,7 +261,7 @@ export const proposalItem = ontology.table(
       name: 'proposal_item_proof_fkey',
       columns: [table.companyId, table.proofRunId],
       foreignColumns: [proofRun.companyId, proofRun.id],
-    }),
+    }).onDelete('cascade'),
     check('proposal_item_n', sql`${table.n} >= 1`),
     check(
       'proposal_item_kind',
@@ -300,7 +300,7 @@ export const revision = ontology.table(
       name: 'revision_proposal_fkey',
       columns: [table.companyId, table.proposalId],
       foreignColumns: [proposal.companyId, proposal.id],
-    }),
+    }).onDelete('cascade'),
     check('revision_number', sql`${table.number} >= 1`),
     check('revision_hash', sql`${table.hash} ~ '^[0-9a-f]{64}$'`),
     policy(SCOPE_ROLES.COMPANY, 'all', COMPANY_ROW),
