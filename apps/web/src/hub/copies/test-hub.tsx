@@ -137,6 +137,13 @@ type Sent = { method: string; path: string; body: unknown; key: string | null }
 
 type Held = Parameters<typeof copiesHub>[1]
 
+/** Apagar: the copy leaves the list, and no table is left in the company's database. */
+function removed(copies: CopySummary[], id: unknown) {
+  const at = copies.findIndex((one) => one.id === id)
+  if (at !== -1) copies.splice(at, 1)
+  return HttpResponse.json({ tablesLeft: [] })
+}
+
 /** The runs of one copy: the first page, with a MORE when `later` is held, or that later page when asked for. */
 function runsOf(held: Held, id: unknown, request: Request) {
   const found = held.copies.find((one) => one.id === id)
@@ -261,6 +268,10 @@ function copiesHub(
     http.post(`${BASE}/copies/:id/run`, async ({ request }) => {
       await note(request)
       return answers.write?.() ?? HttpResponse.json({}, { status: 202 })
+    }),
+    http.delete(`${BASE}/copies/:id`, async ({ request, params }) => {
+      await note(request)
+      return answers.write?.() ?? removed(held.copies, params.id)
     }),
     http.get(`${BASE}/copies/:id/runs`, ({ params, request }) => runsOf(held, params.id, request)),
   )

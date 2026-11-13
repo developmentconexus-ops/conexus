@@ -16,6 +16,7 @@ import type { OfRelease } from './grants.ts'
 import { applyGrants, grantCopy, revokeAllOf, revokeCopy } from './grants.ts'
 import {
   copiesOfConnection,
+  deleteCopy,
   dropEndedCopies,
   endedSourceless,
   leaveCopies,
@@ -56,6 +57,8 @@ export function createCopyService(
     changeInterval: (input: Of & Parameters<typeof changeInterval>[1]) =>
       changeInterval(full, input),
     runNow: (input: Of) => runNow(full, input),
+    /** Apagar a copy with its table, admitting `manageCopies`. */
+    delete: (input: Of) => deleteCopy(full, input),
     /** Propor (Capacidade 3): the Builder's turn, through the connectors' door; admits nobody, the turn did. */
     propose: (ids: OfProject, a: Proposal) => propose(full, ids, a),
     /** Dispensar a proposal, admitting `manageCopies`. */

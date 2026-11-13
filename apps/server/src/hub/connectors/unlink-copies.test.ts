@@ -6,9 +6,10 @@ import { appLogin, appLoginPassword, ConnectionId } from '@conexus/hub-api'
 import pg from 'pg'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { copiesOn, TEST_APP_LOGIN_KEY } from '../copies/test-copies.ts'
+import { copiesUrl, enabled, firstEnded } from '../copies/test-routes.ts'
 import type { StoresOn } from '../copies/test-sources.ts'
 import { ordersCopy, STORE_A, STORE_B, storesOn } from '../copies/test-sources.ts'
-import { call, codeOf } from '../identity/test-hub.ts'
+import { call, codeOf, post } from '../identity/test-hub.ts'
 import { CopyName } from './public.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
 
@@ -101,6 +102,43 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
   assert.equal(empty?.rows, null, 'e vazia')
 })
 
+function schedulesOf(on: CopiesOn) {
+  return on.hub.mastra.schedules.list()
+}
+
+test('desligar tira a agenda da cópia que acaba, pausada também', async (t) => {
+  const on = await copiesOn(t)
+  const active = await enabled(on, 'vendas')
+  const paused = await enabled(on, 'clientes')
+  await firstEnded(on, active.id)
+  await firstEnded(on, paused.id)
+  const pause = await post(on.hub, on.ana, `${copiesUrl(on)}/${paused.id}/pause`, {})
+  assert.equal(pause.statusCode, 200)
+  assert.equal((await schedulesOf(on)).length, 2)
+  assert.equal((await unlink(on, on.connections, on.connectionId)).statusCode, 200)
+  assert.deepEqual(await copiesLeft(on), [])
+  assert.equal((await schedulesOf(on)).length, 0)
+})
+
+test('desligar com o banco da empresa calado na leitura dos apps: nada muda, e depois nenhum app lê', async (t) => {
+  const on = await copiesOn(t)
+  await released(on, 'vendas')
+  const silent = t.mock.method(on.hub.postgres.companyPostgres, 'revokeCopy', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  const refused = await unlink(on, on.connections, on.connectionId)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  const still = await call(on.hub, on.ana, 'GET', `${on.connections}/${on.connectionId}`)
+  assert.equal(still.statusCode, 200, 'a conexão continua')
+  assert.deepEqual(await copiesLeft(on), ['vendas'])
+  silent.mock.restore()
+  const again = await unlink(on, on.connections, on.connectionId)
+  assert.deepEqual([again.statusCode, Object(again.json()).tablesLeft], [200, []])
+  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.vendas'), {
+    refused: '42P01',
+  })
+})
+
 /** Two stores' copy of orders, run once and released to the Projeto Pedidos. */
 async function storesCopy(on: StoresOn): Promise<CopyId> {
   const copyId = await on.planted('pedidos', ordersCopy(false), [STORE_A.ref, STORE_B.ref])
@@ -164,6 +202,11 @@ test('desligar tira as linhas e a leitura do app: o banco da empresa calado depo
   }))
   const gone = await unlink(on, on.connections, on.connectionId)
   assert.deepEqual([gone.statusCode, Object(gone.json()).tablesLeft], [200, ['vendas']])
+  assert.deepEqual(
+    await asApp(on.owner, on.projectId, 'select * from sync.vendas'),
+    { refused: '42501' },
+    'a tabela ficou, mas nenhum app a lê',
+  )
   const missing = await call(on.hub, on.ana, 'GET', `${on.connections}/${on.connectionId}`)
   assert.equal(missing.statusCode, 404, 'a conexão já não existe')
   assert.deepEqual(await copiesLeft(on), [])

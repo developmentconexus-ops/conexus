@@ -1,6 +1,7 @@
 import type { CompanyId, CopyId, CopyProposalId, CopyRun } from '@conexus/hub-api'
 import {
   changeCopyInterval,
+  deleteCopy,
   dismissCopyProposal,
   enableCopy,
   listCopies,
@@ -87,4 +88,6 @@ export const sendCopyPause = hubMutation(pauseCopy)
 export const sendCopyResume = hubMutation(resumeCopy)
 export const sendCopyInterval = hubMutation(changeCopyInterval)
 export const sendCopyRun = hubMutation(runCopy)
+/** Apagar: the cache stays as it is until the dialog is read and closed (`keepCache`, web W12). */
+export const sendCopyDelete = { ...hubMutation(deleteCopy), meta: { keepCache: true } } as const
 export const sendProposalDismiss = hubMutation(dismissCopyProposal)

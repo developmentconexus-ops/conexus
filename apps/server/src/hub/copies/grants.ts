@@ -100,6 +100,24 @@ export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<voi
   deps.log.info({ companyId, projectId, copyId }, 'COPY_GRANTED')
 }
 
+/**
+ * The Projeto's read of the copy taken back in the company's database, with no transaction open
+ * (data D22): the one `REVOKE` of Tirar, Apagar and Desligar. None to do without a sync login; a
+ * silent database answers 503 and nothing else has changed.
+ */
+export async function revokedInDatabase(
+  deps: CopiesDeps,
+  input: OfRelease,
+  release: { name: string; sync: DatabaseUrl | undefined },
+): Promise<void> {
+  if (release.sync === undefined) return
+  const taken = await deps.companyPostgres.revokeCopy(release.sync, {
+    copy: release.name,
+    projectId: input.projectId,
+  })
+  if (taken.kind !== 'DONE') throw refused(deps, input, taken)
+}
+
 /** Tirar: the `REVOKE` first, outside any transaction (data D22), and only then the row; a silent database keeps it. */
 export async function revokeCopy(deps: CopiesDeps, input: OfRelease): Promise<void> {
   const { name, sync } = await deps.database.command(personScope(input), async (tx) => {
@@ -107,13 +125,7 @@ export async function revokeCopy(deps: CopiesDeps, input: OfRelease): Promise<vo
     const found = await bothOf(deps, tx, input)
     return { name: found.name, sync: await syncOf(deps, tx, input.companyId) }
   })
-  if (sync !== undefined) {
-    const taken = await deps.companyPostgres.revokeCopy(sync, {
-      copy: name,
-      projectId: input.projectId,
-    })
-    if (taken.kind !== 'DONE') throw refused(deps, input, taken)
-  }
+  await revokedInDatabase(deps, input, { name, sync })
   await deps.database.command(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'manageCopies' })
     await tx

@@ -1,6 +1,6 @@
 import type { CompanyId, CopyId, CopyRun, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
@@ -123,6 +123,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
   const requests = useRunRequests()
   const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
   const sourceOf = useSourceText(companyId)
+  const navigate = useNavigate()
   const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError)
@@ -152,7 +153,15 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
         </div>
         <div className="flex items-center gap-sm">
           <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
-          <CopyMenu companyId={companyId} copy={copy} onNote={setNote} withRun={false} />
+          <CopyMenu
+            companyId={companyId}
+            copy={copy}
+            onNote={setNote}
+            withRun={false}
+            onDeleted={() =>
+              void navigate({ to: '/companies/$companyId/copies', params: { companyId } })
+            }
+          />
         </div>
       </div>
       {note !== undefined && <NoteLine note={note} />}

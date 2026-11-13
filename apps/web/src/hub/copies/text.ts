@@ -160,3 +160,22 @@ export function inputText(input: Readonly<Record<string, string | number | boole
   const fixed = Object.entries(input).map(([field, value]) => `${field}: ${String(value)}`)
   return fixed.length === 0 ? 'nenhum' : fixed.join(', ')
 }
+
+export const DELETE_RESTART = 'Se você ligar esta cópia de novo, ela copia tudo do zero.'
+export const UNCONFIRMED_DELETE = unconfirmedText('o apagamento', 'Veja a lista.')
+
+/** What Apagar takes from the company's database, said before the click: the copy's rows, or that their count is not known. */
+export function deleteRowsText(rows: number | null): string {
+  if (rows === null) return 'As linhas desta cópia saem do banco da empresa e não voltam.'
+  if (rows === 1) return 'A 1 linha sai do banco da empresa e não volta.'
+  return `As ${countText(rows)} linhas saem do banco da empresa e não voltam.`
+}
+
+export function deleteProjectText(project: string): string {
+  return `O app do Projeto ${project} deixa de ler esta cópia. Onde ele a usava, vai mostrar erro.`
+}
+
+/** The table of a deleted copy that the company's database did not drop yet; the copy is gone all the same. */
+export function deletedTableLeftText(name: string): string {
+  return `A cópia foi apagada. A tabela ${name} ainda não saiu do banco da empresa; o Conexus a apaga no próximo Apagar, Desligar ou quando uma cópia for ligada.`
+}

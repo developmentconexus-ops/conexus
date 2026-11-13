@@ -22,6 +22,7 @@ function surface(on: CopiesOn, copyId: string) {
     ['POST', `${copiesUrl(on)}/${copyId}/pause`],
     ['POST', `${copiesUrl(on)}/${copyId}/resume`],
     ['PATCH', `${copiesUrl(on)}/${copyId}`],
+    ['DELETE', `${copiesUrl(on)}/${copyId}`],
     ['POST', `${copiesUrl(on)}/${copyId}/run`],
     ['GET', `${copiesUrl(on)}/${copyId}/runs`],
     ['GET', project],
