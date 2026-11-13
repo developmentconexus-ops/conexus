@@ -102,7 +102,7 @@ export function ConstrutorChat(props: {
                 conversationId={conversationId}
                 place={{ controller: CONSTRUTOR_CONTROLLER }}
                 conversationKey={listKey}
-                onGone={() => void queryClient.invalidateQueries({ queryKey: listKey })}
+                listKeys={[listKey]}
                 empty={CONSTRUTOR_FIRST}
                 placeholder={CONSTRUTOR_PLACEHOLDER}
                 noAccount={START_NO_ACCOUNT}

@@ -4,7 +4,7 @@ import {
   assistantFilePath,
   listAssistantConversations,
 } from '@conexus/hub-api'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -76,7 +76,6 @@ function useAssistantRoom(held: {
 
 function Conversation(props: Props) {
   const { companyId, conversationId } = props
-  const queryClient = useQueryClient()
   const { conversation } = useSuspenseQuery(
     assistantConversationQuery(companyId, conversationId),
   ).data
@@ -106,11 +105,7 @@ function Conversation(props: Props) {
                 conversationId={conversationId}
                 place={{ controller: ASSISTANT_CONTROLLER }}
                 conversationKey={assistantConversationQuery(companyId, conversationId).queryKey}
-                onGone={() =>
-                  void queryClient.invalidateQueries({
-                    queryKey: hubQueryPrefix(listAssistantConversations, { companyId }),
-                  })
-                }
+                listKeys={[hubQueryPrefix(listAssistantConversations, { companyId })]}
                 empty={EMPTY_ASSISTANT}
                 noAccount={START_NO_ACCOUNT}
                 tools={tools}

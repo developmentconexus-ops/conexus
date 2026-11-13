@@ -8,6 +8,14 @@ const RECORDINGS = join(import.meta.dirname, '../../../../server/src/platform/re
 
 export const AgentStart = z.looseObject({ type: z.literal('agent_start') })
 export const AgentEnd = z.looseObject({ type: z.literal('agent_end'), reason: z.string() })
+export const TitleUpdated = z.looseObject({
+  type: z.literal('thread_title_updated'),
+  title: z.string(),
+})
+export const ObserverTitleUpdated = z.looseObject({
+  type: z.literal('om_thread_title_updated'),
+  newTitle: z.string(),
+})
 export const Display = z.looseObject({
   type: z.literal('display_state_changed'),
   displayState: z.record(z.string(), z.unknown()),

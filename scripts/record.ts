@@ -1,5 +1,5 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -63,6 +63,7 @@ import {
   TASKS_CALLS,
   TASKS_PROMPT,
 } from './record-calls.ts'
+import * as title from './record-title.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
@@ -89,6 +90,7 @@ const Scenario = z.enum([
   'handoff',
   'research',
   'research-failed',
+  ...title.TITLES,
   ...approval.APPROVALS,
 ])
 
@@ -136,6 +138,7 @@ const CALLS = {
   handoff: HANDOFF_CALLS,
   research: RESEARCH_CALLS,
   'research-failed': RESEARCH_FAILED_CALLS,
+  ...title.CALLS,
   ...APPROVAL_CALLS,
 }
 
@@ -145,6 +148,7 @@ const asked = new Map<string, string>([
   ['reads', READS_PROMPT],
   ['research', RESEARCH_PROMPT],
   ['research-failed', RESEARCH_PROMPT],
+  ...title.PROMPTS,
 ])
 
 /** The helper's own model call in `research-failed`: the provider refuses it, as an account that does not answer. */
@@ -176,7 +180,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
     if (
       (scenario === 'files' || asked.has(scenario) || scenario === 'handoff') &&
-      event.type === 'agent_end'
+      event.type === title.endOf(scenario)
     )
       ended.resolve()
     approval.approvalReaction(session, scenario, event, ended)
@@ -196,6 +200,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       )
     : [(signal) => replayed(`anthropic-${scenario}`, signal)]
   if (scenario === 'research-failed') answers[1] = REFUSED
+  title.answer(scenario, answers)
   const restore = replaying(answers)
   try {
     if (scenario === 'files') {
@@ -283,7 +288,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
   const storage = approval.isApproval(scenario)
     ? approval.approvalStore(scenario)
     : new InMemoryStore()
-  const memory = new Memory({ storage })
+  const memory = new Memory({ storage, ...title.memoryOptions(scenario, CLAUDE) })
   const agent = new Agent({
     id: 'builder',
     name: 'Builder',

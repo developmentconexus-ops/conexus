@@ -1057,4 +1057,6 @@ Cartão curto de O texto fixo do Assistente, no molde das referências (`docs/st
 
 Emenda do cartão curto de O texto fixo do Assistente, no molde das referências (`docs/steps/assistente-o-texto-fixo-do-assistente.md`) aprovada em 2026-11-13 (commit 9e3ed86802ff3e26637848be6688e9dc51001a40), só com o texto que a escolha B mudou (o bloco do Luna no texto do Assistente, escolhido pelo modelo da conversa, pela assinatura do ChatGPT ou por uma chave da OpenAI; o texto da assinatura do ChatGPT curto e sem regra de agente; os critérios 4 e 5, a linha do bloco por modelo, o raio da U1 e o aviso da medição), sem decisão nova: "aprovo emenda do cartão"
 
+Cartão curto de Títulos das conversas (`docs/steps/titulos-das-conversas.md`) aprovado em 2026-11-13 (commit 6f6986254a2d42f6282ca3c271f4fbdb3b4aca26), à revisão do pull request https://github.com/developmentconexus-ops/conexus/pull/1008: "Aprovo o cartão dos títulos"
+
 Cartão curto de A Ontologia da empresa (`docs/steps/a-ontologia-da-empresa.md`) aprovado em 2026-11-13 (commit ea698a778d4077492f3e27bd26991bb11f2b600e), no texto final, depois da revisão independente: "aprovo texto final"
