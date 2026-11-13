@@ -31,7 +31,13 @@ type Settled =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
   | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' | 'refusal' }
-  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string>; cyber?: true }
+  | {
+      kind: 'refuse'
+      status: Refusal
+      headers?: Record<string, string>
+      cyber?: true
+      message?: string
+    }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string; before?: Block[] }
   | { kind: 'reset' }
   | { kind: 'recorded'; name: string }
@@ -228,7 +234,9 @@ function replied(sent: Sent, reply: Settled, signal: AbortSignal | null | undefi
       type: 'error',
       error: {
         type: ERROR_TYPES[reply.status],
-        message: reply.cyber === true ? CYBER_REFUSAL : 'planted refusal SECRET-PLANTED-TEXT',
+        message:
+          reply.message ??
+          (reply.cyber === true ? CYBER_REFUSAL : 'planted refusal SECRET-PLANTED-TEXT'),
       },
     }
     const headers = { 'content-type': 'application/json', ...reply.headers }

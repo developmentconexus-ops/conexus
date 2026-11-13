@@ -32,8 +32,7 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
 - **V5.** Ipê **should** mark only the current place (the tick of the rail and of the list, the
   active tab), the focus, the caret and the mark, not every resting action, hover or heading. Two
   exceptions: the mark of the item the person chose (V57's toggle icon, the chosen Projeto's check)
-  and the busy composer's arc (V28). Founder, 2026-11-01: "Aprovo"; 2026-11-02, on the two
-  exceptions: "B". Failure: making everything gold hides the difference between focus and
+  and the busy composer's arc (V28). Failure: making everything gold hides the difference between focus and
   decoration. The one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's
   Mensagens. [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
@@ -157,8 +156,7 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
   line, with no hint under the field; on touch Return breaks the line and the button sends. Under
   the field on a computer sits one small line against pasting secrets. A send takes the person to
   the end, even from higher up. On a phone the line against pasting secrets sits in the empty
-  conversation and the model sheet, not under the field. Founder, 2026-10-20: "3. Okay", "4. Sim";
-  2026-10-25: "1. A 2.quebra de linha diva sumir 3. B"; 2026-10-26: "D. D1". [review]
+  conversation and the model sheet, not under the field. [review]
 - **V31.** Controls **should** have meaningful localized accessible names: labels for inputs and
   pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
   purpose. Syntactic a11y lint does not prove name quality or language. [review]

@@ -20,6 +20,10 @@ Run 2026-10-14 on the live Hub, pass. After 13 minutes without a request the Neo
 
 Six hours of history only: a mistake seen the next day cannot be undone, which is why the plan changes with the first company. Every job is shaped to let the database sleep.
 
+## Later
+
+The founder pays the database awake at each fire of Mastra's scheduler (step 24.2, the Neon Launch plan; [data D27](../guides/data.md)). Founder, 2026-11-01: "3. Okay, mas vou depois por agora no gratuito": the free plan for now.
+
 ## Reopens when
 
 A cause that keeps the database awake cannot leave. Then the free allowance ends near day 17 and Neon suspends it, or the organization moves to the paid plan; the founder chooses.

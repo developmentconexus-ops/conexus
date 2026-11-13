@@ -174,9 +174,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   uncertain write, stays a result that tells the model not to repeat it. A write's result, taken
   or uncertain, carries what the system answered, and only the system's own refusal is a refusal.
   The model's edge has the one ceiling: past 40,000 characters, the first and the last 20,000,
-  cut by character, with how much was left out; the record keeps the whole answer. Founder,
-  2026-11-08: "não vai ser um patch nem uma gambiarra"; to the study's `D3`, "okay"; to its `D6`,
-  "voltar ao erro original"; 2026-11-09, to the write answer's `D1` to `D5`, "Aprovo". Failure: the Sankhya reader dropped
+  cut by character, with how much was left out; the record keeps the whole answer. Failure: the Sankhya reader dropped
   `error.details`, the funnel dropped the body for every reader, and the agent invented a cause
   for a refused order; then an order the system took reached the model as unknown, its answer
   dropped. [review]

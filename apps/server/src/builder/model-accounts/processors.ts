@@ -1,6 +1,7 @@
 import type { ModelId } from '@conexus/hub-api'
 import { isSubscription } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
+import { classifyProviderError, providerRequestId } from '@mastra/core/error'
 import { parseModelString } from '@mastra/core/llm'
 import type {
   ErrorProcessor,
@@ -223,8 +224,9 @@ function failedText(account: Picked, failure: AccountFailure) {
  * Error lane, last, after Mastra's own processors: 429 and 402 put the account in its limit, 401
  * and 403 refuse it (a subscription refreshes once first), a 404 reads the models it serves again,
  * and the next account takes the call,
- * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else Mastra
- * did not retry ends the turn as the model's failure, with no switch.
+ * never `abort()`, which ends the stream silently (study, proved). A 400 Mastra reads as a spent
+ * balance, a rate limit or a refused credential goes the same way (`callFailureOf`); any other 400
+ * and anything else Mastra did not retry ends the turn as the model's failure, with no switch.
  */
 function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
@@ -245,7 +247,14 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
   const account = turn.calling()
   if (account === undefined) return { retry: false }
   const failure = callFailureOf(args.error)
-  const fields = { companyId: turn.companyId, accountId: account.id, failure: failure.kind }
+  const requestId = providerRequestId(args.error)
+  const fields = {
+    companyId: turn.companyId,
+    accountId: account.id,
+    failure: failure.kind,
+    kind: classifyProviderError(args.error),
+    ...(requestId === undefined ? {} : { requestId }),
+  }
   if (failure.kind === 'unknown') {
     deps.log.info(fields, 'MODEL_CALL_FAILED')
     turn.finish('failed')

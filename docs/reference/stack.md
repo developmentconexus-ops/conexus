@@ -17,19 +17,19 @@ change.
 
 | Piece | Used in | Read first | Skill | Reference | Decides | Trap |
 | --- | --- | --- | --- | --- | --- | --- |
-| `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:206`; OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The fork is at core 1.69.0 (`packages/core/package.json:3`); we pin 1.82.0 |
+| `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:152` (`transcriptReducer`); OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The shelf is at core 1.82.0, the pin |
 | `@mastra/memory` | `apps/server/src/builder` | `node_modules/@mastra/memory/dist/docs/`; skill | `mastra` | OS `apps/hub/src/builder/conversation.ts` | 0010, 0011 | — |
 | `@aws-sdk/client-s3` | `apps/server/src/builder/git/copy` | `node_modules/@aws-sdk/client-s3/README.md`; `developers.cloudflare.com/r2/examples/aws/aws-sdk-js-v3/` | none | — | 0051 | R2 takes `region: 'auto'` and the account's endpoint; each call needs its own `abortSignal` |
 | `e2b` | `apps/server/src/builder/machine`, `infra/e2b` | `node_modules/e2b/dist/index.d.ts`; `e2b.dev/docs` | none | vibesdk `worker/services/sandbox/BaseSandboxService.ts` (9da158d) | 0051 | `Sandbox.list` finds paused machines too; a template build is a paid call |
-| `@mastra/e2b` | `apps/server/src/builder/machine` | `node_modules/@mastra/e2b/dist/`; skill | `mastra` | Mastra fork `mastracode/factory/src/workspace.ts:429-436` | 0051 | `running` precedes `onStart`: gate the first tool on `start()` |
+| `@mastra/e2b` | `apps/server/src/builder/machine` | `node_modules/@mastra/e2b/dist/`; skill | `mastra` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory/src/workspace.ts:970-972` (`setOnStart`) | 0051 | `running` precedes `onStart`: gate the first tool on `start()` |
 | `@mastra/evals` | `apps/server/src/builder/conversation` | `node_modules/@mastra/evals/dist/docs/`; skill | `mastra` | — | 0050 | Its `checks` need a Mastra with a storage, else Mastra prints a warning the test reporter refuses: give the test `InMemoryStore` |
 | `@mastra/pg` | `apps/server/src/builder` | `node_modules/@mastra/pg/dist/docs/`; skill | `mastra` | — | 0010 | — |
 | `@mastra/observability` | `apps/server/src/builder/mastra` | `node_modules/@mastra/core/dist/docs/references/` (observability, storage retention); `node_modules/@mastra/observability/dist/`; skill | `mastra` | Mastra Code `mastracode/sdk/src/index.ts:786-844` (`@mastra/core@1.82.0`) | 0068 | `PostgresStoreVNext` prints a raw warning on a pool it shares: the v-next domain goes in by the composite store. A list keeps its first 50 items unless `serializationOptions` says more. A logger of our own reaches the trace only through `__attachObservability` |
-| `@mastra/server` | `apps/server/src/builder/conversation` | `node_modules/@mastra/server/dist/docs/`; skill | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/runtime.ts`; OS `apps/hub/src/builder/mastra-session-routes.ts` | 0050, S39 | `SERVER_ROUTES` holds every route: the Hub registers only the fixed list (`guard.ts`) |
+| `@mastra/server` | `apps/server/src/builder/conversation` | `node_modules/@mastra/server/dist/docs/`; skill | `mastra` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui/src/ui/domains/chat/services/runtime.ts`; OS `apps/hub/src/builder/mastra-session-routes.ts` | 0050, S39 | `SERVER_ROUTES` holds every route: the Hub registers only the fixed list (`guard.ts`) |
 | `@mastra/fastify` | `apps/server/src/builder/conversation` | `node_modules/@mastra/server/dist/docs/`; README | `mastra` | OS `apps/hub/src/builder/mastra-session-routes.ts` | 0050 | A stream ends only when its request leaves: the Hub's close ends the open ones |
-| `@mastra/client-js` | `apps/web/src/builder/conversation` | `node_modules/@mastra/client-js/dist/docs/`; skill | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/agentControllerClient.ts` | 0050 | `subscribe` takes no signal: unsubscribe when the screen leaves |
+| `@mastra/client-js` | `apps/web/src/builder/conversation` | `node_modules/@mastra/client-js/dist/docs/`; skill | `mastra` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui/src/ui/domains/chat/services/agentControllerClient.ts` | 0050 | `subscribe` takes no signal: unsubscribe when the screen leaves |
 | `ai` | `apps/server/src/builder`, `scripts` | `node_modules/ai/docs/`; `ai-sdk.dev/docs/*.md` | none | vibesdk `worker/agents/think/ask-questions-tool.ts:31` | 0027, T24 | — |
-| `@ai-sdk/anthropic` | `apps/server/src/builder` | `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` | none | — | 0049, 0053, T24 | Models think adaptively unless sent `thinking: {type:'disabled'}` (PR 188). The stream sends one text block per cited span (PR 191); Mastra fork draws each as its own paragraph, `mastracode/factory-ui/src/ui/domains/chat/components/MessageBubble.tsx:123-134` |
+| `@ai-sdk/anthropic` | `apps/server/src/builder` | `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` | none | — | 0049, 0053, T24 | Models think adaptively unless sent `thinking: {type:'disabled'}` (PR 188). The stream sends one text block per cited span (PR 191); the reference line cited before is gone in 1.82, — until a study reopens it |
 | `@ai-sdk/openai` | `apps/server/src/builder/model-accounts/openai` | `node_modules/@ai-sdk/openai/docs/03-openai.mdx` | none | Mastra Code `mastracode/sdk/src/providers/openai-codex.ts` (`@mastra/core@1.82.0`) | 0049, T24 | Pinned to 3.0.130, the 3.x whose `@ai-sdk/provider-utils` (4.0.61) is the one `ai` 6.0.309 installs; move it with `ai`. The ChatGPT subscription calls `chatgpt.com/backend-api/codex/responses` through `createOpenAI({ fetch }).responses`, which the Codex endpoint, not the public API, serves |
 | `zod` | every workspace, `scripts` | `zod.dev/llms.txt` | none | — | C27, C28, W27 | — |
 | `fastify` | `apps/server/src` | `node_modules/fastify/docs/`; skill; `fastify.dev/llms.txt` | `fastify-best-practices` | OS `apps/hub/src` | 0004 | — |
@@ -58,20 +58,20 @@ change.
 | `@types/react-dom` | `apps/web` | follows `react-dom` | none | — | — | — |
 | `@tanstack/react-router` | `apps/web/src` | `node_modules/@tanstack/router-core/skills/router-core/`; `tanstack.com/router/latest/llms.txt` | `router-core` skills (in `@tanstack/router-core`) | OS `apps/web/src` | W8, W15, W17, W18, W28 | The installed `react-router` ships no `skills/`; its skills exist only in the TanStack repository |
 | `@tanstack/router-plugin` | `apps/web` | `node_modules/@tanstack/router-plugin/skills/` | `router-plugin` (in the package) | — | W8 | — |
-| `@tanstack/react-query` | `apps/web/src` | `tanstack.com/query/latest/llms.txt` (232 KB, by section) | none | Mastra fork `mastracode/factory-ui` | W10, W11, W12 | — |
-| `@base-ui/react` | `apps/web/src/ui`, `apps/web/src/main.tsx` | `node_modules/@base-ui/react/docs/`; `base-ui.com/llms.txt` | none | Mastra fork `packages/playground-ui` | 0033, W21, W22 | — |
-| `@shadcn/react` | `apps/web/src/ui` | skill; `ui.shadcn.com/llms.txt` | `shadcn` | Mastra fork `mastracode/factory-ui` chat pieces | 0033, V23 | Fields read `text-base md:text-body`, 16px under `md`, as shadcn's input does (PR 158, V18) |
-| `tailwindcss` | `apps/web/src/brand` | `tailwindcss.com/docs` | none | Mastra fork `packages/playground-ui` | design | — |
+| `@tanstack/react-query` | `apps/web/src` | `tanstack.com/query/latest/llms.txt` (232 KB, by section) | none | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui` | W10, W11, W12 | — |
+| `@base-ui/react` | `apps/web/src/ui`, `apps/web/src/main.tsx` | `node_modules/@base-ui/react/docs/`; `base-ui.com/llms.txt` | none | Mastra 1.82 (`mastra-1.82`) `packages/playground-ui` | 0033, W21, W22 | — |
+| `@shadcn/react` | `apps/web/src/ui` | skill; `ui.shadcn.com/llms.txt` | `shadcn` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui` chat pieces | 0033, V23 | Fields read `text-base md:text-body`, 16px under `md`, as shadcn's input does (PR 158, V18) |
+| `tailwindcss` | `apps/web/src/brand` | `tailwindcss.com/docs` | none | Mastra 1.82 (`mastra-1.82`) `packages/playground-ui` | design | — |
 | `@tailwindcss/vite` | `apps/web` | `tailwindcss.com/docs` | none | — | design | — |
 | `class-variance-authority` | `apps/web/src/ui` | README | none | — | V23 | — |
 | `clsx` | `apps/web/src/ui` | README | none | — | — | — |
 | `tailwind-merge` | `apps/web/src/ui` | README | none | — | — | — |
 | `lucide-react` | `apps/web/src` | `lucide.dev/llms.txt` | none | — | design | — |
-| `react-markdown` | `apps/web/src/builder` | README | none | Mastra fork `packages/playground-ui/src/ds/components/MarkdownRenderer/markdown-renderer.tsx:70`, `:226`; the reference pins `^9.1.0` | 0033 | Streaming needs `remend`, tables need `remark-gfm` (PR 192) |
-| `remark-gfm` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:226` | 0033 | As `react-markdown` |
-| `remend` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:70` | 0033 | As `react-markdown` |
+| `react-markdown` | `apps/web/src/builder` | README | none | Mastra 1.82 (`mastra-1.82`) `packages/playground-ui/package.json:216` pins `^9.1.0`; `packages/playground-ui/src/ds/components/MarkdownRenderer/markdown-renderer.tsx` | 0033 | Streaming needs `remend`, tables need `remark-gfm` (PR 192) |
+| `remark-gfm` | `apps/web/src/builder` | README | none | Mastra 1.82 (`mastra-1.82`) `markdown-renderer.tsx:5`, `:241` | 0033 | As `react-markdown` |
+| `remend` | `apps/web/src/builder` | README | none | Mastra 1.82 (`mastra-1.82`) `packages/playground-ui/src/ds/components/MarkdownRenderer/markdown-renderer.tsx:6`, `:82` | 0033 | As `react-markdown` |
 | `mermaid` | `apps/web/src/builder/conversation` | README; the configuration page of the pin | none | Open WebUI `src/lib/utils/index.ts:2155-2165,2305-2313`; LibreChat `client/src/hooks/Mermaid/useMermaid.ts:99-118` | — | `render` puts a `<style>` and `style` attributes on the page to measure, which `style-src 'self'` refuses and which changes the drawing: it runs only in the drawing frame (`diagram-frame.ts`), under its own policy (security S24) |
-| `shiki` | `apps/web/src/builder/source` | `shiki.style/guide/regex-engines`; `shiki.style/guide/best-performance` | none | Mastra fork `packages/playground-ui/src/ds/components/CodeEditor/highlight.ts:74` | V3, C73, W11 | The JavaScript engine, never the wasm default (the page keeps `script-src 'self'`); `codeToTokens` mapped to classes, never `codeToHtml`; a grammar by `import()`, never precompiled |
+| `shiki` | `apps/web/src/builder/source` | `shiki.style/guide/regex-engines`; `shiki.style/guide/best-performance` | none | — (the cited line is gone in 1.82; `highlight.ts` there does not use shiki) | V3, C73, W11 | The JavaScript engine, never the wasm default (the page keeps `script-src 'self'`); `codeToTokens` mapped to classes, never `codeToHtml`; a grammar by `import()`, never precompiled |
 | `react-hook-form` | `apps/web/src` | `react-hook-form.com/docs` | none | — | W23 | — |
 | `@hookform/resolvers` | `apps/web/src/ui`, `packages/app/starter` | README | none | — | W23 | — |
 | `@tanstack/react-table` | `packages/app/starter`, `packages/app/skills` | `node_modules/@tanstack/react-table/skills/` | `getting-started`, `table-state`, `migrate-v8-to-v9` (in the package) | — | — | v9: `useTable` and `tableFeatures`; the v8 `useReactTable` and `getCoreRowModel` that models know fail the check |
@@ -82,12 +82,12 @@ change.
 | `@brazilian-utils/brazilian-utils` | `packages/hub-api`, `apps/web/src/hub` | README | none | — | — | — |
 | `vite` | `apps/web` | `vite.dev/llms.txt` | none | — | 0002 | — |
 | `@vitejs/plugin-react` | `apps/web` | `vite.dev/llms.txt` | none | — | 0002 | — |
-| `vitest` | `apps/web` | `vitest.dev/llms.txt` | none | Mastra fork `mastracode/factory-ui/vitest.config.ts` | 0034 | — |
-| `@testing-library/react` | `apps/web` | docs site | none | Mastra fork `mastracode/factory-ui` | T7 | — |
+| `vitest` | `apps/web` | `vitest.dev/llms.txt` | none | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui/vitest.config.ts` | 0034 | — |
+| `@testing-library/react` | `apps/web` | docs site | none | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui` | T7 | — |
 | `@testing-library/dom` | `apps/web` | follows `@testing-library/react` | none | — | T7 | — |
 | `jsdom` | `apps/web` (Vitest's environment) | README | none | — | 0034 | — |
-| `msw` | `apps/web` | docs site | none | Mastra fork `mastracode/factory-ui`; the reference pins `^2.12.11` | 0034, T14 | — |
-| `playwright-core` | `tests/e2e`, `apps/web` | `node_modules/playwright-core/lib/tools/skills/` | `playwright-cli` | Mastra fork `mastracode/factory-ui/e2e` | T23, T25 (the QA browser when `chrome-devtools-axi` cannot attach) | A library only: no `@playwright/test` |
+| `msw` | `apps/web` | docs site | none | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui`; the reference pins `^2.15.0` (`mastracode/factory-ui/package.json:49`) | 0034, T14 | — |
+| `playwright-core` | `tests/e2e`, `apps/web` | `node_modules/playwright-core/lib/tools/skills/` | `playwright-cli` | Mastra 1.82 (`mastra-1.82`) `mastracode/factory-ui/e2e` | T23, T25 (the QA browser when `chrome-devtools-axi` cannot attach) | A library only: no `@playwright/test` |
 | `typescript` | every workspace | handbook | `typescript-magician` | — | code | — |
 | `@types/node` | every workspace | follows Node | none | — | — | — |
 | `@biomejs/biome` | `biome.json`, `scripts/*.grit` | `biome explain <rule>`; `biomejs.dev` | none | — | code | A nursery rule is not stable: review each bump |

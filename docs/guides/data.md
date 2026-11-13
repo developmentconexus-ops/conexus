@@ -91,8 +91,7 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   earliest one, so the database sleeps between fires (Mastra 1.82.0; founder, 2026-11-04: "A").
   It reads again every `tickIntervalMs` (10 s) while fires are due or its last lap was busy, and
   when reading the next fire fails, so a database that does not answer is read every 10 s.
-  The founder pays the database awake at each fire (step 24.2, the Neon Launch plan; founder,
-  2026-11-01: "3. Okay, mas vou depois por agora no gratuito", the free Neon plan for now). With no
+  With no
   row, `startWorkers()` reads the table once at start and never again. [sleeping-database test]
 
 ## 5. Generated apps

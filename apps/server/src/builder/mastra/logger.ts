@@ -1,16 +1,28 @@
+import { classifyProviderError, providerRequestId } from '@mastra/core/error'
 import type { LoggerAdapterContext } from '@mastra/core/logger'
 import { buildLogRecordData, MastraLogger } from '@mastra/core/logger'
 import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { causeChain } from '../../platform/failure.ts'
 
+/** Mastra's closed reading of a provider's failure and the provider's request id (security S41). */
+function providerFieldsOf(error: unknown): Record<string, Scalar> {
+  const fields: Record<string, Scalar> = {}
+  const kind = classifyProviderError(error)
+  if (kind !== 'unknown') fields.kind = kind
+  const requestId = providerRequestId(error)
+  if (requestId !== undefined) fields.requestId = requestId
+  return fields
+}
+
 /**
  * The scalars of what Mastra logs with a message: the error's name, its provider status, its
- * system code and Mastra's own error id, along the cause chain (security S41).
+ * system code and Mastra's own error id, along the cause chain, and `providerFieldsOf` (security S41).
  */
 function fieldsOf(args: unknown[]): Record<string, Scalar> {
   const fields: Record<string, Scalar> = {}
   for (const arg of args) {
     const start: unknown = arg instanceof Error ? arg : Object(arg).error
+    Object.assign(fields, providerFieldsOf(start), fields)
     for (const found of causeChain(start)) {
       if (!(found instanceof Error)) break
       fields.name ??= found.name

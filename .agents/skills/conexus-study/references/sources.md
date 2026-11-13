@@ -20,6 +20,9 @@ taken as a reference; a warning that sat on an option's reference page, never in
   there, never inside a task worktree, and add its manifest line.
 - **A closed product**: its official docs. Save each page read, with its date, beside the report.
   Docs say what a product claims, not what it does: label them **documentado**.
+- **A non-official source** (a leaked system prompt, Kiro, Mitra, G4 OS): label it **não oficial**.
+  It shows a shape to study, never a behavior to claim. The row cites the file and its date, and a
+  remendo row never rests on it alone. No text from it enters the repository.
 - When the platform has a feature like the step's (environments, deploy, machine, alerts), read its
   page and public client code, and say what to take and what not.
 
