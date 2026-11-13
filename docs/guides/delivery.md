@@ -23,7 +23,7 @@ merge.
   track's file waits for that track's units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds only after the previous one merges, but once a
   card is approved (L6), its units touching none of the previous step's fixes' files may
   start, built from that card's pull request, while the previous step's use, fixes and closing
-  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim"; 2026-11-02: "A", "a"; 2026-11-10: "A". [review]
+  run beside them. A small change that [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   [review]
@@ -111,7 +111,7 @@ merge.
   its findings to the founder. Founder, 2026-11-04: "D A". Failure: deleting the card erases a decision nobody preserved. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, or in a documents-only
   pull request of their own with the founder's word, between two steps of the track it affects; a
-  step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
+  step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
   when none serves. A finding that asks for a change waits in the method queue, an issue with the
   method label. The exception is an emergency label only the founder applies, counted on the step's
@@ -146,7 +146,7 @@ merge.
 | `docs/guides/security.md` | 3,000 |
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
-| `docs/guides/delivery.md` | 1,950 |
+| `docs/guides/delivery.md` | 2,200 |
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |
