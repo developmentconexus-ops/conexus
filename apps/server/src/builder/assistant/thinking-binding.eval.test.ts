@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { test } from 'node:test'
 import { endOf } from '../conversation/test-conversation.ts'
 import { created, talking } from './test-assistant.ts'
-import { API_KEY_FILE, subscribed } from './test-real-model.ts'
+import { API_KEY_FILE, subscribed, XLSX_FILE } from './test-real-model.ts'
 
 const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -19,9 +19,7 @@ const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 test('o modelo de verdade pela chave de API: o pensamento preso a outra lista de ferramentas não derruba o turno nem a conversa seguinte', {
   timeout: 900_000,
 }, async (t) => {
-  // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-  const sheet = process.env.CONEXUS_EVAL_XLSX
-  if (API_KEY_FILE === undefined || sheet === undefined) {
+  if (API_KEY_FILE === undefined || XLSX_FILE === undefined) {
     t.skip(
       'opt-in: set CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE to a file that holds an Anthropic API key, and CONEXUS_EVAL_XLSX to a small spreadsheet of sales by seller',
     )
@@ -41,7 +39,7 @@ test('o modelo de verdade pela chave de API: o pensamento preso a outra lista de
   const on = await subscribed(t, tmpdir(), 'key')
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const talk = await talking(t, on.hub, on.ana, url)
-  const data = `data:${XLSX_TYPE};base64,${readFileSync(sheet).toString('base64')}`
+  const data = `data:${XLSX_TYPE};base64,${readFileSync(XLSX_FILE).toString('base64')}`
   const xlsx = { filename: 'vendas.xlsx', mediaType: XLSX_TYPE, data }
   const turns: [string, (typeof xlsx)[]][] = [
     [

@@ -69,6 +69,8 @@ const LOGIN_FILES = {
 export const OPENAI_LOGIN = LOGIN_FILES.openai
 /** The file that holds an Anthropic API key, named by its switch, outside the repository; its content is never printed. */
 export const API_KEY_FILE = env.CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE
+/** A small spreadsheet of sales by seller the API key's case attaches, outside the repository. */
+export const XLSX_FILE = env.CONEXUS_EVAL_XLSX
 
 /**
  * The switches of the scorecard run, read from the same `env`: the vendor the real run goes through
