@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { plantCodex } from '../../platform/test-openai-codex.ts'
+import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../platform/test-recordings.ts'
 import {
   answeredOf,
@@ -74,10 +74,7 @@ test('ask_user do GPT Luna: os argumentos guardados chegam à tela com `null`, o
   codex.typed = true
   const streams = [lunaAsking(LUNA_ARGS), recordedBody('openai-refused-write-closing')]
   codex.responses = (body) => {
-    const sent = JSON.parse(body)
-    // The Hub's title call streams too, with no tools: the double leaves it to its default.
-    if (sent.stream !== true || !Array.isArray(sent.tools) || sent.tools.length === 0)
-      return { status: 500 }
+    if (!ofTurn(body)) return { status: 500 }
     const stream = streams.shift()
     if (stream === undefined) throw new Error('The turn asked the model more often than recorded.')
     return { status: 200, stream }

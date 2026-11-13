@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 const ISSUER = 'https://auth.openai.com'
@@ -12,6 +14,17 @@ export type CodexReply = {
   body?: unknown
   stream?: Buffer
   headers?: Record<string, string>
+}
+
+const TurnCall = z.object({
+  stream: z.boolean().optional(),
+  tools: z.array(z.unknown()).optional(),
+})
+
+/** Whether a request body is a call of the turn: streamed and carrying tools. The Hub's title call streams too, but carries none, and the double leaves it to its default. */
+export function ofTurn(body: string): boolean {
+  const sent = TurnCall.parse(JSON.parse(body))
+  return sent.stream === true && (sent.tools?.length ?? 0) > 0
 }
 
 /**

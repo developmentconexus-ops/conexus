@@ -77,8 +77,16 @@ export function envelope(
   })
 }
 
-/** What Sankhya's query door says of an SQL the database cannot run: the database's own error, in Oracle's words, not a refusal of the service. */
-const UNRUNNABLE_SQL = 'ORA-00933: comando SQL não encerrado corretamente'
+/**
+ * What Sankhya's query door says of an SQL the database cannot run: the database's own error, in
+ * Oracle's words, not a refusal of the service. The text is the form measured on the real service
+ * (an `ORA-00904` naming a column the table does not have, `identificador inválido`), with an
+ * invented column. The rest of the envelope is the double's `envelope` above, not a recording: no
+ * body of this error is recorded beside the connector yet (testing T29), so the next real read
+ * that fails this way is the one to record. The double also answers this for SQL that Oracle runs
+ * (`TO_DATE`, `ROWNUM`), because it runs SQLite.
+ */
+const UNRUNNABLE_SQL = 'ORA-00904: "COLUNA": identificador inválido'
 
 const LoadRecordsBody = z.object({
   dataSet: z
