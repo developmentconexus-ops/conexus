@@ -123,12 +123,15 @@ choice of test tools.
   under 16px are the browser checks' (`layout.test.ts`, `fields.layout.test.ts`), not captures to
   read; a new screen state joins their sweep. A fix pull request that changes a screen gets a short
   QA pass on the changed states. [review]
-- **T27.** Lines a change adds in a package with a Stryker configuration (server and web) **must**
-  be mutation-tested with the tests that own them, and every
-  surviving mutant accounted for: a test that kills it, or a line in the report naming it
-  equivalent, style-only or owned by a named test elsewhere. There is no score threshold: a score
-  pushes tests to assert classes of output against T7. Failure: a guard tested with one file passes
-  when the code checks "all files" instead of "any file". [`npm run quality`; review]
+- **T27.** The lines a change adds **must** be proved by hand mutations of their key lines: change
+  one line, run the test that owns it, see it fail, restore it. The build or the review lists each
+  mutation (line, change, owning test, result) in the pull request or the report, and a mutation
+  that survives gets a test that kills it. Stryker is an optional manual tool for one file at a
+  time (`npm run quality -- --mutate`); no build, review or step closing requires it, and the CI
+  quality job runs only complexity and duplication. There is no score threshold: a score pushes
+  tests to assert classes of output against T7. Failure: a guard tested with one file passes when
+  the code checks "all files" instead of "any file". Founder, 2026-11-13: "Aprovo recomendação".
+  [review]
 
 ## 6. From change to proof
 

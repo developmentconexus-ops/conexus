@@ -1092,3 +1092,7 @@ O que não foi provado, e fica dito. O efeito dos avisos num modelo de verdade, 
 Revisão de saúde do CI (L19, `docs/how-to/ci-health.md`): fica para quem não construiu a etapa e não é deste pull request; os seus achados vão ao fundador.
 
 Linha de uso de Títulos das conversas: **pendente**. O fundador ainda não usou a etapa no Hub no ar; esta linha se preenche, com a data, a versão e as palavras dele, quando o roteiro de uso rodar ao vivo (L21), com a leitura dos três avisos em português das frases de título e de observador (`instructions.ts`). Nada foi inventado aqui.
+
+## Mudança de método: o Stryker deixa de rodar por unidade
+
+Em 2026-11-13, como mudança de método (L20), sobre o Stryker em toda revisão de unidade, o fundador disse: "avalia sua real necessidade, motivo e quais dados comprovados que vale a pena continuar ou, por exemplo apenas no final da etapa. Porque a cada U demora muito". À recomendação (parar a mutação automática do Stryker por unidade e no fechamento da etapa; manter as mutações à mão das linhas-chave na revisão e na construção; deixar o Stryker só como ferramenta manual opcional): "Aprovo recomendação". A evidência: em 95 relatórios nenhum sobrevivente do Stryker era defeito de produção, as execuções levam de 40 a 60 minutos ou mais, e nenhuma referência roda mutação por pull request. Mudam o T27, o passo 4 da skill `conexus-review`, o passo 6 da skill `conexus-build` e `scripts/quality.ts` (a mutação só com `--mutate`; `--fast` segue aceito).

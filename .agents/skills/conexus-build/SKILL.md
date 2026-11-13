@@ -42,8 +42,8 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    A→B→A, a layout fix the card's failure states, and a new
    security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
-   `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
-   C73 decide what leaves.
+   hand-mutate the key lines, never Stryker
+   ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
 7. One commit for the unit, kept on merge; the tests and proofs its section names are green
    locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 

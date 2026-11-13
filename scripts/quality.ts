@@ -1,10 +1,11 @@
 // Defect: a feature ships lines its tests do not pin, a function it touches grows past what a
 // reader holds, or it adds a clone of code that already has an owner (testing T27,
 // code C77 and C26). `quality.ts [<base>]` runs, on the lines the work adds against <base> (default
-// origin/main): Stryker mutation on the packages that have a stryker.config.json, Biome cognitive
-// complexity on the functions it touches, and jscpd for new clones. `--fast` skips the mutation, as
-// CI does; flags and base come in any order and an unknown flag is refused. `--tests <file>,...` names the server tests that own the changed code when the change
-// and the files beside it do not. Mutation is accounting, not a threshold: survivors print and the
+// origin/main): Biome cognitive complexity on the functions it touches and jscpd for new clones.
+// `--mutate` also runs Stryker mutation on the packages that have a stryker.config.json, a manual
+// opt-in for one file at a time; `--fast` is an accepted no-op, as CI passes it. Flags and base
+// come in any order and an unknown flag is refused. `--tests <file>,...` names the server tests that
+// own the changed code when the change and the files beside it do not. Mutation is accounting, not a threshold: survivors print and the
 // builder or reviewer answers each one. The refusals of the other two are proved in quality.test.ts.
 // Revalidate by 2027-04-27, or when Stryker, Biome or jscpd change what they report.
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -23,12 +24,13 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     fast: { type: 'boolean' },
+    mutate: { type: 'boolean' },
     root: { type: 'string' },
     tests: { type: 'string' },
   },
 })
 const root = resolve(values.root ?? '.')
-const fast = values.fast === true
+const withMutation = values.mutate === true
 const base = positionals[0] ?? 'origin/main'
 const scratch = mkdtempSync(join(tmpdir(), 'conexus-quality-'))
 const failures: string[] = []
@@ -93,7 +95,7 @@ try {
     console.log(`  ${text}`)
     failures.push(`new clone: ${text}`)
   }
-  if (!fast) reportMutation({ sources, all })
+  if (withMutation) reportMutation({ sources, all })
 } finally {
   rmSync(scratch, { recursive: true, force: true })
 }
