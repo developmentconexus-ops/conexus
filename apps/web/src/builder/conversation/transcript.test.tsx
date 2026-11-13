@@ -189,6 +189,41 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   expect(screen.getByText(/Editou um arquivo/)).toBeTruthy()
 })
 
+test('o grupo nasce fechado enquanto a resposta trabalha, e só o clique da pessoa abre (Critério 9, palavra do fundador)', () => {
+  const steps: TranscriptItem[] = [
+    toolItem('t-1', 'mastra_workspace_list_files'),
+    toolItem('t-2', 'mastra_workspace_grep'),
+    toolItem('t-3', 'mastra_workspace_read_file'),
+  ]
+  const view = render(
+    <Transcript
+      turns={[turnOf(steps, true)]}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  const group = screen.getByRole('button', { name: /\d\/3|ferramentas/ })
+  expect(group.getAttribute('aria-expanded')).toBe('false')
+  view.rerender(
+    <Transcript
+      turns={[turnOf(steps, false)]}
+      steers={[]}
+      model={MODEL}
+      older={NO_OLDER}
+      onAsk={() => undefined}
+    />,
+  )
+  expect(screen.getByRole('button', { name: /3 ferramentas/ }).getAttribute('aria-expanded')).toBe(
+    'false',
+  )
+  fireEvent.click(screen.getByRole('button', { name: /3 ferramentas/ }))
+  expect(screen.getByRole('button', { name: /3 ferramentas/ }).getAttribute('aria-expanded')).toBe(
+    'true',
+  )
+})
+
 test('o grupo fechado conta os passos feitos e os que falharam', () => {
   const steps: TranscriptItem[] = [
     toolItem('t-1', 'mastra_workspace_list_files'),
