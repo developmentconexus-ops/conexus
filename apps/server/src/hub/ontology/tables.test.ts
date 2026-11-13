@@ -209,3 +209,19 @@ test('ontologia: uma versão nomeia uma revisão da própria empresa, e um item 
     violating('proposal_item_proof_fkey'),
   )
 })
+
+test('ontologia: a saída da empresa apaga o que ela tem, também item e fonte que citam uma prova', async (t) => {
+  const test = await createTestDatabase(t)
+  await test.asOwner(SEED)
+  await test.asOwner(`insert into ontology.proposal_item(proposal_id, company_id, n, kind, target,
+    content, proof_run_id, decision) values ('${PROPOSAL}', '${A}', 1, 'SET_SOURCE', 'pedido', '{}',
+    '${PROOF}', 'PENDING');
+    insert into ontology.source_version(company_id, concept, revision, connection_id, read, proof_run_id)
+    values ('${A}', 'pedido', 1, '${CONNECTION}', '{}', '${PROOF}')`)
+  const count = async (table: string) =>
+    (await test.asOwner(`select count(*)::int as n from ontology.${table}`))[0]?.n
+  const tables = ['proof_run', 'proposal', 'proposal_item', 'revision', 'source_version']
+  for (const table of tables) assert.equal(await count(table), 1, table)
+  await test.asOwner(`delete from auth.company where id = '${A}'`)
+  for (const table of [...tables, 'inventory_run']) assert.equal(await count(table), 0, table)
+})
