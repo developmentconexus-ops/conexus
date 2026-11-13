@@ -28,7 +28,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser in
    doubt; read QA's report if posted, never wait. Read the CI quality job; never run
-   `npm run quality` or Stryker locally. Hand-mutate the key lines, listed under Ran
+   Stryker locally. Hand-mutate the key lines, listed under Ran
    ([T27](../../../docs/guides/testing.md)); one no test kills is a finding (L12).
 5. Walk the card's reference table against the diff ([code C75](../../../docs/guides/code.md)): a
    nativo row uses the named API; an embrulhado row adds only its line; a remendo row's native

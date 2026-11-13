@@ -2,8 +2,8 @@
 
 [Code C75](../guides/code.md) says to use the library's own mechanism first. This file records each
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
-versions are the installed ones, except five candidates read from the npm registry and not
-installed: Stryker 10.1.1, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
+versions are the installed ones, except four candidates read from the npm registry and not
+installed: remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
 and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
 piece of this file that a row of `scripts/removals.json` protects names that row, and its test
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
@@ -854,7 +854,7 @@ rows for the five above wait on issue #458.
 - **Library line.** Node `node:test` `run({ files, cwd, testNamePatterns, signal, timeout })` runs
   the test. Stryker core 10.1.1 supplies a sandbox, a dry run and `testRunner: 'command'`
   (`dist/src/test-runner/command-test-runner.js:9-12,45-52,114-143`), which reads one aggregate test
-  from an exit code. Its instrumenter 10.0.0 has fixed replacement maps
+  from an exit code. Its instrumenter 10.1.1 has fixed replacement maps
   (`mutators/method-expression-mutator.ts:9-32,61-63`), `string-literal-mutator.ts:11-26` empties a
   literal, and `object-literal-mutator.ts:10-13` empties an object. None of them removes a named
   text, such as one SQL predicate or one adapter call, from one named file.

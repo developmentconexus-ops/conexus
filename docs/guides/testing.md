@@ -126,9 +126,10 @@ choice of test tools.
 - **T27.** The lines a change adds **must** be proved by hand mutations of their key lines: change
   one line, run the test that owns it, see it fail, restore it. The build or the review lists each
   mutation (line, change, owning test, result) in the pull request or the report, and a mutation
-  that survives gets a test that kills it. Stryker is an optional manual tool for one file at a
-  time (`npm run quality -- --mutate`); no build, review or step closing requires it, and the CI
-  quality job runs only complexity and duplication. There is no score threshold: a score pushes
+  that survives gets a test that kills it, or a line naming it equivalent. Stryker is an optional
+  manual tool: `npm run quality -- --mutate` mutates the lines changed against the base; no
+  build, review or step closing requires it, and the CI quality job runs only complexity and
+  duplication. There is no score threshold: a score pushes
   tests to assert classes of output against T7. Failure: a guard tested with one file passes when
   the code checks "all files" instead of "any file". Founder, 2026-11-13: "Aprovo recomendação".
   [review]
