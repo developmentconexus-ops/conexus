@@ -1236,6 +1236,28 @@ reference tool checks a read against its documentation.
 - **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
   values (then the literal goes), or the first company runs Sankhya on SQL Server.
 
+## Connectors (A política de dados pessoais): the personal data a read does not declare
+
+- **Library line.** None serves it. No reference finds a personal datum a connector forgot to
+  declare (n8n's `sensitiveOutputFields` is for credentials and nothing reads it for a CPF; Airbyte,
+  nango and twenty have no such check). `@brazilian-utils/brazilian-utils` 2.5.0 gives the
+  validators: `isValidCpf`, `isValidEmail` and `isValidPhone`.
+- **Hand-made piece.** `findUndeclared` in `packages/connectors/src/kernel/personal.ts`, run only by
+  the conformance (`assertPersonal` in `kernel/conformance.ts`) on each ready read's answer from its
+  double. It reports, by path and kind and never by value, a valid CPF in a text or in an integer of
+  up to 11 digits (read with its leading zeros), an e-mail, or a phone written as 10 to 13 digits,
+  outside every declared path. The read door's entries are not checked: their answer depends on the
+  query.
+- **Why.** The founder's B1, 2026-11-11 ("vale a pena? referências fazem?"): a new connector that
+  forgets where a CPF sits fails the CI, not the company. The one rule it serves: a document never
+  goes to a model or to a copy (`withheldKinds`, `hub/connectors/read.ts`).
+- **Proof.** `kernel/personal.test.ts`, "forma conhecida não declarada"; and
+  `mercado-livre/mercado-livre.test.ts`, "tirar buyer de pedidos faz a conformidade falhar".
+- **Not proved.** A phone with a mask or a country code, a CNPJ, and a name or an address: none is a
+  known shape, so only the declaration covers them.
+- **Revisit when** the library's validators change, or a connector's double carries an id the check
+  takes for a CPF or a phone.
+
 ## Mastra 1.82.0: a conversation's changing state lives in a Hub table (step 24.1)
 
 - **Library line.** At `@mastra/pg` version 1.35.0 and `@mastra/memory` version 1.41.0 (the lockfile's),

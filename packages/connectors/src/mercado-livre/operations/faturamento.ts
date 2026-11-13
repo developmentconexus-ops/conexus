@@ -56,11 +56,11 @@ export const notaFiscalDoPedido = readOf({
   subject: 'faturamento',
   docs: 'obtendo-nota-fiscal',
   summary:
-    'Mostra a nota fiscal emitida para um pedido: série, número, status e data. O destinatário não vem.',
+    'Mostra a nota fiscal emitida para um pedido: série, número, status, data e o destinatário.',
   label: 'Nota fiscal do pedido',
   input: z.object({ orderId: PathId }),
   list: null,
-  omit: ['recipient'], // the buyer's CPF or CNPJ is on it
+  personal: [{ path: 'recipient', kind: 'documento' }],
   from: [pedidos.id],
   probe: firstOrder,
   request: (input, account) => get(`/users/${sellerOf(account)}/invoices/orders/${input.orderId}`),

@@ -18,7 +18,8 @@ import { logoProblems } from './logo.ts'
 import type { OAuth2CodeAuth } from './oauth.ts'
 import { authorizeUrl, codeRequest } from './oauth.ts'
 import type { Account, Operation, OperationId } from './operation.ts'
-import { OPERATION_CLASSES, requestOf } from './operation.ts'
+import { OPERATION_CLASSES, requestOf, valueAt } from './operation.ts'
+import { findUndeclared, personalRowsOf } from './personal.ts'
 import { toRequest } from './request.ts'
 
 /** Every request the probes build, as text: the URL, the headers and the body. */
@@ -56,15 +57,33 @@ function assertSources(
   }
 }
 
+/** Each declared personal path is in a row of the double's answer, and no CPF, e-mail or phone sits outside them. */
+export function assertPersonal(operation: Operation<unknown, unknown>, value: unknown): void {
+  const declared = operation.personal ?? []
+  const { rows } = personalRowsOf(value)
+  for (const { path } of declared)
+    assert.ok(
+      rows.some((row) => valueAt(row, path) !== undefined),
+      `${operation.id} declares ${path}, which no row of the double carries`,
+    )
+  const undeclared = findUndeclared(value, declared).map(({ path, kind }) => `${kind} at ${path}`)
+  assert.deepEqual(
+    undeclared,
+    [],
+    `${operation.id} carries what it does not declare: ${undeclared.join('; ')}`,
+  )
+}
+
 /** Each probe, in order, from the sources it declares, answered with the value its output schema reads from the body. */
 async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
   await answeredEach(connector, fake, async ({ operation, earlier, raw, value }) => {
     assertSources(operation, earlier)
     // A ready operation's `output` reads the body itself; a door entry's is the shape of the
     // value its answer takes out of an envelope, so the value is what it must accept.
-    if (connector.operations.includes(operation))
+    if (connector.operations.includes(operation)) {
       assert.deepEqual(operation.output.parse(raw.body), value, operation.id)
-    else assert.ok(operation.output.safeParse(value).success, operation.id)
+      assertPersonal(operation, value)
+    } else assert.ok(operation.output.safeParse(value).success, operation.id)
   })
 }
 

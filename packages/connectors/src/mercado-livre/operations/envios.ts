@@ -9,11 +9,15 @@ export const envio = readOf({
   subject: 'envios',
   docs: 'gerenciamento-de-envios',
   summary:
-    'Mostra um envio no formato novo: status e substatus, o pedido, o código de rastreio e a logística. O endereço do comprador não vem.',
+    'Mostra um envio no formato novo: status e substatus, o pedido, o código de rastreio, a logística e o destino (o endereço, o nome e o telefone de quem recebe).',
   label: 'Envio',
   input: z.object({ shipmentId: PathId }),
   list: null,
-  omit: ['destination'], // the buyer: `receiver_name`, `receiver_phone` and `shipping_address`
+  personal: [
+    { path: 'destination', kind: 'endereco' },
+    { path: 'destination.receiver_name', kind: 'contato' },
+    { path: 'destination.receiver_phone', kind: 'contato' },
+  ],
   from: [pedido.id],
   probe: chain(pedido.id, 'shipping.id', (shipmentId) => ({ shipmentId })),
   request: (input) => get(`/shipments/${input.shipmentId}`, {}, { 'x-format-new': 'true' }),

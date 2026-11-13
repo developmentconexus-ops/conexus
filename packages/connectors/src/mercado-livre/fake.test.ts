@@ -111,7 +111,7 @@ function shapeOf(value: unknown, at = '', found = new Map<string, Set<string>>()
   return found
 }
 
-/** What the double plants for the kit to drop (`operations.test.ts`, "sem dados do comprador"): the service never sends it on these routes. */
+/** What the double plants where its reads declare personal data, for the Hub to withhold: the service never sends it on these routes. */
 const PLANTED = ['.results[].buyer.', '.questions[].from.']
 
 const SCAN = { scan: true } as const

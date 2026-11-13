@@ -5,8 +5,9 @@ import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { CopyDefinitionV2 } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
-import { forward } from './test-connections.ts'
+import { forward, linkMercadoLivre, mercadoLivreOn, testOf } from './test-connections.ts'
 
 /** In front of the double: what reaches it, in order, a copy's page held until the test lets it go. */
 function doorOf(t: TestContext) {
@@ -95,4 +96,61 @@ test('a cópia toma a vez da conexão página a página', async (t) => {
   assert.ok(
     on.hub.lines.some((line) => line.message === 'CONNECTOR_CALLED' && line.fields.by === 'copy'),
   )
+})
+
+async function pageOf(t: TestContext, columns: readonly object[]) {
+  const on = await mercadoLivreOn(t)
+  const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
+  const connectionId = ConnectionId.parse(Object(linked.json()).connection.id)
+  await testOf(on.hub, on.ana, on.base, connectionId)
+  const definition = CopyDefinitionV2.parse({
+    version: 2,
+    source: { kind: 'OPERATION', operation: 'pedidos', input: {} },
+    description: 'Os pedidos',
+    columns,
+    key: ['id'],
+    changedSince: null,
+  })
+  const read = await on.hub.connectors.copies.readPage({
+    companyId: CompanyId.parse(on.companyId),
+    connectionId,
+    enabledBy: PersonId.parse(on.ana.id),
+    definition,
+    position: null,
+    since: null,
+    windowFrom: null,
+    limit: 50,
+    signal: new AbortController().signal,
+  })
+  assert.equal(read.kind, 'PAGE')
+  return read.kind === 'PAGE' ? JSON.stringify(read.page.rows) : ''
+}
+
+const PLANTED_BUYER = ['Maria', 'Fictícia', 'maria.ficticia', '52998224725', 'COMPRADORFICTICIO']
+
+test('a cópia sem tipo', async (t) => {
+  const text = await pageOf(t, [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'status', type: 'text', path: 'status' },
+  ])
+  assert.ok(text.includes('paid'), 'the order itself is copied')
+  for (const value of PLANTED_BUYER) assert.ok(!text.includes(value), `a cópia guarda ${value}`)
+})
+
+test('a cópia com o tipo da coluna: o que o Ligar conferiu entra, e o documento nunca', async (t) => {
+  const text = await pageOf(t, [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'comprador', type: 'json', path: 'buyer' },
+  ])
+  assert.ok(text.includes('COMPRADORFICTICIO'), 'the column of kind contato holds the buyer')
+  assert.ok(!text.includes('52998224725'), 'the document is withheld from a copy')
+})
+
+test('uma cópia antiga com coluna de documento: a rodada grava a coluna sem valor', async (t) => {
+  const text = await pageOf(t, [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' },
+  ])
+  assert.match(text, /\d{8,}/, 'the orders are read, by their ids')
+  assert.ok(!text.includes('52998224725'), 'the document is never kept')
 })

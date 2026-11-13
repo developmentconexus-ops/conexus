@@ -15,6 +15,7 @@ import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
+import { personalColumnsIn } from './copy-personal.ts'
 import type { OpenedConnection } from './executor.ts'
 import { listIssuesOf, listReadOf, sourceIssuesOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -317,6 +318,9 @@ export function createCopyPort(deps: Deps) {
       )
     },
     readPage: (input: SourcePage): Promise<CopyRead> => readPage(deps, input),
+    /** The kind of each column of a version 2 definition, from the connector's declared personal paths; none for a connector the kit lacks. */
+    personalColumns: (connector: string, definition: CopyDefinitionV2) =>
+      personalColumnsIn(connectorIn(deps, connector), definition),
     /**
      * What a version 2 definition fails against the connector's list read, a path and a message each
      * (none when it fits), and whether its account is `none`: such a connector's copy reads one

@@ -169,6 +169,8 @@ export const ROUTES: readonly Route[] = [
                   street_name: 'Rua Inventada',
                   street_number: '1',
                   zip_code: '00000000',
+                  city: { name: 'Campinas' },
+                  state: { id: 'BR-SP', name: 'São Paulo' },
                 },
               },
             },
