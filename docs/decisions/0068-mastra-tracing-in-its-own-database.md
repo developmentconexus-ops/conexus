@@ -44,7 +44,9 @@ traces, or 21.1 sends spans out.
 
 ## State
 
-Proposed 2026-11-13; founder, the same day: "A A2 B B1 E E1". Supersedes [0052].
+Accepted 2026-11-13: "A A2 B B1 E E1", then "1. Aprovo 2. Aprovo" (the card's page, and the S41
+exception: full content, what the model read included, in Mastra's database in Brazil, 14 days,
+only our access). Supersedes [0052].
 
 [0010]: 0010-mastra-tables-own-database.md
 [0032]: 0032-data-leaving-brazil-told.md
