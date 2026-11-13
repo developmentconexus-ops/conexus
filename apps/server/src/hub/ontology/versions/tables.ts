@@ -209,7 +209,7 @@ export const sourceVersion = ontology.table(
       name: 'source_version_proof_fkey',
       columns: [table.companyId, table.proofRunId],
       foreignColumns: [proofRun.companyId, proofRun.id],
-    }),
+    }).onDelete('cascade'),
     keyCheck('source_version_concept', table.concept),
     check('source_version_read', sql`jsonb_typeof(${table.read}) = 'object'`),
     policy(SCOPE_ROLES.COMPANY, 'all', COMPANY_ROW),
