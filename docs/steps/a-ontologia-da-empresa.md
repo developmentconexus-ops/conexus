@@ -87,6 +87,9 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
   criativo", a pergunta de como a Ontologia entra no desenho ("Não sei se é agora que a gente já vai
   pensar nisso, né? Mas se for depois, a gente espera.") e a licença para olhar bibliotecas como o
   three.js. As telas v3 ficam como estão; o Mapa é a tela que abre Conhecimento e leva a elas.
+- Às duas decisões do Mapa, em 2026-11-13: "1. Não gostei de nenhum tudo ficou muito básico, sem
+  design" (as direções A, B e C saem, e o desenho do Mapa volta para uma rodada nova) e "2 Okay" (o
+  Mapa se constrói com o cartão do Brain).
 - Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
   empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
   especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
@@ -164,7 +167,7 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
   área, e, na página de um conceito, as páginas que o citam. Entra com o cartão do Brain, que leva
   para ela a memória da empresa de Configurações. Esta etapa constrói a metade "Como a empresa é"
   (as abas Conceitos, Para revisar e Histórico, e o lugar do fluxo, vazio), e a página abre nela.
-- **O Mapa**, a tela que abre Conhecimento, se você decidir como recomendamos abaixo. É um grafo de
+- **O Mapa**, a tela que abre Conhecimento, construído com o cartão do Brain ("2 Okay"). É um grafo de
   tudo o que a empresa é e sabe. As coisas da Ontologia ficam entre as áreas que as citam, e as
   páginas do Brain ficam dentro da ilha da sua área, cada tipo com o seu ponto. As ligações levam o
   "um" e o "muitos". O primeiro toque abre a lente da coisa (os papéis, as ligações, os códigos e o
@@ -208,25 +211,19 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 alinhamento): a página Conhecimento ganha as duas metades e o lugar do fluxo, vazio (o roteiro, o
 passo 1); o fluxo, que fica de fora, se lê também do histórico do sistema; o cartão não espera mais o
 da entrada conversada, só a política de dados pessoais. Depois, ao desenho v3: o Mapa, a tela que
-abre Conhecimento, desenhado aqui e construído com o Brain, e as duas decisões acima.
+abre Conhecimento, desenhado aqui e construído com o Brain. Em 2026-11-13, as suas respostas às duas
+decisões do Mapa: o Mapa se constrói com o cartão do Brain, e as direções A, B e C saem.
 
-**As decisões suas nesta etapa.** Duas, as duas sobre o Mapa que você pediu; nenhuma muda o que
-esta etapa constrói.
+**As decisões suas nesta etapa.** Uma, sobre o Mapa, e ela não muda o que esta etapa constrói.
 
-- **Qual desenho.** A, Linhas: cada área é uma linha de metrô. B, Arquipélago: cada área é uma
-  ilha, e as coisas ficam entre as ilhas. C, Roda: uma fatia por área, com as ligações em feixes
-  pelo meio. Recomendamos a B. Ela é o seu "tipo um Obsidian", desenhado com mais cuidado, e diz uma
-  verdade dos dados: uma coisa não tem setor, só a página tem área, e por isso a coisa fica onde as
-  áreas que a citam se encontram. A A sugere uma ordem entre as páginas que os dados não têm. A C
-  embola quando uma área passa de dez páginas.
-- **Quando ele se constrói.** Recomendamos com o cartão do Brain, porque sem as páginas e as áreas
-  o Mapa desta etapa seria cinco pontos soltos. A alternativa é uma U6 nesta etapa, só com a camada
-  das coisas: ela mostra a lente da Ontologia mais cedo, mas soma, pela nossa estimativa, umas 600 linhas a uma etapa que já
-  passou do orçamento.
+- **Qual desenho.** Em aberto: você recusou as direções A (Linhas), B (Arquipélago) e C (Roda)
+  ("tudo ficou muito básico, sem design"), e as novas direções chegam numa rodada própria. Qualquer
+  uma guarda a verdade dos dados: uma coisa não tem setor, só a página tem área.
+- **Quando ele se constrói: decidido**, com o cartão do Brain ("2 Okay", 2026-11-13). Sem as
+  páginas e as áreas, o Mapa desta etapa seria cinco pontos soltos, e esta etapa não ganha uma U6.
 
-O three.js ficou de fora, com a sua licença para olhar. Um grafo em 3D esconde pontos atrás de pontos
-e cruza os rótulos, e fica pior no celular. Com dezenas de pontos, o desenho plano lê melhor. Um modo
-"ver em 3D" pode vir depois, se você quiser o espetáculo.
+O three.js volta a ser opção na rodada nova, se a direção pedir e o Mapa continuar legível e
+acessível, no celular também.
 
 As escolhas técnicas convergem nas referências e
 estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
