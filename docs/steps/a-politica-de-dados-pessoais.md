@@ -7,7 +7,7 @@ como vamos tratar isso [...] Qual que seria a lógica [...] Vale a pena? É uma 
 fazem?"; "`C1` porém mesma coisa de B"; "`D1`"; "E Só vai vir depois". Cada linha do `main` foi lida em
 `7c8b156f`, e as que o Sync mexeu foram lidas de novo em `22702f99` (2026-11-12, `main` depois do fechamento do Sync), com `better-auth` 1.7.8, `@mastra/core` 1.82.0, `zod` 4.6.5,
 `@brazilian-utils/brazilian-utils` 2.5.0 e PostgreSQL 18. As referências: n8n `2e855356`, twenty
-`b76d0217`, Airbyte `8aed3123`, PostgREST `d42ae9d`.
+`b76d0217`, Airbyte `8aed3123`; e, para a regra dos papéis, Mastra Connect `6e8dfcb8` (`mastra-1.82`), HubSpot e Mercado Livre (as páginas citadas abaixo).
 
 Nenhuma peça do Hub, das telas ou do Builder fala de um conector pelo nome. O que é de um sistema (em
 que caminho da resposta mora o comprador, que coluna do Sankhya é o CPF) mora na pasta do conector,
@@ -25,7 +25,7 @@ publica e abre continua lendo ao vivo, e recebe tudo o que a leitura traz, como 
 **A regra, em uma frase.** Quem vê é o **papel, por leitura**, como já é hoje: quem não tem a leitura
 Pedidos não vê pedido. O tipo de dado pessoal **não é** permissão de papel. A única regra nova: o
 **documento** (CPF) nunca vai a um modelo (Assistente, Builder) nem a uma cópia (que o Builder lê
-depois), qualquer que seja o papel da pessoa. Contato e endereço passam.
+depois), qualquer que seja o papel da pessoa, exceto pela porta SQL do Sankhya (`consultar`, decisão G). Contato e endereço passam.
 
 **O que mudou desde a primeira versão desta página (decisão "P2", 2026-11-12).** O estudo das
 referências (relatório de 2026-11-12) mostrou que nenhuma plataforma de IA corta campo por tipo de
@@ -65,7 +65,7 @@ com a leitura Pedidos.
 | Beto pergunta o mesmo | o mesmo | o mesmo que Ana: o papel dele tem a leitura |
 | O app "Quem comprou" que Ana publica | só "pedido 123, R$ 89,90" | "Maria Fictícia, Campinas/SP", e o CPF se a leitura o traz (o app não é um modelo) |
 | Clientes do Sankhya (`buscarParceiros`) pelo Assistente | CPF e nome | nome, sem CPF; a porta SQL fica como hoje (G) |
-| O Builder propõe uma cópia de pedidos com a coluna do CPF | guardaria | o Ligar recusa: "Uma cópia não guarda Documento" |
+| O Builder propõe uma cópia de pedidos com a coluna do CPF | guardaria | o Ligar recusa: "Uma cópia não guarda Documento. Tire essa coluna da cópia; o app que precisa dele lê direto do sistema." |
 | O registro | só escalares | mais `personal: ['contato']` e `withheld: ['documento']`, nunca o valor |
 
 **O que se perde, sem rodeio.** "O Estoque vê o pedido sem o nome" não existe: quem tem a leitura vê o
@@ -75,7 +75,7 @@ nada). Se a empresa precisar de um papel que não veja o comprador, ele não rec
 **O roteiro de uso.** Você é dono, com o Mercado Livre e o Sankhya ligados.
 
 1. Pergunte ao Assistente "quais clientes compraram hoje no Mercado Livre?": ele responde com nomes e
-   cidades. Pergunte o CPF de um cliente do Sankhya: a resposta vem sem o CPF.
+   cidades. Pergunte o CPF de um cliente do Sankhya pela busca de parceiros (`buscarParceiros`): a resposta vem sem o CPF. A porta SQL do Sankhya fica como hoje.
 2. Peça ao Builder uma cópia dos pedidos com o CPF do comprador: o Ligar recusa, com a frase da tela.
    Peça sem o CPF (com o apelido): liga.
 3. Abra o registro de uma leitura: ele diz `personal: contato` e `withheld: documento`, sem nenhum valor.
@@ -103,7 +103,7 @@ da tela do Ligar entre eles); no fim, faz o roteiro e aprova o texto da recusa.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 A declaração e a aplicação num ponto | a lista `PERSONAL_KINDS`; `personal` na operação; `findUndeclared`; a conformidade; as declarações do Mercado Livre e do Sankhya, com o `omit`, o `BUYER` e o `without` apagados; `shapePersonal` em `readThrough`; a regra única `withheldKinds`; os escalares em `CONNECTOR_CALLED` | `packages/connectors/src/{kernel,mercado-livre,sankhya}/`, `packages/connectors/package.json`, `apps/server/src/hub/connectors/` | [security](../guides/security.md) | a U2b do Sync, já em `main` |
+| U1 A declaração e a aplicação num ponto | a lista `PERSONAL_KINDS`; `personal` na operação; `findUndeclared`; a conformidade; as declarações do Mercado Livre e do Sankhya, com o `omit` e o `without` apagados e o `BUYER` virado a declaração; `shapePersonal` em `readThrough`; a regra única `withheldKinds`; os escalares em `CONNECTOR_CALLED` | `packages/connectors/src/{kernel,mercado-livre,sankhya}/`, `packages/connectors/package.json`, `apps/server/src/hub/connectors/` | [security](../guides/security.md) | a U2b do Sync, já em `main` |
 | U2 A cópia não guarda documento | Ligar recusa a coluna de tipo documento com `COPY_PERSONAL_NOT_KEPT`; a rodada de uma cópia antiga grava a coluna sem valor | `apps/server/src/hub/copies/accept.ts`, `apps/server/src/hub/connectors/{copy-personal,copy-port}.ts`, `packages/hub-api/src/{copies,copy-failures}.ts` | [data](../guides/data.md) | U1 |
 
 **Orçamento de código alterado.** U1: 360. U2: 80. Total: cerca de 440 linhas, abaixo de delivery L2.
@@ -162,7 +162,7 @@ o único tipo que uma cópia nunca recebe.
 | Documento nunca ao modelo nem à cópia | U1 | `cut.ts` (só tamanho) | HubSpot "Sensitive Data Properties" (fora dos conectores de IA até um administrador liberar); LGPD art. 33 | propriedade sensível fora da IA | embrulhado: `withheldKinds(by)`, a regra única | crit. 6, 13 | B1, "A" | — |
 | O registro sem o valor | U1 | `read.ts` (`CONNECTOR_CALLED`, escalares) | Mercado Livre "registro de acesso" (documentado) | um evento por leitura | embrulhado: dois escalares na linha que já existe (security S41) | crit. 9 | — | — |
 | Quem vê é o papel, por leitura | U1 | `mayUse`, `roles.ts` | Mastra Connect `mastra-1.82@6e8dfcb8 docs/.../connect/overview.mdx:30`, `tools.mdx:91-101`; Airbyte AI Agents `airbyte@8aed3123 docs/ai-agents/interfaces/ui/add-connector.md:113,135`, `concepts/governance.md:24` | restringe por leitura ou entidade, nunca por campo | nativo: não muda | — | P2 | — |
-| A cópia recusa documento | U2 | `copies/accept.ts` (`mayReadSources`, a recusa de hoje no Ligar) | PostgREST `d42ae9d` (o que não é dado a um papel não é lido) | — | nativo: a mesma forma de recusa do Ligar, com `personalColumns` | crit. 12 | "A" | — |
+| A cópia recusa documento | U2 | `copies/accept.ts` (`mayReadSources`, a recusa de hoje no Ligar) | nenhuma: a recusa que o Ligar já tem (`mayReadSources`) | — | nativo: a mesma forma de recusa do Ligar, com `personalColumns` | crit. 12 | "A" | — |
 
 **Ficam fora da tabela, com a razão.** RH e dados sensíveis (`SKILL.md:21`, LGPD art. 11): `D1`, só pela
 frase da skill. A porta genérica do Sankhya (`sankhya/door.ts:69-145`): fora da política (G). A detecção
@@ -225,8 +225,7 @@ número JSON: o inteiro vira texto de 11 dígitos com zeros à esquerda antes de
 
 ### As skills e a leitura
 
-`stack.md` para `packages/connectors` (`zod`; `@brazilian-utils/brazilian-utils`, README) e para
-`apps/server/src/hub` (`better-auth-best-practices`).
+`stack.md` para `packages/connectors` (`zod`; `@brazilian-utils/brazilian-utils`, README).
 
 ### A ordem do trabalho
 
@@ -252,7 +251,7 @@ Regras: S40, S41, C21, T5.
 ### Como se prova
 
 Critérios 1 a 4 com `node --test` nos arquivos do kit (o crit. 3 tira `buyer` de `pedidos` num teste
-e espera a falha); critérios 8 a 14 pelas portas públicas do Assistente, do Builder e da cópia, com o
+e espera a falha); critérios 5 a 9 e 11 pelas portas públicas do Assistente, do Builder e da cópia, com o
 dublê que planta o comprador (`mercado-livre/fake-data.ts:24-32`). Falha hoje: `personal` não existe,
 e o membro e o dono recebem a mesma linha.
 
