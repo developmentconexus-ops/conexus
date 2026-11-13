@@ -63,6 +63,7 @@ import {
   TASKS_CALLS,
   TASKS_PROMPT,
 } from './record-calls.ts'
+import * as title from './record-title.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
@@ -89,6 +90,7 @@ const Scenario = z.enum([
   'handoff',
   'research',
   'research-failed',
+  ...title.TITLES,
   ...approval.APPROVALS,
 ])
 
@@ -136,6 +138,7 @@ const CALLS = {
   handoff: HANDOFF_CALLS,
   research: RESEARCH_CALLS,
   'research-failed': RESEARCH_FAILED_CALLS,
+  ...title.CALLS,
   ...APPROVAL_CALLS,
 }
 
@@ -145,6 +148,7 @@ const asked = new Map<string, string>([
   ['reads', READS_PROMPT],
   ['research', RESEARCH_PROMPT],
   ['research-failed', RESEARCH_PROMPT],
+  ...title.PROMPTS,
 ])
 
 /** The helper's own model call in `research-failed`: the provider refuses it, as an account that does not answer. */
@@ -176,7 +180,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
     if (
       (scenario === 'files' || asked.has(scenario) || scenario === 'handoff') &&
-      event.type === 'agent_end'
+      event.type === title.endOf(scenario)
     )
       ended.resolve()
     approval.approvalReaction(session, scenario, event, ended)
@@ -196,6 +200,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       )
     : [(signal) => replayed(`anthropic-${scenario}`, signal)]
   if (scenario === 'research-failed') answers[1] = REFUSED
+  if (title.isTitle(scenario)) title.answer(scenario, answers)
   const restore = replaying(answers)
   try {
     if (scenario === 'files') {
@@ -283,7 +288,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
   const storage = approval.isApproval(scenario)
     ? approval.approvalStore(scenario)
     : new InMemoryStore()
-  const memory = new Memory({ storage })
+  const memory = new Memory({ storage, ...title.memoryOptions(scenario, CLAUDE) })
   const agent = new Agent({
     id: 'builder',
     name: 'Builder',

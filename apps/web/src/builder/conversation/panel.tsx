@@ -40,6 +40,7 @@ function BuilderChat(params: Params) {
       conversationId={conversationId}
       place={{ controller: BUILDER_CONTROLLER, projectId }}
       conversationKey={conversationQuery(companyId, projectId, conversationId).queryKey}
+      listKeys={[allConversationsQueryKey(companyId, projectId)]}
       onGone={() =>
         void queryClient.invalidateQueries({
           queryKey: allConversationsQueryKey(companyId, projectId),

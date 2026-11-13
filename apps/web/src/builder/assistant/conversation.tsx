@@ -106,6 +106,7 @@ function Conversation(props: Props) {
                 conversationId={conversationId}
                 place={{ controller: ASSISTANT_CONTROLLER }}
                 conversationKey={assistantConversationQuery(companyId, conversationId).queryKey}
+                listKeys={[hubQueryPrefix(listAssistantConversations, { companyId })]}
                 onGone={() =>
                   void queryClient.invalidateQueries({
                     queryKey: hubQueryPrefix(listAssistantConversations, { companyId }),

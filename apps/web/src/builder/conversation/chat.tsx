@@ -37,6 +37,8 @@ export type ChatProps = {
   place: Place
   /** The read of the conversation, asked again after a send and when the person's session ends. */
   conversationKey: readonly unknown[]
+  /** The lists that show the conversation's title, besides `conversationKey`: asked again when Mastra names or renames it. */
+  listKeys?: readonly (readonly unknown[])[]
   /** The conversation is gone: the caller reads again what lists it. */
   onGone: () => void
   empty: string
@@ -231,6 +233,10 @@ export function Chat(props: ChatProps) {
         setGone(true)
       },
       ended: () => void queryClient.invalidateQueries({ queryKey: props.conversationKey }),
+      titled: () => {
+        for (const queryKey of [props.conversationKey, ...(props.listKeys ?? [])])
+          void queryClient.invalidateQueries({ queryKey })
+      },
     },
   )
   const { error, setError, send, halt } = useSending(props, builder, field, dispatch, () =>

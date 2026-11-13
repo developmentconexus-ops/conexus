@@ -4,7 +4,9 @@ import {
   AgentStart,
   MessageStart,
   MessageUpdate,
+  ObserverTitleUpdated,
   recordedEvent,
+  TitleUpdated,
 } from './test-recorded.ts'
 import { displayOf } from './test-stream.tsx'
 
@@ -22,6 +24,16 @@ export const IDLE = displayOf()
 
 export function agentEnd(reason = 'complete') {
   return { ...recordedEvent('abort', AgentEnd), reason }
+}
+
+/** Mastra's tell that it named the conversation after the answer ended, as `npm run record -- title` saw it. */
+export function titleUpdated() {
+  return recordedEvent('title', TitleUpdated)
+}
+
+/** The observer's tell that it renamed the conversation, as `npm run record -- title-observer` saw it. */
+export function observerTitleUpdated() {
+  return recordedEvent('title-observer', ObserverTitleUpdated)
 }
 
 /** A step of the Builder's opening, as Mastra opens it, with the parts a test gives it. */
