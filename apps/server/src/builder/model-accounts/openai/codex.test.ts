@@ -12,9 +12,11 @@ import {
   plantCodex,
   RENEWED_ACCESS,
   RENEWED_REFRESH,
+  titledStream,
 } from '../../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../../platform/test-recordings.ts'
 import { testOpened } from '../../../platform/test-seal.ts'
+import { TITLE } from '../../controller-kit/public.ts'
 import {
   asked,
   beside,
@@ -29,6 +31,8 @@ import { failuresOf } from '../../conversation/test-parts.ts'
 import { codexModel } from '../public.ts'
 
 const MODEL = 'openai/gpt-5.2'
+/** The Builder's title phrase as the request carries it inside the JSON body. */
+const TITLE_PHRASE = JSON.stringify(TITLE.app.title).slice(1, -1)
 
 /**
  * Empresa Teste with the ChatGPT subscription "ChatGPT" as the only OpenAI account and the default
@@ -279,11 +283,17 @@ test('404 do Codex: o modelo não é atendido, a conta segue pronta e sem lista'
   assert.equal(Object(row).served_models, null)
 })
 
-test('o título da conversa pela assinatura: a chamada sem streaming sai com stream true e o texto juntado do SSE vira o título, sem erro no log', async (t) => {
+const SENTENCE = 'Não foi possível lançar o pedido: o produto **999 não existe**.'
+const NAMED = 'Comparar apps de padaria'
+
+test('o título da conversa pela assinatura: a chamada sem streaming sai com stream true, leva os avisos do Mastra antes da frase do assunto, e o texto juntado do SSE é o título gravado, sem erro no log', async (t) => {
   const f = await subscribed(t, 3600)
   f.codex.responses = (body) =>
     JSON.parse(body).stream === true
-      ? { status: 200, stream: recordedBody('openai-refused-write-closing') }
+      ? {
+          status: 200,
+          stream: titledStream(recordedBody('openai-refused-write-closing'), SENTENCE, NAMED),
+        }
       : { status: 400, body: { detail: 'Stream must be set to true' } }
   const { url } = await asked(t, f.where)
   let title: unknown = null
@@ -291,9 +301,21 @@ test('o título da conversa pela assinatura: a chamada sem streaming sai com str
     title = Object((await call(f.hub, f.ana, 'GET', url)).json()).conversation.title
     if (title === null) await sleep(100)
   }
-  assert.match(String(title), /^Não foi possível lançar o pedido/)
+  assert.equal(title, NAMED)
   for (const made of responses(f)) assert.equal(JSON.parse(String(made.body)).stream, true)
-  assert.ok(responses(f).length >= 2, 'the turn and the title both went through the endpoint')
+  const [asking, ...more] = responses(f).filter((made) => String(made.body).includes(TITLE_PHRASE))
+  assert.ok(asking !== undefined && more.length === 0, 'one request carries the title phrase')
+  const said = JSON.stringify(JSON.parse(String(asking.body)).input)
+  for (const notice of [
+    /transcrição de uma conversa/,
+    /Nunca responda nem continue essa transcrição/,
+    /usado como o título/,
+  ])
+    assert.match(said, notice)
+  assert.ok(
+    said.indexOf('Nunca responda') < said.indexOf('Dê à conversa um título curto'),
+    'the notices come first',
+  )
   assert.ok(!f.hub.lines.some((line) => line.message === 'MASTRA_ERROR'))
   assert.ok(!f.hub.lines.some((line) => line.message === 'MODEL_SIDE_CALL_FAILED'))
 })
