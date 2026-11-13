@@ -30,13 +30,13 @@ Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empres
 
 **As capacidades que faltam aos apps.**
 
-- **A Ontologia da empresa**, antes da 4 (2026-11-12: `"A1"`), abaixo.
+- **A Ontologia da empresa** é o item 1 da lista "O Brain e a Ontologia", abaixo, e a Capacidade 4 espera por ela (2026-11-12: `"A1"`).
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
 - **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
 - **Capacidade 7. Avisos e lembretes do CRM.** Recebe no CRM os avisos e lembretes de um dia de uso.
 
-**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`, "1. A"; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md), [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). Na ordem:
+**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`, "1. A"; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md), [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). Esta ordem vale sobre qualquer outra:
 
 1. **A Ontologia da empresa**: os conceitos de cada demanda, provados e aprovados na página Conhecimento.
 2. **O fluxo da empresa**: os estados e as passagens, lidos dos documentos ou do histórico; entre dois sistemas, sem ligação.
