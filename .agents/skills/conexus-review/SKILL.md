@@ -8,7 +8,7 @@ description: "Reviews a Conexus roadmap step at its exact commit, as the one Opu
 ## When to use
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
-QA, at `main` once the last unit is merged and CI is green there. The same skill reviews each unit
+QA, at `main` once the last unit is merged and CI is green. The same skill reviews each unit
 commit by commit. Later passes are a delta check (step 9).
 
 ## What it receives
@@ -21,14 +21,14 @@ The pull request, its head commit and the card; nothing from the builders' conve
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
    Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column.
-2. A unit review reads every file of its commit, against its section. The step review
+2. A unit review reads every file of its commit against its section. The step review
    ([delivery L9](../../../docs/guides/delivery.md)) reads only the whole reference table and the
-   seams between pull requests (a contract, file or fact two touch), never an approved diff.
+   seams between pull requests (what two touch), its diff in steps 5 and 6; never an approved one.
 3. Try a counterexample to each acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser in
-   doubt; read QA's report if posted, never wait. Rerun `npm run quality` at
+   doubt; read QA's report if posted. Rerun `npm run quality` at
    the head and list it under Ran; a survivor the build called equivalent or style-only that one test
    kills is a finding (L12).
 5. Walk the card's reference table against the diff ([code C75](../../../docs/guides/code.md)): a

@@ -111,7 +111,7 @@ merge.
   learned rules that change the next action, confirm acceptance tests, settle the Fechamento list,
   the founder's text review and the reviews' follow-ups, remove taken items from next-card issues,
   move each remendo row of the reference table into [boundaries](../reference/boundaries.md) with
-  its package version, and delete the card; the use line follows the use (L17). Each week, an agent
+  its package version; the card leaves with the use line, after the use (L17). Each week, an agent
   that built none of the week's steps runs the [CI health review](../how-to/ci-health.md) and sends
   its findings to firstmate. Founder, 2026-11-04: "D A". Failure: deleting the card erases a decision nobody preserved. [review]
 - **L20.** Skills and guides **must** change only in a step's closing, or in the week's one
@@ -137,9 +137,9 @@ merge.
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
   `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
-  card has 2,500 words per unit, its founder's page not counted: a unit's own section, criteria and
-  rows ran about 2,100 words on 2026-11-13, a large card 3,500 to 5,000. L21 guards it and
-  `docs/approvals.md`: keep only what changes what the next agent does. [check-docs, review]
+  card has 2,500 words per unit: its words outside the founder's page, divided by its units. On
+  2026-11-13 a unit's own section, criteria and rows ran about 2,100 words, a large card 3,500 to
+  5,000. L21 guards it and `docs/approvals.md`: keep only what changes what the next agent does. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
