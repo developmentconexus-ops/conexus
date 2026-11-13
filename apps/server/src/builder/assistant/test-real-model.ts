@@ -57,18 +57,6 @@ const CHOICES = {
   openai: { model: 'openai/gpt-5.6-luna', effort: 'low' },
 }
 
-/**
- * The model and effort a run takes instead of the defaults above, both or neither: production's
- * ChatGPT model is `openai/gpt-6-luna` at `high`, which the defaults do not measure.
- */
-function chosenIn(provider: 'claude' | 'openai' | 'key'): { model: string; effort: string } {
-  // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
-  const { CONEXUS_EVAL_MODEL: model, CONEXUS_EVAL_EFFORT: effort } = process.env
-  if ((model === undefined) !== (effort === undefined))
-    throw new Error('Set CONEXUS_EVAL_MODEL and CONEXUS_EVAL_EFFORT together, or neither.')
-  return model === undefined || effort === undefined ? CHOICES[provider] : { model, effort }
-}
-
 /** Where firstmate runs the real model's case: the authorize link goes there, and the sign-in code comes back there. */
 // biome-ignore lint/style/noProcessEnv: the switch of this one opt-in case, not the app's configuration
 const env = process.env
@@ -81,6 +69,35 @@ const LOGIN_FILES = {
 export const OPENAI_LOGIN = LOGIN_FILES.openai
 /** The file that holds an Anthropic API key, named by its switch, outside the repository; its content is never printed. */
 export const API_KEY_FILE = env.CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE
+
+/**
+ * The switches of the scorecard run, read from the same `env`: the vendor the real run goes through
+ * (`claude`, the default, or `openai`) and the questions it asks (numbers split by commas, all by
+ * default), so the ChatGPT model production runs, with the questions that gave up on it, is
+ * measured on its own. A value that is not one of these fails the run, instead of choosing nothing.
+ */
+const Switches = z.object({
+  CONEXUS_EVAL_PROVIDER: z.enum(['claude', 'openai']).default('claude'),
+  CONEXUS_EVAL_QUESTIONS: z
+    .string()
+    .regex(/^\d+(\s*,\s*\d+)*$/, 'numbers split by commas')
+    .transform((each) => each.split(',').map(Number))
+    .optional(),
+})
+const SWITCHES = Switches.parse(env)
+export const EVAL_PROVIDER = SWITCHES.CONEXUS_EVAL_PROVIDER
+export const EVAL_QUESTIONS = SWITCHES.CONEXUS_EVAL_QUESTIONS
+
+/**
+ * The model and effort a run takes instead of the defaults, both or neither: production's
+ * ChatGPT model is `openai/gpt-6-luna` at `high`, which the defaults do not measure.
+ */
+function chosenIn(provider: 'claude' | 'openai' | 'key'): { model: string; effort: string } {
+  const { CONEXUS_EVAL_MODEL: model, CONEXUS_EVAL_EFFORT: effort } = env
+  if ((model === undefined) !== (effort === undefined))
+    throw new Error('Set CONEXUS_EVAL_MODEL and CONEXUS_EVAL_EFFORT together, or neither.')
+  return model === undefined || effort === undefined ? CHOICES[provider] : { model, effort }
+}
 
 /** The sign-in code firstmate writes after opening the link, read once and deleted; never printed. */
 async function codeFrom(folder: string): Promise<string> {

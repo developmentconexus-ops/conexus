@@ -1,3 +1,4 @@
+import { classifyProviderError } from '@mastra/core/error'
 import { z } from 'zod'
 import { causeChain } from '../../platform/failure.ts'
 import { retryAfterMs } from '../../platform/retry-after.ts'
@@ -38,6 +39,13 @@ export function callFailureOf(error: unknown, now = Date.now()): CallFailure {
     return { kind: 'limited', until: new Date(now + after) }
   }
   if (status === 401 || status === 403) return { kind: 'refused' }
+  // Anthropic answers an exhausted credit balance or a workspace spend limit with a 400: Mastra reads it.
+  if (status === 400) {
+    const kind = classifyProviderError(error)
+    if (kind === 'quota') return { kind: 'limited', until: new Date(now + LIMIT_MS[402]) }
+    if (kind === 'rate_limited') return { kind: 'limited', until: new Date(now + LIMIT_MS[429]) }
+    if (kind === 'auth') return { kind: 'refused' }
+  }
   // The provider does not know the model for this credential: the list it serves has changed.
   if (status === 404) return { kind: 'missing' }
   return { kind: 'unknown', status }
