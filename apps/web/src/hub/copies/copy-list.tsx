@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
@@ -20,6 +21,7 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { CopyDeleteDialog } from './copy-delete.tsx'
 import { ProposalPhoneRow, ProposalTableRow } from './copy-proposal.tsx'
 import { IntervalDialog } from './interval.tsx'
 import { NewCopy } from './new-copy.tsx'
@@ -131,17 +133,20 @@ export function RunNowButton(props: {
 
 /**
  * The actions of one copy (criterion 33): **Rodar agora** (not on a copy with no clock, and not in
- * the detail, which has its own button), **Pausar** or **Retomar**, and **Intervalo**, which opens
- * its dialog. Each tells its refusal in the Hub's sentence through `onNote`.
+ * the detail, which has its own button), **Pausar** or **Retomar**, and **Intervalo** and **Apagar**,
+ * which open their dialogs. Each tells its refusal in the Hub's sentence through `onNote`; `onDeleted`
+ * is where the screen goes once the copy is gone.
  */
 export function CopyMenu(props: {
   companyId: CompanyId
   copy: CopySummary
   onNote: (note: Note | undefined) => void
   withRun?: boolean
+  onDeleted?: () => void
 }) {
   const { companyId, copy, onNote, withRun = true } = props
   const [choosing, setChoosing] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const params = { companyId, copyId: copy.id }
   const pause = useMutation(sendCopyPause)
   const resume = useMutation(sendCopyResume)
@@ -177,9 +182,20 @@ export function CopyMenu(props: {
             <DropdownMenuItem disabled={busy} onClick={() => setChoosing(true)}>
               Intervalo
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={busy} onClick={() => setDeleting(true)}>
+              Apagar
+            </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+      <CopyDeleteDialog
+        companyId={companyId}
+        copy={copy}
+        open={deleting}
+        onOpenChange={setDeleting}
+        onDeleted={() => props.onDeleted?.()}
+      />
       <IntervalDialog
         companyId={companyId}
         copy={copy}
