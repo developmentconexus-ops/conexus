@@ -16,7 +16,7 @@ The card (in `docs/steps/` or its pull request) and the unit. It reads its unit'
 rows and section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
+unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
 `typescript-best-practices` before writing code; [bring](references/bring.md) for brought code,
 [bug](references/bug.md) for a defect.
 
@@ -36,7 +36,7 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
    [T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
-6. Run the result for real: the server, the route, the migration on a disposable database, and a
+6. Run the result: the server, the route, the migration on a disposable database, and a
    changed screen looked at per [T23](../../../docs/guides/testing.md), through a
    verification skill when one exists ([screen](references/screen.md)). A state fix reruns
    A→B→A, a layout fix the card's failure states, and a new
@@ -44,7 +44,7 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
    `npm run quality`, hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
-7. One commit for the unit, kept on merge; the tests and proofs its section names are green
+7. One commit for the unit, kept on merge; `npm run check`, the tests and proofs its section names are green
    locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
