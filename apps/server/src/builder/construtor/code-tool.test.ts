@@ -116,6 +116,10 @@ test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado,
   )
   assert.match(String(stored[0]?.module), /total/)
   assert.deepEqual(leftOnMachine(on), [], 'the fixtures left the machine with the folder')
+  const { control } = on.hub.assistantMachines
+  assert.equal(control.names.length, 1, 'the turn started the machine')
+  await new Promise((done) => setTimeout(done, 200))
+  assert.equal(control.stops, 0, 'the turn’s end does not stop the machine (21)')
 })
 
 test('um esquema de mais de 2.000 caracteres é gravado inteiro: o corte do comando é só do que o modelo lê', async (t) => {
