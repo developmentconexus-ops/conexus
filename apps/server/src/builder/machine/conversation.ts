@@ -90,11 +90,6 @@ type Deps = ConversationMachine & {
    * undefined outside a conversation the user serves, which gets no machine.
    */
   marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
-  /**
-   * How long a machine runs before the provider pauses it (E2B's own idle lifecycle, as the
-   * Mastra Factory's `idleTimeoutMinutes`); absent, the kit's default.
-   */
-  idleMs?: number
   /** The media types `read_file` hands the model as media; absent, Mastra's default (a PDF included). */
   readMedia?: readonly string[]
 }
@@ -258,7 +253,6 @@ class Machines implements ConversationMachines {
       id: name,
       ...(found === undefined ? {} : { foundAs: found }),
       allowOut: this.deps.hosts,
-      ...(this.deps.idleMs === undefined ? {} : { idleMs: this.deps.idleMs }),
       metadata: {
         ...mark,
         ...marks,

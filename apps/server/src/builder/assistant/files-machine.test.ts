@@ -132,7 +132,6 @@ test('o turno seguinte reusa a máquina que o anterior deixou ligada', async (t)
   assert.equal(endOf(await on.say('Obrigado')), 'complete')
   assert.equal(control.names.length, 1, 'one start for the three turns')
   assert.equal(control.stops, 0, 'no turn ended by stopping the machine')
-  assert.deepEqual(control.idleMs, [5 * 60 * 1000], 'the provider pauses it after 5 idle minutes')
   assert.equal(placed(on.work).length, 1, 'the file was written once')
 })
 

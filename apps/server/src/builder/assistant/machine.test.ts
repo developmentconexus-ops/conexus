@@ -135,7 +135,6 @@ test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor
   assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
   assert.equal(endOf(await say('Escreva b.txt')), 'complete')
   assert.equal(control.names.length, 1, 'the next question found it running')
-  assert.deepEqual(control.idleMs, [5 * 60 * 1000], 'E2B pauses it after 5 idle minutes')
 })
 
 test('a leitura grande: o arquivo guarda a resposta inteira e um código do mesmo turno lê a linha que o corte deixou fora; o modelo recebe só o corte (18)', async (t) => {

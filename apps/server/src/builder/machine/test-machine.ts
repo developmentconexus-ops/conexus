@@ -63,8 +63,6 @@ export type Control = {
   names: string[]
   /** The hosts each machine started may reach. */
   allowOut: (readonly string[])[]
-  /** The run time each machine was asked for before the provider pauses it; `undefined`, the kit's default. */
-  idleMs: (number | undefined)[]
   /** The mark each machine started carries. */
   marks: Record<string, string>[]
   /** The latest machine started, to watch its status as a test needs. */
@@ -103,7 +101,6 @@ export function newControl(): Control {
     restartBeforeNextCommand: false,
     names: [],
     allowOut: [],
-    idleMs: [],
     marks: [],
     sandbox: undefined,
     stops: 0,
@@ -168,7 +165,6 @@ export function localKit(folder: string, control: Control): KitFactory {
       control.names.push(options.id)
       control.marks.push(options.metadata)
       control.allowOut.push(options.allowOut)
-      control.idleMs.push(options.idleMs)
       control.sandbox = sandbox
       control.restart = () =>
         Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))

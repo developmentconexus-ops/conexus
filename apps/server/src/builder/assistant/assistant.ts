@@ -64,12 +64,6 @@ import { typedSearch } from './typed-search.ts'
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
-/**
- * Minutes of an idle machine before E2B pauses it: the Mastra Factory's default (`idleTimeoutMinutes`
- * 5, `workspaces/e2b/src/factory-sandbox.ts`). The turn's end stops nothing.
- */
-const IDLE_MS = 5 * 60 * 1000
-
 const MODE = 'conversa'
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
 const SEARCH_TOOLS = 'search_tools'
@@ -287,7 +281,6 @@ export function createAssistant(deps: Deps) {
       otherTemplate: 'resume',
       marksOf: machineMarks(scopeOf),
       readMedia: READ_MEDIA,
-      idleMs: IDLE_MS,
     },
     deps.machineTuning,
   )
