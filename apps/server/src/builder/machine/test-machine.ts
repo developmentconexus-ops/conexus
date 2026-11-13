@@ -12,7 +12,6 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
@@ -25,6 +24,7 @@ import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
+import { slowly } from './test-machine-slow.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
 export function restoreRefused(): Promise<Buffer> {
@@ -63,6 +63,8 @@ export type Control = {
   names: string[]
   /** The hosts each machine started may reach. */
   allowOut: (readonly string[])[]
+  /** The run time each machine was asked for before the provider pauses it; `undefined`, the kit's default. */
+  idleMs: (number | undefined)[]
   /** The mark each machine started carries. */
   marks: Record<string, string>[]
   /** The latest machine started, to watch its status as a test needs. */
@@ -101,6 +103,7 @@ export function newControl(): Control {
     restartBeforeNextCommand: false,
     names: [],
     allowOut: [],
+    idleMs: [],
     marks: [],
     sandbox: undefined,
     stops: 0,
@@ -165,6 +168,7 @@ export function localKit(folder: string, control: Control): KitFactory {
       control.names.push(options.id)
       control.marks.push(options.metadata)
       control.allowOut.push(options.allowOut)
+      control.idleMs.push(options.idleMs)
       control.sandbox = sandbox
       control.restart = () =>
         Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
@@ -202,19 +206,6 @@ export function localKit(folder: string, control: Control): KitFactory {
 /** Whether the provider holds the machine of this name: found by a turn before, and not killed. */
 function heldBy(control: Control, name: string): boolean {
   return control.discoverable.includes(name) && !control.killed
-}
-
-/** A file sent in 64 KiB chunks, `chunkMs` apart, until the read's signal aborts it. */
-async function* slowly(control: Control, path: string, signal: AbortSignal | undefined) {
-  for await (const chunk of createReadStream(path, { highWaterMark: 65_536 })) {
-    try {
-      await sleep(control.chunkMs, undefined, { signal })
-    } catch (error) {
-      control.readsCut += 1
-      throw error
-    }
-    yield chunk
-  }
 }
 
 /**

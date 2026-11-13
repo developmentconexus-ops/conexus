@@ -31,7 +31,7 @@ function nameOf(url: string) {
   return `conexus-${INSTALLATION}-${url.slice(url.lastIndexOf('/') + 1)}`
 }
 
-test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o nome da conversa; o turno seguinte acha a mesma com os arquivos; outra conversa tem outra; sem app e sem Git; só o npm e o PyPI (17)', async (t) => {
+test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o nome da conversa; o turno seguinte reusa a mesma, ainda ligada, com os arquivos; outra conversa tem outra; sem app e sem Git; só o npm e o PyPI (17)', async (t) => {
   const on = await assisting(t, [
     [write('a.txt', 'um')],
     [said('Escrevi.')],
@@ -50,12 +50,9 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
   const first = await talking(t, on.hub, on.ana, home)
   assert.equal(endOf(await first.say('Escreva a.txt')), 'complete')
   assert.deepEqual(control.names, [nameOf(home)])
-  control.discoverable.push(nameOf(home))
 
   assert.equal(endOf(await first.say('Leia a.txt')), 'complete')
-  assert.deepEqual(control.names, [nameOf(home), nameOf(home)], 'the same machine, by its name')
-  assert.deepEqual(control.attached, [nameOf(home)], 'the second turn found it, not made it')
-  assert.equal(control.networkClosed, 1, 'a machine found again has its network narrowed again')
+  assert.deepEqual(control.names, [nameOf(home)], 'the second turn reused the running machine')
   assert.ok(
     on.calls.some((call) => call.texts.at(-1)?.includes('um')),
     'the file the first turn wrote is there',
@@ -123,20 +120,22 @@ test('a leitura na máquina: a máquina que não liga deixa a leitura responder 
   assert.match(String(answered), /MACHINE_UNAVAILABLE/)
 })
 
-test('o fim da máquina: o turno que acaba para a máquina, e o seguinte a acorda (21)', async (t) => {
+test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor a pausa ao ficar parada (21)', async (t) => {
   const on = await assisting(t, [
     [write('a.txt', 'um')],
     [said('Escrevi.')],
     [write('b.txt', 'dois')],
+    [said('Escrevi de novo.')],
   ])
   const { control } = on.hub.assistantMachines
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva a.txt')), 'complete')
   await new Promise((done) => setTimeout(done, 200))
-  assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
+  assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
   assert.equal(endOf(await say('Escreva b.txt')), 'complete')
-  assert.equal(control.names.length, 2, 'the next question woke it')
+  assert.equal(control.names.length, 1, 'the next question found it running')
+  assert.deepEqual(control.idleMs, [5 * 60 * 1000], 'E2B pauses it after 5 idle minutes')
 })
 
 test('a leitura grande: o arquivo guarda a resposta inteira e um código do mesmo turno lê a linha que o corte deixou fora; o modelo recebe só o corte (18)', async (t) => {

@@ -95,6 +95,8 @@ type KitOptions = {
   allowOut: readonly string[]
   metadata: Record<string, string>
   onStart: SandboxStartHook
+  /** How long the machine runs before the provider pauses it; absent, the provider's long default of the Builder's. */
+  idleMs?: number
   /** Where a command starts when it names no folder: the app folder. */
   workingDirectory: string
   /** What the model is told of the machine, in place of the provider's own words. */

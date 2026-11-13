@@ -40,6 +40,22 @@ test('máquina: o kit de uma máquina achada pelo id só a religa, e nunca faz o
   assert.equal(options.reattach, 'required')
 })
 
+test('máquina: o kit do E2B pausa pelo tempo parado que quem monta pede, e sem pedido pela hora do Builder', async () => {
+  const config = testConfig(await unreachableDatabaseUrl())
+  function timeoutOf(idleMs?: number) {
+    const kit = createE2bKit(config)({
+      id: `conexus-hub-${CONVERSATION}`,
+      metadata: {},
+      onStart: () => undefined,
+      ...(idleMs === undefined ? {} : { idleMs }),
+      ...IN_APP,
+    })
+    return Reflect.get(kit.sandbox, '_constructorOptions').timeout
+  }
+  assert.equal(timeoutOf(5 * 60 * 1000), 5 * 60 * 1000)
+  assert.equal(timeoutOf(), 60 * 60 * 1000)
+})
+
 test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, atrás da lista de domínios, pausando ao vencer, com a marca da conversa, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-hub-${CONVERSATION}`,

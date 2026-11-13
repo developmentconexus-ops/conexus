@@ -1,6 +1,3 @@
-import { createHash } from 'node:crypto'
-import type { MastraDBMessage } from '@mastra/core/memory'
-import { parseMemoryRequestContext } from '@mastra/core/memory'
 import type {
   FileUploadErrorCode,
   FileUploadTripwireMetadata,
@@ -11,7 +8,6 @@ import type {
 } from '@mastra/core/processors'
 import { FILE_UPLOAD_ERROR_CODES, FileUploadProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Memory } from '@mastra/memory'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -101,165 +97,17 @@ function stamped(messages: readonly Stored[]): void {
   }
 }
 
-/** The request context's mark that the conversation's machine was made new: the files it held are gone. */
-const RECYCLED = 'conexus-machine-recycled'
-
-/** Where a file was placed on the machine, kept on the person's file part so a later turn needs no call to confirm it. */
-const Placed = z.object({
-  hash: z.string(),
-  size: z.number(),
-  relativePath: z.string(),
-  path: z.string(),
-})
-type Placed = z.infer<typeof Placed>
-
-const PlacedPart = z.object({
-  type: z.literal('file'),
-  providerMetadata: z.object({ conexus: z.object({ placed: Placed }) }).loose(),
-})
-
-/** Mastra's `UploadCache` (`file-upload.ts` `cacheOf`): internal, so a test breaks it if a version changes its shape. */
-const Cache = z.object({
-  paths: z.instanceof(Map<string, string>),
-  digests: z.instanceof(Map<string | Uint8Array, { hash: string; size: number }>),
-})
-
-/** A part's provider metadata with the place of its file set, or, with none, taken off; the rest stays. */
-function withPlaced(metadata: unknown, placed: Placed | undefined): Record<string, unknown> {
-  const { conexus, ...rest } = z.record(z.string(), z.unknown()).catch({}).parse(metadata)
-  const { placed: _gone, ...others } = z.record(z.string(), z.unknown()).catch({}).parse(conexus)
-  const next = placed === undefined ? others : { ...others, placed }
-  return { ...rest, ...(Object.keys(next).length === 0 ? {} : { conexus: next }) }
-}
-
-function bytesOf(data: Uint8Array | string): Buffer {
-  return typeof data === 'string'
-    ? Buffer.from(data.replace(DATA_URL, ''), 'base64')
-    : Buffer.from(data)
-}
-
-function hashOf(bytes: Buffer): string {
-  return createHash('sha256').update(bytes).digest('hex')
-}
-
-/** The place of each file the history's parts say was placed, by content hash. */
-function placedIn(messageList: ProcessLLMRequestArgs['messageList']): Map<string, Placed> {
-  const found = new Map<string, Placed>()
-  for (const message of messageList?.get.all.db() ?? []) {
-    for (const part of message.content.parts ?? []) {
-      const placed = PlacedPart.safeParse(part)
-      if (placed.success) {
-        const record = placed.data.providerMetadata.conexus.placed
-        found.set(record.hash, record)
-      }
-    }
-  }
-  return found
-}
-
-/** Fills the native's cache with the files of earlier turns, so it writes their notes and calls no machine for them. */
-function seeded(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>): void {
-  const known = placedIn(args.messageList)
-  if (known.size === 0) return
-  const cache = {
-    paths: new Map<string, string>(),
-    digests: new Map<string | Uint8Array, { hash: string; size: number }>(),
-  }
-  for (const message of args.prompt) {
-    if (message.role !== 'user' || !Array.isArray(message.content)) continue
-    for (const part of message.content) {
-      const file = PromptFile.safeParse(part)
-      if (!file.success || !isInline(file.data.data) || !filter({ mimeType: file.data.mediaType }))
-        continue
-      const record = known.get(hashOf(bytesOf(file.data.data)))
-      if (record === undefined) continue
-      cache.digests.set(file.data.data, { hash: record.hash, size: record.size })
-      cache.paths.set(record.relativePath, record.path)
-    }
-  }
-  args.state.uploads = cache
-}
-
-/**
- * Writes where the native placed each file of the person on its part. The memory saves the new
- * message with it; a message of the history, which the native placed again after a new machine, is
- * saved here.
- */
-async function recorded(
-  args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>,
-  memory: Memory,
-  recycled: boolean,
-): Promise<void> {
-  const cache = Cache.safeParse(args.state.uploads)
-  if (!cache.success) return
-  const fresh = new Set((args.messageList?.get.input.db() ?? []).map((message) => message.id))
-  const changed: MastraDBMessage[] = []
-  for (const message of args.messageList?.get.all.db() ?? []) {
-    if (message.role === 'assistant') continue
-    let touched = false
-    for (const part of message.content.parts ?? []) {
-      const file = StoredFile.safeParse(part)
-      if (!file.success || !filter({ mimeType: file.data.mimeType })) continue
-      const known = PlacedPart.safeParse(part)
-      if (known.success && !recycled) continue
-      const bytes = bytesOf(file.data.data)
-      const hash = hashOf(bytes)
-      const place = [...cache.data.paths].find(([relativePath]) => relativePath.includes(hash))
-      if (place === undefined) continue
-      // After a new machine the stored copy lost its record in `forgetPlaced`; this copy still has it.
-      Object.assign(part, {
-        providerMetadata: withPlaced(part.providerMetadata, {
-          hash,
-          size: bytes.length,
-          relativePath: place[0],
-          path: place[1],
-        }),
-      })
-      touched = true
-    }
-    if (touched && !fresh.has(message.id)) changed.push(message)
-  }
-  if (changed.length > 0) await memory.saveMessages({ messages: changed })
-}
-
-/**
- * The conversation's machine was made new, so the files it held are gone: tells the run, and takes
- * the place off every stored file part so the next turn lets the native write them again.
- */
-export async function forgetPlaced(memory: Memory, requestContext: RequestContext): Promise<void> {
-  requestContext.set(RECYCLED, true)
-  const context = parseMemoryRequestContext(requestContext)
-  const threadId = context?.thread?.id
-  if (threadId === undefined) return
-  const { messages } = await memory.recall({
-    threadId,
-    ...(context?.resourceId === undefined ? {} : { resourceId: context.resourceId }),
-    perPage: false,
-  })
-  const held = messages.filter((message) =>
-    message.content.parts?.some((part) => PlacedPart.safeParse(part).success),
-  )
-  for (const message of held) {
-    for (const part of message.content.parts ?? []) {
-      if (!PlacedPart.safeParse(part).success) continue
-      Object.assign(part, { providerMetadata: withPlaced(part.providerMetadata, undefined) })
-    }
-  }
-  if (held.length > 0) await memory.saveMessages({ messages: held })
-}
-
 /**
  * Mastra's `FileUploadProcessor`, built for each model call with that step's machine
  * (`ProcessLLMRequestArgs.workspace`), since the Hub picks the machine per request; a call without a
- * machine with a sandbox changes nothing. Turns the native stop on a file of this turn it could not
- * write into the machine's failure, so the screen says MACHINE_UNAVAILABLE; a file of the history
- * the machine cannot take is the native note, and the turn goes on.
+ * machine with a sandbox changes nothing. Turns the native stop on a file it could not write into
+ * the machine's failure, so the screen says MACHINE_UNAVAILABLE; a file only in the history, with
+ * the machine out, becomes the native note and the turn goes on.
  * Stamps the note's estimate on the new file parts that are not images (`processInput`,
  * `processInputStep`; criterion 10).
  */
 export function machineUploads(deps: {
   log: FailureLog
-  memory: Memory
 }): InputProcessor<FileUploadTripwireMetadata> {
   return {
     id: 'file-upload',
@@ -290,25 +138,7 @@ export function machineUploads(deps: {
         }
         return args.abort(reason, options)
       }
-      // A file placed in an earlier turn is a note again with no call to the machine: its place is
-      // seeded in Mastra's cache of the request, which the native reads before it asks for the machine.
-      // A machine made new since (`recycled`) holds none of them: the cache starts empty and the
-      // native places them again.
-      const { requestContext, state } = args
-      const recycled = requestContext?.get(RECYCLED) === true
-      if (recycled) delete state.uploads
-      else seeded(args)
-      let result = await native.processLLMRequest({ ...args, abort })
-      // The machine was made new while the native placed a file of this turn (`boot` marked it): the
-      // seeded files of the history are not on it. The cache starts empty and the native places all.
-      const renewed = !recycled && requestContext?.get(RECYCLED) === true
-      if (renewed) {
-        delete state.uploads
-        result = await native.processLLMRequest({ ...args, abort })
-      }
-      requestContext?.delete(RECYCLED)
-      await recorded(args, deps.memory, recycled || renewed)
-      return result
+      return native.processLLMRequest({ ...args, abort })
     },
   }
 }

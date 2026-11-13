@@ -19,7 +19,7 @@ export function createE2bKit(config: Credentials): KitFactory {
       id: options.id,
       template: config.machineTemplate,
       apiKey: config.e2bApiKey.reveal(),
-      timeout: TIMEOUT_MS,
+      timeout: options.idleMs ?? TIMEOUT_MS,
       lifecycle: { onTimeout: 'pause' },
       // A machine found by its id is reattached or refused, never replaced by a new one.
       ...(options.foundAs === undefined
