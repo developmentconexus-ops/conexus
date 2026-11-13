@@ -80,6 +80,13 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
   etapa do fluxo, e esta etapa constrói as abas que já tinha. A terceira pergunta do estudo (se a
   entrada escreve um mapa da empresa) espera a entrada conversada, que volta depois do Brain e da
   Ontologia.
+- Ao desenho v3: "Cara, eu acho que ficou bom as telas. Só que eu criei uma tela inicial em que
+  mostra todos os conhecimentos, igual a tela que eu te mostrei do Mastra, Studio sobre o
+  Knowledge. [...] tipo um Obsidian, sabe? [...] Era vários tipos de documento, bolinhas e por
+  setor". Depois: "Lembrando, eu não quero que você copie o que eles têm, eu quero que você seja
+  criativo", a pergunta de como a Ontologia entra no desenho ("Não sei se é agora que a gente já vai
+  pensar nisso, né? Mas se for depois, a gente espera.") e a licença para olhar bibliotecas como o
+  three.js. As telas v3 ficam como estão; o Mapa é a tela que abre Conhecimento e leva a elas.
 - Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
   empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
   especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
@@ -157,8 +164,14 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
   área, e, na página de um conceito, as páginas que o citam. Entra com o cartão do Brain, que leva
   para ela a memória da empresa de Configurações. Esta etapa constrói a metade "Como a empresa é"
   (as abas Conceitos, Para revisar e Histórico, e o lugar do fluxo, vazio), e a página abre nela.
-- **O grafo da página Conhecimento** ("2. Em faixas"): a página não se organiza por ele ("2. A");
-  quando entrar, abre em faixas, e esta etapa não o desenha.
+- **O Mapa**, a tela que abre Conhecimento, se você decidir como recomendamos abaixo. É um grafo de
+  tudo o que a empresa é e sabe. As coisas da Ontologia ficam entre as áreas que as citam, e as
+  páginas do Brain ficam dentro da ilha da sua área, cada tipo com o seu ponto. As ligações levam o
+  "um" e o "muitos". O primeiro toque abre a lente da coisa (os papéis, as ligações, os códigos e o
+  lugar do fluxo, vazio), e o segundo abre a tela v3 dela. O Mapa chega inteiro com o cartão do
+  Brain, que traz as páginas e as áreas. Esta etapa não o constrói e não muda nada do que já
+  constrói: a página continua abrindo em "Como a empresa é". O desenho está em "Os desenhos de
+  caixas", e ele substitui o "2. Em faixas".
 - **A saúde da Ontologia** (a prova refeita todo dia, o aviso no Início): a etapa 4 da lista. Esta
   etapa grava as provas que ela vai ler, e já tira dos agentes um campo cuja coluna uma prova nova viu
   mudar de tipo.
@@ -194,9 +207,28 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 **O que mudou nesta versão** (2026-11-12, as suas respostas "1. A" e "2. A" ao estudo do
 alinhamento): a página Conhecimento ganha as duas metades e o lugar do fluxo, vazio (o roteiro, o
 passo 1); o fluxo, que fica de fora, se lê também do histórico do sistema; o cartão não espera mais o
-da entrada conversada, só a política de dados pessoais.
+da entrada conversada, só a política de dados pessoais. Depois, ao desenho v3: o Mapa, a tela que
+abre Conhecimento, desenhado aqui e construído com o Brain, e as duas decisões acima.
 
-**As decisões suas nesta etapa.** Nenhuma nova. As escolhas técnicas convergem nas referências e
+**As decisões suas nesta etapa.** Duas, as duas sobre o Mapa que você pediu; nenhuma muda o que
+esta etapa constrói.
+
+- **Qual desenho.** A, Linhas: cada área é uma linha de metrô. B, Arquipélago: cada área é uma
+  ilha, e as coisas ficam entre as ilhas. C, Roda: uma fatia por área, com as ligações em feixes
+  pelo meio. Recomendamos a B. Ela é o seu "tipo um Obsidian", desenhado com mais cuidado, e diz uma
+  verdade dos dados: uma coisa não tem setor, só a página tem área, e por isso a coisa fica onde as
+  áreas que a citam se encontram. A A sugere uma ordem entre as páginas que os dados não têm. A C
+  embola quando uma área passa de dez páginas.
+- **Quando ele se constrói.** Recomendamos com o cartão do Brain, porque sem as páginas e as áreas
+  o Mapa desta etapa seria cinco pontos soltos. A alternativa é uma U6 nesta etapa, só com a camada
+  das coisas: ela mostra a lente da Ontologia mais cedo, mas soma, pela nossa estimativa, umas 600 linhas a uma etapa que já
+  passou do orçamento.
+
+O three.js ficou de fora, com a sua licença para olhar. Um grafo em 3D esconde pontos atrás de pontos
+e cruza os rótulos, e fica pior no celular. Com dezenas de pontos, o desenho plano lê melhor. Um modo
+"ver em 3D" pode vir depois, se você quiser o espetáculo.
+
+As escolhas técnicas convergem nas referências e
 estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
 conceito ligado) é proposta do Builder, provada pelos dados dela, e decisão de quem cuida dos
 conceitos, nunca uma regra do produto.
@@ -569,6 +601,56 @@ produto antigo não tem estas telas: nenhuma captura a seguir. O protótipo v3 c
 (fora do repositório) desenha também a metade "O que a empresa sabe" e as duas junções, para o
 cartão do Brain e para a etapa do fluxo.
 
+O Mapa, desenhado aqui e construído com o cartão do Brain (a decisão do fundador, acima), no
+desenho B. A 1280 px, Conhecimento ganha um terceiro segmento, **Mapa**, antes das duas metades, e
+abre nele. As duas camadas ligam e desligam, e uma área escolhida põe as outras em cinza:
+
+```
+┌ Conhecimento ────────────────────────────────────────────────────────────────────────┐
+│ [ Mapa ] [ Como a empresa é ] [ O que a empresa sabe ]                               │
+│ Camadas (● Como a empresa é 9) (▪ O que a empresa sabe 10)   Áreas (Comercial) …     │
+│                                                                     [ − ][ + ][ ⛶ ]  │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│   COMERCIAL                                                  FINANCEIRO              │
+│   ▪ Comissão do representante    ● Representante             ▪ Prazo de pagamento    │
+│   ▪ Bonificação não é venda      1│        ○ Cliente          ▪ Cobrança de atraso   │
+│   ▪ Tabela de preços             N⋔                 ● Título a receber               │
+│                               ● Documento ────⋔──── ● Parceiro                       │
+│   EMPRESA                     ◇ Origem do item           ┊           ESTOQUE         │
+│   ▪ Como vendemos                              ○ Fornecedor       ▪ Quando comprar   │
+│   ▪ Regras de cadastro             ● Produto ────⋔──── ● Saldo   ▪ Inventário mensal │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│ Legenda  ● coisa  ○ papel  ◇ junção  ▪ página, na cor da área  ─⋔ o "muitos"         │
+│          ╌ a página cita a coisa   ◌ o fluxo: chega com a etapa O fluxo da empresa   │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+O primeiro toque numa coisa abre a lente e o painel; o segundo, ou **Abrir em Como a empresa é**,
+abre a página v3 da coisa. Numa página, o segundo toque abre a página em "O que a empresa sabe":
+
+```
+┌ Mapa · Documento escolhido ──────────────────────────────────────────────────────────┐
+│                 ● Representante              │ Documento                             │
+│                 1│ atende                    │ Coisa · lido de Sankhya · cabeçalhos  │
+│    ╭╌╌ fluxo: na etapa O fluxo da empresa ╌╮ │ 9 campos · 2 códigos · 1.240 linhas   │
+│    ┆            N⋔        cobra um          ┆ │ Ligações e papéis                    │
+│    ┆          ◉ Documento ──⋔── ● Título    ┆ │   é de um Parceiro            N : 1  │
+│    ┆   é de um │N                           ┆ │   ligado por Representante    N : 1  │
+│    ╰╌╌╌╌╌╌╌╌╌╌╌⋔╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯ │   veio de um Origem do item   1 : N   │
+│  (100 · Venda de balcão)  1┼ ● Parceiro      │ Códigos  100 Venda de balcão          │
+│  (101 · Pedido do repr.)   ◇ Origem do item  │          101 Pedido do representante  │
+│             (o resto do mapa recua)          │ O que a empresa sabe: 3 páginas       │
+│                                              │ ┆ Fluxo. Ainda sem fluxo.          ┆  │
+│                                              │ [ Abrir em Como a empresa é ]         │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+A 390 px, o mapa fica em retrato, com as áreas empilhadas, a barra de camadas e áreas vira uma
+linha que rola, a legenda fica fechada num botão, e o painel desce sob o mapa. Os códigos ficam só no
+painel. Com movimento reduzido o mapa chega parado. Sem ele, o conhecimento nasce no centro e se
+espalha até as suas áreas, com a câmera parada. O protótipo do Mapa e as suas capturas estão fora do
+repositório, ao lado do v3.
+
 ## A tabela de falhas
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
@@ -601,6 +683,7 @@ cartão do Brain e para a etapa do fluxo.
 | A primeira revisão do dono e a permissão L1 | U4 | `apps/server/src/hub/identity/roles.ts` (`:24-31`, `companyMemory: ['manage']`) | Palantir aprova pelo "editor or owner of the underlying resource" | a regra na rota, uma checagem de papel | nativo (`createAccessControl` do Better Auth, `organization-best-practices`) | — | "D Aprovado", "L1" | —  |
 | A decisão com a revisão esperada | U4 | `copies/accept.ts:22-45` (a linha travada, a chave de tentativa) | código C38, C65 | a chave única da revisão serializa | nativo | — | não precisa | `apps/server/src/hub/ontology/decide.ts`  |
 | As telas | U4 | o menu da esquerda (`apps/web/src/routes/_app/companies/$companyId/route.tsx:43-96`) e a página de Cópias (`copies.index.tsx`, `copies.$copyId.tsx`); a memória da empresa (`apps/web/src/builder/assistant/company-memory.tsx`) | Palantir, a revisão de propostas da Ontologia; o Mastra Studio, a tela Knowledge (a página própria, que o fundador mandou); os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento, o v3 com as duas metades | uma página no menu, em duas metades: lista, página do conceito, fila de revisão, histórico | embrulhado | os desenhos do estudo do exemplo, seção 8.1, e o protótipo da página Conhecimento (fora do repositório) | "Q1 / R1", "1. Aprovado", "2. A"; os textos, no fim | `apps/web/src/hub/ontology/`, `apps/web/src/routes/_app/companies/$companyId/knowledge.index.tsx`, `knowledge.$concept.tsx`  |
+| O Mapa (desenhado aqui, construído com o cartão do Brain) | nenhuma | nenhum grafo no `apps/web`; o `mermaid` 11.17.2 já traz `d3-force` 3.0.1 em `node_modules` | Mastra Studio 1.82, Knowledge (`mastra-1.82@6e8dfcb8`): o layout com d3-force, semente em espiral e 300 passos (`packages/playground-ui/src/domains/knowledge/lib/layout.ts:42-112`), a forma a partir do foco (`lib/graphShape.ts:104`), a legenda do que está na tela (`components/KnowledgePageGraph.tsx:587-812`), o primeiro toque escolhe e o segundo abre (`:1424-1430`), o React Flow sem arrastar nem ligar (`:1511-1540`), `@xyflow/react` ^12.12.0 e `d3-force` ^3.0.0 (`packages/playground-ui/package.json:206`, `:226`); Obsidian e Quartz, os grafos de notas; Palantir Vertex, o painel do objeto clicado | um grafo de forças: as coisas da Ontologia entre as áreas que as citam e as páginas na ilha da sua área; a lente da coisa escolhida; o foco numa área; a entrada do centro para as áreas | nativo (`d3-force` para o layout e `@xyflow/react` para mover, aproximar, clicar e o teclado, como o Studio); entram em `docs/reference/stack.md` com o cartão do Brain; o three.js, o sigma.js e o cosmos.gl, avaliados e deixados de fora | o protótipo do Mapa ao lado do v3 (fora do repositório), com o `d3-force` 3.0.1 embutido, as capturas em claro e escuro, a 1280 e a 390 px, e a entrada quadro a quadro | o pedido do Mapa ao desenho v3 (2026-11-12); o desenho e quando se constrói, as duas decisões da página | o cartão do Brain |
 | Ferramentas geradas dos metadados | U5 | `apps/server/src/builder/connectors/connector-tools.ts:312-332` | `twenty@b76d0217` `engine/core-modules/tool-provider/providers/database-tool.provider.ts:193-218` (descritor com `executionRef`), `tool-provider/services/tool-registry.service.ts:340-367` (refaz o catálogo de quem chama), `record-crud/json-schemas/record-properties.json-schema.ts:121-125` (enum dos códigos) | descritores como dado, filtrados pelo papel, executor genérico | embrulhado: duas ferramentas fixas sobre os descritores (o trio `get_tool_catalog`, `learn_tools`, `execute_tool` do Twenty com o catálogo no contexto); o alvo é a porta do conector | o protótipo do estudo do exemplo (fora do repositório, `@mastra/core` 1.82.0 e `drizzle-orm` 1.0.0-rc.4): o descritor do Pedido e a SQL compilada pela porta do dublê | `"A1 B1 C1"` (0064) | `apps/server/src/builder/ontology/tools.ts`, `apps/server/src/hub/ontology/descriptors.ts`  |
 | O recorte do SDK | U5 (a forma), apps (depois) | `packages/app/src/connectors.ts:40-64` (`defineConnectors`, `connectorsOf`) | `osdk-ts@2e21feec` `packages/e2e.generated.catchall/src/generatedNoCheck/ontology/objects/Employee.ts:18-213`; Palantir `ontology-sdk/overview/` ("based on just the subset") | só o recorte que o leitor alcança | nativo (a forma); a biblioteca de consulta fica de fora | — | `M` (os apps, depois) | —  |
 
