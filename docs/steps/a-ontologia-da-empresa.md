@@ -97,6 +97,13 @@ Todas de 2026-11-12. As anteriores, que este cartão herda, estão nas decisões
   decidiu). Depois do estudo do Knowledge, sobre como uma área existe: "Fecho na A" (cada área é um
   espaço do Knowledge, filho da empresa, ligado à equipe do Better Auth, com o acesso pelas regras do
   Knowledge). A cor ficou sem resposta: começa pela regra do Studio.
+- Ao protótipo do Mapa, em 2026-11-13: "aprovo layout" e, sobre a página, "Mapa aprovo" (a aprovação
+  da página). Às diferenças entre o Studio e este cartão: "1. b 2. a 3. b 4. a 5. a 6. b", e o "6. b"
+  se lê como o sexto item apresentado, o 7 (você foi avisado desta leitura). Aplicadas: o círculo da
+  área traz o nome da equipe e o endereço vai para a dica do ponto (1); a cor segue a regra do Studio
+  (2); as coisas da Ontologia ficam na raiz do espaço `ontologia:`, já pontos na entrada (3); o um e
+  o muitos, os papéis e os códigos só na lente (4); um ponto só para toda página (5); a citação a uma
+  página que quem lê não abre vira "uma página que você não pode abrir", sem o endereço (7).
 - Ao estudo do metamodelo: "1. Sim" (adotar o metamodelo como a referência oficial). Sobre o caso da
   empresa dele: "Quero etnender melhor, porque não quero criar uma solução fraca pensando
   especificamente nesse caso de exemplo que é minha empresa" e "Mas porque estamos vendo esse caso
@@ -177,10 +184,12 @@ empresa de teste e na sua, diz o que viu e aprova os textos das telas.
 - **O Mapa**, a tela que abre Conhecimento, construído com o cartão do Brain ("2 Okay"), no desenho
   do Knowledge do Mastra Studio (a sua escolha de 2026-11-13). É um grafo de tudo o que a empresa é e
   sabe: uma página no centro, as vizinhas em volta como círculos com nome, em anéis, e as mais longe
-  como pontos na cor do seu ramo. A cor segue o ramo e muda quando o centro muda, como no Studio;
-  fixar uma cor por área é decisão sua, se a troca incomodar. Cada área é um espaço do Knowledge,
-  filho da empresa e ligado à equipe do Better Auth ("Fecho na A"): quem não é da área não a vê no
-  Mapa, na busca nem no Assistente. As coisas da Ontologia entram pelas suas páginas no Brain. O
+  como pontos, todos iguais, na cor do seu ramo. A cor segue o ramo e muda quando o centro muda,
+  como no Studio ("2. a"); fixar uma cor por área é decisão sua, se a troca incomodar. Cada área é um espaço do Knowledge,
+  filho da empresa e ligado à equipe do Better Auth ("Fecho na A"), e o círculo dela traz o nome da
+  equipe, com o endereço na dica do ponto: quem não é da área não a vê no Mapa, na busca nem no
+  Assistente. As coisas da Ontologia entram pelas suas páginas no Brain, na raiz do espaço
+  `ontologia:`, e já são pontos na entrada. O
   primeiro toque põe no centro e, numa coisa, abre a lente (os papéis, as ligações com o "um" e o
   "muitos", os códigos e o lugar do fluxo, vazio); o segundo abre a tela v3 dela. Grafo e Página, a
   legenda do que está na tela e o zoom vêm do Studio. O Mapa chega inteiro com o cartão do Brain,
@@ -231,8 +240,8 @@ equipe ("Fecho na A").
 
 **As decisões suas nesta etapa.** Uma, sobre o Mapa, e ela não muda o que esta etapa constrói.
 
-- **A cor.** Em aberto: o protótipo começa pela regra do Studio (a cor do ramo, que muda com o
-  centro); se a troca incomodar, você decide fixar uma cor por área.
+- **A cor.** Decidida: a regra do Studio (a cor do ramo, que muda com o centro; "2. a"). Se a troca
+  incomodar depois, fixar uma cor por área é decisão sua.
 - **Qual desenho: decidido**, o Knowledge do Mastra Studio (2026-11-13), depois de você recusar as
   direções A, B e C ("tudo ficou muito básico, sem design"). Ele guarda a verdade dos dados: uma
   coisa não tem setor, só a página tem área.
@@ -240,8 +249,9 @@ equipe ("Fecho na A").
   páginas e as áreas, o Mapa desta etapa seria cinco pontos soltos, e esta etapa não ganha uma U6.
 
 Onde o Studio e este cartão não batem (o nome da área no círculo, as coisas dois níveis abaixo do
-centro, o tipo de cada página, a citação a uma página que quem lê não abre) está listado ao lado do
-protótipo, fora do repositório; nenhum ponto muda esta etapa, e o cartão do Brain os leva a você.
+centro, o tipo de cada página, a citação a uma página que quem lê não abre), você respondeu
+("1. b 2. a 3. b 4. a 5. a 6. b") e as respostas estão aplicadas neste cartão; nenhuma muda o que
+esta etapa constrói, e o cartão do Brain as leva.
 
 As escolhas técnicas convergem nas referências e
 estão no metamodelo e na tabela de referência. A forma de cada papel numa empresa (recorte ou
@@ -346,7 +356,7 @@ leitor a pede.
 | 16 | Um código volta ao agente como `{ value, meaning }` | igual | U5 |
 | 17 | O catálogo é a interseção e é refeito na execução | igual | U5 |
 | 18 | A permissão L1 | igual na regra; **corrigida** no lugar: a rota responde `mayApprove`, como a memória da empresa, sem campo novo em `CompanyMay` | U4 |
-| 19 | O caminho no Brain: `conceitos/<chave>` e `conceitos/<chave>/<campo>` | igual | o cartão do Brain (a antiga U6) |
+| 19 | O caminho no Brain: `<chave>` e `<chave>/<campo>`, na raiz do espaço `ontologia:`, sem a página "Conceitos" ("3. b") | igual | o cartão do Brain (a antiga U6) |
 | 20 | O número da revisão fora do corpo da página | igual | o cartão do Brain (a antiga U6) |
 | 21 | O link sempre com área; nome solto recusado; nunca `read: 'all'` | igual (issue 984) | o cartão do Brain (a antiga U6) |
 | 22 | Quem é avisado quando um significado muda | fica para a saúde; a projeção no Brain grava os links que a tornam possível | o cartão do Brain |
@@ -648,7 +658,7 @@ página abre a vista Página:
 
 ```
 ┌ Mapa · Documento escolhido ──────────────────────────────────────────────────────────┐
-│ ┌ Legenda ──────────────┐   · ·        ( MÃE  Conceitos )    ·  │ Documento            │
+│ ┌ Legenda ──────────────┐   · ·        ( MÃE Ontologia )    ·  │ Documento            │
 │ │ → saem da escolhida   │     ↖              │             ↗    │ Como a empresa é ·   │
 │ │ ╌> chegam nela        │        ↖           ▼          ↗       │ coisa                │
 │ │ ━> mãe da escolhida   │   ( Como vendemos )╌╌> (( Documento ))│ [ Abrir em Como a    │
@@ -664,10 +674,11 @@ página abre a vista Página:
 ```
 
 Cada pessoa vê só o que lê. Um membro da Comercial não tem o Financeiro no Mapa, na busca nem no
-Assistente; numa página dele que cita uma do Financeiro, a citação aparece como o Knowledge a mostra a
-quem não a abre: o endereço tracejado, sem link. Uma mudança que o Assistente propõe numa página
-aparece nela com o antes e o depois, à espera de quem edita a área. Os códigos ficam só na lente,
-nunca como rótulo no mapa.
+Assistente; numa página dele que cita uma do Financeiro, a citação fica no texto e aparece como
+"uma página que você não pode abrir", sem o endereço ("7. b"); as contagens, os links e a busca
+continuam sem a página, como no Mastra. Uma mudança que o Assistente propõe numa página
+aparece nela com o antes e o depois, à espera de quem edita a área. O um e o muitos, os papéis e os códigos
+ficam só na lente ("4. a"), nunca no mapa, onde toda página é um ponto só ("5. a").
 
 A 390 px, como no Studio: a busca, depois **Árvore**, **Grafo** e **Página**; a legenda no alto do
 grafo; a lente desce sob o grafo; a página v3 troca a tabela de campos por linhas "Nome · tipo". Com
@@ -1446,13 +1457,13 @@ dos critérios ficam os de quando o cartão nasceu.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 24 | U6 | Cada revisão aprovada grava as páginas `ontologia:<empresa>#conceitos/<chave>` e `…/<campo>` dos campos com códigos, com campos, códigos e ligações e nenhum valor | `apps/server/src/builder/assistant/company-memory-ontology.test.ts`, "as páginas" | must |
+| 24 | U6 | Cada revisão aprovada grava as páginas `ontologia:<empresa>#<chave>` e `…/<campo>` dos campos com códigos, com campos, códigos e ligações e nenhum valor | `apps/server/src/builder/assistant/company-memory-ontology.test.ts`, "as páginas" | must |
 | 25 | U6 | Mudar só um significado deixa as outras páginas `unchanged`, e o corpo de nenhuma página leva o número da revisão | `company-memory-ontology.test.ts`, "só o que mudou" | must |
 | 26 | U6 | A página `ontologia:` da A não aparece na busca nem na leitura da B, e os agentes não escrevem nela | `company-memory-ontology.test.ts`, "isolamento" | must |
 | 27 | U6 | Todo link que o servidor escreve leva área e caminho; com "Devolução" só na empresa B, nenhuma gravação do servidor nem da pessoa na empresa A deixa um `[[Devolução]]` sem área chegar ao armazenamento, e nenhuma leitura de A ou de B mostra aresta entre as duas; nenhum código chama a leitura com `read: 'all'` | `company-memory-ontology.test.ts`, "a issue 984" | must |
 | 28 | U6 | Uma página escrita por pessoa com `[[…]]` sem área, ou com a área de outra empresa, é recusada com `COMPANY_MEMORY_LINK_INVALID` | `apps/server/src/builder/assistant/company-memory-routes.test.ts`, "o link" | must |
 | 29 | U6 | Se a gravação das páginas falha depois da aprovação, a revisão fica, a falha vai ao log, e o comando `reproject-ontology` (ou a aprovação seguinte) completa as páginas | `company-memory-ontology.test.ts`, "refazer" | must |
-| 33b | antiga U6 | A página de um papel no Brain começa por "Papel de [[ontologia:<empresa>#conceitos/parceiro]]", com a área e o caminho | `company-memory-ontology.test.ts`, "o papel" | must |
+| 33b | antiga U6 | A página de um papel no Brain começa por "Papel de [[ontologia:<empresa>#parceiro]]", com a área e o caminho | `company-memory-ontology.test.ts`, "o papel" | must |
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
@@ -1494,15 +1505,14 @@ export function ontologyPages(active: ActiveSet, companyId: CompanyId): readonly
 export function projectOntology(deps: { memory: CompanyMemory; ontology: Pick<Ontology, 'activeOf'>; log: FailureLog }): OntologyProjection
 ```
 
-Os caminhos: `conceitos/<chave>` (nome: o do conceito) e `conceitos/<chave>/<campo>` (nome: "<Conceito>:
+Os caminhos, na raiz do espaço `ontologia:` ("3. b"): `<chave>` (nome: o do conceito) e `<chave>/<campo>` (nome: "<Conceito>:
 <Campo>") para cada campo `CODE`. O corpo: o nome, a descrição, os sinônimos, a chave e o título, os
 campos com o tipo e a descrição, o link da lista de códigos, as ligações; nunca a consulta, a prova,
-o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#conceitos/…]]`. A página de
-um papel começa por "Papel de [[ontologia:<companyId>#conceitos/<base>]]." e não repete as ligações
+o número da revisão nem um valor. Todo link é `[[ontologia:<companyId>#…]]`. A página de
+um papel começa por "Papel de [[ontologia:<companyId>#<base>]]." e não repete as ligações
 da base. Um conceito
-aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`. O `upsertPage` cria a página pai `conceitos` com o nome da chave
-(`host-writes.d.ts:14-15`); a projeção a grava antes, com o nome "Conceitos" e um corpo que lista os
-conceitos. Cada página leva `description` curta (o nome e o plural), que a busca usa.
+aposentado fica com "Aposentado em <data>: use <outro>.". O autor de cada gravação é `host`. Não há página "Conceitos": as coisas são
+filhas diretas do espaço, e o mapa as mostra como pontos já na entrada. Cada página leva `description` curta (o nome e o plural), que a busca usa.
 
 A área, em `SCOPES`: `'ontologia:$orgId': { access: [{ principal: 'self', role: 'viewer' }] }`;
 `companyScopes` acrescenta `ontologia:<companyId>`. As áreas da empresa ("Fecho na A") entram no
