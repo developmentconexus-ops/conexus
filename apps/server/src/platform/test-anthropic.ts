@@ -109,7 +109,6 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     texts,
     media: [],
     thinking: null,
-    betas: null,
     cached: [],
     toolUses: [],
     toolResults: [],

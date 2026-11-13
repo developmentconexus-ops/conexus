@@ -29,7 +29,7 @@ export type Sent = {
   /** The extended thinking the call asked for, as the Messages API body names it, or none. */
   thinking: Thinking | null
   /** The `anthropic-beta` header the call carried, or none. */
-  betas: string | null
+  betas?: string | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
   cached: Cached[]
   /** The `tool_use` parts of the conversation's messages, in order, with the `input` each went out with. */
