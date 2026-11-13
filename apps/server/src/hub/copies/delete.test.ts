@@ -4,7 +4,6 @@ import { test } from 'node:test'
 import type { CopyId, ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import { COPY_WORKFLOW } from '../../builder/copy-clock/public.ts'
 import { call, codeOf, personOn, plantCompany, post } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { copiesOn, holdPage, TEST_APP_LOGIN_KEY } from './test-copies.ts'
@@ -166,7 +165,7 @@ test('rodada em andamento: ela termina INTERRUPTED e não deixa nada', async (t)
 })
 
 function schedulesOf(on: CopiesOn) {
-  return on.hub.mastra.schedules.list({ workflowId: COPY_WORKFLOW })
+  return on.hub.mastra.schedules.list()
 }
 
 test('agenda: sai com a cópia, pausada ou não', async (t) => {

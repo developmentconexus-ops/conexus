@@ -4,7 +4,6 @@ import { test } from 'node:test'
 import type { CopyId, ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword, ConnectionId } from '@conexus/hub-api'
 import pg from 'pg'
-import { COPY_WORKFLOW } from '../../builder/copy-clock/public.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { copiesOn, TEST_APP_LOGIN_KEY } from '../copies/test-copies.ts'
 import { copiesUrl, enabled, firstEnded } from '../copies/test-routes.ts'
@@ -104,7 +103,7 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
 })
 
 function schedulesOf(on: CopiesOn) {
-  return on.hub.mastra.schedules.list({ workflowId: COPY_WORKFLOW })
+  return on.hub.mastra.schedules.list()
 }
 
 test('desligar tira a agenda da cópia que acaba, pausada também', async (t) => {
