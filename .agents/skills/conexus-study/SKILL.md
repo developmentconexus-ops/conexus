@@ -38,7 +38,7 @@ for brought code, the entry sheets and the old code at its frozen commit.
 5. **Then the repository.** Read [architecture](../../../docs/architecture.md), the subject's
    decision records, the guide [`docs/index.md`](../../../docs/index.md) names, and the `next-card`
    issues. Test the premise of each decision and boundaries entry the step leans on, `main`'s
-   included, against its row at the installed version; a failed one goes to the founder, quoting
+   included, against its row at the installed version; a failed one goes to its decider (delivery L6), quoting
    the decision.
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how

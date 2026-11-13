@@ -44,7 +44,7 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    will do at the end and only his real decisions. An amendment rewrites the page, listing what
    changed; his words go to the ledger.
 7a. Write each unit's section as its build spec ([card](references/card.md)): its builder reads
-   only the card's top tables and that section, so the section lists its reference table rows and
+   only its unit's top-table rows and that section, so the section lists its reference table rows and
    holds every file, reference line, shape, step and recording the unit needs. One Opus session per
    unit when the step does not fit one context; never the session that will build it.
 8. Give the card, at the exact commit the founder will approve, to a reader of another model who

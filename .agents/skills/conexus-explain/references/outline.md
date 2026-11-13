@@ -26,7 +26,7 @@ Evidence (commands, CI links) goes at the end of the page.
 ## The founder's checklist
 
 1. Do part 1 and the use script match?
-2. Does each remendo row of part 4 have a reason he accepts? It is where most errors are.
+2. Does each remendo row of part 4 name its decider, its reason and how to undo it? It is where most errors are.
 3. Does each criterion have a test with an observed result? May what is "not proved" go to
    production?
 4. Does each divergence from the card leave what the person sees unchanged? If not, it returns to

@@ -1,6 +1,6 @@
-# Review the health of the CI at a step's closing
+# Review the health of the CI each week
 
-Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that did not build the step. The job is to find why the CI got slower and to propose root-cause fixes; the founder decides between the root now and a bridge with a date to leave.
+Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that built none of the week's steps. The job is to find why the CI got slower and to propose root-cause fixes; firstmate decides between the root now and a bridge with a date to leave (delivery L6).
 
 ## Measure
 
@@ -17,4 +17,4 @@ Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that did n
 
 ## Report
 
-One report to the founder, outside the repository: the medians against the last review, each jump with its cause and its measured gain, and the fixes in two lists, root now and bridge with a date. Close the issue "CI acima do orçamento" when the median of the largest shard is back under 85%.
+One report to firstmate, outside the repository: the medians against the last review, each jump with its cause and its measured gain, and the fixes in two lists, root now and bridge with a date. Close the issue "CI acima do orçamento" when the median of the largest shard is back under 85%.
