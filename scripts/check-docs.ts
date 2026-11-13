@@ -222,6 +222,9 @@ function checkRetired(file: string, text: string) {
   }
 }
 
+/** A draft pull request holds the next card beside the one in construction (delivery L5); CI passes its state. */
+const draft = process.env.CONEXUS_DRAFT === 'true'
+
 function checkSteps() {
   const cards = files.filter(
     (file) => file.startsWith('docs/steps/') && STEP_CARD.test(file.slice('docs/steps/'.length)),
@@ -232,7 +235,7 @@ function checkSteps() {
     byTrack.set(track, [...(byTrack.get(track) ?? []), card])
   }
   for (const [track, list] of byTrack) {
-    if (list.length > 1) fail('second-card', 'docs/steps', `${track}: ${list.join(', ')}`)
+    if (list.length > 1 && !draft) fail('second-card', 'docs/steps', `${track}: ${list.join(', ')}`)
   }
 }
 

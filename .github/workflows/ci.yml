@@ -1,9 +1,11 @@
 name: CI
 
-# A label re-runs the pull request, so the `all-removals` label runs every removal proof on it.
+# A label re-runs the pull request only where it gates something: `all-removals` (every removal proof)
+# and `emergência` (the method freeze). Any other label ends in the `scope` job and cancels nothing.
+# `ready_for_review` re-runs the card check a draft pull request held back (delivery L5).
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   push:
     branches: [main]
 
@@ -11,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}${{ github.event.action == 'labeled' && !contains(fromJSON('["all-removals","emergência"]'), github.event.label.name) && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 # Every test file is a new Node process that compiles the server's 1963 modules again: the cache
@@ -20,7 +22,44 @@ env:
   NODE_COMPILE_CACHE: /tmp/node-compile-cache
 
 jobs:
+  # What this run is for. `relevant`: false for a label that gates nothing. `code`: false for a pull
+  # request that changes only documents (docs/, *.md, .agents/), which the suites cannot read, so
+  # they end as skipped; `check` (documents, approval, method freeze, lint) runs on every relevant run.
+  scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.scope.outputs.relevant }}
+      code: ${{ steps.scope.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          relevant=true
+          code=true
+          if [ "$EVENT" = pull_request ]; then
+            if [ "$ACTION" = labeled ] && [ "$LABEL" != all-removals ] && [ "$LABEL" != "emergência" ]; then
+              relevant=false
+            fi
+            if ! git diff --name-only "origin/${BASE_REF}...HEAD" | grep -qvE '^(docs/|\.agents/)|\.md$'; then
+              code=false
+            fi
+          fi
+          echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Run: relevant=$relevant, code=$code" >> "$GITHUB_STEP_SUMMARY"
+
   check:
+    needs: scope
+    if: needs.scope.outputs.relevant == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -39,6 +78,9 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+        env:
+          # A draft pull request may sit beside the track's card in construction (delivery L5).
+          CONEXUS_DRAFT: ${{ github.event.pull_request.draft }}
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
@@ -95,6 +137,8 @@ jobs:
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
   scripts:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -107,6 +151,8 @@ jobs:
   # How many shards the `server` job needs: scripts/server-shards.ts --count divides the recorded
   # seconds of every server test file (with each file's start) by half the job's timeout, rounded up.
   server-plan:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -168,6 +214,8 @@ jobs:
           TEST_SHARD: ${{ matrix.shard }}/${{ needs.server-plan.outputs.total }}
 
   web:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -183,6 +231,8 @@ jobs:
   # The sweep of every screen (apps/web/sweep.test.ts) is most of the browser time and grows with
   # each screen, so it runs beside `web`, not in it.
   web-sweep:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -194,6 +244,8 @@ jobs:
       - run: npm run test:sweep -w @conexus/web
 
   packages:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -240,6 +292,8 @@ jobs:
         run: npm run test:docs -w @conexus/connectors
 
   e2e:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -271,6 +325,8 @@ jobs:
   # (scripts/removals-select.ts). Every push to main, and a pull request carrying the `all-removals`
   # label, proves all of them.
   removals-plan:
+    needs: scope
+    if: needs.scope.outputs.code == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -340,7 +396,8 @@ jobs:
         run: npm run removals -- ${BASE:+--base "$BASE"} --shard "$SHARD/$TOTAL"
 
   image:
-    if: github.event_name == 'pull_request'
+    needs: scope
+    if: needs.scope.outputs.code == 'true' && github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -388,8 +445,8 @@ jobs:
         run: npm run test:image
 
   ci:
-    if: always()
-    needs: [check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
+    if: always() && needs.scope.outputs.relevant == 'true'
+    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -400,11 +457,16 @@ jobs:
     steps:
       - name: Every job must have succeeded
         env:
+          CODE: ${{ needs.scope.outputs.code }}
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
           RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
+            # A document-only pull request skips the suites (scope), which is a pass.
+            if [ "$result" = skipped ] && [ "$CODE" = false ]; then
+              continue
+            fi
             if [ "$result" != "success" ]; then
               echo "a job ended as $result"
               exit 1

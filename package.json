@@ -12,6 +12,7 @@
   },
   "scripts": {
     "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run quality -- origin/main --fast && npm run boundaries && npm run approval -- --base origin/main && npm run method-freeze -- --base origin/main --labels '' && npm run migrations -- --base origin/main",
     "lint": "biome check .",
     "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && tsc -p tests/apps/tsconfig.json && npm run typecheck --workspaces --if-present",
     "deps": "depcruise . --config .dependency-cruiser.cjs",

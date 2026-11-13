@@ -34,7 +34,7 @@ merge.
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A
   card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
-  approved, and enters when the track's step closes. [check-docs]
+  approved, and enters when the track's step closes; the check stays red on it only when the pull request is not a draft. [check-docs]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
   2026-10-27: "3. Sim". [CI]

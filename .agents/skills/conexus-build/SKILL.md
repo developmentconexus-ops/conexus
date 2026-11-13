@@ -13,7 +13,7 @@ the session that wrote the card.
 ## What it receives
 
 The card (in `docs/steps/` or its pull request) and the unit. It reads the card's top
-tables and its unit's section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
+tables and its unit's section, its spec. A ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
@@ -44,21 +44,19 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
    `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
    C73 decide what leaves.
-7. One commit for the unit, kept on merge; the tests and proofs its section names are green
+7. `npm run check` before every push. One commit for the unit, kept on merge; the tests and proofs its section names are green
    locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
-The commit and a report: what I ran, saw and did not prove; each table row with its file; the line
+The commit and a report: what I ran, saw, did not prove; each table row with its file; the line
 counts of each brought part; every criterion with its test, none red; each declared file outside
 the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots seen, by state,
-width and theme, or "no screen touched". A failing criterion is never handed to the review:
-fix it, or stop.
+width and theme, or "no screen touched". A failing criterion is never handed to the review: fix it, or stop.
 
 ## Stop and ask
 
-- A decision is missing, a criterion cannot turn green without changing the card, or a guide and
-  the card contradict each other.
+- A decision is missing, a criterion cannot turn green without changing the card, or a guide and the card contradict.
 - The unit changes what a person sees, or the scope, beyond the card ([delivery
   L7](../../../docs/guides/delivery.md)).
 - The unit outgrows the card's estimate.
@@ -67,7 +65,7 @@ fix it, or stop.
 - A test needs a library shape no recording holds: stop; record it with `npm run record`, load it with
   `nativeRecording` (T26), never type it.
 
-Stop means no more code: report evidence and question.
+Stop: no more code; report evidence and question.
 
 ## When it closes
 
