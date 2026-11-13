@@ -188,3 +188,21 @@ test('a assinatura ChatGPT oferece os modelos OpenAI do registro, sem leitor de 
   assert.ok(models.includes('openai/gpt-5.2'), models.join())
   assert.deepEqual(codex.elsewhere, [])
 })
+
+test('numa conta de chave, o modelo de pensamento adaptativo manda block_binding drop_block e o beta que o libera', async (t) => {
+  const { hub, ana, base, conversations, anthropic } = await company(t)
+  const opus = 'anthropic/claude-opus-5-5'
+  await hub.test.asOwner(`delete from builder.model_account`)
+  await connect(hub, ana, `${base}/model-accounts`, 'anthropic', 'company', ['claude-opus-5-5'])
+  const chosen = await call(hub, ana, 'PUT', `${base}/default-model`, {
+    model: opus,
+    effort: 'max',
+  })
+  assert.equal(chosen.statusCode, 200, chosen.body)
+  const events = await asked(t, { hub, person: ana, conversations })
+  assert.equal(endOf(events.events), 'complete')
+  const [turn] = anthropic.sent.filter((each) => each.stream)
+  assert.equal(turn?.thinking?.type, 'adaptive')
+  assert.deepEqual(turn?.thinking?.block_binding, { prefix_mismatch_behavior: 'drop_block' })
+  assert.match(turn?.betas ?? '', /thinking-binding-controls-2026-08-01/)
+})
