@@ -1344,8 +1344,8 @@
   {
     "id": "ci-no-secret",
     "file": ".github/workflows/ci.yml",
-    "find": "GH_TOKEN: ${{ github.token }}",
-    "replace": "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "find": "      GH_TOKEN: ${{ github.token }}\n    steps:",
+    "replace": "      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n    steps:",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
@@ -1355,8 +1355,8 @@
   {
     "id": "ci-no-secret-by-index",
     "file": ".github/workflows/ci.yml",
-    "find": "GH_TOKEN: ${{ github.token }}",
-    "replace": "GH_TOKEN: ${{ secrets['GITHUB_TOKEN'] }}",
+    "find": "      GH_TOKEN: ${{ github.token }}\n    steps:",
+    "replace": "      GH_TOKEN: ${{ secrets['GITHUB_TOKEN'] }}\n    steps:",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",

@@ -9,10 +9,12 @@ type Step = {
   name?: string
   uses?: string
   run?: string
+  if?: string
   with?: Record<string, unknown>
   env?: Record<string, string>
 }
 type Job = {
+  env?: Record<string, string>
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
@@ -201,7 +203,7 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
 })
 
 test('o agregador espera todos os trabalhos de código da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
-  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci' && name !== 'processo')
+  const others = Object.keys(ci.jobs).filter((name) => !['ci', 'processo', 'flaky'].includes(name))
   assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
   const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
   for (const name of others.filter((name) => name !== 'removals')) {
@@ -270,4 +272,55 @@ test('uma execução do main nunca cancela nem substitui a anterior, nem a que e
     concurrency.group,
     "ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}",
   )
+})
+
+test('só o job flaky escreve issues, e nenhum job de teste leva token nem permissão de escrita', () => {
+  const writers = Object.entries(ci.jobs).filter(([, job]) => job.permissions?.issues === 'write')
+  assert.deepEqual(
+    writers.map(([name]) => name),
+    ['flaky'],
+  )
+  const flaky = ci.jobs.flaky
+  assert.deepEqual(flaky?.permissions, { contents: 'read', issues: 'write' })
+  assert.deepEqual([flaky?.needs].flat().toSorted(), [
+    'e2e',
+    'packages',
+    'scripts',
+    'server',
+    'web',
+    'web-sweep',
+  ])
+  const runs = flaky?.steps.map((step) => step.run ?? '').join('\n') ?? ''
+  assert.doesNotMatch(runs, /npm (test|run (test|e2e))/)
+  assert.match(runs, /node scripts\/flaky-issues\.ts flaky-records/)
+  const install = flaky?.steps.find((step) => step.uses === './.github/actions/install')
+  assert.equal(install?.with?.['ignore-scripts'], 'true')
+  const download = flaky?.steps.find((step) => step.uses?.startsWith('actions/download-artifact@'))
+  assert.equal(download?.with?.['merge-multiple'], undefined)
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    assert.ok(!JSON.stringify(ci.jobs[name]).includes('github.token'), name)
+  }
+})
+
+test('cada job de teste com segunda rodada sobe os registros dos instáveis, mesmo depois de falhar', () => {
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    const steps = ci.jobs[name]?.steps ?? []
+    const run = steps.find((step) => step.env?.CONEXUS_FLAKY_FILE !== undefined)
+    assert.ok(run, name)
+    const upload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))
+    assert.match(String(upload?.with?.name), /^flaky-/, name)
+    assert.equal(upload?.if, '${{ !cancelled() }}', name)
+  }
+})
+
+test('a ação de instalação pula os scripts de ciclo de vida só quando o job pede, e instala com eles nos outros', () => {
+  const action = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
+  const step = action.runs.steps.find((step: Step) => step.run?.includes('npm ci'))
+  assert.equal(action.inputs['ignore-scripts'].default, 'false')
+  assert.match(step.run, /= true \]; then npm ci --ignore-scripts; else npm ci; fi/)
+  assert.equal(step.env.IGNORE_SCRIPTS, ['${{', 'inputs.ignore-scripts', '}}'].join(' '))
+  for (const [name, job] of Object.entries(ci.jobs)) {
+    const asks = job.steps.some((step) => step.with?.['ignore-scripts'] !== undefined)
+    assert.equal(asks, name === 'flaky', name)
+  }
 })
