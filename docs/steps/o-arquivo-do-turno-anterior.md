@@ -37,6 +37,10 @@ turno segue com a nota `[File not uploaded]` do Mastra em vez de falhar.
    mensagem sai sem "Ligando a máquina…".
 6. No Builder, num Projeto, peça uma mudança no app e, logo depois, outra na mesma conversa. A segunda
    mensagem sai sem "Ligando a máquina…" e a versão da primeira já foi salva.
+7. Conferência ao vivo de turnos longos: peça ao Builder e ao Construtor um trabalho que passe de 5
+   minutos desde que a máquina ligou (gerar e conferir um app; uma ferramenta com vários testes). O
+   turno termina inteiro: se o E2B pausar a máquina no meio, a próxima ferramenta a religa sozinha e o
+   trabalho não salvo continua lá.
 
 **O que você faz, e quando.** No começo: aprova esta página. No fim: faz o roteiro.
 
