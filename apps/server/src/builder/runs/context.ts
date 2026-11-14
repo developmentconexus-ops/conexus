@@ -63,13 +63,13 @@ export type Outcome =
       code: 'SAVE_REFUSED' | 'GIT_RESTORE_NEEDED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE'
     }
 
+/** What a round of the end of the turn is about: tasks left open, or the check of the app. */
+export type RoundKind = 'open' | 'check'
+
 /**
  * A settled turn: its outcome, how many times the end of the turn judged it, and whether its
  * version reached the app, when it was sent.
  */
-/** What a round of the end of the turn is about: tasks left open, or the check of the app. */
-export type RoundKind = 'open' | 'check'
-
 export type Settled = Outcome & { rounds: number; preview?: PreviewData }
 
 /** Where Mastra keeps each workspace it resolved, to stop them all at its shutdown. */

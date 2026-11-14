@@ -74,10 +74,11 @@ const FINISHED: Verdict = { score: 1, reason: 'Conexus has nothing more to ask o
  * What the end of the turn is worth (cards of steps 14, U4, and 14.2, U3): a turn that ends (no
  * tool call, an empty one included) with tasks open scores 0 with them; one that changed the app
  * folder is checked, and a failure scores 0 with the report. Mastra gives the reason to the model
- * and calls it again (`isTaskComplete`). Each counts to `CHECK_LIMITS.checks` on its own, so open tasks never use up the check's turns, and the last lets the
- * turn end, its version kept as unfinished or not built. A machine that could not check costs no
- * attempt; the turn ends, its version kept as unchecked. Each round is told to the run, for the
- * turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
+ * and calls it again (`isTaskComplete`). Open-task ends and checks each count up to
+ * `CHECK_LIMITS.checks` on their own, so open tasks never use up the check's turns, and the last
+ * lets the turn end, its version kept as unfinished or not built. A machine that could not check
+ * costs no attempt; the turn ends, its version kept as unchecked. Each round is told to the run,
+ * for the turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
  */
 async function judge(
   deps: { runs: Runs; storage: MastraCompositeStore },
