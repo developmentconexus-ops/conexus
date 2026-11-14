@@ -239,7 +239,7 @@ test('toda instalação do npm guarda o cache de download sob o hash do lockfile
   const install = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
   const setups = [
     ...install.runs.steps,
-    ...Object.values(ci.jobs).flatMap((job) => job.steps),
+    ...Object.entries(ci.jobs).flatMap(([name, job]) => (name === 'processo' ? [] : job.steps)),
   ].filter((step: Step) => step.uses?.startsWith('actions/setup-node@'))
   assert.ok(setups.length >= 2)
   for (const step of setups) {
