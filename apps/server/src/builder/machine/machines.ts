@@ -1,10 +1,10 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
-import type { Conflicts, Kit } from './kit.ts'
+import type { Kit } from './kit.ts'
 import {
   ALLOWED_HOSTS,
   APP_FOLDER,
@@ -15,77 +15,23 @@ import {
   readCapped,
 } from './kit.ts'
 import { packIn } from './pack.ts'
-import type { Machines, MachinesDeps, Phase } from './port.ts'
+import type { Machines, MachinesDeps } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
-import type { SandboxExec } from './sandbox-filesystem/shell.ts'
 import type { Collected } from './scripts.ts'
 import {
   changedScript,
   collected,
   collectScript,
   conflictsOf,
+  markersScript,
   outFile,
   savedScript,
   seedFile,
   seedScript,
   syncScript,
 } from './scripts.ts'
-
-type Session = {
-  companyId: CompanyId
-  projectId: ProjectId
-  conversationId: ConversationId
-  onPhase: (phase: Phase) => void
-  /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
-  kit: Kit
-  /** How many times the machine started in this turn: a second `created` is a machine that died. */
-  starts: number
-  /** The turn needed the machine: a session outlives its turns, so `ready` alone no longer says it. */
-  used: boolean
-  /** The machine died mid-turn, and what the turn wrote on it is gone. */
-  lost: boolean
-  /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
-  conflicts: Conflicts
-  ready: Promise<Kit> | undefined
-}
-
-/** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */
-function restoreFailure(error: unknown): Failure | undefined {
-  for (let at = error; at instanceof Error; at = at.cause) {
-    if (at instanceof Failure && at.code === 'GIT_RESTORE_NEEDED') return at
-  }
-  return undefined
-}
-
-export async function within<T>(work: Promise<T>, ms: number): Promise<T> {
-  const budget = AbortSignal.timeout(ms)
-  return Promise.race([
-    work,
-    new Promise<never>((_, reject) =>
-      budget.addEventListener('abort', () => reject(new Error('machine start timed out'))),
-    ),
-  ])
-}
-
-/**
- * The file tools' view of a machine: its commands, which wake it first (`ensure`), and its own file
- * API. The Builder's machines and the Assistant's both build their `SandboxFilesystem` on it.
- */
-export function execIn(kit: Kit, ensure: () => Promise<unknown>): SandboxExec {
-  const { sandbox } = kit
-  return {
-    id: sandbox.id,
-    get filesystem() {
-      return sandbox.filesystem
-    },
-    executeCommand: async (command, args, options) => {
-      await ensure()
-      const result = await sandbox.executeCommand?.(command, args, options)
-      if (result === undefined) throw new Error('the machine cannot run commands')
-      return result
-    },
-  }
-}
+import type { Session } from './session.ts'
+import { execIn, restoreFailure, within } from './session.ts'
 
 class BuilderMachines implements Machines {
   private readonly deps: MachinesDeps
@@ -119,8 +65,13 @@ class BuilderMachines implements Machines {
     return this.deps.api.kill(conversationId)
   }
 
-  /** Wakes or creates the machine, once per workspace; the seed ran in `onStart` before this returns. */
-  private ensure(session: Session): Promise<Kit> {
+  /**
+   * Wakes or creates the machine, once per session; the seed ran in `onStart` before this returns.
+   * The first use of a turn on a machine already up reads again which files hold conflict markers:
+   * the warning the model reads is of the tree as the turn finds it, not of the start that told it.
+   */
+  private async ensure(session: Session): Promise<Kit> {
+    const resumed = !session.used && session.ready !== undefined
     session.used = true
     if (session.ready === undefined) {
       const ready = this.boot(session)
@@ -130,7 +81,18 @@ class BuilderMachines implements Machines {
         if (session.ready === ready) session.ready = undefined
       })
     }
-    return session.ready
+    if (resumed) session.refreshing = this.refresh(session, session.ready)
+    const kit = await session.ready
+    await session.refreshing
+    return kit
+  }
+
+  /** A start that ran meanwhile (a resume) told the conflicts itself, and its word is the later one. */
+  private async refresh(session: Session, ready: Promise<Kit>) {
+    const kit = await ready
+    const result = await this.run(kit, markersScript(this.workdir))
+    if (result.exitCode !== 0) throw new Error(`markers not read: ${result.stderr.slice(-500)}`)
+    if (session.starts === 0) session.conflicts = conflictsOf(result.stdout)
   }
 
   /**
@@ -250,7 +212,14 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ companyId, projectId, conversationId, onPhase, kit },
-      ...{ starts: 0, used: false, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
+      ...{
+        starts: 0,
+        used: false,
+        refreshing: undefined,
+        lost: false,
+        conflicts: NO_CONFLICTS,
+        ready: undefined,
+      },
     }
     return session
   }
@@ -261,7 +230,10 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId) ?? this.open(input, name)
     // The machine belongs to the conversation, as the Factory keeps one per session: a turn takes
     // it over with its own phases, and the work it counts starts from nothing.
-    Object.assign(session, { companyId, projectId, onPhase, starts: 0, used: false, lost: false })
+    Object.assign(session, {
+      ...{ companyId, projectId, onPhase },
+      ...{ starts: 0, used: false, refreshing: undefined, lost: false },
+    })
     this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,

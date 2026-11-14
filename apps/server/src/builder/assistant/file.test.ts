@@ -5,7 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf, hubBeside } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
@@ -111,7 +111,7 @@ test('o arquivo: de outra pessoa, do membro ou de conversa que não existe, CONV
   assert.equal((await call(on.hub, on.ana, 'GET', `${on.url}/files`)).statusCode, 400)
 })
 
-test('o arquivo: acima do teto, FILE_TOO_LARGE; a que não liga, MACHINE_UNAVAILABLE (20)', async (t) => {
+test('o arquivo: acima do teto, FILE_TOO_LARGE; a máquina perdida, FILE_GONE; a que não liga, MACHINE_UNAVAILABLE (20)', async (t) => {
   const big = await assisting(t, [
     [
       tool('mastra_workspace_execute_command', {
@@ -126,6 +126,13 @@ test('o arquivo: acima do teto, FILE_TOO_LARGE; a que não liga, MACHINE_UNAVAIL
   const tooLarge = await call(big.hub, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
   assert.deepEqual([tooLarge.statusCode, codeOf(tooLarge)], [413, 'FILE_TOO_LARGE'])
   assert.equal(titleOf(tooLarge), 'O arquivo passa do tamanho que o Hub entrega.')
+  // A Hub restarted: it holds no session, and the provider holds no machine of the conversation.
+  const beside = await hubBeside(t, big.hub)
+  const gone = await call(beside, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
+  assert.deepEqual([gone.statusCode, codeOf(gone)], [410, 'FILE_GONE'])
+  assert.equal(titleOf(gone), 'A máquina desta conversa não guarda mais este arquivo.')
+  assert.equal(beside.assistantMachines.control.names.length, 0, 'none was started (B2)')
+
   // A conversation whose machine has not started yet, and the provider does not answer.
   const down = await assisting(t, [[said('Oi.')]])
   const downUrl = await created(down.hub, down.ana, down.assistant, { connections: [] })

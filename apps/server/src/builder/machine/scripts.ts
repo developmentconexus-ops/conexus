@@ -57,6 +57,11 @@ function markedFiles(): string[] {
   ]
 }
 
+/** The files of the app folder that hold conflict markers now, printed as a start prints them. */
+export function markersScript(workdir: string): string {
+  return ['set -e', `cd ${quoted(workdir)}`, ...markedFiles()].join('\n')
+}
+
 /** What the commit of work the Hub has not saved says, on the machine where it is brought onto `main`. */
 const UNSAVED_MESSAGE = 'Conexus Builder (not saved)'
 

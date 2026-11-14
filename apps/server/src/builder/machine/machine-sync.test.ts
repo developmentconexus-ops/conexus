@@ -44,7 +44,7 @@ test('máquina: o turno cortado e outra conversa mudaram a mesma linha: as marca
   assert.doesNotMatch(told, /could not merge/)
 })
 
-test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e o arquivo que o Builder resolveu sai do aviso', async (t) => {
+test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e o arquivo que o Builder resolveu sai do aviso, com a máquina ainda ligada', async (t) => {
   const { open, machines, repository, control, folder } = await world(t)
   await (await open()).filesystem?.writeFile('s.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 's.ts', 'outra\n')
@@ -65,13 +65,11 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   assert.equal(await noticed.filesystem?.exists('s.ts'), true)
   assert.doesNotMatch(await noticed.getInstructionsAsync(), /could not merge/)
   await save()
-  pausedByE2b(control)
   const next = await open()
   assert.match(String(await next.filesystem?.readFile('s.ts', { encoding: 'utf-8' })), /^<<<<<<< /)
   assert.match(await next.getInstructionsAsync(), /resolve them before any other change: `s\.ts`\./)
   await next.filesystem?.writeFile('s.ts', 'outra\nmeio\n')
   await save()
-  pausedByE2b(control)
   const resolved = await open()
   assert.equal(await resolved.filesystem?.readFile('s.ts', { encoding: 'utf-8' }), 'outra\nmeio\n')
   assert.doesNotMatch(await resolved.getInstructionsAsync(), /conflict/)
@@ -178,10 +176,9 @@ test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por 
 })
 
 test('máquina: o trabalho não guardado que cabe no que o Hub aceita não leva aviso de tamanho', async (t) => {
-  const { open, machines, control } = await world(t)
+  const { open, machines } = await world(t)
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   await machines.release(CONVERSATION)
-  pausedByE2b(control)
   const next = await open()
   assert.equal(await next.filesystem?.exists('cut.ts'), true)
   assert.doesNotMatch(await next.getInstructionsAsync(), /too large|too many files/)

@@ -11,9 +11,9 @@ import { MAX_BYTES } from '../git/public.ts'
 import { locate } from './conversation-file.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
 import { MARK, readCapped } from './kit.ts'
-import { execIn, within } from './machines.ts'
 import type { Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
+import { execIn, within } from './session.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
