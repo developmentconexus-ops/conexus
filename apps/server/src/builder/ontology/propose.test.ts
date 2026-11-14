@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { PADARIA_SOL_MATRIZ, salesDatabase } from '@conexus/connectors'
-import { connecting } from '../../builder/conversation/test-connecting.ts'
-import { endOf, messagesOf } from '../../builder/conversation/test-conversation.ts'
-import { tool } from '../../builder/conversation/test-questions.ts'
+import { countedOnDouble, DOUBLE_SELLERS } from '../../hub/connectors/test-connections.ts'
+import { connecting } from '../conversation/test-connecting.ts'
+import { endOf, messagesOf } from '../conversation/test-conversation.ts'
+import { tool } from '../conversation/test-questions.ts'
 
 const PROPOSE = 'concept_propose'
 
@@ -42,10 +42,6 @@ function concept(
 
 const SELLERS = 'SELECT CODVEND, APELIDO FROM TGFVEN'
 
-/** What the double holds, counted on it directly: the number a proof must report. */
-function countOn(sql: string): number {
-  return Number(salesDatabase(PADARIA_SOL_MATRIZ)(`SELECT COUNT(*) FROM (${sql}) Q`)?.rows[0]?.[0])
-}
 const VENDEDOR = concept(
   'vendedor',
   SELLERS,
@@ -87,7 +83,7 @@ test('a prova sem linha: a fonte grava a contagem e a forma, nome e tipo de cada
   const [answer] = answers
   assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer).slice(0, 2000))
   assert.deepEqual(answer.refused, [])
-  const sellers = countOn(SELLERS)
+  const sellers = countedOnDouble(SELLERS)
   assert.ok(sellers > 0)
   assert.deepEqual(
     answer.items.find((each: { target: string }) => each.target === 'vendedor' && 'proof' in each)
@@ -112,8 +108,8 @@ test('a prova sem linha: a fonte grava a contagem e a forma, nome e tipo de cada
   const kept = JSON.stringify(
     await on.hub.test.asOwner('select * from ontology.proof_run, ontology.proposal_item'),
   )
-  for (const seller of PADARIA_SOL_MATRIZ.vendedores)
-    assert.ok(!kept.includes(seller.apelido), 'no value of a row is kept')
+  for (const seller of DOUBLE_SELLERS)
+    assert.ok(!kept.includes(seller), 'no value of a row is kept')
   const items = await on.hub.test.asOwner(
     'select kind, target, decision from ontology.proposal_item order by n',
   )
@@ -215,7 +211,7 @@ function role(key: string, sql: string, keyFields = ['parceiro'], base = 'parcei
 // partner, or a key moved off the partners, is outside the base.
 const REGISTERED = 'SELECT CODPARC, APELIDO FROM TGFVEN WHERE CODPARC IS NOT NULL'
 const MOVED = 'SELECT CODPARC + 100000 AS CODPARC, APELIDO FROM TGFVEN'
-const UNREGISTERED = countOn(MOVED)
+const UNREGISTERED = countedOnDouble(MOVED)
 
 test('o papel: fora da base é ROLE_NOT_SUBSET com a contagem, a chave de outro tamanho ROLE_KEY_MISMATCH, a base que não existe CONCEPT_INCOMPLETE, e o subconjunto aceito com a prova', async (t) => {
   const { on, answers } = await proposed(

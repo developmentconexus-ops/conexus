@@ -152,7 +152,7 @@ const PastedCredential = z
   .refine((fields) => Object.keys(fields).length <= 8)
 
 const InCompany = z.object({ companyId: CompanyId })
-export const OfConnection = InCompany.extend({ connectionId: ConnectionId })
+const OfConnection = InCompany.extend({ connectionId: ConnectionId })
 const OfSignIn = InCompany.extend({ signInId: ConnectionSignInId })
 export const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 

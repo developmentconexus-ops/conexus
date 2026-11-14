@@ -28,7 +28,7 @@ export type ProofAnswer =
   | Refused
 
 /** A concept's read the dialect would not write (`ConceptRefused`), or its rows. */
-export type QueryAnswer =
+type QueryAnswer =
   | Readonly<{ kind: 'OK'; rows: readonly Readonly<Record<string, unknown>>[] }>
   | Readonly<{ kind: 'CALL_REFUSED' }>
   | Failed

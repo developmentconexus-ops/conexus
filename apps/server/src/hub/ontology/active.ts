@@ -73,12 +73,12 @@ export function applied(active: ActiveSet, versions: ActiveSet): ActiveSet {
   }
 }
 
-export function live(row: { state: string }): boolean {
+function live(row: { state: string }): boolean {
   return row.state !== 'DEPRECATED'
 }
 
 /** The live element at an address, of any kind. */
-export function liveAt(set: ActiveSet, address: string): boolean {
+function liveAt(set: ActiveSet, address: string): boolean {
   return (
     set.concepts.some((row) => live(row) && ADDRESS.concepts(row) === address) ||
     set.fields.some((row) => live(row) && ADDRESS.fields(row) === address) ||

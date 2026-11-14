@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, ProposedItem } from '@conexus/hub-api'
-import type { ActiveSet } from './active.ts'
-import { applied, hashOf, incomplete } from './active.ts'
-import { versionsOf } from './versions-of.ts'
+import type { ActiveSet } from './public.ts'
+import { applied, hashOf, incomplete, versionsOf } from './public.ts'
 
 const EMPTY: ActiveSet = { concepts: [], fields: [], codes: [], relations: [], sources: [] }
 const concept = {

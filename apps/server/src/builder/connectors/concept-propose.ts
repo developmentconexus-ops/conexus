@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 
 /** What proposing answers the model: the proposal, the connection's refusal, or a database that did not answer (it proposed nothing). */
-export type ConceptProposeAnswer =
+type ConceptProposeAnswer =
   | ConceptProposed
   | Readonly<{ kind: 'NOT_GRANTED' }>
   | Readonly<{ kind: 'DATABASE_UNAVAILABLE' }>

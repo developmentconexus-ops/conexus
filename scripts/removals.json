@@ -2596,36 +2596,36 @@
     }
   },
   {
-    "id": "assistant-note-only-for-connection-managers",
-    "file": "apps/server/src/hub/connectors/notes.ts",
-    "find": "      if (manage) await admitted(deps, tx, input, 'manageConnections')\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/connectors/assistant-port-note.test.ts",
-      "name": "a anotação recusada"
-    }
-  },
-  {
-    "id": "assistant-note-never-in-automation-run",
+    "id": "assistant-propose-never-in-automation-run",
     "file": "apps/server/src/builder/assistant/mays.ts",
-    "find": "        !byAutomation &&\n",
-    "replace": "",
+    "find": "      propose: speakers !== undefined && !byAutomation,",
+    "replace": "      propose: speakers !== undefined,",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/note-save.test.ts",
+      "file": "src/builder/connectors/concept-propose.test.ts",
       "name": "a rodada de automação"
     }
   },
   {
-    "id": "assistant-note-never-for-those-who-do-not-manage-connections",
-    "file": "apps/server/src/builder/assistant/mays.ts",
-    "find": "identity.allows(speakers.role, 'manageConnections')",
-    "replace": "true",
+    "id": "ontology-first-revision-only-owner",
+    "file": "apps/server/src/hub/ontology/decide.ts",
+    "find": "  if (current === 0 && fixedNameOf(proof.role) !== 'owner')",
+    "replace": "  if (current === 0 && false)",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/note-save.test.ts",
-      "name": "o membro"
+      "file": "src/hub/ontology/decide.test.ts",
+      "name": "a primeira é do dono"
+    }
+  },
+  {
+    "id": "ontology-approve-needs-approve-right",
+    "file": "apps/server/src/hub/ontology/decide.ts",
+    "find": "  if (current > 0 && !deps.identity.allows(proof.role, 'approveConcepts'))",
+    "replace": "  if (current > 0 && false)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/ontology/decide.test.ts",
+      "name": "L1 e R1"
     }
   },
   {

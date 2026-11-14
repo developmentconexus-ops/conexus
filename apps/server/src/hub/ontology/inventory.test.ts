@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { PAGE_ROWS } from '../connectors/public.ts'
 import { linkMercadoLivre, mercadoLivreOn } from '../connectors/test-connections.ts'
 import { call, codeOf } from '../identity/test-hub.ts'
-import { INVENTORY_DEFAULTS, INVENTORY_LEASE_MS } from './inventory.ts'
+import { INVENTORY_DEFAULTS, INVENTORY_LEASE_MS } from './public.ts'
 import { doorOf, inventoryOn, inventoryPath, linked, rerun, settled } from './test-inventory.ts'
 
 const FIELDS = ['AD_METAS.META', 'TGFCAB.AD_CANAL']

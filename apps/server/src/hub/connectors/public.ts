@@ -51,7 +51,7 @@ export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
 export { TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export type { ConceptDoor, ProofAnswer, QueryAnswer, RoleOf } from './concept-port.ts'
+export type { ConceptDoor, ProofAnswer, RoleOf } from './concept-port.ts'
 export {
   connectionForCopy,
   connectionNamesOf,

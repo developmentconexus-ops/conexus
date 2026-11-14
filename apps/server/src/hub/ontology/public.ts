@@ -6,14 +6,18 @@ import type { ProposeInput } from './propose.ts'
 import { proposeConcepts } from './propose.ts'
 import { registerConceptRoutes, registerOntologyRoutes } from './routes.ts'
 
+export type { ActiveSet } from './active.ts'
+export { applied, hashOf, incomplete } from './active.ts'
 export type {
   InventoryClock,
   InventoryConnectors,
   InventoryEnd,
   InventoryTuning,
 } from './inventory.ts'
+export { INVENTORY_DEFAULTS, INVENTORY_LEASE_MS } from './inventory.ts'
 export type { InventorySearch, InventorySearchInput } from './inventory-search.ts'
 export type { ProposeInput } from './propose.ts'
+export { versionsOf } from './versions-of.ts'
 
 /**
  * The company's Ontology (A Ontologia da empresa): the inventory of what each connection's system

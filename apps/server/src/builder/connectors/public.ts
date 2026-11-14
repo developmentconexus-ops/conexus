@@ -1,4 +1,4 @@
-export type { ConceptProposeAnswer, ConceptProposeCall } from './concept-propose.ts'
+export type { ConceptProposeCall } from './concept-propose.ts'
 export type { BuilderConnectors, ConnectorAccess, GrantedConnection } from './connector-tools.ts'
 export {
   builderAccess,

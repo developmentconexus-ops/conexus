@@ -224,17 +224,6 @@ export function oneAtATimeText(connector: string, taken: string): string {
   return `O ${connector} lê uma ligação por Projeto. Tire a ${taken} antes.`
 }
 
-/** "provado em 30/10 por Bruno, com 20 linhas": what a copy's proposal says about its proof. */
-export function provedText(note: {
-  provedAt: string
-  provedRows: number
-  writtenBy: string | null
-}) {
-  const by = note.writtenBy === null ? 'quem já saiu da empresa' : note.writtenBy
-  const rows = note.provedRows === 1 ? '1 linha' : `${note.provedRows} linhas`
-  return `provado em ${dayAndMonth(note.provedAt)} por ${by}, com ${rows}`
-}
-
 /** What Desligar takes from one copy, said before the click (O Sync de qualquer conector, U4). */
 export function copyLossText(copy: Pick<CopyOfConnection, 'name' | 'last' | 'rows'>): string {
   if (copy.last) return `A cópia ${copy.name} acaba.`

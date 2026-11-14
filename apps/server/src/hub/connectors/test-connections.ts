@@ -5,9 +5,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
-import { MERCADO_LIVRE_FACTS, mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import {
+  MERCADO_LIVRE_FACTS,
+  mercadoLivreFake,
+  PADARIA_SOL_MATRIZ,
+  salesDatabase,
+  sankhyaFake,
+} from '@conexus/connectors'
 
 export { MERCADO_LIVRE_FACTS, mercadoLivreFake }
+
+export function countedOnDouble(sql: string): number {
+  return Number(salesDatabase(PADARIA_SOL_MATRIZ)(`SELECT COUNT(*) FROM (${sql}) Q`)?.rows[0]?.[0])
+}
+
+export const DOUBLE_SELLERS = PADARIA_SOL_MATRIZ.vendedores.map((seller) => seller.apelido)
 
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
