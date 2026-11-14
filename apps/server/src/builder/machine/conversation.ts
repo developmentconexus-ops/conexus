@@ -125,7 +125,6 @@ class Machines implements ConversationMachines {
   readonly codeMode: CodeModeTransport
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
-  /** The pauses in flight, which the Hub's end waits for (code C62). */
   /**
    * Each conversation's line (code C65): a turn's opening of its workspace, its pause and a
    * download run one after another, so neither a download nor the next turn starts a machine
