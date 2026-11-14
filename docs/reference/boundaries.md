@@ -832,11 +832,13 @@ changes, reread the line it names.
   not check them. Undefined reference labels belong to another plugin.
 - **Hand-made piece.** `scripts/check-docs.ts`. Inline links, reference definitions and fragments
   are checked by a small reader. The rest is Conexus policy: word ceilings, the index, rule ids,
-  retired names, the one card, skill names.
+  retired names, the one card, skill names, and a backticked path that some file of the
+  repository ends with (`scripts/check-docs-paths.ts`, which lists what is not the repository's: libraries,
+  reference checkouts, dated records and cards).
 - **Why.** [Delivery L24](../guides/delivery.md) and [code C75](../guides/code.md). The plugin would
   remove only the link reader, while `docs/index.md` coverage and code stripping still need ours.
   The planted cases (broken inline link, definition, same-file and cross-file fragment) in
-  `check-docs.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
+  `check-docs.test.ts` and the missing path in `check-docs-paths.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
   file without the engine.
 
 ## Zod 4.6.5
