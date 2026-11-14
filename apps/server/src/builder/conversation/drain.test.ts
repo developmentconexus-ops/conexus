@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call } from '../../hub/identity/test-hub.ts'
 import {
+  answeredOf,
   beside,
   conversing,
   endOf,
@@ -11,7 +12,6 @@ import {
   PARTIAL,
   sent,
   sessionUrl,
-  settledOf,
   started,
   streamOf,
   title,
@@ -63,7 +63,7 @@ test('termina antes de fechar: no aviso de parar, a resposta em andamento termin
   assert.deepEqual(line('SHUTDOWN_DRAINING'), { inFlight: 1 })
   assert.equal(line('SHUTDOWN_DRAINED')?.finished, 1)
   assert.equal(line('SHUTDOWN_DRAINED')?.left, 0)
-  const answer = (await settledOf(hub, ana, url)).at(-1)
+  const answer = (await answeredOf(hub, ana, url)).at(-1)
   assert.equal(answer?.role, 'builder')
   assert.deepEqual(failuresIn(answer?.parts ?? []), [])
   assert.ok(answer?.parts.some((part) => part.type === 'text' && part.text.startsWith(PARTIAL)))
@@ -102,7 +102,7 @@ test('o limite: a resposta que passa da espera é parada como Parar, guardada co
   assert.equal(line('SHUTDOWN_DRAINED')?.left, 1)
   const ended = line('CONVERSATION_TURN_ENDED')
   assert.equal(ended?.errorCode, 'HUB_UPDATED')
-  const answer = (await settledOf(hub, ana, url)).filter((one) => one.role === 'builder')
+  const answer = (await answeredOf(hub, ana, url)).filter((one) => one.role === 'builder')
   const parts = answer.flatMap((one) => one.parts)
   assert.deepEqual(failuresIn(parts), ['HUB_UPDATED'])
   assert.ok(parts.some((part) => part.type === 'text' && part.text.startsWith(PARTIAL)))

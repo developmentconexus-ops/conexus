@@ -344,30 +344,29 @@ export async function messagesOf(hub: Hub, person: Person, url: string): Promise
   })
 }
 
-/**
- * The transcript once its last message is the Builder's, read again for at most five seconds:
- * Mastra saves an errored run's messages a moment after its end.
- */
-export async function answeredOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
-  for (let attempt = 0; ; attempt += 1) {
-    const messages = await messagesOf(hub, person, url)
-    if (messages.at(-1)?.role === 'builder' || attempt === 50) return messages
-    await new Promise((done) => setTimeout(done, 100))
-  }
-}
+/** The parts only our own message carries; any other part of a Builder message is Mastra's save. */
+const OURS = new Set(['data-conexus-failure', 'data-conexus-version', 'data-conexus-preview'])
 
 /**
- * The transcript once two reads, a moment apart, agree: a failed turn's answer lands a moment after
- * its `agent_end` (Mastra 1.79 ends an errored run before its memory saves it), after the failure
- * the conversation saved before that end.
+ * The transcript once Mastra has saved the turn: the person's message, then a Builder answer that
+ * is not only ours. Mastra 1.82 ends an errored run before its memory saves it
+ * (`map-results-step.ts:401-446`, `session-run-engine.ts:1943-1985`), so our failure is read first.
  */
-export async function settledOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
-  for (let last = await answeredOf(hub, person, url), attempt = 0; ; attempt += 1) {
-    await new Promise((done) => setTimeout(done, 300))
-    const again = await answeredOf(hub, person, url)
-    if (JSON.stringify(again) === JSON.stringify(last) || attempt === 15) return again
-    last = again
-  }
+export async function answeredOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
+  let messages: Read[] = []
+  await until(
+    async () => {
+      messages = await messagesOf(hub, person, url)
+      const after = messages.slice(messages.findLastIndex((each) => each.role === 'person') + 1)
+      const saved = after.some(
+        (each) => each.role === 'builder' && each.parts.some((part) => !OURS.has(part.type)),
+      )
+      return after.length < messages.length && saved
+    },
+    'the turn saved by Mastra',
+    30_000,
+  )
+  return messages
 }
 
 /**
@@ -375,12 +374,7 @@ export async function settledOf(hub: Hub, person: Person, url: string): Promise<
  * stream does not say the answer's data parts, so the transcript is read once it settles.
  */
 export async function turnNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
-  await until(
-    async () => (await messagesOf(hub, person, url)).at(-1)?.role === 'builder',
-    'the answer of the turn saved',
-    30_000,
-  )
-  const messages = await settledOf(hub, person, url)
+  const messages = await answeredOf(hub, person, url)
   const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
   return noticesIn(turn.flatMap((message) => message.parts))
 }

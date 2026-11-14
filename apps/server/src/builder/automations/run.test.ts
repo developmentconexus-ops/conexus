@@ -8,11 +8,11 @@ import type { Reply } from '../../platform/test-anthropic.ts'
 import { until } from '../../platform/test-until.ts'
 import { reading, talking } from '../assistant/test-assistant.ts'
 import {
+  answeredOf,
   endOf,
   holding,
   messagesOf,
   PARTIAL,
-  settledOf,
   title,
 } from '../conversation/test-conversation.ts'
 import { failuresIn } from '../conversation/test-parts.ts'
@@ -157,7 +157,7 @@ test('a falha do turno: o modelo fora e a conta recusada terminam FAILED com o c
     assert.equal(run.state.kind, 'FAILED')
     assert.equal(run.state.code, code)
     const conversation = `${on.assistant}/${String(run.state.conversationId)}`
-    const parts = (await settledOf(on.hub, on.ana, conversation)).flatMap((each) => each.parts)
+    const parts = (await answeredOf(on.hub, on.ana, conversation)).flatMap((each) => each.parts)
     assert.deepEqual(failuresIn(parts), [code])
     assert.ok(on.lines.some((line) => line.message === 'AUTOMATION_RUN_FAILED'))
   }
@@ -172,7 +172,7 @@ test('a falha do turno: o turno que passa do orçamento é abortado, FAILED com 
   assert.equal(run.state.kind, 'FAILED')
   assert.equal(run.state.code, 'INTERRUPTED')
   const conversation = `${on.assistant}/${String(run.state.conversationId)}`
-  const messages = await settledOf(on.hub, on.ana, conversation)
+  const messages = await answeredOf(on.hub, on.ana, conversation)
   const said = messages.filter((each) => each.role === 'builder').flatMap((each) => each.parts)
   assert.ok(said.some((part) => part.type === 'text' && part.text === PARTIAL))
 })

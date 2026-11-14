@@ -8,6 +8,7 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
+import { until } from '../../platform/test-until.ts'
 import type { Read, StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -15,9 +16,9 @@ import {
   conversing,
   endOf,
   holding,
+  messagesOf,
   PARTIAL,
   sent,
-  settledOf,
   started,
   stopped,
   streamOf,
@@ -270,7 +271,12 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
   assert.equal((await sent(hub, ana, first.url, 'Mude a cor')).statusCode, 200)
   const failed = await stream.turn()
   assert.deepEqual(failuresOf(failed), ['MODEL_NO_ACCOUNT'])
-  const kinds = (await settledOf(hub, ana, first.url))
+  await until(
+    async () =>
+      (await messagesOf(hub, ana, first.url)).filter((each) => each.role === 'person').length === 2,
+    'the second turn saved by Mastra',
+  )
+  const kinds = (await answeredOf(hub, ana, first.url))
     .filter((each) => each.role === 'builder')
     .map((each) =>
       each.parts.map((part) => part.type).filter((type) => type.startsWith('data-conexus-')),

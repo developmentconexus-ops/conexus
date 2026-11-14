@@ -45,8 +45,8 @@ test('o prazo de quem espera: passa do prazo na fila e responde DEADLINE; quem t
     await busy.promise
     return 'done'
   })
-  // Frees the holder if the waiter never answers, so a broken deadline fails the asserts instead of hanging.
-  const fallback = setTimeout(busy.resolve, 5_000)
+  // Frees the holder at 300 ms, five times the deadline: a late DEADLINE then gets the turn and fails the assert.
+  const fallback = setTimeout(busy.resolve, 300)
   const started = performance.now()
   const waiter = await limits.inTurn(A, 60, async () => 'ran')
   const elapsed = performance.now() - started
@@ -291,8 +291,8 @@ test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o
   // No event says the queued read is in the line; were it not yet, the stop still answers DEADLINE.
   await sleep(250)
   stop.abort()
-  // Frees the first read if the line ignores the stop, so the test fails on the asserts instead of hanging.
-  const fallback = setTimeout(release, 5_000)
+  // Frees the first read after 1 s: a line slow to leave on the stop then answers after the first ended and fails the assert.
+  const fallback = setTimeout(release, 1_000)
   const answer = await queued
   const ended = firstEnded
   clearTimeout(fallback)
