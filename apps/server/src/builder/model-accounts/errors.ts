@@ -5,10 +5,13 @@ import { retryAfterMs } from '../../platform/retry-after.ts'
 
 /** What a provider's refusal of one call means for its account (code C52, study D3). */
 export type CallFailure =
-  | { kind: 'limited'; until: Date }
+  | { kind: 'limited'; until: Date; reason: LimitReason }
   | { kind: 'refused' }
   | { kind: 'missing' }
   | { kind: 'unknown'; status: number | null }
+
+/** Why an account is out until its time: a rate limit, or its credit spent (a 402 or a 400 of balance). */
+export type LimitReason = 'rate' | 'credit'
 
 /** A failure that is the account's, which the queue answers with the next account. */
 export type AccountFailure = Exclude<CallFailure, { kind: 'unknown' }>
@@ -36,14 +39,20 @@ export function callFailureOf(error: unknown, now = Date.now()): CallFailure {
   const status = found.statusCode
   if (status === 429 || status === 402) {
     const after = retryAfterMs(found.responseHeaders ?? {}, now) ?? LIMIT_MS[status]
-    return { kind: 'limited', until: new Date(now + after) }
+    return {
+      kind: 'limited',
+      until: new Date(now + after),
+      reason: status === 402 ? 'credit' : 'rate',
+    }
   }
   if (status === 401 || status === 403) return { kind: 'refused' }
   // Anthropic answers an exhausted credit balance or a workspace spend limit with a 400: Mastra reads it.
   if (status === 400) {
     const kind = classifyProviderError(error)
-    if (kind === 'quota') return { kind: 'limited', until: new Date(now + LIMIT_MS[402]) }
-    if (kind === 'rate_limited') return { kind: 'limited', until: new Date(now + LIMIT_MS[429]) }
+    if (kind === 'quota')
+      return { kind: 'limited', until: new Date(now + LIMIT_MS[402]), reason: 'credit' }
+    if (kind === 'rate_limited')
+      return { kind: 'limited', until: new Date(now + LIMIT_MS[429]), reason: 'rate' }
     if (kind === 'auth') return { kind: 'refused' }
   }
   // The provider does not know the model for this credential: the list it serves has changed.

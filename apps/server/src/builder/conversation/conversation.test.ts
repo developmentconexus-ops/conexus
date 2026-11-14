@@ -86,7 +86,7 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   const answered = await sent(hub, ana, url, 'Compare dois apps')
   assert.equal(answered.statusCode, 200)
   const events = await stream.turn()
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
   assert.equal(endOf(events), 'error')
   const read = await call(hub, ana, 'GET', url)
   const list = await call(hub, ana, 'GET', conversations)

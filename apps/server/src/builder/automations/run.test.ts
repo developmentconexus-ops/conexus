@@ -147,7 +147,7 @@ test('as ligações de hoje: uma ligação que o Projeto perdeu depois da criaç
 test('a falha do turno: o modelo fora e a conta recusada terminam FAILED com o código que a conversa mostra', async (t) => {
   for (const [status, code] of [
     [529, 'MODEL_CALL_FAILED'],
-    [401, 'MODEL_NO_ACCOUNT'],
+    [401, 'MODEL_ACCOUNTS_REFUSED'],
   ] as const) {
     const on = await automating(t, (asked) => title(asked) ?? { kind: 'refuse', status })
     const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))

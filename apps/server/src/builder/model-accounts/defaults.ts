@@ -3,12 +3,13 @@ import { ModelDefault } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx, Scope } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { AccountRow } from './accounts.ts'
-import { accountsOf, usableForAll, usableInOrder } from './accounts.ts'
+import type { Access } from './access.ts'
+import { accessOf } from './access.ts'
+import type { AccountRow, Context } from './accounts.ts'
+import { accountsOf, inOrder } from './accounts.ts'
 import { isChoosable, STARTER_MODELS } from './providers.ts'
 import type { QueueDeps } from './queue.ts'
 import { admitted, hasAccount, providerOf } from './queue.ts'
-import { servesModel } from './served.ts'
 import { companyModel, personModelDefault } from './tables.ts'
 import { effortFor } from './thinking.ts'
 import type { Turn } from './turn.ts'
@@ -38,24 +39,33 @@ export async function savedDefaults(tx: ReadTx, who: Who) {
 }
 
 /**
- * The first step whose provider has an account to call, with that account's name, the level
- * descended to one the model takes. A model the picker does not offer is skipped like a provider
- * with no account.
+ * The first step with an account to call now, with that account's name, the level descended to one
+ * the model takes; with none, the first step with an account that waits (`accessOf`). A model the picker does not offer is
+ * skipped like a provider with no account.
  */
 function firstStep(
   steps: readonly Step[],
-  rows: AccountRow[],
-  usableOf: (queue: AccountRow[]) => AccountRow[],
+  accessFor: (model: ModelId) => Access,
 ): ConversationStart | null {
-  for (const step of steps) {
-    if (!isChoosable(step.model)) continue
-    const provider = providerOf(step.model)
-    const serving = rows.filter((row) => row.provider === provider && servesModel(row, step.model))
-    const [first] = usableOf(serving)
-    if (first !== undefined)
-      return { ...step, effort: effortFor(step.model, step.effort), account: first.label }
-  }
-  return null
+  const reached = steps
+    .filter((step) => isChoosable(step.model))
+    .map((step) => ({ step, access: accessFor(step.model) }))
+  const found =
+    reached.find((each) => each.access.kind === 'usable') ??
+    reached.find((each) => each.access.kind !== 'none')
+  if (found === undefined || found.access.kind === 'none') return null
+  const { step, access } = found
+  return { ...step, effort: effortFor(step.model, step.effort), account: access.account.label }
+}
+
+function ofProvider(rows: AccountRow[], model: ModelId): AccountRow[] {
+  return rows.filter((row) => row.provider === providerOf(model))
+}
+
+function forAll(rows: AccountRow[], context: Context): AccountRow[] {
+  return rows
+    .filter((row) => row.personId === null && !context.assignees.has(row.id))
+    .sort((left, right) => left.position - right.position)
 }
 
 function starters(): Step[] {
@@ -65,8 +75,7 @@ function starters(): Step[] {
 /**
  * Where a new conversation begins when nothing was asked, the one owner of the order (code C26):
  * for the person, their default, the company's, then the first starter model; for the company's
- * people alike, the company's, then the starters, over the accounts given to all. A step whose
- * provider has no account to call is skipped, and the level descends to one the model takes.
+ * people alike, the company's, then the starters, over the accounts given to all (`firstStep`).
  */
 export async function startsOf(tx: ReadTx, who: Who) {
   const saved = await savedDefaults(tx, who)
@@ -74,11 +83,11 @@ export async function startsOf(tx: ReadTx, who: Who) {
   const company: Step[] = saved.company === null ? [] : [{ ...saved.company, from: 'company' }]
   const mine: Step[] = saved.mine === null ? [] : [{ ...saved.mine, from: 'mine' }]
   return {
-    start: firstStep([...mine, ...company, ...starters()], rows, (queue) =>
-      usableInOrder(queue, context, who.personId),
+    start: firstStep([...mine, ...company, ...starters()], (model) =>
+      accessOf(inOrder(ofProvider(rows, model), context, who.personId), context, model),
     ),
-    companyStart: firstStep([...company, ...starters()], rows, (queue) =>
-      usableForAll(queue, context),
+    companyStart: firstStep([...company, ...starters()], (model) =>
+      accessOf(forAll(ofProvider(rows, model), context), context, model),
     ),
   }
 }
@@ -86,7 +95,7 @@ export async function startsOf(tx: ReadTx, who: Who) {
 /**
  * The model and level a conversation is created on. With no model asked, the person's start, or
  * `MODEL_NO_ACCOUNT` when no step has an account. With one: it must be a model the picker offers
- * (`MODEL_UNKNOWN`) with an account the person may use now (`MODEL_NO_ACCOUNT`), and it keeps the
+ * (`MODEL_UNKNOWN`) with an account the person has (`MODEL_NO_ACCOUNT`, `hasAccount`), and it keeps the
  * level the person saved for that model, else the company's, else the lowest it takes.
  */
 export async function conversationStart(

@@ -209,7 +209,7 @@ test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recus
   )
   assert.equal(renewals(f).length, 1)
   assert.deepEqual(await turnNotices(f.hub, f.ana, url), ['ChatGPT foi recusada. Ligue de novo.'])
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
   assert.deepEqual(await f.states(), [['ChatGPT', 'refused']])
 })
 

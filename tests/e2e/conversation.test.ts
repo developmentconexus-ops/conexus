@@ -30,8 +30,7 @@ import { changeState, enter, linkKey, moveUp, queueTexts } from './model-account
 // answer comes with the page read and a title; a refused key, a paused account and the end of the
 // queue are said in the conversation; the automatic switch goes on with the second model and the
 // next question tries Claude again; Diego, in the same company or in another, finds nothing of hers.
-const EXHAUSTED =
-  'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
+const ALL_REFUSED = 'As contas Anthropic que você pode usar foram recusadas. Ligue de novo.'
 // The last account lost says why (a key refused), instead of the generic line.
 const REFUSED = 'Time 3 foi recusada. Ligue de novo.'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
@@ -116,7 +115,7 @@ async function refusedThenPaused(
   const [top] = await queueTexts(owner, 'Anthropic')
   assert.match(top ?? '', /^1ª Time 3 chave …dE2f recusada · Ligue de novo/)
   await saving(owner, () => changeState(owner, 'Time 1', 'Pausar'))
-  await noticed(chat, hold, 'E o terceiro?', EXHAUSTED)
+  await noticed(chat, hold, 'E o terceiro?', ALL_REFUSED)
 }
 
 /** Step 4: the switch goes on with the second model; with Time 1 back, the next asks Claude again. */

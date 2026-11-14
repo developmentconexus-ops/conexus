@@ -139,7 +139,7 @@ test('renovação recusada e nenhuma outra conta: o turno acaba dizendo que a as
   )
   const { url, events } = await asked(t, f.where)
   assert.deepEqual(await turnNotices(f.hub, f.ana, url), ['Claude foi recusada. Ligue de novo.'])
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
   assert.equal(endOf(events), 'error')
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'paused' })
 })

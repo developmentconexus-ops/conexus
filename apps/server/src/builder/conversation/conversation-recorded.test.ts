@@ -272,7 +272,7 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, first.url, 'Mude a cor')).statusCode, 200)
   const failed = await stream.turn()
-  assert.deepEqual(failuresOf(failed), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(failed), ['MODEL_ACCOUNTS_REFUSED'])
   const kinds = (await settledOf(hub, ana, first.url))
     .filter((each) => each.role === 'builder')
     .map((each) =>
@@ -285,5 +285,8 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
     ['data-conexus-failure'],
   ])
   const toModel = anthropic.sent.filter((each) => each.stream).flatMap((each) => each.texts)
-  assert.doesNotMatch(toModel.join('\n'), /conexus-(version|failure|machine)|MODEL_NO_ACCOUNT/)
+  assert.doesNotMatch(
+    toModel.join('\n'),
+    /conexus-(version|failure|machine)|MODEL_ACCOUNTS_REFUSED/,
+  )
 })

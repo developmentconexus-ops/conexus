@@ -26,6 +26,22 @@ export const CONVERSATION_FAILURES = {
     action: 'Espere o limite passar ou escolha outro modelo.',
     actionKind: 'NONE',
   },
+  MODEL_ACCOUNTS_NO_CREDIT: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 402,
+    phrase: 'As contas que você pode usar para este modelo estão sem crédito.',
+    action: 'Confira o crédito da conta no fornecedor ou escolha outro modelo.',
+    actionKind: 'NONE',
+  },
+  MODEL_ACCOUNTS_REFUSED: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'As contas que você pode usar para este modelo foram recusadas.',
+    action: 'Ligue a conta de novo em Minhas contas de modelo ou escolha outro modelo.',
+    actionKind: 'NONE',
+  },
   EFFORT_UNSUPPORTED: {
     category: 'USER',
     settles: true,

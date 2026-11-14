@@ -62,3 +62,19 @@ test('o e-mail do horário: o disparo manda ao dono o assunto, o nome e o botão
     assert.ok(!part?.includes('98765'), 'nenhum número da empresa')
   }
 })
+
+test('o aviso de falha guarda o estado das contas: no limite, sem crédito e recusada, cada uma com o seu código', async (t) => {
+  for (const [status, code] of [
+    [429, 'MODEL_ACCOUNTS_LIMITED'],
+    [402, 'MODEL_ACCOUNTS_NO_CREDIT'],
+    [401, 'MODEL_ACCOUNTS_REFUSED'],
+  ] as const) {
+    const on = await automating(t, (asked) => title(asked) ?? { kind: 'refuse', status })
+    const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))
+    const url = `${on.automations}/${automation.id}`
+    const run = await ended(on.hub, on.ana, url, await ranNow(on.hub, on.ana, url))
+    assert.deepEqual([run.state.kind, run.state.code], ['FAILED', code])
+    const [row] = (await bellOf(on.hub, on.ana, on.company)).notifications
+    assert.deepEqual([row?.kind, row?.code], ['AUTOMATION_FAILED', code], `${status}`)
+  }
+})

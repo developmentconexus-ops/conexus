@@ -103,7 +103,7 @@ test('429 com horário, 429 sem e 402: a conta ganha o limite, a próxima assume
   assert.deepEqual(f.calls(), ['Time 1', 'Dois', 'Tres', 'Quatro'])
   const notices = await turnNotices(f.hub, f.ana, url)
   assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
-  assert.match(notices[2] ?? '', /^Tres no limite até \d{2}h\d{2}; continuei pela Quatro\.$/)
+  assert.equal(notices[2], 'Tres ficou sem crédito; continuei pela Quatro.')
   assert.equal(notices.length, 3)
   const states = await f.states()
   function within(label: string, ms: number) {
@@ -169,10 +169,9 @@ test('400 de saldo: a conta ganha o limite do crédito, a próxima assume e o lo
   const before = Date.now()
   const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
-  assert.match(
-    (await turnNotices(f.hub, f.ana, url))[0] ?? '',
-    /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/,
-  )
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
+    'Time 1 ficou sem crédito; continuei pela Dois.',
+  ])
   assert.equal(endOf(events), 'complete')
   const until = (await f.states())['Time 1']?.limitedUntil ?? 0
   assert.ok(Math.abs(until - (before + 6 * 60 * MINUTE)) < 30_000, `${until - before}`)
@@ -204,7 +203,7 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   const notices = await turnNotices(f.hub, f.ana, url)
   assert.equal(notices.length, 10)
   assert.equal(notices.at(-1), 'Conta 10 foi recusada. Ligue de novo.')
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_CALL_FAILED'])
   assert.equal(endOf(events), 'error')
   const states = await f.states()
   assert.equal(states['Conta 11']?.state, 'ready')

@@ -18,6 +18,7 @@ import {
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import { accessText, ENDS, until } from './access.ts'
 import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
@@ -25,7 +26,7 @@ import { nextModels } from './fallback.ts'
 import { forCliProxy } from './google/flat-unions.ts'
 import { minusProviderTools } from './provider-tools.ts'
 import type { QueueDeps } from './queue.ts'
-import { limitEnd, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import { accessNow, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { SideCall } from './side-calls.ts'
 import { noAccountModel, watched } from './side-calls.ts'
 import type { ProviderOptions } from './thinking.ts'
@@ -82,17 +83,11 @@ async function exhaust(
   reason: string | undefined,
 ) {
   turn.finish('exhausted')
-  const end = await limitEnd(deps, turn, modelId)
-  const provider = providerName(providerOf(modelId))
+  const access = await accessNow(deps, turn, modelId)
   const text =
-    reason !== undefined
-      ? `${reason}.`
-      : end !== undefined
-        ? `As contas ${provider} que você pode usar estão no limite até ${until(end)}.`
-        : `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
+    reason === undefined ? accessText(access, providerName(providerOf(modelId))) : `${reason}.`
   notify(args, turn, 'accounts-exhausted', text)
-  const code = end === undefined ? 'MODEL_NO_ACCOUNT' : 'MODEL_ACCOUNTS_LIMITED'
-  emit(args, { type: 'error', error: new Failure(code) })
+  emit(args, { type: 'error', error: new Failure(ENDS[access.kind]) })
 }
 
 function refusedText(label: string) {
@@ -113,16 +108,6 @@ async function keepNotices(args: { writer?: Writer; messageList: MessageList }, 
   for (const data of turn.notices.slice(kept)) {
     await args.writer?.custom({ type: NOTICE_PART, data })
   }
-}
-
-const TIME = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: 'America/Sao_Paulo',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-function until(date: Date): string {
-  return TIME.format(date).replace(':', 'h')
 }
 
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
@@ -221,6 +206,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
 }
 
 function failedText(account: Picked, failure: AccountFailure) {
+  if (failure.kind === 'limited' && failure.reason === 'credit')
+    return `${account.label} ficou sem crédito`
   if (failure.kind === 'limited') return `${account.label} no limite até ${until(failure.until)}`
   if (failure.kind === 'missing') return `${account.label} não atende a este modelo`
   return refusedText(account.label)
