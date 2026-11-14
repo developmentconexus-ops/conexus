@@ -20,17 +20,19 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import type { ReleaseScope } from '../controller-kit/public.ts'
+import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
 import {
+  ASK_USER_TOOL,
   admitAsker,
   agentDefaults,
   controllerOf,
+  createAskUserTool,
   MODEL_TIMEOUT,
   oncePerRun,
   sessionModel,
   toolsOf,
 } from '../controller-kit/public.ts'
-import { ASK_USER_TOOL, createAskUserTool, skillOf } from '../conversation/public.ts'
+import { skillOf } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -39,12 +41,11 @@ import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
 import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
-import type { Owner, ScopeOf } from './context.ts'
+import type { ScopeOf } from './context.ts'
 import { machineMarks, sessionScopes } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
-import type { Speakers } from './instructions.ts'
 import { assistantInstructions } from './instructions.ts'
 import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'

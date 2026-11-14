@@ -15,8 +15,8 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
+import type { Owner } from '../controller-kit/public.ts'
 import type { CompanyMemory, Page } from './company-memory.ts'
-import type { Owner } from './context.ts'
 
 type Deps = { database: Database; identity: IdentityPorts; company: CompanyMemory }
 

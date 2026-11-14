@@ -1,9 +1,10 @@
-import type { AccountKind, CompanyId, ModelAccountId, PersonId } from '@conexus/hub-api'
-import { Effort, ModelId } from '@conexus/hub-api'
+import type { AccountKind, CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
+import { Effort } from '@conexus/hub-api'
 import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import { controllerIn } from '../controller-context/public.ts'
 import type { PromptCacheScope } from './claude/models.ts'
 
 const TURN_KEY = 'conexus.turn'
@@ -48,14 +49,6 @@ type Stage =
   | { name: 'calling'; account: Picked }
   | { name: 'ended'; outcome: Outcome }
 
-const ControllerContext = z.object({
-  session: z.object({ modelId: ModelId }),
-})
-const ControllerState = z.object({
-  session: z.object({
-    state: z.object({ get: z.custom<() => unknown>((get) => typeof get === 'function') }),
-  }),
-})
 const SessionState = z.object({ thinkingLevel: Effort.optional() })
 
 /**
@@ -63,15 +56,18 @@ const SessionState = z.object({ thinkingLevel: Effort.optional() })
  * run without one is the Builder's defect, never a model to look accounts up for.
  */
 export function chosenModel(context: RequestContext | undefined): ModelId {
-  const parsed = ControllerContext.safeParse(context?.get('controller'))
-  if (!parsed.success) {
+  const modelId = controllerIn(context).session?.modelId
+  if (modelId === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NO_SESSION_MODEL' } })
   }
-  return parsed.data.session.modelId
+  return modelId
 }
 
 function chosenEffort(context: RequestContext | undefined): Effort {
-  const { state } = ControllerState.parse(context?.get('controller')).session
+  const state = controllerIn(context).session?.state
+  if (state === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NO_SESSION_STATE' } })
+  }
   return SessionState.parse(state.get()).thinkingLevel ?? 'off'
 }
 

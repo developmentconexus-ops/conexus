@@ -13,11 +13,12 @@ import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { conversationRun } from '../controller-context/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
 import { oncePerRun, openSession, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
-import type { Owner } from './context.ts'
-import { runConversation, SESSION_MARK } from './context.ts'
+import { SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
 
@@ -163,7 +164,7 @@ export async function asked(
  */
 export function automationRunFor(memory: ReturnType<typeof assistantMemory>) {
   return oncePerRun(async (requestContext) => {
-    const run = runConversation(requestContext)
+    const run = conversationRun(requestContext)
     if (run === undefined) return false
     const thread = await memory.getThreadById({
       threadId: run.sessionId,

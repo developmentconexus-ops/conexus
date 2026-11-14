@@ -22,12 +22,17 @@ const BAD: Record<string, [string, string]> = {
   'table-door-only-for-foreign-keys-and-schema': [`${SRC}/hub/a/join.ts`, '../b/public-tables.ts'],
   // A folder inside a subject has no door of its own.
   'subject-only-through-public': [`${SRC}/hub/a/nested.ts`, '../b/mail/public.ts'],
+  'conversations-do-not-import-the-assistant': [
+    `${SRC}/builder/agents/a.ts`,
+    '../assistant/public.ts',
+  ],
 }
 const GOOD: Record<string, string> = {
   [`${SRC}/main.ts`]: './hub/b/public.ts',
   [`${SRC}/hub/a/mail.tsx`]: '../b/public-mail.tsx',
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
+  [`${SRC}/builder/agents/ok.test.ts`]: '../assistant/test-thing.ts',
 }
 
 let violations: Violation[] = []
@@ -39,6 +44,8 @@ before(() => {
     [`${SRC}/hub/b/mail/public.ts`]: PUBLIC,
     [`${SRC}/hub/b/test-thing.ts`]: PUBLIC,
     [`${SRC}/hub/c/inner.ts`]: PUBLIC,
+    [`${SRC}/builder/assistant/public.ts`]: PUBLIC,
+    [`${SRC}/builder/assistant/test-thing.ts`]: PUBLIC,
   }
   for (const [file, target] of [...Object.values(BAD), ...Object.entries(GOOD)]) {
     files[file] = importing(target)

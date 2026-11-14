@@ -1,16 +1,11 @@
-import {
-  AGENTS_CONTROLLER,
-  AgentId as AgentIdSchema,
-  ConversationId,
-  ProjectId,
-} from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, AgentId as AgentIdSchema, ProjectId } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
 import { and, eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -18,8 +13,8 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
-import type { Speakers } from '../assistant/public.ts'
-import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import { conversationRun } from '../controller-context/public.ts'
+import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   agentManagerAdmission,
@@ -60,8 +55,6 @@ export const AGENT_MARK = {
   draft: 'conexusAgentDraft',
 } as const
 
-const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
-
 /** Which agent a conversation of the owner's runs, and whether its draft, as the Hub keeps it. */
 export async function keptRun(database: Database, owner: Owner, id: ConversationId) {
   const [row] = await database.read({ kind: 'COMPANY', ...owner }, (tx) =>
@@ -84,12 +77,12 @@ export async function keptRun(database: Database, owner: Owner, id: Conversation
 /** The run a conversation of the agents' controller is: its owner by the thread, its agent by the Hub's row. */
 function runsOf(database: Database) {
   return oncePerRun(async (requestContext): Promise<AgentRun | undefined> => {
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    if (!controller.success) return undefined
-    const owner = ownerOfResource(controller.data.resourceId)
+    const run = conversationRun(requestContext)
+    if (run === undefined) return undefined
+    const owner = ownerOfResource(run.resourceId)
     if (owner?.kind !== 'agents') return undefined
     const { companyId, personId } = owner
-    return keptRun(database, { companyId, personId }, controller.data.sessionId)
+    return keptRun(database, { companyId, personId }, run.sessionId)
   })
 }
 
