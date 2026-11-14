@@ -2255,17 +2255,6 @@
     }
   },
   {
-    "id": "assistant-stop-all-waits",
-    "file": "apps/server/src/builder/machine/conversation.ts",
-    "find": "    await Promise.all([...this.pausing])\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/assistant/machine.test.ts",
-      "name": "o fim do Hub"
-    }
-  },
-  {
     "id": "assistant-close-stops-machines",
     "file": "apps/server/src/builder/assistant/assistant.ts",
     "find": "      close: () => machines.stopAll(),\n",
@@ -2371,8 +2360,8 @@
     "replace": "",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/assistant/file.test.ts",
-      "name": "a máquina perdida, FILE_GONE"
+      "file": "src/builder/machine/conversation-lane.test.ts",
+      "name": "a máquina perdida responde FILE_GONE"
     }
   },
   {

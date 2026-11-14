@@ -100,8 +100,9 @@ function stamped(messages: readonly Stored[]): void {
 /**
  * Mastra's `FileUploadProcessor`, built for each model call with that step's machine
  * (`ProcessLLMRequestArgs.workspace`), since the Hub picks the machine per request; a call without a
- * machine with a sandbox changes nothing. Starts the machine first, and turns the native stop on a
- * file it could not write into the machine's failure, so the screen says MACHINE_UNAVAILABLE.
+ * machine with a sandbox changes nothing. Turns the native stop on a file it could not write into
+ * the machine's failure, so the screen says MACHINE_UNAVAILABLE; a file only in the history, with
+ * the machine out, becomes the native note and the turn goes on.
  * Stamps the note's estimate on the new file parts that are not images (`processInput`,
  * `processInputStep`; criterion 10).
  */
@@ -121,15 +122,6 @@ export function machineUploads(deps: {
     async processLLMRequest(args: ProcessLLMRequestArgs<FileUploadTripwireMetadata>) {
       const machine = args.workspace
       if (machine?.hasSandboxConfig() !== true || !hasPlacedFile(args.prompt)) return undefined
-      // Started here, so a machine that is out fails the turn as MACHINE_UNAVAILABLE even when the
-      // file is only in the history, where the native would leave a note and go on (the card's debt).
-      if (args.requestContext !== undefined) {
-        try {
-          await machine.resolveSandbox({ requestContext: args.requestContext })
-        } catch (cause) {
-          throw cause instanceof Failure ? told(args.requestContext, cause) : cause
-        }
-      }
       // The route already caps every file; the native check stays, with no second copy of that cap.
       const native = new FileUploadProcessor({
         workspace: machine,

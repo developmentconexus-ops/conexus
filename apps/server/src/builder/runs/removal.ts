@@ -25,10 +25,8 @@ async function removeProject(
 }
 
 /**
- * Pauses, then kills by name, the machine of each released conversation (Factory
- * `session-retirement.ts:69-77`: a deleted session leaves no machine), also one no run of this
- * process holds; a killed machine cannot be paused, so the pause comes first. A conversation
- * with no machine passes. Each failure is logged and kept, so it hides none of the others.
+ * Lets go of, then kills by name, the machine of each released conversation, also one no run of
+ * this process holds, paused or running. A conversation with no machine passes. Each failure is logged and kept.
  */
 async function killMachines(
   context: RunsContext,

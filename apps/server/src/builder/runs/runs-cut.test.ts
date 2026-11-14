@@ -7,7 +7,7 @@ import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, started, streamOf, title } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
-import { INSTALLATION, moveMain } from '../machine/test-machine.ts'
+import { moveMain, pausedByE2b } from '../machine/test-machine.ts'
 
 type Tool = { name: string; input: Record<string, string> }
 
@@ -53,14 +53,13 @@ async function twoTurns(
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
   const first = await stream.turn()
-  const name = `conexus-${INSTALLATION}-${id}`
   const dir = join(hub.config.gitRoot, world.companyId, `${world.projectId}.git`)
   function git(...args: string[]) {
     return execFileSync('git', ['--git-dir', dir, ...args]).toString()
   }
   between({ app: join(hub.builder.folder, 'app'), dir, git })
   seen.length = 0
-  hub.builder.control.discoverable = [name]
+  pausedByE2b(hub.builder.control)
   assert.equal((await sent(hub, ana, url, 'Segunda')).statusCode, 200)
   const second = await stream.turn()
   assert.deepEqual(failuresOf([...first, ...second]), failures)

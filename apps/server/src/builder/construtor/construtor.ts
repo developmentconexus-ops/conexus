@@ -261,7 +261,6 @@ export function createConstrutor(deps: Deps) {
       turnKey.start(requestContext)
       return turn
     },
-    ended: (sessionId) => void machines.stop(sessionId),
   })
   const agent = construtorAgent(deps, { memory, turns, scopeOf, machines })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.

@@ -1,10 +1,10 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
-import type { Conflicts, Kit } from './kit.ts'
+import type { Kit } from './kit.ts'
 import {
   ALLOWED_HOSTS,
   APP_FOLDER,
@@ -15,76 +15,23 @@ import {
   readCapped,
 } from './kit.ts'
 import { packIn } from './pack.ts'
-import type { Machines, MachinesDeps, Phase } from './port.ts'
+import type { Machines, MachinesDeps } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
-import type { SandboxExec } from './sandbox-filesystem/shell.ts'
 import type { Collected } from './scripts.ts'
 import {
   changedScript,
   collected,
   collectScript,
   conflictsOf,
-  keepScript,
+  markersScript,
   outFile,
   savedScript,
   seedFile,
   seedScript,
   syncScript,
 } from './scripts.ts'
-
-type Session = {
-  companyId: CompanyId
-  projectId: ProjectId
-  conversationId: ConversationId
-  onPhase: (phase: Phase) => void
-  /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
-  kit: Kit
-  /** How many times the machine started in this turn: a second `created` is a machine that died. */
-  starts: number
-  /** The machine died mid-turn, and what the turn wrote on it is gone. */
-  lost: boolean
-  /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
-  conflicts: Conflicts
-  ready: Promise<Kit> | undefined
-}
-
-/** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */
-function restoreFailure(error: unknown): Failure | undefined {
-  for (let at = error; at instanceof Error; at = at.cause) {
-    if (at instanceof Failure && at.code === 'GIT_RESTORE_NEEDED') return at
-  }
-  return undefined
-}
-
-export async function within<T>(work: Promise<T>, ms: number): Promise<T> {
-  const budget = AbortSignal.timeout(ms)
-  return Promise.race([
-    work,
-    new Promise<never>((_, reject) =>
-      budget.addEventListener('abort', () => reject(new Error('machine start timed out'))),
-    ),
-  ])
-}
-
-/**
- * The file tools' view of a machine: its commands, which wake it first (`ensure`), and its own file
- * API. The Builder's machines and the Assistant's both build their `SandboxFilesystem` on it.
- */
-export function execIn(kit: Kit, ensure: () => Promise<unknown>): SandboxExec {
-  const { sandbox } = kit
-  return {
-    id: sandbox.id,
-    get filesystem() {
-      return sandbox.filesystem
-    },
-    executeCommand: async (command, args, options) => {
-      await ensure()
-      const result = await sandbox.executeCommand?.(command, args, options)
-      if (result === undefined) throw new Error('the machine cannot run commands')
-      return result
-    },
-  }
-}
+import type { Session } from './session.ts'
+import { execIn, restoreFailure, within } from './session.ts'
 
 class BuilderMachines implements Machines {
   private readonly deps: MachinesDeps
@@ -112,12 +59,47 @@ class BuilderMachines implements Machines {
     return result
   }
 
-  kill = (conversationId: ConversationId) => this.deps.api.kill(conversationId)
+  /** The conversation is deleted: its session goes, and every machine it marked is killed. */
+  kill = (conversationId: ConversationId) => {
+    this.sessions.delete(conversationId)
+    return this.deps.api.kill(conversationId)
+  }
 
-  /** Wakes or creates the machine, once per workspace; the seed ran in `onStart` before this returns. */
-  private ensure(session: Session): Promise<Kit> {
-    session.ready ??= this.boot(session)
-    return session.ready
+  /**
+   * Wakes or creates the machine, once per session; the seed ran in `onStart` before this returns.
+   * The first use of a turn on a machine already up reads again which files hold conflict markers:
+   * the warning the model reads is of the tree as the turn finds it, not of the start that told it.
+   */
+  private async ensure(session: Session): Promise<Kit> {
+    session.used = true
+    if (session.ready === undefined) {
+      const ready = this.boot(session)
+      session.ready = ready
+      // The start told the conflicts itself: nothing to read again this turn.
+      session.refreshing = Promise.resolve()
+      // A start that failed is tried again by the next tool or turn, not kept rejected for good.
+      ready.catch(() => {
+        if (session.ready === ready) session.ready = undefined
+      })
+    } else if (session.refreshing === undefined) {
+      const refreshing = this.refresh(session, session.ready)
+      session.refreshing = refreshing
+      // A read that failed is tried again by the next tool, like a start.
+      refreshing.catch(() => {
+        if (session.refreshing === refreshing) session.refreshing = undefined
+      })
+    }
+    const kit = await session.ready
+    await session.refreshing
+    return kit
+  }
+
+  /** A start that ran meanwhile (a resume) told the conflicts itself, and its word is the later one. */
+  private async refresh(session: Session, ready: Promise<Kit>) {
+    const kit = await ready
+    const result = await this.run(kit, markersScript(this.workdir))
+    if (result.exitCode !== 0) throw new Error(`markers not read: ${result.stderr.slice(-500)}`)
+    if (session.starts === 0) session.conflicts = conflictsOf(result.stdout)
   }
 
   /**
@@ -198,24 +180,18 @@ class BuilderMachines implements Machines {
     this.conflicted(session, synced.stdout)
   }
 
-  /** The files stay as they are; the repository must still be there. */
-  private async keep(kit: Kit) {
-    const kept = await this.run(kit, keepScript(this.workdir))
-    if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
-  }
-
   /**
-   * What the machine holds once it is up. One found by name keeps its folder and brings `main` in.
-   * A later start in the same turn is Mastra reconnecting a machine that paused or dropped
-   * (`retryOnDead`): it keeps what the turn wrote. A new one is seeded; a second new one in the same
-   * turn is a machine that died, and what the turn wrote on it is gone.
+   * What the machine holds once it is up, at every start Mastra's `onStart` hook runs: one found by
+   * name, or one E2B paused that a tool resumed (`retryOnDead`), keeps its folder and brings `main`
+   * in, with the work the Hub has not saved kept on it. A new one is seeded; a second new one in the
+   * same turn is a machine that died, and what the turn wrote on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
     const { conversationId, kit } = session
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      return session.starts === 1 ? this.sync(kit, session) : this.keep(kit)
+      return this.sync(kit, session)
     }
     if (session.starts > 1) {
       session.lost = true
@@ -224,9 +200,9 @@ class BuilderMachines implements Machines {
     await this.seed(kit, session)
   }
 
-  async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
+  /** The conversation's machine, built and not touched: building it asks the provider nothing. */
+  private open(input: Parameters<Machines['workspaceFor']>[0], name: string): Session {
     const { companyId, projectId, conversationId, onPhase } = input
-    const name = `conexus-${this.deps.installation}-${conversationId}`
     const kit = this.deps.kit({
       id: name,
       allowOut: ALLOWED_HOSTS,
@@ -243,8 +219,27 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ companyId, projectId, conversationId, onPhase, kit },
-      ...{ starts: 0, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
+      ...{
+        starts: 0,
+        used: false,
+        refreshing: undefined,
+        lost: false,
+        conflicts: NO_CONFLICTS,
+        ready: undefined,
+      },
     }
+    return session
+  }
+
+  async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
+    const { companyId, projectId, conversationId, onPhase } = input
+    const name = `conexus-${this.deps.installation}-${conversationId}`
+    const session = this.sessions.get(conversationId) ?? this.open(input, name)
+    // A turn takes the conversation's machine over with its own phases; the work it counts starts from nothing.
+    Object.assign(session, {
+      ...{ companyId, projectId, onPhase },
+      ...{ starts: 0, used: false, refreshing: undefined, lost: false },
+    })
     this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,
@@ -270,7 +265,7 @@ class BuilderMachines implements Machines {
 
   async collect({ conversationId, base }: { conversationId: ConversationId; base: Sha }) {
     const session = this.sessions.get(conversationId)
-    if (session?.ready === undefined) return 'unchanged'
+    if (session?.used !== true) return 'unchanged'
     const kit = await this.ensure(session)
     if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
@@ -317,20 +312,18 @@ class BuilderMachines implements Machines {
   }
 
   touched(conversationId: ConversationId) {
-    return this.sessions.get(conversationId)?.ready !== undefined
+    return this.sessions.get(conversationId)?.used === true
   }
 
   /**
-   * The turn is over and the machine pauses with its folder as the turn left it: what the Hub did
-   * not save stays for the next start to merge (no reference discards a session's unsaved work). A
-   * start still running settles first; its failure was the turn's to hear.
+   * The turn is over: the session stays, as the Factory keeps a session's machine, and nothing is
+   * stopped. E2B pauses the machine on its own timeout (`machine/e2b.ts`), with its folder as the
+   * turn left it, and the next tool resumes it. A start still running settles first; its failure
+   * was the turn's to hear.
    */
   async release(conversationId: ConversationId) {
-    const session = this.sessions.get(conversationId)
-    this.sessions.delete(conversationId)
-    if (session?.ready === undefined) return
-    await Promise.allSettled([session.ready])
-    await session.kit.sandbox.stop?.()
+    const ready = this.sessions.get(conversationId)?.ready
+    if (ready !== undefined) await Promise.allSettled([ready])
   }
 }
 

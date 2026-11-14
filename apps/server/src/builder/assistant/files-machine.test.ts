@@ -6,11 +6,17 @@ import { test } from 'node:test'
 import { setImmediate, setTimeout as sleep } from 'node:timers/promises'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { endOf, messagesOf, sessionUrl, stopped } from '../conversation/test-conversation.ts'
+import {
+  endOf,
+  hubBeside,
+  messagesOf,
+  sessionUrl,
+  stopped,
+} from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
 import { tool } from '../conversation/test-questions.ts'
 import type { Control } from '../machine/test-machine.ts'
-import { assisting, created } from './test-assistant.ts'
+import { assisting, created, talking } from './test-assistant.ts'
 import {
   conversation,
   documentsIn,
@@ -101,13 +107,31 @@ test('a máquina fora: o turno falha e o arquivo não vaza', async (t) => {
   assert.ok(on.hub.lines.some((line) => line.message === 'MACHINE_UNAVAILABLE'))
 })
 
-test('a máquina fora com o arquivo só do histórico: o turno falha em vez de seguir com a nota', async (t) => {
+test('a máquina fora com o arquivo só do histórico: o turno segue com a nota', async (t) => {
   const on = await conversation(t)
   assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
-  on.hub.assistantMachines.control.start = 'unreachable'
-  const events = await on.say('E os prazos?')
-  assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
-  assert.equal(on.calls.length, 1, 'the second question never reached the model')
+  const [first] = on.calls
+  assert.ok(first)
+  const restarted = await hubBeside(t, on.hub)
+  restarted.assistantMachines.control.start = 'unreachable'
+  const next = await talking(t, restarted, on.ana, on.url)
+  assert.equal(endOf(await next.say('E os prazos?')), 'complete')
+  assert.equal(on.calls.length, 2, 'the second question reached the model')
+  assert.ok(
+    on.calls[1]?.texts.some((text) => text.startsWith('[File not uploaded]')),
+    'the native note',
+  )
+})
+
+test('o turno seguinte reusa a máquina que o anterior deixou ligada', async (t) => {
+  const on = await conversation(t)
+  const { control } = on.hub.assistantMachines
+  assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
+  assert.equal(endOf(await on.say('Oi')), 'complete')
+  assert.equal(endOf(await on.say('Obrigado')), 'complete')
+  assert.equal(control.names.length, 1, 'one start for the three turns')
+  assert.equal(control.stops, 0, 'no turn ended by stopping the machine')
+  assert.equal(placed(on.work).length, 1, 'the file was written once')
 })
 
 test('a gravação recusada: o turno falha e o arquivo não vaza', async (t) => {

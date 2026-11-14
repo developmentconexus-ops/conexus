@@ -12,7 +12,6 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
@@ -25,6 +24,7 @@ import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
+import { slowly } from './test-machine-slow.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
 export function restoreRefused(): Promise<Buffer> {
@@ -199,22 +199,15 @@ export function localKit(folder: string, control: Control): KitFactory {
   }
 }
 
+/** E2B paused the machine since the last tool: the next command finds it gone and Mastra resumes it, which runs `onStart` again. */
+export function pausedByE2b(control: Control) {
+  control.outcome = 'connected'
+  control.restartBeforeNextCommand = true
+}
+
 /** Whether the provider holds the machine of this name: found by a turn before, and not killed. */
 function heldBy(control: Control, name: string): boolean {
   return control.discoverable.includes(name) && !control.killed
-}
-
-/** A file sent in 64 KiB chunks, `chunkMs` apart, until the read's signal aborts it. */
-async function* slowly(control: Control, path: string, signal: AbortSignal | undefined) {
-  for await (const chunk of createReadStream(path, { highWaterMark: 65_536 })) {
-    try {
-      await sleep(control.chunkMs, undefined, { signal })
-    } catch (error) {
-      control.readsCut += 1
-      throw error
-    }
-    yield chunk
-  }
 }
 
 /**
@@ -325,7 +318,15 @@ export async function world(
   function openWithCommandMs(commandMs: number) {
     return openOn(machinesWith({ commandMs }))
   }
-  return { machines, repository, base, control, phases, errors, open, openWithCommandMs, folder }
+  /** The Hub was restarted: a new process holds no session, and its machines find the conversation's by name. */
+  function restartHub() {
+    const restarted = machinesWith()
+    return { machines: restarted, open: (id = CONVERSATION) => openOn(restarted, id) }
+  }
+  return {
+    ...{ machines, repository, base, control, phases, errors, open, openWithCommandMs },
+    ...{ restartHub, folder },
+  }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */
