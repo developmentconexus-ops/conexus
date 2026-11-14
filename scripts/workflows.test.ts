@@ -202,38 +202,11 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
       if (onServer(job)) assert.equal(job.environment, 'production', `${name}: ${id}`)
 })
 
-test('o agregador espera todos os trabalhos de código da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
+test('o agregador espera todos os trabalhos de código da CI', () => {
   const others = Object.keys(ci.jobs).filter((name) => !['ci', 'processo', 'flaky'].includes(name))
   assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
   const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
-  for (const name of others.filter((name) => name !== 'removals')) {
-    assert.ok(results.includes(`needs.${name}.result`), name)
-  }
-  assert.match(
-    results,
-    /needs\.removals\.result == 'skipped' && needs\.removals-plan\.result == 'success' && needs\.removals-plan\.outputs\.selected == '0' && 'success' \|\| needs\.removals\.result/,
-  )
-  assert.equal(ci.jobs.removals?.needs, 'removals-plan')
-  assert.equal(ci.jobs.removals?.if, "needs.removals-plan.outputs.selected != '0'")
-})
-
-test('o plano das remoções lê o pull request pelo ambiente e roda todas as linhas quando o plano diz', () => {
-  const plan = ci.jobs['removals-plan']?.steps.find((step) => step.id === 'plan')
-  assert.match(plan?.env?.BASE ?? '', /^\$\{\{ github\.event_name == 'pull_request' && /)
-  const pullRequest = plan?.env?.PULL_REQUEST ?? ''
-  for (const field of [
-    'github.event.pull_request.title',
-    'github.head_ref',
-    'github.event.pull_request.labels.*.name',
-  ]) {
-    assert.ok(pullRequest.includes(`toJSON(${field})`), field)
-  }
-  assert.doesNotMatch(plan?.run ?? '', /\$\{\{/)
-  assert.match(
-    plan?.run ?? '',
-    /node scripts\/removals\.ts --plan \$\{BASE:\+--base "\$BASE" --pull-request "\$PULL_REQUEST"\}/,
-  )
-  assert.match(plan?.run ?? '', /if \.everything then "" else env\.BASE end/)
+  for (const name of others) assert.ok(results.includes(`needs.${name}.result`), name)
   assert.ok(ci.on.pull_request && JSON.stringify(ci.on.pull_request).includes('labeled'))
 })
 

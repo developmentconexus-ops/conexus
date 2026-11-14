@@ -26,8 +26,6 @@
     "method-freeze": "node scripts/check-method-freeze.ts",
     "new-dependencies": "node scripts/list-new-dependencies.ts",
     "migrations": "node scripts/check-migrations.ts",
-    "preremovals": "npm run build -w @conexus/server",
-    "removals": "node scripts/removals.ts",
     "record": "node scripts/record.ts",
     "record-provider": "node scripts/record-provider.ts",
     "record-connector": "node scripts/record-connector.ts",
