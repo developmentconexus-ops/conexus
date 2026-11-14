@@ -68,7 +68,6 @@ One line per document (`check-docs`).
 - [0029](decisions/0029-git-on-server-disk.md) Git on disk.
 - [0030](decisions/0030-model-accounts-company-and-person.md) old accounts.
 - [0031](decisions/0031-connectors-single-executor.md) connectors.
-- [0032](decisions/0032-data-leaving-brazil-told.md) data leaving Brazil.
 - [0033](decisions/0033-own-visual-pieces.md) own visual pieces.
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
 - [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish by runner.
