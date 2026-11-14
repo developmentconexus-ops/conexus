@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+# A push to main has a group of its own, its commit's, so no run of main replaces the one before it,
+# running or waiting: every commit of main keeps its removal rows and its result. A pull request's
+# new push still replaces its own old run (twenty, ci-front.yaml:13-14).
 concurrency:
   group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -114,6 +117,8 @@ jobs:
       # Only a critical advisory fails the run: the lower ones are read in the step's output.
       - run: npm audit --audit-level=critical
 
+  # A red `processo` is a pull request waiting on the founder or on a card, not broken code, so `ci`
+  # does not read it; the merge needs both green (delivery L15).
   processo:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
