@@ -14,6 +14,46 @@ const TABLE_DOOR = '(^|/)(hub|builder)/[^/]+/public-tables\\.ts$'
 const TEST_HELPER = `${SERVER}/.*/test-[^/]+\\.ts$`
 const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
+// The access contract (founder's decision 2A, 2026-11-14): the agents and the apps reach the data
+// only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
+// the apps are the conversations, their tool adapters and the app packages.
+const DATA = `^(${SERVER}/(hub/(connectors|copies|ontology)/|builder/copy-clock/|platform/copy-sql\\.ts$)|packages/connectors/)`
+const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|tools)/|packages/app(-contract)?/)`
+// The files that still reach the data directly, each removed by its move onto the contract; nothing joins the list.
+const CONTRACT_MIGRATION = [
+  'agents/agent',
+  'agents/choose',
+  'agents/code-tools',
+  'agents/controller',
+  'agents/conversation-routes',
+  'agents/legacy',
+  'agents/publish',
+  'agents/tools',
+  'agents/write-of',
+  'app-data/context',
+  'app-data/tools',
+  'assistant/assistant',
+  'assistant/connector-access',
+  'assistant/context',
+  'assistant/open',
+  'assistant/overview',
+  'assistant/propose',
+  'assistant/research',
+  'assistant/routes',
+  'assistant/typed-search',
+  'automations/automations',
+  'connectors/connector-tools',
+  'connectors/copy-propose',
+  'connectors/typed-reads',
+  'construtor/code-tool',
+  'construtor/construtor',
+  'controller-kit/turns',
+  'conversation/builder',
+  'conversation/public',
+  'tools/check',
+]
+  .map((file) => `${SERVER}/builder/${file}\\.ts$`)
+  .concat('^packages/app/src/connectors\\.ts$')
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -56,6 +96,17 @@ module.exports = {
         pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER],
       },
       to: { path: `${SERVER}/builder/assistant/` },
+    },
+    {
+      name: 'agents-and-apps-reach-data-only-through-the-contract',
+      comment:
+        'Decision 2A: the agents and the apps import nothing of the data but the access contract in @conexus/hub-api; CONTRACT_MIGRATION lists the files still to move. Their tests drive the test Hub (T5).',
+      severity: 'error',
+      from: {
+        path: AGENTS_AND_APPS,
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, ...CONTRACT_MIGRATION],
+      },
+      to: { path: DATA },
     },
     {
       name: 'server-root-only-through-public',
