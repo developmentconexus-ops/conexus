@@ -60,8 +60,8 @@ export type ConversationMachines = {
    */
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined
   /**
-   * The download: the machine the turn holds, or the one the provider has under the
-   * conversation's mark, woken and paused again; it never makes a machine. One file inside
+   * The download: the machine the Hub holds (left to E2B's timeout), or, with no session, the one
+   * the provider has under the conversation's mark, woken and paused again; it never makes a machine. One file inside
    * `WORK_FOLDER`, capped; `signal` stops the read when the browser leaves.
    */
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead>
@@ -126,7 +126,6 @@ class Machines implements ConversationMachines {
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
   /** The pauses in flight, which the Hub's end waits for (code C62). */
-  private readonly pausing = new Set<Promise<void>>()
   /**
    * Each conversation's line (code C65): a turn's opening of its workspace, its pause and a
    * download run one after another, so neither a download nor the next turn starts a machine
@@ -336,15 +335,12 @@ class Machines implements ConversationMachines {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session === undefined) return Promise.resolve()
-    const pausing = this.inLane(conversationId, () => this.pauseLogged(session))
-    this.pausing.add(pausing)
-    return pausing.finally(() => this.pausing.delete(pausing))
+    return this.inLane(conversationId, () => this.pauseLogged(session))
   }
 
-  /** Stops every machine of a turn in flight and waits for the pauses already begun. */
+  /** Pauses every machine the Hub holds and waits for each pause. */
   async stopAll(): Promise<void> {
     await Promise.all([...this.sessions.keys()].map((each) => this.stop(each)))
-    await Promise.all([...this.pausing])
   }
 
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined {
@@ -360,7 +356,9 @@ class Machines implements ConversationMachines {
 
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead> {
     return this.inLane(conversationId, async () => {
-      // A turn in flight holds the conversation's machine: the download reads it there.
+      // The Hub holds the conversation's machine from its first turn on, running or paused by E2B's
+      // own timeout (a tool that finds it paused resumes it): the download reads it there, and
+      // pauses nothing. Without a session (the Hub restarted) the provider's list finds it.
       const held = this.sessions.get(conversationId)
       if (held !== undefined) return this.readFrom(held, path, signal)
       const found = await this.found(conversationId)

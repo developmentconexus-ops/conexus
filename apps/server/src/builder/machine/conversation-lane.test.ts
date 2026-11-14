@@ -105,6 +105,39 @@ test('a máquina achada e perdida antes de ligar: a religação pelo id se recus
   assert.deepEqual(on.killed, [], 'and none was killed')
 })
 
+test('o download sem sessão e sem máquina no provedor: a máquina perdida responde FILE_GONE, e nenhuma é ligada (B2)', async (t) => {
+  const on = machinesOf(t)
+  on.control.discoverable.length = 0
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'FILE_GONE')
+  assert.deepEqual(on.control.names, [], 'none was started')
+})
+
+test('o download sem sessão no Hub, quando a lista do provedor falha: nenhuma máquina é ligada nem morta, a resposta é MACHINE_UNAVAILABLE, e o mesmo arquivo baixa depois (B2)', async (t) => {
+  const on = machinesOf(t)
+  on.control.findFails = 1
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'MACHINE_UNAVAILABLE')
+  assert.deepEqual(on.control.names, [], 'the download started no machine')
+  assert.deepEqual(on.killed, [], 'and killed none by the mark')
+  assert.equal(
+    on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')?.fields.reason,
+    'FIND',
+  )
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'OK')
+})
+
+test('o download sem sessão no Hub, cuja pausa falha: o arquivo lido é entregue, e a pausa que falhou fica no log (F27)', async (t) => {
+  const on = machinesOf(t)
+  // The provider loses the machine while the Hub reads it: the pause after the read fails.
+  on.control.beforeRead = () => {
+    on.control.killed = true
+  }
+  const read = await on.machines.read(on.id, 'a.txt', kept())
+  assert.equal(read.kind === 'OK' ? read.bytes.toString() : read.kind, 'um')
+  const line = on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')
+  assert.equal(line?.fields.reason, 'STOP')
+  assert.equal(line?.fields.conversationId, on.id)
+})
+
 test('a partida que passa do prazo: o download responde MACHINE_UNAVAILABLE, e a máquina que liga depois é pausada (F26)', async (t) => {
   const on = machinesOf(t, {}, { startMs: 100 })
   on.control.upMs = 400
