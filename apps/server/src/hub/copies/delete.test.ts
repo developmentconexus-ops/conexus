@@ -165,8 +165,9 @@ test('rodada em andamento: ela termina INTERRUPTED e não deixa nada', async (t)
   assert.deepEqual(await owner(on, 'select count(*)::int n from copies.copy_run'), [{ n: 0 }])
 })
 
+/** The copies' schedules, not the Hub's own daily trace cleanup. */
 function schedulesOf(on: CopiesOn) {
-  return on.hub.mastra.schedules.list()
+  return on.hub.mastra.schedules.list({ workflowId: 'conexus-copy-run' })
 }
 
 test('agenda: sai com a cópia, pausada ou não', async (t) => {

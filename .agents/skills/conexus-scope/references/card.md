@@ -5,8 +5,8 @@ is the only part the founder approves. The rest serves the builder and the revie
 Portuguese or English, one language per card.
 
 The card never carries whole files. A unit's section is its build spec: what its builder reads,
-with the start of the code where a step is not obvious. The reader opens every cited line, the
-founder approves only his page, and the closing deletes the card; then the code is the only source.
+with the start of the code where a step is not obvious. The reader opens every cited line; the
+closing deletes the card; then the code is the only source.
 
 ```markdown
 # Etapa <n>: <nome>
@@ -88,8 +88,9 @@ Factory), e a API nativa com as opções e o padrão>
 ### Os contratos que a unidade cria
 
 Assinaturas em TypeScript, com o arquivo onde vivem (hub-api, server, web), e o que se apaga:
-rotas (método, caminho, acesso, entrada, saídas e falhas), colunas de tabela com
-tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhum corpo de função.
+rotas (método, caminho, acesso, entrada, saídas e falhas), colunas numa tabela com tipo,
+restrição e "ao apagar" (o `on delete` de cada chave estrangeira), tipos exportados por nome e
+campos, códigos de falha. Nenhum corpo de função.
 
 Além delas, a forma de cada coisa (a conclusão do estudo desce para cá, porque quem
 constrói não lê o estudo):
@@ -134,30 +135,28 @@ mostra, e o teste que falha hoje>
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
 - The founder's page holds only his real decisions: a product choice, references diverging on what
-  a person sees, a remendo row new in the step ([code C75](../../../../docs/guides/code.md)), a
+  a person sees, a remendo row of his ([delivery L6](../../../../docs/guides/delivery.md)), a
   guide rule the study found resting only on "implemented so". Never a fact a run can show, a
   technical choice where the references converge, the wording of a library's output, or a
   near-hypothetical case.
 - Every piece the use script touches has its row in the reference table, and every file the units
   change is explained by a row or a contract. A remendo row without its proof and its
   [boundaries](../../../../docs/reference/boundaries.md) entry goes back to the study.
+- Each invariant stated in prose has its criterion and named test.
 - Each unit lists what it deletes from `main` before what it adds. A fact used by two units has one
   owner unit and one criterion whose test crosses both.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table,
-  and each cell names its criterion; a step with no write writes "nenhuma". Founder, 2026-10-15:
-  "A-A".
+  and each cell names its criterion; a step with no write writes "nenhuma".
 - The card takes every item of the open issues labelled `next-card`, or says on the founder's page
-  why one waits. Whoever files an item for the next card applies the label; the closing removes the
-  items the step took ([delivery L19](../../../../docs/guides/delivery.md)).
+  why one waits. Whoever files an item for the next card applies the label.
 
 ## The reader's questions
 
 The reader of step <n> answers each one with the card's line.
 
-1. For each thing a criterion or contract observes (a status, a failure code, a bound, the console,
-   a cookie), open the guide that owns it: does the card hold against its rules, cited or not, and
-   cite them by identifier without restating them?
+1. For each thing a criterion or contract observes, open the guide that owns it: does the card
+   hold against its rules, cited or not, and cite them by identifier without restating them?
 2. Does each named test reach what it tests through the public door ([testing
    T5](../../../../docs/guides/testing.md))?
 3. Does any criterion rest on a fact the study lists as not proved?
@@ -171,4 +170,5 @@ The reader of step <n> answers each one with the card's line.
    C23 and C26?
 8. Opened at the installed version, does every cell of the reference table, and every reference
    line a unit cites, say what the card claims? Has every row its unit or a reason to stay out, every
-   built row its trace, and every remendo row its proof and the founder's word?
+   built row its trace, and every remendo row its proof and decision?
+9. Has every foreign key its "ao apagar", and every prose invariant its criterion and test?

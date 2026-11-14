@@ -43,7 +43,7 @@ test.each(READS)(
   },
 )
 
-test('o comando que ainda diz sua saída mostra a saída, e a linha fecha quando ele termina (8)', () => {
+test('o comando que ainda diz sua saída segue fechado, e só o clique da pessoa abre (8)', () => {
   const command: ToolItem = {
     kind: 'tool',
     id: 't-9',
@@ -54,9 +54,11 @@ test('o comando que ainda diz sua saída mostra a saída, e a linha fecha quando
     output: 'começo\n',
   }
   const view = render(<ToolRow tool={command} />)
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+  fireEvent.click(screen.getByRole('button'))
   expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
   view.rerender(<ToolRow tool={{ ...command, state: 'result', result: 'começo\n' }} />)
-  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
 })
 
 test.each([

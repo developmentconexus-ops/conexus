@@ -11,16 +11,17 @@ One line per document (`check-docs`).
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): design.
 - [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md).
-- [how-to/hub-server.md](how-to/hub-server.md): the server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
-- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
+- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
+- [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
+- [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards.
 - [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
-- [reference/checklist.md](reference/checklist.md): readers' questions.
+- [reference/checklist.md](reference/checklist.md): checklist.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files, commands.
 
@@ -94,7 +95,7 @@ One line per document (`check-docs`).
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
-- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries; [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI; [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope; [0062](decisions/0062-a-write-declares-its-provider-facts.md) writes; [0063](decisions/0063-copy-models-proof.md) proofs; [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) Ontologia; [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) Brain; [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md) metamodel.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries; [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI; [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope; [0062](decisions/0062-a-write-declares-its-provider-facts.md) writes; [0063](decisions/0063-copy-models-proof.md) proofs; [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) Ontologia; [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) Brain; [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md) metamodel; [0068](decisions/0068-mastra-tracing-in-its-own-database.md) traces.
 
 ## Skills
 

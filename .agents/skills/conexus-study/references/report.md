@@ -16,8 +16,9 @@ commit, a short verbatim snippet.
 
 What a person will do and see at the end, with an example; what the references do, in plain words;
 what we build. Decisions only where they are really his: a product choice, references diverging on
-what a person sees, or a remendo row (code C75). Each one lettered, with a recommendation, its
-verdict, and the native how in one plain line, never theory alone.
+what a person sees, or a remendo row that is his ([delivery L6](../../../../docs/guides/delivery.md)). Each one lettered, with a recommendation, its
+verdict, and the native how in one plain line, never theory alone. Only a **mesma situação** row
+says what a reference does here ([sources](sources.md), the situation).
 
 ## 2. The question and its premise
 
@@ -28,6 +29,9 @@ Each question in one sentence; the premise as it arrived; whether it held, and t
 <the table below, one row per piece>
 
 Searched: <where, with each analog's pin; set aside, with why>.
+
+Verification pass ([sources](sources.md)): <the reader; rows checked, fixed, dropped, and what rested
+on each dropped one>.
 
 Options a guarantee rests on: <library and constructor, option, default at the installed version
 with `file:line`, value to use and why, documentation warning>. Errors the library handles itself,
@@ -61,9 +65,9 @@ Only for a step with a screen: old and new side by side, per state, with the cap
 The one artifact from study to review. The study fills every column but "Unidade" and "Arquivo
 novo", which the card adds; the verdicts are [code C75](../../../../docs/guides/code.md)'s.
 
-| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
+| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, or "não precisa" | Path |
+| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`, the situation it solves and its match label ([sources](sources.md)); "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, firstmate's with how to undo it (delivery L6), or "não precisa" | Path |
 
 Never one row for "o resto". A product piece no library has (our Git, the accounts queue) is a
 remendo row that cites its decision record.
@@ -76,7 +80,9 @@ What the table's shape cannot show. The study closes when each box holds.
 - [ ] Every library claim from the installed version, the maintainers' skill loaded.
 - [ ] Every built row traced in the closest reference's source, `file:line`, **lido**; no built row
   rests on a relay or a docs-only line.
-- [ ] Every number and limit sourced, or dropped.
+- [ ] Every number and limit sourced, a reference's only from a **mesma situação** one, or dropped.
+- [ ] The verification pass recorded; no dropped row still grounds a verdict, an option or the
+  founder's page.
 - [ ] Every reader line reopened, or marked relay in section 4.
 - [ ] Notes, clones, captures and run outputs beside the report.
 

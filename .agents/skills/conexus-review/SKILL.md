@@ -1,6 +1,6 @@
 ---
 name: conexus-review
-description: "Reviews a whole Conexus roadmap step at its exact commit, as the one Opus reviewer that did not build it: reads the rules from main, reads every file of the diff and compares each built piece with the reference's own code, walks the card's reference table row by row, tries to break every acceptance criterion, runs the refusal criteria, asks of every line whether it exists only because the old code had it, labels each finding Bloqueia, Fechamento or Issue futura, and gives one verdict with file and line. Also checks a fix's delta. Use when instructions name a step to review."
+description: "Reviews a Conexus roadmap step at its exact commit, as the one Opus reviewer that did not build it: reads the rules from main, reads every file of a unit's diff and compares each built piece with the reference's own code; for the whole step, reads only the card's reference table row by row and the seams between pull requests, never an approved diff again; tries to break every acceptance criterion, runs the refusal criteria, asks of every line whether it exists only because the old code had it, labels each finding Bloqueia, Fechamento or Issue futura, and gives one verdict with file and line. Also checks a fix's delta. Use when instructions name a step to review."
 ---
 
 # Review
@@ -8,7 +8,7 @@ description: "Reviews a whole Conexus roadmap step at its exact commit, as the o
 ## When to use
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
-QA, at `main` once the last unit is merged and CI is green there. The same skill reviews each unit
+QA, at `main` once the last unit is merged and CI is green. The same skill reviews each unit
 commit by commit. Later passes are a delta check (step 9).
 
 ## What it receives
@@ -20,25 +20,28 @@ The pull request, its head commit and the card; nothing from the builders' conve
 1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
-   Record the reads and the commit; an unloaded skill is read from its `stack.md` docs column.
-2. Read every file of the step's diff, not only the card's rows: `main` at the last group's merge
-   against the step's first commit, and against each unit's section, at the exact commit; a unit review reads its commit.
+   Record reads and commit; an unloaded skill is read from its `stack.md` docs column.
+2. A unit review reads every file of its commit against its section. The step review
+   ([delivery L9](../../../docs/guides/delivery.md)) reads only the whole reference table and the
+   seams between pull requests, its diff in steps 5 and 6; never an approved one.
 3. Try a counterexample to each acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser in
-   doubt; read QA's report if posted, never wait. Read the CI quality job; never run
+   doubt; read QA's report if posted. Read the CI quality job; never run
    Stryker locally. Hand-mutate the key lines, listed under Ran
    ([T27](../../../docs/guides/testing.md)); one no test kills is a finding (L12).
 5. Walk the card's reference table against the diff ([code C75](../../../docs/guides/code.md)): a
    nativo row uses the named API; an embrulhado row adds only its line; a remendo row's native
    candidate runs at the installed version, listed in Ran, and one that serves is a Bloqueia. A
    changed file no row or contract explains is a Bloqueia (C75), outside the card's folders unless
-   the build report declares it (L7). A defect fix walks its report's rows. Then compare each built
-   piece with the reference's code ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or
-   does a library hold it?
-6. Walk the checklist, sweeping each class across the diff, and fill its sweep table (a row
-   per review rule: search, result). A screen: [screen](references/screen.md).
+   the build report declares it (L7). A row on a reference not **mesma situação** in the study's
+   [verification pass](../conexus-study/references/sources.md) is a finding. A defect fix walks its
+   report's rows. Then compare each built piece with the reference's code
+   ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or does a
+   library hold it?
+6. Walk the checklist across the diff; fill its sweep table (a row per rule: search, result). A
+   screen: [screen](references/screen.md).
 7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Every Fechamento about
    code shape goes on the closing list, checked as done.
 8. Write one verdict; an unfinished step is no verdict.
@@ -79,7 +82,7 @@ Only a Bloqueia holds the merge ([delivery L12](../../../docs/guides/delivery.md
 
 ## Stop and ask
 
-The card and a guide contradict each other: report both lines, choose neither.
+The card contradicts a guide: report both lines, choose neither.
 
 ## When it closes
 

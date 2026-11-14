@@ -23,9 +23,9 @@ for brought code, the entry sheets and the old code at its frozen commit.
    "Hoje no main" first: every file of `main` the use script runs through, inherited ones included.
    Then "Referência": three to six closest analogs (for the AI build flow, AI app builders first),
    the library's own products, the native feature and the old product, read at the installed
-   version ([sources](references/sources.md)), with the options a guarantee rests on, their
-   defaults, and the errors the library handles itself (code C50). Name where you searched; "none
-   found" counts only with that list. **Trace** each built row in the closest reference's source,
+   version, each with its situation and match label ([sources](references/sources.md)), the options
+   a guarantee rests on, their defaults, and the errors the library handles itself (code C50). Name
+   where you searched. **Trace** each built row in the closest reference's source,
    `file:line`, **lido**; Mastra rows also in Mastra Code and Factory
    ([sources](references/sources.md)).
 3. **Run** the old product for anything it did, and one reference wherever the step changes what a
@@ -38,14 +38,15 @@ for brought code, the entry sheets and the old code at its frozen commit.
 5. **Then the repository.** Read [architecture](../../../docs/architecture.md), the subject's
    decision records, the guide [`docs/index.md`](../../../docs/index.md) names, and the `next-card`
    issues. Test the premise of each decision and boundaries entry the step leans on, `main`'s
-   included, against its row at the installed version; a failed one goes to the founder, quoting
+   included, against its row at the installed version; a failed one goes to its decider (delivery L6), quoting
    the decision.
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how
    ([report](references/report.md), section 4); without it, it is not brought.
-7. **Verify.** Reopen every line a reader reported, or label it relay. Every cell that reaches the
-   founder's page or an option table is opened by the study's author, never left as a subagent
-   relay.
+7. **Reopen.** Every reader line, or label it relay; every cell reaching the founder's page or an
+   option table, by the author.
+8. **The verification pass** ([sources](references/sources.md)), by a reader that wrote none of
+   the report, before it is final.
 
 **The study rule**: a decision whose only basis is "implemented so",
 "only tested so" or "decided before" is dropped, or defended in writing with a reason of its own. A

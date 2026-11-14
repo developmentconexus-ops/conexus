@@ -1,9 +1,11 @@
 name: CI
 
-# A label re-runs the pull request, so the `all-removals` label runs every removal proof on it.
+# A label re-runs the pull request, so the `all-removals` label runs every removal proof on it and the
+# `emergência` label lets the method freeze pass. `ready_for_review` re-runs the card check a draft
+# pull request held back (delivery L5).
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   push:
     branches: [main]
 
@@ -20,6 +22,36 @@ env:
   NODE_COMPILE_CACHE: /tmp/node-compile-cache
 
 jobs:
+  # Whether the suites have anything to read. `code` is false only for a pull request whose every
+  # changed path is a document the suites never read (docs/, .agents/, the root AGENTS, CLAUDE, README
+  # and PRODUCT); any other path, a rename's old path, a failed `git diff` or a failed job counts as
+  # code, so the suites run and `ci` ends red, never skipped. DESIGN.md and the prompts and skills
+  # under apps/ and packages/ are read by tests, so they are code.
+  scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.scope.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          code=true
+          if [ "$EVENT" = pull_request ]; then
+            if changed="$(git diff --no-renames --name-only "origin/${BASE_REF}...HEAD")" && [ -n "$changed" ] \
+              && ! grep -qvE '^(docs/|\.agents/|(AGENTS|CLAUDE|README|PRODUCT)\.md$)' <<<"$changed"; then
+              code=false
+            fi
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "Run: code=$code" >> "$GITHUB_STEP_SUMMARY"
+
   check:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -39,6 +71,9 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+        env:
+          # A draft pull request may sit beside the track's card in construction (delivery L5).
+          CONEXUS_DRAFT: ${{ github.event.pull_request.draft }}
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
@@ -95,6 +130,8 @@ jobs:
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
   scripts:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -107,6 +144,8 @@ jobs:
   # How many shards the `server` job needs: scripts/server-shards.ts --count divides the recorded
   # seconds of every server test file (with each file's start) by half the job's timeout, rounded up.
   server-plan:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -168,6 +207,8 @@ jobs:
           TEST_SHARD: ${{ matrix.shard }}/${{ needs.server-plan.outputs.total }}
 
   web:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -183,6 +224,8 @@ jobs:
   # The sweep of every screen (apps/web/sweep.test.ts) is most of the browser time and grows with
   # each screen, so it runs beside `web`, not in it.
   web-sweep:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -194,6 +237,8 @@ jobs:
       - run: npm run test:sweep -w @conexus/web
 
   packages:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -240,6 +285,8 @@ jobs:
         run: npm run test:docs -w @conexus/connectors
 
   e2e:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -271,6 +318,8 @@ jobs:
   # (scripts/removals-select.ts). Every push to main, and a pull request carrying the `all-removals`
   # label, proves all of them.
   removals-plan:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -340,7 +389,8 @@ jobs:
         run: npm run removals -- ${BASE:+--base "$BASE"} --shard "$SHARD/$TOTAL"
 
   image:
-    if: github.event_name == 'pull_request'
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
@@ -389,7 +439,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
+    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -400,11 +450,16 @@ jobs:
     steps:
       - name: Every job must have succeeded
         env:
+          CODE: ${{ needs.scope.outputs.code }}
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.scope.result }} ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
+            # A document-only pull request skips the suites (scope), which is a pass.
+            if [ "$result" = skipped ] && [ "$CODE" = false ]; then
+              continue
+            fi
             if [ "$result" != "success" ]; then
               echo "a job ended as $result"
               exit 1

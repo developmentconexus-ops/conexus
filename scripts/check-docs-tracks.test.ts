@@ -15,7 +15,7 @@ after(() => {
 const TABLE =
   '## A tabela de referência\n\n| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| Git | U1 | `a.ts:f` | `mastra@1.79.0`, `x.ts:1` | uma linha | nativo | — | não precisa | `b.ts` |\n'
 
-function check(cards: Record<string, string>) {
+function check(cards: Record<string, string>, env: Record<string, string> = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-docs-tracks-'))
   dirs.push(dir)
   const files: Record<string, string> = {
@@ -29,7 +29,11 @@ function check(cards: Record<string, string>) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
-  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8', timeout: 120_000 })
+  return spawnSync('node', [SCRIPT, dir], {
+    encoding: 'utf8',
+    timeout: 120_000,
+    env: { ...process.env, CONEXUS_DRAFT: '', ...env },
+  })
 }
 
 test('aceita um cartão por trilho: fronteira, padrão e desenho', () => {
@@ -74,4 +78,10 @@ test('recusa dois cartões do trilho do Assistente, nomeando o trilho', () => {
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /second-card: docs\/steps: assistant: /)
+})
+
+test('um pull request em rascunho aceita o segundo cartão da trilha; fora do rascunho, recusa', () => {
+  const cards = { 'e01-a.md': 'a\n', 'e02-b.md': 'b\n' }
+  assert.equal(check(cards, { CONEXUS_DRAFT: 'true' }).status, 0)
+  assert.equal(check(cards, { CONEXUS_DRAFT: 'false' }).status, 1)
 })
