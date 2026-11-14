@@ -13,6 +13,7 @@ type Step = {
   env?: Record<string, string>
 }
 type Job = {
+  env?: Record<string, string>
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
@@ -266,4 +267,23 @@ test('o processo é um trabalho à parte, sempre presente, que o agregador de c�
 test('uma execução do main nunca cancela a anterior', () => {
   const concurrency = parse(text('ci.yml')).concurrency
   assert.match(concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/)
+})
+
+test('o token que abre a issue do teste instável só vai ao passo que roda os testes, nunca ao job inteiro', () => {
+  const writers = Object.entries(ci.jobs).filter(([, job]) => job.permissions?.issues === 'write')
+  assert.deepEqual(writers.map(([name]) => name).toSorted(), [
+    'e2e',
+    'packages',
+    'scripts',
+    'server',
+    'web',
+    'web-sweep',
+  ])
+  for (const [name, job] of writers) {
+    assert.equal(job.permissions?.contents, 'read', name)
+    assert.equal(job.env?.GH_TOKEN, undefined, name)
+    const holders = job.steps.filter((step) => step.env?.GH_TOKEN !== undefined)
+    assert.equal(holders.length, 1, name)
+    assert.match(holders[0]?.run ?? '', /^npm (run (test|e2e)|test)\b/, name)
+  }
 })

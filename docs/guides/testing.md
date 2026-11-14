@@ -12,7 +12,11 @@ choice of test tools.
   **must** fail; and a test **must not** pass silently when the service it needs is missing. A
   flake on a leak, refusal or isolation assertion **must** be investigated as a defect, never
   skipped or rerun until green. Why: issues #388 and #423 logged the same leak of the provider's
-  text as flakes. [CI, review]
+  text as flakes. On CI only, a failed test of any other class gets one second run
+  (`scripts/test-run.ts`, Node's `--test-rerun-failures`); a test that passes it is flaky, never
+  green unmarked: the job summary shows it and its `flaky` issue takes the occurrence. The
+  second run is never given to a failed test whose file or name says isolation, refusal or leak
+  (`scripts/rerun-exempt.ts`), nor to a file that failed whole. [CI, review]
 
 ## 2. What a test asserts
 

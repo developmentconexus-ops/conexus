@@ -157,12 +157,17 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run test:scripts
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   # How many shards the `server` job needs: scripts/server-shards.ts --count divides the recorded
   # seconds of every server test file (with each file's start) by half the job's timeout, rounded up.
@@ -194,6 +199,9 @@ jobs:
     # Twice a shard's usual time: a test that hangs answers in 10 min, not 15. The shard count keeps
     # the usual time at half of this (server-plan), and server-shards.test.ts holds the two equal.
     timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
     strategy:
       fail-fast: false
       matrix:
@@ -227,6 +235,7 @@ jobs:
       # garbage (nodejs/node#54918), and held shard 3 to the timeout in about one run in eleven.
       - run: npm test -w @conexus/server
         env:
+          GH_TOKEN: ${{ github.token }}
           TEST_SHARD: ${{ matrix.shard }}/${{ needs.server-plan.outputs.total }}
 
   web:
@@ -234,6 +243,9 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -242,6 +254,8 @@ jobs:
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
       # The screens in a real Chromium; their vitest half runs in packages, beside this job.
       - run: npm run test:browser -w @conexus/web
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run build
 
   # The sweep of every screen (apps/web/sweep.test.ts) is most of the browser time and grows with
@@ -251,6 +265,9 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -258,12 +275,17 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
       - run: npm run test:sweep -w @conexus/web
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   packages:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -272,6 +294,8 @@ jobs:
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
       - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api
+        env:
+          GH_TOKEN: ${{ github.token }}
       - run: npm run test:unit -w @conexus/web
 
   # The ready Sankhya reads against Sankhya's public documentation, downloaded here and kept nowhere
@@ -312,6 +336,9 @@ jobs:
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -336,6 +363,8 @@ jobs:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   # A pull request proves the removals whose protected file, test file or row its diff changes
   # (scripts/removals-select.ts). Every push to main, and a pull request carrying the `all-removals`
