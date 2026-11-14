@@ -89,15 +89,14 @@ test('máquina: a releitura das marcas que falha (saída diferente de zero) falh
 
 test('máquina: as marcas são relidas uma vez por turno, na primeira ferramenta de uma máquina já ligada, e não de novo nem depois de uma partida', async (t) => {
   const { open, machines, folder } = await world(t)
-  const marked = '<<<<<<< a\nx\n=======\ny\n>>>>>>> b\n'
+  const marked = String.raw`printf '<<<<<<< a\nx\n=======\ny\n>>>>>>> b\n'`
   async function turnTold(write: string) {
     const workspace = await open()
     await workspace.filesystem?.exists('a.ts')
-    await workspace.filesystem?.writeFile(write, marked)
-    // The markers are read from the files Git tracks.
+    // The markers are read from the files Git tracks, and this one appears after the first tool.
     await (await sandboxOf(workspace)).executeCommand('sh', [
       '-c',
-      `cd ${join(folder, 'app')} && git add -A`,
+      `cd ${join(folder, 'app')} && ${marked} > ${write} && git add -A`,
     ])
     await workspace.filesystem?.exists('a.ts')
     return workspace.getInstructionsAsync()
