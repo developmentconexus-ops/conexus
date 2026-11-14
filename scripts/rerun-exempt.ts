@@ -5,7 +5,8 @@
 // test proves (T10, T12, T13). A failed test is on it when its file is listed whole, or when its
 // own name or the name of a suite around it matches a listed test of its file, read as a
 // `--test-name-pattern` is. rerun-exempt.test.ts crosses the list with removals.json and with the
-// repository's files, so a protection or an isolation file added without its entry fails there.
+// repository's files and test names, so a protection, a file or a test about another company or
+// another Project added without its entry fails there.
 // CONEXUS_RERUN_NEVER names another list, for the tests of scripts/test-run.ts.
 // Revalidate by 2027-05-14, or when scripts/removals.json changes shape.
 import { readFileSync } from 'node:fs'

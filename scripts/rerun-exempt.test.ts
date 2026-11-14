@@ -68,3 +68,25 @@ test('a lista não guarda arquivo que sumiu; o nome que sumiu, a própria linha 
     [],
   )
 })
+
+const NAMED = /\b(?:test|it|describe)(?:\.\w+)?\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g
+const ISOLATION =
+  /outra empresa|outras empresas|outro projeto|isolament|isolation|vaz(?:a|am|amento)\b|leak|alheio/i
+
+test('todo teste ou suíte que diz outra empresa, outro Projeto, isolamento ou vazamento está na lista', () => {
+  const tracked = runCommand('git', ['ls-files', '*.test.ts', '*.test.tsx'], { cwd: ROOT })
+    .split('\n')
+    .filter((file) => /^(apps|packages|tests)\//.test(file))
+  const missing = tracked.flatMap((file) =>
+    [...readFileSync(join(ROOT, file), 'utf8').matchAll(NAMED)]
+      .map((match) => match[2] ?? '')
+      .filter((name) => ISOLATION.test(name) && !neverRerun({ file, names: [name] }))
+      .map((name) => `${file}: ${name}`),
+  )
+  assert.deepEqual(missing, [])
+})
+
+test('todo nome da lista é uma expressão válida', () => {
+  for (const entry of NEVER_RERUN.tests)
+    assert.doesNotThrow(() => new RegExp(entry.name), entry.name)
+})

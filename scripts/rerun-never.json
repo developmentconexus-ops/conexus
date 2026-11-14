@@ -131,6 +131,22 @@
       "name": "o desenvolvedor"
     },
     {
+      "file": "apps/server/src/builder/agents/registry.test.ts",
+      "name": "roda sozinho: o agente registrado recusa uma execução de outro Projeto da mesma empresa"
+    },
+    {
+      "file": "apps/server/src/builder/agents/release.test.ts",
+      "name": "a empresa: removê-la leva os agentes e as ferramentas dela, e nada de outra empresa"
+    },
+    {
+      "file": "apps/server/src/builder/agents/release.test.ts",
+      "name": "outro Projeto: apagar pelo endereço do Projeto A o agente do Projeto B dá AGENT_NOT_FOUND sem efeito; a conversa da Carla fica e o agente responde"
+    },
+    {
+      "file": "apps/server/src/builder/agents/routes.test.ts",
+      "name": "a lista da empresa: sem projectId traz os agentes de todos os Projetos, com projectId só os dele; lastRunAt nulo sem execução; o membro e um Projeto de outra empresa dão NOT_FOUND"
+    },
+    {
       "file": "apps/server/src/builder/agents/routes.test.ts",
       "name": "as recusas"
     },
@@ -143,12 +159,24 @@
       "name": "com o observador respondendo"
     },
     {
+      "file": "apps/server/src/builder/assistant/assistant.test.ts",
+      "name": "a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app publicado com a versão que as pessoas usam; o Projeto de outra empresa nunca \\(F21, F22\\)"
+    },
+    {
       "file": "apps/server/src/builder/assistant/company-memory-propose.test.ts",
       "name": "não tem ferramenta de gravação do Knowledge"
     },
     {
       "file": "apps/server/src/builder/assistant/company-memory-propose.test.ts",
       "name": "os dois têm a proposta"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/company-memory-routes.test.ts",
+      "name": "as rotas: outra empresa não acha a página nem a nota, e quem não é membro não lista"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/company-memory.test.ts",
+      "name": "não passam de empresa: a conversa de outra empresa não recebe as instruções nem enxerga a memória desta"
     },
     {
       "file": "apps/server/src/builder/assistant/file.test.ts",
@@ -165,6 +193,14 @@
     {
       "file": "apps/server/src/builder/assistant/file.test.ts",
       "name": "o dono baixa os bytes"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/files-machine.test.ts",
+      "name": "a gravação recusada: o turno falha e o arquivo não vaza"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/files-machine.test.ts",
+      "name": "a máquina fora: o turno falha e o arquivo não vaza"
     },
     {
       "file": "apps/server/src/builder/assistant/machine.test.ts",
@@ -235,6 +271,10 @@
       "name": "o desenvolvedor"
     },
     {
+      "file": "apps/server/src/builder/automations/release.test.ts",
+      "name": "remover a empresa apaga as automações de todas as pessoas dela, e nenhuma de outra empresa"
+    },
+    {
       "file": "apps/server/src/builder/automations/routes.test.ts",
       "name": "as recusas"
     },
@@ -247,8 +287,20 @@
       "name": "o dono virou membro"
     },
     {
+      "file": "apps/server/src/builder/construtor/construtor.test.ts",
+      "name": "testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascunho inválido e agente de outro Projeto voltam recusados"
+    },
+    {
+      "file": "apps/server/src/builder/construtor/routes.test.ts",
+      "name": "abrir e listar: 201, a mesma chave acha a mesma conversa, a lista é só da pessoa e do Projeto, e a chave com outro Projeto dá IDEMPOTENCY_CONFLICT"
+    },
+    {
       "file": "apps/server/src/builder/conversation/builder.eval.test.ts",
       "name": "o portão do Builder: uma senha colada"
+    },
+    {
+      "file": "apps/server/src/builder/conversation/conversations.test.ts",
+      "name": "a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; Diego não recebe evento de Ana; nenhuma rota do Mastra"
     },
     {
       "file": "apps/server/src/builder/conversation/guard.test.ts",
@@ -291,6 +343,10 @@
       "name": "sem união"
     },
     {
+      "file": "apps/server/src/builder/model-accounts/openai/sign-in.test.ts",
+      "name": "a entrada de outra empresa: a espera diz que venceu, sem chamar a OpenAI"
+    },
+    {
       "file": "apps/server/src/builder/runs/preview-send.test.ts",
       "name": "admissão no envio: a empresa marcada para apagar"
     },
@@ -307,8 +363,20 @@
       "name": "tirar a pessoa depois de guardada a versão"
     },
     {
+      "file": "apps/server/src/builder/runs/runs.test.ts",
+      "name": "execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Projeto passa"
+    },
+    {
       "file": "apps/server/src/builder/tools/code-removal.test.ts",
       "name": "um rascunho que a escolhe enquanto os Workers saem"
+    },
+    {
+      "file": "apps/server/src/builder/tools/routes.test.ts",
+      "name": "apagar: o agente de outro Projeto que usa a ferramenta vem com o Projeto dele, na lista e na recusa"
+    },
+    {
+      "file": "apps/server/src/builder/tools/routes.test.ts",
+      "name": "apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, TOOL_IN_USE com os nomes e nada muda; de outra empresa ou de uma ligação que o Projeto não recebeu, TOOL_NOT_FOUND"
     },
     {
       "file": "apps/server/src/builder/tools/routes.test.ts",
@@ -343,8 +411,16 @@
       "name": "resgate: outro vínculo"
     },
     {
+      "file": "apps/server/src/hub/apps/frame-handoff.test.ts",
+      "name": "passagem do iframe: outra empresa, host desconhecido ou Projeto apagado 404; sem sessão 401; de fora 403; nenhum passe"
+    },
+    {
       "file": "apps/server/src/hub/apps/prune.test.ts",
       "name": "poda: a publicada fica"
+    },
+    {
+      "file": "apps/server/src/hub/apps/prune.test.ts",
+      "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
     },
     {
       "file": "apps/server/src/hub/apps/publish.test.ts",
@@ -367,6 +443,26 @@
       "name": "a anotação recusada"
     },
     {
+      "file": "apps/server/src/hub/connectors/assistant-port-operation.test.ts",
+      "name": "operationOf: uma leitura de uma ligação que o Projeto recebeu dá a entrada do kit; uma operação que não é leitura, uma ligação não recebida e outra empresa, nada; o membro lê como a dona"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/assistant-port.test.ts",
+      "name": "a lista: no Início cada ACTIVE da empresa, num Projeto só as liberadas, com a escolha; NEW, NEEDS_REAUTH e outra empresa ficam de fora; o membro recebe a mesma lista da dona"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/assistant-port.test.ts",
+      "name": "o Início: a dona, a administradora e o membro leem uma ligação ACTIVE escolhida, sem liberação de Projeto; NEEDS_REAUTH, outra empresa e uma apagada dão a mesma resposta"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/connections-several.test.ts",
+      "name": "o id de outra empresa dá 404 no Testar, no Desligar e no getConnection"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/connections.test.ts",
+      "name": "a dona de outra empresa não testa nem desliga a ligação de Ana"
+    },
+    {
       "file": "apps/server/src/hub/connectors/connections.test.ts",
       "name": "ligar: quem pode, e as recusas"
     },
@@ -375,12 +471,28 @@
       "name": "a origem, o redirecionamento e o teto"
     },
     {
+      "file": "apps/server/src/hub/connectors/project-connection.test.ts",
+      "name": "a liberação: a empresa lê, libera e tira as suas, e nenhuma de outra empresa"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/sign-ins.test.ts",
+      "name": "outra empresa: a mesma conta, sem nomear quem a tem"
+    },
+    {
       "file": "apps/server/src/hub/connectors/tool-door.test.ts",
       "name": "a chave da chamada"
     },
     {
+      "file": "apps/server/src/hub/connectors/write-grant.test.ts",
+      "name": "uma ligação de outro Projeto ou de outra empresa dá NOT_GRANTED, sem pedido ao dublê \\(T10\\)"
+    },
+    {
       "file": "apps/server/src/hub/connectors/write-returned.test.ts",
       "name": "o token que ele ecoa"
+    },
+    {
+      "file": "apps/server/src/hub/copies/delete.test.ts",
+      "name": "de novo: a mesma resposta, e a cópia de outra empresa não muda"
     },
     {
       "file": "apps/server/src/hub/identity/companies.test.ts",
@@ -464,6 +576,10 @@
     },
     {
       "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "convidar: o membro, ou quem é de outra empresa, 404 e nenhuma linha"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
       "name": "de novo com a mesma chave: depois do correio fora"
     },
     {
@@ -503,6 +619,10 @@
       "name": "renovar: o prazo novo do plugin cai|renovar: o administrador renovando o convite de um dono"
     },
     {
+      "file": "apps/server/src/hub/identity/member-profile.test.ts",
+      "name": "cargo e área: quem é de outra empresa, quem não é membro e quem não entrou recebem a recusa da tabela"
+    },
+    {
       "file": "apps/server/src/hub/identity/memberships-invitations.test.ts",
       "name": "convites do tirado"
     },
@@ -520,11 +640,19 @@
     },
     {
       "file": "apps/server/src/hub/identity/nickname.test.ts",
+      "name": "apelido: administrador, membro e quem é de outra empresa recebem 404 \\(S10\\)"
+    },
+    {
+      "file": "apps/server/src/hub/identity/nickname.test.ts",
       "name": "apelido: duas escolhas juntas"
     },
     {
       "file": "apps/server/src/hub/identity/nickname.test.ts",
       "name": "apelido: o dono escolhe uma vez"
+    },
+    {
+      "file": "apps/server/src/hub/identity/nickname.test.ts",
+      "name": "apelido: tomado por outra empresa 409, reservado 422, fora da forma 400"
     },
     {
       "file": "apps/server/src/hub/identity/password-check.test.ts",
@@ -567,6 +695,10 @@
       "name": "senha que não grava"
     },
     {
+      "file": "apps/server/src/hub/identity/roles-members.test.ts",
+      "name": "o papel de outra empresa não vale aqui: trocar, convidar, mudar e apagar dão ROLE_NOT_FOUND, e o papel de lá fica"
+    },
+    {
       "file": "apps/server/src/hub/identity/roles-memory.test.ts",
       "name": "a memória da empresa"
     },
@@ -597,6 +729,10 @@
     {
       "file": "apps/server/src/hub/notifications/tables.test.ts",
       "name": "a política"
+    },
+    {
+      "file": "apps/server/src/hub/operations/client-deletion-database.test.ts",
+      "name": "com banco: o Neon apaga o id e todo final -<id>, cx-<id> incluído; saem tudo da 5, os Projetos e o banco; a outra empresa fica"
     },
     {
       "file": "apps/server/src/hub/operations/client-deletion-database.test.ts",
@@ -637,6 +773,10 @@
     {
       "file": "apps/server/src/hub/projects/projects-delete.test.ts",
       "name": "empresa marcada"
+    },
+    {
+      "file": "apps/server/src/hub/projects/projects.test.ts",
+      "name": "criar: membro de outra empresa, quem não é membro e a Central recebem 404 nas quatro rotas"
     },
     {
       "file": "apps/server/src/hub/projects/tables.test.ts",
@@ -783,6 +923,26 @@
       "name": "find devolve só o final exato"
     },
     {
+      "file": "apps/web/src/builder/agents/agent-page.test.tsx",
+      "name": "um agente apagado ou de outro Projeto dá a página de não encontrado"
+    },
+    {
+      "file": "apps/web/src/builder/conversation/start-failures.test.tsx",
+      "name": "a conversa cortada depois do Projeto \\("
+    },
+    {
+      "file": "apps/web/src/hub/connectors/integrations-states.test.tsx",
+      "name": "a página de uma ligação que não existe \\(desligada ou de outra empresa\\): a frase e a volta à lista"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/sign-in-return.test.tsx",
+      "name": "NOT_FOUND \\(outra empresa\\): \"Esse endereço não é de uma ligação\\.\""
+    },
+    {
+      "file": "apps/web/src/hub/identity/company-switcher.test.tsx",
+      "name": "escolher a outra empresa na troca a faz a última lembrada \\(critério 6\\)"
+    },
+    {
       "file": "packages/connectors/src/kernel/kernel.test.ts",
       "name": "o pedido fica na origem fixa"
     },
@@ -917,6 +1077,14 @@
     {
       "file": "scripts/workflows.test.ts",
       "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    },
+    {
+      "file": "tests/e2e/builder-writes.test.ts",
+      "name": "o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 na aba Código; outra empresa não vê"
+    },
+    {
+      "file": "tests/e2e/remove-person.test.ts",
+      "name": "o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central convida e rebaixa, sair, esqueci a senha e a senha vazada"
     }
   ]
 }
