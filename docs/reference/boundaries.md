@@ -967,7 +967,7 @@ changes, reread the line it names.
 ## Mastra 1.82.0 and @mastra/fastify 1.5.26: session routes behind the Hub's guard (step 14.2)
 
 - **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
-  agent-controller routes (a session's state, stream, message, Parar, a card's answer, transcript;
+  agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript;
   `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
   of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`

@@ -10,7 +10,7 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): design.
-- [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md).
+- [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
 - [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail.

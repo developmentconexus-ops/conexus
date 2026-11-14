@@ -158,11 +158,10 @@ Hub's own Fastify routes, not Mastra's.
 ## Installed and not used
 
 - Mastra's `server` option, its auth providers and Studio.
-- Agent networks, subagents, MCP clients and servers, channels, voice and structured output.
+- Agent networks, subagents outside the Assistant's one helper, MCP clients and servers, channels, voice and structured output.
 - Semantic recall and vector stores.
 - Workspace search, LSP and workspace skills.
-- Datasets, experiments and stored scorers; workflows beyond the one automation workflow, with
-  no suspend and resume of workflows.
+- Datasets, experiments and stored scorers; suspend and resume of workflows.
 - `@mastra/schema-compat`, present only as a dependency of other Mastra packages.
 
 `PostgresStore` still creates tables for its storage domains that Conexus never reads, such as
