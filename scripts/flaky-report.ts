@@ -1,6 +1,6 @@
 import { appendFileSync } from 'node:fs'
 import { z } from 'zod'
-import { runCommand } from './command.ts'
+import { spawnCommand } from './command.ts'
 
 type Flaky = { file: string; name: string }
 
@@ -8,13 +8,10 @@ const Issues = z.array(z.object({ number: z.number(), title: z.string(), state: 
 const LABEL = 'flaky'
 
 function gh(args: string[]): string | undefined {
-  try {
-    return runCommand('gh', args, { cwd: process.cwd(), stderr: 'pipe' })
-  } catch (error) {
-    // biome-ignore lint/plugin: a record that cannot reach GitHub must not turn a green run red (C53)
-    console.log(`::warning title=Teste instável::o registro não chegou ao GitHub: ${String(error)}`)
-    return undefined
-  }
+  const { status, output } = spawnCommand('gh', args, { cwd: process.cwd(), deadline: 30_000 })
+  if (status === 0) return output
+  console.log(`::warning title=Teste instável::o registro não chegou ao GitHub: ${output}`)
+  return undefined
 }
 
 function titleOf(test: Flaky): string {

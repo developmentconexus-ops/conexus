@@ -139,3 +139,15 @@ test('o teste instável que já tem issue ganha um comentário, e a issue fechad
   assert.match(ghLog, /^issue comment 7 -R o\/r --body Passou só na segunda rodada/m)
   assert.doesNotMatch(ghLog, /issue create/)
 })
+
+test('um gh que falha deixa a execução verde, com o aviso e o resumo', () => {
+  const dir = setup(flaky('oscila'))
+  writeFileSync(join(dir, 'gh'), '#!/bin/sh\necho "sem rede" >&2\nexit 1\n')
+  const { result, summary } = run(dir, { CI: 'true', GH_TOKEN: 'x' })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(
+    result.stdout,
+    /::warning title=Teste instável::o registro não chegou ao GitHub: sem rede/,
+  )
+  assert.match(summary(), /oscila/)
+})
