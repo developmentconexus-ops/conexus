@@ -121,7 +121,7 @@ product theme [0003].
 ```text
 apps/
   server/              the program: Hub and Builder
-    src/main.ts        wires both, with conversations-of.ts and reseal.ts
+    src/main.ts        wires both
     src/platform/      technique without a subject: config, database, error, log
     src/hub/           one folder per subject
     src/builder/       one folder per subject
@@ -131,14 +131,25 @@ apps/
 packages/
   hub-api/             the shape of the Hub's routes
   app-contract/        the generated app's contract, versioned
-  app/                 what the Builder writes an app with: SDK, check, skills, starter
-  connectors/          the connector kit: one definition per company system
+  app/                 what the Builder writes an app with
+  connectors/          the connector kit
 docs/  scripts/  infra/  tests/e2e/  .agents/skills/  .github/
 ```
 
 A subject holds its own routes, tables
 and tests, and a `public.ts` with what others may use. The import law is
-[code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md).
+[code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md). A new one follows
+[adding a subject](how-to/add-a-subject.md).
+
+**Other subjects.** `hub/copies`, `builder/copy-clock` and the schema `sync` are [the Sync](explanation/sync.md):
+a copy's rows live in the company's database, its definition and runs in the Hub's `copies`.
+`hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
+`hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`
+reads an app's data and copies for the Builder and for the agents of `builder/agents`;
+`builder/construtor` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
+`builder/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
+the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
+[connectors](how-to/add-a-connector.md).
 
 ## 7. Deployment
 
@@ -154,61 +165,55 @@ command on the server; a merge alone publishes nothing [0035] [0044]. Migrations
 program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
-the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's P6 B deleted old test
-companies; none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: none before it runs. The edge goes back first.
-Past v0.24.53, rerun `20261108033751_e245_active_by`'s `UPDATE`.
+the migrated database ([data D6](guides/data.md)). Exceptions: none before v0.5.0 runs, as step 4.2 deleted old test
+companies [0039]; none before step 14.2 runs, as it drops `run_event` (D30), `builder.run`,
+`companies_with_runs()` and `hub_runs`. The edge goes back first. Past v0.24.53, rerun
+`20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
-paid. Both Hub databases return to one instant. It then sets every login password
-again, invalidates sessions; the Hub's start recreates app logins, and missing
-Workers from the built files it keeps [0043]. A company's project restores alone.
+paid. Both Hub databases return to one instant, every login password is set again and sessions are
+invalidated; the Hub's start recreates app logins and missing Workers from the built files it keeps
+[0043]. A company's project restores alone.
 
-**The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so.
+**The Hub reaches its database** by the direct address, since a long-lived server keeps connections. Basis: only tested so.
 
-**Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
-route e-mail the founder; the route skips the database, so a hung program shows
-[0035].
+**Down alerts.** The Tunnel's health notification and an external monitor of the health route
+e-mail the founder; the route skips the database, so a hung program shows [0035].
 
 ## 8. Crosscutting concepts
 
 **The data path of an app** [0045]. The capability, inside the dispatcher, picks that app's login
-and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
-transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
-Nothing carries between calls; the rule for apps is [data D28](guides/data.md). A
-call's numbers are `APP_CALL_LIMITS` [0047]: the platform cuts its CPU at 50 ms (`cpu_ms` at the
-version's upload, also set on each call) and its 51st `db` call (the call's `subRequests`, which
-counts the capability's calls). Pieces still made by hand here:
+and talks to Neon's HTTP driver: `db.query` in a read-only transaction, `db.batch` in one
+transaction for a call's writes. Nothing carries between calls ([data D28](guides/data.md)). The
+limits are `APP_CALL_LIMITS` [0047], listed in [the contract and the dispatcher](explanation/app-contract-and-dispatcher.md).
+Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
 | Session check | No call reaches an app without it | Purpose |
 | 10 s deadline per call | No platform limit cuts an app that only waits | Measured [0047] |
-| Statement and transaction timeouts on the run login | A slow statement or batch keeps running after the caller gets the error | Measured [0047] |
+| Statement and transaction timeouts on the run login | A slow statement keeps running after the caller gets the error | Measured [0047] |
 
 **Who may enter** [0013] [0014] [0015] [0016]. The Hub's session has three guarantees: no stored
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
 a total deadline. Who holds it, and where companies, members and invitations live, are reopened
 [0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions and the
-one-use handoff to an app, taken at `/apps/open` in a tab or by `createAppFrameHandoff` inside the
-Prévia's frame, are Conexus's own. The Prévia frame and the tab hold separate sessions
-(`environment`), and Publicar moves only the published pointer (step 17). An app session lives inside the Hub's,
-with no sign-out of its own [0041].
+one-use handoff to an app (`/apps/open`, or `createAppFrameHandoff` in the Prévia's frame) are
+Conexus's own; an app session lives inside the Hub's, with no sign-out of its own [0041].
 
-**Isolation, in layers.** Hub admission on every read and write, with the company column on every
+**Isolation, in layers.** Hub admission on every read and write, the company column on every
 table and the company carried in every transaction [0012]; row policies bound each transaction's
-scope [0039].
-One project per company and one login per app, so PostgreSQL refuses a cross read [0021]. An app
-without secret or network [0018]. The rows Mastra writes carry the company, built by the server,
-never by the browser.
+scope [0039]. One project per company and one login per app, so PostgreSQL refuses a cross read
+[0021]. An app without secret or network [0018]. The rows Mastra writes carry the company, built by
+the server, never by the browser.
 
 **Model accounts and calls** [0049] [0050]. One queue per provider for the company and
 each person; the credential is sealed with the installation key and opened only inside the
 program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled work is rows of Mastra's `mastra.schedules`: automations, the
-Sync's copies and the daily trace prune, each the target of a workflow. A single owner is a lease row
-with an expiry, held per subject and renewed by activity, as a copy's run and a model account's
-refresh do ([data D25](guides/data.md)). Basis: implemented so; accepted because queues and Redis serve
+Sync's copies and the daily trace prune. A single owner is a lease row with an expiry, per subject and
+renewed by activity, as in a copy's run and a model account's refresh ([data D25](guides/data.md)). Basis: implemented so; queues and Redis serve
 a scale that does not exist.
 
 | Job | Shape |
@@ -234,7 +239,7 @@ too.
 | The server stops | Hub and published apps stop [0025] | Kept: the check stays in the Hub (step 18, `G`) |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
 | One E2B key for the founder's account | A release kills another's machine | It kills only this installation's machines [0051] |
-| The publish runner runs as root; its registration token and the owner login's key, the app key and the Workers token rest on the server (S31) | Any writer of the repository, or root there, commands the server and the edge [0035] [0036] | Accepted by the founder; forks never reach the runner |
+| The publish runner runs as root, and its token and keys rest on the server (S31) | A writer of the repository, or root there, commands the server and the edge [0035] [0036] | Accepted by the founder; forks never reach the runner |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
