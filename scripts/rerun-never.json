@@ -127,8 +127,16 @@
       "name": "a ferramenta salva sobe ao gravar"
     },
     {
+      "file": "apps/server/src/builder/agents/conversation-routes.test.ts",
+      "name": "as escritas da conversa: listWrites traz cada escrita com o estado, a marca, se uma pessoa aprovou e a mensagem do sistema da recusa, sem os campos; Faz sozinho não conta como aprovada; um envio sem resposta vem UNCERTAIN, com a marca; outra pessoa recebe CONVERSATION_NOT_FOUND \\(38\\)"
+    },
+    {
       "file": "apps/server/src/builder/agents/developer.test.ts",
       "name": "o desenvolvedor"
+    },
+    {
+      "file": "apps/server/src/builder/agents/machine.test.ts",
+      "name": "o arquivo: um caminho fora da pasta \\(por um link\\) é recusado com SHOW_REFUSED; a rota entrega os bytes ao dono e dá 404 a outra pessoa, ao membro e a conversa que não existe \\(15\\)"
     },
     {
       "file": "apps/server/src/builder/agents/registry.test.ts",
@@ -137,6 +145,10 @@
     {
       "file": "apps/server/src/builder/agents/release.test.ts",
       "name": "a empresa: removê-la leva os agentes e as ferramentas dela, e nada de outra empresa"
+    },
+    {
+      "file": "apps/server/src/builder/agents/release.test.ts",
+      "name": "as chaves: a política da empresa não lê o agente de outra; companies_with_agents só executa por hub_runtime e só dá as empresas com um agente publicado"
     },
     {
       "file": "apps/server/src/builder/agents/release.test.ts",
@@ -179,6 +191,10 @@
       "name": "não passam de empresa: a conversa de outra empresa não recebe as instruções nem enxerga a memória desta"
     },
     {
+      "file": "apps/server/src/builder/assistant/delete.test.ts",
+      "name": "apagar: a própria conversa dá 204, some da lista e da leitura, e a de outra pessoa ou repetida dá CONVERSATION_NOT_FOUND \\(1, 3\\)"
+    },
+    {
       "file": "apps/server/src/builder/assistant/file.test.ts",
       "name": "a máquina perdida, FILE_GONE"
     },
@@ -189,6 +205,14 @@
     {
       "file": "apps/server/src/builder/assistant/file.test.ts",
       "name": "nosniff e CSP sandbox"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "o arquivo de uma máquina de outro molde baixa"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "o arquivo: de outra pessoa, do membro ou de conversa que não existe, CONVERSATION_NOT_FOUND; fora da pasta ou inexistente, FILE_NOT_FOUND \\(20\\)"
     },
     {
       "file": "apps/server/src/builder/assistant/file.test.ts",
@@ -209,6 +233,10 @@
     {
       "file": "apps/server/src/builder/assistant/machine.test.ts",
       "name": "a marca"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "a máquina de outro molde é retomada com os arquivos \\(17\\)"
     },
     {
       "file": "apps/server/src/builder/assistant/machine.test.ts",
@@ -243,6 +271,10 @@
       "name": "o membro"
     },
     {
+      "file": "apps/server/src/builder/assistant/recall.test.ts",
+      "name": "não lê a de outro"
+    },
+    {
       "file": "apps/server/src/builder/assistant/release.test.ts",
       "name": "pela pessoa, pelo Projeto e pela empresa"
     },
@@ -260,6 +292,10 @@
     },
     {
       "file": "apps/server/src/builder/assistant/routes.test.ts",
+      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/routes.test.ts",
       "name": "trocar as ligações"
     },
     {
@@ -269,6 +305,10 @@
     {
       "file": "apps/server/src/builder/automations/developer.test.ts",
       "name": "o desenvolvedor"
+    },
+    {
+      "file": "apps/server/src/builder/automations/release.test.ts",
+      "name": "apagar: o banco que falha entre os runs e a linha deixa a linha, a repetição a acha, e os runs de outra automação ficam"
     },
     {
       "file": "apps/server/src/builder/automations/release.test.ts",
@@ -287,12 +327,24 @@
       "name": "o dono virou membro"
     },
     {
+      "file": "apps/server/src/builder/connectors/connector-tools.test.ts",
+      "name": "a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada \\(F-A\\)"
+    },
+    {
       "file": "apps/server/src/builder/construtor/construtor.test.ts",
       "name": "testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascunho inválido e agente de outro Projeto voltam recusados"
     },
     {
       "file": "apps/server/src/builder/construtor/routes.test.ts",
       "name": "abrir e listar: 201, a mesma chave acha a mesma conversa, a lista é só da pessoa e do Projeto, e a chave com outro Projeto dá IDEMPOTENCY_CONFLICT"
+    },
+    {
+      "file": "apps/server/src/builder/construtor/routes.test.ts",
+      "name": "o guarda: as seis rotas servem o controlador construtor ao dono enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
+    },
+    {
+      "file": "apps/server/src/builder/construtor/routes.test.ts",
+      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND"
     },
     {
       "file": "apps/server/src/builder/conversation/builder.eval.test.ts",
@@ -304,15 +356,31 @@
     },
     {
       "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "name": "a resposta de aprovação: outra pessoa, ou a mesma por outro controlador, recebe CONVERSATION_NOT_FOUND; alwaysAllowCategory ou um requestContext dão REQUEST_MALFORMED; um toolCallId que não é um portão vivo da sessão responde not_pending; nada roda \\(7\\)"
+    },
+    {
+      "file": "apps/server/src/builder/conversation/guard.test.ts",
       "name": "o Assistente: as rotas do Mastra"
+    },
+    {
+      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "name": "os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
     },
     {
       "file": "apps/server/src/builder/git/source.test.ts",
       "name": "a aba Código lê o main"
     },
     {
+      "file": "apps/server/src/builder/machine/conversation-lane.test.ts",
+      "name": "o download achado pelo id religa pelo id e não mata a de outro modelo; o limite é MAX_BYTES \\(S\\)"
+    },
+    {
       "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
       "name": "com `replace`, a de outro molde é morta"
+    },
+    {
+      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "name": "com `resume`, a de outro molde é retomada e nada é morto"
     },
     {
       "file": "apps/server/src/builder/machine/e2b-api.test.ts",
@@ -339,8 +407,24 @@
       "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
     },
     {
+      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "name": "máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não"
+    },
+    {
+      "file": "apps/server/src/builder/model-accounts/claude/claude.test.ts",
+      "name": "troca recusada: 422 e nada gravado, e a entrada acaba; fornecedor fora: 502; tarde ou de outro: 410"
+    },
+    {
       "file": "apps/server/src/builder/model-accounts/google/flat-unions.test.ts",
       "name": "sem união"
+    },
+    {
+      "file": "apps/server/src/builder/model-accounts/model-accounts-order.test.ts",
+      "name": "ordenar uma fila com todos os seus ids grava; velha, incompleta ou de outro fornecedor dá 409"
+    },
+    {
+      "file": "apps/server/src/builder/model-accounts/model-defaults.test.ts",
+      "name": "o padrão sem conta usável é pulado: pausada, no limite, de outra pessoa; nenhum degrau usável é 422 e nada nasce"
     },
     {
       "file": "apps/server/src/builder/model-accounts/openai/sign-in.test.ts",
@@ -361,6 +445,14 @@
     {
       "file": "apps/server/src/builder/runs/preview-send.test.ts",
       "name": "tirar a pessoa depois de guardada a versão"
+    },
+    {
+      "file": "apps/server/src/builder/runs/preview-send.test.ts",
+      "name": "um envio de cada vez: com a trava viva de outro envio, o do Builder falha APP_VERSION_SENDING \\(34\\)"
+    },
+    {
+      "file": "apps/server/src/builder/runs/runs-removal.test.ts",
+      "name": "tirar a pessoa no meio do turno dela: a execução dela solta o Projeto, e a próxima conversa de outra pessoa não é RUN_BUSY"
     },
     {
       "file": "apps/server/src/builder/runs/runs.test.ts",
@@ -415,6 +507,10 @@
       "name": "passagem do iframe: outra empresa, host desconhecido ou Projeto apagado 404; sem sessão 401; de fora 403; nenhum passe"
     },
     {
+      "file": "apps/server/src/hub/apps/handoff-route.test.ts",
+      "name": "passagem: um fetch ou uma moldura de outro site 403, nenhum passe; HEAD e POST, nenhum passe"
+    },
+    {
       "file": "apps/server/src/hub/apps/prune.test.ts",
       "name": "poda: a publicada fica"
     },
@@ -436,6 +532,10 @@
     },
     {
       "file": "apps/server/src/hub/apps/send-migrations.test.ts",
+      "name": "a tabela de outro esquema com nome longo recusa com o motivo inteiro"
+    },
+    {
+      "file": "apps/server/src/hub/apps/send-migrations.test.ts",
       "name": "o envio com GRANT não entra"
     },
     {
@@ -453,6 +553,10 @@
     {
       "file": "apps/server/src/hub/connectors/assistant-port.test.ts",
       "name": "o Início: a dona, a administradora e o membro leem uma ligação ACTIVE escolhida, sem liberação de Projeto; NEEDS_REAUTH, outra empresa e uma apagada dão a mesma resposta"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/assistant-port.test.ts",
+      "name": "quem saiu da empresa recebe a lista vazia e NOT_GRANTED"
     },
     {
       "file": "apps/server/src/hub/connectors/connections-several.test.ts",
@@ -491,8 +595,16 @@
       "name": "o token que ele ecoa"
     },
     {
+      "file": "apps/server/src/hub/connectors/write.test.ts",
+      "name": "o pedido sem resposta \\(a\\): uma linha SENDING de outra chamada faz WRITE_OPEN com a marca dela, sem gravar nem enviar"
+    },
+    {
       "file": "apps/server/src/hub/copies/delete.test.ts",
       "name": "de novo: a mesma resposta, e a cópia de outra empresa não muda"
+    },
+    {
+      "file": "apps/server/src/hub/copies/enable.test.ts",
+      "name": "ligar: repetir com a mesma chave não pede outra rodada"
     },
     {
       "file": "apps/server/src/hub/identity/companies.test.ts",
@@ -620,6 +732,14 @@
     },
     {
       "file": "apps/server/src/hub/identity/member-profile.test.ts",
+      "name": "cargo e área: o dono e o administrador gravam os de outro membro, e cada um vê o que pode"
+    },
+    {
+      "file": "apps/server/src/hub/identity/member-profile.test.ts",
+      "name": "cargo e área: quem não pode mudar papel recebe NOT_IN_ROLE ao gravar os de outro, e nada muda"
+    },
+    {
+      "file": "apps/server/src/hub/identity/member-profile.test.ts",
       "name": "cargo e área: quem é de outra empresa, quem não é membro e quem não entrou recebem a recusa da tabela"
     },
     {
@@ -741,6 +861,10 @@
     {
       "file": "apps/server/src/hub/operations/client-deletion.test.ts",
       "name": "apagar: concorrência com o link"
+    },
+    {
+      "file": "apps/server/src/hub/operations/client-reads.test.ts",
+      "name": "corrigir: aguardando dá 200 com a revisão \\+1 e o nome novo no convite; revisão velha, 412 CLIENT_STALE; CNPJ de outro, 409 CLIENT_EXISTS; ativo, 409 CLIENT_ACTIVE"
     },
     {
       "file": "apps/server/src/hub/operations/client-reads.test.ts",
@@ -923,16 +1047,56 @@
       "name": "find devolve só o final exato"
     },
     {
+      "file": "apps/web/diagram.layout.test.ts",
+      "name": "uma mensagem forjada de outra janela ao quadro não tem resposta"
+    },
+    {
+      "file": "apps/web/diagram.layout.test.ts",
+      "name": "uma mensagem forjada de outra janela à página é recusada"
+    },
+    {
+      "file": "apps/web/frame.layout.test.ts",
+      "name": "a faixa da caixa: "
+    },
+    {
       "file": "apps/web/src/builder/agents/agent-page.test.tsx",
       "name": "um agente apagado ou de outro Projeto dá a página de não encontrado"
+    },
+    {
+      "file": "apps/web/src/builder/agents/area.test.tsx",
+      "name": "uma conversa com o Construtor de outra pessoa dá não encontrado"
+    },
+    {
+      "file": "apps/web/src/builder/assistant/conversation.test.tsx",
+      "name": "uma conversa que não existe, ou que é de outra pessoa, não é encontrada"
+    },
+    {
+      "file": "apps/web/src/builder/automations/proposal.test.tsx",
+      "name": "a resposta cortada não diz que criou: o cartão pede outro toque, com a mesma chave"
+    },
+    {
+      "file": "apps/web/src/builder/conversation/panel.test.tsx",
+      "name": "a conversa de outra pessoa abre como \"não encontrado\", sem rastro dela"
     },
     {
       "file": "apps/web/src/builder/conversation/start-failures.test.tsx",
       "name": "a conversa cortada depois do Projeto \\("
     },
     {
+      "file": "apps/web/src/builder/preview/preview.test.tsx",
+      "name": "entrada: uma mensagem de outra origem, de outra janela ou que não é a entrada é ignorada"
+    },
+    {
       "file": "apps/web/src/hub/connectors/integrations-states.test.tsx",
       "name": "a página de uma ligação que não existe \\(desligada ou de outra empresa\\): a frase e a volta à lista"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/integrations-states.test.tsx",
+      "name": "uma ligação desligada por outra pessoa: o Testar leva à página relida, com a frase e a volta à lista"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/integrations.test.tsx",
+      "name": "um nome já usado por outra pessoa: a lista é lida de novo atrás da janela"
     },
     {
       "file": "apps/web/src/hub/connectors/sign-in-return.test.tsx",
@@ -943,8 +1107,44 @@
       "name": "escolher a outra empresa na troca a faz a última lembrada \\(critério 6\\)"
     },
     {
+      "file": "apps/web/src/hub/identity/member-profile.test.tsx",
+      "name": "Pessoas, o administrador grava os de outro: a janela traz o que está escrito e o PUT leva o membro"
+    },
+    {
+      "file": "apps/web/src/hub/identity/preparation.test.tsx",
+      "name": "com outra pessoa na empresa, mas sem conta, falta só a conta"
+    },
+    {
+      "file": "apps/web/src/hub/identity/preparation.test.tsx",
+      "name": "outra pessoa na empresa conta como equipe, e com a conta o cartão some"
+    },
+    {
+      "file": "apps/web/src/hub/identity/preparation.test.tsx",
+      "name": "preparationOf: cada passo vem de um fato, e a equipe é outra pessoa ou convite pendente"
+    },
+    {
+      "file": "apps/web/src/hub/identity/sign-in-form.test.tsx",
+      "name": "entrar a caminho de outra página leva o foco ao título dela, não ao corpo \\(#32-4\\)"
+    },
+    {
+      "file": "apps/web/workbench.layout.test.ts",
+      "name": "uma pasta dentro de outra aberta fecha sozinha: a seta e o ícone seguem o estado, no clique e no teclado"
+    },
+    {
+      "file": "packages/connectors/src/kernel/kernel.test.ts",
+      "name": "o Testar é uma leitura do próprio conector, que não depende de outra"
+    },
+    {
       "file": "packages/connectors/src/kernel/kernel.test.ts",
       "name": "o pedido fica na origem fixa"
+    },
+    {
+      "file": "packages/connectors/src/mercado-livre/operations.test.ts",
+      "name": "uma linha passa como o Mercado Livre a mandou, com campo a mais ou de outro tipo"
+    },
+    {
+      "file": "packages/connectors/src/sankhya/fake.test.ts",
+      "name": "o logout encerra o token, conta, a leitura depois pede outro, e o token vencido não sai mais"
     },
     {
       "file": "packages/connectors/src/sankhya/read-only-sql.test.ts",
@@ -957,6 +1157,10 @@
     {
       "file": "packages/connectors/src/sankhya/search.test.ts",
       "name": "recusado antes de qualquer chamada"
+    },
+    {
+      "file": "packages/hub-api/src/address.test.ts",
+      "name": "endereço: o nome sem acento, minúsculo, cada trecho de outro caractere um hífen"
     },
     {
       "file": "scripts/deploy.test.ts",
@@ -1081,6 +1285,10 @@
     {
       "file": "tests/e2e/builder-writes.test.ts",
       "name": "o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 na aba Código; outra empresa não vê"
+    },
+    {
+      "file": "tests/e2e/conversation.test.ts",
+      "name": "o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa"
     },
     {
       "file": "tests/e2e/remove-person.test.ts",

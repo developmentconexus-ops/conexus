@@ -71,9 +71,9 @@ test('a lista não guarda arquivo que sumiu; o nome que sumiu, a própria linha 
 
 const NAMED = /\b(?:test|it|describe)(?:\.\w+)?\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g
 const ISOLATION =
-  /outra empresa|outras empresas|outro projeto|isolament|isolation|vaz(?:a|am|amento)\b|leak|alheio/i
+  /outra empresa|outras empresas|outro projeto|outra pessoa|de outr[ao]\b|estranh|forast|isolament|isolation|vaz(?:a|am|amento)\b|leak|alheio/i
 
-test('todo teste ou suíte que diz outra empresa, outro Projeto, isolamento ou vazamento está na lista', () => {
+test('todo teste ou suíte que diz outra empresa, outro Projeto, outra pessoa, isolamento ou vazamento está na lista', () => {
   const tracked = runCommand('git', ['ls-files', '*.test.ts', '*.test.tsx'], { cwd: ROOT })
     .split('\n')
     .filter((file) => /^(apps|packages|tests)\//.test(file))
