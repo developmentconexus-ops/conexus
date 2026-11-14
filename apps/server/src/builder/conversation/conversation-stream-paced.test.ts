@@ -10,6 +10,7 @@ import { runInNewContext } from 'node:vm'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { until as untilHolds } from '../../platform/test-until.ts'
 import {
   conversing,
   endOf,
@@ -141,16 +142,16 @@ async function lineOf(
   hub: { lines: { fields: Record<string, unknown>; message: string }[] },
   matches: (fields: Record<string, unknown>) => boolean,
 ) {
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const found = hub.lines.find(
-      (line) => line.message === 'BUILDER_STREAM_ENDED' && matches(line.fields),
-    )
-    if (found !== undefined) return found.fields
-    await new Promise((done) => setTimeout(done, 25))
+  function found() {
+    return hub.lines.find((line) => line.message === 'BUILDER_STREAM_ENDED' && matches(line.fields))
   }
-  assert.fail(
-    `no such BUILDER_STREAM_ENDED line: ${JSON.stringify(hub.lines.filter((line) => line.message === 'BUILDER_STREAM_ENDED'))}`,
+  await untilHolds(
+    () => found() !== undefined,
+    `such a BUILDER_STREAM_ENDED line (${JSON.stringify(hub.lines.filter((line) => line.message === 'BUILDER_STREAM_ENDED'))})`,
   )
+  const line = found()
+  assert.ok(line !== undefined)
+  return line.fields
 }
 
 test('um turno de 96 passos com uma página que não lê não enche o heap do Hub: o stream manda só o que a tela lê', async (t) => {

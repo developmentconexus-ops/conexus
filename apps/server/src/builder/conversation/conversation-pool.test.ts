@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import { TEST_IDLE_MS } from '../../platform/test-mastra-database.ts'
+import { until } from '../../platform/test-until.ts'
 import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
 
 // The test pool's idle time and a margin: what lets Neon put the branch to sleep (D27).
@@ -27,9 +27,7 @@ test('depois de um turno, o login do Mastra não segura conexão: zero depois do
     return rows[0]?.n
   }
   assert.ok(Number(await open()) > 0, 'the turn went through Mastra’s login')
-  const deadline = Date.now() + QUIET_MS
-  while (Number(await open()) > 0 && Date.now() < deadline) await setTimeout(250)
-  assert.equal(await open(), 0)
+  await until(async () => Number(await open()) === 0, 'the Mastra connections close', QUIET_MS)
 })
 
 test('quem segura a conversa enquanto a outra solta abre uma sessão nova', async (t) => {

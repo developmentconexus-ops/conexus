@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
-import { TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
+import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { MailHub, Person } from './test-hub.ts'
 import { codeOf, companyOn, INVITEE, PASSWORD, personOn, post, signIn } from './test-hub.ts'
 
@@ -150,7 +149,7 @@ test('acceptance replay requires the current membership and a session still live
     [companyId],
     async (release) => {
       const replay = accept(hub, davi, id)
-      await queued(hub, 1, replay)
+      await queued(hub.test, 1, replay)
       await hub.test.asOwner('delete from auth.session where user_id = $1', [davi.id])
       await release()
       return replay
@@ -200,22 +199,6 @@ test('acceptance and public declination have exactly one winner', async (t) => {
 
 type Reply = Awaited<ReturnType<typeof accept>>
 
-/** Resolves once `count` requests of this database wait on a lock, or `request` has answered. */
-async function queued(hub: MailHub, count: number, request: Promise<Reply>): Promise<void> {
-  let answered = false
-  void request.then(() => {
-    answered = true
-  })
-  const waiting = `select count(distinct l.pid)::int as waiting from pg_locks l
-    join pg_stat_activity a on a.pid = l.pid
-    where not l.granted and a.datname = current_database()`
-  const deadline = Date.now() + 5_000
-  while (!answered && Object((await hub.test.asOwner(waiting))[0]).waiting < count) {
-    assert.ok(Date.now() < deadline, `${count} requests never queued on the company`)
-    await setTimeout(20)
-  }
-}
-
 function outcomeOf(response: Reply): string {
   return `${response.statusCode}${response.statusCode < 300 ? '' : String(codeOf(response))}`
 }
@@ -242,9 +225,9 @@ test('aceitar: com um re-convite ao mesmo tempo, nas duas ordens, membro e 409 M
     const lockCompany = 'select id from auth.company where id = $1 for update'
     const answered = await withOwnerLock(hub.test, lockCompany, [companyId], async (release) => {
       const ahead = first()
-      await queued(hub, 1, ahead)
+      await queued(hub.test, 1, ahead)
       const behind = second()
-      await queued(hub, 2, behind)
+      await queued(hub.test, 2, behind)
       await release()
       return Promise.all([ahead, behind])
     })

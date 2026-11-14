@@ -6,6 +6,7 @@ import type { CopiesOn } from '../../hub/copies/test-copies.ts'
 import { copiesOn, holdPage, plantCopy } from '../../hub/copies/test-copies.ts'
 import { copiesUrl, enabled, runsPage } from '../../hub/copies/test-routes.ts'
 import { call, codeOf, personOn, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { COPY_WORKFLOW } from './public.ts'
 
 /** A scheduler that ticks fast enough for a test to wait for a fire it made due (T20). */
@@ -14,13 +15,16 @@ const DEADLINE_MS = 60_000
 
 /** The copy's runs, once `done` holds of them: polled, never a fixed wait. */
 async function runsWhen(on: CopiesOn, copyId: string, done: (runs: CopyRun[]) => boolean) {
-  const deadline = Date.now() + DEADLINE_MS
-  for (;;) {
-    const { runs } = await runsPage(on, on.ana, copyId)
-    if (done(runs)) return runs
-    if (Date.now() > deadline) throw new Error(`the runs of ${copyId} never reached the state`)
-    await sleep(50)
-  }
+  let runs: CopyRun[] = []
+  await until(
+    async () => {
+      runs = (await runsPage(on, on.ana, copyId)).runs
+      return done(runs)
+    },
+    `the runs of ${copyId} reach the state`,
+    DEADLINE_MS,
+  )
+  return runs
 }
 
 function ended(runs: CopyRun[]) {

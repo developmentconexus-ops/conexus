@@ -11,7 +11,7 @@ plataforma do master, a gente vai guardar no nosso banco." Card: `docs/steps/pat
 - One `Observability` (`@mastra/observability` 1.23.1) on the Hub's `Mastra` traces every
   controller and workflow, with no code per agent.
 - One exporter, `MastraStorageExporter`, into Mastra's database [0010]: no platform exporter, so
-  nothing leaves Brazil and [0032] gains no line.
+  nothing leaves Brazil.
 - Spans keep input, output and error, the provider's body included: the one exception to
   security S41, written into the guide at the card's closing (L20).
 - Sampling `always`, `SensitiveDataFilter`; no chunk spans; a step keeps 500 messages.
@@ -43,5 +43,4 @@ Amended 2026-11-13: "1. Sim" (A2, over the bound) and "2. SIm" (500 messages a s
 Supersedes [0052].
 
 [0010]: 0010-mastra-tables-own-database.md
-[0032]: 0032-data-leaving-brazil-told.md
 [0052]: 0052-one-tracing-path-builder-to-grafana.md

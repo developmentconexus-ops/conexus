@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { AgentId, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { endOf, hubBeside, KEY, MODEL, sent } from '../conversation/test-conversation.ts'
 import { agentKey, agentRunContext } from './public.ts'
@@ -58,8 +58,11 @@ test('ao ligar: todo agente publicado é registrado antes da agenda, a linha da 
 
   const { lines, log } = recording()
   const back = await hubBeside(t, on.hub, log)
-  await sleep(4 * CLOCK.schedulerTickMs + 400)
-  assert.notEqual(await store.getSchedule(id), null, 'the schedule outlived four ticks')
+  await until(async () => {
+    const kept = await store.getSchedule(id)
+    assert.notEqual(kept, null, 'the schedule outlived the scheduler')
+    return Number(kept?.nextFireAt) > now
+  }, 'the scheduler fired the schedule')
   const said = lines.map((line) => line.message)
   const hydrated = said.indexOf('AGENTS_HYDRATED')
   assert.ok(hydrated >= 0 && hydrated < said.indexOf('MASTRA_WORKERS_STARTED'), said.join(' '))

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { HandedOff } from '@conexus/hub-api'
 import { BRUNO, CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { endOf, messagesOf, sent } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
@@ -149,12 +149,9 @@ test('o passe do membro e do desenvolvedor ao Builder cria o Projeto e abre o Bu
     )
     assert.deepEqual(granted, [], role)
     const builder = `${on.company}/projects/${handed.projectId}/conversations/${handed.conversationId}`
-    const deadline = Date.now() + 5000
-    let opened = await messagesOf(on.hub, person, builder)
-    while (opened.length === 0 && Date.now() < deadline) {
-      await sleep(100)
-      opened = await messagesOf(on.hub, person, builder)
-    }
-    assert.ok(opened.length > 0, `${role}: the Builder opened`)
+    await until(
+      async () => (await messagesOf(on.hub, person, builder)).length > 0,
+      `${role}: the Builder opened`,
+    )
   }
 })

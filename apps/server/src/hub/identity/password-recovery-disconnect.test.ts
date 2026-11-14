@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { connect } from 'node:net'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { until } from '../../platform/test-until.ts'
 import { ANA_OWNER, hubWithMail, personOn } from './test-hub.ts'
 
 test('desconexão: quem some antes da resposta ainda recebe o link, e o próximo pedido não é recusado pelo ritmo', async (t) => {
@@ -28,7 +28,7 @@ test('desconexão: quem some antes da resposta ainda recebe o link, e o próximo
   )
   // The client leaves before the answer is flushed: no `finish` will ever come.
   socket.destroy()
-  for (let tries = 0; tries < 100 && hub.mail.sent.length < 1; tries++) await sleep(50)
+  await until(() => hub.mail.sent.length >= 1, 'the recovery mail was sent')
   assert.equal(hub.mail.sent.length, 1)
   assert.equal(hub.mail.sent[0]?.to, ANA_OWNER.email)
 })
