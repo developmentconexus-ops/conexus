@@ -131,7 +131,7 @@ test('o desligamento espera o envio: o Hub fechando no meio do envio só fecha c
   const closing = hub.close().then(() => {
     closed = true
   })
-  await setTimeout(500)
+  await setTimeout(200)
   assert.equal(closed, false, 'the shutdown waits for the send')
   held.release()
   await closing

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import type { CopyId } from '@conexus/hub-api'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
+import { until } from '../../platform/test-until.ts'
 import { CopyName } from '../connectors/public.ts'
 import { linkSankhya, testOf } from '../connectors/test-connections.ts'
 import { sankhyaFake } from '../connectors/test-sales.ts'
@@ -72,10 +72,15 @@ export async function releasing(
     ids.set(name, copy)
     // The Hub's own clock starts the first run on turning on; a run the test asks for waits for its lease.
     let ended = await hub.copies.run({ companyId, copyId: copy }, AbortSignal.timeout(60_000))
-    for (let tries = 0; ended.kind === 'RUNNING' && tries < 200; tries += 1) {
-      await setTimeout(100)
-      ended = await hub.copies.run({ companyId, copyId: copy }, AbortSignal.timeout(60_000))
-    }
+    await until(
+      async () => {
+        if (ended.kind === 'RUNNING')
+          ended = await hub.copies.run({ companyId, copyId: copy }, AbortSignal.timeout(60_000))
+        return ended.kind !== 'RUNNING'
+      },
+      `the first run of ${name} ended`,
+      20_000,
+    )
     assert.equal(ended.kind, 'ENDED')
     if (release.includes(name))
       await hub.copies.grant({

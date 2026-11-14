@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
 import {
   endOf,
@@ -75,11 +76,7 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   assert.equal(marks?.conexus_agent, agent.id)
   assert.equal(marks?.conexus_conversation, idOf(url))
 
-  const deadline = Date.now() + 5_000
-  while (control.stops < 1) {
-    assert.ok(Date.now() < deadline, 'the machine never slept when the turn ended')
-    await new Promise((done) => setTimeout(done, 20))
-  }
+  await until(() => control.stops >= 1, 'the machine slept when the turn ended')
   assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
 
   const [output] = await shown(on, url)

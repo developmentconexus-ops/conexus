@@ -52,6 +52,7 @@ export type Control = {
   networkClosed: number
   /** How long the machine takes to come up after it says it runs, as E2B's start does. */
   upMs: number
+  holdUp?: Promise<void>
   /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
   restart: () => Promise<void>
   /**
@@ -132,7 +133,7 @@ export function localKit(folder: string, control: Control): KitFactory {
         if (made && basename(options.workingDirectory) !== basename(APP_FOLDER)) {
           rmdirSync(options.workingDirectory)
         }
-        await new Promise((up) => setTimeout(up, control.upMs))
+        await Promise.all([new Promise((up) => setTimeout(up, control.upMs)), control.holdUp])
         const outcome = control.discoverable.includes(options.id) ? 'connected' : control.outcome
         if (outcome === 'connected') control.attached.push(options.id)
         await options.onStart({ ...started, outcome })

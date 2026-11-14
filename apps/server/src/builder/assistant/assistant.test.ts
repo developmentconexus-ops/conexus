@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { call, plantCompany } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { approving } from '../agents/test-approval.ts'
 import { TITLE } from '../controller-kit/public.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
@@ -19,12 +19,6 @@ import {
 import { conversation, LONG } from './test-files.ts'
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
-
-/** Waits, up to five seconds, for `done`. */
-async function until(done: () => boolean) {
-  for (let waited = 0; !done() && waited < 5000; waited += 20) await sleep(20)
-  assert.ok(done(), 'it did not happen in time')
-}
 
 test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya vão na escolha e no Projeto dela, com a mesma chave; o turno seguinte tem outra', async (t) => {
   const on = await assisting(t, [
@@ -263,7 +257,7 @@ test('a troca do modelo: uma resposta em andamento termina no modelo em que come
   const { stream, say } = await talking(t, on.hub, on.ana, url)
   const first = await sent(on.hub, on.ana, url, 'Primeira')
   assert.equal(first.statusCode, 200, first.body)
-  await until(() => used.length === 1)
+  await until(() => used.length === 1, 'the model was asked')
   const switched = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
     model: OTHER_MODEL,
     effort: 'off',

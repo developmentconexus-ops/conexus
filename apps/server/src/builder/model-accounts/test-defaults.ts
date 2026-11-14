@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
+import { until } from '../../platform/test-until.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { sessionStateOf } from '../conversation/test-questions.ts'
 import { listKeyProviders } from './providers.ts'
@@ -15,15 +15,6 @@ export const GROQ_MODEL = (() => {
   if (model === undefined) throw new Error('The registry lists no Groq chat model.')
   return model.id
 })()
-
-/** Resolves once `holds` is true, asked again every 50 ms; fails naming `what` past `ms`. */
-export async function until(holds: () => boolean | Promise<boolean>, what: string, ms = 10_000) {
-  const deadline = Date.now() + ms
-  while (!(await holds())) {
-    assert.ok(Date.now() < deadline, `${what} within ${ms} ms`)
-    await sleep(50)
-  }
-}
 
 /** The conversation's title once Mastra has stored it, which it does after the turn's end. */
 export async function titleOf(hub: Hub, person: Person, url: string): Promise<unknown> {

@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { Connector } from '@conexus/connectors'
 import type { CopyId } from '@conexus/hub-api'
 import { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
+import { until } from '../../platform/test-until.ts'
 import type { StoresOn } from '../copies/test-sources.ts'
 import {
   BY_ACCOUNT,
@@ -57,13 +58,6 @@ async function twoCompanies(t: TestContext, catalog?: readonly Connector[]) {
     lua: { companyId: lua, personId: daviId },
     run: (companyId: CompanyId, copyId: CopyId) =>
       on.copies.run({ companyId, copyId }, new AbortController().signal),
-  }
-}
-
-async function until(holds: () => boolean, what: string) {
-  for (let waited = 0; !holds(); waited += 10) {
-    assert.ok(waited < 5_000, what)
-    await sleep(10)
   }
 }
 

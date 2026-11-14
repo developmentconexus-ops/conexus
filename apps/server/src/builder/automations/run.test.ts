@@ -5,6 +5,7 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { bellOf } from '../../hub/notifications/test-notifications.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { reading, talking } from '../assistant/test-assistant.ts'
 import {
   endOf,
@@ -16,7 +17,6 @@ import {
 } from '../conversation/test-conversation.ts'
 import { failuresIn } from '../conversation/test-parts.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { until } from '../model-accounts/test-defaults.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,

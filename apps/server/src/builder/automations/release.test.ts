@@ -10,8 +10,8 @@ import {
   personOn,
   plantCompany,
 } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { holding } from '../conversation/test-conversation.ts'
-import { until } from '../model-accounts/test-defaults.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,

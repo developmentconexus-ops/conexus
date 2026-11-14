@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { BRUNO, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   asked,
   conversing,
@@ -110,9 +111,7 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 200)
   await stream.next()
   // The second call comes once the write is done, so the machine is up and seeded.
-  for (let attempt = 0; attempt < 100 && step < 2; attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-  }
+  await until(() => step >= 2, 'the second model call')
   const project = `/api/companies/${companyId}/projects/${projectId}`
   assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode, 204)
   held.release()
@@ -135,21 +134,16 @@ test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main n
   function saving() {
     return hub.lines.some((line) => line.message === 'RUN_SETTLING')
   }
-  for (let attempt = 0; attempt < 100 && !saving(); attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-  }
-  assert.ok(saving(), 'the turn saves, held before its commit is checked in')
+  await until(saving, 'the turn saves, held before its commit is checked in')
   const member = `/api/companies/${companyId}/members/${bruno.id}`
   assert.equal((await call(hub, ana, 'DELETE', member)).statusCode, 204)
   gate.resolve()
-  // The save goes on past the removal's answer; it ends in a commit, or in nothing.
+  // The save outlives the removal's answer; the Hub's close waits for it.
+  await hub.close()
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
   })
-  for (let attempt = 0; attempt < 30 && (await repository.version()) === 0; attempt += 1) {
-    await new Promise((done) => setTimeout(done, 100))
-  }
   assert.equal(await repository.version(), 0)
 })
 

@@ -3,8 +3,8 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { holding, hubBeside } from '../conversation/test-conversation.ts'
-import { until } from '../model-accounts/test-defaults.ts'
 import type { Summary } from './test-automations.ts'
 import {
   answering,

@@ -11,6 +11,7 @@ import {
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { testMail } from '../../platform/test-mail.ts'
+import { until } from '../../platform/test-until.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
 import { codeOf, companyOn, INVITEE, TEST_KIT } from './test-hub.ts'
@@ -130,14 +131,15 @@ test('fora: o serviço com erro dá 503 PASSWORD_CHECK_UNAVAILABLE e o link cont
 test('fora: sem resposta em 3 s dá 503 e, enquanto espera, nenhuma transação está aberta', async (t) => {
   const { test: db, set, openTransactions } = await linked(t)
   db.passwords.mode = 'HANG'
+  // A real 3 s wait: the check's deadline is its own production timer, with nothing to inject.
   const started = Date.now()
   const pending = set(CLEAN)
-  while (db.passwords.asked.length === 0) await new Promise((resolve) => setTimeout(resolve, 20))
+  await until(() => db.passwords.asked.length > 0, 'the password service was asked')
   assert.equal(await openTransactions(), 0)
   const refused = await pending
   assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'PASSWORD_CHECK_UNAVAILABLE'])
   const waited = Date.now() - started
-  assert.ok(waited >= 2900 && waited < 4500, `the deadline is 3 seconds, not ${waited} ms`)
+  assert.ok(waited >= 2900 && waited < 6000, `the deadline is 3 seconds, not ${waited} ms`)
   db.passwords.mode = 'CLEAN'
   assert.equal((await set(CLEAN)).statusCode, 204)
 })

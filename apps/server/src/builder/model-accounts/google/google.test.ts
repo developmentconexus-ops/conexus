@@ -12,7 +12,7 @@ import {
   post,
 } from '../../../hub/identity/test-hub.ts'
 import { testCliProxy } from '../../../platform/test-cliproxy-binary.ts'
-import { until } from '../test-defaults.ts'
+import { until } from '../../../platform/test-until.ts'
 
 const TOKEN = 'ya29.planted-google-token'
 

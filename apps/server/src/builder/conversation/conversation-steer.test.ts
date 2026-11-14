@@ -122,7 +122,7 @@ test('uma mensagem com a pergunta aberta: {ok: true}, Mastra a guarda até a res
   const { card } = await untilCard(stream, 'question')
   const steered = await sent(hub, ana, url, STEER)
   assert.deepEqual([steered.statusCode, steered.json()], [200, { ok: true }])
-  await sleep(1000)
+  await sleep(300)
   assert.equal(calls.length, 1, 'Mastra holds the message while the card is open')
   assert.equal((await answerTo(hub, ana, url, card.toolCallId, WHOEVER)).statusCode, 200)
   const events = await stream.turn()

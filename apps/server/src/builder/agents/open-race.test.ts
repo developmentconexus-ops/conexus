@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { AgentId, CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import pg from 'pg'
+import { until } from '../../platform/test-until.ts'
 import { agentsOn, publishedAgent } from './test-agents.ts'
 
 test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND e mata a máquina da conversa (17)', async (t) => {
@@ -41,15 +42,15 @@ test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND
       (made) => made,
       (error: unknown) => error,
     )
-    const deadline = Date.now() + 10_000
-    for (;;) {
-      const waiting = await mastraPool.query(
-        `select 1 from pg_locks where locktype = 'advisory' and objid = 7441 and not granted`,
-      )
-      if ((waiting.rowCount ?? 0) > 0) break
-      assert.ok(Date.now() < deadline, 'the open never reached the thread taking its model')
-      await new Promise((done) => setTimeout(done, 20))
-    }
+    await until(
+      async () =>
+        ((
+          await mastraPool.query(
+            `select 1 from pg_locks where locktype = 'advisory' and objid = 7441 and not granted`,
+          )
+        ).rowCount ?? 0) > 0,
+      'the open reached the thread taking its model',
+    )
     // The sweep of the deletion that ran while the open waited.
     await on.hub.test.asOwner('delete from builder.agent_conversation where id = $1', [id])
     await holder.query('commit')

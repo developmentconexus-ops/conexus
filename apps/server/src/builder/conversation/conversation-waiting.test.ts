@@ -6,6 +6,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import pg from 'pg'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 
 import type { StreamEvent } from './test-conversation.ts'
 import { answeredOf, endOf, messagesOf, sent, stopped, streamOf } from './test-conversation.ts'
@@ -39,19 +40,12 @@ async function closedRead(
   url: string,
   toolCallId: string,
 ) {
-  let messages = await answeredOf(hub, ana, url)
-  for (
-    let attempt = 0;
-    attempt < 50 &&
-    stateOf(
-      messages.flatMap((message) => message.parts),
-      toolCallId,
-    ).at(-1) !== CLOSED.at(-1);
-    attempt += 1
-  ) {
-    await sleep(100)
+  let messages: Awaited<ReturnType<typeof answeredOf>> = []
+  await until(async () => {
     messages = await answeredOf(hub, ana, url)
-  }
+    const parts = messages.flatMap((message) => message.parts)
+    return stateOf(parts, toolCallId).at(-1) === CLOSED.at(-1)
+  }, 'Mastra writes the denial of the call')
   return messages
 }
 
@@ -132,7 +126,7 @@ test('fechar a última aba com a pergunta aberta: o cartão continua, e a respos
   const { card } = await untilCard(stream, 'question')
   stream.close()
   // The last stream's close lets the session go (`deleteSession`), a moment after the socket ends.
-  await sleep(1_000)
+  await sleep(300)
   const read = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
   const fresh = await streamOf(hub, ana, url)
@@ -185,7 +179,7 @@ test('Parar com uma pergunta aberta: nada fica no banco do Mastra', {
   await untilCard(stream, 'question')
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   await answeredOf(hub, ana, url)
-  assert.equal(await parkedRows(hub), 0)
+  await until(async () => (await parkedRows(hub)) === 0, 'Mastra keeps no parked run')
 })
 
 test('Parar no instante em que o cartão chega, antes de o Mastra guardar a chamada: ela fecha negada', {

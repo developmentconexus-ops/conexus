@@ -7,6 +7,7 @@ import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   conversing,
   endOf,
@@ -33,11 +34,16 @@ function stalling(t: TestContext) {
 
 /** The conversation's messages once they are `count`, read again for at most five seconds. */
 async function readOnce(read: () => Promise<unknown[]>, count: number) {
-  for (let attempt = 0; ; attempt += 1) {
-    const messages = await read()
-    if (messages.length >= count || attempt === 50) return messages
-    await new Promise((done) => setTimeout(done, 100))
-  }
+  let messages: unknown[] = []
+  await until(
+    async () => {
+      messages = await read()
+      return messages.length >= count
+    },
+    `the conversation has ${count} messages`,
+    5_000,
+  )
+  return messages
 }
 
 /**
@@ -55,13 +61,12 @@ async function stalled(t: TestContext, hub: Hub, table: string) {
   }
   t.after(release)
   async function waited() {
-    for (;;) {
+    await until(async () => {
       const found = await hub.test.mastraPool.query(
         "select count(*)::int as count from pg_stat_activity where wait_event_type = 'Lock'",
       )
-      if (found.rows[0]?.count > 0) return
-      await new Promise((done) => setTimeout(done, 20))
-    }
+      return found.rows[0]?.count > 0
+    }, 'a query of the Builder waits on the locked table')
   }
   return { release, waited }
 }
@@ -97,8 +102,7 @@ test('reconectar com o turno em curso e ainda mudo: a semente diz que ele trabal
   )
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 200)
-  while (!anthropic.sent.some((each) => each.stream))
-    await new Promise((done) => setTimeout(done, 20))
+  await until(() => anthropic.sent.some((each) => each.stream), 'the model is asked')
   const again = await streamOf(hub, ana, url)
   t.after(() => again.close())
   assert.equal((await again.seed()).isRunning, true)
@@ -273,7 +277,7 @@ test('desligar com um stream ainda na verificação da sessão: o Hub fecha mesm
   await threads.waited()
   const closed = closing.close()
   // The Hub's own streams are closed once its server stops listening; the guard then lets this one in.
-  while (closing.app.server.listening) await new Promise((done) => setTimeout(done, 20))
+  await until(() => !closing.app.server.listening, 'the Hub stops listening')
   await threads.release()
   const late = new Promise<string>((done) => setTimeout(() => done('hung'), 30_000).unref())
   assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
@@ -297,8 +301,8 @@ test('desligar com um pedido comum ainda em curso: ele termina antes de o Hub fe
   const answered = once(read, 'response')
   await threads.waited()
   const closed = closing.close()
-  while (closing.app.server.listening) await new Promise((done) => setTimeout(done, 20))
-  await new Promise((done) => setTimeout(done, 1_000))
+  await until(() => !closing.app.server.listening, 'the Hub stops listening')
+  await new Promise((done) => setTimeout(done, 500))
   await threads.release()
   const [response] = await answered
   assert.ok(response instanceof http.IncomingMessage)

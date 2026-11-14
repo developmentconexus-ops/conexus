@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
 import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   asked,
   conversing,
@@ -133,6 +134,8 @@ test('o fim da máquina: o turno que acaba para a máquina, e o seguinte a acord
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva a.txt')), 'complete')
+  await until(() => control.stops > 0, 'the machine slept when the turn ended')
+  // A second stop has no event to wait on: a short real wait gives it the chance to show.
   await new Promise((done) => setTimeout(done, 200))
   assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
   assert.equal(endOf(await say('Escreva b.txt')), 'complete')

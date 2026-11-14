@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   asked,
   conversing,
@@ -90,13 +91,10 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
-  for (let attempt = 0; attempt < 100 && !settling(); attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-  }
   function settling() {
     return hub.lines.some((line) => line.message === 'RUN_SETTLING')
   }
-  assert.ok(settling(), 'the first turn saves, held before its commit is checked in')
+  await until(settling, 'the first turn saves, held before its commit is checked in')
   const second = sent(hub, ana, url, 'Segunda')
   await new Promise((done) => setTimeout(done, 300))
   assert.equal(step, 2, 'the second message calls no model while the first version is saved')

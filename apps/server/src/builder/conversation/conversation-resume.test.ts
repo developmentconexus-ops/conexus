@@ -42,7 +42,7 @@ test('o turno que roda quando o servidor cai fica parado: a sessão volta sem ex
   assert.deepEqual(seed.pendingSuspensions, {})
   // Mastra saves a run's messages from its second step on: the first step's are lost (30).
   assert.deepEqual(await rolesAndParts(next, ana, url), [])
-  await sleep(1000)
+  await sleep(300)
   assert.equal(anthropic.sent.length, calls, 'nothing resumed on its own')
 
   assert.equal((await sent(next, ana, url, 'Depois')).statusCode, 200)

@@ -3,7 +3,6 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
@@ -104,10 +103,8 @@ async function stoppedOf(
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, person, url, 'Liste nomes de padarias')).statusCode, 200)
-  // The journal says text in pieces of 200 characters, so this short text waits for the turn's end:
-  // the stop comes once the recording's words have reached the turn.
   const opening = await stream.next()
-  await setTimeout(1000)
+  await stream.until(() => stream.seen.raw.includes('"type":"text-delta"'))
   assert.equal((await stopped(hub, person, url)).statusCode, 200)
   const events = [opening, ...(await stream.turn())]
   assert.equal(endOf(events), 'aborted')
