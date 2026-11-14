@@ -9,6 +9,7 @@ type Step = {
   name?: string
   uses?: string
   run?: string
+  if?: string
   with?: Record<string, unknown>
   env?: Record<string, string>
 }
@@ -202,7 +203,7 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
 })
 
 test('o agregador espera todos os trabalhos de código da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
-  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci' && name !== 'processo')
+  const others = Object.keys(ci.jobs).filter((name) => !['ci', 'processo', 'flaky'].includes(name))
   assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
   const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
   for (const name of others.filter((name) => name !== 'removals')) {
@@ -273,9 +274,15 @@ test('uma execução do main nunca cancela nem substitui a anterior, nem a que e
   )
 })
 
-test('o token que abre a issue do teste instável só vai ao passo que roda os testes, nunca ao job inteiro', () => {
+test('só o job flaky escreve issues, e nenhum job de teste leva token nem permissão de escrita', () => {
   const writers = Object.entries(ci.jobs).filter(([, job]) => job.permissions?.issues === 'write')
-  assert.deepEqual(writers.map(([name]) => name).toSorted(), [
+  assert.deepEqual(
+    writers.map(([name]) => name),
+    ['flaky'],
+  )
+  const flaky = ci.jobs.flaky
+  assert.deepEqual(flaky?.permissions, { contents: 'read', issues: 'write' })
+  assert.deepEqual([flaky?.needs].flat().toSorted(), [
     'e2e',
     'packages',
     'scripts',
@@ -283,11 +290,21 @@ test('o token que abre a issue do teste instável só vai ao passo que roda os t
     'web',
     'web-sweep',
   ])
-  for (const [name, job] of writers) {
-    assert.equal(job.permissions?.contents, 'read', name)
-    assert.equal(job.env?.GH_TOKEN, undefined, name)
-    const holders = job.steps.filter((step) => step.env?.GH_TOKEN !== undefined)
-    assert.equal(holders.length, 1, name)
-    assert.match(holders[0]?.run ?? '', /^npm (run (test|e2e)|test)\b/, name)
+  const runs = flaky?.steps.map((step) => step.run ?? '').join('\n') ?? ''
+  assert.doesNotMatch(runs, /npm (test|run (test|e2e))/)
+  assert.match(runs, /node scripts\/flaky-issues\.ts flaky-records/)
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    assert.ok(!JSON.stringify(ci.jobs[name]).includes('github.token'), name)
+  }
+})
+
+test('cada job de teste com segunda rodada sobe os registros dos instáveis, mesmo depois de falhar', () => {
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    const steps = ci.jobs[name]?.steps ?? []
+    const run = steps.find((step) => step.env?.CONEXUS_FLAKY_FILE !== undefined)
+    assert.ok(run, name)
+    const upload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))
+    assert.match(String(upload?.with?.name), /^flaky-/, name)
+    assert.equal(upload?.if, '${{ !cancelled() }}', name)
   }
 })

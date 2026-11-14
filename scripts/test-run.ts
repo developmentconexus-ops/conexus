@@ -2,9 +2,9 @@
 // to fix, and costs a whole run by hand (the CI study: 186 runs went green only on a rerun).
 // `node scripts/test-run.ts <options> <files>` is `node --test <options> <files>`; on CI it also
 // reruns once the tests that failed, and nothing else, with Node's own `--test-rerun-failures`.
-// A test that passes the second time is flaky: scripts/flaky-report.ts shows it in the job summary and
-// keeps its issue. The second run is skipped when a failed test is one of the classes testing T4
-// forbids rerunning (scripts/rerun-exempt.ts), when a test file itself failed, or when the run failed
+// A test that passes the second time is flaky: scripts/flaky-report.ts shows it in the job summary, writes its record and
+// is taken to its issue by the `flaky` job (scripts/flaky-issues.ts). The second run is skipped when a failed test is one of the classes testing T4
+// forbids rerunning (scripts/rerun-never.json), when a test file itself failed, or when the run failed
 // with no test failing (a reporter rule, a timeout, a crash). Options come first and use the
 // `--name=value` form, so what follows them is the list of files the second run narrows to.
 // The refusals and the rerun are proved in test-run.test.ts.

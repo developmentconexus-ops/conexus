@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
 import { after, test } from 'node:test'
@@ -30,18 +30,11 @@ function setup(source: string) {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-test-run-'))
   dirs.push(dir)
   writeFileSync(join(dir, 'x.test.ts'), source)
-  writeFileSync(join(dir, 'gh.log'), '')
-  writeFileSync(join(dir, 'issues.json'), '[]')
-  writeFileSync(
-    join(dir, 'gh'),
-    `#!/bin/sh\necho "$@" >> "${join(dir, 'gh.log')}"\n[ "$1 $2" = "issue list" ] && cat "${join(dir, 'issues.json')}"\nexit 0\n`,
-  )
-  chmodSync(join(dir, 'gh'), 0o755)
   return dir
 }
 
 function run(dir: string, env: Record<string, string>, args = ['x.test.ts']) {
-  const { NODE_TEST_CONTEXT: _outer, CI: _ci, GH_TOKEN: _token, ...base } = process.env
+  const { NODE_TEST_CONTEXT: _outer, CI: _ci, ...base } = process.env
   const summary = join(dir, 'summary.md')
   const result = spawnSync('node', [SCRIPT, `--test-reporter=${REPORTER}`, ...args], {
     cwd: dir,
@@ -49,32 +42,28 @@ function run(dir: string, env: Record<string, string>, args = ['x.test.ts']) {
     timeout: 120_000,
     env: {
       ...base,
-      PATH: `${dir}:${process.env.PATH}`,
+      CONEXUS_FLAKY_FILE: join(dir, 'flaky.jsonl'),
+      GITHUB_JOB: 'server',
       GITHUB_STEP_SUMMARY: summary,
-      GITHUB_REPOSITORY: 'o/r',
-      GITHUB_RUN_ID: '9',
-      GITHUB_SERVER_URL: 'https://github.com',
       ...env,
     },
   })
   return {
     result,
-    ghLog: readFileSync(join(dir, 'gh.log'), 'utf8'),
+    records: () => readFileSync(join(dir, 'flaky.jsonl'), 'utf8'),
+    recorded: () => existsSync(join(dir, 'flaky.jsonl')),
     summary: () => readFileSync(summary, 'utf8'),
   }
 }
 
-test('na CI, o teste que falhou e passou na segunda rodada deixa a execução verde, marcado e com issue', () => {
+test('na CI, o teste que falhou e passou na segunda rodada deixa a execução verde, marcado e registrado', () => {
   const dir = setup(flaky('oscila'))
-  const { result, ghLog, summary } = run(dir, { CI: 'true', GH_TOKEN: 'x' })
+  const { result, records, summary } = run(dir, { CI: 'true' })
   assert.equal(result.status, 0, result.stderr)
   assert.match(result.stderr, /second run of the 1 test\(s\) that failed/)
   assert.match(result.stdout, /::warning title=Teste instável::x\.test\.ts › oscila/)
   assert.match(summary(), /^\| `x\.test\.ts` \| oscila \|$/m)
-  assert.match(
-    ghLog,
-    /^issue create -R o\/r --label flaky --title Teste instável: x\.test\.ts › oscila /m,
-  )
+  assert.deepEqual(JSON.parse(records()), { file: 'x.test.ts', name: 'oscila', job: 'server' })
 })
 
 test('um teste que falha nas duas rodadas deixa a execução vermelha, e a segunda rodada só leva o arquivo que falhou', () => {
@@ -95,13 +84,13 @@ function never(dir: string, name: string): Record<string, string> {
 
 test('um teste da lista das classes T4 nunca ganha a segunda rodada: a execução fica vermelha e ele roda uma vez', () => {
   const dir = setup(flaky('B lista só os seus projetos'))
-  const { result, ghLog } = run(dir, { CI: 'true', GH_TOKEN: 'x', ...never(dir, 'seus projetos') })
+  const { result, recorded } = run(dir, { CI: 'true', ...never(dir, 'seus projetos') })
   assert.equal(result.status, 1)
   assert.match(
     result.stderr,
     /no second run, a test of a class T4 forbids rerunning failed: x\.test\.ts › B lista/,
   )
-  assert.equal(ghLog, '')
+  assert.equal(recorded(), false)
 })
 
 test('um teste dentro de uma suíte da lista também fica sem a segunda rodada', () => {
@@ -177,33 +166,9 @@ test('uma opção depois dos arquivos é recusada', () => {
   assert.match(result.stderr, /options come before the files/)
 })
 
-test('sem GH_TOKEN o teste instável aparece no resumo e não abre issue', () => {
+test('sem arquivo de registro o teste instável aparece no resumo e a execução fica verde', () => {
   const dir = setup(flaky('oscila'))
-  const { result, ghLog, summary } = run(dir, { CI: 'true' })
+  const { result, summary } = run(dir, { CI: 'true', CONEXUS_FLAKY_FILE: '' })
   assert.equal(result.status, 0, result.stderr)
-  assert.match(summary(), /oscila/)
-  assert.equal(ghLog, '')
-})
-
-test('o teste instável que já tem issue ganha um comentário, e a issue fechada reabre', () => {
-  const dir = setup(flaky('oscila'))
-  const issue = { number: 7, title: 'Teste instável: x.test.ts › oscila', state: 'CLOSED' }
-  writeFileSync(join(dir, 'issues.json'), JSON.stringify([issue]))
-  const { result, ghLog } = run(dir, { CI: 'true', GH_TOKEN: 'x' })
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(ghLog, /^issue reopen 7 -R o\/r$/m)
-  assert.match(ghLog, /^issue comment 7 -R o\/r --body Passou só na segunda rodada/m)
-  assert.doesNotMatch(ghLog, /issue create/)
-})
-
-test('um gh que falha deixa a execução verde, com o aviso e o resumo', () => {
-  const dir = setup(flaky('oscila'))
-  writeFileSync(join(dir, 'gh'), '#!/bin/sh\necho "sem rede" >&2\nexit 1\n')
-  const { result, summary } = run(dir, { CI: 'true', GH_TOKEN: 'x' })
-  assert.equal(result.status, 0, result.stderr)
-  assert.match(
-    result.stdout,
-    /::warning title=Teste instável::o registro não chegou ao GitHub: sem rede/,
-  )
   assert.match(summary(), /oscila/)
 })
