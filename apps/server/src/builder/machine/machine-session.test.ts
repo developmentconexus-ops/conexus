@@ -14,7 +14,6 @@ test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases
   const first: string[] = []
   await (await turn((phase) => first.push(phase))).filesystem?.writeFile('a.ts', 'um\n')
   await machines.release(CONVERSATION)
-  // The machine is gone when the next turn needs it: a new one is seeded, and no turn lost anything.
   const second: string[] = []
   const next = await turn((phase) => second.push(phase))
   control.outcome = 'created'
@@ -28,7 +27,6 @@ test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases
     'a machine that died between turns is no loss of this one',
   )
   await machines.release(CONVERSATION)
-  // A turn that never needed the machine saves nothing, whatever the one before left on it.
   await turn(() => undefined)
   assert.equal(machines.touched(CONVERSATION), false)
   assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')

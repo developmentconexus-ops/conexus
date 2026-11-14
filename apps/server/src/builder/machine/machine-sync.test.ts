@@ -125,14 +125,12 @@ test('máquina: a religada cujo main não se integra falha com a causa nomeada e
   )
   await (await here.open()).filesystem?.writeFile('a.ts', 'um\n')
   broken = true
-  // A tool resumes the machine E2B paused: the start hook fails, and the tool hears the cause.
   pausedByE2b(here.control)
   await assert.rejects(
     (await here.open()).filesystem?.exists('a.ts') ?? Promise.reject(),
     /sync failed/,
   )
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED'])
-  // A Hub that starts the machine again finds it by name: the start fails as the machine's.
   const restarted = here.restartHub()
   await assert.rejects((await restarted.open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
     code: 'MACHINE_UNAVAILABLE',

@@ -337,7 +337,6 @@ class Machines implements ConversationMachines {
     return this.inLane(conversationId, () => this.pauseLogged(session))
   }
 
-  /** Pauses every machine the Hub holds and waits for each pause. */
   async stopAll(): Promise<void> {
     await Promise.all([...this.sessions.keys()].map((each) => this.stop(each)))
   }

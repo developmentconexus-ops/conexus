@@ -228,8 +228,7 @@ class BuilderMachines implements Machines {
     const { companyId, projectId, conversationId, onPhase } = input
     const name = `conexus-${this.deps.installation}-${conversationId}`
     const session = this.sessions.get(conversationId) ?? this.open(input, name)
-    // The machine belongs to the conversation, as the Factory keeps one per session: a turn takes
-    // it over with its own phases, and the work it counts starts from nothing.
+    // A turn takes the conversation's machine over with its own phases; the work it counts starts from nothing.
     Object.assign(session, {
       ...{ companyId, projectId, onPhase },
       ...{ starts: 0, used: false, refreshing: undefined, lost: false },

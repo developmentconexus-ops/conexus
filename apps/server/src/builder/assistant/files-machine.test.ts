@@ -112,7 +112,6 @@ test('a máquina fora com o arquivo só do histórico: o turno segue com a nota'
   assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
   const [first] = on.calls
   assert.ok(first)
-  // The Hub restarted: no machine is held, and the provider cannot start one.
   const restarted = await hubBeside(t, on.hub)
   restarted.assistantMachines.control.start = 'unreachable'
   const next = await talking(t, restarted, on.ana, on.url)

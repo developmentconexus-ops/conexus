@@ -126,14 +126,12 @@ test('o arquivo: acima do teto, FILE_TOO_LARGE; a máquina perdida, FILE_GONE; a
   const tooLarge = await call(big.hub, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
   assert.deepEqual([tooLarge.statusCode, codeOf(tooLarge)], [413, 'FILE_TOO_LARGE'])
   assert.equal(titleOf(tooLarge), 'O arquivo passa do tamanho que o Hub entrega.')
-  // A Hub restarted: it holds no session, and the provider holds no machine of the conversation.
   const beside = await hubBeside(t, big.hub)
   const gone = await call(beside, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
   assert.deepEqual([gone.statusCode, codeOf(gone)], [410, 'FILE_GONE'])
   assert.equal(titleOf(gone), 'A máquina desta conversa não guarda mais este arquivo.')
   assert.equal(beside.assistantMachines.control.names.length, 0, 'none was started (B2)')
 
-  // A conversation whose machine has not started yet, and the provider does not answer.
   const down = await assisting(t, [[said('Oi.')]])
   const downUrl = await created(down.hub, down.ana, down.assistant, { connections: [] })
   down.hub.assistantMachines.control.start = 'unreachable'

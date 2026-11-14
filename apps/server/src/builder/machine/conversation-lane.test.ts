@@ -127,7 +127,6 @@ test('o download sem sessão no Hub, quando a lista do provedor falha: nenhuma m
 
 test('o download sem sessão no Hub, cuja pausa falha: o arquivo lido é entregue, e a pausa que falhou fica no log (F27)', async (t) => {
   const on = machinesOf(t)
-  // The provider loses the machine while the Hub reads it: the pause after the read fails.
   on.control.beforeRead = () => {
     on.control.killed = true
   }
