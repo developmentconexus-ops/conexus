@@ -26,6 +26,10 @@ const BAD: Record<string, [string, string]> = {
     `${SRC}/builder/agents/a.ts`,
     '../assistant/public.ts',
   ],
+  'agents-and-apps-reach-data-only-through-the-contract': [
+    `${SRC}/builder/assistant/rows.ts`,
+    '../../hub/connectors/public.ts',
+  ],
 }
 const GOOD: Record<string, string> = {
   [`${SRC}/main.ts`]: './hub/b/public.ts',
@@ -33,6 +37,8 @@ const GOOD: Record<string, string> = {
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
   [`${SRC}/builder/agents/ok.test.ts`]: '../assistant/test-thing.ts',
+  [`${SRC}/builder/assistant/routes.ts`]: '../../hub/connectors/public.ts',
+  [`${SRC}/builder/assistant/data.test.ts`]: '../../hub/connectors/test-connections.ts',
 }
 
 let violations: Violation[] = []
@@ -46,6 +52,8 @@ before(() => {
     [`${SRC}/hub/c/inner.ts`]: PUBLIC,
     [`${SRC}/builder/assistant/public.ts`]: PUBLIC,
     [`${SRC}/builder/assistant/test-thing.ts`]: PUBLIC,
+    [`${SRC}/hub/connectors/public.ts`]: PUBLIC,
+    [`${SRC}/hub/connectors/test-connections.ts`]: PUBLIC,
   }
   for (const [file, target] of [...Object.values(BAD), ...Object.entries(GOOD)]) {
     files[file] = importing(target)
@@ -69,7 +77,7 @@ for (const [rule, [file]] of Object.entries(BAD)) {
   })
 }
 
-test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx e o ajudante test-*.ts', () => {
+test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante test-*.ts e a lista de migração do contrato', () => {
   assert.deepEqual(
     violations.filter((violation) => Object.hasOwn(GOOD, violation.from)),
     [],
