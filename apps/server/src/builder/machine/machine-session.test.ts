@@ -93,7 +93,6 @@ test('máquina: as marcas são relidas uma vez por turno, na primeira ferramenta
   async function turnTold(write: string) {
     const workspace = await open()
     await workspace.filesystem?.exists('a.ts')
-    // The markers are read from the files Git tracks, and this one appears after the first tool.
     await (await sandboxOf(workspace)).executeCommand('sh', [
       '-c',
       `cd ${join(folder, 'app')} && ${marked} > ${write} && git add -A`,
@@ -101,10 +100,8 @@ test('máquina: as marcas são relidas uma vez por turno, na primeira ferramenta
     await workspace.filesystem?.exists('a.ts')
     return workspace.getInstructionsAsync()
   }
-  // A turn that starts the machine: the start told the conflicts, and nothing reads them again.
   assert.doesNotMatch(await turnTold('first.ts'), /first\.ts/)
   await machines.release(CONVERSATION)
-  // The next turn's first tool reads the tree, which now has `first.ts`; a file written later waits.
   const told = await turnTold('second.ts')
   assert.match(told, /first\.ts/)
   assert.doesNotMatch(told, /second\.ts/)
