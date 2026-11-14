@@ -7,6 +7,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
+import { controllerIn } from '../controller-context/public.ts'
 import { turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 
@@ -38,8 +39,6 @@ export function checkTool(runs: Runs) {
   })
 }
 
-const ControllerThread = z.object({ threadId: z.string() })
-
 /** The words of a failed check at the end of the turn, which Mastra gives the model before it answers again. */
 function feedback(report: CheckReport, failed: number): string {
   return [
@@ -61,10 +60,9 @@ async function openTasks(
   storage: MastraCompositeStore,
   requestContext: RequestContext,
 ): Promise<TaskItemSnapshot[]> {
-  const controller = ControllerThread.safeParse(requestContext.get('controller'))
-  if (!controller.success) return []
+  const { threadId } = controllerIn(requestContext)
+  if (threadId === undefined) return []
   const store = await storage.getStore('threadState')
-  const { threadId } = controller.data
   const tasks = await store?.getState<TaskItemSnapshot[]>({ threadId, type: TASK_STATE_TYPE })
   return summarizeTaskCheck(Array.isArray(tasks) ? tasks : []).incompleteTasks
 }

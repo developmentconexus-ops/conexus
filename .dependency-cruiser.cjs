@@ -47,6 +47,17 @@ module.exports = {
       },
     },
     {
+      name: 'conversations-do-not-import-the-assistant',
+      comment:
+        'C4: what the conversations share lives in builder/controller-kit/; the agents and the Construtor never import the Assistant. Their tests borrow its test doubles.',
+      severity: 'error',
+      from: {
+        path: `${SERVER}/builder/(agents|construtor)/`,
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER],
+      },
+      to: { path: `${SERVER}/builder/assistant/` },
+    },
+    {
       name: 'server-root-only-through-public',
       comment:
         'C4: main.ts, conversations-of.ts and first-person-arguments.ts, at the root of the server, reach a subject only through its public.ts.',

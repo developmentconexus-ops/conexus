@@ -3,13 +3,13 @@ import { ConversationId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { InputProcessor, OutputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import { z } from 'zod'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Turn } from '../model-accounts/public.ts'
+import { controllerIn } from '../controller-context/public.ts'
+import type { QueueDeps, Turn } from '../model-accounts/public.ts'
 import { setTurn, turnIn } from '../model-accounts/public.ts'
-
-const Session = z.object({ sessionId: ConversationId })
+import type { Owner } from './kinds.ts'
+import { turnOfOwner } from './memory.ts'
 
 /**
  * A controller's turns by session, and the one owner of their end (code C26): a run takes its turn
@@ -37,12 +37,14 @@ export function sessionTurns(options: {
     requestContext: RequestContext | undefined,
     abort: (reason: string) => never,
   ): Promise<void> {
-    const session = Session.safeParse(requestContext?.get('controller'))
-    if (requestContext === undefined || !session.success) return abort('CONVERSATION_NOT_FOUND')
+    const { sessionId } = controllerIn(requestContext)
+    if (requestContext === undefined || sessionId === undefined) {
+      return abort('CONVERSATION_NOT_FOUND')
+    }
     const turn = await options.take(requestContext)
     if (turn === undefined) return abort('CONVERSATION_NOT_FOUND')
     setTurn(requestContext, turn)
-    held.set(session.data.sessionId, { turn, requestContext })
+    held.set(sessionId, { turn, requestContext })
   }
 
   // A deleted session's run still ends its stream after the abort, and Mastra's memory saves that
@@ -110,5 +112,23 @@ export function turnKeyOn(name: string) {
       }
       return turn.data
     },
+  }
+}
+
+/**
+ * The `take` of a controller whose conversations are an owner's: the turn of the scope the run
+ * belongs to, with a new `TurnKey` on its context; `undefined` for a run that is not one of them.
+ */
+export function takeOfScope(deps: {
+  queue: QueueDeps
+  scopeOf: (requestContext: RequestContext) => Promise<Owner | undefined>
+  turnKey: ReturnType<typeof turnKeyOn>
+}) {
+  return async (requestContext: RequestContext): Promise<Turn | undefined> => {
+    const scope = await deps.scopeOf(requestContext)
+    if (scope === undefined) return undefined
+    const turn = await turnOfOwner(deps.queue, scope)
+    deps.turnKey.start(requestContext)
+    return turn
   }
 }

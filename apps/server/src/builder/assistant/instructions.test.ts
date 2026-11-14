@@ -4,10 +4,9 @@ import { test } from 'node:test'
 import { Role } from '@conexus/hub-api'
 import { MemoryPG } from '@mastra/pg'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
-import { turnDate } from '../conversation/public.ts'
+import { blockOf, turnDate } from '../controller-kit/public.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { blockOf } from './public.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 function read(path: string) {

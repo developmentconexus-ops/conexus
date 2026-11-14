@@ -27,12 +27,12 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
 import { appDataTools } from '../app-data/public.ts'
-import type { Speakers } from '../assistant/public.ts'
-import { blockOf } from '../assistant/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
+import type { Speakers } from '../controller-kit/public.ts'
 import {
   agentDefaults,
+  blockOf,
   fixedSystem,
   oncePerRun,
   routedModel,

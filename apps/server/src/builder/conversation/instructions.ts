@@ -7,6 +7,7 @@ import { createSkill, validateSkillContent } from '@mastra/core/skills'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { GrantedConnection } from '../connectors/public.ts'
+import { turnDate } from '../controller-kit/public.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { chosenModel } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -15,7 +16,6 @@ import {
   fillPrompt,
   MODEL_KNOWLEDGE_CUTOFFS,
   projectContext,
-  turnDate,
 } from './prompt/prompt.ts'
 
 type ProjectIds = { companyId: CompanyId; projectId: ProjectId }

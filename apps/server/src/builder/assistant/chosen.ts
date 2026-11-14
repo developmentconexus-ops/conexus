@@ -4,8 +4,8 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Kept as Opened } from '../controller-kit/public.ts'
-import type { Kept, Owner } from './context.ts'
+import type { Kept as Opened, Owner } from '../controller-kit/public.ts'
+import type { Kept } from './context.ts'
 import { assistantConversation } from './tables.ts'
 
 const Chosen = z.array(ConnectionId)

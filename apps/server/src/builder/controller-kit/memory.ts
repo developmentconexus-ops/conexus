@@ -2,18 +2,16 @@ import type { WorkingMemory } from '@mastra/core/memory'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
-import { z } from 'zod'
+import { controllerIn } from '../controller-context/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { accountModel, memoryModelsFor, Turn } from '../model-accounts/public.ts'
 import { MODEL_TIMEOUT } from './factories.ts'
 import type { Owner, ResourceOwner } from './kinds.ts'
 import { ownerOfResource } from './kinds.ts'
 
-const Resource = z.object({ resourceId: z.string() })
-
 /** Whose conversation a Mastra run is: the owner Mastra keeps its thread under, of either controller. */
 export function ownerIn(requestContext: RequestContext): ResourceOwner | undefined {
-  return ownerOfResource(Resource.safeParse(requestContext.get('controller')).data?.resourceId)
+  return ownerOfResource(controllerIn(requestContext).resourceId)
 }
 
 /** The turn of a conversation's owner, in the accounts' queue (step 11). */

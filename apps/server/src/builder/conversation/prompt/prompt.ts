@@ -62,11 +62,6 @@ export function fillPrompt(values: PromptValues): string {
   return TEMPLATE.replace(PLACEHOLDER, (slot) => slots[slot] ?? values.memory)
 }
 
-/** Today as `YYYY-MM-DD` in `America/Sao_Paulo` (Conexus OS `e0353c36` `harness/prompt.ts:91-92`). */
-export function turnDate(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now)
-}
-
 const INSTRUCTIONS_PATH = 'AGENTS.md'
 const MEMORY_PATH = '.conexus/memory/MEMORY.md'
 // The prompt's share of each file and the most read at all (Conexus OS `e0353c36`
