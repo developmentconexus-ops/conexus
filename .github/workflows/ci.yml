@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 # Every test file is a new Node process that compiles the server's 1963 modules again: the cache
 # takes the import from 1.8 s to 1.3 s from the second process of a job on.
@@ -71,9 +71,6 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
-        env:
-          # A draft pull request may sit beside the track's card in construction (delivery L5).
-          CONEXUS_DRAFT: ${{ github.event.pull_request.draft }}
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
@@ -83,16 +80,6 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: npm run quality -- "origin/$BASE_REF" --fast
       - run: npm run boundaries
-      - name: Approval of the step card
-        env:
-          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
-        run: npm run approval -- ${BASE:+--base "$BASE"}
-      - name: The method stays frozen while a step is in construction
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: npm run method-freeze -- --base "origin/$BASE_REF" --labels "$LABELS"
       - name: Migrations carry no unmarked DROP or RENAME, no changed history or conflicting branches, no session state
         if: github.event_name == 'pull_request'
         env:
@@ -126,6 +113,33 @@ jobs:
         run: docker run --rm --volume "$PWD:/repo" --workdir /repo --env ZIZMOR_GITHUB_TOKEN ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --color always .github # v1.31.1
       # Only a critical advisory fails the run: the lower ones are read in the step's output.
       - run: npm audit --audit-level=critical
+
+  processo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: One card per track, a draft pull request aside
+        env:
+          # A draft pull request may sit beside the track's card in construction (delivery L5).
+          CONEXUS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: npm run second-card
+      - name: Approval of the step card
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: npm run approval -- ${BASE:+--base "$BASE"}
+      - name: The method stays frozen while a step of the track is in construction
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: npm run method-freeze -- --base "origin/$BASE_REF" --labels "$LABELS"
 
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
