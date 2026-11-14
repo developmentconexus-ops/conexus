@@ -15,13 +15,11 @@ import {
  * included, each `jsonb` parsed at the database's edge (C27). The row policy keeps it the company's.
  */
 export async function activeIn(tx: ReadTx) {
-  const [concepts, fields, codes, relations, sources] = await Promise.all([
-    tx.select().from(currentConcept),
-    tx.select().from(currentField),
-    tx.select().from(currentCode),
-    tx.select().from(currentRelation),
-    tx.select().from(currentSource),
-  ])
+  const concepts = await tx.select().from(currentConcept)
+  const fields = await tx.select().from(currentField)
+  const codes = await tx.select().from(currentCode)
+  const relations = await tx.select().from(currentRelation)
+  const sources = await tx.select().from(currentSource)
   return {
     concepts,
     fields,

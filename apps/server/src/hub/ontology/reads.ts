@@ -52,12 +52,9 @@ function relationOf({ companyId: _, revision: __, fromConcept, toConcept, ...row
 type Names = Map<string, string | null>
 async function namesOf(deps: Deps, tx: ReadTx, ids: readonly (string | null)[]): Promise<Names> {
   const unique = [...new Set(ids.flatMap((id) => (id === null ? [] : [id])))]
-  const named = await Promise.all(
-    unique.map(
-      async (id) =>
-        [id, (await deps.identity.personNameOf(tx, PersonIdSchema.parse(id))) ?? null] as const,
-    ),
-  )
+  const named: (readonly [string, string | null])[] = []
+  for (const id of unique)
+    named.push([id, (await deps.identity.personNameOf(tx, PersonIdSchema.parse(id))) ?? null])
   return new Map(named)
 }
 

@@ -3,6 +3,7 @@ import {
   getClient,
   getCompany,
   getInvitation,
+  getOntology,
   getProject,
   getSession,
   getStatus,
@@ -126,6 +127,14 @@ function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name 
     [`GET /api/companies/${id}/assistant/conversations`]: ok(listAssistantConversations, {
       conversations: [],
       next: { kind: 'END' },
+    }),
+    // The rail's Conhecimento link preloads its page on focus, and every member has it.
+    [`GET /api/companies/${id}/ontology`]: ok(getOntology, {
+      revision: null,
+      concepts: [],
+      toReview: 0,
+      mayApprove: false,
+      awaits: null,
     }),
     // The frame's bell reads the person's notifications on every page.
     [`GET /api/companies/${id}/notifications`]: ok(listNotifications, {
