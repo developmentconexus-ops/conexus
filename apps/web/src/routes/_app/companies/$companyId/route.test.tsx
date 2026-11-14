@@ -64,10 +64,16 @@ function linkNames(scope: BoundFunctions<typeof queries>) {
     .map((link) => link.getAttribute('aria-label') ?? link.textContent)
 }
 
-test('o membro: o trilho tem Início, Projetos, Integrações, Configurações e a conta; a lista é a da dona, Nova conversa e as conversas, sem Projetos recentes (critérios 3, 5 e 9)', async () => {
+test('o membro: o trilho tem Início, Projetos, Integrações, Conhecimento, Configurações e a conta; a lista é a da dona, Nova conversa e as conversas, sem Projetos recentes (critérios 3, 5 e 9)', async () => {
   open(HOME)
   const { rail, list } = await sidebar()
-  expect(linkNames(rail)).toEqual(['Início', 'Projetos', 'Integrações', 'Configurações'])
+  expect(linkNames(rail)).toEqual([
+    'Início',
+    'Projetos',
+    'Integrações',
+    'Conhecimento',
+    'Configurações',
+  ])
   expect(rail.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
   expect(rail.getByRole('link', { name: 'Início' }).getAttribute('aria-current')).toBe('page')
   expect(rail.getByRole('link', { name: 'Configurações' }).getAttribute('href')).toBe(
@@ -89,6 +95,7 @@ test('o desenvolvedor: o trilho tem Automações, Agentes e Cópias depois de In
     'Automações',
     'Agentes',
     'Cópias',
+    'Conhecimento',
     'Configurações',
   ])
   expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
@@ -104,6 +111,7 @@ test('o trilho da dona tem Automações, Agentes e Cópias logo depois de Integr
     'Automações',
     'Agentes',
     'Cópias',
+    'Conhecimento',
     'Configurações',
   ])
   expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()

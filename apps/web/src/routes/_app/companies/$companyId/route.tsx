@@ -1,6 +1,7 @@
 import type { CompanyId, CompanyMay } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import {
+  BookOpenIcon,
   BotIcon,
   CopyIcon,
   FolderIcon,
@@ -92,6 +93,12 @@ function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
           label="Cópias"
         />
       )}
+      <SidebarRailButton
+        to="/companies/$companyId/knowledge"
+        params={params}
+        icon={BookOpenIcon}
+        label="Conhecimento"
+      />
     </>
   )
 }
