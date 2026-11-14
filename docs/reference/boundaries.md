@@ -53,11 +53,11 @@ changes, reread the line it names.
   read (`session.ts`) and the route calls (`routes.ts`), mapping a failure through
   `databaseFailure` and a 5xx it cannot name to `DATABASE_UNAVAILABLE`. A library command goes
   through `libraryCommand`, which `databaseFailure` maps in the database module.
-- **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
-  system; unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or
-  unexpected database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md):
-  only a code leaves. The test "banco fora" in `database-down.test.ts` fails without the piece, and the test "senha que não grava" in
-  `password-write.test.ts` fails without the option.
+- **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside system;
+  unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or unexpected
+  database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md): only a code
+  leaves. The test "banco fora" in `database-down.test.ts` fails without the piece, and the test
+  "senha que não grava" in `password-write.test.ts` fails without the option.
 
 ### A library refusal becomes the Hub's code by one reader
 
@@ -104,8 +104,8 @@ changes, reread the line it names.
 - **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
   adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
 - **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
-  `invitations.test.ts` fails when the wrapper is taken out, and so does "renovar: o administrador renovando o convite
-  de um dono", where the second phase refuses the escaped write.
+  `invitations.test.ts` fails when the wrapper is taken out, and so does "renovar: o administrador
+  renovando o convite de um dono", where the second phase refuses the escaped write.
 
 ### The operator's invitation of an owner, through the plugin's adapter
 
@@ -130,22 +130,22 @@ changes, reread the line it names.
   the parameter is typed `AuthContext<BetterAuthOptions>`, which no configured auth's context
   matches.
 - **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus never
-  becomes one, so the operator invites an owner without a membership, which no endpoint admits.
-  Step 6 declared the departure: the Central also invites an owner into an active company, since
-  its card has it act on the people as an owner, so the rule "only a company with no member" is
-  gone and the mail says "primeiro dono" only for a company with no member
-  ("empresa ativa" in `owner-invitation.test.ts` also checks the subject). Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
-  2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
-  `invitations.test.ts` fails when a member's invitation is written by the adapter instead: the Hub no longer checks the creator role or an existing
-  member itself. "renovar: o administrador renovando o convite de um dono…" fails when a member's
-  renewal skips the endpoint. A member's cancel has no
-  such row: the admission already requires `invitation: ["create"]`, every default role that holds
-  it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
-  from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
-  company is created by the endpoint; "recusas" guards that the
-  adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
-  `joiningTransaction` alike, so no single test proves either. When the library
-  changes, reread `getOrgAdapter`'s signature and these four methods.
+  becomes one, so the operator invites an owner without a membership, which no endpoint admits. Step
+  6 declared the departure: the Central also invites an owner into an active company, since its card
+  has it act on the people as an owner, so the rule "only a company with no member" is gone and the
+  mail says "primeiro dono" only for a company with no member ("empresa ativa" in
+  `owner-invitation.test.ts` also checks the subject). Members keep the native endpoints: the
+  founder's answer A on the 4.2 code audit, 2026-10-17 ([delivery L12](../guides/delivery.md)).
+  "convidar: o administrador pedindo dono…" in `invitations.test.ts` fails when a member's
+  invitation is written by the adapter instead: the Hub no longer checks the creator role or an
+  existing member itself. "renovar: o administrador renovando o convite de um dono…" fails when a
+  member's renewal skips the endpoint. A member's cancel has no such test: the admission already
+  requires `invitation: ["create"]`, every default role that holds it also holds `cancel`, and the
+  endpoint writes the same status, so no test can tell the endpoint from the adapter there. The test
+  "sem membro" in `hub/operations/clients.test.ts` fails when the company is created by the
+  endpoint; "recusas" guards that the adapter writes inside the Hub's transaction, which it joins
+  through `runWithTransaction` and `joiningTransaction` alike, so no single test proves either. When
+  the library changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
 
@@ -206,9 +206,10 @@ changes, reread the line it names.
   no row count, and a read afterwards passes the same row policy as the DELETE. A correction and a
   deletion lock the company, then the operator's row, then the client, the order the invitations and
   the accept keep (`lockCompany` first).
-- **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
-  test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens; "apagar: concorrência" in `client-deletion.test.ts` deadlocks
-  when the operator's row is locked before the company's.
+- **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The test
+  "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens; "apagar:
+  concorrência" in `client-deletion.test.ts` deadlocks when the operator's row is locked before the
+  company's.
 
 ### Taking a person out and changing a role: the plugin's adapter, with the native routes unused
 
@@ -286,9 +287,9 @@ changes, reread the line it names.
   `CompanyOperatorProof` or `OperatorProof`, which the Hub's reads and writes require.
 - **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
   company and a role without the action get the same 404, with the reason only in the log. The test
-  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company; "fora: o operador" fails when a person who is not the
-  operator may act on a company as the operator;
-  "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
+  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company;
+  "fora: o operador" fails when a person who is not the operator may act on a company as the
+  operator; "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
   `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
 ### The lists the Hub reads itself, 50 rows a page
@@ -362,9 +363,9 @@ changes, reread the line it names.
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
   conflicts, current admission, races and rollback; removing terminal guards fails
-  `invitation-cancel-terminal-guard` and `invitation-create-replay-terminal`. Existing expired-row cancellation and parsing
-  tests in `invitations.test.ts` fail without `re-invite-cancels-expired` and
-  `open-invitation-row-parsed`.
+  "accepted or declined never become canceled" and "binds the complete replay payload". The tests
+  "de novo: o anterior vencido" and "de novo: o anterior com um id fora de forma" in
+  `invitations.test.ts` fail without the expired-row cancellation and the row parse.
 
 ### Three reads through the library's internal adapter
 
@@ -418,10 +419,10 @@ changes, reread the line it names.
   company's lock, and a rollback after the send mails an invitation that does not exist; sent after
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
-  `invitation-replay.test.ts` fails without the replay branch, and "de novo com a mesma chave: depois do correio fora" in
-  `invitations.test.ts` fails without the mark on a bounce.
+  `invitation-replay.test.ts` fails without the replay branch, and "de novo com a mesma chave:
+  depois do correio fora" in `invitations.test.ts` fails without the mark on a bounce.
   `invitation-lifecycle.test.ts` proves a failed mark permits at-least-once delivery on replay, and
-  the late-send test fails without the revision comparison (`invitation-mark-current-revision`).
+  the test "a late send cannot mark" fails without the revision comparison.
 
 ### The pace of invitations
 
@@ -507,10 +508,10 @@ changes, reread the line it names.
   the answer is 202 and empty whether or not a mail leaves, and an unavailable provider is logged
   as `MAIL_UNAVAILABLE`, never answered. The library has no per-person pace and no way to ask for
   a link without sending it.
-- **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour),
-  P3 (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
-  `password-recovery.test.ts` fail without each piece. A mail still in flight when the Hub stops is lost; the person asks
-  again.
+- **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour), P3
+  (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
+  `password-recovery.test.ts` fail without each piece. A mail still in flight when the Hub stops is
+  lost; the person asks again.
 
 ### The leaked-password check is the library's function, run before the transaction
 
@@ -1097,10 +1098,10 @@ sealed credential, so both rows of the card's reference table that read "remendo
   the Hub's configuration) and a checked path, with `redirect: 'error'` (`request.ts:48`).
 - **Why.** A caller's text must never choose the host the Hub sends a credential to (S36), and a
   write must never pass as a read for lack of a class.
-- **Proof.** Tests on the request origin, the refused redirect, the local-only origin and the read door's
-  statement words. Also `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só aceita
-  operações read", which fail at compile time or at definition rather than by a line a scratch copy
-  could remove.
+- **Proof.** Tests on the request origin, the refused redirect, the local-only origin and the read
+  door's statement words. Also `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só
+  aceita operações read", which fail at compile time or at definition rather than by a line a test
+  could fail on.
 - **Revisit when** a connector library runs a provider call in the Hub's region with the credential
   sealed.
 
@@ -1120,12 +1121,11 @@ sealed credential, so both rows of the card's reference table that read "remendo
 - **Why.** A provider's body is its own and can be large or carry the credential back; and a bug in
   the executor must not read as "the provider is down" (the founder, 2026-10-29: "a gente estava
   suprimindo alguns erros. Para mim isso não é bom").
-- **Proof.** `executor.test.ts` "a origem, o redirecionamento e o teto" covers the refused redirect and the
-  response cap. Also, each on the
-  public door: "o corpo de erro perde os valores da credencial antes de ser lido", "o token sai de
-  todo corpo de uma operação, no envelope do gateway e no erro REST", "um erro de programação dentro
-  do envio sobe como falha, não vira UNREACHABLE" and "um corpo de erro que não é JSON chega como
-  texto e o status decide".
+- **Proof.** `executor.test.ts` "a origem, o redirecionamento e o teto" covers the refused redirect
+  and the response cap. Also, each on the public door: "o corpo de erro perde os valores da
+  credencial antes de ser lido", "o token sai de todo corpo de uma operação, no envelope do gateway
+  e no erro REST", "um erro de programação dentro do envio sobe como falha, não vira UNREACHABLE"
+  and "um corpo de erro que não é JSON chega como texto e o status decide".
 - **Revisit when** Node's `fetch` takes a body cap, or a connector library runs the call in Brazil
   with the credential outside the caller.
 
@@ -1167,8 +1167,8 @@ reference tool checks a read against its documentation.
 - **Why.** The founder's choice B, 2026-11-09: one search in the connector that the Project's
   agent, the apps and the Assistant share, and one call that returns many rows. What the model
   writes is hostile input (S2, S15).
-- **Proof.** `search.test.ts` covers the text marks, the `LIKE` escape and the doubled quote. The check in
-  `queryRequest` fails the same file's hostile-input test without it.
+- **Proof.** `search.test.ts` covers the text marks, the `LIKE` escape and the doubled quote. The
+  check in `queryRequest` fails the same file's hostile-input test without it.
 - **Not proved.** On SQL Server, `[` and `]` are wildcards in `LIKE` and `escaped` leaves them
   (https://github.com/developmentconexus-ops/conexus/issues/929).
 - **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound

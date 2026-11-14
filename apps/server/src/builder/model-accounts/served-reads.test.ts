@@ -94,7 +94,7 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   async function read() {
     return Object((await call(hub, ana, 'GET', accounts)).json())
   }
-  // Removal row: matching the registry's ids exactly kept only the two Flash Lites.
+  // Matching the registry's ids exactly kept only the two Flash Lites.
   const [google] = (await read()).choices.company
   assert.deepEqual(google.models, [
     { id: 'google/gemini-3.1-flash-lite', efforts: ['low', 'medium', 'high'] },
