@@ -293,6 +293,8 @@ test('só o job flaky escreve issues, e nenhum job de teste leva token nem permi
   const runs = flaky?.steps.map((step) => step.run ?? '').join('\n') ?? ''
   assert.doesNotMatch(runs, /npm (test|run (test|e2e))/)
   assert.match(runs, /node scripts\/flaky-issues\.ts flaky-records/)
+  assert.match(runs, /npm ci --ignore-scripts/)
+  assert.ok(!flaky?.steps.some((step) => step.uses === './.github/actions/install'))
   const download = flaky?.steps.find((step) => step.uses?.startsWith('actions/download-artifact@'))
   assert.equal(download?.with?.['merge-multiple'], undefined)
   for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
