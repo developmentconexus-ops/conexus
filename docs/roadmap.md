@@ -32,7 +32,7 @@ chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrev
 do contrato podem estar as nossas cópias, no banco de cada empresa; as ferramentas ao vivo pela
 Nango, como o Gmail, que o agente consulta e nunca copia; e, mais tarde, a plataforma de dados ou o
 banco que a empresa já tem, como o seu exemplo do Databricks ou os bancos que o Mitra liga direto.
-Essa última só se constrói quando um cliente pedir. Ideia nova entra pelo único estudo aberto de uma
+Ideia nova entra pelo único estudo aberto de uma
 trilha, nunca por fora do roteiro.
 
 As duas trilhas andam ao mesmo tempo, cada uma na ordem dos seus marcos. Cada página de
