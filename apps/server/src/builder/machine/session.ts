@@ -15,7 +15,9 @@ export type Session = {
   starts: number
   /** The turn needed the machine: a session outlives its turns, so `ready` alone no longer says it. */
   used: boolean
-  /** The turn's first use of a machine already up reads the markers again; every use waits for it. */
+  /** The turn read the markers (or started the machine): the first use of a machine already up reads them again. */
+  markersRead: boolean
+  /** The read in flight, which every use waits for. */
   refreshing: Promise<void> | undefined
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean

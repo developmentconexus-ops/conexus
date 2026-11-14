@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { COMPANY, CONVERSATION, moveMain, PROJECT, pausedByE2b, world } from './test-machine.ts'
@@ -62,4 +63,18 @@ test('máquina: o início que falhou não fica recusado para sempre: a ferrament
     3,
     'a deleted conversation keeps no session: its machine starts again',
   )
+})
+
+test('máquina: a releitura das marcas que falha (saída diferente de zero) falha a ferramenta, e a seguinte e o collect passam', async (t) => {
+  const { open, machines, base, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('a.ts', 'um\n')
+  await machines.release(CONVERSATION)
+  const git = join(folder, 'app', '.git')
+  renameSync(git, `${git}.away`)
+  const next = await open()
+  await assert.rejects(next.filesystem?.exists('a.ts') ?? Promise.reject(), /markers not read/)
+  renameSync(`${git}.away`, git)
+  assert.equal(await next.filesystem?.exists('a.ts'), true, 'the next tool reads again and goes on')
+  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  assert.ok(typeof collected === 'object', 'and the turn saves what it wrote')
 })
