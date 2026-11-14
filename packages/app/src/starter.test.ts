@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { test } from 'node:test'
+import { readSkills } from './skills.ts'
 import { STARTER_DIR } from './starter.ts'
 
 function filesUnder(dir: string): string[] {
@@ -44,5 +45,24 @@ test('toda dependência do starter tem versão exata e todo componente leva a li
   assert.ok(files.includes('src/components/ui/LICENSE-shadcn-ui.txt'))
   for (const file of files.filter((each) => /^src\/components\/ui\/.*\.tsx$/.test(each))) {
     assert.match(read(file), /shadcn\/ui .*MIT License/, file)
+  }
+})
+
+test('toda cor de gráfico que a skill manda usar existe no starter, no claro e no escuro', () => {
+  const numbers = readSkills()
+    .flatMap((skill) => [skill.content, ...Object.values(skill.references)])
+    .flatMap((text) => Array.from(text.matchAll(/--chart-(\d+)/g), (found) => Number(found[1])))
+  // The skill names the range as "--chart-1 to --chart-5", so its ends stand for every token between.
+  const named = Array.from(
+    { length: Math.max(...numbers) - Math.min(...numbers) + 1 },
+    (_, at) => `--chart-${Math.min(...numbers) + at}`,
+  )
+  assert.ok(numbers.length > 0, 'the skills name chart tokens')
+  const css = read('src/styles.css')
+  const dark = css.slice(css.indexOf('prefers-color-scheme: dark'), css.indexOf('@theme inline'))
+  const light = css.slice(0, css.indexOf('prefers-color-scheme: dark'))
+  for (const token of named) {
+    assert.match(light, new RegExp(`${token}:\\s*#`), `${token} in the light theme`)
+    assert.match(dark, new RegExp(`${token}:\\s*#`), `${token} in the dark theme`)
   }
 })
