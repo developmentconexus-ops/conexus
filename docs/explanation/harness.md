@@ -13,8 +13,8 @@ leaves alone. `builder/` below means `apps/server/src/builder/`. The import law 
 ## One Mastra, four controllers
 
 The server builds one `Mastra` instance (`builder/mastra/mastra.ts`) with a logger, a storage,
-four agent controllers and one workflow. It passes no `agents`, `server`, `observability`, MCP,
-vectors or scorers keys. `createHubMastra` (`builder/mastra/hub-mastra.ts`) owns its life:
+four agent controllers and three workflows. It passes no `agents`, `server`, MCP, vectors or
+scorers keys; `observability` is set (see Tracing below). `createHubMastra` (`builder/mastra/hub-mastra.ts`) owns its life:
 `prepare()` creates Mastra's tables, `start()` starts Mastra's workers after every part is ready,
 `settle()` stops the scheduler and waits for live turns at shutdown, and `close()` drains and shuts
 Mastra down.
@@ -27,7 +27,7 @@ is a closed list; the `agents` controller has none, and the tool set each versio
 the closed set. The controller's built-in tools stay off
 unless the mode offers them; Conexus supplies its own `ask_user` and, for the Builder,
 `submit_plan`, under the native ids (`builder/conversation/plan-tools.ts`). The `subagent` tool is
-never on.
+on only for the Assistant, with one helper type that reads (`builder/assistant/research.ts`).
 
 A session's id is the thread's id and Conexus's conversation id. The thread's resource encodes the
 kind and the owner, `<prefix>company:<c>:person:<p>` (`builder/controller-kit/kinds.ts`), and the
@@ -84,7 +84,9 @@ observational memory scoped to the thread, observing at 30,000 message tokens an
 40,000 observation tokens, with async buffering off. The title writer uses the turn's account. The
 observer and the reflector use the company's memory models, read when the turn opens and picked
 beside the queue, never through it (`builder/model-accounts/processors.ts`). Only the Builder turns on recall
-inside its thread. Nothing uses working memory, semantic recall, vectors or embedders.
+inside its thread. Only the Assistant uses working memory, per person
+(`builder/assistant/memory.ts`), and reads the company's Knowledge, tools that only read
+(`builder/assistant/company-memory.ts`). Nothing uses semantic recall, vectors or embedders.
 
 ## Workspace, machine and filesystem
 
@@ -123,10 +125,18 @@ scorer; `@mastra/evals` appears only in a test.
 
 ## Workflow and scheduler
 
-One workflow, `conexus-automation-run`, built with `createWorkflow` and `createStep`, runs
-automations. Automations are rows of `mastra.schedules`. The scheduler polls every 10 seconds and
+Three workflows, built with `createWorkflow` and `createStep`. `conexus-automation-run` runs
+automations and `conexus-copy-run` runs the Sync's copies (`builder/copy-clock/workflow.ts`); both
+are rows of `mastra.schedules`. `conexus-retention-prune` drops old traces at 03:30 in São Paulo
+(`builder/mastra/retention.ts`). The scheduler polls every 10 seconds and
 starts only when a schedule row exists. Renaming the workflow would make Mastra delete every
 automation (`builder/automations/run.ts`).
+
+## Tracing
+
+One `Observability` with the storage exporter writes every controller's and workflow's spans, logs
+and metrics to Mastra's own database, without the streamed chunks
+(`builder/mastra/mastra.ts`, decision [0068](../decisions/0068-mastra-tracing-in-its-own-database.md)).
 
 ## The routes the browser reaches
 
@@ -147,14 +157,11 @@ Hub's own Fastify routes, not Mastra's.
 
 ## Installed and not used
 
-- Tracing and observability: no exporter is installed, and nothing sets `observability`.
-  Decision [0052](../decisions/0052-one-tracing-path-builder-to-grafana.md) proposes it.
 - Mastra's `server` option, its auth providers and Studio.
-- Agent networks, subagents, MCP clients and servers, channels, voice and structured output.
-- Working memory, semantic recall and vector stores.
+- Agent networks, subagents outside the Assistant's one helper, MCP clients and servers, channels, voice and structured output.
+- Semantic recall and vector stores.
 - Workspace search, LSP and workspace skills.
-- Datasets, experiments and stored scorers; workflows beyond the one automation workflow, with
-  no suspend and resume of workflows.
+- Datasets, experiments and stored scorers; suspend and resume of workflows.
 - `@mastra/schema-compat`, present only as a dependency of other Mastra packages.
 
 `PostgresStore` still creates tables for its storage domains that Conexus never reads, such as
