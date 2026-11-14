@@ -18,7 +18,7 @@ export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
 /** What an operation does to the provider's data, as a role's screen says it: reads, writes, deletes. */
-const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
+export const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
 
 /**
  * A subject of the kit with its operations, for the screens that choose among them (a role, an

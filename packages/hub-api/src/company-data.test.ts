@@ -23,7 +23,7 @@ const CATALOG = Catalog.parse({
           operation: 'criarPedido',
           label: 'Criar pedido',
           summary: 'Um pedido novo.',
-          class: 'write',
+          effect: 'WRITE',
         },
       ],
     },
@@ -42,7 +42,7 @@ const CATALOG = Catalog.parse({
       name: 'Correio',
       reads: [{ operation: 'buscarMensagens', label: 'Mensagens', summary: 'Busca por texto.' }],
       actions: [
-        { operation: 'enviarMensagem', label: 'Enviar', summary: 'Uma mensagem.', class: 'write' },
+        { operation: 'enviarMensagem', label: 'Enviar', summary: 'Uma mensagem.', effect: 'WRITE' },
       ],
     },
   ],
@@ -74,6 +74,17 @@ const CATALOG = Catalog.parse({
       },
     },
     {
+      name: 'clientes',
+      description: 'Os clientes ativos do ERP.',
+      columns: [{ name: 'nome', type: 'text', description: 'O nome do cliente.' }],
+      kept: {
+        kind: 'COPY',
+        connections: [ERP],
+        source: { kind: 'OPERATION', operation: 'listarClientes', label: 'Clientes', input: {} },
+        lastRun: null,
+      },
+    },
+    {
       name: 'estoque',
       description: null,
       columns: [{ name: 'produto', type: 'text', description: 'O código do produto.' }],
@@ -87,30 +98,45 @@ const CATALOG = Catalog.parse({
   ],
 })
 
+type Answer<K extends 'rows' | 'live' | 'funnel'> = Awaited<ReturnType<DataSources[K]>>
+
 function fakeWorld(): DataWorld {
-  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [] }
+  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], signals: [] }
+  const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [] }
   const isDown = { catalog: false, rows: false }
   const sources: DataSources = {
-    async catalog() {
+    async catalog({ signal }) {
+      reached.signals.push(signal)
       return isDown.catalog ? { kind: 'CATALOG_UNAVAILABLE' } : CATALOG
     },
-    async rows({ table }) {
-      if (isDown.rows) return { kind: 'TABLE_UNAVAILABLE' }
-      reached.rows.push(table.name)
-      return { kind: 'ROWS', rows: [{ numero: 1, total: '10.00' }], complete: true }
+    async rows({ table, signal }) {
+      reached.signals.push(signal)
+      if (!isDown.rows) reached.rows.push(table.name)
+      const page: Answer<'rows'> = isDown.rows
+        ? { kind: 'TABLE_UNAVAILABLE' }
+        : { kind: 'ROWS', rows: [{ numero: 1, total: '10.00' }], complete: false }
+      gave.rows.push(page)
+      return page
     },
-    async live({ connection, operation, input }) {
+    async live({ connection, operation, input, signal }) {
+      reached.signals.push(signal)
       reached.live.push({ connection, operation, input })
-      return { kind: 'OK', value: [] }
+      const answer: Answer<'live'> = { kind: 'OK', value: [{ assunto: 'Pedido 7' }] }
+      gave.live.push(answer)
+      return answer
     },
-    async funnel({ connection, operation, input, call }) {
+    async funnel({ connection, operation, input, call, signal }) {
+      reached.signals.push(signal)
       reached.funnel.push({ connection, operation, input, call })
-      return { kind: 'OK', value: { numero: 2 }, returned: { status: 201, body: { numero: 2 } } }
+      const answer: Answer<'funnel'> = { kind: 'WRITE_UNCERTAIN', mark: 'pedido-2', returned: null }
+      gave.funnel.push(answer)
+      return answer
     },
   }
   return {
     sources,
     reached,
+    gave,
     down(part) {
       isDown[part] = true
     },

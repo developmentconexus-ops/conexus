@@ -1,10 +1,9 @@
 import { z } from 'zod'
 import { ConnectorId } from './company-roles.ts'
-import { ConnectionId, Native } from './connectors.ts'
+import { ConnectionId, Native, OfferedRead, OperationEffect } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
 import { CopyRun } from './copies.ts'
 import { CopyOrigin, CopyShown } from './copy-shown.ts'
-import { PersonId } from './identity.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
 
@@ -16,7 +15,7 @@ import { OperationId } from './tools.ts'
  * who asks and where, and never chooses where a read is served from.
  */
 
-const OperationEntry = z.object({ operation: OperationId, label: z.string(), summary: z.string() })
+const OperationEntry = OfferedRead.omit({ allowed: true })
 
 /** One connected system and what it does live: its reads and its actions, as the kit or the provider's catalog declares them. */
 export const CatalogSystem = z.object({
@@ -24,8 +23,8 @@ export const CatalogSystem = z.object({
   connector: ConnectorId,
   name: z.string(),
   reads: z.array(OperationEntry),
-  /** An action the provider declares without a class counts as a write, so it asks before it runs (D1). */
-  actions: z.array(OperationEntry.extend({ class: z.enum(['write', 'destructive']) })),
+  /** An action the provider declares without an effect counts as a write, so it asks before it runs (D1). */
+  actions: z.array(OperationEntry.extend({ effect: OperationEffect.exclude(['READ']) })),
 })
 export type CatalogSystem = z.infer<typeof CatalogSystem>
 
@@ -118,8 +117,6 @@ export const ActRequest = z.object({
   operation: OperationId,
   input: z.unknown(),
   call: z.object({ thread: ConversationId, toolCall: ToolCallId }),
-  /** Set only by the approval card: the person who let this write be sent. */
-  approvedBy: PersonId.optional(),
 })
 export type ActRequest = z.infer<typeof ActRequest>
 
@@ -155,7 +152,7 @@ export type DataSources = Readonly<{
   rows(a: Signal & Readonly<{ table: CatalogTable }>): Promise<Page>
   /** One read of a system now, through the executor, whatever logs in beneath it. */
   live(a: Signal & OperationRead): Promise<LiveAnswer>
-  /** One write through the funnel, which records it and asks with the approval card. */
+  /** One write through the funnel, which records it and asks with the approval card; who approved it is bound here by the card's path, never carried by the request. */
   funnel(a: Signal & ActRequest): Promise<Exclude<ActAnswer, { kind: CatalogOnly }>>
 }>
 
