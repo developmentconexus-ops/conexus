@@ -1115,7 +1115,7 @@ Cartão curto de A máquina do Assistente que não pausa a cada mensagem (`docs/
 
 Emenda do cartão curto de A máquina da conversa que não pausa a cada mensagem (`docs/steps/o-arquivo-do-turno-anterior.md`) aprovada em 2026-11-13 (commit 15ca1480ec984f1cc905946deeaba0eae74243ac), à pergunta se o Builder e o Construtor passam ao mesmo padrão nativo (a máquina deixa de pausar a cada turno, uma só configuração do E2B de 5 minutos, para o Assistente, o Builder, o Construtor e os agentes da empresa): "sIM MESMO PADRÃO NATIVO de acordo com documentação de /mastra context7 o que for nativo"
 
-Página corrigida do cartão curto de A máquina da conversa que não pausa a cada mensagem (`docs/steps/o-arquivo-do-turno-anterior.md`) aprovada em 2026-11-13 (commit 93626afd49190cb5c3d12ebd670dbd18d039f5ff), à página que inclui o Builder, conta os 5 minutos do E2B desde que a máquina liga ou volta (o padrão da Factory, sem renovação por turno) e traz no roteiro a conferência ao vivo de turnos longos do Builder e do Construtor: "Aprovo"
+Emenda do cartão curto de A máquina da conversa que não pausa a cada mensagem (`docs/steps/o-arquivo-do-turno-anterior.md`) aprovada em 2026-11-13 (commit 93626afd49190cb5c3d12ebd670dbd18d039f5ff), à página que inclui o Builder, conta os 5 minutos do E2B desde que a máquina liga ou volta (o padrão da Factory, sem renovação por turno) e traz no roteiro a conferência ao vivo de turnos longos do Builder e do Construtor: "Aprovo"
 
 ## Mudança de método: toda referência com prova da situação
 
