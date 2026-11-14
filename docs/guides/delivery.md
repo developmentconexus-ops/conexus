@@ -19,8 +19,8 @@ merge.
 - **L1.** Product work **must** go to the track owning its folders, **Dados** or **Agentes e
   Apps**, as each track's page says. Each track **should** have one step in construction and at
   most one open study. The platform is maintenance, not a track: a defect there follows L4 in the
-  track that found it. Agentes e Apps reaches company data only through the access contract,
-  changed through an issue labelled `contrato`. A unit touching the other track's file waits for
+  track that found it. Once the contract file lands, Agentes e Apps reaches company data
+  only through it, changed through an issue labelled `contrato`. A unit touching the other track's file waits for
   its units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds
   only after the previous one merges, but once a card is approved (L6), its units touching none of
   the previous step's fixes' files may start, built from that card's pull request, while the
@@ -162,14 +162,14 @@ merge.
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 
-## 7. The pattern track
+## 7. The light method
 
-- **L27.** The pattern track **must** use the light method of
+- **L27.** After its first milestone, the Dados track **must** use the light method of
   [the pattern card](../../.agents/skills/conexus-scope/references/pattern-card.md): a card from
   that template (2,000 words at most, no separate card reader), one Opus unit review launched on
-  green CI, one delta at most, one step review with QA for screens. The tracks keep apart by
-  file: the pattern track owns `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
-  (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the frontier track.
+  green CI, one delta at most, one step review with QA for screens. Dados owns
+  `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
+  (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the Agentes e Apps track.
   Founder, 2026-10-30: "3. Sim", "4. Sim". [review]
 
 ## 8. Git

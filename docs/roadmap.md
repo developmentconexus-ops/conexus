@@ -36,7 +36,7 @@ Essa última só se constrói quando um cliente pedir. Ideia nova entra pelo ún
 trilha, nunca por fora do roteiro.
 
 As duas trilhas andam ao mesmo tempo, cada uma na ordem dos seus marcos. Cada página de
-trilha está em [steps/trilhas/](steps/trilhas/). As etapas fechadas estão nas [aprovações](approvals.md).
+trilha está em [steps/trilhas/](steps/trilhas/).
 
 **Trilha Dados.**
 
@@ -63,8 +63,8 @@ página da [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-`A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: plano em
-`A3`, teste em `A1`, revisão em `A4`.
+`A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
+plano em `A3`, código e teste em `A1`, revisão em `A4`.
 
 **O que brilha primeiro.** `D1`, `D2` e `A2`: ligar um sistema em um clique, perguntar sobre o dado
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps

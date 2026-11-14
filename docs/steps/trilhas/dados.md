@@ -20,6 +20,12 @@ Antes de `D1`, as duas trilhas desenham juntas o contrato, uma vez: um arquivo c
 teste de conformidade verde contra um conector falso. Esse arquivo é de outra tarefa. Depois de `D1`, a
 trilha segue o método leve da fila do molde (delivery L27).
 
+## O cartão de hoje
+
+O cartão desta trilha em `docs/steps/` é `a-ontologia-da-empresa.md`, a Ontologia da empresa. Ele
+espera o estudo do contrato, que decide o destino do PR 1030: o inventário passa a ler do catálogo,
+ou o PR entra como está. O primeiro marco a construir é `D1`.
+
 ## O que a trilha possui
 
 - `packages/connectors/` e as funções da Nango.
@@ -28,13 +34,15 @@ trilha segue o método leve da fila do molde (delivery L27).
 - As telas de Integrações, Cópias e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.
 
-A Plataforma (identidade, Projetos, publicação, `apps/server/src/platform/` e `apps/edge/`) não é
-trilha. É manutenção: um defeito ali entra na frente da fila da trilha que o achou (delivery L4).
+A Plataforma (identidade, Projetos, publicação, `apps/server/src/platform/` menos `copy-sql.ts`, e
+`apps/edge/`) não é trilha. É manutenção: um defeito ali entra na frente da fila da trilha que o
+achou (delivery L4). Toda pasta que nenhuma página de trilha nomeia é da Plataforma.
 
 ## A interface: o contrato de acesso
 
 O Assistente, o Builder, os agentes da empresa e os apps publicados chegam ao dado da empresa por um
-contrato só, com três verbos. Ele mora num arquivo de `packages/hub-api/`.
+contrato só, com três verbos. Ele virá num arquivo de `packages/hub-api/`, com o teste de
+conformidade, em outra tarefa.
 
 | Verbo | O que responde | De onde vem |
 | --- | --- | --- |
@@ -46,8 +54,8 @@ Ler não espera a Ontologia. A Ontologia continua a única fonte de significado 
 [0064](../../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md)), e um sistema
 ligado hoje já serve pelo catálogo.
 
-Uma regra do `dependency-cruiser` proíbe a trilha Agentes e Apps de importar de dados qualquer coisa
-que não seja o contrato.
+Uma regra do `dependency-cruiser` virá com o arquivo do contrato e proibirá a trilha Agentes e Apps
+de importar de dados qualquer coisa que não seja o contrato.
 
 ## Como a outra trilha pede uma mudança no contrato
 
@@ -76,7 +84,7 @@ A ordem de 2026-11-12 (`"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"
 [0064](../../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md),
 [0065](../../decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e
 [0067](../../decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). A Ontologia
-da empresa, o item 1, é o cartão em construção e passa a ler do catálogo em `D4`. Os itens 5 a 7 são
+da empresa, o item 1, tem cartão em `docs/steps/` e passa a ler do catálogo em `D4`. Os itens 5 a 7 são
 consumidos pela trilha Agentes e Apps.
 
 1. **A Ontologia da empresa**: os conceitos de cada demanda, provados e aprovados na página Conhecimento.

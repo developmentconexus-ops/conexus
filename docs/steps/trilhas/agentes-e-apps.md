@@ -37,6 +37,12 @@ As respostas do fundador:
 - **As capacidades, em 2026-11-09, ao estudo delas.** A Prévia usa os dados reais. Veem o banco do app o dono, o administrador e quem constrói (papéis do Better Auth). O Sync tem intervalo por dado, de 15 minutos no mínimo. Dono e administrador editam a identidade da empresa; o app a segue e troca a cor de destaque se pedem. O agente no app: "o agente dentro do app seria o agente dentro de um projeto, o app só meio que teria um visual, stream e uma ponte para o agente no HUB", com o modelo que o construtor de agentes escolher.
 - **Aos pareceres do Builder, em 2026-11-09.** O Sync é da empresa, não de cada app: "da empresa faz mais sentido". O vínculo da pessoa é genérico: "a gente não pode focar no sankhya". Sugestões: "Isso é no app". O design, "igual o design.md, que o Impeccable utiliza". Capacidades uma por vez; sem banco de teste agora.
 
+## O cartão de hoje
+
+O cartão desta trilha em `docs/steps/` é `o-arquivo-do-turno-anterior.md`, a máquina da conversa que
+não pausa a cada mensagem, com a marca antiga `Trilho: assistente`. O cartão
+`pattern-o-rastreio-do-mastra.md` mexe em `builder/mastra/` e é da Plataforma.
+
 ## O que a trilha possui
 
 - `apps/server/src/builder/controller-kit/`, `conversation/`, `assistant/`, `agents/`,
@@ -44,14 +50,15 @@ As respostas do fundador:
 - `packages/app/` e `packages/app-contract/`.
 - As telas de conversa.
 
-A trilha consome o contrato de acesso e não é dona dele. A Plataforma não é trilha: um defeito nela
+A trilha consome o contrato de acesso e não é dona dele. Toda pasta que nenhuma página de trilha
+nomeia é da Plataforma, como `builder/mastra/` e `builder/model-accounts/`. A Plataforma não é trilha: um defeito nela
 entra na frente da fila de quem o achou (delivery L4).
 
 ## A interface: o contrato de acesso
 
-Todo agente e todo app publicado chegam ao dado da empresa só pelo contrato, com três verbos:
+Quando o arquivo do contrato vier, em outra tarefa, todo agente e todo app publicado chegarão ao dado da empresa só por ele, com três verbos:
 descrever, ler e agir. A página da [trilha Dados](dados.md) traz o que cada verbo responde. Uma
-regra do `dependency-cruiser` proíbe esta trilha de importar de dados qualquer coisa que não seja o
+regra do `dependency-cruiser` virá com o arquivo do contrato e proibirá esta trilha de importar de dados qualquer coisa que não seja o
 contrato.
 
 ## Como pedir uma mudança no contrato
@@ -69,6 +76,6 @@ A auditoria de 2026-11-14 deixou seis passos abertos. Cada um entra num marco de
 - **Passo 3.** A casca única de conversa na web, `<ConversationRoom>` com o registro de cartões por ferramenta, entra antes de `A3`, que põe o plano na conversa.
 - **Passo 4.** As regras de prompt trocadas por mecanismo do Mastra entram em `A3`, onde o juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts.
 - **Passo 5.** O modo de plano nativo é o próprio `A3`, com o teste em que o controlador recusa a escrita antes da aprovação.
-- **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados, e a memória do Projeto no Knowledge entra em `A3`, depois do cartão do Brain.
+- **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados. A memória do Projeto no Knowledge vai com o item 5 da lista do Brain, na página da [trilha Dados](dados.md), e `A3` fica sem ela.
 - **Passo 7.** As correções de stack andam ao lado de `A1`, cada uma num pull request. O convite com senha mexe em segurança e pede cartão.
 - **Passo 8.** O renome para o Estúdio vem por último, depois de `A4`. Desde `A1`, todo arquivo novo nasce na pasta alvo da auditoria, com o que é comum às conversas em `builder/controller-kit/`.
