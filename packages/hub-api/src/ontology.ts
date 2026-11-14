@@ -31,6 +31,7 @@ export const Target = z
 const Name = z.string().min(1).max(80)
 
 export const OntologyProposalId = z.uuid().brand<'OntologyProposalId'>()
+export type OntologyProposalId = z.infer<typeof OntologyProposalId>
 export const ProofRunId = z.uuid().brand<'ProofRunId'>()
 export type ProofRunId = z.infer<typeof ProofRunId>
 export const InventoryRunId = z.uuid().brand<'InventoryRunId'>()

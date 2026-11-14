@@ -233,6 +233,8 @@ export {
   setObservationalMemoryModel,
 } from './observational-memory.ts'
 export * from './ontology.ts'
+export { DecisionGap, ProblemGaps } from './ontology-failures.ts'
+export * from './ontology-routes.ts'
 export * from './open-writes.ts'
 export {
   type AccessKind,

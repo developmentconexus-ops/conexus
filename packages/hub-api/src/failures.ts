@@ -9,7 +9,7 @@ import { CONVERSATION_FAILURES } from './conversation-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
-import { ONTOLOGY_FAILURES } from './ontology-failures.ts'
+import { ONTOLOGY_FAILURES, ONTOLOGY_PROBLEM } from './ontology-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
 import { REQUEST_FAILURES } from './request-failures.ts'
@@ -300,6 +300,7 @@ export const Problem = z.object({
   operation: z.string().optional(),
   /** RFC 9457 extension members, each written only by the refusal that owns it (step 24.3). */
   ...AGENT_PROBLEM,
+  ...ONTOLOGY_PROBLEM,
 })
 export type Problem = z.infer<typeof Problem>
 

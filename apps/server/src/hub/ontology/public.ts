@@ -4,7 +4,7 @@ import { searchInventory } from './inventory-search.ts'
 import { createInventoryService } from './inventory-service.ts'
 import type { ProposeInput } from './propose.ts'
 import { proposeConcepts } from './propose.ts'
-import { registerOntologyRoutes } from './routes.ts'
+import { registerConceptRoutes, registerOntologyRoutes } from './routes.ts'
 
 export type {
   InventoryClock,
@@ -33,7 +33,10 @@ export function createOntology(deps: InventoryDeps) {
     concepts: {
       propose: (input: ProposeInput) => proposeConcepts(deps, input),
     },
-    routes: (app: FastifyInstance) => registerOntologyRoutes(app, inventory),
+    routes: (app: FastifyInstance) => {
+      registerOntologyRoutes(app, inventory)
+      registerConceptRoutes(app, deps)
+    },
   })
 }
 export type Ontology = ReturnType<typeof createOntology>
