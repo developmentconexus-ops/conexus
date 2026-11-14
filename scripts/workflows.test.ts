@@ -262,3 +262,8 @@ test('o processo é um trabalho à parte, sempre presente, que o agregador de c�
   for (const script of ['second-card', 'approval', 'method-freeze'])
     assert.doesNotMatch(code, new RegExp(`npm run ${script}\\b`), `check: ${script}`)
 })
+
+test('uma execução do main nunca cancela a anterior', () => {
+  const concurrency = parse(text('ci.yml')).concurrency
+  assert.match(concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/)
+})

@@ -12,9 +12,11 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request replaces its running run; a push to main never does, so every
+# commit of main keeps its removal rows and its result.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 # Every test file is a new Node process that compiles the server's 1963 modules again: the cache
 # takes the import from 1.8 s to 1.3 s from the second process of a job on.
