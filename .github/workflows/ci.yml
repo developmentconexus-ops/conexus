@@ -522,7 +522,6 @@ jobs:
         with:
           pattern: flaky-*
           path: flaky-records
-          merge-multiple: true
       - if: ${{ hashFiles('flaky-records/**') != '' }}
         uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - if: ${{ hashFiles('flaky-records/**') != '' }}

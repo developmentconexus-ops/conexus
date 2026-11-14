@@ -89,3 +89,20 @@ test('um gh que falha deixa a execução verde, com o aviso', () => {
     /::warning title=Teste instável::o registro não chegou ao GitHub: sem rede/,
   )
 })
+
+test('dois artefatos com o mesmo nome de arquivo, cada um na sua pasta, chegam os dois', () => {
+  const dir = setup([])
+  for (const [folder, name] of [
+    ['flaky-server-1', 'um'],
+    ['flaky-web', 'dois'],
+  ]) {
+    mkdirSync(join(dir, 'records', folder))
+    writeFileSync(join(dir, 'records', folder, 'flaky.jsonl'), record(name))
+  }
+  const { result, ghLog } = run(dir)
+  assert.equal(result.status, 0, result.stderr)
+  const created = ghLog.split('\n').filter((line) => line.startsWith('issue create'))
+  assert.equal(created.length, 2)
+  assert.match(created.join('\n'), /› um /)
+  assert.match(created.join('\n'), /› dois /)
+})
