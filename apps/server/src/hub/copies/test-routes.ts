@@ -7,10 +7,12 @@ import type { Person } from '../identity/test-hub.ts'
 import { call, post } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 
+type Reader = Pick<CopiesOn, 'hub' | 'ana' | 'companyId'>
+
 /** How long a test waits for a run to end: the publish, the pages and the close, with a margin. */
 const RUN_DEADLINE_MS = 60_000
 
-export function copiesUrl(on: CopiesOn) {
+export function copiesUrl(on: Reader) {
   return `/api/companies/${on.companyId}/copies`
 }
 
@@ -23,7 +25,7 @@ export async function enabled(on: CopiesOn, model: string): Promise<CopySummary>
 }
 
 /** The copy's runs, one page. */
-export async function runsPage(on: CopiesOn, person: Person, copyId: string, page?: string) {
+export async function runsPage(on: Reader, person: Person, copyId: string, page?: string) {
   const read = await call(
     on.hub,
     person,
@@ -35,7 +37,7 @@ export async function runsPage(on: CopiesOn, person: Person, copyId: string, pag
 }
 
 /** The first run of the copy to end, once the workflow has run it. */
-export async function firstEnded(on: CopiesOn, copyId: string): Promise<CopyRun> {
+export async function firstEnded(on: Reader, copyId: string): Promise<CopyRun> {
   const deadline = Date.now() + RUN_DEADLINE_MS
   while (Date.now() < deadline) {
     const { runs } = await runsPage(on, on.ana, copyId)
