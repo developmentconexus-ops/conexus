@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER, CompanyId, ModelAccountId } from '@conexus/hub-api'
 import { call, post } from '../../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../../platform/test-database.ts'
@@ -29,6 +28,7 @@ import {
 } from '../../conversation/test-conversation.ts'
 import { failuresOf } from '../../conversation/test-parts.ts'
 import { codexModel } from '../public.ts'
+import { bothOnTheLease, titleOf } from '../test-defaults.ts'
 
 const MODEL = 'openai/gpt-5.2'
 /** The Builder's title phrase as the request carries it inside the JSON body. */
@@ -218,25 +218,24 @@ test('429 é limite: a conta ganha a hora que o Codex dá', async (t) => {
   f.codex.responses = () => ({ status: 429, headers: { 'retry-after': '120' } })
   const begun = Date.now()
   await asked(t, f.where)
+  const answered = Date.now()
   const [row] = await f.hub.test.asOwner(
     `select limited_until, state from builder.model_account where label = 'ChatGPT'`,
   )
   const until = Object(row).limited_until
   assert.ok(until instanceof Date)
-  const seconds = (until.getTime() - begun) / 1000
-  assert.ok(seconds > 115 && seconds < 135, String(seconds))
+  const [afterStart, afterEnd] = [until.getTime() - begun, until.getTime() - answered]
+  assert.ok(afterStart > 115_000 && afterEnd < 125_000, String([afterStart, afterEnd]))
   assert.equal(Object(row).state, 'ready')
 })
 
 test('renovação com duas conversas: uma só chamada, o token novo nas duas e o refresh novo selado', async (t) => {
   const f = await subscribed(t, 1)
   f.codex.responses = () => ({ status: 400 })
-  const renewed = f.codex.refresh
-  f.codex.refresh = async () => {
-    await sleep(300)
-    return renewed()
-  }
-  const turns = await Promise.all([asked(t, f.where), asked(t, await beside(f.where, 'Estoque'))])
+  const other = await beside(f.where, 'Estoque')
+  const turns = await bothOnTheLease(f.hub, 'ChatGPT', () =>
+    Promise.all([asked(t, f.where), asked(t, other)]),
+  )
   assert.equal(turns.length, 2)
   assert.equal(renewals(f).length, 1)
   const body = new URLSearchParams(renewals(f)[0]?.body)
@@ -296,12 +295,7 @@ test('o título da conversa pela assinatura: a chamada sem streaming sai com str
         }
       : { status: 400, body: { detail: 'Stream must be set to true' } }
   const { url } = await asked(t, f.where)
-  let title: unknown = null
-  for (let wait = 0; wait < 30 && title === null; wait++) {
-    title = Object((await call(f.hub, f.ana, 'GET', url)).json()).conversation.title
-    if (title === null) await sleep(100)
-  }
-  assert.equal(title, NAMED)
+  assert.equal(await titleOf(f.hub, f.ana, url), NAMED)
   for (const made of responses(f)) assert.equal(JSON.parse(String(made.body)).stream, true)
   const [asking, ...more] = responses(f).filter((made) => String(made.body).includes(TITLE_PHRASE))
   assert.ok(asking !== undefined && more.length === 0, 'one request carries the title phrase')
