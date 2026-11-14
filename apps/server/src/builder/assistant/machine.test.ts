@@ -120,7 +120,7 @@ test('a leitura na máquina: a máquina que não liga deixa a leitura responder 
   assert.match(String(answered), /MACHINE_UNAVAILABLE/)
 })
 
-test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor a pausa ao ficar parada (21)', async (t) => {
+test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor a pausa pelo prazo dele (21)', async (t) => {
   const on = await assisting(t, [
     [write('a.txt', 'um')],
     [said('Escrevi.')],

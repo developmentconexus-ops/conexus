@@ -48,11 +48,9 @@ export type ConversationMachines = {
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /**
-   * The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. It
-   * never rejects: a pause that fails is logged, and the provider's own timeout pauses the machine.
+   * The Hub ends: every machine a turn held pauses, each failure logged and a machine never started
+   * left alone. A turn's end stops nothing: E2B pauses the machine on its own timeout.
    */
-  stop(conversationId: ConversationId): Promise<void>
-  /** The Hub ends: every machine of a turn in flight stops, each failure logged. */
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (`MachineApi.kill`). */
   kill(conversationId: ConversationId): Promise<void>
@@ -334,7 +332,7 @@ class Machines implements ConversationMachines {
     }
   }
 
-  stop(conversationId: ConversationId): Promise<void> {
+  private stop(conversationId: ConversationId): Promise<void> {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session === undefined) return Promise.resolve()

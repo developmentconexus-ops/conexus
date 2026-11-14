@@ -26,6 +26,17 @@ test('máquina: a do Builder recebe só o registro do npm na lista de endereços
   assert.deepEqual(control.allowOut, [['registry.npmjs.org']])
 })
 
+test('máquina: o fim do turno do Builder não para a máquina: a pausa é do E2B, e o turno seguinte a acha pelo nome', async (t) => {
+  const { open, control, machines } = await world(t)
+  await (await open()).filesystem?.writeFile('a.ts', 'um\n')
+  await machines.release(CONVERSATION)
+  assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
+  control.discoverable = [OWN]
+  const next = await open()
+  assert.equal(await next.filesystem?.exists('a.ts'), true)
+  assert.deepEqual(control.attached, [OWN])
+})
+
 test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
   const { open, phases, control, machines, base } = await world(t)
   const first = await open()

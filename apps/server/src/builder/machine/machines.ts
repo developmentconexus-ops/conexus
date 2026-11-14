@@ -321,16 +321,16 @@ class BuilderMachines implements Machines {
   }
 
   /**
-   * The turn is over and the machine pauses with its folder as the turn left it: what the Hub did
-   * not save stays for the next start to merge (no reference discards a session's unsaved work). A
-   * start still running settles first; its failure was the turn's to hear.
+   * The turn is over: the Hub lets go of the machine and stops nothing. E2B pauses it on its own
+   * timeout (`machine/e2b.ts`), with its folder as the turn left it: what the Hub did not save
+   * stays for the next start to merge (no reference discards a session's unsaved work). A start
+   * still running settles first; its failure was the turn's to hear.
    */
   async release(conversationId: ConversationId) {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session?.ready === undefined) return
     await Promise.allSettled([session.ready])
-    await session.kit.sandbox.stop?.()
   }
 }
 

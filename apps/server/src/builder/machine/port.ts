@@ -51,7 +51,7 @@ export type Machines = {
   pack(input: { conversationId: ConversationId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the conversation's turn used the machine: then there may be something to collect. */
   touched(conversationId: ConversationId): boolean
-  /** Ends the turn's use of the machine: it pauses with its folder as the turn left it. Safe to repeat. */
+  /** Ends the turn's use of the machine: nothing is stopped, E2B pauses it on its own timeout, folder as the turn left it. Safe to repeat. */
   release(conversationId: ConversationId): Promise<void>
   kill: MachineApi['kill']
 }

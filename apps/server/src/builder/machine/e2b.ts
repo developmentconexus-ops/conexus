@@ -7,9 +7,11 @@ import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
 import { MARK } from './kit.ts'
 
 /**
- * How long an idle machine runs before E2B pauses it, for every agent: the Mastra Factory's
- * default (`idleTimeoutMinutes` 5, `workspaces/e2b/src/factory-sandbox.ts`). A turn's end stops
- * nothing; the next start resumes a paused machine.
+ * How long a machine runs before E2B pauses it, for every agent: the Mastra Factory's default
+ * (`idleTimeoutMinutes` 5, `workspaces/e2b/src/factory-sandbox.ts`), which becomes the sandbox's
+ * `timeout`. E2B counts it from the machine's start or its last reconnect, not from the last use,
+ * and the Hub renews nothing, as the Factory does not. A turn's end stops nothing; the next tool
+ * that finds the machine paused resumes it by itself (`retryOnDead`).
  */
 const IDLE_MS = 5 * 60 * 1000
 const CALL_MS = 30_000

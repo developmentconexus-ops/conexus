@@ -15,7 +15,7 @@ export const turnKey = turnKeyOn('conexus-assistant-turn-key')
  * takes its owner's turn with a new `TurnKey`, and no Projeto (`Runs`): the controller already
  * sends one message at a time to a conversation. A card (`ask_user`) suspends the run, and an
  * automation's run ends then (`endOf`). The turn's end leaves the conversation's machine running:
- * E2B's own idle lifecycle pauses it, and a later question within it reuses it.
+ * E2B pauses it on its own timeout, and a later question before then reuses it.
  */
 export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
   return sessionTurns({
