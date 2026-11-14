@@ -528,13 +528,9 @@ jobs:
           pattern: flaky-*
           path: flaky-records
       - if: ${{ hashFiles('flaky-records/**') != '' }}
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - if: ${{ hashFiles('flaky-records/**') != '' }}
-        run: npm ci --ignore-scripts
+          ignore-scripts: 'true'
       - if: ${{ hashFiles('flaky-records/**') != '' }}
         env:
           GH_TOKEN: ${{ github.token }}

@@ -293,8 +293,8 @@ test('só o job flaky escreve issues, e nenhum job de teste leva token nem permi
   const runs = flaky?.steps.map((step) => step.run ?? '').join('\n') ?? ''
   assert.doesNotMatch(runs, /npm (test|run (test|e2e))/)
   assert.match(runs, /node scripts\/flaky-issues\.ts flaky-records/)
-  assert.match(runs, /npm ci --ignore-scripts/)
-  assert.ok(!flaky?.steps.some((step) => step.uses === './.github/actions/install'))
+  const install = flaky?.steps.find((step) => step.uses === './.github/actions/install')
+  assert.equal(install?.with?.['ignore-scripts'], 'true')
   const download = flaky?.steps.find((step) => step.uses?.startsWith('actions/download-artifact@'))
   assert.equal(download?.with?.['merge-multiple'], undefined)
   for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
@@ -310,5 +310,17 @@ test('cada job de teste com segunda rodada sobe os registros dos instáveis, mes
     const upload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))
     assert.match(String(upload?.with?.name), /^flaky-/, name)
     assert.equal(upload?.if, '${{ !cancelled() }}', name)
+  }
+})
+
+test('a ação de instalação pula os scripts de ciclo de vida só quando o job pede, e instala com eles nos outros', () => {
+  const action = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
+  const step = action.runs.steps.find((step: Step) => step.run?.includes('npm ci'))
+  assert.equal(action.inputs['ignore-scripts'].default, 'false')
+  assert.match(step.run, /= true \]; then npm ci --ignore-scripts; else npm ci; fi/)
+  assert.equal(step.env.IGNORE_SCRIPTS, ['${{', 'inputs.ignore-scripts', '}}'].join(' '))
+  for (const [name, job] of Object.entries(ci.jobs)) {
+    const asks = job.steps.some((step) => step.with?.['ignore-scripts'] !== undefined)
+    assert.equal(asks, name === 'flaky', name)
   }
 })

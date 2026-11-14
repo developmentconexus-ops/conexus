@@ -1,5 +1,9 @@
 name: Install
 description: The pinned Node and the locked dependencies, with npm's download cache kept between runs under the lockfile's hash.
+inputs:
+  ignore-scripts:
+    description: "'true' installs without running any dependency's lifecycle scripts, for a job that holds a token that writes."
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -8,5 +12,7 @@ runs:
         node-version-file: .nvmrc
         cache: npm
         cache-dependency-path: package-lock.json
-    - run: npm ci
+    - run: if [ "$IGNORE_SCRIPTS" = true ]; then npm ci --ignore-scripts; else npm ci; fi
       shell: bash
+      env:
+        IGNORE_SCRIPTS: ${{ inputs.ignore-scripts }}
