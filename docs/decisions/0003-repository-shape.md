@@ -1,4 +1,4 @@
-# 0003. One tree, five packages, walls checked by a machine
+# 0003. One tree, seven packages, walls checked by a machine
 
 ## Context
 
@@ -6,7 +6,7 @@ The old code had folder rules written in prose and broken in practice. The found
 
 ## Decision
 
-One repository with five `package.json`: `apps/server`, `apps/web`, `apps/edge`, `packages/hub-api`, `packages/app-contract`. The Hub, the Builder and `platform` are folders. dependency-cruiser enforces the import law in CI, including the walls between subjects inside the Hub and the Builder. Basis: Purpose: a package only where something forces it (two consumers, or a versioned contract); the three app packages have a weak reason, stated: each runs in one place with its own dependencies.
+One repository with seven `package.json`: `apps/server`, `apps/web`, `apps/edge`, `packages/hub-api`, `packages/app-contract`, `packages/app` and `packages/connectors` (the last two came with the generated apps and the connector kit). The Hub, the Builder and `platform` are folders. dependency-cruiser enforces the import law in CI, including the walls between subjects inside the Hub and the Builder. Basis: Purpose: a package only where something forces it (two consumers, or a versioned contract); the three app packages have a weak reason, stated: each runs in one place with its own dependencies.
 
 ## Criterion
 
