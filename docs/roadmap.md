@@ -17,103 +17,95 @@ desenvolvimento do conexus, um dos primeiros seria a parte de pesquisa, depois a
 parte de plano em conjunto com estratégia de construção, depois a gente foca em como é feito o
 código, depois como é revisado, depois como é testado".
 
-O foco é o Builder e a construção de apps; o Assistente fica para depois. A 24.6 congela: "congelar
-24.6", "a gente não vai construir agentes agora". Você julga o Builder: "eu prefiro eu ser a régua".
-Os apps de teste: um CRM e um acompanhamento de vendedor; o gestor vê tudo de cada vendedor; o
-vendedor entra e vê os seus dados, metas, marcas, desempenho, clientes e sugestões. Nada de app de
-brinquedo. O mapa sai: "Deixa quieto sobre o Mapa". Este roteiro reescrito: "Pode".
+A 24.6 congela: "congelar 24.6", "a gente não vai construir agentes agora". Você julga o Builder: "eu
+prefiro eu ser a régua". Os seus dois apps de teste estão na página da [trilha
+Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
-### As etapas, e o que você faz quando cada uma fecha
+Em 2026-11-14, ao parecer do conselheiro de produto: "1A. Duas trilhas", "2A. Catálogo primeiro,
+Ontologia por cima", "3B. Identidade da empresa mais direção por app", "4A. Build semanal fixo"; à
+lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
-Fechadas: as que as [aprovações](approvals.md) registram com o uso. Sua empresa usa o Conexus desde
-2026-11-02.
+### A direção
 
-**As capacidades que faltam aos apps.**
+O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
+chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
+do contrato podem estar as nossas cópias, no banco de cada empresa; as ferramentas ao vivo pela
+Nango, como o Gmail, que o agente consulta e nunca copia; e, mais tarde, a plataforma de dados ou o
+banco que a empresa já tem, como o seu exemplo do Databricks ou os bancos que o Mitra liga direto.
+Essa última só se constrói quando um cliente pedir. Ideia nova entra pelo único estudo aberto de uma
+trilha, nunca por fora do roteiro.
 
-- **A Ontologia da empresa** é o item 1 da lista "O Brain e a Ontologia", abaixo, e a Capacidade 4 espera por ela (2026-11-12: `"A1"`).
-- **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
-- **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela.
-- **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
-- **Capacidade 7. Avisos e lembretes do CRM.** Recebe no CRM os avisos e lembretes de um dia de uso.
+As duas trilhas andam ao mesmo tempo, cada uma na ordem dos seus marcos. Cada página de
+trilha está em [steps/trilhas/](steps/trilhas/). As etapas fechadas estão nas [aprovações](approvals.md).
 
-**O Brain e a Ontologia** (2026-11-12: `"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"`, "1. A"; decisões [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md), [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). Esta ordem vale sobre qualquer outra:
+**Trilha Dados.**
 
-1. **A Ontologia da empresa**: os conceitos de cada demanda, provados e aprovados na página Conhecimento.
-2. **O fluxo da empresa**: os estados e as passagens, lidos dos documentos ou do histórico; entre dois sistemas, sem ligação.
-3. **A saúde da Ontologia**: a prova refeita todo dia e o aviso no Início.
-4. **Ligações e duas fontes**; sobe antes da saúde se o próximo cliente tiver dois sistemas no fluxo principal.
-5. **O Brain do Builder e dos Projetos**, com o Mapa da página Conhecimento ("2 Okay").
-6. **A entrada conversada**, o onboarding que aprende o começo: "quando tiver definido a ontologia, o brand".
-7. **Os agentes da empresa nos dois**, com a Capacidade 6.
-8. **Fontes de conhecimento**: arquivos, depois pastas por conector.
-9. **A revisão semanal**, que só propõe.
-10. **A busca por significado**, quando a medida pedir.
+| Marco | O que a pessoa vê | Pronto quando |
+| --- | --- | --- |
+| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pela Nango. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
+| `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no banco da empresa dentro do intervalo. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
+| `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
+| `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas de uma cópia ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
+| `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
+| `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-**O fluxo de desenvolvimento, por fase.** Cada fase mapeia o que o Builder faz hoje; você a julga nos dois apps de teste.
+A fila do molde, de onde saem os dez de `D3`, e a ordem do Brain e da Ontologia depois de `D4` estão na
+página da [trilha Dados](steps/trilhas/dados.md).
 
-- **Fluxo 1. Pesquisa.**
-- **Fluxo 2. Plano e estratégia de construção.**
-- **Fluxo 3. Código.**
-- **Fluxo 4. Revisão.**
-- **Fluxo 5. Teste.**
+**Trilha Agentes e Apps.**
 
-**Depois desta frente:**
+| Marco | O que a pessoa vê | Pronto quando |
+| --- | --- | --- |
+| `A1`. O Builder vê o que construiu | Menos apps "prontos" que não funcionam | Um teste planta um defeito visível e o Builder o corrige sem ninguém avisar. A conferência falha quando uma tela não está ligada. O estudo curto que compara máquina e Worker de verdade está feito antes |
+| `A2`. Apps com identidade | Dois apps de empresas diferentes não se confundem. Os apps da mesma empresa parecem da mesma casa | O mesmo pedido em duas empresas de teste com identidades diferentes gera `styles.css` diferentes. Você distingue os dois em capturas lado a lado. O plano mostra a direção de design antes de construir |
+| `A3`. O plano que trava e fecha | O Builder não escreve antes de você aprovar, e não diz "pronto" com item em aberto | Um teste em que o modelo tenta escrever antes da aprovação e o controlador recusa. Cada pedido numerado do plano aparece conferido no fim. O juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts |
+| `A4`. O segundo olhar | Uma revisão antes da entrega, feita por quem não construiu | Outra sessão revisa a versão exata, no máximo três voltas. Você julga se os dois apps de teste melhoraram com ela. Se não melhorarem, sai |
+| `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
+| `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-- **O Assistente.**
-- **24.6 Workflows e automações.** Monta conversando o fluxo do orçamento do Sankhya e o vê como trem de balões. Congelada.
-- **24.7 Canais.** O agente no Telegram.
-- **21.1 Ver o que acontece.** Vê a Atividade, o painel e o uso por empresa.
-- **16 Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
-- **22 Ensaio geral.** Restaura tudo junto, pelo procedimento.
-- **23 As outras empresas.** Empresas além da sua usam o Conexus.
-- **20.2 App que se atualiza.** Vê o app mudar com um aviso do fornecedor, depois dos webhooks.
+`A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: plano em
+`A3`, teste em `A1`, revisão em `A4`.
 
-Sem ordem: o Sync de outros ERPs e de bancos como Oracle e MySQL.
+**O que brilha primeiro.** `D1`, `D2` e `A2`: ligar um sistema em um clique, perguntar sobre o dado
+copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
+bonitos e quebrados.
 
-### A fila do molde, ao lado
-
-O que tem molde anda numa fila de método leve (2026-10-30: "1. Sim 2. Sim 3. Sim"):
-
-1. **Fábrica de conectores.** O esqueleto sai da documentação do fornecedor.
-2. **Os sistemas das quatro empresas.**
-3. **Bling**, **Omie** (login por chave fixa) e **Conta Azul**.
-4. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco; a Jet (20.3) quando alguém a usar.
-
-Em espera: 19.2 Central de Ajuda.
+**O que não se faz.** Conector novo no kit próprio para sistema que a Nango tem. A Fábrica de
+conectores na forma antiga: o esqueleto é uma função da Nango gerada do kit. Mais de um estudo aberto
+por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
+agente. Transformações e histórico de mudanças antes de `D3`.
 
 ### O que você fornece, e quando
 
-Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, US$ 25 por mês), o Neon grátis, as assinaturas de modelo, o E2B grátis (pago, US$ 150 por mês, se o uso pedir), o R2 e o usuário de leitura no Sankhya.
-
-| Etapa | O que | Gasto que uma página dá |
-| --- | --- | --- |
-| 24.2 | O Neon Launch no projeto do Hub: a agenda das automações o mantém acordado. Por agora fica no plano grátis (2026-11-01) | Cerca de US$ 19,35 por mês, uma conta só |
-| 22 | Um lugar de cópia fora do Neon | Não lido |
-| 23 | O aviso do que sai do Brasil, com uma linha: o ditado no Chrome passa pelo Google | Nenhum novo |
+Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, US$ 25 por mês), o Neon
+grátis, as assinaturas de modelo, o E2B grátis, o R2 e o usuário de leitura no Sankhya. Na 24.2, o
+Neon Launch no Hub, cerca de US$ 19,35 por mês, fica no plano grátis por agora (2026-11-01). Na 22,
+um lugar de cópia fora do Neon, não lido.
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas para dentro de um app. Medição de uso, segundo idioma. Domínio de empresa.
+Login social. Arquivos enviados por pessoas para dentro de um app. Segundo idioma. Domínio de empresa.
 
 ### As suas respostas
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** Em 2026-10-13: "2. A".
-2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim".
+2. **A 16 vai para depois da 21.1, antes da 22.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim".
 3. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". O teto de 1.600 palavras não sobe.
-4. **Sua empresa primeiro, as outras depois.** Em 2026-10-30, ao estudo da estrutura dos agentes: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas". Os agentes vêm depois.
-5. **As capacidades, em 2026-11-09, ao estudo delas.** A Prévia usa os dados reais. Veem o banco do app o dono, o administrador e quem constrói (papéis do Better Auth). O Sync tem intervalo por dado, de 15 minutos no mínimo. Dono e administrador editam a identidade da empresa; o app a segue e troca a cor de destaque se pedem. O agente no app: "o agente dentro do app seria o agente dentro de um projeto, o app só meio que teria um visual, stream e uma ponte para o agente no HUB", com o modelo que o construtor de agentes escolher.
-6. **Aos pareceres do Builder, em 2026-11-09.** O Sync é da empresa, não de cada app: "da empresa faz mais sentido". O vínculo da pessoa é genérico: "a gente não pode focar no sankhya". Sugestões: "Isso é no app". O design, "igual o design.md, que o Impeccable utiliza". Capacidades uma por vez; sem banco de teste agora.
+4. **Sua empresa primeiro, as outras depois.** Em 2026-10-30: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
 
-## 2. As etapas
+As suas respostas às capacidades e aos pareceres do Builder, de 2026-11-09, estão na página da
+[trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
-| Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
-| --- | --- | --- | --- |
-| Capacidades 4 a 7 | Uma por vez, na ordem | As das respostas 5 e 6; outras, no estudo | Referências e Mastra; na 4, `defineRoles` e `can`; na 5, Impeccable, Claude Design e o frontend-design da Anthropic |
-| Fluxo 1 a 5 | As capacidades, uma fase por vez | Você é a régua | vibesdk, Mastra, o estudo do Builder ideal |
-| 24.6 Workflows e automações | Esta frente | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
-| 24.7 Canais | A 24.6 | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
-| 21.1 Ver o que acontece | A 24.7 | Grafana no Brasil, provado | O OTel como mais um destino ao lado do rastro do Mastra no banco dele (0068). O uso por empresa. As ferramentas de conector sem entrada e saída no span (veio da 20, critério 29) |
-| 16 Atualizar sem cortar | A 21.1 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
-| 22 Ensaio geral | A 16 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Carga de um painel e de uma rotina |
-| 23 As outras empresas | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 20.2 App que se atualiza | A 23 e os webhooks | Nenhuma | Avisos do fornecedor (S48), num workflow do Mastra |
+## 2. As etapas depois das trilhas
+
+Cada etapa espera a de cima; a 20.2 espera também os webhooks.
+
+| Etapa | Decisão sua nela | Conhecimento trazido |
+| --- | --- | --- |
+| 24.6 Workflows e automações: monta conversando o fluxo do orçamento do Sankhya. Congelada | O gatilho do Sankhya | Workflows dinâmicos do Mastra. Seu orçamento é o aceite |
+| 24.7 Canais: o agente no Telegram | Nenhuma | Sem ninguém da empresa olhando, `toolApprovers: 'requester'`; até lá, nenhuma escrita que pergunta (`D1`) |
+| 21.1 Ver o que acontece: a Atividade, o painel e o uso por empresa | Grafana no Brasil, provado | O OTel ao lado do rastro do Mastra no banco dele (0068) |
+| 16 Atualizar sem cortar: conversa enquanto o Conexus é atualizado | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
+| 22 Ensaio geral: restaura tudo junto | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13 |
+| 23 As outras empresas usam o Conexus | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
+| 20.2 App que se atualiza com um aviso do fornecedor | Nenhuma | S48, num workflow do Mastra |

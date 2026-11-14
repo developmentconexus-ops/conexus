@@ -16,14 +16,16 @@ merge.
 
 ## 1. One step at a time
 
-- **L1.** Product work **should** have one step in construction per track: **frontier** (the
-  Builder, agents, data in apps, platform), **pattern** (connectors through the kit and other
-  work with a template, L27), **design** (`DESIGN.md`, `apps/web/src/{brand,ui}/`) and **assistente** (the
-  Assistant: `apps/server/src/builder/assistant/` and its owned parts). A unit touching another
-  track's file waits for that track's units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds only after the previous one merges, but once a
-  card is approved (L6), its units touching none of the previous step's fixes' files may
-  start, built from that card's pull request, while the previous step's use, fixes and closing
-  run beside them. A small change that [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
+- **L1.** Product work **must** go to the track owning its folders, **Dados** or **Agentes e
+  Apps**, as each track's page says. Each track **should** have one step in construction and at
+  most one open study. The platform is maintenance, not a track: a defect there follows L4 in the
+  track that found it. Agentes e Apps reaches company data only through the access contract,
+  changed through an issue labelled `contrato`. A unit touching the other track's file waits for
+  its units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds
+  only after the previous one merges, but once a card is approved (L6), its units touching none of
+  the previous step's fixes' files may start, built from that card's pull request, while the
+  previous step's use, fixes and closing run beside them. A small change that
+  [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   [review]
@@ -32,8 +34,8 @@ merge.
 
 ## 2. The card
 
-- **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A
-  card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
+- **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A track's
+  page in `docs/steps/trilhas/` is not a card. The `processo` check reads the old marks: a card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
   approved, and enters when the track's step closes; the `processo` check stays red on it only when the pull request is not a draft. [processo]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Firstmate
