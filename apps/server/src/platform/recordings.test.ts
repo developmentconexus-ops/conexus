@@ -48,6 +48,7 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
       const text = readFileSync(join(RECORDINGS, file), 'utf8')
       assert.equal(LEAK.test(text), false, `${file} carries an address or a credential`)
       assert.doesNotMatch(text, /^(authorization|x-api-key|cookie|set-cookie):/im, file)
+      assert.doesNotMatch(text, /connector_notes/, `${file} still lists the notebook's tool`)
     }
   }
 })

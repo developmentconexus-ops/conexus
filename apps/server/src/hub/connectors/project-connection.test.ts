@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm'
 import { createTestDatabase } from '../../platform/test-database.ts'
 
 // Two companies with a Sankhya connection and a Projeto each; the checks of step 20's U2, the
-// grant of a connection to a Projeto and the connection's notes, as the company's login sees them.
+// grant of a connection to a Projeto, as the company's login sees them.
 const A = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const B = CompanyId.parse('companyBBBBBBBBBBBBBBBBBBBBBBBBB')
 const ANA = PersonId.parse('person-a')
