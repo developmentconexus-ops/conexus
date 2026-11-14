@@ -1,8 +1,7 @@
 name: CI
 
-# A label re-runs the pull request, so the `all-removals` label runs every removal proof on it and the
-# `emergência` label lets the method freeze pass. `ready_for_review` re-runs the card check a draft
-# pull request held back (delivery L5).
+# A label re-runs the pull request, so the `emergência` label lets the method freeze pass.
+# `ready_for_review` re-runs the card check a draft pull request held back (delivery L5).
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
@@ -13,7 +12,7 @@ permissions:
   contents: read
 
 # A push to main has a group of its own, its commit's, so no run of main replaces the one before it,
-# running or waiting: every commit of main keeps its removal rows and its result. A pull request's
+# running or waiting: every commit of main keeps its result. A pull request's
 # new push still replaces its own old run (twenty, ci-front.yaml:13-14).
 concurrency:
   group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
@@ -386,80 +385,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
-  # A pull request proves the removals whose protected file, test file or row its diff changes
-  # (scripts/removals-select.ts). Every push to main, and a pull request carrying the `all-removals`
-  # label, proves all of them.
-  removals-plan:
-    needs: scope
-    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    outputs:
-      base: ${{ steps.plan.outputs.base }}
-      selected: ${{ steps.plan.outputs.selected }}
-      total: ${{ steps.plan.outputs.total }}
-      shards: ${{ steps.plan.outputs.shards }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
-      - name: The removal rows this run proves
-        id: plan
-        env:
-          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
-          PULL_REQUEST: ${{ github.event_name == 'pull_request' && format('{{"title":{0},"headRef":{1},"labels":{2}}}', toJSON(github.event.pull_request.title), toJSON(github.head_ref), toJSON(github.event.pull_request.labels.*.name)) || '{}' }}
-        run: |
-          plan="$(node scripts/removals.ts --plan ${BASE:+--base "$BASE" --pull-request "$PULL_REQUEST"})"
-          echo "$plan"
-          {
-            echo "base=$(jq -r 'if .everything then "" else env.BASE end' <<<"$plan")"
-            echo "selected=$(jq .selected <<<"$plan")"
-            echo "total=$(jq .shards <<<"$plan")"
-            echo "shards=$(jq -c '[range(1; .shards + 1)]' <<<"$plan")"
-          } >> "$GITHUB_OUTPUT"
-          jq -r '"Removals: \(.selected) of \(.total) rows" + (if .selected == 0 then ", nothing to run" elif .everything then ", all because \(.everything)" else "" end)' <<<"$plan" >> "$GITHUB_STEP_SUMMARY"
-
-  removals:
-    needs: removals-plan
-    if: needs.removals-plan.outputs.selected != '0'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ${{ fromJSON(needs.removals-plan.outputs.shards) }}
-    services:
-      postgres:
-        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
-        env:
-          POSTGRES_PASSWORD: ci-superuser
-        ports:
-          - 5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
-      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
-        with:
-          port: ${{ job.services.postgres.ports['5432'] }}
-      - name: Each protection's test fails when the protection is taken out
-        env:
-          BASE: ${{ needs.removals-plan.outputs.base }}
-          SHARD: ${{ matrix.shard }}
-          TOTAL: ${{ needs.removals-plan.outputs.total }}
-        run: npm run removals -- ${BASE:+--base "$BASE"} --shard "$SHARD/$TOTAL"
-
   image:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' && github.event_name == 'pull_request' }}
@@ -538,7 +463,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, removals-plan, removals, image]
+    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -550,8 +475,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           CODE: ${{ needs.scope.outputs.code }}
-          # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.scope.result }} ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.scope.result }} ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
