@@ -67,6 +67,9 @@ export type Outcome =
  * A settled turn: its outcome, how many times the end of the turn judged it, and whether its
  * version reached the app, when it was sent.
  */
+/** What a round of the end of the turn is about: tasks left open, or the check of the app. */
+export type RoundKind = 'open' | 'check'
+
 export type Settled = Outcome & { rounds: number; preview?: PreviewData }
 
 /** Where Mastra keeps each workspace it resolved, to stop them all at its shutdown. */
@@ -88,8 +91,8 @@ export type Driven = {
   conversationId: ConversationId
   /** What the end of the turn's check said last, for the version it saves. */
   check: VersionCheck | undefined
-  /** How many times the end of the turn judged it, for the turn's line. */
-  rounds: number
+  /** How many times the end of the turn judged it, by what it judged: each has its own limit. */
+  rounds: Record<RoundKind, number>
   /** A removal reached the run: nothing more of it is saved. */
   stopped: boolean
   /** What the run keeps open while it writes, let go when it ends. */
