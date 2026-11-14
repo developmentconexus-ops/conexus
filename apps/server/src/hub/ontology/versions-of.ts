@@ -45,48 +45,52 @@ class Working {
   }
 }
 
+const DEPRECATED = 'DEPRECATED' as const
+
+function conceptPatch(item: Change, row: ActiveSet['concepts'][number]) {
+  return item.kind === 'RENAME_LABEL'
+    ? { name: item.name, description: item.description ?? row.description }
+    : { state: DEPRECATED, replacedBy: item.replacedBy ?? null }
+}
+
+function fieldPatch(item: Change, row: ActiveSet['fields'][number]) {
+  return item.kind === 'RENAME_LABEL'
+    ? { name: item.name, description: item.description ?? row.description }
+    : { state: DEPRECATED }
+}
+
+function codePatch(item: Change, row: ActiveSet['codes'][number]) {
+  return item.kind === 'RENAME_LABEL'
+    ? { label: item.name, description: item.description ?? row.description }
+    : { state: DEPRECATED }
+}
+
+/** A relation has no name of its own: its label is what the origin side is called. */
+function relationPatch(item: Change) {
+  return item.kind === 'RENAME_LABEL' ? { fromName: item.name } : { state: DEPRECATED }
+}
+
 /** A rename or a deprecation, on the element as the working set holds it; one that left is TARGET_UNKNOWN. */
 function changed(work: Working, item: Change, revision: number): void {
   const address = item.target
-  const rename = item.kind === 'RENAME_LABEL'
-  const state = 'DEPRECATED' as const
   const concept = work.concepts.get(address)
   if (concept !== undefined) {
-    work.keep(work.concepts, address, {
-      ...{ ...concept, revision },
-      ...(rename
-        ? { name: item.name, description: item.description ?? concept.description }
-        : { state, replacedBy: item.replacedBy ?? null }),
-    })
+    work.keep(work.concepts, address, { ...concept, revision, ...conceptPatch(item, concept) })
     return
   }
   const field = work.fields.get(address)
   if (field !== undefined) {
-    work.keep(work.fields, address, {
-      ...{ ...field, revision },
-      ...(rename
-        ? { name: item.name, description: item.description ?? field.description }
-        : { state }),
-    })
+    work.keep(work.fields, address, { ...field, revision, ...fieldPatch(item, field) })
     return
   }
   const code = work.codes.get(address)
   if (code !== undefined) {
-    work.keep(work.codes, address, {
-      ...{ ...code, revision },
-      ...(rename
-        ? { label: item.name, description: item.description ?? code.description }
-        : { state }),
-    })
+    work.keep(work.codes, address, { ...code, revision, ...codePatch(item, code) })
     return
   }
   const relation = work.relations.get(address)
   if (relation !== undefined) {
-    // A relation has no name of its own: its label is what the origin side is called.
-    work.keep(work.relations, address, {
-      ...{ ...relation, revision },
-      ...(rename ? { fromName: item.name } : { state }),
-    })
+    work.keep(work.relations, address, { ...relation, revision, ...relationPatch(item) })
     return
   }
   throw new Failure('TARGET_UNKNOWN', { details: { target: address } })

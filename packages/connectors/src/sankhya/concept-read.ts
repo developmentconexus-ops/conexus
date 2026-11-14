@@ -72,38 +72,51 @@ function literal(value: unknown, type: ConceptColumn['type']): string {
   return exact(value)
 }
 
+type Filter<Op extends ConceptFilter['op']> = Extract<ConceptFilter, { op: Op }>
+
+function equalsCondition(at: string, filter: Filter<'equals'>, column: ConceptColumn): string {
+  if (column.type === 'BOOLEAN' && typeof filter.value === 'boolean') return flag(at, filter.value)
+  return `${at} = ${literal(filter.value, column.type)}`
+}
+
+function inCondition(at: string, { values }: Filter<'in'>, column: ConceptColumn): string {
+  if (values.length === 0 || values.length > IN_MAX) return refuse('in: 1 to 50 values')
+  if (DATED.has(column.type) || column.type === 'BOOLEAN') return refuse('in on a date or flag')
+  if (values.every((value) => typeof value === 'number'))
+    return inList(
+      at,
+      values.map((value) => Number(numberOf(value, column.type))),
+    )
+  if (NUMERIC.has(column.type) || !values.every((value) => typeof value === 'string'))
+    return refuse('in: one type of value')
+  const codes = values.filter((value): value is string => typeof value === 'string')
+  if (!codes.every((code) => CodeText.safeParse(code).success)) return refuse('not a code')
+  return inExact(at, codes)
+}
+
+function rangeCondition(at: string, filter: Filter<'from' | 'to'>, column: ConceptColumn): string {
+  if (!NUMERIC.has(column.type) && !DATED.has(column.type)) return refuse('range on a code')
+  return `${at} ${filter.op === 'from' ? '>=' : '<='} ${literal(filter.value, column.type)}`
+}
+
+function containsCondition(at: string, filter: Filter<'contains'>, column: ConceptColumn): string {
+  if (column.type !== 'TEXT') return refuse('contains on a column that is not text')
+  const text = SearchText.safeParse(filter.text)
+  return text.success ? containing([at], text.data) : refuse('not a search text')
+}
+
 function conditionOf(filter: ConceptFilter, column: ConceptColumn): string {
   const at = named(column.column)
   switch (filter.op) {
     case 'equals':
-      if (column.type === 'BOOLEAN' && typeof filter.value === 'boolean')
-        return flag(at, filter.value)
-      return `${at} = ${literal(filter.value, column.type)}`
-    case 'in': {
-      const { values } = filter
-      if (values.length === 0 || values.length > IN_MAX) return refuse('in: 1 to 50 values')
-      if (DATED.has(column.type) || column.type === 'BOOLEAN') return refuse('in on a date or flag')
-      if (values.every((value) => typeof value === 'number'))
-        return inList(
-          at,
-          values.map((value) => Number(numberOf(value, column.type))),
-        )
-      if (NUMERIC.has(column.type) || !values.every((value) => typeof value === 'string'))
-        return refuse('in: one type of value')
-      const codes = values.filter((value): value is string => typeof value === 'string')
-      if (!codes.every((code) => CodeText.safeParse(code).success)) return refuse('not a code')
-      return inExact(at, codes)
-    }
+      return equalsCondition(at, filter, column)
+    case 'in':
+      return inCondition(at, filter, column)
     case 'from':
-    case 'to': {
-      if (!NUMERIC.has(column.type) && !DATED.has(column.type)) return refuse('range on a code')
-      return `${at} ${filter.op === 'from' ? '>=' : '<='} ${literal(filter.value, column.type)}`
-    }
-    case 'contains': {
-      if (column.type !== 'TEXT') return refuse('contains on a column that is not text')
-      const text = SearchText.safeParse(filter.text)
-      return text.success ? containing([at], text.data) : refuse('not a search text')
-    }
+    case 'to':
+      return rangeCondition(at, filter, column)
+    case 'contains':
+      return containsCondition(at, filter, column)
     default:
       return filter satisfies never
   }

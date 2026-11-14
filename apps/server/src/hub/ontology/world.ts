@@ -82,30 +82,32 @@ export async function contextOf(tx: ReadTx, conversationId: ConversationId | nul
 
 export type Context = Awaited<ReturnType<typeof contextOf>>
 
-/** The world the items are checked against; the call's own sources enter as they are proved. */
-export function worldOf(context: Context, items: readonly ProposedItem[]): World {
-  const { active, pending, shapes, activeShapes } = context
+function activeWorld({ active, activeShapes }: Context): World {
   const world: World = { concepts: new Map(), fields: new Map(), sources: new Map(), active }
-  for (const concept of active.concepts)
-    if (concept.state !== 'DEPRECATED')
-      world.concepts.set(concept.key, {
-        keyFields: concept.keyFields,
-        titleField: concept.titleField,
-        base: concept.base ?? undefined,
-      })
-  for (const field of active.fields)
-    if (field.state !== 'DEPRECATED')
-      world.fields.set(fieldKey(field.concept, field.key), {
-        column: field.columnName,
-        type: field.type,
-      })
+  for (const concept of active.concepts.filter((each) => live(each.state)))
+    world.concepts.set(concept.key, {
+      keyFields: concept.keyFields,
+      titleField: concept.titleField,
+      base: concept.base ?? undefined,
+    })
+  for (const field of active.fields.filter((each) => live(each.state)))
+    world.fields.set(fieldKey(field.concept, field.key), {
+      column: field.columnName,
+      type: field.type,
+    })
   for (const source of active.sources)
     world.sources.set(source.concept, {
       sql: source.read.sql,
       shape: activeShapes.get(source.concept),
     })
+  return world
+}
+
+/** The world the items are checked against; the call's own sources enter as they are proved. */
+export function worldOf(context: Context, items: readonly ProposedItem[]): World {
+  const world = activeWorld(context)
   const declared = [
-    ...pending.map((each) => ({ item: each.item, proofRunId: each.proofRunId })),
+    ...context.pending.map((each) => ({ item: each.item, proofRunId: each.proofRunId })),
     ...items.map((item) => ({ item, proofRunId: null })),
   ]
   for (const { item, proofRunId } of declared) {
@@ -113,7 +115,7 @@ export function worldOf(context: Context, items: readonly ProposedItem[]): World
     if (item.kind === 'ADD_FIELD')
       world.fields.set(fieldKey(item.concept, item.field.key), item.field)
     if (item.kind === 'SET_SOURCE' && proofRunId !== null)
-      world.sources.set(item.concept, { sql: item.sql, shape: shapes.get(proofRunId) })
+      world.sources.set(item.concept, { sql: item.sql, shape: context.shapes.get(proofRunId) })
   }
   return world
 }

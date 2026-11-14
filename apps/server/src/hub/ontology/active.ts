@@ -89,47 +89,59 @@ function liveAt(set: ActiveSet, address: string): boolean {
 
 type Gap = Omit<DecisionGap, 'n'>
 
-function conceptGaps(set: ActiveSet, known: ReadonlySet<string>, liveFields: ReadonlySet<string>) {
+function roleGaps(set: ActiveSet, base: string): Gap[] {
+  return set.concepts
+    .filter((role) => live(role) && role.base === base)
+    .map((role) => ({ target: base, needs: 'ACTIVE_ROLE', address: role.key }))
+}
+
+function liveConceptGaps(
+  row: ConceptRow,
+  sourced: ReadonlySet<string>,
+  liveConcepts: ReadonlySet<string>,
+  liveFields: ReadonlySet<string>,
+): Gap[] {
+  const target = row.key
   const gaps: Gap[] = []
+  if (!sourced.has(target)) gaps.push({ target, needs: 'SOURCE', address: target })
+  for (const field of new Set([row.titleField, ...row.keyFields]))
+    if (!liveFields.has(`${target}.${field}`))
+      gaps.push({ target, needs: 'FIELD', address: `${target}.${field}` })
+  if (row.base !== null && !liveConcepts.has(row.base))
+    gaps.push({ target, needs: 'BASE', address: row.base })
+  return gaps
+}
+
+function conceptGaps(set: ActiveSet, known: ReadonlySet<string>, liveFields: ReadonlySet<string>) {
   const sourced = new Set(set.sources.map(ADDRESS.sources))
   const liveConcepts = new Set(set.concepts.filter(live).map(ADDRESS.concepts))
-  for (const row of set.concepts) {
-    const target = row.key
-    if (!live(row)) {
-      for (const role of set.concepts)
-        if (live(role) && role.base === target)
-          gaps.push({ target, needs: 'ACTIVE_ROLE', address: role.key })
-      continue
-    }
-    if (!sourced.has(target)) gaps.push({ target, needs: 'SOURCE', address: target })
-    for (const field of new Set([row.titleField, ...row.keyFields]))
-      if (!liveFields.has(`${target}.${field}`))
-        gaps.push({ target, needs: 'FIELD', address: `${target}.${field}` })
-    if (row.base !== null && !liveConcepts.has(row.base))
-      gaps.push({ target, needs: 'BASE', address: row.base })
-  }
+  const gaps: Gap[] = set.concepts.flatMap((row) =>
+    live(row) ? liveConceptGaps(row, sourced, liveConcepts, liveFields) : roleGaps(set, row.key),
+  )
   for (const row of set.fields)
     if (!known.has(row.concept))
       gaps.push({ target: ADDRESS.fields(row), needs: 'CONCEPT', address: row.concept })
   return gaps
 }
 
+function relationEnds(row: RelationRow, join: string): string[] {
+  return [
+    ...row.pairs.flatMap(([own, theirs]) => [`${row.fromConcept}.${own}`, `${join}.${theirs}`]),
+    ...(row.throughPairs ?? []).flatMap(([own, theirs]) => [
+      `${join}.${own}`,
+      `${row.toConcept}.${theirs}`,
+    ]),
+  ]
+}
+
 function relationGaps(set: ActiveSet, known: ReadonlySet<string>, fields: ReadonlySet<string>) {
   const gaps: Gap[] = []
-  for (const row of set.relations) {
-    if (!live(row)) continue
+  for (const row of set.relations.filter(live)) {
     const target = ADDRESS.relations(row)
     const join = row.through ?? row.toConcept
-    for (const concept of new Set([row.fromConcept, row.toConcept, ...(row.through ? [join] : [])]))
+    for (const concept of new Set([row.fromConcept, row.toConcept, join]))
       if (!known.has(concept)) gaps.push({ target, needs: 'CONCEPT', address: concept })
-    const ends = [
-      ...row.pairs.flatMap(([own, theirs]) => [`${row.fromConcept}.${own}`, `${join}.${theirs}`]),
-      ...(row.throughPairs ?? []).flatMap(([own, theirs]) => [
-        `${join}.${own}`,
-        `${row.toConcept}.${theirs}`,
-      ]),
-    ]
-    for (const address of new Set(ends))
+    for (const address of new Set(relationEnds(row, join)))
       if (!fields.has(address)) gaps.push({ target, needs: 'FIELD', address })
   }
   return gaps
