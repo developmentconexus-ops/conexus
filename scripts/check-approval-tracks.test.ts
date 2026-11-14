@@ -54,10 +54,14 @@ test('um pull request de outro trilho não responde pelo cartão sem linha da fr
   }
 })
 
-test('um pull request que só muda scripts ou fluxos não toca trilho nenhum', () => {
-  const dir = repository()
-  topic(dir, 'scripts/x.ts')
-  assert.equal(run(dir, '--base', 'main').status, 0)
+test('um pull request que só muda scripts, fluxos ou arquivos da raiz responde por todos os cartões', () => {
+  for (const file of ['scripts/x.ts', '.github/workflows/ci.yml', 'package.json']) {
+    const dir = repository()
+    topic(dir, file)
+    const result = run(dir, '--base', 'main')
+    assert.equal(result.status, 1, file)
+    assert.match(result.stderr, /^approval-missing: /, file)
+  }
 })
 
 test('mudar o cartão sem linha o põe a cargo do pull request, mesmo com documentos só', () => {

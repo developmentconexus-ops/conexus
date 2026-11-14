@@ -6,7 +6,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { option } from './cli.ts'
 import { runCommand } from './command.ts'
-import { cardsInConstruction, tracksTouched } from './tracks.ts'
+import { cardsInConstruction, tracksAffected } from './tracks.ts'
 
 const EMERGENCY = 'emergência'
 const FROZEN = ['.agents/skills/', 'docs/guides/']
@@ -28,14 +28,12 @@ if (inConstruction.size === 0) {
   console.log('check-method-freeze: no step in construction, the method may change')
   process.exit(0)
 }
-// The tracks the change affects: those it touches, or all of them when it touches only the method;
-// the pattern card's model affects the pattern track alone.
-const touched = tracksTouched(root, base)
+// The pattern card's model affects the pattern track alone; any other file, the tracks the pull
+// request affects, when one of them has a step in construction.
+const tracks = tracksAffected(root, base, inConstruction)
 function affected(file: string): boolean {
   if (PATTERN_ONLY.includes(file)) return inConstruction.has('pattern')
-  return [...(touched.size > 0 ? touched : inConstruction)].some((track) =>
-    inConstruction.has(track),
-  )
+  return [...tracks].some((track) => inConstruction.has(track))
 }
 
 const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {

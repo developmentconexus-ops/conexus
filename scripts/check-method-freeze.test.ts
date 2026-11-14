@@ -143,3 +143,11 @@ test('o fechamento de um trilho muda o método sem esperar o cartão de outro tr
   git(dir, 'commit', '-q', '-m', 'closing')
   assert.equal(run(dir).status, 0)
 })
+
+test('um pull request de scripts e de guia, que não toca trilho, responde por todos os trilhos', () => {
+  const dir = branch('scripts/x.ts', 'pattern-e01-x.md')
+  write(dir, 'docs/guides/code.md', 'changed\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'guide')
+  assert.equal(run(dir).status, 1)
+})

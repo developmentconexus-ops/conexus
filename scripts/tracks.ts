@@ -29,11 +29,21 @@ export function cardsInConstruction(root: string, names: string[]): Map<string, 
 }
 
 /**
+ * The tracks a pull request answers for (delivery L5, L6, L20): those it touches, or every track in
+ * construction when it touches none, as a change of the method alone or of the scripts, the
+ * workflows and the root files does.
+ */
+export function tracksAffected(root: string, base: string, inConstruction: Set<Track>): Set<Track> {
+  const touched = tracksTouched(root, base)
+  return touched.size > 0 ? touched : inConstruction
+}
+
+/**
  * The tracks a pull request touches: the track of each card it changes or deletes, read from the
  * base when the card is gone, and of each product file it changes (delivery L1, L20). A change of
  * the method alone touches none.
  */
-export function tracksTouched(root: string, base: string): Set<Track> {
+function tracksTouched(root: string, base: string): Set<Track> {
   const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
     cwd: root,
   })
