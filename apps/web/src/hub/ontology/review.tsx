@@ -175,10 +175,30 @@ function toldOf(error: unknown): Told {
   }
 }
 
+function ToHistory() {
+  return (
+    <Link to="." search={{ aba: 'historico' }} className={buttonVariants()}>
+      {TO_HISTORY}
+    </Link>
+  )
+}
+
+/** A proposal that closed under the person's hands: the reading that follows the refusal no longer lists it, and the sentence stays. */
+function ClosedProposal({ demand }: { demand: string }) {
+  return (
+    <section aria-label={demand} className="flex flex-col items-start gap-sm">
+      <h3 className="break-words font-display text-title">{demand}</h3>
+      <Alert tone="danger">{PROPOSAL_DECIDED}</Alert>
+      <ToHistory />
+    </section>
+  )
+}
+
 function ProposalBlock(props: {
   companyId: CompanyId
   proposal: ProposalView
   view: OntologyView
+  onDecided: () => void
 }) {
   const { companyId, proposal, view } = props
   const queryClient = useQueryClient()
@@ -195,7 +215,13 @@ function ProposalBlock(props: {
     setTold(undefined)
     send.mutate(
       { params: { companyId, proposalId: proposal.id }, body },
-      { onError: (error) => setTold(toldOf(error)) },
+      {
+        onError: (error) => {
+          const next = toldOf(error)
+          setTold(next)
+          if (next.decided) props.onDecided()
+        },
+      },
     )
   }
   function again() {
@@ -225,11 +251,7 @@ function ProposalBlock(props: {
       </ul>
       {told !== undefined && <Alert tone="danger">{told.text}</Alert>}
       {told?.stale === true && <Button onClick={again}>{SEE_AGAIN}</Button>}
-      {told?.decided === true && (
-        <Link to="." search={{ aba: 'historico' }} className={buttonVariants()}>
-          {TO_HISTORY}
-        </Link>
-      )}
+      {told?.decided === true && <ToHistory />}
       {view.mayApprove && choices.size > 0 && (
         <div className="sticky bottom-0 flex justify-end bg-canvas py-sm">
           <Button
@@ -252,6 +274,7 @@ function ProposalBlock(props: {
 export function Review({ companyId }: { companyId: CompanyId }) {
   const ontology = useQuery(ontologyQuery(companyId))
   const proposals = useQuery(openProposalsQuery(companyId))
+  const [decided, setDecided] = useState<readonly ProposalView[]>([])
   if (ontology.isError)
     return <ReadFailure text={sentenceOf(ontology.error)} onRetry={() => void ontology.refetch()} />
   if (proposals.isError)
@@ -259,13 +282,24 @@ export function Review({ companyId }: { companyId: CompanyId }) {
       <ReadFailure text={sentenceOf(proposals.error)} onRetry={() => void proposals.refetch()} />
     )
   if (ontology.isPending || proposals.isPending) return <Waiting />
-  if (proposals.data.proposals.length === 0) return <Empty>{NOTHING_TO_REVIEW}</Empty>
+  const listed = proposals.data.proposals
+  const closed = decided.filter((each) => !listed.some((proposal) => proposal.id === each.id))
+  if (listed.length === 0 && closed.length === 0) return <Empty>{NOTHING_TO_REVIEW}</Empty>
   const view = ontology.data
   return (
     <div className="flex flex-col gap-lg">
       {!view.mayApprove && view.awaits !== null && <p>{AWAITS[view.awaits]}</p>}
-      {proposals.data.proposals.map((proposal) => (
-        <ProposalBlock key={proposal.id} companyId={companyId} proposal={proposal} view={view} />
+      {listed.map((proposal) => (
+        <ProposalBlock
+          key={proposal.id}
+          companyId={companyId}
+          proposal={proposal}
+          view={view}
+          onDecided={() => setDecided([...decided, proposal])}
+        />
+      ))}
+      {closed.map((each) => (
+        <ClosedProposal key={each.id} demand={each.demand} />
       ))}
     </div>
   )

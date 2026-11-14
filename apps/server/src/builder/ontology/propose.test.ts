@@ -248,6 +248,36 @@ test('o papel: fora da base é ROLE_NOT_SUBSET com a contagem, a chave de outro 
   )
 })
 
+test('a base sem a coluna da chave na prova: o papel é FIELD_NOT_IN_PROOF', async (t) => {
+  const { answers } = await proposed(t, [
+    ...concept(
+      'base_cega',
+      'SELECT NOMEPARC FROM TGFPAR',
+      [
+        { key: 'parceiro', column: 'CODPARC', type: 'ID' },
+        { key: 'nome', column: 'NOMEPARC', type: 'TEXT' },
+      ],
+      { keyFields: ['parceiro'], titleField: 'nome' },
+    ),
+    ...role('papel_cego', REGISTERED, ['parceiro'], 'base_cega'),
+  ])
+  assert.equal(reasons(answers[0]).papel_cego, 'FIELD_NOT_IN_PROOF')
+})
+
+test('o mesmo alvo duas vezes na mesma chamada: a segunda é ITEM_REPEATED e a primeira fica', async (t) => {
+  const [head, codigo, nome, source] = VENDEDOR
+  const { answers } = await proposed(t, [head, codigo, nome, source, codigo, nome])
+  const [answer] = answers
+  assert.deepEqual(reasons(answer), {
+    'vendedor.codigo': 'ITEM_REPEATED',
+    'vendedor.nome': 'ITEM_REPEATED',
+  })
+  assert.deepEqual(
+    answer.items.map((each: { target: string }) => each.target).sort(),
+    ['vendedor', 'vendedor.codigo', 'vendedor.nome', 'vendedor'].sort(),
+  )
+})
+
 const DOCUMENTO = concept(
   'documento',
   'SELECT NUNOTA FROM TGFCAB',

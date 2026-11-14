@@ -181,6 +181,27 @@ test('das declarações', async (t) => {
   assert.ok(view.inventory.operations > 0)
 })
 
+test('Conectar de novo não abre a rodada: a de quando se ligou a conexão fica', async (t) => {
+  const { through } = doorOf(t)
+  const on = await mercadoLivreOn(t, { through, tuning: { inventory: {} } })
+  const first = await linkMercadoLivre(on.hub, on.ana, on.companyId)
+  assert.equal(first.statusCode, 200, first.body)
+  const { id } = z
+    .object({ connection: z.object({ id: z.string() }) })
+    .parse(first.json()).connection
+  const path = `/api/companies/${on.companyId}/ontology/inventories/${id}`
+  await settled(on.hub, on.ana.cookie, path)
+  const [opened] = await on.hub.test.asOwner('select id from ontology.inventory_run')
+  const again = await linkMercadoLivre(on.hub, on.ana, on.companyId, { connectionId: id })
+  assert.equal(again.statusCode, 200, again.body)
+  await settled(on.hub, on.ana.cookie, path)
+  const runs = await on.hub.test.asOwner('select id from ontology.inventory_run')
+  assert.deepEqual(
+    runs.map((row) => row.id),
+    [opened?.id],
+  )
+})
+
 test('a busca no inventário, como as ferramentas a leem', async (t) => {
   const on = await inventoryOn(t)
   const id = ConnectionId.parse(await linked(on))
@@ -217,6 +238,17 @@ test('a busca no inventário, como as ferramentas a leem', async (t) => {
       `"${text}" acha "Descrição do produto"`,
     )
   }
+  await on.hub.test.asOwner(
+    `insert into ontology.inventory_entry(run_id, company_id, kind, name, type, label, custom)
+      select run_id, company_id, 'FIELD', 'TGFPRO.AÇUCAR', 'S', 'Zzz', false
+      from ontology.inventory_entry limit 1`,
+  )
+  const byName = await ask('acucar', 'FIELD')
+  assert.deepEqual(
+    Object(byName).entries.map((entry: { name: string }) => entry.name),
+    ['TGFPRO.AÇUCAR'],
+    'o acento do nome também se dobra, não só o do rótulo',
+  )
   const none = await on.hub.ontology.inventory.search({
     companyId: CompanyId.parse(on.companyId),
     connectionId: ConnectionId.parse('4aaaaaaa-0000-4000-8000-000000000000'),

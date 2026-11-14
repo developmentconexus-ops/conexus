@@ -5,6 +5,7 @@ import { expect, test } from 'vitest'
 import { problemOf } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { decisionOf } from './review.tsx'
+import type { Held } from './test-hub.tsx'
 import { KNOWLEDGE, openKnowledge, proposal, sourceItem, view } from './test-hub.tsx'
 
 // Para revisar: quem aprova decide, quem não aprova lê quem aguarda (criterion 18).
@@ -102,6 +103,27 @@ test('uma proposta que fechou: a frase e Ver o histórico', async () => {
   expect(await screen.findByText('Esta proposta já foi decidida.')).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Ver o histórico' })).toBeTruthy()
 })
+
+test.each(['ITEM_DECIDED', 'NOT_FOUND'] as const)(
+  'uma proposta que fechou enquanto se revia, %s: a frase fica mesmo quando a leitura seguinte não a lista mais',
+  async (code) => {
+    const held: Held = {
+      view: view(),
+      proposals: [proposal()],
+      decide: () => {
+        held.proposals = []
+        return refusal(code)
+      },
+    }
+    openKnowledge(server, held, REVIEW)
+    fireEvent.click(await screen.findByRole('button', { name: 'Aprovar todos' }))
+    expect(await screen.findByText('Esta proposta já foi decidida.')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Aprovar todos' })).toBeNull())
+    expect(screen.getByText('Esta proposta já foi decidida.')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ver o histórico' })).toBeTruthy()
+    expect(screen.queryByText('Nada para revisar.')).toBeNull()
+  },
+)
 
 test('decisionOf: sem item ou com recusa sem motivo não há corpo', () => {
   expect(decisionOf(new Map(), 0)).toBeUndefined()

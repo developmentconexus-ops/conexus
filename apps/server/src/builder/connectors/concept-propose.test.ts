@@ -171,7 +171,7 @@ function movement(key: string, dictionary: string) {
   ]
 }
 
-/** A finished reading of the connection's dictionary, as the inventory writes one, holding the code V of TGFCAB.TIPMOV. */
+/** A finished reading of the connection's dictionary, as the inventory writes one, holding the codes V and P of TGFCAB.TIPMOV. */
 async function planted(hub: Hub, companyId: string, connectionId: string) {
   const run = randomUUID()
   const on = [run, companyId, connectionId]
@@ -186,12 +186,13 @@ async function planted(hub: Hub, companyId: string, connectionId: string) {
   )
   await hub.test.asOwner(
     `insert into ontology.inventory_entry(run_id, company_id, kind, name, type, label, custom)
-       values ($1, $2, 'CODE', 'TGFCAB.TIPMOV=V', null, 'Venda', false)`,
+       values ($1, $2, 'CODE', 'TGFCAB.TIPMOV=V', null, 'Venda', false),
+         ($1, $2, 'CODE', 'TGFCAB.TIPMOV=P', null, 'Pedido', false)`,
     on.slice(0, 2),
   )
 }
 
-test('a origem do código: a entrada citada fica só quando o inventário a tem com o valor', async (t) => {
+test('a origem do código: a entrada citada fica só quando o inventário a tem e o valor do código é o dela (a entrada de outro valor, que o inventário também tem, não vale)', async (t) => {
   const items = [
     ...movement('lido', 'TGFCAB.TIPMOV=V'),
     ...movement('outro_campo', 'TGFCAB.STATUSNOTA=V'),

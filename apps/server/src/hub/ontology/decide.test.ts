@@ -156,6 +156,31 @@ test('o conjunto fechado: sem a fonte, sem o conceito, sem o campo ou sem o subs
   assert.deepEqual(refusedOnly.json(), { revision: null })
 })
 
+test('critério 16: um conceito sem o campo do título ou sem o campo da chave, DECISION_INCOMPLETE; com os dois, aprova', async (t) => {
+  const on = await companyOfFour(t)
+  const first = await on.proposed(on.owner, VENDEDOR)
+  const noTitle = await on.decide(on.owner, first, {
+    approved: [1, 2, 4],
+    refused: [],
+    expectedRevision: 0,
+  })
+  assert.equal(codeOf(noTitle), 'DECISION_INCOMPLETE')
+  assert.deepEqual(gapsOf(noTitle), [
+    { n: 1, target: 'vendedor', needs: 'FIELD', address: 'vendedor.nome' },
+  ])
+  const noKey = await on.decide(on.owner, first, {
+    approved: [1, 3, 4],
+    refused: [],
+    expectedRevision: 0,
+  })
+  assert.equal(codeOf(noKey), 'DECISION_INCOMPLETE')
+  assert.deepEqual(gapsOf(noKey), [
+    { n: 1, target: 'vendedor', needs: 'FIELD', address: 'vendedor.codigo' },
+  ])
+  assert.deepEqual((await stored(on.hub)).decisions, ['PENDING', 'PENDING', 'PENDING', 'PENDING'])
+  assert.equal((await on.approveAll(on.owner, first, 4, 0)).statusCode, 200)
+})
+
 const PARCEIRO = conceptItems('parceiro', [{ key: 'codigo', column: 'CODPARC', type: 'ID' }], {
   keyFields: ['codigo'],
   titleField: 'codigo',
