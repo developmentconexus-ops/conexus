@@ -9,6 +9,7 @@ import {
   releasing,
   sankhyaServed,
 } from '../../hub/copies/test-released.ts'
+import { firstEnded } from '../../hub/copies/test-routes.ts'
 import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
@@ -175,6 +176,7 @@ test('a origem e as descrições', async (t) => {
   ])
     assert.ok(first.includes(part), `${part}\n${first}`)
   const copyId = CopyId.parse(Object(made.json()).copy.id)
+  await firstEnded(on, copyId)
   const again = await on.hub.copies.run(
     { companyId: on.companyId, copyId },
     AbortSignal.timeout(60_000),
@@ -227,6 +229,7 @@ test('a proposta ligada entre dois turnos: o bloco do turno seguinte a marca, se
   assert.ok(!before.includes('[your proposal, turned on]'))
   const made = await on.enable(on.ana, Object(proposed).proposalId)
   assert.equal(made.statusCode, 201, made.body)
+  await firstEnded(on, Object(made.json()).copy.id)
   const after = dataContext(await on.hub.copies.projectView(ids))
   assert.ok(after.includes('- `sync.ml_pedidos` [your proposal, turned on] ('), after)
   assert.ok(!after.includes('is open'), after)
