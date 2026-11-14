@@ -36,6 +36,14 @@ test('um membro sugere o rótulo de um código; a sugestão sai com a chave e a 
   })
 })
 
+test('o formulário diz que a sugestão vira uma proposta que quem tem Conceitos da empresa aprova', async () => {
+  openKnowledge(server, { view: view(), concepts: { documento: page() } }, CODES)
+  await openForm()
+  expect(
+    screen.getByText('Isto vira uma proposta. Quem tem "Conceitos da empresa" aprova.'),
+  ).toBeTruthy()
+})
+
 test('dois toques fazem uma proposta só', async () => {
   const hub = openKnowledge(server, { view: view(), concepts: { documento: page() } }, CODES)
   await openForm()

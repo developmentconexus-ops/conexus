@@ -18,7 +18,7 @@ import {
 } from '../../ui/form.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { sendSuggestion } from './queries.ts'
-import { UNCONFIRMED_SUGGESTION } from './text.ts'
+import { SUGGEST_NOTE, UNCONFIRMED_SUGGESTION } from './text.ts'
 
 const Suggested = z.object({
   name: z.string().min(1).max(80),
@@ -96,6 +96,7 @@ export function SuggestForm(props: {
         <TextField name="name" label="Quer dizer" type="text" autoComplete="off" maxLength={80} />
         <Explanation />
         <TextField name="why" label="Por quê" type="text" autoComplete="off" maxLength={500} />
+        <p className="text-text-2">{SUGGEST_NOTE}</p>
         <FormAlert />
         <div className="flex flex-wrap gap-sm">
           <Button type="button" onClick={props.onClose}>
