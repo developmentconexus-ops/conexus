@@ -12,7 +12,14 @@ choice of test tools.
   **must** fail; and a test **must not** pass silently when the service it needs is missing. A
   flake on a leak, refusal or isolation assertion **must** be investigated as a defect, never
   skipped or rerun until green. Why: issues #388 and #423 logged the same leak of the provider's
-  text as flakes. [CI, review]
+  text as flakes. On CI only, a failed test of any other class gets one second run
+  (`scripts/test-run.ts`, Node's `--test-rerun-failures`); a test that passes it is flaky, never
+  green unmarked: the job summary shows it and a `flaky` issue takes each occurrence. The second
+  run is never given to a test on `scripts/rerun-never.json`, the one list of the classes above:
+  the files of isolation, refusal, secrets and access, and the tests listed by name, among them
+  those whose name, or its suite's, says another company, another Project, isolation or leak. A new
+  such file or name fails its check until it is listed. A file that failed whole is not rerun
+  either. [CI, review]
 
 ## 2. What a test asserts
 
@@ -41,9 +48,6 @@ choice of test tools.
   each negative case linked to its protection when replacing tests; remove it only with that
   protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
   origin, so its removal goes unnoticed. [review]
-- **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`.
-  The registry keeps only security protections. Founder, 2026-10-24 (`1a98660`).
-  [`scripts/removals.ts`]
 - **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
   machine or data path with other layers disabled, when authorized. Failure: an outer layer
   refuses first and the test never reaches the wall it claims to prove. [review]
@@ -143,4 +147,4 @@ choice of test tools.
 | A route | HTTP status/body and negative cases (T6, T10) |
 | A screen | Screen test beside it, real browser and transitions (T23), end-to-end path when it crosses the Hub |
 | A Builder change | Real turn when authorized (T14) |
-| A security rule | Negative cases, isolation attack, registered removal proof (T10, T12, T13) |
+| A security rule | Negative cases, isolation attack (T10, T13) |

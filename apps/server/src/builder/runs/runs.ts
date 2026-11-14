@@ -322,7 +322,7 @@ export class Runs {
     return this.#deps.send({ companyId, projectId, personId, runId, number, folder })
   }
 
-  /** The run lets go of what it keeps open and of its machine, which pauses. */
+  /** The run lets go of what it keeps open and of its machine, which E2B pauses on its own timeout. */
   async #letGo(mine: Driven): Promise<void> {
     const { companyId, conversationId } = mine
     for (const end of mine.ends.splice(0)) end()

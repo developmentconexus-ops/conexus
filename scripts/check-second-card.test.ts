@@ -6,25 +6,17 @@ import { dirname, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
 
 // One card per track (delivery L5): the frontier's, the pattern's, the design's and the Assistant's.
-const SCRIPT = resolve(import.meta.dirname, 'check-docs.ts')
+const SCRIPT = resolve(import.meta.dirname, 'check-second-card.ts')
 const dirs: string[] = []
 after(() => {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
 })
 
-const TABLE =
-  '## A tabela de referência\n\n| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| Git | U1 | `a.ts:f` | `mastra@1.79.0`, `x.ts:1` | uma linha | nativo | — | não precisa | `b.ts` |\n'
-
 function check(cards: Record<string, string>, env: Record<string, string> = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'conexus-docs-tracks-'))
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-second-card-'))
   dirs.push(dir)
-  const files: Record<string, string> = {
-    'AGENTS.md': 'Instructions.\n',
-    'docs/index.md': '- [code](guides/code.md): rules.\n- [steps](steps/): the card.\n',
-    'docs/guides/code.md': '- **C1.** A rule.\n',
-  }
-  for (const [name, text] of Object.entries(cards))
-    files[`docs/steps/${name}`] = `${text}\n${TABLE}`
+  const files: Record<string, string> = {}
+  for (const [name, text] of Object.entries(cards)) files[`docs/steps/${name}`] = text
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)

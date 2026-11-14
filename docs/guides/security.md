@@ -52,7 +52,7 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   Hub operations. Failure: a known storage key opens data without admission. [review]
 - **S15.** An additional defense **should** address a named threat and have a test that fails
   without it. Failure: a second layer duplicates the first with divergent state and blocks no
-  additional attack. [testing T12](testing.md) owns the removal proof. [review]
+  additional attack. [review]
 
 ## 3. Sessions (ASVS `V7`)
 

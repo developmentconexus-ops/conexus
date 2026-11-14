@@ -105,6 +105,38 @@ test('a máquina achada e perdida antes de ligar: a religação pelo id se recus
   assert.deepEqual(on.killed, [], 'and none was killed')
 })
 
+test('o download sem sessão e sem máquina no provedor: a máquina perdida responde FILE_GONE, e nenhuma é ligada (B2)', async (t) => {
+  const on = machinesOf(t)
+  on.control.discoverable.length = 0
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'FILE_GONE')
+  assert.deepEqual(on.control.names, [], 'none was started')
+})
+
+test('o download sem sessão no Hub, quando a lista do provedor falha: nenhuma máquina é ligada nem morta, a resposta é MACHINE_UNAVAILABLE, e o mesmo arquivo baixa depois (B2)', async (t) => {
+  const on = machinesOf(t)
+  on.control.findFails = 1
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'MACHINE_UNAVAILABLE')
+  assert.deepEqual(on.control.names, [], 'the download started no machine')
+  assert.deepEqual(on.killed, [], 'and killed none by the mark')
+  assert.equal(
+    on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')?.fields.reason,
+    'FIND',
+  )
+  assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'OK')
+})
+
+test('o download sem sessão no Hub, cuja pausa falha: o arquivo lido é entregue, e a pausa que falhou fica no log (F27)', async (t) => {
+  const on = machinesOf(t)
+  on.control.beforeRead = () => {
+    on.control.killed = true
+  }
+  const read = await on.machines.read(on.id, 'a.txt', kept())
+  assert.equal(read.kind === 'OK' ? read.bytes.toString() : read.kind, 'um')
+  const line = on.lines.find((each) => each.message === 'MACHINE_UNAVAILABLE')
+  assert.equal(line?.fields.reason, 'STOP')
+  assert.equal(line?.fields.conversationId, on.id)
+})
+
 test('a partida que passa do prazo: o download responde MACHINE_UNAVAILABLE, e a máquina que liga depois é pausada (F26)', async (t) => {
   const on = machinesOf(t, {}, { startMs: 100 })
   on.control.upMs = 400
@@ -128,22 +160,22 @@ test('o fim do Hub com uma pausa que falha: stopAll termina, e a falha fica no l
   assert.equal(line?.fields.conversationId, on.id)
 })
 
-test('a fila da conversa: o download que chega logo depois do fim do turno espera a pausa lenta acabar para ligar a máquina (F-D, C65)', async (t) => {
+test('a fila da conversa: o download que chega logo depois de uma pausa lenta (o fim do Hub) espera a pausa acabar para ligar a máquina (F-D, C65)', async (t) => {
   const on = watchingStarts(t)
   await turnOf(on)
   on.control.stopMs = 200
-  const stopping = on.machines.stop(on.id)
+  const stopping = on.machines.stopAll()
   const read = await on.machines.read(on.id, 'a.txt', kept())
   await stopping
   assert.equal(read.kind, 'OK')
   assert.deepEqual(on.startedAfter, [0, 1], 'the download started after the pause ended')
 })
 
-test('a fila da conversa: o turno seguinte que abre a máquina logo depois do fim do anterior espera a pausa lenta acabar (F-D, C65)', async (t) => {
+test('a fila da conversa: o turno que abre a máquina logo depois de uma pausa lenta (o fim do Hub) espera a pausa acabar (F-D, C65)', async (t) => {
   const on = watchingStarts(t)
   const context = await turnOf(on)
   on.control.stopMs = 200
-  const stopping = on.machines.stop(on.id)
+  const stopping = on.machines.stopAll()
   const files = (await on.machines.workspace(context))?.filesystem
   assert.ok(files !== undefined)
   await files.writeFile('c.txt', 'três')
@@ -203,12 +235,12 @@ test('a máquina do turno: serving só existe com sessão, o download lê a máq
   assert.equal(on.machines.serving(context), undefined)
 })
 
-test('o fim do turno: stop pausa só a máquina que ligou, e stopAll para todas as conversas (S)', async (t) => {
+test('o fim do Hub: stopAll pausa só a máquina que ligou, e todas as conversas (S)', async (t) => {
   const idle = machinesOf(t)
   await idle.machines.workspace(
     new RequestContext<unknown>([['controller', { sessionId: idle.id }]]),
   )
-  await idle.machines.stop(idle.id)
+  await idle.machines.stopAll()
   assert.equal(idle.control.stops, 0, 'no machine was started')
   const broken = machinesOf(t)
   broken.control.start = 'unreachable'
@@ -218,7 +250,7 @@ test('o fim do turno: stop pausa só a máquina que ligou, e stopAll para todas 
     )
   )?.filesystem
   await assert.rejects(async () => files?.writeFile('b.txt', 'x'))
-  await broken.machines.stop(broken.id)
+  await broken.machines.stopAll()
   assert.equal(broken.control.stops, 0, 'a start that failed made nothing to pause')
   const many = machinesOf(t)
   await turnOf(many)

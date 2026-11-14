@@ -138,7 +138,6 @@ function agentTurns(
       const model = { id: start.model, effort: start.effort }
       return agentTurnOf(queue, requestContext, { run, model })
     },
-    ended: (sessionId) => void own.machines.stop(sessionId),
   })
 }
 

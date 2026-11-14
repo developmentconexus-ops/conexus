@@ -34,12 +34,12 @@ merge.
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A
   card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
-  approved, and enters when the track's step closes; the check stays red on it only when the pull request is not a draft. [check-docs]
+  approved, and enters when the track's step closes; the `processo` check stays red on it only when the pull request is not a draft. [processo]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
   ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Firstmate
   decides a reversible technical call on every track, with its evidence and how to undo it; the
   founder keeps product, spend, security, table permissions, live use, merge words and his own
-  decisions. Founder, 2026-10-27: "3. Sim". [CI, review]
+  decisions. Founder, 2026-10-27: "3. Sim". [processo, review]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder.  
@@ -71,7 +71,7 @@ merge.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
   card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
-  test that cannot fail (T12); two owners of one rule; red CI. Fechamento (wording, name, citation,
+  test that cannot fail; two owners of one rule; red CI. Fechamento (wording, name, citation,
   guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
@@ -88,11 +88,11 @@ merge.
   Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim"; 2026-11-09: "U1, U2 e U3 seriam um PR".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
-  `main`, always through firstmate's merge script, and only after the CI job reported green on that
+  `main`, always through firstmate's merge script, and only after the `ci` and `processo` checks reported green on that
   exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
   GitHub refuses a direct push.
   [firstmate's merge script, review]
-- **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
+- **L15.** CI **must** have one check, `ci`, that fails when any job of the code fails, is skipped or is cancelled. A second check, `processo`, always present, holds the gates of L5, L6 and L20, so a pull request waiting on the process is not read as broken code; a merge needs both green.
   Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
   starts no `pull_request` run. [CI, review]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
@@ -119,7 +119,7 @@ merge.
   step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
   when none serves. A finding that asks for a change waits in the method queue, an issue with the
-  method label. The exception is an emergency label only the founder applies, counted on the step's
+  method label. A pull request answers for the tracks it touches (the track of a card it changes, or of a product file), and for all of them when it touches only the method. The exception is an emergency label only the founder applies, counted on the step's
   line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
 
 ## 6. What the repository keeps

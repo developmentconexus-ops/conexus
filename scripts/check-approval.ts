@@ -7,8 +7,8 @@
 // Revalidate by 2027-04-13, or when the approval line changes shape.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { STEP_CARD } from './cli.ts'
 import { runCommand } from './command.ts'
+import { cardsInConstruction, tracksAffected } from './tracks.ts'
 
 const args = process.argv.slice(2)
 const baseIndex = args.indexOf('--base')
@@ -42,11 +42,14 @@ function onlyDocuments(): boolean {
 }
 
 const stepsDir = join(root, 'docs/steps')
-const cards = existsSync(stepsDir)
-  ? readdirSync(stepsDir).filter((name) => STEP_CARD.test(name))
-  : []
+const inConstruction = cardsInConstruction(root, existsSync(stepsDir) ? readdirSync(stepsDir) : [])
+const affected =
+  base === undefined ? undefined : tracksAffected(root, base, new Set(inConstruction.values()))
+const cards = [...inConstruction]
+  .filter(([, track]) => affected === undefined || affected.has(track))
+  .map(([name]) => name)
 if (cards.length === 0) {
-  console.log('check-approval: no card in docs/steps, nothing to check')
+  console.log('check-approval: no card of a track this change affects, nothing to check')
   process.exit(0)
 }
 const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')

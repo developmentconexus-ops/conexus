@@ -57,6 +57,11 @@ function markedFiles(): string[] {
   ]
 }
 
+/** The files of the app folder that hold conflict markers now, printed as a start prints them. */
+export function markersScript(workdir: string): string {
+  return ['set -e', `cd ${quoted(workdir)}`, ...markedFiles()].join('\n')
+}
+
 /** What the commit of work the Hub has not saved says, on the machine where it is brought onto `main`. */
 const UNSAVED_MESSAGE = 'Conexus Builder (not saved)'
 
@@ -119,11 +124,6 @@ export function savedScript(workdir: string, version: Sha): string {
     `git update-ref ${BASE_REF} ${quoted(version)}`,
     `git checkout --quiet --force -B main ${BASE_REF}`,
   ].join('\n')
-}
-
-/** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
-export function keepScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && git rev-parse --git-dir`
 }
 
 /** The whole tree as `tree`, whatever `HEAD` is, in an index of its own; `node_modules` is left out. */

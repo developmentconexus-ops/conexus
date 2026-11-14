@@ -1,6 +1,5 @@
 // Defect: a document grows past its ceiling, hides from docs/index.md, holds a link that goes
-// nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
-// card of one track waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24); the method's
+// nowhere, repeats or cites a rule that does not exist, names a retired process, or a skill's name leaves its folder's (delivery L24); the method's
 // own refusals are in check-docs-method.ts. A package a workspace depends on has no row in the
 // stack map, a row repeats or names nothing the repository uses, or a workspace pattern is one the
 // check cannot read.
@@ -12,7 +11,6 @@ import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { methodProblems, RULE_DEFINITION, withoutFences, words } from './check-docs-method.ts'
-import { STEP_CARD, trackOf } from './cli.ts'
 
 const root = resolve(process.argv[2] ?? '.')
 
@@ -222,23 +220,6 @@ function checkRetired(file: string, text: string) {
   }
 }
 
-/** A draft pull request holds the next card beside the one in construction (delivery L5); CI passes its state. */
-const draft = process.env.CONEXUS_DRAFT === 'true'
-
-function checkSteps() {
-  const cards = files.filter(
-    (file) => file.startsWith('docs/steps/') && STEP_CARD.test(file.slice('docs/steps/'.length)),
-  )
-  const byTrack = new Map<ReturnType<typeof trackOf>, string[]>()
-  for (const card of cards) {
-    const track = trackOf(basename(card), readFileSync(join(root, card), 'utf8'))
-    byTrack.set(track, [...(byTrack.get(track) ?? []), card])
-  }
-  for (const [track, list] of byTrack) {
-    if (list.length > 1 && !draft) fail('second-card', 'docs/steps', `${track}: ${list.join(', ')}`)
-  }
-}
-
 const STACK = 'docs/reference/stack.md'
 /** What the repository runs that no package.json declares: the database, the runtime, the images and the Hub image's Google sign-in binary. */
 const OTHER_PIECES = ['PostgreSQL', 'Node', 'Docker', 'cloudflared', 'CLIProxyAPI']
@@ -326,7 +307,6 @@ for (const [file, text] of texts) {
 checkIndex()
 checkRules(texts)
 problems.push(...methodProblems(texts))
-checkSteps()
 checkStack()
 
 if (problems.length > 0) {

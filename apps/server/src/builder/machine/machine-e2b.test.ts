@@ -82,7 +82,7 @@ test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe
   })
 })
 
-test('máquina: o E2B a mantém uma hora, a mais longa do plano, e então a pausa; o turno não tem prazo próprio', async () => {
+test('máquina: o E2B a mantém ligada 5 minutos desde que liga, o padrão da Factory do Mastra, e então a pausa, para todo agente; o turno não tem prazo próprio', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-hub-${CONVERSATION}`,
     metadata: {},
@@ -90,7 +90,7 @@ test('máquina: o E2B a mantém uma hora, a mais longa do plano, e então a paus
     ...IN_APP,
   })
   const options = Reflect.get(kit.sandbox, '_constructorOptions')
-  assert.equal(options.timeout, 60 * 60 * 1000)
+  assert.equal(options.timeout, 5 * 60 * 1000)
   assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
 })
 
@@ -204,7 +204,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   assert.ok(files !== undefined)
   // The Hub's own start: its onStart makes the conversation's folder, which the template does not.
   await files.writeFile('probe.txt', 'L1')
-  await machines.stop(conversation)
+  await machines.stopAll()
   const read = await machines.read(conversation, 'probe.txt', new AbortController().signal)
   assert.equal(read.kind, 'OK')
   assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')

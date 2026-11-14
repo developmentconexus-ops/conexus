@@ -39,8 +39,7 @@ unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mod
 6. Run the result: the server, the route, the migration on a disposable database, and a
    changed screen looked at per [T23](../../../docs/guides/testing.md), through a
    verification skill when one exists ([screen](references/screen.md)). A state fix reruns
-   A→B→A, a layout fix the card's failure states, and a new
-   security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
+   A→B→A, a layout fix the card's failure states. A remendo row keeps the card's proof beside its
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
    `npm run quality`, hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.

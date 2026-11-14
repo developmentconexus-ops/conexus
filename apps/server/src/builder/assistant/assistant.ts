@@ -284,7 +284,7 @@ export function createAssistant(deps: Deps) {
     },
     deps.machineTuning,
   )
-  const turns = assistantTurns({ queue, scopeOf, machines })
+  const turns = assistantTurns({ queue, scopeOf })
   const offeredOf = offeredFor(deps, scopeOf)
   async function chosenOf(requestContext: RequestContext) {
     return (await offeredOf(requestContext)).filter((each) => each.chosen)

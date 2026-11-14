@@ -6,8 +6,14 @@ import type { Config } from '../../platform/config.ts'
 import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
 import { MARK } from './kit.ts'
 
-/** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
-const TIMEOUT_MS = 60 * 60 * 1000
+/**
+ * How long a machine runs before E2B pauses it, for every agent: the Mastra Factory's default
+ * (`idleTimeoutMinutes` 5, `workspaces/e2b/src/factory-sandbox.ts`), which becomes the sandbox's
+ * `timeout`. E2B counts it from the machine's start or its last reconnect, not from the last use,
+ * and the Hub renews nothing, as the Factory does not. A turn's end stops nothing; the next tool
+ * that finds the machine paused resumes it by itself (`retryOnDead`).
+ */
+const IDLE_MS = 5 * 60 * 1000
 const CALL_MS = 30_000
 
 type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
@@ -19,7 +25,7 @@ export function createE2bKit(config: Credentials): KitFactory {
       id: options.id,
       template: config.machineTemplate,
       apiKey: config.e2bApiKey.reveal(),
-      timeout: TIMEOUT_MS,
+      timeout: IDLE_MS,
       lifecycle: { onTimeout: 'pause' },
       // A machine found by its id is reattached or refused, never replaced by a new one.
       ...(options.foundAs === undefined

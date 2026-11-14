@@ -73,7 +73,6 @@ const REFUSALS: [string, Record<string, string>][] = [
         '- [code](guides/code.md): rules.\n- [web](guides/web.md): rules.\n- [steps](steps/): the card.\n',
     },
   ],
-  ['second-card', { 'docs/steps/e01-a.md': 'a\n', 'docs/steps/e02-b.md': 'b\n' }],
 ]
 
 const HEADER =

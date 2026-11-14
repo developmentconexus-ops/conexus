@@ -9,10 +9,12 @@ type Step = {
   name?: string
   uses?: string
   run?: string
+  if?: string
   with?: Record<string, unknown>
   env?: Record<string, string>
 }
 type Job = {
+  env?: Record<string, string>
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
@@ -200,38 +202,11 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
       if (onServer(job)) assert.equal(job.environment, 'production', `${name}: ${id}`)
 })
 
-test('o agregador espera todos os trabalhos da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
-  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci')
+test('o agregador espera todos os trabalhos de código da CI', () => {
+  const others = Object.keys(ci.jobs).filter((name) => !['ci', 'processo', 'flaky'].includes(name))
   assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
   const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
-  for (const name of others.filter((name) => name !== 'removals')) {
-    assert.ok(results.includes(`needs.${name}.result`), name)
-  }
-  assert.match(
-    results,
-    /needs\.removals\.result == 'skipped' && needs\.removals-plan\.result == 'success' && needs\.removals-plan\.outputs\.selected == '0' && 'success' \|\| needs\.removals\.result/,
-  )
-  assert.equal(ci.jobs.removals?.needs, 'removals-plan')
-  assert.equal(ci.jobs.removals?.if, "needs.removals-plan.outputs.selected != '0'")
-})
-
-test('o plano das remoções lê o pull request pelo ambiente e roda todas as linhas quando o plano diz', () => {
-  const plan = ci.jobs['removals-plan']?.steps.find((step) => step.id === 'plan')
-  assert.match(plan?.env?.BASE ?? '', /^\$\{\{ github\.event_name == 'pull_request' && /)
-  const pullRequest = plan?.env?.PULL_REQUEST ?? ''
-  for (const field of [
-    'github.event.pull_request.title',
-    'github.head_ref',
-    'github.event.pull_request.labels.*.name',
-  ]) {
-    assert.ok(pullRequest.includes(`toJSON(${field})`), field)
-  }
-  assert.doesNotMatch(plan?.run ?? '', /\$\{\{/)
-  assert.match(
-    plan?.run ?? '',
-    /node scripts\/removals\.ts --plan \$\{BASE:\+--base "\$BASE" --pull-request "\$PULL_REQUEST"\}/,
-  )
-  assert.match(plan?.run ?? '', /if \.everything then "" else env\.BASE end/)
+  for (const name of others) assert.ok(results.includes(`needs.${name}.result`), name)
   assert.ok(ci.on.pull_request && JSON.stringify(ci.on.pull_request).includes('labeled'))
 })
 
@@ -239,11 +214,86 @@ test('toda instalação do npm guarda o cache de download sob o hash do lockfile
   const install = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
   const setups = [
     ...install.runs.steps,
-    ...Object.values(ci.jobs).flatMap((job) => job.steps),
+    ...Object.entries(ci.jobs).flatMap(([name, job]) => (name === 'processo' ? [] : job.steps)),
   ].filter((step: Step) => step.uses?.startsWith('actions/setup-node@'))
   assert.ok(setups.length >= 2)
   for (const step of setups) {
     assert.equal(step.with?.cache, 'npm')
     assert.equal(step.with?.['cache-dependency-path'], 'package-lock.json')
+  }
+})
+
+test('o processo é um trabalho à parte, sempre presente, que o agregador de código não lê', () => {
+  const processo = ci.jobs.processo
+  assert.ok(processo, 'no processo job')
+  assert.equal(processo.if, undefined)
+  assert.equal(processo.needs, undefined)
+  assert.ok(!JSON.stringify(ci.jobs.ci).includes('processo'))
+  const runs = processo.steps.map((step) => step.run ?? '').join('\n')
+  for (const script of ['second-card', 'approval', 'method-freeze'])
+    assert.match(runs, new RegExp(`npm run ${script}\\b`), script)
+  assert.doesNotMatch(runs, /npm ci/)
+  const code = ci.jobs.check?.steps.map((step) => step.run ?? '').join('\n') ?? ''
+  for (const script of ['second-card', 'approval', 'method-freeze'])
+    assert.doesNotMatch(code, new RegExp(`npm run ${script}\\b`), `check: ${script}`)
+})
+
+test('uma execução do main nunca cancela nem substitui a anterior, nem a que espera', () => {
+  const concurrency = parse(text('ci.yml')).concurrency
+  assert.match(concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/)
+  assert.equal(
+    concurrency.group,
+    "ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}",
+  )
+})
+
+test('só o job flaky escreve issues, e nenhum job de teste leva token nem permissão de escrita', () => {
+  const writers = Object.entries(ci.jobs).filter(([, job]) => job.permissions?.issues === 'write')
+  assert.deepEqual(
+    writers.map(([name]) => name),
+    ['flaky'],
+  )
+  const flaky = ci.jobs.flaky
+  assert.deepEqual(flaky?.permissions, { contents: 'read', issues: 'write' })
+  assert.deepEqual([flaky?.needs].flat().toSorted(), [
+    'e2e',
+    'packages',
+    'scripts',
+    'server',
+    'web',
+    'web-sweep',
+  ])
+  const runs = flaky?.steps.map((step) => step.run ?? '').join('\n') ?? ''
+  assert.doesNotMatch(runs, /npm (test|run (test|e2e))/)
+  assert.match(runs, /node scripts\/flaky-issues\.ts flaky-records/)
+  const install = flaky?.steps.find((step) => step.uses === './.github/actions/install')
+  assert.equal(install?.with?.['ignore-scripts'], 'true')
+  const download = flaky?.steps.find((step) => step.uses?.startsWith('actions/download-artifact@'))
+  assert.equal(download?.with?.['merge-multiple'], undefined)
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    assert.ok(!JSON.stringify(ci.jobs[name]).includes('github.token'), name)
+  }
+})
+
+test('cada job de teste com segunda rodada sobe os registros dos instáveis, mesmo depois de falhar', () => {
+  for (const name of ['scripts', 'server', 'web', 'web-sweep', 'packages', 'e2e']) {
+    const steps = ci.jobs[name]?.steps ?? []
+    const run = steps.find((step) => step.env?.CONEXUS_FLAKY_FILE !== undefined)
+    assert.ok(run, name)
+    const upload = steps.find((step) => step.uses?.startsWith('actions/upload-artifact@'))
+    assert.match(String(upload?.with?.name), /^flaky-/, name)
+    assert.equal(upload?.if, '${{ !cancelled() }}', name)
+  }
+})
+
+test('a ação de instalação pula os scripts de ciclo de vida só quando o job pede, e instala com eles nos outros', () => {
+  const action = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
+  const step = action.runs.steps.find((step: Step) => step.run?.includes('npm ci'))
+  assert.equal(action.inputs['ignore-scripts'].default, 'false')
+  assert.match(step.run, /= true \]; then npm ci --ignore-scripts; else npm ci; fi/)
+  assert.equal(step.env.IGNORE_SCRIPTS, ['${{', 'inputs.ignore-scripts', '}}'].join(' '))
+  for (const [name, job] of Object.entries(ci.jobs)) {
+    const asks = job.steps.some((step) => step.with?.['ignore-scripts'] !== undefined)
+    assert.equal(asks, name === 'flaky', name)
   }
 })
