@@ -39,6 +39,7 @@ export function conceptRow(fields: Partial<ConceptRow> = {}): ConceptRow {
     replacedBy: null,
     fields: 2,
     codes: 2,
+    source: 'Sankhya Matriz',
     ...fields,
   }
 }
@@ -125,6 +126,7 @@ export function page(fields: Partial<ConceptPage> = {}): ConceptPage {
     relations: [],
     source: {
       connectionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      connectionName: 'Sankhya Matriz',
       sql: 'SELECT NUNOTA FROM TGFCAB',
       proof: {
         outcome: 'OK',
@@ -168,6 +170,7 @@ export function proposal(fields: Partial<ProposalView> = {}): ProposalView {
           state: 'ACTIVE',
         },
         proof: null,
+        connectionName: null,
         decision: 'PENDING',
         reason: null,
         decidedBy: null,

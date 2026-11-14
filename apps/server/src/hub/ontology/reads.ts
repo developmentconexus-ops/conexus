@@ -17,6 +17,7 @@ import {
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { connection } from '../connectors/public-tables.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ActiveSet, CodeRow, ConceptRow, FieldRow, RelationRow } from './active.ts'
 import { ADDRESS, activeIn } from './active.ts'
@@ -58,6 +59,16 @@ async function namesOf(deps: Deps, tx: ReadTx, ids: readonly (string | null)[]):
   return new Map(named)
 }
 
+/** The names of the connections, by id; a connection that left has none. */
+async function connectionNamesOf(tx: ReadTx, ids: readonly string[]): Promise<Names> {
+  if (ids.length === 0) return new Map()
+  const rows = await tx
+    .select({ id: connection.id, name: connection.name })
+    .from(connection)
+    .where(inArray(connection.id, [...ids]))
+  return new Map(rows.map((row) => [row.id, row.name]))
+}
+
 function nameIn(names: Names, id: string | null): string | null {
   return id === null ? null : (names.get(id) ?? null)
 }
@@ -79,6 +90,14 @@ export async function ontologyView(deps: Deps, input: Reader): Promise<OntologyV
         ? fixedNameOf(admitted.role) === 'owner'
         : deps.identity.allows(admitted.role, 'approveConcepts')
     const names = await namesOf(deps, tx, [newest?.proposedBy ?? null, newest?.approvedBy ?? null])
+    const sources = await connectionNamesOf(
+      tx,
+      active.sources.map((each) => each.connectionId),
+    )
+    function sourceOf(key: string): string | null {
+      const found = active.sources.find((each) => each.concept === key)
+      return found === undefined ? null : nameIn(sources, found.connectionId)
+    }
     return {
       revision:
         newest === undefined
@@ -94,6 +113,7 @@ export async function ontologyView(deps: Deps, input: Reader): Promise<OntologyV
         ...conceptOf(row),
         fields: active.fields.filter((field) => field.concept === row.key).length,
         codes: active.codes.filter((code) => code.concept === row.key).length,
+        source: sourceOf(row.key),
       })),
       toReview: waiting.length,
       mayApprove,
@@ -102,19 +122,29 @@ export async function ontologyView(deps: Deps, input: Reader): Promise<OntologyV
   })
 }
 
-async function proofsOf(tx: ReadTx, ids: readonly string[]): Promise<Map<string, ProofView>> {
+type Proved = Readonly<{ view: ProofView; connectionName: string | null }>
+
+/** The proofs by id, each with the name of the connection it read through. */
+async function proofsOf(tx: ReadTx, ids: readonly string[]): Promise<Map<string, Proved>> {
   if (ids.length === 0) return new Map()
   const rows = await tx
     .select()
     .from(proofRun)
     .where(inArray(proofRun.id, [...ids]))
+  const names = await connectionNamesOf(
+    tx,
+    rows.map((row) => row.connectionId),
+  )
   return new Map(
     rows.map((row) => [
       row.id,
       {
-        ...{ outcome: row.outcome, reason: row.reason, rows: row.rows },
-        columns: ProofShape.parse(row.shape).map((each) => each.column),
-        ranAt: row.ranAt.toISOString(),
+        view: {
+          ...{ outcome: row.outcome, reason: row.reason, rows: row.rows },
+          columns: ProofShape.parse(row.shape).map((each) => each.column),
+          ranAt: row.ranAt.toISOString(),
+        },
+        connectionName: nameIn(names, row.connectionId),
       },
     ]),
   )
@@ -132,6 +162,7 @@ export async function conceptPage(
     if (concept === undefined) throw new Failure('CONCEPT_UNKNOWN')
     const source = active.sources.find((row) => row.concept === concept.key)
     const proofs = await proofsOf(tx, source === undefined ? [] : [source.proofRunId])
+    const proved = source === undefined ? undefined : proofs.get(source.proofRunId)
     function touches(row: RelationRow) {
       return [row.fromConcept, row.toConcept, row.through].includes(concept?.key ?? null)
     }
@@ -145,8 +176,9 @@ export async function conceptPage(
           ? null
           : {
               connectionId: source.connectionId,
+              connectionName: proved?.connectionName ?? null,
               sql: source.read.sql,
-              proof: proofs.get(source.proofRunId) ?? null,
+              proof: proved?.view ?? null,
             },
     }
   })
@@ -163,6 +195,11 @@ function beforeOf(active: ActiveSet, address: string): ElementBefore | null {
   const relation = active.relations.find((row) => ADDRESS.relations(row) === address)
   if (relation !== undefined) return { kind: 'RELATION', ...relationOf(relation) }
   return null
+}
+
+function proofOf(proofs: Map<string, Proved>, id: string | null) {
+  const found = id === null ? undefined : proofs.get(id)
+  return { proof: found?.view ?? null, connectionName: found?.connectionName ?? null }
 }
 
 /** GET ${BASE}/proposals: the proposals, newest first, each item with its before, its after and its proof. */
@@ -205,7 +242,7 @@ export async function proposalsView(
         .map((row) => ({
           ...{ n: row.n, target: row.target, item: storedItem(row) },
           before: beforeOf(active, row.target),
-          proof: row.proofRunId === null ? null : (proofs.get(row.proofRunId) ?? null),
+          ...proofOf(proofs, row.proofRunId),
           ...{ decision: row.decision, reason: row.reason },
           ...{
             decidedBy: nameIn(names, row.decidedBy),

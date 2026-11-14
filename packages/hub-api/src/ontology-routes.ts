@@ -48,8 +48,13 @@ export const ConceptView = z.object({
 })
 export type ConceptView = z.infer<typeof ConceptView>
 
-/** A row of the list of concepts: the concept and how many fields and codes it has. */
-export const ConceptRow = ConceptView.extend({ fields: z.int(), codes: z.int() })
+/** A row of the list of concepts: the concept, how many fields and codes it has, and where it is read from. */
+export const ConceptRow = ConceptView.extend({
+  fields: z.int(),
+  codes: z.int(),
+  /** The name of the connection the concept is read from; null when it has no source or the connection left. */
+  source: z.string().nullable(),
+})
 export type ConceptRow = z.infer<typeof ConceptRow>
 
 export const FieldView = z.object({
@@ -103,6 +108,8 @@ export type ProofView = z.infer<typeof ProofView>
 /** Where a concept is read from: the connection, the query and its proof. */
 export const SourceView = z.object({
   connectionId: ConnectionId,
+  /** The connection by its name; null when it left the company. */
+  connectionName: z.string().nullable(),
   sql: z.string(),
   proof: ProofView.nullable(),
 })
@@ -147,6 +154,8 @@ export const ProposalItemView = z.object({
   item: ProposedItem,
   before: ElementBefore.nullable(),
   proof: ProofView.nullable(),
+  /** The name of the connection the proof read through; null without a proof or when the connection left. */
+  connectionName: z.string().nullable(),
   decision: ItemDecision,
   reason: z.string().nullable(),
   decidedBy: Who,

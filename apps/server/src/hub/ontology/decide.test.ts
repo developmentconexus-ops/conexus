@@ -237,3 +237,21 @@ test('a junção: Documento com Documento pela Origem do item, aprovada, aparece
   const unknown = await on.read(on.member, '/concepts/nenhum')
   assert.equal(codeOf(unknown), 'CONCEPT_UNKNOWN')
 })
+
+test('o nome da conexão: a lista, a página do conceito e o item de Para revisar dizem de onde o conceito é lido', async (t) => {
+  const on = await companyOfFour(t)
+  const first = await on.proposed(on.owner, VENDEDOR)
+  const waiting = Object((await on.read(on.member, '/proposals?state=OPEN')).json()).proposals
+  const proved = waiting[0].items.map(
+    (each: { kind?: string; connectionName: string | null }) => each.connectionName,
+  )
+  assert.deepEqual(proved, [null, null, null, 'Sankhya Matriz'])
+  assert.equal((await on.approveAll(on.owner, first, 4, 0)).statusCode, 200)
+  const list = Object((await on.read(on.member)).json())
+  assert.deepEqual(
+    list.concepts.map((each: { source: string | null }) => each.source),
+    ['Sankhya Matriz'],
+  )
+  const page = Object((await on.read(on.member, '/concepts/vendedor')).json())
+  assert.equal(page.source.connectionName, 'Sankhya Matriz')
+})

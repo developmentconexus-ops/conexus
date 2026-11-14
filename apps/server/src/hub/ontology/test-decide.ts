@@ -79,6 +79,13 @@ export async function companyOfFour(t: TestContext) {
     'member',
   )
   const base = `/api/companies/${companyId}/ontology`
+  const connectionId = randomUUID()
+  await hub.test.asOwner(
+    `insert into connectors.connection(id, company_id, connector_id, name, connector_version, state,
+      sealed, key_id, linked_by, linked_at, attempt_key)
+      values ($1, $2, 'sankhya', 'Sankhya Matriz', '1.0.0', 'ACTIVE', '\\x01', 'k1', $3, now(), 'plant')`,
+    [connectionId, companyId, owner.id],
+  )
 
   /** A proposal of `by`, with its items pending; a source's proof written as U3 writes one. */
   async function proposed(by: Person, items: readonly Seeded[]): Promise<string> {
@@ -94,7 +101,7 @@ export async function companyOfFour(t: TestContext) {
         await hub.test.asOwner(
           `insert into ontology.proof_run (id, company_id, connection_id, query, query_hash, ran_at, outcome, rows, shape)
             values ($1, $2, $3, 'SELECT 1', repeat('a', 64), now(), 'OK', 3, '[]')`,
-          [proof, companyId, randomUUID()],
+          [proof, companyId, connectionId],
         )
       await hub.test.asOwner(
         `insert into ontology.proposal_item (proposal_id, company_id, n, kind, target, content, proof_run_id, decision)
@@ -127,7 +134,12 @@ export async function companyOfFour(t: TestContext) {
     return call(hub, who, 'GET', `${base}${path}`)
   }
 
-  return { hub, companyId, owner, admin, developer, member, proposed, decide, approveAll, read }
+  return {
+    ...{ hub, companyId, owner, admin, developer, member },
+    ...{ proposed, decide },
+    approveAll,
+    read,
+  }
 }
 export type Four = Awaited<ReturnType<typeof companyOfFour>>
 

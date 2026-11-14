@@ -14,7 +14,6 @@ import { Button, buttonVariants } from '../../ui/button.tsx'
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
-import { connectionsQuery } from '../connectors/public.ts'
 import { FlowPlace } from './concepts.tsx'
 import { conceptQuery, ontologyQuery } from './queries.ts'
 import { SuggestForm } from './suggest.tsx'
@@ -24,6 +23,7 @@ import {
   fieldTypeText,
   plural,
   SEE_AND_SUGGEST,
+  SOURCE_GONE,
   SUGGEST,
   when,
 } from './text.ts'
@@ -87,16 +87,14 @@ function Facts({ page }: { page: ConceptPage }) {
   )
 }
 
-function SourceBlock({ companyId, page }: { companyId: CompanyId; page: ConceptPage }) {
-  const connections = useQuery(connectionsQuery(companyId))
+function SourceBlock({ page }: { page: ConceptPage }) {
   const { source } = page
   if (source === null) return null
-  const name = connections.data?.connections.find((each) => each.id === source.connectionId)?.name
   return (
     <div className="flex flex-col gap-xs">
       <p className="break-words">
         <span className="text-text-2">Lido de </span>
-        {name ?? '—'}
+        {source.connectionName ?? SOURCE_GONE}
       </p>
       <details>
         <summary className="cursor-pointer text-text-2">Ver a consulta</summary>
@@ -277,7 +275,7 @@ function ConceptBody(props: {
       <Standing companyId={companyId} page={page} names={names} />
       <p className="break-words">{page.concept.description}</p>
       <Facts page={page} />
-      <SourceBlock companyId={companyId} page={page} />
+      <SourceBlock page={page} />
       <FlowPlace title={`Fluxo do ${page.concept.name}`} />
       <FieldsTable companyId={companyId} page={page} />
       <Relations page={page} names={names} />
