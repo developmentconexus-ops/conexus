@@ -21,7 +21,7 @@ const TIPO: Seeded[] = [
   },
 ]
 
-const LABEL = { kind: 'SET_CODE', concept: 'vendedor', field: 'tipo', value: 'I', label: 'Interno' }
+const LABEL = { kind: 'RENAME_LABEL', target: 'vendedor.tipo=I', name: 'Interno' }
 
 test('Sugerir mudança: a sugestão de um membro vira proposta aberta com quem propôs; a mesma chave duas vezes dá uma proposta só', async (t) => {
   const on = await companyOfFour(t)
@@ -44,7 +44,7 @@ test('Sugerir mudança: a sugestão de um membro vira proposta aberta com quem p
   assert.deepEqual(rows, [
     {
       ...{ proposed_by: on.member.id, agent: null, state: 'OPEN', base_revision: 1 },
-      ...{ kind: 'SET_CODE', target: 'vendedor.tipo=I', decision: 'PENDING' },
+      ...{ kind: 'RENAME_LABEL', target: 'vendedor.tipo=I', decision: 'PENDING' },
     },
   ])
   const conflict = await post(on.hub, on.member, path, { ...body, why: 'outro' }, key)
@@ -61,7 +61,7 @@ test('Sugerir mudança: a sugestão de um membro vira proposta aberta com quem p
   })
 })
 
-test('Sugerir mudança: um alvo que não existe, TARGET_UNKNOWN; um código novo sem a porta da pessoa, PROOF_FAILED; nada se grava', async (t) => {
+test('Sugerir mudança: um alvo que não existe, TARGET_UNKNOWN; um código novo, REQUEST_MALFORMED, porque a rota não o aceita; nada se grava', async (t) => {
   const on = await companyOfFour(t)
   const first = await on.proposed(on.owner, [...VENDEDOR, ...TIPO])
   assert.equal((await on.approveAll(on.owner, first, 6, 0)).statusCode, 200)
@@ -74,9 +74,9 @@ test('Sugerir mudança: um alvo que não existe, TARGET_UNKNOWN; um código novo
   assert.equal(codeOf(gone), 'TARGET_UNKNOWN')
   const fresh = await post(on.hub, on.member, path, {
     why: 'um tipo novo',
-    items: [{ ...LABEL, value: 'E', label: 'Externo' }],
+    items: [{ kind: 'SET_CODE', concept: 'vendedor', field: 'tipo', value: 'E', label: 'Externo' }],
   })
-  assert.equal(codeOf(fresh), 'PROOF_FAILED')
+  assert.equal(codeOf(fresh), 'REQUEST_MALFORMED')
   const repeated = await post(on.hub, on.member, path, { why: 'duas vezes', items: [LABEL, LABEL] })
   assert.equal(codeOf(repeated), 'REQUEST_MALFORMED')
   const proposals = await on.hub.test.asOwner('select id from ontology.proposal')

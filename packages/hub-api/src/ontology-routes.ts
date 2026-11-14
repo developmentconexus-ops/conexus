@@ -6,10 +6,12 @@ import {
   Cardinality,
   ConceptKey,
   Demand,
+  Deprecate,
   FieldType,
   OntologyProposalId,
   ProposedItem,
   RelationPairs,
+  RenameLabel,
 } from './ontology.ts'
 import { defineOperation } from './operation.ts'
 
@@ -182,12 +184,8 @@ export const RevisionEntry = RevisionView.extend({
 })
 export type RevisionEntry = z.infer<typeof RevisionEntry>
 
-/** What **Sugerir mudança** sends: the person's code, label or deprecation; a code is always the person's. */
-export const SuggestedItem = z.discriminatedUnion('kind', [
-  ProposedItem.options[2].omit({ dictionary: true }),
-  ProposedItem.options[5],
-  ProposedItem.options[6],
-])
+/** What **Sugerir mudança** sends: a new label and explanation, or a deprecation. A new code waits for the connector's door. */
+export const SuggestedItem = z.discriminatedUnion('kind', [RenameLabel, Deprecate])
 export type SuggestedItem = z.infer<typeof SuggestedItem>
 export const Suggestion = z.object({ why: Demand, items: z.array(SuggestedItem).min(1).max(10) })
 export type Suggestion = z.infer<typeof Suggestion>
@@ -278,10 +276,8 @@ export const suggestConcepts = defineOperation({
     ...READS,
     'REQUEST_MALFORMED',
     'IDEMPOTENCY_CONFLICT',
-    'CODE_UNSEEN',
     'TARGET_UNKNOWN',
     'NOT_IN_ROLE',
-    'PROOF_FAILED',
   ],
 })
 

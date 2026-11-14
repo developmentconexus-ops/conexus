@@ -180,6 +180,14 @@ function keptUnless(item: ProposedItem, refused: ItemRefusal | undefined): Outco
   return refused === undefined ? { kept: { item, target } } : refusal(target, refused)
 }
 
+/** A rename or a deprecation: its target is active. No system is asked. */
+export function labelChecked(
+  world: World,
+  item: Extract<ProposedItem, { kind: 'RENAME_LABEL' | 'DEPRECATE' }>,
+): Outcome {
+  return keptUnless(item, isActive(world.active, targetOf(item)) ? undefined : 'TARGET_UNKNOWN')
+}
+
 /** Checks one item against the world, through the door when its rule asks the system. */
 export async function checked(
   door: ConceptDoor,
@@ -204,7 +212,7 @@ export async function checked(
       return keptUnless(item, relationRefusal(world, item))
     case 'RENAME_LABEL':
     case 'DEPRECATE':
-      return keptUnless(item, isActive(world.active, targetOf(item)) ? undefined : 'TARGET_UNKNOWN')
+      return labelChecked(world, item)
     default:
       return item satisfies never
   }

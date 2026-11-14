@@ -54,6 +54,20 @@ export const SourceRead = z.strictObject({
   sql: z.string().min(1).max(4000),
 })
 
+export const RenameLabel = z.object({
+  kind: z.literal('RENAME_LABEL'),
+  target: Target,
+  name: z.string().max(80),
+  description: z.string().max(500).optional(),
+})
+
+export const Deprecate = z.object({
+  kind: z.literal('DEPRECATE'),
+  target: Target,
+  reason: z.string().max(500),
+  replacedBy: Target.optional(),
+})
+
 /** The proposal's items, one union on `kind` (code C21). */
 export const ProposedItem = z.discriminatedUnion('kind', [
   z.object({
@@ -114,18 +128,8 @@ export const ProposedItem = z.discriminatedUnion('kind', [
     concept: ConceptKey,
     sql: z.string().min(1).max(4000),
   }),
-  z.object({
-    kind: z.literal('RENAME_LABEL'),
-    target: Target,
-    name: z.string().max(80),
-    description: z.string().max(500).optional(),
-  }),
-  z.object({
-    kind: z.literal('DEPRECATE'),
-    target: Target,
-    reason: z.string().max(500),
-    replacedBy: Target.optional(),
-  }),
+  RenameLabel,
+  Deprecate,
 ])
 export type ProposedItem = z.infer<typeof ProposedItem>
 

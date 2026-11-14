@@ -1,23 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type {
-  CompanyId,
-  FailureCode,
-  ItemRefusal,
-  PersonId,
-  ProposedItem,
-  Suggestion,
-} from '@conexus/hub-api'
+import type { CompanyId, PersonId, Suggestion } from '@conexus/hub-api'
 import { OntologyProposalId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { ConceptDoor } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { currentRevision } from './decide.ts'
 import { contentOf, sameChange, targetOf } from './items.ts'
-import { checked } from './rules.ts'
+import { labelChecked } from './rules.ts'
 import { proposal, proposalItem } from './tables.ts'
 import type { World } from './world.ts'
 import { contextOf, worldOf } from './world.ts'
@@ -30,50 +22,15 @@ export type Suggesting = Readonly<{
 }>
 type Deps = Readonly<{ database: Database; identity: IdentityPorts; log: FailureLog }>
 
-/** Each refusal of the U3 rules as the route answers it; the others cannot follow from these three kinds. */
-const ANSWERED: Record<ItemRefusal, FailureCode> = {
-  CODE_UNSEEN: 'CODE_UNSEEN',
-  TARGET_UNKNOWN: 'TARGET_UNKNOWN',
-  CONCEPT_INCOMPLETE: 'TARGET_UNKNOWN',
-  NOT_IN_ROLE: 'NOT_IN_ROLE',
-  PROOF_FAILED: 'PROOF_FAILED',
-  ITEM_REPEATED: 'REQUEST_MALFORMED',
-  FIELD_NOT_IN_PROOF: 'REQUEST_MALFORMED',
-  RELATION_INVALID: 'REQUEST_MALFORMED',
-  ROLE_NOT_SUBSET: 'REQUEST_MALFORMED',
-  ROLE_KEY_MISMATCH: 'REQUEST_MALFORMED',
-}
-
-/**
- * The door of a person outside a conversation: the connectors give the Ontology none yet, so a new
- * code cannot be counted and answers as a connector with no concept read does (`PROOF_FAILED`).
- */
-function unprovable(world: World, item: ProposedItem): ConceptDoor | undefined {
-  const concept = item.kind === 'SET_CODE' ? item.concept : undefined
-  const source =
-    world.active.sources.find((each) => each.concept === concept) ?? world.active.sources[0]
-  if (source === undefined) return undefined
-  const failed = { kind: 'FAILED', reason: 'NO_DOOR' } as const
-  return { connectionId: source.connectionId, prove: async () => failed, query: async () => failed }
-}
-
 /** Every item checked by its U3 rule; the first refusal answers the route, and nothing is written. */
-async function checkedAll(world: World, items: readonly ProposedItem[]): Promise<void> {
+function checkedAll(world: World, items: Suggestion['items']): void {
   const seen: { kind: string; target: string }[] = []
   for (const item of items) {
     const change = { kind: item.kind, target: targetOf(item) }
     if (seen.some((each) => sameChange(each, change))) throw new Failure('REQUEST_MALFORMED')
     seen.push(change)
-    const door = unprovable(world, item)
-    if (door === undefined) throw new Failure('TARGET_UNKNOWN')
-    const outcome = await checked(door, world, item, new Set())
-    if ('refused' in outcome) {
-      const code = ANSWERED[outcome.refused.reason]
-      throw new Failure(code, {
-        details: { target: change.target, reason: outcome.refused.reason },
-        ...(code === 'NOT_IN_ROLE' ? { named: { operation: 'os conceitos da empresa' } } : {}),
-      })
-    }
+    if ('refused' in labelChecked(world, item))
+      throw new Failure('TARGET_UNKNOWN', { details: { target: change.target } })
   }
 }
 
@@ -112,7 +69,7 @@ async function written(deps: Deps, tx: CommandTx, input: Suggesting, bodyHash: s
 }
 
 /**
- * **Sugerir mudança** (A Ontologia da empresa, U4): any member proposes codes, labels and
+ * **Sugerir mudança** (A Ontologia da empresa, U4): any member proposes labels and
  * deprecations, each checked by the U3 rules before any transaction opens (D22); then one proposal,
  * under the screen's attempt key, so the same key twice makes one (C37).
  */
@@ -122,7 +79,7 @@ export async function suggestConcepts(deps: Deps, input: Suggesting): Promise<On
     await deps.identity.admitMember({ tx, ...input, action: 'readCompany' })
     return contextOf(tx, null)
   })
-  await checkedAll(worldOf(context, input.suggestion.items), input.suggestion.items)
+  checkedAll(worldOf(context, input.suggestion.items), input.suggestion.items)
   const bodyHash = hashOfBody(input.suggestion)
   let proposalId: OntologyProposalId
   try {
