@@ -25,8 +25,8 @@ async function removeProject(
 }
 
 /**
- * Kills by name the machine of each released conversation, also one no run of this process
- * holds, paused or running. A conversation with no machine passes. Each failure is logged and kept.
+ * Lets go of, then kills by name, the machine of each released conversation, also one no run of
+ * this process holds, paused or running. A conversation with no machine passes. Each failure is logged and kept.
  */
 async function killMachines(
   context: RunsContext,
