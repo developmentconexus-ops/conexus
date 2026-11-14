@@ -199,6 +199,12 @@ export function localKit(folder: string, control: Control): KitFactory {
   }
 }
 
+/** E2B paused the machine since the last tool: the next command finds it gone and Mastra resumes it, which runs `onStart` again. */
+export function pausedByE2b(control: Control) {
+  control.outcome = 'connected'
+  control.restartBeforeNextCommand = true
+}
+
 /** Whether the provider holds the machine of this name: found by a turn before, and not killed. */
 function heldBy(control: Control, name: string): boolean {
   return control.discoverable.includes(name) && !control.killed
@@ -312,7 +318,15 @@ export async function world(
   function openWithCommandMs(commandMs: number) {
     return openOn(machinesWith({ commandMs }))
   }
-  return { machines, repository, base, control, phases, errors, open, openWithCommandMs, folder }
+  /** The Hub was restarted: a new process holds no session, and its machines find the conversation's by name. */
+  function restartHub() {
+    const restarted = machinesWith()
+    return { machines: restarted, open: (id = CONVERSATION) => openOn(restarted, id) }
+  }
+  return {
+    ...{ machines, repository, base, control, phases, errors, open, openWithCommandMs },
+    ...{ restartHub, folder },
+  }
 }
 
 /** The workspace's machine, started as a tool's first call starts it. */

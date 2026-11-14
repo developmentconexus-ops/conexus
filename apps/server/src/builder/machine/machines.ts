@@ -24,7 +24,6 @@ import {
   collected,
   collectScript,
   conflictsOf,
-  keepScript,
   outFile,
   savedScript,
   seedFile,
@@ -41,6 +40,8 @@ type Session = {
   kit: Kit
   /** How many times the machine started in this turn: a second `created` is a machine that died. */
   starts: number
+  /** The turn needed the machine: a session outlives its turns, so `ready` alone no longer says it. */
+  used: boolean
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean
   /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
@@ -112,11 +113,23 @@ class BuilderMachines implements Machines {
     return result
   }
 
-  kill = (conversationId: ConversationId) => this.deps.api.kill(conversationId)
+  /** The conversation is deleted: its session goes, and every machine it marked is killed. */
+  kill = (conversationId: ConversationId) => {
+    this.sessions.delete(conversationId)
+    return this.deps.api.kill(conversationId)
+  }
 
   /** Wakes or creates the machine, once per workspace; the seed ran in `onStart` before this returns. */
   private ensure(session: Session): Promise<Kit> {
-    session.ready ??= this.boot(session)
+    session.used = true
+    if (session.ready === undefined) {
+      const ready = this.boot(session)
+      session.ready = ready
+      // A start that failed is tried again by the next tool or turn, not kept rejected for good.
+      ready.catch(() => {
+        if (session.ready === ready) session.ready = undefined
+      })
+    }
     return session.ready
   }
 
@@ -198,24 +211,18 @@ class BuilderMachines implements Machines {
     this.conflicted(session, synced.stdout)
   }
 
-  /** The files stay as they are; the repository must still be there. */
-  private async keep(kit: Kit) {
-    const kept = await this.run(kit, keepScript(this.workdir))
-    if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
-  }
-
   /**
-   * What the machine holds once it is up. One found by name keeps its folder and brings `main` in.
-   * A later start in the same turn is Mastra reconnecting a machine that paused or dropped
-   * (`retryOnDead`): it keeps what the turn wrote. A new one is seeded; a second new one in the same
-   * turn is a machine that died, and what the turn wrote on it is gone.
+   * What the machine holds once it is up, at every start Mastra's `onStart` hook runs: one found by
+   * name, or one E2B paused that a tool resumed (`retryOnDead`), keeps its folder and brings `main`
+   * in, with the work the Hub has not saved kept on it. A new one is seeded; a second new one in the
+   * same turn is a machine that died, and what the turn wrote on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
     const { conversationId, kit } = session
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      return session.starts === 1 ? this.sync(kit, session) : this.keep(kit)
+      return this.sync(kit, session)
     }
     if (session.starts > 1) {
       session.lost = true
@@ -224,9 +231,9 @@ class BuilderMachines implements Machines {
     await this.seed(kit, session)
   }
 
-  async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
+  /** The conversation's machine, built and not touched: building it asks the provider nothing. */
+  private open(input: Parameters<Machines['workspaceFor']>[0], name: string): Session {
     const { companyId, projectId, conversationId, onPhase } = input
-    const name = `conexus-${this.deps.installation}-${conversationId}`
     const kit = this.deps.kit({
       id: name,
       allowOut: ALLOWED_HOSTS,
@@ -243,8 +250,18 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ companyId, projectId, conversationId, onPhase, kit },
-      ...{ starts: 0, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
+      ...{ starts: 0, used: false, lost: false, conflicts: NO_CONFLICTS, ready: undefined },
     }
+    return session
+  }
+
+  async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
+    const { companyId, projectId, conversationId, onPhase } = input
+    const name = `conexus-${this.deps.installation}-${conversationId}`
+    const session = this.sessions.get(conversationId) ?? this.open(input, name)
+    // The machine belongs to the conversation, as the Factory keeps one per session: a turn takes
+    // it over with its own phases, and the work it counts starts from nothing.
+    Object.assign(session, { companyId, projectId, onPhase, starts: 0, used: false, lost: false })
     this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,
@@ -270,7 +287,7 @@ class BuilderMachines implements Machines {
 
   async collect({ conversationId, base }: { conversationId: ConversationId; base: Sha }) {
     const session = this.sessions.get(conversationId)
-    if (session?.ready === undefined) return 'unchanged'
+    if (session?.used !== true) return 'unchanged'
     const kit = await this.ensure(session)
     if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
@@ -317,20 +334,18 @@ class BuilderMachines implements Machines {
   }
 
   touched(conversationId: ConversationId) {
-    return this.sessions.get(conversationId)?.ready !== undefined
+    return this.sessions.get(conversationId)?.used === true
   }
 
   /**
-   * The turn is over: the Hub lets go of the machine and stops nothing. E2B pauses it on its own
-   * timeout (`machine/e2b.ts`), with its folder as the turn left it: what the Hub did not save
-   * stays for the next start to merge (no reference discards a session's unsaved work). A start
-   * still running settles first; its failure was the turn's to hear.
+   * The turn is over: the session stays, as the Factory keeps a session's machine, and nothing is
+   * stopped. E2B pauses the machine on its own timeout (`machine/e2b.ts`), with its folder as the
+   * turn left it, and the next tool resumes it. A start still running settles first; its failure
+   * was the turn's to hear.
    */
   async release(conversationId: ConversationId) {
-    const session = this.sessions.get(conversationId)
-    this.sessions.delete(conversationId)
-    if (session?.ready === undefined) return
-    await Promise.allSettled([session.ready])
+    const ready = this.sessions.get(conversationId)?.ready
+    if (ready !== undefined) await Promise.allSettled([ready])
   }
 }
 

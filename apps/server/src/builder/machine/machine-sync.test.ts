@@ -9,6 +9,7 @@ import {
   INSTALLATION,
   moveMain,
   PROJECT,
+  pausedByE2b,
   sandboxOf,
   world,
 } from './test-machine.ts'
@@ -19,7 +20,7 @@ test('máquina: o turno cortado enquanto outra conversa moveu o main: religada, 
   const { open, machines, control, repository, folder } = await world(t)
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   assert.equal(await after.filesystem?.readFile('cut.ts', { encoding: 'utf-8' }), 'meio\n')
   assert.equal(await after.filesystem?.readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
@@ -34,7 +35,7 @@ test('máquina: o turno cortado e outra conversa mudaram a mesma linha: as marca
   const { open, control, folder } = await world(t)
   await (await open()).filesystem?.writeFile('s.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 's.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   const text = String(await after.filesystem?.readFile('s.ts', { encoding: 'utf-8' }))
   assert.match(text, /^<<<<<<< [^\n]*\noutra\n=======\nmeio\n>>>>>>> /)
@@ -47,7 +48,7 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   const { open, machines, repository, control, folder } = await world(t)
   await (await open()).filesystem?.writeFile('s.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 's.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   let run = 10
   async function save() {
     const base = await repository.ensure()
@@ -64,11 +65,13 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   assert.equal(await noticed.filesystem?.exists('s.ts'), true)
   assert.doesNotMatch(await noticed.getInstructionsAsync(), /could not merge/)
   await save()
+  pausedByE2b(control)
   const next = await open()
   assert.match(String(await next.filesystem?.readFile('s.ts', { encoding: 'utf-8' })), /^<<<<<<< /)
   assert.match(await next.getInstructionsAsync(), /resolve them before any other change: `s\.ts`\./)
   await next.filesystem?.writeFile('s.ts', 'outra\nmeio\n')
   await save()
+  pausedByE2b(control)
   const resolved = await open()
   assert.equal(await resolved.filesystem?.readFile('s.ts', { encoding: 'utf-8' }), 'outra\nmeio\n')
   assert.doesNotMatch(await resolved.getInstructionsAsync(), /conflict/)
@@ -80,7 +83,7 @@ test('máquina: o turno cortado mudou um arquivo que o main novo apagou: a cópi
   moveMain(gitDir, 'd.ts', 'um\n')
   await (await open()).filesystem?.writeFile('d.ts', 'meio\n')
   moveMain(gitDir, 'd.ts', null)
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   assert.equal(await after.filesystem?.readFile('d.ts', { encoding: 'utf-8' }), 'meio\n')
   const told = await after.getInstructionsAsync()
@@ -94,7 +97,7 @@ test('máquina: o turno cortado e outra conversa mudaram o mesmo arquivo binári
   moveMain(gitDir, 'img.bin', 'um\0\n')
   await (await open()).filesystem?.writeFile('img.bin', 'meio\0\n')
   moveMain(gitDir, 'img.bin', 'outra\0\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   assert.equal(await after.filesystem?.readFile('img.bin', { encoding: 'utf-8' }), 'outra\0\n')
   const told = await after.getInstructionsAsync()
@@ -124,11 +127,23 @@ test('máquina: a religada cujo main não se integra falha com a causa nomeada e
   )
   await (await here.open()).filesystem?.writeFile('a.ts', 'um\n')
   broken = true
-  here.control.outcome = 'connected'
-  await assert.rejects((await here.open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
+  // A tool resumes the machine E2B paused: the start hook fails, and the tool hears the cause.
+  pausedByE2b(here.control)
+  await assert.rejects(
+    (await here.open()).filesystem?.exists('a.ts') ?? Promise.reject(),
+    /sync failed/,
+  )
+  assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED'])
+  // A Hub that starts the machine again finds it by name: the start fails as the machine's.
+  const restarted = here.restartHub()
+  await assert.rejects((await restarted.open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
     code: 'MACHINE_UNAVAILABLE',
   })
-  assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED', 'MACHINE_UNAVAILABLE'])
+  assert.deepEqual(here.errors, [
+    'MACHINE_SYNC_FAILED',
+    'MACHINE_SYNC_FAILED',
+    'MACHINE_UNAVAILABLE',
+  ])
   assert.equal(readFileSync(join(here.folder, 'app', 'a.ts'), 'utf-8'), 'um\n')
 })
 
@@ -136,7 +151,7 @@ test('máquina: o trabalho cortado que o turno seguinte juntou ao main continua 
   const { open, machines, control, folder } = await world(t)
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const next = await open()
   assert.equal(await next.filesystem?.exists('cut.ts'), true, 'the sync kept the cut work')
   await machines.release(CONVERSATION)
@@ -154,7 +169,7 @@ test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por 
   ])
   assert.equal(made.exitCode, 0, made.stderr)
   await machines.release(CONVERSATION)
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const next = await open()
   assert.equal(await next.filesystem?.exists('big.bin'), true)
   const told = await next.getInstructionsAsync()
@@ -166,7 +181,7 @@ test('máquina: o trabalho não guardado que cabe no que o Hub aceita não leva 
   const { open, machines, control } = await world(t)
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   await machines.release(CONVERSATION)
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const next = await open()
   assert.equal(await next.filesystem?.exists('cut.ts'), true)
   assert.doesNotMatch(await next.getInstructionsAsync(), /too large|too many files/)
@@ -178,7 +193,7 @@ test('máquina: um comando da máquina que não termina no prazo falha a religad
   const hook = join(here.folder, 'app', '.git', 'hooks', 'post-checkout')
   writeFileSync(hook, '#!/bin/sh\nsleep 20\n')
   chmodSync(hook, 0o755)
-  here.control.outcome = 'connected'
+  pausedByE2b(here.control)
   const started = Date.now()
   await assert.rejects(
     (await here.openWithCommandMs(400)).filesystem?.exists('a.ts') ?? Promise.reject(),
@@ -195,7 +210,7 @@ test('máquina: um index.lock que um git morto deixou na pasta não prende a con
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'index.lock'), '')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   assert.equal(await after.filesystem?.exists('cut.ts'), true)
   assert.equal(await after.filesystem?.exists('b.ts'), true)
@@ -206,7 +221,7 @@ test('máquina: o lock do índice próprio da junção, que um git morto deixou,
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'conexus-sync-index.lock'), '')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const after = await open()
   assert.equal(await after.filesystem?.exists('cut.ts'), true)
   assert.equal(await after.filesystem?.exists('b.ts'), true)

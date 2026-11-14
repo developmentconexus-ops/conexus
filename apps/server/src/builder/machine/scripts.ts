@@ -121,11 +121,6 @@ export function savedScript(workdir: string, version: Sha): string {
   ].join('\n')
 }
 
-/** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
-export function keepScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && git rev-parse --git-dir`
-}
-
 /** The whole tree as `tree`, whatever `HEAD` is, in an index of its own; `node_modules` is left out. */
 function treeIn(base: string, index: string): string[] {
   return [
