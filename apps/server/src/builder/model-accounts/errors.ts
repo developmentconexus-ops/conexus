@@ -11,7 +11,7 @@ export type CallFailure =
   | { kind: 'unknown'; status: number | null }
 
 /** Why an account is out until its time: a rate limit, or its credit spent (a 402 or a 400 of balance). */
-export type LimitReason = 'rate' | 'credit'
+type LimitReason = 'rate' | 'credit'
 
 /** A failure that is the account's, which the queue answers with the next account. */
 export type AccountFailure = Exclude<CallFailure, { kind: 'unknown' }>
