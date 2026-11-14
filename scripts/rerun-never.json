@@ -1,0 +1,922 @@
+{
+  "files": [
+    "apps/server/src/builder/agents/approval-refused.test.ts",
+    "apps/server/src/builder/app-data/access.test.ts",
+    "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+    "apps/server/src/builder/conversation/conversation-refusal.test.ts",
+    "apps/server/src/builder/conversation/permissions.test.ts",
+    "apps/server/src/builder/model-accounts/openai/sign-in-refusals.test.ts",
+    "apps/server/src/hub/apps/app-access-journey.test.ts",
+    "apps/server/src/hub/connectors/connections-oauth-logs.test.ts",
+    "apps/server/src/hub/projects/app-access.test.ts",
+    "apps/server/src/platform/access.test.ts",
+    "apps/server/src/platform/isolation-apps.test.ts",
+    "apps/server/src/platform/isolation-conversations.test.ts",
+    "apps/server/src/platform/isolation-model-accounts.test.ts",
+    "apps/server/src/platform/isolation-ontology.test.ts",
+    "apps/server/src/platform/isolation-projects.test.ts",
+    "apps/server/src/platform/isolation-requests.test.ts",
+    "apps/server/src/platform/isolation-versions.test.ts",
+    "apps/server/src/platform/isolation.test.ts",
+    "apps/server/src/platform/secret.test.ts",
+    "apps/web/src/builder/assistant/refusals.test.tsx",
+    "apps/web/src/hub/apps/app-refused.test.tsx",
+    "apps/web/src/hub/projects/access.test.tsx",
+    "apps/web/src/hub/projects/project-integrations-refusal.test.tsx",
+    "tests/e2e/refusals.test.ts"
+  ],
+  "tests": [
+    {
+      "file": "apps/edge/src/db.test.ts",
+      "name": "db: a recusa do PostgreSQL leva só o código"
+    },
+    {
+      "file": "apps/edge/src/db.test.ts",
+      "name": "db: chamado depois do prazo da chamada"
+    },
+    {
+      "file": "apps/edge/src/db.test.ts",
+      "name": "db: query só lê"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-clone.test.ts",
+      "name": "a entrada do despachante"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-guards.test.ts",
+      "name": "GET de outro site"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-guards.test.ts",
+      "name": "escrita: Sec-Fetch-Site"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-guards.test.ts",
+      "name": "escrita: sem Origin"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-guards.test.ts",
+      "name": "os 303"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-limits.test.ts",
+      "name": "limites: a versão e o exemplo recebem"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-limits.test.ts",
+      "name": "prazo: o app que não responde em 10 s"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: NETWORK"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: TIMEOUT"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-versions.test.ts",
+      "name": "sem versão no ar: o exemplo, com props só caller"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-versions.test.ts",
+      "name": "versão no ar cujo Worker sumiu"
+    },
+    {
+      "file": "apps/edge/src/dispatcher-versions.test.ts",
+      "name": "versão no ar: o Worker dela"
+    },
+    {
+      "file": "apps/edge/src/dispatcher.test.ts",
+      "name": "app: a CSP do app"
+    },
+    {
+      "file": "apps/edge/src/dispatcher.test.ts",
+      "name": "app: escrita de outro site"
+    },
+    {
+      "file": "apps/edge/src/dispatcher.test.ts",
+      "name": "app: não recebe /__conexus/"
+    },
+    {
+      "file": "apps/edge/src/dispatcher.test.ts",
+      "name": "app: não recebe os cookies"
+    },
+    {
+      "file": "apps/edge/src/dispatcher.test.ts",
+      "name": "app: o Set-Cookie dele"
+    },
+    {
+      "file": "apps/edge/src/outbound.test.ts",
+      "name": "o muro"
+    },
+    {
+      "file": "apps/edge/src/tools.test.ts",
+      "name": "sem o Access ou com outro público"
+    },
+    {
+      "file": "apps/server/src/builder/agents/app-data.test.ts",
+      "name": "não grava"
+    },
+    {
+      "file": "apps/server/src/builder/agents/app-data.test.ts",
+      "name": "não grava: o login de leitura só tem SELECT"
+    },
+    {
+      "file": "apps/server/src/builder/agents/code-tool.test.ts",
+      "name": "a ferramenta salva sobe ao gravar"
+    },
+    {
+      "file": "apps/server/src/builder/agents/developer.test.ts",
+      "name": "o desenvolvedor"
+    },
+    {
+      "file": "apps/server/src/builder/agents/routes.test.ts",
+      "name": "as recusas"
+    },
+    {
+      "file": "apps/server/src/builder/agents/routes.test.ts",
+      "name": "o rascunho"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/assistant-memory-cliproxy.test.ts",
+      "name": "com o observador respondendo"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/company-memory-propose.test.ts",
+      "name": "não tem ferramenta de gravação do Knowledge"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/company-memory-propose.test.ts",
+      "name": "os dois têm a proposta"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "a máquina perdida, FILE_GONE"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "acima do teto"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "nosniff e CSP sandbox"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/file.test.ts",
+      "name": "o dono baixa os bytes"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "a leitura grande"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "a marca"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "cada leitura do turno"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "o download cancelado"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/machine.test.ts",
+      "name": "o fim do Hub"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/member.test.ts",
+      "name": "o membro conversa"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/member.test.ts",
+      "name": "o membro não recebe propor automação"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/member.test.ts",
+      "name": "o passe do membro"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/note-save.test.ts",
+      "name": "a rodada de automação"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/note-save.test.ts",
+      "name": "o membro"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/release.test.ts",
+      "name": "pela pessoa, pelo Projeto e pela empresa"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/release.test.ts",
+      "name": "remover a empresa apaga"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/routes.test.ts",
+      "name": "criar: com o modelo padrão"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/routes.test.ts",
+      "name": "criar: um modelo sem conta"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/routes.test.ts",
+      "name": "trocar as ligações"
+    },
+    {
+      "file": "apps/server/src/builder/assistant/show-file.test.ts",
+      "name": "link para fora feito depois"
+    },
+    {
+      "file": "apps/server/src/builder/automations/developer.test.ts",
+      "name": "o desenvolvedor"
+    },
+    {
+      "file": "apps/server/src/builder/automations/routes.test.ts",
+      "name": "as recusas"
+    },
+    {
+      "file": "apps/server/src/builder/automations/routes.test.ts",
+      "name": "pausar e retomar"
+    },
+    {
+      "file": "apps/server/src/builder/automations/run.test.ts",
+      "name": "o dono virou membro"
+    },
+    {
+      "file": "apps/server/src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder: uma senha colada"
+    },
+    {
+      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "name": "o Assistente: as rotas do Mastra"
+    },
+    {
+      "file": "apps/server/src/builder/git/source.test.ts",
+      "name": "a aba Código lê o main"
+    },
+    {
+      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "name": "com `replace`, a de outro molde é morta"
+    },
+    {
+      "file": "apps/server/src/builder/machine/e2b-api.test.ts",
+      "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
+    },
+    {
+      "file": "apps/server/src/builder/machine/locate.test.ts",
+      "name": "o caminho cai na pasta"
+    },
+    {
+      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "name": "achada pelo id"
+    },
+    {
+      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "name": "lista de domínios"
+    },
+    {
+      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "name": "lista de endereços"
+    },
+    {
+      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
+    },
+    {
+      "file": "apps/server/src/builder/model-accounts/google/flat-unions.test.ts",
+      "name": "sem união"
+    },
+    {
+      "file": "apps/server/src/builder/runs/preview-send.test.ts",
+      "name": "admissão no envio: a empresa marcada para apagar"
+    },
+    {
+      "file": "apps/server/src/builder/runs/preview-send.test.ts",
+      "name": "admissão relida"
+    },
+    {
+      "file": "apps/server/src/builder/runs/preview-send.test.ts",
+      "name": "pasta que não bate com o manifesto"
+    },
+    {
+      "file": "apps/server/src/builder/runs/preview-send.test.ts",
+      "name": "tirar a pessoa depois de guardada a versão"
+    },
+    {
+      "file": "apps/server/src/builder/tools/code-removal.test.ts",
+      "name": "um rascunho que a escolhe enquanto os Workers saem"
+    },
+    {
+      "file": "apps/server/src/builder/tools/routes.test.ts",
+      "name": "gravar"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-access-journey.test.ts",
+      "name": "outra empresa não tira o acesso a um app da empresa"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-access-journey.test.ts",
+      "name": "quem sai da empresa leva a linha que estava inerte"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-handoff.test.ts",
+      "name": "antes do primeiro Publicar"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: 200 com quem chama"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: o Projeto apagado e criado de novo"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: duas trocas juntas"
+    },
+    {
+      "file": "apps/server/src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: outro vínculo"
+    },
+    {
+      "file": "apps/server/src/hub/apps/prune.test.ts",
+      "name": "poda: a publicada fica"
+    },
+    {
+      "file": "apps/server/src/hub/apps/publish.test.ts",
+      "name": "publicar: as recusas, e o envio em curso não atrapalha"
+    },
+    {
+      "file": "apps/server/src/hub/apps/publish.test.ts",
+      "name": "quem publica"
+    },
+    {
+      "file": "apps/server/src/hub/apps/repair.test.ts",
+      "name": "a reparação sobe a publicada também"
+    },
+    {
+      "file": "apps/server/src/hub/apps/send-migrations.test.ts",
+      "name": "o envio com GRANT não entra"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/assistant-port-note.test.ts",
+      "name": "a anotação recusada"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/connections.test.ts",
+      "name": "ligar: quem pode, e as recusas"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/executor.test.ts",
+      "name": "a origem, o redirecionamento e o teto"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/tool-door.test.ts",
+      "name": "a chave da chamada"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/write-returned.test.ts",
+      "name": "o token que ele ecoa"
+    },
+    {
+      "file": "apps/server/src/hub/identity/companies.test.ts",
+      "name": "fora: o membro"
+    },
+    {
+      "file": "apps/server/src/hub/identity/companies.test.ts",
+      "name": "fora: o operador"
+    },
+    {
+      "file": "apps/server/src/hub/identity/companies.test.ts",
+      "name": "um convite vencido fica em"
+    },
+    {
+      "file": "apps/server/src/hub/identity/database-down.test.ts",
+      "name": "banco fora"
+    },
+    {
+      "file": "apps/server/src/hub/identity/developer.test.ts",
+      "name": "o desenvolvedor"
+    },
+    {
+      "file": "apps/server/src/hub/identity/developer.test.ts",
+      "name": "o que a pessoa pode"
+    },
+    {
+      "file": "apps/server/src/hub/identity/first-person-rows.test.ts",
+      "name": "id vazio"
+    },
+    {
+      "file": "apps/server/src/hub/identity/first-person.test.ts",
+      "name": "ao mesmo tempo"
+    },
+    {
+      "file": "apps/server/src/hub/identity/first-person.test.ts",
+      "name": "com a pessoa ainda sem senha"
+    },
+    {
+      "file": "apps/server/src/hub/identity/identity.test.ts",
+      "name": "limite: a 11ª tentativa"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-acceptance.test.ts",
+      "name": "acceptance replay requires the current membership"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: 200 e um membro"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: com um re-convite ao mesmo tempo"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-journey.test.ts",
+      "name": "native invitation attempt counters"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "a late send cannot mark"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "accepted or declined never become canceled"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "binds the complete replay payload"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-link.test.ts",
+      "name": "empty name"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitation-replay.test.ts",
+      "name": "o Hub parou entre o convite e o e-mail"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "convidar: o administrador pedindo dono"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "de novo com a mesma chave: depois do correio fora"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "de novo: a mesma chave"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior com um id fora de forma"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior vencido"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos atrás de 100 vencidos"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "limite: com 99 vivos"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "limite: o 11º convite"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "renovar: o administrador renovando o convite de um dono"
+    },
+    {
+      "file": "apps/server/src/hub/identity/invitations.test.ts",
+      "name": "renovar: o prazo novo do plugin cai|renovar: o administrador renovando o convite de um dono"
+    },
+    {
+      "file": "apps/server/src/hub/identity/memberships-invitations.test.ts",
+      "name": "convites do tirado"
+    },
+    {
+      "file": "apps/server/src/hub/identity/memberships-race.test.ts",
+      "name": "último dono sob corrida"
+    },
+    {
+      "file": "apps/server/src/hub/identity/memberships.test.ts",
+      "name": "papel: a resposta"
+    },
+    {
+      "file": "apps/server/src/hub/identity/memberships.test.ts",
+      "name": "quem tira quem"
+    },
+    {
+      "file": "apps/server/src/hub/identity/nickname.test.ts",
+      "name": "apelido: duas escolhas juntas"
+    },
+    {
+      "file": "apps/server/src/hub/identity/nickname.test.ts",
+      "name": "apelido: o dono escolhe uma vez"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-check.test.ts",
+      "name": "fora: o serviço com erro"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-check.test.ts",
+      "name": "fora: sem resposta"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-check.test.ts",
+      "name": "link primeiro"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-check.test.ts",
+      "name": "vazada em PUT"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-check.test.ts",
+      "name": "vazada no convite"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-recovery.test.ts",
+      "name": "correio: o e-mail sai"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-recovery.test.ts",
+      "name": "limite: o quarto"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-recovery.test.ts",
+      "name": "pedido: 202 vazio"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-recovery.test.ts",
+      "name": "sessões: trocar a senha"
+    },
+    {
+      "file": "apps/server/src/hub/identity/password-write.test.ts",
+      "name": "senha que não grava"
+    },
+    {
+      "file": "apps/server/src/hub/identity/roles-memory.test.ts",
+      "name": "a memória da empresa"
+    },
+    {
+      "file": "apps/server/src/hub/identity/session.test.ts",
+      "name": "prazo total"
+    },
+    {
+      "file": "apps/server/src/hub/identity/session.test.ts",
+      "name": "sair falha"
+    },
+    {
+      "file": "apps/server/src/hub/identity/session.test.ts",
+      "name": "versão anterior"
+    },
+    {
+      "file": "apps/server/src/hub/identity/sign-up.test.ts",
+      "name": "apagar só pela Central"
+    },
+    {
+      "file": "apps/server/src/hub/identity/sign-up.test.ts",
+      "name": "empresa só pela Central"
+    },
+    {
+      "file": "apps/server/src/hub/notifications/notifications.test.ts",
+      "name": "quem não é da empresa"
+    },
+    {
+      "file": "apps/server/src/hub/notifications/tables.test.ts",
+      "name": "a política"
+    },
+    {
+      "file": "apps/server/src/hub/operations/client-deletion-database.test.ts",
+      "name": "exclusão em andamento: o Neon fora"
+    },
+    {
+      "file": "apps/server/src/hub/operations/client-deletion.test.ts",
+      "name": "apagar: concorrência com o link"
+    },
+    {
+      "file": "apps/server/src/hub/operations/client-reads.test.ts",
+      "name": "corrigir: contra a renovação do convite de dono"
+    },
+    {
+      "file": "apps/server/src/hub/operations/clients.test.ts",
+      "name": "a chave"
+    },
+    {
+      "file": "apps/server/src/hub/operations/clients.test.ts",
+      "name": "recusas"
+    },
+    {
+      "file": "apps/server/src/hub/operations/clients.test.ts",
+      "name": "sem membro"
+    },
+    {
+      "file": "apps/server/src/hub/operations/owner-invitation.test.ts",
+      "name": "empresa ativa"
+    },
+    {
+      "file": "apps/server/src/hub/projects/projects-delete.test.ts",
+      "name": "apagar com app"
+    },
+    {
+      "file": "apps/server/src/hub/projects/projects-delete.test.ts",
+      "name": "apagar: dono e administrador"
+    },
+    {
+      "file": "apps/server/src/hub/projects/projects-delete.test.ts",
+      "name": "empresa marcada"
+    },
+    {
+      "file": "apps/server/src/hub/projects/tables.test.ts",
+      "name": "mesmo nome em outra caixa"
+    },
+    {
+      "file": "apps/server/src/hub/requests/races.test.ts",
+      "name": "cancelar e decidir ao mesmo tempo"
+    },
+    {
+      "file": "apps/server/src/hub/requests/races.test.ts",
+      "name": "decidir e publicar ao mesmo tempo"
+    },
+    {
+      "file": "apps/server/src/hub/requests/races.test.ts",
+      "name": "publicar outra versão enquanto quem pediu sai da empresa"
+    },
+    {
+      "file": "apps/server/src/hub/requests/races.test.ts",
+      "name": "recusar enquanto quem pediu sai da empresa"
+    },
+    {
+      "file": "apps/server/src/hub/requests/requests.test.ts",
+      "name": "quem decide"
+    },
+    {
+      "file": "apps/server/src/hub/requests/requests.test.ts",
+      "name": "recusar sem motivo"
+    },
+    {
+      "file": "apps/server/src/platform/access.test.ts",
+      "name": "borda: uma rota edge na escuta pública"
+    },
+    {
+      "file": "apps/server/src/platform/access.test.ts",
+      "name": "entrada: recusa a escrita de outro site"
+    },
+    {
+      "file": "apps/server/src/platform/access.test.ts",
+      "name": "passagem: só uma navegação de documento; um fetch"
+    },
+    {
+      "file": "apps/server/src/platform/access.test.ts",
+      "name": "tipo: a rota handoff só GET"
+    },
+    {
+      "file": "apps/server/src/platform/cloudflare.test.ts",
+      "name": "quem a pediu desiste"
+    },
+    {
+      "file": "apps/server/src/platform/company-postgres.test.ts",
+      "name": "banco do app: logins por SQL"
+    },
+    {
+      "file": "apps/server/src/platform/company-postgres.test.ts",
+      "name": "banco do app: os logins de um app não leem"
+    },
+    {
+      "file": "apps/server/src/platform/config.test.ts",
+      "name": "configuração: a origem do dublê é só local"
+    },
+    {
+      "file": "apps/server/src/platform/database-type.test.ts",
+      "name": "o tipo"
+    },
+    {
+      "file": "apps/server/src/platform/edge-tools.test.ts",
+      "name": "a borda fora"
+    },
+    {
+      "file": "apps/server/src/platform/edge-tools.test.ts",
+      "name": "o prazo"
+    },
+    {
+      "file": "apps/server/src/platform/http.test.ts",
+      "name": "mídia da própria página, text/plain"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-apps.test.ts",
+      "name": "a função dá ao login do Hub"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-apps.test.ts",
+      "name": "um apelido e um endereço valem"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a B não vê a A"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: a P1 no banco"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-ontology.test.ts",
+      "name": "ontologia: o atual e o da revisão N"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-projects.test.ts",
+      "name": "projetos: sem filtro"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-requests.test.ts",
+      "name": "pedidos"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-versions.test.ts",
+      "name": "um Projeto marcado para apagar não tem mais endereço"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-versions.test.ts",
+      "name": "versões: o login do Hub lista só as empresas com app"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-versions.test.ts",
+      "name": "versões: sem filtro, a empresa lê só as suas"
+    },
+    {
+      "file": "apps/server/src/platform/isolation-versions.test.ts",
+      "name": "versões: uma versão em envio sempre tem a trava"
+    },
+    {
+      "file": "apps/server/src/platform/isolation.test.ts",
+      "name": "filtro esquecido"
+    },
+    {
+      "file": "apps/server/src/platform/isolation.test.ts",
+      "name": "operador sem papel"
+    },
+    {
+      "file": "apps/server/src/platform/isolation.test.ts",
+      "name": "positivo"
+    },
+    {
+      "file": "apps/server/src/platform/isolation.test.ts",
+      "name": "sessões"
+    },
+    {
+      "file": "apps/server/src/platform/neon.test.ts",
+      "name": "find devolve só o final exato"
+    },
+    {
+      "file": "packages/connectors/src/kernel/kernel.test.ts",
+      "name": "o pedido fica na origem fixa"
+    },
+    {
+      "file": "packages/connectors/src/sankhya/read-only-sql.test.ts",
+      "name": "refuses every statement word"
+    },
+    {
+      "file": "packages/connectors/src/sankhya/search.test.ts",
+      "name": "nunca vira curinga"
+    },
+    {
+      "file": "packages/connectors/src/sankhya/search.test.ts",
+      "name": "recusado antes de qualquer chamada"
+    },
+    {
+      "file": "scripts/deploy.test.ts",
+      "name": "a imagem nova que não fica saudável volta à imagem e ao template de antes"
+    },
+    {
+      "file": "scripts/deploy.test.ts",
+      "name": "deploy.sh aceita um template exatamente quando o Hub o aceita"
+    },
+    {
+      "file": "scripts/deploy.test.ts",
+      "name": "sem hub_app_login_key recusa antes de migrate e não sobe o Hub"
+    },
+    {
+      "file": "scripts/first-person.test.ts",
+      "name": "a primeira pessoa: o link vai só ao terminal, o nome e o e-mail entram como argumentos inteiros"
+    },
+    {
+      "file": "scripts/publish-edge.test.ts",
+      "name": "publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem"
+    },
+    {
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa a chave com CR"
+    },
+    {
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa a chave legível por outros: nada se publica"
+    },
+    {
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa um arquivo cujo dono não é quem publica"
+    },
+    {
+      "file": "scripts/releases.test.ts",
+      "name": "recusa registrar um nome de versão ou uma referência que não são os esperados"
+    },
+    {
+      "file": "scripts/releases.test.ts",
+      "name": "um registro adulterado que não é um digest é recusado ao procurar"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "sem espelho, ou sem conseguir buscar main, tudo é recusado"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit de main é aceito, também o que o espelho ainda não tinha"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit fora de main é recusado"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um commit que não é um nome de commit é recusado"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um disparo manual de main num commit fora de main é recusado"
+    },
+    {
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um disparo manual de outro ramo é recusado"
+    },
+    {
+      "file": "scripts/setup-runner-hook.test.ts",
+      "name": "recusa um endereço que não é o https do GitHub, antes de tocar o espelho"
+    },
+    {
+      "file": "scripts/setup-runner-hook.test.ts",
+      "name": "se o espelho falha, o .env já nomeia o gancho e a falha é do espelho"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta da borda recusa uma versão fora de main antes do npm ci e do token"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "cada trabalho do Release usa o commit que o gancho conferiu, não a tag"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "nenhum trabalho que instala dependências tem um token que escreve no repositório"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release publica o Hub depois da imagem e do template, e a borda depois do Hub"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release sobe e registra o digest com o template do mesmo commit, o registro depois do deploy"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "o template nasce do commit do Release numa máquina nova do GitHub, depois da imagem conferir main"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "só o Release e o disparo manual chegam ao runner do servidor"
+    },
+    {
+      "file": "scripts/workflows.test.ts",
+      "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    }
+  ]
+}

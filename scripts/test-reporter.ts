@@ -56,11 +56,30 @@ function filesTable(files: Map<string, number>): string {
   ].join('\n')
 }
 
-function recordFailure(file: string, event: TestEvent & { type: 'test:fail' }): void {
+type Started = Map<string, { name: string; parent: number }>
+
+function chainOf(started: Started, file: string, id: number): string[] {
+  const names: string[] = []
+  for (let at = started.get(`${file}#${id}`); at !== undefined; ) {
+    names.unshift(at.name)
+    at = at.parent === 0 ? undefined : started.get(`${file}#${at.parent}`)
+  }
+  return names
+}
+
+function recordFailure(
+  file: string,
+  event: TestEvent & { type: 'test:fail' },
+  started: Started,
+): void {
   const path = process.env.CONEXUS_FAILURES_FILE
-  const { name, details } = event.data
+  const { name, details, testId } = event.data
   if (path === undefined || Reflect.get(details.error, 'failureType') === 'subtestsFailed') return
-  appendFileSync(path, `${JSON.stringify({ file, name })}\n`)
+  const names = chainOf(started, event.data.file ?? '', testId ?? 0)
+  appendFileSync(
+    path,
+    `${JSON.stringify({ file, name, names: names.length > 0 ? names : [name] })}\n`,
+  )
 }
 
 function isLogLine(line: string): boolean {
@@ -69,6 +88,7 @@ function isLogLine(line: string): boolean {
 
 async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEvent, void> {
   const pending = new Map<string, string>()
+  const started: Started = new Map()
   const timed: Timed[] = []
   const files = new Map<string, number>()
   for await (const event of source) {
@@ -83,8 +103,12 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
         }
       }
     }
+    if (event.type === 'test:start') {
+      const { file, testId, parentId, name } = event.data
+      started.set(`${file ?? ''}#${testId}`, { name, parent: parentId ?? 0 })
+    }
     if (event.type === 'test:fail')
-      recordFailure(relative(process.cwd(), event.data.file ?? ''), event)
+      recordFailure(relative(process.cwd(), event.data.file ?? ''), event, started)
     if (event.type === 'test:pass' || event.type === 'test:fail') {
       const { name, file, details } = event.data
       if (details.type !== 'suite' && name !== file) {

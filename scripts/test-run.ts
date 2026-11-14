@@ -12,13 +12,14 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { z } from 'zod'
 import { reportFlaky } from './flaky-report.ts'
 import { neverRerun } from './rerun-exempt.ts'
 import { flakyTests } from './rerun-state.ts'
 
-const Failure = z.object({ file: z.string(), name: z.string() })
+const ROOT = resolve(import.meta.dirname, '..')
+const Failure = z.object({ file: z.string(), name: z.string(), names: z.array(z.string()) })
 
 function runNodeTest(args: string[], env: Record<string, string>): number {
   const run = spawnSync(process.execPath, ['--test', ...args], {
@@ -59,12 +60,23 @@ const first = runNodeTest([`--test-rerun-failures=${state}`, ...options, ...file
 if (first === 0) process.exit(0)
 
 const failures = failuresIn(failuresFile)
-const refused = failures.filter((failure) => neverRerun(failure) || failure.name === failure.file)
-if (failures.length === 0 || refused.length > 0) {
-  const why =
-    failures.length === 0
-      ? 'the run failed with no test failing'
-      : `a test of a class T4 forbids rerunning failed: ${refused.map((failure) => `${failure.file} › ${failure.name}`).join('; ')}`
+function label(failure: z.infer<typeof Failure>): string {
+  return `${failure.file} › ${failure.name}`
+}
+
+const wholeFile = failures.filter((failure) => failure.name === failure.file)
+const refused = failures.filter((failure) =>
+  neverRerun({ file: relative(ROOT, resolve(failure.file)), names: failure.names }),
+)
+const why =
+  failures.length === 0
+    ? 'the run failed with no test failing'
+    : wholeFile.length > 0
+      ? `a test file failed whole: ${wholeFile.map((failure) => failure.file).join(', ')}`
+      : refused.length > 0
+        ? `a test of a class T4 forbids rerunning failed: ${refused.map(label).join('; ')}`
+        : undefined
+if (why !== undefined) {
   console.error(`test-run: no second run, ${why}`)
   process.exit(first)
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { after, test } from 'node:test'
 
 const SCRIPT = resolve(import.meta.dirname, 'test-run.ts')
@@ -87,15 +87,71 @@ test('um teste que falha nas duas rodadas deixa a execução vermelha, e a segun
   assert.match(result.stderr, /in x\.test\.ts\n/)
 })
 
-test('um teste de recusa nunca ganha a segunda rodada: a execução fica vermelha e ele roda uma vez', () => {
-  const dir = setup(flaky('recusa quem é de outra empresa'))
-  const { result, ghLog } = run(dir, { CI: 'true', GH_TOKEN: 'x' })
+function never(dir: string, name: string): Record<string, string> {
+  const file = relative(resolve(import.meta.dirname, '..'), join(dir, 'x.test.ts'))
+  writeFileSync(join(dir, 'never.json'), JSON.stringify({ files: [], tests: [{ file, name }] }))
+  return { CONEXUS_RERUN_NEVER: join(dir, 'never.json') }
+}
+
+test('um teste da lista das classes T4 nunca ganha a segunda rodada: a execução fica vermelha e ele roda uma vez', () => {
+  const dir = setup(flaky('B lista só os seus projetos'))
+  const { result, ghLog } = run(dir, { CI: 'true', GH_TOKEN: 'x', ...never(dir, 'seus projetos') })
   assert.equal(result.status, 1)
   assert.match(
     result.stderr,
-    /no second run, a test of a class T4 forbids rerunning failed: x\.test\.ts › recusa/,
+    /no second run, a test of a class T4 forbids rerunning failed: x\.test\.ts › B lista/,
   )
   assert.equal(ghLog, '')
+})
+
+test('um teste dentro de uma suíte da lista também fica sem a segunda rodada', () => {
+  const source = [
+    "import { existsSync, writeFileSync } from 'node:fs'",
+    "import { describe, test } from 'node:test'",
+    "describe('isolamento entre empresas', () => {",
+    "  test('B lista só os seus projetos', () => {",
+    "    if (existsSync('seen')) return",
+    "    writeFileSync('seen', '1')",
+    "    throw new Error('first time')",
+    '  })',
+    '})',
+  ].join('\n')
+  const dir = setup(source)
+  const { result } = run(dir, { CI: 'true', ...never(dir, 'isolamento entre empresas') })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /forbids rerunning failed/)
+})
+
+test('sem estar na lista, o mesmo teste de suíte ganha a segunda rodada, e só a falha dele conta', () => {
+  const source = [
+    "import { existsSync, writeFileSync } from 'node:fs'",
+    "import { describe, test } from 'node:test'",
+    "describe('um grupo', () => {",
+    "  test('oscila', () => {",
+    "    if (existsSync('seen')) return",
+    "    writeFileSync('seen', '1')",
+    "    throw new Error('first time')",
+    '  })',
+    '})',
+  ].join('\n')
+  const { result } = run(setup(source), { CI: 'true' })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stderr, /second run of the 1 test\(s\) that failed/)
+})
+
+test('um arquivo que quebrou inteiro não ganha a segunda rodada', () => {
+  const source = [
+    "import { existsSync, writeFileSync } from 'node:fs'",
+    "import test from 'node:test'",
+    "if (!existsSync('seen')) {",
+    "  writeFileSync('seen', '1')",
+    "  throw new Error('quebra no topo')",
+    '}',
+    "test('ok', () => {})",
+  ].join('\n')
+  const { result } = run(setup(source), { CI: 'true' })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /no second run, a test file failed whole: x\.test\.ts/)
 })
 
 test('uma falha da regra do reporter, sem teste vermelho, não ganha a segunda rodada', () => {
