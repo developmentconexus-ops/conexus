@@ -92,10 +92,11 @@ test('um gh que falha deixa a execução verde, com o aviso', () => {
 
 test('dois artefatos com o mesmo nome de arquivo, cada um na sua pasta, chegam os dois', () => {
   const dir = setup([])
-  for (const [folder, name] of [
+  const artifacts: [string, string][] = [
     ['flaky-server-1', 'um'],
     ['flaky-web', 'dois'],
-  ]) {
+  ]
+  for (const [folder, name] of artifacts) {
     mkdirSync(join(dir, 'records', folder))
     writeFileSync(join(dir, 'records', folder, 'flaky.jsonl'), record(name))
   }
