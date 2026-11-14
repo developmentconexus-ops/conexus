@@ -8,7 +8,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { runCommand } from './command.ts'
-import { cardsInConstruction, tracksTouched } from './tracks.ts'
+import { cardsInConstruction, tracksAffected } from './tracks.ts'
 
 const args = process.argv.slice(2)
 const baseIndex = args.indexOf('--base')
@@ -43,13 +43,13 @@ function onlyDocuments(): boolean {
 
 const stepsDir = join(root, 'docs/steps')
 const inConstruction = cardsInConstruction(root, existsSync(stepsDir) ? readdirSync(stepsDir) : [])
-// A pull request answers for the cards of the tracks it touches (delivery L6, L20); a push to main, which has no base, for all.
-const touched = base === undefined ? undefined : tracksTouched(root, base)
+const affected =
+  base === undefined ? undefined : tracksAffected(root, base, new Set(inConstruction.values()))
 const cards = [...inConstruction]
-  .filter(([, track]) => touched === undefined || touched.has(track))
+  .filter(([, track]) => affected === undefined || affected.has(track))
   .map(([name]) => name)
 if (cards.length === 0) {
-  console.log('check-approval: no card of a track this change touches, nothing to check')
+  console.log('check-approval: no card of a track this change affects, nothing to check')
   process.exit(0)
 }
 const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')

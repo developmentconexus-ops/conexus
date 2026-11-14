@@ -143,3 +143,27 @@ test('o fechamento de um trilho muda o método sem esperar o cartão de outro tr
   git(dir, 'commit', '-q', '-m', 'closing')
   assert.equal(run(dir).status, 0)
 })
+
+test('o fechamento de um cartão do trilho de desenho lê o trilho do cartão apagado na base', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-freeze-'))
+  dirs.push(dir)
+  git(dir, 'init', '-q', '-b', 'main')
+  write(dir, 'docs/steps/e01-x.md', '# x\n\nTrilho: desenho\n')
+  write(dir, 'docs/steps/e02-y.md', 'frontier card\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'base')
+  git(dir, 'checkout', '-q', '-b', 'topic')
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/guides/design.md', 'learned rule\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'closing')
+  assert.equal(run(dir).status, 0)
+})
+
+test('um pull request de scripts e de guia, que não toca trilho, responde por todos os trilhos', () => {
+  const dir = branch('scripts/x.ts', 'pattern-e01-x.md')
+  write(dir, 'docs/guides/code.md', 'changed\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'guide')
+  assert.equal(run(dir).status, 1)
+})

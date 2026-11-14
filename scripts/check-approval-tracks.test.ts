@@ -54,10 +54,14 @@ test('um pull request de outro trilho não responde pelo cartão sem linha da fr
   }
 })
 
-test('um pull request que só muda scripts ou fluxos não toca trilho nenhum', () => {
-  const dir = repository()
-  topic(dir, 'scripts/x.ts')
-  assert.equal(run(dir, '--base', 'main').status, 0)
+test('um pull request que só muda scripts, fluxos ou arquivos da raiz responde por todos os cartões', () => {
+  for (const file of ['scripts/x.ts', '.github/workflows/ci.yml', 'package.json']) {
+    const dir = repository()
+    topic(dir, file)
+    const result = run(dir, '--base', 'main')
+    assert.equal(result.status, 1, file)
+    assert.match(result.stderr, /^approval-missing: /, file)
+  }
 })
 
 test('mudar o cartão sem linha o põe a cargo do pull request, mesmo com documentos só', () => {
@@ -75,4 +79,19 @@ test('mudar o cartão sem linha o põe a cargo do pull request, mesmo com docume
 test('um push à main, sem base, confere todos os cartões', () => {
   const dir = repository()
   assert.equal(run(dir).status, 1)
+})
+
+test('um arquivo de um provedor dos conectores é do trilho padrão, e os outros não', () => {
+  const dir = repository()
+  git(dir, 'mv', 'docs/steps/e01-x.md', 'docs/steps/pattern-e01-x.md')
+  git(dir, 'commit', '-qam', 'pattern card')
+  topic(dir, 'packages/connectors/src/acme/client.ts')
+  const result = run(dir, '--base', 'main')
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: /)
+  write(dir, 'packages/connectors/src/kernel.ts', 'export {}\n')
+  git(dir, 'rm', '-q', 'packages/connectors/src/acme/client.ts')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'only the shared file')
+  assert.equal(run(dir, '--base', 'main').status, 0)
 })

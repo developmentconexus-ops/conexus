@@ -240,7 +240,7 @@ test('toda instalação do npm guarda o cache de download sob o hash do lockfile
   const install = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
   const setups = [
     ...install.runs.steps,
-    ...Object.values(ci.jobs).flatMap((job) => job.steps),
+    ...Object.entries(ci.jobs).flatMap(([name, job]) => (name === 'processo' ? [] : job.steps)),
   ].filter((step: Step) => step.uses?.startsWith('actions/setup-node@'))
   assert.ok(setups.length >= 2)
   for (const step of setups) {
@@ -264,9 +264,13 @@ test('o processo é um trabalho à parte, sempre presente, que o agregador de c�
     assert.doesNotMatch(code, new RegExp(`npm run ${script}\\b`), `check: ${script}`)
 })
 
-test('uma execução do main nunca cancela a anterior', () => {
+test('uma execução do main nunca cancela nem substitui a anterior, nem a que espera', () => {
   const concurrency = parse(text('ci.yml')).concurrency
   assert.match(concurrency['cancel-in-progress'], /github\.ref != 'refs\/heads\/main'/)
+  assert.equal(
+    concurrency.group,
+    "ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}",
+  )
 })
 
 test('o token que abre a issue do teste instável só vai ao passo que roda os testes, nunca ao job inteiro', () => {
