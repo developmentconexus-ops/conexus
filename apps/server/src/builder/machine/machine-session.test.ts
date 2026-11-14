@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import { renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { COMPANY, CONVERSATION, moveMain, PROJECT, pausedByE2b, world } from './test-machine.ts'
+import {
+  COMPANY,
+  CONVERSATION,
+  moveMain,
+  PROJECT,
+  pausedByE2b,
+  sandboxOf,
+  world,
+} from './test-machine.ts'
 
 test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases vão ao ouvinte do turno, a máquina que sumiu entre turnos volta nova sem MACHINE_LOST, e o turno que não a usou não guarda nada', async (t) => {
   const { control, machines, base, folder } = await world(t)
@@ -77,4 +85,28 @@ test('máquina: a releitura das marcas que falha (saída diferente de zero) falh
   assert.equal(await next.filesystem?.exists('a.ts'), true, 'the next tool reads again and goes on')
   const collected = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof collected === 'object', 'and the turn saves what it wrote')
+})
+
+test('máquina: as marcas são relidas uma vez por turno, na primeira ferramenta de uma máquina já ligada, e não de novo nem depois de uma partida', async (t) => {
+  const { open, machines, folder } = await world(t)
+  const marked = '<<<<<<< a\nx\n=======\ny\n>>>>>>> b\n'
+  async function turnTold(write: string) {
+    const workspace = await open()
+    await workspace.filesystem?.exists('a.ts')
+    await workspace.filesystem?.writeFile(write, marked)
+    // The markers are read from the files Git tracks.
+    await (await sandboxOf(workspace)).executeCommand('sh', [
+      '-c',
+      `cd ${join(folder, 'app')} && git add -A`,
+    ])
+    await workspace.filesystem?.exists('a.ts')
+    return workspace.getInstructionsAsync()
+  }
+  // A turn that starts the machine: the start told the conflicts, and nothing reads them again.
+  assert.doesNotMatch(await turnTold('first.ts'), /first\.ts/)
+  await machines.release(CONVERSATION)
+  // The next turn's first tool reads the tree, which now has `first.ts`; a file written later waits.
+  const told = await turnTold('second.ts')
+  assert.match(told, /first\.ts/)
+  assert.doesNotMatch(told, /second\.ts/)
 })

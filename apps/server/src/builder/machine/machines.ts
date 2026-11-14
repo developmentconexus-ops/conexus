@@ -75,23 +75,19 @@ class BuilderMachines implements Machines {
     if (session.ready === undefined) {
       const ready = this.boot(session)
       session.ready = ready
-      session.markersRead = true
+      // The start told the conflicts itself: nothing to read again this turn.
+      session.refreshing = Promise.resolve()
       // A start that failed is tried again by the next tool or turn, not kept rejected for good.
       ready.catch(() => {
         if (session.ready === ready) session.ready = undefined
       })
-    } else if (!session.markersRead && session.refreshing === undefined) {
+    } else if (session.refreshing === undefined) {
       const refreshing = this.refresh(session, session.ready)
       session.refreshing = refreshing
       // A read that failed is tried again by the next tool, like a start.
-      refreshing.then(
-        () => {
-          session.markersRead = true
-        },
-        () => {
-          if (session.refreshing === refreshing) session.refreshing = undefined
-        },
-      )
+      refreshing.catch(() => {
+        if (session.refreshing === refreshing) session.refreshing = undefined
+      })
     }
     const kit = await session.ready
     await session.refreshing
@@ -226,7 +222,6 @@ class BuilderMachines implements Machines {
       ...{
         starts: 0,
         used: false,
-        markersRead: false,
         refreshing: undefined,
         lost: false,
         conflicts: NO_CONFLICTS,
@@ -243,7 +238,7 @@ class BuilderMachines implements Machines {
     // A turn takes the conversation's machine over with its own phases; the work it counts starts from nothing.
     Object.assign(session, {
       ...{ companyId, projectId, onPhase },
-      ...{ starts: 0, used: false, markersRead: false, refreshing: undefined, lost: false },
+      ...{ starts: 0, used: false, refreshing: undefined, lost: false },
     })
     this.sessions.set(conversationId, session)
     return new Workspace({
