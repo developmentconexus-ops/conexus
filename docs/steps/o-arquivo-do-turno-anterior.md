@@ -25,6 +25,11 @@ mensagem. Numa conversa que segue ligada, a mudança de outra conversa só apare
 volta. O trabalho ainda não salvo continua na máquina, e os conflitos são avisados ao modelo na mesma
 hora em que o main entra.
 
+Nos turnos com a máquina já ligada, a primeira vez que o turno a usa o Hub relê da árvore quais
+arquivos têm marcas de conflito, e o aviso ao modelo acompanha isso: um arquivo que o Builder resolveu
+sai do aviso. Os avisos de arquivo apagado ou trocado pelo main e de tamanho valem só no turno em que o
+main entra. É instrução ao modelo e não muda o que você vê.
+
 **O que muda para você.** Hoje o Hub pausa a máquina no fim de cada resposta, em cada um desses
 agentes. Passa a deixar isso ao E2B, com uma só configuração para todos, como a Factory do Mastra faz
 com uma máquina E2B por sessão: 5 minutos, o padrão dela. O Hub não renova esse prazo a cada mensagem,
