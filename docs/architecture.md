@@ -113,7 +113,7 @@ flowchart TB
 calls the Hub through named ports: admit, read a connector, store an app version,
 delete what belongs to a Project, a company or a person. A port may run inside the caller's
 transaction, so a run and its delivery stay one step. The Hub never imports the
-Builder; `main.ts` wires both.
+Builder; `main.ts` and `conversations-of.ts` wire both, and `reseal.ts` runs after each deploy's migrations.
 
 **The tree.** "Package" is a folder with its own `package.json`; "subject" is a folder holding one
 product theme [0003].
@@ -121,7 +121,7 @@ product theme [0003].
 ```text
 apps/
   server/              the program: Hub and Builder
-    src/main.ts        the only file that wires both
+    src/main.ts        wires both, with conversations-of.ts and reseal.ts
     src/platform/      technique without a subject: config, database, error, log
     src/hub/           one folder per subject
     src/builder/       one folder per subject
@@ -131,6 +131,8 @@ apps/
 packages/
   hub-api/             the shape of the Hub's routes
   app-contract/        the generated app's contract, versioned
+  app/                 what the Builder writes an app with: SDK, check, skills, starter
+  connectors/          the connector kit: one definition per company system
 docs/  scripts/  infra/  tests/e2e/  .agents/skills/  .github/
 ```
 
@@ -203,17 +205,16 @@ never by the browser.
 each person; the credential is sealed with the installation key and opened only inside the
 program, for one attempt, by Mastra's processors.
 
-**Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
-copy that owns them. Basis: implemented so; accepted because queues and Redis serve
-a scale that does not exist. Every job but the schedules' lets the database sleep:
+**Work that runs alone.** Scheduled work is rows of Mastra's `mastra.schedules`: automations, the
+Sync's copies and the daily trace prune, each the target of a workflow. A single owner is a lease row
+with an expiry, held per subject and renewed by activity, as a copy's run and a model account's
+refresh do ([data D25](guides/data.md)). Basis: implemented so; accepted because queues and Redis serve
+a scale that does not exist.
 
-| Job | Shape that lets the database sleep |
+| Job | Shape |
 | --- | --- |
-| Run heartbeat and takeover | One pass at start, then only while a run is open |
-| Expired sessions, handoffs, invitations | Expiry checked on read; cleanup once a day |
-| Idle conversations, traces | Touch nothing when there is nothing; daily otherwise |
-| The lease | Renewed by activity, not by clock |
-| Automations' and copies' schedules | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (24.2, Capacidade 2) |
+| Expired sessions, handoffs, invitations | Expiry checked on read |
+| Schedules | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (24.2, Capacidade 2) |
 
 No job touches a machine; it ends with its conversation.
 
@@ -245,7 +246,7 @@ too.
 - `projects.project.host_label` stays nullable (a rolled-back 7.x Projeto).
 - `createUser`, `listUsers` and `findCredentialAccount` are internal calls while sign-up is closed:
   the version stays pinned (step 3).
-- Trace ids are Fastify's request ids until 21.1 [0052].
+- Trace ids are Fastify's request ids until 21.1 [0068].
 - A conversation created between a release and its removal leaves an orphan thread (16).
 - Database calls cannot be cancelled (C57, `pg@8.23.1`): deadlines end waits.
 - A refresh lost after the key turned, or 6 idle months, forces a reconnect. Trigger: `CONNECTION_REFRESH_UNANSWERED` then `NEEDS_REAUTH`.

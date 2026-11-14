@@ -909,9 +909,8 @@ changes, reread the line it names.
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owner `runs/copy-retry.ts`, and `node:timers` and
-  `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
-  short text (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
+  owner `runs/copy-retry.ts`, and so are `node:timers` and
+  `node:timers/promises` (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change
   that touches their timers moves each to a named owner.
 - **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
@@ -965,7 +964,7 @@ changes, reread the line it names.
 
 ## Mastra 1.82.0 and @mastra/fastify 1.5.26: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `conversation/guard.ts` registers six of Mastra's own
+- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, transcript;
   `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
