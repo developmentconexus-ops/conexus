@@ -25,6 +25,7 @@ const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
 const MANAGE_COPIES = { copy: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
 const MANAGE_COMPANY_MEMORY = { companyMemory: ['manage'] } as const
+const APPROVE_CONCEPTS = { ontology: ['approve'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
 const PROFILE_OF_ANOTHER = 'o cargo e a área de outra pessoa'
@@ -32,27 +33,8 @@ const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
-  statement?:
-    | typeof INVITE
-    | typeof REMOVE
-    | typeof CHANGE_ROLE
-    | typeof CREATE_PROJECT
-    | typeof DELETE_PROJECT
-    | typeof CHOOSE_NICKNAME
-    | typeof MANAGE_MODEL_ACCOUNTS
-    | typeof MANAGE_APP_ACCESS
-    | typeof MANAGE_CONNECTIONS
-    | typeof PUBLISH_APP
-    | typeof VIEW_APP_DATA
-    | typeof MANAGE_AGENTS
-    | typeof PUBLISH_AGENT
-    | typeof MANAGE_AUTOMATIONS
-    | typeof MANAGE_COPIES
-    | typeof ASK_ASSISTANT
-    | typeof MANAGE_COMPANY_MEMORY
-    | typeof REQUEST_PUBLISH
-    | typeof DECIDE_REQUEST
-    | typeof MANAGE_ROLES
+  /** What the plugin's role must allow: any statement the roles' access control declares. */
+  statement?: Parameters<(typeof COMPANY_ROLES)['member']['authorize']>[0]
 }
 
 /**
@@ -107,6 +89,11 @@ const ACTIONS = {
   // holds for the whole company (alignment of the Assistant, U9); every member reads them. They live
   // in Mastra's store, admitted in a read-only transaction, which cannot hold the role.
   manageCompanyMemory: { by: 'MEMBER', statement: MANAGE_COMPANY_MEMORY, locks: false },
+  // Every member proposes a change of the company's concepts (A Ontologia da empresa, Q1); after the
+  // first revision, which only the owner approves, an owner or an administrator decides (L1). Both
+  // hold the member's row until the write commits (S8).
+  proposeConcepts: { by: 'MEMBER', statement: undefined, locks: true },
+  approveConcepts: { by: 'MEMBER', statement: APPROVE_CONCEPTS, locks: true },
   // A Projeto's agents and the company's tools are an owner's, an administrator's or a developer's
   // (step 24.3, 3.A, and 24.3.4): reading holds no row, a change holds the role until it commits.
   readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },

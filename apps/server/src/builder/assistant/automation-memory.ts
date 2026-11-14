@@ -6,7 +6,7 @@ const WRITE_MEMORY_TOOL = 'updateWorkingMemory'
 
 /**
  * An automation's run reads the person's profile and never writes it (U7, the card's stop rule): the
- * write tool leaves the step's tools, as the notebook's write does. Mastra's `readOnly` would also
+ * write tool leaves the step's tools, as `concept_propose` does. Mastra's `readOnly` would also
  * stop the run's own messages from being saved (`agent` `mcfg?.readOnly` before `flushMessages`), and
  * the run's conversation must keep them.
  */

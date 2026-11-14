@@ -1,15 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import {
-  ItemContent,
-  NoteContent,
-  ProofShape,
-  ProposedItem,
-  RelationPairs,
-  SourceRead,
-} from './ontology.ts'
-
-const CONNECTION = '4aaaaaaa-0000-4000-8000-000000000000'
+import { ItemContent, ProofShape, ProposedItem, RelationPairs, SourceRead } from './ontology.ts'
 
 test('as colunas jsonb: de 1 a 4 pares de campos, e a forma da prova até 200 colunas', () => {
   assert.ok(RelationPairs.safeParse([['codparc', 'codparc']]).success)
@@ -31,17 +22,6 @@ test('o conteúdo de um item é o do seu tipo sem o tipo, ou uma nota; uma mistu
   assert.ok(ItemContent.safeParse(source).success)
   assert.ok(ItemContent.safeParse({ target: 'pedido.tipo', name: 'Tipo' }).success)
   assert.ok(!ItemContent.safeParse({ ...source, target: 'pedido' }).success)
-  const note = {
-    connectionId: CONNECTION,
-    concept: 'pedido',
-    mapping: 'a nota',
-    provingQuery: 'SELECT 1',
-    provedAt: '2026-11-13T12:00:00.000Z',
-    provedRows: 0,
-  }
-  assert.ok(NoteContent.safeParse(note).success)
-  assert.ok(ItemContent.safeParse(note).success)
-  assert.ok(!ItemContent.safeParse({ ...note, provedRows: -1 }).success)
 })
 
 test('a ligação por junção leva os pares até a junção e os da junção até o outro lado', () => {

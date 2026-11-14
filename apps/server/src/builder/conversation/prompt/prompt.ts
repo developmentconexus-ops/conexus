@@ -158,7 +158,7 @@ export async function projectContext(
 
 /**
  * The block of the Projeto's granted connections (card of step 20, U5): each by name, its connector
- * and skill, how many the Projeto reads of that connector and the concepts of its notebook; never a value.
+ * and skill, and how many the Projeto reads of that connector; never a value.
  */
 export function connectionsContext(granted: readonly GrantedConnection[]): string {
   if (granted.length === 0) return ''
@@ -167,8 +167,7 @@ export function connectionsContext(granted: readonly GrantedConnection[]): strin
       each.perProject === 'one'
         ? `this Project reads one ${each.connector} connection`
         : `this Project may read several ${each.connector} connections: always name the connection`
-    const notebook = each.notes.length === 0 ? 'nothing yet' : each.notes.join(', ')
-    return `- \`${each.name}\`: ${each.connector} (skill \`${each.skill.name}\`; ${reads}). Notebook: ${notebook}.`
+    return `- \`${each.name}\`: ${each.connector} (skill \`${each.skill.name}\`; ${reads}).`
   })
   return [
     '## Connections',

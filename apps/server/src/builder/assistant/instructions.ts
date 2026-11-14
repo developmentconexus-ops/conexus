@@ -67,14 +67,13 @@ export type Speakers = {
  * the one that builds the tools: the block says in words what the tools leave out.
  */
 export type Mays = {
-  note: boolean
+  /** `concept_propose`: every member, never in an automation's run. */
+  propose: boolean
   automate: boolean
   byAutomation: boolean
   companyMemory: boolean
 }
 
-const NO_NOTE =
-  'You cannot note on a connection here: write the concept, the mapping and the query, ready for an owner or an administrator to note, and say that you did not note it.'
 const NO_AUTOMATION =
   "The person's role does not create automations: when what they ask repeats at a time, say in text that only the owner, the administrators and the developers create them and that the person can ask one of them, and offer no card."
 const NO_COMPANY_MEMORY =
@@ -85,7 +84,6 @@ const AUTOMATION_RUN =
 /** The sentences of the tools this run lacks, so the fixed message stays the same for everyone. */
 function toolSentences(may: Mays): string[] {
   return [
-    ...(may.note ? [] : [NO_NOTE]),
     ...(may.automate ? [] : [NO_AUTOMATION]),
     ...(may.companyMemory ? [] : [NO_COMPANY_MEMORY]),
     ...(may.byAutomation ? [AUTOMATION_RUN] : []),

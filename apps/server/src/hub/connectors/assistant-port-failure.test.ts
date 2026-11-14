@@ -6,7 +6,7 @@ import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 
-test('uma falha inesperada ao checar o papel da pessoa não vira "sem acesso": a lista, a leitura e o caderno rejeitam com ela', async (t) => {
+test('uma falha inesperada ao checar o papel da pessoa não vira "sem acesso": a lista, a leitura e a porta de conceitos rejeitam com ela', async (t) => {
   const on = await appCalls(t)
   const matriz = ConnectionId.parse(await on.connect('Matriz', false))
   const scope: SessionScope = {
@@ -28,5 +28,5 @@ test('uma falha inesperada ao checar o papel da pessoa não vira "sem acesso": a
   }
   await assert.rejects(port.connections(scope), broken)
   await assert.rejects(port.read(scope, call), broken)
-  await assert.rejects(port.notes(scope, matriz), broken)
+  await assert.rejects(port.concepts(scope, { connectionId: matriz, turn: call.turn }), broken)
 })

@@ -140,3 +140,10 @@ export type NamedAgent = z.infer<typeof NamedAgent>
 /** The agents a refusal names, such as those that still use a tool (`TOOL_IN_USE`). */
 export const ProblemAgents = z.array(NamedAgent)
 export type ProblemAgents = z.infer<typeof ProblemAgents>
+
+/** The Problem's members the agents' refusals write (step 24.3). */
+export const AGENT_PROBLEM = {
+  field: ProblemField.optional(),
+  reason: ProblemReason.optional(),
+  agents: ProblemAgents.optional(),
+}

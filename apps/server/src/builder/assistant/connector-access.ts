@@ -2,8 +2,10 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import { TURNS_KEPT } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
+import type { ConceptProposeCall, ConnectorAccess } from '../connectors/public.ts'
+import { connectorTools, NOT_GRANTED } from '../connectors/public.ts'
+import type { InventoryAsk, OntologyDoor } from '../ontology/public.ts'
+import { conversationIn } from '../runs/public.ts'
 import { turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
@@ -29,28 +31,35 @@ export function assistantAccess(
     log: deps.log,
     read: (call, requestContext) =>
       deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) }),
-    notes: (connectionId) => deps.connectors.notes(scope, connectionId),
     wording: { whose: 'this conversation chose', limit: ASSISTANT_LIMIT },
   }
 }
 
 /**
- * The notebook tools of a conversation: its reads are the typed ones (`typed-reads.ts`), never
- * `connector_read`. The notebook's write is the Builder's tool, for who may manage connections and
- * never in an automation's run (step 24.3.5).
+ * The connector tools of a conversation: its reads are the typed ones (`typed-reads.ts`), never
+ * `connector_read`. Every member proposes concepts (Q1), never in an automation's run.
  */
 export function assistantConnectorTools(
-  deps: { connectors: AssistantConnectors; log: FailureLog },
-  a: Conversation & { mayNote: boolean },
+  deps: { connectors: AssistantConnectors; ontology: OntologyDoor; log: FailureLog },
+  a: Conversation & { mayPropose: boolean },
 ) {
   const { scope } = a
   const access = assistantAccess(deps, a)
-  if (!a.mayNote) return connectorTools(access, { noteSave: false, reads: false })
+  const inventory: InventoryAsk = (call) =>
+    deps.ontology.search({ companyId: scope.companyId, ...call })
+  const concepts: ConceptProposeCall = async (call, requestContext) => {
+    const turn = turnKey.of(requestContext)
+    const door = await deps.connectors.concepts(scope, { connectionId: call.connectionId, turn })
+    if (door === undefined) return NOT_GRANTED
+    return deps.ontology.propose({
+      ...{ ...call, companyId: scope.companyId, personId: scope.personId, door },
+      ...{ agent: 'assistant', conversationId: conversationIn(requestContext) ?? null },
+    })
+  }
   return connectorTools(access, {
-    noteSave: true,
     reads: false,
-    save: (call, requestContext) =>
-      deps.connectors.saveNote(scope, { ...call, turn: turnKey.of(requestContext) }),
+    inventory,
+    ...(a.mayPropose ? { concepts } : {}),
   })
 }
 

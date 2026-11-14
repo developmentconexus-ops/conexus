@@ -28,7 +28,7 @@ function named(column: string): string {
 }
 
 /** A date of the input (`z.iso.date()` made it digits and dashes) in the literal decision 0063 measured. */
-function dated(day: string): string {
+export function dated(day: string): string {
   return `TO_DATE('${day}', 'YYYY-MM-DD')`
 }
 

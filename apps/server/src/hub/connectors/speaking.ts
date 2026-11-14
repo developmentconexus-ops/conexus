@@ -1,14 +1,10 @@
 import type { Connector } from '@conexus/connectors'
-import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { Speaker } from '../identity/public.ts'
 import { speakerOf } from '../identity/public.ts'
-import type { NotInRole } from './read.ts'
-import type { Deps } from './rows.ts'
 
-/** The notebook's proving read: the operation whose use the notebook follows (decision of criteria 12 and 20). */
-const NOTEBOOK_OPERATION = 'consultar'
+import type { Deps } from './rows.ts'
 
 /** The person as the role the company holds them in now; none for someone who is no member. */
 export async function personSpeaker(
@@ -81,30 +77,6 @@ export async function visibleTo<T extends Listed>(
 
 function keyOf(target: { connectionId: ConnectionId; operationId: OperationId }): string {
   return `${target.connectionId}:${target.operationId}`
-}
-
-/**
- * Whether the notebook of a connection may be read or written by the speaker: it follows the
- * connector's free query, since the notebook is proved by it. A connector without one has no
- * notebook to guard.
- */
-export async function mayUseNotebook(
-  deps: Deps,
-  companyId: CompanyId,
-  speaker: Speaker,
-  on: Readonly<{ connectionId: ConnectionId; connector: string }>,
-): Promise<NotInRole | undefined> {
-  if (speaker.kind === 'VERSION') return undefined
-  const connector = connectorOf(on.connector)
-  if (connector?.readDoor?.[NOTEBOOK_OPERATION] === undefined) return undefined
-  const allowed = await deps.identity.mayUse(companyId, speaker, {
-    connectionId: on.connectionId,
-    connectorId: ConnectorId.parse(on.connector),
-    operationId: OperationId.parse(NOTEBOOK_OPERATION),
-  })
-  return allowed
-    ? undefined
-    : { kind: 'NOT_IN_ROLE', role: speaker.role, operation: NOTEBOOK_OPERATION }
 }
 
 /**

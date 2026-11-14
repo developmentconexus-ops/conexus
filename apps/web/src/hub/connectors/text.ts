@@ -224,23 +224,6 @@ export function oneAtATimeText(connector: string, taken: string): string {
   return `O ${connector} lê uma ligação por Projeto. Tire a ${taken} antes.`
 }
 
-export const NOTEBOOK = 'Caderno'
-export const EMPTY_NOTEBOOK = 'Nada anotado nesta ligação ainda.'
-export const ERASE_NOTE_DESCRIPTION =
-  'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.'
-export const ERASE = 'Apagar'
-
-/** "provado em 30/10 por Bruno, com 20 linhas": what an entry of the notebook says about its proof. */
-export function provedText(note: {
-  provedAt: string
-  provedRows: number
-  writtenBy: string | null
-}) {
-  const by = note.writtenBy === null ? 'quem já saiu da empresa' : note.writtenBy
-  const rows = note.provedRows === 1 ? '1 linha' : `${note.provedRows} linhas`
-  return `provado em ${dayAndMonth(note.provedAt)} por ${by}, com ${rows}`
-}
-
 /** What Desligar takes from one copy, said before the click (O Sync de qualquer conector, U4). */
 export function copyLossText(copy: Pick<CopyOfConnection, 'name' | 'last' | 'rows'>): string {
   if (copy.last) return `A cópia ${copy.name} acaba.`
@@ -257,4 +240,32 @@ export const COPIES_UNREAD = 'Não conseguiu ler as cópias desta conta.'
 /** The table of an ended copy that the company's database did not drop yet; the connection is gone all the same. */
 export function tableLeftText(name: string): string {
   return `A conexão foi removida. A tabela da cópia ${name} ainda não saiu do banco da empresa; o Conexus a apaga no próximo Desligar ou quando uma cópia for ligada.`
+}
+
+export const READING_INVENTORY = 'Lendo o inventário…'
+export const INVENTORY_FAILED = 'Não foi possível ler o inventário.'
+export const INVENTORY_PARTIAL = 'Inventário parcial: lido até o limite.'
+export const READ_AGAIN = 'Ler de novo'
+
+function counted(n: number, one: string, many: string): string {
+  return `${n.toLocaleString('pt-BR')} ${n === 1 ? one : many}`
+}
+
+/** "Inventário: 812 tabelas, 9.310 campos, 2.140 códigos, lido em 12/11 às 09:00"; for a system with no dictionary, "Inventário: 12 leituras declaradas". */
+export function inventoryText(inventory: {
+  readAt: string
+  tables: number
+  fields: number
+  codes: number
+  operations: number
+}): string {
+  const { tables, fields, codes, operations } = inventory
+  if (tables + fields + codes === 0)
+    return `Inventário: ${counted(operations, 'leitura declarada', 'leituras declaradas')}`
+  const counts = [
+    counted(tables, 'tabela', 'tabelas'),
+    counted(fields, 'campo', 'campos'),
+    counted(codes, 'código', 'códigos'),
+  ].join(', ')
+  return `Inventário: ${counts}, lido em ${dayAndMonth(inventory.readAt)} às ${clockOf(inventory.readAt)}`
 }

@@ -210,6 +210,15 @@ test('ontologia: uma versão nomeia uma revisão da própria empresa, e um item 
   )
 })
 
+test('ontologia: o caderno saiu, e um item NOTE não se grava (fundador, 2026-11-13)', async (t) => {
+  const { inA } = await seeded(t)
+  await assert.rejects(
+    inA(sql`insert into ontology.proposal_item(proposal_id, company_id, n, kind, target, content,
+      decision) values (${PROPOSAL}, ${A}, 9, 'NOTE', 'pedido', '{}', 'PENDING')`),
+    violating('proposal_item_kind'),
+  )
+})
+
 test('ontologia: a saída da empresa apaga o que ela tem, também item e fonte que citam uma prova', async (t) => {
   const test = await createTestDatabase(t)
   await test.asOwner(SEED)

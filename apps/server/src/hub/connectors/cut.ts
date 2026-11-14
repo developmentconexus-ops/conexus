@@ -8,7 +8,7 @@ const CUT_BYTES = 16 * 1024
 const MAX_TEXT = 600
 
 /** Every read lists its rows in `linhas`; the page reads add `temMais`, the DbExplorer door `completo`. Whatever else a read sent is kept as it came. */
-export const Listed = z.looseObject({
+const Listed = z.looseObject({
   linhas: z.array(z.unknown()),
   temMais: z.boolean().nullable().optional(),
 })

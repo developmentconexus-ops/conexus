@@ -5,9 +5,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { AppKeys } from '@conexus/connectors'
-import { MERCADO_LIVRE_FACTS, mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import {
+  MERCADO_LIVRE_FACTS,
+  mercadoLivreFake,
+  PADARIA_SOL_MATRIZ,
+  salesDatabase,
+  sankhyaFake,
+} from '@conexus/connectors'
 
 export { MERCADO_LIVRE_FACTS, mercadoLivreFake }
+
+export function countedOnDouble(sql: string): number {
+  return Number(salesDatabase(PADARIA_SOL_MATRIZ)(`SELECT COUNT(*) FROM (${sql}) Q`)?.rows[0]?.[0])
+}
+
+export const DOUBLE_SELLERS = PADARIA_SOL_MATRIZ.vendedores.map((seller) => seller.apelido)
 
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -36,15 +48,21 @@ export async function connectionsOn(
   t: TestContext,
   /** The origin the Hub is given for the double, when something stands in front of it. */
   through: (origin: string) => Promise<string> = async (origin) => origin,
+  /** The Hub's clock and catalog, and the inventory's ceilings, when the test sets its own. */
+  tuning?: Parameters<typeof hubWithLog>[2],
 ) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
   const origin = await through(served.origin)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', origin]]),
-  }))
+  const hub = await hubWithLog(
+    t,
+    (config) => ({
+      ...config,
+      connectorOrigins: new Map([['sankhya', origin]]),
+    }),
+    tuning,
+  )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
   const bruno = await memberOn(hub, companyId, BRUNO, 'admin')

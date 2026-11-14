@@ -1,4 +1,5 @@
 import type {
+  DecisionGap,
   FailureCode,
   MigrationCause,
   ProblemAgents,
@@ -24,6 +25,7 @@ export type Named = Readonly<{
   operation?: string
   reason?: ProblemReason
   agents?: ProblemAgents
+  gaps?: readonly DecisionGap[]
 }>
 
 export class Failure extends Error {

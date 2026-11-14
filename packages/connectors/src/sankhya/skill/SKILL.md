@@ -51,7 +51,7 @@ The meaning lives in the dictionary, which `consultar` reads:
 - `TDDOPC`: what each value of a coded field means, by `NUCAMPO`. A company can add options.
 - `TDDINS`: the instance names `carregar` takes as `entidade`.
 
-Search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. Custom fields start with `AD_`. Never change the dictionary.
+Read the inventory first (`inventory_search`, when you have it): it keeps the tables, the fields and the meaning of each coded value, read when the connection was linked, and asks the system nothing; ask the person only what it does not say. Otherwise search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. Custom fields start with `AD_`. Never change the dictionary.
 
 ## Investigate in stages
 
@@ -62,7 +62,7 @@ Search the person's word in `DESCRCAMPO`, confirm each column exists before usin
 5. Join and count safely. Versioned tables (`TGFTOP`, `TGFTPV`) are joined on the code and the version the document stored (`DHTIPOPER`, `DHTIPVENDA`). Count the rows per key before any other join. Orders and the notes made from them are separate documents; count one or the other. A document number repeats across operation types, companies and series.
 6. Settle or ask. Ask only what the data cannot settle, one decision per question, in the person's business words, never a table, a field or a code. A meaning the person does not give stays open.
 
-Record what you proved with the query that proved it, never the rows.
+Propose what you proved with `concept_propose`: the concept, its fields, the meaning of each code and its links, with the query that reads it as its source. The proposal keeps the proof's counts and columns, never the rows, and counts nothing until a person approves it. A role of a concept, such as the customer of a partner, takes one of two forms: a slice of the base concept (the same key, its own read, proved a subset of the base) or a concept with its own key, linked to the base. Choose by what the inventory and the proof show.
 
 ## Never
 

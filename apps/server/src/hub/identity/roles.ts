@@ -28,6 +28,7 @@ const MANAGE_COMPANY = {
   connection: ['manage'],
   request: ['create', 'decide'],
   companyMemory: ['manage'],
+  ontology: ['approve'],
 } as const
 
 // Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
@@ -52,7 +53,8 @@ const BUILD = {
  * member creates one; only an owner or an administrator deletes one and changes its model
  * accounts (step 11, D4), gives and takes a person's access to an app (step 18, B), and links,
  * tests and removes the company's connections (step 19, D), and writes the company's memory and
- * instructions (alignment of the Assistant, U9). Only the
+ * instructions (alignment of the Assistant, U9), and approves the company's concepts after the
+ * first revision, which is the owner's (A Ontologia da empresa, L1). Only the
  * owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
@@ -82,6 +84,7 @@ export function rolesFor(kit: RoleKit) {
     copy: ['manage'],
     request: ['create', 'decide'],
     companyMemory: ['manage'],
+    ontology: ['approve'],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.

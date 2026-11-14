@@ -1,4 +1,5 @@
 import type {
+  DecisionGap,
   FailureCode,
   Operation,
   ProblemAgents,
@@ -29,6 +30,8 @@ export class HubFailure extends Error {
   readonly reason: ProblemReason | undefined
   /** The agents a refusal names, such as those that still use a tool (`TOOL_IN_USE`). */
   readonly agents: ProblemAgents | undefined
+  /** What an approval would leave missing, for `DECISION_INCOMPLETE`. */
+  readonly gaps: DecisionGap[] | undefined
 
   constructor(
     code: FailureCode,
@@ -40,6 +43,7 @@ export class HubFailure extends Error {
       field?: ProblemField
       reason?: ProblemReason
       agents?: ProblemAgents
+      gaps?: DecisionGap[]
     } = {},
   ) {
     super(code, options)
@@ -51,6 +55,7 @@ export class HubFailure extends Error {
     this.field = options.field
     this.reason = options.reason
     this.agents = options.agents
+    this.gaps = options.gaps
   }
 }
 
@@ -83,6 +88,7 @@ export function failureOfProblem(body: unknown): HubFailure {
     field: problem.data.field,
     reason: problem.data.reason,
     agents: problem.data.agents,
+    gaps: problem.data.gaps,
   })
 }
 
@@ -267,6 +273,7 @@ const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set([
   'NOT_FOUND',
   'CONVERSATION_NOT_FOUND',
   'COPY_NOT_FOUND',
+  'CONCEPT_UNKNOWN',
 ])
 
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */

@@ -72,7 +72,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.notEqual(on.reads[2]?.turn, on.reads[0]?.turn)
 })
 
-test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras e as do caderno, a escrita incluída, a visão da empresa, as da web, as de skill, a de perguntar por cartão, a do ajudante de pesquisa, as de tarefas, a de mostrar arquivo, as da memória, as de ler a memória da empresa e a de propor guardar nela, e as da máquina do Builder, nenhuma a mais', async (t) => {
+test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras, a do inventário e a de propor conceitos, a visão da empresa, as da web, as de skill, a de perguntar por cartão, a do ajudante de pesquisa, as de tarefas, a de mostrar arquivo, as da memória, as de ler a memória da empresa e a de propor guardar nela, e as da máquina do Builder, nenhuma a mais', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -81,9 +81,9 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
   const asked = on.calls.at(0)
   assert.deepEqual([...(asked?.tools ?? [])].sort(), [
     'ask_user',
+    'concept_propose',
     'conexus_overview',
-    'connector_note_save',
-    'connector_notes',
+    'inventory_search',
     'knowledge_list',
     'knowledge_read',
     'knowledge_search',

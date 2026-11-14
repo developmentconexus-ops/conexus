@@ -30,13 +30,13 @@ async function offeredTo(
   return on.calls.at(-1)?.tools.toSorted()
 }
 
-test('selecionar a ligação não dá leitura: o modelo recebe só o caderno dela, e a Consulta livre só chega com a ferramenta marcada', async (t) => {
+test('selecionar a ligação não dá leitura: o modelo não recebe ferramenta dela, e a Consulta livre só chega com a ferramenta marcada', async (t) => {
   const on = await agentsOn(t)
   const only = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda sobre as vendas.',
     connections: [on.matriz],
   })
-  assert.deepEqual(await offeredTo(t, on, only.id), ['connector_notes'])
+  assert.deepEqual(await offeredTo(t, on, only.id), [])
 
   const orders = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
   const made = await madeAgent(on.hub, on.ana, on.agents, 'Com pedidos')
@@ -73,7 +73,6 @@ test('a versão antiga sem a consulta livre: connections [X] sem ferramenta de X
   })
   assert.equal(published.statusCode, 200, published.body)
   const offered = await offeredTo(t, on, made.id)
-  assert.ok(offered?.includes('connector_notes'))
   assert.ok(offered?.includes(`tool_pedidos_${on.matriz.slice(0, 6)}`))
   assert.ok(!offered?.some((name) => /consultar|carregar/.test(name)))
   assert.ok(!offered?.includes('connector_read'))

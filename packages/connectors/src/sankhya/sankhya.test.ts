@@ -233,6 +233,7 @@ test('a porta lê o envelope: sucesso, recusa do fornecedor e o que não se lê'
         { N: 3, M: null },
       ],
       completo: false,
+      colunas: ['N', 'M'].map((nome) => ({ nome, tipo: null })),
     },
   })
 
@@ -280,7 +281,14 @@ test('a recusa do envelope leva o que o Sankhya disse; uma linha lida e um 2xx i
       status: '1',
       responseBody: { fieldsMetadata: [{ name: 'OBS' }], rows: [['[CORE_E123] texto gravado']] },
     }),
-    { kind: 'OK', value: { linhas: [{ OBS: '[CORE_E123] texto gravado' }], completo: true } },
+    {
+      kind: 'OK',
+      value: {
+        linhas: [{ OBS: '[CORE_E123] texto gravado' }],
+        completo: true,
+        colunas: [{ nome: 'OBS', tipo: null }],
+      },
+    },
   )
   const rule = answer('consultar', 200, {
     status: '1',

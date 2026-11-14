@@ -9,16 +9,19 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { InventoryAsk, OntologyDoor } from '../ontology/public.ts'
+import { inventorySearchTool } from '../ontology/public.ts'
+import { conversationIn } from '../runs/public.ts'
+import type { ConceptProposeCall } from './concept-propose.ts'
+import { conceptProposeTool } from './concept-propose.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
-type Notes = Awaited<ReturnType<BuilderConnectors['notes']>>
 type Answer = Awaited<ReturnType<BuilderConnectors['read']>>
 /** An OK read that also carries the connector's answer before the cut: the Assistant's, for its machine. */
 type WholeAnswer = Extract<Answer, { kind: 'OK' }> & { whole: unknown }
-type Saved = Awaited<ReturnType<BuilderConnectors['saveNote']>>
 
 /** Who asks, and the run the port counts the 50 calls by, known only when a tool runs. */
 export type Asker = OfProject & {
@@ -28,8 +31,8 @@ export type Asker = OfProject & {
 
 /**
  * What a caller binds the connector tools to (step 24.1, U2): the connections its scope offers
- * for this turn, its door's read and notebook, and the words that say whose they are and the
- * limit. The tools never decide what may be read: the door behind `read` and `notes` does.
+ * for this turn, its door's read, and the words that say whose they are and the limit. The tools
+ * never decide what may be read: the door behind `read` does.
  */
 export type ConnectorAccess = {
   connections: readonly (Pick<GrantedConnection, 'connectionId' | 'connector' | 'name'> & {
@@ -43,15 +46,8 @@ export type ConnectorAccess = {
   savedAt?: (requestContext: RequestContext) => string
   /** Where a refused call and a failed save are logged. */
   log: FailureLog
-  notes(connectionId: ConnectionId): Promise<Notes>
   wording: { whose: string; limit: string }
 }
-
-/** The notebook's write: the Builder's, and the Assistant's for who manages the connections. */
-type NoteSave = (
-  call: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string },
-  requestContext: RequestContext,
-) => Promise<Saved>
 
 type Connection = ConnectorAccess['connections'][number]
 
@@ -68,10 +64,12 @@ function runIn(who: Asker, requestContext: RequestContext): RunId {
 /** The Builder's access: its Projeto's granted connections through its door, counted by run. */
 export function builderAccess(
   port: BuilderConnectors,
+  ontology: OntologyDoor,
   granted: readonly GrantedConnection[],
   who: Asker,
   log: FailureLog,
-): { access: ConnectorAccess; save: NoteSave; propose: ProposeCall } {
+): { access: ConnectorAccess; concepts: ConceptProposeCall; propose: ProposeCall } {
+  const { companyId, personId } = who
   const access: ConnectorAccess = {
     connections: granted,
     log,
@@ -81,11 +79,22 @@ export function builderAccess(
         personId: who.personId,
         runId: runIn(who, requestContext),
       }),
-    notes: (connectionId) => port.notes(who, connectionId),
     wording: { whose: "this Project's owner released", limit: '50 connector calls per run' },
   }
-  const save: NoteSave = (call, requestContext) =>
-    port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
+  const concepts: ConceptProposeCall = async (call, requestContext) => {
+    const runId = runIn(who, requestContext)
+    const door = await port.concepts(who, { connectionId: call.connectionId, personId, runId })
+    if (door === undefined) return NOT_GRANTED
+    const conversationId = conversationIn(requestContext) ?? null
+    return ontology.propose({
+      ...call,
+      companyId,
+      personId,
+      agent: 'builder',
+      conversationId,
+      door,
+    })
+  }
   const propose: ProposeCall = ({ signal, ...call }, requestContext) =>
     port.propose(who, {
       ...call,
@@ -94,7 +103,7 @@ export function builderAccess(
       // A call Mastra gives no signal is one nobody can stop: the proof's own deadline still holds.
       signal: signal ?? new AbortController().signal,
     })
-  return { access, save, propose }
+  return { access, concepts, propose }
 }
 
 /** The connection a name says; the connector too when the call names one, since two systems may share a name. */
@@ -106,8 +115,8 @@ function named(connections: readonly Connection[], name: string, connector?: str
 
 const AMBIGUOUS = { kind: 'AMBIGUOUS_CONNECTION' } as const
 
-/** The connection for the notebook tools: `connector` is needed only when two systems share the name. */
-function inNotebook(connections: readonly Connection[], name: string, connector?: string) {
+/** The connection a tool names: `connector` is needed only when two systems share the name. */
+function inScope(connections: readonly Connection[], name: string, connector?: string) {
   const sameName = connections.filter((each) => each.name === name)
   if (connector === undefined && sameName.length > 1) return AMBIGUOUS
   return named(connections, name, connector)
@@ -274,76 +283,46 @@ function readTool(access: ConnectorAccess): ToolsInput {
   }
 }
 
-function notesTool(access: ConnectorAccess) {
-  return {
-    [BUILDER_TOOL.connectorNotes]: createTool({
-      id: BUILDER_TOOL.connectorNotes,
-      description:
-        'The notebook of a connection: each concept the Builder proved before, with its mapping and the query that proved it. Read it before you ask the person what a code means.',
-      inputSchema: z.object({
-        connection: connectionField(access.connections),
-        connector: CONNECTOR_FIELD,
-      }),
-      execute: async ({ connection, connector }) => {
-        const found = inNotebook(access.connections, connection, connector)
-        if (found === undefined) return NOT_GRANTED
-        if ('kind' in found) return found
-        return (await access.notes(found.connectionId)) ?? NOT_GRANTED
-      },
-    }),
-  }
-}
-
-function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
-  return {
-    [BUILDER_TOOL.connectorNoteSave]: createTool({
-      id: BUILDER_TOOL.connectorNoteSave,
-      description:
-        "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
-      inputSchema: z.object({
-        connection: connectionField(connections),
-        connector: CONNECTOR_FIELD,
-        concept: z.string().min(1).max(120),
-        mapping: z.string().min(1).max(500),
-        provingQuery: z.string().min(1).max(4000),
-      }),
-      execute: async (
-        { connection, connector, concept, mapping, provingQuery },
-        { requestContext },
-      ) => {
-        const found = inNotebook(connections, connection, connector)
-        if (found === undefined || requestContext === undefined) return NOT_GRANTED
-        if ('kind' in found) return found
-        return save(
-          { connectionId: found.connectionId, concept, mapping, provingQuery },
-          requestContext,
-        )
-      },
-    }),
-  }
-}
-
 /**
- * The connector tools for a scope that offers at least one connection; {} otherwise. The notebook's
- * write comes only with `noteSave`, and `reads: false` leaves `connector_read` out: an agent's
- * reads are its chosen tools, and its selected connections bring the notebook alone (decision E4).
+ * The connector tools for a scope that offers at least one connection; {} otherwise.
+ * `concept_propose` comes only with `concepts`, `inventory_search` only with `inventory`, and
+ * `reads: false` leaves `connector_read` out (the Assistant's reads are typed).
  */
 export function connectorTools(
   access: ConnectorAccess,
-  include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & {
+  include: {
+    /** The Builder's and the Assistant's: `concept_propose` on the connections of the scope. */
+    concepts?: ConceptProposeCall
     reads?: false
+    /** `inventory_search` on the connections of the scope, reading what the inventory kept. */
+    inventory?: InventoryAsk
     /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
     propose?: {
       copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
       call: ProposeCall
     }
-  },
+  } = {},
 ): ToolsInput {
   if (access.connections.length === 0) return {}
   return {
     ...(include.reads === false ? {} : readTool(access)),
-    ...notesTool(access),
-    ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
+    ...(include.inventory === undefined
+      ? {}
+      : inventorySearchTool({
+          connection: connectionField(access.connections),
+          connector: CONNECTOR_FIELD,
+          resolve: (connection, connector) => inScope(access.connections, connection, connector),
+          notGranted: NOT_GRANTED,
+          ask: include.inventory,
+        })),
+    ...(include.concepts === undefined
+      ? {}
+      : conceptProposeTool({
+          connection: connectionField(access.connections),
+          connector: CONNECTOR_FIELD,
+          resolve: (connection, connector) => inScope(access.connections, connection, connector),
+          call: include.concepts,
+        })),
     ...(include.propose === undefined
       ? {}
       : copyProposeTool(include.propose.copying, include.propose.call)),

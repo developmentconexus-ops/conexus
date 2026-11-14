@@ -1,9 +1,11 @@
 import { DatabaseSync } from 'node:sqlite'
+import { dictionaryOf } from './fake-dictionary.ts'
 import { inserter, registerOn } from './fake-register.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
 
-type Seller = { codvend: number; apelido: string }
+// `codparc`: the seller's own partner; one has a partner the double does not register, a role's row outside its base.
+type Seller = { codvend: number; apelido: string; codparc: number }
 type Item = { codprod: number; qtdneg: number; vlrunit: number; vlrtot: number }
 type Note = {
   nunota: number
@@ -79,9 +81,9 @@ function salesOf(codemp: number, vendedores: readonly Seller[], weight: number):
 export const PADARIA_SOL_MATRIZ = salesOf(
   1,
   [
-    { codvend: 1, apelido: 'RITA' },
-    { codvend: 2, apelido: 'JOAO' },
-    { codvend: 3, apelido: 'MARCIA' },
+    { codvend: 1, apelido: 'RITA', codparc: 202 },
+    { codvend: 2, apelido: 'JOAO', codparc: 206 },
+    { codvend: 3, apelido: 'MARCIA', codparc: 204 },
   ],
   0,
 )
@@ -90,8 +92,8 @@ export const PADARIA_SOL_MATRIZ = salesOf(
 export const PADARIA_SOL_FILIAL = salesOf(
   2,
   [
-    { codvend: 4, apelido: 'PEDRO' },
-    { codvend: 5, apelido: 'LUCIA' },
+    { codvend: 4, apelido: 'PEDRO', codparc: 202 },
+    { codvend: 5, apelido: 'LUCIA', codparc: 999 },
   ],
   3,
 )
@@ -121,7 +123,7 @@ export function changedOn(dtneg: string): string {
 function tablesOf(database: DatabaseSync, set: SalesSet): void {
   database.exec(`
     CREATE TABLE TGFVEN (CODVEND INTEGER PRIMARY KEY, APELIDO TEXT, ATIVO TEXT DEFAULT 'S',
-      DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
+      CODPARC INTEGER, DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
     CREATE TABLE TGFPAR (CODPARC INTEGER PRIMARY KEY, NOMEPARC TEXT, RAZAOSOCIAL TEXT, CGC_CPF TEXT,
       TIPPESSOA TEXT DEFAULT 'J', ATIVO TEXT DEFAULT 'S', CLIENTE TEXT DEFAULT 'S', FORNECEDOR TEXT DEFAULT 'N',
       DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
@@ -132,11 +134,12 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
       STATUSNOTA TEXT DEFAULT 'L', DTALTER DATE);
     CREATE TABLE TGFITE (NUNOTA INTEGER, SEQUENCIA INTEGER, CODPROD INTEGER, QTDNEG REAL,
       VLRUNIT REAL, VLRTOT REAL, CODVOL TEXT DEFAULT 'UN');
+    CREATE TABLE TGFVAR (NUNOTA INTEGER, SEQUENCIA INTEGER, NUNOTAORIG INTEGER, SEQUENCIAORIG INTEGER);
   `)
   const insert = inserter(database)
   insert(
-    'INSERT INTO TGFVEN (CODVEND, APELIDO) VALUES (?, ?)',
-    set.vendedores.map((each) => [each.codvend, each.apelido]),
+    'INSERT INTO TGFVEN (CODVEND, APELIDO, CODPARC) VALUES (?, ?, ?)',
+    set.vendedores.map((each) => [each.codvend, each.apelido, each.codparc]),
   )
   insert(
     'INSERT INTO TGFPAR (CODPARC, NOMEPARC, RAZAOSOCIAL) VALUES (?, ?, ?)',
@@ -173,6 +176,15 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
       ]),
     ),
   )
+  // Every fifth note came from the note before it, item by item: the origin of an item (`TGFVAR`).
+  insert(
+    'INSERT INTO TGFVAR (NUNOTA, SEQUENCIA, NUNOTAORIG, SEQUENCIAORIG) VALUES (?, ?, ?, ?)',
+    set.notas.flatMap((nota, at) => {
+      const before = set.notas[at - 1]
+      if (at % 5 !== 4 || before === undefined) return []
+      return nota.itens.map((_, item) => [nota.nunota, item + 1, before.nunota, item + 1])
+    }),
+  )
 }
 
 /** SQLite has no `OFFSET 0 ROWS FETCH NEXT n ROWS ONLY` (what both Oracle 12c and SQL Server take), so the double runs the same page as `LIMIT n`. */
@@ -187,8 +199,16 @@ function asSankhyaDate(value: unknown): unknown {
   return year === undefined ? value : `${day}${month}${year} ${time ?? '00:00:00'}`
 }
 
-/** The answer of a read query: the columns by name and the rows in their order. */
-export type QueryAnswer = { fields: string[]; rows: unknown[][] }
+/** The answer of a read query: the columns by name, their DbExplorer type (`userType`) and the rows in their order. */
+export type QueryAnswer = { fields: string[]; types: (string | null)[]; rows: unknown[][] }
+
+/** The DbExplorer's `userType` of a column the double declares; none for a computed one. */
+const USER_TYPE: Readonly<Record<string, string>> = {
+  INTEGER: 'I',
+  TEXT: 'S',
+  REAL: 'F',
+  DATE: 'D',
+}
 
 /**
  * The set's tables in an in-memory SQLite, read by the SQL a read sends (`DbExplorerSP.executeQuery`):
@@ -215,6 +235,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
   })
   database.exec('PRAGMA case_sensitive_like = ON')
   tablesOf(database, set)
+  dictionaryOf(database)
   registerOn(database)
   return (sql) => {
     let statement: ReturnType<DatabaseSync['prepare']>
@@ -240,6 +261,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
     }
     return {
       fields,
+      types: columns.map((column) => USER_TYPE[column.type ?? ''] ?? null),
       rows: read.map((row) =>
         Object.values(row).map((cell, at) =>
           dated[at] && cell !== null ? asSankhyaDate(cell) : cell,

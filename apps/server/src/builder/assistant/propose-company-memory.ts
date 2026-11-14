@@ -10,7 +10,7 @@ import type { ScopeOf } from './context.ts'
 const NOTE_MAX = 1000
 
 const DESCRIPTION =
-  "Proposes something for the company's memory, which the Assistant reads in every conversation of the company: a note on a page you read, or a new page. The conversation shows the text in a card, and nothing is saved until a person who may change the company's memory taps Salvar; you never save it. Propose what holds for the whole company and stays true (a rule, a code's meaning, a definition), never something about one person or one conversation. A note takes `page`, the id knowledge_read gave the page, and `text`; a new page takes `name` and `text`, its body. Tell the person the card is there."
+  "Proposes something for the company's memory, which the Assistant reads in every conversation of the company: a note on a page you read, or a new page. The conversation shows the text in a card, and nothing is saved until a person who may change the company's memory taps Salvar; you never save it. Propose what holds for the whole company, stays true and no query proves (a rule, an exception, a definition), never something about one person or one conversation; what a code or a field of a connected system means goes to concept_propose. A note takes `page`, the id knowledge_read gave the page, and `text`; a new page takes `name` and `text`, its body. Tell the person the card is there."
 
 /**
  * `propose_company_memory` (alignment of the Assistant, U9, B1): the model proposes and a person

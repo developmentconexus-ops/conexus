@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm'
 import { createTestDatabase } from '../../platform/test-database.ts'
 
 // Two companies with a Sankhya connection and a Projeto each; the checks of step 20's U2, the
-// grant of a connection to a Projeto and the connection's notes, as the company's login sees them.
+// grant of a connection to a Projeto, as the company's login sees them.
 const A = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const B = CompanyId.parse('companyBBBBBBBBBBBBBBBBBBBBBBBBB')
 const ANA = PersonId.parse('person-a')
@@ -140,60 +140,13 @@ test('a liberação: a empresa lê, libera e tira as suas, e nenhuma de outra em
   ])
 })
 
-test('o caderno: nasce vazio, só objeto de até 32 KB; a empresa o lê e o muda sem mexer no selo', async (t) => {
+test('a empresa não grava o selo da ligação: a permissão da linha não cobre a coluna', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
-  function inA(statement: ReturnType<typeof sql>) {
-    return database.command({ kind: 'COMPANY', companyId: A, personId: ANA }, (tx) =>
-      tx.execute(statement),
-    )
-  }
-
-  assert.deepEqual(
-    (await inA(sql`select notes, revision from connectors.connection where id = ${CONNECTION_A}`))
-      .rows,
-    [{ notes: {}, revision: 0 }],
-  )
-  // One instruction adds a note and keeps the others; the revision, which only a seal write raises, stays.
-  function note(concept: string) {
-    return JSON.stringify({ [concept]: { map: { vendedor: 'TGFCAB.AD_CODVEND' }, rows: 3 } })
-  }
-  const sealedBefore = await asOwner(
-    `select encode(sealed, 'hex') as sealed from connectors.connection where id = '${CONNECTION_A}'`,
-  )
-  assert.equal(sealedBefore.length, 1)
-  await inA(sql`update connectors.connection set notes = notes || ${note('vendedor')}::jsonb
-    where id = ${CONNECTION_A}`)
-  await inA(sql`update connectors.connection set notes = notes || ${note('cliente')}::jsonb
-    where id = ${CONNECTION_A}`)
-  await inA(sql`update connectors.connection set notes = notes - 'vendedor'
-    where id = ${CONNECTION_A}`)
-  assert.deepEqual(
-    (await inA(sql`select notes, revision from connectors.connection where id = ${CONNECTION_A}`))
-      .rows,
-    [{ notes: JSON.parse(note('cliente')), revision: 0 }],
-  )
-  // A value that is not an object, or past 32 KB, is refused by the database.
-  for (const value of ['[]', '"texto"', 'null', JSON.stringify({ big: 'x'.repeat(32_768) })]) {
-    await assert.rejects(
-      inA(sql`update connectors.connection set notes = ${value}::jsonb where id = ${CONNECTION_A}`),
-      refusedWith('23514'),
-    )
-  }
-  assert.deepEqual(
-    await asOwner(`select 1 from connectors.connection where octet_length(notes::text) = 32768`),
-    [],
-  )
-  // The notes' updates left the seal byte-equal, read as the owner.
-  assert.deepEqual(
-    await asOwner(
-      `select encode(sealed, 'hex') as sealed from connectors.connection where id = '${CONNECTION_A}'`,
-    ),
-    sealedBefore,
-  )
-  // The company cannot write the seal at all: the grant covers the notes only.
   await assert.rejects(
-    inA(sql`update connectors.connection set sealed = sealed`),
+    database.command({ kind: 'COMPANY', companyId: A, personId: ANA }, (tx) =>
+      tx.execute(sql`update connectors.connection set sealed = sealed`),
+    ),
     refusedWith('42501'),
   )
 })

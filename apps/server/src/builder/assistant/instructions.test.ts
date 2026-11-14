@@ -280,7 +280,7 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
   const his = forMember?.systems.at(1)?.text ?? ''
   assert.doesNotMatch(mine, /You cannot note on a connection/)
   assert.doesNotMatch(mine, /does not create automations/)
-  assert.match(his, /You cannot note on a connection here/)
+  assert.doesNotMatch(his, /You cannot note/, 'every member proposes concepts')
   assert.match(his, /does not create automations/)
   assert.doesNotMatch(FIXED, /You cannot note|does not create automations|run of an automation/)
 
@@ -292,16 +292,15 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
     department: null,
     projectName: undefined,
   }
-  const noteOnly = blockOf(speakers, [], {
-    note: false,
+  const proposing = blockOf(speakers, [], {
+    propose: true,
     automate: true,
     byAutomation: false,
     companyMemory: true,
   })
-  assert.match(noteOnly, /You cannot note/)
-  assert.doesNotMatch(noteOnly, /does not create automations|run of an automation/)
+  assert.doesNotMatch(proposing, /You cannot note|does not create automations|run of an automation/)
   const run = blockOf(speakers, [], {
-    note: false,
+    propose: false,
     automate: true,
     byAutomation: true,
     companyMemory: true,

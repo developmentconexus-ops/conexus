@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Answered, ProviderAnswer } from '../kernel/operation.ts'
 import { gatewayAnswer } from './answers.ts'
-import { QueriedRows } from './door.ts'
+import { QueriedColumn, QueriedRows } from './door.ts'
 import { Code } from './operations/shared.ts'
 
 /** How many rows a search returns when the input gives no `limite`: the cut the model reads (`hub/connectors/cut.ts`). */
@@ -39,10 +39,12 @@ export function foundIn<
   Row extends z.ZodType<{ extra: boolean }, Record<string, NonNullable<unknown> | null>>,
 >(row: Row) {
   const Found = QueriedRows.pipe(
-    z.object({ linhas: z.array(row), completo: z.boolean() }).transform(({ linhas, completo }) => ({
-      linhas: linhas.filter((each) => !each.extra).map(({ extra: _extra, ...kept }) => kept),
-      temMais: !completo || linhas.some((each) => each.extra),
-    })),
+    z
+      .object({ linhas: z.array(row), completo: z.boolean(), colunas: z.array(QueriedColumn) })
+      .transform(({ linhas, completo }) => ({
+        linhas: linhas.filter((each) => !each.extra).map(({ extra: _extra, ...kept }) => kept),
+        temMais: !completo || linhas.some((each) => each.extra),
+      })),
   )
   function answer(answered: ProviderAnswer): Answered<z.output<typeof Found>> {
     const result = gatewayAnswer(answered, Found)

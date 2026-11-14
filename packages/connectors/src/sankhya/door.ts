@@ -104,16 +104,21 @@ const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('Re
 
 /** What `DbExplorerSP.executeQuery` answers, its rows keyed by column: the door's `consultar` and the searches read it. */
 export const QueriedShape = z.object({
-  fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
+  fieldsMetadata: z.array(z.looseObject({ name: z.string(), userType: z.string().optional() })),
   rows: z.array(z.array(z.unknown())),
   burstLimit: z.boolean().optional(),
 })
+
+/** A column of a query's answer, by its name and the DbExplorer's type. */
+export const QueriedColumn = z.object({ nome: z.string(), tipo: z.string().nullable() })
 
 export const QueriedRows = QueriedShape.transform(({ fieldsMetadata, rows, burstLimit }) => ({
   linhas: rows.map((row) =>
     Object.fromEntries(fieldsMetadata.map(({ name }, index) => [name, row[index] ?? null])),
   ),
   completo: burstLimit !== true,
+  // Each column with the DbExplorer's own type (`userType`), null where it sends none: the shape a proof keeps.
+  colunas: fieldsMetadata.map(({ name, userType }) => ({ nome: name, tipo: userType ?? null })),
 }))
 
 /** The request of one read statement: the only way a request is built from SQL, so the filter has judged it (code C23). */
@@ -124,6 +129,7 @@ export function queryRequest(sql: string): ProviderRequest {
 const Queried = z.object({
   linhas: z.array(z.record(z.string(), z.unknown())),
   completo: z.boolean(),
+  colunas: z.array(QueriedColumn),
 })
 
 const consultar = defineOperation({

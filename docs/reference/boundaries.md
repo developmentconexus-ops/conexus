@@ -1407,10 +1407,10 @@ reference tool checks a read against its documentation.
   model: `stopWhen` sees only the model's loop, and no reference has such a ceiling.
 - **Hand-made piece.** `CONNECTOR_CALLS_PER_TURN` and `createSpending` (`hub/connectors/builder-port.ts`):
   a synchronous counter by key (a run for the Builder, a turn for the Assistant), the oldest key
-  forgotten past `TURNS_KEPT`, at the Hub's door. It counts the typed reads, the notebook's saves and
+  forgotten past `TURNS_KEPT`, at the Hub's door. It counts the typed reads, the proofs of `concept_propose` and
   the research helper's reads together, with the tools in parallel.
 - **Why.** It protects the company's system; the door is where every read passes.
-- **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
+- **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `hub/ontology/propose.test.ts`; the
   helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
 
 ## Mastra 1.82.0, @neondatabase/serverless 1.2.0 and PostgreSQL 18: the company's copies (Capacidade 2)

@@ -12,6 +12,8 @@ import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { Speaker } from '../identity/public.ts'
+import type { ConceptDoor } from './concept-port.ts'
+import { conceptDoorOf } from './concept-port.ts'
 import type { Proved } from './copy-proof.ts'
 import { provedPage } from './copy-proof.ts'
 import { shaped } from './cut.ts'
@@ -19,13 +21,11 @@ import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
 import type { ListMisfit, ListProved } from './list-proof.ts'
 import { provedList } from './list-proof.ts'
-import type { NoteSaved } from './notes.ts'
-import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
-import { mayUseNotebook, personSpeaker, visibleTo } from './speaking.ts'
+import { personSpeaker, visibleTo } from './speaking.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
@@ -48,7 +48,6 @@ export type GrantedConnection = Readonly<{
   }>[]
   /** The writes the connector declares (step 24.5): an agent's tool may be one, never a read of the Builder or the Assistant. */
   writes: readonly Readonly<{ operation: string; label: string; summary: string }>[]
-  notes: readonly string[]
   /** The connector copies through its free read door (version 1) or declares a read that lists rows (version 2): `copy_propose` is offered. */
   copies: boolean
 }>
@@ -104,11 +103,11 @@ export type BuilderConnectors = {
     ids: OfProject,
     a: Of & Readonly<{ operation: string; input: unknown; signal?: AbortSignal }>,
   ): Promise<ShapedRead | Spent>
-  notes(ids: Asking, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
-  saveNote(
+  /** The door the Ontology proves and reads through, for a connection granted to the Projeto; none otherwise. */
+  concepts(
     ids: OfProject,
-    a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
-  ): Promise<NoteSaved | Spent>
+    a: Of & Readonly<{ signal?: AbortSignal }>,
+  ): Promise<ConceptDoor | undefined>
   /** The proof of one connection, as the person may read it: the counts, never a row. */
   provePage(
     ids: OfProject,
@@ -146,7 +145,6 @@ export function offeredIn(
       id: connection.id,
       connector: connection.connectorId,
       name: connection.name,
-      notes: connection.notes,
     })
     .from(connection)
     .where(
@@ -236,7 +234,6 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         skill: { name: `conexus-${connector.id}`, ...connector.skill },
         reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
-        notes: Object.keys(Notes.parse(row.notes)),
         copies:
           (connector.copy !== undefined && connector.readDoor !== undefined) ||
           connector.operations.some((operation) => operation.list !== undefined),
@@ -245,7 +242,7 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
   })
 }
 
-/** The Builder's door to the Projeto's granted connections (step 20, U3): read, notebook, and what the next turn is given. */
+/** The Builder's door to the Projeto's granted connections (step 20, U3): read, the concepts' door, and what the next turn is given. */
 export function createBuilderConnectors(
   deps: Deps & { propose: () => Propose },
 ): BuilderConnectors {
@@ -278,26 +275,12 @@ export function createBuilderConnectors(
       return answered.kind === 'OK' ? { kind: 'OK', ...shaped(answered.value) } : answered
     },
 
-    async notes(ids, connectionId) {
-      const [row] = await grantedRows(deps, ids, connectionId)
-      if (row === undefined) return null
-      const speaker = await personSpeaker(deps, ids.companyId, ids.personId)
-      if (speaker === undefined) return null
-      const refused = await mayUseNotebook(deps, ids.companyId, speaker, {
-        connectionId,
-        connector: row.connector,
-      })
-      return refused ?? Notes.parse(row.notes)
-    },
-
-    async saveNote(ids, a) {
+    async concepts(ids, a) {
       const opened = await admit(deps, ids, a)
-      if (opened === undefined) return { kind: 'NOT_GRANTED' }
+      if (opened === undefined) return undefined
       const speaker = await personSpeaker(deps, ids.companyId, a.personId)
-      if (speaker === undefined) return { kind: 'NOT_GRANTED' }
-      if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
-      const read = readerOf({ ids, ...a, speaker, opened })
-      return provedAndSaved(deps, { ...a, read })
+      if (speaker === undefined) return undefined
+      return conceptDoorOf(deps, readerOf({ ids, ...a, speaker, opened }), () => spend(a.runId))
     },
 
     async provePage(ids, a) {

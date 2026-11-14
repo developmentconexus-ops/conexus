@@ -135,7 +135,10 @@ export function executeQuery(
   if (answered === undefined)
     return envelope('DbExplorerSP.executeQuery', '0', undefined, UNRUNNABLE_SQL)
   return envelope('DbExplorerSP.executeQuery', '1', {
-    fieldsMetadata: answered.fields.map((name) => ({ name })),
+    fieldsMetadata: answered.fields.map((name, at) => {
+      const userType = answered.types[at] ?? null
+      return userType === null ? { name } : { name, userType }
+    }),
     rows: answered.rows,
     burstLimit: false,
   })

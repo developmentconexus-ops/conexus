@@ -177,11 +177,6 @@ export function violatedReference(error: unknown): string | undefined {
   return constraintOf(error, '23503')
 }
 
-/** The check constraint a violation (23514) names, read by SQLSTATE and name (code C52). */
-export function violatedCheck(error: unknown): string | undefined {
-  return constraintOf(error, '23514')
-}
-
 function constraintOf(error: unknown, sqlstate: string): string | undefined {
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
     if (cause instanceof pg.DatabaseError) {

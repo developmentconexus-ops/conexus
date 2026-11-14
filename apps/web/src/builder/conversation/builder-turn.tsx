@@ -12,6 +12,7 @@ import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import { ApprovalCard } from './approval-card.tsx'
+import { ConceptProposalCard } from './concept-proposal-card.tsx'
 import { CopyProposalCard } from './copy-proposal-card.tsx'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
@@ -80,14 +81,7 @@ function ItemRow({
     case 'reasoning':
       return <ThinkingLine part={item} />
     case 'tool':
-      return item.toolName === BUILDER_TOOL.copyPropose ? (
-        <>
-          <ToolRow tool={item} />
-          <CopyProposalCard tool={item} />
-        </>
-      ) : (
-        <ToolRow tool={item} />
-      )
+      return <ToolWithCard item={item} />
     case 'card':
       return <CardOf item={item} />
     case 'conexus':
@@ -96,6 +90,27 @@ function ItemRow({
       return <Sources sources={item.sources} />
     default:
       return item satisfies never
+  }
+}
+
+function ToolWithCard({ item }: { item: Extract<TranscriptItem, { kind: 'tool' }> }) {
+  switch (item.toolName) {
+    case BUILDER_TOOL.copyPropose:
+      return (
+        <>
+          <ToolRow tool={item} />
+          <CopyProposalCard tool={item} />
+        </>
+      )
+    case BUILDER_TOOL.conceptPropose:
+      return (
+        <>
+          <ToolRow tool={item} />
+          <ConceptProposalCard tool={item} />
+        </>
+      )
+    default:
+      return <ToolRow tool={item} />
   }
 }
 

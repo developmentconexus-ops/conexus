@@ -78,7 +78,7 @@ instead of writing again.
 
 The Assistant is one Mastra agent with its own controller (`builder/assistant/assistant.ts`).
 A conversation's place is the whole company or one Project. Its model is the one the person
-picked. Its tools are a closed set: the machine's files and commands, connector reads and notes,
+picked. Its tools are a closed set: the machine's files and commands, connector reads,
 web fetch and search, skills (a `conexus` skill plus one per chosen connection), `ask_user`,
 tasks, and its own `overview`, `show_file`, `propose_app`, `propose_app_change` and
 `propose_automation`.

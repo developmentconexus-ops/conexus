@@ -97,21 +97,17 @@ test('o papel na leitura: no Builder, a lista e a leitura seguem o papel, e a po
   assert.equal(on.called(), before)
 })
 
-test('a prova do caderno pelo papel: sem consultar, gravar e ler o caderno dá NOT_IN_ROLE e o dublê não recebe a consulta', async (t) => {
+test('a prova de um conceito pelo papel: sem consultar, a porta de conceitos responde NOT_IN_ROLE e o dublê não recebe a consulta', async (t) => {
   const on = await atendenteOn(t)
   const before = on.called()
-  const saved = await on.hub.connectors.builder.saveNote(on.ids, {
+  const door = await on.hub.connectors.builder.concepts(on.ids, {
     connectionId: on.matriz,
     personId: on.ids.personId,
     runId: RunId.parse(randomUUID()),
-    concept: 'Empresa',
-    mapping: 'TSIEMP guarda as empresas',
-    provingQuery: QUERY,
   })
-  assert.equal(saved.kind, 'NOT_IN_ROLE')
+  assert.ok(door)
+  assert.equal((await door.prove(QUERY)).kind, 'NOT_IN_ROLE')
   assert.equal(on.called(), before)
-  const notes = await on.hub.connectors.builder.notes(on.ids, on.matriz)
-  assert.equal(Object(notes).kind, 'NOT_IN_ROLE')
 })
 
 test('o funil: uma versão publicada lê só o que declara, e a que não declarou a consulta livre recebe NOT_IN_ROLE sem pedido ao dublê', async (t) => {

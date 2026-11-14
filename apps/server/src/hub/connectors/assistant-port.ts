@@ -8,18 +8,17 @@ import type { Speaker } from '../identity/public.ts'
 import { personOf } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
+import type { ConceptDoor } from './concept-port.ts'
+import { conceptDoorOf } from './concept-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
-import type { NoteSaved } from './notes.ts'
-import { Notes, provedAndSaved } from './notes.ts'
-import type { NotInRole } from './read.ts'
 import { readThrough } from './read.ts'
 import { fixedFieldsOf } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import type { SessionScope, TurnKey } from './scope.ts'
 import { idsOf } from './scope.ts'
-import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
+import { markedFor, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
 import type { WrittenRecord } from './write-list.ts'
@@ -70,19 +69,11 @@ export type AssistantConnectors = {
   openWrites(key: OpenWritesKey): Promise<readonly OpenWrite[]>
   /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); the card reads it, `openWrites` stays for the tool's own check. */
   writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
-  /** The connection's caderno, under the same check as read. */
-  notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
-  /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
-  saveNote(
+  /** The door the Ontology proves and reads through, for a chosen connection its place offers; none otherwise. */
+  concepts(
     scope: SessionScope,
-    call: {
-      connectionId: ConnectionId
-      turn: TurnKey
-      concept: string
-      mapping: string
-      provingQuery: string
-    },
-  ): Promise<NoteSaved | Spent>
+    call: { connectionId: ConnectionId; turn: TurnKey; signal?: AbortSignal },
+  ): Promise<ConceptDoor | undefined>
   /**
    * The input of one read of a connection the place offers, whose top-level fields an agent's tool
    * fixes or leaves to the model (step 24.3, U1); none for a connection not offered, an operation
@@ -157,14 +148,14 @@ type Refusal = 'NOT_CHOSEN' | 'NOT_ADMITTED' | 'NOT_OFFERED' | 'NOT_A_READ'
 /**
  * The one connection the conversation chose and its place offers, handed to `use` in the same
  * transaction that decided it (D22, S8); none gives the reason, which the caller logs and answers
- * as NOT_GRANTED (S10). The owner of "what a conversation may read" (C26): the notebook and every
- * read go through it.
+ * as NOT_GRANTED (S10). The owner of "what a conversation may read" (C26): every read and the
+ * concepts' door go through it.
  */
 async function readable<T>(
   deps: Deps,
   scope: SessionScope,
   connectionId: ConnectionId,
-  use: (tx: ReadTx, row: { notes: unknown; connector: string }, speaker: Speaker) => Promise<T>,
+  use: (tx: ReadTx, row: { connector: string }, speaker: Speaker) => Promise<T>,
 ): Promise<{ kind: 'OK'; value: T } | { kind: Refusal }> {
   if (!scope.chosen.includes(connectionId)) return { kind: 'NOT_CHOSEN' }
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
@@ -177,15 +168,14 @@ async function readable<T>(
   })
 }
 
-/** A refusal of the Assistant's read, notebook or note, its reason in the log (S10: the model hears NOT_GRANTED). */
+/** A refusal of the Assistant's read or of its concepts, its reason in the log (S10: the model hears NOT_GRANTED). */
 function refused(
   deps: Deps,
   scope: SessionScope,
   about: { connectionId: ConnectionId; operation?: string; reason: Refusal },
-  event: 'ASSISTANT_READ_REFUSED' | 'CONNECTION_NOTE_REFUSED' = 'ASSISTANT_READ_REFUSED',
 ) {
   const { companyId, personId } = scope
-  deps.log.info({ companyId, personId, ...about }, event)
+  deps.log.info({ companyId, personId, ...about }, 'ASSISTANT_READ_REFUSED')
   return { kind: 'NOT_GRANTED' } as const
 }
 
@@ -193,44 +183,36 @@ function viewerOf(scope: SessionScope) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
-/** The chosen connection its place offers, opened; none once the refusal is logged as `event`. */
-async function chosenOpened(
-  deps: Deps,
-  scope: SessionScope,
-  connectionId: ConnectionId,
-  event?: Parameters<typeof refused>[3],
-) {
+/** The chosen connection its place offers, opened; none once the refusal is logged. */
+async function chosenOpened(deps: Deps, scope: SessionScope, connectionId: ConnectionId) {
   const found = await readable(deps, scope, connectionId, async (tx, _row, speaker) => ({
     opened: await openedIn(deps, tx, { companyId: scope.companyId, connectionId }),
     speaker,
   }))
   if (found.kind === 'OK') return found.value
-  refused(deps, scope, { connectionId, reason: found.kind }, event)
+  refused(deps, scope, { connectionId, reason: found.kind })
   return undefined
 }
 
-/**
- * The Assistant's note: the chosen connection its place offers, one of the turn's calls, then the
- * proof and the write, which checks `manageConnections` (step 24.3.5).
- */
-async function noted(
+/** The Ontology's door on the chosen connection its place offers, its calls counted by the turn. */
+async function conceptsOn(
   deps: Deps,
   spend: ReturnType<typeof createSpending>,
   scope: SessionScope,
-  call: Parameters<AssistantConnectors['saveNote']>[1],
-): Promise<NoteSaved | Spent> {
-  const chosen = await chosenOpened(deps, scope, call.connectionId, 'CONNECTION_NOTE_REFUSED')
-  if (chosen === undefined) return { kind: 'NOT_GRANTED' }
-  if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
-  const read = {
+  call: Parameters<AssistantConnectors['concepts']>[1],
+): Promise<ConceptDoor | undefined> {
+  const chosen = await chosenOpened(deps, scope, call.connectionId)
+  if (chosen === undefined) return undefined
+  const reader = {
     by: 'assistant',
     ids: idsOf(scope),
     viewer: viewerOf(scope),
     speaker: chosen.speaker,
     opened: chosen.opened,
     deadlineMs: CALL_DEADLINE_MS,
+    signal: call.signal,
   } as const
-  return provedAndSaved(deps, { ...call, read })
+  return conceptDoorOf(deps, reader, () => spend(call.turn))
 }
 
 /** The kit's typed reads of each row's connector, the read door's left out. */
@@ -251,7 +233,7 @@ function kitReadsOf(rows: readonly { id: string; connector: string }[]): KitRead
   )
 }
 
-/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
+/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`, and the door the Ontology proves through. */
 /** A connection as the place lists it: the fields the screen and the model read, and whether the conversation chose it. */
 function chosenAmong(scope: SessionScope) {
   const chosen = new Set(scope.chosen)
@@ -352,19 +334,6 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       return kitReadsOf((await offeredTo(deps, scope))?.rows ?? [])
     },
 
-    async notes(scope, connectionId) {
-      const found = await readable(deps, scope, connectionId, async (_, row, speaker) => {
-        const refusal = await mayUseNotebook(deps, scope.companyId, speaker, {
-          connectionId,
-          connector: row.connector,
-        })
-        return refusal ?? Notes.parse(row.notes)
-      })
-      if (found.kind === 'OK') return found.value
-      refused(deps, scope, { connectionId, reason: found.kind })
-      return null
-    },
-
-    saveNote: (scope, call) => noted(deps, spend, scope, call),
+    concepts: (scope, call) => conceptsOn(deps, spend, scope, call),
   }
 }

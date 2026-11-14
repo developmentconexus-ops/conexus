@@ -3,8 +3,8 @@ import {
   CircleAlertIcon,
   CopyPlusIcon,
   DatabaseIcon,
-  NotebookPenIcon,
-  NotebookTextIcon,
+  LightbulbIcon,
+  ListTreeIcon,
 } from 'lucide-react'
 import { z } from 'zod'
 import type { WritesRead } from './approval-item.ts'
@@ -14,11 +14,11 @@ import { readRefusedText, refusedLabelText } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const { connectorRead, connectorNotes, connectorNoteSave, copyPropose } = BUILDER_TOOL
+const { connectorRead, conceptPropose, inventorySearch, copyPropose } = BUILDER_TOOL
 
 /** The rows of the tools of a Projeto's granted connections (card of step 20, U5). */
 export const CONNECTOR_SPECS: Record<
-  typeof connectorRead | typeof connectorNotes | typeof connectorNoteSave | typeof copyPropose,
+  typeof connectorRead | typeof conceptPropose | typeof inventorySearch | typeof copyPropose,
   ToolSpec
 > = {
   [connectorRead]: {
@@ -30,21 +30,21 @@ export const CONNECTOR_SPECS: Record<
     body: 'generic',
     groups: true,
   },
-  [connectorNotes]: {
-    icon: NotebookTextIcon,
-    running: 'Relendo o caderno do sistema',
-    done: 'Releu o caderno do sistema',
-    failed: 'Não conseguiu reler o caderno',
-    verb: 'releu caderno',
+  [conceptPropose]: {
+    icon: LightbulbIcon,
+    running: 'Propondo conceitos da empresa',
+    done: 'Propôs conceitos da empresa',
+    failed: 'Não conseguiu propor os conceitos',
+    verb: 'propôs conceitos',
     body: 'generic',
     groups: true,
   },
-  [connectorNoteSave]: {
-    icon: NotebookPenIcon,
-    running: 'Anotando no caderno do sistema',
-    done: 'Anotou no caderno do sistema',
-    failed: 'Não conseguiu anotar no caderno',
-    verb: 'anotou',
+  [inventorySearch]: {
+    icon: ListTreeIcon,
+    running: 'Procurando no inventário do sistema',
+    done: 'Procurou no inventário do sistema',
+    failed: 'Não conseguiu procurar no inventário',
+    verb: 'procurou inventário',
     body: 'generic',
     groups: true,
   },

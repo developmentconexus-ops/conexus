@@ -1,8 +1,8 @@
+import type { CompanyId, Connection, ConnectionId } from '@conexus/hub-api'
 import {
   callAppConnector,
   callToolConnector,
   completeConnectionSignIn,
-  deleteConnectionNote,
   getConnection,
   grantProjectConnection,
   linkConnection,
@@ -17,12 +17,13 @@ import {
   unlinkConnection,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { AppCalls } from './app-calls.ts'
 import { copiesOfConnection } from './connection-copies.ts'
 import { detail, link, list, reconnect, unlink } from './connections.ts'
 import { grant, list as listGrants, revoke } from './grants.ts'
-import { erase } from './notes.ts'
 import type { Deps } from './rows.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
@@ -33,6 +34,25 @@ function ended(
   native: { status: number; code: string | null } | null,
 ): Record<string, string | number> {
   return native === null ? {} : { status: native.status, code: native.code ?? '-' }
+}
+
+/** A connection just linked has its inventory read; a failure only reaches the log, and the link answers as before (U2). */
+async function readInventory(
+  deps: Deps,
+  ids: { companyId: CompanyId; connectionId: ConnectionId },
+  log: FailureLog,
+): Promise<void> {
+  try {
+    await deps.inventory().launch(ids)
+  } catch (error) {
+    logFailure(
+      log,
+      new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'INVENTORY_OPEN' }, cause: error }),
+      {
+        connectionId: ids.connectionId,
+      },
+    )
+  }
 }
 
 export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void {
@@ -54,6 +74,11 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
         connector: made.connection.connector,
       }
       log.info(fields, 'CONNECTION_LINKED')
+      await readInventory(
+        deps,
+        { companyId: params.companyId, connectionId: made.connection.id },
+        log,
+      )
     }
     return answer({ connection: made.connection })
   })
@@ -88,9 +113,12 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     return answer({ url: started.url })
   })
 
-  serve(app, completeConnectionSignIn, async ({ person, params, body, log }) =>
-    answer(await completeSignIn(deps, { person, ...params, answer: body, log })),
-  )
+  serve(app, completeConnectionSignIn, async ({ person, params, body, log }) => {
+    function created(connection: Connection) {
+      return readInventory(deps, { companyId: params.companyId, connectionId: connection.id }, log)
+    }
+    return answer(await completeSignIn(deps, { person, ...params, answer: body, log, created }))
+  })
 
   registerGrantRoutes(app, deps)
 
@@ -107,7 +135,7 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
   })
 }
 
-/** The grant of a connection to a Projeto, and the connection's notebook (step 20). */
+/** The grant of a connection to a Projeto (step 20). */
 function registerGrantRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, listProjectConnections, async ({ person, params }) =>
     answer(await listGrants(deps, { person, ...params })),
@@ -122,12 +150,6 @@ function registerGrantRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, revokeProjectConnection, async ({ person, params, log }) => {
     if (await revoke(deps, { person, ...params }))
       log.info({ by: person.id, ...params }, 'PROJECT_CONNECTION_REVOKED')
-    return answer(undefined)
-  })
-
-  serve(app, deleteConnectionNote, async ({ person, params, log }) => {
-    await erase(deps, { person, ...params })
-    log.info({ by: person.id, connectionId: params.connectionId }, 'CONNECTION_NOTE_DELETED')
     return answer(undefined)
   })
 }

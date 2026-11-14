@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
+import type { ConceptProposed } from '@conexus/hub-api'
+import { ConnectionId, OntologyProposalId, PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
+import type { OntologyDoor } from '../ontology/public.ts'
 import type { BuilderConnectors, ConnectorAccess, GrantedConnection } from './public.ts'
 import { builderAccess, connectorTools } from './public.ts'
 
@@ -22,20 +24,18 @@ function granted(
     skill: { name: `conexus-${connector}`, content: '', references: {} },
     reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta', list: null }],
     writes: [],
-    notes: [],
     copies: false,
   }
 }
 
 const QUIET = { info: () => undefined, error: () => undefined }
 
-/** An access over `connections`, whose reads and notebook calls are recorded. */
+/** An access over `connections`, whose reads are recorded. */
 function accessOver(
   connections: ReturnType<typeof granted>[],
   over: Partial<ConnectorAccess> = {},
 ) {
   const reads: { connectionId: string; operation: string; input: unknown }[] = []
-  const notes: string[] = []
   const access: ConnectorAccess = {
     connections,
     read: async (call) => {
@@ -43,21 +43,50 @@ function accessOver(
       return { kind: 'OK', value: { linhas: [] }, complete: true, rows: 0, bytes: 14 }
     },
     log: QUIET,
-    notes: async (connectionId) => {
-      notes.push(connectionId)
-      return {}
-    },
     wording: { whose: 'x', limit: 'y' },
     ...over,
   }
-  return { access, reads, notes }
+  return { access, reads }
+}
+
+const RENAME = {
+  connection: 'Matriz',
+  demand: 'o nome do pedido',
+  items: [{ kind: 'RENAME_LABEL', target: 'pedido', name: 'Pedido' }],
+}
+
+const PROPOSED: ConceptProposed = {
+  kind: 'PROPOSED',
+  proposalId: OntologyProposalId.parse('77777777-7777-4777-8777-777777777777'),
+  baseRevision: 0,
+  items: [],
+  refused: [],
+}
+
+/** The Ontology's door for these tests: a proposal is recorded and answers an empty one. */
+function ontologyOf(seen: unknown[]): OntologyDoor {
+  return {
+    search: async () => ({ kind: 'EMPTY' }),
+    propose: async (input) => {
+      seen.push({ connectionId: input.door.connectionId, items: input.items })
+      return PROPOSED
+    },
+  }
+}
+
+function conceptDoor(connectionId: ConnectionId) {
+  return {
+    connectionId,
+    prove: async () => ({ kind: 'CALLS_SPENT' }) as const,
+    query: async () => ({ kind: 'CALLS_SPENT' }) as const,
+  }
 }
 
 function runOn(set: object, name: string, input: object, context: object = {}) {
   return Object(set)[name].execute(input, { requestContext: new RequestContext(), ...context })
 }
 
-test('a leitura do Builder chega à porta com a ligação, a operação e a consulta, e a escrita do caderno leva a corrida', async () => {
+test('a leitura do Builder chega à porta com a ligação, a operação e a consulta, e a proposta de conceitos leva a corrida', async () => {
   const seen: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
@@ -67,10 +96,9 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
       seen.push(call)
       return { kind: 'NOT_GRANTED' }
     },
-    notes: async () => ({}),
-    saveNote: async (_ids, call) => {
+    concepts: async (_ids, call) => {
       seen.push(call)
-      return { kind: 'SAVED', provedRows: 1 }
+      return conceptDoor(call.connectionId)
     },
   }
   const ids = {
@@ -78,20 +106,21 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
     projectId: '55555555555555555555555555555555',
   }
   const person = PersonId.parse('66666666-6666-4666-8666-666666666666')
-  const { access, save } = builderAccess(
+  const proposed: unknown[] = []
+  const { access, concepts } = builderAccess(
     port,
+    ontologyOf(proposed),
     [granted('sankhya', SANKHYA)],
     { ...Object(ids), personId: person, runIdOf: () => RUN },
     QUIET,
   )
-  const set = connectorTools(access, { noteSave: true, save })
+  const set = connectorTools(access, { concepts })
   await runOn(set, 'connector_read', {
     connection: 'Matriz',
     operation: 'sankhya.consultar',
     input: { sql: 'SELECT 1' },
   })
-  const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  await runOn(set, 'connector_note_save', note)
+  await runOn(set, 'concept_propose', RENAME)
   assert.deepEqual(seen[0], {
     connectionId: SANKHYA,
     operation: 'consultar',
@@ -100,14 +129,8 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
     runId: RUN,
     signal: undefined,
   })
-  assert.deepEqual(seen[1], {
-    connectionId: SANKHYA,
-    concept: 'C',
-    mapping: 'm',
-    provingQuery: 'q',
-    personId: person,
-    runId: RUN,
-  })
+  assert.deepEqual(seen[1], { connectionId: SANKHYA, personId: person, runId: RUN })
+  assert.deepEqual(proposed, [{ connectionId: SANKHYA, items: RENAME.items }])
 })
 
 test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOOL_WITHOUT_RUN, e nada chega à porta', async () => {
@@ -120,14 +143,14 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
       calls.push(args)
       return { kind: 'NOT_GRANTED' }
     },
-    notes: async () => ({}),
-    saveNote: async (...args) => {
+    concepts: async (...args) => {
       calls.push(args)
-      return { kind: 'SAVED', provedRows: 1 }
+      return undefined
     },
   }
-  const { access, save } = builderAccess(
+  const { access, concepts } = builderAccess(
     port,
+    ontologyOf(calls),
     [granted('sankhya', SANKHYA)],
     {
       ...Object(ids()),
@@ -136,14 +159,13 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
     },
     QUIET,
   )
-  const set = connectorTools(access, { noteSave: true, save })
+  const set = connectorTools(access, { concepts })
   const read = { connection: 'Matriz', operation: 'sankhya.consultar', input: {} }
-  const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
   function refusal(error: unknown) {
     return Object(error).details?.reason === 'CONNECTOR_TOOL_WITHOUT_RUN'
   }
   await assert.rejects(runOn(set, 'connector_read', read), refusal)
-  await assert.rejects(runOn(set, 'connector_note_save', note), refusal)
+  await assert.rejects(runOn(set, 'concept_propose', RENAME), refusal)
   assert.deepEqual(calls, [])
 })
 
@@ -159,7 +181,7 @@ test('duas ligações de mesmo nome em sistemas diferentes: a leitura vai à do 
     granted('sankhya', SANKHYA),
     granted('mercado-livre', LOJA),
   ])
-  const set = connectorTools(access, { noteSave: false })
+  const set = connectorTools(access)
   await runOn(set, 'connector_read', {
     connection: 'Matriz',
     operation: 'mercado-livre.consultar',
@@ -176,64 +198,43 @@ test('duas ligações de mesmo nome em sistemas diferentes: a leitura vai à do 
   )
 })
 
-test('o caderno: só dois sistemas com o mesmo nome dão AMBIGUOUS_CONNECTION; um nome só, ou nomes diferentes, vão direto à ligação', async () => {
-  const single = accessOver([
-    granted('sankhya', SANKHYA, 'Matriz'),
-    granted('sankhya', LOJA, 'Filial'),
-  ])
-  const set = connectorTools(single.access, { noteSave: false })
-  assert.deepEqual(await runOn(set, 'connector_notes', { connection: 'Matriz' }), {})
-  assert.deepEqual(single.notes, [SANKHYA])
-  const named = await runOn(set, 'connector_notes', { connection: 'Matriz', connector: 'outro' })
-  assert.deepEqual(named, { kind: 'NOT_GRANTED' })
-  const alone = accessOver([granted('sankhya', SANKHYA)])
-  assert.deepEqual(
-    await runOn(connectorTools(alone.access, { noteSave: false }), 'connector_notes', {
-      connection: 'Matriz',
-    }),
-    {},
-  )
-})
-
-test('a escrita do caderno de um conector que a ligação não tem é NOT_GRANTED, e nada é salvo', async () => {
-  const saved: unknown[] = []
+test('a proposta a um conector que a ligação não tem é NOT_GRANTED, e nada é proposto', async () => {
+  const proposed: unknown[] = []
   const { access } = accessOver([granted('sankhya', SANKHYA)])
   const set = connectorTools(access, {
-    noteSave: true,
-    save: async (call) => {
-      saved.push(call)
-      return { kind: 'SAVED', provedRows: 1 }
+    concepts: async (call) => {
+      proposed.push(call)
+      return PROPOSED
     },
   })
-  const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  assert.deepEqual(await runOn(set, 'connector_note_save', { ...note, connector: 'outro' }), {
+  assert.deepEqual(await runOn(set, 'concept_propose', { ...RENAME, connector: 'outro' }), {
     kind: 'NOT_GRANTED',
   })
-  assert.deepEqual(saved, [])
+  assert.deepEqual(proposed, [])
 })
 
-test('a escrita do caderno recusa o vazio e o que passa dos limites do conceito, do mapeamento e da consulta', async () => {
-  const saved: unknown[] = []
+test('a proposta recusa a demanda vazia ou longa e a lista vazia ou de mais de 40 itens', async () => {
+  const proposed: unknown[] = []
   const { access } = accessOver([granted('sankhya', SANKHYA)])
   const set = connectorTools(access, {
-    noteSave: true,
-    save: async (call) => {
-      saved.push(call)
-      return { kind: 'SAVED', provedRows: 1 }
+    concepts: async (call) => {
+      proposed.push(call)
+      return PROPOSED
     },
   })
-  const full = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  const limits = { concept: 120, mapping: 500, provingQuery: 4000 }
-  for (const [field, max] of Object.entries(limits)) {
-    const refused = [
-      await runOn(set, 'connector_note_save', { ...full, [field]: '' }),
-      await runOn(set, 'connector_note_save', { ...full, [field]: 'x'.repeat(max + 1) }),
-    ]
-    for (const each of refused) assert.equal(each.error, true, field)
-    const kept = await runOn(set, 'connector_note_save', { ...full, [field]: 'x'.repeat(max) })
-    assert.equal(kept.kind, 'SAVED', field)
-  }
-  assert.equal(saved.length, 3)
+  const [item] = RENAME.items
+  for (const refused of [
+    { ...RENAME, demand: '' },
+    { ...RENAME, demand: 'x'.repeat(501) },
+    { ...RENAME, items: [] },
+    { ...RENAME, items: Array.from({ length: 41 }, () => item) },
+  ])
+    assert.equal((await runOn(set, 'concept_propose', refused)).error, true)
+  assert.equal(
+    (await runOn(set, 'concept_propose', { ...RENAME, demand: 'x'.repeat(500) })).kind,
+    'PROPOSED',
+  )
+  assert.equal(proposed.length, 1)
 })
 
 test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta reads/, uma recusa passa intacta, e sem máquina ou sem caminho volta o corte', async () => {
@@ -258,7 +259,7 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
     read: async () => whole,
     savedAt: () => 'reads/aaaa-1.json',
   })
-  const set = connectorTools(withMachine.access, { noteSave: false })
+  const set = connectorTools(withMachine.access)
   const saved = await runOn(set, 'connector_read', read, { workspace: { filesystem: files } })
   assert.deepEqual(written, ['reads/aaaa-1.json'])
   assert.equal(saved.file, 'reads/aaaa-1.json')
@@ -268,14 +269,9 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
     read: async () => ({ kind: 'CALLS_SPENT' }),
     savedAt: () => 'reads/aaaa-2.json',
   })
-  const refused = await runOn(
-    connectorTools(spent.access, { noteSave: false }),
-    'connector_read',
-    read,
-    {
-      workspace: { filesystem: files },
-    },
-  )
+  const refused = await runOn(connectorTools(spent.access), 'connector_read', read, {
+    workspace: { filesystem: files },
+  })
   assert.deepEqual(refused, { kind: 'CALLS_SPENT' })
   assert.equal(written.length, 1, 'a refusal is not written')
 
@@ -285,14 +281,9 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
     ['OK', false, false],
   )
   const noPath = accessOver([granted('sankhya', SANKHYA)], { read: async () => whole })
-  const cut = await runOn(
-    connectorTools(noPath.access, { noteSave: false }),
-    'connector_read',
-    read,
-    {
-      workspace: { filesystem: files },
-    },
-  )
+  const cut = await runOn(connectorTools(noPath.access), 'connector_read', read, {
+    workspace: { filesystem: files },
+  })
   assert.deepEqual(
     [cut.kind, 'file' in cut, 'saved' in cut, 'whole' in cut],
     ['OK', false, false, false],
@@ -300,9 +291,14 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
   assert.equal(written.length, 1)
 })
 
-test('uma ligação sem leituras não leva a ferramenta de leitura, mas leva o caderno; sem ligações nenhuma ferramenta', () => {
+async function concepts() {
+  return { kind: 'NOT_GRANTED' } as const
+}
+
+test('uma ligação sem leituras não leva a ferramenta de leitura, mas leva a proposta; sem ligações nenhuma ferramenta', () => {
   const none = { ...accessOver([]).access }
-  assert.deepEqual(Object.keys(connectorTools(none, { noteSave: false })), [])
+  assert.deepEqual(Object.keys(connectorTools(none, { concepts })), [])
   const noReads = accessOver([{ ...granted('sankhya', SANKHYA), reads: [] }]).access
-  assert.deepEqual(Object.keys(connectorTools(noReads, { noteSave: false })), ['connector_notes'])
+  assert.deepEqual(Object.keys(connectorTools(noReads)), [])
+  assert.deepEqual(Object.keys(connectorTools(noReads, { concepts })), ['concept_propose'])
 })

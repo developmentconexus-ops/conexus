@@ -21,10 +21,8 @@ export function maysOf(
       automate: speakers !== undefined && identity.allows(speakers.role, 'manageAutomations'),
       companyMemory:
         speakers !== undefined && identity.allows(speakers.role, 'manageCompanyMemory'),
-      note:
-        speakers !== undefined &&
-        !byAutomation &&
-        identity.allows(speakers.role, 'manageConnections'),
+      // Every member proposes concepts (Q1); an automation's run never does.
+      propose: speakers !== undefined && !byAutomation,
     }
   })
 }
