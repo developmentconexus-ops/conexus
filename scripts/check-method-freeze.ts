@@ -28,8 +28,6 @@ if (inConstruction.size === 0) {
   console.log('check-method-freeze: no step in construction, the method may change')
   process.exit(0)
 }
-// The pattern card's model affects the pattern track alone; any other file, the tracks the pull
-// request affects, when one of them has a step in construction.
 const tracks = tracksAffected(root, base, inConstruction)
 function affected(file: string): boolean {
   if (PATTERN_ONLY.includes(file)) return inConstruction.has('pattern')

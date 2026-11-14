@@ -43,7 +43,6 @@ function onlyDocuments(): boolean {
 
 const stepsDir = join(root, 'docs/steps')
 const inConstruction = cardsInConstruction(root, existsSync(stepsDir) ? readdirSync(stepsDir) : [])
-// A pull request answers for the cards of the tracks it affects (delivery L6, L20); a push to main, which has no base, for all.
 const affected =
   base === undefined ? undefined : tracksAffected(root, base, new Set(inConstruction.values()))
 const cards = [...inConstruction]

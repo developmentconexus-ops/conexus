@@ -6,12 +6,6 @@ import { runCommand } from './command.ts'
 
 const CARDS = 'docs/steps/'
 
-/**
- * The track a product file belongs to (delivery L1): the design track owns `DESIGN.md` and
- * `apps/web/src/{brand,ui}/`, the Assistant track `apps/server/src/builder/assistant/`, the pattern
- * track `packages/connectors/src/<provider>/`, and any other file of `apps/`, `packages/`, `tests/`
- * or `infra/` is the frontier's. Documents, skills, scripts and workflows belong to no track.
- */
 function trackOfFile(file: string): Track | undefined {
   if (file === 'DESIGN.md' || /^apps\/web\/src\/(brand|ui)\//.test(file)) return 'design'
   if (file.startsWith('apps/server/src/builder/assistant/')) return 'assistant'
@@ -19,7 +13,6 @@ function trackOfFile(file: string): Track | undefined {
   return /^(apps|packages|tests|infra)\//.test(file) ? 'frontier' : undefined
 }
 
-/** The card files of `docs/steps/` at `root`, with the track each belongs to. */
 export function cardsInConstruction(root: string, names: string[]): Map<string, Track> {
   return new Map(
     names
@@ -28,21 +21,11 @@ export function cardsInConstruction(root: string, names: string[]): Map<string, 
   )
 }
 
-/**
- * The tracks a pull request answers for (delivery L5, L6, L20): those it touches, or every track in
- * construction when it touches none, as a change of the method alone or of the scripts, the
- * workflows and the root files does.
- */
 export function tracksAffected(root: string, base: string, inConstruction: Set<Track>): Set<Track> {
   const touched = tracksTouched(root, base)
   return touched.size > 0 ? touched : inConstruction
 }
 
-/**
- * The tracks a pull request touches: the track of each card it changes or deletes, read from the
- * base when the card is gone, and of each product file it changes (delivery L1, L20). A change of
- * the method alone touches none.
- */
 function tracksTouched(root: string, base: string): Set<Track> {
   const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
     cwd: root,
