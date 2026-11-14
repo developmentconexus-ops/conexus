@@ -3,7 +3,6 @@ import {
   callAppConnector,
   callToolConnector,
   completeConnectionSignIn,
-  deleteConnectionNote,
   getConnection,
   grantProjectConnection,
   linkConnection,
@@ -25,7 +24,6 @@ import type { AppCalls } from './app-calls.ts'
 import { copiesOfConnection } from './connection-copies.ts'
 import { detail, link, list, reconnect, unlink } from './connections.ts'
 import { grant, list as listGrants, revoke } from './grants.ts'
-import { erase } from './notes.ts'
 import type { Deps } from './rows.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import { test } from './testing.ts'
@@ -134,7 +132,7 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
   })
 }
 
-/** The grant of a connection to a Projeto, and the connection's notebook (step 20). */
+/** The grant of a connection to a Projeto (step 20). */
 function registerGrantRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, listProjectConnections, async ({ person, params }) =>
     answer(await listGrants(deps, { person, ...params })),
@@ -149,12 +147,6 @@ function registerGrantRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, revokeProjectConnection, async ({ person, params, log }) => {
     if (await revoke(deps, { person, ...params }))
       log.info({ by: person.id, ...params }, 'PROJECT_CONNECTION_REVOKED')
-    return answer(undefined)
-  })
-
-  serve(app, deleteConnectionNote, async ({ person, params, log }) => {
-    await erase(deps, { person, ...params })
-    log.info({ by: person.id, connectionId: params.connectionId }, 'CONNECTION_NOTE_DELETED')
     return answer(undefined)
   })
 }

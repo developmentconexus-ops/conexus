@@ -37,8 +37,8 @@ export const AgentConfig = z.object({
   model: ModelId.nullable(),
   memory: AgentMemory,
   /**
-   * The Projeto's connections the agent selected (decision E4): each brings its notebook and gives
-   * no read; the reads are the chosen tools'. A tool's connection is always among them.
+   * The Projeto's connections the agent selected (decision E4): each gives no read; the reads are
+   * the chosen tools'. A tool's connection is always among them.
    */
   connections: z
     .array(ConnectionId)

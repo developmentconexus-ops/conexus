@@ -192,14 +192,14 @@ async function completed(
   )
 }
 
-const SAVE = 'connector_note_save'
+const PROPOSE = 'concept_propose'
 const TEACHING =
-  'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Anota isso no caderno.'
+  'Na Matriz, o NUNOTA da tabela TGFCAB é o número da nota de venda. Guarde isso como conhecimento da empresa.'
 const OPT_IN =
   'opt-in: set CONEXUS_EVAL_REAL_MODEL to a folder; firstmate opens the link the test writes there and writes back the sign-in code, or CONEXUS_EVAL_CLAUDE_CREDENTIAL names a saved sign-in'
 
-/** The real model's case of the caderno: the Hub signed in, and every tool call and the final text of a case kept beside the sign-in files, never in the repository. */
-async function notebook(t: TestContext) {
+/** The real model's case of the concepts: the Hub signed in, and every tool call and the final text of a case kept beside the sign-in files, never in the repository. */
+async function proposing(t: TestContext) {
   const folder = REAL_MODEL ?? ''
   const on = await subscribed(t, folder)
   function record(name: string, parts: MastraMessagePart[]) {
@@ -207,7 +207,7 @@ async function notebook(t: TestContext) {
       part.type === 'tool-invocation' ? [part.toolInvocation] : [],
     )
     writeFileSync(
-      join(folder, `caderno-${name}.json`),
+      join(folder, `conceitos-${name}.json`),
       JSON.stringify({ calls, text: textOf(parts) }, null, 2),
     )
     return `${JSON.stringify(calls)}\n${textOf(parts)}`
@@ -215,33 +215,31 @@ async function notebook(t: TestContext) {
   return { on, record, body: { connections: [on.matriz] } }
 }
 
-test('o modelo de verdade: o caderno, a conversa em que a pessoa não ensina nem pede anotação não grava', {
+test('o modelo de verdade: os conceitos, a conversa em que a pessoa não ensina nem pede para guardar não propõe', {
   timeout: 1_800_000,
 }, async (t) => {
   if (REAL_MODEL === undefined) return t.skip(OPT_IN)
-  const { on, record, body } = await notebook(t)
+  const { on, record, body } = await proposing(t)
   const idle = await created(on.hub, on.ana, on.assistant, body)
   const chat = 'O que é o NUNOTA no Sankhya?'
   await completed(on, on.ana, idle, await (await talking(t, on.hub, on.ana, idle)).say(chat))
   const talked = await answerParts(on.hub, on.ana, idle)
   const talk = record('sem-ensino', talked)
-  assert.deepEqual(await checked(talked, [checks.didNotCall(SAVE)]), [1], talk)
+  assert.deepEqual(await checked(talked, [checks.didNotCall(PROPOSE)]), [1], talk)
 })
 
-test('o modelo de verdade: o caderno, o membro pede e o turno termina com o texto e sem a ferramenta', {
+test('o modelo de verdade: os conceitos, o membro ensina e o turno propõe pela ferramenta e diz o que propôs', {
   timeout: 1_800_000,
 }, async (t) => {
   if (REAL_MODEL === undefined) return t.skip(OPT_IN)
-  const { on, record, body } = await notebook(t)
+  const { on, record, body } = await proposing(t)
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
   const his = await created(on.hub, bruno, on.assistant, body)
   await completed(on, bruno, his, await (await talking(t, on.hub, bruno, his)).say(TEACHING))
   const theirs = await answerParts(on.hub, bruno, his)
   const hers = record('membro', theirs)
-  assert.deepEqual(await checked(theirs, [checks.didNotCall(SAVE)]), [1], hers)
-  assert.match(textOf(theirs), /NUNOTA/, `o texto não traz o conceito\n${hers}`)
-  assert.match(textOf(theirs), /SELECT/i, `o texto não traz a consulta\n${hers}`)
-  assert.match(textOf(theirs), /TGFCAB/, `o texto não traz a tabela\n${hers}`)
+  assert.deepEqual(await checked(theirs, [checks.calledTool(PROPOSE)]), [1], hers)
+  assert.match(textOf(theirs), /NUNOTA|nota/i, `o texto não diz o que propôs\n${hers}`)
 })
 
 test('o modelo de verdade: o web_fetch do provedor Anthropic lê uma página pública pela assinatura, uma chamada, e o turno guarda a ferramenta, as fontes e os tokens (U2, passo 4)', {

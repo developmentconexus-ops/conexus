@@ -1,0 +1,2 @@
+-- contract: no image writes a NOTE item (only the old notebook's import would have, and it never shipped); founder 2026-11-13. A NOTE row left anywhere makes the new check fail and the migration abort, writing nothing.
+ALTER TABLE "ontology"."proposal_item" DROP CONSTRAINT "proposal_item_kind", ADD CONSTRAINT "proposal_item_kind" CHECK ("kind" IN ('ADD_CONCEPT', 'ADD_FIELD', 'SET_CODE', 'ADD_RELATION', 'SET_SOURCE', 'RENAME_LABEL', 'DEPRECATE'));

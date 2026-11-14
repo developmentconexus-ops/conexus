@@ -35,7 +35,7 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
-import type { InventoryDoor } from '../ontology/public.ts'
+import type { OntologyDoor } from '../ontology/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
 import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
@@ -85,8 +85,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...COMPANY_MEMORY_TOOLS,
   SEARCH_TOOLS,
   ...TYPED_READ_NAMES,
-  BUILDER_TOOL.connectorNotes,
-  BUILDER_TOOL.connectorNoteSave,
+  BUILDER_TOOL.conceptPropose,
   BUILDER_TOOL.inventorySearch,
   ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
@@ -111,7 +110,7 @@ type Deps = {
   database: Database
   identity: IdentityPorts
   connectors: AssistantConnectors
-  inventory: InventoryDoor
+  ontology: OntologyDoor
   projects: AssistantProjects
   queue: QueueDeps
   /**
@@ -237,7 +236,7 @@ function assistantAgent(
     tools: async ({ requestContext }) => {
       const scope = await scopeOf(requestContext)
       const chosen = await chosenOf(requestContext)
-      const { byAutomation, automate, note } = await maysFor(requestContext)
+      const { byAutomation, automate, propose } = await maysFor(requestContext)
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
@@ -247,7 +246,7 @@ function assistantAgent(
         ...handOffOf(scope, proposals, byAutomation),
         ...(scope === undefined
           ? {}
-          : assistantConnectorTools(deps, { scope, chosen, mayNote: note })),
+          : assistantConnectorTools(deps, { scope, chosen, mayPropose: propose })),
       }
     },
     skills: async ({ requestContext }) => [

@@ -105,31 +105,7 @@ const BROKEN = line('Financeiro', {
   access: { kind: 'NOT_RELEASED_NOT_WORKING' },
 })
 
-const NOTE = {
-  concept: 'Vendedor do pedido',
-  mapping: 'TGFCAB.AD_CODVEND → TGFVEN.CODVEND',
-  provedAt: '2026-10-30T14:02:00.000Z',
-  provedRows: 20,
-  writtenBy: 'Bruno',
-}
-const CONNECTION = connectionOf({ name: 'Matriz', state: 'ACTIVE' })
-
-function notebook(who: typeof OWNER, mayManage: boolean, notes: (typeof NOTE)[]) {
-  return {
-    ...who,
-    [`GET /api/companies/${COMPANY.id}/connections`]: ok(listConnections, {
-      connectors: [SANKHYA],
-      connections: [CONNECTION],
-      mayManage,
-    }),
-    [`GET /api/companies/${COMPANY.id}/connections/${CONNECTION.id}`]: ok(getConnection, {
-      connection: CONNECTION,
-      notes,
-    }),
-  }
-}
-
-// The screens step 20 brings: the Projeto's Integrações with its Liberar, and the Caderno of a connection.
+// The screens step 20 brings: the Projeto's Integrações with its Liberar.
 export const PROJECT_INTEGRATIONS_STATES: State[] = [
   {
     name: 'Integrações do Projeto, a dona com liberadas e uma escolha pelo nome',
@@ -154,7 +130,6 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
       // The link to the connection's page is preloaded when it takes focus.
       [`GET /api/companies/${COMPANY.id}/connections/${STOPPED.id}`]: ok(getConnection, {
         connection: connectionOf({ id: STOPPED.id, name: STOPPED.name, state: 'NEW' }),
-        notes: [],
       }),
     },
     settle: (p) => waitFor(p, 'liberado, mas não lê até a ligação funcionar'),
@@ -166,7 +141,6 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
       ...page(OWNER, true, [], [UNTESTED]),
       [`GET /api/companies/${COMPANY.id}/connections/${UNTESTED.id}`]: ok(getConnection, {
         connection: connectionOf({ id: UNTESTED.id, name: UNTESTED.name, state: 'NEW' }),
-        notes: [],
       }),
     },
     settle: (p) => waitFor(p, 'Teste a ligação antes de liberar'),
@@ -185,7 +159,6 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
       // The link to the connection's page is preloaded when it takes focus.
       [`GET /api/companies/${COMPANY.id}/connections/${BROKEN.id}`]: ok(getConnection, {
         connection: connectionOf({ id: BROKEN.id, name: BROKEN.name, state: 'NEEDS_REAUTH' }),
-        notes: [],
       }),
     },
     settle: (p) => waitFor(p, 'Conectar de novo em Integrações da empresa'),
@@ -221,32 +194,5 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
     path: PAGE,
     replies: page(OWNER, true, [], []),
     settle: (p) => waitFor(p, 'A empresa ainda não ligou nenhum sistema.'),
-  },
-  {
-    name: 'A ligação com o Caderno da dona',
-    path: `/companies/${COMPANY.id}/integrations/${CONNECTION.id}`,
-    replies: notebook(OWNER, true, [NOTE]),
-    settle: (p) => waitFor(p, 'Vendedor do pedido'),
-  },
-  {
-    name: 'A ligação com a confirmação de Apagar',
-    path: `/companies/${COMPANY.id}/integrations/${CONNECTION.id}`,
-    replies: notebook(OWNER, true, [NOTE]),
-    settle: async (p) => {
-      await p.getByRole('button', { name: 'Apagar: Vendedor do pedido' }).click()
-      await waitFor(p, 'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.')
-    },
-  },
-  {
-    name: 'A ligação com o Caderno vazio',
-    path: `/companies/${COMPANY.id}/integrations/${CONNECTION.id}`,
-    replies: notebook(OWNER, true, []),
-    settle: (p) => waitFor(p, 'Nada anotado nesta ligação ainda.'),
-  },
-  {
-    name: 'A ligação com o Caderno do membro',
-    path: `/companies/${COMPANY.id}/integrations/${CONNECTION.id}`,
-    replies: notebook(MEMBER, false, [NOTE]),
-    settle: (p) => waitFor(p, 'Vendedor do pedido'),
   },
 ]

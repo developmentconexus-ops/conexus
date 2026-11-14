@@ -34,9 +34,6 @@ export function connectionsPage(
 /** One connection's page. */
 export function connectionPage(id: string, connection: ReturnType<typeof connectionOf>): Replies {
   return {
-    [`GET /api/companies/${id}/connections/${connection.id}`]: ok(getConnection, {
-      connection,
-      notes: [],
-    }),
+    [`GET /api/companies/${id}/connections/${connection.id}`]: ok(getConnection, { connection }),
   }
 }

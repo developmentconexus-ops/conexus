@@ -21,7 +21,7 @@ import {
   toolsOf,
 } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import type { InventoryAsk, InventoryDoor } from '../ontology/public.ts'
+import type { InventoryAsk, OntologyDoor } from '../ontology/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
@@ -83,20 +83,25 @@ function dataFor(
   })
 }
 
-/** The Builder's connector tools, its notebook's write included, and `copy_propose` where a connector copies. */
+/** The Builder's connector tools, `concept_propose` included, and `copy_propose` where a connector copies. */
 function builderConnectorTools(
-  deps: { connectors: BuilderConnectors; inventory: InventoryDoor; runs: Runs; log: FailureLog },
+  deps: { connectors: BuilderConnectors; ontology: OntologyDoor; runs: Runs; log: FailureLog },
   granted: readonly GrantedConnection[],
-  ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
+  ids: Omit<Parameters<typeof builderAccess>[3], 'runIdOf'>,
 ): ToolsInput {
   const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
-  const { access, save, propose } = builderAccess(deps.connectors, granted, who, deps.log)
+  const { access, concepts, propose } = builderAccess(
+    deps.connectors,
+    deps.ontology,
+    granted,
+    who,
+    deps.log,
+  )
   const copying = granted.filter((each) => each.copies)
   const inventory: InventoryAsk = (call) =>
-    deps.inventory.search({ companyId: ids.companyId, ...call })
+    deps.ontology.search({ companyId: ids.companyId, ...call })
   return connectorTools(access, {
-    noteSave: true,
-    save,
+    concepts,
     inventory,
     propose: { copying, call: propose },
   })
@@ -118,7 +123,7 @@ export function createBuilder(deps: {
   runs: Runs
   index: ConversationIndex
   connectors: BuilderConnectors
-  inventory: InventoryDoor
+  ontology: OntologyDoor
   data: BuilderData
   copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>
   log: FailureLog

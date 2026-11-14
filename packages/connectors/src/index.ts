@@ -19,6 +19,14 @@ export {
   readToken,
   tokenRequest,
 } from './kernel/auth.ts'
+export type {
+  ConceptCall,
+  ConceptColumn,
+  ConceptFilter,
+  ConceptMeasure,
+  ConceptRead,
+} from './kernel/concepts.ts'
+export { ConceptRefused } from './kernel/concepts.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance-session.ts'
 export type {
   ConnectorCopy,

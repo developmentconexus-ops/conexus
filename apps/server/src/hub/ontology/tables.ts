@@ -228,7 +228,6 @@ const ITEM_KINDS = [
   'SET_SOURCE',
   'RENAME_LABEL',
   'DEPRECATE',
-  'NOTE',
 ] as const
 
 /** One change of a proposal, decided by itself; its content cannot change after it is written. */

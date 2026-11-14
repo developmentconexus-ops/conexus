@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { readSkill } from '../kernel/skill.ts'
+import { sankhyaConceptRead } from './concept-read.ts'
 import { sankhyaCopyModels } from './copies.ts'
 import { lerPagina } from './copy-read.ts'
 import { sankhyaDoor } from './door.ts'
@@ -88,5 +89,6 @@ export const sankhya = defineConnector({
   callLimit: { countedBy: 'ACCOUNT' }, // each company has its own Sankhya and its own keys
   copy: { read: lerPagina, models: sankhyaCopyModels },
   inventory: { read: lerInventario },
+  conceptRead: sankhyaConceptRead,
   skill: readSkill(SKILL),
 })

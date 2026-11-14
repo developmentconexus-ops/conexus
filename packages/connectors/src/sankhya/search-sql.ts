@@ -48,6 +48,24 @@ export function containing(columns: readonly string[], text: string): string {
   return like.length === 1 ? (like[0] ?? '') : `(${like.join(' OR ')})`
 }
 
+/** A code as the model or a person writes it: 1 to 40 letters, digits, spaces and `._/-`, no comment mark. */
+export const CodeText = z
+  .string()
+  .min(1)
+  .max(40)
+  .regex(/^[\p{L}\p{N} ._/-]+$/u)
+  .refine((text) => !MARKS.test(text))
+
+/** A code as one exact literal, case and accent kept (unlike `containing`); the schema has refused any other character. */
+export function exact(value: string): string {
+  return `'${CodeText.parse(value).replaceAll("'", "''")}'`
+}
+
+/** The column holds one of the codes, each an exact literal. */
+export function inExact(column: string, values: readonly string[]): string {
+  return `${column} IN (${values.map(exact).join(', ')})`
+}
+
 export function inList(column: string, codes: readonly number[]): string {
   return `${column} IN (${codes.join(', ')})`
 }

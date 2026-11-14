@@ -32,6 +32,7 @@ const Name = z.string().min(1).max(80)
 
 export const OntologyProposalId = z.uuid().brand<'OntologyProposalId'>()
 export const ProofRunId = z.uuid().brand<'ProofRunId'>()
+export type ProofRunId = z.infer<typeof ProofRunId>
 export const InventoryRunId = z.uuid().brand<'InventoryRunId'>()
 export type InventoryRunId = z.infer<typeof InventoryRunId>
 
@@ -52,7 +53,7 @@ export const SourceRead = z.strictObject({
   sql: z.string().min(1).max(4000),
 })
 
-/** The proposal's items, one union on `kind` (code C21). `NOTE` is written only by the migration. */
+/** The proposal's items, one union on `kind` (code C21). */
 export const ProposedItem = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('ADD_CONCEPT'),
@@ -127,17 +128,51 @@ export const ProposedItem = z.discriminatedUnion('kind', [
 ])
 export type ProposedItem = z.infer<typeof ProposedItem>
 
-/** A note of the old notebook, kept as a pending item (what `connection.notes` held, never a value). */
-export const NoteContent = z.strictObject({
-  connectionId: ConnectionId,
-  concept: z.string().min(1).max(120),
-  mapping: z.string().min(1).max(500),
-  provingQuery: z.string().min(1).max(4000),
-  provedAt: z.iso.datetime(),
-  provedRows: z.int().nonnegative(),
-})
+/** Why `concept_propose` left an item out; the others it kept. */
+export const ItemRefusal = z.enum([
+  'CONCEPT_INCOMPLETE',
+  'FIELD_NOT_IN_PROOF',
+  'CODE_UNSEEN',
+  'PROOF_FAILED',
+  'NOT_IN_ROLE',
+  'RELATION_INVALID',
+  'TARGET_UNKNOWN',
+  'ITEM_REPEATED',
+  'ROLE_NOT_SUBSET',
+  'ROLE_KEY_MISMATCH',
+])
+export type ItemRefusal = z.infer<typeof ItemRefusal>
 
-/** An item's content as `proposal_item.content` holds it: its `ProposedItem` without `kind`, or a note. */
+/** The demand a proposal answers, in the person's words. */
+export const Demand = z.string().min(1).max(500)
+
+/**
+ * What `concept_propose` answers: the open proposal, the items it kept with their proof (the rows
+ * counted and the columns seen, never a row), and each item it refused, with why. `detail` is the
+ * type of the system's answer for `PROOF_FAILED`, the rows outside the base for `ROLE_NOT_SUBSET`.
+ */
+export const ConceptProposed = z.object({
+  kind: z.literal('PROPOSED'),
+  proposalId: OntologyProposalId,
+  baseRevision: z.int().nonnegative(),
+  items: z.array(
+    z.object({
+      n: z.int().positive(),
+      target: z.string(),
+      proof: z.object({ rows: z.int().nonnegative(), columns: z.array(z.string()) }).optional(),
+    }),
+  ),
+  refused: z.array(
+    z.object({
+      target: z.string(),
+      reason: ItemRefusal,
+      detail: z.union([z.string(), z.int()]).optional(),
+    }),
+  ),
+})
+export type ConceptProposed = z.infer<typeof ConceptProposed>
+
+/** An item's content as `proposal_item.content` holds it: its `ProposedItem` without `kind`. */
 export const ItemContent = z.union([
   ProposedItem.options[0].omit({ kind: true }).strict(),
   ProposedItem.options[1].omit({ kind: true }).strict(),
@@ -146,7 +181,6 @@ export const ItemContent = z.union([
   ProposedItem.options[4].omit({ kind: true }).strict(),
   ProposedItem.options[5].omit({ kind: true }).strict(),
   ProposedItem.options[6].omit({ kind: true }).strict(),
-  NoteContent,
 ])
 export type ItemContent = z.infer<typeof ItemContent>
 

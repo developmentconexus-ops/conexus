@@ -54,8 +54,8 @@ export const connection = connectors.table(
     // Written and read by nothing since Testar became one check (founder, 2026-10-30): a later
     // migration drops it, once no running image reads it (data D6).
     lastTest: jsonb('last_test'),
-    // What the Builder proved about this company's system (founder, J1): names and codes, never
-    // values. Not a seal write: it does not bump `revision`.
+    // Written and read by nothing since the Ontology took the notebook's place (founder,
+    // 2026-11-13): a later migration drops it, once no running image reads it (data D6).
     notes: jsonb('notes').notNull().default(sql`'{}'::jsonb`),
     // The creation's Idempotency-Key (code C37).
     attemptKey: text('attempt_key').notNull(),

@@ -13,7 +13,7 @@ import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import { resourceOf } from '../controller-kit/public.ts'
 import { registerSourceRoutes } from '../git/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import type { InventoryDoor } from '../ontology/public.ts'
+import type { OntologyDoor } from '../ontology/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
 import type { GuardedMastra } from './guard.ts'
@@ -70,7 +70,7 @@ export function createBuilderConversations(deps: {
   queue: QueueDeps
   runs: Runs
   connectors: BuilderConnectors
-  inventory: InventoryDoor
+  ontology: OntologyDoor
   data: BuilderData
   copies: Pick<CopyService, 'projectView'>
   log: FailureLog
@@ -79,7 +79,7 @@ export function createBuilderConversations(deps: {
   const store = createConversationStore(deps)
   const builder = createBuilder({
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
-    ...{ index: store, connectors: deps.connectors, inventory: deps.inventory, data: deps.data },
+    ...{ index: store, connectors: deps.connectors, ontology: deps.ontology, data: deps.data },
     copies: (ids) => deps.copies.projectView(ids),
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {

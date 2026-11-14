@@ -126,7 +126,7 @@ export function subjectsOf(deps: SubjectsDeps) {
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
     copies: lateCopies,
-    ontology: () => ontology.inventory,
+    ontology: () => ontology,
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release

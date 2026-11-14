@@ -59,7 +59,7 @@ export function researchReads(
       chosen: await a.chosenOf(requestContext),
       savedAt: a.savedAt,
     })
-    const { [BUILDER_TOOL.connectorRead]: read } = connectorTools(access, { noteSave: false })
+    const { [BUILDER_TOOL.connectorRead]: read } = connectorTools(access)
     return read === undefined ? {} : { [BUILDER_TOOL.connectorRead]: read }
   }
 }

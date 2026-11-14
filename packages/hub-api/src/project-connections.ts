@@ -8,7 +8,6 @@ import {
   CONNECTION_STATES,
   ConnectionId,
   ConnectorEntry,
-  OfConnection,
   READ_FAILURES,
 } from './connectors.ts'
 import { ProjectId } from './library-ids.ts'
@@ -98,19 +97,6 @@ export const revokeProjectConnection = defineOperation({
   path: '/api/companies/{companyId}/projects/{projectId}/connections/{connectionId}',
   bodyLimit: 1024,
   input: { params: OfGrant },
-  success: { status: 204 },
-  failures: READ_FAILURES,
-})
-
-export const deleteConnectionNote = defineOperation({
-  id: 'deleteConnectionNote',
-  summary:
-    "Erases one of the Builder's notes about a connection; erasing it again answers the same.",
-  access: 'session',
-  method: 'DELETE',
-  path: '/api/companies/{companyId}/connections/{connectionId}/notes/{concept}',
-  bodyLimit: 1024,
-  input: { params: OfConnection.extend({ concept: z.string().min(1).max(120) }) },
   success: { status: 204 },
   failures: READ_FAILURES,
 })

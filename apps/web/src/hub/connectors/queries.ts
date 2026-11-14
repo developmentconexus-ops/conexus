@@ -1,7 +1,6 @@
 import type { CompanyId, ConnectionId, ProjectId } from '@conexus/hub-api'
 import {
   completeConnectionSignIn,
-  deleteConnectionNote,
   getConnection,
   getInventory,
   grantProjectConnection,
@@ -73,4 +72,3 @@ export function projectConnectionsKey(companyId: CompanyId, projectId: ProjectId
 
 export const sendGrant = hubMutation(grantProjectConnection)
 export const sendRevoke = hubMutation(revokeProjectConnection)
-export const sendNoteDeletion = hubMutation(deleteConnectionNote)

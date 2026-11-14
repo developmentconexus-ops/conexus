@@ -2,7 +2,7 @@ import type { ConnectionId } from '@conexus/hub-api'
 import { BUILDER_TOOL } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { InventorySearch, InventorySearchInput } from '../../hub/ontology/public.ts'
+import type { InventorySearch } from '../../hub/ontology/public.ts'
 
 /** What a search of the inventory is asked: the connection and the words; the company is the caller's. */
 export type InventoryCall = {
@@ -12,13 +12,10 @@ export type InventoryCall = {
   limit: number
 }
 
-/** The Ontology's search, reached when a turn calls it: the Ontology is made after the conversations. */
-export type InventoryDoor = { search(input: InventorySearchInput): Promise<InventorySearch> }
-
 /** A search of what a connection's system declares about itself, bound to a company by who builds it. */
 export type InventoryAsk = (call: InventoryCall) => Promise<InventorySearch>
 
-/** The `connector_notes` access: the connection the call names, none, or the answer that says it is ambiguous. */
+/** The connection the call names, none, or the answer that says it is ambiguous. */
 type Resolve = (
   connection: string,
   connector: string | undefined,
@@ -29,7 +26,7 @@ const SEARCH_TEXT = z.string().trim().min(1).max(60)
 /**
  * `inventory_search`: the entries of a connection's inventory (tables, fields, codes and
  * operations) whose name or label holds the text, with the type, the label and whether the
- * company's own. The access is the notebook's; nothing is asked of the system.
+ * company's own. Nothing is asked of the system.
  */
 export function inventorySearchTool(a: {
   connection: z.ZodType<string>

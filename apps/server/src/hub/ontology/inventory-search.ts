@@ -1,6 +1,6 @@
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
-import type { Database } from '../../platform/database.ts'
+import type { Database, ReadTx } from '../../platform/database.ts'
 import type { InventoryEntry } from '../connectors/public.ts'
 import { companyScope } from './inventory.ts'
 import { inventoryEnd, inventoryEntry, inventoryRun } from './tables.ts'
@@ -23,6 +23,27 @@ function containing(text: string): string {
   return `%${text.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
 }
 
+/** The run the inventory is read from: the newest COMPLETE, else the newest PARTIAL; none before one finished. */
+export async function shownRunOf(
+  tx: ReadTx,
+  ids: Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>,
+) {
+  const [run] = await tx
+    .select({ id: inventoryRun.id, endedAt: inventoryEnd.endedAt })
+    .from(inventoryRun)
+    .innerJoin(inventoryEnd, eq(inventoryEnd.runId, inventoryRun.id))
+    .where(
+      and(
+        eq(inventoryRun.companyId, ids.companyId),
+        eq(inventoryRun.connectionId, ids.connectionId),
+        sql`${inventoryEnd.outcome} IN ('COMPLETE', 'PARTIAL')`,
+      ),
+    )
+    .orderBy(sql`(${inventoryEnd.outcome} = 'COMPLETE') DESC`, sql`${inventoryEnd.endedAt} DESC`)
+    .limit(1)
+  return run
+}
+
 /**
  * The entries of the connection's inventory (the newest COMPLETE run, else the newest PARTIAL) whose
  * name or label holds the text. No call to the system: the agents read what the run already kept.
@@ -32,20 +53,7 @@ export async function searchInventory(
   input: InventorySearchInput,
 ): Promise<InventorySearch> {
   return database.read(companyScope(input.companyId), async (tx) => {
-    const [run] = await tx
-      .select({ id: inventoryRun.id, endedAt: inventoryEnd.endedAt })
-      .from(inventoryRun)
-      .innerJoin(inventoryEnd, eq(inventoryEnd.runId, inventoryRun.id))
-      .where(
-        and(
-          eq(inventoryRun.companyId, input.companyId),
-          eq(inventoryRun.connectionId, input.connectionId),
-          sql`${inventoryEnd.outcome} IN ('COMPLETE', 'PARTIAL')`,
-        ),
-      )
-      // COMPLETE before PARTIAL, then the newest.
-      .orderBy(sql`(${inventoryEnd.outcome} = 'COMPLETE') DESC`, sql`${inventoryEnd.endedAt} DESC`)
-      .limit(1)
+    const run = await shownRunOf(tx, input)
     if (run === undefined) return { kind: 'EMPTY' } as const
     const pattern = containing(input.text)
     const found = await tx

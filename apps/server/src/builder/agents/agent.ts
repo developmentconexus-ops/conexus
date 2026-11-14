@@ -29,8 +29,6 @@ import type { AppDataPort } from '../app-data/public.ts'
 import { appDataTools } from '../app-data/public.ts'
 import type { Speakers } from '../assistant/public.ts'
 import { blockOf } from '../assistant/public.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
 import {
   agentDefaults,
   fixedSystem,
@@ -138,7 +136,7 @@ export type Plan = {
   machine: boolean
   /** The version's tools: the chosen ones, or for a version written before E4 the kit's reads of its connections. */
   tools: readonly FrozenTool[]
-  /** The connections the version selected: the notebook of each, and the home of every tool. */
+  /** The connections the version selected: the home of every tool. */
   selected: ReadonlySet<ConnectionId>
 }
 
@@ -261,14 +259,7 @@ function runToolsOf(
   const machines = frozen.machine ? deps.machines : undefined
   const showFile = machines === undefined ? undefined : showFileTool(machines)
   return oncePerRun(async (requestContext) => {
-    const { run, scope, offered, start, tools, selected } = await plan(requestContext)
-    const access: ConnectorAccess = {
-      connections: offered.filter((each) => selected.has(each.connectionId)),
-      log: deps.log,
-      read: (call, context) => deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
-      notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-      wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
-    }
+    const { run, scope, offered, start, tools } = await plan(requestContext)
     const { companyId, personId, projectId } = run.scope
     const mayReadApp =
       frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
@@ -279,7 +270,6 @@ function runToolsOf(
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({
-        ...connectorTools(access, { noteSave: false, reads: false }),
         ...(mayReadApp
           ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
           : {}),

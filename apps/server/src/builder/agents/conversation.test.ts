@@ -102,7 +102,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.ok(asked)
   assert.ok(asked.system.startsWith(CONEXUS.trim().slice(0, 200)))
   assert.ok(asked.system.indexOf('Responda sobre as vendas.') > asked.system.indexOf('Company:'))
-  assert.deepEqual(asked.tools.toSorted(), ['connector_notes', ORDERS])
+  assert.deepEqual(asked.tools.toSorted(), [ORDERS])
 
   const draft = await talking(
     t,

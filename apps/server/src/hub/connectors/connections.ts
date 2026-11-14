@@ -19,7 +19,6 @@ import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
 import { subjectsOf } from './catalog-subjects.ts'
 import type { BearerToken, OpenedConnection } from './executor.ts'
-import { notesOf } from './notes.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import {
   admitted,
@@ -334,9 +333,6 @@ export async function unlink(deps: Deps, input: Viewer & { connectionId: Connect
 export function detail(deps: Deps, input: OfConnection): Promise<ConnectionDetail> {
   return deps.database.read(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'readConnections')
-    return {
-      connection: await viewIn(tx, input, input.connectionId),
-      notes: await notesOf(tx, input),
-    }
+    return { connection: await viewIn(tx, input, input.connectionId) }
   })
 }

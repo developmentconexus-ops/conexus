@@ -5,7 +5,7 @@ import { connectorOf } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { call, plantCompany } from '../identity/test-hub.ts'
-import type { SessionScope } from './public.ts'
+import type { Connectors, SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls, CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './test-app-calls.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
@@ -98,14 +98,22 @@ test('o Projeto: uma escolhida e liberada ao Projeto dá OK; uma escolhida mas n
   assert.equal((await on.ask(on.ana, { project: true })).kind, 'OK')
 })
 
-test('a escolha: o que o lugar oferece e a conversa não escolheu dá NOT_GRANTED e caderno null; escolhida de novo, OK; o caderno de quem o Projeto não recebeu é null; o do membro é o da dona', async (t) => {
+function conceptsOn(
+  port: Connectors['assistant'],
+  scope: SessionScope,
+  connectionId: ConnectionId,
+) {
+  return port.concepts(scope, { connectionId, turn: TurnKey.parse(randomUUID()) })
+}
+
+test('a escolha: o que o lugar oferece e a conversa não escolheu dá NOT_GRANTED e nenhuma porta de conceitos; escolhida de novo, OK; a de quem o Projeto não recebeu é nenhuma; o membro tem a sua', async (t) => {
   const on = await assistantOn(t)
   assert.deepEqual(await on.ask(on.ana, { chosen: [] }), { kind: 'NOT_GRANTED' })
-  assert.equal(await on.port.notes(on.scope(on.ana, { chosen: [] }), on.matriz), null)
+  assert.equal(await conceptsOn(on.port, on.scope(on.ana, { chosen: [] }), on.matriz), undefined)
   assert.equal((await on.ask(on.ana)).kind, 'OK')
-  assert.deepEqual(await on.port.notes(on.scope(on.ana), on.matriz), {})
-  assert.equal(await on.port.notes(on.scope(on.ana, { project: true }), on.matriz), null)
-  assert.deepEqual(await on.port.notes(on.scope(on.carla), on.matriz), {})
+  assert.equal((await conceptsOn(on.port, on.scope(on.ana), on.matriz))?.connectionId, on.matriz)
+  assert.equal(await conceptsOn(on.port, on.scope(on.ana, { project: true }), on.matriz), undefined)
+  assert.equal((await conceptsOn(on.port, on.scope(on.carla), on.matriz))?.connectionId, on.matriz)
 })
 
 test('só leitura: uma operação que não é read nunca sai pela porta da empresa', async (t) => {
@@ -204,7 +212,7 @@ test('uma falha do fornecedor volta como veio, sem corte nem whole', async (t) =
   assert.ok(!('whole' in answered))
 })
 
-test('duas liberadas ao Projeto: o caderno e a leitura são da escolhida, não da primeira liberada', async (t) => {
+test('duas liberadas ao Projeto: a porta de conceitos e a leitura são da escolhida, não da primeira liberada', async (t) => {
   const on = await assistantOn(t)
   const filial = ConnectionId.parse(await on.connect('Filial', false))
   assert.equal((await call(on.hub, on.ana, 'PUT', on.routes.grant(on.matriz))).statusCode, 200)
@@ -213,20 +221,9 @@ test('duas liberadas ao Projeto: o caderno e a leitura são da escolhida, não d
     'insert into connectors.project_connection (project_id, company_id, connector_id, connection_id, exclusive, granted_by, granted_at) select project_id, company_id, connector_id, $1, false, granted_by, granted_at from connectors.project_connection where connection_id = $2',
     [filial, on.matriz],
   )
-  const note = {
-    mapping: 'TGFPAR.CODPARC',
-    provingQuery: QUERY,
-    provedAt: new Date().toISOString(),
-    provedRows: 1,
-    writtenBy: on.ana.id,
-  }
-  await on.hub.test.asOwner('update connectors.connection set notes = $1::jsonb where id = $2', [
-    JSON.stringify({ cliente: note }),
-    filial,
-  ])
   const chose = on.scope(on.ana, { project: true, chosen: [filial] })
-  assert.deepEqual(await on.port.notes(chose, filial), { cliente: note })
-  assert.equal(await on.port.notes(chose, on.matriz), null)
+  assert.equal((await conceptsOn(on.port, chose, filial))?.connectionId, filial)
+  assert.equal(await conceptsOn(on.port, chose, on.matriz), undefined)
   function read(connectionId: ConnectionId) {
     return on.port.read(chose, {
       connectionId,
@@ -263,7 +260,7 @@ test('quem saiu da empresa recebe a lista vazia e NOT_GRANTED, como quem não po
   assert.equal(left.statusCode, 204, left.body)
   assert.deepEqual(await on.port.connections(on.scope(on.bruno)), [])
   assert.deepEqual(await on.ask(on.bruno), { kind: 'NOT_GRANTED' })
-  assert.equal(await on.port.notes(on.scope(on.bruno), on.matriz), null)
+  assert.equal(await conceptsOn(on.port, on.scope(on.bruno), on.matriz), undefined)
 })
 
 test('a linha: CONNECTOR_CALLED com empresa, pessoa, by assistant, o projectId só num Projeto, a operação e o resultado; nunca o corpo nem o SQL', async (t) => {

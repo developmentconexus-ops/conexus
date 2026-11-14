@@ -87,7 +87,7 @@ The mode's tool list is closed (`builder/conversation/permissions.ts`):
 
 | Kind | Tools |
 | --- | --- |
-| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `connector_notes`, `connector_note_save`; `app_data_read`, `app_data_check`; the skill tools |
+| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `inventory_search`, `concept_propose`; `app_data_read`, `app_data_check`; the skill tools |
 | Edit | the workspace's write, edit, mkdir and delete |
 | Run | the workspace's command tools; `conexus_check` |
 | Talk | `ask_user`, `submit_plan`, `task_write`, `task_update`, `task_complete`, `task_check` |

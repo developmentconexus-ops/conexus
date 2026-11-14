@@ -71,7 +71,6 @@ const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   BUILDER_TOOL.connectorRead,
-  BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
   ASK_USER_TOOL,
@@ -214,12 +213,11 @@ function construtorAgent(
         connections: offered,
         log: deps.log,
         read,
-        notes: (connectionId) => deps.connectors.notes(door, connectionId),
         wording: { whose: 'this Project received', limit: '50 connector calls per answer' },
       }
       return {
         ...toolsOf(sessionModel(requestContext)),
-        ...connectorTools(access, { noteSave: false }),
+        ...connectorTools(access),
         ...construtorTools({ ...construtor, read }, scope),
       }
     },

@@ -1,6 +1,5 @@
 import type {
   Connection,
-  ConnectionNote,
   ConnectorEntry,
   CopyOfConnection,
   InventoryView,
@@ -28,7 +27,6 @@ export type View = {
   mayManage: boolean
   role?: 'owner' | 'admin' | 'member'
   connectors?: ConnectorEntry[]
-  notes?: ConnectionNote[]
   /** The copies that read each connection, by its id; none unless the test says. */
   copies?: Record<string, CopyOfConnection[]>
   /** While set, the read of a connection's copies waits for it; then it answers this instead, when given. */
@@ -95,7 +93,7 @@ function reads(view: View): HttpHandler[] {
     http.get(`${BASE}/connections/:connectionId`, ({ params }) => {
       const connection = view.connections.find((one) => one.id === params.connectionId)
       if (!connection) return refusal('CONNECTION_NOT_FOUND')
-      return HttpResponse.json(ConnectionDetail.parse({ connection, notes: view.notes ?? [] }))
+      return HttpResponse.json(ConnectionDetail.parse({ connection }))
     }),
   ]
 }

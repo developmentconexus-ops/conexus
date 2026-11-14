@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
+import type { ConceptRead } from './concepts.ts'
 import type { ConnectorCopy } from './copy.ts'
 import { CopyDefinitionV1 } from './copy.ts'
 import type { ConnectorInventory } from './inventory.ts'
@@ -61,6 +62,8 @@ export type Connector = Readonly<{
   copy?: ConnectorCopy
   // The paged read of the system's own dictionary (the Ontology's inventory): outside `operations` too, so no role, tool or probe sees it.
   inventory?: ConnectorInventory
+  // A concept's read in the connector's dialect (the Ontology's proof and query), through the door operation it names.
+  conceptRead?: ConceptRead
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
   writes?: readonly WriteOperation<unknown, unknown>[]
   // The refusals recorded from the real service (see `RecordedRefusal`); the conformance reads each one through its operation.

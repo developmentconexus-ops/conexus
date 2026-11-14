@@ -15,7 +15,7 @@ import { COPY_WORKFLOW, copyClockOf, copyRun } from './builder/copy-clock/public
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
-import type { InventoryDoor } from './builder/ontology/public.ts'
+import type { OntologyDoor } from './builder/ontology/public.ts'
 import { INVENTORY_WORKFLOW, inventoryRun } from './builder/ontology/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
@@ -41,8 +41,7 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     listing: (scope) => connectors().assistant.listing(scope),
     read: (scope, call) => connectors().assistant.read(scope, call),
     write: (request) => connectors().assistant.write(request),
-    notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
-    saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),
+    concepts: (scope, call) => connectors().assistant.concepts(scope, call),
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
     writeOf: (scope, target) => connectors().assistant.writeOf(scope, target),
     openWrites: (key) => connectors().assistant.openWrites(key),
@@ -60,14 +59,10 @@ function builderDoorOf(connectors: () => Connectors) {
       ids: Parameters<Connectors['builder']['read']>[0],
       a: Parameters<Connectors['builder']['read']>[1],
     ) => connectors().builder.read(ids, a),
-    notes: (
-      ids: Parameters<Connectors['builder']['notes']>[0],
-      connectionId: Parameters<Connectors['builder']['notes']>[1],
-    ) => connectors().builder.notes(ids, connectionId),
-    saveNote: (
-      ids: Parameters<Connectors['builder']['saveNote']>[0],
-      a: Parameters<Connectors['builder']['saveNote']>[1],
-    ) => connectors().builder.saveNote(ids, a),
+    concepts: (
+      ids: Parameters<Connectors['builder']['concepts']>[0],
+      a: Parameters<Connectors['builder']['concepts']>[1],
+    ) => connectors().builder.concepts(ids, a),
     provePage: (
       ids: Parameters<Connectors['builder']['provePage']>[0],
       a: Parameters<Connectors['builder']['provePage']>[1],
@@ -111,9 +106,12 @@ function copiesOf(
   return { projectView: (ids) => copies().projectView(ids) }
 }
 
-/** The Ontology's inventory search as the agents' turns reach it: reached when a turn calls it. */
-function inventoryDoorOf(ontology: ConversationsDeps['ontology']): InventoryDoor {
-  return { search: (input) => ontology().search(input) }
+/** The Ontology as the agents' turns reach it: its inventory's search and the concepts' proposals. */
+function ontologyDoorOf(ontology: ConversationsDeps['ontology']): OntologyDoor {
+  return {
+    search: (input) => ontology().inventory.search(input),
+    propose: (input) => ontology().concepts.propose(input),
+  }
 }
 
 /** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
@@ -122,7 +120,7 @@ function builderDoorsOf(
 ) {
   return {
     connectors: builderDoorOf(deps.connectors),
-    inventory: inventoryDoorOf(deps.ontology),
+    ontology: ontologyDoorOf(deps.ontology),
     data: builderDataOf(deps.apps),
     copies: copiesOf(deps.copies),
   }
@@ -159,7 +157,7 @@ function workflowsOf(
   return {
     [AUTOMATION_WORKFLOW]: run,
     [COPY_WORKFLOW]: copyRun({ copies: deps.copies, log }),
-    [INVENTORY_WORKFLOW]: inventoryRun({ ontology: deps.ontology, log }),
+    [INVENTORY_WORKFLOW]: inventoryRun({ ontology: () => deps.ontology().inventory, log }),
   }
 }
 
@@ -182,8 +180,8 @@ type ConversationsDeps = {
   apps: () => Apps
   /** The copies are made after the conversations; a run comes long after both. */
   copies: () => Pick<CopyService, 'run' | 'projectView'>
-  /** The Ontology is made after the conversations; an inventory run comes long after both. */
-  ontology: () => Pick<Ontology['inventory'], 'run' | 'search'>
+  /** The Ontology is made after the conversations; an inventory run and a turn come long after both. */
+  ontology: () => Pick<Ontology, 'inventory' | 'concepts'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -210,11 +208,11 @@ export function conversationsOf(deps: ConversationsDeps) {
     log,
   }
   const door = doorOf(deps.connectors)
+  const ontology = ontologyDoorOf(deps.ontology)
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log },
     ...machineOf(deps),
-    connectors: door,
-    inventory: inventoryDoorOf(deps.ontology),
+    ...{ connectors: door, ontology },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
     handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
   })

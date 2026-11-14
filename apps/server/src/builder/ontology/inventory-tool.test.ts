@@ -21,11 +21,9 @@ function toolsOver(connections: ConnectorAccess['connections']) {
     connections,
     read: () => Promise.reject(new Error('o inventário não lê do sistema')),
     log: QUIET,
-    notes: async () => ({}),
     wording: { whose: 'x', limit: 'y' },
   }
   const tools = connectorTools(access, {
-    noteSave: false,
     reads: false,
     inventory: async (call) => {
       asked.push(call)
