@@ -1,31 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
-import { CopyProposalId, listCopyRuns } from '@conexus/hub-api'
+import { CopyProposalId } from '@conexus/hub-api'
 import { call, codeOf, memberOn } from '../identity/test-hub.ts'
 import type { ListProposalsOn } from './test-list-proposals.ts'
 import { listProposalsOn } from './test-list-proposals.ts'
+import { firstEnded } from './test-routes.ts'
 import { ordersCopy, STORE_A, STORE_B, tableOf } from './test-sources.ts'
-
-const RUN_DEADLINE_MS = 60_000
 
 async function proposedOn(on: ListProposalsOn, name = 'ml_pedidos') {
   const answer = await on.propose({ name })
   assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
   return CopyProposalId.parse(Object(answer).proposalId)
-}
-
-/** The copy's first run to end, as the route lists it. */
-async function firstEnded(on: ListProposalsOn, copyId: string) {
-  const deadline = Date.now() + RUN_DEADLINE_MS
-  while (Date.now() < deadline) {
-    const read = await call(on.hub, on.ana, 'GET', `${on.copiesUrl}/${copyId}/runs`)
-    const { runs } = listCopyRuns.success.body.parse(read.json())
-    const ended = runs.find((run) => run.outcome.kind !== 'RUNNING')
-    if (ended !== undefined) return ended
-    await sleep(100)
-  }
-  throw new Error(`no run of ${copyId} ended within ${RUN_DEADLINE_MS} ms`)
 }
 
 test('ligar a proposta de uma leitura de lista', async (t) => {
