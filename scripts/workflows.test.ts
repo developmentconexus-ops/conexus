@@ -200,8 +200,8 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
       if (onServer(job)) assert.equal(job.environment, 'production', `${name}: ${id}`)
 })
 
-test('o agregador espera todos os trabalhos da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
-  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci')
+test('o agregador espera todos os trabalhos de código da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
+  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci' && name !== 'processo')
   assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
   const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
   for (const name of others.filter((name) => name !== 'removals')) {
@@ -246,4 +246,19 @@ test('toda instalação do npm guarda o cache de download sob o hash do lockfile
     assert.equal(step.with?.cache, 'npm')
     assert.equal(step.with?.['cache-dependency-path'], 'package-lock.json')
   }
+})
+
+test('o processo é um trabalho à parte, sempre presente, que o agregador de código não lê', () => {
+  const processo = ci.jobs.processo
+  assert.ok(processo, 'no processo job')
+  assert.equal(processo.if, undefined)
+  assert.equal(processo.needs, undefined)
+  assert.ok(!JSON.stringify(ci.jobs.ci).includes('processo'))
+  const runs = processo.steps.map((step) => step.run ?? '').join('\n')
+  for (const script of ['second-card', 'approval', 'method-freeze'])
+    assert.match(runs, new RegExp(`npm run ${script}\\b`), script)
+  assert.doesNotMatch(runs, /npm ci/)
+  const code = ci.jobs.check?.steps.map((step) => step.run ?? '').join('\n') ?? ''
+  for (const script of ['second-card', 'approval', 'method-freeze'])
+    assert.doesNotMatch(code, new RegExp(`npm run ${script}\\b`), `check: ${script}`)
 })

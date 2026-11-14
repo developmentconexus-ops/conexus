@@ -2,10 +2,11 @@
 // construction, so running sessions end up on different rules (delivery L20).
 // Refusals are proved by planting each one in check-method-freeze.test.ts.
 // Revalidate by 2027-04-13, or when the emergency label changes.
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { option, STEP_CARD, trackOf } from './cli.ts'
+import { option } from './cli.ts'
 import { runCommand } from './command.ts'
+import { cardsInConstruction, tracksTouched } from './tracks.ts'
 
 const EMERGENCY = 'emergência'
 const FROZEN = ['.agents/skills/', 'docs/guides/']
@@ -20,16 +21,21 @@ const labels = (option('--labels') ?? '').split(',').map((label) => label.trim()
 const root = resolve(option('--root') ?? '.')
 
 const stepsDir = join(root, 'docs/steps')
-const cards = existsSync(stepsDir)
-  ? readdirSync(stepsDir).filter((name) => STEP_CARD.test(name))
-  : []
-const tracks = new Set(
-  cards.map((name) => trackOf(name, readFileSync(join(stepsDir, name), 'utf8'))),
+const inConstruction = new Set(
+  cardsInConstruction(root, existsSync(stepsDir) ? readdirSync(stepsDir) : []).values(),
 )
-const patternInConstruction = tracks.has('pattern')
-if (tracks.size === 0) {
+if (inConstruction.size === 0) {
   console.log('check-method-freeze: no step in construction, the method may change')
   process.exit(0)
+}
+// The tracks the change affects: those it touches, or all of them when it touches only the method;
+// the pattern card's model affects the pattern track alone.
+const touched = tracksTouched(root, base)
+function affected(file: string): boolean {
+  if (PATTERN_ONLY.includes(file)) return inConstruction.has('pattern')
+  return [...(touched.size > 0 ? touched : inConstruction)].some((track) =>
+    inConstruction.has(track),
+  )
 }
 
 const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
@@ -37,7 +43,7 @@ const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${bas
 })
   .split('\n')
   .filter((file) => FROZEN.some((prefix) => file.startsWith(prefix)))
-  .filter((file) => (PATTERN_ONLY.includes(file) ? patternInConstruction : true))
+  .filter(affected)
 
 if (changed.length > 0 && !labels.includes(EMERGENCY)) {
   console.error(`method-frozen-during-step: ${changed.join(', ')}`)

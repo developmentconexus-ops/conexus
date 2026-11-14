@@ -111,3 +111,35 @@ test('aceita o modelo do cartão padrão com só um cartão do trilho de desenho
   const path = '.agents/skills/conexus-scope/references/pattern-card.md'
   assert.equal(run(branch(path, 'e01-x.md', '# x\n\nTrilho: desenho\n')).status, 0)
 })
+
+test('aceita guia num pull request de um trilho que não tem cartão em construção', () => {
+  const dir = branch('apps/web/src/ui/button.ts', 'e01-x.md')
+  write(dir, 'docs/guides/design.md', 'changed\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'guide')
+  assert.equal(run(dir).status, 0)
+})
+
+test('recusa guia num pull request do trilho que tem cartão em construção', () => {
+  const dir = branch('apps/server/src/main.ts', 'e01-x.md')
+  write(dir, 'docs/guides/code.md', 'changed\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'guide')
+  assert.equal(run(dir).status, 1)
+})
+
+test('o fechamento de um trilho muda o método sem esperar o cartão de outro trilho', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-freeze-'))
+  dirs.push(dir)
+  git(dir, 'init', '-q', '-b', 'main')
+  write(dir, 'docs/steps/e01-x.md', 'closing card\n')
+  write(dir, 'docs/steps/pattern-e02-y.md', 'pattern card\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'base')
+  git(dir, 'checkout', '-q', '-b', 'topic')
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/guides/code.md', 'learned rule\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'closing')
+  assert.equal(run(dir).status, 0)
+})

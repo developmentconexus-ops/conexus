@@ -12,7 +12,7 @@
   },
   "scripts": {
     "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run test && npm run build",
-    "check": "git fetch -q origin main && NODE_OPTIONS=--max-old-space-size=4096 npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run quality -- origin/main --fast && npm run boundaries && npm run approval -- --base origin/main && npm run method-freeze -- --base origin/main --labels \"$CONEXUS_LABELS\" && npm run migrations -- --base origin/main && npm run check:workflows",
+    "check": "git fetch -q origin main && NODE_OPTIONS=--max-old-space-size=4096 npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run quality -- origin/main --fast && npm run boundaries && npm run second-card && npm run approval -- --base origin/main && npm run method-freeze -- --base origin/main --labels \"$CONEXUS_LABELS\" && npm run migrations -- --base origin/main && npm run check:workflows",
     "check:workflows": "docker run --rm --volume \"$PWD:/repo\" --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color && docker run --rm --volume \"$PWD:/repo\" --workdir /repo ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --offline --color always .github",
     "lint": "biome check .",
     "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && tsc -p tests/apps/tsconfig.json && npm run typecheck --workspaces --if-present",
@@ -21,6 +21,7 @@
     "docs": "node scripts/check-docs.ts",
     "quality": "node scripts/quality.ts",
     "suppressions": "node scripts/check-suppressions.ts",
+    "second-card": "node scripts/check-second-card.ts",
     "approval": "node scripts/check-approval.ts",
     "method-freeze": "node scripts/check-method-freeze.ts",
     "new-dependencies": "node scripts/list-new-dependencies.ts",
