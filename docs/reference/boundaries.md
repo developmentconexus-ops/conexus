@@ -935,8 +935,8 @@ changes, reread the line it names.
   (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
   failed app check, scores 0 and Mastra gives the scorer's reason to the model and calls it again
   (`formatCompletionFeedback`, the `task_complete_evaluation` event reaches the screen). Mastra's loop
-  has no cap of its own for this, so the rounds count in `CHECK_LIMITS.checks`, kept by the run
-  (`Runs.round`); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
+  has no cap of its own for this, so ends with tasks open and failed checks each count up to `CHECK_LIMITS.checks`, kept by the run
+  (`Runs.round`, by kind); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 

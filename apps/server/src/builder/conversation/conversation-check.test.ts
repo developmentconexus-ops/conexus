@@ -291,6 +291,31 @@ test(`tarefas abertas em ${CHECK_LIMITS.checks} fins: a versão fica pela metade
   assert.equal(ended?.fields.rounds, CHECK_LIMITS.checks)
 })
 
+test('tarefas abertas não gastam as voltas da conferência: três fins abertos e depois três conferências que falham ainda deixam a quarta montar (14.2, 15)', async (t) => {
+  const open = CHECK_LIMITS.checks - 1
+  const steps: Blocks[] = [
+    [TASKS, WRITE],
+    ...Array.from({ length: open }, (): Blocks => []),
+    [DONE],
+  ]
+  let calls = 0
+  const { hub, ana, conversations } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    const blocks = steps[calls]
+    calls += 1
+    return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
+  })
+  const check = checking(
+    hub.builder.folder,
+    Array.from({ length: CHECK_LIMITS.checks - 1 }, () => FAILED),
+  )
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(check.calls(), CHECK_LIMITS.checks, 'the check had all of its own turns')
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [
+    { number: 1, changedFiles: 1, check: { state: 'passed' } },
+  ])
+})
+
 test('uma pergunta com tarefas abertas: nada volta ao modelo e a versão fica sem veredito (14.2, 15)', {
   timeout: 60_000,
 }, async (t) => {
