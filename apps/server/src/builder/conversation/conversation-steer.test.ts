@@ -11,7 +11,6 @@ import {
   holding,
   KEY,
   PARTIAL,
-  rolesAndParts,
   sent,
   started,
   stopped,
@@ -19,6 +18,7 @@ import {
   title,
 } from './test-conversation.ts'
 import { answerTo, ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 const STEER = 'Só eu cadastro.'
 const ANSWER = 'Certo, só você.'

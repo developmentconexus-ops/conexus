@@ -23,6 +23,7 @@ import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
+import { until } from '../../platform/test-until.ts'
 import { noticesIn } from './test-parts.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-6'
@@ -45,21 +46,6 @@ export function title(asked: Sent): Reply | undefined {
   return asked.stream ? undefined : { kind: 'text', text: 'Título' }
 }
 
-/**
- * A conversation's messages read again, as role and parts, without what Mastra keeps beside each
- * part for itself (`createdAt`, `providerMetadata`) and its `step-start` markers.
- */
-export async function rolesAndParts(hub: Hub, person: Person, url: string) {
-  const messages = await messagesOf(hub, person, url)
-  return messages.map((message) => [
-    message.role,
-    message.parts.flatMap((part) => {
-      if (part.type === 'step-start') return []
-      const { createdAt: _at, providerMetadata: _kept, ...drawn } = Object(part)
-      return [drawn]
-    }),
-  ])
-}
 export const KEY = 'sk-ant-conversation-key-0001'
 
 /**
@@ -389,6 +375,11 @@ export async function settledOf(hub: Hub, person: Person, url: string): Promise<
  * stream does not say the answer's data parts, so the transcript is read once it settles.
  */
 export async function turnNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
+  await until(
+    async () => (await messagesOf(hub, person, url)).at(-1)?.role === 'builder',
+    'the answer of the turn saved',
+    30_000,
+  )
   const messages = await settledOf(hub, person, url)
   const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
   return noticesIn(turn.flatMap((message) => message.parts))

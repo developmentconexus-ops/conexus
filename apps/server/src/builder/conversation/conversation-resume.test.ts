@@ -7,13 +7,13 @@ import {
   holding,
   hubBeside,
   PARTIAL,
-  rolesAndParts,
   sent,
   started,
   streamOf,
   title,
 } from './test-conversation.ts'
 import { failuresOf } from './test-parts.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 test('o turno que roda quando o servidor cai fica parado: a sessão volta sem execução nem cartão, a releitura traz o que o Mastra guardou, nada retoma sozinho e a próxima mensagem funciona (49)', {
   timeout: 60_000,

@@ -14,7 +14,6 @@ import {
   holding,
   hubBeside,
   PARTIAL,
-  rolesAndParts,
   sent,
   sessionUrl,
   started,
@@ -23,6 +22,7 @@ import {
   title,
 } from './test-conversation.ts'
 import { textsOf } from './test-parts.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 /** A provider answer that sends nothing until released, at the test's end at the latest. */
 function stalling(t: TestContext) {

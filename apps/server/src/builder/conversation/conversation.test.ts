@@ -14,7 +14,6 @@ import {
   endOf,
   KEY,
   messagesOf,
-  rolesAndParts,
   sent,
   started,
   streamOf,
@@ -22,6 +21,7 @@ import {
 import { failuresOf, textsOf } from './test-parts.ts'
 import { sessionStateOf } from './test-questions.ts'
 import { onGroq, printedOf, routedTo, served } from './test-research.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
