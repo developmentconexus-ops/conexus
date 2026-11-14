@@ -12,10 +12,11 @@ on:
 permissions:
   contents: read
 
-# A new push to a pull request replaces its running run; a push to main never does, so every
-# commit of main keeps its removal rows and its result.
+# A new push to a pull request replaces its running or waiting run. Every push to main has a group
+# of its own, its commit's, so none replaces another and every commit of main keeps its removal
+# rows and its result (twenty, ci-front.yaml:13-14).
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 # Every test file is a new Node process that compiles the server's 1963 modules again: the cache
