@@ -75,6 +75,10 @@ test('o conector sem dicionário declara só as suas operações', () => {
   const entries = declaredInventory({ ...sankhya, inventory: undefined })
   assert.ok(entries.length > 0)
   assert.ok(entries.every((entry) => entry.kind === 'OPERATION' && !entry.custom))
+  const names = new Set(entries.map((entry) => entry.name))
+  const writes = sankhya.writes ?? []
+  assert.ok(writes.length > 0)
+  for (const write of writes) assert.ok(names.has(write.id), `a escrita ${write.id} é declarada`)
 })
 
 test('um cursor que não é o do kit é recusado antes de virar SQL', () => {

@@ -1,4 +1,5 @@
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
+import type { SQLWrapper } from 'drizzle-orm'
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import type { InventoryEntry } from '../connectors/public.ts'
@@ -18,9 +19,23 @@ export type InventorySearch =
   | Readonly<{ kind: 'OK'; readAt: string; entries: InventoryEntry[]; more: boolean }>
   | Readonly<{ kind: 'EMPTY' }>
 
-/** The text as a `LIKE` pattern that means it literally: `%`, `_` and the escape itself escaped. */
+const ACCENTED = 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑáàâãäéèêëíìîïóòôõöúùûüçñ'
+
+/** A letter without its accent. */
+function plain(letter: string): string {
+  return letter.normalize('NFD').replace(/\p{M}/gu, '')
+}
+const PLAIN = Array.from(ACCENTED, plain).join('')
+
+/** A column with no accent, so "codigo" finds "Código" (`ilike` already ignores case). */
+function unaccented(column: SQLWrapper) {
+  return sql`translate(${column}, ${ACCENTED}, ${PLAIN})`
+}
+
+/** The text as a `LIKE` pattern that means it literally, with no accent: `%`, `_` and the escape itself escaped. */
 function containing(text: string): string {
-  return `%${text.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
+  const bare = Array.from(text.normalize('NFC'), plain).join('')
+  return `%${bare.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
 }
 
 /** The run the inventory is read from: the newest COMPLETE, else the newest PARTIAL; none before one finished. */
@@ -70,7 +85,10 @@ export async function searchInventory(
           eq(inventoryEntry.companyId, input.companyId),
           eq(inventoryEntry.runId, run.id),
           input.kind === undefined ? undefined : eq(inventoryEntry.kind, input.kind),
-          or(ilike(inventoryEntry.name, pattern), ilike(inventoryEntry.label, pattern)),
+          or(
+            ilike(unaccented(inventoryEntry.name), pattern),
+            ilike(unaccented(inventoryEntry.label), pattern),
+          ),
         ),
       )
       .orderBy(asc(inventoryEntry.kind), asc(inventoryEntry.name))

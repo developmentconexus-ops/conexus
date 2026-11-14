@@ -50,6 +50,14 @@ test('a primeira rodada corre: "Lendo o inventário…", e o botão espera', asy
   expect(inventory.getByRole('button', { name: 'Ler de novo' })).toHaveProperty('disabled', true)
 })
 
+test('nenhuma rodada ainda: sem frase de falha, e quem gerencia lê', async () => {
+  open({ inventory: { inventory: null, last: null, running: false, mayRun: true } })
+  const inventory = await block()
+  expect(inventory.getByRole('button', { name: 'Ler de novo' })).toHaveProperty('disabled', false)
+  expect(inventory.queryByText('Não foi possível ler o inventário.')).toBeNull()
+  expect(inventory.queryByText('Lendo o inventário…')).toBeNull()
+})
+
 test('um conector sem dicionário diz quantas leituras declara', async () => {
   open({
     inventory: {

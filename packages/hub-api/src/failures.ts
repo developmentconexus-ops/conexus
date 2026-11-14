@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AGENT_FAILURES, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
+import { AGENT_FAILURES, AGENT_PROBLEM } from './agent-failures.ts'
 import { APP_DATA_FAILURES, APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { ASSISTANT_FAILURES } from './assistant-failures.ts'
 import { AUTOMATION_FAILURES } from './automation-failures.ts'
@@ -299,9 +299,7 @@ export const Problem = z.object({
   /** The label of the operation a refusal names in its phrase, where the row has `{operation}` (`NOT_IN_ROLE`). */
   operation: z.string().optional(),
   /** RFC 9457 extension members, each written only by the refusal that owns it (step 24.3). */
-  field: ProblemField.optional(),
-  reason: ProblemReason.optional(),
-  agents: ProblemAgents.optional(),
+  ...AGENT_PROBLEM,
 })
 export type Problem = z.infer<typeof Problem>
 

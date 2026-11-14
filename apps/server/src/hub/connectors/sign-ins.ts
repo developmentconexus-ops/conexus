@@ -227,6 +227,8 @@ export async function completeSignIn(
     signInId: ConnectionSignInId
     answer: { code: string } | { refused: true } | { error: string; description?: string }
     log: FailureLog
+    /** Called once with the connection a first authorization made; not for Conectar de novo. */
+    created: (connection: Connection) => Promise<void>
   },
 ): Promise<SignInCompleted> {
   const { target, verifier } = await take(deps, input)
@@ -269,6 +271,7 @@ export async function completeSignIn(
   const event = target.connectionId === null ? 'CONNECTION_LINKED' : 'CONNECTION_RECONNECTED'
   const fields = { by: input.person.id, companyId: input.companyId, connectionId: linked.id }
   input.log.info({ ...fields, connector: connector.id }, event)
+  if (target.connectionId === null) await input.created(linked)
   return { result: 'LINKED', connection: linked }
 }
 

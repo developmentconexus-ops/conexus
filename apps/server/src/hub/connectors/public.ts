@@ -43,6 +43,7 @@ export {
   CopyPosition,
   deniesAccess,
   PAGE_ROWS,
+  SearchText,
 } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'

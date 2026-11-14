@@ -105,3 +105,4 @@ export {
   salesDatabase,
   soldBy,
 } from './sankhya/fake-sales.ts'
+export { SearchText } from './sankhya/search-sql.ts'

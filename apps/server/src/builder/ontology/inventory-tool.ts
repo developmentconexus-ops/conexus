@@ -2,6 +2,7 @@ import type { ConnectionId } from '@conexus/hub-api'
 import { BUILDER_TOOL } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import { SearchText } from '../../hub/connectors/public.ts'
 import type { InventorySearch } from '../../hub/ontology/public.ts'
 
 /** What a search of the inventory is asked: the connection and the words; the company is the caller's. */
@@ -20,8 +21,6 @@ type Resolve = (
   connection: string,
   connector: string | undefined,
 ) => { connectionId: ConnectionId } | { kind: string } | undefined
-
-const SEARCH_TEXT = z.string().trim().min(1).max(60)
 
 /**
  * `inventory_search`: the entries of a connection's inventory (tables, fields, codes and
@@ -43,7 +42,7 @@ export function inventorySearchTool(a: {
       inputSchema: z.object({
         connection: a.connection,
         connector: a.connector,
-        text: SEARCH_TEXT.describe(
+        text: SearchText.describe(
           'A word of the name or of the label, such as "tipo" or "CODVEND"',
         ),
         kind: z.enum(['TABLE', 'FIELD', 'CODE', 'OPERATION']).optional(),

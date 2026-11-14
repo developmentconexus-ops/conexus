@@ -70,7 +70,7 @@ test('inventory_search: uma conexão fora do acesso é NOT_GRANTED, e o nome rep
   const named = await run(tools, {
     connection: 'Matriz',
     connector: 'mercado-livre',
-    text: 'x',
+    text: 'canal',
     limit: 1,
   })
   assert.equal(named.kind, 'OK')

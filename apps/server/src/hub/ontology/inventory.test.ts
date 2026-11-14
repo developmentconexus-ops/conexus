@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { PAGE_ROWS } from '../connectors/public.ts'
 import { linkMercadoLivre, mercadoLivreOn } from '../connectors/test-connections.ts'
 import { call, codeOf } from '../identity/test-hub.ts'
+import { INVENTORY_DEFAULTS, INVENTORY_LEASE_MS } from './inventory.ts'
 import { doorOf, inventoryOn, inventoryPath, linked, rerun, settled } from './test-inventory.ts'
 
 const FIELDS = ['AD_METAS.META', 'TGFCAB.AD_CANAL']
@@ -102,6 +104,68 @@ test('recusa, teto e prazo', async (t) => {
   assert.equal(ends.length, 1, 'a rodada que o processo deixou aberta termina INTERRUPTED')
 })
 
+test('duas aberturas ao mesmo tempo: uma começa, a outra recebe 409', async (t) => {
+  const on = await inventoryOn(t)
+  const id = await linked(on)
+  const path = inventoryPath(on, id)
+  await settled(on.hub, on.ana.cookie, path)
+  const both = await Promise.all([
+    rerun(on.hub, on.ana.cookie, path),
+    rerun(on.hub, on.ana.cookie, path),
+  ])
+  const answers = both.map((made) => [made.statusCode, made.statusCode === 409 && codeOf(made)])
+  assert.deepEqual(answers.map(([status]) => status).sort(), [202, 409])
+  assert.deepEqual(
+    answers.filter(([status]) => status === 409),
+    [[409, 'INVENTORY_RUNNING']],
+  )
+  await settled(on.hub, on.ana.cookie, path)
+  const runs = await on.hub.test.asOwner('select id from ontology.inventory_run')
+  assert.equal(runs.length, 1)
+})
+
+test('uma rodada PARTIAL depois de uma COMPLETE não apaga a COMPLETE', async (t) => {
+  const on = await inventoryOn(t, { pageRows: 2, runPages: 2 })
+  const id = await linked(on)
+  const path = inventoryPath(on, id)
+  await settled(on.hub, on.ana.cookie, path)
+  await on.hub.test.asOwner(
+    `with made as (
+       insert into ontology.inventory_run (id, company_id, connection_id, started_at)
+       select gen_random_uuid(), company_id, connection_id, now() - interval '1 hour'
+       from ontology.inventory_run limit 1 returning id, company_id)
+     insert into ontology.inventory_end (run_id, company_id, ended_at, outcome, pages)
+     select id, company_id, now() - interval '59 minutes', 'COMPLETE', 1 from made`,
+  )
+  await rerun(on.hub, on.ana.cookie, path)
+  const view = Object(await settled(on.hub, on.ana.cookie, path))
+  assert.deepEqual(view.last, { outcome: 'PARTIAL', reason: 'CAP' })
+  const ends = await on.hub.test.asOwner(
+    `select outcome from ontology.inventory_end order by outcome`,
+  )
+  assert.deepEqual(
+    ends.map((end) => end.outcome),
+    ['COMPLETE', 'PARTIAL'],
+    'a COMPLETE fica, a PARTIAL anterior sai',
+  )
+})
+
+test('o prazo e o teto do cartão: 15 minutos, 200 páginas', async (t) => {
+  assert.equal(INVENTORY_LEASE_MS, 15 * 60_000)
+  assert.deepEqual(INVENTORY_DEFAULTS, { pageRows: PAGE_ROWS, runPages: 200, runMs: 10 * 60_000 })
+  const on = await inventoryOn(t)
+  const id = await linked(on)
+  const path = inventoryPath(on, id)
+  await settled(on.hub, on.ana.cookie, path)
+  await on.hub.test.asOwner(
+    `insert into ontology.inventory_run (id, company_id, connection_id, started_at)
+     select gen_random_uuid(), company_id, connection_id, now() - interval '14 minutes'
+     from ontology.inventory_run limit 1`,
+  )
+  const busy = await rerun(on.hub, on.ana.cookie, path)
+  assert.deepEqual([busy.statusCode, codeOf(busy)], [409, 'INVENTORY_RUNNING'])
+})
+
 test('das declarações', async (t) => {
   const { door, through } = doorOf(t)
   const on = await mercadoLivreOn(t, { through, tuning: { inventory: {} } })
@@ -110,8 +174,6 @@ test('das declarações', async (t) => {
   const id = z.object({ connection: z.object({ id: z.string() }) }).parse(linkedOn.json())
   const path = `/api/companies/${on.companyId}/ontology/inventories/${id.connection.id}`
   const before = door.calls
-  const started = await rerun(on.hub, on.ana.cookie, path)
-  assert.equal(started.statusCode, 202, started.body)
   const view = Object(await settled(on.hub, on.ana.cookie, path))
   assert.equal(door.calls, before, 'nenhuma chamada ao fornecedor')
   assert.equal(view.inventory.outcome, 'COMPLETE')
@@ -147,6 +209,14 @@ test('a busca no inventário, como as ferramentas a leem', async (t) => {
   assert.deepEqual(Object(own).entries, [
     { kind: 'FIELD', name: 'TGFCAB.AD_CANAL', type: 'I', label: 'Canal de venda', custom: true },
   ])
+  for (const text of ['descricao', 'DESCRIÇÃO', 'descrição']) {
+    const folded = await ask(text, 'FIELD')
+    assert.deepEqual(
+      Object(folded).entries.map((entry: { name: string }) => entry.name),
+      ['TGFPRO.DESCRPROD'],
+      `"${text}" acha "Descrição do produto"`,
+    )
+  }
   const none = await on.hub.ontology.inventory.search({
     companyId: CompanyId.parse(on.companyId),
     connectionId: ConnectionId.parse('4aaaaaaa-0000-4000-8000-000000000000'),

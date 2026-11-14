@@ -17,11 +17,11 @@ import {
 /** How often the block asks again while a run is open: a run takes seconds to minutes. */
 const WHILE_RUNNING_MS = 2_000
 
-/** The sentence of what the last run left, after the summary: none when it went well. */
+/** The sentence of what the last run left, after the summary: none when it went well or when no run was ever opened. */
 function stateOf(view: InventoryView): string | undefined {
   if (view.last?.outcome === 'FAILED' || view.last?.outcome === 'INTERRUPTED')
     return INVENTORY_FAILED
-  if (view.inventory === null) return view.running ? undefined : INVENTORY_FAILED
+  if (view.inventory === null) return undefined
   return view.inventory.outcome === 'PARTIAL' ? INVENTORY_PARTIAL : undefined
 }
 

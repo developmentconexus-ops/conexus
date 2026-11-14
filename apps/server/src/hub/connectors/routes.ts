@@ -1,4 +1,4 @@
-import type { CompanyId, ConnectionId } from '@conexus/hub-api'
+import type { CompanyId, Connection, ConnectionId } from '@conexus/hub-api'
 import {
   callAppConnector,
   callToolConnector,
@@ -113,9 +113,12 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     return answer({ url: started.url })
   })
 
-  serve(app, completeConnectionSignIn, async ({ person, params, body, log }) =>
-    answer(await completeSignIn(deps, { person, ...params, answer: body, log })),
-  )
+  serve(app, completeConnectionSignIn, async ({ person, params, body, log }) => {
+    function created(connection: Connection) {
+      return readInventory(deps, { companyId: params.companyId, connectionId: connection.id }, log)
+    }
+    return answer(await completeSignIn(deps, { person, ...params, answer: body, log, created }))
+  })
 
   registerGrantRoutes(app, deps)
 

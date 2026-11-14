@@ -15,7 +15,7 @@ import type { IdentityPorts } from '../identity/public.ts'
 import { inventoryEnd, inventoryEntry, inventoryRun } from './tables.ts'
 
 /** Production's ceilings of one run, the copies' (`hub/copies/run.ts`): 500 rows a page, 200 pages or 10 minutes. */
-const INVENTORY_DEFAULTS = {
+export const INVENTORY_DEFAULTS = {
   pageRows: PAGE_ROWS,
   runPages: 200,
   runMs: 10 * 60_000,
