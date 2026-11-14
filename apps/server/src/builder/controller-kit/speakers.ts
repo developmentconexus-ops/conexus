@@ -1,7 +1,7 @@
 import type { FixedRole, Role } from '@conexus/hub-api'
 import { fixedNameOf } from '@conexus/hub-api'
 
-/** Today as `YYYY-MM-DD` in `America/Sao_Paulo`. */
+/** Today as `YYYY-MM-DD` in `America/Sao_Paulo` (Conexus OS `e0353c36` `harness/prompt.ts:91-92`). */
 export function turnDate(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(now)
 }
