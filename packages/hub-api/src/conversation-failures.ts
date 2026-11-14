@@ -18,6 +18,14 @@ export const CONVERSATION_FAILURES = {
     action: 'Escolha outro modelo ou fale com quem administra a empresa.',
     actionKind: 'NONE',
   },
+  MODEL_ACCOUNTS_LIMITED: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 429,
+    phrase: 'As contas que você pode usar para este modelo estão no limite.',
+    action: 'Espere o limite passar ou escolha outro modelo.',
+    actionKind: 'NONE',
+  },
   EFFORT_UNSUPPORTED: {
     category: 'USER',
     settles: true,

@@ -57,6 +57,7 @@ export type AutomationSummary = z.infer<typeof AutomationSummary>
  */
 export const AutomationFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
+  'MODEL_ACCOUNTS_LIMITED',
   'MODEL_CALL_FAILED',
   'MODEL_REFUSED',
   'MODEL_ANSWER_CUT',

@@ -25,7 +25,7 @@ import { nextModels } from './fallback.ts'
 import { forCliProxy } from './google/flat-unions.ts'
 import { minusProviderTools } from './provider-tools.ts'
 import type { QueueDeps } from './queue.ts'
-import { markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import { limitEnd, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { SideCall } from './side-calls.ts'
 import { noAccountModel, watched } from './side-calls.ts'
 import type { ProviderOptions } from './thinking.ts'
@@ -74,20 +74,25 @@ function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) 
   emit(args, { type: 'info', message: text })
 }
 
-/**
- * The turn's end when its accounts ran out, with the notice that says so: the reason the last
- * account was lost (refused, in its limit) when the turn saw one, else that none is left.
- */
-function exhaust(args: Notifier, turn: Turn, modelId: ModelId, reason: string | undefined) {
+async function exhaust(
+  deps: QueueDeps,
+  args: Notifier,
+  turn: Turn,
+  modelId: ModelId,
+  reason: string | undefined,
+) {
   turn.finish('exhausted')
+  const end = await limitEnd(deps, turn, modelId)
   const provider = providerName(providerOf(modelId))
   const text =
-    reason === undefined
-      ? `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
-      : `${reason}.`
+    reason !== undefined
+      ? `${reason}.`
+      : end !== undefined
+        ? `As contas ${provider} que você pode usar estão no limite até ${until(end)}.`
+        : `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
   notify(args, turn, 'accounts-exhausted', text)
-  // The run's error says why it ends: the call that fails next is the provider's, or none at all.
-  emit(args, { type: 'error', error: new Failure('MODEL_NO_ACCOUNT') })
+  const code = end === undefined ? 'MODEL_NO_ACCOUNT' : 'MODEL_ACCOUNTS_LIMITED'
+  emit(args, { type: 'error', error: new Failure(code) })
 }
 
 function refusedText(label: string) {
@@ -146,7 +151,8 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
     return switched
   }
   const refused = turn.unsaid.splice(0).map(refusedText)
-  exhaust(args, turn, chosen, refused.length > 0 ? refused.join('. ') : turn.reasons.at(-1))
+  const reason = refused.length > 0 ? refused.join('. ') : turn.reasons.at(-1)
+  await exhaust(deps, args, turn, chosen, reason)
   return undefined
 }
 
@@ -272,7 +278,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
     turn.reasons.push(failedText(account, failure))
   }
   if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
-    exhaust(args, turn, account.modelId, turn.reasons.at(-1))
+    await exhaust(deps, args, turn, account.modelId, turn.reasons.at(-1))
     return { retry: false }
   }
   turn.drop()

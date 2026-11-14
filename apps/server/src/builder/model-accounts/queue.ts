@@ -69,6 +69,13 @@ export type Asker = {
  * (`usableInOrder`), less those this turn tried. The caller admitted the person.
  */
 async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<AccountRow[]> {
+  const { rows, context } = await providerRows(tx, asker, model)
+  return usableInOrder(rows, context, asker.personId).filter(
+    (row) => servesModel(row, model) && !asker.tried.has(row.id),
+  )
+}
+
+async function providerRows(tx: ReadTx, asker: Asker, model: ModelId) {
   const rows = await tx
     .select(columns)
     .from(modelAccount)
@@ -80,11 +87,31 @@ async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<Acc
     )
     .orderBy(asc(modelAccount.position))
   const context = await contextOf(tx, asker.companyId)
-  return usableInOrder(
-    rows.map((row) => AccountRow.parse(row)),
-    context,
-    asker.personId,
-  ).filter((row) => servesModel(row, model) && !asker.tried.has(row.id))
+  return { rows: rows.map((row) => AccountRow.parse(row)), context }
+}
+
+/**
+ * When the first of the person's accounts for `model` that only a limit keeps out of the queue
+ * leaves it; `undefined` when no account is kept out by a limit alone.
+ */
+export async function limitEnd(
+  deps: QueueDeps,
+  turn: Turn,
+  model: ModelId,
+): Promise<Date | undefined> {
+  return deps.database.read(scopeOf(turn), async (tx) => {
+    await admitted(deps, tx, turn)
+    const { rows, context } = await providerRows(tx, turn, model)
+    const until = new Map(rows.map((row) => [row.id, row.limitedUntil]))
+    const free = rows
+      .filter((row) => row.limitedUntil !== null)
+      .map((row) => ({ ...row, limitedUntil: null }))
+    const ends = usableInOrder(free, context, turn.personId).flatMap((row) => {
+      const end = until.get(row.id)
+      return end && servesModel(row, model) ? [end.getTime()] : []
+    })
+    return ends.length === 0 ? undefined : new Date(Math.min(...ends))
+  })
 }
 
 export function admitted(deps: Pick<QueueDeps, 'identity'>, tx: ReadTx, asker: Asker) {

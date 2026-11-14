@@ -47,6 +47,7 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 export const TurnFailureCode = z.enum([
   'RUN_BUSY',
   'MODEL_NO_ACCOUNT',
+  'MODEL_ACCOUNTS_LIMITED',
   'MODEL_CALL_FAILED',
   'MODEL_REFUSED',
   'MODEL_ANSWER_CUT',

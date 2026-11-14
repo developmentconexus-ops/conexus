@@ -142,7 +142,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   const notices = await turnNotices(hub, ana, third.url)
   assert.match(notices.at(-1) ?? '', /^Time 1 no limite até \d{2}h\d{2}\.$/)
   assert.ok(!notices.some((text) => text.startsWith('Troquei')))
-  assert.deepEqual(failuresOf(third.events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(third.events), ['MODEL_ACCOUNTS_LIMITED'])
   assert.equal(endOf(third.events), 'error')
   assert.equal(streamedChats().length, 1)
 })
