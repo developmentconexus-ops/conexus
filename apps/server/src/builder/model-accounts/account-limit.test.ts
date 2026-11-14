@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call, post } from '../../hub/identity/test-hub.ts'
-import { endOf, MODEL, sent, streamOf, turnNotices } from '../conversation/test-conversation.ts'
+import { until } from '../../platform/test-until.ts'
+import {
+  endOf,
+  MODEL,
+  messagesOf,
+  sent,
+  streamOf,
+  turnNotices,
+} from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
 import { EXHAUSTED, fleet, saidLive } from './test-fleet.ts'
 
@@ -14,6 +22,10 @@ async function again(t: TestContext, f: Fleet, url: string) {
   t.after(() => stream.close())
   assert.equal((await sent(f.hub, f.ana, url, 'Continue')).statusCode, 200)
   const events = await stream.turn()
+  await until(async () => {
+    const messages = await messagesOf(f.hub, f.ana, url)
+    return messages.filter((each) => each.role === 'person').length === 2
+  }, 'the second message saved by Mastra')
   return { events, notices: await turnNotices(f.hub, f.ana, url) }
 }
 
