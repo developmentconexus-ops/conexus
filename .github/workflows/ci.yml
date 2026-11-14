@@ -504,10 +504,7 @@ jobs:
       - name: The final image sends rendered HTML and text through the real Hub
         run: npm run test:image
 
-  # The tests that passed only on their second run (scripts/test-run.ts) become issues here and not in
-  # the test jobs: this job holds `issues: write` and runs no test, so no test or test dependency
-  # ever holds a token that writes. It is not read by `ci`: an issue that cannot be opened is a
-  # warning, not broken code.
+  # Holds `issues: write` and runs no test, so no test code ever holds a token that writes.
   flaky:
     needs: [scripts, server, web, web-sweep, packages, e2e]
     if: ${{ !cancelled() }}

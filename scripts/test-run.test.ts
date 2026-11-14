@@ -12,7 +12,6 @@ after(() => {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
 })
 
-// A test that fails the first time it runs and passes the next, counted by a file beside it.
 function flaky(name: string): string {
   return [
     "import { existsSync, writeFileSync } from 'node:fs'",
