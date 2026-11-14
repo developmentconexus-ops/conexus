@@ -155,6 +155,8 @@ export const ProposalItemView = z.object({
   target: z.string(),
   item: ProposedItem,
   before: ElementBefore.nullable(),
+  /** What `target` is called in the person's words ("Documento › Tipo de operação 101"); null when no active element has that address. */
+  targetName: z.string().nullable(),
   proof: ProofView.nullable(),
   /** The name of the connection the proof read through; null without a proof or when the connection left. */
   connectionName: z.string().nullable(),

@@ -45,7 +45,7 @@ function ConceptsTable(props: { companyId: CompanyId; concepts: ConceptRow[] }) 
     <Table>
       <TableHeader>
         <TableRow>
-          {['Conceito', 'É', 'Campos', 'Códigos', 'Estado'].map((head) => (
+          {['Conceito', 'É', 'Lido de', 'Campos', 'Códigos', 'Estado'].map((head) => (
             <TableHead key={head}>{head}</TableHead>
           ))}
         </TableRow>
@@ -57,6 +57,7 @@ function ConceptsTable(props: { companyId: CompanyId; concepts: ConceptRow[] }) 
               <ConceptLink companyId={props.companyId} concept={concept} />
             </TableCell>
             <TableCell>{isText(concept, props.concepts)}</TableCell>
+            <TableCell>{concept.source ?? '—'}</TableCell>
             <TableCell className="tabular-nums">{concept.fields}</TableCell>
             <TableCell className="tabular-nums">{concept.codes}</TableCell>
             <TableCell>{stateText(concept.state)}</TableCell>
@@ -75,6 +76,9 @@ function ConceptsPhone(props: { companyId: CompanyId; concepts: ConceptRow[] }) 
           <div className="flex flex-col gap-xs px-sm py-md">
             <ConceptLink companyId={props.companyId} concept={concept} />
             <span className="text-text-2">{isText(concept, props.concepts)}</span>
+            {concept.source !== null && (
+              <span className="break-words text-text-2">{`Lido de ${concept.source}`}</span>
+            )}
             <span className="text-text-2 tabular-nums">
               {`${plural(concept.fields, 'campo', 'campos')} · ${plural(concept.codes, 'código', 'códigos')} · ${stateText(concept.state)}`}
             </span>

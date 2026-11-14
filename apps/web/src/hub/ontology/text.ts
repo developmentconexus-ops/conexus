@@ -1,4 +1,10 @@
-import type { ConceptRow, ConceptView, FieldView, ProposalItemView } from '@conexus/hub-api'
+import type {
+  ConceptRow,
+  ConceptView,
+  FieldView,
+  ProposalItemView,
+  ProposalView,
+} from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 import { unconfirmedText } from '../../platform/hub.ts'
 
@@ -23,6 +29,7 @@ export const BACK_TO_CONCEPT = 'Voltar ao conceito'
 export const PROPOSAL_DECIDED = 'Esta proposta já foi decidida.'
 export const TO_HISTORY = 'Ver o histórico'
 export const SEE_AGAIN = 'Ver de novo'
+export const SEE_QUERY = 'Ver a consulta'
 export const SOURCE_GONE = 'uma conexão que saiu'
 export const SUGGEST_NOTE = 'Isto vira uma proposta. Quem tem "Conceitos da empresa" aprova.'
 export const SUGGEST = 'Sugerir mudança'
@@ -76,7 +83,7 @@ export function stateText(state: ConceptView['state']): string {
 }
 
 /** The line of one item of a proposal: what it adds or changes, in the person's words. */
-export function itemText(item: ProposalItemView['item']): string {
+export function itemText(item: ProposalItemView['item'], targetName: string | null): string {
   switch (item.kind) {
     case 'ADD_CONCEPT':
       return item.concept.base === undefined
@@ -91,14 +98,25 @@ export function itemText(item: ProposalItemView['item']): string {
     case 'SET_SOURCE':
       return `${item.concept} · de onde lê`
     case 'RENAME_LABEL':
-      return `${item.target} · ${item.name}`
+      return `${targetName ?? item.target} · ${item.name}`
     case 'DEPRECATE':
       return item.replacedBy === undefined
-        ? `${item.target} · aposentar`
-        : `${item.target} · aposentar, use ${item.replacedBy}`
+        ? `${targetName ?? item.target} · aposentar`
+        : `${targetName ?? item.target} · aposentar, use ${item.replacedBy}`
     default:
       return item satisfies never
   }
+}
+
+/** Who made the proposal: the agent, or the person, or nobody when the person left. */
+export function authorText(proposal: Pick<ProposalView, 'agent' | 'proposedBy'>): string {
+  if (proposal.agent === 'builder') return 'pelo Builder'
+  if (proposal.agent === 'assistant') return 'pelo Assistente'
+  return `por ${proposal.proposedBy ?? 'alguém que saiu'}`
+}
+
+export function baseText(revision: number): string {
+  return revision === 0 ? 'base: nenhuma revisão' : `base: revisão ${revision}`
 }
 
 export function when(instant: string): string {

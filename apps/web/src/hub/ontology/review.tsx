@@ -16,13 +16,17 @@ import { Checkbox } from '../../ui/checkbox.tsx'
 import { Input } from '../../ui/input.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { ontologyQuery, openProposalsQuery, sendDecision } from './queries.ts'
+import { Query } from './source-block.tsx'
 import {
   AWAITS,
+  authorText,
+  baseText,
   itemText,
   NOTHING_TO_REVIEW,
   PROPOSAL_DECIDED,
   plural,
   SEE_AGAIN,
+  SOURCE_GONE,
   TO_HISTORY,
   UNCONFIRMED_DECISION,
   when,
@@ -93,17 +97,24 @@ function afterName(item: ProposalItemView['item']): string | undefined {
   return item.kind === 'RENAME_LABEL' ? item.name : undefined
 }
 
+function lineOf(item: ProposalItemView): string {
+  return itemText(item.item, item.targetName)
+}
+
 function Change({ item }: { item: ProposalItemView }) {
   const after = afterName(item.item)
   return (
     <>
-      <p className="break-words">{itemText(item.item)}</p>
+      <p className="break-words">{lineOf(item)}</p>
       {item.before !== null && after !== undefined && (
         <p className="break-words text-text-2">{`antes ${nameBefore(item.before)} · depois ${after}`}</p>
       )}
       {item.proof !== null && (
-        <p className="text-text-2 tabular-nums">{`Prova: ${plural(item.proof.rows, 'linha', 'linhas')}`}</p>
+        <p className="break-words text-text-2 tabular-nums">
+          {`Lido de ${item.connectionName ?? SOURCE_GONE} · Prova: ${plural(item.proof.rows, 'linha', 'linhas')}`}
+        </p>
       )}
+      {item.item.kind === 'SET_SOURCE' && <Query sql={item.item.sql} />}
     </>
   )
 }
@@ -121,7 +132,7 @@ function ItemRow(props: {
       <div className="flex items-start gap-sm">
         {choice !== undefined && onChange !== undefined && (
           <Checkbox
-            aria-label={`Aprovar: ${itemText(item.item)}`}
+            aria-label={`Aprovar: ${lineOf(item)}`}
             checked={choice.approve}
             onCheckedChange={(approve) => onChange({ ...choice, approve })}
           />
@@ -135,7 +146,7 @@ function ItemRow(props: {
       </div>
       {choice !== undefined && !choice.approve && onChange !== undefined && (
         <Input
-          aria-label={`Motivo da recusa: ${itemText(item.item)}`}
+          aria-label={`Motivo da recusa: ${lineOf(item)}`}
           value={choice.reason}
           maxLength={500}
           onChange={(event) => onChange({ ...choice, reason: event.target.value })}
@@ -198,7 +209,7 @@ function ProposalBlock(props: {
       <div className="flex flex-col gap-xs">
         <h3 className="break-words font-display text-title">{proposal.demand}</h3>
         <p className="text-text-2">
-          {`${proposal.agent === null ? 'por um membro' : 'pelo Builder'} · ${plural(proposal.items.length, 'item', 'itens')} · ${when(proposal.createdAt)}`}
+          {`${authorText(proposal)} · ${baseText(proposal.baseRevision)} · ${plural(proposal.items.length, 'item', 'itens')} · ${when(proposal.createdAt)}`}
         </p>
       </div>
       <ul>

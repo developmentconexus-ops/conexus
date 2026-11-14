@@ -2,6 +2,7 @@ import type {
   ConceptPage,
   ConceptRow,
   OntologyView,
+  ProposalItemView,
   ProposalView,
   RevisionEntry,
 } from '@conexus/hub-api'
@@ -10,6 +11,7 @@ import {
   ConceptPage as ConceptPageSchema,
   OntologyProposalId,
   OntologyView as OntologyViewSchema,
+  ProposalItemView as ProposalItemViewSchema,
   ProposalView as ProposalViewSchema,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -169,6 +171,7 @@ export function proposal(fields: Partial<ProposalView> = {}): ProposalView {
           origin: 'PERSON',
           state: 'ACTIVE',
         },
+        targetName: 'Documento › Tipo de operação 101',
         proof: null,
         connectionName: null,
         decision: 'PENDING',
@@ -247,4 +250,28 @@ export async function onPhone<T>(run: () => Promise<T>): Promise<T> {
   } finally {
     phone.mockRestore()
   }
+}
+
+/** A proposal's source of a concept, with the proof that read it: where it is read from and how many rows. */
+export function sourceItem(fields: Partial<ProposalItemView> = {}): ProposalItemView {
+  return ProposalItemViewSchema.parse({
+    n: 2,
+    target: 'documento',
+    item: { kind: 'SET_SOURCE', concept: 'documento', sql: 'SELECT NUNOTA\nFROM TGFCAB' },
+    before: null,
+    targetName: null,
+    proof: {
+      outcome: 'OK',
+      reason: null,
+      rows: 1240,
+      columns: ['NUNOTA'],
+      ranAt: '2026-11-12T10:02:00.000Z',
+    },
+    connectionName: 'Sankhya Matriz',
+    decision: 'PENDING',
+    reason: null,
+    decidedBy: null,
+    decidedAt: null,
+    ...fields,
+  })
 }

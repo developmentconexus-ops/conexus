@@ -53,6 +53,7 @@ test('L1 e R1: depois da primeira, membro e desenvolvedor recebem NOT_IN_ROLE; d
   const open = Object((await on.read(on.member, '/proposals?state=OPEN')).json()).proposals
   assert.equal(open[0].items[0].before.name, 'vendedor')
   assert.equal(open[0].items[0].item.name, 'Vendedor externo')
+  assert.equal(open[0].items[0].targetName, 'vendedor')
   assert.equal((await on.approveAll(on.admin, ofMember, 1, 1)).statusCode, 200)
   const ofAdmin = await on.proposed(on.admin, [rename('vendedor.nome', 'Apelido')])
   assert.equal((await on.approveAll(on.admin, ofAdmin, 1, 2)).statusCode, 200)

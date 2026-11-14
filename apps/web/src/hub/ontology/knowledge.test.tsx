@@ -29,6 +29,25 @@ test('Conceitos: a lista traz o papel com o nome da base, as contagens e a revis
   expect(screen.getByRole('link', { name: 'Ver o histórico' })).toBeTruthy()
 })
 
+test('Conceitos: a coluna Lido de traz a conexão de cada conceito, e um traço sem fonte', async () => {
+  openKnowledge(
+    server,
+    {
+      view: view({
+        concepts: [conceptRow(), conceptRow({ key: 'origem', name: 'Origem', source: null })],
+      }),
+    },
+    KNOWLEDGE,
+  )
+  expect(await screen.findByRole('columnheader', { name: 'Lido de' })).toBeTruthy()
+  const documento = screen.getByRole('link', { name: 'Documento' }).closest('tr')
+  const origem = screen.getByRole('link', { name: 'Origem' }).closest('tr')
+  if (!(documento instanceof HTMLElement) || !(origem instanceof HTMLElement))
+    throw new Error('no row')
+  expect(within(documento).getByText('Sankhya Matriz')).toBeTruthy()
+  expect(within(origem).queryByText('Sankhya Matriz')).toBeNull()
+})
+
 test('Conceitos: sem conceito aprovado, a frase de primeira vez', async () => {
   openKnowledge(server, { view: view({ concepts: [], revision: null }) }, KNOWLEDGE)
   expect(
@@ -42,6 +61,7 @@ test('Conceitos: a 390 px cada conceito é um cartão com as contagens', async (
   await onPhone(async () => {
     openKnowledge(server, { view: view() }, KNOWLEDGE)
     expect(await screen.findByText('1 campo · 0 códigos · ativo')).toBeTruthy()
+    expect(screen.getAllByText('Lido de Sankhya Matriz').length).toBe(2)
   })
 })
 
@@ -88,4 +108,66 @@ test('um código que saiu: a frase da matriz e Voltar ao conceito', async () => 
   )
   expect(await screen.findByText('Este código não existe mais.')).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Voltar ao conceito' })).toBeTruthy()
+})
+
+test('a página diz de onde lê pelo nome da conexão, e a consulta abre sob Ver a consulta', async () => {
+  openKnowledge(server, { view: view(), concepts: { documento: page() } }, `${KNOWLEDGE}/documento`)
+  expect(await screen.findByText('Sankhya Matriz')).toBeTruthy()
+  expect(screen.queryByText('SELECT NUNOTA FROM TGFCAB')).toBeNull()
+  fireEvent.click(screen.getByText('Ver a consulta'))
+  expect(await screen.findByText('SELECT NUNOTA FROM TGFCAB')).toBeTruthy()
+})
+
+test('a conexão que saiu: a página diz isso e não um traço', async () => {
+  const gone = page()
+  openKnowledge(
+    server,
+    {
+      view: view(),
+      concepts: {
+        documento: { ...gone, source: gone.source && { ...gone.source, connectionName: null } },
+      },
+    },
+    `${KNOWLEDGE}/documento`,
+  )
+  expect(await screen.findByText('uma conexão que saiu')).toBeTruthy()
+})
+
+test('a 390 px a página do conceito é uma lista de linhas "Nome · tipo", com Ver e sugerir à vista', async () => {
+  await onPhone(async () => {
+    openKnowledge(
+      server,
+      { view: view(), concepts: { documento: page() } },
+      `${KNOWLEDGE}/documento`,
+    )
+    expect(await screen.findByText('Número único · código')).toBeTruthy()
+    expect(screen.getByText('Tipo de operação · lista')).toBeTruthy()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Ver e sugerir' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: 'Sugerir mudança' })).toHaveLength(1)
+  })
+})
+
+test('a 390 px os códigos são cartões, cada um com Sugerir mudança dentro da tela', async () => {
+  await onPhone(async () => {
+    openKnowledge(
+      server,
+      { view: view(), concepts: { documento: page() } },
+      `${KNOWLEDGE}/documento?campo=tipo`,
+    )
+    expect(await screen.findByText('Documento › Tipo de operação')).toBeTruthy()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.getByText('Venda tirada fora da loja.')).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: 'Sugerir mudança' })).toHaveLength(3)
+    const [first] = screen.getAllByRole('button', { name: 'Sugerir mudança' })
+    if (first === undefined) throw new Error('no button')
+    fireEvent.click(first)
+    expect(await screen.findByLabelText('Sugerir mudança no 100')).toBeTruthy()
+  })
+})
+
+test('a página não termina num link solto "Conceitos": as abas levam de volta', async () => {
+  openKnowledge(server, { view: view(), concepts: { documento: page() } }, `${KNOWLEDGE}/documento`)
+  await screen.findByRole('heading', { name: 'Documento' })
+  expect(screen.queryByRole('link', { name: 'Conceitos' })).toBeNull()
 })

@@ -1,32 +1,19 @@
-import type {
-  CodeView,
-  CompanyId,
-  ConceptPage,
-  ConceptRow,
-  FieldView,
-  RelationView,
-} from '@conexus/hub-api'
+import type { CompanyId, ConceptPage, ConceptRow, FieldView, RelationView } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
-import { Button, buttonVariants } from '../../ui/button.tsx'
-import { PageTitle, SectionTitle } from '../../ui/list.tsx'
+import { Button } from '../../ui/button.tsx'
+import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
+import { Codes } from './concept-codes.tsx'
 import { FlowPlace } from './concepts.tsx'
 import { conceptQuery, ontologyQuery } from './queries.ts'
+import { SourceBlock } from './source-block.tsx'
 import { SuggestForm } from './suggest.tsx'
-import {
-  BACK_TO_CONCEPT,
-  CODE_GONE,
-  fieldTypeText,
-  plural,
-  SEE_AND_SUGGEST,
-  SOURCE_GONE,
-  SUGGEST,
-  when,
-} from './text.ts'
+import { fieldTypeText, SEE_AND_SUGGEST, SUGGEST } from './text.ts'
 import { Waiting } from './waiting.tsx'
 
 type Names = readonly ConceptRow[]
@@ -87,28 +74,6 @@ function Facts({ page }: { page: ConceptPage }) {
   )
 }
 
-function SourceBlock({ page }: { page: ConceptPage }) {
-  const { source } = page
-  if (source === null) return null
-  return (
-    <div className="flex flex-col gap-xs">
-      <p className="break-words">
-        <span className="text-text-2">Lido de </span>
-        {source.connectionName ?? SOURCE_GONE}
-      </p>
-      <details>
-        <summary className="cursor-pointer text-text-2">Ver a consulta</summary>
-        <pre className="overflow-x-auto font-mono text-fact">{source.sql}</pre>
-      </details>
-      {source.proof !== null && (
-        <p className="text-text-2 tabular-nums">
-          {`Prova: ${plural(source.proof.rows, 'linha', 'linhas')} em ${when(source.proof.ranAt)}`}
-        </p>
-      )}
-    </div>
-  )
-}
-
 function fieldLink(field: FieldView, page: ConceptPage, companyId: CompanyId) {
   const codes = page.codes.filter((each) => each.field === field.key)
   if (field.type !== 'CODE' && codes.length === 0) return null
@@ -151,6 +116,25 @@ function FieldsTable({ companyId, page }: { companyId: CompanyId; page: ConceptP
   )
 }
 
+/** On a phone the fields are lines "Nome · tipo", the codes link under the ones that have them. */
+function FieldsPhone({ companyId, page }: { companyId: CompanyId; page: ConceptPage }) {
+  return (
+    <List>
+      {page.fields.map((field) => {
+        const link = fieldLink(field, page, companyId)
+        return (
+          <Row key={field.key}>
+            <div className="flex flex-col gap-xs px-sm py-md">
+              <p className="break-words">{`${field.name} · ${fieldTypeText(field)}`}</p>
+              {link !== null && <p className="text-text-2">{link}</p>}
+            </div>
+          </Row>
+        )
+      })}
+    </List>
+  )
+}
+
 /** One relation as the concept on this side reads it: what its other side is called, and the join it goes through. */
 function relationText(relation: RelationView, concept: string, names: Names): string {
   const label = relation.from === concept ? relation.fromName : relation.toName
@@ -170,97 +154,6 @@ function Relations(props: { page: ConceptPage; names: Names }) {
   )
 }
 
-function CodeRow(props: {
-  companyId: CompanyId
-  concept: string
-  code: CodeView
-  suggesting: boolean
-  onSuggest: (value: string | undefined) => void
-}) {
-  const { code } = props
-  return (
-    <>
-      <TableRow>
-        <TableCell className="font-mono text-fact">{code.value}</TableCell>
-        <TableCell>{code.label}</TableCell>
-        <TableCell className="whitespace-normal">{code.description ?? '—'}</TableCell>
-        <TableCell>{code.origin === 'DICTIONARY' ? 'sistema' : 'empresa'}</TableCell>
-        <TableCell>
-          <Button size="sm" onClick={() => props.onSuggest(code.value)}>
-            {SUGGEST}
-          </Button>
-        </TableCell>
-      </TableRow>
-      {props.suggesting && (
-        <TableRow>
-          <TableCell colSpan={5} className="whitespace-normal">
-            <SuggestForm
-              companyId={props.companyId}
-              target={`${props.concept}.${code.field}=${code.value}`}
-              title={`Sugerir mudança no ${code.value}`}
-              current={{ name: code.label, description: code.description ?? '' }}
-              onClose={() => props.onSuggest(undefined)}
-            />
-          </TableCell>
-        </TableRow>
-      )}
-    </>
-  )
-}
-
-/** The codes of one field, each with **Sugerir mudança**; the field comes from the address (web W18). */
-function Codes(props: { companyId: CompanyId; page: ConceptPage; field: string }) {
-  const [value, setValue] = useState<string>()
-  const field = props.page.fields.find((each) => each.key === props.field)
-  const concept = props.page.concept.key
-  if (field === undefined)
-    return (
-      <div className="flex flex-col items-start gap-md">
-        <p>{CODE_GONE}</p>
-        <Link
-          to="/companies/$companyId/knowledge/$concept"
-          params={{ companyId: props.companyId, concept }}
-          className={buttonVariants()}
-        >
-          {BACK_TO_CONCEPT}
-        </Link>
-      </div>
-    )
-  const codes = props.page.codes.filter((each) => each.field === field.key)
-  return (
-    <section
-      aria-label={`${props.page.concept.name} › ${field.name}`}
-      className="flex flex-col gap-md"
-    >
-      <SectionTitle>{`${props.page.concept.name} › ${field.name}`}</SectionTitle>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {['Código', 'Quer dizer', 'Explicação', 'Origem'].map((head) => (
-              <TableHead key={head}>{head}</TableHead>
-            ))}
-            <TableHead>
-              <span className="sr-only">Ações</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {codes.map((code) => (
-            <CodeRow
-              key={code.value}
-              companyId={props.companyId}
-              concept={concept}
-              code={code}
-              suggesting={value === code.value}
-              onSuggest={setValue}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </section>
-  )
-}
-
 function ConceptBody(props: {
   companyId: CompanyId
   page: ConceptPage
@@ -269,6 +162,7 @@ function ConceptBody(props: {
   const { companyId, page } = props
   const names = useQuery(ontologyQuery(companyId)).data?.concepts ?? []
   const [suggesting, setSuggesting] = useState(false)
+  const phone = useIsMobile()
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <PageTitle>{page.concept.name}</PageTitle>
@@ -277,7 +171,11 @@ function ConceptBody(props: {
       <Facts page={page} />
       <SourceBlock page={page} />
       <FlowPlace title={`Fluxo do ${page.concept.name}`} />
-      <FieldsTable companyId={companyId} page={page} />
+      {phone ? (
+        <FieldsPhone companyId={companyId} page={page} />
+      ) : (
+        <FieldsTable companyId={companyId} page={page} />
+      )}
       <Relations page={page} names={names} />
       {props.field !== undefined && <Codes companyId={companyId} page={page} field={props.field} />}
       {suggesting ? (
@@ -293,13 +191,6 @@ function ConceptBody(props: {
           <Button onClick={() => setSuggesting(true)}>{SUGGEST}</Button>
         </div>
       )}
-      <Link
-        to="/companies/$companyId/knowledge"
-        params={{ companyId }}
-        className={buttonVariants({ variant: 'ghost' })}
-      >
-        Conceitos
-      </Link>
     </div>
   )
 }

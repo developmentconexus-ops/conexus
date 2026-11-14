@@ -9,6 +9,7 @@ import type {
   RevisionEntry,
 } from '@conexus/hub-api'
 import {
+  ConnectionId,
   fixedNameOf,
   OntologyProposalId,
   PersonId as PersonIdSchema,
@@ -17,7 +18,7 @@ import {
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { connection } from '../connectors/public-tables.ts'
+import { connectionNamesOf as namedConnections } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ActiveSet, CodeRow, ConceptRow, FieldRow, RelationRow } from './active.ts'
 import { ADDRESS, activeIn } from './active.ts'
@@ -60,13 +61,16 @@ async function namesOf(deps: Deps, tx: ReadTx, ids: readonly (string | null)[]):
 }
 
 /** The names of the connections, by id; a connection that left has none. */
-async function connectionNamesOf(tx: ReadTx, ids: readonly string[]): Promise<Names> {
-  if (ids.length === 0) return new Map()
-  const rows = await tx
-    .select({ id: connection.id, name: connection.name })
-    .from(connection)
-    .where(inArray(connection.id, [...ids]))
-  return new Map(rows.map((row) => [row.id, row.name]))
+async function connectionNamesOf(
+  tx: ReadTx,
+  companyId: CompanyId,
+  ids: readonly string[],
+): Promise<Names> {
+  const found = await namedConnections(tx, {
+    companyId,
+    ids: ids.map((id) => ConnectionId.parse(id)),
+  })
+  return new Map([...found].map(([id, each]) => [id, each.name]))
 }
 
 function nameIn(names: Names, id: string | null): string | null {
@@ -92,6 +96,7 @@ export async function ontologyView(deps: Deps, input: Reader): Promise<OntologyV
     const names = await namesOf(deps, tx, [newest?.proposedBy ?? null, newest?.approvedBy ?? null])
     const sources = await connectionNamesOf(
       tx,
+      input.companyId,
       active.sources.map((each) => each.connectionId),
     )
     function sourceOf(key: string): string | null {
@@ -125,7 +130,11 @@ export async function ontologyView(deps: Deps, input: Reader): Promise<OntologyV
 type Proved = Readonly<{ view: ProofView; connectionName: string | null }>
 
 /** The proofs by id, each with the name of the connection it read through. */
-async function proofsOf(tx: ReadTx, ids: readonly string[]): Promise<Map<string, Proved>> {
+async function proofsOf(
+  tx: ReadTx,
+  companyId: CompanyId,
+  ids: readonly string[],
+): Promise<Map<string, Proved>> {
   if (ids.length === 0) return new Map()
   const rows = await tx
     .select()
@@ -133,6 +142,7 @@ async function proofsOf(tx: ReadTx, ids: readonly string[]): Promise<Map<string,
     .where(inArray(proofRun.id, [...ids]))
   const names = await connectionNamesOf(
     tx,
+    companyId,
     rows.map((row) => row.connectionId),
   )
   return new Map(
@@ -161,7 +171,11 @@ export async function conceptPage(
     const concept = active.concepts.find((row) => row.key === input.concept)
     if (concept === undefined) throw new Failure('CONCEPT_UNKNOWN')
     const source = active.sources.find((row) => row.concept === concept.key)
-    const proofs = await proofsOf(tx, source === undefined ? [] : [source.proofRunId])
+    const proofs = await proofsOf(
+      tx,
+      input.companyId,
+      source === undefined ? [] : [source.proofRunId],
+    )
     const proved = source === undefined ? undefined : proofs.get(source.proofRunId)
     function touches(row: RelationRow) {
       return [row.fromConcept, row.toConcept, row.through].includes(concept?.key ?? null)
@@ -197,6 +211,35 @@ function beforeOf(active: ActiveSet, address: string): ElementBefore | null {
   return null
 }
 
+/** The words for an active element's address: a code under its concept and field, a field under its concept. */
+function targetNameOf(active: ActiveSet, before: ElementBefore | null): string | null {
+  if (before === null) return null
+  function conceptName(key: string): string {
+    return active.concepts.find((row) => row.key === key)?.name ?? key
+  }
+  switch (before.kind) {
+    case 'CONCEPT':
+      return before.name
+    case 'FIELD':
+      return `${conceptName(before.concept)} › ${before.name}`
+    case 'CODE': {
+      const field = active.fields.find(
+        (row) => row.concept === before.concept && row.key === before.field,
+      )
+      return `${conceptName(before.concept)} › ${field?.name ?? before.field} ${before.value}`
+    }
+    case 'RELATION':
+      return `${before.fromName} · ${before.toName}`
+    default:
+      return before satisfies never
+  }
+}
+
+function beforeAndName(active: ActiveSet, address: string) {
+  const before = beforeOf(active, address)
+  return { before, targetName: targetNameOf(active, before) }
+}
+
 function proofOf(proofs: Map<string, Proved>, id: string | null) {
   const found = id === null ? undefined : proofs.get(id)
   return { proof: found?.view ?? null, connectionName: found?.connectionName ?? null }
@@ -227,6 +270,7 @@ export async function proposalsView(
     const active = await activeIn(tx)
     const proofs = await proofsOf(
       tx,
+      input.companyId,
       items.flatMap((row) => (row.proofRunId === null ? [] : [row.proofRunId])),
     )
     const names = await namesOf(deps, tx, [
@@ -241,7 +285,7 @@ export async function proposalsView(
         .filter((row) => row.proposalId === each.id)
         .map((row) => ({
           ...{ n: row.n, target: row.target, item: storedItem(row) },
-          before: beforeOf(active, row.target),
+          ...beforeAndName(active, row.target),
           ...proofOf(proofs, row.proofRunId),
           ...{ decision: row.decision, reason: row.reason },
           ...{

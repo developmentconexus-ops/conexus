@@ -51,6 +51,8 @@ test('Sugerir mudança: a sugestão de um membro vira proposta aberta com quem p
   assert.equal(codeOf(conflict), 'IDEMPOTENCY_CONFLICT')
   const view = Object((await on.read(on.member)).json())
   assert.equal(view.toReview, 1)
+  const [open] = Object((await on.read(on.member, '/proposals?state=OPEN')).json()).proposals
+  assert.equal(open.items[0].targetName, 'vendedor › Tipo I')
   // The decision makes the code the person's.
   const approved = await on.approveAll(on.admin, Object(made.json()).proposalId, 1, 1)
   assert.equal(approved.statusCode, 200, approved.body)

@@ -5,7 +5,7 @@ import { expect, test } from 'vitest'
 import { problemOf } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { decisionOf } from './review.tsx'
-import { KNOWLEDGE, openKnowledge, proposal, view } from './test-hub.tsx'
+import { KNOWLEDGE, openKnowledge, proposal, sourceItem, view } from './test-hub.tsx'
 
 // Para revisar: quem aprova decide, quem não aprova lê quem aguarda (criterion 18).
 const server = hubServer()
@@ -111,4 +111,43 @@ test('decisionOf: sem item ou com recusa sem motivo não há corpo', () => {
     refused: [],
     expectedRevision: 3,
   })
+})
+
+test('o item diz o que muda pelo nome, nunca pelo endereço', async () => {
+  openKnowledge(server, { view: view(), proposals: [proposal()] }, REVIEW)
+  expect(
+    await screen.findByText('Documento › Tipo de operação 101 · Pedido do representante'),
+  ).toBeTruthy()
+  expect(screen.queryByText(/documento\.tipo=101/)).toBeNull()
+})
+
+test('o cabeçalho diz quem propôs e a revisão da base', async () => {
+  openKnowledge(server, { view: view(), proposals: [proposal()] }, REVIEW)
+  expect(await screen.findByText(/^por Membro · base: revisão 2 · 1 item/)).toBeTruthy()
+})
+
+test('uma proposta do Builder, de quem saiu e da primeira revisão', async () => {
+  openKnowledge(
+    server,
+    {
+      view: view({ revision: null }),
+      proposals: [proposal({ agent: 'builder', baseRevision: 0 }), proposal({ proposedBy: null })],
+    },
+    REVIEW,
+  )
+  expect(await screen.findByText(/^pelo Builder · base: nenhuma revisão/)).toBeTruthy()
+  expect(screen.getByText(/^por alguém que saiu · base: revisão 2/)).toBeTruthy()
+})
+
+test('a fonte de um conceito mostra de onde lê, a prova e a consulta sob Ver a consulta', async () => {
+  const base = proposal()
+  openKnowledge(
+    server,
+    { view: view(), proposals: [{ ...base, items: [...base.items, sourceItem()] }] },
+    REVIEW,
+  )
+  expect(await screen.findByText('Lido de Sankhya Matriz · Prova: 1.240 linhas')).toBeTruthy()
+  expect(screen.queryByText('SELECT NUNOTA')).toBeNull()
+  fireEvent.click(screen.getByText('Ver a consulta'))
+  expect(await screen.findByText('SELECT NUNOTA')).toBeTruthy()
 })
