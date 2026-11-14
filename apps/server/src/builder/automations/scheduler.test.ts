@@ -3,8 +3,8 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { TEST_IDLE_MS } from '../../platform/test-mastra-database.ts'
 import { holding, hubBeside } from '../conversation/test-conversation.ts'
+import { until } from '../model-accounts/test-defaults.ts'
 import type { Summary } from './test-automations.ts'
 import {
   answering,
@@ -21,21 +21,21 @@ import {
   TEST_CLOCK,
 } from './test-automations.ts'
 
-// The test pool's idle time and a margin: what lets Neon put the branch to sleep (D27).
-const QUIET_MS = TEST_IDLE_MS + 2_000
 /** How long the Hub waits for its turns when it is told to stop. */
 const SETTLE_MS = 3_000
 /** Five ticks of the scheduler: a fire or a read that was going to come would have come by now. */
 const TICKS_MS = 5 * TEST_CLOCK.schedulerTickMs
 
-/** The connections Mastra's login holds open to the Hub's database. */
-async function mastraOpen(hub: Hub): Promise<number> {
+/** Waits until Mastra's login holds no connection to the Hub's database, which lets Neon sleep it (D27). */
+async function mastraClosed(hub: Hub): Promise<void> {
   const database = new URL(hub.test.mastraUrl.reveal()).pathname.slice(1)
-  const [row] = await hub.test.asOwner(
-    `select count(*)::int as n from pg_stat_activity where usename = 'mastra_runtime' and datname = $1`,
-    [database],
-  )
-  return Number(Object(row).n)
+  await until(async () => {
+    const [row] = await hub.test.asOwner(
+      `select count(*)::int as n from pg_stat_activity where usename = 'mastra_runtime' and datname = $1`,
+      [database],
+    )
+    return Number(Object(row).n) === 0
+  }, 'the Mastra pool reached zero')
 }
 
 /** The reads of Mastra's schedule table since the database was made, read in Mastra's database. */
@@ -58,8 +58,7 @@ test('sem automação, a agenda só tem a limpeza diária do rastro e dorme até
 
   const back = await hubBeside(t, on.hub)
   assert.equal(back.mastra.getWorker('scheduler')?.isRunning, true)
-  await sleep(QUIET_MS)
-  assert.equal(await mastraOpen(on.hub), 0)
+  await mastraClosed(on.hub)
   const reads = await scheduleReads(on.hub)
   assert.ok(reads >= 1, 'the schedules were read')
   await sleep(TICKS_MS)
@@ -81,10 +80,9 @@ test('a primeira automação liga a agenda, que dorme até o próximo disparo: o
   const far = { kind: 'DAILY', time: minuteAhead(12 * 3_600_000) }
   await created(on.hub, on.ana, on.automations, salesSummary([], { cadence: far }))
   assert.equal(on.hub.mastra.getWorker('scheduler')?.isRunning, true)
-  await sleep(QUIET_MS)
-  assert.equal(await mastraOpen(on.hub), 0)
+  await mastraClosed(on.hub)
   const asleep = await scheduleReads(on.hub)
-  await sleep(SETTLE_MS)
+  await sleep(TICKS_MS)
   assert.equal(await scheduleReads(on.hub), asleep, 'no read while it sleeps')
 
   const cadence = { kind: 'DAILY', time: minuteAhead(70_000) }
@@ -108,11 +106,11 @@ test('o fim do Hub: a agenda para primeiro; rodar, criar e retomar dão HUB_UPDA
   assert.equal((await post(stopping, on.ana, `${pausedUrl}/pause`, {})).statusCode, 200)
   const runId = await ranNow(stopping, on.ana, url)
   const running = await conversing(stopping, on.ana, url, runId)
-  while (on.calls.length < 1) await sleep(10)
+  await until(() => on.calls.length >= 1, 'the model was asked')
 
   const closed = stopping.close(SETTLE_MS)
   const scheduler = stopping.mastra.getWorker('scheduler')
-  while (scheduler?.isRunning) await sleep(10)
+  await until(() => scheduler?.isRunning === false, 'the scheduler stopped')
   for (const [path, body] of [
     [`${url}/run`, {}],
     [on.automations, salesSummary([])],
@@ -147,7 +145,7 @@ test('o processo que morreu: a execução que ficou running aparece FAILED com I
   const url = `${on.automations}/${automation.id}`
   const runId = await ranNow(dying.hub, on.ana, url)
   const running = await conversing(on.hub, on.ana, url, runId)
-  while (on.calls.length < 1) await sleep(10)
+  await until(() => on.calls.length >= 1, 'the model was asked')
   await dying.die()
 
   const back = await hubBeside(t, on.hub)

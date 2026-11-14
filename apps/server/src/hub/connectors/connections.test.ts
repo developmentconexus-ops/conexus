@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import { sankhyaFake } from '@conexus/connectors'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
@@ -14,6 +13,7 @@ import {
   personOn,
   plantCompany,
 } from '../identity/test-hub.ts'
+import { sankhyaDoor } from './test-app-calls.ts'
 import { connectionsOn, linkSankhya, testOf } from './test-connections.ts'
 
 test('ligar: quem pode, e as recusas', async (t) => {
@@ -146,7 +146,8 @@ test('testar: o fornecedor fora do ar não muda o estado', async (t) => {
 })
 
 test('testar e desligar juntos; um serviço por token', async (t) => {
-  const { hub, fake, ana, base } = await connectionsOn(t)
+  const door = sankhyaDoor(t)
+  const { hub, fake, ana, base } = await connectionsOn(t, door.through)
   const { connection } = Object((await linkSankhya(hub, ana, base, fake.credential)).json())
   const logins = fake.logins()
   const both = await Promise.all([
@@ -158,15 +159,15 @@ test('testar e desligar juntos; um serviço por token', async (t) => {
     assert.equal(Object(each.json()).result, 'WORKING')
   }
 
-  // The check read is held in flight, so the Desligar commits while the Testar is still on it.
-  fake.switches.delayMilliseconds = 1_000
+  // The check read is held at the door, so the Desligar commits while the Testar is still on it.
   const second = Object(
     (await linkSankhya(hub, ana, base, fake.credential, undefined, 'Filial')).json(),
   )
-  const started = fake.logins()
+  const release = door.hold()
   const testing = testOf(hub, ana, base, second.connection.id)
-  while (fake.logins() === started) await setTimeout(5)
+  await door.reached(1)
   const removed = await call(hub, ana, 'DELETE', `${base}/${second.connection.id}`)
+  release()
   assert.equal(removed.statusCode, 200)
   const gone = await testing
   assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'CONNECTION_NOT_FOUND'])

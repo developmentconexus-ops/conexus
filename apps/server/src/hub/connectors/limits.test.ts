@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { TurnKey } from './public.ts'
-import { appCalls } from './test-app-calls.ts'
+import { appCalls, sankhyaDoor } from './test-app-calls.ts'
 import {
   A,
   B,
@@ -29,25 +30,30 @@ test('uma por vez: dez leituras na mesma ligação fazem um login e nunca duas c
   )
   assert.equal(on.fake.logins(), 1, 'the Testar and the ten reads share one token')
   const limits = createLimits({ executor: NO_EXECUTOR })
-  const started = performance.now()
-  function slow(id: typeof A) {
-    return limits.inTurn(id, 1000, () => sleep(100))
-  }
-  await Promise.all([slow(A), slow(B)])
-  assert.ok(performance.now() - started < 190, 'two connections wait for nobody')
+  const busy = Promise.withResolvers<void>()
+  const holder = limits.inTurn(A, 1000, () => busy.promise)
+  const other = await limits.inTurn(B, 1000, async () => 'B')
+  busy.resolve()
+  assert.equal(other, 'B', 'two connections wait for nobody')
+  await holder
 })
 
 test('o prazo de quem espera: passa do prazo na fila e responde DEADLINE; quem tem a vez segue', async () => {
   const limits = createLimits({ executor: NO_EXECUTOR })
+  const busy = Promise.withResolvers<void>()
   const holder = limits.inTurn(A, 1000, async () => {
-    await sleep(300)
+    await busy.promise
     return 'done'
   })
+  // Frees the holder if the waiter never answers, so a broken deadline fails the asserts instead of hanging.
+  const fallback = setTimeout(busy.resolve, 5_000)
   const started = performance.now()
   const waiter = await limits.inTurn(A, 60, async () => 'ran')
   const elapsed = performance.now() - started
-  assert.deepEqual(waiter, { kind: 'DEADLINE' })
-  assert.ok(elapsed >= 55 && elapsed < 200, `${elapsed} ms: answered at its own deadline`)
+  clearTimeout(fallback)
+  busy.resolve()
+  assert.deepEqual(waiter, { kind: 'DEADLINE' }, 'answered while the turn was still held')
+  assert.ok(elapsed >= 55, `${elapsed} ms: not before its own deadline`)
   assert.equal(await holder, 'done')
   assert.equal(
     await limits.inTurn(A, 1000, async (waited) => (waited < 50 ? 'free' : 'late')),
@@ -128,17 +134,32 @@ test('o status 4: UNREADABLE com o que veio, a linha de erro CONNECTOR_CONCURREN
   assert.ok(on.hub.lines.some((line) => line.message === 'CONNECTOR_CONCURRENCY_FAULT'))
 })
 
-test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e a próxima leitura faz outro login', async () => {
+/** The test's clock for a token's end; `settled` lets what a fired timer started run to its end. */
+function clockOf(t: TestContext) {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] })
+  return {
+    tick: (ms: number) => t.mock.timers.tick(ms),
+    settled: () => new Promise((resolve) => setImmediate(resolve)),
+  }
+}
+
+test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e a próxima leitura faz outro login', async (t) => {
+  const clock = clockOf(t)
   const events: string[] = []
   const limits = createLimits({ executor: executorOf(events, 61) })
   await limits.token(OPENED, 1000)
   assert.deepEqual(events, ['login1'])
-  await sleep(1300)
+  clock.tick(999)
+  await clock.settled()
+  assert.deepEqual(events, ['login1'], 'not before its end minus the margin')
+  clock.tick(1)
+  await clock.settled()
   assert.deepEqual(events, ['login1', 'logout t1'], 'logged out at its end minus the margin')
   await limits.token(OPENED, 1000)
   assert.deepEqual(events, ['login1', 'logout t1', 'login2'])
   await limits.closeAll(1000)
-  await sleep(1300)
+  clock.tick(1000)
+  await clock.settled()
   assert.deepEqual(
     events,
     ['login1', 'logout t1', 'login2', 'logout t2'],
@@ -146,22 +167,27 @@ test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e 
   )
 })
 
-test('o logout do fim espera a vez da ligação: com uma leitura aberta no token, nada sai; quando ela termina, o logout sai', async () => {
+test('o logout do fim espera a vez da ligação: com uma leitura aberta no token, nada sai; quando ela termina, o logout sai', async (t) => {
+  const clock = clockOf(t)
   const events: string[] = []
   const limits = createLimits({ executor: executorOf(events, 61) })
   await limits.token(OPENED, 1000)
+  const read = Promise.withResolvers<void>()
   const reading = limits.inTurn(OPENED.id, 1000, async () => {
-    await sleep(1800)
+    await read.promise
     events.push('read done')
   })
-  await sleep(1300)
+  clock.tick(1000)
+  await clock.settled()
   assert.deepEqual(events, ['login1'], 'the timer fired and the logout did not meet the read')
+  read.resolve()
   await reading
-  await sleep(100)
+  await clock.settled()
   assert.deepEqual(events, ['login1', 'read done', 'logout t1'])
 })
 
-test('o logout do fim com defeito vai ao registro e não derruba o processo', async () => {
+test('o logout do fim com defeito vai ao registro e não derruba o processo', async (t) => {
+  const clock = clockOf(t)
   const lines: string[] = []
   const limits = createLimits({
     executor: executorWithBrokenLogout(),
@@ -174,7 +200,8 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
   process.on('unhandledRejection', hear)
   try {
     await limits.token(OPENED, 1000)
-    await sleep(1300)
+    clock.tick(1000)
+    await clock.settled()
   } finally {
     process.off('unhandledRejection', hear)
   }
@@ -183,12 +210,13 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
 })
 
 test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma ligação não abrem duas chamadas juntas', async (t) => {
-  const on = await appCalls(t)
+  const door = sankhyaDoor(t)
+  const on = await appCalls(t, { through: door.through })
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const companyId = CompanyId.parse(on.companyId)
   const personId = PersonId.parse(on.ana.id)
-  on.fake.switches.delayMilliseconds = 150
-  const [assistant, builder] = await Promise.all([
+  const release = door.hold()
+  const both = Promise.all([
     on.hub.connectors.assistant.read(
       { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
       {
@@ -209,7 +237,14 @@ test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma 
       },
     ),
   ])
+  await door.reached(1)
+  // No event says a call is not coming: a second call outside the line has 300 ms to reach the double.
+  await sleep(300)
+  assert.equal(door.open(), 1, 'the other read waits its turn')
+  release()
+  const [assistant, builder] = await both
   assert.deepEqual([assistant.kind, builder.kind], ['OK', 'OK'])
+  assert.equal(door.most(), 1)
   const waits = on.hub.lines
     .filter((line) => line.message === 'CONNECTOR_CALLED')
     .map((line) => [line.fields.by, Number(line.fields.queuedMs)] as const)
@@ -221,11 +256,12 @@ test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma 
 })
 
 test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o fornecedor; a que já tinha a vez termina', async (t) => {
-  const on = await appCalls(t)
+  const door = sankhyaDoor(t)
+  const on = await appCalls(t, { through: door.through })
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const companyId = CompanyId.parse(on.companyId)
   const personId = PersonId.parse(on.ana.id)
-  on.fake.switches.delayMilliseconds = 600
+  const release = door.hold()
   const first = on.hub.connectors.assistant.read(
     { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
     {
@@ -235,6 +271,11 @@ test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o
       input: { page: 0 },
     },
   )
+  let firstEnded = false
+  void first.then(() => {
+    firstEnded = true
+  })
+  await door.reached(1)
   const stop = new AbortController()
   const queued = on.hub.connectors.builder.read(
     { companyId, projectId: ProjectId.parse(on.projectId) },
@@ -247,11 +288,17 @@ test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o
       signal: stop.signal,
     },
   )
+  // No event says the queued read is in the line; were it not yet, the stop still answers DEADLINE.
   await sleep(250)
-  const stoppedAt = performance.now()
   stop.abort()
-  assert.deepEqual(await queued, { kind: 'DEADLINE' })
-  assert.ok(performance.now() - stoppedAt < 100, 'it left the line when the turn stopped')
+  // Frees the first read if the line ignores the stop, so the test fails on the asserts instead of hanging.
+  const fallback = setTimeout(release, 5_000)
+  const answer = await queued
+  const ended = firstEnded
+  clearTimeout(fallback)
+  release()
+  assert.deepEqual(answer, { kind: 'DEADLINE' })
+  assert.equal(ended, false, 'it left the line while the first still had the turn')
   assert.equal((await first).kind, 'OK', 'the read that had the turn finished')
   const called = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED')
   assert.equal(called.length, 1, 'the stopped read never reached the provider')

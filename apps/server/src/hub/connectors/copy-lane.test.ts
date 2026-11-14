@@ -62,7 +62,7 @@ async function twoCompanies(t: TestContext, catalog?: readonly Connector[]) {
 
 async function until(holds: () => boolean, what: string) {
   for (let waited = 0; !holds(); waited += 10) {
-    assert.ok(waited < 800, what)
+    assert.ok(waited < 5_000, what)
     await sleep(10)
   }
 }

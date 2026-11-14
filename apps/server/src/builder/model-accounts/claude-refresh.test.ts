@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import {
   asked,
@@ -15,6 +14,7 @@ import {
   turnNotices,
 } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
+import { bothOnTheLease, titleOf, until } from './test-defaults.ts'
 
 const FIRST = { access: 'sk-ant-oat01-first-access', refresh: 'sk-ant-ort01-first-refresh' }
 const SECOND = { access: 'sk-ant-oat01-second-access', refresh: 'sk-ant-ort01-second-refresh' }
@@ -178,20 +178,10 @@ test('a observação pede a conta antes do passo: uma escolha só, e a assinatur
 test('renovação recusada com outra pergunta à espera: as duas seguem pela Time 1 e dizem a recusa, sem esperar o prazo', async (t) => {
   const f = await subscribed(t, 1)
   f.anthropic.refresh = () => ({ status: 400 })
-  const planted = globalThis.fetch
-  // The token endpoint answers late, so the other question waits on the lease.
-  const slowed: typeof fetch = async (input, init) => {
-    const url = input instanceof Request ? input.url : String(input)
-    if (url.includes('/v1/oauth/token')) await sleep(1500)
-    return planted(input, init)
-  }
-  globalThis.fetch = slowed
-  t.after(() => {
-    if (globalThis.fetch === slowed) globalThis.fetch = planted
-  })
-  const begun = Date.now()
-  const turns = await Promise.all([asked(t, f.where), asked(t, await beside(f.where, 'Estoque'))])
-  assert.ok(Date.now() - begun < 15_000, 'the waiting question stops with the refusal')
+  const other = await beside(f.where, 'Estoque')
+  const turns = await bothOnTheLease(f.hub, 'Claude', () =>
+    Promise.all([asked(t, f.where), asked(t, other)]),
+  )
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
   for (const { url, events } of turns) {
     assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
@@ -205,24 +195,13 @@ test('renovação recusada com outra pergunta à espera: as duas seguem pela Tim
 const IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
 const OBSERVER = /You are the memory consciousness/
 
-/** The conversation's title once Mastra has stored it, which it does after the turn's end. */
-async function titleOf(f: Awaited<ReturnType<typeof subscribed>>, url: string) {
-  for (let wait = 0; wait < 30; wait++) {
-    const read = await call(f.hub, f.ana, 'GET', url)
-    const title = Object(read.json()).conversation.title
-    if (title !== null) return title
-    await sleep(100)
-  }
-  return null
-}
-
 test('assinatura: o título vem pela conta do turno, sem erro, e toda chamada abre com a linha de identidade', async (t) => {
   const f = await subscribed(t, 3600)
   f.refused.status = undefined
   f.anthropic.answer = (each) => ({ kind: 'text', text: each.stream ? 'Pronto.' : 'Padarias' })
   const { url, events } = await asked(t, f.where)
   assert.equal(endOf(events), 'complete')
-  assert.equal(await titleOf(f, url), 'Padarias')
+  assert.equal(await titleOf(f.hub, f.ana, url), 'Padarias')
   const bearer = f.anthropic.sent.filter((each) => each.bearer !== null)
   assert.deepEqual(
     bearer.map((each) => each.stream),
@@ -269,7 +248,10 @@ test('assinatura: o título que falha diz no log a chamada e a conta, sem texto 
   f.anthropic.answer = (each) =>
     each.stream ? { kind: 'text', text: 'Pronto.' } : { kind: 'refuse', status: 500 }
   const { url } = await asked(t, f.where, 'SEGREDO-DA-PESSOA')
-  await sleep(1000)
+  await until(
+    () => f.lines.some((line) => line.message === 'MODEL_SIDE_CALL_FAILED'),
+    'the title call failed',
+  )
   const read = await call(f.hub, f.ana, 'GET', url)
   assert.equal(Object(read.json()).conversation.title, null)
   const failed = f.lines.filter((line) => line.message === 'MODEL_SIDE_CALL_FAILED')

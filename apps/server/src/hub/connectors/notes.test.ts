@@ -3,12 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { call } from '../identity/test-hub.ts'
-import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
+import { appCalls, CONNECTOR_CALLS_PER_TURN, sankhyaDoor } from './test-app-calls.ts'
 
 const QUERY = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
-async function builderOn(t: Parameters<typeof appCalls>[0]) {
-  const on = await appCalls(t)
+async function builderOn(...a: Parameters<typeof appCalls>) {
+  const on = await appCalls(...a)
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const ids = {
     ...{ companyId: CompanyId.parse(on.companyId), projectId: ProjectId.parse(on.projectId) },
@@ -96,16 +96,18 @@ test('guardar: a consulta que a porta recusa recusa a anotação; o caderno chei
 })
 
 test('guardar: a ligação desligada entre a prova e a gravação não responde SAVED: o modelo ouve NOT_GRANTED', async (t) => {
-  const on = await builderOn(t)
-  on.fake.switches.delayMilliseconds = 300
+  const door = sankhyaDoor(t)
+  const on = await builderOn(t, { through: door.through })
+  const release = door.hold()
   const saving = on.port.saveNote(on.ids, {
     ...on.who(),
     concept: 'Empresa',
     mapping: 'm',
     provingQuery: QUERY,
   })
-  await new Promise((later) => setTimeout(later, 100))
+  await door.reached(1)
   await on.hub.test.asOwner('delete from connectors.connection')
+  release()
   assert.deepEqual(await saving, { kind: 'NOT_GRANTED' })
 })
 

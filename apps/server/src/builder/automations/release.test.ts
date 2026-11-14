@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   CARLA,
@@ -12,6 +11,7 @@ import {
   plantCompany,
 } from '../../hub/identity/test-hub.ts'
 import { holding } from '../conversation/test-conversation.ts'
+import { until } from '../model-accounts/test-defaults.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,
@@ -21,6 +21,7 @@ import {
   ended,
   ranNow,
   salesSummary,
+  TEST_CLOCK,
 } from './test-automations.ts'
 
 /** Whether the automation still has its schedule row, and how many runs of it are kept. */
@@ -208,14 +209,12 @@ test('tirar a pessoa no meio do turno da execução: a conversa apagada termina 
   const url = `${on.automations}/${automation.id}`
   const runId = await ranNow(on.hub, carla, url)
   await conversing(on.hub, carla, url, runId)
-  while (on.calls.length < 1) await sleep(50)
+  await until(() => on.calls.length >= 1, 'the model was asked')
   const removed = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${carla.id}`)
   assert.equal(removed.statusCode, 204, removed.body)
-  // The turn's budget is a minute; the deleted conversation must end it long before.
-  const deadline = Date.now() + 15_000
   function failed() {
     return on.lines.find((line) => line.message === 'AUTOMATION_RUN_FAILED')
   }
-  while (failed() === undefined && Date.now() < deadline) await sleep(100)
+  await until(() => failed() !== undefined, 'the run ended', TEST_CLOCK.turnMs / 4)
   assert.equal(failed()?.fields.code, 'INTERRUPTED')
 })

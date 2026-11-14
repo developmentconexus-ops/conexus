@@ -16,6 +16,7 @@ import {
 } from '../conversation/test-conversation.ts'
 import { failuresIn } from '../conversation/test-parts.ts'
 import { tool } from '../conversation/test-questions.ts'
+import { until } from '../model-accounts/test-defaults.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,
@@ -205,13 +206,11 @@ test('o dono virou membro: o disparo não abre conversa, SKIPPED com OWNER_CANNO
   const asMember = await post(on.hub, bia, `${on.automations}/${automation.id}/run`, {})
   assert.deepEqual([asMember.statusCode, codeOf(asMember)], [404, 'NOT_FOUND'])
   await dueNow(on.hub, automation.id)
-  const deadline = Date.now() + 90_000
   async function paused() {
     const { notifications } = await bellOf(on.hub, bia, on.company)
     return notifications.some((each) => each.kind === 'AUTOMATION_PAUSED')
   }
-  while (!(await paused()) && Date.now() < deadline) await sleep(200)
-  assert.ok(await paused(), 'the run ended SKIPPED and told its owner')
+  await until(paused, 'the run ended SKIPPED and told its owner', 90_000)
   assert.equal((await role('admin', 'member')).statusCode, 200)
   const [run] = (await runsOf(on.hub, bia, `${on.automations}/${automation.id}`)).runs
   assert.equal(run?.trigger, 'SCHEDULED')
@@ -233,8 +232,9 @@ test('uma pergunta só: o passo refeito no mesmo runId, por outro Hub depois do 
   const url = `${on.automations}/${automation.id}`
   const runId = await ranNow(dying.hub, on.ana, url)
   const running = await conversing(on.hub, on.ana, url, runId)
-  while (on.calls.length < 2) await sleep(50)
+  await until(() => on.calls.length >= 2, 'the model was asked twice')
   await dying.die()
+  // Mastra emits no event when the dead Hub's lease lapses, and restart() takes the run only after it.
   await sleep(LEASE_MS)
   const workflow = on.hub.mastra.getWorkflow(AUTOMATION_WORKFLOW)
   await (await workflow.createRun({ runId })).restart()

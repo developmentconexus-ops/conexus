@@ -3,7 +3,6 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import {
   ANA_OWNER,
   codeOf,
@@ -13,6 +12,7 @@ import {
   post,
 } from '../../../hub/identity/test-hub.ts'
 import { testCliProxy } from '../../../platform/test-cliproxy-binary.ts'
+import { until } from '../test-defaults.ts'
 
 const TOKEN = 'ya29.planted-google-token'
 
@@ -103,13 +103,16 @@ test('state errado: 410 e o processo para; tarde: 410; login recusado: 422 e o p
 })
 
 test('entrada abandonada: o processo para quando a janela do login acaba, e a pasta vai com ele', async (t) => {
-  const { start, complete } = await google(t, (config) => ({
+  const { hub, start, complete } = await google(t, (config) => ({
     ...config,
     cliProxy: { ...config.cliProxy, loginSeconds: 1 },
   }))
   const started = await start()
   assert.ok(alive(started.pid))
-  await sleep(2_500)
+  await until(
+    () => hub.lines.some(({ message }) => message === 'CLIPROXY_STOPPED'),
+    'the login window ended its process',
+  )
   assert.equal(alive(started.pid), false)
   assert.equal(existsSync(started.dir), false)
   const late = await complete(started.url, started.state)
