@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
 import { endOf, hubBeside, sent, stopped, streamOf } from '../conversation/test-conversation.ts'
@@ -16,13 +15,14 @@ import {
 import {
   ASKED,
   answer,
+  answerLate,
   approvalsIn,
   approving,
   askedOf,
   launched,
-  PERSON_PACE_MS,
   pendingOf,
   untilAsked,
+  untilCardStored,
   WRITE,
 } from './test-approval.ts'
 
@@ -101,7 +101,7 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
   assert.deepEqual(await answer(on.hub, on.ana, url, approved, true), { ok: true })
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.equal(on.fake.orders().length, 1)
-  assert.deepEqual(await answer(on.hub, on.ana, url, approved, true), {
+  assert.deepEqual(await answerLate(on.hub, on.ana, url, approved, true), {
     ok: false,
     reason: 'not_pending',
   })
@@ -126,20 +126,20 @@ test('aprovar, recusar, mensagem, Parar: Aprovar roda a escrita uma vez e o turn
 
   await sent(on.hub, on.ana, url, 'Lance mais um')
   const overtaken = askedOf(await untilAsked(stream)).toolCallId
-  await sleep(PERSON_PACE_MS)
+  await untilCardStored(on.hub, overtaken)
   await sent(on.hub, on.ana, url, 'Espera, são três')
   assert.equal(endOf(await stream.turn()), 'complete')
-  assert.deepEqual(await answer(on.hub, on.ana, url, overtaken, true), {
+  assert.deepEqual(await answerLate(on.hub, on.ana, url, overtaken, true), {
     ok: false,
     reason: 'not_pending',
   })
 
   await sent(on.hub, on.ana, url, 'Lance de novo')
   const halted = askedOf(await untilAsked(stream)).toolCallId
-  await sleep(PERSON_PACE_MS)
+  await untilCardStored(on.hub, halted)
   assert.equal((await stopped(on.hub, on.ana, url)).statusCode, 200)
   await stream.turn()
-  assert.deepEqual(await answer(on.hub, on.ana, url, halted, true), {
+  assert.deepEqual(await answerLate(on.hub, on.ana, url, halted, true), {
     ok: false,
     reason: 'not_pending',
   })

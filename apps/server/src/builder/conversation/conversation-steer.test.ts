@@ -11,7 +11,6 @@ import {
   holding,
   KEY,
   PARTIAL,
-  rolesAndParts,
   sent,
   started,
   stopped,
@@ -19,6 +18,7 @@ import {
   title,
 } from './test-conversation.ts'
 import { answerTo, ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 const STEER = 'Só eu cadastro.'
 const ANSWER = 'Certo, só você.'
@@ -122,7 +122,7 @@ test('uma mensagem com a pergunta aberta: {ok: true}, Mastra a guarda até a res
   const { card } = await untilCard(stream, 'question')
   const steered = await sent(hub, ana, url, STEER)
   assert.deepEqual([steered.statusCode, steered.json()], [200, { ok: true }])
-  await sleep(1000)
+  await sleep(300)
   assert.equal(calls.length, 1, 'Mastra holds the message while the card is open')
   assert.equal((await answerTo(hub, ana, url, card.toolCallId, WHOEVER)).statusCode, 200)
   const events = await stream.turn()

@@ -263,6 +263,7 @@ const HEALTH_PIPELINE = 'GET /api/health HTTP/1.1\r\nHost: x\r\n'
 
 /** Until the listener refuses a new connection: the Hub's close has begun. */
 async function refusesNew(port: number) {
+  const deadline = Date.now() + 10_000
   for (;;) {
     const probe = connect(port, '127.0.0.1')
     try {
@@ -271,6 +272,7 @@ async function refusesNew(port: number) {
       return
     }
     probe.destroy()
+    assert.ok(Date.now() < deadline, 'the listener refuses a new connection within 10000 ms')
     await new Promise((done) => setTimeout(done, 10))
   }
 }

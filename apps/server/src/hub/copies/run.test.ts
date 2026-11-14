@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import type { CopyId } from '@conexus/hub-api'
+import { until } from '../../platform/test-until.ts'
 import { PADARIA_SOL_MATRIZ } from '../connectors/test-sales.ts'
 import type { CopiesOn } from './test-copies.ts'
 import {
   copiesOn,
   copyRowOf,
   holdPage,
+  plantCopy,
   plantSource,
   runsOf,
   syncRows,
@@ -87,28 +88,30 @@ test('uma rodada por vez', async (t) => {
 })
 
 test('a rodada órfã e a trava perdida', async (t) => {
-  const on = await copiesOn(t, { ...TEST_TUNING, leaseMs: 300 })
+  const on = await copiesOn(t)
   const copyId = await on.enable('vendas')
   const held = holdPage(on, 2)
+  const resumed = holdPage(on, 3)
   const orphan = on.run(copyId)
   await held.arrived
-  await setTimeout(400)
-  assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
-  const [taken, left] = await runsOf(on, copyId)
-  assert.equal(left.outcome, 'INTERRUPTED', 'a rodada aberta fecha INTERRUPTED')
-  assert.equal(taken.outcome, 'COMPLETE')
-  assert.equal(taken.pages, 3, 'continua da posição salva, sem reler a primeira página')
-  assert.equal(on.gate.pages, 5)
-  const after = await copyRowOf(on, copyId)
-
+  const orphanToken = (await copyRowOf(on, copyId)).claim_token
+  await plantCopy(on, copyId, "claimed_until = now() - interval '1 minute'")
+  const taking = ended(on, copyId)
+  await until(
+    async () => (await copyRowOf(on, copyId)).claim_token !== orphanToken,
+    'the next run takes the lease',
+  )
+  const taken = await copyRowOf(on, copyId)
   held.release()
   assert.deepEqual(await orphan, { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } })
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_CLAIM_LOST'))
-  assert.deepEqual(await copyRowOf(on, copyId), after, 'nem posição, nem marca, nem fechamento')
-  assert.deepEqual(
-    (await runsOf(on, copyId)).map((run) => run.outcome),
-    ['COMPLETE', 'INTERRUPTED'],
-  )
+  assert.deepEqual(await copyRowOf(on, copyId), taken, 'nem posição, nem marca, nem fechamento')
+  resumed.release()
+  assert.deepEqual(await taking, { kind: 'COMPLETE' })
+  const [second, left] = await runsOf(on, copyId)
+  assert.equal(left.outcome, 'INTERRUPTED', 'a rodada aberta fecha INTERRUPTED')
+  assert.equal(second.outcome, 'COMPLETE')
+  assert.equal(second.pages, 3, 'continua da posição salva, sem reler a primeira página')
   assert.equal(on.gate.pages, 5, 'a perdida para antes da página seguinte')
 })
 

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { until } from '../../platform/test-until.ts'
 import {
   COMPANY,
   CONVERSATION,
@@ -164,7 +165,9 @@ test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos 
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
   const { open, folder, control } = await world(t)
-  control.upMs = 300
+  const seed = Promise.withResolvers<void>()
+  t.after(() => seed.resolve())
+  control.holdUp = seed.promise
   const workspace = await open()
   const tools = await createWorkspaceTools(workspace)
   const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
@@ -172,8 +175,10 @@ test('máquina: duas ferramentas do Workspace no primeiro passo esperam a sement
   const head = { description: 'Lendo o HEAD', command: `cat ${join(folder, 'app')}/.git/HEAD` }
   const first = command.execute(head, { workspace })
   // The second arrives while the machine already says `running` and the seed is still coming.
-  while (control.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
-  const seen = [await first, await command.execute(head, { workspace })]
+  await until(() => control.sandbox?.status === 'running', 'the machine says it runs')
+  const second = command.execute(head, { workspace })
+  seed.resolve()
+  const seen = [await first, await second]
   for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
 

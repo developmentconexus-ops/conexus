@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -13,7 +14,6 @@ import {
   endOf,
   KEY,
   messagesOf,
-  rolesAndParts,
   sent,
   started,
   streamOf,
@@ -21,6 +21,7 @@ import {
 import { failuresOf, textsOf } from './test-parts.ts'
 import { sessionStateOf } from './test-questions.ts'
 import { onGroq, printedOf, routedTo, served } from './test-research.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
@@ -201,12 +202,13 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
 
 /** The conversation's title once it has one, read again for at most five seconds. */
 async function titleOf(hub: Hub, person: Person, url: string): Promise<unknown> {
-  for (let attempt = 0; ; attempt += 1) {
+  let found: unknown = null
+  await until(async () => {
     const read = await call(hub, person, 'GET', url)
-    const { title } = Object(read.json()).conversation
-    if (title !== null || attempt === 50) return title
-    await new Promise((done) => setTimeout(done, 100))
-  }
+    found = Object(read.json()).conversation.title
+    return found !== null
+  }, 'the conversation has a title')
+  return found
 }
 
 test('o título nasce na primeira mensagem, pela conta do turno, e fica guardado na conversa', async (t) => {

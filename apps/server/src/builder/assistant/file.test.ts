@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { until } from '../../platform/test-until.ts'
 import { endOf, hubBeside } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
@@ -189,10 +190,7 @@ test('o download que o navegador abandona, num soquete de verdade: sair no meio 
   await reading.promise
   request.destroy()
   assert.equal((await failed.promise).message, 'socket hang up', 'the browser left before any byte')
-  const deadline = Date.now() + 2_000
-  while (control.readsCut === 0 && Date.now() < deadline) {
-    await new Promise((later) => setTimeout(later, 20))
-  }
+  await until(() => control.readsCut > 0, 'the machine stopped sending')
   assert.equal(control.readsCut, 1, 'the machine stopped sending once the browser left')
   assert.equal(
     on.lines.some((line) => line.message === 'ASSISTANT_FILE_READ'),

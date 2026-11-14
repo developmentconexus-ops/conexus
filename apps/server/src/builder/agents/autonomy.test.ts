@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { operationLabel } from '../../hub/connectors/public.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
@@ -22,8 +21,8 @@ import {
   askedOf,
   developerHolds,
   launched,
-  PERSON_PACE_MS,
   untilAsked,
+  untilCardStored,
   WRITE,
 } from './test-approval.ts'
 
@@ -292,7 +291,7 @@ test('quem aprova precisa ter a escrita no próprio papel: o Aprovar de quem nã
   await sent(on.hub, dora, url, 'Lance o pedido')
   const asked = askedOf(await untilAsked(stream))
 
-  await sleep(PERSON_PACE_MS)
+  await untilCardStored(on.hub, asked.toolCallId)
   const refused = await post(on.hub, dora, `${sessionUrl(url)}/tool-approval`, {
     toolCallId: asked.toolCallId,
     approved: true,

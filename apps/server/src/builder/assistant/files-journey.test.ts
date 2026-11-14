@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
 import type { Upload } from './test-assistant.ts'
@@ -169,16 +169,15 @@ test('o roteiro do Assistente do dia a dia', async (t) => {
     assert.ok(read.includes(line), `the Builder's first call lacks: ${line}\n${read}`)
 })
 
-/** The text of the Builder's first call after the hand-off, once its turn asked the model (ten seconds at most). */
+/** The text of the Builder's first call after the hand-off, once its turn asked the model. */
 async function listOf(on: Awaited<ReturnType<typeof conversation>>): Promise<string> {
-  for (let tries = 0; tries < 100; tries += 1) {
-    const read = on.calls
+  function asked() {
+    return on.calls
       .map((each) => each.texts.join('\n'))
       .find((each) => each.includes(SUMMARY) && each.includes('Arquivos que a pessoa mandou'))
-    if (read !== undefined) return read
-    await sleep(100)
   }
-  assert.fail('the Builder never asked the model with the list of files')
+  await until(() => asked() !== undefined, 'the Builder asked the model with the list of files')
+  return String(asked())
 }
 
 const OPT_IN =

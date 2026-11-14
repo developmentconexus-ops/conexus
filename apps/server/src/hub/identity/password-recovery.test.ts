@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { serveEnvironment, WRITE_HEADERS } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
+import { until } from '../../platform/test-until.ts'
 import type { MailHub } from './test-hub.ts'
 import {
   ANA_OWNER,
@@ -46,7 +47,7 @@ function choose(hub: MailHub, token: string, password: string) {
 
 /** The mail goes out after the answer, so a test waits for it where it lands. */
 async function mailed(hub: MailHub, count: number): Promise<void> {
-  for (let tries = 0; tries < 100 && hub.mail.sent.length < count; tries++) await sleep(50)
+  await until(() => hub.mail.sent.length >= count, `${count} recovery mails were sent`)
   assert.equal(hub.mail.sent.length, count)
 }
 

@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { HandedOff } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { endOf, messagesOf, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
 import type { Upload } from './test-assistant.ts'
@@ -66,17 +67,15 @@ async function proposing(
   return { on, url, toolCallId: await callIdOf(on, url, name) }
 }
 
-/** The model's calls that read the hand-off, once the Builder's turn asked it (ten seconds at most). */
+/** The model's calls that read the hand-off, once the Builder's turn asked it. */
 async function handedCalls(on: On, at = 1): Promise<string[]> {
-  for (let tries = 0; tries < 100; tries += 1) {
-    const read = on.calls
+  function builder() {
+    return on.calls
       .map((each) => each.texts.join('\n'))
-      .filter((each) => each.includes(SUMMARY))
-    const builder = read.filter((each) => each.includes('[File: briefing.md]'))
-    if (builder.length >= at) return builder
-    await sleep(100)
+      .filter((each) => each.includes(SUMMARY) && each.includes('[File: briefing.md]'))
   }
-  assert.fail('the Builder never asked the model with the hand-off')
+  await until(() => builder().length >= at, 'the Builder asked the model with the hand-off')
+  return builder()
 }
 
 async function granted(on: On, projectId: string): Promise<string[]> {
@@ -333,5 +332,8 @@ test('a mudança no Projeto: a mesma rota abre uma conversa nova do Builder dess
   const [read] = await handedCalls(on)
   assert.match(read ?? '', /source="assistant"/)
   const builder = `${on.company}/projects/${on.projectId}/conversations/${handed.conversationId}`
-  assert.ok((await messagesOf(on.hub, on.ana, builder)).length > 0)
+  await until(
+    async () => (await messagesOf(on.hub, on.ana, builder)).length > 0,
+    'the Builder conversation holds a message',
+  )
 })

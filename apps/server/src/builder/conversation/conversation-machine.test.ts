@@ -119,7 +119,8 @@ test('abrir uma conversa de um Projeto com máquina guardada não toca na máqui
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const opened = await streamOf(hub, ana, url)
   t.after(() => opened.close())
-  await new Promise((done) => setTimeout(done, 300))
+  await opened.seed()
+  await new Promise((done) => setTimeout(done, 100))
   assert.equal(
     control.names.length,
     made,
