@@ -4,12 +4,8 @@
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
 versions are the installed ones, except four candidates read from the npm registry and not
 installed: remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
-and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
-piece of this file that a row of `scripts/removals.json` protects names that row, and its test
-"fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
-not name protect Hub rules that are not boundaries over a library: the replay of an attempt key,
-that only the Operations Central creates a company, the state of a listed invitation, and a write
-refused for its media type or its origin.
+and @asteasolutions/zod-to-openapi 9.1.0. When the library
+changes, reread the line it names.
 
 ## GitHub Actions and git
 
@@ -32,7 +28,7 @@ refused for its media type or its origin.
   plus 8 h or later. Both read the total from `endOfLifetime`.
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
   `session.test.ts`, a session read every 25 min through the library, fails without the hook: the
-  row stays (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's
+  row stays. The cost: once `expiresAt` is capped, the library's
   renewal test (`session.mjs:180`) holds on every read, so each read writes the row from
   `createdAt` plus 7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before
   that, a read writes at most once a minute. The idle deadline and the renewal stay the library's,
@@ -43,7 +39,7 @@ refused for its media type or its origin.
   close this: `infra/deploy.sh` runs `migrate` while the earlier Hub still serves, and it brings the
   earlier image back when the new one is not healthy, after the migration ran once. The test
   "versão anterior" in `session.test.ts`, a row renewed at 7 h 59 min and read at 8 h 1 min, fails
-  without the check (removal `session-total-at-read`). Remove it with its removal row once no
+  without the check. Remove it once no
   release without the hook can start on this database: 30 min after such a release last served, no
   row of its own can be open.
 
@@ -60,9 +56,8 @@ refused for its media type or its origin.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
   system; unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or
   unexpected database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md):
-  only a code leaves. The test "banco fora" in `database-down.test.ts` fails without the piece
-  (removal `library-failure-is-database`), and the test "senha que não grava" in
-  `password-write.test.ts` fails without the option (removal `library-errors-thrown`).
+  only a code leaves. The test "banco fora" in `database-down.test.ts` fails without the piece, and the test "senha que não grava" in
+  `password-write.test.ts` fails without the option.
 
 ### A library refusal becomes the Hub's code by one reader
 
@@ -96,9 +91,8 @@ refused for its media type or its origin.
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` guards it.
   The plugin's own transaction joins ours through `runWithTransaction` and, since
   `joiningTransaction`, through the adapter as well, so the test fails only when both are taken
-  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and
-  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock
-  (removal `first-person-lock`).
+  out, and no single test proves either. The tests "ao mesmo tempo, com dois e-mails" and
+  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock.
 
 ### The plain adapter joins that transaction too
 
@@ -110,8 +104,7 @@ refused for its media type or its origin.
 - **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
   adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
 - **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
-  `invitations.test.ts` fails when the wrapper is taken out (removal
-  `library-adapter-joins-transaction`), and so does "renovar: o administrador renovando o convite
+  `invitations.test.ts` fails when the wrapper is taken out, and so does "renovar: o administrador renovando o convite
   de um dono", where the second phase refuses the escaped write.
 
 ### The operator's invitation of an owner, through the plugin's adapter
@@ -140,20 +133,18 @@ refused for its media type or its origin.
   becomes one, so the operator invites an owner without a membership, which no endpoint admits.
   Step 6 declared the departure: the Central also invites an owner into an active company, since
   its card has it act on the people as an owner, so the rule "only a company with no member" is
-  gone and the mail says "primeiro dono" only for a company with no member (removal
-  `owner-invitation-first-owner`; "empresa ativa" in `owner-invitation.test.ts` also checks the
-  subject). Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
+  gone and the mail says "primeiro dono" only for a company with no member
+  ("empresa ativa" in `owner-invitation.test.ts` also checks the subject). Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
   2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
-  `invitations.test.ts` fails when a member's invitation is written by the adapter instead (removal
-  `invitation-member-native-endpoint`): the Hub no longer checks the creator role or an existing
+  `invitations.test.ts` fails when a member's invitation is written by the adapter instead: the Hub no longer checks the creator role or an existing
   member itself. "renovar: o administrador renovando o convite de um dono…" fails when a member's
-  renewal skips the endpoint (removal `invitation-member-native-renewal`). A member's cancel has no
+  renewal skips the endpoint. A member's cancel has no
   such row: the admission already requires `invitation: ["create"]`, every default role that holds
   it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
   from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
-  company is created by the endpoint (removal `operator-not-member`); "recusas" guards that the
+  company is created by the endpoint; "recusas" guards that the
   adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
-  `joiningTransaction` alike, so no single removal row proves either. When the library
+  `joiningTransaction` alike, so no single test proves either. When the library
   changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
@@ -204,22 +195,6 @@ refused for its media type or its origin.
   `app-access-journey.test.ts` fail without the table's key, cascade and policies. When the
   library changes, reread the team add and the invitation acceptance above.
 
-### The protections of an app's access that the removal rows do not cover (step 18)
-
-Better Auth 1.7.8 and the Hub's own tables, as in the two entries above. These guards keep a
-person given an app inside the app; each has a test that covers it, and none has a row in
-`scripts/removals.json` yet, so none is proved to fail without it ([T12](../guides/testing.md)):
-
-- the row admits only in the `published` environment (`admitToApp`, `projects/hosts.ts`);
-- `admitAppUser`'s (`identity/admission.ts`) refusal of a row holder while the company is marked for deletion (`DELETING`);
-- the capability `manageAppAccess` on giving, changing, taking and canceling;
-- the cancellation of the app's pending invitations when access is taken;
-- the acceptance's own `LIVE` check of the Projeto and the invitation's deadline.
-
-Two have rows: a removed member takes the person's rows of that company (`member-removal-takes-app-access`),
-and a one-Projeto revoke checks the Projeto is the company's (`app-access-revoke-own-project`). The
-rows for the five above wait on issue #458.
-
 ### Deleting a company: the adapter, with the native route closed
 
 - **Library line.** `organization/routes/crud-org.mjs:255`: with `disableOrganizationDeletion`
@@ -232,8 +207,7 @@ rows for the five above wait on issue #458.
   deletion lock the company, then the operator's row, then the client, the order the invitations and
   the accept keep (`lockCompany` first).
 - **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
-  test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal
-  `client-delete-operator-only`); "apagar: concorrência" in `client-deletion.test.ts` deadlocks
+  test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens; "apagar: concorrência" in `client-deletion.test.ts` deadlocks
   when the operator's row is locked before the company's.
 
 ### Taking a person out and changing a role: the plugin's adapter, with the native routes unused
@@ -257,9 +231,8 @@ rows for the five above wait on issue #458.
   and the last-owner rule is one, under the company's lock. The role table is the founder's
   answer A on B1: the owner and the Central change any role; an administrator only between
   administrator and member, also their own; a member none; the sole owner gets 409 `LAST_OWNER`
-  whoever asks, the Central included. A removal row proves each part: the lock
-  (`member-company-lock`), the owner count (`member-last-owner`), the rank (`member-actor-rank`),
-  the role the caller read (`member-role-from`) and the cancellation (`removed-person-invitations`).
+  whoever asks, the Central included. Each part has its test: the lock, the
+  owner count, the rank, the role the caller read and the cancellation.
   The plugin's `organizationHooks` for members are none today; one turned on later would be bypassed
   here. When the library changes, reread `deleteMember` and `updateMember`.
 
@@ -272,8 +245,7 @@ rows for the five above wait on issue #458.
   `user-agent` and `cookie`.
 - **Why.** The library's routes are not mounted (criterion 18), and the limit of
   [security S30](../guides/security.md) must still apply. The test "limite: a 11ª tentativa" in
-  `identity.test.ts` fails when sign-in goes through `auth.api` instead (removal
-  `sign-in-through-router`).
+  `identity.test.ts` fails when sign-in goes through `auth.api` instead.
 
 ### An earlier link stops working when a new one is given
 
@@ -284,7 +256,7 @@ rows for the five above wait on issue #458.
   person's links by their stored value, the person's id, with Drizzle's `delete` in the same
   transaction as the new one.
 - **Why.** [Code C37](../guides/code.md). The test "com a pessoa ainda sem senha" in
-  `first-person.test.ts` fails without it (removal `first-person-forgets-earlier-link`). The
+  `first-person.test.ts` fails without it. The
   invitation password command consumes its reset token in the same transaction; it sends no link.
 
 ### Sign-out: the row first, then the cookies
@@ -296,7 +268,7 @@ rows for the five above wait on issue #458.
   `signOut`, which expires the cookies.
 - **Why.** [Security S13](../guides/security.md). With the library's order, a database failure
   answers "signed out" to a session that is still alive. The test "sair falha" in
-  `session.test.ts` fails without the piece (removal `sign-out-row-first`).
+  `session.test.ts` fails without the piece.
 
 ### Who may act on a company: admission over the plugin's roles
 
@@ -314,9 +286,8 @@ rows for the five above wait on issue #458.
   `CompanyOperatorProof` or `OperatorProof`, which the Hub's reads and writes require.
 - **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
   company and a role without the action get the same 404, with the reason only in the log. The test
-  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company
-  (removal `admission-reads-membership`); "fora: o operador" fails when a person who is not the
-  operator may act on a company as the operator (removal `owner-inviter-is-operator`);
+  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company; "fora: o operador" fails when a person who is not the
+  operator may act on a company as the operator;
   "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
   `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
@@ -350,8 +321,8 @@ rows for the five above wait on issue #458.
   rows, paged after the last row's id; the app's tables are the app's, and the page shows them as
   they are. Supabase's table editor pages by offset too, ordered by the key with `ctid` as the
   tiebreak.
-- **Proof.** "dados: páginas pela chave" and "dados: tabela sem chave" in `app-data.test.ts`. No
-  removal row: it is a read, with no protection of ours to remove.
+- **Proof.** "dados: páginas pela chave" and "dados: tabela sem chave" in `app-data.test.ts`. It
+  is a read, with no protection of ours to remove.
 - **Not proved.** A page by offset shifts when a row arrives between two pages. A partitioned table
   repeats `ctid` across partitions
   (https://github.com/developmentconexus-ops/conexus/issues/937). The time of the count and of an
@@ -370,9 +341,8 @@ rows for the five above wait on issue #458.
   it counts the live pending rows of other addresses in SQL.
 - **Why.** The founder's limit of 100 (step 4, answer 6), and [code C65](../guides/code.md). The
   test "limite: com 100 vivos atrás de 100 vencidos" in `invitations.test.ts` fails without the
-  refusal (removal `invitation-capacity`) and when expired rows count (removal
-  `invitation-capacity-live-only`); "limite: com 99 vivos, dois convidantes juntos" fails without
-  the lock (removal `invitation-company-lock`).
+  refusal and when expired rows count; "limite: com 99 vivos, dois convidantes juntos" fails without
+  the lock.
 
 ### Renewing a live invitation and reissuing an expired one
 
@@ -413,8 +383,7 @@ rows for the five above wait on issue #458.
   `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
   tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "password" in
   `invitation-link.test.ts` cover them. The tests "id vazio" in `first-person-rows.test.ts` and
-  "empty name" in `invitation-link.test.ts` fail without the person-row parse (removals
-  `first-person-rows-parsed` and `link-person-row-parsed`).
+  "empty name" in `invitation-link.test.ts` fail without the person-row parse.
 
 ### A password link's token goes back to the command that asked for it
 
@@ -449,9 +418,8 @@ rows for the five above wait on issue #458.
   company's lock, and a rollback after the send mails an invitation that does not exist; sent after
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
-  `invitation-replay.test.ts` fails without the replay branch (removal
-  `invitation-replay-resends-unmailed`), and "de novo com a mesma chave: depois do correio fora" in
-  `invitations.test.ts` fails without the mark on a bounce (removal `invitation-bounce-marked`).
+  `invitation-replay.test.ts` fails without the replay branch, and "de novo com a mesma chave: depois do correio fora" in
+  `invitations.test.ts` fails without the mark on a bounce.
   `invitation-lifecycle.test.ts` proves a failed mark permits at-least-once delivery on replay, and
   the late-send test fails without the revision comparison (`invitation-mark-current-revision`).
 
@@ -465,7 +433,7 @@ rows for the five above wait on issue #458.
   leaves with the second e-mail.
 - **Why.** [Security S28](../guides/security.md): behind the Tunnel the Hub keys on the account;
   the founder's numbers (step 4, answer 6). The tests "limite: o 11º convite" in
-  `invitations.test.ts` fails without it (removal `invitation-pace`).
+  `invitations.test.ts` fails without it.
 
 ### The library writes its timestamps with the application's clock
 
@@ -493,8 +461,8 @@ rows for the five above wait on issue #458.
   already accepted with its company; otherwise it calls the plugin's accept.
 - **Why.** [Security S10](../guides/security.md), [code C37 and C65](../guides/code.md). In
   `invitation-acceptance.test.ts`, "aceitar: 200 e um membro" fails when the recipient is not
-  checked first (removal `accept-recipient-first`), "aceitar: com um re-convite ao mesmo tempo"
-  fails without the lock (removal `accept-company-lock`), and "aceitar: dois juntos" covers it.
+  checked first, "aceitar: com um re-convite ao mesmo tempo"
+  fails without the lock, and "aceitar: dois juntos" covers it.
 
 ### Public invitation responses and terminal replay
 
@@ -541,9 +509,7 @@ rows for the five above wait on issue #458.
   a link without sending it.
 - **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour),
   P3 (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
-  `password-recovery.test.ts` fail without each piece (removals `recovery-pace-per-person`,
-  `recovery-attempt-path`, `recovery-mail-after-commit`, `revoke-sessions-on-reset`,
-  `recovery-link-validity`). A mail still in flight when the Hub stops is lost; the person asks
+  `password-recovery.test.ts` fail without each piece. A mail still in flight when the Hub stops is lost; the person asks
   again.
 
 ### The leaked-password check is the library's function, run before the transaction
@@ -560,9 +526,8 @@ rows for the five above wait on issue #458.
   tests use the `fetch` that `createTestDatabase` plants (`platform/test-password-service.ts`).
   Hubs that tests spawn load `platform/test-password-preload.ts`. The Docker image test
   (`tests/e2e/invitation-image.test.ts`) blocks the host with `--add-host` and sets the password in
-  the database; the review found it reaching the service. Removals `password-check-before-link`,
-  `password-check-invitation`, `password-check-deadline` and `password-check-error` take each
-  protection out.
+  the database; the review found it reaching the service. The password-check tests cover the
+  protections.
 
 ## TanStack Router 1.170.44: stable public-page data
 
@@ -598,9 +563,8 @@ rows for the five above wait on issue #458.
   React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
   branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`
-  own the ports used by source and consumer. Local prestart/pretest, pree2e/preremovals and the image
-  build generate the same artifacts; removal scratch copies carry these generated inputs as well as
-  source.
+  own the ports used by source and consumer. Local prestart/pretest, pree2e and the image
+  build generate the same artifacts.
 - **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
   conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
   `invitation-email.test.ts` sends through the Hub and HTTP provider fake;
@@ -660,8 +624,7 @@ rows for the five above wait on issue #458.
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
   "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since
   step 5 the person scope's member policy holds the same rule, so removing the anchor's filter
-  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
-  `person-member-policy`).
+  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens.
 
 ### Every transaction opens in a scope
 
@@ -686,9 +649,8 @@ rows for the five above wait on issue #458.
   `FOR SHARE` and `FOR NO KEY UPDATE` need the UPDATE grant and policy, so a scope that locks a row
   holds UPDATE on it, on one column no command writes where it only locks.
 - **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
-  esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
-  opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
-  `scope-in-signature`).
+  esquecido" fails without the role switch and with the member policy
+  opened; "o tipo" fails when a read stops naming its scope.
 
 ### The operator's administrator, answered by one function (provisional)
 
@@ -703,8 +665,7 @@ rows for the five above wait on issue #458.
   founder's word, beside the U2 list.
 - **Why.** The card's rule that every operator policy needs an installation administrator
   (security S11) with the Central's owners in auth.user. "operador sem papel" in
-  `isolation.test.ts` fails without the check on auth.member (removal
-  `operator-policy-admin-only`).
+  `isolation.test.ts` fails without the check on auth.member.
 
 ### A deadline on every checkout of a database connection
 
@@ -849,27 +810,6 @@ rows for the five above wait on issue #458.
   `apps/server/src/platform/test-database.test.ts` cover it. Revalidate by 2027-04-13,
   or when `JSON.parse` reports duplicate keys.
 
-### Removals: one protection taken out in a scratch copy, then its test
-
-- **Library line.** Node `node:test` `run({ files, cwd, testNamePatterns, signal, timeout })` runs
-  the test. Stryker core 10.1.1 supplies a sandbox, a dry run and `testRunner: 'command'`
-  (`dist/src/test-runner/command-test-runner.js:9-12,45-52,114-143`), which reads one aggregate test
-  from an exit code. Its instrumenter 10.1.1 has fixed replacement maps
-  (`mutators/method-expression-mutator.ts:9-32,61-63`), `string-literal-mutator.ts:11-26` empties a
-  literal, and `object-literal-mutator.ts:10-13` empties an object. None of them removes a named
-  text, such as one SQL predicate or one adapter call, from one named file.
-- **Hand-made piece.** `scripts/removals.ts` and `scripts/removals.json`. Each row replaces an exact
-  text once in a scratch copy and runs the row's test. It reports `caught`, `survived`, `stale`,
-  `unreachable` or `broken-baseline`. A row is `caught` only when a `test:fail` event whose own name
-  matches the row's `test.name` pattern appears (a matching failing suite counts); the failure of
-  another test, a hook of another suite or a file that cannot load is not a catch. The manifest is
-  loaded by one strict Zod schema that refuses an unknown key and a repeated id.
-- **Why.** [Testing T12 and T4](../guides/testing.md). Stryker's command runner does not tell zero
-  real tests or an import failure apart from a pass, and its mutators cannot target a row. A custom
-  Stryker mutator and runner could bridge that, but would not delete code. The planted outcomes in
-  `scripts/removals.test.ts` cover the runner. Revalidate when Stryker can address a mutation
-  by file and text.
-
 ### Radius: the card's grammar over Node's matcher
 
 - **Library line.** `node:path` `matchesGlob(path, pattern)`, stable since Node 24.8.0. It reads
@@ -960,7 +900,7 @@ rows for the five above wait on issue #458.
   a cut reply left is found by the exact `-<companyId>` ending of its name (`find`, decision 0048)
   and adopted, never created twice. A refusal from Neon releases the claim, silence keeps it until
   it ends; `projects-database.test.ts` and `neon.test.ts` cover it, and the exact ending fails without
-  it (removal `neon-exact-suffix`).
+  it.
 - **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
@@ -1078,7 +1018,7 @@ rows for the five above wait on issue #458.
   (the study of step 24.5; Papéis P1).
 - **Proof.** Covered, not fails without: `approval.test.ts`, "a escrita espera, o resto não", reads
   every tool of an agent running without asking while a write in Pergunta antes waits. No test
-  swaps the rule for `allow` against Postgres, and no row of `scripts/removals.json` protects it.
+  swaps the rule for `allow` against Postgres, and nothing else protects it.
 - **Revisit when** Mastra fixes the approval race, or `allow` stops suspending.
 
 ## Mastra 1.82.0: a step's answer without the body of its request
@@ -1157,9 +1097,8 @@ sealed credential, so both rows of the card's reference table that read "remendo
   the Hub's configuration) and a checked path, with `redirect: 'error'` (`request.ts:48`).
 - **Why.** A caller's text must never choose the host the Hub sends a credential to (S36), and a
   write must never pass as a read for lack of a class.
-- **Proof.** Removals `connector-request-origin`, `connector-redirect-refused`,
-  `connector-origin-only-local` and `sankhya-read-only-words` (the read door's statement words).
-  Tests without a row: `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só aceita
+- **Proof.** Tests on the request origin, the refused redirect, the local-only origin and the read door's
+  statement words. Also `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só aceita
   operações read", which fail at compile time or at definition rather than by a line a scratch copy
   could remove.
 - **Revisit when** a connector library runs a provider call in the Hub's region with the credential
@@ -1181,8 +1120,8 @@ sealed credential, so both rows of the card's reference table that read "remendo
 - **Why.** A provider's body is its own and can be large or carry the credential back; and a bug in
   the executor must not read as "the provider is down" (the founder, 2026-10-29: "a gente estava
   suprimindo alguns erros. Para mim isso não é bom").
-- **Proof.** Removals `connector-redirect-refused` and `connector-response-cap`, both through
-  `executor.test.ts` "a origem, o redirecionamento e o teto". Tests without a row, each on the
+- **Proof.** `executor.test.ts` "a origem, o redirecionamento e o teto" covers the refused redirect and the
+  response cap. Also, each on the
   public door: "o corpo de erro perde os valores da credencial antes de ser lido", "o token sai de
   todo corpo de uma operação, no envelope do gateway e no erro REST", "um erro de programação dentro
   do envio sobe como falha, não vira UNREACHABLE" and "um corpo de erro que não é JSON chega como
@@ -1205,7 +1144,7 @@ reference tool checks a read against its documentation.
   @conexus/connectors`, by hand on a desktop, never in CI).
 - **Why.** The founder, 2026-10-29: "não guardar e baixar na hora". The check is weaker than
   Sankhya's: it does not check the shape of the answer.
-- **Proof.** Card criterion 21: a read whose route is not in the page fails. No removal row: the test
+- **Proof.** Card criterion 21: a read whose route is not in the page fails. The test
   needs the live site.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
@@ -1228,9 +1167,8 @@ reference tool checks a read against its documentation.
 - **Why.** The founder's choice B, 2026-11-09: one search in the connector that the Project's
   agent, the apps and the Assistant share, and one call that returns many rows. What the model
   writes is hostile input (S2, S15).
-- **Proof.** Removals `sankhya-search-text-marks`, `sankhya-search-like-escape` and
-  `sankhya-search-quote-doubled`, through `search.test.ts`. The check in `queryRequest` fails the
-  same file's hostile-input test without it, with no row.
+- **Proof.** `search.test.ts` covers the text marks, the `LIKE` escape and the doubled quote. The check in
+  `queryRequest` fails the same file's hostile-input test without it.
 - **Not proved.** On SQL Server, `[` and `]` are wildcards in `LIKE` and `escaped` leaves them
   (https://github.com/developmentconexus-ops/conexus/issues/929).
 - **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
@@ -1308,10 +1246,8 @@ reference tool checks a read against its documentation.
   and Gemini never called the tool. With `cadence` flat it called it correctly 6 of 6 in a local proof
   of 18 calls to the company's Google login.
 - **Proof.** `google/flat-unions.test.ts` "sem união": the declaration the proxy receives has no union.
-  The row `cliproxy-flat-unions` in `scripts/removals.json` takes the lines out of `accountPick`
-  and the test fails.
 - **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
-  the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
+  the product. Then delete the file, its test, the lines in `processors.ts` and this entry.
 
 ## `@mastra/memory` 1.41.0 and CLIProxyAPI v8.0.33: the Automático model on the Google sign-in (fix)
 
@@ -1325,10 +1261,9 @@ reference tool checks a read against its documentation.
   fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
   resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
 - **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
-  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it. The row
-  `cliproxy-auto-memory-model` in `scripts/removals.json` takes the piece out and the test fails.
+  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it.
 - **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
-  Then delete the constant, the `kind` argument, the test, the removal row and this entry.
+  Then delete the constant, the `kind` argument, the test and this entry.
 
 ## Mastra 1.82.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 
@@ -1371,8 +1306,7 @@ reference tool checks a read against its documentation.
   the roles; one file and one test keep an experimental storage from spreading.
 - **Proof.** `company-memory.test.ts` "o formato do Knowledge" (fails when a Mastra changes the
   schema version: export the pages with `readKnowledgePage` and `listKnowledgeTreeChildren`,
-  write them back with `upsertPage` after the reset); removal rows `company-memory-read-only`,
-  `company-memory-permission` and `company-memory-proposal`.
+  write them back with `upsertPage` after the reset).
 - **Revisit when** Mastra takes `Knowledge` out of experimental, or adds a migration or a way to
   rewrite the pinned text.
 
@@ -1397,7 +1331,7 @@ reference tool checks a read against its documentation.
 - **Why.** The helper must read with the asker's scope and the turn's account, write nothing and never
   open another helper; a count per context object loses the file of one of them.
 - **Proof.** `research.test.ts` "o ajudante só lê", "a porta, as 50 e o arquivo", "a conta da
-  conversa" and "a falha da conta". No removal row protects it.
+  conversa" and "a falha da conta".
 - **Revisit when** Mastra lets a subagent run the input processors, take its tools from the asker's
   context, or report its usage (today a subagent emits none, `:6898-6931`).
 

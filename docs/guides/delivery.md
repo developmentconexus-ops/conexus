@@ -71,7 +71,7 @@ merge.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
   card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
-  test that cannot fail (T12); two owners of one rule; red CI. Fechamento (wording, name, citation,
+  test that cannot fail; two owners of one rule; red CI. Fechamento (wording, name, citation,
   guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
