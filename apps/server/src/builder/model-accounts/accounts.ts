@@ -40,6 +40,7 @@ export const AccountRow = z.object({
   position: z.number().int().nonnegative(),
   state: AccountState,
   limitedUntil: z.date().nullable(),
+  limitReason: z.enum(['rate', 'credit']).nullable(),
   hint: z.string().length(HINT_LENGTH).nullable(),
   linkedBy: z.string().nullable(),
   linkedAt: z.date(),
@@ -62,6 +63,7 @@ export const columns = {
     sql<Date | null>`case when ${modelAccount.limitedUntil} > now() then ${modelAccount.limitedUntil} end`.mapWith(
       modelAccount.limitedUntil,
     ),
+  limitReason: modelAccount.limitReason,
   hint: modelAccount.hint,
   linkedBy: personNameColumn(modelAccount.linkedBy),
   linkedAt: modelAccount.linkedAt,
@@ -102,7 +104,7 @@ export function ownerOf(row: { personId: PersonId | null }): Owner {
 export type Context = { assignees: Map<ModelAccountId, PersonId[]>; open: Set<SignInKind> }
 
 /** Whether the operators keep the account's kind open to the company; the API key always is. */
-function kindOpen(row: Pick<AccountRow, 'kind'>, context: Context): boolean {
+export function kindOpen(row: Pick<AccountRow, 'kind'>, context: Context): boolean {
   return row.kind === 'api_key' || context.open.has(row.kind)
 }
 
@@ -123,36 +125,35 @@ export function partOf(
 }
 
 /** The queue's own test of an account: ready, out of its limit and of a kind left open. */
-function isUsable(row: AccountRow, context: Context): boolean {
+export function isUsable(row: AccountRow, context: Context): boolean {
   return row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context)
 }
 
 /**
- * The accounts the person may call now, in their order (the queue's rule, step 12): a paused or
- * refused one, one of a closed kind, one in its limit and one given only to others are left out.
- * `rows` are read through `columns`, whose `limitedUntil` is null once the limit passed.
+ * The accounts the person may call now, in their order (the queue's rule, step 12): `inOrder` less
+ * those `isUsable` refuses; `columns` clears `limitedUntil` once the limit passed.
  */
 export function usableInOrder(
   rows: AccountRow[],
   context: Context,
   personId: PersonId,
 ): AccountRow[] {
+  return inOrder(
+    rows.filter((row) => isUsable(row, context)),
+    context,
+    personId,
+  )
+}
+
+/** The accounts the person may use, in any state, in their order: one given only to others is left out. */
+export function inOrder(rows: AccountRow[], context: Context, personId: PersonId): AccountRow[] {
   return rows
-    .filter((row) => isUsable(row, context))
     .flatMap((row) => {
       const part = partOf(row, context, personId)
       return part === undefined ? [] : [{ row, part }]
     })
     .sort((left, right) => left.part - right.part || left.row.position - right.row.position)
     .map((each) => each.row)
-}
-
-/** The company's own accounts that anyone may call now, in the company's order. */
-export function usableForAll(rows: AccountRow[], context: Context): AccountRow[] {
-  return rows
-    .filter((row) => row.personId === null && !context.assignees.has(row.id))
-    .filter((row) => isUsable(row, context))
-    .sort((left, right) => left.position - right.position)
 }
 
 /** Every account the transaction's scope may read, with the company's context; the caller admitted the person. */
@@ -165,7 +166,13 @@ export async function accountsOf(tx: ReadTx, companyId: CompanyId) {
 }
 
 export function viewOf(row: AccountRow, context: Context): ModelAccount {
-  const { attemptKey: _attemptKey, personId: _personId, served: _served, ...shown } = row
+  const {
+    attemptKey: _attemptKey,
+    personId: _personId,
+    served: _served,
+    limitReason: _limitReason,
+    ...shown
+  } = row
   return {
     ...shown,
     owner: ownerOf(row),

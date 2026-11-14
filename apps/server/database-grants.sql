@@ -308,6 +308,7 @@ GRANT SELECT(limited_until),UPDATE(limited_until) ON TABLE builder.model_account
 GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(served_models),UPDATE(served_models) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(limit_reason),UPDATE(limit_reason) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;

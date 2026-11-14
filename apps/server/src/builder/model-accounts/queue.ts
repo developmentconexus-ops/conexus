@@ -7,7 +7,9 @@ import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
-import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
+import type { Access } from './access.ts'
+import { accessOf } from './access.ts'
+import { AccountRow, columns, contextOf, credentialOf, inOrder, usableInOrder } from './accounts.ts'
 import type { PromptCacheScope } from './claude/models.ts'
 import { apiKeyModel, subscriptionModel } from './claude/models.ts'
 import { refreshAnthropicTokens } from './claude/sign-in.ts'
@@ -69,6 +71,13 @@ export type Asker = {
  * (`usableInOrder`), less those this turn tried. The caller admitted the person.
  */
 async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<AccountRow[]> {
+  const { rows, context } = await providerRows(tx, asker, model)
+  return usableInOrder(rows, context, asker.personId).filter(
+    (row) => servesModel(row, model) && !asker.tried.has(row.id),
+  )
+}
+
+async function providerRows(tx: ReadTx, asker: Asker, model: ModelId) {
   const rows = await tx
     .select(columns)
     .from(modelAccount)
@@ -80,11 +89,21 @@ async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<Acc
     )
     .orderBy(asc(modelAccount.position))
   const context = await contextOf(tx, asker.companyId)
-  return usableInOrder(
-    rows.map((row) => AccountRow.parse(row)),
-    context,
-    asker.personId,
-  ).filter((row) => servesModel(row, model) && !asker.tried.has(row.id))
+  return { rows: rows.map((row) => AccountRow.parse(row)), context }
+}
+
+/** The person's access to `model` (`accessOf`), every account counted; the caller admitted the person. */
+async function accessIn(tx: ReadTx, asker: Asker, model: ModelId): Promise<Access> {
+  const { rows, context } = await providerRows(tx, asker, model)
+  return accessOf(inOrder(rows, context, asker.personId), context, model)
+}
+
+/** The access at the turn's end, read in a transaction that admits the person (security S32). */
+export function accessNow(deps: QueueDeps, turn: Turn, model: ModelId): Promise<Access> {
+  return deps.database.read(scopeOf(turn), async (tx) => {
+    await admitted(deps, tx, turn)
+    return accessIn(tx, turn, model)
+  })
 }
 
 export function admitted(deps: Pick<QueueDeps, 'identity'>, tx: ReadTx, asker: Asker) {
@@ -110,14 +129,17 @@ async function nextRow(deps: QueueDeps, turn: Turn, model: ModelId) {
   })
 }
 
-/** Whether the person may call an account of the model's provider now. */
+/**
+ * Whether the person has an account for the model, one to call now or one waiting in a limit, out
+ * of credit or refused.
+ */
 export async function hasAccount(tx: ReadTx, who: Asker, model: ModelId): Promise<boolean> {
-  return (await queuedRows(tx, who, model)).length > 0
+  return (await accessIn(tx, who, model)).kind !== 'none'
 }
 
 /**
  * The model a conversation changes to: one the picker does not offer is `MODEL_UNKNOWN`, and one
- * with no account the person may use now is `MODEL_NO_ACCOUNT`. No credential is opened.
+ * the person has no account for is `MODEL_NO_ACCOUNT` (`hasAccount`). No credential is opened.
  */
 export async function conversationModel(
   deps: QueueDeps,
@@ -232,7 +254,9 @@ export async function markAccount(
 ): Promise<void> {
   if (failure.kind === 'missing') return readServedAgain(deps, turn, accountId)
   const set =
-    failure.kind === 'limited' ? { limitedUntil: failure.until } : { state: 'refused' as const }
+    failure.kind === 'limited'
+      ? { limitedUntil: failure.until, limitReason: failure.reason }
+      : { state: 'refused' as const }
   try {
     await deps.database.command(scopeOf(turn), (tx) =>
       tx

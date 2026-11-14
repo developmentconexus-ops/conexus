@@ -1,93 +1,16 @@
 import assert from 'node:assert/strict'
 import { env } from 'node:process'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import type { StreamEvent } from '../conversation/test-conversation.ts'
-import {
-  answeredOf,
-  asked,
-  conversing,
-  endOf,
-  KEY,
-  turnNotices,
-} from '../conversation/test-conversation.ts'
+import { answeredOf, endOf, turnNotices } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
+import { EXHAUSTED, fleet, saidLive } from './test-fleet.ts'
 
-const EXHAUSTED =
-  'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
 const MINUTE = 60_000
 /** Mastra's wait before the retry of an unknown error (`StreamErrorRetryProcessor`, 1.79). */
 const RETRY_DELAY_MS = 3000
-
-/** The notices the stream said live, as the screen draws them before the answer is saved. */
-function saidLive(events: readonly StreamEvent[]): string[] {
-  return events.flatMap((event) => (event.type === 'info' ? [event.message] : []))
-}
-
-function keyOf(label: string): string {
-  return label === 'Time 1' ? KEY : `sk-ant-queue-${label.replaceAll(' ', '-')}-key-0001`
-}
-
-/** A company whose accounts answer as `plan` says by label; the others answer with text. */
-async function fleet(t: TestContext, plan: Record<string, Reply> = {}) {
-  const labels = new Map([[KEY, 'Time 1']])
-  const base = await conversing(t, (call) => {
-    if (!call.stream) return { kind: 'text', text: 'Apps de encomenda' }
-    return plan[labels.get(String(call.key)) ?? ''] ?? { kind: 'text', text: 'Pronto.' }
-  })
-  const { hub, ana, companyId } = base
-  const accounts = `/api/companies/${companyId}/model-accounts`
-  async function add(label: string, owner = 'company', who = ana) {
-    labels.set(keyOf(label), label)
-    const body = { owner, provider: 'anthropic', label, key: keyOf(label) }
-    const linked = await base.hub.app.inject({
-      method: 'POST',
-      url: accounts,
-      headers: {
-        origin: TEST_ORIGIN,
-        cookie: who.cookie,
-        'content-type': 'application/json',
-        'idempotency-key': crypto.randomUUID(),
-      },
-      payload: JSON.stringify(body),
-    })
-    assert.equal(linked.statusCode, 201, linked.body)
-    const { account } = Object(linked.json())
-    return { id: String(account.id), revision: Number(account.revision) }
-  }
-  /** The streamed calls by account label, in order: the titles' calls are left out. */
-  function calls(): string[] {
-    return base.anthropic.sent
-      .filter((each) => each.stream)
-      .map((each) => labels.get(String(each.key)) ?? '?')
-  }
-  async function states(): Promise<Record<string, { state: string; limitedUntil: number | null }>> {
-    const rows = await hub.test.asOwner(
-      'select label, state, limited_until from builder.model_account',
-    )
-    return Object.fromEntries(
-      rows.map((row) => [
-        String(row.label),
-        {
-          state: String(row.state),
-          limitedUntil: row.limited_until instanceof Date ? row.limited_until.getTime() : null,
-        },
-      ]),
-    )
-  }
-  async function listed() {
-    const read = await call(hub, ana, 'GET', accounts)
-    const company: { label: string; state: string }[] = Object(read.json()).company
-    return Object.fromEntries(company.map((each) => [each.label, each.state]))
-  }
-  function ask(between?: () => Promise<void>) {
-    return asked(t, { hub, person: ana, conversations: base.conversations, between })
-  }
-  return { ...base, accounts, add, calls, states, listed, ask }
-}
 
 test('a ordem: a própria, a dada à pessoa, a da empresa; a dada a outro não entra', async (t) => {
   const plan: Record<string, Reply> = {
@@ -180,7 +103,7 @@ test('429 com horário, 429 sem e 402: a conta ganha o limite, a próxima assume
   assert.deepEqual(f.calls(), ['Time 1', 'Dois', 'Tres', 'Quatro'])
   const notices = await turnNotices(f.hub, f.ana, url)
   assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
-  assert.match(notices[2] ?? '', /^Tres no limite até \d{2}h\d{2}; continuei pela Quatro\.$/)
+  assert.equal(notices[2], 'Tres ficou sem crédito; continuei pela Quatro.')
   assert.equal(notices.length, 3)
   const states = await f.states()
   function within(label: string, ms: number) {
@@ -246,10 +169,9 @@ test('400 de saldo: a conta ganha o limite do crédito, a próxima assume e o lo
   const before = Date.now()
   const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
-  assert.match(
-    (await turnNotices(f.hub, f.ana, url))[0] ?? '',
-    /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/,
-  )
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
+    'Time 1 ficou sem crédito; continuei pela Dois.',
+  ])
   assert.equal(endOf(events), 'complete')
   const until = (await f.states())['Time 1']?.limitedUntil ?? 0
   assert.ok(Math.abs(until - (before + 6 * 60 * MINUTE)) < 30_000, `${until - before}`)
@@ -270,24 +192,6 @@ test('400 de formato: o turno falha, sem troca, e o log traz o tipo fechado', as
   assert.ok(!JSON.stringify(f.lines).includes('non-empty'))
 })
 
-test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim com erro', async (t) => {
-  const f = await fleet(t, {
-    'Time 1': { kind: 'refuse', status: 429 },
-    Dois: { kind: 'refuse', status: 429 },
-  })
-  await f.add('Dois')
-  const { url, events } = await f.ask()
-  assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
-  const notices = await turnNotices(f.hub, f.ana, url)
-  assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
-  // The end says why the last account was lost, not that none is left.
-  assert.match(notices[1] ?? '', /^Dois no limite até \d{2}h\d{2}\.$/)
-  assert.equal(notices.length, 2)
-  assert.deepEqual(saidLive(events), notices)
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
-  assert.equal(endOf(events), 'error')
-})
-
 test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async (t) => {
   const plan: Record<string, Reply> = {}
   const labels = ['Time 1', ...Array.from({ length: 10 }, (_, index) => `Conta ${index + 2}`)]
@@ -299,7 +203,7 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   const notices = await turnNotices(f.hub, f.ana, url)
   assert.equal(notices.length, 10)
   assert.equal(notices.at(-1), 'Conta 10 foi recusada. Ligue de novo.')
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_CALL_FAILED'])
   assert.equal(endOf(events), 'error')
   const states = await f.states()
   assert.equal(states['Conta 11']?.state, 'ready')

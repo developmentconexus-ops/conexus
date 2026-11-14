@@ -18,6 +18,7 @@ import {
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
 import { controllerIn } from '../controller-context/public.ts'
+import { accessText, ENDS, until } from './access.ts'
 import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
@@ -25,7 +26,7 @@ import { nextModels } from './fallback.ts'
 import { forCliProxy } from './google/flat-unions.ts'
 import { minusProviderTools } from './provider-tools.ts'
 import type { QueueDeps } from './queue.ts'
-import { markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import { accessNow, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { SideCall } from './side-calls.ts'
 import { noAccountModel, watched } from './side-calls.ts'
 import type { ProviderOptions } from './thinking.ts'
@@ -70,20 +71,19 @@ function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) 
   emit(args, { type: 'info', message: text })
 }
 
-/**
- * The turn's end when its accounts ran out, with the notice that says so: the reason the last
- * account was lost (refused, in its limit) when the turn saw one, else that none is left.
- */
-function exhaust(args: Notifier, turn: Turn, modelId: ModelId, reason: string | undefined) {
+async function exhaust(
+  deps: QueueDeps,
+  args: Notifier,
+  turn: Turn,
+  modelId: ModelId,
+  reason: string | undefined,
+) {
   turn.finish('exhausted')
-  const provider = providerName(providerOf(modelId))
+  const access = await accessNow(deps, turn, modelId)
   const text =
-    reason === undefined
-      ? `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
-      : `${reason}.`
+    reason === undefined ? accessText(access, providerName(providerOf(modelId))) : `${reason}.`
   notify(args, turn, 'accounts-exhausted', text)
-  // The run's error says why it ends: the call that fails next is the provider's, or none at all.
-  emit(args, { type: 'error', error: new Failure('MODEL_NO_ACCOUNT') })
+  emit(args, { type: 'error', error: new Failure(ENDS[access.kind]) })
 }
 
 function refusedText(label: string) {
@@ -104,16 +104,6 @@ async function keepNotices(args: { writer?: Writer; messageList: MessageList }, 
   for (const data of turn.notices.slice(kept)) {
     await args.writer?.custom({ type: NOTICE_PART, data })
   }
-}
-
-const TIME = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: 'America/Sao_Paulo',
-  hour: '2-digit',
-  minute: '2-digit',
-})
-
-function until(date: Date): string {
-  return TIME.format(date).replace(':', 'h')
 }
 
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
@@ -142,7 +132,8 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
     return switched
   }
   const refused = turn.unsaid.splice(0).map(refusedText)
-  exhaust(args, turn, chosen, refused.length > 0 ? refused.join('. ') : turn.reasons.at(-1))
+  const reason = refused.length > 0 ? refused.join('. ') : turn.reasons.at(-1)
+  await exhaust(deps, args, turn, chosen, reason)
   return undefined
 }
 
@@ -211,6 +202,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
 }
 
 function failedText(account: Picked, failure: AccountFailure) {
+  if (failure.kind === 'limited' && failure.reason === 'credit')
+    return `${account.label} ficou sem crédito`
   if (failure.kind === 'limited') return `${account.label} no limite até ${until(failure.until)}`
   if (failure.kind === 'missing') return `${account.label} não atende a este modelo`
   return refusedText(account.label)
@@ -268,7 +261,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
     turn.reasons.push(failedText(account, failure))
   }
   if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
-    exhaust(args, turn, account.modelId, turn.reasons.at(-1))
+    await exhaust(deps, args, turn, account.modelId, turn.reasons.at(-1))
     return { retry: false }
   }
   turn.drop()

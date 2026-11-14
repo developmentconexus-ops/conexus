@@ -69,12 +69,12 @@ test('a conta: um turno do Assistente e um do Builder da mesma pessoa correm jun
   assert.equal(endOf(await on.conversation.stream.turn()), 'complete')
 })
 
-test('a conta: sem conta que responda, o turno do Assistente termina com a frase de hoje', async (t) => {
+test('a conta: a única conta recusada, o turno do Assistente termina dizendo que foi recusada', async (t) => {
   const on = await oneAccount(t)
   on.next.reply = { kind: 'refuse', status: 401 }
   const events = await on.conversation.say('Quanto vendemos?')
   assert.equal(endOf(events), 'error')
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
 })
 
 test('o fim do turno solta a conta: depois de um turno que acaba, um que falha e um parado pela pessoa, o seguinte e um do Builder começam', async (t) => {
