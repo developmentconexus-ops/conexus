@@ -3,12 +3,12 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
+import { until } from '../../platform/test-until.ts'
 import type { Read, StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -16,9 +16,9 @@ import {
   conversing,
   endOf,
   holding,
+  messagesOf,
   PARTIAL,
   sent,
-  settledOf,
   started,
   stopped,
   streamOf,
@@ -104,10 +104,8 @@ async function stoppedOf(
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, person, url, 'Liste nomes de padarias')).statusCode, 200)
-  // The journal says text in pieces of 200 characters, so this short text waits for the turn's end:
-  // the stop comes once the recording's words have reached the turn.
   const opening = await stream.next()
-  await setTimeout(1000)
+  await stream.until(() => stream.seen.raw.includes('"type":"text-delta"'))
   assert.equal((await stopped(hub, person, url)).statusCode, 200)
   const events = [opening, ...(await stream.turn())]
   assert.equal(endOf(events), 'aborted')
@@ -273,7 +271,12 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
   assert.equal((await sent(hub, ana, first.url, 'Mude a cor')).statusCode, 200)
   const failed = await stream.turn()
   assert.deepEqual(failuresOf(failed), ['MODEL_NO_ACCOUNT'])
-  const kinds = (await settledOf(hub, ana, first.url))
+  await until(
+    async () =>
+      (await messagesOf(hub, ana, first.url)).filter((each) => each.role === 'person').length === 2,
+    'the second turn saved by Mastra',
+  )
+  const kinds = (await answeredOf(hub, ana, first.url))
     .filter((each) => each.role === 'builder')
     .map((each) =>
       each.parts.map((part) => part.type).filter((type) => type.startsWith('data-conexus-')),

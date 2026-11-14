@@ -5,6 +5,7 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { ASK_USER_TOOL } from '../controller-kit/public.ts'
 import { SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import type { StreamEvent } from './test-conversation.ts'
@@ -178,14 +179,11 @@ const LOOP_PARKED = `select 1 from mastra.mastra_workflow_snapshot where workflo
  * turn's end, and its own resume refuses an answer that comes first.
  */
 export async function untilParked(hub: Hub) {
-  for (
-    let attempt = 0;
-    (await hub.test.mastraPool.query(LOOP_PARKED)).rowCount === 0;
-    attempt += 1
-  ) {
-    assert.ok(attempt < 50, 'Mastra keeps the parked run')
-    await sleep(100)
-  }
+  await until(
+    async () => (await hub.test.mastraPool.query(LOOP_PARKED)).rowCount !== 0,
+    'Mastra keeps the parked run',
+    5_000,
+  )
 }
 
 /** Answers a card as a person does, once Mastra keeps its run parked. */

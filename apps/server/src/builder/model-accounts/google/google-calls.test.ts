@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
+import { EventEmitter, once } from 'node:events'
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
 import { testCliProxy } from '../../../platform/test-cliproxy-binary.ts'
 import { createTestDatabase, testConfig } from '../../../platform/test-database.ts'
@@ -112,16 +112,22 @@ async function setup(
     return { revision: held.revision, login }
   }
   const lines: string[] = []
+  const logged = new EventEmitter()
   const log = {
-    info: (fields: Record<string, unknown>, message: string) =>
-      lines.push(JSON.stringify([fields, message])),
+    info: (fields: Record<string, unknown>, message: string) => {
+      lines.push(JSON.stringify([fields, message]))
+      logged.emit(message)
+    },
     error: (fields: Record<string, unknown>, message: string) =>
       lines.push(JSON.stringify([fields, message])),
   }
   const cliProxy = idleSeconds === undefined ? given : { ...given, idleSeconds }
   const calls = openGoogleCalls({ cliProxy, log, database, sealKeys })
   t.after(() => calls.stop())
-  return { double, calls, plant, row, asOwner, lines }
+  function nextStop() {
+    return once(logged, 'CLIPROXY_STOPPED', { signal: AbortSignal.timeout(5_000) })
+  }
+  return { double, calls, plant, row, asOwner, lines, nextStop }
 }
 
 test('uma conta, um processo em 127.0.0.1, chave aleatória, pasta 0700 com o login; outra conta, outro processo', async (t) => {
@@ -151,16 +157,20 @@ test('uma conta, um processo em 127.0.0.1, chave aleatória, pasta 0700 com o lo
 })
 
 test('10 minutos sem chamada: o processo sai e a pasta some; a chamada seguinte abre outro', async (t) => {
-  const { double, calls, plant } = await setup(t, 0.4)
+  const { double, calls, plant, nextStop } = await setup(t, 0.4)
   const account = await plant()
+  t.mock.timers.enable({ apis: ['setTimeout'] })
   await calls.googleCalls(account, SCOPE)
   const [run] = runsOf(double.control)
   assert.ok(run !== undefined && alive(run.pid))
-  await sleep(250)
+  t.mock.timers.tick(250)
   await calls.googleCalls(account, SCOPE)
-  await sleep(250)
-  assert.ok(alive(run.pid), 'a call restarts the idle time')
-  await sleep(500)
+  t.mock.timers.tick(250)
+  await calls.googleCalls(account, SCOPE)
+  assert.equal(runsOf(double.control).length, 1, 'a call restarts the idle time')
+  const stop = nextStop()
+  t.mock.timers.tick(400)
+  await stop
   assert.equal(alive(run.pid), false)
   assert.equal(existsSync(run.dir), false)
   await calls.googleCalls(account, SCOPE)
@@ -168,18 +178,24 @@ test('10 minutos sem chamada: o processo sai e a pasta some; a chamada seguinte 
 })
 
 test('uma chamada mais longa que o tempo parado: o processo fica até ela acabar, e sai depois do tempo parado', async (t) => {
-  const { double, calls, plant } = await setup(t, 0.4)
+  const { double, calls, plant, nextStop } = await setup(t, 0.4)
   const account = await plant()
+  t.mock.timers.enable({ apis: ['setTimeout'] })
   const opened = await calls.googleCalls(account, SCOPE)
   const release = opened.hold()
   const [run] = runsOf(double.control)
   assert.ok(run !== undefined)
-  await sleep(900)
-  assert.ok(alive(run.pid), 'a call in flight keeps the process')
+  t.mock.timers.tick(900)
+  await calls.googleCalls(account, SCOPE)
+  assert.equal(runsOf(double.control).length, 1, 'a call in flight keeps the process')
   release()
-  await sleep(250)
-  assert.ok(alive(run.pid), 'the idle time counts from the call end')
-  await sleep(500)
+  t.mock.timers.tick(250)
+  const later = await calls.googleCalls(account, SCOPE)
+  later.hold()()
+  assert.equal(runsOf(double.control).length, 1, 'the idle time counts from the call end')
+  const stop = nextStop()
+  t.mock.timers.tick(400)
+  await stop
   assert.equal(alive(run.pid), false)
   assert.equal(existsSync(run.dir), false)
 })

@@ -3,9 +3,10 @@ import { randomBytes } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { setImmediate, setTimeout as sleep } from 'node:timers/promises'
+import { setImmediate } from 'node:timers/promises'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   endOf,
   hubBeside,
@@ -45,12 +46,11 @@ test('o teto é o da rota', async (t) => {
     files: [file('grande.pdf', PDF_TYPE, bytes)],
   })
   assert.equal(sent.statusCode, 200, sent.body)
-  let answered = false
-  for (let wait = 0; wait < 100 && !answered; wait++) {
-    answered = (await messagesOf(on.hub, on.ana, url)).some((each) => each.role === 'builder')
-    if (!answered) await sleep(200)
-  }
-  assert.ok(answered, 'the turn ends with an answer')
+  await until(
+    async () => (await messagesOf(on.hub, on.ana, url)).some((each) => each.role === 'builder'),
+    'the turn ends with an answer',
+    20_000,
+  )
   const [call] = calls
   assert.ok(call)
   assert.deepEqual(documentsIn(call), [])
