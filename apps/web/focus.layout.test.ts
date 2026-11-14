@@ -65,6 +65,7 @@ const RAIL_STOPS = [
   'Automações',
   'Agentes',
   'Cópias',
+  'Conhecimento',
   'Configurações',
   'Notificações',
   'Conta de Ana Lima',
