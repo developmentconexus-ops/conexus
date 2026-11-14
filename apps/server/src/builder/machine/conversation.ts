@@ -1,5 +1,4 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { ConversationId as ConversationIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CodeModeTransport } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
@@ -7,6 +6,7 @@ import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { controllerIn } from '../controller-context/public.ts'
 import { MAX_BYTES } from '../git/public.ts'
 import { locate } from './conversation-file.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
@@ -115,8 +115,6 @@ type Session = {
    */
   found: string | undefined
 }
-
-const Controller = z.object({ sessionId: ConversationIdSchema })
 
 class Machines implements ConversationMachines {
   private readonly deps: Deps
@@ -274,9 +272,8 @@ class Machines implements ConversationMachines {
 
   async workspace(requestContext: RequestContext): Promise<Workspace | undefined> {
     const marks = await this.deps.marksOf(requestContext)
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    if (marks === undefined || !controller.success) return undefined
-    const { sessionId: conversationId } = controller.data
+    const conversationId = controllerIn(requestContext).sessionId
+    if (marks === undefined || conversationId === undefined) return undefined
     const held = this.sessions.get(conversationId)?.workspace
     if (held !== undefined) return held
     return this.inLane(conversationId, async () => {
@@ -342,8 +339,8 @@ class Machines implements ConversationMachines {
   }
 
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined {
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    const session = controller.success ? this.sessions.get(controller.data.sessionId) : undefined
+    const conversationId = controllerIn(requestContext).sessionId
+    const session = conversationId === undefined ? undefined : this.sessions.get(conversationId)
     return session === undefined ? undefined : this.shortLived(session)
   }
 

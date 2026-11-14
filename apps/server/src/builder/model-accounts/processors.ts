@@ -16,8 +16,8 @@ import {
   StreamErrorRetryProcessor,
 } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import { controllerIn } from '../controller-context/public.ts'
 import { accessText, ENDS, until } from './access.ts'
 import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'
@@ -53,16 +53,12 @@ function lastStep(args: ProcessInputStepArgs): ProcessInputStepResult {
 type Writer = ProcessAPIErrorArgs['writer']
 
 type QueueEvent = { type: 'info'; message: string } | { type: 'error'; error: Failure }
-const ControllerEvents = z.object({
-  emitEvent: z.custom<(event: QueueEvent) => void>((value) => typeof value === 'function'),
-})
 
 type Notifier = { requestContext?: RequestContext | undefined }
 
 /** Says `event` on the run's controller, as a tool forwards its events. */
 export function emit(args: Notifier, event: QueueEvent) {
-  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
-  if (controller.success) controller.data.emitEvent(event)
+  controllerIn(args.requestContext).emitEvent?.(event)
 }
 
 /**

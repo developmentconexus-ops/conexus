@@ -6,7 +6,7 @@ import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
-import { createAskUserTool } from '../conversation/public.ts'
+import { createAskUserTool } from '../controller-kit/public.ts'
 import {
   asked,
   conversing,

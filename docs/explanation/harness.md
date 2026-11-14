@@ -26,7 +26,7 @@ mode, `conversa`. For the Builder, the Assistant and the Construtor the mode's `
 is a closed list; the `agents` controller has none, and the tool set each version's code builds is
 the closed set. The controller's built-in tools stay off
 unless the mode offers them; Conexus supplies its own `ask_user` and, for the Builder,
-`submit_plan`, under the native ids (`builder/conversation/plan-tools.ts`). The `subagent` tool is
+`submit_plan`, under the native ids (`builder/controller-kit/ask-user.ts` and `builder/conversation/plan-tools.ts`). The `subagent` tool is
 on only for the Assistant, with one helper type that reads (`builder/assistant/research.ts`).
 
 A session's id is the thread's id and Conexus's conversation id. The thread's resource encodes the

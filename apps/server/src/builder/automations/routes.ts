@@ -10,7 +10,7 @@ import {
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
-import type { Owner } from '../assistant/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
 import type { Automations } from './automations.ts'
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {

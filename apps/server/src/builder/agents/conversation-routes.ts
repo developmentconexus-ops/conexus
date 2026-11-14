@@ -13,7 +13,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, listOwned, ownThread, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, listOwned, ownThread } from '../controller-kit/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
@@ -134,11 +134,8 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     served: 'AGENT_FILE_READ',
     ownConversation: async (owner, conversationId) => {
       const run = await keptRun(deps.database, owner, conversationId)
-      const thread = await memory.getThreadById({
-        threadId: conversationId,
-        resourceId: resourceOf('agents', owner),
-      })
-      if (run === undefined || thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
+      await ownThread(memory, 'agents', owner, conversationId)
+      if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
       await mayManage(deps, { ...owner, projectId: run.scope.projectId })
     },
   })

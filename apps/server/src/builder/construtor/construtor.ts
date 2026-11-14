@@ -4,7 +4,6 @@ import {
   BUILDER_TOOL,
   CONSTRUTOR_CONTROLLER,
   CONSTRUTOR_TOOL,
-  ConversationId,
   ProjectId,
   TASK_TOOLS,
 } from '@conexus/hub-api'
@@ -14,7 +13,6 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
-import { z } from 'zod'
 import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { liveProjectOf } from '../../hub/projects/public.ts'
@@ -22,16 +20,18 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AgentsAlive } from '../agents/public.ts'
-import type { Speakers } from '../assistant/public.ts'
-import { blockOf } from '../assistant/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import { conversationRun } from '../controller-context/public.ts'
+import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
 import {
+  ASK_USER_TOOL,
   agentDefaults,
   agentManagerAdmission,
+  blockOf,
   controllerOf,
   conversationMemory,
+  createAskUserTool,
   fixedSystem,
   oncePerRun,
   ownerOfResource,
@@ -39,12 +39,11 @@ import {
   sessionModel,
   sessionTurns,
   TITLE,
+  takeOfScope,
   threadsByMarks,
   toolsOf,
   turnKeyOn,
-  turnOfOwner,
 } from '../controller-kit/public.ts'
-import { ASK_USER_TOOL, createAskUserTool } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -79,8 +78,6 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...TASK_TOOLS,
 ]
 
-const Controller = z.object({ resourceId: z.string(), sessionId: ConversationId })
-
 type Deps = {
   storage: MastraCompositeStore
   database: Database
@@ -110,13 +107,13 @@ type Threads = Pick<Memory, 'getThreadById'>
 /** The person and the Projeto a run is of: the owner from the thread's resource, the Projeto from its marks. */
 function scopes(memory: Threads) {
   return oncePerRun(async (requestContext): Promise<InProject | undefined> => {
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    if (!controller.success) return undefined
-    const owner = ownerOfResource(controller.data.resourceId)
+    const run = conversationRun(requestContext)
+    if (run === undefined) return undefined
+    const owner = ownerOfResource(run.resourceId)
     if (owner?.kind !== 'construtor') return undefined
     const thread = await memory.getThreadById({
-      threadId: controller.data.sessionId,
-      resourceId: controller.data.resourceId,
+      threadId: run.sessionId,
+      resourceId: run.resourceId,
     })
     const projectId = ProjectId.safeParse(thread?.metadata?.[CONSTRUTOR_MARK.project])
     if (!projectId.success) return undefined
@@ -254,13 +251,7 @@ export function createConstrutor(deps: Deps) {
   )
   const turns = sessionTurns({
     id: 'conexus-construtor-turn',
-    async take(requestContext) {
-      const scope = await scopeOf(requestContext)
-      if (scope === undefined) return undefined
-      const turn = await turnOfOwner(queue, scope)
-      turnKey.start(requestContext)
-      return turn
-    },
+    take: takeOfScope({ queue, scopeOf, turnKey }),
   })
   const agent = construtorAgent(deps, { memory, turns, scopeOf, machines })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
