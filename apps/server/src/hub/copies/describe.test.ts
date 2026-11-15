@@ -138,5 +138,6 @@ test('a posse que outra rodada tomou ao preencher', async (t) => {
   })
   assert.deepEqual(await on.run(copyId), { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } })
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_CLAIM_LOST'))
+  assert.equal(on.gate.pages, 0, 'the run ends before it reads a page')
   assert.equal((await storedDefinition(on, copyId)).description, undefined)
 })
