@@ -73,12 +73,13 @@ test('a junção nomeia as duas tabelas', async (t) => {
   assert.ok(answer.rows.length > 0)
 })
 
-test('uma autojunção nomeia a tabela uma vez só', async (t) => {
+test('a mesma tabela lida duas vezes nomeia a tabela uma vez só', async (t) => {
   const { on } = await withCopies(t)
   const answer = queryOf(
     await queried(
       on,
-      'select count(*) from sync.sankhya_vendas a join sync.sankhya_vendas b using ("NUNOTA")',
+      `select count(*) from (select "NUNOTA" from sync.sankhya_vendas
+        union all select "NUNOTA" from sync.sankhya_vendas) u`,
     ),
   )
   assert.deepEqual(
