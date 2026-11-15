@@ -31,6 +31,22 @@ function appTablesOf(data: AppTables) {
   return data.kind === 'NO_APP' ? [] : data.tables.filter((table) => table.schema === 'APP')
 }
 
+function GroupHead(props: { companyId: CompanyId; project: AppProject; title: string }) {
+  const { companyId, project, title } = props
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-md">
+      <h2 className="font-medium">{title}</h2>
+      <Link
+        to="/companies/$companyId/projects/$projectId/data"
+        params={{ companyId, projectId: project.id }}
+        className="text-text-2 underline underline-offset-2"
+      >
+        {OPEN_PROJECT}
+      </Link>
+    </div>
+  )
+}
+
 function ProjectGroup(props: {
   companyId: CompanyId
   project: AppProject
@@ -39,22 +55,22 @@ function ProjectGroup(props: {
   const { companyId, project, read } = props
   if (read.isPending) return <Skeleton className="h-16 w-full" />
   if (read.isError) {
-    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+    return (
+      <section aria-label={project.name} className="flex flex-col gap-sm">
+        <GroupHead companyId={companyId} project={project} title={project.name} />
+        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
+      </section>
+    )
   }
   const tables = appTablesOf(read.data)
   if (tables.length === 0) return null
   return (
     <section aria-label={project.name} className="flex flex-col gap-sm">
-      <div className="flex flex-wrap items-baseline justify-between gap-md">
-        <h2 className="font-medium">{systemText(project.name, [], tables.length)}</h2>
-        <Link
-          to="/companies/$companyId/projects/$projectId/data"
-          params={{ companyId, projectId: project.id }}
-          className="text-text-2 underline underline-offset-2"
-        >
-          {OPEN_PROJECT}
-        </Link>
-      </div>
+      <GroupHead
+        companyId={companyId}
+        project={project}
+        title={systemText(project.name, [], tables.length)}
+      />
       <Table>
         <TableHeader>
           <TableRow>

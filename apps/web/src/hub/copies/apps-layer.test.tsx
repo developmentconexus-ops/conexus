@@ -104,7 +104,9 @@ test('Apps: o Projeto que não responde diz só no grupo dele', async () => {
     [ACOMPANHAMENTO.id]: refusal('DATABASE_UNAVAILABLE'),
   })
   openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM, ACOMPANHAMENTO])
-  expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  const failed = within(await screen.findByRole('region', { name: 'Acompanhamento' }))
+  expect(failed.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  expect(failed.getByRole('link', { name: 'Abrir o Projeto' })).toBeTruthy()
   expect(screen.getByRole('region', { name: 'CRM' })).toBeTruthy()
 })
 
