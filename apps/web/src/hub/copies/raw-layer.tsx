@@ -1,10 +1,4 @@
-import type {
-  CompanyId,
-  Connection,
-  ConnectorEntry,
-  CopyProposalSummary,
-  CopySummary,
-} from '@conexus/hub-api'
+import type { CompanyId, ConnectorEntry, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
@@ -18,9 +12,9 @@ import { Table, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import type { Props } from './copy-list.tsx'
-import { CELL, CopyPhoneRow, CopyTableRow, describedAs, HeadRow, Proposals } from './copy-list.tsx'
-import { folded } from './search.ts'
-import { originOf } from './source.ts'
+import { CELL, CopyPhoneRow, CopyTableRow, HeadRow, Proposals } from './copy-list.tsx'
+import type { System } from './data-systems.ts'
+import { answers, systemsOf } from './data-systems.ts'
 import {
   CATALOG_FAILED,
   DATA_COLUMNS,
@@ -33,36 +27,6 @@ import {
   SEARCH_TABLES,
   systemText,
 } from './text.ts'
-
-type System = { connector: string; accounts: Set<string>; copies: CopySummary[] }
-
-/** The company's systems: each connector a copy reads or an active connection links, with its connections' names and its copies. */
-function systemsOf(copies: readonly CopySummary[], connections: readonly Connection[]): System[] {
-  const found = new Map<string, System>()
-  function system(connector: string): System {
-    const known = found.get(connector)
-    if (known !== undefined) return known
-    const made = { connector, accounts: new Set<string>(), copies: [] }
-    found.set(connector, made)
-    return made
-  }
-  for (const copy of copies) {
-    const one = system(originOf(copy).connector)
-    one.copies.push(copy)
-    for (const name of originOf(copy).accounts) one.accounts.add(name)
-  }
-  for (const connection of connections) {
-    if (connection.state === 'ACTIVE') system(connection.connector).accounts.add(connection.name)
-  }
-  return [...found.values()]
-}
-
-/** Whether a copy answers the search: its name, its description or the name of one of its columns. */
-function answers(copy: CopySummary, query: string): boolean {
-  const needle = folded(query.trim())
-  const fields = [copy.name, describedAs(copy), ...copy.shown.columns.map((column) => column.name)]
-  return fields.some((field) => folded(field).includes(needle))
-}
 
 function SystemTitle(props: { system: System; connectors: readonly ConnectorEntry[] }) {
   const { system, connectors } = props

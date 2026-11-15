@@ -63,30 +63,34 @@ function searchable() {
 
 test('Dados: a busca acha pela coluna', async () => {
   openCopies(server, { copies: searchable() }, LIST)
-  const box = await screen.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const main = within(await screen.findByRole('main'))
+  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'NUNOTA' } })
   await waitFor(() => expect(screen.queryByText('sankhya_clientes')).toBeNull())
-  expect(screen.getByText('sankhya_vendas')).toBeTruthy()
+  expect(main.getByText('sankhya_vendas')).toBeTruthy()
 })
 
 test('Dados: a busca não liga para acento', async () => {
   openCopies(server, { copies: searchable() }, LIST)
-  const box = await screen.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const main = within(await screen.findByRole('main'))
+  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'devolucoes' } })
   await waitFor(() => expect(screen.queryByText('sankhya_vendas')).toBeNull())
-  expect(screen.getByText('sankhya_clientes')).toBeTruthy()
+  expect(main.getByText('sankhya_clientes')).toBeTruthy()
 })
 
 test('Dados: a busca sem resposta diz que nada bate', async () => {
   openCopies(server, { copies: searchable() }, LIST)
-  const box = await screen.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const main = within(await screen.findByRole('main'))
+  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'zzz' } })
-  expect(await screen.findByText('Nenhuma tabela com esse texto.')).toBeTruthy()
+  expect(await main.findByText('Nenhuma tabela com esse texto.')).toBeTruthy()
 })
 
 test('Dados: nenhum sistema ligado', async () => {
   openCopies(server, { copies: [], connections: [] }, LIST)
-  expect(await screen.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
   expect(
     screen.getByText(
       'Ligue um sistema da empresa, como o Sankhya, e as tabelas copiadas dele aparecem aqui.',
@@ -99,8 +103,9 @@ test('Dados: nenhum sistema ligado', async () => {
 
 test('Dados: um sistema sem cópia', async () => {
   openCopies(server, { copies: [], connections: [connection()] }, LIST)
-  expect(await screen.findByText('Sankhya · Matriz')).toBeTruthy()
-  expect(screen.getByText('Nenhuma tabela copiada')).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(main.getByText('Nenhuma tabela copiada')).toBeTruthy()
 })
 
 test('Dados: a falha de leitura e Tentar de novo', async () => {
@@ -113,15 +118,16 @@ test('Dados: a falha de leitura e Tentar de novo', async () => {
     },
     LIST,
   )
-  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  const main = within(await screen.findByRole('main'))
+  const retry = await main.findByRole('button', { name: 'Tentar de novo' })
   expect(
-    screen.getByText(
+    main.getByText(
       'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.',
     ),
   ).toBeTruthy()
   fail = false
   fireEvent.click(retry)
-  expect(await screen.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
+  expect(await main.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
 })
 
 test('Dados: a camada Negócio vazia', async () => {
@@ -148,14 +154,16 @@ test('Cópias leva a Dados', async () => {
 test('Dados: uma conexão que não está ativa não vira sistema', async () => {
   const waiting = connection({ state: 'NEEDS_REAUTH' })
   openCopies(server, { copies: [], connections: [waiting] }, LIST)
-  expect(await screen.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
-  expect(screen.queryByText('Nenhuma tabela copiada')).toBeNull()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
+  expect(main.queryByText('Nenhuma tabela copiada')).toBeNull()
 })
 
 test('Dados: sem sistema ligado, uma proposta aberta ainda aparece e a frase de vazio some', async () => {
   openCopies(server, { copies: [], connections: [], proposals: [proposal()] }, LIST)
-  expect(await screen.findByText('Proposta')).toBeTruthy()
-  expect(screen.queryByText('Nenhum sistema ligado ainda')).toBeNull()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Proposta')).toBeTruthy()
+  expect(main.queryByText('Nenhum sistema ligado ainda')).toBeNull()
 })
 
 test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {
@@ -168,8 +176,9 @@ test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {
         : HttpResponse.json({ connectors: CATALOG, connections: [connection()], mayManage: true }),
     ),
   )
-  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  const main = within(await screen.findByRole('main'))
+  const retry = await main.findByRole('button', { name: 'Tentar de novo' })
   fail = false
   fireEvent.click(retry)
-  expect(await screen.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
+  expect(await main.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
 })

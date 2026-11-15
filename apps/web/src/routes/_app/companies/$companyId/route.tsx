@@ -1,5 +1,5 @@
 import type { CompanyId, CompanyMay } from '@conexus/hub-api'
-import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useMatches, useParams, useSearch } from '@tanstack/react-router'
 import {
   BotIcon,
   DatabaseIcon,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
+import { DataTree } from '../../../../hub/copies/public.ts'
 import {
   AccountMenu,
   CompanySwitcher,
@@ -104,6 +105,11 @@ function HouseFrame() {
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
+  const inData = useMatches({ select: (matches) => matches.at(-1)?.staticData.place === 'Dados' })
+  const q = useSearch({
+    strict: false,
+    select: (search) => (typeof search.q === 'string' ? search.q : undefined),
+  })
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
   const menuNote = unreadNote(useUnread(companyId))
   const foot = (
@@ -132,6 +138,8 @@ function HouseFrame() {
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
+        ) : inData && may.manageCopies ? (
+          <DataTree companyId={companyId} q={q} />
         ) : (
           <SidebarGroup>
             <NewConversation companyId={companyId} />
