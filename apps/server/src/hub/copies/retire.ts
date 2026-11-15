@@ -1,6 +1,6 @@
-import { CopyDefinitionV1 } from '@conexus/connectors'
 import { eq } from 'drizzle-orm'
 import type { DatabaseUrl } from '../../platform/database.ts'
+import { CopyDefinition } from '../connectors/public.ts'
 import type { Claimed } from './source-pass.ts'
 import { DATABASE_DOWN, lost } from './source-pass.ts'
 import { whileHeld } from './sources.ts'
@@ -45,7 +45,7 @@ export async function retiredColumns(
     deps.log.error({ companyId, copyId, code }, 'COPY_RETIRE_FAILED')
     return { kind: 'END', end: await end(DATABASE_DOWN) }
   }
-  const definition = CopyDefinitionV1.parse({
+  const definition = CopyDefinition.parse({
     ...kept,
     source: entry.model.definition.source,
     columns: kept.columns.filter((column) => !gone.includes(column.name)),
