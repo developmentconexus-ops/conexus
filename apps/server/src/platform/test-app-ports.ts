@@ -68,9 +68,9 @@ export function heldCompanyPostgres(config: Config) {
       const same =
         seen === undefined || (seen !== 'TWO_COMPANIES' && seen.reveal() === owner.reveal())
       syncOwners.set(host, same ? owner : 'TWO_COMPANIES')
-      // The sync login belongs to the whole test server: another file's teardown may drop it between
-      // the look and the GRANT (42704), so the act holds the lock the drops take. Once the schema it
-      // owns exists here, a drop refuses (2BP01).
+      // Only the test server's share: the sync login belongs to the whole server, and another file's
+      // teardown may drop it between the look and the GRANT (42704), so the act holds the lock the
+      // drops take. Two acts on one company take turns in `ensureSync` itself (`ROLES_LOCK`).
       return withRoleLock(() => inner.ensureSync(owner))
     },
     ensureReader: (owner) => withRoleLock(() => inner.ensureReader(owner)),
