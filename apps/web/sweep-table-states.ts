@@ -145,9 +145,15 @@ export const TABLE_STATES: State[] = [
   },
   {
     name: 'A tabela, as colunas com uma inativa',
-    path: `${PAGE}/${VENDAS}`,
+    path: `${PAGE}/${VENDAS}?tab=columns`,
     replies: columnedPage(),
     settle: (p) => waitFor(p, 'Inativa desde 10/11'),
+  },
+  {
+    name: 'A tabela, a visão geral',
+    path: `${PAGE}/${VENDAS}`,
+    replies: columnedPage(),
+    settle: (p) => waitFor(p, 'As notas de venda da Matriz'),
   },
   {
     name: 'A tabela, a amostra',

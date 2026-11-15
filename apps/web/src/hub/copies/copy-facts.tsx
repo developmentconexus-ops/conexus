@@ -1,4 +1,5 @@
 import type { CopySummary } from '@conexus/hub-api'
+import type { ReactNode } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
@@ -9,7 +10,10 @@ import {
   inactiveMark,
   KEY_MARK,
   modeText,
+  NO_DESCRIPTION,
   NO_SCHEDULE,
+  ORIGIN_READ,
+  OVERVIEW_LABELS,
   PANEL_LABELS,
   RAW_LAYER,
   typeText,
@@ -48,11 +52,31 @@ export function ColumnsTab({ copy }: { copy: CopySummary }) {
   )
 }
 
-function Line({ label, children }: { label: string; children: string }) {
+function Line({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col">
       <dt className="text-text-2">{label}</dt>
       <dd className="break-words">{children}</dd>
+    </div>
+  )
+}
+
+/** The **Visão geral** tab, the one a table opens on: its description, the connection, the key, the mode and, for a version 2 copy, the read it comes from. */
+export function OverviewTab({ copy }: { copy: CopySummary }) {
+  const { description, key, source } = copy.shown
+  return (
+    <div className="flex min-w-0 flex-col gap-lg">
+      <p className="max-w-message text-text-2">{description ?? NO_DESCRIPTION}</p>
+      <dl className="grid gap-md sm:grid-cols-2">
+        <Line label={OVERVIEW_LABELS.connection}>
+          {copy.sources.map((one) => one.connection.name).join(', ')}
+        </Line>
+        <Line label={OVERVIEW_LABELS.key}>
+          <span className="font-mono text-fact">{key.join(', ')}</span>
+        </Line>
+        <Line label={OVERVIEW_LABELS.mode}>{modeText(copy.mode)}</Line>
+        {source.kind === 'OPERATION' && <Line label={ORIGIN_READ}>{source.label}</Line>}
+      </dl>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import type {
   CopySummary,
 } from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
-import { dayAndMonth } from '../../platform/dates.ts'
+import { dayAndHour, dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
 /** The words of the Dados screens (Capacidade 2, U4); the founder approves them at the step's end. */
@@ -26,17 +26,17 @@ export const CONCEPT_HINT =
   'Um conceito é o significado de uma palavra do negócio, aprovado por uma pessoa da empresa, como "Venda". Quando o primeiro for aprovado, ele aparece aqui.'
 export const CATALOG_FAILED =
   'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
-export const BACK_TO_DATA = 'Dados'
 export const TREE_LABEL = 'Dados'
 export const PAUSED_LABEL = 'Pausada'
 export const LOADING_LABEL = 'Carregando'
 export const DATA_LAYERS = { raw: 'Bruto', business: 'Negócio', apps: 'Apps' } as const
 export const DATA_COLUMNS = ['Tabela', 'Atualizada', 'Linhas', 'Intervalo', 'Projetos'] as const
 
-/** A system's header in the list: its name, the connections' names and how many tables it has copied. */
+/** A system's header in the list: its name, the connections' names (not one that repeats the system's) and how many tables it has copied. */
 export function systemText(system: string, accounts: readonly string[], tables: number): string {
   const counted = tables === 0 ? [] : [`${tables} ${tables === 1 ? 'tabela' : 'tabelas'}`]
-  return [system, accounts.join(', '), ...counted].filter((part) => part !== '').join(' · ')
+  const named = accounts.filter((account) => account !== system)
+  return [system, named.join(', '), ...counted].filter((part) => part !== '').join(' · ')
 }
 export const ENABLE_COPY = 'Ligar uma cópia'
 export const NO_MODEL_CONNECTION = 'Ligue em Integrações uma conexão que ofereça cópias.'
@@ -58,6 +58,11 @@ export function versionText(version: {
     ? `Publicado · v${version.publishedVersion}`
     : `Em construção · v${version.appVersion}`
 }
+export const OVERVIEW_TITLE = 'Visão geral'
+export const NO_DESCRIPTION = 'Sem descrição.'
+export const ORIGIN_READ = 'Leitura de origem'
+export const OVERVIEW_LABELS = { connection: 'Ligação', key: 'Chave', mode: 'Modo' } as const
+export const CRUMBS_LABEL = 'Caminho'
 export const COLUMNS_TITLE = 'Colunas'
 export const SAMPLE_TITLE = 'Amostra'
 export const KEY_MARK = 'Chave'
@@ -77,6 +82,17 @@ export const PANEL_LABELS = {
   layer: 'Camada',
 } as const
 export const RAW_LAYER = 'Bruto'
+
+/** The line under a table's title: when the last pass copied it and how many rows, never an hour of a run that did not copy. */
+export function copiedText(system: string, copy: Pick<CopySummary, 'run' | 'rows'>): string {
+  const rows = copy.rows === null ? '' : ` · ${countText(copy.rows)} linhas`
+  if (copy.run === null) return `${system} · a primeira rodada ainda não terminou`
+  const { outcome, endedAt } = copy.run
+  if (endedAt !== null && (outcome.kind === 'COMPLETE' || outcome.kind === 'PARTIAL')) {
+    return `Copiada do ${system} em ${dayAndHour(endedAt)}${rows}`
+  }
+  return `${system}${rows}`
+}
 
 const TYPE_LABEL: Readonly<Record<string, string>> = {
   bigint: 'Número',
