@@ -170,60 +170,68 @@ for (const [name, statements, line, undo = []] of PLANTED) {
   })
 }
 
-const REFUSED: [string, ReturnType<typeof sql>][] = [
-  ['DELETE de auth.user', sql`delete from auth.user`],
-  ['DELETE de auth.account', sql`delete from auth.account`],
-  // Step 4, decision 8: the Hub never deletes a company, a member or an invitation.
-  ['DELETE de auth.company', sql`delete from auth.company`],
-  ['DELETE de auth.member', sql`delete from auth.member`],
-  ['DELETE de auth.invitation', sql`delete from auth.invitation`],
-  // Step 4.2: the Hub never deletes a client; step 5 brings that grant.
-  ['DELETE de operations.client', sql`delete from operations.client`],
-  ['DDL em auth', sql`alter table auth.session add column planted text`],
-]
-for (const [name, statement] of REFUSED) {
-  test(`o login do Hub recebe 42501 em ${name}`, async (t) => {
-    const { database } = await createTestDatabase(t)
-    await assert.rejects(
-      database.installation((tx) => tx.execute(statement)),
-      (error: unknown) => {
-        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
-        assert.equal(error.cause.code, '42501')
-        return true
-      },
-    )
-  })
-}
-
-// The Hub's company login (hub_company), the one the grants of the copy alerts are for: hub_runtime
-// has no USAGE on these schemas, so its refusal would not say the grant is narrow.
+// The Hub's company login (hub_company) is the one the grants of the copy alerts are for: hub_runtime
+// has no USAGE on those schemas, so its refusal would not say the grant is narrow.
 const COMPANY_SCOPE = {
   kind: 'COMPANY',
   companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
   personId: PersonId.parse('someone'),
 } as const
 
-const COMPANY_REFUSED: [string, ReturnType<typeof sql>][] = [
-  ['UPDATE de copies.copy_run.whole', sql`update copies.copy_run set whole = true where false`],
+type Door = 'installation' | 'company'
+const REFUSED: [string, Door, ReturnType<typeof sql>][] = [
+  ['DELETE de auth.user', 'installation', sql`delete from auth.user`],
+  ['DELETE de auth.account', 'installation', sql`delete from auth.account`],
+  // Step 4, decision 8: the Hub never deletes a company, a member or an invitation.
+  ['DELETE de auth.company', 'installation', sql`delete from auth.company`],
+  ['DELETE de auth.member', 'installation', sql`delete from auth.member`],
+  ['DELETE de auth.invitation', 'installation', sql`delete from auth.invitation`],
+  // Step 4.2: the Hub never deletes a client; step 5 brings that grant.
+  ['DELETE de operations.client', 'installation', sql`delete from operations.client`],
+  ['DDL em auth', 'installation', sql`alter table auth.session add column planted text`],
+  [
+    'UPDATE de copies.copy_run.whole',
+    'company',
+    sql`update copies.copy_run set whole = true where false`,
+  ],
   [
     'UPDATE de notifications.alert_recipient',
+    'company',
     sql`update notifications.alert_recipient set email = '' where false`,
   ],
   [
     'UPDATE de notifications.copy_follower',
+    'company',
     sql`update notifications.copy_follower set created_at = now() where false`,
   ],
-  ['DELETE de notifications.copy_notice', sql`delete from notifications.copy_notice where false`],
+  [
+    'DELETE de notifications.copy_notice',
+    'company',
+    sql`delete from notifications.copy_notice where false`,
+  ],
   [
     'UPDATE de notifications.copy_notice.copy_name',
+    'company',
     sql`update notifications.copy_notice set copy_name = '' where false`,
   ],
+  [
+    'UPDATE de notifications.copy_notice.code',
+    'company',
+    sql`update notifications.copy_notice set code = code where false`,
+  ],
+  [
+    'UPDATE de notifications.copy_notice.run_id',
+    'company',
+    sql`update notifications.copy_notice set run_id = run_id where false`,
+  ],
 ]
-for (const [name, statement] of COMPANY_REFUSED) {
-  test(`o login da empresa recebe 42501 em ${name}`, async (t) => {
+for (const [name, door, statement] of REFUSED) {
+  test(`o login do Hub recebe 42501 em ${name}`, async (t) => {
     const { database } = await createTestDatabase(t)
     await assert.rejects(
-      database.command(COMPANY_SCOPE, (tx) => tx.execute(statement)),
+      door === 'company'
+        ? database.command(COMPANY_SCOPE, (tx) => tx.execute(statement))
+        : database.installation((tx) => tx.execute(statement)),
       (error: unknown) => {
         assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
         assert.equal(error.cause.code, '42501')
