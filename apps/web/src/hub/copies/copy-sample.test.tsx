@@ -23,6 +23,34 @@ test('a amostra completa não leva a marca de que há mais', async () => {
   expect(screen.queryByText('A cópia tem mais linhas que estas cinco.')).toBeNull()
 })
 
+test('a amostra mostra o tipo de cada coluna', async () => {
+  const columns = [
+    { name: 'NUNOTA', type: 'bigint', description: null, inactiveSince: null },
+    { name: 'CODPARC', type: 'text', description: null, inactiveSince: null },
+  ]
+  openCopies(server, { copies: [copy({ shown: { ...copy().shown, columns } })] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByRole('img', { name: 'Número' })).toBeTruthy()
+  expect(table.getByRole('img', { name: 'Texto' })).toBeTruthy()
+})
+
+test('uma coluna fora da definição fica só com o nome', async () => {
+  openCopies(server, { copies: [copy()] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByText('NUNOTA')).toBeTruthy()
+  expect(table.queryByRole('img')).toBeNull()
+})
+
+test('o número da linha', async () => {
+  openCopies(server, { copies: [copy()] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  const rows = table.getAllByRole('row').slice(1)
+  expect(rows.map((row) => row.querySelector('td')?.textContent)).toEqual(['1', '2', '3', '4', '5'])
+  const head = table.getAllByRole('columnheader')[0]
+  expect(head?.textContent).toBe('Linha')
+  expect(head?.querySelector('span')?.className).toContain('sr-only')
+})
+
 test('o desenvolvedor não vê a aba Amostra', async () => {
   openCopies(server, { copies: [copy()] }, detailOf(VENDAS), 'developer')
   await screen.findByRole('heading', { name: 'vendas' })
@@ -51,9 +79,11 @@ test('a amostra que falha tem Tentar de novo', async () => {
   expect(await screen.findByText('Cinco linhas da cópia.')).toBeTruthy()
 })
 
-test('o desenvolvedor que abre ?tab=sample cai em Colunas, sem a amostra', async () => {
+test('o desenvolvedor que abre ?tab=sample cai na Visão geral, sem a amostra', async () => {
   openCopies(server, { copies: [copy()] }, SAMPLE, 'developer')
   await screen.findByRole('heading', { name: 'vendas' })
-  expect(screen.getByRole('tab', { name: 'Colunas' }).getAttribute('aria-selected')).toBe('true')
+  expect(screen.getByRole('tab', { name: 'Visão geral' }).getAttribute('aria-selected')).toBe(
+    'true',
+  )
   expect(screen.queryByText('Cinco linhas da cópia.')).toBeNull()
 })

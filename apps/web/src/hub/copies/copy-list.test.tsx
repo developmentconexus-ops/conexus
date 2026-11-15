@@ -213,11 +213,23 @@ test('a origem da cópia', async () => {
   const row = await rowOf('Os pedidos de cada loja')
   fireEvent.click(within(row).getByRole('link', { name: 'ml_pedidos' }))
   await screen.findByRole('heading', { name: 'ml_pedidos' })
-  const columns = within(screen.getByRole('table'))
+  const overview = within(screen.getByRole('tabpanel'))
+  expect(overview.getByText('Loja A, Loja B')).toBeTruthy()
+  expect(overview.getByText('só o alterado')).toBeTruthy()
+  fireEvent.click(screen.getByRole('tab', { name: /Colunas/ }))
+  const columns = within(await screen.findByRole('table'))
   expect(columns.getByText('O número do pedido')).toBeTruthy()
   expect(columns.getByText('Número')).toBeTruthy()
   // A column with no description: its name and the type in words alone.
   expect(columns.getByText('Data e hora')).toBeTruthy()
-  expect(screen.getByText('Loja A, Loja B')).toBeTruthy()
-  expect(screen.getByText('só o alterado')).toBeTruthy()
+})
+
+test('a ligação com o nome do sistema não se repete no cabeçalho do grupo', async () => {
+  const sources = STORES.slice(0, 1).map((one) => ({
+    connection: { ...one.connection, name: 'Mercado Livre' },
+  }))
+  const orders = copy({ name: 'ml_pedidos', label: 'Pedidos', sources, shown: ORDERS_SHOWN })
+  openCopies(server, { copies: [orders], runs: [] }, LIST)
+  expect(await screen.findByText('Mercado Livre · 1 tabela')).toBeTruthy()
+  expect(screen.queryByText(/Mercado Livre · Mercado Livre/)).toBeNull()
 })
