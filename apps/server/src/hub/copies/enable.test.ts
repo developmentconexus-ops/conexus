@@ -85,6 +85,31 @@ test('ligar: a linha, o esquema e a tabela', async (t) => {
   await refusedWith('IDEMPOTENCY_CONFLICT', () => on.enable('clientes', { key }))
 })
 
+test('ligar: o banco recusa um column_state que não é objeto nem nulo', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  const scope = { kind: 'COMPANY', companyId: on.companyId, personId: null } as const
+  async function refusedWithCause(code: string, value: string) {
+    await assert.rejects(
+      on.hub.test.database.command(scope, (tx) =>
+        tx.execute(
+          sql`update copies.copy set column_state = ${sql.raw(value)} where id = ${copyId}`,
+        ),
+      ),
+      (error: unknown) => {
+        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+        assert.equal(error.cause.code, code)
+        return true
+      },
+    )
+  }
+  await refusedWithCause('23514', `'[]'::jsonb`)
+  await refusedWithCause('23502', 'null')
+  await on.hub.test.database.command(scope, (tx) =>
+    tx.execute(sql`update copies.copy set column_state = '{}'::jsonb where id = ${copyId}`),
+  )
+})
+
 async function connectionState(on: CopiesOn, state: string) {
   const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
   await client.connect()

@@ -71,7 +71,7 @@ export const copy = copies.table(
     // The table's rows after the last complete pass.
     rows: bigint('rows', { mode: 'number' }),
     lastRunId: uuid('last_run_id'),
-    // Each source column's state: when it last came in a row, and since when it has not (parte 1, C5).
+    // Each source column's state: when it last came in a row, and since when it has not.
     columnState: jsonb('column_state').notNull().default({}),
   },
   (table) => [
