@@ -1,4 +1,4 @@
-import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
+import { PROOF_PAGE_ROWS, SYSTEM_MESSAGE_MAX } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
@@ -111,6 +111,12 @@ export const copyRun = copies.table(
     pages: integer('pages').notNull().default(0),
     read: integer('read').notNull().default(0),
     written: integer('written').notNull().default(0),
+    // A pass that began every source from scratch; only the run's INSERT writes it.
+    whole: boolean('whole').notNull().default(false),
+    // What the source system said when it refused the read of a run that ended in ERROR; never the body.
+    systemStatus: integer('system_status'),
+    systemCode: text('system_code'),
+    systemMessage: text('system_message'),
   },
   (table) => [
     foreignKey({
@@ -122,6 +128,11 @@ export const copyRun = copies.table(
     check(
       'copy_run_outcome',
       sql`${table.outcome} IS NULL OR ${table.outcome} IN ('COMPLETE', 'PARTIAL', 'ERROR', 'INTERRUPTED')`,
+    ),
+    check('copy_run_system', sql`${table.systemStatus} IS NULL OR ${table.outcome} = 'ERROR'`),
+    check(
+      'copy_run_system_message',
+      sql`char_length(${table.systemMessage}) <= ${sql.raw(String(SYSTEM_MESSAGE_MAX))}`,
     ),
     // One open run per copy.
     uniqueIndex('copy_run_open_key').on(table.copyId).where(sql`${table.endedAt} IS NULL`),
