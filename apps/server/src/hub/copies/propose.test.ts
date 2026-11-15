@@ -18,7 +18,7 @@ test('propor: prova uma página e guarda só a contagem', async (t) => {
   const [row, ...more] = await proposalRows(on)
   assert.equal(more.length, 0)
   assert.equal(row.state, 'OPEN')
-  assert.equal(row.name, 'devolucoes')
+  assert.equal(row.name, 'sankhya_devolucoes')
   assert.equal(row.project_id, on.projectId)
   // The page of proof is 50 rows at most; the double's sales fill it and more follow.
   assert.deepEqual(
@@ -77,14 +77,14 @@ test('propor: as recusas', async (t) => {
   const malformed = await proposeAs(on, { definition: broken })
   assert.equal(malformed.kind, 'MALFORMED')
   assert.match(JSON.stringify(malformed), /definition\.key\.0: A key column is a bigint column/)
-  const badName = await proposeAs(on, { name: 'Devoluções' })
+  const badName = await proposeAs(on, { name: 'sankhya_Devoluções' })
   assert.equal(badName.kind, 'MALFORMED')
   assert.match(JSON.stringify(badName), /^\{"kind":"MALFORMED","issues":\["name: /)
   // A copy of the company, then the same copy released to this Projeto.
   const copyId = await on.enable('vendas')
-  assert.deepEqual(await proposeAs(on, { name: 'vendas' }), {
+  assert.deepEqual(await proposeAs(on, { name: 'sankhya_vendas' }), {
     kind: 'EXISTS',
-    name: 'vendas',
+    name: 'sankhya_vendas',
     releasedHere: false,
   })
   await on.copies.grant({
@@ -93,9 +93,9 @@ test('propor: as recusas', async (t) => {
     projectId: on.projectId,
     copyId,
   })
-  assert.deepEqual(await proposeAs(on, { name: 'vendas' }), {
+  assert.deepEqual(await proposeAs(on, { name: 'sankhya_vendas' }), {
     kind: 'EXISTS',
-    name: 'vendas',
+    name: 'sankhya_vendas',
     releasedHere: true,
   })
   // A role of the company's own that holds no read of the connection's door.
@@ -114,7 +114,28 @@ test('propor: as recusas', async (t) => {
   assert.deepEqual(await proposalRows(on), [])
   // An open proposal of the name.
   assert.equal((await proposeAs(on)).kind, 'PROPOSED')
-  assert.deepEqual(await proposeAs(on), { kind: 'EXISTS', name: 'devolucoes', releasedHere: false })
+  assert.deepEqual(await proposeAs(on), {
+    kind: 'EXISTS',
+    name: 'sankhya_devolucoes',
+    releasedHere: false,
+  })
+  assert.equal((await proposalRows(on)).length, 1)
+})
+
+test('propor: o nome sem o sistema na frente', async (t) => {
+  const on = await copiesOn(t)
+  await grantMatriz(on)
+  const bare = await proposeAs(on, { name: 'vendas' })
+  assert.equal(bare.kind, 'MALFORMED')
+  assert.match(JSON.stringify(bare), /name: COPY_NAME_PREFIX: the name starts with \\"sankhya_\\"/)
+  const tooLong = await proposeAs(on, { name: `sankhya_${'a'.repeat(33)}` })
+  assert.equal(tooLong.kind, 'MALFORMED')
+  const issues = Object(tooLong).issues
+  assert.ok(Array.isArray(issues) && issues.length > 0, JSON.stringify(tooLong))
+  assert.ok(issues.every((each: unknown) => String(each).startsWith('name:')))
+  assert.ok(!JSON.stringify(tooLong).includes('COPY_NAME_PREFIX'))
+  assert.deepEqual(await proposalRows(on), [])
+  assert.equal((await proposeAs(on, { name: 'sankhya_devolucoes' })).kind, 'PROPOSED')
   assert.equal((await proposalRows(on)).length, 1)
 })
 
@@ -124,9 +145,9 @@ test('propor: as formas de definição', async (t) => {
   const base = definitionOf(on)
   const { window: _window, ...noWindow } = base
   const shapes = {
-    inteira: { ...noWindow, changedSince: null },
-    alterado: noWindow,
-    janela: base,
+    sankhya_inteira: { ...noWindow, changedSince: null },
+    sankhya_alterado: noWindow,
+    sankhya_janela: base,
   }
   const modes: Record<string, unknown> = {}
   for (const [name, definition] of Object.entries(shapes)) {
@@ -135,9 +156,9 @@ test('propor: as formas de definição', async (t) => {
     modes[name] = Object(answer).mode
   }
   assert.deepEqual(modes, {
-    inteira: { kind: 'WHOLE' },
-    alterado: { kind: 'CHANGES' },
-    janela: { kind: 'WINDOW', days: base.window?.days },
+    sankhya_inteira: { kind: 'WHOLE' },
+    sankhya_alterado: { kind: 'CHANGES' },
+    sankhya_janela: { kind: 'WINDOW', days: base.window?.days },
   })
   const kept = await proposalRows(on)
   assert.deepEqual(

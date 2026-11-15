@@ -16,7 +16,7 @@ import { ordersConversing } from './test-orders-turn.ts'
 const PROPOSE = BUILDER_TOOL.copyPropose
 const SKILL = new URL('../../../../../packages/app/skills/conexus-data/SKILL.md', import.meta.url)
 
-/** A conversation whose model proposes the copy `devolucoes` from the double's sales query, once. */
+/** A conversation whose model proposes the copy `sankhya_devolucoes` from the double's sales query, once. */
 async function proposing(t: TestContext) {
   const calls: Sent[] = []
   const served = await sankhyaServed(t)
@@ -29,7 +29,7 @@ async function proposing(t: TestContext) {
       calls.push(asked)
       if (!asked.tools.includes(PROPOSE) || asked.toolResults.length > 0)
         return { kind: 'text', text: 'Pronto.' }
-      const input = { connections: ['Matriz'], name: 'devolucoes', label: 'Devoluções' }
+      const input = { connections: ['Matriz'], name: 'sankhya_devolucoes', label: 'Devoluções' }
       return {
         kind: 'blocks',
         blocks: [tool(PROPOSE, { ...input, definition: definitionOf.current })],

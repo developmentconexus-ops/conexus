@@ -143,7 +143,7 @@ test('a lista e as rodadas', async (t) => {
   assert.ok(model)
   assert.deepEqual(
     [copy.name, copy.label, copy.sources.map((each) => each.connection.id), copy.interval],
-    ['vendas', model.model.label, [on.connectionId], '30m'],
+    ['sankhya_vendas', model.model.label, [on.connectionId], '30m'],
   )
   assert.equal(copy.sources[0]?.connection.connector, 'sankhya')
   assert.ok((copy.sources[0]?.connection.name ?? '').length > 0)
@@ -245,7 +245,7 @@ test('a lista com as propostas', async (t) => {
   await grantMatriz(on)
   const definition = definitionOf(on)
   const open = await proposed(on)
-  const gone = await proposed(on, 'dispensada')
+  const gone = await proposed(on, 'sankhya_dispensada')
   assert.equal((await dismiss(on, on.ana, gone)).statusCode, 200)
   const { proposals } = await listedBy(on, on.ana)
   assert.deepEqual(
@@ -258,7 +258,7 @@ test('a lista com as propostas', async (t) => {
     { ...one, proved: { ...one.proved, rows: one.proved.rows > 0 } },
     {
       id: open,
-      name: 'devolucoes',
+      name: 'sankhya_devolucoes',
       label: 'Devoluções',
       sources: [{ connection: { id: on.connectionId, name: 'Matriz', connector: 'sankhya' } }],
       project: { id: on.projectId, name: 'Pedidos' },

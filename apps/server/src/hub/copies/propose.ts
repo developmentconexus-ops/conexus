@@ -12,6 +12,7 @@ import {
   lackedSourceReadOf,
 } from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
+import { namePrefixIssue } from './naming.ts'
 import type { CopiesDeps } from './store.ts'
 import { companyScope, originOf } from './store.ts'
 import { copy, copyProposal, copyProposalSource, projectCopy } from './tables.ts'
@@ -228,6 +229,8 @@ export async function propose(
   const sourced = await sourcesOf(deps, ids, { ...a, definition })
   if (sourced.kind !== 'SOURCES') return sourced
   const { sources, connector } = sourced
+  const prefixed = namePrefixIssue(connector, name)
+  if (prefixed !== undefined) return { kind: 'MALFORMED', issues: [prefixed] }
   const proved = await proofs(deps, ids, { ...a, definition, sources })
   if (proved.kind !== 'PROVED') return proved
   const { rows, more, counts } = proved

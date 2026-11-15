@@ -12,6 +12,7 @@ import { connectionForCopy } from '../connectors/public.ts'
 import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
 import { dropEndedCopies } from './leave.ts'
+import { modelCopyName } from './naming.ts'
 import { mayCreate } from './schedule.ts'
 import { sourcesOf } from './sources.ts'
 import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
@@ -70,7 +71,7 @@ async function fromModel(
   const row = await insertedCopy(tx, input, {
     connectorId: linked.connectorId,
     sources: [{ connectionId, accountRef: linked.accountRef }],
-    ...{ name: model.id, label: model.label },
+    ...{ name: modelCopyName(linked.connectorId, model.id), label: model.label },
     ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
   })
   return parsedCopy(row)

@@ -13,7 +13,7 @@ import { tool } from './test-questions.ts'
 const SKILL = new URL('../../../../../packages/app/skills/conexus-data/SKILL.md', import.meta.url)
 
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
-const COLUMN = 'select "CODVEND" from sync.vendas'
+const COLUMN = 'select "CODVEND" from sync.sankhya_vendas'
 
 /** A Projeto of Sankhya's `vendas` copy, run and released, and a model that checks and reads it. */
 async function turning(t: Parameters<typeof conversing>[0]) {
@@ -72,7 +72,7 @@ test('o app lê a cópia de qualquer conector', async (t) => {
   const { system } = first
   for (const part of [
     '## Data',
-    '`sync.vendas`',
+    '`sync.sankhya_vendas`',
     'through `db`',
     '`copy_propose`',
     '`connector_read`',
@@ -108,7 +108,7 @@ function proposalFrom(description: string) {
   assert.ok(connection?.name && read?.operation && read.field, description)
   return {
     connections: [connection.name],
-    name: 'ml_pedidos',
+    name: 'mercado_livre_pedidos',
     label: 'Pedidos',
     definition: {
       version: 2,

@@ -36,7 +36,7 @@ test('ligar a proposta libera ao Projeto', async (t) => {
   const made = await enableProposal(on, on.ana, proposalId, key)
   assert.equal(made.statusCode, 201, made.body)
   const copy = Object(made.json()).copy
-  assert.equal(copy.name, 'devolucoes')
+  assert.equal(copy.name, 'sankhya_devolucoes')
   assert.deepEqual(copy.projects, [{ id: on.projectId, name: 'Pedidos' }])
   assert.deepEqual(copy.mode, { kind: 'WINDOW', days: definition.window?.days })
   assert.equal(copy.interval, '1h')
@@ -57,10 +57,10 @@ test('ligar a proposta libera ao Projeto', async (t) => {
   const granted = await asSync(on.owner, (client) =>
     client.query(
       `select count(*)::int as n from information_schema.role_table_grants
-        where table_schema = 'sync' and table_name = 'devolucoes' and privilege_type = 'SELECT'`,
+        where table_schema = 'sync' and table_name = 'sankhya_devolucoes' and privilege_type = 'SELECT'`,
     ),
   )
-  assert.ok(Number(granted.rows[0]?.n) > 0, 'a SELECT grant on sync.devolucoes')
+  assert.ok(Number(granted.rows[0]?.n) > 0, 'a SELECT grant on sync.sankhya_devolucoes')
   // The first run starts.
   assert.equal((await firstEnded(on, copy.id)).outcome.kind, 'COMPLETE')
   const again = await enableProposal(on, on.ana, proposalId, key)
@@ -86,7 +86,7 @@ test('dois cliques em duas abas', async (t) => {
   assert.equal(codeOf(late), 'COPY_PROPOSAL_DECIDED')
   const copies = await on.hub.test.asOwner('select id from copies.copy')
   assert.equal(copies.length, 1)
-  const other = await proposed(on, 'outra')
+  const other = await proposed(on, 'sankhya_outra')
   assert.equal((await dismiss(on, on.ana, other)).statusCode, 200)
   const dismissed = await enableProposal(on, on.ana, other)
   assert.equal(dismissed.statusCode, 409, dismissed.body)
@@ -118,7 +118,10 @@ test('a mesma chave ao mesmo tempo dá a mesma cópia', async (t) => {
   const on = await copiesOn(t)
   await grantMatriz(on)
   // The Projeto's database exists already, so only the Hub's lock is left to race on.
-  assert.equal((await enableProposal(on, on.ana, await proposed(on, 'antes'))).statusCode, 201)
+  assert.equal(
+    (await enableProposal(on, on.ana, await proposed(on, 'sankhya_antes'))).statusCode,
+    201,
+  )
   const proposalId = await proposed(on)
   const key = randomUUID()
   const [first, second] = await Promise.all([
@@ -167,7 +170,7 @@ test('dispensar', async (t) => {
   assert.equal(repeated.statusCode, 200, repeated.body)
   assert.equal(on.hub.lines.filter((each) => each.message === 'COPY_PROPOSAL_DISMISSED').length, 1)
   assert.equal(codeOf(await dismiss(on, on.carla, proposalId)), 'NOT_FOUND')
-  const accepted = await proposed(on, 'aceita')
+  const accepted = await proposed(on, 'sankhya_aceita')
   assert.equal((await enableProposal(on, on.ana, accepted)).statusCode, 201)
   const late = await dismiss(on, on.ana, accepted)
   assert.equal(late.statusCode, 409, late.body)

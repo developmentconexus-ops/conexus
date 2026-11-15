@@ -75,12 +75,14 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
   const vendas = await released(on, 'vendas')
   const clientes = await released(on, 'clientes')
   await on.copies.pause({ companyId: on.companyId, personId: on.anaId, copyId: clientes })
-  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.vendas'), { rows: 183 })
+  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.sankhya_vendas'), {
+    rows: 183,
+  })
 
   const gone = await unlink(on, on.connections, on.connectionId)
   assert.deepEqual([gone.statusCode, Object(gone.json()).tablesLeft], [200, []])
   assert.deepEqual(await copiesLeft(on), [], 'a cópia de uma conexão acaba com ela, pausada também')
-  for (const name of ['vendas', 'clientes'])
+  for (const name of ['sankhya_vendas', 'sankhya_clientes'])
     assert.deepEqual(await asApp(on.owner, on.projectId, `select * from sync.${name}`), {
       refused: '42P01',
     })
@@ -94,7 +96,7 @@ test('desligar tira as linhas e a leitura do app', async (t) => {
   })
   assert.notEqual(again, vendas)
   assert.deepEqual(
-    await asApp(on.owner, on.projectId, 'select * from sync.vendas'),
+    await asApp(on.owner, on.projectId, 'select * from sync.sankhya_vendas'),
     { refused: '42501' },
     'a cópia nova com o mesmo nome começa sem a leitura do app',
   )
@@ -131,11 +133,11 @@ test('desligar com o banco da empresa calado na leitura dos apps: nada muda, e d
   assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'COPY_DATABASE_UNAVAILABLE'])
   const still = await call(on.hub, on.ana, 'GET', `${on.connections}/${on.connectionId}`)
   assert.equal(still.statusCode, 200, 'a conexão continua')
-  assert.deepEqual(await copiesLeft(on), ['vendas'])
+  assert.deepEqual(await copiesLeft(on), ['sankhya_vendas'])
   silent.mock.restore()
   const again = await unlink(on, on.connections, on.connectionId)
   assert.deepEqual([again.statusCode, Object(again.json()).tablesLeft], [200, []])
-  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.vendas'), {
+  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.sankhya_vendas'), {
     refused: '42P01',
   })
 })
@@ -202,9 +204,9 @@ test('desligar tira as linhas e a leitura do app: o banco da empresa calado depo
     kind: 'NO_ANSWER' as const,
   }))
   const gone = await unlink(on, on.connections, on.connectionId)
-  assert.deepEqual([gone.statusCode, Object(gone.json()).tablesLeft], [200, ['vendas']])
+  assert.deepEqual([gone.statusCode, Object(gone.json()).tablesLeft], [200, ['sankhya_vendas']])
   assert.deepEqual(
-    await asApp(on.owner, on.projectId, 'select * from sync.vendas'),
+    await asApp(on.owner, on.projectId, 'select * from sync.sankhya_vendas'),
     { refused: '42501' },
     'a tabela ficou, mas nenhum app a lê',
   )
@@ -212,7 +214,7 @@ test('desligar tira as linhas e a leitura do app: o banco da empresa calado depo
   assert.equal(missing.statusCode, 404, 'a conexão já não existe')
   assert.deepEqual(await copiesLeft(on), [])
   const left = await on.hub.test.asOwner('select name from copies.copy_table_left')
-  assert.deepEqual(left, [{ name: 'vendas' }])
+  assert.deepEqual(left, [{ name: 'sankhya_vendas' }])
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_TABLES_LEFT'))
   silent.mock.restore()
 
@@ -224,7 +226,7 @@ test('desligar tira as linhas e a leitura do app: o banco da empresa calado depo
     attemptKey: randomUUID(),
   })
   assert.deepEqual(await on.hub.test.asOwner('select name from copies.copy_table_left'), [])
-  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.vendas'), {
+  assert.deepEqual(await asApp(on.owner, on.projectId, 'select * from sync.sankhya_vendas'), {
     refused: '42P01',
   })
 })
