@@ -29,20 +29,20 @@ lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
 O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
 chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
-do contrato podem estar as nossas cópias, no banco de cada empresa; as ferramentas ao vivo pela
-Nango, como o Gmail, que o agente consulta e nunca copia; e, mais tarde, a plataforma de dados ou o
+do contrato podem estar as nossas cópias, no banco de cada empresa; as ferramentas ao vivo do
+kit, como o Gmail, que o agente consulta e nunca copia; e, mais tarde, a plataforma de dados ou o
 banco que a empresa já tem, como o seu exemplo do Databricks ou os bancos que o Mitra liga direto.
 Ideia nova entra pelo único estudo aberto de uma
 trilha, nunca por fora do roteiro.
 
 As duas trilhas andam ao mesmo tempo, cada uma na ordem dos seus marcos. Cada página de
-trilha está em [steps/trilhas/](steps/trilhas/).
+trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilhas/dados-spec/README.md).
 
 **Trilha Dados.**
 
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
-| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pela Nango. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
+| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. |
 | `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no banco da empresa dentro do intervalo. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
 | `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
 | `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas de uma cópia ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
@@ -70,8 +70,9 @@ plano em `A3`, código e teste em `A1`, revisão em `A4`.
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
 bonitos e quebrados.
 
-**O que não se faz.** Conector novo no kit próprio para sistema que a Nango tem. A Fábrica de
-conectores na forma antiga: o esqueleto é uma função da Nango gerada do kit. Mais de um estudo aberto
+**O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
+a Nango fica fora do código. A Fábrica gera declarações do kit, escritas pela IA a partir
+da documentação e conferidas com uma leitura de teste. Mais de um estudo aberto
 por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
 agente. Transformações e histórico de mudanças antes de `D3`.
 
