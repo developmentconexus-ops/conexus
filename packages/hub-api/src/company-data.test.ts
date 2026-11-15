@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { DataSources } from './company-data.ts'
-import { Catalog, Described } from './company-data.ts'
-import type { DataWorld } from './company-data-conformance.ts'
+import { Catalog, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
 import { runDataConformance } from './company-data-conformance.ts'
+import type { DataWorld } from './company-data-world.ts'
 
 const ERP = '00000000-0000-4000-8000-0000000000e1'
 const BRANCH = '00000000-0000-4000-8000-0000000000e2'
@@ -112,12 +112,18 @@ const CATALOG = Catalog.parse({
   ],
 })
 
-type Answer<K extends 'rows' | 'live' | 'funnel'> = Awaited<ReturnType<DataSources[K]>>
+type Answer<K extends 'rows' | 'live' | 'funnel' | 'query'> = Awaited<ReturnType<DataSources[K]>>
+
+const QUERIES: DataWorld['queries'] = {
+  reads: 'select 1 from pedidos_abertos',
+  outside: 'select 1 from fora',
+  refused: 'select nao_existe',
+}
 
 function fakeWorld(): DataWorld {
-  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], signals: [] }
-  const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [] }
-  const isDown = { catalog: false, rows: false }
+  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], query: [], signals: [] }
+  const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [], query: [] }
+  const isDown = { catalog: false, rows: false, query: false }
   const sources: DataSources = {
     async catalog({ signal }) {
       reached.signals.push(signal)
@@ -139,6 +145,27 @@ function fakeWorld(): DataWorld {
       gave.live.push(answer)
       return answer
     },
+    async query({ sql, signal }) {
+      reached.signals.push(signal)
+      if (!isDown.query) reached.query.push(sql)
+      const answer: Answer<'query'> = isDown.query
+        ? { kind: 'TABLE_UNAVAILABLE' }
+        : sql === QUERIES.refused
+          ? {
+              kind: 'QUERY_REFUSED',
+              sqlstate: '42703',
+              message: 'column "nao_existe" does not exist',
+            }
+          : {
+              kind: 'ROWS',
+              columns: ['?column?'],
+              rows: [[1]],
+              complete: false,
+              used: [sql === QUERIES.outside ? 'fora' : 'pedidos_abertos'],
+            }
+      gave.query.push(answer)
+      return answer
+    },
     async funnel({ connection, operation, input, call, signal }) {
       reached.signals.push(signal)
       reached.funnel.push({ connection, operation, input, call })
@@ -151,6 +178,7 @@ function fakeWorld(): DataWorld {
     sources,
     reached,
     gave,
+    queries: QUERIES,
     down(part) {
       isDown[part] = true
     },
@@ -181,4 +209,21 @@ test('o contrato recusa a coluna inativa desde uma data que não é data', () =>
   assert.ok(column)
   const dated = { ...first, columns: [{ ...column, inactiveSince: 'ontem' }, ...columns] }
   assert.equal(Catalog.safeParse({ ...CATALOG, tables: [dated, ...rest] }).success, false)
+})
+
+test('o pedido de consulta tira os espaços das pontas e recusa o texto vazio ou maior que o teto', () => {
+  assert.equal(ReadRequest.parse({ kind: 'QUERY', sql: '  select 1  ' }).kind, 'QUERY')
+  assert.deepEqual(ReadRequest.parse({ kind: 'QUERY', sql: '  select 1  ' }), {
+    kind: 'QUERY',
+    sql: 'select 1',
+  })
+  assert.equal(ReadRequest.safeParse({ kind: 'QUERY', sql: ' ' }).success, false)
+  assert.equal(
+    ReadRequest.safeParse({ kind: 'QUERY', sql: 'x'.repeat(QUERY_SQL_MAX) }).success,
+    true,
+  )
+  assert.equal(
+    ReadRequest.safeParse({ kind: 'QUERY', sql: 'x'.repeat(QUERY_SQL_MAX + 1) }).success,
+    false,
+  )
 })
