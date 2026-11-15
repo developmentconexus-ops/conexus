@@ -48,8 +48,8 @@ domingos de madrugada, que relê tudo e apaga da cópia o que foi apagado no sis
 6. Diga o que viu e aprove os textos das telas.
 
 **O que você faz, e quando.** Antes: nada; o Hub no ar já tem uma empresa de teste com o Sankhya e a
-cópia de vendas. No começo: aprova esta página e escolhe as letras abaixo. No meio: dá a palavra da
-permissão (letra A) no PR dela. No fim: faz o roteiro, diz o que viu e aprova os textos das telas,
+cópia de vendas. No começo: aprova esta página; as letras você já escolheu. No meio: dá a palavra
+de merge do PR da permissão (letra A). No fim: faz o roteiro, diz o que viu e aprova os textos das telas,
 que cada PR lista.
 
 **Fica de fora.**
@@ -78,7 +78,9 @@ que cada PR lista.
   aparece numa consulta que pede todas as colunas) não traz dado da empresa, e o conserto pede uma
   escolha entre uma permissão por coluna e uma visão.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Escolhidas por você em 2026-11-15: "2. A1 / 3. B1". As sete
+permissões entram num PR só, e a página da tabela abre na Visão geral. As letras ficam abaixo como
+foram postas.
 
 - **A. As permissões da passada semanal e dos avisos** (data D11: uma permissão nova no banco do
   Hub pede a sua palavra, num PR só dela). As tabelas e as colunas estão no PR 1088. O que o login do
