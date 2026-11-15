@@ -1,6 +1,7 @@
 import type { ConnectorEntry, CopySummary } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { Badge } from '../../ui/badge.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { ConnectorLogo } from '../connectors/public.ts'
 import {
@@ -67,7 +68,9 @@ export function OverviewTab({ copy }: { copy: CopySummary }) {
   const { description, key, source } = copy.shown
   return (
     <div className="flex min-w-0 flex-col gap-lg">
-      <p className="max-w-message text-text-2">{description ?? NO_DESCRIPTION}</p>
+      <p className={cn('max-w-message', description === null && 'text-text-2')}>
+        {description ?? NO_DESCRIPTION}
+      </p>
       <dl className="grid gap-md sm:grid-cols-2">
         <Line label={OVERVIEW_LABELS.connection}>
           {copy.sources.map((one) => one.connection.name).join(', ')}
@@ -92,7 +95,7 @@ export function DetailsPanel(props: {
   return (
     <aside
       aria-labelledby="table-details"
-      className="flex min-w-0 flex-col gap-md md:w-list md:shrink-0"
+      className="flex min-w-0 flex-col gap-md pt-md md:w-list md:shrink-0 md:border-l md:border-line md:ps-lg"
     >
       <h2 id="table-details" className="text-label">
         {DETAILS_TITLE}

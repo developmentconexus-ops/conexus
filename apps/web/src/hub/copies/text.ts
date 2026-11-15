@@ -84,8 +84,9 @@ export const KEPT_IN_HUB =
 
 /** The line under a table's title: when the last pass copied it and how many rows, never an hour of a run that did not copy. */
 export function copiedText(system: string, copy: Pick<CopySummary, 'run' | 'rows'>): string {
-  const rows = copy.rows === null ? '' : ` · ${countText(copy.rows)} linhas`
   if (copy.run === null) return `${system} · a primeira rodada ainda não terminou`
+  if (copy.rows === null) return system
+  const rows = ` · ${countText(copy.rows)} linhas`
   const { outcome, endedAt } = copy.run
   if (endedAt !== null && (outcome.kind === 'COMPLETE' || outcome.kind === 'PARTIAL')) {
     return `Copiada do ${system} em ${dayAndHour(endedAt)}${rows}`

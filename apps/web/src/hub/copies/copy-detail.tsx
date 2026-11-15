@@ -115,10 +115,11 @@ function inactiveOf(copy: CopySummary) {
 }
 
 /**
- * **A tabela** (Dados, parte 1; web W29, W34): its name, state and system on top, then the tabs
- * **Visão geral** (the one it opens on), **Colunas**, **Amostra** (for whoever may read rows) and **Rodadas**, the tab in the address, with
- * the panel of where it comes from beside. A column the source stopped sending is told on top.
- * The route's loader has already refused a copy the Hub does not have.
+ * **A tabela** (Dados, parte 1; web W29, W34): the path, the system's logo, the name and state and
+ * the line of when it was last copied on top, then a bar with the tabs **Visão geral** (the one it
+ * opens on), **Colunas**, **Amostra** (for whoever may read rows) and **Rodadas**, the tab in the
+ * address, and under it the tab beside the panel **Detalhes**. A column the source stopped sending
+ * is told on top. The route's loader has already refused a copy the Hub does not have.
  */
 export function CopyDetail(props: {
   companyId: CompanyId
@@ -206,46 +207,48 @@ export function CopyDetail(props: {
           </Link>
         </div>
       )}
-      <div className="flex min-w-0 flex-col gap-lg md:flex-row">
-        <Tabs
-          value={tab}
-          className="min-w-0 flex-1"
-          onValueChange={(next) => {
-            const chosen = TableTab.safeParse(next)
-            if (chosen.success) {
-              void navigate({
-                to: '.',
-                search: (old) => ({ ...old, tab: chosen.data, page: undefined }),
-              })
-            }
-          }}
-        >
-          <TabsList aria-label="Tabela" className="max-w-full flex-wrap">
-            <TabsTrigger value={TableTab.enum.overview}>{OVERVIEW_TITLE}</TabsTrigger>
-            <TabsTrigger value={TableTab.enum.columns}>
-              {COLUMNS_TITLE}{' '}
-              <span className="text-text-2 tabular-nums">{copy.shown.columns.length}</span>
-            </TabsTrigger>
-            {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
-            <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
-          </TabsList>
-          <TabsContent value={TableTab.enum.overview} className="pt-md">
-            <OverviewTab copy={copy} />
-          </TabsContent>
-          <TabsContent value={TableTab.enum.columns} className="pt-md">
-            <ColumnsTab copy={copy} />
-          </TabsContent>
-          {mayReadRows && (
-            <TabsContent value={TableTab.enum.sample} className="pt-md">
-              <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
+      <Tabs
+        value={tab}
+        className="min-w-0"
+        onValueChange={(next) => {
+          const chosen = TableTab.safeParse(next)
+          if (chosen.success) {
+            void navigate({
+              to: '.',
+              search: (old) => ({ ...old, tab: chosen.data, page: undefined }),
+            })
+          }
+        }}
+      >
+        <TabsList aria-label="Tabela" className="w-full max-w-full flex-wrap border-b border-line">
+          <TabsTrigger value={TableTab.enum.overview}>{OVERVIEW_TITLE}</TabsTrigger>
+          <TabsTrigger value={TableTab.enum.columns}>
+            {COLUMNS_TITLE}{' '}
+            <span className="text-text-2 tabular-nums">{copy.shown.columns.length}</span>
+          </TabsTrigger>
+          {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
+          <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
+        </TabsList>
+        <div className="flex min-w-0 flex-col gap-lg md:flex-row">
+          <div className="min-w-0 flex-1">
+            <TabsContent value={TableTab.enum.overview} className="pt-md">
+              <OverviewTab copy={copy} />
             </TabsContent>
-          )}
-          <TabsContent value={TableTab.enum.runs} className="pt-md">
-            <Runs runs={runs} next={next} page={page} />
-          </TabsContent>
-        </Tabs>
-        <DetailsPanel copy={copy} system={system} entry={entry} />
-      </div>
+            <TabsContent value={TableTab.enum.columns} className="pt-md">
+              <ColumnsTab copy={copy} />
+            </TabsContent>
+            {mayReadRows && (
+              <TabsContent value={TableTab.enum.sample} className="pt-md">
+                <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
+              </TabsContent>
+            )}
+            <TabsContent value={TableTab.enum.runs} className="pt-md">
+              <Runs runs={runs} next={next} page={page} />
+            </TabsContent>
+          </div>
+          <DetailsPanel copy={copy} system={system} entry={entry} />
+        </div>
+      </Tabs>
     </div>
   )
 }

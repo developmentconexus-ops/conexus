@@ -46,7 +46,9 @@ test('o número da linha', async () => {
   const table = within(await screen.findByRole('table'))
   const rows = table.getAllByRole('row').slice(1)
   expect(rows.map((row) => row.querySelector('td')?.textContent)).toEqual(['1', '2', '3', '4', '5'])
-  expect(table.getAllByRole('columnheader')[0]?.textContent).toBe('Linha')
+  const head = table.getAllByRole('columnheader')[0]
+  expect(head?.textContent).toBe('Linha')
+  expect(head?.querySelector('span')?.className).toContain('sr-only')
 })
 
 test('o desenvolvedor não vê a aba Amostra', async () => {
