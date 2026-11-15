@@ -1,7 +1,8 @@
-import { createHash, randomBytes } from 'node:crypto'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { OAuthFake } from '../kernel/conformance-session.ts'
 import { serveOnLoopback } from '../kernel/loopback.ts'
+import type { Held } from '../kernel/oauth-double.ts'
+import { authorizePage, exchangeCode, nextKey, tokenRoute } from '../kernel/oauth-double.ts'
 import type { Route } from './fake-data.ts'
 import { APP, REDIRECT_URI as DEFAULT_REDIRECT_URI, me, SELLER } from './fake-data.ts'
 import { ROUTES } from './fake-routes.ts'
@@ -54,19 +55,12 @@ export type MercadoLivreFake = OAuthFake &
   }>
 
 type Account = { ref: string; label: string }
-type Code = {
-  challenge: string
-  redirectUri: string
-  account: Account
-  operator: boolean
-  used: boolean
-}
-
 /** What the double remembers: the codes, the keys it issued and how many renewals it answered. */
 type World = {
+  app: typeof APP
   switches: Switches
   redirectUri: string
-  codes: Map<string, Code>
+  codes: Map<string, Held<{ account: Account; operator: boolean }>>
   access: Map<string, { ref: string; expired: boolean }>
   refresh: Map<string, Account & { current: boolean }>
   count: { issued: number; renewals: number; unmarked: number }
@@ -81,16 +75,11 @@ function oauthError(error: string, status: number): Response {
   return json({ message: error, error, status, cause: [] }, status)
 }
 
-function next(world: World, prefix: string): string {
-  world.count.issued += 1
-  return `${prefix}-${world.count.issued}-${randomBytes(6).toString('hex')}`
-}
-
 /** New keys for an account: the refresh key it had before stops being the current one. */
 function issue(world: World, account: Account): Response {
   for (const held of world.refresh.values()) if (held.ref === account.ref) held.current = false
-  const accessToken = next(world, 'APP_USR')
-  const refreshToken = next(world, 'TG')
+  const accessToken = nextKey(world, 'APP_USR')
+  const refreshToken = nextKey(world, 'TG')
   world.access.set(accessToken, { ref: account.ref, expired: false })
   world.refresh.set(refreshToken, { ...account, current: true })
   return json({
@@ -103,55 +92,30 @@ function issue(world: World, account: Account): Response {
   })
 }
 
-function redirect(location: URL): Response {
-  return new Response(null, { status: 302, headers: { location: location.href } })
-}
-
 function authorization(world: World, url: URL): Response {
-  const q = url.searchParams
-  const right =
-    q.get('response_type') === 'code' &&
-    q.get('client_id') === APP.clientId &&
-    q.get('redirect_uri') === world.redirectUri &&
-    q.get('code_challenge_method') === 'S256' &&
-    (q.get('code_challenge') ?? '') !== '' &&
-    (q.get('state') ?? '') !== ''
-  if (!right) return oauthError('invalid_request', 400)
   const { switches } = world
-  const back = new URL(world.redirectUri)
-  back.searchParams.set('state', q.get('state') ?? '')
-  if (switches.refuse) {
-    switches.refuse = false
-    back.searchParams.set('error', 'access_denied')
-    return redirect(back)
-  }
-  const code = next(world, 'TG')
-  world.codes.set(code, {
-    challenge: q.get('code_challenge') ?? '',
-    redirectUri: world.redirectUri,
-    account: { ...switches.account },
-    operator: switches.operator,
-    used: false,
+  return authorizePage(world, url, {
+    prefix: 'TG',
+    invalid: () => oauthError('invalid_request', 400),
+    refuses: () => {
+      const refuse = switches.refuse
+      switches.refuse = false
+      return refuse
+    },
+    extra: () => ({ account: { ...switches.account }, operator: switches.operator }),
   })
-  back.searchParams.set('code', code)
-  return redirect(back)
 }
 
 function exchange(world: World, form: URLSearchParams): Response {
-  const held = world.codes.get(form.get('code') ?? '')
-  if (!held || held.used) return oauthError('invalid_grant', 400)
-  held.used = true // spent even when the rest is wrong
-  const challenge = createHash('sha256')
-    .update(form.get('code_verifier') ?? '')
-    .digest('base64url')
-  if (challenge !== held.challenge || form.get('redirect_uri') !== held.redirectUri)
-    return oauthError('invalid_grant', 400)
-  if (held.operator) {
-    world.switches.operator = false
-    const message = 'invalid_operator_user_id'
-    return json({ message, error: 'invalid_grant', status: 400, cause: [] }, 400)
-  }
-  return issue(world, held.account)
+  return exchangeCode(world, form, {
+    invalid: () => oauthError('invalid_grant', 400),
+    issue: (held) => {
+      if (!held.operator) return issue(world, held.account)
+      world.switches.operator = false
+      const message = 'invalid_operator_user_id'
+      return json({ message, error: 'invalid_grant', status: 400, cause: [] }, 400)
+    },
+  })
 }
 
 async function renew(world: World, form: URLSearchParams): Promise<Response> {
@@ -163,16 +127,6 @@ async function renew(world: World, form: URLSearchParams): Promise<Response> {
   if (switches.revoke || !held?.current) return oauthError('invalid_grant', 400)
   world.count.renewals += 1
   return issue(world, held)
-}
-
-async function token(world: World, request: Request): Promise<Response> {
-  const form = new URLSearchParams(await request.text())
-  if (form.get('client_id') !== APP.clientId || form.get('client_secret') !== APP.clientSecret)
-    return oauthError('invalid_client', 401)
-  const grant = form.get('grant_type')
-  if (grant === 'authorization_code') return exchange(world, form)
-  if (grant === 'refresh_token') return renew(world, form)
-  return oauthError('unsupported_grant_type', 400)
 }
 
 function forbidden(): Response {
@@ -256,7 +210,8 @@ async function handle(world: World, request: Request): Promise<Response> {
   const url = new URL(request.url)
   if (url.pathname === '/authorization' && request.method === 'GET')
     return authorization(world, url)
-  if (url.pathname === '/oauth/token' && request.method === 'POST') return token(world, request)
+  if (url.pathname === '/oauth/token' && request.method === 'POST')
+    return tokenRoute(world, request, oauthError, { exchange, renew })
   if (request.method === 'DELETE' && url.pathname.startsWith('/users/'))
     return revoke(world, request, url)
   if (request.method !== 'GET') return json({ message: 'Method not allowed', status: 405 }, 405)
@@ -291,6 +246,7 @@ export function mercadoLivreFake({
     expiresInSeconds: 21_600,
   }
   const world: World = {
+    app: APP,
     switches,
     redirectUri,
     codes: new Map(),

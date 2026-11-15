@@ -1,6 +1,19 @@
-import type { z } from 'zod'
+import { z } from 'zod'
 import type { Native, ProviderAnswer, ProviderRequest, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
+
+/** The token answer of RFC 6749 §5.1: the key, the renewal key when one comes, and the seconds the key lasts. */
+export const rfc6749Answer = z
+  .object({
+    access_token: z.string().min(1).max(8192),
+    refresh_token: z.string().min(1).max(8192).optional(),
+    expires_in: z.number().int().positive(),
+  })
+  .transform(({ access_token, refresh_token, expires_in }) => ({
+    accessToken: access_token,
+    ...(refresh_token === undefined ? {} : { refreshToken: refresh_token }),
+    expiresInSeconds: expires_in,
+  }))
 
 /** The installation's app: the Hub reads it from a file (S31) and hands it in; the kit never keeps it (S36). */
 export type AppKeys = Readonly<{ clientId: string; clientSecret: string }>

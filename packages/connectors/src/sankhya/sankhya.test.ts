@@ -51,10 +51,10 @@ test('o modelo clientes não copia CGC_CPF e o declara aposentado', () => {
   assert.ok(!clientes.definition.source.sql.includes('CGC_CPF'))
 })
 
-test('o catálogo tem o Sankhya e o Mercado Livre, o Sankhya achado pelo id', () => {
+test('o catálogo tem o Sankhya, o Mercado Livre e o HubSpot, o Sankhya achado pelo id', () => {
   assert.deepEqual(
     CONNECTORS.map((connector) => connector.id),
-    ['sankhya', 'mercado-livre'],
+    ['sankhya', 'mercado-livre', 'hubspot'],
   )
   assert.equal(connectorOf('sankhya'), sankhya)
   assert.equal(connectorOf('Sankhya'), undefined)

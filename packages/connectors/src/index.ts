@@ -1,16 +1,18 @@
+import { hubspot } from './hubspot/definition.ts'
 import type { Connector } from './kernel/definition.ts'
 import { ConnectorId } from './kernel/definition.ts'
 import { mercadoLivre } from './mercado-livre/definition.ts'
 import { sankhya } from './sankhya/definition.ts'
 
 /** The catalog the Hub lists (one owner, C26). */
-export const CONNECTORS: readonly Connector[] = [sankhya, mercadoLivre]
+export const CONNECTORS: readonly Connector[] = [sankhya, mercadoLivre, hubspot]
 
 export function connectorOf(id: string): Connector | undefined {
   const parsed = ConnectorId.safeParse(id)
   return parsed.success ? CONNECTORS.find((connector) => connector.id === parsed.data) : undefined
 }
 
+export { hubspotFake } from './hubspot/fake.ts'
 export {
   type Auth,
   type ClientCredentialsAuth,
