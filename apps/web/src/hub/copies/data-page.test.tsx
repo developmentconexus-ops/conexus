@@ -132,7 +132,9 @@ test('Dados: a camada fica no endereço', async () => {
   fireEvent.mouseDown(await screen.findByRole('tab', { name: /Negócio/ }), { button: 0 })
   fireEvent.click(screen.getByRole('tab', { name: /Negócio/ }))
   expect(await screen.findByText('Nenhum conceito aprovado ainda')).toBeTruthy()
-  expect(within(screen.getByRole('tablist')).getByRole('tab', { name: /Bruto/ })).toBeTruthy()
+  expect(
+    within(screen.getByRole('tablist', { name: 'Camada' })).getByRole('tab', { name: /Bruto/ }),
+  ).toBeTruthy()
 })
 
 test('Cópias leva a Dados', async () => {
