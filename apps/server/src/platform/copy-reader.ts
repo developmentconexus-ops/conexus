@@ -2,7 +2,14 @@ import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { appLoginPassword } from '@conexus/hub-api'
 import type { Context, ReadResult, SqlAnswer, SqlStatement } from './app-sql.ts'
 import { missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
-import { budget, DUPLICATE_OBJECT, READ_LOGIN, SYNC_LOGIN, SYNC_SCHEMA } from './copy-sql.ts'
+import {
+  budget,
+  DUPLICATE_OBJECT,
+  READ_LOGIN,
+  ROLES_LOCK,
+  SYNC_LOGIN,
+  SYNC_SCHEMA,
+} from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { COMPANY_DATABASE } from './neon.ts'
 
@@ -20,6 +27,7 @@ async function ensureReader(context: Context, owner: DatabaseUrl): Promise<SqlAn
     return context.transport(
       owner,
       [
+        ROLES_LOCK,
         ...created,
         { text: `ALTER ROLE ${read} SET search_path = ${SYNC_SCHEMA}` },
         { text: `ALTER ROLE ${read} SET default_transaction_read_only = on` },

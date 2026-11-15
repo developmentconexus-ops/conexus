@@ -103,6 +103,13 @@ export function budget(signal?: AbortSignal): AbortSignal {
 export const DUPLICATE_OBJECT = '42710'
 
 /**
+ * First statement of the transaction that makes the company's logins: PostgreSQL refuses two
+ * `ALTER ROLE` of one role made together (`XX000`), so the acts of one company's database take turns.
+ * The loser then finds the login made and its `CREATE ROLE` refused as `DUPLICATE_OBJECT`, which is repeated.
+ */
+export const ROLES_LOCK: SqlStatement = { text: 'SELECT pg_advisory_xact_lock(4207000002)' }
+
+/**
  * The `sync` schema and the login that owns it, as the company's owner, who holds that login by SET
  * alone, as it holds an app's migration login (decision 0043). What a cut act left is found.
  */
@@ -115,6 +122,7 @@ export async function ensureSync(context: Context, owner: DatabaseUrl): Promise<
     return context.transport(
       owner,
       [
+        ROLES_LOCK,
         ...created,
         { text: `GRANT ${sync} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE` },
         { text: `CREATE SCHEMA IF NOT EXISTS ${SYNC_SCHEMA} AUTHORIZATION ${sync}` },
