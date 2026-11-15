@@ -49,8 +49,10 @@ fora pela sua palavra.
 **O que o rastro guarda, e o que isso pede de você.**
 
 - **Conteúdo completo.** O texto que a pessoa escreveu, as instruções, a resposta do modelo e a
-  resposta de cada ferramenta como o modelo a viu. De uma ligação, o modelo recebe o
-  que o papel de quem conversa lê. Então o rastro guarda dado pessoal da empresa, no Brasil,
+  resposta de cada ferramenta como o modelo a viu. De uma ligação, o modelo só vê o que o
+  `readThrough` deixa: o Assistente, o Builder e as cópias não recebem o tipo documento, mas recebem
+  nome, contato e endereço; a porta genérica do Sankhya (`consultar`, `carregar`) ainda entrega o
+  CPF ao Assistente, pela sua decisão G. Então o rastro guarda dado pessoal da empresa, no Brasil,
   dentro do banco do Mastra, pelo prazo da letra B. A regra S41 do guia de segurança (nada de texto
   de pessoa em log nem em trecho) passa a valer para o log e para o que sai; o rastro do Mastra no
   banco dele fica de fora dela, pela decisão 0068. A frase entra no guia no fechamento desta etapa,
