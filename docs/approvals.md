@@ -1150,3 +1150,7 @@ Em 2026-11-15, como mudança de método (L20), à pergunta sobre qual padrão o 
 ## O cartão da Ontologia da empresa sai sem a etapa fechar
 
 Em 2026-11-15, à pergunta de como dar a vez ao cartão novo da trilha Dados (aposentar o cartão antigo da Ontologia da empresa num pull request só de documento, com o PR 1030 aberto como fonte, ou manter o cartão novo em rascunho), o fundador disse: "Aposentar". O cartão `docs/steps/a-ontologia-da-empresa.md` sai; a Ontologia volta como a etapa do Negócio, com estudo e cartão próprios (delivery L5, L19).
+
+## O cartão A pergunta respondida com a origem
+
+Cartão curto de A pergunta respondida com a origem (`docs/steps/a-pergunta-respondida-com-a-origem.md`) aprovado em 2026-11-15 (commit c71d548283490ca53cb42ddd543c604df222cb32), depois de ver a página detalhada num quadro, com as letras dele do mesmo dia ("2. A1 / 3. B1": as sete permissões da passada semanal e dos avisos num PR só, e a página da tabela que abre na Visão geral): "eU APROVO CARD"

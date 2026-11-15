@@ -1,7 +1,8 @@
 import type { CompanyId, CopyId, CopyRun, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ChevronRightIcon } from 'lucide-react'
+import { Fragment } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -12,21 +13,23 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { connectionsQuery, connectorName } from '../connectors/public.ts'
-import { ColumnsTab, TablePanel } from './copy-columns.tsx'
+import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
+import { ColumnsTab, DetailsPanel, OverviewTab } from './copy-facts.tsx'
 import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
 import { CopySample } from './copy-sample.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import { TableTab } from './search.ts'
 import {
-  BACK_TO_DATA,
   COLUMNS_TITLE,
+  CRUMBS_LABEL,
+  copiedText,
   countText,
+  DATA_TITLE,
   durationText,
-  INTERVAL_LABEL,
   inactiveNotice,
   NO_RUNS_YET,
+  OVERVIEW_TITLE,
   outcomeText,
   RUNS_TITLE,
   SAMPLE_TITLE,
@@ -116,19 +119,21 @@ function inactiveOf(copy: CopySummary) {
 }
 
 /**
- * **A tabela** (Dados, parte 1; web W29, W34): its name, state and system on top, then the tabs
- * **Colunas**, **Amostra** (for whoever may read rows) and **Rodadas**, the tab in the address, with
- * the panel of where it comes from beside. A column the source stopped sending is told on top.
- * The route's loader has already refused a copy the Hub does not have.
+ * **A tabela** (Dados, parte 1; web W29, W34): the path, the system's logo, the name and state and
+ * the line of when it was last copied on top, then a bar with the tabs **Visão geral** (the one it
+ * opens on), **Colunas**, **Amostra** (for whoever may read rows) and **Rodadas**, the tab in the
+ * address, and under it the tab beside the panel **Detalhes**. A column the source stopped sending
+ * is told on top. The route's loader has already refused a copy the Hub does not have.
  */
 export function CopyDetail(props: {
   companyId: CompanyId
   copyId: CopyId
   tab: TableTab | undefined
   page?: string
+  q?: string
   mayReadRows: boolean
 }) {
-  const { companyId, copyId, page, mayReadRows } = props
+  const { companyId, copyId, page, q, mayReadRows } = props
   const requests = useRunRequests()
   const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
   const connections = useQuery(connectionsQuery(companyId))
@@ -147,29 +152,37 @@ export function CopyDetail(props: {
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
   const shown = props.tab === TableTab.enum.sample && !mayReadRows ? undefined : props.tab
-  const tab = shown ?? TableTab.enum.columns
+  const tab = shown ?? TableTab.enum.overview
   const connector = copy.sources[0]?.connection.connector ?? ''
   const system = connectorName(connections.data.connectors, connector)
+  const entry = connections.data.connectors.find((one) => one.id === connector)
   const inactive = inactiveOf(copy)
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
-      <Link
-        to="/companies/$companyId/data"
-        params={{ companyId }}
-        className="inline-flex items-center gap-xs text-label text-text-2"
+      <nav
+        aria-label={CRUMBS_LABEL}
+        className="flex min-w-0 flex-wrap items-center gap-xs text-label text-text-2"
       >
-        <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
-        {BACK_TO_DATA}
-      </Link>
+        {[DATA_TITLE, system].map((name) => (
+          <Fragment key={name}>
+            <Link
+              to="/companies/$companyId/data"
+              params={{ companyId }}
+              search={{ q }}
+              activeOptions={{ exact: true }}
+            >
+              {name}
+            </Link>
+            <ChevronRightIcon aria-hidden="true" className="size-4 shrink-0" />
+          </Fragment>
+        ))}
+        <span className="min-w-0 break-words font-mono text-fact text-text">{copy.name}</span>
+      </nav>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-md">
         <div className="flex min-w-0 flex-wrap items-center gap-md">
+          {entry !== undefined && <ConnectorLogo entry={entry} />}
           <PageTitle className="min-w-0 break-words font-mono">{copy.name}</PageTitle>
           <StateBadge copy={copy} />
-          <span className="text-text-2">
-            {copy.interval === null
-              ? system
-              : `${system} · a cada ${INTERVAL_LABEL[copy.interval]}`}
-          </span>
         </div>
         <div className="flex items-center gap-sm">
           <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
@@ -184,6 +197,7 @@ export function CopyDetail(props: {
           />
         </div>
       </div>
+      <p className="text-text-2 tabular-nums">{copiedText(system, copy)}</p>
       {note !== undefined && <NoteLine note={note} />}
       {inactive !== undefined && (
         <div className="flex flex-wrap items-baseline gap-md">
@@ -197,39 +211,48 @@ export function CopyDetail(props: {
           </Link>
         </div>
       )}
-      <div className="flex min-w-0 flex-col gap-lg md:flex-row">
-        <Tabs
-          value={tab}
-          className="min-w-0 flex-1"
-          onValueChange={(next) => {
-            const chosen = TableTab.safeParse(next)
-            if (chosen.success) {
-              void navigate({
-                to: '.',
-                search: (old) => ({ ...old, tab: chosen.data, page: undefined }),
-              })
-            }
-          }}
-        >
-          <TabsList aria-label="Tabela">
-            <TabsTrigger value={TableTab.enum.columns}>{COLUMNS_TITLE}</TabsTrigger>
-            {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
-            <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
-          </TabsList>
-          <TabsContent value={TableTab.enum.columns} className="pt-md">
-            <ColumnsTab copy={copy} />
-          </TabsContent>
-          {mayReadRows && (
-            <TabsContent value={TableTab.enum.sample} className="pt-md">
-              <CopySample companyId={companyId} copyId={copyId} />
+      <Tabs
+        value={tab}
+        className="min-w-0"
+        onValueChange={(next) => {
+          const chosen = TableTab.safeParse(next)
+          if (chosen.success) {
+            void navigate({
+              to: '.',
+              search: (old) => ({ ...old, tab: chosen.data, page: undefined }),
+            })
+          }
+        }}
+      >
+        <TabsList aria-label="Tabela" className="w-full max-w-full flex-wrap border-b border-line">
+          <TabsTrigger value={TableTab.enum.overview}>{OVERVIEW_TITLE}</TabsTrigger>
+          <TabsTrigger value={TableTab.enum.columns}>
+            {COLUMNS_TITLE}{' '}
+            <span className="text-text-2 tabular-nums">{copy.shown.columns.length}</span>
+          </TabsTrigger>
+          {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
+          <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
+        </TabsList>
+        <div className="flex min-w-0 flex-col gap-lg md:flex-row">
+          <div className="min-w-0 flex-1">
+            <TabsContent value={TableTab.enum.overview} className="pt-md">
+              <OverviewTab copy={copy} />
             </TabsContent>
-          )}
-          <TabsContent value={TableTab.enum.runs} className="pt-md">
-            <Runs runs={runs} next={next} page={page} />
-          </TabsContent>
-        </Tabs>
-        <TablePanel copy={copy} system={system} />
-      </div>
+            <TabsContent value={TableTab.enum.columns} className="pt-md">
+              <ColumnsTab copy={copy} />
+            </TabsContent>
+            {mayReadRows && (
+              <TabsContent value={TableTab.enum.sample} className="pt-md">
+                <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
+              </TabsContent>
+            )}
+            <TabsContent value={TableTab.enum.runs} className="pt-md">
+              <Runs runs={runs} next={next} page={page} />
+            </TabsContent>
+          </div>
+          <DetailsPanel copy={copy} system={system} entry={entry} />
+        </div>
+      </Tabs>
     </div>
   )
 }
