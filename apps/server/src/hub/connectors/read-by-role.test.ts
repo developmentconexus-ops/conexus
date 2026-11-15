@@ -83,7 +83,7 @@ async function sankhyaOn(t: TestContext) {
   return { ...on, ask }
 }
 
-const ML_READS = { 'mercado-livre': ['pedidos'] }
+const ML_READS = { 'mercado-livre': ['pedidos', 'notaFiscalDoPedido'] }
 const PARTNER = { codigos: [202] }
 const PARTNER_DOCUMENT = '11122233344'
 
@@ -96,6 +96,17 @@ test('o Builder lê pedidos e recebe o comprador como o dublê manda', async (t)
     shown.includes('"buyer"') && shown.includes('COMPRADORFICTICIO'),
     'the buyer comes whole',
   )
+})
+
+test('o Assistente e o Builder recebem a nota com o documento de quem recebe', async (t) => {
+  const on = await shopOn(t, ML_READS)
+  for (const kind of ['assistant', 'builder'] as const) {
+    const invoice = await on.read({ kind, person: on.carla }, 'notaFiscalDoPedido', {
+      orderId: '2000000000001',
+    })
+    assert.equal(invoice.kind, 'OK', kind)
+    assert.ok(JSON.stringify(invoice).includes('52998224725'), `${kind}: the recipient's document`)
+  }
 })
 
 test('o membro com a leitura buscarParceiros recebe o parceiro com o documento', async (t) => {
