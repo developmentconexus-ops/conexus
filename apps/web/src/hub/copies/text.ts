@@ -27,6 +27,9 @@ export const CONCEPT_HINT =
 export const CATALOG_FAILED =
   'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
 export const BACK_TO_DATA = 'Dados'
+export const TREE_LABEL = 'Dados'
+export const PAUSED_LABEL = 'Pausada'
+export const LOADING_LABEL = 'Carregando'
 export const DATA_LAYERS = { raw: 'Bruto', business: 'Negócio', apps: 'Apps' } as const
 export const DATA_COLUMNS = ['Tabela', 'Atualizada', 'Linhas', 'Intervalo', 'Projetos'] as const
 
@@ -151,7 +154,7 @@ export type CopyState = { label: string; tone: 'success' | 'warning' | 'danger' 
 export function stateOf(copy: Pick<CopySummary, 'run' | 'schedule'>): CopyState {
   const outcome = copy.run?.outcome.kind
   if (outcome === 'RUNNING') return { label: 'Rodando…', tone: 'warning' }
-  if (copy.schedule.kind === 'PAUSED') return { label: 'Pausada', tone: 'neutral' }
+  if (copy.schedule.kind === 'PAUSED') return { label: PAUSED_LABEL, tone: 'neutral' }
   if (copy.schedule.kind === 'MISSING') return { label: 'Sem relógio', tone: 'neutral' }
   if (outcome === 'ERROR') return { label: 'Com erro', tone: 'danger' }
   if (outcome === 'COMPLETE') return { label: 'Em dia', tone: 'success' }
