@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { DataSources } from './company-data.ts'
-import { Catalog, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
-import { runDataConformance } from './company-data-conformance.ts'
+import { Catalog, companyData, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
+import { keepsLiveOnlyOutOfTables, runDataConformance } from './company-data-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
+import { ConnectionId } from './connectors.ts'
 
 const ERP = '00000000-0000-4000-8000-0000000000e1'
 const BRANCH = '00000000-0000-4000-8000-0000000000e2'
@@ -16,6 +17,7 @@ const CATALOG = Catalog.parse({
       connection: ERP,
       connector: 'erp-falso',
       name: 'ERP da matriz',
+      liveOnly: false,
       reads: [
         { operation: 'listarPedidos', label: 'Pedidos', summary: 'Os pedidos de uma situação.' },
         { operation: 'listarClientes', label: 'Clientes', summary: 'Os clientes ativos.' },
@@ -33,6 +35,7 @@ const CATALOG = Catalog.parse({
       connection: BRANCH,
       connector: 'erp-falso',
       name: 'ERP da filial',
+      liveOnly: false,
       reads: [
         { operation: 'listarPedidos', label: 'Pedidos', summary: 'Os pedidos de uma situação.' },
       ],
@@ -42,6 +45,7 @@ const CATALOG = Catalog.parse({
       connection: MAIL,
       connector: 'correio-falso',
       name: 'Correio',
+      liveOnly: true,
       reads: [{ operation: 'buscarMensagens', label: 'Mensagens', summary: 'Busca por texto.' }],
       actions: [
         { operation: 'enviarMensagem', label: 'Enviar', summary: 'Uma mensagem.', effect: 'WRITE' },
@@ -120,14 +124,14 @@ const QUERIES: DataWorld['queries'] = {
   refused: 'select nao_existe',
 }
 
-function fakeWorld(): DataWorld {
+function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
   const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], query: [], signals: [] }
   const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [], query: [] }
   const isDown = { catalog: false, rows: false, query: false }
   const sources: DataSources = {
     async catalog({ signal }) {
       reached.signals.push(signal)
-      return isDown.catalog ? { kind: 'CATALOG_UNAVAILABLE' } : CATALOG
+      return isDown.catalog ? { kind: 'CATALOG_UNAVAILABLE' } : catalog
     },
     async rows({ table, signal }) {
       reached.signals.push(signal)
@@ -186,6 +190,50 @@ function fakeWorld(): DataWorld {
 }
 
 runDataConformance('o contrato sobre um ERP e um correio falsos', fakeWorld)
+
+test('a lei do sistema só ao vivo falha quando uma tabela o tem como origem', async () => {
+  const [first, ...rest] = CATALOG.tables
+  assert.ok(first && first.kept.kind === 'COPY')
+  const kept = { ...first, kept: { ...first.kept, connections: [ConnectionId.parse(MAIL)] } }
+  const world = fakeWorld({ ...CATALOG, tables: [kept, ...rest] })
+  await assert.rejects(
+    keepsLiveOnlyOutOfTables(world, companyData({ sources: world.sources, now: () => new Date() })),
+    /kept from Correio/,
+  )
+})
+
+test('a lei do sistema só ao vivo falha quando o mundo não tem sistema só ao vivo', async () => {
+  const systems = CATALOG.systems.map((system) => ({ ...system, liveOnly: false }))
+  const world = fakeWorld({ ...CATALOG, systems })
+  await assert.rejects(
+    keepsLiveOnlyOutOfTables(world, companyData({ sources: world.sources, now: () => new Date() })),
+    /a live-only system in the world/,
+  )
+})
+
+test('a lei do sistema só ao vivo falha quando describe não devolve o catálogo da fonte', async () => {
+  const world = fakeWorld()
+  const [first, ...rest] = CATALOG.systems
+  assert.ok(first)
+  const changed = { ...CATALOG, systems: [{ ...first, name: 'outro nome' }, ...rest] }
+  let asked = 0
+  const catalog: DataSources['catalog'] = async () => (++asked === 1 ? CATALOG : changed)
+  const sources: DataSources = { ...world.sources, catalog }
+  await assert.rejects(
+    keepsLiveOnlyOutOfTables(
+      { ...world, sources },
+      companyData({ sources, now: () => new Date() }),
+    ),
+    assert.AssertionError,
+  )
+})
+
+test('o contrato recusa o sistema do catálogo que não diz se é só ao vivo', () => {
+  const [first, ...rest] = CATALOG.systems
+  assert.ok(first)
+  const { liveOnly: _, ...unsaid } = first
+  assert.equal(Catalog.safeParse({ ...CATALOG, systems: [unsaid, ...rest] }).success, false)
+})
 
 test('o contrato recusa a tabela do catálogo sem descrição', () => {
   const [first, ...rest] = CATALOG.tables
