@@ -8,7 +8,7 @@ import { nextColumnState } from './public.ts'
 import { asSync } from './test-copies.ts'
 import { copiesUrl } from './test-routes.ts'
 import type { StoresOn } from './test-sources.ts'
-import { ordersCopy, STORE_A, storesOn, tableOf } from './test-sources.ts'
+import { ordersCopy, STORE_A, storesOn } from './test-sources.ts'
 
 const FIRST = new Date('2026-11-10T10:00:00.000Z')
 const SECOND = new Date('2026-11-10T11:00:00.000Z')
