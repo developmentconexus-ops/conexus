@@ -5,7 +5,7 @@
 Step 19.1 links a company to a provider the person authorizes, the Mercado Livre first; its refresh
 token is single use. Basis: the 19.1
 card (`W1`, `V2`, `U1`, `Y1`), approved 2026-10-29, and the "Sim" of 2026-10-30 to revoking, in
-`docs/approvals.md`.
+`docs/approvals/e191-ligar-por-oauth.md`.
 
 ## Decision
 

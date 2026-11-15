@@ -20,7 +20,7 @@ Um percurso verde não prova o modelo de verdade nem o E2B (provas ao vivo: [005
 
 ## Ler uma falha
 
-A mensagem diz o passo do roteiro: `questionsAndPlan` (1 e 2), `firstVersion` (3 e 4), `libraryAdded` (5), `screenOnly` (6). Um texto que não aparece é uma tela que mudou ou um defeito; nunca troque o texto do teste sem o texto aprovado ([aprovações](../approvals.md)).
+A mensagem diz o passo do roteiro: `questionsAndPlan` (1 e 2), `firstVersion` (3 e 4), `libraryAdded` (5), `screenOnly` (6). Um texto que não aparece é uma tela que mudou ou um defeito; nunca troque o texto do teste sem o texto aprovado ([aprovações](../approvals/README.md)).
 
 ## O roteiro do fundador, na nuvem
 
