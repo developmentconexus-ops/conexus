@@ -14,7 +14,7 @@ Ela é dona do contrato de acesso e mede o sucesso em sistemas reais que passam 
 
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
-| **`D1`. O primeiro sistema de catálogo** | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do nosso kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
+| **`D1`. O primeiro sistema de catálogo** | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do nosso kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. |
 
 Antes de `D1`, as duas trilhas desenham juntas o contrato, uma vez: um arquivo com os três verbos e um
 teste de conformidade verde contra um conector falso. Esse arquivo é de outra tarefa. Depois de `D1`, a

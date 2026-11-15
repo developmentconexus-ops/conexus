@@ -436,7 +436,7 @@ Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`
     - Passos 6 e 7 da skill `conexus-build`: a reconciliação rodada num banco descartável, pstack `deslop` e `no-comments`, as mutações das duas unidades, um commit por unidade.
     - Linha da tabela de referência: "O banco garante", `copy-sql.ts:331-347` e `app-read.ts:41-67`, nativo, com a prova rodada no Postgres 18.
     - A CI roda `check` e os testes do servidor em quatro partes. Os dois arquivos novos nunca ganham segunda rodada.
-- [ ] 5. Grupo 5: o contrato (um PR, só o contrato e a conformidade, `docs/steps/trilhas/dados.md:60-66`)
+- [ ] 5. Grupo 5: o contrato (um PR, só o contrato e a conformidade, `docs/steps/trilhas/dados.md:72-78`)
   - [ ] 5.1 `withheld` no catálogo e `NOT_IN_ROLE` da tabela retida (um commit)
     - **Arquivos:** `packages/hub-api/src/company-data.ts`, `packages/hub-api/src/company-data-conformance.ts`, `packages/hub-api/src/company-data.test.ts`, `apps/server/src/hub/data/catalog.ts` (uma linha, para compilar), `apps/server/src/builder/data-tools/test-data.ts` e `apps/server/src/builder/data-tools/tools.test.ts` (da parte 3: os catálogos fixos ganham `withheld: []`), `scripts/rerun-never.json`.
     - **Referência a seguir:** `Catalog` em `packages/hub-api/src/company-data.ts:54-58`, `sourceOf` em `:192-207`, a forma das leis e de `LAWS` em `packages/hub-api/src/company-data-conformance.ts:260-313`, e o mundo falso em `packages/hub-api/src/company-data.test.ts:103-146`. O molde do "existe e não é seu": `allowed: false` em `packages/hub-api/src/connectors.ts:42-48`.
@@ -477,7 +477,7 @@ Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`
     - Rodar `packages/hub-api/src/company-data.test.ts`, os testes da parte 3 que usam o catálogo (`apps/server/src/hub/data/*.test.ts`), `scripts/rerun-exempt.test.ts`, `npm run check` e `npm run quality`.
     - Passos 6 e 7 da skill `conexus-build`.
     - O PR responde à issue `contrato` desta parte, com o exemplo do escopo 6.2 (Bruno pede o contas a receber). O consumidor entra no grupo 6, noutro PR.
-    - Exceção registrada no PR: o grupo tem uma unidade de commit só, porque a mudança do contrato é sempre um PR só dela (`docs/steps/trilhas/dados.md:63`, o índice). O corpo do PR lista, como o mínimo para compilar, a linha `withheld: []` em `apps/server/src/hub/data/catalog.ts` e as duas leis em `scripts/rerun-never.json`, como a decisão `D19` do índice faz na parte 1: não carregam comportamento.
+    - Exceção registrada no PR: o grupo tem uma unidade de commit só, porque a mudança do contrato é sempre um PR só dela (`docs/steps/trilhas/dados.md:75`, o índice). O corpo do PR lista, como o mínimo para compilar, a linha `withheld: []` em `apps/server/src/hub/data/catalog.ts` e as duas leis em `scripts/rerun-never.json`, como a decisão `D19` do índice faz na parte 1: não carregam comportamento.
     - Linha da tabela de referência: "A lista do que o papel não lê", `connectors.ts:42-48`, remendo pequeno.
 - [ ] 6. Grupo 6: o catálogo por papel (um PR)
   - [ ] 6.1 `catalogOf` filtrado, a leitura pelo login do papel e o conserto em `42501` (um commit)

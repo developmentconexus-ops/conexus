@@ -4,7 +4,7 @@ Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repos
 
 ## Visão geral
 
-No fim desta parte a pessoa pergunta ao Assistente quanto vendeu no mês. Ele descreve o catálogo, vê 5 linhas da tabela, consulta com uma consulta só de leitura e responde com o sistema, a tabela e a hora da cópia. É o marco `D2` [visto, `docs/roadmap.md:47`]. O Builder e um agente salvo usam as mesmas duas ferramentas.
+No fim desta parte a pessoa pergunta ao Assistente quanto vendeu no mês. Ele descreve o catálogo, vê 5 linhas da tabela, consulta com uma consulta só de leitura e responde com o sistema, a tabela e a hora da cópia. É o marco `D2` [visto, `docs/roadmap.md:46`]. O Builder e um agente salvo usam as mesmas duas ferramentas.
 
 | O que entra | Onde |
 | --- | --- |
@@ -47,7 +47,7 @@ A regra do verificador de dependências continua valendo: as ferramentas dos age
 | --- | --- | --- |
 | Duas ferramentas: inspecionar e executar | O modelo oficial de agente SQL do Mastra [visto, o modelo oficial de agente SQL do Mastra 1.82, `introspect-database.ts:7-54` e `execute-sql.ts:14-44`] | Igual. Diferente: o modelo do Mastra filtra a consulta por expressão regular e lança `Error`. Aqui quem recusa é o banco, e a ferramenta devolve a recusa tipada |
 | A amostra antes da consulta | Um agente que não olha o dado erra o nome do campo, e uma amostra de 5 linhas evita isso | Igual: descrever uma tabela devolve as colunas e 5 linhas |
-| "Não achei" é resposta | "A non-answer is a message, not an error" | Igual: a ordem do agente diz isso |
+| "Não achei" é resposta | Uma não resposta é mensagem, e não erro | Igual: a ordem do agente diz isso |
 | Tabelas usadas e a consulta a um clique | Uma resposta que mostra as tabelas usadas e a consulta | Igual. A hora da cópia na resposta é [ideia nossa] |
 | A ferramenta como função da requisição | `tools` dinâmico do Mastra [visto, `node_modules/@mastra/core/dist/agent/types.d.ts:675`] | Já é o que os três agentes fazem [visto, `apps/server/src/builder/assistant/assistant.ts:235-250`] |
 
@@ -55,7 +55,7 @@ A regra do verificador de dependências continua valendo: as ferramentas dos age
 
 ### `C1`. O pedido de consulta no contrato
 
-Hoje o verbo ler não tem filtro, colunas, limite nem SQL [visto, `packages/hub-api/src/company-data.ts:66-75`]. A mudança passa pela issue `contrato`: um PR que muda só o contrato e a conformidade [visto, `docs/steps/trilhas/dados.md:60-66`].
+Hoje o verbo ler não tem filtro, colunas, limite nem SQL [visto, `packages/hub-api/src/company-data.ts:66-75`]. A mudança passa pela issue `contrato`: um PR que muda só o contrato e a conformidade [visto, `docs/steps/trilhas/dados.md:72-78`].
 
 ```ts
 // packages/hub-api/src/company-data.ts
@@ -318,7 +318,7 @@ Onde entra: nas instruções do Assistente [visto, `apps/server/src/builder/assi
 "Count a read on the real data with `app_data_check`, and see a few rows with `app_data_read`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`."
 passa a ser
 "Count a read on the real data with `app_data_check`, and see the columns and a few rows of a copy with `data_describe`, in the order of `## Company data`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`."
-O arquivo continua na lista de migração: a mudança é de texto e não muda import. A frase "cópia primeiro" do Builder [visto, `context.ts:15-17`, `SOURCE_RULE`] fica: ela sai no marco `D4` [visto, `docs/roadmap.md:49`].
+O arquivo continua na lista de migração: a mudança é de texto e não muda import. A frase "cópia primeiro" do Builder [visto, `context.ts:15-17`, `SOURCE_RULE`] fica: ela sai no marco `D4` [visto, `docs/roadmap.md:48`].
 
 ### `C5`. A origem até a tela
 

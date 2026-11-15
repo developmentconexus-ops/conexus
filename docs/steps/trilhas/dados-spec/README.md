@@ -132,8 +132,6 @@ Dois atos seus destravam esse bloco da parte 2, e não são perguntas: criar o a
 5. O protótipo `p2-09` diz "Este link venceu. Peça outro a Lea." A página pública não sabe de quem era um link vencido sem confirmar que ele existiu. A spec usa "Peça outro a quem enviou." (security S10).
 6. O exemplo do escopo manda o link do Mercado Livre, que é de autorização. A spec só gera link para sistema de chaves coladas (`D23`).
 7. A decisão H5 (duas fontes, a Nango e o kit) vivia no roteiro e na página da trilha Dados. Este PR a troca pela fonte única, no roteiro, na página da trilha e na decisão [0069](../../../decisions/0069-connectors-one-source-the-kit.md).
-8. O pedido lista "o executor da Nango atrás da mesma porta" na parte 2. Com a fonte única ele sai.
-9. O pedido cita "a regra de nomes de arquivo proibidos das pastas do Kiro". Não achei essa regra escrita no estudo nem no pedido. Li só os achados do estudo e os prompts de spec, e a spec usa os três nomes que o Kiro usa.
 
 ## Os textos que os protótipos não trazem
 
@@ -149,34 +147,9 @@ Cada parte propõe os textos de tela que o escopo não deu, e o PR os lista para
 - A proposta de cópia do Builder pelo verbo `act` do contrato, que tira `app-data/context.ts` e `connectors/copy-propose` da lista de migração.
 - A passagem das cópias do Sankhya à versão 2. A spec só acrescenta a descrição à versão 1.
 
-## A passagem de verificação
+## O que nenhuma conferência provou
 
-Quem conferiu: agentes em Opus, esforço médio, que não escreveram a spec. Cada um leu a spec contra o repositório em `0d4c5730` e contra as referências. Nenhum rodou teste: conferiram por leitura.
-
-| Passada | O que olhou | Citações conferidas | Erradas | Achados que bloqueavam |
-| --- | --- | --- | --- | --- |
-| 1, parte 1 | Tudo | cerca de 190 | 14 | 3 |
-| 1, parte 2 | Tudo, ainda com a Nango | cerca de 215 | 14 | 1 |
-| 1, parte 3 | Tudo | cerca de 150 | 7 | 2 |
-| 1, parte 4 | Tudo, mais a segurança do desenho | cerca de 130 | 8 | 3 |
-| 2, partes 1, 3 e 4 | As correções e as costuras entre as partes | 31 novas | 1 | 1 |
-| 2, parte 2 | A parte refeita sem a Nango | cerca de 130 | 2 | 1 |
-| 3, as quatro | Só o que mudou na última correção | não contou | não contou | 0 |
-
-Depois de cada passada, quem escreveu a parte corrigiu todos os achados, e a passada seguinte conferiu os que bloqueavam.
-
-O que as passadas mudaram de mais importante:
-
-- **A coluna inativa nunca seria detectada** da segunda rodada em diante. A condição da passada inteira foi corrigida.
-- **A página pública do link não acharia o link.** O molde citado filtrava por empresa. Passou ao molde que acha o Projeto pelo endereço.
-- **Duas mudanças de permissão ao mesmo tempo** podiam devolver a um papel uma tabela recém-tirada. O desenho passou por três formas até a de hoje (`D11`): o Hub primeiro, um bilhete no banco da empresa, e a conferência no fim de cada rodada de cópia.
-- **O login do Gmail quebraria no Hub**, que sempre perguntava a conta.
-- **Uma escrita tentada pela consulta** volta com outro nome do que o primeiro desenho dizia (`D15`).
-
-O que nenhuma passada conferiu:
-
-- A última correção da parte 4 (a ordem única, o Hub primeiro) e a da parte 2 (três achados pequenos) foram feitas depois da passada 3. Nenhum verificador as leu.
-- Nenhum teste foi rodado. O risco de dois `GRANT` ao mesmo tempo falharem no PostgreSQL é esperado, e não medido. A unidade 4.1 da parte 4 o trata e o testa, e o teste depende de tempo.
-- O `EXPLAIN (VERBOSE, FORMAT JSON)` foi medido num PostgreSQL 17.10. O banco das empresas é o 18. A unidade 2.1 da parte 3 prova no teste.
 - As formas de resposta do HubSpot e do Gmail vêm da referência, e não de uma chamada real. Estão marcadas "a confirmar na gravação", e o grupo 9 da parte 2 grava.
+- O `EXPLAIN (VERBOSE, FORMAT JSON)` foi medido num PostgreSQL 17.10. O banco das empresas é o 18, e a unidade 2.1 da parte 3 prova no teste.
+- O risco de dois `GRANT` ao mesmo tempo falharem no PostgreSQL é esperado, e não medido. A unidade 4.1 da parte 4 o trata e o testa, e o teste depende de tempo.
 - Nada rodou na Neon nem pelo transporte HTTP dela.

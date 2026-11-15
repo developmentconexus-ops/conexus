@@ -42,7 +42,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
-| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
+| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. |
 | `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no banco da empresa dentro do intervalo. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
 | `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
 | `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas de uma cópia ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |

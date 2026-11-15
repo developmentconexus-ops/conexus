@@ -1,6 +1,6 @@
 # Documento de desenho: parte 1, o dado guardado e o catálogo
 
-Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repositório. Os rótulos de prova são os do escopo: **[visto]** é arquivo aberto nesta spec, ****, **** e **** são seções dos estudos, **[ideia nossa]** é proposta sem referência.
+Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repositório. Os rótulos de prova: **[visto]** é arquivo aberto nesta spec, e **[ideia nossa]** é proposta sem referência.
 
 ## Visão geral
 
@@ -183,9 +183,9 @@ A ação `readCopyRows` é nova em `ACTIONS` [visto, `apps/server/src/hub/identi
 
 ### `C5`. A coluna que some na origem
 
-Decisão sua: a coluna fica, marcada inativa. É o que o Lakeflow Connect faz: a coluna apagada na origem fica "inactive" e não é apagada.
+Decisão sua: a coluna fica, marcada inativa. É o padrão de uma ingestão gerenciada: a coluna apagada na origem fica inativa e não é apagada.
 
-O Lakeflow lê o esquema da origem. Uma API não tem esquema, e muitas omitem o campo vazio. Então a regra precisa de um sinal que não acuse a coluna que só está vazia:
+Uma ingestão de banco lê o esquema da origem. Uma API não tem esquema, e muitas omitem o campo vazio. Então a regra precisa de um sinal que não acuse a coluna que só está vazia:
 
 > Uma coluna fica **inativa** quando já veio com valor numa passada completa anterior e não veio em nenhuma linha da última passada completa que leu a origem inteira e trouxe ao menos uma linha. Ela volta a **ativa** na primeira passada, de qualquer tipo, em que vier numa linha.
 
@@ -198,7 +198,7 @@ A rodada junta os `present` das páginas e das fontes. O caminho é `pageV2` [vi
 
 ### `C6`. O contrato
 
-A mudança passa pelo processo da issue `contrato`: um PR pequeno que muda só o contrato e a conformidade [visto, `docs/steps/trilhas/dados.md:60-66`]. A exceção é a decisão `D19` do índice: o PR leva também as linhas `inactiveSince: null` que fazem o repositório compilar (`shownOf`, `routes.test.ts:158` e `:268`, `builder/app-data/context.test.ts:33` e as fixtures da tela), listadas no corpo do PR.
+A mudança passa pelo processo da issue `contrato`: um PR pequeno que muda só o contrato e a conformidade [visto, `docs/steps/trilhas/dados.md:72-78`]. A exceção é a decisão `D19` do índice: o PR leva também as linhas `inactiveSince: null` que fazem o repositório compilar (`shownOf`, `routes.test.ts:158` e `:268`, `builder/app-data/context.test.ts:33` e as fixtures da tela), listadas no corpo do PR.
 
 ```ts
 // packages/hub-api/src/copy-shown.ts
@@ -444,6 +444,6 @@ Uma linha por peça que o roteiro de uso toca, com o veredito da regra `C75`: **
 | Descrição de tabela e coluna | `copy.ts:122`, `:129`, `copy-sql.ts:63-88` | `COMMENT ON` do Postgres. Comentário como campo próprio de cada tabela e coluna, o padrão de um catálogo de dados | nativo |
 | Login de leitura | `app-read.ts:41-67` | Papéis e `GRANT` do Postgres. A prova foi rodada no Postgres 18 (`D1` do índice) | nativo |
 | Amostra | nenhuma | Uma amostra de 5 linhas ao lado da descrição, o padrão de um catálogo de dados | nativo (`SELECT ... LIMIT`) |
-| Coluna inativa | nenhuma | Lakeflow Connect | remendo: uma API não tem esquema, então o sinal é nosso. A regra "só depois de vista" é [ideia nossa] |
-| Catálogo | `store.ts:200-215`, `list.ts:119-161` | "It's the core of everything". `information_schema` filtrado pelo privilégio | embrulhado: junta o que o Hub já guarda. O Mastra não tem peça de catálogo |
+| Coluna inativa | nenhuma | Uma ingestão gerenciada marca a coluna inativa | remendo: uma API não tem esquema, então o sinal é nosso. A regra "só depois de vista" é [ideia nossa] |
+| Catálogo | `store.ts:200-215`, `list.ts:119-161` | `information_schema` filtrado pelo privilégio | embrulhado: junta o que o Hub já guarda. O Mastra não tem peça de catálogo |
 | Página Dados | `copy-list.tsx:400`, `copy-detail.tsx:121` | O conteúdo de um catálogo de dados: descrição, origem, frescor | nativo (as peças de `apps/web/src/ui/`) |

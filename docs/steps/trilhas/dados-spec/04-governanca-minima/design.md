@@ -42,7 +42,7 @@ A verdade de quem lê fica no banco do Hub. O banco da empresa é a parede: o lo
 | Vale a permissão de quem pergunta | Ferramentas de análise que leem com a permissão de quem pergunta. O `information_schema` já filtra pelo privilégio | Igual: o agente lê com o login do papel de quem pergunta |
 | Permissão por tabela | Uma tela de permissão por tabela, com as tabelas marcáveis | Igual no eixo tabela. Diferente: só papel, nunca direto à pessoa, e sem os níveis Manager, Editor e Viewer (N3b) |
 | A consulta que toca tabela sem acesso devolve erro | Uma ferramenta que executa SQL e devolve o erro do banco | Igual, e quem devolve o erro é o PostgreSQL |
-| O registro guarda os argumentos e nunca a resposta | "The response body is never recorded". `system.query.history` | Igual |
+| O registro guarda os argumentos e nunca a resposta | Um registro que guarda os argumentos e nunca a resposta, e um histórico de consultas | Igual |
 | O registro por pessoa | Um registro por token | Diferente: por pessoa e por agente |
 
 ## Componentes e interfaces

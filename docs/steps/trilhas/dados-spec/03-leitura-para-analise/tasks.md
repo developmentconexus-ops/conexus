@@ -6,7 +6,7 @@ Seis grupos, um PR cada.
 
 - O grupo 1 muda só o contrato e a conformidade: o pedido de consulta e as cinco leis.
 - O grupo 2 é da trilha Dados: a fonte `query` em `apps/server/src/hub/data/`.
-- O grupo 3 é dos consumidores, na trilha Agentes e Apps (`docs/steps/trilhas/dados.md:66`): as duas ferramentas e a montagem nos três agentes.
+- O grupo 3 é dos consumidores, na trilha Agentes e Apps (`docs/steps/trilhas/dados.md:78`): as duas ferramentas e a montagem nos três agentes.
 - O grupo 4 grava os cenários e leva a origem até a tela. Depois dele vem a QA.
 - O grupo 5 muda só a conformidade: `runDataConformance` passa a aceitar um mundo assíncrono.
 - O grupo 6 põe o teste que impede a lista de migração de crescer e implementa `live` e `funnel` com a conformidade inteira.
@@ -32,7 +32,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
 
 ## Tarefas
 
-- [ ] 1. Grupo 1: o pedido de consulta no contrato (um PR, só contrato e conformidade, `docs/steps/trilhas/dados.md:60-66`)
+- [ ] 1. Grupo 1: o pedido de consulta no contrato (um PR, só contrato e conformidade, `docs/steps/trilhas/dados.md:72-78`)
   - [ ] 1.1 O pedido `QUERY`, as três respostas novas e `DataSources.query` (um commit)
     - **Arquivos:** `packages/hub-api/src/company-data.ts`, `packages/hub-api/src/company-data.test.ts`, `apps/server/src/hub/data/public.ts` (da parte 1).
     - **Referência a seguir:** `packages/hub-api/src/company-data.ts:66-75` (`ReadRequest`), `:79-87` (`REFUSALS`), `:91-112` (`ReadAnswer`), `:148-157` (`DataSources`), `:219-242` (`read`). O caso novo segue a forma do caso `TABLE` (`:227-233`).
@@ -150,7 +150,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
     - O corpo do PR declara a exceção: a linha `query` provisória de `apps/server/src/hub/data/public.ts`, como `D19`.
     - A CI roda `npm run check` e os testes de todos os pacotes.
 
-- [ ] 2. Grupo 2: a fonte de consulta, na trilha Dados (um PR de uma fonte só: exceção registrada à regra de duas ou três unidades, porque a trilha Dados vai em PR próprio, `docs/steps/trilhas/dados.md:66`)
+- [ ] 2. Grupo 2: a fonte de consulta, na trilha Dados (um PR de uma fonte só: exceção registrada à regra de duas ou três unidades, porque a trilha Dados vai em PR próprio, `docs/steps/trilhas/dados.md:78`)
   - [ ] 2.1 `queryOf` e `relationsOf`, e as dependências novas de `DataDeps` (um commit)
     - **Arquivos:** `apps/server/src/hub/data/query.ts` (novo), `apps/server/src/hub/data/public.ts`, `apps/server/src/main.ts`, `apps/server/src/hub/identity/test-hub.ts`, `apps/server/src/hub/data/query.test.ts` (novo).
     - **Referência a seguir:** `askApp` em `apps/server/src/hub/apps/app-database.ts:174-210` (o endereço do login, `NO_LOGIN` com o dono e a nova tentativa, os logs); `withoutPassColumn` em `app-database.ts:213-221` e `withoutPass` em `:223-233` (a coluna `_pass` fora); `readApp` em `apps/server/src/platform/app-read.ts:114-156` (o `switch` das respostas); o prazo de `app_data_read` em `apps/server/src/builder/app-data/tools.ts:56-59`; os tipos de dependência de `apps/server/src/hub/copies/store.ts:92-94`; `personScope` em `store.ts:112-114` (a forma do escopo).
@@ -626,7 +626,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
   - [ ] 4.5 QA das telas `p3-01` a `p3-07` (não é commit)
     - Um agente que não construiu roda a skill `conexus-qa` no commit candidato do grupo 4 (testing T25): o Hub local com os dublês, o roteiro "Quanto vendi em outubro?" como dono, a matriz de estados do escopo (vazio, carregando, erro, recusa, não achou, atrasado), a 1366 e 390 px, nos dois temas. O relatório vai no PR do grupo 4 antes da revisão.
 
-- [ ] 5. Grupo 5: a conformidade aceita um mundo assíncrono (um PR só da conformidade: exceção registrada à regra de duas ou três unidades, porque a mudança de conformidade vai sozinha, `docs/steps/trilhas/dados.md:60-66`; pode esperar a parte 5) (entra depois da unidade 6.1 da parte 4)
+- [ ] 5. Grupo 5: a conformidade aceita um mundo assíncrono (um PR só da conformidade: exceção registrada à regra de duas ou três unidades, porque a mudança de conformidade vai sozinha, `docs/steps/trilhas/dados.md:72-78`; pode esperar a parte 5) (entra depois da unidade 6.1 da parte 4)
   - [ ] 5.1 `runDataConformance` com `make(t)` assíncrono (um commit)
     - **Arquivos:** `packages/hub-api/src/company-data-conformance.ts`.
     - **Referência a seguir:** `runDataConformance` em `packages/hub-api/src/company-data-conformance.ts:305-313`; `copiesOn(t)` em `apps/server/src/hub/copies/test-copies.ts:137` (assíncrona, pede `t`), o motivo da mudança.
@@ -744,7 +744,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
 - **`L3`, decidida. O turno e quem fala vêm do turno preso.** `assistant.read` pede `turn: TurnKey` (`assistant-port.ts:56-66`), e `assistant.write` pede `turn` e `speaker` (`write-record.ts:32-45`). A assinatura é uma só nas partes 3 e 4: `createCompanyData(deps)(scope, context?: { by?: ReadBy; turn?: TurnBinding })`, posta na 2.1. O contrato não muda. Sem `turn`, `live` e `funnel` respondem `NOT_GRANTED`. `ReadBy` é da parte 4 (o Registro de dados); aqui as ferramentas o passam e ninguém o lê.
 - **`L4`. Textos que o escopo não deu.** A falha de **Copiar a consulta** (proposta: "Não deu para copiar. Selecione a consulta e copie."), a fonte de uma tabela sem rodada ("ainda sem cópia"), a hora de outro dia ("copiado ontem às", "copiado em 17/10/2026 às"), o nome da fonte ao vivo (o conector e a conexão, "Sankhya · Matriz", como a linha de hoje), e o estado vazio do escopo ("Ainda não há sistema ligado. Ligue um em Integrações.", que o desenho não dá a nenhuma peça). O construtor usa as propostas e o PR as lista para a palavra do fundador.
 - **Bruno no Início.** Nesta parte o Catálogo do Início só lista tabelas para dono e administrador (parte 1). A pergunta do escopo "Bruno, no Início" roda aqui com o dono. Bruno, membro, recebe o Catálogo vazio até a parte 4.
-- **Os grupos de contrato e as trilhas.** O grupo 1 leva só o contrato e a conformidade, mais a linha provisória declarada no corpo do PR, como `D19`. A fonte `query` é da trilha Dados e vai sozinha no grupo 2. Os consumidores vão no grupo 3 (`docs/steps/trilhas/dados.md:66`). A mudança de `runDataConformance` é de conformidade e vai sozinha no grupo 5, antes do mundo real do grupo 6.
+- **Os grupos de contrato e as trilhas.** O grupo 1 leva só o contrato e a conformidade, mais a linha provisória declarada no corpo do PR, como `D19`. A fonte `query` é da trilha Dados e vai sozinha no grupo 2. Os consumidores vão no grupo 3 (`docs/steps/trilhas/dados.md:78`). A mudança de `runDataConformance` é de conformidade e vai sozinha no grupo 5, antes do mundo real do grupo 6.
 - **A linha mínima de tela no grupo 3.** Pôr `DATA_TOOL` em `BUILDER_TOOL` faz `TOOLS` exigir as duas linhas (`tool-registry.ts:47`, tipo `Record<RowTool, ToolSpec>`), e o caso de `tool-row.test.tsx:185` exige frase para todo nome de `CLOSED_TOOLS`. Por isso a 3.1 traz a linha mínima e a 4.2 a completa. Pelo mesmo motivo a 3.1 põe os nomes em `READ`.
 - **A coluna `_pass`.** A consulta tira `_pass` do resultado, como `askApp` já faz para o agente (`apps/server/src/hub/apps/app-database.ts:223-233`, critério 34 da Capacidade 3).
 - **O Sankhya real.** Nenhum teste da CI lê o Sankhya real. A leitura dele acontece só no uso de fechamento do fundador (delivery L17), com a cópia `vendas` ligada na empresa dele.

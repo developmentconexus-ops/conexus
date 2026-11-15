@@ -4,7 +4,7 @@ Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repos
 
 ## Visão geral
 
-No fim desta parte a empresa liga o Sankhya, o HubSpot e o Gmail pelo mesmo caminho, em quatro passos, e os três aparecem iguais no catálogo. Quem não tem a senha manda um link para quem tem. Uma empresa nova entra por uma conversa que aprende a empresa e leva a ligar o primeiro sistema. São os marcos `D1` e parte de `D3` [visto, `docs/roadmap.md:46`, `:47`].
+No fim desta parte a empresa liga o Sankhya, o HubSpot e o Gmail pelo mesmo caminho, em quatro passos, e os três aparecem iguais no catálogo. Quem não tem a senha manda um link para quem tem. Uma empresa nova entra por uma conversa que aprende a empresa e leva a ligar o primeiro sistema. São os marcos `D1` e parte de `D3` [visto, `docs/roadmap.md:45`, `:47`].
 
 Há uma fonte só de conector, o kit do Conexus (decisão do fundador de 2026-11-14, P3 do índice, no lugar da H5; registro [0069](../../../../decisions/0069-connectors-one-source-the-kit.md)). Todo conector fica no formato do kit, as cópias rodam no nosso motor, e o login por autorização, a guarda e a renovação do token são do kit, com o app de login da instalação em cada sistema. A Nango fica só como referência de padrão: o prazo do link, os campos de credencial, as páginas de autorização e de token de cada sistema.
 
@@ -41,9 +41,9 @@ Sankhya, Mercado Livre, HubSpot e Gmail são definições do kit. A porta, o fun
 | Ponto | Referência | O que a spec faz |
 | --- | --- | --- |
 | O formulário sai de dados | Um formulário que sai de um modelo de campos. Os campos `credentials` do `providers.yaml` da Nango [visto, `nango@e6c6131 packages/types/lib/providers/provider.ts:23-44`] | Igual, e já é assim: os campos saem da definição do kit [visto, `packages/connectors/src/kernel/auth.ts:7-17`] |
-| Testar uma vez e descobrir o que o sistema oferece | "Importing schema" e "Discovering available data streams". `validate_connection`, `list_objects`, `get_object_metadata`, `preview_table_with_row_filter` | Igual: as quatro operações, com o mesmo nome em todo conector |
-| Escolher os conjuntos e revisar antes da primeira rodada | "Select streams" e "Configure source". O cartão de revisão | Igual, em quatro passos e não sete (`T3`). Sem a escolha de camada (`T2`) |
-| O link para quem tem a senha | "Share link", campo a campo. O `connect_link` da Nango, que vale 30 minutos | Igual: campo a campo, 30 minutos. A página é nossa |
+| Testar uma vez e descobrir o que o sistema oferece | Testar a ligação e descobrir os conjuntos de dados. As quatro operações de um conector de dados: validar, listar, descrever e ver uma amostra | Igual: as quatro operações, com o mesmo nome em todo conector |
+| Escolher os conjuntos e revisar antes da primeira rodada | Escolher os conjuntos e configurar a fonte. O cartão de revisão | Igual, em quatro passos e não sete (`T3`). Sem a escolha de camada (`T2`) |
+| O link para quem tem a senha | Um link compartilhado, campo a campo. O `connect_link` da Nango, que vale 30 minutos | Igual: campo a campo, 30 minutos. A página é nossa |
 | Uma fonte só de conector | As plataformas de dados maduras rodam os conectores delas, com o login delas | Igual (decisão 0069) |
 | A separação entre copiar e consultar ao vivo | Uma fonte copiada e uma ferramenta ao vivo são duas portas diferentes | Igual: "só ao vivo" é declaração do sistema |
 | A entrada que aprende a empresa | Uma entrada que conversa e grava o que aprende da empresa | Igual na forma, com o toque para gravar (B1) |

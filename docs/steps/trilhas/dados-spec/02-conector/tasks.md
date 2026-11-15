@@ -124,7 +124,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
 - [ ] 2. Grupo 2: o contrato de acesso diz "só ao vivo" (bloco A, PR que muda só o contrato e a conformidade, issue `contrato`) (um PR)
   - [ ] 2.1 `CatalogSystem.liveOnly` e o mundo falso (um commit)
     - **Arquivos:** `packages/hub-api/src/company-data.ts`, `packages/hub-api/src/company-data.test.ts`.
-    - **Referência a seguir:** `packages/hub-api/src/company-data.ts:21-29` (`CatalogSystem`); `packages/hub-api/src/company-data.test.ts:12-46` (os três sistemas do mundo falso: dois `erp-falso` e um `correio-falso`); `docs/steps/trilhas/dados.md:60-66` (o PR de contrato muda só o contrato e o teste de conformidade).
+    - **Referência a seguir:** `packages/hub-api/src/company-data.ts:21-29` (`CatalogSystem`); `packages/hub-api/src/company-data.test.ts:12-46` (os três sistemas do mundo falso: dois `erp-falso` e um `correio-falso`); `docs/steps/trilhas/dados.md:72-78` (o PR de contrato muda só o contrato e o teste de conformidade).
     - **O que sai:** nada.
     - **O que entra:**
       ```ts
@@ -630,7 +630,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
       // notaNoContato: post('/crm/v3/objects/notes') com properties { hs_note_body, hs_timestamp } e a associação ao contato,
       //   associationCategory 'HUBSPOT_DEFINED', associationTypeId 202; idempotent false; uncertain/mark/idOf (decisão 0062)
       ```
-      O caminho de token, a forma da resposta do token, as recusas e o limite por conta ficam marcados "a confirmar na gravação" num comentário que a 9.1 tira. Até a gravação, o dublê responde no envelope mais próximo medido (testing T29): as formas das funções da estante.
+      O caminho de token, a forma da resposta do token, as recusas e o limite por conta ficam marcados "a confirmar na gravação" num comentário que a 9.1 tira. Até a gravação, o dublê responde no envelope mais próximo medido (testing T29): as formas das funções da referência.
     - **Testes:** os três que conferem o catálogo exato ganham o HubSpot depois do Mercado Livre: `sankhya.test.ts:45-49`, a lista de ids passa a `['sankhya', 'mercado-livre', 'hubspot']`; `kernel.test.ts:129-133`, o `PerProject` declarado ganha `hubspot: 'many'`; `role-kit.test.ts:5-13`, a lista de recursos ganha `['hubspot', 'connector_hubspot']`. `hubspot.test.ts`: `runConformance(hubspot, hubspotFake())`, as verificações que o `main` tiver (treze, depois do grupo 1); "a lista de contatos anda cada página uma vez pelo `after`"; "a conta é o portal".
     - **Mutações à mão:** tirar o `personal` do e-mail (a verificação 6 falha pelo `findUndeclared`); trocar `after` por `cursor` na paginação (o caso das páginas falha).
     - **Pronto quando:** `npm test -w @conexus/connectors` passa com o HubSpot no catálogo, e o Sankhya e o Mercado Livre seguem verdes.
@@ -757,7 +757,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
 - **Nenhum dos dois declara revogação.** `oauth2Code` exige `{account}` no caminho de revogação, e a do HubSpot e a do Google não o levam. Desligar apaga a linha e as chaves; o fundador revoga no sistema, se quiser.
 - **A origem de login (8.1)** é a única mudança do kit no bloco B. Ela pede um registro de decisão "proposto", e o grupo 8 só começa com ele no PR.
 - **O que espera o quê no bloco C.**
-  - `ApiKeyAuth` (`C9`) entra com o primeiro sistema que o usa, o Omie, no `D3` (data `docs/steps/trilhas/dados.md:74-75`). Um modo de login sem conector não tem dublê gravado nem conformidade que o prove.
+  - `ApiKeyAuth` (`C9`) entra com o primeiro sistema que o usa, o Omie, no `D3` (data `docs/steps/trilhas/dados.md:89`). Um modo de login sem conector não tem dublê gravado nem conformidade que o prove.
   - A entrada conversada entra pela reescrita do cartão do PR 982, com a skill `conexus-scope`, no próprio PR. O cartão reescrito carrega os requisitos 9.1 a 9.8. As mudanças que ele recebe, pela tabela de `C10` do desenho:
     - U1, Ligue seus sistemas: nada muda, e a janela é a de quatro passos do grupo 4.
     - U2, a skill `conexus-intake`: as etapas passam a ser cinco, Empresa, Desafios, Objetivos, Sistemas e Salvar, escritas com `task_write` e fechadas com `task_check`; a skill manda marcar a suposição com "(suposição, confirmar)".

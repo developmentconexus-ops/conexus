@@ -2,7 +2,7 @@
 
 ## Introdução
 
-No fim desta parte a pessoa pergunta ao Assistente "Quanto vendi em outubro?" e recebe o número em negrito. Embaixo da resposta, o bloco Fontes diz o sistema, a tabela e a hora da cópia: Sankhya, `sankhya_vendas`, copiado hoje às 08:45. Quem abre as linhas de ferramenta vê o catálogo consultado, as 5 linhas que o agente olhou e a consulta, com **Copiar a consulta**. O Builder e um agente salvo usam as mesmas duas ferramentas. É o marco `D2` do roteiro (`docs/roadmap.md:47`). As decisões vêm do escopo aprovado, seção 5 (telas `p3-01` a `p3-07`): `T5` (a origem no bloco Fontes), `T7` (a amostra de 5 linhas) e E3a (a consulta visível a quem lê a tabela, recolhida). O como está no `design.md` desta pasta, que parte da parte 1 construída.
+No fim desta parte a pessoa pergunta ao Assistente "Quanto vendi em outubro?" e recebe o número em negrito. Embaixo da resposta, o bloco Fontes diz o sistema, a tabela e a hora da cópia: Sankhya, `sankhya_vendas`, copiado hoje às 08:45. Quem abre as linhas de ferramenta vê o catálogo consultado, as 5 linhas que o agente olhou e a consulta, com **Copiar a consulta**. O Builder e um agente salvo usam as mesmas duas ferramentas. É o marco `D2` do roteiro (`docs/roadmap.md:46`). As decisões vêm do escopo aprovado, seção 5 (telas `p3-01` a `p3-07`): `T5` (a origem no bloco Fontes), `T7` (a amostra de 5 linhas) e E3a (a consulta visível a quem lê a tabela, recolhida). O como está no `design.md` desta pasta, que parte da parte 1 construída.
 
 ## Glossário
 

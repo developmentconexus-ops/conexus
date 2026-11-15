@@ -343,7 +343,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
     - Linhas da tabela de referência no PR: "Login de leitura" (nativo, papéis e `GRANT`), "Amostra" (nativo, `SELECT ... LIMIT`), "Coluna inativa" (remendo; a prova é `column-state.test.ts`, ao lado da entrada em `docs/reference/boundaries.md`, passo 6 da skill).
     - A CI roda `npm run check`, os shards do servidor, os testes do kit e do contrato, e o `openapi` (a operação nova).
 
-- [ ] 3. Grupo 3: o contrato (um PR do contrato e da conformidade, `docs/steps/trilhas/dados.md:60-66`, com a exceção da decisão `D19` do índice)
+- [ ] 3. Grupo 3: o contrato (um PR do contrato e da conformidade, `docs/steps/trilhas/dados.md:72-78`, com a exceção da decisão `D19` do índice)
   - [ ] 3.1 O rótulo, a descrição obrigatória, a coluna inativa e `TABLE_PAGE_ROWS` (um commit)
     - **Arquivos:** `packages/hub-api/src/copy-shown.ts`, `packages/hub-api/src/company-data.ts`, `packages/hub-api/src/company-data-conformance.ts`, `packages/hub-api/src/company-data.test.ts`; para o typecheck e os testes continuarem compilando (decisão `L7`): `apps/server/src/hub/copies/store.ts` (`shownOf` dá `inactiveSince: null`), `apps/server/src/hub/copies/routes.test.ts` (`:158` e `:268`, as colunas comparadas com `deepEqual`), `apps/server/src/builder/app-data/context.test.ts` (`:33`, colunas tipadas por `CopyShown['columns']` via `project-view.ts:30`), `apps/web/src/hub/copies/test-sources.ts`, `apps/web/sweep-copies-states.ts`, `apps/web/sweep-copy-proposal-states.ts` e os testes de `apps/web` que montam colunas (`copy-detail.test.tsx`, `builder/conversation/copy-proposal-card.test.tsx`, `construtor-rows.test.tsx`).
     - **Referência a seguir:** `CopyShown` em `copy-shown.ts:24-35`; `CatalogTable` em `company-data.ts:42-48`; a lei `describesSystemsAndTables` em `company-data-conformance.ts:113-125` e a lista `LAWS` em `:260-302`; a fixture `CATALOG` em `company-data.test.ts:10-98`.
@@ -379,7 +379,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
   - [ ] 3.2 Ponto de conferência do grupo 3
     - Rode `npm test -w @conexus/hub-api`, `npm run typecheck`, os testes de tela dos arquivos de fixture tocados, `npm run check` e `npm run quality`.
     - Passos 6 e 7 da skill `conexus-build`: pstack `deslop` e `no-comments`; a mutação de 3.1.
-    - O PR diz qual verbo muda (Descrever), o que a pessoa vê (a descrição e a coluna inativa) e traz o exemplo `sankhya_vendas` (`dados.md:62-63`).
+    - O PR diz qual verbo muda (Descrever), o que a pessoa vê (a descrição e a coluna inativa) e traz o exemplo `sankhya_vendas` (`dados.md:74-75`).
     - A CI roda `npm run check` (com `openapi`, que emite a mudança de `CopyShown`) e os testes do contrato.
 
 - [ ] 4. Grupo 4: o catálogo no servidor (um PR; depende dos grupos 2 e 3 no `main`)
@@ -459,7 +459,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
       // .dependency-cruiser.cjs:20: hub/(connectors|copies|ontology|data)/
       // dados.md:32: `apps/server/src/hub/data/` entra na lista
       ```
-      Nenhum consumidor chama `createCompanyData` nesta parte. A trilha Agentes e Apps o liga depois, em PR próprio (`dados.md:66`).
+      Nenhum consumidor chama `createCompanyData` nesta parte. A trilha Agentes e Apps o liga depois, em PR próprio (`dados.md:78`).
     - **Testes:** `data.test.ts`, pela porta `on.hub.data` com `copiesOn`:
       - "descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro não": `describe()` com `place: { kind: 'COMPANY' }`.
       - "descrever num Projeto: só as liberadas" e o exemplo do `design.md` (Projeto do CRM com `sankhya_clientes` liberada).
@@ -569,7 +569,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
     - _Requisitos: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8_
   - [ ] 5.3 A camada Apps (tela `p1-06`) (um commit)
     - **Arquivos:** `apps/web/src/hub/copies/apps-layer.tsx` (novo), `apps/web/src/hub/copies/data-page.tsx`, `apps/web/src/hub/copies/text.ts`, `apps/web/src/hub/copies/apps-layer.test.tsx` (novo).
-    - **Referência a seguir:** `DataPage` e `listOf` do Projeto em `apps/web/src/hub/apps/data.tsx:102-160` (o que é tabela do app e o "indisponível" de `countText`, `:19-31`); `appTablesQuery` de `hub/apps/public.ts:8`; `projectsQuery` de `hub/projects/public.ts:11` (`publishedVersion` e `appVersion` em `packages/hub-api/src/projects.ts:19-27`); as fixtures de `apps/web/src/hub/apps/test-data.tsx` (`server`, `PROJECT`, `TABLES`); o protótipo `p1-06` do escopo; `Skeleton` de `apps/web/src/ui/skeleton.tsx`.
+    - **Referência a seguir:** `DataPage` e `listOf` do Projeto em `apps/web/src/hub/apps/data.tsx:102-159` (o que é tabela do app e o "indisponível" de `countText`, `:19-31`); `appTablesQuery` de `hub/apps/public.ts:8`; `projectsQuery` de `hub/projects/public.ts:11` (`publishedVersion` e `appVersion` em `packages/hub-api/src/projects.ts:19-27`); as fixtures de `apps/web/src/hub/apps/test-data.tsx` (`server`, `PROJECT`, `TABLES`); o protótipo `p1-06` do escopo; `Skeleton` de `apps/web/src/ui/skeleton.tsx`.
     - **O que sai:** nada.
     - **O que entra:**
       ```ts
@@ -616,7 +616,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
 - **`L4`, textos propostos.** Nenhum protótipo traz "A cópia tem mais linhas que estas cinco.", "A cópia ainda não tem linhas.", "Nenhum app guarda tabelas ainda.", "Nenhuma tabela copiada", "Ver a rodada" nem o rótulo dos tipos `boolean` ("Sim ou não") e `json` ("Estrutura"). O construtor usa estes, e o PR os lista para a aprovação do fundador no fim da etapa, como `text.ts:11` já diz.
 - **`L5`, decidida.** No lugar `PROJECT`, o catálogo lista só as conexões `ACTIVE` liberadas ao Projeto, como o Assistente de um Projeto já escolhe (`C21` de `hub/connectors/scope.ts:5`). No lugar `COMPANY`, lista todas as `ACTIVE` da empresa. `catalogSystems` recebe o `SessionScope` e lê `offeredIn(tx, idsOf(scope))`, importado de `./builder-port.ts` (definido em `apps/server/src/hub/connectors/builder-port.ts:139`; `assistant-port.ts:140-143` mostra a chamada), e o teste da 4.2 cobre os dois lugares.
 - **`L6`, decidida.** A aba **Amostra** aparece só para dono e administrador. A unidade 2.2 acrescenta `readCopyRows` a `CompanyMay` (`packages/hub-api/src/roles.ts:47`), no molde dos outros campos. É o contrato das telas, e não `company-data.ts`, então não pede a issue `contrato`.
-- **`L7`, decidida (`D19` do índice).** A unidade 3.1 muda `CopyShown`, que o servidor produz e as telas leem. O PR do contrato leva, além do contrato e da conformidade, só as linhas `inactiveSince: null` que fazem o repositório compilar: `shownOf` em `store.ts`, `routes.test.ts:158` e `:268`, `builder/app-data/context.test.ts:33` e as fixtures de `apps/web`. É uma exceção registrada à regra de `dados.md:64-65`. O grupo do contrato tem uma unidade de commit e o ponto de conferência, outra exceção registrada à regra de duas ou três unidades: o contrato é uma mudança só. O corpo do PR lista essas linhas. A regra de `docs/steps/trilhas/dados.md:64` existe para o PR do contrato não carregar comportamento, e estas linhas não carregam.
+- **`L7`, decidida (`D19` do índice).** A unidade 3.1 muda `CopyShown`, que o servidor produz e as telas leem. O PR do contrato leva, além do contrato e da conformidade, só as linhas `inactiveSince: null` que fazem o repositório compilar: `shownOf` em `store.ts`, `routes.test.ts:158` e `:268`, `builder/app-data/context.test.ts:33` e as fixtures de `apps/web`. É uma exceção registrada à regra de `dados.md:76-77`. O grupo do contrato tem uma unidade de commit e o ponto de conferência, outra exceção registrada à regra de duas ou três unidades: o contrato é uma mudança só. O corpo do PR lista essas linhas. A regra de `docs/steps/trilhas/dados.md:76` existe para o PR do contrato não carregar comportamento, e estas linhas não carregam.
 - **`L8`, decidida.** A camada Apps lê os Projetos pela consulta paginada que a página Projetos já usa (`projectsPagedQuery`, `apps/web/src/hub/projects/queries.ts:25-36`), com o botão **Mais** dela no fim da lista. Nenhuma página é lida sem o toque.
 
 **Correções feitas no `design.md`.** Listadas no relatório final da redação desta parte.
