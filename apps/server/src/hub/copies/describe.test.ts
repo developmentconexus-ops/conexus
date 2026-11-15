@@ -133,7 +133,7 @@ test('a posse que outra rodada tomou ao preencher', async (t) => {
   const ensure = companyPostgres.ensureCopyTable.bind(companyPostgres)
   t.mock.method(companyPostgres, 'ensureCopyTable', async (...args: Parameters<typeof ensure>) => {
     const answer = await ensure(...args)
-    await plantCopy(on, copyId, "claim_token = gen_random_uuid()")
+    await plantCopy(on, copyId, 'claim_token = gen_random_uuid()')
     return answer
   })
   assert.deepEqual(await on.run(copyId), { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } })

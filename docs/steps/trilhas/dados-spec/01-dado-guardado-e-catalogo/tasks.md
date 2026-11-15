@@ -74,7 +74,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
 
 - [ ] 1. Grupo 1: o nome e a descrição (um PR; depende do grupo 0 no `main`)
   - [ ] 1.1 A regra de nome `sistema_tabela` (um commit)
-    - **Arquivos:** `apps/server/src/hub/copies/naming.ts` (novo), `apps/server/src/hub/copies/naming.test.ts` (novo), `apps/server/src/hub/copies/enable.ts`, `apps/server/src/hub/copies/propose.ts`, `apps/server/src/hub/copies/test-proposals.ts`, e os testes que leem `sync.<modelo>` ou propõem um nome (lista abaixo).
+    - **Arquivos:** `apps/server/src/hub/copies/naming.ts` (novo), `packages/connectors/src/kernel/copy.ts` (`copyPrefixOf`), `packages/connectors/src/kernel/copy-description.test.ts` (novo), `apps/server/src/hub/copies/enable.ts`, `apps/server/src/hub/copies/propose.ts`, `apps/server/src/hub/copies/test-proposals.ts`, e os testes que leem `sync.<modelo>` ou propõem um nome (lista abaixo).
     - **Referência a seguir:** `enable.ts:70-75` (`insertedCopy` com `name: model.id`); `propose.ts:219-233` (a ordem das recusas de `propose`); o item de recusa `MALFORMED` de `propose.ts:188-205`; a regra que o Construtor já recebe em `apps/server/src/builder/connectors/copy-propose.ts:47` ("`<system>_<data>`").
     - **O que sai:** `name: model.id` em `enable.ts:73`.
     - **O que entra:**
@@ -101,7 +101,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
       ```
       A recusa é um item de `MALFORMED` (`apps/server/src/hub/connectors/builder-port.ts:80-81`), e não um tipo novo de resposta: o Construtor já lê os itens. A ordem de `propose` não muda. Um nome de mais de 40 caracteres continua recusado em `CopyName.safeParse` (`propose.ts:219-223`), com o item do zod que `issuesOf(name.error, 'name')` (`propose.ts:20-22`) monta. `namePrefixIssue` confere só o prefixo, depois que o conector é conhecido.
     - **Testes:**
-      - `naming.test.ts`: "o prefixo troca o hífen" (`mercado-livre`), "cada modelo do kit cabe em 40 caracteres com o prefixo" (percorre `CONNECTORS` de `../connectors/public.ts` e chama `modelCopyName` em cada `copy.models`).
+      - `packages/connectors/src/kernel/copy-description.test.ts` (um teste de servidor que importasse `naming.ts` quebra o testing T5; a regra do prefixo, `copyPrefixOf`, mora no kit, ao lado de `CopyName`): "o prefixo troca o hífen" (`mercado-livre`), "cada modelo do kit cabe em 40 caracteres com o prefixo do conector" (percorre `CONNECTORS` de `../index.ts` e confere `CopyName` em cada `copy.models`).
       - `apps/server/src/hub/copies/enable.test.ts`, caso "ligar: a linha, o esquema e a tabela" (`:49`): o nome guardado e a tabela `sync.sankhya_vendas`.
       - `apps/server/src/hub/copies/propose.test.ts`, caso novo "propor: o nome sem o sistema na frente" no molde de "propor: as recusas" (`:70`): `vendas` recusa com o item `COPY_NAME_PREFIX`; `sankhya_` seguido de 33 letras (41 caracteres) recusa com um item que começa por `name:` e não cita `COPY_NAME_PREFIX` (o item do zod de hoje); `sankhya_devolucoes` passa; nada é gravado (`copy_proposal` vazio).
       - `apps/server/src/hub/copies/test-proposals.ts`: o nome padrão `'devolucoes'` de `proposeAs` (`:47`) e de `proposed` (`:56`) vira `'sankhya_devolucoes'`. Sem isso todo `proposed(on)` volta `MALFORMED` e quebra `accept.test.ts`, `accept-v2.test.ts`, `delete.test.ts` e `routes.test.ts:296`. Os testes que passam outro nome a `proposeAs` ou `proposed` ganham o prefixo do conector da conexão proposta (`sankhya_` na versão 1; o prefixo do conector do dublê na versão 2, como `propose-v2.test.ts` monta). A lista sai de `git grep -ln "proposeAs(\|proposed(\|devolucoes" -- apps/server/src`.
@@ -174,12 +174,12 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
       - "preencher não troca uma descrição que existe": plantar uma descrição de coluna diferente da do modelo; depois de duas rodadas ela continua.
       - "o modelo que saiu do kit": plantar `model = 'nao_existe'`; a rodada termina `COMPLETE` e o log tem `COPY_MODEL_GONE` uma vez (`hubLog`, `test-copies.ts:208`).
       - "o banco da empresa cai ao preencher": `t.mock.method(on.hub.postgres.companyPostgres, 'ensureCopyTable', ...)` com `NO_ANSWER` (molde `grants.test.ts:81-83`); a rodada termina `ERROR` `COPY_DATABASE_UNAVAILABLE` e a definição continua sem descrição.
-      - Teste puro de `filledFrom` no mesmo arquivo: aplicar duas vezes dá `undefined` na segunda.
+      - "preencher não troca" planta também a descrição da tabela e confere, depois de duas rodadas, que a definição guardada não mudou na segunda (a idempotência de `filledFrom` pela porta do teste de cópias; um teste puro de `filledFrom` quebra o testing T5).
     - **Mutações à mão:** trocar `c.description !== undefined ? c` por `{ ...c, description: ... }` sempre faz "preencher não troca" falhar; inverter os passos 4 e 5 faz "o banco da empresa cai ao preencher" falhar; tirar o log faz "o modelo que saiu do kit" falhar.
     - **Pronto quando:** `describe.test.ts` passa e uma cópia ligada antes desta parte mostra a descrição na lista depois da próxima rodada.
     - _Requisitos: 2.4, 2.6, 2.7_
   - [ ] 1.4 Ponto de conferência do grupo 1
-    - Rode `npm test -w @conexus/connectors`, os arquivos `naming.test.ts`, `describe.test.ts`, `enable.test.ts`, `propose.test.ts`, `propose-v2.test.ts`, `routes.test.ts` e os arquivos de teste das duas listas da unidade 1.1, e depois `npm run check` e `npm run quality`.
+    - Rode `npm test -w @conexus/connectors`, os arquivos `copy-description.test.ts`, `describe.test.ts`, `enable.test.ts`, `propose.test.ts`, `propose-v2.test.ts`, `routes.test.ts` e os arquivos de teste das duas listas da unidade 1.1, e depois `npm run check` e `npm run quality`.
     - Passos 6 e 7 da skill `conexus-build`: ligue uma cópia no Hub local com o dublê do Sankhya e veja o nome e a descrição na lista; pstack `deslop` e `no-comments`; as mutações de 1.1, 1.2 e 1.3, sem pular nenhuma.
     - Linhas da tabela de referência no PR: "Nome da tabela" (nativo, `naming.ts`) e "Descrição de tabela e coluna" (nativo, `COMMENT ON`), com o arquivo e a linha de cada uma.
     - A CI roda `npm run check` (`quality --fast`), os testes do kit e os shards do servidor.
