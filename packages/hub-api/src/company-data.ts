@@ -57,11 +57,16 @@ export type CatalogTable = z.infer<typeof CatalogTable>
 
 const CatalogUnavailable = z.object({ kind: z.literal('CATALOG_UNAVAILABLE') })
 
+/** A table that exists and the role of whoever asks does not read: its name and label only, never a column or a description. */
+export const WithheldTable = z.object({ name: z.string(), label: z.string() })
+export type WithheldTable = z.infer<typeof WithheldTable>
+
 /** What the place may use, assembled by the platform from the connections and the tables. */
 export const Catalog = z.object({
   kind: z.literal('CATALOG'),
   systems: z.array(CatalogSystem),
   tables: z.array(CatalogTable),
+  withheld: z.array(WithheldTable),
 })
 export type Catalog = z.infer<typeof Catalog>
 
@@ -221,6 +226,7 @@ export type CompanyData = Readonly<{
 }>
 
 const NOT_IN_CATALOG = { kind: 'NOT_IN_CATALOG' } as const
+const NOT_IN_ROLE = { kind: 'NOT_IN_ROLE' } as const
 
 function fixes(fixed: Readonly<Record<string, unknown>>, input: unknown): boolean {
   const given = input ?? {}
@@ -246,9 +252,11 @@ type Source =
   | Readonly<{ kind: 'TABLE'; table: CatalogTable }>
   | Readonly<{ kind: 'LIVE'; read: OperationRead }>
   | typeof NOT_IN_CATALOG
+  | typeof NOT_IN_ROLE
 
 function sourceOf(catalog: Catalog, request: TableOrOperation): Source {
   if (request.kind === 'TABLE') {
+    if (catalog.withheld.some(({ name }) => name === request.table)) return NOT_IN_ROLE
     const table = catalog.tables.find(({ name }) => name === request.table)
     return table === undefined ? NOT_IN_CATALOG : { kind: 'TABLE', table }
   }
@@ -304,6 +312,7 @@ export function companyData(a: Readonly<{ sources: DataSources; now: () => Date 
       const source = sourceOf(catalog, request)
       switch (source.kind) {
         case 'NOT_IN_CATALOG':
+        case 'NOT_IN_ROLE':
           return source
         case 'TABLE': {
           const { table } = source

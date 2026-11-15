@@ -9,6 +9,7 @@ import type {
 } from './company-data.ts'
 import { ActAnswer, companyData, Described, ReadAnswer } from './company-data.ts'
 import { queryLaws } from './company-data-query-conformance.ts'
+import { roleLaws } from './company-data-role-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
 import { ConversationId } from './conversations.ts'
 import { ToolCallId } from './questions.ts'
@@ -288,6 +289,7 @@ const LAWS: readonly (readonly [string, Law])[] = [
     'recusa, sem chamar nada, a leitura ou a tabela fora do catálogo e a ação lida como leitura',
     refusesReadOutsideCatalog,
   ],
+  ...roleLaws,
   ...queryLaws,
   [
     'age só pelo funil, uma vez, com o pedido e a chamada intactos, e devolve a resposta do funil',
