@@ -1421,8 +1421,7 @@ moves the watermark or takes a row out.
 - **Library line.** `zod` 4.6.5 and the kit have no schema of a source: a list answer is rows of any
   shape, and `cellOf` (`packages/connectors/src/kernel/list.ts`) reads an absent path and a null the
   same. Nothing in `@mastra/core` 1.82.0, `@neondatabase/serverless` 1.2.0 or PostgreSQL 18 keeps
-  which columns a source sent in the runs before. Databricks' Lakeflow Connect marks a column
-  inactive from the source's schema, which an API does not have.
+  which columns a source sent in the runs before.
 - **Hand-made piece.** `present` (the columns whose path exists in a row of the page, `cellsOf` and
   `listPageOf` in the kit, `CopyRead` in `hub/connectors/copy-port.ts`); `seen` of the run
   (`source-pass.ts`: the present columns, whether every source read the whole window, the rows read);
