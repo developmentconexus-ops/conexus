@@ -66,6 +66,17 @@ que cada PR lista.
 - Na conversa do Builder, a fonte nomeia o sistema pelo nome técnico ("sankhya"), porque a conversa
   do Projeto ainda não tem os nomes do catálogo, que o Assistente tem. O conserto é um PR pequeno
   fora desta etapa.
+- Das pendências guardadas para o próximo cartão, a etapa toma uma: a 940, a linha com a data de
+  alteração vazia que a cópia incremental nunca corrige, porque a passada inteira de domingo relê
+  tudo e a corrige. As outras que tocam esta etapa esperam. A 1016 (as leituras ao vivo devolvem a
+  falha ao modelo como resposta, e não como erro) muda as linhas de leitura de todos os agentes,
+  também as do Construtor, que está congelado; as duas ferramentas novas já nascem do jeito certo,
+  e a etapa só põe a hora na leitura que deu certo. A 942 (ver o relógio da cópia rodar sozinho no
+  Hub no ar) fica pela metade: no passo 5 você vê a rodada de domingo disparada sozinha, mas não o
+  segundo ciclo da rodada normal. A 944 (o número exato acima de 10.000 linhas) é da tela de Dados
+  do Projeto, que esta etapa não toca, e pede uma palavra sua. A 946 (a coluna interna `_pass`
+  aparece numa consulta que pede todas as colunas) não traz dado da empresa, e o conserto pede uma
+  escolha entre uma permissão por coluna e uma visão.
 
 **As decisões suas nesta etapa.**
 
@@ -98,7 +109,7 @@ que cada PR lista.
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | G1 (um PR só do contrato e da conformidade, issue `contrato`) | U1 `withheld` sai do contrato e a lei da tabela escondida | O catálogo perde a segunda lista: a tabela que o papel não lê não aparece em lugar nenhum de `describe`, e pedi-la pelo nome responde `NOT_IN_CATALOG`, igual a um nome que não existe. A conformidade troca a lei da tabela retida pela lei da tabela escondida; a lei da consulta recusada pelo banco fica | `packages/hub-api/src/`, `apps/server/src/hub/data/` (uma linha e um teste), `scripts/rerun-never.json` | testing (T5, T10, T27); security S10 | nada; entra antes das ferramentas (parte 3, grupo 3) e do catálogo por papel (parte 4, grupo 6) |
-| G2 | U2 As duas ferramentas, os nomes, o fecho do Builder e o verificador | `data_describe` e `data_query` sobre o contrato, com a origem de cada tabela e a recusa tipada; os nomes no dono único; a ordem do agente num texto só; a pasta nova fora da lista de migração; a linha mínima de cada uma na conversa | `apps/server/src/builder/data-tools/` (nova), `packages/hub-api/src/tools.ts`, `apps/server/src/builder/conversation/permissions.ts`, `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`, `apps/web/src/builder/conversation/` | testing, web | U1 (o catálogo sem `withheld`); a fonte de consulta, já no `main` (PR 1077) |
+| G2 | U2 As duas ferramentas, os nomes, o fecho do Builder e o verificador | `data_describe` e `data_query` sobre o contrato, com a origem de cada tabela e a recusa lançada como erro da ferramenta; os nomes e a forma do resultado no dono único; a ordem do agente num texto só; a pasta nova fora da lista de migração; a linha mínima de cada uma na conversa | `apps/server/src/builder/data-tools/` (nova), `packages/hub-api/src/tools.ts`, `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/conversation/permissions.ts`, `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`, `apps/web/src/builder/conversation/` | testing, web | U1 (o catálogo sem `withheld`); a fonte de consulta, já no `main` (PR 1077) |
 | G2 | U3 A montagem nos três agentes, com a porta na raiz do servidor | O `data` da raiz do servidor chega ao Assistente, ao Builder e ao agente salvo; os três oferecem as duas ferramentas e trazem a ordem; o Construtor não; o bloco "## Data" do Builder manda ver linhas com `data_describe` | `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/builder/assistant/`, `apps/server/src/builder/conversation/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/app-data/context.ts` | testing | U2 |
 | G3 (um PR; depois dele, a QA, testing T25) | U4 O `at` da leitura ao vivo, os cenários `data-query` e `reads`, e as perguntas com resposta conhecida | A leitura ao vivo guarda a hora em que a resposta voltou; o fluxo nativo do Mastra gravado com as duas ferramentas de dado, de onde as telas leem o resultado; seis perguntas sobre o dado copiado no placar, com o número calculado do dublê | `apps/server/src/builder/connectors/`, `apps/server/src/builder/data-tools/` (só o ajudante de teste), `apps/server/src/builder/assistant/`, `apps/server/src/platform/` (gravações e o teste delas), `packages/hub-api/src/assistant.ts`, `scripts/`, `apps/web/src/builder/conversation/test-recorded.ts` | testing | U2, U3 |
 | G3 | U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa | Telas `p3-02`, `p3-06`, `p3-07`: a frase de cada estado, o detalhe ao lado, a consulta no corpo aberto com **Copiar a consulta**, o texto de cada recusa | `apps/web/src/builder/conversation/` | web, testing | U3, U4 (o cenário `data-query`) |
@@ -156,7 +167,7 @@ U8 e U9 partem de U7 e não dividem arquivo de produção além de `copy-detail.
 
 ## Os critérios de aceite
 
-Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69, G5 de 70 a 79, G6 de 80 a 99), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar.
+Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69 e de 74 a 79, G5 de 70 a 73, G6 de 80 a 99), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar. A faixa de G4 encheu com a conferência no ar do explorador, e G5 só usa 70 a 73.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
@@ -166,41 +177,44 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 4 | U1 | O catálogo do servidor, pela porta `createCompanyData`, responde sem a chave `withheld`: as chaves do `describe` cru, antes de `Catalog.parse`, são `kind`, `systems`, `tables` | `apps/server/src/hub/data/data.test.ts`, caso "descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro não", com uma asserção nova sobre as chaves do `describe` do dono | must |
 | 5 | U1 | A conformidade continua com 22 leis no mundo falso (15 de `LAWS`, 2 de `roleLaws`, 5 de `queryLaws`): uma lei sai e uma entra | a saída de `npm test -w @conexus/hub-api`, a suíte "o contrato sobre um ERP e um correio falsos" | should |
 | 6 | U1 | Nenhum `withheld` sobra: `git grep -n -i withheld -- packages/hub-api apps/server/src/hub/data scripts/rerun-never.json` não mostra nada, e `scripts/rerun-never.json` traz o nome da lei nova no lugar da antiga | `scripts/rerun-exempt.test.ts` (cruza a lista com os nomes dos testes) e o comando `git grep` no ponto de conferência | should |
-| 10 | U2 | `data_describe` e `data_query` chamadas sem `requestContext` devolvem `{ kind: 'NOT_GRANTED' }`, e nenhuma fonte do contrato é chamada | `apps/server/src/builder/data-tools/tools.test.ts`, "sem requestContext, NOT_GRANTED e nenhuma fonte chamada" | must |
-| 11 | U2 | Com `dataOf` devolvendo `undefined` (conversa sem escopo), as duas devolvem `NOT_GRANTED` | `tools.test.ts`, "dataOf undefined, NOT_GRANTED" | must |
-| 12 | U2 | `data_describe` sem tabela devolve `CATALOG` com cada sistema (nome, conector, leituras) e cada tabela (nome, rótulo, descrição, sistema, conector, `copiedAt`, `lastRun`), sem colunas; a empresa sem sistema nem cópia recebe as duas listas vazias | `tools.test.ts`, "describe sem tabela não traz colunas e traz o conector, a hora e o estado da última rodada" e "o catálogo vazio dá CATALOG com as duas listas vazias" | must |
+| 10 | U2 | `data_describe` e `data_query` chamadas sem `requestContext` falham com o erro da ferramenta de `kind` `NOT_GRANTED`, e nenhuma fonte do contrato é chamada | `apps/server/src/builder/data-tools/tools.test.ts`, "sem requestContext, NOT_GRANTED e nenhuma fonte chamada" | must |
+| 11 | U2 | Com `dataOf` devolvendo `undefined` (conversa sem escopo), as duas falham com `NOT_GRANTED` | `tools.test.ts`, "dataOf undefined, NOT_GRANTED" | must |
+| 12 | U2 | `data_describe` sem tabela devolve `CATALOG` com cada sistema (nome, conector, leituras) e cada tabela (nome, rótulo, descrição, sistemas, conector, `lastRunEndedAt`, `lastRun`), sem colunas; `lastRunEndedAt` é o `endedAt` de `kept.lastRun`, a última rodada encerrada com qualquer resultado, e é nulo com `lastRun: 'NONE'`; nenhum campo se chama `copiedAt`. A empresa sem sistema nem cópia recebe as duas listas vazias | `tools.test.ts`, "describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada" (uma tabela com a última rodada `ERROR`, outra sem rodada) e "o catálogo vazio dá CATALOG com as duas listas vazias" | must |
 | 13 | U2 | `data_describe({ table })` de uma tabela do catálogo devolve `TABLE` com as colunas, no máximo 5 linhas, `more: true` quando a página tem mais ou veio cortada, e a origem | `tools.test.ts`, "describe com tabela corta 200 linhas em 5 e diz more" | must |
-| 14 | U2 | `data_describe({ table })` de um nome fora de `tables` (inexistente, ou de uma cópia que o lugar não lê) devolve `NOT_IN_CATALOG` com "No such table in the catalog. Call data_describe with no table to list them." e não pede linha nenhuma à fonte | `tools.test.ts`, "describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha" | must |
-| 15 | U2 | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com o nome e o conector do sistema tirados de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome e o conector do sistema do catálogo" | must |
+| 14 | U2 | `data_describe({ table })` de um nome fora de `tables` (inexistente, ou de uma cópia que o lugar não lê) falha com o erro da ferramenta `NOT_IN_CATALOG`, com "No such table in the catalog. Call data_describe with no table to list them." no `reason`, e não pede linha nenhuma à fonte | `tools.test.ts`, "describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha" | must |
+| 15 | U2 | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com os nomes e o conector dos sistemas tirados de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome e o conector do sistema do catálogo" | must |
 | 16 | U2 | `data_query` cujo plano não nomeia tabela de `sync` devolve as linhas, `origin: []` e a frase "The origin of these rows was not identified: say so." | `tools.test.ts`, "query sem tabela no plano diz que a origem não foi identificada" | must |
-| 17 | U2 | Uma tabela cuja conexão não está em `systems` faz `data_describe({ table })` e `data_query` devolverem `CATALOG_UNAVAILABLE` sem linha, e o servidor registra `DATA_ORIGIN_UNREAD`; o id da conexão nunca vira nome | `tools.test.ts`, "um sistema fora do catálogo dá CATALOG_UNAVAILABLE e registra DATA_ORIGIN_UNREAD" | must |
-| 18 | U2 | Cada recusa (`QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `TABLE_UNAVAILABLE`, `NOT_IN_ROLE`, `NOT_IN_CATALOG`, `CATALOG_UNAVAILABLE`) volta com o seu `kind` e a frase ao modelo da tabela de U2; `QUERY_REFUSED` põe o SQLSTATE na frase | `tools.test.ts`, "cada recusa leva a sua frase" (`test.each`) | must |
+| 17 | U2 | Uma tabela com uma conexão que não está em `systems` faz `data_describe({ table })` e `data_query` falharem com `CATALOG_UNAVAILABLE`, sem linha, e o servidor registra `DATA_ORIGIN_UNREAD`; o id da conexão nunca vira nome | `tools.test.ts`, "um sistema fora do catálogo dá CATALOG_UNAVAILABLE e registra DATA_ORIGIN_UNREAD" | must |
+| 18 | U2 | Cada recusa (`QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `TABLE_UNAVAILABLE`, `NOT_IN_ROLE`, `NOT_IN_CATALOG`, `CATALOG_UNAVAILABLE`) sai pelo caminho nativo de falha da Mastra, como erro da ferramenta (code C79), com o seu `kind` e a frase ao modelo da tabela de U2 em `reason`; `QUERY_REFUSED` leva o SQLSTATE em `code` e a mensagem inteira do PostgreSQL em `message`. Recusa: nenhuma recusa volta como resultado de sucesso | `tools.test.ts`, "cada recusa sai como erro da ferramenta com a sua frase" (`test.each`, com `assert.rejects` sobre o JSON lançado) | must |
 | 19 | U2 | `data_query` com SQL vazio ou acima de 4000 caracteres é recusada pelo esquema de entrada, e a fonte `query` não é chamada | `tools.test.ts`, "o SQL vazio ou acima de 4000 caracteres é recusado pelo esquema" | must |
 | 20 | U2 | O conjunto fechado do Builder e o da tela são o mesmo e contêm `data_describe` e `data_query`; tirar os nomes de `READ` quebra a igualdade | `apps/server/src/builder/conversation/permissions.test.ts`, "a tela e o Builder nomeiam o mesmo conjunto fechado" | must |
 | 21 | U2 | Um arquivo de `builder/data-tools/` que importe `hub/connectors/public.ts` é recusado pelo verificador; a pasta não está na lista de migração | `scripts/rules-doors.test.ts`, o caso `BAD` de `agents-and-apps-reach-data-only-through-the-contract` | must |
 | 22 | U2 | Na conversa, `data_describe` e `data_query` têm frase de rodando, feito e falha | `apps/web/src/builder/conversation/tool-row.test.tsx`, "cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela (Critério 8)" | must |
+| 28 | U2 | Uma tabela copiada de duas conexões traz na origem os nomes das duas, na ordem de `kept.connections`: `data_describe({ table })` e `data_query` dizem `systems: ['Loja A', 'Loja B']`; o catálogo traz os mesmos dois nomes na tabela | `tools.test.ts`, "uma cópia de duas conexões nomeia as duas na origem" | must |
 | 23 | U3 | O Assistente, o Builder e o agente salvo oferecem `data_describe` e `data_query` ao modelo com a mesma descrição e o mesmo esquema | `apps/server/src/builder/data-tools/mounted.test.ts`, "o Assistente, o Builder e o agente salvo oferecem data_describe e data_query com a mesma descrição e o mesmo esquema" | must |
 | 24 | U3 | O Construtor não oferece nenhuma das duas | `mounted.test.ts`, "o Construtor não oferece data_describe nem data_query" | must |
 | 25 | U3 | As instruções dos três trazem `## Company data`, também o Builder num Projeto sem cópia liberada | `mounted.test.ts`, "a ordem do agente está nas instruções dos três, também num Projeto sem cópia" | must |
 | 26 | U3 | O bloco "## Data" do Builder, num Projeto com cópia liberada, manda ver colunas e linhas com `data_describe` e não diz mais "see a few rows with `app_data_read`" | `mounted.test.ts`, "o bloco de dados do Builder não manda ver linhas com app_data_read" | must |
 | 27 | U3 | Pela porta da raiz, o lugar decide o catálogo: o dono no Início chamando `data_describe` recebe a cópia da empresa; o Builder e o agente salvo do Projeto recebem só a cópia liberada a ele | `mounted.test.ts`, "data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada" | must |
+| 29 | U3 | O agente salvo do Projeto, usado por um membro que não é o seu autor, lê com o escopo de quem usa (`run.scope.personId`, `apps/server/src/builder/agents/agent.ts:178`): recebe a mesma cópia liberada ao Projeto que o autor recebe, e nenhuma outra cópia da empresa. Nesta etapa o papel não muda o catálogo do Projeto (a leitura por papel é a etapa 2) | `mounted.test.ts`, "o agente salvo usado por um membro lê o catálogo do Projeto, como o autor" | must |
+
 | 30 | U4 | Uma leitura ao vivo que responde OK, por `connector_read` ou por uma leitura tipada, devolve ao modelo `at`, uma data ISO entre o antes e o depois da chamada, com e sem resposta inteira guardada na máquina. Recusa: uma leitura recusada (`REAUTH`, `REFUSED`, `READ_FAILED`, `NOT_GRANTED`) não ganha `at` | `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, caso novo "uma leitura OK leva a hora em que voltou", com e sem `whole`, e o caso de recusa | must |
-| 31 | U4 | `npm run record -- data-query` e `npm run record -- reads` gravam `apps/server/src/platform/recordings/mastra/data-query.jsonl` e `reads.jsonl` com o cabeçalho `@mastra/core` 1.82.0 e `source` `test-anthropic-stream.ts`, sem endereço nem credencial; `data-query` guarda `data_describe`, `data_describe({ table })`, `data_query` e a resposta, cada uma com o resultado real das ferramentas. Recusa: uma chamada de modelo a mais que o roteiro faz a gravação parar com "A recording holds 4 model call(s); another was asked." | `apps/server/src/platform/recordings.test.ts`, caso "cada gravação do fluxo nativo diz a biblioteca, a versão..." com `data-query` em `NATIVE` e `STREAMED`; `apps/server/src/builder/assistant/numbers.test.ts` passa com `reads` regravado | must |
+| 31 | U4 | `npm run record -- data-query` e `npm run record -- reads` gravam `apps/server/src/platform/recordings/mastra/data-query.jsonl` e `reads.jsonl` com o cabeçalho `@mastra/core` 1.82.0 e `source` `test-anthropic-stream.ts`, sem endereço nem credencial; `data-query` guarda `data_describe`, `data_describe({ table })`, `data_query` e a resposta, cada uma com o resultado real das ferramentas (`CATALOG`, `TABLE` e `ROWS` com `origin`). Recusa: uma gravação de `data-query` ou de `reads` com outra versão da Mastra, ou um `data-query` sem os três resultados, faz o caso falhar. As outras gravações, hoje em 1.79.0, não entram nesta conferência de versão | `apps/server/src/platform/recordings.test.ts`, caso novo "as gravações desta etapa são da Mastra instalada e guardam o resultado das ferramentas de dado" (a versão lida do `package.json` de `@mastra/core` comparada à do cabeçalho de `data-query` e de `reads`; os três `kind` lidos nas partes de `data-query`), e o caso de hoje com `data-query` em `NATIVE` e `STREAMED`; `apps/server/src/builder/assistant/numbers.test.ts` passa com `reads` regravado | must |
 | 32 | U4 | As seis perguntas do dado copiado (c1 a c6) têm cada uma a tabela da origem e o número esperado, calculados no teste pela função do dublê e pela consulta como dono no banco de teste, e os dois batem; as 27 do fundador continuam 27. Recusa: um número escrito à mão no teste | `apps/server/src/builder/assistant/assistant.scorecard.test.ts`, caso "as perguntas do dado copiado: cada uma com tabela, número e origem esperados, calculados do dublê" | must |
 | 33 | U4 | O placar julga certo um turno do Assistente que chama `data_query` e responde com o número lido e a tabela de `origin` esperada; julga errado o turno que lê o sistema ao vivo (`connector_read`) e o que cita outra tabela na origem (`sankhya_clientes` para c1). Recusa: `judgedCopy` devolve falso | `assistant.scorecard.test.ts`, caso "o placar do dado copiado julga certo um turno que consulta e cita a origem, e errado um que lê o sistema ao vivo", pelo Assistente de `assisting` com o dublê de modelo (testing T28) | must |
-| 34 | U4 | `CATALOG`, `TABLE` e `ROWS` de uma ferramenta de dado não contam como erro no placar (`errors` 0), e "Quanto pagamos de comissão?" (c4) é certa com prosa que nomeia uma tabela que existe e nenhuma chamada com `kind` de recusa. Recusa: um turno de c4 com um número, ou com uma recusa, é julgado errado | `assistant.scorecard.test.ts`, caso "não achei é resposta" | must |
+| 34 | U4 | `CATALOG`, `TABLE` e `ROWS` de uma ferramenta de dado não contam como erro no placar (`errors` 0), e "Quanto pagamos de comissão?" (c4) é certa com prosa que nomeia uma tabela que existe e nenhuma chamada em erro. Recusa: um turno de c4 com um número, ou com uma recusa, é julgado errado | `assistant.scorecard.test.ts`, caso "não achei é resposta" | must |
 | 35 | U4 | O caso do modelo real das perguntas do dado copiado pula sem `CONEXUS_EVAL_REAL_MODEL`, com a razão começando por `opt-in:`; com a variável, grava um JSON por pergunta na pasta dela | `assistant.scorecard.test.ts`, caso "o modelo de verdade, as perguntas do dado copiado" | should |
 | 36 | U5 | `data_describe` sem tabela diz "Consultando o catálogo" enquanto roda e "Consultou o catálogo" depois, com "5 tabelas" ao lado ("1 tabela" no singular). Recusa: com a chamada em erro ou negada, diz "Não conseguiu ler o catálogo agora." | `apps/web/src/builder/conversation/data-specs.test.tsx`, caso "o catálogo: Consultou o catálogo, 5 tabelas" | must |
 | 37 | U5 | `data_describe({ table })` diz "Vendo sankhya_vendas" enquanto roda e "Viu sankhya_vendas" depois, com "5 linhas, há mais" quando a amostra tem `more`. Recusa: `NOT_IN_CATALOG` diz "Essa tabela não está no catálogo.", também para a tabela que o papel não lê (item (d): ela responde como uma que não existe) | `data-specs.test.tsx`, casos "a amostra: Viu sankhya_vendas, 5 linhas, há mais" e "cada recusa diz o seu texto" | must |
 | 38 | U5 | `data_query` diz "Consultando os dados" enquanto roda e "Consultou sankhya_vendas" depois, com "1 linha" ("n linhas", ", há mais" quando `complete` é falso); duas tabelas na origem aparecem juntas, separadas por vírgula. Recusa: um resultado fora do esquema dá "Consultou os dados", sem detalhe | `data-specs.test.tsx`, casos "rodando: Consultando os dados", "a consulta: Consultou sankhya_vendas, 1 linha", "um resultado fora do esquema dá a linha genérica" | must |
-| 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" e "a cópia recusada diz para selecionar" | must |
-| 40 | U5 | Cada recusa de ferramenta de dado diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. Recusa: um `kind` fora da lista cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, caso "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`) | must |
+| 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (com uma consulta de 1.200 caracteres, acima do corte de 800 de `shown`) e "a cópia recusada diz para selecionar" | must |
+| 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, caso "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) | must |
 | 41 | U5 | Na conversa do Builder (`BUILDER_ROOM`) as duas ferramentas têm as mesmas linhas e o mesmo corpo | `data-specs.test.tsx`, caso "na sala do Builder, as mesmas linhas" | must |
 | 42 | U6 | A resposta que leu uma tabela copiada mostra no bloco Fontes "Sankhya · sankhya_vendas · copiado hoje às 08:45": o nome do conector pelas palavras da sala, a tabela e a hora da cópia | `apps/web/src/builder/conversation/sources.test.tsx`, caso "a fonte do dado: Sankhya · sankhya_vendas · copiado hoje às 08:45" | must |
-| 43 | U6 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro, interrompida ou sem rodada diz "parada, copiado ..."; sem hora de cópia, "ainda sem cópia"; outro dia, "copiado ontem às" ou "copiado em 17/10/2026 às" | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial", "a rodada com erro diz parada", "outro dia diz ontem ou a data" | must |
+| 43 | U6 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial", "a rodada com erro ou interrompida diz parada e nunca copiado", "sem rodada diz ainda sem cópia", "outro dia diz ontem ou a data" | must |
 | 44 | U6 | A mesma tabela lida duas vezes no turno aparece uma vez; as páginas da web citadas continuam como hoje | `sources.test.tsx`, caso "a mesma tabela lida duas vezes aparece uma vez" e o caso de web de hoje com `kind: 'web'` | must |
-| 45 | U6 | A resposta que leu um sistema ao vivo mostra "Sankhya · Matriz · lido agora, às HH:MM", com a hora do `at` gravado. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte | `sources.test.tsx`, caso "a fonte da leitura ao vivo diz lido agora, às" com `reads` regravado | must |
-| 46 | U6 | Um resultado de ferramenta de dado fora do esquema não vira fonte, e nenhuma recusa vira fonte | `sources.test.tsx`, caso "um resultado fora do esquema não vira fonte" | must |
+| 45 | U6 | A resposta que leu um sistema ao vivo mostra "Sankhya · Matriz · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "lido ontem às HH:MM" ou "lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz lido agora, às" com `reads` regravado e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
+| 46 | U6 | Um resultado de ferramenta de dado fora do esquema não vira fonte, e nenhuma chamada em erro vira fonte | `sources.test.tsx`, caso "um resultado fora do esquema não vira fonte" | must |
 | 47 | U6 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela | `apps/web/sources.layout.test.ts`, caso novo "a fonte do dado" (testing T23) | should |
 | 50 | U7 | Em `/companies/<c>/data/<id>`, a navegação "Caminho" tem os links "Dados" e "{sistema}" e o nome da tabela em texto; os dois links levam a `/data` sem `layer` e com o `q` do endereço; nenhum dos dois tem `aria-current`. O link "← Dados" de hoje não existe mais | `copy-detail.test.tsx`, "o caminho" e "o caminho leva a busca" | must |
 | 51 | U7 | O topo mostra o nome da tabela como título, o estado, **Rodar agora** e o menu da cópia, como hoje; a frase "{sistema} · a cada {intervalo}" não aparece | `copy-detail.test.tsx`, "o caminho leva a Dados" (o antigo `:47-52`) e "as rodadas…" (`:15-45`, ajustado) | must |
@@ -222,6 +236,8 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 67 | U9 | Uma coluna da amostra fora da definição, ou com um tipo sem ícone, fica só com o nome; nenhum ícone sem nome (recusa) | `copy-sample.test.tsx`, "uma coluna fora da definição fica só com o nome" | must |
 | 68 | U9 | A primeira célula de cada linha da Amostra é o número da linha, 1 a 5; o cabeçalho dela tem o nome "Linha" só para leitor de tela | `copy-sample.test.tsx`, "o número da linha" | must |
 | 69 | U9 | As frases "Cinco linhas da cópia.", "A cópia tem mais linhas que estas cinco." e "A cópia ainda não tem linhas." continuam, e a falha da amostra tem "Tentar de novo" | `copy-sample.test.tsx`, os casos de hoje (`:10-17`, `:19-24`, `:32-36`, `:38-52`) | must |
+| 74 | U7 | Na lista de Dados, o cabeçalho do grupo não repete o nome: uma ligação com o mesmo nome do sistema não aparece ("Mercado Livre · 1 tabela", nunca "Mercado Livre · Mercado Livre · 1 tabela"); as ligações de outro nome continuam ("Mercado Livre · Loja A, Loja B · 1 tabela") | `apps/web/src/hub/copies/copy-list.test.tsx`, caso novo "a ligação com o nome do sistema não se repete no cabeçalho do grupo" e o caso de hoje "a origem da cópia" | must |
+| 75 | U9 | A 1366 px, na Amostra de uma tabela de 11 colunas, a grade rola na horizontal dentro da sua própria caixa (`table-container`), a página não rola de lado, a caixa termina antes do painel Detalhes, e rolada até o fim a última coluna aparece inteira dentro da caixa | `apps/web/tables.layout.test.ts`, caso novo "a amostra larga rola dentro da sua caixa e o painel Detalhes não a corta, a 1366px", sobre o estado "A tabela, a amostra larga" de `sweep-table-states.ts` | must |
 | 70 | U10 | O banco depois de `migrate` tem exatamente as permissões de `database-grants.sql`, com as sete linhas novas. Uma migração sem uma delas, ou com uma a mais, é recusada pelo instantâneo | `apps/server/src/platform/catalog.test.ts`, `'o instantâneo depois de migrate é o de database-grants.sql'` | must |
 | 71 | U10 | O login do Hub executa cada verbo novo sem `42501`: `UPDATE` de `system_status`, `system_code` e `system_message` em `copies.copy_run`; `SELECT`, `INSERT` e `DELETE` em `notifications.alert_recipient` e `notifications.copy_follower`; `SELECT`, `INSERT` e `UPDATE(read_at)` em `notifications.copy_notice` | `catalog.test.ts`, caso novo `'o login do Hub tem os verbos dos avisos de cópia'` (cada instrução sobre zero linhas, `WHERE false`) | must |
 | 72 | U10 | O login do Hub recebe `42501` no que fica de fora: `UPDATE` de `whole` em `copy_run`; `UPDATE` de qualquer coluna de `alert_recipient` e de `copy_follower`; `DELETE` de `copy_notice`; `UPDATE` de `copy_name`, `code` ou `run_id` de `copy_notice` | `catalog.test.ts`, os casos novos da lista `REFUSED` (`'o login do Hub recebe 42501 em …'`) | must |
@@ -238,11 +254,13 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 89 | U12 | `GET` das cópias devolve uma entrada por cópia, com o estado e o próximo horário da linha normal, mesmo com as duas linhas | `clock.test.ts`, `'a lista de cópias mostra uma entrada por cópia'` | must |
 | 90 | U12 | Quando a linha semanal dispara sem rodada aberta, nasce uma rodada com `whole = true` | `clock.test.ts`, `'a linha semanal dispara a passada inteira'` | must |
 | 91 | U12 | Quando a linha semanal dispara com outra rodada aberta, nenhuma rodada nasce, e o processo imprime `COPY_WHOLE_PASS_SKIPPED` com `companyId` e `copyId` | `clock.test.ts`, `'a linha semanal com uma rodada aberta é pulada'` | must |
-| 92 | U12 | Ao subir, a cópia incremental sem linha semanal ganha a linha, no estado da normal (pausada se a normal está pausada), sem mudar o próximo horário da normal; rodar de novo não muda nada | `clock.test.ts`, `'ao subir, a cópia antiga ganha a linha semanal'` | must |
+| 92 | U12 | Ao subir, a cópia incremental sem linha semanal ganha a linha, no estado da normal (pausada se a normal está pausada), sem mudar o próximo horário da normal; rodar de novo não muda nada. O programa chama o passe ao subir: o processo imprime `COPY_WHOLE_LINES` uma vez | `clock.test.ts`, `'ao subir, a cópia antiga ganha a linha semanal'`; `apps/server/src/main.test.ts`, caso novo `'ao subir, o Hub passa as linhas semanais'` | must |
 | 93 | U12 | Uma cópia que sumiu leva as duas linhas quando qualquer uma dispara | `clock.test.ts`, `'a cópia que sumiu leva as duas linhas'` | must |
 | 94 | U12 | Apagar a empresa, desligar a conexão e apagar a cópia levam as duas linhas de cada cópia; com o agendador calado, as duas ficam e o processo imprime `COPY_SCHEDULE_LEFT` | `clock.test.ts` `'a empresa apagada leva as agendas'`, `apps/server/src/hub/copies/delete.test.ts` (os dois casos que contam agendas), `apps/server/src/hub/connectors/unlink-copies.test.ts` (o caso de `:115-122`), com as contagens dobradas | must |
 | 95 | U12 | Se a linha semanal não nasce ao ligar, a rota responde a falha e a normal não existe; repetir o mesmo pedido cria as duas e dispara uma primeira rodada só | `clock.test.ts`, `'a linha semanal que falha ao nascer não perde a primeira rodada'` | must |
-| 96 | U13 | Na aba Rodadas, uma rodada inteira mostra "Passada inteira" depois do resultado, em `text-2`, no computador e no celular; uma rodada normal não mostra | `apps/web/src/hub/copies/copy-detail.test.tsx`, `'as rodadas: a passada inteira aparece ao lado do resultado'` | must |
+| 98 | U11 | Uma rodada inteira pedida no meio de uma passada apaga também a linha que a passada interrompida gravou e que depois sumiu da origem, quando a passada inteira fecha | `run.test.ts`, `'a passada inteira no meio de uma passada apaga o que a passada interrompida gravou e sumiu'` | must |
+| 96 | U13 |
+ Na aba Rodadas, uma rodada inteira mostra "Passada inteira" depois do resultado, em `text-2`, no computador e no celular; uma rodada normal não mostra | `apps/web/src/hub/copies/copy-detail.test.tsx`, `'as rodadas: a passada inteira aparece ao lado do resultado'` | must |
 | 97 | U13 | `GET` das rodadas devolve `whole: true` na rodada inteira e `whole: false` na normal | `apps/server/src/hub/copies/routes.test.ts`, `'as rodadas dizem qual foi inteira'` | must |
 
 ## A matriz de estados
@@ -275,11 +293,10 @@ G2 não cria tela. A linha completa, o corpo e o bloco Fontes (tela `p3-02` da p
 | --- | --- | --- |
 | `DATA_TOOL.describe`, `DATA_TOOL.query` | U2, `packages/hub-api/src/tools.ts` | U3 (os três agentes), `permissions.ts`, a tela (`RowTool`, `TOOLS`) |
 | `DESCRIBE_SAMPLE_ROWS` | U2, `packages/hub-api/src/tools.ts` | `data_describe` (U2); G3 (o texto "5 linhas, há mais") |
-| `Origin` (`system`, `connector`, `table`, `copiedAt`, `lastRun`) | U2, `data-tools/tools.ts` | o modelo; G3 (bloco Fontes, esquema da tela) |
-| `reason` de cada recusa | U2 | o modelo |
+| `DataOrigin` (`systems`, `connector`, `table`, `lastRunEndedAt`, `lastRun`) e `DataResult` (`CATALOG`, `TABLE`, `ROWS`), esquemas Zod | U2, `packages/hub-api/src/assistant.ts`, ao lado de `ReadCut` (code C26) | `data-tools/tools.ts` (o tipo do resultado, por `z.infer`); o modelo; G3 (`presentDescribe`, `presentQuery`, `sourcesOf`) |
+| O erro lançado de cada recusa (`kind`, `status`, `code`, `message`, `body`, `reason`) | U2 | o modelo; G3 (`thrownOf`) |
 | `DataOf` | U2 | U3 (cada agente o implementa) |
 | `ConversationsDeps.companyData` | U3, `main.ts` | U3, os três agentes |
-| `by: { agent, agentId?, threadId? }` | U3 | ninguém nesta etapa: o Registro de dados o grava na etapa 3 (`DataContext` já o aceita, `apps/server/src/hub/data/public.ts:12-16`) |
 
 ### G3
 
@@ -295,11 +312,11 @@ G2 não cria tela. A linha completa, o corpo e o bloco Fontes (tela `p3-02` da p
 | --- | --- | --- |
 | `at` do resultado OK de `readOn` | `readOn`, `apps/server/src/builder/connectors/connector-tools.ts:218-235` (U4) | `sourcesOf` (U6) pela `LiveResult`; o modelo ignora |
 | `ReadCut.at` (opcional, `packages/hub-api/src/assistant.ts:85-91`) | o esquema (U4) | `LiveResult` de `sources.ts` (U6), que o exige |
-| `origin[]` de `ROWS` (`system`, `connector`, `table`, `copiedAt`, `lastRun`) | `data_query` (U3) | `presentQuery` (U5), `sourcesOf` (U6), `judgedCopy` (U4) |
-| `origin` de `TABLE` | `data_describe({ table })` (U3) | `sourcesOf` (U6) |
-| `sample.rows`, `sample.more` de `TABLE` | `data_describe({ table })` (U3) | `presentDescribe` (U5) |
-| `tables` de `CATALOG` | `data_describe()` (U3) | `presentDescribe` (U5), a contagem |
-| `kind` de recusa das ferramentas de dado | U3 | `dataRefusal` e `REFUSED_TEXT` (U5), `failed` do placar (U4) |
+| `origin[]` de `ROWS` (`systems`, `connector`, `table`, `lastRunEndedAt`, `lastRun`) | `data_query` (U2) | `presentQuery` (U5), `sourcesOf` (U6), `judgedCopy` (U4) |
+| `origin` de `TABLE` | `data_describe({ table })` (U2) | `sourcesOf` (U6) |
+| `sample.rows`, `sample.more` de `TABLE` | `data_describe({ table })` (U2) | `presentDescribe` (U5) |
+| `tables` de `CATALOG` | `data_describe()` (U2) | `presentDescribe` (U5), a contagem |
+| `kind` do erro lançado pelas ferramentas de dado | U2 | `thrownOf` e `REFUSED_TEXT` (U5), `failed` do placar (U4) |
 | `args.sql` de `data_query` | o modelo | o corpo `query` (U5) |
 | `MessageSource` `kind: 'data'` (`connector`, `system`, `table`, `at`, `state`) | `sourcesOf` (U6) | `Sources` (U6); `system` também na chave sem repetição |
 | `CopyQuestion` (`n`, `text`, `asks`, `tables`, `truth`, `partial`, `released`) | `COPY_QUESTIONS` (U4) | `assistant.scorecard.test.ts` e `judgedCopy` (U4) |
@@ -470,20 +487,17 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 | `saveWhole` da leitura ao vivo, agora com `at` no corte (U4, gravação de hoje) | cada leitura tem o seu caminho na máquina, como hoje | o arquivo que não se grava dá `saved: false` com `at` no corte, como hoje | a máquina fora: a resposta volta sem arquivo e com `at` | a linha de log de hoje de `saveWhole` | 30 |
 | JSON do placar do modelo real (U4, `pergunta-c<n>.json` na pasta de `CONEXUS_EVAL_REAL_MODEL`) | um arquivo por pergunta; duas rodadas na mesma pasta sobrescrevem | o teste falha na pergunta e os arquivos anteriores ficam | o modelo fora: a pergunta conta errada, sem parar a lista | `placar em <pasta>` | 35 |
 | `navigator.clipboard.writeText` de **Copiar a consulta** (U5) | dois toques escrevem o mesmo texto | a promessa recusada vira `FAILED`: o texto de `L4` ao lado e `QUERY_NOT_COPIED` no console | sem `navigator.clipboard` (contexto inseguro): o mesmo `FAILED`, sem lançar | `console.error('QUERY_NOT_COPIED', causa)` | 39 |
-| U6 | nenhuma: só lê o resultado guardado | | | | |
-| nenhuma | — | — | — | — | — |
 | A migração à mão (`migrate`) | o `migrate` é um só processo antes do Hub (data D9); um `GRANT` repetido não muda nada | a migração roda numa transação: um `GRANT` recusado desfaz os sete e o `migrate` para | banco fora: o `migrate` falha e o Hub não sobe, como hoje (data D9) | a falha do `migrate` de hoje, com o nome da migração | 70 |
-| `wholePasses` e o `INSERT` da rodada com `whole`, em `claim` | a trava de `claim` deixa uma só; a outra vê `RUNNING` | a transação de `claim` desfaz tudo: nada zerado, nenhuma rodada | banco do Hub fora: o passo falha como hoje, sem rodada | o que `claim` imprime hoje | 81, 84, 91 |
+| `wholePasses` (zera o ponto de partida e a posição e soma um a `pass`) e o `INSERT` da rodada com `whole`, em `claim` | a trava de `claim` deixa uma só; a outra vê `RUNNING` | a transação de `claim` desfaz tudo: nada zerado, nenhuma rodada | banco do Hub fora: o passo falha como hoje, sem rodada | o que `claim` imprime hoje | 81, 84, 91, 98 |
 | `closePass` com `readAll` (o `DELETE` de `_pass`) | só quem segura a trava chega aqui | o `DELETE`, o `UPDATE` do nome e a contagem vão num só envio (`copy-sql.ts:280-284`); recusado, nada sai e a rodada termina `COPY_DATABASE_UNAVAILABLE` | banco da empresa fora: o mesmo; o `watermark` fica nulo e a próxima relê tudo | `COPY_RUN_ENDED` com o código | 80, 82, 83 |
 | `schedules.create` da linha semanal (`set`, `ensureWhole`) | o `create` que perde a corrida lê a linha de novo e segue, como `clock.ts:77-81` | a semanal nasce antes da normal: se falha, a normal não existe, e a repetição de Ligar ainda vê `CREATED` | storage do Mastra fora: `databaseFailure` como hoje; a rota responde a falha | a falha da rota de hoje | 86, 95 |
 | `pause` e `resume` das duas linhas | o Mastra devolve a linha como está quando já está no estado (`schedules-D8PrAbVN.js:666-699`) | a normal muda e a semanal falha: a rota responde a falha; repetir converge | o mesmo | a falha da rota de hoje | 88 |
 | `remove` das duas linhas (apagar, desligar, empresa apagada, `GONE`) | `delete` de um id que não existe volta sem erro (`:660-665`) | a semanal sai primeiro; se a normal falha, `releaseCopies`, que acha a cópia pela normal, tenta de novo | agendador calado: as duas ficam | `COPY_SCHEDULE_LEFT` (de hoje) | 93, 94 |
-| `ensureWholeLines` ao subir | dois Hubs ao mesmo tempo: o `create` perdido é tratado como em `set` | uma empresa que falha não para as outras | banco do Hub fora: a empresa falha | `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`; `COPY_WHOLE_LINES` com `companyId` e `count` no fim de cada empresa | 92 |
+| `ensureWholeLines` ao subir | dois Hubs ao mesmo tempo: o `create` perdido é tratado como em `set` | uma empresa que falha não para as outras | banco do Hub fora: a empresa falha | `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`; `COPY_WHOLE_LINES` uma vez no fim, com `companies` e `count` | 92 |
 | A linha semanal disparada com a trava ocupada | — | — | — | `COPY_WHOLE_PASS_SKIPPED` com `companyId` e `copyId` | 91 |
 
-nenhuma. A unidade não acrescenta gravação nem comando: tira um campo de resposta montado em memória.
+Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira um campo de resposta montado em memória), U3 (liga as ferramentas aos agentes), U6 (só lê o resultado guardado), U7, U8 e U9 (só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem; **Rodar agora** e o menu da cópia ficam como estão) e U13 (lê `whole` na rota de rodadas).
 
-As três unidades não acrescentam gravação nem comando: só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem. **Rodar agora** e o menu da cópia ficam como estão.
 
 ## A tabela de referência
 
@@ -493,23 +507,23 @@ As três unidades não acrescentam gravação nem comando: só leem `listCopyRun
 | O nome pedido responde como inexistente | U1 | `sourceOf`, `company-data.ts:259` (`NOT_IN_ROLE`) | Mesma situação: pedir pelo nome uma tabela inacessível. A plataforma de ingestão de referência, a mesma página (documentado): a prévia da tabela volta erro e a listagem deixa de incluí-la | Erro igual ao de uma tabela fora da lista | nativo | — | o `NOT_IN_CATALOG` de hoje, `company-data.ts:260-261` | nenhum |
 | A consulta recusada pelo banco | U1 (só a lei, que fica) | `pageOf`, `apps/server/src/hub/data/query.ts:106-109` (`42501` vira `NOT_IN_ROLE`) | Mesma situação: SQL que cita uma tabela inacessível. A plataforma de ingestão de referência (documentado): erro aplicado pelo controle de acesso da nuvem, não pela leitura do SQL; PostgreSQL 18, SQLSTATE `42501` | O banco recusa | nativo | — | sem mudança no servidor | nenhum |
 | A lei da tabela escondida | U1 | `keepsWithheldTableOut`, `packages/hub-api/src/company-data-role-conformance.ts:8-21` | Molde: a lei vizinha `refusesReadOutsideCatalog` (`company-data-conformance.ts:198-207`) e `bb03b122` (#1072), ao contrário | — | nativo | — | uma lei sai e uma entra; a conta fica em 22 | nenhum |
-| As duas ferramentas | U2 | `apps/server/src/builder/app-data/tools.ts:65-86`, `apps/server/src/builder/connectors/typed-reads.ts:97-126` | O modelo oficial de agente SQL do Mastra 1.82 (`text-to-sql`, `introspect-database.ts:7-54`, `execute-sql.ts:14-44`): mesma situação. A plataforma de dados com catálogo e linhagem dá colunas, 5 linhas e depois a consulta (estudo de referência, fora do repositório, delivery L21, conferência P3.2; documentado) | Uma ferramenta inspeciona, outra executa; `createTool` com `inputSchema` Zod e `execute(input, context)` (`@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109`) | nativo | — | Igual. Diferente do modelo: quem recusa é o banco, e a ferramenta devolve a recusa tipada (code C79) em vez de lançar | `apps/server/src/builder/data-tools/tools.ts` |
+| As duas ferramentas | U2 | `apps/server/src/builder/app-data/tools.ts:65-86`, `apps/server/src/builder/connectors/typed-reads.ts:97-126` | O modelo oficial de agente SQL do Mastra 1.82 (`text-to-sql`, `introspect-database.ts:7-54`, `execute-sql.ts:14-44`): mesma situação. A plataforma de dados com catálogo e linhagem dá colunas, 5 linhas e depois a consulta (estudo de referência, fora do repositório, delivery L21, conferência P3.2; documentado) | Uma ferramenta inspeciona, outra executa; `createTool` com `inputSchema` Zod e `execute(input, context)` (`@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109`) | nativo | — | Igual. Diferente do modelo: quem recusa é o banco, e a ferramenta lança a recusa pelo caminho nativo de falha da Mastra (`TOOL_EXECUTION_FAILED`, `@mastra/core@1.82.0 dist/utils-BcF5eERx.js:1116-1125`), na forma que `refuse()` já lança (`apps/server/src/builder/agents/tools.ts:68-75`) e que `thrownOf` lê na tela (`apps/web/src/builder/conversation/connector-specs.ts:181-201`) (code C79) | `apps/server/src/builder/data-tools/tools.ts` |
 | Os nomes no dono único | U2 | `APP_DATA_TOOL`, `BUILDER_TOOL`, `CLOSED_TOOLS` em `packages/hub-api/src/tools.ts:40-68` | O Mastra Code fecha o conjunto num lugar (`mastracode/sdk/src/index.ts:858,1331`, citado em `permissions.ts:55-56`): mesma situação | Uma constante; o fecho e a tela a herdam | nativo | — | code C26 | — |
 | A origem de cada tabela | U2 | nenhuma (a fonte devolve `tables[].kept`, `packages/hub-api/src/company-data.ts:135`) | A plataforma de dados com catálogo e linhagem mostra as tabelas usadas no passo da consulta (estudo de referência, conferência P3.6; documentado) | As tabelas usadas saem do motor de consulta; o nome do sistema vem do catálogo | nativo (o `EXPLAIN` da fonte; o nome por `systems`) | — | Uma conexão fora de `systems` é recusa com log, nunca o id como nome | — |
-| A recusa com frase ao modelo | U2 | `NOT_GRANTED` e as frases em `apps/server/src/builder/connectors/connector-tools.ts:58`, `:171-186` | A plataforma de ingestão de referência devolve o erro com uma explicação provável (estudo de referência, conferência P3.10; documentado) | O texto do motor e uma frase do que fazer | nativo (o SQLSTATE do Postgres) | — | — | — |
+| A recusa com frase ao modelo | U2 | `NOT_GRANTED` e as frases em `apps/server/src/builder/connectors/connector-tools.ts:58`, `:171-186`; `refuse()` em `apps/server/src/builder/agents/tools.ts:68-75` | A plataforma de ingestão de referência devolve o erro com uma explicação provável (estudo de referência, conferência P3.10; documentado) | O texto do motor e uma frase do que fazer | nativo (o SQLSTATE e a mensagem do Postgres, lançados como erro da ferramenta) | — | o JSON de `refuse()` com `reason` a mais; a issue 1016 leva as leituras ao vivo ao mesmo caminho | — |
 | A pasta fora da lista de migração | U2 | `AGENTS_AND_APPS` e `CONTRACT_MIGRATION` em `.dependency-cruiser.cjs:21-56`; `BAD` em `scripts/rules-doors.test.ts:20-33` | nenhuma: regra de engenharia nossa (conferência P3.13) | — | nativo (o `forbidden` do dependency-cruiser) | — | A pasta entra em `AGENTS_AND_APPS` e não na lista | — |
 | A linha mínima na conversa | U2 | `APP_DATA_SPECS` em `apps/web/src/builder/conversation/app-data-specs.ts:21-42`; `TOOLS` em `tool-registry.ts:47`, `:202` | O Factory do Mastra 1.82, uma linha por chamada (`mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:152`, `docs/reference/stack.md:20`): mesma situação | Uma linha por parte de ferramenta | nativo | — | Só o mínimo; G3 completa | `apps/web/src/builder/conversation/data-specs.ts` |
 | A ordem do agente | U2, U3 | `HOW_TO_READ` em `apps/server/src/builder/app-data/context.ts:19-25` | A plataforma de dados com catálogo e linhagem ensina buscar, ver 5 linhas, consultar com `LIMIT`, e "não achei" é resposta (estudo de referência, conferência P3.2 e P3.11; documentado) | Texto nas instruções | nativo (texto) | — | Um texto, três agentes | `apps/server/src/builder/data-tools/order.ts` |
 | A porta na raiz | U3 | `doorOf` em `apps/server/src/conversations-of.ts:34-48`, `:186`; `connectors: () => connectors` em `main.ts:162` | nenhuma de fora | A chamada tardia de `send` (`main.ts:155`) | nativo | — | Um só `createCompanyData`, o de `main.ts:205` | — |
 | A montagem nos três agentes | U3 | `tools` dinâmico em `assistant.ts:235-250`, `builder.ts:140-156`, `agent.ts:280-302` | `tools` como função da requisição (`@mastra/core@1.82.0 dist/agent/types.d.ts:516`): mesma situação | `DynamicArgument<ToolsInput>` | nativo | — | — | — |
-| A ferramenta dentro do modo código | U3 | `codeModeOf(ofTheAgent, …)` em `agent.ts:290` | `createCodeMode` chama `execute` com `requestContext` e `abortSignal`, sem `agent` (`@mastra/core@1.82.0 dist/tools-BVDic2bB.js:478-485`) | — | nativo | — | Aceito: o agente salvo numa máquina chama as duas do programa, com `threadId` vazio no `by` | — |
+| A ferramenta dentro do modo código | U3 | `codeModeOf(ofTheAgent, …)` em `agent.ts:290` | `createCodeMode` chama `execute` com `requestContext` e `abortSignal`, sem `agent` (`@mastra/core@1.82.0 dist/tools-BVDic2bB.js:478-485`) | — | nativo | — | Aceito: o agente salvo numa máquina chama as duas do programa | — |
 | A hora da leitura ao vivo | U4 | `readOn` devolve o corte sem hora, `connector-tools.ts:218-235` | Mastra 1.82, mesma situação: o resultado da ferramenta é guardado na mensagem (`@mastra/core@1.82.0 dist/docs/references/reference-storage-overview.md:54`, a parte `tool-invocation`) | o que a tela precisa ler depois vai no resultado da chamada | nativo (o resultado da ferramenta) | | o `at` entra uma vez em `readOn`, para `connector_read` e as leituras tipadas | nenhum |
 | O cenário gravado `data-query` | U4 | `nativeRecording`, `apps/server/src/platform/test-recordings.ts:77-89`; o cenário `reads`, `scripts/record.ts:12-14`, `:89`, `:137`, `:148` | o `AgentController` real do Mastra 1.82 com a loja em memória (testing T26), mesma situação | grava os eventos e as linhas que o Mastra emite e guarda | nativo | | um cenário a mais em `Scenario`, `CALLS` e `asked` | `apps/server/src/platform/recordings/mastra/data-query.jsonl` (gerado), `apps/server/src/builder/data-tools/test-data.ts` |
 | As perguntas com resposta conhecida | U4 | `test-scorecard.ts:58-161` (27 perguntas, nenhuma de cópia), `failed` `:169-178` | a regra do próprio Mastra para ferramenta que falhou (`checks.noToolErrors`, citada em `failed`); a plataforma de dados de referência avalia o agente com perguntas de resposta conhecida (estudo de referência, fora do repositório, delivery L21, seção 3.7; documentado) | um conjunto de perguntas com a resposta certa calculada, julgado por turno | nativo (o placar de hoje, uma lista a mais) | | `COPY_QUESTIONS` separada das 27 | nenhum |
 | A linha da ferramenta e a consulta recolhida | U5 | `ToolRow`, `tool-row.tsx:370`; `Block`, `:129`; `ToolBody` no molde do Factory (`tool-spec.ts:34`) | a plataforma de dados de referência mostra a consulta gerada, recolhida, embaixo da resposta (estudo de referência, fora do repositório, delivery L21, seção 3.7; decisão E3a do escopo; documentado); o Mastra Code Factory, `ToolCard.tsx:32-67` | a chamada recolhida, o corpo aberto com a entrada | nativo (o molde do Factory, um corpo a mais) | | `ToolBody` ganha `'query'` | nenhum |
-| Os textos de recusa | U5 | `LOCAL_REFUSALS`, `connector-specs.ts:144-148`; `refusal` e `Refusal`, `tool-spec.ts:68`, `:106-107` | o molde de hoje das ferramentas que recusam como resultado (`APP_DATA_SPECS`, `app-data-specs.ts:21-42`), mesma situação | a recusa é resultado com `kind`, e a linha o lê | nativo | | sem `withheld`: a tabela escondida cai em `NOT_IN_CATALOG` (item (d)) | nenhum |
+| Os textos de recusa | U5 | `LOCAL_REFUSALS`, `connector-specs.ts:144-148`; `refusal` e `Refusal`, `tool-spec.ts:68`, `:106-107` | o molde de hoje das ferramentas dos agentes que lançam a recusa (`thrownOf` e `failureDetail`, `connector-specs.ts:181-235`), mesma situação | a recusa é o erro da ferramenta com `kind`, e a linha o lê | nativo | | sem `withheld`: a tabela escondida cai em `NOT_IN_CATALOG` (item (d)) | nenhum |
 | **Copiar a consulta** | U5 | nenhum `navigator.clipboard` em `apps/web/src` | a API de área de transferência do navegador (`navigator.clipboard.writeText`) | escreve o texto e responde por promessa | nativo | | | nenhum |
-| A origem até a tela | U6 | `sourcesOf`, `sources.ts:8-46`; `specOf` lê o resultado, `tool-registry.ts:244` | o resultado da ferramenta, que o Mastra guarda; `writer.custom` não chega vivo sob o controlador (`apps/server/src/builder/model-accounts/processors.ts:64-68`; `@mastra/core` 1.82 `agent-controller/session-run-engine.ts:1618-1619`) | a tela lê o resultado guardado da chamada | nativo | | a origem vai em `origin` do resultado (U3) | nenhum |
+| A origem até a tela | U6 | `sourcesOf`, `sources.ts:8-46`; `specOf` lê o resultado, `tool-registry.ts:244` | o resultado da ferramenta, que o Mastra guarda; `writer.custom` não chega vivo sob o controlador (`apps/server/src/builder/model-accounts/processors.ts:64-68`; `@mastra/core` 1.82 `agent-controller/session-run-engine.ts:1618-1619`) | a tela lê o resultado guardado da chamada | nativo | | a origem vai em `origin` do resultado (U2), com a forma em `DataResult` de `@conexus/hub-api` | nenhum |
 | O bloco Fontes de dado | U6 | `Sources`, `sources.tsx:4-34`, só páginas da web | a plataforma de dados de referência diz a tabela de onde a resposta veio (estudo de referência, fora do repositório, delivery L21, seção 3.7; documentado); a parte `source` do Mastra para a web, mesma peça | a origem embaixo da resposta | nativo (o bloco de hoje, um caso a mais na união) | | `MessageSource` vira união com `kind` | nenhum |
 | O caminho da tabela | U7 | `copy-detail.tsx:152-159`, o link "← Dados" com `ArrowLeftIcon` | a plataforma de dados com catálogo e linhagem, na página da tabela (estudo de referência, fora do repositório, delivery L21, seção 11.3; visto nas capturas, não oficial); a `v10` aprovada | um caminho de links acima do título; aqui com `Link` do TanStack Router e `activeOptions={{ exact: true }}` (`@tanstack/react-router@1.170.44 dist/esm/link.js:35-37`, `:235-238`) | nativo | — | os dois links vão a `/data` sem `layer` (a camada de hoje é a Bruta) e levam o `q` | — |
 | A linha da cópia | U7 | `copy-detail.tsx:164-168`, "{sistema} · a cada {intervalo}" | a plataforma de ingestão de referência, no painel da tabela com linhas e datas (estudo de referência, seção 3.5; visto, não oficial); a `v10` | a hora e as linhas da última carga ao lado do nome | nativo | — | "Copiada do … em" só com COMPLETE ou PARTIAL, a hora é `endedAt` | — |
@@ -525,7 +539,7 @@ As três unidades não acrescentam gravação nem comando: só leem `listCopyRun
 | Permissões de tabelas novas "ao lado" | U10 | `notifications.notification` e `request_notice` com `SELECT, INSERT` e `UPDATE(read_at)`, `database-grants.sql:433-439` | mesma situação: `request_notice` | `SELECT, INSERT` e `UPDATE(read_at)`; nunca `DELETE`, a linha sai pela cascata | nativo | — | `copy_notice` igual a `request_notice`; `alert_recipient` e `copy_follower` com `DELETE`, porque tirar e deixar de seguir apagam | — |
 | A prova das permissões | U10 | `catalog.test.ts:95-99` (instantâneo) e `:171-197` (a lista `REFUSED`) | mesma situação: data D11 aponta `catalog.test.ts` | o instantâneo compara o catálogo com o arquivo; a lista de recusas prova o que fica de fora | nativo | — | acrescentar as recusas e um caso positivo | — |
 | Apagar no fim de uma passada que leu tudo | U11 | `closePass` em `copy-sql.ts:243-288`; decide por `changedSince === null` (`:254-255`) | a plataforma de ingestão de referência: a releitura inteira traz também o que foi apagado na origem (estudo de referência, fora do repositório, delivery L21, seção "sync types", documentado) | relê a fonte e apaga o que não veio | nativo (o `DELETE` de `_pass` de hoje) | — | decidir por `readAll`, não pela definição | — |
-| Começar cada fonte do zero | U11 | `datedPasses` em `sources.ts:56-61`; `datesOf` dá `since: null` com `watermark` nulo (`source-pass.ts:39-47`); o contrato do kit lê tudo sem `since` (#940) | mesma situação: a primeira passada de hoje | zera o ponto de partida e a posição | nativo | — | `wholePasses`, na forma de `datedPasses` | — |
+| Começar cada fonte do zero | U11 | `datedPasses` em `sources.ts:56-61`; `datesOf` dá `since: null` com `watermark` nulo (`source-pass.ts:39-47`); o contrato do kit lê tudo sem `since` (#940) | mesma situação: a primeira passada de hoje | zera o ponto de partida e a posição | nativo | — | `wholePasses`, na forma de `datedPasses`, e soma um a `pass`, como `passed` (`sources.ts:127-149`), para que as linhas da passada interrompida contem como velhas | — |
 | A linha semanal | U12 | uma linha por cópia, `createCopyClock` em `clock.ts:57-106` | a plataforma de ingestão de referência agenda uma releitura inteira periódica ao lado da cópia incremental, numa agenda própria (estudo de referência, seção "sync types", documentado); `@mastra/core@1.82.0` `schedules.create` com `id` e `status` (`dist/schedules/schedules.d.ts:95-115`, `dist/schedules-D8PrAbVN.js:492-525`) | uma segunda agenda, semanal | nativo (uma linha a mais do agendador do Mastra) | — | domingo, 04:07, só cópia incremental | — |
 | O id da linha | U12 | `scheduleIdOf` em `workflow.ts:82-84` | `@mastra/core@1.82.0` `canonicalizeScheduleId` (`dist/schedules-D8PrAbVN.js:316-322`) passa o id pelo `slugify`, que troca `_` por `-` (medido: `<uuid>_whole` dá `<uuid>-whole`); `#load` procura o id exato (`:409-417`) | — | nativo | — | sufixo `-whole` | — |
 | Pausar, retomar, apagar e ler | U12 | `pause`, `resume`, `remove`, `states` em `clock.ts:84-104` | `@mastra/core@1.82.0`: `get` devolve `null` sem a linha (`:536-540`); `pause` e `resume` lançam `SCHEDULES_NOT_FOUND` sem a linha (`:666-699`); `delete` volta sem erro (`:660-665`); `update` com `cron` recalcula `nextFireAt` (`:561-600`) | — | nativo | — | `get` antes de pausar a semanal; `ensureWhole` nunca chama `update` na normal | — |
@@ -547,10 +561,10 @@ firstmate, com o conserto.
 | 3 | A spec de três arquivos (`trilhas/dados-spec/`) fica no repositório até a última etapa que a substitui | Ela ainda guarda o que as etapas 2 a 6 vão converter; o método a tira quando o próximo cartão a substituir | Apagar a pasta no fechamento da última etapa que a usa |
 | 4 | O critério 4 acrescenta uma asserção no teste do servidor sobre as chaves do `describe` cru | O tipo do retorno de `catalogOf` é inferido do callback de `deps.database.read`; um `withheld: []` esquecido provavelmente compila (inferido, não medido), e `Catalog.parse` no teste o apagaria (Zod tira chave desconhecida) | tirar a asserção; o critério 6 fica sozinho |
 | 5 | `context.ts` fica na lista de migração (spec, decisão `L2`) | O bloco "## Data" usa campos que o `Catalog` não tem (`apps/server/src/hub/copies/project-view.ts:22-42`); a mudança é só de texto | Tirar o arquivo da lista quando a proposta de cópia passar pelo contrato |
-| 6 | O `threadId` da Mastra vira `ConversationId` na borda da ferramenta | `ReadBy.threadId` é `ConversationId` (`apps/server/src/hub/data/public.ts:12-16`), a Mastra o dá como `string` (`@mastra/core@1.82.0 dist/tools/types.d.ts:183`), e as conversas já o parseiam assim (`apps/server/src/builder/controller-kit/open.ts:25`) (code C23) | Tipar `by.threadId` como `string` |
-| 7 | `Origin.lastRun` derivado do dono, `CopyRun['outcome']['kind'] \| 'NONE'` | A união da spec não tem `RUNNING`, que `CopyRun` tem (`packages/hub-api/src/copies.ts:47-54`); escrita à mão, não compila (code C26) | Voltar à união da spec e tratar `RUNNING` |
+| 6 | Os agentes não passam `by` ao contrato nesta etapa | `sourcesFor` ignora o contexto (`apps/server/src/hub/data/public.ts:38`) e nenhum critério poderia observá-lo; o Registro de dados, na etapa 3, é o primeiro leitor e liga o `by` com o seu critério | Passar `{ by: { agent, agentId?, threadId } }` em cada `DataOf` quando o Registro chegar |
+| 7 | `DataOrigin.lastRun` derivado do dono, os `kind` de `CopyRun.shape.outcome` mais `'NONE'` | A união da spec não tem `RUNNING`, que `CopyRun` tem (`packages/hub-api/src/copies.ts:47-54`); escrita à mão, diverge (code C26) | Voltar à união da spec e tratar `RUNNING` |
 | 8 | O critério 27 entra (a porta provada de ponta a ponta) | Nenhum teste da spec provava a porta ligada ao lugar certo; `Sent.toolResults` lê o resultado (`apps/server/src/platform/test-anthropic-body.ts:37-38`) | Tirar o caso |
-| 9 | Os textos que o escopo não deu (`L4` da parte 3): "Não deu para copiar. Selecione a consulta e copie.", "ainda sem cópia", "copiado ontem às", "copiado em 17/10/2026 às", e a fonte ao vivo pelo conector e a conexão ("Sankhya · Matriz") | parte 3, `tasks.md:745`: o construtor usa as propostas e o PR as lista para a palavra do fundador | trocar a frase em `data-specs.ts` ou `sources.tsx`; o teste do critério cita a frase nova |
+| 9 | Os textos que o escopo não deu (`L4` da parte 3): "Não deu para copiar. Selecione a consulta e copie.", "ainda sem cópia", "copiado ontem às", "copiado em 17/10/2026 às", "parada hoje às" (no lugar de "parada, copiado"), "lido ontem às", "lido em 17/10/2026 às", e a fonte ao vivo pelo conector e a conexão ("Sankhya · Matriz") | parte 3, `tasks.md:745`: o construtor usa as propostas e o PR as lista para a palavra do fundador | trocar a frase em `data-specs.ts` ou `sources.tsx`; o teste do critério cita a frase nova |
 | 10 | O catálogo gravado tem as cinco tabelas dos modelos de cópia do Sankhya, e a linha diz "5 tabelas", não "7 tabelas" | o kit tem cinco modelos (`packages/connectors/src/sankhya/copies.ts:85-160`: clientes, vendedores, produtos, vendas, itens de venda); o "7" da spec veio do protótipo `p3-03` | outra lista em `recordedData`; o teste lê a contagem gravada |
 | 11 | Na conversa do Builder a fonte nomeia o conector pelo id ("sankhya") | `BUILDER_ROOM` usa `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); dar à sala do Builder as palavras do catálogo muda a montagem da conversa do Projeto, fora destas pastas | um `RoomContext.Provider` com `useConnectorCatalog` na conversa do Projeto, como `apps/web/src/builder/assistant/conversation.tsx:40-44` |
 | 12 | Visão geral é a aba de abertura, embora a `v10` desenhe a Amostra aberta | As duas referências abrem a tabela na visão geral (estudo de referência, seções 3.5 e 11.3); a `v10` abre a Amostra para mostrar a grade | Trocar `TableTab.enum.overview` pela aba desejada como padrão em `CopyDetail` |
@@ -564,8 +578,12 @@ firstmate, com o conserto.
 | 20 | A linha semanal aos domingos, 04:07, só para cópia incremental | a proposta aprovada diz de madrugada; a referência agenda a releitura ao lado da incremental; uma cópia inteira já relê tudo; o minuto 7 fica fora de `*/15` e `*/30` | trocar `WHOLE_CRON` em `clock.ts` |
 | 21 | O id `schedule_<cópia>-whole` | o Mastra troca `_` por `-` no id (`schedules-D8PrAbVN.js:316-322`), e o `get` com `_` não acharia a linha | um passo ao subir que recria as linhas com o id novo |
 | 22 | Pular a passada inteira quando outra rodada está aberta | a referência pula a execução que chega com outra em curso; a próxima é no domingo seguinte | pôr a passada numa fila (outra unidade) |
-| 23 | A linha semanal guarda o `interval` da normal em `metadata` | `ownedOf` exige `Metadata` (`clock.ts:25`, `:39-46`); um campo de `metadata` próprio pediria outro esquema | um esquema de `metadata` só da semanal |
+| 23 | A linha semanal guarda o `interval` da normal em `metadata`, só para `ownedOf` aceitá-la; ninguém o lê (`states` pula a semanal), e ele pode ficar velho depois de mudar o intervalo | `ownedOf` exige `Metadata` (`clock.ts:25`, `:39-46`); um campo de `metadata` próprio pediria outro esquema | um esquema de `metadata` só da semanal |
 | 24 | `stepOf`, `pageStep` e `closedPass` passam a levar `{ windowFrom, readAll }` no lugar de `windowFrom` | o fim da passada precisa saber se ela começou sem `since`, que só `sourcePass` sabe | voltar ao parâmetro solto |
+| 25 | O `copiedAt` da spec vira `lastRunEndedAt`, e a fonte da rodada parada diz "parada hoje às", sem "copiado" | o contrato só dá a última rodada encerrada, de qualquer resultado (`ended` grava `lastRunId` em toda rodada, `apps/server/src/hub/copies/run.ts:114`); a spec define o campo como "quando a última rodada terminou" (parte 3, `design.md:255`) e pede "parada" junto da hora (`requirements.md:86`); com o nome `copiedAt`, o modelo e a tela diriam "copiado" na hora de uma rodada que não copiou, o que a decisão 13 já recusa na página da tabela | Voltar ao nome da spec e calcular, no catálogo, o fim da última rodada `COMPLETE` ou `PARTIAL` |
+| 26 | Um resultado de ferramenta de dado fora de `DataResult` não vira fonte nem linha completa, sem log | a parte guardada é da Mastra e a mesma gravação passa pelo esquema no teste (critérios 38 e 46); um log na tela se repetiria a cada desenho | um `console.error` com código no `sourcesOf` |
+| 27 | Durante a implantação em rodízio, um Hub antigo pode ler a linha semanal | `CopyInput` de hoje é `z.object` e tira a chave `whole` (`workflow.ts`): o Hub antigo roda a semanal como uma rodada normal, inofensiva, e o seu `states` pode, por um instante, mostrar o horário da semanal no lugar da normal (o `Map` por cópia fica com a última linha lida). O Hub antigo sai quando o novo sobe; a passada inteira volta no domingo seguinte | implantar o Hub novo antes de ligar qualquer cópia, ou abrir issue se o rodízio durar mais que um domingo |
+
 
 ## U1 `withheld` sai do contrato e a lei da tabela escondida
 
@@ -675,9 +693,10 @@ consulta já está no `main` desde `a1c7df27` (PR 1077). Sonnet: módulo novo, p
 
 ### As linhas da tabela
 
-- **As duas ferramentas.** Leia na base `typedTool` (`apps/server/src/builder/connectors/typed-reads.ts:97-126`: `createTool`, o `requestContext` indefinido, o `NOT_GRANTED`), `appDataTools` (`apps/server/src/builder/app-data/tools.ts:65-86`) e o contrato `CompanyData`, `Described`, `ReadAnswer`, `QUERY_SQL_MAX` (`packages/hub-api/src/company-data.ts:65-93`, `:113-150`, `:222-226`). API: `@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109` (o contexto: `requestContext`, `abortSignal`, `agent`), `dist/tools/types.d.ts:172-183` (`AgentToolExecutionContext.threadId`). O modelo `text-to-sql` do Mastra (`introspect-database.ts:7-54`, `execute-sql.ts:14-44`).
+- **As duas ferramentas.** Leia na base `typedTool` (`apps/server/src/builder/connectors/typed-reads.ts:97-126`: `createTool`, o `requestContext` indefinido, o `NOT_GRANTED`), `appDataTools` (`apps/server/src/builder/app-data/tools.ts:65-86`) e o contrato `CompanyData`, `Described`, `ReadAnswer`, `QUERY_SQL_MAX` (`packages/hub-api/src/company-data.ts:65-93`, `:113-150`, `:222-226`). API: `@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109` (o contexto: `requestContext`, `abortSignal`). O modelo
+ `text-to-sql` do Mastra (`introspect-database.ts:7-54`, `execute-sql.ts:14-44`).
 - **Os nomes.** `packages/hub-api/src/tools.ts:40-41` (`APP_DATA_TOOL`), `:48-59` (`BUILDER_TOOL`), `:62-68` (`CLOSED_TOOLS`); `READ` em `apps/server/src/builder/conversation/permissions.ts:22-38`; `RowTool` em `apps/web/src/builder/conversation/tool-spec.ts:15-21`.
-- **A origem e a recusa.** `NOT_GRANTED` em `connector-tools.ts:58`; as frases em `:171-186`; `FailureLog` em `apps/server/src/platform/failure.ts:12-15`.
+- **A origem e a recusa.** `NOT_GRANTED` em `connector-tools.ts:58`; as frases em `:171-186`; `FailureLog` em `apps/server/src/platform/failure.ts:12-15`. O caminho de falha: `refuse()` e `ConnectorRefused` em `apps/server/src/builder/agents/tools.ts:27-75`; a Mastra embrulha o que a ferramenta lança em `TOOL_EXECUTION_FAILED` (`@mastra/core@1.82.0 dist/utils-BcF5eERx.js:1116-1125`); a tela o lê por `thrownOf` (`apps/web/src/builder/conversation/connector-specs.ts:181-201`). `ReadCut` em `packages/hub-api/src/assistant.ts:85-91`, o molde do esquema do resultado guardado.
 - **A pasta.** `.dependency-cruiser.cjs:21` (`AGENTS_AND_APPS`), `:23-56` (`CONTRACT_MIGRATION`), `:101-110` (a regra); `BAD` em `scripts/rules-doors.test.ts:20-33`.
 - **A linha mínima.** `APP_DATA_SPECS` em `apps/web/src/builder/conversation/app-data-specs.ts:21-42`; `TOOLS` em `tool-registry.ts:47` e `:202`.
 
@@ -687,6 +706,7 @@ consulta já está no `main` desde `a1c7df27` (PR 1077). Sonnet: módulo novo, p
 | --- | --- | --- |
 | `apps/server/src/builder/data-tools/` | Cria | U3 (assistente, builder, agentes) pelo `public.ts` |
 | `packages/hub-api/src/tools.ts` | Muda (`DATA_TOOL`, `DESCRIBE_SAMPLE_ROWS`, `BUILDER_TOOL`) | `permissions.ts`, `assistant.ts`, a tela (`tool-spec.ts`, `tool-registry.ts`, `tool-row.test.tsx`) |
+| `packages/hub-api/src/assistant.ts` | Muda (`DataOrigin`, `DataResult`, ao lado de `ReadCut`) | `data-tools/tools.ts`; G3 (`data-specs.ts`, `sources.ts`); lido pela trilha Dados (delivery L27) |
 | `apps/server/src/builder/conversation/permissions.ts` | Muda (`READ`) | `TOOL_CLOSURE`, `permissions.test.ts` |
 | `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts` | Muda | `npm run deps`, CI |
 | `apps/web/src/builder/conversation/` | Cria `data-specs.ts`; muda `tool-registry.ts` | `TOOLS` |
@@ -699,41 +719,52 @@ export const DATA_TOOL = { describe: 'data_describe', query: 'data_query' } as c
 export const DESCRIBE_SAMPLE_ROWS = 5            // decisão T7 do escopo
 // BUILDER_TOOL ganha dataDescribe: DATA_TOOL.describe, dataQuery: DATA_TOOL.query (CLOSED_TOOLS e RowTool herdam)
 
+// packages/hub-api/src/assistant.ts, ao lado de ReadCut (o dono da forma do resultado, code C26)
+export const DataOrigin = z.object({ systems: z.array(z.string()).min(1), connector: z.string(),
+  table: z.string(), lastRunEndedAt: z.iso.datetime().nullable(),
+  lastRun: z.enum([...<os kind de CopyRun.shape.outcome>, 'NONE']) })   // decisão 7
+export const DataResult = z.discriminatedUnion('kind', [ /* CATALOG, TABLE, ROWS, abaixo */ ])
+export type DataOrigin = z.infer<typeof DataOrigin>
+
 // apps/server/src/builder/data-tools/tools.ts
-export type DataOf = (requestContext: RequestContext,
-  call: Readonly<{ threadId?: ConversationId }>) => Promise<CompanyData | undefined>
-export const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
-export type Origin = Readonly<{ system: string; connector: string; table: string;
-  copiedAt: string | null; lastRun: CopyRun['outcome']['kind'] | 'NONE' }>
+export type DataOf = (requestContext: RequestContext) => Promise<CompanyData | undefined>
 export function dataTools(deps: { dataOf: DataOf; log: Pick<FailureLog, 'error'> }): ToolsInput
 
 // apps/server/src/builder/data-tools/order.ts
 export function dataOrder(): string              // o texto de `C4`, palavra por palavra
 
 // apps/server/src/builder/data-tools/public.ts
-export { dataTools, NOT_GRANTED, type DataOf, type Origin } from './tools.ts'
+export { dataTools, type DataOf } from './tools.ts'
 export { dataOrder } from './order.ts'
 ```
 
-O resultado ao modelo é uma união com `kind` (code C21): `CATALOG` (`systems: [{ name, connector,
-reads: [{ operation, label, summary }] }]`, `tables: [{ name, label, description, ...Origin sem
-table }]`), `TABLE` (`name, label, description, columns: [{ name, type, description,
-inactiveSince }], sample: { rows, more }, origin`), `ROWS` (`columns, rows, complete, origin:
-Origin[]`, mais `reason` quando `origin` é vazia), `NOT_GRANTED`, e cada recusa do contrato com
-`reason`. O `switch` das recusas termina em `satisfies never`.
+O resultado ao modelo é `DataResult`, uma união com `kind` (code C21): `CATALOG` (`systems: [{ name,
+connector, reads: [{ operation, label, summary }] }]`, `tables: [{ name, label, description,
+...DataOrigin sem table }]`), `TABLE` (`name, label, description, columns: [{ name, type,
+description, inactiveSince }], sample: { rows, more }, origin`) e `ROWS` (`columns, rows, complete,
+origin: DataOrigin[]`, mais `reason` quando `origin` é vazia). `lastRunEndedAt` é
+`kept.lastRun?.endedAt ?? null`, e `lastRun` é `kept.lastRun?.outcome.kind ?? 'NONE'` (decisão 25).
+`systems` traz o nome de cada conexão de `kept.connections`, na mesma ordem.
 
-| `kind` | `reason` ao modelo (inglês, `C3`) |
+Toda recusa, `NOT_GRANTED` e as do contrato, é lançada, nunca devolvida (code C79): a ferramenta
+lança um `Error` cuja mensagem é o JSON `{ kind, status: null, code, message, body: null, reason }`,
+a forma que `refuse()` lança e `thrownOf` lê, e a Mastra a entrega ao modelo como falha da
+ferramenta. `QUERY_REFUSED` põe o SQLSTATE em `code` e a mensagem inteira do PostgreSQL em
+`message`; as outras levam `code` e `message` nulos. O `switch` das recusas termina em
+`satisfies never`.
+
+| `kind` | `reason` ao modelo, no erro lançado (inglês, `C3`) |
 | --- | --- |
 | `NOT_IN_CATALOG` | "No such table in the catalog. Call data_describe with no table to list them." |
 | `NOT_IN_ROLE` | "PostgreSQL denied this statement: the role of the person does not read one of its tables, or the statement is not a read. Say so; do not look for the data elsewhere." |
-| `QUERY_REFUSED` | `PostgreSQL refused the query (SQLSTATE ${sqlstate}). 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.` |
+| `QUERY_REFUSED` | `PostgreSQL refused the query (SQLSTATE ${sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.` |
 | `QUERY_TOO_LARGE` | "The answer is too large. Aggregate or add LIMIT." |
 | `DEADLINE` | "The query took too long. Narrow it." |
 | `TABLE_UNAVAILABLE` | "The company's database did not answer. Do not read the system live in its place; tell the person to try again." |
 | `CATALOG_UNAVAILABLE` | "The catalog did not answer. Tell the person to try again." |
 
-- **Ids.** `threadId` parseado com `ConversationId.parse` na borda (`execute`), quando a Mastra o dá (code C23).
-- **Donos.** Os nomes: `DATA_TOOL`. A amostra: `DESCRIBE_SAMPLE_ROWS`. O teto do SQL: `QUERY_SQL_MAX` do contrato. As frases: uma tabela `REASONS` em `tools.ts` (code C26).
+- **Ids.** Nenhum id novo entra pela borda: o `by` fica para a etapa 3 (decisão 6).
+- **Donos.** Os nomes: `DATA_TOOL`. A amostra: `DESCRIBE_SAMPLE_ROWS`. O teto do SQL: `QUERY_SQL_MAX` do contrato. A forma do resultado: `DataOrigin` e `DataResult` em `@conexus/hub-api`; o servidor tira o tipo por `z.infer`. As frases: uma tabela `REASONS` em `tools.ts` (code C26).
 - **Esquemas Zod.** `data_describe`: `z.object({ table: z.string().max(40).optional() })`. `data_query`: `z.object({ sql: z.string().trim().min(1).max(QUERY_SQL_MAX) })` (code C27).
 - **Arquivo modelo.** `typed-reads.ts` (cumpre C21 e C26; não recebe id de marca, C23 não se aplica).
 
@@ -746,27 +777,27 @@ web; `DatabaseIcon` já vem de `lucide-react` (`apps/web/src/builder/conversatio
 ### A ordem do trabalho
 
 1. **Os nomes no dono único e no fecho.** Critérios: 20.
-   - **Arquivos:** muda `packages/hub-api/src/tools.ts`, `apps/server/src/builder/conversation/permissions.ts`.
-   - **Referência a seguir:** "Os nomes", acima.
+   - **Arquivos:** muda `packages/hub-api/src/tools.ts`, `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/conversation/permissions.ts`.
+   - **Referência a seguir:** "Os nomes", acima; `ReadCut` para o esquema.
    - **O que sai:** nada.
-   - **O que entra:** `DATA_TOOL`, `DESCRIBE_SAMPLE_ROWS`; `BUILDER_TOOL.dataDescribe` e `.dataQuery`; os dois em `READ`. Regras: code C26.
+   - **O que entra:** `DATA_TOOL`, `DESCRIBE_SAMPLE_ROWS`; `BUILDER_TOOL.dataDescribe` e `.dataQuery`; os dois em `READ`; `DataOrigin` e `DataResult` em `assistant.ts`. Regras: code C26, C27.
    - **Testes:** `permissions.test.ts`, "a tela e o Builder nomeiam o mesmo conjunto fechado" (`:259-261`) passa.
    - **Mutações à mão:** tire os dois nomes de `READ`: o caso fica vermelho.
    - **Pronto quando:** `permissions.test.ts` passa no comando do servidor.
-2. **As duas ferramentas e a ordem.** Critérios: 10 a 19.
+2. **As duas ferramentas e a ordem.** Critérios: 10 a 19, 28.
    - **Arquivos:** cria `data-tools/tools.ts`, `order.ts`, `public.ts`, `tools.test.ts`.
+
    - **Referência a seguir:** "As duas ferramentas" e "A origem e a recusa", acima.
    - **O que sai:** nada.
    - **O que entra:** `dataTools` e `dataOrder`, nos contratos acima. O começo do caminho comum:
      ```ts
-     execute: async ({ sql }, { requestContext, abortSignal, agent }) => {
-       const threadId = agent?.threadId === undefined ? undefined : ConversationId.parse(agent.threadId)
-       const data = requestContext === undefined ? undefined : await dataOf(requestContext, { threadId })
-       if (data === undefined) return NOT_GRANTED
+     execute: async ({ sql }, { requestContext, abortSignal }) => {
+       const data = requestContext === undefined ? undefined : await dataOf(requestContext)
+       if (data === undefined) refused({ kind: 'NOT_GRANTED' })   // lança; nunca devolve
      ```
-     `data_describe({ table })` confere `table` em `described.tables` antes de `read`, e responde `NOT_IN_CATALOG` sem ler. `data_query` lê, depois descreve, e liga cada `answer.tables[].kept.connections[0]` a `systems[].connection`; sem par, `log.error({ table, connection }, 'DATA_ORIGIN_UNREAD')` e `CATALOG_UNAVAILABLE` com a frase, sem linha. `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` em inglês, no molde de `READ_DESCRIPTION` (`app-data/tools.ts:25`), mandam escrever a tabela com o esquema (`sync.sankhya_vendas`). Regras: code C21, C23, C26, C27, C79; security S41 (o log só com escalares).
-   - **Testes:** `tools.test.ts`, os casos dos critérios 10 a 19, sobre `companyData({ sources, now })` com fontes falsas no molde de `fakeWorld` (`packages/hub-api/src/company-data.test.ts:133-199`), um `log` que guarda as linhas, e `execute` chamado como `runOn` (`apps/server/src/builder/connectors/connector-tools-scope.test.ts:56-58`), importando de `./public.ts` (testing T5, como `connector-tools-scope.test.ts:5-6`).
-   - **Mutações à mão:** (a) `DESCRIBE_SAMPLE_ROWS` por `200` no `slice`: o caso do critério 13 fica vermelho. (b) tire o `return NOT_GRANTED` de `dataOf` indefinido: critério 11. (c) `originOf` usando `String(connections[0])` como nome: critério 17. (d) tire a conferência em `described.tables`: critério 14.
+     `data_describe({ table })` confere `table` em `described.tables` antes de `read`, e lança `NOT_IN_CATALOG` sem ler. `data_query` lê, depois descreve, e liga cada conexão de `answer.tables[].kept.connections`, todas, a `systems[].connection`; uma sem par faz `log.error({ table, connection }, 'DATA_ORIGIN_UNREAD')` e lança `CATALOG_UNAVAILABLE` com a frase, sem linha. `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` em inglês, no molde de `READ_DESCRIPTION` (`app-data/tools.ts:25`), mandam escrever a tabela com o esquema (`sync.sankhya_vendas`). Regras: code C21, C23, C26, C27, C79; security S41 (o log só com escalares).
+   - **Testes:** `tools.test.ts`, os casos dos critérios 10 a 19 e 28 (a tabela de duas conexões com `connections: [lojaA, lojaB]` no `CATALOG` falso, como `copy-list.test.tsx:202-223`; a recusa lida por `assert.rejects` e `JSON.parse` da mensagem), sobre `companyData({ sources, now })` com fontes falsas no molde de `fakeWorld` (`packages/hub-api/src/company-data.test.ts:133-199`), um `log` que guarda as linhas, e `execute` chamado como `runOn` (`apps/server/src/builder/connectors/connector-tools-scope.test.ts:56-58`), importando de `./public.ts` (testing T5, como `connector-tools-scope.test.ts:5-6`).
+   - **Mutações à mão:** (a) `DESCRIBE_SAMPLE_ROWS` por `200` no `slice`: o caso do critério 13 fica vermelho. (b) tire o `refused` de `dataOf` indefinido: critério 11. (c) `originOf` usando `String(connections[0])` como nome: critério 17. (d) tire a conferência em `described.tables`: critério 14. (e) ligue só `connections[0]`: critério 28. (f) devolva a recusa em vez de lançá-la: critério 18.
    - **Pronto quando:** `tools.test.ts` passa no comando do servidor.
 3. **A pasta no verificador.** Critérios: 21.
    - **Arquivos:** muda `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`.
@@ -787,14 +818,15 @@ web; `DatabaseIcon` já vem de `lucide-react` (`apps/web/src/builder/conversatio
 
 ### Como se prova
 
-- 10 a 19: `execute` sobre o contrato real (`companyData`) com fontes falsas; o 14 e o 19 contam zero chamadas a `rows` e a `query`; o 17 lê `DATA_ORIGIN_UNREAD` no `log`. Hoje falha: a pasta não existe.
+- 10 a 19 e 28: `execute` sobre o contrato real (`companyData`) com fontes falsas; o 14 e o 19 contam zero chamadas a `rows` e a `query`; o 17 lê `DATA_ORIGIN_UNREAD` no `log`. Hoje falha: a pasta não existe.
 - 21: `rules-doors.test.ts` planta o arquivo e roda o verificador; hoje a pasta não está em `AGENTS_AND_APPS` e o caso passaria sem recusar.
 - 20 e 22: hoje passam; passam a exigir os nomes e as linhas quando `BUILDER_TOOL` os ganha.
 
 ### Parar se
 
 - O PR de U1 não estiver no `main`: o catálogo falso precisaria de `withheld: []`. Pare e espere; não escreva `withheld` em arquivo novo.
-- `agent.threadId` vier com uma forma que `ConversationId.parse` recusa num dos três agentes (aparece em U3): reporte com o valor; não troque `parse` por `safeParse`.
+- A forma única de `refuse()` pedir que a classe saia de `builder/agents/tools.ts` para um lugar comum: pare e reporte; mover o dono é a issue 1016. Nesta unidade a ferramenta lança o mesmo JSON por um `Error` próprio de `data-tools/`.
+
 - O texto de `C4` pedir outra palavra: reporte; ele não muda.
 
 ## U3 A montagem nos três agentes, com a porta na raiz do servidor
@@ -817,8 +849,8 @@ conhecidos, sem desenho novo.
 | --- | --- | --- |
 | `apps/server/src/main.ts` | Muda | `runServer`, o Hub de teste (`test-hub.ts:82`), `main.test.ts` |
 | `apps/server/src/conversations-of.ts` | Muda (`ConversationsDeps.companyData`) | `main.ts:158` |
-| `apps/server/src/builder/assistant/` | Muda | `conversations-of.ts:187` |
-| `apps/server/src/builder/conversation/` | Muda | `conversations-of.ts:216` |
+| `apps/server/src/builder/assistant/` | Muda; em `assistant.test.ts`, a lista exata de ferramentas do caso de `:76-112` ganha `data_describe` e `data_query` | `conversations-of.ts:187` |
+| `apps/server/src/builder/conversation/` | Muda; em `conversation-tools.test.ts`, as três listas de `:56-73` ganham `data_describe` e `data_query`, na ordem que o caso ordena | `conversations-of.ts:216` |
 | `apps/server/src/builder/agents/` | Muda (`AgentDeps`, `Deps` do controlador) | `agents/public.ts:68-75`, `conversations-of.ts:197` |
 | `apps/server/src/builder/app-data/context.ts` | Muda (uma frase) | `builder.ts` (`dataFor`) |
 | `apps/server/src/builder/data-tools/` | Cria `mounted.test.ts` | — |
@@ -832,8 +864,7 @@ companyData: (scope: SessionScope, context?: DataContext) => CompanyData
 ```
 
 O nome não é `data`: `createBuilder` já tem `data: BuilderData` (`builder.ts:110`). Cada agente
-implementa `DataOf` de U2 e passa `by`: `{ agent: 'ASSISTANT', threadId }`, `{ agent: 'BUILDER',
-threadId }`, `{ agent: 'AGENT', agentId: frozen.agentId, threadId }`. Nenhum passa `turn`.
+implementa `DataOf` de U2 só com o escopo; nenhum passa `by` nem `turn` (decisão 6).
 
 ### As skills e a leitura
 
@@ -850,7 +881,7 @@ As de U2.
    - **Mutações à mão:** passe `{ ...scope, place: { kind: 'COMPANY' } }` no Builder: o caso do critério 27 fica vermelho.
    - **Pronto quando:** `npm run typecheck` passa.
 2. **Os três agentes e a frase.** Critérios: 23, 24, 25, 26.
-   - **Arquivos:** muda `assistant.ts`, `assistant/instructions.ts`, `conversation/builder.ts`, `conversation/public.ts`, `conversation/instructions.ts`, `agents/agent.ts`, `agents/controller.ts`, `app-data/context.ts`.
+   - **Arquivos:** muda `assistant.ts`, `assistant/instructions.ts`, `assistant/assistant.test.ts`, `conversation/builder.ts`, `conversation/public.ts`, `conversation/instructions.ts`, `conversation/conversation-tools.test.ts`, `agents/agent.ts`, `agents/controller.ts`, `app-data/context.ts`.
    - **Referência a seguir:** as linhas acima.
    - **O que sai:** em `HOW_TO_READ` (`context.ts:22`), "and see a few rows with `app_data_read`; the Project app".
    - **O que entra:** no Assistente, `dataOf` por `scopeOf(requestContext)`, `...dataTools({ dataOf, log: deps.log })` depois de `assistantConnectorTools`, `...Object.values(DATA_TOOL)` em `AVAILABLE_TOOLS`, `{ role: 'system', content: dataOrder() }` depois de `fixedSystem(FIXED)`. No Builder, `dataOf` por `admitted` e `granted`:
@@ -859,19 +890,20 @@ As de U2.
      if (ids === undefined) return undefined
      const chosen = (await granted(requestContext)).map((each) => each.connectionId)
      return deps.companyData({ companyId: ids.companyId, personId: ids.personId,
-       place: { kind: 'PROJECT', projectId: ids.projectId }, chosen }, { by: { agent: 'BUILDER', threadId } })
+       place: { kind: 'PROJECT', projectId: ids.projectId }, chosen })
      ```
-     com `...dataTools(...)` no fim do objeto (a ordem de `:144` muda só no fim) e `${dataOrder()}` num bloco próprio depois de `fillPrompt`, fora de `dataContext`. No agente salvo, `...dataTools({ dataOf: async (_rc, { threadId }) => deps.companyData(scope, { by: { agent: 'AGENT', agentId: frozen.agentId, threadId } }), log: deps.log })` dentro de `neverAsking` de `ofTheAgent`, e `dataOrder()` depois de `fixedSystem(FIXED)`. A frase nova de `HOW_TO_READ`: "Count a read on the real data with `app_data_check`, and see the columns and a few rows of a copy with `data_describe`, in the order of `## Company data`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`." Regras: code C26; decisão `L2` (o arquivo fica na lista).
+     com `...dataTools(...)` no fim do objeto (a ordem de `:144` muda só no fim) e `${dataOrder()}` num bloco próprio depois de `fillPrompt`, fora de `dataContext`. No agente salvo, `...dataTools({ dataOf: async () => deps.companyData(scope), log: deps.log })` dentro de `neverAsking` de `ofTheAgent`, e `dataOrder()` depois de `fixedSystem(FIXED)`. A frase nova de `HOW_TO_READ`: "Count a read on the real data with `app_data_check`, and see the columns and a few rows of a copy with `data_describe`, in the order of `## Company data`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`." Regras: code C26; decisão `L2` (o arquivo fica na lista).
    - **Testes:** `mounted.test.ts`, os casos dos critérios 23 a 26: o Assistente por `assisting` (`apps/server/src/builder/assistant/test-assistant.ts:74`), o Builder por `conversing` (`apps/server/src/builder/conversation/test-conversation.ts:55`, como `apps/server/src/builder/app-data/access.test.ts:37-55`), o agente salvo por `agentsOn` (`apps/server/src/builder/agents/test-agents.ts:55`), o Construtor pelo seu teste; cada um lê a primeira chamada ao dublê (`Sent`, `apps/server/src/platform/test-anthropic-body.ts:9-40`: `tools`, `descriptions`, `schemas`, `system`). O Projeto com cópia por `releasing` (`apps/server/src/hub/copies/test-released.ts:49`). `context.test.ts` (o caso de `:126`) e `permissions.test.ts` continuam passando.
    - **Mutações à mão:** (a) tire `...Object.values(DATA_TOOL)` de `AVAILABLE_TOOLS`: critério 23 (o controlador tira a ferramenta). (b) tire `...dataTools(...)` de `runToolsOf`: critério 23. (c) mova `dataOrder()` do Builder para dentro de `dataContext`: critério 25. (d) volte a frase antiga: critério 26.
-   - **Pronto quando:** `mounted.test.ts`, `permissions.test.ts`, `context.test.ts` e `assistant.test.ts` passam.
-3. **A porta provada de ponta a ponta.** Critérios: 27.
+   - **Pronto quando:** `mounted.test.ts`, `permissions.test.ts`, `context.test.ts`, `assistant.test.ts`, `conversation-tools.test.ts` e `instructions.test.ts` passam; se uma contagem de mensagens de sistema mudar com `dataOrder()`, o caso ganha a mensagem nova, com a razão.
+3. **A porta provada de ponta a ponta.** Critérios: 27, 29.
    - **Arquivos:** muda `mounted.test.ts`.
    - **Referência a seguir:** `stepped` (`apps/server/src/builder/conversation/test-questions.ts:57-72`) com uma chamada `data_describe` e depois "Pronto."; o resultado em `Sent.toolResults` (`test-anthropic-body.ts:37-38`).
    - **O que sai:** nada.
-   - **O que entra:** o caso "data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada": a empresa com duas cópias, uma liberada ao Projeto; o dono no Assistente lê as duas em `tables`; o Builder e o agente salvo do Projeto leem só a liberada.
-   - **Testes:** o próprio caso.
-   - **Mutações à mão:** a do passo 1.
+   - **O que entra:** o caso "data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada": a empresa com duas cópias, uma liberada ao Projeto; o dono no Assistente lê as duas em `tables`; o Builder e o agente salvo do Projeto leem só a liberada. E o caso "o agente salvo usado por um membro lê o catálogo do Projeto, como o autor": o agente publicado pelo dono, usado por um membro do Projeto, lê em `tables` só a cópia liberada.
+   - **Testes:** os dois casos.
+   - **Mutações à mão:** a do passo 1; no agente salvo, passe `{ ...scope, place: { kind: 'COMPANY' } }`: o membro, sem `readCopyRows`, recebe `tables` vazia (`catalog.ts:20-22`) e o caso do critério 29 fica vermelho.
+
    - **Pronto quando:** o caso passa no comando do servidor.
 
 ### Como se prova
@@ -882,12 +914,14 @@ As de U2.
 
 ### Parar se
 
+- `agentsOn` não conseguir rodar o agente salvo como um membro que não é o autor (critério 29): faça o caso com o dono, reporte o que falta no ajudante, e não monte o escopo à mão.
 - `agentsOn` não conseguir um agente salvo num Projeto com cópia liberada para o critério 27: faça o caso com o Assistente e o Builder e reporte o que falta no ajudante; não crie um ajudante de teste fora de `test-*.ts`.
 - O Construtor passar a receber as duas por algum caminho (o `toolsOf` dele é outro, `construtor.ts:197-221`): pare; o Construtor está congelado.
 
 ## G2 O ponto de conferência
 
-Rode os testes dos passos das duas unidades, mais `assistant.test.ts`; depois `npm run deps` e
+Rode os testes dos passos das duas unidades, mais `assistant.test.ts` e `conversation-tools.test.ts`; depois
+ `npm run deps` e
 `npm run check`. Passos 6 e 7 de `conexus-build`: `npm run build -w @conexus/server`
 e um turno do Assistente com o dublê, que mostra `data_describe` e `data_query` em `Sent.tools` e o
 resultado `CATALOG` de uma chamada; pstack `deslop` e `no-comments`; as mutações das duas unidades
@@ -968,8 +1002,8 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
    - **Referência a seguir:** `scripts/record.ts:82-152`, `:238-258`; `record-calls.ts:18-40`.
    - **O que sai:** nada.
    - **O que entra:** `recordedData()` é `companyData({ now, sources })` sobre um `CATALOG` com as cinco tabelas `sankhya_*` dos modelos de cópia, sistema "Matriz", conector `sankhya`, última rodada completa terminada às 08:45 de 2026-11-14; `rows` com 6 notas de `PADARIA_SOL_MATRIZ` (`complete: false`); `query` com `{ kind: 'ROWS', columns: ['total'], rows: [[TOTAL_OUTUBRO]], complete: true, used: ['sankhya_vendas'] }`, `TOTAL_OUTUBRO` somado de `soldBy(PADARIA_SOL_MATRIZ, '2026-10')`; `live` e `funnel` `NOT_GRANTED`. Nenhuma lista `withheld`. `DATA_QUERY_PROMPT = 'Quanto a Padaria Sol vendeu em outubro de 2026?'`, e `DATA_QUERY_CALLS` com quatro chamadas: `data_describe {}`, `data_describe { table: 'sankhya_vendas' }`, `data_query { sql: OCTOBER_SQL }` e o texto com o número. `RECORDED_TOOLS` ganha `...dataTools({ dataOf: async () => recordedData(), log })` de `apps/server/src/builder/data-tools/public.ts`; `'data-query'` entra em `Scenario`, `CALLS`, `asked` e no comentário de `:2`; `NATIVE` e `STREAMED` ganham `'data-query'`. `DataPart` no molde de `SubagentPart`.
-   - **Testes:** `recordings.test.ts` (cabeçalho e `LEAK`).
-   - **Mutações à mão:** tire `'data-query'` de `NATIVE`: o caso fica vermelho pela lista do diretório.
+   - **Testes:** `recordings.test.ts` (cabeçalho e `LEAK`) e o caso novo do critério 31, que lê a versão de `node_modules/@mastra/core/package.json` e a compara com a do cabeçalho de `data-query` e de `reads`, e acha nas partes de `data-query` os resultados `CATALOG`, `TABLE` e `ROWS` com `origin`.
+   - **Mutações à mão:** tire `'data-query'` de `NATIVE`: o caso fica vermelho pela lista do diretório. Troque `1.82.0` por `1.79.0` no cabeçalho de `reads.jsonl`: o caso novo fica vermelho. Tire o `origin` do `ROWS` gravado: o caso novo fica vermelho.
    - **Pronto quando:** `npm run record -- data-query` grava sem `LEAK`, e o arquivo guarda os quatro passos com o resultado real.
 3. **O `reads` regravado.** Critérios: 30, 31.
    - **Arquivos:** muda `record.ts`; regrava `reads.jsonl`.
@@ -979,7 +1013,7 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 4. **As perguntas do dado copiado.** Critérios: 32, 33, 34, 35.
    - **Arquivos:** muda `test-scorecard.ts`, `assistant.scorecard.test.ts`.
    - **Referência a seguir:** `test-scorecard.ts:169-227`; `assistant.eval.test.ts:45-77`; `assistant.scorecard.test.ts:82-127`.
-   - **O que entra:** `COPY_QUESTIONS` com c1 a c6 como a parte 3, `tasks.md:499-504` (c1 "Quanto vendi em outubro?", `sankhya_vendas`; c2 clientes ativos, `sankhya_clientes`, contagem de `ATIVO = 'S'` e `CLIENTE = 'S'`; c3 vendedor do mês, `sankhya_vendas` e `sankhya_vendedores`; c4 comissão, nenhuma tabela; c5 c1 com a última rodada parcial e `/incomplet|parcial/i`; c6 o Builder no Projeto, `sankhya_clientes` e nenhuma outra). `failed` aceita `CATALOG`, `TABLE` e `ROWS` quando `toolName` é de `DATA_TOOL`. `judgedCopy`: chamou `data_query` (menos c4 e c6), as tabelas de `origin` do último `data_query` são `asked.tables`, e o texto mostra o número por `shows`. Regras: T28 (o dublê compõe a resposta com o número do resultado), T5.
+   - **O que entra:** `COPY_QUESTIONS` com c1 a c6 como a parte 3, `tasks.md:499-504` (c1 "Quanto vendi em outubro?", `sankhya_vendas`; c2 clientes ativos, `sankhya_clientes`, contagem de `ATIVO = 'S'` e `CLIENTE = 'S'`; c3 vendedor do mês, `sankhya_vendas` e `sankhya_vendedores`; c4 comissão, nenhuma tabela; c5 c1 com a última rodada parcial e `/incomplet|parcial/i`; c6 o Builder no Projeto, `sankhya_clientes` e nenhuma outra). `failed` aceita `CATALOG`, `TABLE` e `ROWS` quando `toolName` é de `DATA_TOOL`; a recusa de uma ferramenta de dado já conta como erro, por `output-error` (`test-scorecard.ts:170-176`). `judgedCopy`: chamou `data_query` (menos c4 e c6), as tabelas de `origin` do último `data_query` são `asked.tables`, e o texto mostra o número por `shows`. Regras: T28 (o dublê compõe a resposta com o número do resultado), T5.
    - **Testes:** os quatro casos da coluna de teste dos critérios 32 a 35; o turno pelo Assistente de `assisting`, com as cópias de `releasing(t, ..., ['vendas', 'vendedores', 'clientes'], [])`.
    - **Mutações à mão:** tire a exceção de `DATA_TOOL` em `failed`: o caso que julga certo fica vermelho; não confira as tabelas em `judgedCopy`: o turno com `sankhya_clientes` para c1 passa a certo e o caso negativo fica vermelho.
    - **Pronto quando:** `assistant.scorecard.test.ts` passa, e o caso do modelo real pula com `opt-in:`.
@@ -987,14 +1021,15 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 ### Como se prova
 
 - 30: `connector-tools-scope.test.ts` chama a ferramenta pela porta de `connectorTools` e lê o resultado; hoje o resultado não tem `at`.
-- 31: `recordings.test.ts` lê o diretório e cada cabeçalho; hoje `data-query.jsonl` não existe e `reads.jsonl` diz 1.79.0.
+- 31: `recordings.test.ts` lê o diretório, cada cabeçalho, a versão instalada e as partes de `data-query`; hoje `data-query.jsonl` não existe e `reads.jsonl` diz 1.79.0. A parada na chamada de modelo a mais é de `scripts/record.ts:120-121`, de hoje, e fica na tabela de falhas, sem critério.
+
 - 32 a 34: o turno passa pela porta do Assistente (`assisting`) e o placar lê as partes guardadas; hoje não há pergunta de cópia e `failed` conta `ROWS` como erro.
 - 35: sem a variável, a saída do teste mostra `# SKIP opt-in:`.
 
 ### Parar se
 
 - O hub de `assisting` não aceita o teto de páginas (`runPages`) para a rodada parcial de c5: pare e relate; não invente um gancho de teste.
-- O resultado guardado de `data_query` no cenário não tem `origin` com as cinco chaves que U3 promete: o defeito é de U3; relate com a linha da gravação.
+- O resultado guardado de `data_query` no cenário não passa em `DataResult` (as cinco chaves de `DataOrigin` que U2 promete): o defeito é de U2; relate com a linha da gravação.
 - `numbers.test.ts` falha com `reads` regravado: relate o número que mudou; não ajuste o teste para passar.
 
 ## U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa
@@ -1022,14 +1057,10 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 
 ```ts
 // apps/web/src/builder/conversation/data-specs.ts
-const Catalogued = z.looseObject({ kind: z.literal('CATALOG'), tables: z.array(z.unknown()) })
-const Tabled = z.looseObject({ kind: z.literal('TABLE'), name: z.string(),
-  sample: z.object({ rows: z.array(z.unknown()), more: z.boolean() }) })
-const Queried = z.looseObject({ kind: z.literal('ROWS'), rows: z.array(z.unknown()), complete: z.boolean(),
-  origin: z.array(z.looseObject({ table: z.string() })) })
-const Refused = z.looseObject({ kind: z.enum(['NOT_IN_ROLE', 'TABLE_UNAVAILABLE', 'CATALOG_UNAVAILABLE',
-  'QUERY_REFUSED', 'QUERY_TOO_LARGE', 'DEADLINE', 'NOT_IN_CATALOG', 'NOT_GRANTED']) })
-export const REFUSED_TEXT: { readonly [K in z.infer<typeof Refused>['kind']]: string }
+// o resultado guardado passa por DataResult de @conexus/hub-api (U2); a recusa vem lançada e é lida por thrownOf
+type DataRefusal = 'NOT_IN_ROLE' | 'TABLE_UNAVAILABLE' | 'CATALOG_UNAVAILABLE' | 'QUERY_REFUSED'
+  | 'QUERY_TOO_LARGE' | 'DEADLINE' | 'NOT_IN_CATALOG' | 'NOT_GRANTED'
+export const REFUSED_TEXT: { readonly [K in DataRefusal]: string }
 //  os textos de design.md, C5, e NOT_GRANTED: LOCAL_REFUSALS.NOT_GRANTED
 export const DATA_SPECS: Record<(typeof DATA_TOOL)[keyof typeof DATA_TOOL], ToolSpec>
 
@@ -1041,9 +1072,9 @@ export function QueryBlock({ sql }: { sql: string }): ReactNode
 type Copied = 'IDLE' | 'DONE' | 'FAILED'
 ```
 
-- **Estados.** `Copied` como união (C21); a recusa pelo `kind` de `Refused` (C22).
-- **Donos.** `REFUSED_TEXT` é o dono das frases de recusa de dado; `NOT_GRANTED` continua dono em `LOCAL_REFUSALS` (C26). Sem `withheld`: nenhuma frase nomeia uma tabela que o papel não lê.
-- **Esquema de entrada externa.** O resultado guardado passa por `Catalogued`, `Tabled`, `Queried`, `Refused` (C27).
+- **Estados.** `Copied` como união (C21); a recusa pelo `kind` do erro lançado (C22).
+- **Donos.** `REFUSED_TEXT` é o dono das frases de recusa de dado; `NOT_GRANTED` continua dono em `LOCAL_REFUSALS`; a forma do resultado é `DataResult`, de `@conexus/hub-api` (C26). Sem `withheld`: nenhuma frase nomeia uma tabela que o papel não lê.
+- **Esquema de entrada externa.** O resultado guardado passa por `DataResult`; o erro, por `thrownOf` (C27).
 - **Arquivo modelo.** `connector-specs.ts` (`presentRead`): cumpre C21 e C26.
 
 ### As skills e a leitura
@@ -1056,9 +1087,9 @@ type Copied = 'IDLE' | 'DONE' | 'FAILED'
    - **Arquivos:** muda `data-specs.ts`; cria `data-specs.test.tsx`.
    - **Referência a seguir:** `connector-specs.ts:250-305`.
    - **O que sai:** `body: 'generic'` e as frases fixas da linha mínima de U2.
-   - **O que entra:** `presentDescribe(tool, status)`: com recusa, `said(REFUSED_TEXT[kind])`; em erro ou negada sem recusa, "Não conseguiu ler o catálogo agora." sem tabela e `REFUSED_TEXT.TABLE_UNAVAILABLE` com tabela; sem tabela, "Consultando o catálogo"/"Consultou o catálogo" e "n tabelas"; com tabela, `Vendo ${table}`/`Viu ${table}` e a contagem da amostra por `rowsText`. `presentQuery`: rodando, "Consultando os dados"; feita, `Consultou ${origin.map(t => t.table).join(', ')}` e a contagem; origem vazia ou fora do esquema, "Consultou os dados". `dataRefusal(result)` é `'SAID'` quando `Refused` passa. Regras: C21, C79.
-   - **Testes:** `data-specs.test.tsx` com as partes de `recordedPart('data-query', DataPart, ...)`; um caso troca só o `result` para a recusa, como `source()` em `sources.test.tsx:20-30`. Os casos dos critérios 36 a 38, 40 e 41.
-   - **Mutações à mão:** `more` sempre `false`: "a amostra" fica vermelho; tire `NOT_IN_ROLE` de `REFUSED_TEXT`: "cada recusa" fica vermelho.
+   - **O que entra:** `presentDescribe(tool, status)`: com o erro lançado de um `kind` de `REFUSED_TEXT` (`thrownOf(tool)?.kind`), `said(REFUSED_TEXT[kind])`; em erro ou negada sem esse `kind`, "Não conseguiu ler o catálogo agora." sem tabela e `REFUSED_TEXT.TABLE_UNAVAILABLE` com tabela; sem tabela, "Consultando o catálogo"/"Consultou o catálogo" e "n tabelas"; com tabela, `Vendo ${table}`/`Viu ${table}` e a contagem da amostra por `rowsText`. `presentQuery`: rodando, "Consultando os dados"; feita, `Consultou ${origin.map(t => t.table).join(', ')}` e a contagem; origem vazia ou fora de `DataResult`, "Consultou os dados". Nenhum `refusal` lê o resultado: a recusa não é resultado. Regras: C21, C79.
+   - **Testes:** `data-specs.test.tsx` com as partes de `recordedPart('data-query', DataPart, ...)`; um caso troca a parte por uma em erro com o JSON lançado (as duas formas que `thrownOf` lê, `errorText` ou `isError` com o texto em `result`), como `source()` em `sources.test.tsx:20-30`. Os casos dos critérios 36 a 38, 40 e 41.
+   - **Mutações à mão:** `more` sempre `false`: "a amostra" fica vermelho; tire `NOT_IN_ROLE` de `REFUSED_TEXT`: "cada recusa" fica vermelho; leia a recusa do `result` em vez de `thrownOf`: "cada recusa" fica vermelho.
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/data-specs.test.tsx` passa.
 2. **O corpo com a consulta.** Critérios: 39.
    - **Arquivos:** muda `tool-spec.ts`, `tool-row.tsx`, `tool-bodies.tsx`, `data-specs.ts`.
@@ -1070,9 +1101,10 @@ type Copied = 'IDLE' | 'DONE' | 'FAILED'
          () => setCopied('DONE'),
          (cause: unknown) => { console.error('QUERY_NOT_COPIED', cause); setCopied('FAILED') })
      ```
-     `<pre className={BLOCK}>{shown(sql)}</pre>`, o `Button` `ghost` `sm` "Copiar a consulta" ("Consulta copiada" em `DONE`), e em `FAILED` o texto de `L4` ao lado. Regras: W21; nenhum erro calado (o console leva o código).
-   - **Testes:** "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (`vi.spyOn(navigator.clipboard, 'writeText')`) e "a cópia recusada diz para selecionar" (a promessa recusada).
-   - **Mutações à mão:** tire o `onClick`: o caso da cópia fica vermelho.
+     `<pre className={BLOCK}>{sql}</pre>`, a consulta inteira, sem `shown` (que corta em 800 caracteres, `tool-args.ts:38-42`, e a consulta vai a `QUERY_SQL_MAX`, 4.000), o `Button` `ghost` `sm` "Copiar a consulta" ("Consulta copiada" em `DONE`), e em `FAILED` o texto de `L4` ao lado. Regras: W21; nenhum erro calado (o console leva o código).
+   - **Testes:** "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (`vi.spyOn(navigator.clipboard, 'writeText')`), com uma consulta de 1.200 caracteres: o texto na tela e o texto copiado são a consulta inteira, sem reticências; e "a cópia recusada diz para selecionar" (a promessa recusada).
+   - **Mutações à mão:** tire o `onClick`: o caso da cópia fica vermelho. Ponha `shown(sql)` no `<pre>` e na cópia: o caso da consulta de 1.200 caracteres fica vermelho.
+
    - **Pronto quando:** os dois casos e `tool-row.test.tsx` passam.
 
 ### Como se prova
@@ -1112,18 +1144,14 @@ export type MessageSource =
   | { kind: 'web'; url: string; title: string | undefined; domain: string; linked: boolean }
   | { kind: 'data'; connector: string; system: string; table: string; at: string | null;
       state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE' }
-const DataOrigin = z.looseObject({ system: z.string(), connector: z.string(), table: z.string(),
-  copiedAt: z.iso.datetime().nullable(), lastRun: z.enum(['COMPLETE', 'PARTIAL', 'ERROR', 'INTERRUPTED', 'NONE']) })
-const DataResult = z.union([
-  z.looseObject({ kind: z.literal('ROWS'), origin: z.array(DataOrigin) }),
-  z.looseObject({ kind: z.literal('TABLE'), origin: DataOrigin }) ])
+// DataResult e DataOrigin de @conexus/hub-api (U2): só ROWS e TABLE trazem origem
 const LiveResult = ReadCut.extend({ at: z.iso.datetime() })
 export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
 ```
 
-- **Estados.** `kind` separa web e dado; `state` separa a cópia e a leitura ao vivo (C21, C22). `COMPLETE` é `FRESH`; `PARTIAL` é `PARTIAL`; `ERROR`, `INTERRUPTED` e `NONE` são `STOPPED`.
-- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26).
-- **Esquema de entrada externa.** O resultado guardado passa por `DataResult` ou `LiveResult`; fora deles, nenhuma fonte (C27).
+- **Estados.** `kind` separa web e dado; `state` separa a cópia e a leitura ao vivo (C21, C22). `COMPLETE` é `FRESH`; `PARTIAL` é `PARTIAL`; `ERROR` e `INTERRUPTED` são `STOPPED`, sempre com hora; `NONE` vem com `at` nulo e diz "ainda sem cópia".
+- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26). Na fonte de cópia, `system` é `systems.join(', ')`, como a lista de Dados escreve as contas ("Loja A, Loja B", `copy-list.test.tsx:209`). O dia e a hora de toda fonte de dado saem de uma função só, `whenOf(at, now)`: "hoje às", "ontem às" ou "em 17/10/2026 às", por `dayGroupOf`, `dayOf` e `clockOf`.
+- **Esquema de entrada externa.** O resultado guardado passa por `DataResult` (de `@conexus/hub-api`) ou `LiveResult`; fora deles, nenhuma fonte, sem log (decisão 26) (C27).
 - **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
 
 ### As skills e a leitura
@@ -1136,15 +1164,17 @@ export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
    - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
    - **Referência a seguir:** `sources.ts:35-46`; `sources.tsx:12-31`.
    - **O que sai:** o `MessageSource` de hoje vira o caso `web`; nenhum chamador lê os campos sem passar por `kind`.
-   - **O que entra:** em `sourcesOf`, cada parte `tool-invocation` com `state: 'result'` de `data_query`, ou de `data_describe` com `args.table`, passa por `DataResult`; cada origem vira `{ kind: 'data', connector, system, table, at: copiedAt, state }`. Em `Sources`, `kind: 'data'` desenha `<li>` em `text-fact` com `${words.name(connector)} · ${table} · ${quando}`: `FRESH` "copiado hoje às 08:45", `PARTIAL` "rodada parcial, copiado ...", `STOPPED` "parada, copiado ...", `at` nulo "ainda sem cópia"; o dia por `dayGroupOf(at, new Date())` ("hoje", "ontem") e `dayOf` ("em 17/10/2026"); a hora por `clockOf`. A `key` é a chave de `sourcesOf`.
-   - **Testes:** os casos dos critérios 42, 43, 44 e 46, com `recordedPart('data-query', DataPart)` e o relógio fixo por `vi.setSystemTime` no dia da cópia gravada; o caso de web de hoje (`:44-60`) com `kind: 'web'`.
-   - **Mutações à mão:** `PARTIAL` para `FRESH`: "a rodada parcial" fica vermelho; tire a chave de dado do conjunto: "a mesma tabela" fica vermelho; `system` no lugar de `words.name(connector)`: "a fonte do dado" fica vermelho.
+   - **O que entra:** em `sourcesOf`, cada parte `tool-invocation` com `state: 'result'` de `data_query`, ou de `data_describe` com `args.table`, passa por `DataResult`; cada origem vira `{ kind: 'data', connector, system: systems.join(', '), table, at: lastRunEndedAt, state }`. Em `Sources`, `kind: 'data'` desenha `<li>` em `text-fact` com `${words.name(connector)} · ${table} · ${quando}`: `FRESH` "copiado hoje às 08:45", `PARTIAL` "rodada parcial, copiado hoje às 08:45", `STOPPED` "parada hoje às 08:45", `at` nulo "ainda sem cópia"; o dia e a hora por `whenOf(at, new Date())`. A `key` é a chave de `sourcesOf`.
+   - **Testes:** os casos dos critérios 42, 43, 44 e 46, com `recordedPart('data-query', DataPart)` e o relógio fixo por `vi.setSystemTime` no dia da cópia gravada; para 43, a origem trocada para `ERROR`, `INTERRUPTED` e `NONE`; o caso de web de hoje (`:44-60`) com `kind: 'web'`.
+   - **Mutações à mão:** `PARTIAL` para `FRESH`: "a rodada parcial" fica vermelho; "parada, copiado" no lugar de "parada": "a rodada com erro ou interrompida" fica vermelho; tire a chave de dado do conjunto: "a mesma tabela" fica vermelho; `system` no lugar de `words.name(connector)`: "a fonte do dado" fica vermelho.
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx` passa.
 2. **A fonte da leitura ao vivo.** Critérios: 45.
    - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
-   - **O que entra:** `connector_read` ou uma leitura tipada (`<conector>_<operação>`, `typed-reads.ts:14-16`) cujo resultado passa em `LiveResult` vira `{ kind: 'data', connector, system: args.connection, table: <operação>, at, state: 'LIVE' }`; o conector de `connector_read` sai da operação, como `connector-specs.ts:246-248`, e o da leitura tipada é o nome antes do primeiro `_`. Só `readOn` põe `at` (U4), por isso outro nome com `_` não vira fonte. `LIVE` desenha `${words.name(connector)} · ${system} · lido agora, às ${clockOf(at)}`.
-   - **Testes:** "a fonte da leitura ao vivo diz lido agora, às", com a parte de `reads` regravada; e a mesma parte sem `at`, que não vira fonte.
-   - **Pronto quando:** o caso passa.
+   - **O que entra:** `connector_read` ou uma leitura tipada (`<conector>_<operação>`, `typed-reads.ts:14-16`) cujo resultado passa em `LiveResult` vira `{ kind: 'data', connector, system: args.connection, table: <operação>, at, state: 'LIVE' }`; o conector de `connector_read` sai da operação, como `connector-specs.ts:246-248`, e o da leitura tipada é o nome antes do primeiro `_`. Só `readOn` põe `at` (U4), por isso outro nome com `_` não vira fonte. `LIVE` desenha `${words.name(connector)} · ${system} · ` e, no dia do `at`, "lido agora, às 10:02"; noutro dia, `lido ${whenOf(at, new Date())}` ("lido ontem às 10:02", "lido em 17/10/2026 às 10:02").
+   - **Testes:** "a fonte da leitura ao vivo diz lido agora, às", com a parte de `reads` regravada; "a leitura ao vivo vista noutro dia diz o dia", com `vi.setSystemTime` no dia seguinte ao `at`; e a mesma parte sem `at`, que não vira fonte.
+   - **Mutações à mão:** use só `clockOf(at)` na fonte ao vivo: "a leitura ao vivo vista noutro dia" fica vermelho.
+   - **Pronto quando:** os casos passam.
+
 3. **A largura.** Critérios: 47.
    - **Arquivos:** muda `apps/web/sources.layout.test.ts`.
    - **Referência a seguir:** o caso "as fontes" (`:23-40`), com a mensagem do Assistente de `data-query` (`recordedRun('data-query')`).
@@ -1273,9 +1303,18 @@ Pelas linhas de `docs/reference/stack.md` de `apps/web/src`: `router-core` (`nod
    - **Mutações à mão:** — (ajustes).
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/hub/copies/copy-detail.test.tsx src/hub/copies/copy-sample.test.tsx src/hub/copies/copy-list.test.tsx` passa.
 
+5. **O cabeçalho do grupo sem o nome repetido.** Critérios: 74.
+   - **Arquivos:** muda `text.ts`, `copy-list.test.tsx`.
+   - **Referência a seguir:** `systemText`, `text.ts:36-39` no head do PR 1085 (`689ece4a`), lido por `raw-layer.tsx:33` e `apps-layer.tsx:72`.
+   - **O que sai:** nada.
+   - **O que entra:** em `systemText`, as ligações cujo nome é igual ao do sistema saem antes do `join(', ')`; com nenhuma sobrando, o cabeçalho fica "{sistema} · {n} tabela(s)". Regras: C26 (o texto continua num dono só).
+   - **Testes:** `copy-list.test.tsx`, caso novo "a ligação com o nome do sistema não se repete no cabeçalho do grupo" (uma cópia cuja ligação se chama "Mercado Livre", do conector Mercado Livre: o cabeçalho é exatamente "Mercado Livre · 1 tabela"); "a origem da cópia" (`:202-223`) continua com "Mercado Livre · Loja A, Loja B · 1 tabela".
+   - **Mutações à mão:** tire o filtro: o caso novo fica vermelho.
+   - **Pronto quando:** `copy-list.test.tsx` passa.
+
 ### Como se prova
 
-Nenhum critério toca gravação (T26 não se aplica). 50 a 59: os testes abrem o Hub inteiro pelo roteador com `openCopies` (`test-hub.tsx:311-322`, no head do PR 1085), testing T5; hoje falham porque não há "Caminho", a aba de abertura é Colunas e a linha diz "Sankhya · a cada 30 min". A recusa de 53 é o texto exato sem "Copiada"; a de 50, nenhum `aria-current` e nenhum link "← Dados". 60: `npm run test:sweep -w @conexus/web` no ponto de conferência (ou a CI); hoje o estado "A tabela, a visão geral" não existe.
+Nenhum critério toca gravação (T26 não se aplica). 74: o cabeçalho da lista pelo Hub inteiro (`openCopies`); hoje repete o nome, como a conferência no ar do explorador v0.24.91 viu. 50 a 59: os testes abrem o Hub inteiro pelo roteador com `openCopies` (`test-hub.tsx:311-322`, no head do PR 1085), testing T5; hoje falham porque não há "Caminho", a aba de abertura é Colunas e a linha diz "Sankhya · a cada 30 min". A recusa de 53 é o texto exato sem "Copiada"; a de 50, nenhum `aria-current` e nenhum link "← Dados". 60: `npm run test:sweep -w @conexus/web` no ponto de conferência (ou a CI); hoje o estado "A tabela, a visão geral" não existe.
 
 ### Parar se
 
@@ -1379,6 +1418,7 @@ Nenhuma gravação. 61 a 65 pelo Hub inteiro (`openCopies`), testing T5; hoje fa
 | `apps/web/src/hub/copies/copy-detail.tsx` | Muda (passa `copy.shown.columns`) | a rota da tabela |
 | `apps/web/src/hub/copies/text.ts` | Muda (`ROW_NUMBER`) | `copy-sample.tsx` |
 | `apps/web/src/hub/copies/copy-sample.test.tsx` | Muda | — |
+| `apps/web/sweep-table-states.ts`, `apps/web/tables.layout.test.ts` | Muda (o estado "A tabela, a amostra larga" e o caso de layout) | `sweep.test.ts`, `npm run test:browser -w @conexus/web` |
 
 ### Os contratos que a unidade cria
 
@@ -1427,18 +1467,30 @@ As da U7, sem `router-core`; `lucide-react` (`lucide.dev/llms.txt`). Ler antes: 
    - **Mutações à mão:** (c) troque `at + 1` por `at`: "o número da linha" fica vermelho.
    - **Pronto quando:** `copy-sample.test.tsx` passa.
 
+3. **A amostra larga rola na sua caixa.** Critérios: 75.
+   - **Arquivos:** muda `copy-sample.tsx` e `copy-detail.tsx` (só as classes de largura), `apps/web/sweep-table-states.ts`, `apps/web/tables.layout.test.ts`.
+   - **Referência a seguir:** `Table` de `apps/web/src/ui/table.tsx:7-16` (a caixa `table-container` já tem `overflow-x-auto`); a coluna das abas, `copy-detail.tsx:196-199` no head do PR 1085 (`min-w-0 flex-1`); o `aside` do painel da U8 (`md:w-list md:shrink-0`); o molde de `tables.layout.test.ts:39-50` (`createHarness`, `DESKTOP`, `stateNamed`).
+   - **O que sai:** nada.
+   - **O que entra:** no estado novo "A tabela, a amostra larga" (`${PAGE}/${VENDAS}?tab=sample`, a amostra com 11 colunas de nomes como os do Sankhya), o caso de layout lê, a 1366 px: `scrollWidth` do documento igual à largura; o `scrollWidth` da caixa `[data-slot="table-container"]` da Amostra maior que o seu `clientWidth`; a borda direita da caixa à esquerda do `complementary` "Detalhes"; e, com a caixa rolada até o fim, a borda direita do último `columnheader` dentro da caixa. Para passar, cada ancestral da grade entre a coluna das abas e a caixa leva `min-w-0` (o `TabsContent` da Amostra e o que `CopySample` desenha em volta da `Table`); `ui/table.tsx` não muda. Regras: design V18, testing T23.
+   - **Testes:** o caso novo de `tables.layout.test.ts` e a varredura do estado novo a 1366, 390 e 320 px (critério 60).
+   - **Mutações à mão:** tire o `min-w-0` que o passo pôs: o caso novo fica vermelho (a grade empurra a página ou passa por baixo do painel).
+   - **Pronto quando:** `npm run test:browser -w @conexus/web -- tables.layout.test.ts` passa; se a máquina não aguentar, a CI, dito no PR.
+
 ### Como se prova
 
-Nenhuma gravação. 66 a 69 pelo Hub inteiro (`openCopies`, `?tab=sample`), testing T5; hoje falham porque o cabeçalho só tem o nome e não há coluna de número. A recusa de 67 é a tabela sem `img`.
+Nenhuma gravação. 66 a 69 pelo Hub inteiro (`openCopies`, `?tab=sample`), testing T5; hoje falham porque o cabeçalho só tem o nome e não há coluna de número. A recusa de 67 é a tabela sem `img`. 75: o navegador real mede a caixa e o painel (testing T23); hoje, como a conferência no ar do explorador v0.24.91 viu, a grade de 11 colunas rola com a página e o painel corta a última coluna.
 
 ### Parar se
 
 - Um tipo novo aparecer no contrato sem ícone: fica só com o nome (67); não escolher ícone sem a palavra do fundador.
 - O ícone com `role="img"` quebrar o contorno do Tab na varredura (não é focável; não deveria): reportar com a captura.
+- O `min-w-0` nos ancestrais não fizer a grade rolar na sua caixa (critério 75): parar e reportar com a medida; não mudar `ui/table.tsx` nem tirar o painel de lado.
+
 
 ## G4 O ponto de conferência
 
-Depois da U9, antes do PR. Rodar `npm run test:unit -w @conexus/web -- src/hub/copies`, `npm run typecheck` e `npm run check`; `npm run test:sweep -w @conexus/web` para o critério 60 (os estados da tabela a 1366, 390 e 320 px, nos dois temas), ou deixá-lo à CI se a máquina não aguentar, dizendo isso no PR. `npm run quality` inteiro em segundo plano antes do PR (a CI roda só `quality --fast`). Os passos 6 e 7 da `conexus-build`: `deslop` e `no-comments` no diff, as mutações de U7, U8 e U9 feitas e desfeitas com o resultado anotado (testing T27), `impeccable detect` nos arquivos mudados. Abrir o Hub local com os dublês, como dona, em `/data/<id>` sem `tab`, com `?tab=sample` e com `?q=NUNOTA`, a 1280 e 390 px nos dois temas, e comparar com a tela a1 e com a `v10`. O corpo do PR lista os textos novos (Visão geral, Sem descrição., Leitura de origem, Ligação, Chave, Modo, Caminho, a linha "Copiada do … em …", Detalhes, Frequência, "A cada …", a frase do Hub, Linha) para a palavra do fundador e as linhas da tabela de referência deste grupo. Depois do PR, a QA (`conexus-qa`) por um agente que não construiu, com a matriz de estados acima.
+Depois da U9, antes do PR. Rodar `npm run test:unit -w @conexus/web -- src/hub/copies`, `npm run typecheck` e `npm run check`; `npm run test:browser -w @conexus/web -- tables.layout.test.ts` para o critério 75 e `npm run test:sweep -w @conexus/web` para o critério 60
+ (os estados da tabela a 1366, 390 e 320 px, nos dois temas), ou deixá-lo à CI se a máquina não aguentar, dizendo isso no PR. `npm run quality` inteiro em segundo plano antes do PR (a CI roda só `quality --fast`). Os passos 6 e 7 da `conexus-build`: `deslop` e `no-comments` no diff, as mutações de U7, U8 e U9 feitas e desfeitas com o resultado anotado (testing T27), `impeccable detect` nos arquivos mudados. Abrir o Hub local com os dublês, como dona, em `/data/<id>` sem `tab`, com `?tab=sample` e com `?q=NUNOTA`, a 1280 e 390 px nos dois temas, e comparar com a tela a1 e com a `v10`. O corpo do PR lista os textos novos (Visão geral, Sem descrição., Leitura de origem, Ligação, Chave, Modo, Caminho, a linha "Copiada do … em …", Detalhes, Frequência, "A cada …", a frase do Hub, Linha) para a palavra do fundador e as linhas da tabela de referência deste grupo. Depois do PR, a QA (`conexus-qa`) por um agente que não construiu, com a matriz de estados acima.
 
 **Fica de fora deste grupo** (grupo 3 do explorador, espera outras partes; web W31): Perguntar ao Assistente (parte 3, grupo 3); a aba e a linha Quem lê e "lida com o seu papel" (parte 4, grupos 4, 6 e 7: etapa 2); a aba Qualidade (item (c): etapa 4); o nome de negócio sobre a coluna, "{n} de {m} colunas", Conceito, Ligações e o botão Colunas da grade (parte 5: etapa 7); a contagem de descrições (ideia nossa, às perguntas).
 
@@ -1495,7 +1547,7 @@ Cada linha entra na ordem que o instantâneo dá (o `pg_dump` ordena por objeto)
    - **Arquivos:** muda `apps/server/src/platform/catalog.test.ts`.
    - **Referência a seguir:** a lista `REFUSED` e o seu laço, `catalog.test.ts:171-197`.
    - **O que sai:** nada.
-   - **O que entra:** em `REFUSED`, as recusas do critério 72 (`update copies.copy_run set whole = true where false`, `update notifications.alert_recipient set email = '' where false`, `update notifications.copy_follower set created_at = now() where false`, `delete from notifications.copy_notice where false`, `update notifications.copy_notice set copy_name = '' where false`). O Postgres confere a permissão antes da política e do `WHERE`, então `42501` sai mesmo sem linha. Um caso novo, `'o login do Hub tem os verbos dos avisos de cópia'`, com o mesmo `database.installation` do laço, roda as dez instruções do critério 71 com `where false` e espera que nenhuma lance.
+   - **O que entra:** em `REFUSED`, as recusas do critério 72 (`update copies.copy_run set whole = true where false`, `update notifications.alert_recipient set email = '' where false`, `update notifications.copy_follower set created_at = now() where false`, `delete from notifications.copy_notice where false`, `update notifications.copy_notice set copy_name = '' where false`). O Postgres confere a permissão antes da política e do `WHERE`, então `42501` sai mesmo sem linha. Um caso novo, `'o login do Hub tem os verbos dos avisos de cópia'`, com o mesmo `database.installation` do laço, roda as doze instruções do critério 71 com `where false` e espera que nenhuma lance.
    - **Testes:** os casos acima.
    - **Mutações à mão:** tire `DELETE` de `copy_follower` nos dois arquivos: o caso positivo fica vermelho. Dê `UPDATE(whole)`: a recusa de `whole` fica vermelha.
    - **Pronto quando:** `catalog.test.ts` passa inteiro.
@@ -1503,7 +1555,7 @@ Cada linha entra na ordem que o instantâneo dá (o `pg_dump` ordena por objeto)
 ### Como se prova
 
 - 70: o instantâneo lê o catálogo do banco migrado (a gravação é a migração); hoje falha porque o arquivo não tem as sete linhas.
-- 71: dez instruções pelo login do Hub; hoje cada uma dá `42501`, porque as tabelas do PR 1088 têm só as linhas `OWNER`.
+- 71: doze instruções pelo login do Hub; hoje cada uma dá `42501`, porque as tabelas do PR 1088 têm só as linhas `OWNER`.
 - 72: as recusas continuam `42501` depois da unidade; elas provam que as permissões ficaram estreitas (data D12).
 - 73: o diff do PR.
 
@@ -1564,14 +1616,14 @@ run(copyId: CopyId, signal?: AbortSignal, whole?: boolean): Promise<CopyRunEnd>
 
 ### A ordem do trabalho
 
-1. **A rodada pedida como inteira.** Critérios: 81, 84.
+1. **A rodada pedida como inteira.** Critérios: 81, 84, 98.
    - **Arquivos:** muda `service.ts`, `run.ts`, `sources.ts`, `test-copies.ts`.
    - **Referência a seguir:** `datedPasses`, `sources.ts:56-61`.
    - **O que sai:** nada.
-   - **O que entra:** `whole` na entrada de `service.run` (ausente é falso) e de `runCopy`; em `claim`, o `INSERT` de `copyRun` leva `whole`, e depois de `datedPasses(tx, ids)`, só quando `whole`, `wholePasses(tx, ids)`, que põe `watermark: null`, `position: null` e `passStartedAt: statement_timestamp()` em cada fonte da cópia; `waitUntil` fica. `on.run` repassa `whole`. Regras: C26, data D25.
-   - **Testes:** `run.test.ts`, `'a passada inteira começa do zero mesmo no meio de uma passada'` (depois de uma passada `COMPLETE` de `clientes`, `plantSource(on, copyId, 'position = $2', [{ kind: 'KEY', after: [<um CODPARC do meio>] }])`, rode com `whole`: as linhas e o número são os de antes) e `'a rodada inteira fica marcada'` (lido pelo dono, como `delete.test.ts:173`).
-   - **Mutações à mão:** em `wholePasses`, deixe de zerar `position`: o primeiro teste fica vermelho (linhas somem). Grave `whole: false` no `INSERT`: o segundo fica vermelho.
-   - **Pronto quando:** os dois testes passam.
+   - **O que entra:** `whole` na entrada de `service.run` (ausente é falso) e de `runCopy`; em `claim`, o `INSERT` de `copyRun` leva `whole`, e depois de `datedPasses(tx, ids)`, só quando `whole`, `wholePasses(tx, ids)`, que põe `watermark: null`, `position: null`, `passStartedAt: statement_timestamp()` e `pass: pass + 1` em cada fonte da cópia; `waitUntil` fica. Somar um a `pass` faz as linhas que a passada interrompida gravou, com a marca dela (`copy-sql.ts:217-221`), contarem como velhas: a passada inteira que fecha apaga as que não releu (`copy-sql.ts:258`). `on.run` repassa `whole`. Regras: C26, data D25.
+   - **Testes:** `run.test.ts`, `'a passada inteira começa do zero mesmo no meio de uma passada'` (depois de uma passada `COMPLETE` de `clientes`, `plantSource(on, copyId, 'position = $2', [{ kind: 'KEY', after: [<um CODPARC do meio>] }])`, rode com `whole`: as linhas e o número são os de antes), `'a rodada inteira fica marcada'` (lido pelo dono, como `delete.test.ts:173`) e `'a passada inteira no meio de uma passada apaga o que a passada interrompida gravou e sumiu'` (`TEST_TUNING` com `runPages: 1`: uma rodada normal de `clientes` termina `PARTIAL` com a primeira página gravada; ponha um `CODPARC` dessa página em `on.gate.gone`; rode com `whole` até `COMPLETE`: a linha sai). Este último caso depende do passo 2 e fica vermelho até ele.
+   - **Mutações à mão:** em `wholePasses`, deixe de zerar `position`: o primeiro teste fica vermelho (linhas somem). Grave `whole: false` no `INSERT`: o segundo fica vermelho. Tire o `pass + 1`: o terceiro fica vermelho (a linha fica).
+   - **Pronto quando:** os dois primeiros testes passam; o terceiro, depois do passo 2.
 2. **O apagar decidido por "leu tudo".** Critérios: 80, 82, 83, 85.
    - **Arquivos:** muda `source-pass.ts`, `copy-sql.ts`, `company-postgres.ts` (o tipo, se não derivar sozinho).
    - **Referência a seguir:** `closePass`, `copy-sql.ts:254-269`.
@@ -1593,6 +1645,7 @@ run(copyId: CopyId, signal?: AbortSignal, whole?: boolean): Promise<CopyRunEnd>
 
 - 80: a gravação é o `DELETE` em `sync.sankhya_clientes`; lido por `syncRows`. Hoje a rodada inteira não existe e a incremental nunca apaga.
 - 81: lê as linhas depois de uma rodada inteira com posição plantada; hoje não há como pedir a rodada.
+- 98: lê as linhas depois de uma passada interrompida e de uma passada inteira; hoje a incremental nunca apaga.
 - 82: a recusa do Sankhya falso; mostra `ERROR` e as linhas intactas, depois o apagar.
 - 83: o teto de páginas; mostra `PARTIAL` sem apagar.
 - 84: lê `copies.copy_run.whole` pelo dono.
@@ -1625,7 +1678,7 @@ run(copyId: CopyId, signal?: AbortSignal, whole?: boolean): Promise<CopyRunEnd>
 | `apps/server/src/hub/copies/` (`store.ts`, `enable.ts`, `schedule.ts`, `service.ts`, `test-copies.ts`, `delete.test.ts`) | Muda | as rotas de cópias; `releaseCopies` |
 | `apps/server/src/hub/copies/whole.ts` | Cria | `service.ts` |
 | `apps/server/src/hub/connectors/unlink-copies.test.ts` | Muda (a contagem) | ninguém |
-| `apps/server/src/main.ts` | Muda (um passe ao subir) | o programa |
+| `apps/server/src/main.ts`, `main.test.ts` | Muda (um passe ao subir, e o caso que o vê) | o programa |
 
 ### Os contratos que a unidade cria
 
@@ -1649,7 +1702,7 @@ export async function ensureWholeLines(deps: CopiesDeps): Promise<void>
 - **Esquema Zod:** `CopyInput` lê o `inputData` guardado; as linhas de hoje, sem `whole`, continuam válidas.
 - **O arquivo modelo:** `clock.ts` cumpre C21, C23 e C26.
 
-O comportamento: `set` com `incremental` cria primeiro a semanal (com o `status` da normal quando a normal existe; `active` quando não) e depois a normal, e `CREATED` continua dizendo que a normal nasceu nesta chamada; sem `incremental`, apaga a semanal. `pause` e `resume` agem primeiro na normal, depois na semanal só se `get` a acha. `remove` apaga primeiro a semanal, depois a normal, sem ler. `runNow` só na normal. `states` pula `input.whole === true`. `ensureWhole` lê a normal e, sem a semanal, cria a semanal com o `status` da normal e o tratamento de corrida de `clock.ts:77-81`; nunca chama `update` na normal. `wholeMissing` lê o mesmo `schedules.list` de `states`.
+O comportamento: `set` com `incremental` cria primeiro a semanal (com o `status` da normal quando a normal existe; `active` quando não) e depois a normal, e `CREATED` continua dizendo que a normal nasceu nesta chamada; sem `incremental`, apaga a semanal. `pause` e `resume` agem primeiro na normal, depois na semanal só se `get` a acha. `remove` apaga primeiro a semanal, depois a normal, sem ler. `runNow` só na normal. `states` pula `input.whole === true`. `ensureWhole` lê a normal e, sem a semanal, cria a semanal com o `status` da normal e o tratamento de corrida de `clock.ts:77-81`; nunca chama `update` na normal. `wholeMissing` lê o mesmo `schedules.list` de `states`. Na implantação em rodízio, um Hub antigo que leia a linha semanal a roda como normal (decisão 27).
 
 ### As skills e a leitura
 
@@ -1674,12 +1727,12 @@ O comportamento: `set` com `incremental` cria primeiro a semanal (com o `status`
    - **Mutações à mão:** passe `whole: false` sempre: o primeiro teste fica vermelho. Tire o log: o segundo fica vermelho. Apague só a normal em `GONE`: o terceiro fica vermelho.
    - **Pronto quando:** os três testes passam.
 3. **A cópia antiga ganha a linha ao subir.** Critérios: 92, 94.
-   - **Arquivos:** cria `whole.ts`; muda `service.ts`, `main.ts`, `clock.test.ts`.
+   - **Arquivos:** cria `whole.ts`; muda `service.ts`, `main.ts`, `main.test.ts`, `clock.test.ts`.
    - **Referência a seguir:** `repairApps`, `hub/apps/repair.ts:218-236`; o passe de `main.ts:264-268`.
    - **O que sai:** nada.
-   - **O que entra:** `ensureWholeLines` chama `wholeMissing`, agrupa por empresa e, para cada uma, lê as definições dessas cópias no escopo `companyScope(companyId)`; chama `ensureWhole` para cada incremental; imprime `COPY_WHOLE_LINES` com `companyId` e `count`; uma empresa que falha imprime `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`, e segue. Em `main.ts`, ao lado de `resumeCopies`, `void copies.ensureWholeLines().catch((error: unknown) => logFailure(log, databaseFailure(error)))`. Regras: C53, S41.
-   - **Testes:** `'ao subir, a cópia antiga ganha a linha semanal'` (pause pela rota, apague só a semanal com `hub.mastra.schedules.delete`, guarde o `nextFireAt` da normal, chame `on.hub.copies.ensureWholeLines()`: a semanal volta `paused` e o `nextFireAt` da normal é o mesmo; chame de novo: nada muda). `'a empresa apagada leva as agendas'` com a contagem 4 para 0.
-   - **Mutações à mão:** crie a semanal sem o `status` da normal: o teste fica vermelho (volta `active`). Chame `set` em vez de `ensureWhole`: fica vermelho no `nextFireAt`.
+   - **O que entra:** `ensureWholeLines` chama `wholeMissing`, agrupa por empresa e, para cada uma, lê as definições dessas cópias no escopo `companyScope(companyId)`; chama `ensureWhole` para cada incremental; uma empresa que falha imprime `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`, e segue; no fim, uma linha só, `COPY_WHOLE_LINES` com `companies` e `count`, também com zero. Em `main.ts`, ao lado de `resumeCopies`, `void copies.ensureWholeLines().catch((error: unknown) => logFailure(log, databaseFailure(error)))`. Regras: C53, S41.
+   - **Testes:** em `apps/server/src/main.test.ts`, `'ao subir, o Hub passa as linhas semanais'`: `startHub` e `until` (como `:220-233`) esperam uma linha `COPY_WHOLE_LINES`. E `'ao subir, a cópia antiga ganha a linha semanal'` (pause pela rota, apague só a semanal com `hub.mastra.schedules.delete`, guarde o `nextFireAt` da normal, chame `on.hub.copies.ensureWholeLines()`: a semanal volta `paused` e o `nextFireAt` da normal é o mesmo; chame de novo: nada muda). `'a empresa apagada leva as agendas'` com a contagem 4 para 0.
+   - **Mutações à mão:** crie a semanal sem o `status` da normal: o teste fica vermelho (volta `active`). Chame `set` em vez de `ensureWhole`: fica vermelho no `nextFireAt`. Tire a chamada de `main.ts`: o caso de `main.test.ts` fica vermelho.
    - **Pronto quando:** os testes passam e o Hub local sobe com `COPY_WHOLE_LINES` no log.
 
 ### Como se prova
@@ -1688,7 +1741,7 @@ O comportamento: `set` com `incremental` cria primeiro a semanal (com o `status`
 - 87: a linha semanal sai ao mudar o intervalo de uma cópia sem data de alteração.
 - 89: `GET` das cópias pela rota.
 - 90, 91: o disparo real do agendador; lê `copy_run.whole` e `on.hub.lines`.
-- 92: o passe chamado pelo serviço; hoje não existe.
+- 92: o passe chamado pelo serviço, e o processo real do Hub que o chama ao subir; hoje não existe.
 - 93: o caso `GONE` do passo.
 - 94: os testes de hoje, com as contagens dobradas; `COPY_SCHEDULE_LEFT` no agendador calado.
 - 95: o mock no `create`; mostra a falha, depois uma rodada só.
@@ -1714,9 +1767,11 @@ O comportamento: `set` com `incremental` cria primeiro a semanal (com o `status`
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/copies.ts` | Muda (`CopyRun.whole`) | o servidor (`list.ts`) e a web (aba Rodadas) |
+| `packages/hub-api/src/copies.ts` | Muda (`CopyRun.whole`) | o servidor (`list.ts`) e a web (aba Rodadas); o contrato de acesso o leva em `kept.lastRun` (`company-data.ts:40`), lido pela trilha Agentes e Apps (delivery L27) |
+| `packages/hub-api/src/company-data.test.ts` | Muda (o `lastRun` do mundo falso, `:78-85`, ganha `whole: false`) | `npm test -w @conexus/hub-api` |
 | `apps/server/src/hub/copies/` (`list.ts`, `routes.test.ts`) | Muda | a rota de rodadas |
-| `apps/web/src/hub/copies/` (`copy-detail.tsx`, `text.ts`, `test-hub.tsx`, `copy-detail.test.tsx`) | Muda | a página da tabela |
+| `apps/web/src/hub/copies/` (`copy-detail.tsx`, `text.ts`, `test-hub.tsx`, `copy-detail.test.tsx`, `copy-list.test.tsx`, `run-follow.test.tsx`) | Muda (as rodadas escritas à mão ganham `whole`) | a página da tabela |
+| `apps/web/sweep-copies-states.ts` | Muda (`DONE` ganha `whole: false`; `RUNNING` e `SOURCE_DOWN` herdam) | a varredura das cópias |
 
 ### Os contratos que a unidade cria
 
@@ -1738,13 +1793,14 @@ export const WHOLE_PASS = 'Passada inteira'
 ### A ordem do trabalho
 
 1. **O campo no contrato e na rota.** Critério: 97.
-   - **Arquivos:** muda `packages/hub-api/src/copies.ts`, `list.ts`, `routes.test.ts`, `apps/web/src/hub/copies/test-hub.tsx` (`copyRun` ganha `whole: false`).
+   - **Arquivos:** muda `packages/hub-api/src/copies.ts`, `packages/hub-api/src/company-data.test.ts`, `list.ts`, `routes.test.ts`, `apps/web/src/hub/copies/test-hub.tsx` (`copyRun` ganha `whole: false`), `apps/web/sweep-copies-states.ts` e cada rodada escrita à mão que o `typecheck` apontar (`git grep -n "written: [0-9]"` acha as de hoje). O PR cita delivery L27: o campo novo entra no contrato de acesso pelo `kept.lastRun`.
    - **Referência a seguir:** `runOf`, `list.ts:38-44`.
    - **O que sai:** nada.
    - **O que entra:** `whole: row.whole` em `base`. Regras: C27.
    - **Testes:** `routes.test.ts`, `'as rodadas dizem qual foi inteira'` (uma rodada com `on.run(copyId, undefined, true)` e uma sem; `runsPage` devolve `true` e `false`).
    - **Mutações à mão:** `whole: false` fixo em `runOf`: o teste fica vermelho.
-   - **Pronto quando:** o teste e `npm test -w @conexus/hub-api` passam.
+   - **Pronto quando:** o teste, `npm test -w @conexus/hub-api` e `npm run typecheck` passam.
+
 2. **A marca na linha.** Critério: 96.
    - **Arquivos:** muda `copy-detail.tsx`, `text.ts`, `copy-detail.test.tsx`.
    - **Referência a seguir:** o `text-text-2` de `RunPhoneRow`, `copy-detail.tsx:54`.
