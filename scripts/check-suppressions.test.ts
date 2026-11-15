@@ -110,12 +110,19 @@ test('conta o ignore da configuração do zizmor e recusa o que não tem coment�
   )
 })
 
-test('num repositório lê só o que o git traz: a pasta ignorada fica de fora', () => {
+test('num repositório lê o que o git traz e recusa nele, e deixa de fora a pasta ignorada', () => {
   const line = suppression('biome-ignore lint/suspicious/noExplicitAny:', 'the vendor type is any')
+  const bare = suppression('biome-ignore lint/suspicious/noExplicitAny', '')
   const run = check(
-    { '.gitignore': '.lab/\n', '.lab/a.ts': `${line}\n`, 'b.ts': 'export const b = 1\n' },
-    {},
+    {
+      '.gitignore': '.lab/\n',
+      '.lab/a.ts': `${line}\n`,
+      'b.ts': `${bare}\nexport const b = 1\n`,
+    },
+    { 'b.ts': 1 },
     true,
   )
-  assert.equal(run.status, 0, run.stderr)
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^suppression-without-cause: b\.ts:1$/m)
+  assert.doesNotMatch(run.stderr, /\.lab/)
 })

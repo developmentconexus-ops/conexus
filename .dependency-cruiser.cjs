@@ -307,7 +307,7 @@ module.exports = {
       mainFields: ['module', 'main', 'types'],
     },
     // Packages stay out of the graph except Mastra's ee code, so no-mastra-ee sees an import that resolves.
-    // .lab/ is a builder's scratch folder, never tracked: it stays out so the check runs on a machine that has one.
+    // .lab/ is a builder's scratch folder, listed in .gitignore: git does not hold it, so it stays out here too (check-suppressions reads git's list).
     exclude: { path: `^(?!.*${MASTRA_EE}/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/` },
   },
 }
