@@ -1,5 +1,7 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
 import type { DataSources } from './company-data.ts'
-import { Catalog } from './company-data.ts'
+import { Catalog, Described } from './company-data.ts'
 import type { DataWorld } from './company-data-conformance.ts'
 import { runDataConformance } from './company-data-conformance.ts'
 
@@ -49,10 +51,16 @@ const CATALOG = Catalog.parse({
   tables: [
     {
       name: 'pedidos_abertos',
+      label: 'Pedidos em aberto',
       description: 'Os pedidos em aberto do ERP.',
       columns: [
-        { name: 'numero', type: 'bigint', description: 'O número do pedido no ERP.' },
-        { name: 'total', type: 'numeric', description: null },
+        {
+          name: 'numero',
+          type: 'bigint',
+          description: 'O número do pedido no ERP.',
+          inactiveSince: null,
+        },
+        { name: 'total', type: 'numeric', description: null, inactiveSince: null },
       ],
       kept: {
         kind: 'COPY',
@@ -75,8 +83,11 @@ const CATALOG = Catalog.parse({
     },
     {
       name: 'clientes',
+      label: 'Clientes',
       description: 'Os clientes ativos do ERP.',
-      columns: [{ name: 'nome', type: 'text', description: 'O nome do cliente.' }],
+      columns: [
+        { name: 'nome', type: 'text', description: 'O nome do cliente.', inactiveSince: null },
+      ],
       kept: {
         kind: 'COPY',
         connections: [ERP],
@@ -86,8 +97,11 @@ const CATALOG = Catalog.parse({
     },
     {
       name: 'estoque',
-      description: null,
-      columns: [{ name: 'produto', type: 'text', description: 'O código do produto.' }],
+      label: 'Estoque',
+      description: 'O estoque do ERP.',
+      columns: [
+        { name: 'produto', type: 'text', description: 'O código do produto.', inactiveSince: null },
+      ],
       kept: {
         kind: 'COPY',
         connections: [ERP],
@@ -144,3 +158,11 @@ function fakeWorld(): DataWorld {
 }
 
 runDataConformance('o contrato sobre um ERP e um correio falsos', fakeWorld)
+
+test('o contrato recusa a tabela do catálogo sem descrição', () => {
+  const [first, ...rest] = CATALOG.tables
+  assert.ok(first)
+  const undescribed = { ...CATALOG, tables: [{ ...first, description: '' }, ...rest] }
+  assert.equal(Catalog.safeParse(undescribed).success, false)
+  assert.equal(Described.safeParse(undescribed).success, false)
+})

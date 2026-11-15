@@ -60,6 +60,9 @@ async function people(on: CopiesOn) {
   }
 }
 
+/** A column of a copy no template described, that the source still sends. */
+const UNDESCRIBED = { description: null, inactiveSince: null }
+
 test('cópias: quem vê e quem recebe não encontrado', async (t) => {
   const on = await copiesOn(t)
   const others = await people(on)
@@ -155,7 +158,7 @@ test('a lista e as rodadas', async (t) => {
     changedSince: definition.changedSince,
     window: definition.window ?? null,
     description: null,
-    columns: definition.columns.map(({ name, type }) => ({ name, type, description: null })),
+    columns: definition.columns.map(({ name, type }) => ({ name, type, ...UNDESCRIBED })),
   })
 
   await plantRuns(on, made.id)
@@ -265,7 +268,7 @@ test('a lista com as propostas', async (t) => {
         changedSince: definition.changedSince,
         window: definition.window ?? null,
         description: null,
-        columns: definition.columns.map(({ name, type }) => ({ name, type, description: null })),
+        columns: definition.columns.map(({ name, type }) => ({ name, type, ...UNDESCRIBED })),
       },
       mode: { kind: 'WINDOW', days: definition.window?.days },
       proved: { rows: true, more: one.proved.more, calls: null },
@@ -306,7 +309,7 @@ test('a lista com a origem', async (t) => {
     window: null,
     description: 'Os pedidos de cada loja',
     columns: ordersCopy(true).columns.map(({ name, type, description }) => {
-      return { name, type, description: description ?? null }
+      return { name, type, description: description ?? null, inactiveSince: null }
     }),
   }
   const [proposal] = (await on.listed(on.ana)).proposals

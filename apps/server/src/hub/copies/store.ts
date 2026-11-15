@@ -207,10 +207,16 @@ export function shownOf(connector: string, definition: CopyDefinition): CopyShow
     description: definition.version === 2 ? definition.description : null,
     columns:
       definition.version === 1
-        ? definition.columns.map(({ name, type }) => ({ name, type, description: null }))
+        ? definition.columns.map(({ name, type }) => ({
+            name,
+            type,
+            description: null,
+            inactiveSince: null,
+          }))
         : definition.columns.map(({ name, type, description }) => ({
             ...{ name, type },
             description: description ?? null,
+            inactiveSince: null,
           })),
   }
 }

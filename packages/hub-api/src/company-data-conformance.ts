@@ -259,7 +259,7 @@ async function passesTheSignalToEverySource(world: DataWorld, data: CompanyData)
 
 const LAWS: readonly (readonly [string, Law])[] = [
   [
-    'descreve cada sistema com leituras e ações, e cada tabela com o significado das colunas e a última rodada',
+    'descreve os sistemas e as tabelas, cada tabela com a descrição, o significado das colunas e a última rodada',
     describesSystemsAndTables,
   ],
   [
