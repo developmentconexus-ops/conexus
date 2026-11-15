@@ -14,6 +14,7 @@ const RUN = {
   endedAt: '2026-11-14T11:05:00.000Z',
   read: 10,
   written: 10,
+  whole: false,
 }
 
 const SOURCE = { kind: 'QUERY', query: 'select 1' } as const
