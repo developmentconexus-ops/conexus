@@ -69,7 +69,7 @@ export function ProjectCopies(scope: Scope) {
         <div className="flex flex-col items-start gap-sm">
           <Empty>{NO_COPIES}</Empty>
           <Link
-            to="/companies/$companyId/copies"
+            to="/companies/$companyId/data"
             params={{ companyId }}
             className="text-text-2 underline underline-offset-2"
           >

@@ -140,10 +140,10 @@ const REFUSED_REPLIES = {
   ...sessionReplies(CONVERSATION_ID, { messages: REFUSED_MESSAGES }),
 }
 
-/** The screens of the Builder's copy proposal: its row in Cópias, the dialog of Ligar and its card in the conversation. */
+/** The screens of the Builder's copy proposal: its row in Dados, the dialog of Ligar and its card in the conversation. */
 export const COPY_PROPOSAL_STATES: State[] = [
   {
-    name: 'Cópias, a proposta do Builder com textos longos ao lado das cópias',
+    name: 'Dados, a proposta do Builder com textos longos ao lado das cópias',
     path: PAGE,
     replies: copiesPage(LISTED, [PROPOSAL]),
     settle: (p) => waitFor(p, 'Dispensar'),

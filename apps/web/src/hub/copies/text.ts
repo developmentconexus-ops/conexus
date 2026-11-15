@@ -9,13 +9,34 @@ import { phraseOf } from '@conexus/hub-api'
 import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
 /** The words of the Cópias screens (Capacidade 2, U4); the founder approves them at the step's end. */
-export const COPIES_TITLE = 'Cópias'
-export const NO_COPIES =
-  'Copie um dado de uma conexão para o banco da empresa e libere aos Projetos que usam.'
+export const DATA_TITLE = 'Dados'
+export const DATA_INTRO =
+  'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.'
+export const RAW_INTRO = 'Cópia fiel de cada sistema. Atualiza sozinha no intervalo de cada tabela.'
+export const SEARCH_TABLES = 'Buscar tabela ou coluna'
+export const NO_SYSTEM = 'Nenhum sistema ligado ainda'
+export const NO_SYSTEM_HINT =
+  'Ligue um sistema da empresa, como o Sankhya, e as tabelas copiadas dele aparecem aqui.'
+export const LINK_SYSTEM = 'Ligar um sistema'
+export const NO_TABLE_COPIED = 'Nenhuma tabela copiada'
+export const NO_MATCH = 'Nenhuma tabela com esse texto.'
+export const NO_CONCEPT = 'Nenhum conceito aprovado ainda'
+export const CONCEPT_HINT =
+  'Um conceito é o significado de uma palavra do negócio, aprovado por uma pessoa da empresa, como "Venda". Quando o primeiro for aprovado, ele aparece aqui.'
+export const CATALOG_FAILED =
+  'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
+export const BACK_TO_DATA = 'Dados'
+export const DATA_LAYERS = { raw: 'Bruto', business: 'Negócio', apps: 'Apps' } as const
+export const DATA_COLUMNS = ['Tabela', 'Atualizada', 'Linhas', 'Intervalo', 'Projetos'] as const
+
+/** A system's header in the list: its name, the connections' names and how many tables it has copied. */
+export function systemText(system: string, accounts: readonly string[], tables: number): string {
+  const counted = tables === 0 ? [] : [`${tables} ${tables === 1 ? 'tabela' : 'tabelas'}`]
+  return [system, accounts.join(', '), ...counted].filter((part) => part !== '').join(' · ')
+}
 export const ENABLE_COPY = 'Ligar uma cópia'
 export const NO_MODEL_CONNECTION = 'Ligue em Integrações uma conexão que ofereça cópias.'
 export const TO_INTEGRATIONS = 'Ir para Integrações'
-export const BACK_TO_COPIES = 'Cópias'
 export const NO_RUNS_YET = 'A primeira rodada ainda não terminou.'
 export const COPIED_TITLE = 'O que é copiado'
 export const RUNS_TITLE = 'Rodadas'
@@ -43,7 +64,7 @@ export function enableFailureText(error: unknown): string {
   return writeFailureText(error, UNCONFIRMED_ENABLE)
 }
 export const MANAGERS_ENABLE =
-  'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.'
+  'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Dados.'
 
 /** The six intervals, each in its words once (the column, the detail and the dialog read these). */
 export const INTERVAL_LABEL = {

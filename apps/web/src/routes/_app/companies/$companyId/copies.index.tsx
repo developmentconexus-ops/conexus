@@ -1,18 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { CopyList, loadCopies, manageCopiesOrNotFound } from '../../../../hub/copies/public.ts'
-import { Loading, RouteReadFailure } from '../../../../ui/states.tsx'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-// The company's copies, for whoever manages them; anyone else's address is not found (web W34, S10).
+// The page of the copies is Dados now (Dados, parte 1): the old address leads there.
 export const Route = createFileRoute('/_app/companies/$companyId/copies/')({
-  staticData: { place: 'Cópias' },
-  beforeLoad: manageCopiesOrNotFound,
-  loader: ({ context, params }) => loadCopies(context.queryClient, params.companyId),
-  pendingComponent: Loading,
-  errorComponent: RouteReadFailure,
-  component: CopiesPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: '/companies/$companyId/data', params, replace: true })
+  },
 })
-
-function CopiesPage() {
-  const { companyId } = Route.useParams()
-  return <CopyList companyId={companyId} />
-}

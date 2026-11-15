@@ -48,10 +48,10 @@ test('a cópia e as rodadas: a consulta, a chave, a janela e cada rodada em pala
   expect(table.getAllByText('1.204')).toHaveLength(6)
 })
 
-test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e Voltar às cópias estão à mão', async () => {
+test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e Voltar a Dados estão à mão', async () => {
   openCopies(server, { copies: [copy({ run: null })], runs: [] }, DETAIL)
   expect(await screen.findByText('A primeira rodada ainda não terminou.')).toBeTruthy()
-  expect(within(screen.getByRole('main')).getByRole('link', { name: 'Cópias' })).toBeTruthy()
+  expect(within(screen.getByRole('main')).getByRole('link', { name: 'Dados' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ações: Vendas' })).toBeTruthy()
 })
 

@@ -7,9 +7,10 @@ import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
 export { CopyDetail } from './copy-detail.tsx'
-export { CopyList } from './copy-list.tsx'
 export { ProposalDialog } from './copy-proposal.tsx'
+export { DataPage, DataReadFailure } from './data-page.tsx'
 export { proposalsQuery } from './queries.ts'
+export { DataLayer, DataSearch } from './search.ts'
 export { useSourceText, withAccounts } from './source.ts'
 export {
   callsText,

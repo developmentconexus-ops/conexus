@@ -130,7 +130,7 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações,
-  Agentes (founder, 2026-11-02, `V1`) and Cópias (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
+  Agentes (founder, 2026-11-02, `V1`) and Dados (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
   Aprovo"), and Configurações, the bell and the account at the foot) with
   the place's list beside it. In the company the list is Nova conversa and Conversas by day, for
   every role, since the member talks with the Assistant too. Inside a Projeto

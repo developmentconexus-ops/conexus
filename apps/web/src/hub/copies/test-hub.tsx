@@ -282,9 +282,9 @@ function copiesHub(
 }
 
 const COMPANY_ROOT = `/companies/${COMPANY.id}`
-export const LIST = `${COMPANY_ROOT}/copies`
+export const LIST = `${COMPANY_ROOT}/data`
 export function detailOf(copyId: string) {
-  return `${LIST}/${copyId}`
+  return `${COMPANY_ROOT}/copies/${copyId}`
 }
 
 /** Opens `path` as a person of `role` on the Hub of `held`: the session, the company and the Projetos, then the copies. */

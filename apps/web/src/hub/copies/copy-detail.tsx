@@ -16,7 +16,7 @@ import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
 import { originOf, useSourceText } from './source.ts'
 import {
-  BACK_TO_COPIES,
+  BACK_TO_DATA,
   COPIED_TITLE,
   countText,
   durationText,
@@ -134,12 +134,12 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <Link
-        to="/companies/$companyId/copies"
+        to="/companies/$companyId/data"
         params={{ companyId }}
         className="inline-flex items-center gap-xs text-label text-text-2"
       >
         <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
-        {BACK_TO_COPIES}
+        {BACK_TO_DATA}
       </Link>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-md">
         <div className="flex min-w-0 flex-wrap items-center gap-md">
@@ -159,7 +159,7 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
             onNote={setNote}
             withRun={false}
             onDeleted={() =>
-              void navigate({ to: '/companies/$companyId/copies', params: { companyId } })
+              void navigate({ to: '/companies/$companyId/data', params: { companyId } })
             }
           />
         </div>
