@@ -48,6 +48,12 @@ async function twoCompanies(t: TestContext, catalog?: readonly Connector[]) {
       on.hub.projects.ports.recordDatabaseHost(tx, { companyId, host: `${companyId}.test` }),
     )
   const sql = on.hub.postgres.companyPostgres
+  t.mock.method(on.hub.neon.neon, 'ownerConnection', async () => ({
+    kind: 'DONE' as const,
+    value: on.owner,
+  }))
+  t.mock.method(sql, 'ensureSync', async () => ({ kind: 'DONE' as const }))
+  t.mock.method(sql, 'ensureReader', async () => ({ kind: 'DONE' as const }))
   t.mock.method(sql, 'syncAddress', async () => on.owner)
   t.mock.method(sql, 'writePage', async () => ({ kind: 'DONE' as const, value: [] }))
   t.mock.method(sql, 'closePass', async () => ({ kind: 'DONE' as const, rows: 0 }))

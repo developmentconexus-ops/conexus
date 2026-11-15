@@ -11,6 +11,7 @@ import {
   testCompanyPostgres,
   withPassword,
 } from './test-company-postgres.ts'
+import { withRoleLock } from './test-database.ts'
 
 const KEY = testAppsConfig().appLoginKey
 const postgres = testCompanyPostgres(KEY)
@@ -154,4 +155,25 @@ test('a consulta que passa do prazo do login é TIMEOUT', async (t) => {
   const { reader } = await readerOf(t)
   const slow = await postgres.readCopies(reader, [{ text: 'select pg_sleep(6)' }], signal)
   assert.deepEqual(slow, { kind: 'TIMEOUT' })
+})
+
+test('as garantias dos logins da mesma empresa, juntas, nenhuma é recusada', async (t) => {
+  const owner = await createCompanyDatabase(t)
+  await withRoleLock(async () => {
+    assert.equal((await postgres.ensureSync(owner)).kind, 'DONE')
+    assert.equal((await postgres.ensureReader(owner)).kind, 'DONE')
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const answers = await Promise.all(
+        Array.from({ length: 4 }, async () => {
+          const synced = await postgres.ensureSync(owner)
+          return synced.kind === 'DONE' ? postgres.ensureReader(owner) : synced
+        }),
+      )
+      assert.deepEqual(
+        answers.map((answer) => answer.kind),
+        ['DONE', 'DONE', 'DONE', 'DONE'],
+        JSON.stringify(answers),
+      )
+    }
+  })
 })

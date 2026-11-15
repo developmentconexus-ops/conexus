@@ -10,7 +10,7 @@ import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass
 import type { StoredSource } from './sources.ts'
 import { datedPasses, sourcesOf } from './sources.ts'
 import type { CopiesDeps, CopyOutcome, CopyRunEnd, CopyTuning } from './store.ts'
-import { companyScope, copyTableOf, parsedCopy, syncOf } from './store.ts'
+import { companyOwner, companyScope, copyTableOf, parsedCopy, syncOf } from './store.ts'
 import { copy, copyRun } from './tables.ts'
 
 /** Production's ceilings of one run (code C26): 500 rows a page, 200 pages or 10 minutes, a lease of 10 minutes renewed at each page. */
@@ -157,6 +157,25 @@ function inRunOrder(sources: readonly StoredSource[]): StoredSource[] {
 }
 
 /**
+ * The company's two logins made when missing, as the owner, before the run reads anything: a
+ * company whose copies came before a login existed gets it here, and one that has it is left as it
+ * is (both steps repeat). The sync login's address when they stand; none when the first thing that
+ * stops it ends the run `DATABASE_DOWN`.
+ */
+async function ensuredSync(deps: CopiesDeps, claimed: Claimed) {
+  const { companyId, createdBy: personId, id: copyId } = claimed.copy
+  if (claimed.sync === undefined) return undefined
+  const owner = await companyOwner(deps, { companyId, personId })
+  if (owner === undefined) return undefined
+  const synced = await deps.companyPostgres.ensureSync(owner)
+  const made = synced.kind === 'DONE' ? await deps.companyPostgres.ensureReader(owner) : synced
+  if (made.kind === 'DONE') return claimed.sync
+  const code = made.kind === 'REFUSED' ? made.code : made.kind
+  deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
+  return undefined
+}
+
+/**
  * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then the rows of an
  * account that is no source's out of the table (Desligar's net), then each source's pass. A source
  * the provider asked to wait ends the run when the provider counts its limit by the app, which every
@@ -176,7 +195,7 @@ export async function runCopy(
   function end(outcome: CopyOutcome) {
     return ended(deps, held, outcome, counts, finish)
   }
-  const { sync } = claimed
+  const sync = await ensuredSync(deps, held)
   if (sync === undefined) return end(DATABASE_DOWN)
   const described = await describedCopy(deps, { claimed: held, sync, end })
   if (described.kind === 'END') return described.end
