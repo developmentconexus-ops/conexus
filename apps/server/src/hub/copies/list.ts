@@ -34,7 +34,7 @@ const RUNS_PAGE = 20
 const Reason = z.enum(['CAP', 'STOPPED', 'WAIT'])
 
 /** A run's row as the contract states it; the reason of each outcome parsed again (code C27). */
-export function runOf(row: typeof copyRun.$inferSelect): CopyRun {
+function runOf(row: typeof copyRun.$inferSelect): CopyRun {
   const base = {
     id: CopyRunId.parse(row.id),
     startedAt: row.startedAt.toISOString(),
