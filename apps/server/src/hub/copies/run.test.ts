@@ -273,3 +273,26 @@ test('o registro não leva dado', async (t) => {
     on.hub.lines.some((line) => line.message === 'CONNECTOR_CALLED' && line.fields.by === 'copy'),
   )
 })
+
+test('a garantia dos logins que falha termina a rodada sem chamar o fornecedor', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  const down = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' }
+  const postgres = on.hub.postgres.companyPostgres
+  const refused = t.mock.method(postgres, 'ensureReader', async () => ({
+    kind: 'REFUSED' as const,
+    code: '42501',
+  }))
+  const pages = on.gate.pages
+  assert.deepEqual(await ended(on, copyId), down)
+  assert.equal(on.gate.pages, pages, 'nenhuma página lida')
+  assert.ok(on.hub.lines.some((line) => line.message === 'COPY_DATABASE_FAILED'))
+  refused.mock.restore()
+  const silent = t.mock.method(on.hub.neon.neon, 'ownerConnection', async () => ({
+    kind: 'NO_ANSWER' as const,
+  }))
+  assert.deepEqual(await ended(on, copyId), down)
+  assert.equal(on.gate.pages, pages, 'nenhuma página lida')
+  silent.mock.restore()
+  assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
+})

@@ -93,6 +93,20 @@ test('a amostra de uma empresa cuja cópia veio antes do login de leitura', asyn
   const on = await copiesOn(t)
   const copy = await enabled(on, 'vendas')
   await firstEnded(on, copy.id)
+  await asSync(on.owner, (client) => client.query('REVOKE USAGE ON SCHEMA sync FROM conexus_read'))
+  const before = await sample(on, on.ana, copy.id)
+  assert.deepEqual([before.statusCode, codeOf(before)], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  await on.run(copy.id)
+  const answered = await sample(on, on.ana, copy.id)
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.equal(CopySample.parse(Object(answered.json()).sample).rows.length, 5)
+  assert.equal(on.hub.lines.filter((line) => line.message === 'COPY_READER_MADE').length, 0)
+})
+
+test('a amostra, com a leitura calada até o login existir, é atendida depois da rodada', async (t) => {
+  const on = await copiesOn(t)
+  const copy = await enabled(on, 'vendas')
+  await firstEnded(on, copy.id)
   const postgres = on.hub.postgres.companyPostgres
   const made = t.mock.method(postgres, 'ensureReader')
   const read = postgres.readCopies.bind(postgres)
@@ -102,7 +116,6 @@ test('a amostra de uma empresa cuja cópia veio antes do login de leitura', asyn
   await on.run(copy.id)
   const answered = await sample(on, on.ana, copy.id)
   assert.equal(answered.statusCode, 200, answered.body)
-  assert.equal(CopySample.parse(Object(answered.json()).sample).rows.length, 5)
 })
 
 test('a amostra com o banco calado', async (t) => {
