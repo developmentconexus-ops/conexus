@@ -110,6 +110,19 @@ async function describesSystemsAndTables(world: DataWorld, data: CompanyData): P
   assert.ok(catalog.tables.some((table) => table.kept.lastRun?.outcome.kind === 'PARTIAL'))
 }
 
+export async function keepsLiveOnlyOutOfTables(world: DataWorld, data: CompanyData): Promise<void> {
+  const catalog = await catalogOf(world)
+  const live = catalog.systems.filter((system) => system.liveOnly)
+  assert.ok(live.length > 0, 'a live-only system in the world')
+  for (const system of live)
+    for (const table of catalog.tables)
+      assert.ok(
+        !table.kept.connections.includes(system.connection),
+        `${table.name} kept from ${system.name}`,
+      )
+  assert.deepEqual(await data.describe(), catalog)
+}
+
 async function readsTheCopy(world: DataWorld, data: CompanyData): Promise<void> {
   const { copied, table } = await fixturesOf(world)
   const answer = ReadAnswer.parse(await data.read({ kind: 'OPERATION', ...copied }))
@@ -247,6 +260,10 @@ const LAWS: readonly (readonly [string, Law])[] = [
   [
     'descreve os sistemas e as tabelas, cada tabela com a descrição, o significado das colunas e a última rodada',
     describesSystemsAndTables,
+  ],
+  [
+    'descreve o sistema só ao vivo com liveOnly e nenhuma tabela o tem como origem',
+    keepsLiveOnlyOutOfTables,
   ],
   [
     'lê da tabela a leitura que uma cópia guarda, sem chamar o sistema, com as linhas e quem as guarda',
