@@ -1,5 +1,6 @@
 import type { Connector } from '@conexus/connectors'
-import type { ConnectorEntry } from '@conexus/hub-api'
+import type { CatalogSystem, ConnectionId, ConnectorEntry } from '@conexus/hub-api'
+import { ConnectorId } from '@conexus/hub-api'
 
 const EFFECT_OF = { read: 'READ', write: 'WRITE', destructive: 'DESTROY' } as const
 
@@ -25,4 +26,28 @@ export function subjectsOf(connector: Connector): ConnectorEntry['subjects'] {
         door: door.has(operation.id),
       })),
   }))
+}
+
+function entryOf({ id, label, summary }: { id: string; label: string; summary: string }) {
+  return { operation: id, label, summary }
+}
+
+/** A connection as the data contract states it: what the system reads and what it does, by the kit's declaration. */
+export function systemOf(
+  connector: Connector,
+  row: { id: ConnectionId; name: string },
+): CatalogSystem {
+  return {
+    connection: row.id,
+    connector: ConnectorId.parse(connector.id),
+    name: row.name,
+    liveOnly: false,
+    reads: operationsOf(connector)
+      .filter((operation) => operation.class === 'read')
+      .map(entryOf),
+    actions: (connector.writes ?? []).map((operation) => ({
+      ...entryOf(operation),
+      effect: EFFECT_OF[operation.class],
+    })),
+  }
 }

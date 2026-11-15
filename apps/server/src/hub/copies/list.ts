@@ -34,7 +34,7 @@ const RUNS_PAGE = 20
 const Reason = z.enum(['CAP', 'STOPPED', 'WAIT'])
 
 /** A run's row as the contract states it; the reason of each outcome parsed again (code C27). */
-function runOf(row: typeof copyRun.$inferSelect): CopyRun {
+export function runOf(row: typeof copyRun.$inferSelect): CopyRun {
   const base = {
     id: CopyRunId.parse(row.id),
     startedAt: row.startedAt.toISOString(),
@@ -104,7 +104,7 @@ async function releasesOf(deps: CopiesDeps, tx: ReadTx, companyId: CompanyId, id
 }
 
 /** Each copy's connections, in the order its sources were made. */
-async function copySources(tx: ReadTx, companyId: CompanyId, ids: readonly CopyId[]) {
+export async function copySources(tx: ReadTx, companyId: CompanyId, ids: readonly CopyId[]) {
   if (ids.length === 0) return new Map<string, CopySource[]>()
   const rows = await tx
     .select({ of: copySource.copyId, connectionId: copySource.connectionId })
