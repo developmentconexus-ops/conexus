@@ -472,7 +472,7 @@ Os testes da CI usam dublês e bancos descartáveis. As recusas desta parte são
 
 **A rodada com modelo real.** As perguntas acima rodam com `CONEXUS_EVAL_REAL_MODEL` contra o dublê do Sankhya. O Sankhya real é lido num lugar só, o uso de fechamento do fundador (delivery L17): ele dá a um papel de teste só a tabela de vendas, pergunta pelos clientes como uma pessoa desse papel e vê a recusa e a linha no Registro. É só leitura.
 
-**Mutações à mão (testing T27).** As linhas-chave: o `REVOKE ALL` antes do `GRANT` em `reconcileReaders`, a ordem banco e Hub ao tirar, o filtro de `copiesReadBy` no catálogo, o `NOT_IN_ROLE` de uma tabela retida, o limiar "mais da metade" de `documentColumns`, o `DROP COLUMN` antes de gravar a definição, e a resposta `TABLE_UNAVAILABLE` quando o registro falha.
+**Mutações à mão (testing T27).** As linhas-chave: o `REVOKE ALL` antes do `GRANT` em `reconcileReaders`, a ordem banco e Hub ao tirar, o filtro de `copiesReadBy` no catálogo, o `NOT_IN_ROLE` de uma tabela retida, e a resposta `TABLE_UNAVAILABLE` quando o registro falha.
 
 ## Tabela de referência
 
