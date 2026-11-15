@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
+import { CompanyId, PersonId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { TestDatabase } from './test-database.ts'
 import { createTestDatabase, withRoleLock } from './test-database.ts'
@@ -193,6 +194,65 @@ for (const [name, statement] of REFUSED) {
     )
   })
 }
+
+// The Hub's company login (hub_company), the one the grants of the copy alerts are for: hub_runtime
+// has no USAGE on these schemas, so its refusal would not say the grant is narrow.
+const COMPANY_SCOPE = {
+  kind: 'COMPANY',
+  companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
+  personId: PersonId.parse('someone'),
+} as const
+
+const COMPANY_REFUSED: [string, ReturnType<typeof sql>][] = [
+  ['UPDATE de copies.copy_run.whole', sql`update copies.copy_run set whole = true where false`],
+  [
+    'UPDATE de notifications.alert_recipient',
+    sql`update notifications.alert_recipient set email = '' where false`,
+  ],
+  [
+    'UPDATE de notifications.copy_follower',
+    sql`update notifications.copy_follower set created_at = now() where false`,
+  ],
+  ['DELETE de notifications.copy_notice', sql`delete from notifications.copy_notice where false`],
+  [
+    'UPDATE de notifications.copy_notice.copy_name',
+    sql`update notifications.copy_notice set copy_name = '' where false`,
+  ],
+]
+for (const [name, statement] of COMPANY_REFUSED) {
+  test(`o login da empresa recebe 42501 em ${name}`, async (t) => {
+    const { database } = await createTestDatabase(t)
+    await assert.rejects(
+      database.command(COMPANY_SCOPE, (tx) => tx.execute(statement)),
+      (error: unknown) => {
+        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+        assert.equal(error.cause.code, '42501')
+        return true
+      },
+    )
+  })
+}
+
+test('o login do Hub tem os verbos dos avisos de cópia', async (t) => {
+  const { database } = await createTestDatabase(t)
+  const statements = [
+    sql`update copies.copy_run set system_status = system_status where false`,
+    sql`update copies.copy_run set system_code = system_code where false`,
+    sql`update copies.copy_run set system_message = system_message where false`,
+    sql`select 1 from notifications.alert_recipient where false`,
+    sql`insert into notifications.alert_recipient select * from notifications.alert_recipient where false`,
+    sql`delete from notifications.alert_recipient where false`,
+    sql`select 1 from notifications.copy_follower where false`,
+    sql`insert into notifications.copy_follower select * from notifications.copy_follower where false`,
+    sql`delete from notifications.copy_follower where false`,
+    sql`select 1 from notifications.copy_notice where false`,
+    sql`insert into notifications.copy_notice select * from notifications.copy_notice where false`,
+    sql`update notifications.copy_notice set read_at = read_at where false`,
+  ]
+  await database.command(COMPANY_SCOPE, async (tx) => {
+    for (const statement of statements) await tx.execute(statement)
+  })
+})
 
 // The tables that hold no company data, or are reached only through a proof, so they have no policy
 // (`drizzle.__drizzle_migrations` is migrate's own bookkeeping).
