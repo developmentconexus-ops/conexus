@@ -71,6 +71,8 @@ export const copy = copies.table(
     // The table's rows after the last complete pass.
     rows: bigint('rows', { mode: 'number' }),
     lastRunId: uuid('last_run_id'),
+    // Each source column's state: when it last came in a row, and since when it has not (parte 1, C5).
+    columnState: jsonb('column_state').notNull().default({}),
   },
   (table) => [
     unique('copy_company_id_name_key').on(table.companyId, table.name),
@@ -87,6 +89,7 @@ export const copy = copies.table(
     check('copy_claim', sql`(${table.claimToken} IS NULL) = (${table.claimedUntil} IS NULL)`),
     check('copy_name', sql`${table.name} ~ '^[a-z][a-z0-9_]{0,39}$'`),
     check('copy_definition', sql`jsonb_typeof(${table.definition}) = 'object'`),
+    check('copy_column_state', sql`jsonb_typeof(${table.columnState}) = 'object'`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
