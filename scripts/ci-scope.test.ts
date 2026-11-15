@@ -29,7 +29,7 @@ function commit(dir: string, files: Record<string, string>): string {
 }
 
 function scope(dir: string, event: string, before: string, sha: string): string {
-  const output = join(dir, '.scope-output')
+  const output = `${dir}.output`
   writeFileSync(output, '')
   execFileSync('bash', ['--noprofile', '--norc', '-e', '-c', SCRIPT], {
     cwd: dir,
@@ -62,5 +62,6 @@ test('o scope lê o intervalo do push e só chama de documento o que a lista nom
     assert.equal(scope(dir, 'schedule', base, documents), 'code=true')
   } finally {
     rmSync(dir, { recursive: true, force: true })
+    rmSync(`${dir}.output`, { force: true })
   }
 })
