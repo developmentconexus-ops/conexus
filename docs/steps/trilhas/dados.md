@@ -66,8 +66,7 @@ em 2026-11-14 ("Aprovado", E1a a E5a) e respondeu às três perguntas da spec: P
 Okay") e P3, a fonte única de conectores, o kit (decisão
 [0069](../../decisions/0069-connectors-one-source-the-kit.md)). A entrada conversada entra pelo
 cartão em rascunho do PR 982 (E2a). A consulta fica visível a quem lê a tabela, recolhida (E3a). O
-Registro de dados é do dono e do administrador, sem prazo por ora (E4a), e o documento do cliente não
-fica na cópia (E5a).
+Registro de dados é do dono e do administrador, sem prazo por ora (E4a).
 
 ## Como a outra trilha pede uma mudança no contrato
 

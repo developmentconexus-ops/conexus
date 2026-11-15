@@ -626,18 +626,17 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
         subjects: { contatos: 'Contatos', empresas: 'Empresas', negocios: 'Negócios' },
         operations: [contatos, empresas, negocios], writes: [notaNoContato], check: contatos, skill: readSkill(SKILL) })
       // cada leitura: GET /crm/v3/objects/<objeto>, list CURSOR ('after', 'paging.next.after', 'results'), limit 100
-      // contatos: personal no e-mail e no telefone
       // notaNoContato: post('/crm/v3/objects/notes') com properties { hs_note_body, hs_timestamp } e a associação ao contato,
       //   associationCategory 'HUBSPOT_DEFINED', associationTypeId 202; idempotent false; uncertain/mark/idOf (decisão 0062)
       ```
       O caminho de token, a forma da resposta do token, as recusas e o limite por conta ficam marcados "a confirmar na gravação" num comentário que a 9.1 tira. Até a gravação, o dublê responde no envelope mais próximo medido (testing T29): as formas das funções da referência.
     - **Testes:** os três que conferem o catálogo exato ganham o HubSpot depois do Mercado Livre: `sankhya.test.ts:45-49`, a lista de ids passa a `['sankhya', 'mercado-livre', 'hubspot']`; `kernel.test.ts:129-133`, o `PerProject` declarado ganha `hubspot: 'many'`; `role-kit.test.ts:5-13`, a lista de recursos ganha `['hubspot', 'connector_hubspot']`. `hubspot.test.ts`: `runConformance(hubspot, hubspotFake())`, as verificações que o `main` tiver (treze, depois do grupo 1); "a lista de contatos anda cada página uma vez pelo `after`"; "a conta é o portal".
-    - **Mutações à mão:** tirar o `personal` do e-mail (a verificação 6 falha pelo `findUndeclared`); trocar `after` por `cursor` na paginação (o caso das páginas falha).
+    - **Mutações à mão:** trocar `after` por `cursor` na paginação (o caso das páginas falha).
     - **Pronto quando:** `npm test -w @conexus/connectors` passa com o HubSpot no catálogo, e o Sankhya e o Mercado Livre seguem verdes.
     - _Requisitos: 6.1, 7.6, 8.1, 8.4_
   - [ ] 7.2 O HubSpot no Hub: o login pelo dublê, a leitura e a escrita com cartão pela porta (um commit)
     - **Arquivos:** `apps/server/src/hub/connectors/test-connections.ts`, `apps/server/src/hub/identity/test-kit.ts`, `apps/server/src/hub/connectors/hubspot-door.test.ts` (novo), `docs/how-to/add-a-connector.md`, `scripts/rerun-never.json`.
-    - **Referência a seguir:** `apps/server/src/hub/connectors/test-connections.ts:57-115` (`appsOf` e `mercadoLivreOn`: o dublê servido, `connectorOrigins` e `connectorApps`); `apps/server/src/hub/connectors/sign-ins.test.ts:22`, `:56`, `:66` (começar, sem as chaves do app, completar); `apps/server/src/hub/connectors/apps.ts:14-21` (`CONNECTOR_NOT_CONFIGURED`); `apps/server/src/hub/connectors/connections-refresh.test.ts:32` (a renovação); `apps/server/src/hub/connectors/executor.test.ts:223` (a recusa inteira); `apps/server/src/hub/identity/test-kit.ts:40-67` (`TEST_KIT`, o kit do Hub de teste escrito à mão, testing T6), `apps/server/src/hub/identity/roles.ts:86-101` e `may-use.ts:106` (o dono recebe as operações do kit de teste e `mayUse` pergunta `connector_<id>`); `apps/server/src/hub/connectors/write.test.ts:8` (o pedido de escrita com o cartão); `apps/server/src/hub/connectors/personal-read.test.ts` (a retirada do dado pessoal); `apps/server/src/hub/connectors/limits.test.ts` (o limite por turno); `docs/how-to/add-a-connector.md:37` (a chave `<id>` no arquivo de `HUB_CONNECTOR_APPS_FILE`).
+    - **Referência a seguir:** `apps/server/src/hub/connectors/test-connections.ts:57-115` (`appsOf` e `mercadoLivreOn`: o dublê servido, `connectorOrigins` e `connectorApps`); `apps/server/src/hub/connectors/sign-ins.test.ts:22`, `:56`, `:66` (começar, sem as chaves do app, completar); `apps/server/src/hub/connectors/apps.ts:14-21` (`CONNECTOR_NOT_CONFIGURED`); `apps/server/src/hub/connectors/connections-refresh.test.ts:32` (a renovação); `apps/server/src/hub/connectors/executor.test.ts:223` (a recusa inteira); `apps/server/src/hub/identity/test-kit.ts:40-67` (`TEST_KIT`, o kit do Hub de teste escrito à mão, testing T6), `apps/server/src/hub/identity/roles.ts:86-101` e `may-use.ts:106` (o dono recebe as operações do kit de teste e `mayUse` pergunta `connector_<id>`); `apps/server/src/hub/connectors/write.test.ts:8` (o pedido de escrita com o cartão); `apps/server/src/hub/connectors/limits.test.ts` (o limite por turno); `docs/how-to/add-a-connector.md:37` (a chave `<id>` no arquivo de `HUB_CONNECTOR_APPS_FILE`).
     - **O que sai:** o `'mercado-livre'` fixo de `appsOf`: a função passa a receber o id do conector.
     - **O que entra:**
       ```ts
@@ -701,7 +700,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
         perProject: 'many', callLimit: { countedBy: 'ACCOUNT' },
         subjects: { mensagens: 'Mensagens' }, operations: [buscarMensagens, lerMensagem], check: buscarMensagens, skill: readSkill(SKILL) })
       // buscarMensagens: GET /gmail/v1/users/me/messages { q, maxResults, pageToken } -> { messages: [{ id, threadId }], nextPageToken, resultSizeEstimate }
-      // lerMensagem: GET /gmail/v1/users/me/messages/{id} { format } ; personal nos endereços, no assunto e no corpo (a confirmar na gravação)
+      // lerMensagem: GET /gmail/v1/users/me/messages/{id} { format }
       // sem copy e sem writes
       // test-connections.ts: googleMailOn, o molde de hubspotOn
       // identity/test-kit.ts: { id: 'google-mail', resource: 'connector_google-mail', operations: [{ id: 'buscarMensagens', class: 'read' }, { id: 'lerMensagem', class: 'read' }] }
