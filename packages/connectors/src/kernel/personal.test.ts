@@ -89,7 +89,7 @@ test('documentColumns acha a coluna de CPF e de CNPJ, com e sem máscara', () =>
   assert.deepEqual(documentColumns(['nome', 'cpf', 'cnpj'], rows), ['cpf', 'cnpj'])
 })
 
-test('três células ou menos não acusam', () => {
+test('menos de três células não acusam', () => {
   assert.deepEqual(documentColumns(['doc'], [[CPF_A], [CPF_B], [null], ['']]), [])
   assert.deepEqual(documentColumns(['doc'], [[CPF_A], [CPF_B], [CPF_C]]), ['doc'])
 })

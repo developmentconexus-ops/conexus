@@ -72,8 +72,9 @@ test('uma proposta da versão 2 com uma coluna de CNPJ sem caminho declarado é 
   const answer = await on.propose({ name: 'mercado_livre_documento', definition })
   assert.deepEqual(answer, {
     kind: 'COPY_PERSONAL_NOT_KEPT',
-    connection: answer.kind === 'COPY_PERSONAL_NOT_KEPT' ? answer.connection : '',
+    connection: 'Loja A',
     column: 'documento',
   })
   assert.deepEqual(await on.proposalRows(), [])
+  assert.equal(on.hub.lines.filter((line) => line.message === 'COPY_DOCUMENT_REFUSED').length, 1)
 })
