@@ -17,6 +17,8 @@ export const CopyInput = z.object({
   version: z.literal(1),
   companyId: CompanyIdSchema,
   copyId: CopyIdSchema,
+  /** Only the weekly row has it: the run it starts reads every source from nothing. */
+  whole: z.literal(true).optional(),
 })
 export type CopyInput = z.infer<typeof CopyInput>
 
@@ -27,7 +29,10 @@ const Ended = z.object({
 
 type Deps = {
   copies: () => {
-    run(input: { companyId: CompanyId; copyId: CopyId }, signal: AbortSignal): Promise<CopyRunEnd>
+    run(
+      input: { companyId: CompanyId; copyId: CopyId; whole: boolean },
+      signal: AbortSignal,
+    ): Promise<CopyRunEnd>
   }
   log: FailureLog
 }
@@ -55,10 +60,16 @@ export function copyRun(deps: Deps) {
         )
         return { kind: 'INPUT_UNREADABLE' }
       }
-      const ended = await deps.copies().run(read.data, abortSignal)
+      const { companyId, copyId } = read.data
+      const whole = read.data.whole === true
+      const ended = await deps.copies().run({ companyId, copyId, whole }, abortSignal)
       if (ended.kind === 'GONE') {
-        await mastra.schedules.delete(scheduleIdOf(read.data.copyId))
+        await mastra.schedules.delete(wholeScheduleIdOf(copyId))
+        await mastra.schedules.delete(scheduleIdOf(copyId))
         return { kind: 'GONE' }
+      }
+      if (ended.kind === 'RUNNING' && whole) {
+        deps.log.info({ companyId, copyId }, 'COPY_WHOLE_PASS_SKIPPED')
       }
       return ended.kind === 'ENDED'
         ? { kind: 'ENDED', outcome: ended.outcome.kind }
@@ -81,4 +92,9 @@ export function copyRun(deps: Deps) {
  */
 export function scheduleIdOf(copyId: CopyId): string {
   return `schedule_${copyId}`
+}
+
+/** The weekly row's id: Mastra's `slugify` turns an underscore suffix into a hyphen, so the suffix is already one. */
+export function wholeScheduleIdOf(copyId: CopyId): string {
+  return `${scheduleIdOf(copyId)}-whole`
 }

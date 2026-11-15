@@ -188,9 +188,9 @@ test('agenda: sai com a cópia, pausada ou não', async (t) => {
     (await post(on.hub, on.ana, `${copiesUrl(on)}/${paused.id}/pause`, {})).statusCode,
     200,
   )
-  assert.equal((await schedulesOf(on)).length, 2)
+  assert.equal((await schedulesOf(on)).length, 4, 'a linha normal e a semanal de cada cópia')
   assert.equal((await apagar(on, active.id)).statusCode, 200)
-  assert.equal((await schedulesOf(on)).length, 1)
+  assert.equal((await schedulesOf(on)).length, 2, 'a linha normal e a semanal de cada cópia')
   assert.equal((await apagar(on, paused.id)).statusCode, 200)
   assert.equal((await schedulesOf(on)).length, 0)
 })
@@ -258,7 +258,7 @@ test('relógio calado: a cópia sai mesmo assim e a agenda fica, registrada', as
   const done = await apagar(on, vendas.id)
   assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: [] }])
   assert.equal((await rowsOf(on, vendas.id)).copy, 0)
-  assert.equal((await schedulesOf(on)).length, 1)
+  assert.equal((await schedulesOf(on)).length, 2, 'a linha normal e a semanal de cada cópia')
   const left = on.hub.lines.find((line) => line.message === 'COPY_SCHEDULE_LEFT')
   assert.equal(left?.fields.copyId, vendas.id)
   assert.equal(typeof left?.fields.reason, 'string')

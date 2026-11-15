@@ -1,6 +1,6 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connection, copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
@@ -42,6 +42,46 @@ test('as rodadas: cada uma em palavras, na aba Rodadas', async () => {
     table.getByText('O Conexus reiniciou no meio; a próxima continua de onde parou'),
   ).toBeTruthy()
   expect(table.getAllByText('1.204')).toHaveLength(6)
+})
+
+const WHOLE_AND_NORMAL = {
+  copies: [copy()],
+  runs: [
+    copyRun({ whole: true, read: 2000, written: 2000 }),
+    copyRun({ whole: false, read: 3000, written: 3000 }),
+  ],
+}
+
+test('as rodadas: a passada inteira aparece ao lado do resultado', async () => {
+  openCopies(server, WHOLE_AND_NORMAL, RUNS)
+  expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
+  const rows = screen.getAllByRole('row')
+  const whole = rows.find((row) => row.textContent?.includes('2.000'))
+  const normal = rows.find((row) => row.textContent?.includes('3.000'))
+  expect(whole?.textContent).toContain('Completa · Passada inteira')
+  expect(normal?.textContent).not.toContain('Passada inteira')
+})
+
+test('as rodadas: a passada inteira aparece na linha do celular', async () => {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: media.includes('767'),
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    openCopies(server, WHOLE_AND_NORMAL, RUNS)
+    expect(
+      await screen.findByText('2.000 lidas · 2.000 gravadas · Completa · Passada inteira'),
+    ).toBeTruthy()
+    expect(screen.getByText('3.000 lidas · 3.000 gravadas · Completa')).toBeTruthy()
+  } finally {
+    phone.mockRestore()
+  }
 })
 
 test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e o caminho para Dados estão à mão', async () => {

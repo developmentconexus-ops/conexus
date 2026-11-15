@@ -117,7 +117,7 @@ test('desligar tira a agenda da cópia que acaba, pausada também', async (t) =>
   await firstEnded(on, paused.id)
   const pause = await post(on.hub, on.ana, `${copiesUrl(on)}/${paused.id}/pause`, {})
   assert.equal(pause.statusCode, 200)
-  assert.equal((await schedulesOf(on)).length, 2)
+  assert.equal((await schedulesOf(on)).length, 4, 'a linha normal e a semanal de cada cópia')
   assert.equal((await unlink(on, on.connections, on.connectionId)).statusCode, 200)
   assert.deepEqual(await copiesLeft(on), [])
   assert.equal((await schedulesOf(on)).length, 0)

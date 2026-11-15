@@ -51,6 +51,7 @@ export function copyRun(fields: Partial<CopyRun> = {}): CopyRun {
     outcome: { kind: 'COMPLETE' },
     read: 1204,
     written: 1204,
+    whole: false,
     ...fields,
   })
 }

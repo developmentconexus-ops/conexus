@@ -82,16 +82,15 @@ function account(run: Run, source: StoredSource): CopyAccount {
   return { ref: source.accountRef, name: run.claimed.names.get(source.connectionId)?.name ?? '' }
 }
 
+/** What a pass's close needs: the window's start, and whether the pass read the whole source (it alone decides the delete). */
+type PassEnds = { windowFrom: string | null; readAll: boolean }
+
 /** The source's pass closed once its last page is written: its account's rows the pass did not write go, and the pass is counted. */
-async function closedPass(
-  run: Run,
-  source: StoredSource,
-  windowFrom: string | null,
-): Promise<SourceStep> {
+async function closedPass(run: Run, source: StoredSource, ends: PassEnds): Promise<SourceStep> {
   const { deps, claimed, sync, signal, table } = run
   const closed = await deps.companyPostgres.closePass(
     sync,
-    { ...table, pass: source.pass, windowFrom, account: account(run, source) },
+    { ...table, pass: source.pass, ...ends, account: account(run, source) },
     signal,
   )
   if (closed.kind !== 'DONE') return { kind: 'END', end: await run.end(DATABASE_DOWN) }
@@ -141,7 +140,7 @@ async function pageStep(
   run: Run,
   source: StoredSource,
   read: Extract<CopyRead, { kind: 'PAGE' }>,
-  windowFrom: string | null,
+  ends: PassEnds,
 ): Promise<PageStep> {
   const { deps, claimed, sync, signal, counts, table } = run
   const { rows, more } = read.page
@@ -159,17 +158,12 @@ async function pageStep(
   counts.pages += 1
   counts.read += rows.length
   counts.written += rows.length
-  if (!more) return closedPass(run, source, windowFrom)
+  if (!more) return closedPass(run, source, ends)
   return { kind: 'NEXT', position: read.next }
 }
 
 /** What one read leads to. */
-function stepOf(
-  run: Run,
-  source: StoredSource,
-  read: CopyRead,
-  windowFrom: string | null,
-): Promise<PageStep> {
+function stepOf(run: Run, source: StoredSource, read: CopyRead, ends: PassEnds): Promise<PageStep> {
   switch (read.kind) {
     case 'NO_CONNECTION':
       return failed(run, { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' })
@@ -180,7 +174,7 @@ function stepOf(
     case 'STALE':
       return restartStep(run, source)
     case 'PAGE':
-      return pageStep(run, source, read, windowFrom)
+      return pageStep(run, source, read, ends)
     default:
       return read satisfies never
   }
@@ -196,8 +190,9 @@ export async function sourcePass(run: Run, source: StoredSource): Promise<Source
   const { connectionId } = source
   const { definition, createdBy } = claimed.copy
   const { since, windowFrom } = datesOf(definition, source)
-  if (!(source.position === null && (since === null || definition.changedSince === null)))
-    run.seen.whole = false
+  const readAll = definition.changedSince === null || since === null
+  const ends = { windowFrom, readAll }
+  if (!(source.position === null && readAll)) run.seen.whole = false
   let position: CopyPosition | null = source.position
   for (;;) {
     const stopped = await halted(run)
@@ -206,7 +201,7 @@ export async function sourcePass(run: Run, source: StoredSource): Promise<Source
       ...{ companyId: ids.companyId, connectionId, enabledBy: createdBy, definition, position },
       ...{ since, windowFrom, limit: deps.tuning.pageRows, signal },
     })
-    const step = await stepOf(run, source, read, windowFrom)
+    const step = await stepOf(run, source, read, ends)
     if (step.kind !== 'NEXT') return step
     position = step.position
   }

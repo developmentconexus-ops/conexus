@@ -13,6 +13,7 @@ import { connectionForCopy } from '../connectors/public.ts'
 import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
 import { dropEndedCopies } from './leave.ts'
+import { isIncremental } from './mode.ts'
 import { modelCopyName } from './naming.ts'
 import { mayCreate } from './schedule.ts'
 import { sourcesOf } from './sources.ts'
@@ -180,7 +181,10 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
   // made the schedule asks for the first run and records it, so concurrent repeats record once (C37).
   if (made.releaseTo !== undefined)
     await released(deps, input, { stored, projectId: made.releaseTo })
-  const schedule = await deps.clock().set({ companyId, copyId, interval: input.interval })
+  const schedule = await deps.clock().set({
+    ...{ companyId, copyId, interval: input.interval },
+    incremental: isIncremental(stored.definition),
+  })
   if (schedule === 'CREATED') {
     await deps.clock().runNow(copyId)
     deps.log.info({ companyId, copyId, from: input.source.kind }, 'COPY_ENABLED')

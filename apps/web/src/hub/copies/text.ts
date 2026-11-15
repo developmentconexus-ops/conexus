@@ -26,6 +26,7 @@ export const CONCEPT_HINT =
   'Um conceito é o significado de uma palavra do negócio, aprovado por uma pessoa da empresa, como "Venda". Quando o primeiro for aprovado, ele aparece aqui.'
 export const CATALOG_FAILED =
   'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
+export const WHOLE_PASS = 'Passada inteira'
 export const TREE_LABEL = 'Dados'
 export const PAUSED_LABEL = 'Pausada'
 export const LOADING_LABEL = 'Carregando'

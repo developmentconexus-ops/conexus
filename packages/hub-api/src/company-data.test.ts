@@ -82,6 +82,7 @@ const CATALOG = Catalog.parse({
           outcome: { kind: 'PARTIAL', reason: 'CAP' },
           read: 500,
           written: 500,
+          whole: false,
         },
       },
     },
