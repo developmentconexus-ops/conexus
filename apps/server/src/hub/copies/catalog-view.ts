@@ -1,13 +1,13 @@
 import type { CatalogTable, CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
 import { ConnectionId } from '@conexus/hub-api'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
-import { copySources, projectCopyRows, runOf } from './list.ts'
+import { copySources, endedRuns, projectCopyRows } from './list.ts'
 import type { TableRead } from './read-table.ts'
 import { readCopyTable } from './read-table.ts'
 import type { CopiesDeps } from './store.ts'
 import { companyScope, parsedCopy, shownOf } from './store.ts'
-import { copy, copyRun } from './tables.ts'
+import { copy } from './tables.ts'
 
 type Place = 'ALL' | { projectId: ProjectId }
 
@@ -21,16 +21,6 @@ async function copiesOf(tx: ReadTx, companyId: CompanyId, only: Place) {
   return rows.map(parsedCopy)
 }
 
-/** The run each copy ended and points at, by copy; a copy that has not ended one has none. */
-async function lastRunsOf(tx: ReadTx, runIds: readonly string[]) {
-  if (runIds.length === 0) return new Map<string, ReturnType<typeof runOf>>()
-  const rows = await tx
-    .select()
-    .from(copyRun)
-    .where(inArray(copyRun.id, [...runIds]))
-  return new Map(rows.map((row) => [row.copyId, runOf(row)]))
-}
-
 /** The copies a place reads, as the catalog states them; admits nobody: the caller did, in its transaction (code C8). */
 export async function catalogTables(
   tx: ReadTx,
@@ -40,7 +30,7 @@ export async function catalogTables(
   const copies = await copiesOf(tx, companyId, only)
   const ids: CopyId[] = copies.map(({ id }) => id)
   const sources = await copySources(tx, companyId, ids)
-  const runs = await lastRunsOf(
+  const runs = await endedRuns(
     tx,
     copies.flatMap(({ lastRunId }) => (lastRunId === null ? [] : [lastRunId])),
   )

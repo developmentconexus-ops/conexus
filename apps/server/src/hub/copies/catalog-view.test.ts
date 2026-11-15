@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CatalogSystem, CatalogTable } from '@conexus/hub-api'
+import pg from 'pg'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn, plantCopy } from './test-copies.ts'
+import { copiesOn, holdPage, plantCopy } from './test-copies.ts'
 
 function COMPANY_SCOPE(on: CopiesOn) {
   return { kind: 'COMPANY', companyId: on.companyId, personId: null } as const
@@ -55,7 +56,7 @@ test('a descrição ausente vira o rótulo', async (t) => {
   assert.equal(table.description, table.label)
 })
 
-test('a lista não leva uma rodada aberta no lugar da que terminou', async (t) => {
+test('sem last_run_id a cópia não tem última rodada', async (t) => {
   const on = await copiesOn(t)
   const copyId = await on.enable('vendas')
   assert.equal((await on.run(copyId)).kind, 'ENDED')
@@ -64,6 +65,33 @@ test('a lista não leva uma rodada aberta no lugar da que terminou', async (t) =
   const [none] = await tablesOf(on, 'ALL')
   assert.ok(ended?.kept.lastRun)
   assert.equal(none?.kept.lastRun, null)
+})
+
+test('a última rodada é a que terminou, não a que está aberta', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const held = holdPage(on)
+  const second = on.run(copyId)
+  await held.arrived
+  const [table] = await tablesOf(on, 'ALL')
+  held.release()
+  await second
+  assert.equal(table?.kept.lastRun?.outcome.kind, 'COMPLETE')
+  assert.ok(table?.kept.lastRun?.endedAt)
+})
+
+test('uma cópia sem fonte viva fica fora do catálogo', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
+  await client.connect()
+  try {
+    await client.query('delete from copies.copy_source where copy_id = $1', [copyId])
+  } finally {
+    await client.end()
+  }
+  assert.deepEqual(await tablesOf(on, 'ALL'), [])
 })
 
 test('os sistemas da empresa', async (t) => {

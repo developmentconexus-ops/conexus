@@ -57,14 +57,23 @@ export function runOf(row: typeof copyRun.$inferSelect): CopyRun {
   }
 }
 
+/** The run each copy ended and points at, by copy; a copy that has not ended one has none. */
+export async function endedRuns(tx: ReadTx, runIds: readonly string[]) {
+  if (runIds.length === 0) return new Map<string, CopyRun>()
+  const rows = await tx
+    .select()
+    .from(copyRun)
+    .where(inArray(copyRun.id, [...runIds]))
+  return new Map(rows.map((row) => [row.copyId, runOf(row)]))
+}
+
 /** The open run of each copy, else its last (the one it ended and points at). */
 async function currentRuns(tx: ReadTx, copies: readonly Pick<StoredCopy, 'id' | 'lastRunId'>[]) {
-  const runs = new Map<string, CopyRun>()
-  if (copies.length === 0) return runs
-  const last = copies.flatMap(({ lastRunId }) => (lastRunId === null ? [] : [lastRunId]))
-  const ended =
-    last.length === 0 ? [] : await tx.select().from(copyRun).where(inArray(copyRun.id, last))
-  for (const row of ended) runs.set(row.copyId, runOf(row))
+  if (copies.length === 0) return new Map<string, CopyRun>()
+  const runs = await endedRuns(
+    tx,
+    copies.flatMap(({ lastRunId }) => (lastRunId === null ? [] : [lastRunId])),
+  )
   const open = await tx
     .select()
     .from(copyRun)

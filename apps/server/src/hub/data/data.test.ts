@@ -17,6 +17,7 @@ import { memberOn } from '../identity/test-hub.ts'
 import { createCompanyData } from './public.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
+const BIA = { name: 'Bia Reis', email: 'bia@example.test' }
 
 function scopeOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']): SessionScope {
   return { companyId: on.companyId, personId, place, chosen: [] }
@@ -55,6 +56,12 @@ test('descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro n�
     ['sankhya_vendas'],
   )
   assert.equal(owner.systems.length, 1)
+  const admin = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const administrator = await catalogOf(inCompany(on, PersonId.parse(admin.id)))
+  assert.deepEqual(
+    administrator.tables.map(({ name }) => name),
+    ['sankhya_vendas'],
+  )
   for (const person of [PersonId.parse(developer.id), PersonId.parse(on.carla.id)]) {
     const seen = await catalogOf(inCompany(on, person))
     assert.deepEqual(seen.tables, [])
@@ -75,6 +82,16 @@ test('descrever num Projeto: só as liberadas', async (t) => {
   assert.deepEqual(
     seen.tables.map(({ name }) => name),
     ['sankhya_clientes'],
+  )
+  assert.deepEqual(seen.systems, [], 'a conexão não liberada ao Projeto fica fora')
+  await on.hub.connectors.grants.grant({
+    ...{ companyId: on.companyId, person: { id: on.anaId } },
+    ...{ projectId: on.projectId, connectionId: on.connectionId },
+  })
+  const released = await catalogOf(inProject)
+  assert.deepEqual(
+    released.systems.map(({ connection }) => connection),
+    [on.connectionId],
   )
   const [table] = seen.tables
   assert.equal(table?.kept.kind, 'COPY')
@@ -125,12 +142,13 @@ test('o banco da empresa calado dá TABLE_UNAVAILABLE e não lê ao vivo', async
   await endedCopy(on, 'vendas')
   t.mock.method(on.hub.postgres.companyPostgres, 'readCopies', async () => ({
     kind: 'UNAVAILABLE' as const,
-    reason: 'DOWN',
+    cause: 'DOWN',
   }))
   const before = on.gate.pages
   const answer = await inCompany(on).read({ kind: 'TABLE', table: 'sankhya_vendas' })
   assert.deepEqual(answer, { kind: 'TABLE_UNAVAILABLE' })
-  assert.ok(on.hub.lines.some(({ message }) => message === 'DATA_ROWS_FAILED'))
+  const failed = on.hub.lines.find(({ message }) => message === 'DATA_ROWS_FAILED')
+  assert.equal(failed?.fields.reason, 'DOWN')
   assert.equal(on.gate.pages, before)
 })
 
