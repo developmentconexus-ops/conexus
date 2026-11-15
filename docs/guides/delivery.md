@@ -3,7 +3,8 @@
 How a roadmap step moves from its card to the founder's use. This guide adapts
 [Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and
 [DORA's small-batch capability](https://dora.dev/capabilities/), within the founder's decisions.
-[AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures.
+[AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures. This guide changes
+only with the founder's word.
 
 In every guide, each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
 **must not** state a requirement; **should** and **should not** need a stated reason to break;
@@ -38,18 +39,16 @@ product decision, security boundary or operational prohibition.
 - **L6.** The founder **must** approve the card's page in Portuguese, with his words, the date and
   the card's commit in its approval file, named as the card in `docs/approvals/`, with its
   amendments, his mid-step decisions (no new approval) and the use line. Firstmate
-  decides a reversible technical call on every track, with its evidence and how to undo it; the
+  decides a reversible technical call on every track, except L28, with its evidence and how to undo it; the
   founder keeps product, spend, security, table permissions, live use, merge words and his own
   decisions. Founder, 2026-10-27: "3. Sim". [processo, review]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder.  
   [review]
-- **L28.** Study, card, build and review **must** follow the references at their pinned versions. A
-  product row not proving the same situation, or a piece or finding departing from the references
-  or the card, goes to the founder as a decision, already researched, with the exact
-  platform test for any gap; firstmate decides only internal engineering. Founder, 2026-11-15.
-  [review]
+- **L28.** A piece departing from the references **must** go to the founder as a decision,
+  researched in them first; what they leave open names the platform test that would close it.
+  Founder, 2026-11-15. [review]
 
 ## 3. Build and review
 
@@ -106,11 +105,12 @@ product decision, security boundary or operational prohibition.
   through it. His words, the date and the address go in the
   card's approval file (L6), and only then **may** the next step start, but for the units of L1.
   Publishing is a GitHub Release firstmate creates after the merge, with a note of what the step
-  delivers. It **may** leave at once when the pull request's last green run tested `main`'s tip at
-  the merge, as the base of its test merge; if `main` moved, it waits for green CI on `main`.
+  delivers. It **may** leave at once when the green run of the merged head, its suites run, tested
+  `main`'s tip at the merge as the base of its test merge; if `main` moved, it waits for green CI on `main`.
   Founder, 2026-11-15. Its names: `v0.N.0` for step N, `v0.N.P` for a fix of
   it, `v1.0.0` with the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
-  releases its proof creates. Failed use leaves the step open for a fix. [CI]
+  releases its proof creates. Failed use leaves the step open for a fix. [CI for the names,
+  firstmate's publish step for the wait]
 
 ## 5. Closing a step
 

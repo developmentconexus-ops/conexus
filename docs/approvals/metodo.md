@@ -66,7 +66,16 @@ Em 2026-11-15, como mudança de método (L20), à pergunta sobre qual padrão o 
 
 ## Mudança de método: o ritmo de entrega e as referências como guia
 
-Em 2026-11-15, como mudança de método (L20), às escolhas `D1` a `D4` do estudo do ritmo de entrega: "`D1` B / `D2` A / `D3` B / `D4` A estamos plano open source, mas temosq ue sempre otimizar". A `D1` B faz a revisão Opus começar quando o pull request abre, ao lado do CI (L9); o merge continua exigindo CI verde e revisão aprovada no mesmo commit (L13). A `D2` A divide este registro em `docs/approvals/`, um arquivo com o nome do arquivo de cada cartão (L6, L24 e `scripts/check-approval.ts`). A `D3` B deixa a versão ir ao ar sem esperar o `main` quando a última rodada verde do pull request testou o topo do `main` no merge; se o `main` andou, espera o `main` verde (L17). A `D4` A não muda nada no repositório.
+Em 2026-11-15, como mudança de método (L20), às escolhas `D1` a `D4` do estudo do ritmo de entrega, nas quatro linhas dele:
+
+```text
+D1 B
+D2 A
+D3 B
+D4 A estamos plano open source, mas temosq ue sempre otimizar
+```
+
+A `D1` B faz a revisão Opus começar quando o pull request abre, ao lado do CI (L9); o merge continua exigindo CI verde e revisão aprovada no mesmo commit (L13). A `D2` A divide este registro em `docs/approvals/`, um arquivo com o nome do arquivo de cada cartão (L6, L24 e `scripts/check-approval.ts`). A `D3` B deixa a versão ir ao ar sem esperar o `main` quando a última rodada verde do pull request testou o topo do `main` no merge; se o `main` andou, espera o `main` verde (L17). A `D4` A não muda nada no repositório.
 
 Em 2026-11-15, sobre as referências: "tudo que a gente está fazendo, na parte que foi escrita o scope, o card e tudo, tem que estar muito ligado a essas referências. Se a gente for implementar uma coisa que está destoando delas, tem que virar decisão e tem que investigar o porquê." e "Não é autonomia de resolver sozinho. Você pode trazer para mim, mas você tem que já vir pesquisado nas referências. Elas sempre vão ser nosso guia, especialmente agora que a gente está começando a implementação. E o que você achar que a gente ainda não coletou de informação, seja na engenharia reversa, seja com validação, a gente pode entrar nas plataformas e estudar, se faltar, e fazer testes nelas." São a L28 e as linhas que as skills `conexus-study`, `conexus-scope` e `conexus-review` ganham.
 

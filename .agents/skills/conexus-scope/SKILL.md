@@ -32,9 +32,8 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    Shape a contract that crosses a module with pstack `architect` (`arena` if shapes compete);
    else compare two shapes in writing. Copy the study's reference table and give every row its unit,
    or "fica de fora" with its reason, and its new file ([card](references/card.md)). A row
-   without a traced reference goes back to the study; a product row whose reference proves another
-   situation is his decision on his page, researched first
-   ([delivery L28](../../../docs/guides/delivery.md)). Firstmate decides only internal engineering.
+   without a traced reference goes back to the study; a row departing from its references follows
+   [delivery L28](../../../docs/guides/delivery.md).
 5. Fill the state matrix: each screen's states, and for each contract field who writes and
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
    rules](../../../docs/reference/impeccable.md). A brought part passes the study's rule.

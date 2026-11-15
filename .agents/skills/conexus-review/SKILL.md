@@ -28,7 +28,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser in
-   doubt; read QA's report. Read the CI quality job; never run
+   doubt; read QA's report if posted. Read the CI quality job; never run
    Stryker locally. Hand-mutate the key lines, listed under Ran
    ([T27](../../../docs/guides/testing.md)); one no test kills is a finding (L12).
 5. Walk the card's reference table against the diff ([code C75](../../../docs/guides/code.md)): a
@@ -80,9 +80,8 @@ approve | request changes: <one line why>
 
 ## Stop and ask
 
-The card contradicts a guide, or a piece departs from the references or the card: bring it as
-the founder's decision, researched first ([delivery L28](../../../docs/guides/delivery.md));
-never choose.
+The card contradicts a guide: report both lines, choose neither. A piece departs from the
+references: bring it to the founder as [delivery L28](../../../docs/guides/delivery.md) says.
 
 ## When it closes
 
