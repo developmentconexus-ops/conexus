@@ -4,7 +4,7 @@ Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repos
 
 ## Visão geral
 
-No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e recebe a recusa, o dono vê numa tela o que cada agente leu, e nenhuma cópia guarda o documento do cliente.
+No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e recebe a recusa, o dono vê numa tela o que cada agente leu.
 
 | O que entra | Decisão | Onde |
 | --- | --- | --- |
@@ -13,7 +13,6 @@ No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e receb
 | O banco garante: um login de leitura por papel | N3b, prova própria | `apps/server/src/platform/copy-sql.ts` |
 | A tela Papéis ganha as tabelas, e a tabela ganha a aba **Quem lê** | escopo 6.1 | `apps/web/src/hub/identity/`, `apps/web/src/hub/copies/` |
 | O membro vê a página Dados com as tabelas do papel dele | escopo `p1-11` | `apps/server/src/hub/copies/list.ts`, o trilho |
-| O documento do cliente fora de toda cópia | E5a | `packages/connectors/src/sankhya/copies.ts`, `apps/server/src/hub/copies/accept.ts`, a rodada |
 | O Registro de dados: dono e administrador, sem prazo, nunca as linhas | E4a, `T8` | tabela nova `data.data_read`, `apps/server/src/hub/data/`, página nova em Configurações |
 
 O que fica de fora: quem vê qual linha (Capacidade 4), grupos, máscara de coluna, etiquetas e classificação automática, o escopo de tabelas por agente salvo (parte 7), o token para quem é de fora (parte 8), e o pedido de acesso.
@@ -294,55 +293,6 @@ A tela Papéis é da identidade e não importa a trilha Dados. Ela já recebe o 
 
 Esta última linha troca o estado de recusa que o escopo desenhou para a página por "não encontrado". O motivo é a regra `S10` do repositório, que o guia de segurança impõe a toda rota. A troca está na lista de conflitos do índice.
 
-### `C5`. O documento do cliente fora de toda cópia (E5a)
-
-Hoje a regra "o documento nunca vai a uma cópia" vale na cópia nova da versão 2 e falha em três lugares [visto, `apps/server/src/hub/copies/accept.ts:140-156`, com a saída na `:149`]:
-
-1. O modelo `clientes` do Sankhya copia `CGC_CPF` [visto, `packages/connectors/src/sankhya/copies.ts:43`, `:48`].
-2. Uma proposta da versão 1 não é conferida: a função sai na primeira linha.
-3. Uma cópia `clientes` já ligada tem a coluna no banco da empresa.
-
-A conferência da versão 2 olha o caminho que a operação declara como `documento`. A versão 1 lê de uma consulta, e a coluna pode ter qualquer apelido. Então a conferência das duas versões passa a olhar também o valor.
-
-```ts
-// packages/connectors/src/kernel/personal.ts
-// isValidCnpj vem de @brazilian-utils/brazilian-utils 2.5.0, a biblioteca que o kit já usa para isValidCpf (:1):
-// isValidCnpj(text, { version: 2 }) aceita a máscara e o CNPJ alfanumérico. Nenhuma função nossa (code C75).
-/** As colunas de uma página cujas células, em sua maioria, são um CPF ou um CNPJ válido. */
-export function documentColumns(columns: readonly string[], rows: readonly (readonly (string | null)[])[]): string[]
-//  uma coluna entra quando tem ao menos 3 células não nulas e mais da metade delas é CPF ou CNPJ válido
-//  (isValidCpf ou isValidCnpj com version 2)
-```
-
-A página da prova está à mão nas duas versões: `page.page.rows` em `provedPage` [visto, `copy-proof.ts:66-79`] e `page.rows` em `countedOf` [visto, `list-proof.ts:47-84`], células na ordem de `definition.columns`. A recusa volta ao Construtor como um caso novo de `ProposeAnswer` [visto, `apps/server/src/hub/connectors/builder-port.ts:72-82`], `{ kind: 'COPY_PERSONAL_NOT_KEPT', connection, column }`, mapeado em `proofs()` de `apps/server/src/hub/copies/propose.ts:121-148`.
-
-- **Na prova da proposta.** A prova já lê uma página de até 50 linhas e guarda só contagens [visto, `apps/server/src/hub/connectors/copy-proof.ts:35-80`, `list-proof.ts:113`]. Ela passa a rodar `documentColumns` na página, e a proposta com uma coluna de documento é recusada com `COPY_PERSONAL_NOT_KEPT` e o nome da coluna. Vale para as duas versões. A conferência do caminho declarado da versão 2 continua.
-- **No modelo.** `clientes` perde `CGC_CPF` da consulta e das colunas.
-- **Na cópia já ligada.** O kit declara a coluna aposentada, e a rodada a tira:
-
-```ts
-// packages/connectors/src/kernel/copy.ts
-export type CopyModel = Readonly<{
-  id: CopyName; label: string; definition: CopyDefinitionV1
-  /** Colunas que o modelo copiava e deixou de copiar. A rodada as tira da cópia já ligada. */
-  retired?: readonly string[]
-}>
-```
-
-```ts
-// apps/server/src/hub/copies/retire.ts (novo), chamado pela rodada antes da primeira passada
-//  se copy.model existe, o modelo de hoje tem `retired` e a definição guardada ainda tem uma dessas colunas:
-//  1. no banco da empresa, como conexus_sync:  ALTER TABLE sync.<nome> DROP COLUMN IF EXISTS "<coluna>"
-//  2. no Hub: definição = { ...guardada, source: a do modelo, columns: guardada.columns sem as aposentadas },
-//     validada por CopyDefinitionV1.parse, e gravada
-//  3. log COPY_COLUMN_RETIRED
-//  O banco primeiro: se o passo 2 falhar, a próxima rodada repete o 1, que não faz nada, e o 2.
-```
-
-A regra "mais da metade das células" é [ideia nossa]. O detector do kit de hoje não cobre o CNPJ [visto, `packages/connectors/src/kernel/personal.ts:35-44`, `:57-68`], e as referências resolvem o dado pessoal com classificação automática, que é de escala.
-
-Consequência aprovada: um app que mostrava o CNPJ pela cópia, como o CRM, deixa de tê-lo.
-
 ### `C6`. O Registro de dados
 
 Hoje uma leitura ao vivo deixa só uma linha de log [visto, `apps/server/src/hub/connectors/read.ts:231-247`], e a leitura de uma cópia não deixa nada. O rastro do Mastra guarda a saída da ferramenta, que são as linhas, e a observabilidade expira em 14 dias [visto, `apps/server/src/builder/conversation/storage.ts:5`]. Por isso o registro é uma tabela nossa, no molde do registro de escrita [visto, `apps/server/src/hub/connectors/tables.ts:218-249`].
@@ -455,7 +405,6 @@ export const exportDataReads = defineOperation({
 | Hub, `copies.copy.readers_set` | Os leitores já foram gravados uma vez | Os mesmos três | A semeadura |
 | Hub, `data.data_read` | Uma leitura de dado | `withDataLog`, `readThrough` | `listDataReads`, `exportDataReads` |
 | Empresa, logins `conexus_role_<id>` | Um login por papel editável ou próprio | `reconcileReaders` | `queryOf`, `rowsOf`, `sampleOf` |
-| Kit, `CopyModel.retired` | Colunas aposentadas de um modelo | O autor do conector | A rodada |
 
 As migrações só acrescentam (data D6). Cada tabela nova tem a política de linha por empresa, como as outras [visto, `apps/server/src/hub/copies/tables.ts:90`]. As permissões das duas tabelas novas entram em migrações de permissão próprias e em `database-grants.sql`, que o teste de catálogo confere (data D10, `D11`).
 
@@ -466,7 +415,7 @@ As migrações só acrescentam (data D6). Cada tabela nova tem a política de li
 3. **O catálogo e o login concordam.** Para todo papel, as tabelas do catálogo são exatamente as que o login do papel lê. *Valida: requisitos 3.1, 3.2.*
 4. **Retida não vaza.** Para toda tabela em `withheld`, nenhuma coluna, descrição ou linha dela chega a quem pergunta. *Valida: requisitos 3.3, 3.4.*
 5. **A cópia nasce com quem já lê a origem.** Para todo papel e toda cópia nova, o papel está em `copy_reader` se e só se segura as leituras da origem. *Valida: requisito 1.2.*
-6. **Nenhuma coluna de documento é aceita.** Para toda página de prova em que mais da metade das células de uma coluna é CPF ou CNPJ válido, a proposta é recusada, nas duas versões. *Valida: requisitos 5.1, 5.2.*
+6. **Removida** (2026-11-15): a regra do documento do cliente saiu. O número fica para que as outras não mudem de lugar.
 7. **Uma leitura, uma linha.** Para toda chamada de `rows`, `query` ou leitura ao vivo de agente ou app, o registro ganha exatamente uma linha, e a linha nunca tem um valor das linhas lidas. *Valida: requisitos 6.1 a 6.4.*
 8. **Sem registro, sem linhas.** Se a gravação falhar, a leitura não devolve linha. *Valida: requisito 6.5.*
 9. **A reconciliação mais velha não desfaz a mais nova.** Para todo par de reconciliações da mesma empresa, a de bilhete menor aplicada depois da de bilhete maior não muda permissão nenhuma; como quem tira pega o bilhete depois do commit do Hub, toda aplicação que passa depois dela leu o Hub já sem a tabela. *Valida: requisitos 2.3, 2.10.*
@@ -484,8 +433,6 @@ Nenhum erro é engolido. Cada falha tem um nome, um log e uma resposta.
 | `readAs`, para `queryOf` e `rowsOf` | `42501` ou `NO_LOGIN` com login de papel, e o catálogo lista ao menos uma tabela | `reconcileReaders` e uma nova tentativa. Se repetir, `NOT_IN_ROLE` na consulta e `TABLE_UNAVAILABLE` na tabela | `COPY_READERS_REPAIRED`, ou `DATA_READ_REFUSED` com a pessoa e sem a consulta (security S41) |
 | `readAs` | `42501` e o catálogo não lista tabela nenhuma | `NOT_IN_ROLE`, sem reconciliar | `DATA_READ_REFUSED` |
 | `roleLogin` | O nome passa de 63 bytes | Falha `INTERNAL_UNEXPECTED` ao criar o papel: não há login truncado | `COPY_READER_NAME` |
-| A prova da proposta | Uma coluna de documento | `COPY_PERSONAL_NOT_KEPT` com a coluna, de volta ao Builder | o log de recusa que `propose` já faz |
-| A rodada, ao aposentar | O `ALTER TABLE` falhou | A rodada termina `ERROR` com o código, sem copiar. A coluna não é lida de novo | `COPY_RETIRE_FAILED` |
 | `withDataLog`, `readThrough` | A gravação do registro falhou | `TABLE_UNAVAILABLE` na tabela e na consulta, `UNREACHABLE` ao vivo. Nenhuma linha volta | `DATA_READ_UNRECORDED` |
 | `listDataReads` | O Hub não respondeu | 503. A tela diz "Não deu para ler o registro agora." com **Tentar de novo** | o da rota |
 | Quem não é dono nem administrador abre o Registro | Sem permissão | "não encontrado" (security S10), e o item não aparece no menu | nenhum |
@@ -502,7 +449,6 @@ Os testes da CI usam dublês e bancos descartáveis. As recusas desta parte são
 | N3b-1 | Uma cópia ligada com dois papéis: um segura as leituras da origem e o outro não | `apps/server/src/hub/copies/test-copies.ts` |
 | O catálogo e o login concordam | `catalog().tables` contra `information_schema.tables` como o login | o teste de `catalogOf` da parte 1 |
 | O contrato | As duas leis novas, com o caso recusado | `packages/hub-api/src/company-data.test.ts` |
-| O documento | `documentColumns` no kit, com o `isValidCnpj` da biblioteca. Uma proposta da versão 1 com `CGC_CPF AS X` é recusada. A rodada tira a coluna de uma cópia `clientes` antiga | `packages/connectors/src/sankhya/copy-read.test.ts:28-40`, `fake-sales.ts:125` |
 | O registro | Cada verbo grava uma linha. Uma busca pelo valor de uma célula lida não acha nada na tabela. A gravação derrubada não devolve linha | `apps/server/src/hub/copies/grants.test.ts:63-92` para derrubar uma porta |
 | O bilhete | Dois bilhetes pegos, o maior aplicado primeiro: o menor volta `SUPERSEDED` e não muda nada. A ordem da rodada 3, item 1(c): uma reconciliação parada depois de ler o Hub com a tabela, uma troca que tira a tabela e responde 200, a parada solta volta `SUPERSEDED` e o login não lê a tabela. Duas reconciliações e um `grantCopy` ao mesmo tempo terminam sem erro. Duas semeaduras ao mesmo tempo marcam uma vez | `apps/server/src/hub/copies/grants.test.ts:81-83` para dublar uma porta |
 | As rotas | Estado e corpo literais, e os casos negativos: outro papel, outra empresa, sessão vencida (testing T10) | os testes de `company-routes.ts` |
@@ -513,7 +459,6 @@ Os testes da CI usam dublês e bancos descartáveis. As recusas desta parte são
 1. O catálogo de um papel lista exatamente o que o login do papel lê.
 2. Uma tabela retida responde `NOT_IN_ROLE`, e nada dela chega a quem pergunta.
 3. O banco nunca lê mais do que o Hub diz, com o banco da empresa caindo em qualquer ponto.
-4. Nenhuma cópia nova guarda uma coluna de documento.
 5. Toda leitura de dado deixa uma linha, sem as linhas lidas.
 
 **As perguntas com resposta conhecida.** Na Lume, com o dublê do Sankhya: o papel Vendas, de Bruno, lê `sankhya_vendas`, `sankhya_itens_venda`, `sankhya_vendedores` e `sankhya_produtos`. O papel Financeiro, de Carla, lê `sankhya_clientes`. Os exemplos ilustram e não viram regra.
@@ -522,14 +467,12 @@ Os testes da CI usam dublês e bancos descartáveis. As recusas desta parte são
 | --- | --- | --- | --- |
 | "Quanto vendi em outubro?" | Bruno | O número do dublê, com `sankhya_vendas` na origem | Uma linha `SAMPLE` e uma `QUERY`, `sankhya_vendas`, com a contagem |
 | "Quantos clientes novos entraram no mês?" | Bruno | "Seu papel não lê Clientes. Peça a quem administra a empresa." | Uma linha `SAMPLE`, `sankhya_clientes`, `NOT_IN_ROLE`, sem contagem |
-| "Quantos clientes novos entraram no mês?" | Carla | A contagem do dublê, e nenhum CPF ou CNPJ em lugar nenhum da resposta | Uma linha `QUERY`, `sankhya_clientes` |
-| "Me dá o CNPJ do cliente 12" | Carla | "Não achei": a coluna não existe na cópia | Uma linha `SAMPLE` |
 | Lea abre o Registro de dados e filtra por Bruno | Lea | As linhas de Bruno, a recusa entre elas | nada novo |
 | Bruno abre o endereço do Registro de dados | Bruno | "não encontrado" | nada |
 
 **A rodada com modelo real.** As perguntas acima rodam com `CONEXUS_EVAL_REAL_MODEL` contra o dublê do Sankhya. O Sankhya real é lido num lugar só, o uso de fechamento do fundador (delivery L17): ele dá a um papel de teste só a tabela de vendas, pergunta pelos clientes como uma pessoa desse papel e vê a recusa e a linha no Registro. É só leitura.
 
-**Mutações à mão (testing T27).** As linhas-chave: o `REVOKE ALL` antes do `GRANT` em `reconcileReaders`, a ordem banco e Hub ao tirar, o filtro de `copiesReadBy` no catálogo, o `NOT_IN_ROLE` de uma tabela retida, o limiar "mais da metade" de `documentColumns`, o `DROP COLUMN` antes de gravar a definição, e a resposta `TABLE_UNAVAILABLE` quando o registro falha.
+**Mutações à mão (testing T27).** As linhas-chave: o `REVOKE ALL` antes do `GRANT` em `reconcileReaders`, a ordem banco e Hub ao tirar, o filtro de `copiesReadBy` no catálogo, o `NOT_IN_ROLE` de uma tabela retida, e a resposta `TABLE_UNAVAILABLE` quando o registro falha.
 
 ## Tabela de referência
 
@@ -539,6 +482,5 @@ Os testes da CI usam dublês e bancos descartáveis. As recusas desta parte são
 | O banco garante | `copy-sql.ts:331-347`, `app-read.ts:41-67` | Papéis e `GRANT` do PostgreSQL. A prova foi rodada no Postgres 18 | nativo |
 | A recusa | `read.ts:178-195` | Uma ferramenta que executa SQL devolve o erro do banco | nativo (o erro `42501` do PostgreSQL) |
 | A lista do que o papel não lê | `connectors.ts:42-48` (`allowed`) | nenhuma | remendo pequeno, [ideia nossa] |
-| O documento | `accept.ts:140-156`, `personal.ts:35-68` | Uma classificação automática de colunas, que é de escala | remendo: o detector por valor é nosso, [ideia nossa] |
 | O registro | `connectors/tables.ts:218-249`, `read.ts:231-247` | Um registro de auditoria por token e um histórico de consultas | embrulhado: uma tabela nossa. O rastro do Mastra guarda as linhas e expira |
 | A tela do registro | nenhuma | Um registro de auditoria e um monitor de uso | nativo (as peças de `apps/web/src/ui/`) |

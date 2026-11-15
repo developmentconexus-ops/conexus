@@ -34,7 +34,7 @@ O que fica de fora: os gatilhos (`D5`), a medição por empresa (`D6`), a nova t
                      direto ao sistema, com o token que o kit buscou e renova
 ```
 
-Sankhya, Mercado Livre, HubSpot e Gmail são definições do kit. A porta, o funil de escrita com o cartão, os papéis, a retirada de dado pessoal e a conformidade valem iguais para todos, sem mudança [visto, `apps/server/src/hub/connectors/executor.ts:262-295`, `packages/connectors/src/kernel/conformance.ts:213-256`].
+Sankhya, Mercado Livre, HubSpot e Gmail são definições do kit. A porta, o funil de escrita com o cartão, os papéis e a conformidade valem iguais para todos, sem mudança [visto, `apps/server/src/hub/connectors/executor.ts:262-295`, `packages/connectors/src/kernel/conformance.ts:213-256`].
 
 ### O que cada referência faz no mesmo ponto
 
@@ -278,7 +278,7 @@ export const hubspot = defineConnector({
 | A conta | `GET /account-info/v3/details`, com `portalId` | `fetch-account-information.ts:6-15`, `:29` |
 | As três leituras | `GET /crm/v3/objects/{contacts,companies,deals}`, `limit` e `after`, a resposta em `results` e o cursor em `paging.next.after` | `list-contacts.ts:34-38`, `:57`, `list-companies.ts:38-42`, `list-deals.ts:35-39`; `nango@e6c6131 providers.yaml:13041-13045` |
 | A escrita | `POST /crm/v3/objects/notes`, com `hs_note_body`, `hs_timestamp` e a associação ao contato, tipo 202 | `create-note.ts:36-40`, `:51-77` |
-| O dado pessoal | O e-mail e o telefone dos contatos, marcados `personal` e retirados como hoje | `list-contacts.ts:8-16` |
+| O e-mail e o telefone | Vão como o HubSpot os manda, sem declaração | `list-contacts.ts:8-16` |
 
 A escrita segue o funil de hoje, com o cartão de aprovação, gravada antes de enviar e enviada uma vez [visto, `apps/server/src/hub/connectors/write.ts:158-187`; decisão 0062]. A recusa chega ao agente com o status e o corpo do sistema (code C79), e um 401 marca a ligação como **precisa religar** [visto, `read.ts:229`].
 
@@ -310,7 +310,6 @@ export const googleMail = defineConnector({
 | O escopo | `gmail.readonly` | `integration-templates@9afa0aab integrations/google-mail/actions/list-messages.ts:39`, `get-message.ts:67` |
 | Buscar mensagens | `GET /gmail/v1/users/me/messages`, `q`, `maxResults`, `pageToken`; a resposta `{ messages: [{ id, threadId }], nextPageToken, resultSizeEstimate }` | `list-messages.ts:22-31`, `:44-50` |
 | Ler uma mensagem | `GET /gmail/v1/users/me/messages/{id}`, `format` | `get-message.ts:6-13`, `:83` |
-| O dado pessoal | Os endereços, o assunto e o corpo da mensagem | a confirmar na gravação: a referência não dá a forma da mensagem inteira |
 
 - **A conta é `none`.** A única conta que o Gmail diz é o endereço de e-mail (`/gmail/v1/users/me/profile`, `integration-templates@9afa0aab integrations/google-mail/syncs/messages.ts:320`), um dado pessoal, que viraria o rótulo da ligação na tela. O nome que a empresa dá separa as ligações, como no Sankhya [visto, `definition.ts:17-19`].
 - **O login sem conta.** Hoje `completeSignIn` sempre pede a conta depois da troca [visto, `apps/server/src/hub/connectors/sign-ins.ts:251`], `who` lança num conector cuja conta não é `reported` [visto, `executor.ts:343-344`], e a ligação grava `accountRef` e `accountLabel` da conta [visto, `sign-ins.ts:296`]. A conformidade do kit já aceita `none` [visto, `packages/connectors/src/kernel/conformance-session.ts:106`]. Com a conta `none`, o login pula `who` e grava `accountRef` e `accountLabel` nulos, que a regra `connection_account` aceita [visto, `apps/server/src/hub/connectors/tables.ts:100-104`].
@@ -409,7 +408,7 @@ As migrações só acrescentam (data D6). O bloco B não muda tabela nem permiss
 1. **A descrição não muda o que a tela mostra.** Para todo conector do kit, a entrada montada de `descriptorOf` traz o mesmo nome, categoria, resumo, logo, assuntos e campos que a de hoje. *Valida: requisitos 1.1, 1.2.*
 2. **Só ao vivo nunca é copiado.** Para todo sistema só ao vivo, nenhuma tabela é oferecida, toda proposta de cópia é recusada e a janela pula os passos de cópia. *Valida: requisitos 2.1 a 2.4.*
 3. **O que é oferecido pode ser descrito e amostrado.** Para todo conector que oferece tabelas, cada tabela tem descrição, chave e colunas descritas, e o dublê responde a primeira página. *Valida: requisitos 3.1 a 3.4.*
-4. **A amostra nunca passa de 5 linhas e nunca traz documento.** *Valida: requisito 3.5.*
+4. **A amostra nunca passa de 5 linhas e vem como o sistema manda.** *Valida: requisito 3.5.*
 5. **O link vale uma vez e por 30 minutos.** Para todo link, o segundo uso e o uso depois do prazo respondem "não encontrado", e o segredo não aparece em linha nem em log. *Valida: requisitos 5.1, 5.4, 5.5.*
 6. **O link só pede o que foi pedido.** A página mostra só os campos em `asked`, e nunca um valor que quem pediu já preencheu. *Valida: requisito 5.2.*
 7. **Um conector novo entra pela porta de hoje.** Para toda operação do HubSpot, a resposta que o agente lê tem a forma de uma leitura do kit, a recusa chega inteira e a escrita passa pelo cartão. *Valida: requisitos 7.1, 7.2, 7.4.*
@@ -477,7 +476,7 @@ Os testes da CI usam dublês. Nenhum teste da CI chama o HubSpot, o Google nem o
 
 O Sankhya real não é lido nesta parte.
 
-**Mutações à mão (testing T27).** As linhas-chave: a recusa de `liveOnly` com `copy`, o `LIMIT` da amostra, o `DELETE … RETURNING` do link, a comparação do prazo em `link_of`, a origem de login da troca do token, e o `personal` dos contatos do HubSpot.
+**Mutações à mão (testing T27).** As linhas-chave: a recusa de `liveOnly` com `copy`, o `LIMIT` da amostra, o `DELETE … RETURNING` do link, a comparação do prazo em `link_of` e a origem de login da troca do token.
 
 ## Tabela de referência
 

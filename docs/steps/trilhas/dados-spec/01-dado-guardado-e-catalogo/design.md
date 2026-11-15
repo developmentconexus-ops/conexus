@@ -366,7 +366,7 @@ As tabelas e colunas são as que a decisão 0063 mediu num Sankhya real [visto, 
 | `VLRUNIT` | Valor unitário do item. |
 | `VLRTOT` | Valor total do item. |
 
-A coluna `CGC_CPF` de `clientes` recebe a descrição "CPF ou CNPJ do parceiro. Retido em toda leitura." A regra nova de `assertCopy` recusa uma coluna sem descrição, e a coluna só sai da cópia na parte 4 (decisão E5a).
+A coluna `CGC_CPF` de `clientes` recebe a descrição "CPF ou CNPJ do parceiro." A regra nova de `assertCopy` recusa uma coluna sem descrição.
 
 ## Propriedades de correção
 

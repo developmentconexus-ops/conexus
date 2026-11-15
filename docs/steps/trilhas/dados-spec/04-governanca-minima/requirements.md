@@ -2,7 +2,7 @@
 
 ## Introdução
 
-No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e recebe a recusa com o nome do dado, o dono e o administrador marcam na tela Papéis quais tabelas cada papel lê, o membro vê na página Dados só as tabelas do papel dele, nenhuma cópia guarda o CPF ou o CNPJ do cliente, e o dono e o administrador veem no Registro de dados cada leitura que um agente ou um app fez. As decisões vêm do escopo aprovado (seção 6 e tela `p1-11`, decisões `T4`, `T8`, E4a e E5a, aprovadas em 2026-11-14) e do `design.md` desta pasta. A parte parte do pressuposto de que as partes 1 e 3 estão construídas: o login `conexus_read`, o catálogo, `rowsOf`, `queryOf` e as ferramentas `data_describe` e `data_query`.
+No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e recebe a recusa com o nome do dado, o dono e o administrador marcam na tela Papéis quais tabelas cada papel lê, o membro vê na página Dados só as tabelas do papel dele, e o dono e o administrador veem no Registro de dados cada leitura que um agente ou um app fez. As decisões vêm do escopo aprovado (seção 6 e tela `p1-11`, decisões `T4`, `T8` e E4a, aprovadas em 2026-11-14) e do `design.md` desta pasta. A parte parte do pressuposto de que as partes 1 e 3 estão construídas: o login `conexus_read`, o catálogo, `rowsOf`, `queryOf` e as ferramentas `data_describe` e `data_query`.
 
 ## Glossário
 
@@ -92,17 +92,9 @@ No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e receb
 12. QUANDO a Ferramenta_Consultar recebe `NOT_IN_ROLE`, A linha da ferramenta na conversa DEVE dizer "Seu papel não lê esta tabela. Peça a quem administra a empresa.".
 13. A Tela_Papéis DEVE dizer, sob o bloco "Dados copiados", "Desmarcar uma tabela não tira a leitura ao vivo do sistema. Ela segue as operações marcadas acima.".
 
-### Requisito 5: o documento do cliente fora de toda cópia
+### Requisito 5: removido
 
-**História de usuário:** Como dono, quero que nenhuma cópia guarde o CPF ou o CNPJ de um cliente, para que esse dado nunca chegue a um agente por uma tabela.
-
-#### Critérios de aceite
-
-1. SE a Prova_da_Proposta de uma cópia da versão 1 tem uma coluna em que mais da metade das células não nulas, sendo ao menos 3, é CPF ou CNPJ válido, ENTÃO O Hub DEVE recusar a proposta com `COPY_PERSONAL_NOT_KEPT` e o nome da coluna.
-2. SE a Prova_da_Proposta de uma cópia da versão 2 tem uma coluna assim, ENTÃO O Hub DEVE recusar a proposta do mesmo jeito, além da conferência do caminho declarado como `documento`.
-3. O modelo `clientes` do Kit do Sankhya DEVE copiar as colunas de hoje sem `CGC_CPF`.
-4. QUANDO a Rodada de uma cópia ligada de um modelo encontra na definição guardada uma coluna que o modelo de hoje declara aposentada, A Rodada DEVE tirar a coluna da tabela no Banco_da_Empresa e depois gravar a definição sem ela, antes de copiar.
-5. SE tirar a coluna aposentada falha no Banco_da_Empresa, ENTÃO A Rodada DEVE terminar `ERROR` com `COPY_DATABASE_UNAVAILABLE`, registrar `COPY_RETIRE_FAILED` e não copiar linha nenhuma.
+A regra do documento do cliente fora da cópia foi desfeita em 2026-11-15 (fundador: "Pode remover tudo que tem relacionado a isso"). A leitura respeita só o papel de quem pergunta. O número fica para que os outros requisitos não mudem de lugar.
 
 ### Requisito 6: cada leitura deixa uma linha no registro
 

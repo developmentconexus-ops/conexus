@@ -62,7 +62,7 @@ No fim desta parte a dona da empresa liga o Sankhya, o HubSpot e o Gmail pelo me
 2. QUANDO a empresa já tem a cópia de uma tabela oferecida por aquela ligação, O Hub DEVE responder a tabela com o id dessa cópia em `copy`.
 3. SE um conector que não é só ao vivo declara `copy` e não oferece tabela, ou um conector só ao vivo oferece uma tabela, ENTÃO A Conformidade_do_Kit DEVE falhar.
 4. SE uma tabela oferecida não tem descrição, uma coluna não tem descrição, a chave falta, a coluna de mudança não está entre as colunas, ou o dublê não responde a primeira página com ao menos uma linha nos tipos das colunas, ENTÃO A Conformidade_do_Kit DEVE falhar.
-5. QUANDO quem administra conexões pede `previewConnectionObject`, O Hub DEVE responder no máximo 5 linhas lidas do sistema naquela hora, sem coluna de documento.
+5. QUANDO quem administra conexões pede `previewConnectionObject`, O Hub DEVE responder no máximo 5 linhas lidas do sistema naquela hora, como o sistema as manda.
 6. SE a ligação não está ativa, ENTÃO O Hub DEVE responder 409 `CONNECTION_NOT_READY` a `listConnectionObjects` e a `previewConnectionObject`.
 7. SE o sistema recusa a leitura da amostra, ENTÃO O Hub DEVE responder `CONNECTOR_REFUSED` com o status, o código e o corpo que o sistema mandou (code C79), e registrar a linha `CONNECTOR_CALLED`.
 8. SE um Membro pede `listConnectionObjects` ou `previewConnectionObject`, ENTÃO O Hub DEVE responder 404 `NOT_FOUND` (security S10).
@@ -135,7 +135,7 @@ No fim desta parte a dona da empresa liga o Sankhya, o HubSpot e o Gmail pelo me
 3. SE o HubSpot responde 401, ENTÃO O Hub DEVE marcar a ligação como `NEEDS_REAUTH`.
 4. QUANDO um agente pede a escrita de uma nota num contato, O Hub DEVE mostrar o cartão de aprovação e enviar a escrita uma vez.
 5. O Hub DEVE contar as chamadas do HubSpot no mesmo limite por turno das chamadas de outro conector.
-6. O Hub DEVE tratar o e-mail e o telefone dos contatos do HubSpot como dado pessoal `contato`, pela regra de hoje.
+6. O HubSpot NÃO DEVE declarar dado pessoal: o Hub entrega o e-mail e o telefone dos contatos como o sistema os manda.
 
 ### Requisito 8: O primeiro sistema comum e o primeiro só ao vivo
 

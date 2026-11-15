@@ -1,6 +1,6 @@
 import { rowsOf } from './recordings.ts'
 
-// Invented values only (S40), the buyer's personal data included on purpose.
+// Invented values only (S40).
 
 export const APP = Object.freeze({
   clientId: 'fake-app-1234567890',
@@ -24,11 +24,6 @@ export const CLAIM = 5000000001
 export const BUYER = {
   id: 77001,
   nickname: 'COMPRADORFICTICIO',
-  first_name: 'Maria',
-  last_name: 'Fictícia',
-  email: 'maria.ficticia@exemplo.test',
-  phone: { area_code: '11', number: '988776655' },
-  billing_info: { doc_type: 'CPF', doc_number: '52998224725' },
 }
 
 export const ORDER_BODY = {
@@ -53,7 +48,7 @@ export const ORDER_BODY = {
 
 let ordersKept: readonly (Record<string, unknown> & { date_last_updated: string })[] | undefined
 
-/** 120 orders, each shaped as a recorded one with the planted buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
+/** 120 orders, each shaped as a recorded one with its buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
 export function ordersOf() {
   const recorded = rowsOf('pedidos-alterados', 'results')
   ordersKept ??= Array.from({ length: 120 }, (_, index) => ({

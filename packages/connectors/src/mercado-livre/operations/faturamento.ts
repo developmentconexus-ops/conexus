@@ -60,7 +60,6 @@ export const notaFiscalDoPedido = readOf({
   label: 'Nota fiscal do pedido',
   input: z.object({ orderId: PathId }),
   list: null,
-  personal: [{ path: 'recipient', kind: 'documento' }],
   from: [pedidos.id],
   probe: firstOrder,
   request: (input, account) => get(`/users/${sellerOf(account)}/invoices/orders/${input.orderId}`),

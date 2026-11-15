@@ -44,7 +44,6 @@ export const perguntas = readOf({
     },
     changed: null,
   },
-  personal: [{ path: 'from', kind: 'contato' }],
   probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get('/questions/search', {

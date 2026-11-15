@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-Nove grupos, um pull request cada. O grupo 1 cria as duas tabelas. Os grupos 2 e 3 dão as permissões delas no banco do Hub, cada uma num PR só dela, com a palavra do fundador dada em 2026-11-14 (P2, no índice). O grupo 4 faz o banco da empresa garantir a leitura por papel. O grupo 5 muda só o contrato. O grupo 6 liga o catálogo, as rotas e o membro ao papel. O grupo 7 muda as telas. O grupo 8 tira o documento do cliente de toda cópia. O grupo 9 grava e mostra o Registro de dados.
+Nove grupos, um pull request cada. O grupo 1 cria as duas tabelas. Os grupos 2 e 3 dão as permissões delas no banco do Hub, cada uma num PR só dela, com a palavra do fundador dada em 2026-11-14 (P2, no índice). O grupo 4 faz o banco da empresa garantir a leitura por papel. O grupo 5 muda só o contrato. O grupo 6 liga o catálogo, as rotas e o membro ao papel. O grupo 7 muda as telas. O grupo 8 foi desfeito em 2026-11-15. O grupo 9 grava e mostra o Registro de dados.
 
 Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`, `readerAddress` e `readCopies` em `apps/server/src/platform/copy-sql.ts`; a pasta `apps/server/src/hub/data/` com `createCompanyData`, `catalogOf`, `rowsOf` e `queryOf`; `sampleOf` em `apps/server/src/hub/copies/sample.ts` e a ação `readCopyRows`; a página Dados nas rotas `data.index.tsx` e `data.$copyId.tsx`; as ferramentas em `apps/server/src/builder/data-tools/` com `order.ts`; e `apps/web/src/builder/conversation/data-specs.ts`. Um nome dessas partes que não estiver no `main` quando a unidade começar é um passo 2 da skill `conexus-build`: pare e diga.
 
@@ -752,92 +752,8 @@ Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`
     - Linhas da tabela de referência: "A tela do registro" não; "Quem lê cada tabela" (a tela) e "A recusa", com as peças de `apps/web/src/ui/`.
   - [ ] 7.5 QA do grupo 7 (depois do ponto de conferência, por outro agente; não é um commit)
     - Skill `conexus-qa` (testing T25) no commit candidato, com o Hub local e os dublês, a 1366 e 390 px e nos dois temas: `p4-01` (o papel Financeiro aberto, marcar `sankhya_clientes`, salvar), `p4-02` (a aba Quem lê de `sankhya_clientes`), `p4-03` (Bruno pergunta "Quantos clientes novos entraram no mês?"), `p1-11` (Bruno abre Dados e o endereço de `sankhya_clientes`), e os estados vazio ("Nenhuma tabela copiada", "Não lê nenhuma tabela"), carregando e erro.
-- [ ] 8. Grupo 8: o documento do cliente (um PR)
-  - [ ] 8.1 `documentColumns` no kit e a conferência na prova da proposta, nas duas versões (um commit)
-    - **Arquivos:** `packages/connectors/src/kernel/personal.ts`, `packages/connectors/src/index.ts` (a exportação, onde o kit exporta `isValidCpf` hoje ou `PERSONAL_KINDS`), `packages/connectors/src/kernel/personal.test.ts`, `apps/server/src/hub/connectors/copy-proof.ts`, `apps/server/src/hub/connectors/list-proof.ts`, `apps/server/src/hub/connectors/builder-port.ts`, `apps/server/src/hub/copies/propose.ts`, `apps/server/src/builder/connectors/copy-propose.ts`, `apps/server/src/hub/copies/propose-document.test.ts` (novo), `scripts/rerun-never.json`.
-    - **Referência a seguir:** o detector de hoje em `packages/connectors/src/kernel/personal.ts:1` e `:35-44`, que usa `isValidCpf` de `@brazilian-utils/brazilian-utils` 2.5.0. A mesma biblioteca já traz `isValidCnpj(cnpj, { version: 2 })`, que aceita a máscara e o CNPJ alfanumérico de julho de 2026 (`node_modules/@brazilian-utils/brazilian-utils/dist/brazilian-utils.d.ts:446-480`): é ela, e não uma função nossa (code C75). A página de prova na versão 1: `page.page.rows`, linhas de `(string | null)[]` na ordem de `a.definition.columns`, em `apps/server/src/hub/connectors/copy-proof.ts:66-79` (a forma em `packages/connectors/src/kernel/copy.ts:196-200`). Na versão 2: `page.rows` depois de `listPageOf`, na ordem de `definition.columns`, em `countedOf` (`apps/server/src/hub/connectors/list-proof.ts:47-84`). A recusa tipada que volta ao Construtor: `TYPE_MISFIT` em `apps/server/src/hub/connectors/builder-port.ts:76-77` e `apps/server/src/hub/copies/propose.ts:135`.
-    - **O que sai:** nada. A conferência do caminho declarado da versão 2 (`mayKeepPersonal`, `apps/server/src/hub/copies/accept.ts:144-156`) continua.
-    - **O que entra:**
-      ```ts
-      // packages/connectors/src/kernel/personal.ts
-      import { isValidCnpj, isValidCpf, ... } from '@brazilian-utils/brazilian-utils'
-      const DOCUMENT_MIN_CELLS = 3
-      /** As colunas de uma página cujas células não nulas, ao menos 3, são em mais da metade um CPF ou um CNPJ válido. */
-      export function documentColumns(columns: readonly string[],
-        rows: readonly (readonly (string | null)[])[]): string[] {
-        return columns.filter((_, at) => {
-          const cells = rows.flatMap((row) => { const cell = row[at] ?? null
-            return cell === null || cell.trim() === '' ? [] : [cell] })
-          if (cells.length < DOCUMENT_MIN_CELLS) return false
-          const documents = cells.filter((cell) => isValidCpf(cell) || isValidCnpj(cell, { version: 2 })).length
-          return documents * 2 > cells.length
-        })
-      }
-
-      // copy-proof.ts, antes do retorno PROVED
-      const [column] = documentColumns(a.definition.columns.map((one) => one.name), page.page.rows)
-      if (column !== undefined) {
-        deps.log.info({ ...ids, connectionId, column }, 'COPY_DOCUMENT_REFUSED')
-        return { kind: 'DOCUMENT_COLUMN', column }
-      }
-      // list-proof.ts, em countedOf, depois de page.kind === 'PAGE': a mesma conferência sobre page.rows
-      //   -> { kind: 'DOCUMENT_COLUMN', column } como mais um caso de Counted, devolvido por provedList
-
-      // builder-port.ts, ProposeAnswer ganha
-      | Readonly<{ kind: 'COPY_PERSONAL_NOT_KEPT'; connection: string; column: string }>
-      // propose.ts, proofs: proved.kind === 'DOCUMENT_COLUMN'
-      //   -> { kind: 'COPY_PERSONAL_NOT_KEPT', connection: source.name, column: proved.column }
-      // copy-propose.ts (a ferramenta do Construtor): o caso novo no switch, com a frase ao modelo
-      // "A copy never keeps a document (CPF or CNPJ). Leave column <column> out of the copy."
-      ```
-      O log leva o nome da coluna e nunca uma célula (security S41).
-    - **Testes:** `packages/connectors/src/kernel/personal.test.ts`: "documentColumns acha a coluna de CPF e de CNPJ, com e sem máscara", "três células ou menos não acusam", "metade exata não acusa e mais da metade acusa", "um CNPJ alfanumérico conta". `apps/server/src/hub/copies/propose-document.test.ts` (novo), no molde de `apps/server/src/hub/copies/propose.test.ts` com o dublê do Sankhya (`packages/connectors/src/sankhya/fake-sales.ts:125` tem `CGC_CPF` em `TGFPAR`): "uma proposta da versão 1 com CGC_CPF AS X é recusada com a coluna X", "a mesma sem a coluna é aceita", "uma proposta da versão 2 com uma coluna de CNPJ sem caminho declarado é recusada". O arquivo entra em `scripts/rerun-never.json`.
-    - **Mutações à mão:** trocar `documents * 2 > cells.length` por `>=` faz falhar "metade exata não acusa"; tirar o `isValidCnpj` faz falhar o caso do CNPJ; tirar a conferência de `countedOf` faz falhar o caso da versão 2.
-    - **Pronto quando:** `node scripts/test-run.ts packages/connectors/src/kernel/personal.test.ts` e o teste do servidor passam.
-    - _Requisitos: 5.1, 5.2_
-  - [ ] 8.2 O modelo `clientes` sem `CGC_CPF`, `CopyModel.retired` e a rodada que aposenta a coluna (um commit)
-    - **Arquivos:** `packages/connectors/src/kernel/copy.ts`, `packages/connectors/src/sankhya/copies.ts`, `packages/connectors/src/sankhya/sankhya.test.ts`, `apps/server/src/platform/copy-sql.ts`, `apps/server/src/platform/company-postgres.ts`, `apps/server/src/hub/copies/retire.ts` (novo), `apps/server/src/hub/copies/run.ts`, `apps/server/src/hub/copies/retire.test.ts` (novo), `scripts/rerun-never.json`.
-    - **Referência a seguir:** `CopyModel` em `packages/connectors/src/kernel/copy.ts:178`. O modelo `clientes` em `packages/connectors/src/sankhya/copies.ts:42-56`. A rodada em `apps/server/src/hub/copies/run.ts:149-176`, com `netDropped` antes das fontes (`apps/server/src/hub/copies/source-pass.ts:209-215`) e `DATABASE_DOWN` em `source-pass.ts:48`. Um ato como `conexus_sync`: `dropCopyTable` em `apps/server/src/platform/copy-sql.ts:323-329`. Os modelos do kit sem conexão: `catalog()` da porta de cópias em `apps/server/src/hub/connectors/copy-port.ts:315-318`.
-    - **O que sai:** `CGC_CPF` da consulta (`copies.ts:43`) e das colunas (`copies.ts:48`) do modelo `clientes`.
-    - **O que entra:**
-      ```ts
-      // packages/connectors/src/kernel/copy.ts
-      export type CopyModel = Readonly<{
-        id: CopyName; label: string; definition: CopyDefinitionV1
-        /** Colunas que o modelo copiava e deixou de copiar. A rodada as tira da cópia já ligada. */
-        retired?: readonly string[]
-      }>
-      // sankhya/copies.ts: model('clientes', ...) com retired: ['CGC_CPF']; a função model passa `retired` adiante
-
-      // apps/server/src/platform/copy-sql.ts (e a fachada)
-      export function dropCopyColumns(context, sync, input: { copy: string; columns: readonly string[] }): Promise<SqlAnswer>
-      //  sent(context, sync, { text: `ALTER TABLE ${tableOf(copy)} ${columns.map((c) => `DROP COLUMN IF EXISTS ${quoted(c)}`).join(', ')}` })
-
-      // apps/server/src/hub/copies/retire.ts
-      export async function retired(run: Run): Promise<StoredCopy | 'FAILED'>
-      //  model = copy.model && deps.connectors().catalog().find((e) => e.connector === copy.connectorId && e.model.id === copy.model)
-      //  gone = (model?.model.retired ?? []).filter((c) => copy.definition.columns.some((one) => one.name === c))
-      //  gone vazio -> copy
-      //  1. dropCopyColumns(sync, { copy: copy.name, columns: gone }); kind !== 'DONE'
-      //       -> log.error({ companyId, copyId, code }, 'COPY_RETIRE_FAILED'), 'FAILED'
-      //  2. definição = CopyDefinitionV1.parse({ ...guardada, source: model.definition.source,
-      //       columns: guardada.columns.filter((c) => !gone.includes(c.name)) })
-      //     database.command(companyScope): update copy set definition where id e claim_token = o da rodada
-      //  3. log.info({ companyId, copyId, columns: gone.length }, 'COPY_COLUMN_RETIRED'); devolve a cópia nova
-      // run.ts, depois de netDropped e antes do laço das fontes:
-      //  const kept = await retired(run); kept === 'FAILED' -> return end(DATABASE_DOWN)
-      //  held.copy e table passam a ser os de kept
-      ```
-      O banco primeiro: se o passo 2 falhar, a próxima rodada repete o 1, que não faz nada, e o 2. Uma falha do Hub no passo 2 sobe como as outras falhas da rodada, e a rodada termina como `run.ts` já termina uma falha do Hub.
-    - **Testes:** `packages/connectors/src/sankhya/sankhya.test.ts`: "o modelo clientes não copia CGC_CPF e o declara aposentado". `apps/server/src/hub/copies/retire.test.ts` (novo), com `copiesOn` e a cópia `clientes` antiga plantada com `CGC_CPF` na definição e na tabela (`plantCopy`, `asSync` de `test-copies.ts:239-262`): "a rodada tira CGC_CPF da tabela e da definição antes de copiar", "uma segunda rodada não faz nada", "o ALTER TABLE recusado termina a rodada em ERROR sem copiar e diz COPY_RETIRE_FAILED" (com `t.mock.method` em `dropCopyColumns`), "nenhuma célula de CGC_CPF chega a sync.clientes depois da rodada". O arquivo entra em `scripts/rerun-never.json`.
-    - **Mutações à mão:** gravar a definição antes do `DROP COLUMN` faz falhar "o ALTER TABLE recusado" (a definição já mudou e a coluna ficou); trocar `source: model.definition.source` pela guardada faz falhar "a rodada tira CGC_CPF" (o Sankhya ainda manda a coluna e a rodada falha no tipo).
-    - **Pronto quando:** os testes passam, e no Hub local uma cópia `clientes` de antes perde a coluna na primeira rodada, com `COPY_COLUMN_RETIRED` no log.
-    - _Requisitos: 5.3, 5.4, 5.5_
-  - [ ] 8.3 Ponto de conferência do grupo 8
-    - Rodar `packages/connectors/src/kernel/personal.test.ts`, `packages/connectors/src/sankhya/sankhya.test.ts`, `packages/connectors/src/sankhya/copy-read.test.ts`, `apps/server/src/hub/copies/propose-document.test.ts`, `propose.test.ts`, `propose-v2.test.ts`, `retire.test.ts`, `run.test.ts`, `run-v2.test.ts`, `apps/server/src/hub/connectors/personal-read.test.ts`, `scripts/rerun-exempt.test.ts`, `npm run check` e `npm run quality`.
-    - Passos 6 e 7 da skill `conexus-build`. O remendo "o detector por valor" fica com a prova ao lado da entrada de `docs/reference/boundaries.md:1178-1196`, que passa a dizer que o CNPJ é detectado.
-    - Linha da tabela de referência: "O documento", `accept.ts:140-156` e `personal.ts:35-68`, remendo.
-    - Consequência aprovada (E5a) no corpo do PR: o app que lia o CNPJ pela cópia, como o CRM, deixa de tê-lo.
+- [x] 8. Grupo 8: o documento do cliente, desfeito em 2026-11-15
+  - A regra saiu do código nos PRs A, B e C (#1079 e #1082) e no PR D, que tirou a declaração de dado pessoal do kit dos conectores. Nada fica no lugar: a leitura respeita só o papel de quem pergunta (fundador, 2026-11-15: "Pode remover tudo que tem relacionado a isso").
 - [ ] 9. Grupo 9: o Registro de dados (um PR)
   - [ ] 9.1 `withDataLog` e a gravação em `readThrough` (um commit)
     - **Arquivos:** `apps/server/src/hub/data/record.ts` (novo), `apps/server/src/hub/data/public.ts`, `apps/server/src/hub/connectors/read.ts`, `apps/server/src/hub/connectors/public.ts`, `apps/server/src/hub/connectors/rows.ts`, `apps/server/src/main.ts`, `apps/server/src/builder/data-tools/tools.ts`, `apps/server/src/hub/data/conformance.test.ts` (da parte 3; ele existe aqui porque os grupos 5 e 6 da parte 3 entram depois da unidade 6.1 desta parte e antes deste grupo; o mundo real passa a montar o contrato por `createCompanyData(deps)(scope, context)`), `apps/server/src/hub/data/record.test.ts` (novo), `scripts/rerun-never.json`.
@@ -1025,19 +941,18 @@ Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`
 - **Desmarcar uma tabela não tira a leitura ao vivo.** No contrato, uma operação servida por uma tabela retida cai na leitura ao vivo, liberada pela operação do papel (`packages/hub-api/src/company-data.ts:205-206`). Hoje nenhum agente chama `live`. A tela Papéis diz isso sob o bloco Dados copiados (unidade 7.1).
 - **O nome do agente no Registro, decidido.** A linha guarda `agentId`. A tela do Registro mostra o nome pela lista de `agentsQuery(companyId, undefined)` (`apps/web/src/builder/agents/queries.ts:24-27`), que lista os agentes de todos os Projetos vivos. Um id que a lista não traz aparece como "Agente apagado". Nenhuma porta nova no servidor.
 - **A leitura ao vivo que não registra, decidido.** Responde `UNREACHABLE`, que é o par de "o dado não veio" no contrato da leitura ao vivo. A linha `LIVE` sai sem `threadId` e sem `agentId` nesta parte, porque nenhum agente chama `live` ainda.
-- **As respostas novas, decididas.** `COPY_PERSONAL_NOT_KEPT` na proposta, e `COPY_DATABASE_UNAVAILABLE` com o log `COPY_RETIRE_FAILED` quando a retirada da coluna falha.
 - **As linhas de dono em `database-grants.sql`.** O grupo 1 acrescenta só as linhas `OWNER TO` que o dump imprime para as tabelas novas. Elas não dão nada ao login do Hub, então não são mudança da lista de permissões (data D11). As permissões ficam nos grupos 2 e 3.
 - **A aba Quem lê, decidido.** Todo membro a vê, só para as cópias que o papel dele lê, com a contagem de pessoas e sem os nomes. Só quem tem `manageCopies` muda as marcas.
-- **Os testes de isolamento.** Cada arquivo novo das unidades 4.1, 4.2, 6.1, 6.2, 6.3, 7.2, 8.1, 8.2, 9.1, 9.2 e 9.3 entra em `scripts/rerun-never.json`, e `apps/server/src/builder/data-tools/tools.test.ts` entra na unidade 7.3; as leis novas do contrato entram pelo nome (unidade 5.1).
+- **Os testes de isolamento.** Cada arquivo novo das unidades 4.1, 4.2, 6.1, 6.2, 6.3, 7.2, 9.1, 9.2 e 9.3 entra em `scripts/rerun-never.json`, e `apps/server/src/builder/data-tools/tools.test.ts` entra na unidade 7.3; as leis novas do contrato entram pelo nome (unidade 5.1).
 
 ## Grafo de dependência das tarefas
 
 ```json
 {
   "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2", "5.1", "8.1"] },
-    { "id": 1, "tasks": ["1.3", "5.2", "8.2"] },
-    { "id": 2, "tasks": ["2.1", "3.1", "8.3"] },
+    { "id": 0, "tasks": ["1.1", "1.2", "5.1"] },
+    { "id": 1, "tasks": ["1.3", "5.2"] },
+    { "id": 2, "tasks": ["2.1", "3.1"] },
     { "id": 3, "tasks": ["2.2", "3.2"] },
     { "id": 4, "tasks": ["4.1"] },
     { "id": 5, "tasks": ["4.2"] },
