@@ -39,6 +39,22 @@ export const ENABLE_COPY = 'Ligar uma cópia'
 export const NO_MODEL_CONNECTION = 'Ligue em Integrações uma conexão que ofereça cópias.'
 export const TO_INTEGRATIONS = 'Ir para Integrações'
 export const NO_RUNS_YET = 'A primeira rodada ainda não terminou.'
+export const APPS_INTRO =
+  'As tabelas que cada app guarda. Elas são do Projeto e ficam aqui só para leitura.'
+export const OPEN_PROJECT = 'Abrir o Projeto'
+export const APPS_EMPTY = 'Nenhum app guarda tabelas ainda.'
+export const MORE_PROJECTS = 'Mais Projetos'
+export const APPS_COLUMNS = ['Tabela', 'Versão', 'Linhas'] as const
+
+/** The version an app's tables belong to: the published one, or the one still being built. */
+export function versionText(version: {
+  publishedVersion: number | null
+  appVersion: number
+}): string {
+  return version.publishedVersion !== null
+    ? `Publicado · v${version.publishedVersion}`
+    : `Em construção · v${version.appVersion}`
+}
 export const COLUMNS_TITLE = 'Colunas'
 export const SAMPLE_TITLE = 'Amostra'
 export const KEY_MARK = 'Chave'

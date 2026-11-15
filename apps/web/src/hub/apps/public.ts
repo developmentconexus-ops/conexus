@@ -2,7 +2,7 @@ import { AppTableName } from '@conexus/hub-api'
 import { idOrNotFound } from '../../platform/hub.ts'
 
 export { AppRefused } from './app-refused.tsx'
-export { DataPage } from './data.tsx'
+export { countText, DataPage } from './data.tsx'
 export { DataRows, RowsFailure } from './data-rows.tsx'
 export { Publish } from './publish.tsx'
 export { appRowsQuery, appTablesQuery, copyRowsQuery } from './queries.ts'

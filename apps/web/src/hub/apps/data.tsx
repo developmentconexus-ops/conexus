@@ -16,7 +16,7 @@ const NO_TABLES = 'O app ainda não criou tabelas.'
 const CAP_NOTE = 'teto da contagem'
 
 /** What the list says a table holds: the count in the person's language, "mais de 10.000" (its ceiling is said in `CountCell`), or that it could not be counted. */
-function countText(rows: RowCount): string {
+export function countText(rows: RowCount): string {
   switch (rows.kind) {
     case 'EXACT':
       return rows.rows.toLocaleString('pt-BR')

@@ -126,7 +126,7 @@ export function connection(fields: Partial<Connection> = {}): Connection {
   })
 }
 
-export type Answers = {
+type Answers = {
   /** What a write answers instead of the Hub's success. */
   write?: () => Response | undefined
   /** What the list of copies answers instead of its rows. */
@@ -313,9 +313,10 @@ export function openCopies(
   held: Parameters<typeof copiesHub>[1],
   path: string,
   role = 'owner',
+  projects = [PEDIDOS],
 ) {
   const hub = copiesHub(server, held)
-  server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }))
+  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: false, role }))
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [path] }))} />)
   return hub
 }

@@ -4,6 +4,7 @@ import { useNavigate, useRouter } from '@tanstack/react-router'
 import { PageTitle } from '../../ui/list.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
+import { AppsLayer } from './apps-layer.tsx'
 import { NoteLine, useNote } from './copy-list.tsx'
 import { NewCopy } from './new-copy.tsx'
 import { copiesQuery } from './queries.ts'
@@ -74,12 +75,16 @@ export function DataPage(props: { companyId: CompanyId; layer: DataLayer; q: str
             {DATA_LAYERS.business}
             <span className="text-text-2 tabular-nums">0</span>
           </TabsTrigger>
+          <TabsTrigger value={DataLayer.enum.apps}>{DATA_LAYERS.apps}</TabsTrigger>
         </TabsList>
         <TabsContent value={DataLayer.enum.raw} className="pt-md">
           <RawLayer companyId={companyId} read={read} q={q} onNote={setNote} />
         </TabsContent>
         <TabsContent value={DataLayer.enum.business} className="pt-md">
           <BusinessLayer />
+        </TabsContent>
+        <TabsContent value={DataLayer.enum.apps} className="pt-md">
+          <AppsLayer companyId={companyId} />
         </TabsContent>
       </Tabs>
     </div>

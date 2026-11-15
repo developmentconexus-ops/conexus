@@ -57,7 +57,7 @@ function Fact(props: { label: string; children: string }) {
  * What a copy reads, before its key: a query in mono; a list read by its label and connector, its
  * fixed input, the accounts and, for a proposal, the calls a whole pass spends.
  */
-export function ReadFacts(props: { origin: Origin; source: string; calls?: number | null }) {
+function ReadFacts(props: { origin: Origin; source: string; calls?: number | null }) {
   const { origin } = props
   if (origin.source.kind === 'QUERY')
     return (
