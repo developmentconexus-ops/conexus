@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { assertPersonal } from './conformance.ts'
 import { defineOperation, get } from './operation.ts'
 import type { PersonalField } from './personal.ts'
-import { findUndeclared } from './personal.ts'
+import { documentColumns, findUndeclared } from './personal.ts'
 
 function readWith(personal: readonly PersonalField[]) {
   return defineOperation({
@@ -71,4 +71,36 @@ test('forma conhecida não declarada', () => {
       return true
     },
   )
+})
+
+const [CPF_A, CPF_B, CPF_C] = ['529.982.247-25', '11144477735', '390.533.447-05'] as const
+const [CNPJ_A, CNPJ_B, CNPJ_C] = [
+  '11.222.333/0001-81',
+  '11222333000181',
+  '45.723.174/0001-10',
+] as const
+
+test('documentColumns acha a coluna de CPF e de CNPJ, com e sem máscara', () => {
+  const rows = [
+    ['a', CPF_A, CNPJ_A],
+    ['b', CPF_B, CNPJ_B],
+    ['c', CPF_C, CNPJ_C],
+  ]
+  assert.deepEqual(documentColumns(['nome', 'cpf', 'cnpj'], rows), ['cpf', 'cnpj'])
+})
+
+test('três células ou menos não acusam', () => {
+  assert.deepEqual(documentColumns(['doc'], [[CPF_A], [CPF_B], [null], ['']]), [])
+  assert.deepEqual(documentColumns(['doc'], [[CPF_A], [CPF_B], [CPF_C]]), ['doc'])
+})
+
+test('metade exata não acusa e mais da metade acusa', () => {
+  const half = [[CPF_A], [CPF_B], ['abc'], ['def']]
+  assert.deepEqual(documentColumns(['doc'], half), [])
+  assert.deepEqual(documentColumns(['doc'], [...half, [CPF_C]]), ['doc'])
+})
+
+test('um CNPJ alfanumérico conta', () => {
+  const rows = [['Q0SLFMBD7VX439'], ['q0.slf.mbd/7vx4-39'], ['Q0SLFMBD7VX439']]
+  assert.deepEqual(documentColumns(['doc'], rows), ['doc'])
 })

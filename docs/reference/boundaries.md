@@ -1180,20 +1180,26 @@ reference tool checks a read against its documentation.
 - **Library line.** None serves it. No reference finds a personal datum a connector forgot to
   declare (n8n's `sensitiveOutputFields` is for credentials and nothing reads it for a CPF; Airbyte,
   nango and twenty have no such check). `@brazilian-utils/brazilian-utils` 2.5.0 gives the
-  validators: `isValidCpf`, `isValidEmail` and `isValidPhone`.
+  validators: `isValidCpf`, `isValidCnpj` (`version: 2` takes the alphanumeric CNPJ),
+  `isValidEmail` and `isValidPhone`.
 - **Hand-made piece.** `findUndeclared` in `packages/connectors/src/kernel/personal.ts`, run only by
   the conformance (`assertPersonal` in `kernel/conformance.ts`) on each ready read's answer from its
   double. It reports, by path and kind and never by value, a valid CPF in a text or in an integer of
   up to 11 digits (read with its leading zeros), an e-mail, or a phone written as 10 to 13 digits,
   outside every declared path. The read door's entries are not checked: their answer depends on the
-  query.
+  query. `documentColumns` in the same file finds, in a page of proof, a column whose non-null
+  cells, at least 3, are mostly a valid CPF or CNPJ; a proposal with one is refused with
+  `COPY_PERSONAL_NOT_KEPT`, and the log carries the column, never a cell (S41).
 - **Why.** The founder's B1, 2026-11-11 ("vale a pena? referências fazem?"): a new connector that
   forgets where a CPF sits fails the CI, not the company. The one rule it serves: a document never
   goes to a model or to a copy (`withheldKinds`, `hub/connectors/read.ts`).
-- **Proof.** `kernel/personal.test.ts`, "forma conhecida não declarada"; and
-  `mercado-livre/mercado-livre.test.ts`, "tirar buyer de pedidos faz a conformidade falhar".
-- **Not proved.** A phone with a mask or a country code, a CNPJ, and a name or an address: none is a
-  known shape, so only the declaration covers them.
+- **Proof.** `kernel/personal.test.ts`, "forma conhecida não declarada" and the `documentColumns`
+  cases; `hub/copies/propose-document.test.ts`, where a version 1 query and a version 2 read whose
+  page carries a document are refused; and `mercado-livre/mercado-livre.test.ts`, "tirar buyer de
+  pedidos faz a conformidade falhar".
+- **Not proved.** A phone with a mask or a country code, and a name or an address: none is a
+  known shape, so only the declaration covers them. `findUndeclared` does not look for a CNPJ;
+  `documentColumns` does, on a proposal's page.
 - **Revisit when** the library's validators change, or a connector's double carries an id the check
   takes for a CPF or a phone.
 

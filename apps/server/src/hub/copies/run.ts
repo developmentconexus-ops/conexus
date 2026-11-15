@@ -3,6 +3,7 @@ import { CopyRunId } from '@conexus/hub-api'
 import { and, desc, eq, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import { connectionNamesOf } from '../connectors/public.ts'
 import { describedCopy } from './describe.ts'
+import { retiredColumns } from './retire.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
 import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
 import type { StoredSource } from './sources.ts'
@@ -167,10 +168,14 @@ export async function runCopy(
   const table = copyTableOf(current.copy, current.sources)
   const run: Run = { deps, ids, signal, claimed: current, sync, table, counts, end }
   if (!(await netDropped(run))) return end(DATABASE_DOWN)
+  const retired = await retiredColumns(deps, { claimed: current, sync, table: table.name, end })
+  if (retired.kind === 'END') return retired.end
+  const kept: Claimed = { ...current, copy: retired.copy }
+  const pass: Run = { ...run, claimed: kept, table: copyTableOf(retired.copy, current.sources) }
   const byApp = deps.connectors().countedBy(held.copy.connectorId) === 'APP'
   let waited = false
   for (const source of inRunOrder(held.sources)) {
-    const step: SourceStep = source.waits ? { kind: 'WAIT' } : await sourcePass(run, source)
+    const step: SourceStep = source.waits ? { kind: 'WAIT' } : await sourcePass(pass, source)
     if (step.kind === 'END') return step.end
     if (step.kind === 'WAIT') {
       if (byApp) return end(WAIT)

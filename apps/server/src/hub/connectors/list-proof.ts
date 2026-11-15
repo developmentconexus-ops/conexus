@@ -1,9 +1,10 @@
 import type { CopyDefinitionV2, ListRead, Rows } from '@conexus/connectors'
-import { listPageOf } from '@conexus/connectors'
+import { documentColumns, listPageOf } from '@conexus/connectors'
 import type { ConnectionId, OfProject, PersonId, ProveCounts } from '@conexus/hub-api'
 import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import type { CopyRefusal, ListAnswer } from './copy-port.ts'
 import { listAnswer } from './copy-port.ts'
+import type { DocumentColumn } from './copy-proof.ts'
 import type { OpenedConnection } from './executor.ts'
 import { listReadOf } from './list-read.ts'
 import type { Deps } from './rows.ts'
@@ -41,6 +42,7 @@ function misfitsOf(definition: CopyDefinitionV2, list: ListRead, rows: Rows, col
 type Counted =
   | Readonly<{ kind: 'COUNTED'; counts: Omit<ProveCounts, 'changedLastDay'> }>
   | ListMisfit
+  | DocumentColumn
   | Readonly<{ kind: 'UNREADABLE'; reason: string }>
 
 /** A page of proof as counts: its rows and whether more follow, the key's nulls and repeats, each column's nulls. */
@@ -56,6 +58,8 @@ function countedOf(definition: CopyDefinitionV2, read: Extract<ListAnswer, { kin
     return { kind: 'UNREADABLE', reason } satisfies Counted
   }
   const names = definition.columns.map((column) => column.name)
+  const [document] = documentColumns(names, page.rows)
+  if (document !== undefined) return { kind: 'DOCUMENT_COLUMN', column: document } satisfies Counted
   const keyAt = definition.key.map((name) => names.indexOf(name))
   const seen = new Set<string>()
   let keyNull = 0
@@ -121,7 +125,7 @@ export async function provedList(
     signal: AbortSignal
     spend: () => boolean
   }>,
-): Promise<ListProved | ListMisfit | Refused> {
+): Promise<ListProved | ListMisfit | DocumentColumn | Refused> {
   const { ids, opened, connectionId, definition } = a
   if (opened === undefined || listReadOf(opened.connector, definition) === undefined) {
     const reason = opened === undefined ? 'NOT_GRANTED_TO_PROJECT' : 'NO_LIST_READ'
@@ -134,7 +138,7 @@ export async function provedList(
   const first = await listAnswer(deps, { ...asked, since: null })
   if (first.kind !== 'ROWS') return refusalOf(first)
   const counted = countedOf(definition, first)
-  if (counted.kind === 'MISFIT') return counted
+  if (counted.kind === 'MISFIT' || counted.kind === 'DOCUMENT_COLUMN') return counted
   if (counted.kind === 'UNREADABLE') return unreadable(counted.reason)
   const { counts } = counted
   if (definition.changedSince === null || first.list.changed === null)
@@ -149,7 +153,7 @@ export async function provedList(
   const changed = await listAnswer(deps, { ...asked, since })
   if (changed.kind !== 'ROWS') return refusalOf(changed)
   const day = countedOf(definition, changed)
-  if (day.kind === 'MISFIT') return day
+  if (day.kind === 'MISFIT' || day.kind === 'DOCUMENT_COLUMN') return day
   if (day.kind === 'UNREADABLE') return unreadable(day.reason)
   const changedLastDay = day.counts.total ?? day.counts.rows
   return {

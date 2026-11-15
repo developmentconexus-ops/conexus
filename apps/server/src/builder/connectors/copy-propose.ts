@@ -46,6 +46,7 @@ const COPY_PROPOSE_DESCRIPTION = [
   '6. How often? The longest interval the screen bears: the proof answers the calls a whole pass spends, and an expensive copy asks for a longer interval.',
   'The fields the app uses become columns; the obvious neighbours (dates, status, linking ids) may come along; a nested part enters as `json` only when the app reads it. Write the description of the table and of each column. Name it after the system and the data (`<system>_<data>`). The accounts of one connector go in one copy, each connection in `connections`, unless the app asks for them apart.',
   'A read that lists rows takes version 2: { version: 2, source: { kind: "OPERATION", operation, input }, description, columns: [{ name, type, path, description }], key, changedSince }. A connector that copies by query takes version 1: { version: 1, source: { kind: "QUERY", sql }, columns, key, changedSince, window }, on one connection.',
+  'A copy never keeps a document (CPF or CNPJ). When the proof answers COPY_PERSONAL_NOT_KEPT, leave the column it names out of the copy.',
   COPY_SHAPE_RULE,
   `Proposing proves each connection with a page or two of the read and keeps only counts, never a row. ${COPY_TURN_ON_RULE} Tell the person the proposal is there and go on with what does not depend on it.`,
 ].join('\n')

@@ -133,6 +133,8 @@ async function proofs(
       ...{ connectionId: source.id, personId: a.personId, runId: a.runId },
       ...{ definition: a.definition, signal: a.signal },
     })
+    if (proved.kind === 'DOCUMENT_COLUMN')
+      return { kind: 'COPY_PERSONAL_NOT_KEPT', connection: source.name, column: proved.column }
     if (proved.kind === 'MISFIT') return { ...proved, kind: 'TYPE_MISFIT', connection: source.name }
     if (proved.kind !== 'PROVED') return proved
     const { counts: of } = proved
