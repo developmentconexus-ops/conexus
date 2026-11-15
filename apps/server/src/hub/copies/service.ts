@@ -10,6 +10,7 @@ import type { SqlAnswer } from '../../platform/company-postgres.ts'
 import type { Proposal } from '../connectors/public.ts'
 import type { Accepting } from './accept.ts'
 import { dismissProposal } from './accept.ts'
+import { catalogTables, tableRowsByName } from './catalog-view.ts'
 import type { Enabling } from './enable.ts'
 import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
@@ -54,6 +55,11 @@ export function createCopyService(
     /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
     projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
       projectView(full, input),
+    /** What the data contract reads; admits nobody, the caller did: the tables a place reads and one page of a table by its name. */
+    data: Object.freeze({
+      catalogTables,
+      tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(full, input),
+    }),
     /** The schedule's acts, admitting `manageCopies`. */
     pause: (input: Of) => pauseCopy(full, input),
     resume: (input: Of) => resumeCopy(full, input),

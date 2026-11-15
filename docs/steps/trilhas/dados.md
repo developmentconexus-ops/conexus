@@ -29,7 +29,7 @@ ou o PR entra como está. O primeiro marco a construir é `D1`.
 ## O que a trilha possui
 
 - `packages/connectors/`, o nosso kit de conectores.
-- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/` e `apps/server/src/hub/ontology/`.
+- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/` e `apps/server/src/hub/data/`.
 - `apps/server/src/builder/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
 - As telas de Integrações, Dados (que toma o lugar de Cópias, resposta E1a) e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.

@@ -1,6 +1,5 @@
-import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FAILURES, getStatus } from '@conexus/hub-api'
+import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
@@ -16,15 +15,16 @@ import type {
   RepositoryOf,
 } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
+import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
-import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
+import { createCompanyData } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
-import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
+import { createIdentity } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
@@ -55,7 +55,7 @@ import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './plat
 import type { SendMail } from './platform/mail.ts'
 import { createMail } from './platform/mail.ts'
 import { watchMemory } from './platform/memory.ts'
-import { migrate, migrateExitCode } from './platform/migrate.ts'
+import { migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
@@ -68,7 +68,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs'> & { status: Status; identity: Identity; webRoot?: string },
+  deps: Omit<Subjects, 'runs' | 'data'> & { status: Status; identity: Identity; webRoot?: string },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -202,9 +202,13 @@ export function subjectsOf(deps: {
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })
+  const data = createCompanyData({
+    ...{ database, identity, log },
+    ...{ connectors: () => connectors, copies: () => copies.data },
+  })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors, copies },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
 }
 
@@ -275,41 +279,6 @@ async function runServer(): Promise<void> {
   } catch (error) {
     await Promise.all([database.close(), mastraPool.end()])
     throw error
-  }
-}
-
-async function runMigrate(): Promise<void> {
-  const config = readConfig('migrate')
-  await migrate({
-    ownerUrl: config.migrationDatabaseUrl,
-    runtimeUrl: config.databaseUrl,
-    mastraUrl: config.mastraDatabaseUrl,
-  })
-  const log = bootLog(config.logLevel)
-  log.info('MASTRA_LOGIN_READY')
-  log.info('MIGRATED')
-}
-
-async function runFirstPerson(args: string[]): Promise<void> {
-  const input = firstPersonArguments(args)
-  const config = readConfig('serve')
-  const log = bootLog(config.logLevel)
-  const database = openDatabase({ url: config.databaseUrl, log })
-  try {
-    await assertRuntimeLogin(database)
-    await assertMigrated(database)
-    const sendMail = createMail({ config, log })
-    const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
-    const { link } = await identity.firstPerson({ name: input.name, email: input.email })
-    appendFileSync(input.summary, passwordLinkText(input.name, link))
-    log.info({}, 'FIRST_PERSON_LINK_GIVEN')
-  } catch (error) {
-    if (error instanceof Failure && error.code === 'FIRST_PERSON_EXISTS') {
-      appendFileSync(input.summary, `${FAILURES.FIRST_PERSON_EXISTS.phrase}\n`)
-    }
-    throw error
-  } finally {
-    await database.close()
   }
 }
 
