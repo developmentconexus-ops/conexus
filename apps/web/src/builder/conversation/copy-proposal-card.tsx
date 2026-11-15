@@ -62,9 +62,9 @@ function LiveState(props: { companyId: CompanyId; proposed: CopyProposed }) {
  * The card of a copy the Builder proposed (Capacidade 3, U3; O Sync de qualquer conector, U4): drawn
  * from the result of `copy_propose` the conversation already holds, with where it reads, the
  * accounts, the mode the Hub wrote and, for a list read, the calls a whole pass spends. Whoever manages copies
- * rereads its state through the list of copies and turns it on in the Cópias page's own dialog; anyone
+ * rereads its state through the list of copies and turns it on in the Dados page's own dialog; anyone
  * else reads who turns it on, with no button and no read the Hub would refuse (web W34). Dismissing is
- * the Cópias page's.
+ * the Dados page's.
  */
 export function CopyProposalCard({ tool }: { tool: Pick<ToolItem, 'result'> }) {
   const { companyId } = company.useParams()

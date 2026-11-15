@@ -9,7 +9,7 @@ import { phraseOf } from '@conexus/hub-api'
 import { dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
-/** The words of the Cópias screens (Capacidade 2, U4); the founder approves them at the step's end. */
+/** The words of the Dados screens (Capacidade 2, U4); the founder approves them at the step's end. */
 export const DATA_TITLE = 'Dados'
 export const DATA_INTRO =
   'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.'

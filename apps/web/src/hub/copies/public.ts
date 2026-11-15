@@ -20,7 +20,7 @@ export {
   provedText,
 } from './text.ts'
 
-/** The Cópias routes are for whoever manages copies; for anyone else the address is not found (web W34, S10). */
+/** The Dados routes are for whoever manages copies; for anyone else the address is not found (web W34, S10). */
 export function manageCopiesOrNotFound({ context }: { context: { may: CompanyMay } }) {
   if (!context.may.manageCopies) throw notFound()
 }

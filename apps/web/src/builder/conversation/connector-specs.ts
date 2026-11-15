@@ -82,7 +82,7 @@ function proposeRefusedText(refused: z.infer<typeof ProposeRefused>): string | u
     case 'EXISTS':
       return refused.releasedHere
         ? `A cópia ${refused.name} já está liberada a este Projeto.`
-        : `A empresa já tem ${refused.name}: peça na página Cópias que a liberem a este Projeto.`
+        : `A empresa já tem ${refused.name}: peça na página Dados que a liberem a este Projeto.`
     case 'NOT_IN_ROLE':
       return `Seu papel não usa a leitura ${refused.operation} desta conexão.`
     case 'REFUSED':

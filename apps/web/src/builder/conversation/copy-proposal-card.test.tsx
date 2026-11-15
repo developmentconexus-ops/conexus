@@ -124,7 +124,7 @@ test('o cartão da proposta: ligar pela conversa', async () => {
   expect(within(card).queryByRole('button', { name: 'Dispensar' })).toBeNull()
   expect(hub.reads.some((search) => search.includes(held.id))).toBe(true)
   fireEvent.click(ligar)
-  // The Cópias page's own dialog, and its one operation.
+  // The Dados page's own dialog, and its one operation.
   const dialog = within(await screen.findByRole('dialog'))
   expect(dialog.getByText('Libera ao Projeto Vendedores')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
