@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-Nove grupos, um pull request cada. O grupo 1 cria as duas tabelas. Os grupos 2 e 3 dão as permissões delas no banco do Hub, cada uma num PR só dela, com a palavra do fundador dada em 2026-11-14 (P2, no índice). O grupo 4 faz o banco da empresa garantir a leitura por papel. O grupo 5 muda só o contrato. O grupo 6 liga o catálogo, as rotas e o membro ao papel. O grupo 7 muda as telas. O grupo 8 tira o documento do cliente de toda cópia. O grupo 9 grava e mostra o Registro de dados.
+Nove grupos, um pull request cada. O grupo 1 cria as duas tabelas. Os grupos 2 e 3 dão as permissões delas no banco do Hub, cada uma num PR só dela, com a palavra do fundador dada em 2026-11-14 (P2, no índice). O grupo 4 faz o banco da empresa garantir a leitura por papel. O grupo 5 muda só o contrato. O grupo 6 liga o catálogo, as rotas e o membro ao papel. O grupo 7 muda as telas. O grupo 8 foi desfeito em 2026-11-15. O grupo 9 grava e mostra o Registro de dados.
 
 Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`, `readerAddress` e `readCopies` em `apps/server/src/platform/copy-sql.ts`; a pasta `apps/server/src/hub/data/` com `createCompanyData`, `catalogOf`, `rowsOf` e `queryOf`; `sampleOf` em `apps/server/src/hub/copies/sample.ts` e a ação `readCopyRows`; a página Dados nas rotas `data.index.tsx` e `data.$copyId.tsx`; as ferramentas em `apps/server/src/builder/data-tools/` com `order.ts`; e `apps/web/src/builder/conversation/data-specs.ts`. Um nome dessas partes que não estiver no `main` quando a unidade começar é um passo 2 da skill `conexus-build`: pare e diga.
 
@@ -943,16 +943,16 @@ Tudo parte de que as partes 1 e 3 estão no `main`: `READ_LOGIN`, `ensureReader`
 - **A leitura ao vivo que não registra, decidido.** Responde `UNREACHABLE`, que é o par de "o dado não veio" no contrato da leitura ao vivo. A linha `LIVE` sai sem `threadId` e sem `agentId` nesta parte, porque nenhum agente chama `live` ainda.
 - **As linhas de dono em `database-grants.sql`.** O grupo 1 acrescenta só as linhas `OWNER TO` que o dump imprime para as tabelas novas. Elas não dão nada ao login do Hub, então não são mudança da lista de permissões (data D11). As permissões ficam nos grupos 2 e 3.
 - **A aba Quem lê, decidido.** Todo membro a vê, só para as cópias que o papel dele lê, com a contagem de pessoas e sem os nomes. Só quem tem `manageCopies` muda as marcas.
-- **Os testes de isolamento.** Cada arquivo novo das unidades 4.1, 4.2, 6.1, 6.2, 6.3, 7.2, 8.1, 8.2, 9.1, 9.2 e 9.3 entra em `scripts/rerun-never.json`, e `apps/server/src/builder/data-tools/tools.test.ts` entra na unidade 7.3; as leis novas do contrato entram pelo nome (unidade 5.1).
+- **Os testes de isolamento.** Cada arquivo novo das unidades 4.1, 4.2, 6.1, 6.2, 6.3, 7.2, 9.1, 9.2 e 9.3 entra em `scripts/rerun-never.json`, e `apps/server/src/builder/data-tools/tools.test.ts` entra na unidade 7.3; as leis novas do contrato entram pelo nome (unidade 5.1).
 
 ## Grafo de dependência das tarefas
 
 ```json
 {
   "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2", "5.1", "8.1"] },
-    { "id": 1, "tasks": ["1.3", "5.2", "8.2"] },
-    { "id": 2, "tasks": ["2.1", "3.1", "8.3"] },
+    { "id": 0, "tasks": ["1.1", "1.2", "5.1"] },
+    { "id": 1, "tasks": ["1.3", "5.2"] },
+    { "id": 2, "tasks": ["2.1", "3.1"] },
     { "id": 3, "tasks": ["2.2", "3.2"] },
     { "id": 4, "tasks": ["4.1"] },
     { "id": 5, "tasks": ["4.2"] },

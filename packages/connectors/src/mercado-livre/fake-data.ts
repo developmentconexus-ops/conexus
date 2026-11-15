@@ -48,7 +48,7 @@ export const ORDER_BODY = {
 
 let ordersKept: readonly (Record<string, unknown> & { date_last_updated: string })[] | undefined
 
-/** 120 orders, each shaped as a recorded one with the planted buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
+/** 120 orders, each shaped as a recorded one with its buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
 export function ordersOf() {
   const recorded = rowsOf('pedidos-alterados', 'results')
   ordersKept ??= Array.from({ length: 120 }, (_, index) => ({

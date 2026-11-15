@@ -14,7 +14,7 @@ Base: `main` do Conexus em `0d4c5730`. Entrada: o escopo aprovado da camada de d
 | Parte | O que ela decide | Marco | Depende de | Nesta spec |
 | --- | --- | --- | --- | --- |
 | 1. O dado guardado e o catálogo | A regra de nome. A descrição em toda tabela e coluna. O login de leitura. A amostra. A coluna inativa. `catalog` e `rows` do contrato. A página Dados | `D2` | Nada | [a fundo](01-dado-guardado-e-catalogo/) |
-| 2. O conector, com a entrada conversada | A descrição do sistema. "Só ao vivo". As quatro operações. A janela Ligar em quatro passos. O link para outra pessoa. O HubSpot e o Gmail pelo login do kit. A entrada conversada | `D1`, parte do `D3` | Parte 1. A conformidade das tabelas oferecidas espera a parte 4 tirar o documento do cliente do modelo de clientes | [a fundo](02-conector/) |
+| 2. O conector, com a entrada conversada | A descrição do sistema. "Só ao vivo". As quatro operações. A janela Ligar em quatro passos. O link para outra pessoa. O HubSpot e o Gmail pelo login do kit. A entrada conversada | `D1`, parte do `D3` | Parte 1 | [a fundo](02-conector/) |
 | 3. A leitura para análise | O pedido de consulta no contrato. As duas ferramentas iguais nos três agentes. A ordem do agente. A origem até a tela | `D2` | Parte 1 | [a fundo](03-leitura-para-analise/) |
 | 4. A governança mínima | Quem lê cada tabela, garantido pelo banco. A recusa. O Registro de dados | `D2`, `D6` | Partes 1 e 3 | [a fundo](04-governanca-minima/) |
 | 5. O Negócio | A fonte do conceito que aponta para uma cópia. `concept_read` e `concept_query`, e qual devolve linhas. A lista dos conceitos no contexto. O destino do PR 1030. Uma fonte por conceito (R1a) | `D4` | Parte 1 | só aqui |

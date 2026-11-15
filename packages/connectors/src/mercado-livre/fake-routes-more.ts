@@ -19,7 +19,7 @@ const MAIL = 'maria.ficticia@exemplo.test'
 
 let questionsKept: readonly Record<string, unknown>[] | undefined
 
-/** 12 questions shaped as the recorded one, every fourth answered as it was; the asker's name and e-mail are planted for the kit to drop. */
+/** 12 questions shaped as the recorded one, every fourth answered as it was, the asker with only the `id` the service sends. */
 export function questionsOf() {
   const recorded = rowsOf('perguntas-varredura', 'questions')
   questionsKept ??= Array.from({ length: 12 }, (_, index) => ({

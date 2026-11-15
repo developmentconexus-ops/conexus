@@ -34,7 +34,7 @@ O que fica de fora: os gatilhos (`D5`), a medição por empresa (`D6`), a nova t
                      direto ao sistema, com o token que o kit buscou e renova
 ```
 
-Sankhya, Mercado Livre, HubSpot e Gmail são definições do kit. A porta, o funil de escrita com o cartão, os papéis, a retirada de dado pessoal e a conformidade valem iguais para todos, sem mudança [visto, `apps/server/src/hub/connectors/executor.ts:262-295`, `packages/connectors/src/kernel/conformance.ts:213-256`].
+Sankhya, Mercado Livre, HubSpot e Gmail são definições do kit. A porta, o funil de escrita com o cartão, os papéis e a conformidade valem iguais para todos, sem mudança [visto, `apps/server/src/hub/connectors/executor.ts:262-295`, `packages/connectors/src/kernel/conformance.ts:213-256`].
 
 ### O que cada referência faz no mesmo ponto
 
@@ -310,7 +310,6 @@ export const googleMail = defineConnector({
 | O escopo | `gmail.readonly` | `integration-templates@9afa0aab integrations/google-mail/actions/list-messages.ts:39`, `get-message.ts:67` |
 | Buscar mensagens | `GET /gmail/v1/users/me/messages`, `q`, `maxResults`, `pageToken`; a resposta `{ messages: [{ id, threadId }], nextPageToken, resultSizeEstimate }` | `list-messages.ts:22-31`, `:44-50` |
 | Ler uma mensagem | `GET /gmail/v1/users/me/messages/{id}`, `format` | `get-message.ts:6-13`, `:83` |
-| O dado pessoal | Os endereços, o assunto e o corpo da mensagem | a confirmar na gravação: a referência não dá a forma da mensagem inteira |
 
 - **A conta é `none`.** A única conta que o Gmail diz é o endereço de e-mail (`/gmail/v1/users/me/profile`, `integration-templates@9afa0aab integrations/google-mail/syncs/messages.ts:320`), um dado pessoal, que viraria o rótulo da ligação na tela. O nome que a empresa dá separa as ligações, como no Sankhya [visto, `definition.ts:17-19`].
 - **O login sem conta.** Hoje `completeSignIn` sempre pede a conta depois da troca [visto, `apps/server/src/hub/connectors/sign-ins.ts:251`], `who` lança num conector cuja conta não é `reported` [visto, `executor.ts:343-344`], e a ligação grava `accountRef` e `accountLabel` da conta [visto, `sign-ins.ts:296`]. A conformidade do kit já aceita `none` [visto, `packages/connectors/src/kernel/conformance-session.ts:106`]. Com a conta `none`, o login pula `who` e grava `accountRef` e `accountLabel` nulos, que a regra `connection_account` aceita [visto, `apps/server/src/hub/connectors/tables.ts:100-104`].

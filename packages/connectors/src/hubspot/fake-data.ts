@@ -17,7 +17,7 @@ function stamped(index: number) {
   return { createdAt: at, updatedAt: at, archived: false }
 }
 
-/** A contact's e-mail and phone are real-looking and planted on purpose: the Hub must withhold them. */
+/** A contact's e-mail and phone look real, as HubSpot sends them. */
 const CONTACTS = Array.from({ length: COUNT }, (_, index) => ({
   id: String(1000 + index),
   properties: {

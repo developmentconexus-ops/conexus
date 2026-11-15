@@ -18,7 +18,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
 
 ## Tarefas
 
-- [ ] 1. Grupo 1: o kit, a descrição, o "só ao vivo" e o que o sistema oferece (bloco A; a unidade 1.3 espera a descrição dos modelos da parte 1 e a saída de `CGC_CPF` da parte 4) (um PR)
+- [ ] 1. Grupo 1: o kit, a descrição, o "só ao vivo" e o que o sistema oferece (bloco A; a unidade 1.3 espera a descrição dos modelos da parte 1) (um PR)
   - [ ] 1.1 A descrição do sistema, `descriptorOf` (um commit)
     - **Arquivos:** `packages/connectors/src/kernel/descriptor.ts` (novo), `packages/connectors/src/kernel/descriptor.test.ts` (novo), `packages/connectors/src/kernel/auth.ts`, `packages/connectors/src/index.ts`.
     - **Referência a seguir:** `packages/connectors/src/kernel/definition.ts:42-71` (os campos do `Connector` que a descrição copia); `apps/server/src/hub/connectors/catalog-subjects.ts:12-28` (como os assuntos e a marca `door` saem do conector: a descrição carrega o mesmo); `packages/connectors/src/kernel/auth.ts:7-17` (o tipo `Fields`, hoje não exportado).
@@ -112,7 +112,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
       A verificação 10 diz: com `copy` e sem `liveOnly`, `objectsOf` tem ao menos uma tabela; com `liveOnly`, nenhuma. A 11: `description.length > 0` na tabela e em cada coluna. A 12: `key.length > 0`, e `changedSince` nulo ou o nome de uma coluna. A 13 roda só onde `connector.copy` existe.
     - **Testes:** `objects.test.ts`: "o Sankhya oferece as cinco tabelas com a chave e DTALTER" (ids `clientes`, `vendedores`, `produtos`, `vendas`, `itens_venda`; `vendas.key` igual a `['NUNOTA']`; `changedSince === 'DTALTER'`); "o Mercado Livre não oferece nada"; "objectOf de um id que não existe é undefined"; "um conector com `copy` e nenhum modelo falha a verificação 10" (o Sankhya com `copy.models` vazio, montado sem `defineConnector`); "um dublê que responde a primeira página vazia falha a verificação 13" (`assertFirstPages` contra o dublê do Sankhya com as linhas de `vendas` tiradas). A conformidade nova roda em `packages/connectors/src/sankhya/sankhya.test.ts:13` e `packages/connectors/src/mercado-livre/mercado-livre.test.ts:18` sem mudança nesses arquivos.
     - **Mutações à mão:** trocar `rows.length > 0` por `>= 0` (o caso do dublê vazio falha); na verificação 10, trocar `objects.length > 0` por `>= 0` (o caso do conector sem modelo falha); tirar a conferência de `changedSince` entre as colunas.
-    - **Pronto quando:** `npm test -w @conexus/connectors` passa com as treze verificações no Sankhya e no Mercado Livre. Espera: a descrição de `CopyDefinitionV1` e dos modelos do Sankhya (parte 1, `C2`) e a saída de `CGC_CPF` de `clientes` (parte 4, decisão E5a), sem as quais a verificação 11 falha no Sankhya.
+    - **Pronto quando:** `npm test -w @conexus/connectors` passa com as treze verificações no Sankhya e no Mercado Livre. Espera: a descrição de `CopyDefinitionV1` e dos modelos do Sankhya (parte 1, `C2`), sem a qual a verificação 11 falha no Sankhya.
     - _Requisitos: 3.3, 3.4_
   - [ ] 1.4 Ponto de conferência do grupo 1
     - Rodar `npm test -w @conexus/connectors`, `npm run typecheck`, `npm run check` e, em segundo plano, `npm run quality`.
@@ -770,7 +770,7 @@ Base: `main` em `0d4c5730`. Todo caminho é relativo à raiz do repositório. A 
 - **Religar por link** fica fora desta spec. O link só cria uma ligação nova; Conectar de novo segue pela janela de quem tem a sessão.
 - **Os textos propostos.** `CONNECTOR_REFUSED` na janela: "O <Sistema> recusou a leitura.", com a resposta do sistema. A página do link depois do envio: "Pronto. A ligação com o <Sistema> foi feita. Pode fechar esta página." A página do link vencido: "Este link venceu. Peça outro a quem enviou.", porque a rota responde 404 sem o nome de quem pediu (security S10). O PR do grupo 6 lista os três para a palavra do fundador.
 - **Um sistema que não é só ao vivo e não oferece tabela, decidido** (o Mercado Livre de hoje): depois do teste a janela vai direto ao **Ligado**, sem os passos 3 e 4, e o **Ligado** não lista cópia (requisito 4.10).
-- **As dependências de outras partes.** A 1.3 espera a descrição de `CopyDefinitionV1` (parte 1, `C2`) e a saída de `CGC_CPF` do modelo `clientes` (parte 4). A 3.2 espera `CopySample` e `COPY_SAMPLE_ROWS` (parte 1, `C4`). A 3.1 move o `catalogOf` da parte 1, se ele já estiver no `main`.
+- **As dependências de outras partes.** A 1.3 espera a descrição de `CopyDefinitionV1` (parte 1, `C2`). A 3.2 espera `CopySample` e `COPY_SAMPLE_ROWS` (parte 1, `C4`). A 3.1 move o `catalogOf` da parte 1, se ele já estiver no `main`.
 
 ## Grafo de dependência das tarefas
 

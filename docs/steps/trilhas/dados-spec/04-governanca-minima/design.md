@@ -415,6 +415,7 @@ As migrações só acrescentam (data D6). Cada tabela nova tem a política de li
 3. **O catálogo e o login concordam.** Para todo papel, as tabelas do catálogo são exatamente as que o login do papel lê. *Valida: requisitos 3.1, 3.2.*
 4. **Retida não vaza.** Para toda tabela em `withheld`, nenhuma coluna, descrição ou linha dela chega a quem pergunta. *Valida: requisitos 3.3, 3.4.*
 5. **A cópia nasce com quem já lê a origem.** Para todo papel e toda cópia nova, o papel está em `copy_reader` se e só se segura as leituras da origem. *Valida: requisito 1.2.*
+6. **Removida** (2026-11-15): a regra do documento do cliente saiu. O número fica para que as outras não mudem de lugar.
 7. **Uma leitura, uma linha.** Para toda chamada de `rows`, `query` ou leitura ao vivo de agente ou app, o registro ganha exatamente uma linha, e a linha nunca tem um valor das linhas lidas. *Valida: requisitos 6.1 a 6.4.*
 8. **Sem registro, sem linhas.** Se a gravação falhar, a leitura não devolve linha. *Valida: requisito 6.5.*
 9. **A reconciliação mais velha não desfaz a mais nova.** Para todo par de reconciliações da mesma empresa, a de bilhete menor aplicada depois da de bilhete maior não muda permissão nenhuma; como quem tira pega o bilhete depois do commit do Hub, toda aplicação que passa depois dela leu o Hub já sem a tabela. *Valida: requisitos 2.3, 2.10.*
