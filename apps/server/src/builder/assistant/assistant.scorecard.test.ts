@@ -94,7 +94,7 @@ test('o modelo de verdade, a lista inteira: cada pergunta numa conversa nova, o 
   const on = await subscribed(t, REAL_MODEL, EVAL_PROVIDER, (config) => ({
     ...config,
     connectorOrigins: new Map([['mercado-livre', served.origin]]),
-    connectorApps: appsOf(ml.app),
+    connectorApps: appsOf('mercado-livre', ml.app),
   }))
   const linked = await linkMercadoLivre(on.hub, on.ana, on.companyId)
   assert.equal(linked.statusCode, 200, linked.body)

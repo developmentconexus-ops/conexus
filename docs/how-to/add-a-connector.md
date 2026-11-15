@@ -36,6 +36,9 @@ copies a connector's rows is [the Sync](../explanation/sync.md).
 8. **Give the installation its OAuth app**, for an `oauth2Code` connector whose `app` is `from:
    'installation'`: the key `<id>` in the file `HUB_CONNECTOR_APPS_FILE`, with its `clientId` and
    `clientSecret` ([0057](../decisions/0057-connections-by-oauth.md)). The founder holds that file.
+   HubSpot's entry is the example: `{ "hubspot": { "clientId": "...", "clientSecret": "..." } }`, and
+   the app made at HubSpot registers the return address `{publicOrigin}/integrations/return`, the one
+   address every connector's login comes back to.
 
 ## What needs no step
 
