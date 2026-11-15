@@ -32,4 +32,6 @@ If 1 fails, the fallback is Jaeger on the server (founder's second choice).
 ## State
 
 Proposed 2026-10-19. Founder: A on all four calls of the study; then (2026-10-19): "Okay di grafana e um
-so da telemtria do builder pro hub(B)".
+so da telemtria do builder pro hub(B)". Superseded by [0068] (2026-11-13).
+
+[0068]: 0068-mastra-tracing-in-its-own-database.md

@@ -1,0 +1,205 @@
+{
+  "service": "Mercado Livre",
+  "connector": "mercado-livre",
+  "case": "anuncios-varredura-1",
+  "route": {
+    "method": "GET",
+    "path": "/users/ACCOUNT/items/search",
+    "query": [
+      "limit",
+      "search_type"
+    ]
+  },
+  "recordedAt": "2026-11-12",
+  "status": 200,
+  "replaced": [
+    "available_orders.id",
+    "available_orders.id.id",
+    "available_orders.id.missing",
+    "available_orders.name",
+    "orders.id",
+    "orders.name",
+    "results",
+    "scroll_id",
+    "seller",
+    "seller_id"
+  ],
+  "body": {
+    "scroll_id": "EYJPZCI0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+    "seller_id": "000000002",
+    "results": [
+      "Texto inventado 3",
+      "Texto inventado 4",
+      "Texto inventado 5",
+      "Texto inventado 6",
+      "Texto inventado 7",
+      "Texto inventado 8",
+      "Texto inventado 9",
+      "Texto inventado 10",
+      "Texto inventado 11",
+      "Texto inventado 12",
+      "Texto inventado 13",
+      "Texto inventado 14",
+      "Texto inventado 15",
+      "Texto inventado 16",
+      "Texto inventado 17",
+      "Texto inventado 18",
+      "Texto inventado 19",
+      "Texto inventado 20",
+      "Texto inventado 21",
+      "Texto inventado 22",
+      "Texto inventado 23",
+      "Texto inventado 24",
+      "Texto inventado 25",
+      "Texto inventado 26",
+      "Texto inventado 27",
+      "Texto inventado 28",
+      "Texto inventado 29",
+      "Texto inventado 30",
+      "Texto inventado 31",
+      "Texto inventado 32",
+      "Texto inventado 33",
+      "Texto inventado 34",
+      "Texto inventado 35",
+      "Texto inventado 36",
+      "Texto inventado 37",
+      "Texto inventado 38",
+      "Texto inventado 39",
+      "Texto inventado 40",
+      "Texto inventado 41",
+      "Texto inventado 42",
+      "Texto inventado 43",
+      "Texto inventado 44",
+      "Texto inventado 45",
+      "Texto inventado 46",
+      "Texto inventado 47",
+      "Texto inventado 48",
+      "Texto inventado 49",
+      "Texto inventado 50",
+      "Texto inventado 51",
+      "Texto inventado 52",
+      "Texto inventado 53",
+      "Texto inventado 54",
+      "Texto inventado 55",
+      "Texto inventado 56",
+      "Texto inventado 57",
+      "Texto inventado 58",
+      "Texto inventado 59",
+      "Texto inventado 60",
+      "Texto inventado 61",
+      "Texto inventado 62",
+      "Texto inventado 63",
+      "Texto inventado 64",
+      "Texto inventado 65",
+      "Texto inventado 66",
+      "Texto inventado 67",
+      "Texto inventado 68",
+      "Texto inventado 69",
+      "Texto inventado 70",
+      "Texto inventado 71",
+      "Texto inventado 72",
+      "Texto inventado 73",
+      "Texto inventado 74",
+      "Texto inventado 75",
+      "Texto inventado 76",
+      "Texto inventado 77",
+      "Texto inventado 78",
+      "Texto inventado 79",
+      "Texto inventado 80",
+      "Texto inventado 81",
+      "Texto inventado 82",
+      "Texto inventado 83",
+      "Texto inventado 84",
+      "Texto inventado 85",
+      "Texto inventado 86",
+      "Texto inventado 87",
+      "Texto inventado 88",
+      "Texto inventado 89",
+      "Texto inventado 90",
+      "Texto inventado 91"
+    ],
+    "paging": {
+      "limit": 100,
+      "total": 89
+    },
+    "query": null,
+    "orders": [
+      {
+        "id": "STOPTIMEASC000092",
+        "name": "Texto inventado 93"
+      }
+    ],
+    "available_orders": [
+      {
+        "id": "STOPTIMEASC000092",
+        "name": "Texto inventado 93"
+      },
+      {
+        "id": "STOPTIMEDESC000094",
+        "name": "Texto inventado 95"
+      },
+      {
+        "id": "STARTTIMEASC000096",
+        "name": "Texto inventado 97"
+      },
+      {
+        "id": "STARTTIMEDESC000098",
+        "name": "Texto inventado 99"
+      },
+      {
+        "id": "AVAILABLEQUANTITYASC000100",
+        "name": "Texto inventado 101"
+      },
+      {
+        "id": "AVAILABLEQUANTITYDESC000102",
+        "name": "Texto inventado 103"
+      },
+      {
+        "id": "SOLDQUANTITYASC000104",
+        "name": "Texto inventado 105"
+      },
+      {
+        "id": "SOLDQUANTITYDESC000106",
+        "name": "Texto inventado 107"
+      },
+      {
+        "id": "PRICEASC000108",
+        "name": "Texto inventado 109"
+      },
+      {
+        "id": "PRICEDESC000110",
+        "name": "Texto inventado 111"
+      },
+      {
+        "id": "LASTUPDATEDDESC000112",
+        "name": "Texto inventado 113"
+      },
+      {
+        "id": "LASTUPDATEDASC000114",
+        "name": "Texto inventado 115"
+      },
+      {
+        "id": "TOTALSOLDQUANTITYASC000116",
+        "name": "Texto inventado 117"
+      },
+      {
+        "id": {
+          "id": "TOTALSOLDQUANTITYDESC000118",
+          "field": "sold_quantity",
+          "missing": "Texto inventado 119",
+          "order": "desc"
+        },
+        "name": "Texto inventado 120"
+      },
+      {
+        "id": {
+          "id": "INVENTORYIDASC000121",
+          "field": "inventory_id",
+          "missing": "Texto inventado 119",
+          "order": "asc"
+        },
+        "name": "Texto inventado 122"
+      }
+    ]
+  }
+}

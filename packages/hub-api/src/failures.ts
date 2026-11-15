@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { AGENT_FAILURES, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
-import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
+import { APP_DATA_FAILURES, APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { ASSISTANT_FAILURES } from './assistant-failures.ts'
 import { AUTOMATION_FAILURES } from './automation-failures.ts'
 import { CAPACITY } from './capacity.ts'
@@ -273,6 +273,7 @@ export const FAILURES = {
   ...PROJECT_FAILURES,
   ...APP_FAILURES,
   ...APP_VERSION_FAILURES,
+  ...APP_DATA_FAILURES,
   ...MODEL_ACCOUNT_FAILURES,
   ...CONNECTOR_FAILURES,
   ...ASSISTANT_FAILURES,

@@ -114,6 +114,19 @@ test('não conta como novo um clone que já existia', () => {
   assert.equal(run.status, 0, run.stderr)
 })
 
+test('só roda a mutação com --mutate; --fast segue aceito sem efeito', () => {
+  const before = { [FILE]: 'export const a = 1\n' }
+  const after = { [FILE]: 'export const a = 2\n' }
+  const plain = quality(before, after, { args: ['main'] })
+  assert.equal(plain.status, 0)
+  assert.doesNotMatch(plain.stdout, /^mutation:/m)
+  const fast = quality(before, after, { args: ['main', '--fast'] })
+  assert.equal(fast.status, 0)
+  assert.doesNotMatch(fast.stdout, /^mutation:/m)
+  const mutated = quality(before, after, { args: ['main', '--mutate'] })
+  assert.match(mutated.stdout, /^mutation:/m)
+})
+
 test('lê a base e --fast em qualquer ordem e recusa um sinalizador desconhecido', () => {
   const before = { [FILE]: 'export const a = 1\n' }
   const after = { [FILE]: nested('g', 6) }

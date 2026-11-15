@@ -1,5 +1,6 @@
-import type { ConversationSummary } from '@conexus/hub-api'
+import { ROW_COUNT_CAP } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 import type { DictationError } from '../../ui/speech-input.tsx'
 import type { Refusal } from './attachments.ts'
 import { LIMITS } from './attachments.ts'
@@ -17,7 +18,7 @@ export function steerPlaceholderText(agent: string): string {
 }
 export const STILL_WORKING = 'Ainda trabalhando…'
 export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'
-export const UNCONFIRMED_SEND = 'Não confirmamos o envio. Envie de novo.'
+export const UNCONFIRMED_SEND = unconfirmedText('o envio', 'Envie de novo.')
 export const FILE_EMPTY = 'Arquivo vazio.'
 /** Where a person may put a secret by habit: said under the field on a computer, and on a phone in the first-time state and the model sheet. */
 export const NO_SECRETS = 'Não cole senhas ou chaves na conversa.'
@@ -25,8 +26,10 @@ export const START_PLACEHOLDER = 'Descreva o app que você quer…'
 export const START_NO_ACCOUNT =
   'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.'
 /** Início's request, sent by the conversation it opened, when a reload cut the send short. */
-export const HANDOFF_UNCONFIRMED =
-  'Não confirmamos o envio do seu pedido. Confira a conversa antes de enviar de novo.'
+export const HANDOFF_UNCONFIRMED = unconfirmedText(
+  'o envio do seu pedido',
+  'Confira a conversa antes de enviar de novo.',
+)
 /** What a Projeto created without its first request says, above "Nenhuma conversa". */
 export const REQUEST_NOT_SENT = 'O Projeto foi criado, mas o seu pedido não saiu.'
 /** What the first send of an empty Projeto says after the Hub's sentence on a refused model: the text is back in the box. */
@@ -48,9 +51,11 @@ export const EXAMPLES = [
     text: 'Um app para registrar as visitas a clientes, com data, vendedor e anotações',
   },
 ] as const
-export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
-export const UNCONFIRMED_MODEL =
-  'Não confirmamos a troca do modelo. Confira o modelo e tente de novo.'
+export const UNCONFIRMED_CREATION = unconfirmedText('a criação da conversa', 'Tente de novo.')
+export const UNCONFIRMED_MODEL = unconfirmedText(
+  'a troca do modelo',
+  'Confira o modelo e tente de novo.',
+)
 
 /** Megabytes of file the route takes for a data URL's characters: base64 spends 4 for every 3 bytes. */
 function megabytesOf(characters: number): string {
@@ -82,8 +87,10 @@ export function dictationText(error: DictationError): string {
   }
 }
 
-/** What a conversation is called until the Builder titles it: the moment it began. */
-export function titleOf(conversation: Pick<ConversationSummary, 'title' | 'createdAt'>): string {
+/** A conversation's label: its title, or "Conversa de <date>" by the moment it began, which no message changes (decision 4A). */
+export function titleOf(
+  conversation: Readonly<{ title: string | null; createdAt: string }>,
+): string {
   return conversation.title ?? `Conversa de ${dayAndHour(conversation.createdAt)}`
 }
 
@@ -104,6 +111,13 @@ export function toolsText(count: number): string {
 
 export function automationsText(count: number): string {
   return count === 1 ? '1 automação' : `${count} automações`
+}
+
+/** How many rows a checked read gives, past the cap said as such. */
+export function checkedRowsText(rows: { kind: 'EXACT'; rows: number } | { kind: 'OVER' }): string {
+  if (rows.kind === 'OVER') return `mais de ${ROW_COUNT_CAP.toLocaleString('pt-BR')} linhas`
+  if (rows.rows === 0) return 'Nenhuma linha.'
+  return rows.rows === 1 ? '1 linha' : `${rows.rows.toLocaleString('pt-BR')} linhas`
 }
 
 export function tablesText(count: number): string {

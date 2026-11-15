@@ -17,6 +17,8 @@ export type Sent = {
   descriptions: Record<string, string>
   /** Each offered tool's input schema, by name, as the body declares it. */
   schemas: Record<string, unknown>
+  /** Each offered tool's whole declaration, by name: the type and the arguments of a tool the provider runs. */
+  declared: Record<string, Record<string, unknown>>
   system: string
   /** The system's blocks as the body sends them, each with whether it carries a cache mark. */
   systems: { text: string; cached: boolean }[]
@@ -26,6 +28,8 @@ export type Sent = {
   media: Media[]
   /** The extended thinking the call asked for, as the Messages API body names it, or none. */
   thinking: Thinking | null
+  /** The `anthropic-beta` header the call carried, or none. */
+  betas?: string | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
   cached: Cached[]
   /** The `tool_use` parts of the conversation's messages, in order, with the `input` each went out with. */
@@ -41,7 +45,11 @@ export type ToolUse = { name: string; input: unknown }
 /** A `tool_result` of the conversation as the model read it: its text and whether the provider marks it a failure (`is_error`). */
 export type ToolResultSent = { text: string; error: boolean }
 
-const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
+const Thinking = z.object({
+  type: z.string(),
+  budget_tokens: z.number().optional(),
+  block_binding: z.object({ prefix_mismatch_behavior: z.string() }).optional(),
+})
 type Thinking = z.infer<typeof Thinking>
 
 const CacheControl = z.object({ type: z.literal('ephemeral'), ttl: z.string().optional() })
@@ -52,11 +60,13 @@ const Body = z.object({
   thinking: Thinking.optional(),
   tools: z
     .array(
-      z.object({
-        name: z.string(),
-        description: z.string().optional(),
-        input_schema: z.unknown().optional(),
-      }),
+      z
+        .object({
+          name: z.string(),
+          description: z.string().optional(),
+          input_schema: z.unknown().optional(),
+        })
+        .loose(),
     )
     .optional(),
   tool_choice: z.object({ type: z.string() }).optional(),
@@ -201,11 +211,13 @@ export function sentOf(init: RequestInit | undefined): Sent {
       (body.tools ?? []).map((tool) => [tool.name, tool.description ?? '']),
     ),
     schemas: Object.fromEntries((body.tools ?? []).map((tool) => [tool.name, tool.input_schema])),
+    declared: Object.fromEntries((body.tools ?? []).map((tool) => [tool.name, tool])),
     system,
     systems,
     texts,
     media,
     thinking: body.thinking ?? null,
+    betas: headers.get('anthropic-beta'),
     cached: cachedOf(body),
     toolUses: toolUsesOf(body),
     toolResults: toolResultsOf(body),

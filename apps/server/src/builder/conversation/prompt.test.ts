@@ -156,3 +156,11 @@ test('depois da primeira versão: sem a linha 51, e AGENTS.md e MEMORY.md lidos 
   const values = filled({ instructions: INSTRUCTIONS.trim(), memory: MEMORY.trim() })
   assert.deepEqual(broken(second.system, values, false), [])
 })
+
+test('a frase do comando em português', async (t) => {
+  const model = builderModel(() => undefined)
+  await firstTurn(t, model)
+  const first = model.calls[0]
+  assert.ok(first)
+  assert.match(first.system, /Write each command's `description` in Brazilian Portuguese/)
+})

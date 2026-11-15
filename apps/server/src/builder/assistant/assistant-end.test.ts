@@ -14,7 +14,7 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
-import { assisting, created, reading, said, talking } from './test-assistant.ts'
+import { assisting, created, reading, said, searching, talking } from './test-assistant.ts'
 
 /** Whether `promise` settles within `ms`. */
 async function within(promise: Promise<unknown>, ms: number): Promise<'settled' | 'hung'> {
@@ -68,7 +68,7 @@ test('o fim do Hub: passado o limite, o turno do Assistente é parado como o do 
 })
 
 test('depois do reinício: um Hub novo sobre o mesmo banco continua o fio da conversa de Projeto, com as marcas e a escolha dela; a lista e a remoção a acham', async (t) => {
-  const on = await assisting(t, [[reading()], [said('Uma.')], [reading()]])
+  const on = await assisting(t, [[searching()], [reading()], [said('Uma.')], [reading()]])
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
     connections: [on.matriz],

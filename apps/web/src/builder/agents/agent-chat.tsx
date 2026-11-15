@@ -6,7 +6,7 @@ import type {
   WrittenRow,
 } from '@conexus/hub-api'
 import { AGENTS_CONTROLLER, agentFilePath } from '@conexus/hub-api'
-import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -99,7 +99,6 @@ export function AgentChat(props: {
 }) {
   const { companyId, projectId, agentId, conversationId } = props
   const scope = { companyId, projectId }
-  const queryClient = useQueryClient()
   const { words } = useConnectorCatalog(companyId)
   const { agent } = useSuspenseQuery(agentQuery(scope, agentId)).data
   const { conversations } = useSuspenseQuery(agentConversationsQuery(scope, agentId)).data
@@ -144,7 +143,7 @@ export function AgentChat(props: {
                 conversationId={conversationId}
                 place={{ controller: AGENTS_CONTROLLER }}
                 conversationKey={listKey}
-                onGone={() => void queryClient.invalidateQueries({ queryKey: listKey })}
+                listKeys={[listKey]}
                 empty={`Converse com ${agent.name}.`}
                 placeholder={askAgent(agent.name)}
                 noAccount={START_NO_ACCOUNT}

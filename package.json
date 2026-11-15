@@ -12,6 +12,8 @@
   },
   "scripts": {
     "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run test && npm run build",
+    "check": "git fetch -q origin main && NODE_OPTIONS=--max-old-space-size=4096 npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run quality -- origin/main --fast && npm run boundaries && npm run second-card && npm run approval -- --base origin/main && npm run method-freeze -- --base origin/main --labels \"$CONEXUS_LABELS\" && npm run migrations -- --base origin/main && npm run check:workflows",
+    "check:workflows": "docker run --rm --volume \"$PWD:/repo\" --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color && docker run --rm --volume \"$PWD:/repo\" --workdir /repo ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --offline --color always .github",
     "lint": "biome check .",
     "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && tsc -p tests/apps/tsconfig.json && npm run typecheck --workspaces --if-present",
     "deps": "depcruise . --config .dependency-cruiser.cjs",
@@ -19,14 +21,14 @@
     "docs": "node scripts/check-docs.ts",
     "quality": "node scripts/quality.ts",
     "suppressions": "node scripts/check-suppressions.ts",
+    "second-card": "node scripts/check-second-card.ts",
     "approval": "node scripts/check-approval.ts",
     "method-freeze": "node scripts/check-method-freeze.ts",
     "new-dependencies": "node scripts/list-new-dependencies.ts",
     "migrations": "node scripts/check-migrations.ts",
-    "preremovals": "npm run build -w @conexus/server",
-    "removals": "node scripts/removals.ts",
     "record": "node scripts/record.ts",
     "record-provider": "node scripts/record-provider.ts",
+    "record-connector": "node scripts/record-connector.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
     "boundaries": "node scripts/check-boundaries.ts",
@@ -34,10 +36,10 @@
     "build": "npm run build --workspaces --if-present",
     "app:pack": "node scripts/app-pack.ts tests/apps/recados dist/apps/recados-1 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-2 tests/apps/recados/cor-2 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-nao-inicia tests/apps/recados-nao-inicia && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-defeito tests/apps/recados-defeito && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-laco tests/apps/recados-laco",
     "pree2e": "npm run build -w @conexus/server && npm run build -w @conexus/web && npm run app:pack && npm exec -w @conexus/web -- playwright-core install chromium-headless-shell",
-    "e2e": "node --test --test-force-exit --test-concurrency=1 --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts tests/e2e/app.test.ts tests/e2e/app-open.test.ts tests/e2e/versions.test.ts tests/e2e/refusals.test.ts tests/e2e/model-accounts.test.ts tests/e2e/conversation.test.ts tests/e2e/defaults.test.ts tests/e2e/house.test.ts tests/e2e/builder-writes.test.ts tests/e2e/builder-builds.test.ts tests/e2e/builder-native.test.ts tests/e2e/first-request.test.ts tests/e2e/phone-rail.test.ts",
+    "e2e": "node scripts/test-run.ts --test-force-exit --test-concurrency=1 --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts tests/e2e/app.test.ts tests/e2e/app-open.test.ts tests/e2e/versions.test.ts tests/e2e/refusals.test.ts tests/e2e/model-accounts.test.ts tests/e2e/conversation.test.ts tests/e2e/defaults.test.ts tests/e2e/house.test.ts tests/e2e/builder-writes.test.ts tests/e2e/builder-builds.test.ts tests/e2e/builder-native.test.ts tests/e2e/first-request.test.ts tests/e2e/phone-rail.test.ts",
     "test:docs:mercado-livre": "npm run test:docs:mercado-livre -w @conexus/connectors",
     "test:image": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation-image.test.ts",
-    "test:scripts": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"
+    "test:scripts": "node scripts/test-run.ts --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

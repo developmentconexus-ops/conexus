@@ -45,7 +45,10 @@ const SCRIPT: (Call[] | string)[] = [
     {
       type: 'tool_use',
       name: RUN,
-      input: { command: 'echo começo; sleep 3; echo página escrita' },
+      input: {
+        description: 'Conferindo a página escrita',
+        command: 'echo começo; sleep 3; echo página escrita',
+      },
     },
   ],
   'Escrevi a página.',
@@ -72,8 +75,9 @@ async function lastingShown(chat: Page, version: RegExp) {
   await chat.getByText(WORKING).waitFor({ state: 'hidden' })
   const transcript = transcriptOf(chat)
   assert.ok(await transcript.getByText(version).isVisible(), 'the version line is gone')
-  // The command's row closes once it ends, and opens again on its output.
-  await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
+  // The command's row stays as the person left it: open if they opened it while it ran, closed on a reload.
+  if ((await outputWith(chat, 'página escrita').count()) === 0)
+    await transcript.getByRole('button', { name: 'Conferindo a página escrita' }).click()
   await outputWith(chat, 'página escrita').waitFor()
 }
 
@@ -84,6 +88,8 @@ async function writeFirst(chat: Page) {
   await ask(chat, 'Faça a página da padaria')
   // The command's first line and a clock show while it still runs; the write and the command are
   // one step's two calls, which Mastra runs together, so two rows run and each one has a clock.
+  // A running row stays closed until the person opens it, so the person opens the command's.
+  await transcriptOf(chat).getByRole('button', { name: 'Conferindo a página escrita' }).click()
   await outputWith(chat, 'começo').waitFor()
   await transcriptOf(chat)
     .getByText(/^\(\d+ s\)$/)

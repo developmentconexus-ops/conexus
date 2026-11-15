@@ -1,7 +1,9 @@
 import type { ServerResponse } from 'node:http'
 import type { ConversationId } from '@conexus/hub-api'
-import type { PostgresStore } from '@mastra/pg'
+import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
+import type { BuilderData } from '../../hub/apps/public.ts'
+import type { CopyService } from '../../hub/copies/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -19,18 +21,13 @@ import { TOOL_CLOSURE } from './permissions.ts'
 import { created, registerConversationRoutes } from './routes.ts'
 import { createConversationStore } from './store.ts'
 
-export { conversationMemory, routedModel, sessionModel, toolsOf } from './builder.ts'
 export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra, MayApprove, WriteOf } from './guard.ts'
 export { approvedCallOf } from './guard.ts'
 export { skillOf } from './instructions.ts'
-export { ASK_USER_TOOL, createAskUserTool } from './plan-tools.ts'
-export { turnDate } from './prompt/prompt.ts'
 export { createMastraStorage } from './storage.ts'
-export { bodyHashOf } from './store.ts'
 export { TurnTally } from './turn-line.ts'
-export { turnOfOwner } from './turn-of.ts'
 export { TOOL_CLOSURE }
 
 /**
@@ -66,17 +63,20 @@ export function createBuilderConversations(deps: {
   database: Database
   identity: IdentityPorts
   projects: Pick<ProjectPorts, 'liveProjectOf'>
-  storage: PostgresStore
+  storage: MastraCompositeStore
   queue: QueueDeps
   runs: Runs
   connectors: BuilderConnectors
+  data: BuilderData
+  copies: Pick<CopyService, 'projectView'>
   log: FailureLog
 }) {
   const { database, identity, queue } = deps
   const store = createConversationStore(deps)
   const builder = createBuilder({
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
-    ...{ index: store, connectors: deps.connectors },
+    ...{ index: store, connectors: deps.connectors, data: deps.data },
+    copies: (ids) => deps.copies.projectView(ids),
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name

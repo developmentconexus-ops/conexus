@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useMatches } from '@tanstack/react-router'
 import {
   BotIcon,
+  DatabaseIcon,
   HammerIcon,
   InfoIcon,
   MessagesSquareIcon,
@@ -74,7 +75,7 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
 
 /**
  * The entries of the Projeto's list, beside the rail that carries the way back to the company:
- * Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações. Each later one is added by its step, never as "em breve" (web W31). The
+ * Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações, Dados. Each later one is added by its step, never as "em breve" (web W31). The
  * address of Construir is the Projeto's own, with its conversations below it: it is the current
  * place while the route it lives under is among the matches.
  */
@@ -144,6 +145,14 @@ export function ProjectRailNav(scope: Scope) {
           icon={PlugIcon}
           label="Integrações"
         />
+        {may.viewAppData && (
+          <FrameLink
+            to="/companies/$companyId/projects/$projectId/data"
+            params={params}
+            icon={DatabaseIcon}
+            label="Dados"
+          />
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )

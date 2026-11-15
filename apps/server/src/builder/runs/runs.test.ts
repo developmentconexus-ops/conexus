@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   asked,
   conversing,
@@ -90,13 +91,10 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
-  for (let attempt = 0; attempt < 100 && !settling(); attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-  }
   function settling() {
     return hub.lines.some((line) => line.message === 'RUN_SETTLING')
   }
-  assert.ok(settling(), 'the first turn saves, held before its commit is checked in')
+  await until(settling, 'the first turn saves, held before its commit is checked in')
   const second = sent(hub, ana, url, 'Segunda')
   await new Promise((done) => setTimeout(done, 300))
   assert.equal(step, 2, 'the second message calls no model while the first version is saved')
@@ -220,7 +218,10 @@ test('a máquina cai no meio do turno: failed, MACHINE_LOST, e o main como era',
 })
 
 test('o guardar falha numa máquina viva: failed, SAVE_REFUSED, e o main como era', async (t) => {
-  const lock = { name: COMMAND, input: { command: 'mkdir .git/conexus-index.lock' } }
+  const lock = {
+    name: COMMAND,
+    input: { description: 'Rodando um teste', command: 'mkdir .git/conexus-index.lock' },
+  }
   const { hub, ana, conversations, companyId, projectId } = await conversing(
     t,
     working(writing('a.ts', 'x\n'), lock),
@@ -261,7 +262,10 @@ test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_N
 test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', async (t) => {
   const many = {
     name: COMMAND,
-    input: { command: 'mkdir -p m && cd m && seq 1 2100 | xargs touch' },
+    input: {
+      description: 'Rodando um teste',
+      command: 'mkdir -p m && cd m && seq 1 2100 | xargs touch',
+    },
   }
   const { hub, ana, conversations, companyId, projectId } = await conversing(t, working(many))
   const { events } = await asked(t, { hub, person: ana, conversations })
@@ -277,7 +281,7 @@ test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', a
 test('nada mudado: sem versão; o comando tocou a máquina, o turno fecha unchanged', async (t) => {
   const { hub, ana, conversations, companyId, projectId } = await conversing(
     t,
-    working({ name: COMMAND, input: { command: 'echo oi' } }),
+    working({ name: COMMAND, input: { description: 'Rodando um teste', command: 'echo oi' } }),
   )
   await asked(t, { hub, person: ana, conversations })
   assert.equal(hub.builder.bucket.held.size, 0)

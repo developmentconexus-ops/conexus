@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "wrangler types --check && tsc -p tsconfig.json",
-    "test": "node --test --test-timeout=60000 --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\" \"example/**/*.test.ts\""
+    "test": "node ../../scripts/test-run.ts --test-timeout=60000 --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\" \"example/**/*.test.ts\""
   },
   "dependencies": {
     "@conexus/app-contract": "*",

@@ -23,6 +23,7 @@ import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
 import { createMayUse } from './may-use.ts'
+import { memberProfileOf } from './member-profile.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
@@ -37,22 +38,14 @@ export type { ProjectApps } from './app-invitations.ts'
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export type { Speaker } from './may-use.ts'
-export { roleOfSpeaker } from './may-use.ts'
+export { personOf, roleOfSpeaker, speakerOf } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 export type { RoleKit } from './roles.ts'
-// The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
-// and the model accounts' foreign keys (code C8), and a person's name, for the version that
-// person sent, or a member's, for the request they decided.
-export {
-  ADMINISTRATOR,
-  company,
-  member,
-  memberNameColumn,
-  personNameColumn,
-  policy,
-  session,
-} from './tables.ts'
+// The row policies' pieces, for the Central's own table and the Hub session's table, and a
+// person's name, for the version that person sent, or a member's, for the request they decided.
+// The tables themselves leave by `public-tables.ts`, for the foreign keys (code C8).
+export { ADMINISTRATOR, memberNameColumn, personNameColumn, policy } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
@@ -131,6 +124,7 @@ export function createIdentity(deps: {
       companyNicknameOf,
       liveHubSession,
       personNameOf,
+      memberProfileOf,
       mailOwnerInvitation: ownerMailer(deps),
     }),
     // The Builder's release and the Projetos' apps come with the routes: identity exists before

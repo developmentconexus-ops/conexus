@@ -1,13 +1,17 @@
+import { classifyProviderError } from '@mastra/core/error'
 import { z } from 'zod'
 import { causeChain } from '../../platform/failure.ts'
 import { retryAfterMs } from '../../platform/retry-after.ts'
 
 /** What a provider's refusal of one call means for its account (code C52, study D3). */
 export type CallFailure =
-  | { kind: 'limited'; until: Date }
+  | { kind: 'limited'; until: Date; reason: LimitReason }
   | { kind: 'refused' }
   | { kind: 'missing' }
   | { kind: 'unknown'; status: number | null }
+
+/** Why an account is out until its time: a rate limit, or its credit spent (a 402 or a 400 of balance). */
+type LimitReason = 'rate' | 'credit'
 
 /** A failure that is the account's, which the queue answers with the next account. */
 export type AccountFailure = Exclude<CallFailure, { kind: 'unknown' }>
@@ -29,13 +33,33 @@ function providerErrorOf(error: unknown) {
   return undefined
 }
 
+const REASON = { 429: 'rate', 402: 'credit' } as const satisfies Record<
+  keyof typeof LIMIT_MS,
+  LimitReason
+>
+
+/**
+ * Anthropic answers an exhausted credit balance or a workspace spend limit with a 400: Mastra reads
+ * which, and the queue treats it as the status that means the same.
+ */
+function statusOf400(error: unknown): number {
+  const kind = classifyProviderError(error)
+  if (kind === 'quota') return 402
+  if (kind === 'rate_limited') return 429
+  return kind === 'auth' ? 401 : 400
+}
+
 export function callFailureOf(error: unknown, now = Date.now()): CallFailure {
   const found = providerErrorOf(error)
   if (found === undefined) return { kind: 'unknown', status: null }
-  const status = found.statusCode
+  const status = found.statusCode === 400 ? statusOf400(error) : found.statusCode
   if (status === 429 || status === 402) {
-    const after = retryAfterMs(found.responseHeaders ?? {}, now) ?? LIMIT_MS[status]
-    return { kind: 'limited', until: new Date(now + after) }
+    const after = retryAfterMs(found.responseHeaders ?? {}, now)
+    return {
+      kind: 'limited',
+      until: new Date(now + (after ?? LIMIT_MS[status])),
+      reason: REASON[status],
+    }
   }
   if (status === 401 || status === 403) return { kind: 'refused' }
   // The provider does not know the model for this credential: the list it serves has changed.

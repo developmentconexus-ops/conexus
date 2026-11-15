@@ -19,6 +19,10 @@ export const periodosDeFaturamento = readOf({
     limit: Limit(12).optional(),
   }),
   list: 'results',
+  paged: {
+    paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 12, ceiling: null },
+    changed: null,
+  },
   probe: () => ({}),
   request: (input) =>
     get('/billing/integration/monthly/periods', {
@@ -52,11 +56,10 @@ export const notaFiscalDoPedido = readOf({
   subject: 'faturamento',
   docs: 'obtendo-nota-fiscal',
   summary:
-    'Mostra a nota fiscal emitida para um pedido: série, número, status e data. O destinatário não vem.',
+    'Mostra a nota fiscal emitida para um pedido: série, número, status, data e o destinatário.',
   label: 'Nota fiscal do pedido',
   input: z.object({ orderId: PathId }),
   list: null,
-  omit: ['recipient'], // the buyer's CPF or CNPJ is on it
   from: [pedidos.id],
   probe: firstOrder,
   request: (input, account) => get(`/users/${sellerOf(account)}/invoices/orders/${input.orderId}`),

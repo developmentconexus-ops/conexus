@@ -16,8 +16,9 @@ import {
   unique,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { ADMINISTRATOR, policy, session } from '../identity/public.ts'
-import { project } from '../projects/public.ts'
+import { ADMINISTRATOR, policy } from '../identity/public.ts'
+import { session } from '../identity/public-tables.ts'
+import { project } from '../projects/public-tables.ts'
 
 // A Projeto's app opens on its own host: the Hub hands the browser a one-use pass there, and the
 // dispatcher trades it for an app session (security S22). Only hashes are stored. The Hub's login

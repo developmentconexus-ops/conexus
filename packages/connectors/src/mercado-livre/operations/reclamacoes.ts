@@ -15,6 +15,10 @@ export const reclamacoes = readOf({
     limit: Limit(30),
   }),
   list: 'data',
+  paged: {
+    paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 30, ceiling: null },
+    changed: null,
+  },
   probe: () => ({ status: 'opened' as const, offset: 0, limit: 5 }),
   request: (input, account) =>
     get('/post-purchase/v1/claims/search', {

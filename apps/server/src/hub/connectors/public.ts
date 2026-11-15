@@ -1,10 +1,10 @@
-import type { ConnectorId } from '@conexus/connectors'
-import { connectorOf } from '@conexus/connectors'
+import type { Connector, ConnectorId } from '@conexus/connectors'
+import { CONNECTORS } from '@conexus/connectors'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { ConnectorApp } from '../../platform/config-connectors.ts'
-import type { Database } from '../../platform/database.ts'
+import type { Database, ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
@@ -13,7 +13,10 @@ import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
+import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
+import { catalogSystemsOf } from './catalog-systems.ts'
+import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
 import { grant, mayGrant } from './grants.ts'
@@ -25,10 +28,35 @@ import {
   registerConnectionRoutes,
   registerToolCallRoutes,
 } from './routes.ts'
+import type { ConnectionCopies } from './rows.ts'
+import { connectorIn } from './rows.ts'
+import type { SessionScope } from './scope.ts'
 import { createToolDoor } from './tool-door.ts'
 
+export type { Connector, Native, Operation } from '@conexus/connectors'
+/** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056), and `deniesAccess`, which tells a 403 from a request to correct. */
+export {
+  AccountRef,
+  CONNECTORS,
+  CopyDefinition,
+  CopyDefinitionV2,
+  CopyName,
+  CopyPosition,
+  copyPrefixOf,
+  deniesAccess,
+} from '@conexus/connectors'
+export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
+export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
+export type { Proposal, ProposeAnswer } from './builder-port.ts'
+export { TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
+export {
+  connectionForCopy,
+  connectionNamesOf,
+  lackedReadOf,
+  lackedSourceReadOf,
+} from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
@@ -38,9 +66,17 @@ export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'
 export type { WriteRequest, Written } from './write-record.ts'
 export { markOf } from './write-record.ts'
+export type { Returned } from './wrote.ts'
 
-/** What tests change: a shorter deadline, and the clock a write is dated by (production's is the machine's). */
-export type ConnectorTuning = { callDeadlineMs?: number; now?: (() => Date) | undefined }
+/**
+ * What tests change: a shorter deadline, the clock a write and a cursor are dated by (production's
+ * is the machine's), and the catalog, with a connector of the test's own beside the kit's.
+ */
+export type ConnectorTuning = {
+  callDeadlineMs?: number
+  now?: (() => Date) | undefined
+  catalog?: readonly Connector[] | undefined
+}
 
 export type Connectors = ReturnType<typeof createConnectors>
 
@@ -57,11 +93,17 @@ export function createConnectors(deps: {
   log: FailureLog
   /** The apps' door: who an app's call is, the version its session gets and its manifest. */
   door: AppDoorPort
+  /** `hub/copies`' proposing, handed on to the Builder (Capacidade 3): it is made after the connectors. */
+  propose: () => Propose
+  /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
+  copies: () => ConnectionCopies
   tuning?: ConnectorTuning
 }) {
+  const catalog = deps.tuning?.catalog ?? CONNECTORS
+  const now = deps.tuning?.now ?? (() => new Date())
   const origins = new Map<ConnectorId, string>()
   for (const [id, origin] of deps.config.connectorOrigins ?? []) {
-    const connector = connectorOf(id)
+    const connector = connectorIn({ catalog }, id)
     if (connector === undefined)
       throw new Failure('CONFIG_INVALID', {
         details: { variables: 'HUB_CONNECTOR_ORIGINS', reason: 'unknown connector' },
@@ -70,7 +112,7 @@ export function createConnectors(deps: {
   }
   const apps = new Map<ConnectorId, ConnectorApp>()
   for (const [id, app] of deps.config.connectorApps ?? []) {
-    const connector = connectorOf(id)
+    const connector = connectorIn({ catalog }, id)
     if (connector === undefined || !isOAuth(connector))
       throw new Failure('CONFIG_INVALID', {
         details: { variables: 'HUB_CONNECTOR_APPS_FILE', reason: 'not an OAuth connector' },
@@ -81,7 +123,7 @@ export function createConnectors(deps: {
     fetch,
     origins,
     log: deps.log,
-    now: deps.tuning?.now ?? (() => new Date()),
+    now,
   })
   const limits = createLimits({ executor, log: deps.log })
   const routeDeps = {
@@ -94,6 +136,8 @@ export function createConnectors(deps: {
     limits,
     log: deps.log,
     callDeadlineMs: deps.tuning?.callDeadlineMs ?? CALL_DEADLINE_MS,
+    catalog,
+    now,
   }
   const appCalls = createAppCalls(routeDeps, deps.door)
   // One door for the agents and the saved tools they call, so a turn's 50 reads count both.
@@ -118,6 +162,10 @@ export function createConnectors(deps: {
       may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),
       grant: (input: OfGrant) => grant(routeDeps, input),
     },
+    /** The systems a place offers, for the data contract's catalog; admits nobody, the caller did. */
+    catalogSystems: (tx: ReadTx, scope: SessionScope) => catalogSystemsOf(routeDeps, tx, scope),
+    /** The copies' templates and their paged read (Capacidade 2, U2). */
+    copies: createCopyPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

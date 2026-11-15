@@ -1,13 +1,11 @@
-import { appendFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { FAILURES, getStatus } from '@conexus/hub-api'
+import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
-  resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
 import type {
@@ -17,14 +15,16 @@ import type {
   RepositoryOf,
 } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
+import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
-import { firstPersonArguments } from './first-person-arguments.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
-import { createConnectors, resealConnections, roleKit } from './hub/connectors/public.ts'
+import { createConnectors, roleKit } from './hub/connectors/public.ts'
+import { createCopies } from './hub/copies/public.ts'
+import { createCompanyData } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
-import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
+import { createIdentity } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
@@ -55,10 +55,11 @@ import { bootLog, closeListeners, listenQuietly, shutDownOnSignal } from './plat
 import type { SendMail } from './platform/mail.ts'
 import { createMail } from './platform/mail.ts'
 import { watchMemory } from './platform/memory.ts'
-import { migrate, migrateExitCode } from './platform/migrate.ts'
+import { migrateExitCode } from './platform/migrate.ts'
 import { loadMigrationRule } from './platform/migration-rule.ts'
 import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
+import { runReseal } from './reseal.ts'
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 
@@ -67,7 +68,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs'> & { status: Status; identity: Identity; webRoot?: string },
+  deps: Omit<Subjects, 'runs' | 'data'> & { status: Status; identity: Identity; webRoot?: string },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -82,7 +83,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    deps.requests,
+    ...[deps.requests, deps.copies],
   ]) {
     part.routes(app)
   }
@@ -132,11 +133,17 @@ export function subjectsOf(deps: {
   tuning?: ConnectorTuning
   /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
   pruneBudgetMs?: number
+  /** The tests' deadline for one look at an app's database (`test-hub.ts`); the apps' call limit by default. */
+  appDataDeadlineMs?: number
 }) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
-  const appRemoval = createAppRemoval(deps)
+  // The copies are made below, after the apps their release and removal reach; both come long after.
+  function lateCopies() {
+    return copies
+  }
+  const appRemoval = createAppRemoval({ ...deps, copies: lateCopies })
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
@@ -148,11 +155,12 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents } = conversationsOf({
+  const { conversations, assistant, automations, agents, copyClock } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
+    copies: lateCopies,
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release
@@ -172,6 +180,8 @@ export function subjectsOf(deps: {
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
+    copies: lateCopies,
+    appDataDeadlineMs: deps.appDataDeadlineMs,
   })
   const { noticeRequests } = notifications
   const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })
@@ -179,10 +189,27 @@ export function subjectsOf(deps: {
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  const connectors = createConnectors({ ...deps, identity, door: apps.connectorCall })
+  // The copies come next: the Builder's proposing is theirs, and a proposal comes long after.
+  const connectors = createConnectors({
+    ...{ ...deps, identity, door: apps.connectorCall },
+    propose: () => copies.propose,
+    copies: () => copies.ofConnections,
+  })
+  const copies = createCopies({
+    ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
+    ...{ projects: projects.ports, connectors: () => connectors.copies, apps: () => apps },
+    prove: () => connectors.builder.provePage,
+    clock: () => copyClock,
+    updating: () => conversations.updating(),
+  })
+  const data = createCompanyData({
+    ...{ database, identity, log },
+    ...{ connectors: () => connectors, copies: () => copies.data },
+    ...{ projects: projects.ports, companyPostgres: deps.companyPostgres, neon },
+  })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
 }
 
@@ -211,7 +238,7 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors, copies } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
@@ -239,6 +266,9 @@ async function runServer(): Promise<void> {
         .catch((error: unknown) =>
           logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
         )
+      void copies
+        .ensureWholeLines()
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
@@ -253,58 +283,6 @@ async function runServer(): Promise<void> {
   } catch (error) {
     await Promise.all([database.close(), mastraPool.end()])
     throw error
-  }
-}
-
-async function runMigrate(): Promise<void> {
-  const config = readConfig('migrate')
-  await migrate({
-    ownerUrl: config.migrationDatabaseUrl,
-    runtimeUrl: config.databaseUrl,
-    mastraUrl: config.mastraDatabaseUrl,
-  })
-  const log = bootLog(config.logLevel)
-  log.info('MASTRA_LOGIN_READY')
-  log.info('MIGRATED')
-}
-
-async function runFirstPerson(args: string[]): Promise<void> {
-  const input = firstPersonArguments(args)
-  const config = readConfig('serve')
-  const log = bootLog(config.logLevel)
-  const database = openDatabase({ url: config.databaseUrl, log })
-  try {
-    await assertRuntimeLogin(database)
-    await assertMigrated(database)
-    const sendMail = createMail({ config, log })
-    const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
-    const { link } = await identity.firstPerson({ name: input.name, email: input.email })
-    appendFileSync(input.summary, passwordLinkText(input.name, link))
-    log.info({}, 'FIRST_PERSON_LINK_GIVEN')
-  } catch (error) {
-    if (error instanceof Failure && error.code === 'FIRST_PERSON_EXISTS') {
-      appendFileSync(input.summary, `${FAILURES.FIRST_PERSON_EXISTS.phrase}\n`)
-    }
-    throw error
-  } finally {
-    await database.close()
-  }
-}
-
-/** Each deploy's step after migrate: moves the credentials off keys that only open (security S32). */
-async function runReseal(): Promise<void> {
-  const config = readConfig('serve')
-  const log = bootLog(config.logLevel)
-  const database = openDatabase({ url: config.databaseUrl, log })
-  try {
-    await assertRuntimeLogin(database)
-    await assertMigrated(database)
-    const accounts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
-    const connections = await resealConnections({ database, sealKeys: config.sealKeys })
-    const moved = accounts.moved + connections.moved
-    log.info({ moved, refused: accounts.refused + connections.refused }, 'RESEALED')
-  } finally {
-    await database.close()
   }
 }
 

@@ -150,7 +150,12 @@ const SCRIPT: (Block[] | string)[] = [
   [write('server/handlers.ts', HANDLERS)],
   [read('src/routes/home.tsx')],
   [write('src/routes/home.tsx', ORDERS_SCREEN)],
-  [tool('mastra_workspace_execute_command', { command: 'ls shared server' })],
+  [
+    tool('mastra_workspace_execute_command', {
+      description: 'Listando os arquivos do app',
+      command: 'ls shared server',
+    }),
+  ],
   [tool('conexus_check', {})],
   [tasks('completed', 'completed')],
   'O app de encomendas está pronto.',
@@ -236,8 +241,11 @@ async function firstVersion(chat: Page) {
   await transcriptShowed(chat, 'Montando a tabela')
   await chat.getByRole('region', { name: 'Painel de tarefas' }).waitFor({ state: 'hidden' })
   // The turn's tools in a row are one closed line that says what they did; it opens on each one.
-  await transcript.getByRole('button', { name: /\d+ ferramentas: .*rodou/ }).click()
-  await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
+  await transcript
+    .getByRole('button', { name: /\d+ ferramentas/ })
+    .filter({ hasText: /rodou/ })
+    .click()
+  await transcript.getByRole('button', { name: 'Listando os arquivos do app' }).click()
   await transcript.locator('pre', { hasText: '$ ls shared server' }).waitFor()
   await outputWith(chat, 'operations.ts').waitFor()
   await chat.getByText(/Versão 1, guardada em/).waitFor()

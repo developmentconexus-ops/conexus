@@ -13,11 +13,11 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, changeModel, resourceOf } from '../controller-kit/public.ts'
+import { attemptIdOf, changeModel, listOwned, ownThread } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
-import { CONSTRUTOR_MARK, construtorMarks, openConstrutor, threadOf } from './open.ts'
+import { CONSTRUTOR_MARK, construtorMarks, openConstrutor } from './open.ts'
 
 type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   database: Database
@@ -36,7 +36,8 @@ function admittedTo(deps: Deps, scope: InProject) {
 function summaryOf(thread: StorageThreadType): ConstrutorConversationSummary {
   return {
     id: ConversationId.parse(thread.id),
-    title: thread.title ?? '',
+    title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
   }
 }
@@ -57,7 +58,7 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
       { ...deps, controller, memory },
       { scope, id, model, effort },
     )
-    const thread = await threadOf(memory, owner, id)
+    const thread = await ownThread(memory, 'construtor', owner, id)
     if (opened.made) {
       const about = { companyId: scope.companyId, traceId: input.traceId, conversationId: id }
       deps.log.info(about, 'CONSTRUTOR_CONVERSATION_CREATED')
@@ -69,13 +70,8 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     const scope = inProjectOf(input)
     await admittedTo(deps, scope)
     const owner = { companyId: scope.companyId, personId: scope.personId }
-    const { threads } = await memory.listThreads({
-      filter: {
-        resourceId: resourceOf('construtor', owner),
-        metadata: { [CONSTRUTOR_MARK.project]: scope.projectId },
-      },
-      perPage: false,
-      orderBy: { field: 'updatedAt', direction: 'DESC' },
+    const threads = await listOwned(memory, 'construtor', owner, {
+      [CONSTRUTOR_MARK.project]: scope.projectId,
     })
     return answer({ conversations: threads.map(summaryOf) })
   })
@@ -85,7 +81,7 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     await admittedTo(deps, scope)
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const { conversationId } = input.params
-    const thread = await threadOf(memory, owner, conversationId)
+    const thread = await ownThread(memory, 'construtor', owner, conversationId)
     if (thread.metadata?.[CONSTRUTOR_MARK.project] !== scope.projectId)
       throw new Failure('CONVERSATION_NOT_FOUND')
     const kept = await changeModel(

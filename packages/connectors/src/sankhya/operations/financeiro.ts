@@ -5,7 +5,7 @@ import { empresaPage, empresas } from './cadastros.ts'
 import { Code, Date_, Page } from './shared.ts'
 
 /** The filters the two financial lists share; their pages start at 1, where the other routes start at 0. */
-const TitulosInput = z.object({
+const TitulosInput = z.strictObject({
   codigoEmpresa: Code,
   page: Page(1),
   codigoParceiro: Code.optional(),
@@ -54,7 +54,7 @@ export const tiposPagamento = defineOperation({
   summary:
     'Lista os tipos de pagamento (código, nome, subtipo); a página começa em 0. `subTipoPagamento` filtra por subtipo.',
   label: 'Tipos de pagamento',
-  input: z.object({ page: Page(0), subTipoPagamento: z.number().int().optional() }),
+  input: z.strictObject({ page: Page(0), subTipoPagamento: z.number().int().optional() }),
   ...rows({ list: 'data' }),
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/financeiros/tipos-pagamento', input),

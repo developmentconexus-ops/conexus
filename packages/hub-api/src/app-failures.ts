@@ -113,3 +113,23 @@ export const APP_VERSION_FAILURES = {
     actionKind: 'NONE',
   },
 } as const satisfies Record<string, FailureRow>
+
+/** The failures of reading a Projeto's app data for the Dados page (capacity 1): its database silent, or a table too wide to show. */
+export const APP_DATA_FAILURES = {
+  APP_DATABASE_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 503,
+    phrase: 'O banco do app não respondeu.',
+    action: 'Tente de novo em instantes.',
+    actionKind: 'RETRY',
+  },
+  APP_TABLE_TOO_WIDE: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'Esta tabela tem colunas demais para mostrar aqui.',
+    action: 'Peça ao Builder o que você quer ver dela.',
+    actionKind: 'NONE',
+  },
+} as const satisfies Record<string, FailureRow>

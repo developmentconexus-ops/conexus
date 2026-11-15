@@ -15,7 +15,8 @@ Build in small steps and prove each one before the next. A step is done when you
 ## Prove each step
 
 `conexus_check` runs the steps Conexus runs when you finish: the packages, that `shared/operations.ts` fits in JSON and, in an app with roles, that every operation names the roles that call it, the types, the build, the Worker, and the page opened in a browser under the app's security policy. It does not call operations, touch data or show you the screen. Once it passes, prove the step with what can show it:
-- An operation: nothing here calls it. Read its handler against its input, its output, its table and the failures it can meet, and say it was not run.
+- A read: `app_data_check` runs the read's own SQL and the values of a real case of the handler on the company's real data, and answers how many rows come back, the columns with their types and the time, never a row. Prove each read with it on the same text and values the handler binds, and use `app_data_read` when you need to see a few rows to understand the data. A refusal carries PostgreSQL's SQLSTATE: fix the read and check again.
+- A write: nothing here runs it. Read its handler against its input, its output, its table and the failures it can meet, and say it was not run.
 - A screen: you cannot see it. Trace each value it shows to the operation that returns it, check its four data states (`conexus-app`), and tell the person which screen to try and what they should see there.
 - A new table or migration: Conexus applies migrations when the version is sent, not in this run. Read the migration against how the table is used, and say it is proven only once the person tries the app.
 
@@ -47,4 +48,4 @@ Build in small steps and prove each one before the next. A step is done when you
 2. Read the app as the person will meet it, screen by screen, from the first one, against the plan's part for the person. If a screen would read as a bare form or an empty table to someone opening it for the first time, or a suggestion the person approved is missing, fix it before you finish.
 3. Leave each approved plan file as it was approved: what you built differently goes in the final message.
 4. Save what lasts to the app's memory: decisions with why, rules the person confirmed, and where each piece of data lives.
-5. Write the final message in a few short sentences: first what failed or was not proven, then what is ready and what to try, then the decisions you made and the assumptions for the person to confirm. Say what ran as facts, such as "a conferência passou; as 3 operações foram lidas, não executadas". Do not end by offering more help.
+5. Write the final message in a few short sentences: first what failed or was not proven, then what is ready and what to try, then the decisions you made and the assumptions for the person to confirm. Say what ran as facts, such as "a conferência passou; as leituras listarVendas e listarMetas rodaram nos dados reais, com 38 e 12 linhas; a gravação criarMeta foi lida, não executada". Do not end by offering more help.

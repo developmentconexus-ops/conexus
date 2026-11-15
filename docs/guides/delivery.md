@@ -16,14 +16,16 @@ merge.
 
 ## 1. One step at a time
 
-- **L1.** Product work **should** have one step in construction per track: **frontier** (the
-  Builder, agents, data in apps, platform), **pattern** (connectors through the kit and other
-  work with a template, L27) and **design** (`DESIGN.md`, `apps/web/src/{brand,ui}/`). A unit touching another
-  track's file waits for that track's units on it. Study/scope of the next step and a draft method change can run beside
-  it without product code. A sibling step builds only after the previous one merges, but once a
-  card is approved (L6), its units that touch none of the files of the previous step's fixes may
-  start, built from that card's pull request, while the use, fixes and closing of the previous step
-  run beside them. Founder, 2026-10-27: "1. Sim"; 2026-10-30: "1. Sim"; 2026-11-02: "A", "a". [review]
+- **L1.** Product work **must** go to the track owning its folders, **Dados** or **Agentes e
+  Apps**, as each track's page says. Each track **should** have one step in construction and at
+  most one open study. The platform is maintenance, not a track: a defect there follows L4 in the
+  track that found it. Once the contract file lands, Agentes e Apps reaches company data
+  only through it, changed through an issue labelled `contrato`. A unit touching the other track's file waits for
+  its units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds
+  only after the previous one merges, but once a card is approved (L6), its units touching none of
+  the previous step's fixes' files may start, built from that card's pull request, while the
+  previous step's use, fixes and closing run beside them. A small change that
+  [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   [review]
@@ -32,12 +34,14 @@ merge.
 
 ## 2. The card
 
-- **L5.** `docs/steps/` **must** hold one file per track: the card of the step in construction. A
-  card's track is `Trilho: desenho` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on their branches once
-  approved, and enters when that track's step closes. [check-docs]
+- **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A track's
+  page in `docs/steps/trilhas/` is not a card. The `processo` check reads the old marks: a card's track is `Trilho: desenho` or `Trilho: assistente` in its first five lines, `pattern-` in its name, else frontier. The next card of a track waits in its own draft pull request, its units built on branches once
+  approved, and enters when the track's step closes; the `processo` check stays red on it only when the pull request is not a draft. [processo]
 - **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
-  ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Founder,
-  2026-10-27: "3. Sim". [CI]
+  ledger with his words, the date and the card's commit. A mid-step decision of his goes straight into the ledger, with no new card approval. Firstmate
+  decides a reversible technical call on every track, with its evidence and how to undo it; the
+  founder keeps product, spend, security, table permissions, live use, merge words and his own
+  decisions. Founder, 2026-10-27: "3. Sim". [processo, review]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder.  
@@ -45,11 +49,14 @@ merge.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. Each unit goes as its own pull request;
-  with CI green, one Opus reviewer reads it and firstmate merges it. After the last unit, QA
+- **L9.** Review **should** follow the approved protocol. The build is one pull request per
+  step or group of units, one commit per unit. With CI green, one Opus reviewer
+  reads it commit by commit. After the last unit, QA
   ([testing T25](testing.md)) and one whole-step reviewer start together: Claude on Opus, no builder
-  of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It walks
-  the reference table row by row ([code C75](code.md)), runs the refusal criteria, reads CI logs.
+  of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It reads only
+  what no unit review could see: the whole reference table row by row ([code C75](code.md)) and the
+  seams between pull requests; it runs the refusal criteria, reads CI logs and never rereads an
+  approved diff.
   Nobody waits for QA; a review left incomplete is finished by its reviewer. QA and review findings
   form one fix round, split into fronts that share no file, built at once, one commit each, as one
   pull request into `main`; a Bloqueia that needs a contract the card lacks follows L7, then is one
@@ -66,7 +73,7 @@ merge.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
   card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
-  test that cannot fail (T12); two owners of one rule; red CI. Fechamento (wording, name, citation,
+  test that cannot fail; two owners of one rule; red CI. Fechamento (wording, name, citation,
   guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
@@ -76,18 +83,18 @@ merge.
 
 ## 4. Merge and use
 
-- **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
-  its review approves the same commit. The card's pull request and a proof's decision record carry
-  documents only; the closing pull request adds the founder's text review and the reviews'
-  follow-ups. One founder merge word covers a step's units; review and CI still gate each.
-  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
+- **L13.** Each build pull request **must** enter `main` as one merge, by firstmate, after the tests
+  pass and its review approves the same commit. The card's pull request and a proof's decision record carry
+  documents only; the step's last pull request adds the closing (L19). One founder merge word
+  covers a step's units; review and CI still gate each.
+  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim"; 2026-11-09: "U1, U2 e U3 seriam um PR".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
-  `main`, always through firstmate's merge script, and only after the CI job reported green on that
+  `main`, always through firstmate's merge script, and only after the `ci` and `processo` checks reported green on that
   exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
   GitHub refuses a direct push.
   [firstmate's merge script, review]
-- **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
+- **L15.** CI **must** have one check, `ci`, that fails when any job of the code fails, is skipped or is cancelled. A second check, `processo`, always present, holds the gates of L5, L6 and L20, so a pull request waiting on the process is not read as broken code; a merge needs both green.
   Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
   starts no `pull_request` run. [CI, review]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
@@ -102,18 +109,19 @@ merge.
 
 ## 5. Closing a step
 
-- **L19.** Closing **should** follow use and settlement of pending items: write the use line, retain
+- **L19.** Closing **should** fold into the step's last pull request, on every track: retain
   learned rules that change the next action, confirm acceptance tests, settle the Fechamento list,
-  remove taken items from next-card issues, move each remendo row of the reference table into
-  [boundaries](../reference/boundaries.md) with its package version, and delete the card. An agent
-  that did not build the step also runs the [CI health review](../how-to/ci-health.md) and sends
-  its findings to the founder. Founder, 2026-11-04: "D A". Failure: deleting the card erases a decision nobody preserved. [review]
-- **L20.** Skills and guides **must** change only in a closing pull request, or in a documents-only
-  pull request of their own with the founder's word, between two steps of the track it affects; a
-  step in flight keeps the rules it started with. Founder, 2026-10-30: "2. Sim". A new check **must** land in a pull request of its own before the step that needs
+  the founder's text review and the reviews' follow-ups, remove taken items from next-card issues,
+  move each remendo row of the reference table into [boundaries](../reference/boundaries.md) with
+  its package version; the card leaves with the use line, after the use (L17). Each week, an agent
+  that built none of the week's steps runs the [CI health review](../how-to/ci-health.md) and sends
+  its findings to firstmate. Founder, 2026-11-04: "D A". Failure: deleting the card erases a decision nobody preserved. [review]
+- **L20.** Skills and guides **must** change only in a step's closing, or in the week's one
+  documents-only pull request of method changes with the founder's word, between two steps of the track it affects; a
+  step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
   when none serves. A finding that asks for a change waits in the method queue, an issue with the
-  method label. The exception is an emergency label only the founder applies, counted on the step's
+  method label. A pull request answers for the tracks it touches (the track of a card it changes, or of a product file), and for all of them when it touches only the method. The exception is an emergency label only the founder applies, counted on the step's
   line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
 
 ## 6. What the repository keeps
@@ -131,8 +139,9 @@ merge.
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
   `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
-  card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
-  what the next agent does. [check-docs, review]
+  card has 2,500 words per unit: its words outside the founder's page, divided by its units. On
+  2026-11-13 a unit's own section, criteria and rows ran about 2,100 words, a large card 3,500 to
+  5,000. L21 guards it and `docs/approvals.md`: keep only what changes what the next agent does. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
@@ -145,23 +154,22 @@ merge.
 | `docs/guides/security.md` | 3,000 |
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
-| `docs/guides/delivery.md` | 1,950 |
+| `docs/guides/delivery.md` | 2,200 |
 | `docs/decisions/*.md` | 350 |
-| `docs/steps/*.md` | none (L21), nor on the founder's page |
+| `docs/steps/*.md` | 2,500 per unit (review), none (L21) on the founder's page |
 | `docs/how-to/*.md` | 800 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 
-## 7. The pattern track
+## 7. The light method
 
-- **L27.** The pattern track **must** use the light method of
+- **L27.** After its first milestone, the Dados track **must** use the light method of
   [the pattern card](../../.agents/skills/conexus-scope/references/pattern-card.md): a card from
   that template (2,000 words at most, no separate card reader), one Opus unit review launched on
-  green CI, one delta at most, one step review with QA for screens, the closing folded into the
-  last unit's pull request. The tracks keep apart by file: the pattern track owns
+  green CI, one delta at most, one step review with QA for screens. Dados owns
   `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
-  (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the frontier track.
+  (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the Agentes e Apps track.
   Founder, 2026-10-30: "3. Sim", "4. Sim". [review]
 
 ## 8. Git

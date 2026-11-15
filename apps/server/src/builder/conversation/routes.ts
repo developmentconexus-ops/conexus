@@ -7,6 +7,7 @@ import {
   setConversationModel,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { bodyHashOf } from '../../platform/attempt.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
@@ -16,7 +17,6 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { titleOf, titlesOf } from './history.ts'
 import type { ConversationStore, InProject } from './store.ts'
-import { bodyHashOf } from './store.ts'
 
 type Deps = { store: ConversationStore; builder: Builder; queue: QueueDeps }
 

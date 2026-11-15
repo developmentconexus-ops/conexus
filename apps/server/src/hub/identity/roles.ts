@@ -27,6 +27,7 @@ const MANAGE_COMPANY = {
   appAccess: ['manage'],
   connection: ['manage'],
   request: ['create', 'decide'],
+  companyMemory: ['manage'],
 } as const
 
 // Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
@@ -36,20 +37,22 @@ const ASK = { request: ['create'] } as const
 // without asking (step 24.5, Papéis `D1`).
 const UNATTENDED = ['publishUnattendedWrite'] as const
 
-// What makes a person a builder: they publish apps, manage and publish agents, create automations
-// and ask the Assistant (step 24.3.4, U1). The connections stay the administrators' (step 19, D).
+// What makes a person a builder: they publish apps, manage and publish agents, create automations,
+// ask the Assistant (step 24.3.4, U1) and manage the company's copies (Capacidade 2). The connections stay the administrators' (step 19, D).
 const BUILD = {
-  app: ['publish'],
+  app: ['publish', 'viewData'],
   agent: ['manage', 'publish'],
   automation: ['manage'],
   assistant: ['ask'],
+  copy: ['manage'],
 } as const
 
 /**
  * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
  * member creates one; only an owner or an administrator deletes one and changes its model
  * accounts (step 11, D4), gives and takes a person's access to an app (step 18, B), and links,
- * tests and removes the company's connections (step 19, D). Only the
+ * tests and removes the company's connections (step 19, D), and writes the company's memory and
+ * instructions (alignment of the Assistant, U9). Only the
  * owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
@@ -72,11 +75,13 @@ export function rolesFor(kit: RoleKit) {
     modelAccount: ['manage'],
     appAccess: ['manage'],
     connection: ['manage'],
-    app: ['publish'],
+    app: ['publish', 'viewData'],
     agent: ['manage', 'publish', ...UNATTENDED],
     automation: ['manage'],
     assistant: ['ask'],
+    copy: ['manage'],
     request: ['create', 'decide'],
+    companyMemory: ['manage'],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.

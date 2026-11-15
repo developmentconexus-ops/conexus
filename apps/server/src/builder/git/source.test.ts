@@ -28,7 +28,7 @@ function writesThree() {
         {
           type: 'tool_use' as const,
           name: 'mastra_workspace_execute_command',
-          input: { command: COMMAND },
+          input: { description: 'Rodando um teste', command: COMMAND },
         },
       ],
     }

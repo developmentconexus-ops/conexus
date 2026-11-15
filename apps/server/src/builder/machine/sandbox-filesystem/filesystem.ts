@@ -368,6 +368,6 @@ export class SandboxFilesystem implements WorkspaceFilesystem, Host {
   }
 
   getInstructions(): string {
-    return `Files are stored in a remote sandbox at ${this.basePath}. Use absolute workspace paths like /src/index.ts. All reads, writes and commands run inside the same sandbox.`
+    return `Files are stored in a remote sandbox at ${this.basePath}. File tools take paths relative to ${this.basePath}, or absolute paths under it. Any other absolute path is placed inside ${this.basePath} (/tmp/x becomes ${this.basePath}/tmp/x), while commands see the real path: keep every file a tool and a command share under ${this.basePath}.`
   }
 }

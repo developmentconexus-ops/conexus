@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { check, foreignKey, integer, jsonb, text, unique, uuid } from 'drizzle-orm/pg-core'
-import { company, policy } from '../../hub/identity/public.ts'
+import { policy } from '../../hub/identity/public.ts'
+import { company } from '../../hub/identity/public-tables.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
 import { authored, builder, instant, OWN_COMPANY } from '../schema/public.ts'
 

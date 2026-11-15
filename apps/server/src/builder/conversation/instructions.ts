@@ -7,6 +7,7 @@ import { createSkill, validateSkillContent } from '@mastra/core/skills'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { GrantedConnection } from '../connectors/public.ts'
+import { turnDate } from '../controller-kit/public.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { chosenModel } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -15,7 +16,6 @@ import {
   fillPrompt,
   MODEL_KNOWLEDGE_CUTOFFS,
   projectContext,
-  turnDate,
 } from './prompt/prompt.ts'
 
 type ProjectIds = { companyId: CompanyId; projectId: ProjectId }
@@ -32,6 +32,8 @@ export function builderInstructions(deps: {
   projectName: (ids: ProjectIds) => Promise<string | undefined>
   /** The Projeto's granted connections for the turn, read once for the run's tools, skills and these instructions. */
   granted: (requestContext: RequestContext) => Promise<readonly GrantedConnection[]>
+  /** The "## Data" block for the turn, read once for the run (`dataContext`). */
+  data: (requestContext: RequestContext) => Promise<string>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }): Promise<string> => {
     const ids = await deps.projectOf(requestContext)
@@ -40,10 +42,11 @@ export function builderInstructions(deps: {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const [projectName, context, granted] = await Promise.all([
+    const [projectName, context, granted, data] = await Promise.all([
       deps.projectName(ids),
       projectContext(deps.runs.repositoryOf(ids)),
       deps.granted(requestContext),
+      deps.data(requestContext),
     ])
     if (projectName === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_PROJECT_GONE' } })
@@ -59,6 +62,7 @@ export function builderInstructions(deps: {
       appFolder: APP_FOLDER,
       checks: CHECK_LIMITS.checks,
       connections: connectionsContext(granted),
+      data,
     })
   }
 }

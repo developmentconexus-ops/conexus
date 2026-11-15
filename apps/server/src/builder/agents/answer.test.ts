@@ -63,6 +63,35 @@ test('quem restaura responde pela versão até o fim do turno: a v3 entra no mei
   assert.equal(on.fake.orders().length, 1, 'the card stops the second write before the Sankhya')
 })
 
+test('quem publicou sai da empresa no meio do turno: a escrita seguinte em Faz sozinho ainda responde por ela, que não tem mais papel, e pergunta (D2-a)', async (t) => {
+  const between: { run: () => Promise<void> } = { run: () => Promise.resolve() }
+  const replies: Reply[] = [
+    { kind: 'blocks', blocks: [launched()] },
+    { kind: 'after', until: () => between.run(), reply: { kind: 'blocks', blocks: [launched()] } },
+  ]
+  let step = 0
+  const on = await approving(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    return replies[step++] ?? { kind: 'text', text: 'Pronto.' }
+  })
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const v1 = await publishedAgent(on.hub, bia, on.agents, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+
+  between.run = async () => {
+    const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${bia.id}`)
+    assert.equal(gone.statusCode, 204, gone.body)
+  }
+  const { url, stream } = await on.opened(v1.id)
+  await sent(on.hub, on.ana, url, 'Lance dois pedidos')
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.equal(on.fake.orders().length, 1, 'the card stops the second write before the Sankhya')
+})
+
 test('quem restaura sai da empresa e volta: o agente registrado deixa de ser dele, e o turno novo da v1 pergunta ainda que ele tenha de novo o papel e a ação (D2-a)', async (t) => {
   const on = await approving(t, [[launched()], [said('Lançado.')], [launched()]])
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')

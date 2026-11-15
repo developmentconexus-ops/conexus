@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
+import { after, test } from 'node:test'
+
+// One card per track (delivery L5): the frontier's, the pattern's, the design's and the Assistant's.
+const SCRIPT = resolve(import.meta.dirname, 'check-second-card.ts')
+const dirs: string[] = []
+after(() => {
+  for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
+})
+
+function check(cards: Record<string, string>, env: Record<string, string> = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-second-card-'))
+  dirs.push(dir)
+  const files: Record<string, string> = {}
+  for (const [name, text] of Object.entries(cards)) files[`docs/steps/${name}`] = text
+  for (const [path, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true })
+    writeFileSync(join(dir, path), content)
+  }
+  return spawnSync('node', [SCRIPT, dir], {
+    encoding: 'utf8',
+    timeout: 120_000,
+    env: { ...process.env, CONEXUS_DRAFT: '', ...env },
+  })
+}
+
+test('aceita um cartão por trilho: fronteira, padrão e desenho', () => {
+  const run = check({
+    'e01-a.md': 'a\n',
+    'pattern-e02-b.md': 'b\n',
+    'e03-c.md': '# c\n\nTrilho: desenho\n',
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('recusa dois cartões do trilho de desenho, nomeando o trilho', () => {
+  const run = check({
+    'e03-a.md': '# a\n\nTrilho: desenho\n',
+    'e04-b.md': '# b\n\nTrilho: desenho\n',
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /second-card: docs\/steps: design: /)
+})
+
+test('o marcador de trilho só vale nas primeiras linhas', () => {
+  const run = check({
+    'e01-a.md': 'a\n',
+    'e03-c.md': `${'x\n'.repeat(6)}Trilho: desenho\n`,
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /second-card: docs\/steps: frontier: /)
+})
+
+test('aceita um cartão do trilho do Assistente ao lado de um da fronteira', () => {
+  const run = check({
+    'e01-a.md': 'a\n',
+    'e05-d.md': '# d\n\nTrilho: assistente\n',
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('recusa dois cartões do trilho do Assistente, nomeando o trilho', () => {
+  const run = check({
+    'e05-a.md': '# a\n\nTrilho: assistente\n',
+    'e06-b.md': '# b\n\nTrilho: assistente\n',
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /second-card: docs\/steps: assistant: /)
+})
+
+test('um pull request em rascunho aceita o segundo cartão da trilha; fora do rascunho, recusa', () => {
+  const cards = { 'e01-a.md': 'a\n', 'e02-b.md': 'b\n' }
+  assert.equal(check(cards, { CONEXUS_DRAFT: 'true' }).status, 0)
+  assert.equal(check(cards, { CONEXUS_DRAFT: 'false' }).status, 1)
+})

@@ -5,6 +5,7 @@ import { runConformance } from '../kernel/conformance.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
+import { sankhyaCopyModels } from './copies.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaDoor } from './door.ts'
 import { sankhyaFake } from './fake.ts'
@@ -28,10 +29,17 @@ function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
 
-test('o catálogo tem o Sankhya e o Mercado Livre, o Sankhya achado pelo id', () => {
+test('o modelo clientes copia CGC_CPF', () => {
+  const clientes = sankhyaCopyModels.find((each) => each.id === 'clientes')
+  assert.ok(clientes)
+  assert.ok(clientes.definition.columns.some((column) => column.name === 'CGC_CPF'))
+  assert.ok(clientes.definition.source.sql.includes('CGC_CPF'))
+})
+
+test('o catálogo tem o Sankhya, o Mercado Livre e o HubSpot, o Sankhya achado pelo id', () => {
   assert.deepEqual(
     CONNECTORS.map((connector) => connector.id),
-    ['sankhya', 'mercado-livre'],
+    ['sankhya', 'mercado-livre', 'hubspot'],
   )
   assert.equal(connectorOf('sankhya'), sankhya)
   assert.equal(connectorOf('Sankhya'), undefined)

@@ -7,6 +7,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
+import { controllerIn } from '../controller-context/public.ts'
 import { turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 
@@ -38,8 +39,6 @@ export function checkTool(runs: Runs) {
   })
 }
 
-const ControllerThread = z.object({ threadId: z.string() })
-
 /** The words of a failed check at the end of the turn, which Mastra gives the model before it answers again. */
 function feedback(report: CheckReport, failed: number): string {
   return [
@@ -61,10 +60,9 @@ async function openTasks(
   storage: MastraCompositeStore,
   requestContext: RequestContext,
 ): Promise<TaskItemSnapshot[]> {
-  const controller = ControllerThread.safeParse(requestContext.get('controller'))
-  if (!controller.success) return []
+  const { threadId } = controllerIn(requestContext)
+  if (threadId === undefined) return []
   const store = await storage.getStore('threadState')
-  const { threadId } = controller.data
   const tasks = await store?.getState<TaskItemSnapshot[]>({ threadId, type: TASK_STATE_TYPE })
   return summarizeTaskCheck(Array.isArray(tasks) ? tasks : []).incompleteTasks
 }
@@ -76,10 +74,11 @@ const FINISHED: Verdict = { score: 1, reason: 'Conexus has nothing more to ask o
  * What the end of the turn is worth (cards of steps 14, U4, and 14.2, U3): a turn that ends (no
  * tool call, an empty one included) with tasks open scores 0 with them; one that changed the app
  * folder is checked, and a failure scores 0 with the report. Mastra gives the reason to the model
- * and calls it again (`isTaskComplete`). Both count in `CHECK_LIMITS.checks`, and the last lets the
- * turn end, its version kept as unfinished or not built. A machine that could not check costs no
- * attempt; the turn ends, its version kept as unchecked. Each round is told to the run, for the
- * turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
+ * and calls it again (`isTaskComplete`). Open-task ends and checks each count up to
+ * `CHECK_LIMITS.checks` on their own, so open tasks never use up the check's turns, and the last
+ * lets the turn end, its version kept as unfinished or not built. A machine that could not check
+ * costs no attempt; the turn ends, its version kept as unchecked. Each round is told to the run,
+ * for the turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
  */
 async function judge(
   deps: { runs: Runs; storage: MastraCompositeStore },
@@ -90,10 +89,11 @@ async function judge(
   if (turnIn(requestContext)?.outcome !== undefined) return FINISHED
   const open = await openTasks(deps.storage, requestContext)
   if (open.length === 0 && !(await runs.changed(requestContext))) return FINISHED
-  const round = runs.round(requestContext)
+  const kind = open.length > 0 ? 'open' : 'check'
+  const round = runs.round(requestContext, kind)
   if (round === 0) return FINISHED
   const last = round >= CHECK_LIMITS.checks
-  if (open.length > 0) {
+  if (kind === 'open') {
     if (!last) return { score: 0, reason: unfinished(open) }
     runs.judged(requestContext, { state: 'unfinished', open: open.length })
     return FINISHED

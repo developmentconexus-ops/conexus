@@ -3,28 +3,45 @@ import type { Manifest } from '@conexus/app-contract'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
+import { NeonDbError, neon, neonConfig, types } from '@neondatabase/serverless'
 import type { AppReadAnswer } from './app-read.ts'
 import { ensureReadLogin, readAddress, readApp, readGrants, readSettings } from './app-read.ts'
 import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
+import type { Bound, CopyReader } from './copy-reader.ts'
+import { copyReader } from './copy-reader.ts'
+import type { CopyTable } from './copy-sql.ts'
+import {
+  accountRows,
+  closePass,
+  dropAccountRows,
+  dropCopyTable,
+  dropForeignRows,
+  ensureCopyTable,
+  ensureSync,
+  grantCopy,
+  revokeCopy,
+  syncAddress,
+  writePage,
+} from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { OUTCOME_AFTER, OUTCOME_BEFORE } from './migration-outcome.ts'
 import type { RuleBreak } from './migration-rule.ts'
 import { ruleBreak } from './migration-rule.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
-export type { AppRead } from './app-read.ts'
-export type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
+export type { AppRead, AppReadAnswer } from './app-read.ts'
+export type { ReadResult, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
+export { quoted } from './app-sql.ts'
 
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
 
 /**
- * A SQLSTATE refuses with the names it carries; none, or a lost connection, is silence. Never
- * `detail`, which holds values (code C52, security S40).
+ * A SQLSTATE refuses with the names it carries and the message PostgreSQL gave; none, or a lost
+ * connection, is silence. Never `detail` nor `hint`, which hold values (code C52, security S40).
  */
 export function answerOf(
   error:
@@ -34,15 +51,15 @@ export function answerOf(
         table?: string
         column?: string
         constraint?: string
+        message?: string
       }>
     | undefined,
 ): SqlAnswer {
   const code = error?.code
-  if (code === undefined || CONNECTION_LOST.test(code)) {
+  if (code === undefined || CONNECTION_LOST.test(code))
     return { kind: 'NO_ANSWER', cause: code ?? error?.name }
-  }
-  const { table, column, constraint } = error ?? {}
-  return { kind: 'REFUSED', code, table, column, constraint }
+  const { table, column, constraint, message } = error ?? {}
+  return { kind: 'REFUSED', code, table, column, constraint, message }
 }
 
 /** The class of whatever was thrown: enough to say what went silent, never its message. */
@@ -64,6 +81,28 @@ async function cappedFetch(input: string | URL | Request, init?: RequestInit): P
 
 // The SDK reads a reply whole, and takes its own fetch only for the whole process.
 neonConfig.fetchFunction = cappedFetch
+
+// The driver's names for the types an app's columns commonly have, as PostgreSQL writes them.
+const POSTGRES_NAME: Readonly<Record<string, string>> = {
+  INT2: 'smallint',
+  INT4: 'integer',
+  INT8: 'bigint',
+  BOOL: 'boolean',
+  FLOAT4: 'real',
+  FLOAT8: 'double precision',
+  VARCHAR: 'character varying',
+  BPCHAR: 'character',
+  TIMESTAMP: 'timestamp without time zone',
+  TIMESTAMPTZ: 'timestamp with time zone',
+}
+const BUILTIN_NAME = new Map(Object.entries(types.builtins).map(([name, oid]) => [oid, name]))
+
+/** The name of a column's type from its OID, read from the driver's own map; an OID outside it is `oid <n>`. */
+export function columnTypeName(typeId: number): string {
+  const name = BUILTIN_NAME.get(typeId)
+  if (name === undefined) return `oid ${typeId}`
+  return POSTGRES_NAME[name] ?? name.toLowerCase()
+}
 
 /** The program's transport: Neon's HTTP proxy, one request per transaction (decision 0043). */
 export function neonTransport(
@@ -88,21 +127,21 @@ export async function neonTransport(
     const queries = statements.map(({ text, values }) => sql.query(text, [...(values ?? [])]))
     if (options?.readOnly) {
       // Rows as arrays with the result's own fields: two columns of one name stay two, an empty read keeps its columns.
-      const results = await sql.transaction(queries, {
-        ...options,
-        arrayMode: true,
-        fullResults: true,
-      })
-      const result = results[0]
-      if (result === undefined) return { kind: 'NO_ANSWER' }
-      return { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+      const mode = { ...options, arrayMode: true, fullResults: true } as const
+      const results = await sql.transaction(queries, mode)
+      return {
+        kind: 'READ',
+        results: results.map(({ fields, rows }) => ({
+          columns: fields.map(({ name, dataTypeID }) => ({ name, typeId: dataTypeID })),
+          rows,
+        })),
+      }
     }
     const value: Row[][] = await sql.transaction(queries)
     return { kind: 'DONE', value }
   } catch (error) {
-    if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge) {
+    if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge)
       return options?.readOnly ? { kind: 'TOO_LARGE' } : { kind: 'NO_ANSWER' }
-    }
     return answerOf(error instanceof NeonDbError ? error : { name: errorName(error) })
   }
 }
@@ -118,8 +157,12 @@ export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
   /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
   ensureReadLogin(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
-  /** One statement as the read login, whose address `readAddress` gives: the Hub never needs the company. */
-  readApp(read: DatabaseUrl, sql: string, signal: AbortSignal): Promise<AppReadAnswer>
+  /** The statements as the read login, in one read-only transaction, whose address `readAddress` gives: the Hub never needs the company. */
+  readApp(
+    read: DatabaseUrl,
+    statements: readonly SqlStatement[],
+    signal: AbortSignal,
+  ): Promise<AppReadAnswer>
   /** The read login's address on the company's host, its password derived here and never kept. */
   readAddress(host: string, projectId: ProjectId): Promise<DatabaseUrl>
   migrate(
@@ -128,7 +171,32 @@ export type CompanyPostgres = {
     migrations: readonly AppMigration[],
   ): Promise<MigrateAnswer>
   dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
-}
+  /** The `sync` schema and the login that owns it, once per company, as its owner. */
+  ensureSync(owner: DatabaseUrl): Promise<SqlAnswer>
+  /** The copy's table as the sync login. */
+  ensureCopyTable(sync: DatabaseUrl, table: CopyTable): Promise<SqlAnswer>
+  /** Where the Hub reaches the sync login, from the host it recorded, with no call to Neon. */
+  syncAddress(host: string): Promise<DatabaseUrl>
+  /** One page in one transaction, each row with the pass and, in a copy of accounts, its account. */
+  writePage: Bound<typeof writePage>
+  /** The end of a complete pass: what it did not see leaves, then the count. */
+  closePass: Bound<typeof closePass>
+  /** Desligar: an account's rows out of a copy that goes on; repeatable. */
+  dropAccountRows: Bound<typeof dropAccountRows>
+  /** The run's net: the rows of an account that is no source's leave. */
+  dropForeignRows: Bound<typeof dropForeignRows>
+  /** One account's rows in a copy of accounts. */
+  accountRows: Bound<typeof accountRows>
+  /** The table of a copy that ended, with the app logins' read of it; repeatable. */
+  dropCopyTable: Bound<typeof dropCopyTable>
+  /** A copy released to a Projeto's run and read logins. */
+  grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
+  /** A release taken back; `ALL`, every one of the Projeto and the schema. */
+  revokeCopy(
+    sync: DatabaseUrl,
+    input: { copy: string | 'ALL'; projectId: ProjectId },
+  ): Promise<SqlAnswer>
+} & CopyReader
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
 function migrationDigest(migration: AppMigration): string {
@@ -278,11 +346,23 @@ export function createCompanyPostgres(deps: {
 }): CompanyPostgres {
   const context: Context = { transport: deps.transport, key: deps.appLoginKey.reveal() }
   return Object.freeze({
+    ...copyReader(context),
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
-    readApp: (read, sql, signal) => readApp(context, read, sql, signal),
+    readApp: (read, statements, signal) => readApp(context, read, statements, signal),
     readAddress: (host, projectId) => readAddress(context, host, projectId),
     migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),
+    ensureSync: (owner) => ensureSync(context, owner),
+    ensureCopyTable: (sync, table) => ensureCopyTable(context, sync, table),
+    syncAddress: (host) => syncAddress(context, host),
+    writePage: (sync, input, signal) => writePage(context, sync, input, signal),
+    closePass: (sync, input, signal) => closePass(context, sync, input, signal),
+    dropAccountRows: (sync, input) => dropAccountRows(context, sync, input),
+    dropForeignRows: (sync, input, signal) => dropForeignRows(context, sync, input, signal),
+    accountRows: (sync, input) => accountRows(context, sync, input),
+    dropCopyTable: (sync, input) => dropCopyTable(context, sync, input),
+    grantCopy: (sync, input) => grantCopy(context, sync, input),
+    revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })
 }

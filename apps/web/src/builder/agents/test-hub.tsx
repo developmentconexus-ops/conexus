@@ -171,7 +171,8 @@ function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
         id: body.draft ? TEST_CHAT : CHAT,
         agentId: AgentId.parse(params.id),
         draft: body.draft === true,
-        title: '',
+        title: null,
+        createdAt: '2026-11-02T12:00:00.000Z',
         updatedAt: '2026-11-02T12:00:00.000Z',
       }
       held.conversations = [made, ...(held.conversations ?? [])]
@@ -215,7 +216,12 @@ function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
       await note(request)
       const replaced = held.answers?.openConstrutor?.()
       if (replaced) return replaced
-      const made = { id: BUILDER_CHAT, title: '', updatedAt: '2026-11-02T12:00:00.000Z' }
+      const made = {
+        id: BUILDER_CHAT,
+        title: null,
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      }
       held.construtor = [made, ...(held.construtor ?? [])]
       return HttpResponse.json({ conversation: made }, { status: 201 })
     }),

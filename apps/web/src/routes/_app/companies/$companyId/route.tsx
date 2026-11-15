@@ -1,8 +1,17 @@
 import type { CompanyId, CompanyMay } from '@conexus/hub-api'
-import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
-import { BotIcon, FolderIcon, HouseIcon, PlugIcon, SettingsIcon, TimerIcon } from 'lucide-react'
+import { createFileRoute, Outlet, useMatches, useParams, useSearch } from '@tanstack/react-router'
+import {
+  BotIcon,
+  DatabaseIcon,
+  FolderIcon,
+  HouseIcon,
+  PlugIcon,
+  SettingsIcon,
+  TimerIcon,
+} from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
+import { DataTree } from '../../../../hub/copies/public.ts'
 import {
   AccountMenu,
   CompanySwitcher,
@@ -31,7 +40,7 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The rail's places at the top: Automações follows Integrações and Agentes follows it, each for whoever the Hub says may. */
+/** The rail's places at the top: Automações follows Integrações, Agentes follows it and Dados follows Agentes, each for whoever the Hub says may. */
 function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
   const { companyId, may } = props
   const inInicio = useMatches({
@@ -76,6 +85,14 @@ function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
           label="Agentes"
         />
       )}
+      {may.manageCopies && (
+        <SidebarRailButton
+          to="/companies/$companyId/data"
+          params={params}
+          icon={DatabaseIcon}
+          label="Dados"
+        />
+      )}
     </>
   )
 }
@@ -88,6 +105,11 @@ function HouseFrame() {
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
+  const inData = useMatches({ select: (matches) => matches.at(-1)?.staticData.place === 'Dados' })
+  const q = useSearch({
+    strict: false,
+    select: (search) => (typeof search.q === 'string' ? search.q : undefined),
+  })
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
   const menuNote = unreadNote(useUnread(companyId))
   const foot = (
@@ -116,6 +138,8 @@ function HouseFrame() {
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
+        ) : inData && may.manageCopies ? (
+          <DataTree companyId={companyId} q={q} />
         ) : (
           <SidebarGroup>
             <NewConversation companyId={companyId} />

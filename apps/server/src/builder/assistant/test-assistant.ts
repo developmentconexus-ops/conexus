@@ -7,17 +7,44 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
-import { conversing, sent, streamOf } from '../conversation/test-conversation.ts'
-import { stepping, tool } from '../conversation/test-questions.ts'
+import { conversing, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
 
-export const READ = 'connector_read'
+/** A file the person sends with a message, as the screen sends it: a name, a type and a data URL. */
+/** The note's two templates, for the tests that read what a person keeps. */
+export { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
+
+export type Upload = { filename: string; mediaType: string; data: string }
+
+/** Sankhya's SQL read as the Assistant's typed tool. */
+export const READ = 'sankhya_consultar'
+export const SEARCH = 'search_tools'
 export const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
 
-/** A `connector_read` of `connection` with a query. */
+/** A search for the typed reads, loaded for the model's next step; by the read's own name it finds that read first. */
+export function searching(query = READ): Block {
+  return tool(SEARCH, { query })
+}
+
+/** A read of `connection` with a query, through the typed tool `searching` loads. */
 export function reading(connection = 'Matriz', sql = COUNT): Block {
-  return tool(READ, { connection, operation: 'sankhya.consultar', input: { sql } })
+  return tool(READ, { connection, sql })
+}
+
+/** The main agent asks the helper for a research, as the Assistant's text tells it to (U12). */
+export function researching(task = 'Quantas empresas a Matriz tem?', more: object = {}): Block {
+  return tool('subagent', { agentType: 'pesquisar', task, ...more })
+}
+
+/** The helper's read of the Matriz through `connector_read`. */
+export function helperReading(sql = COUNT): Block {
+  return tool('connector_read', {
+    connection: 'Matriz',
+    operation: 'sankhya.consultar',
+    input: { sql },
+  })
 }
 
 /** The kit's Sankhya double, both connections on it with the same credential. */
@@ -53,7 +80,10 @@ export async function assisting(
   const calls: Sent[] = []
   const served = sankhya ?? (await kitSankhya(t))
   const answer = Array.isArray(model)
-    ? stepping(model, calls)
+    ? stepped(
+        model.map((blocks) => () => blocks),
+        calls,
+      )
     : (asked: Sent) => {
         if (asked.stream) calls.push(asked)
         return model(asked)
@@ -121,8 +151,11 @@ export async function created(hub: Hub, person: Person, assistant: string, body:
 export async function talking(t: TestContext, hub: Hub, person: Person, url: string) {
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
-  async function say(content: string) {
-    const asked = await sent(hub, person, url, content)
+  async function say(content: string, files: Upload[] = []) {
+    const asked =
+      files.length === 0
+        ? await sent(hub, person, url, content)
+        : await post(hub, person, `${sessionUrl(url)}/messages`, { message: content, files })
     assert.equal(asked.statusCode, 200, asked.body)
     return stream.turn()
   }

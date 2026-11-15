@@ -71,7 +71,7 @@ function peaks(run: CiRun, budgets: Budgets): Map<string, number> {
   for (const job of run.jobs) {
     if (job.job === IGNORED_JOB) continue
     const budget = budgetOf(job.job, budgets)
-    if (budget === undefined) continue
+    if (budget === undefined || job.conclusion === 'skipped') continue
     peak.set(budget.key, Math.max(peak.get(budget.key) ?? 0, percentOf(job, budget.minutes)))
   }
   return peak
@@ -82,15 +82,20 @@ function cancelledByConcurrency(run: CiRun, budgets: Budgets): boolean {
   return run.conclusion === 'cancelled' && ![...peaks(run, budgets).values()].some((p) => p >= 100)
 }
 
-/** `runs` newest first. A job is over when its peak is 85% or more in each of the last three runs. */
+/**
+ * `runs` newest first. A job is over when its peak is 85% or more in each of its last three runs: a
+ * run in which the job was skipped (a push to main of documents only) is not one of its runs.
+ */
 export function overBudget(runs: CiRun[], budgets: Budgets): OverBudget[] {
-  const last = runs.filter((run) => !cancelledByConcurrency(run, budgets)).slice(0, STREAK)
-  const [first, second, third] = last
-  if (first === undefined || second === undefined || third === undefined) return []
-  const peaksOf = last.map((run) => peaks(run, budgets))
+  const counted = runs
+    .filter((run) => !cancelledByConcurrency(run, budgets))
+    .map((run) => ({ id: run.id, peak: peaks(run, budgets) }))
   const found: OverBudget[] = []
   for (const job of Object.keys(budgets)) {
-    const percents = peaksOf.map((peak) => peak.get(job) ?? 0)
+    const own = counted.filter((run) => run.peak.has(job)).slice(0, STREAK)
+    const [first, second, third] = own
+    if (first === undefined || second === undefined || third === undefined) continue
+    const percents = own.map((run) => run.peak.get(job) ?? 0)
     const [a = 0, b = 0, c = 0] = percents
     if (percents.every((percent) => percent >= OVER_PERCENT)) {
       found.push({ job, percents: [a, b, c], runs: [first.id, second.id, third.id] })
@@ -111,7 +116,7 @@ export function issueBody(over: OverBudget[], runs: CiRun[], budgets: Budgets): 
       ? `Nenhum job está em ${OVER_PERCENT}% ou mais nos últimos ${STREAK} runs de \`main\`.`
       : `Em ${OVER_PERCENT}% ou mais do \`timeout-minutes\` nos últimos ${STREAK} runs de \`main\`: ${over.map((o) => `\`${o.job}\``).join(', ')}.`,
     '',
-    `O maior job de cada nome, em % do seu \`timeout-minutes\`, nos ${runs.length} últimos runs completos de \`main\`, do mais novo ao mais antigo. Um run cancelado pela concorrência não conta e aparece com "–".`,
+    `O maior job de cada nome, em % do seu \`timeout-minutes\`, nos ${runs.length} últimos runs completos de \`main\`, do mais novo ao mais antigo. Um run cancelado pela concorrência não conta e aparece com "–"; um job pulado (push só de documento) fica em branco e não conta.`,
     '',
     `| Job | Limite | ${columns.map((column) => column.title).join(' | ')} |`,
     `| --- | ---: | ${columns.map(() => '---:').join(' | ')} |`,

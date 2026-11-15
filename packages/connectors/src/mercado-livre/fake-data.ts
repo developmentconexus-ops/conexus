@@ -1,5 +1,6 @@
-// Invented values only (S40). The buyer's name, e-mail, phone, address and CPF are here on
-// purpose: the kit must drop them (`operations.test.ts`, "sem dados do comprador").
+import { rowsOf } from './recordings.ts'
+
+// Invented values only (S40).
 
 export const APP = Object.freeze({
   clientId: 'fake-app-1234567890',
@@ -9,9 +10,10 @@ export const REDIRECT_URI = 'https://hub.exemplo.test/integrations/return'
 
 export const SELLER = Object.freeze({ ref: '123456789', label: 'PADARIASOL' })
 
+/** More than the 1,000 an offset search reaches: only a scan reads them all. */
 export const ITEMS = Array.from(
-  { length: 12 },
-  (_, index) => `MLB10000000${String(index + 1).padStart(2, '0')}`,
+  { length: 1300 },
+  (_, index) => `MLB1000000${String(index + 1).padStart(4, '0')}`,
 )
 export const ORDER = 2000000000001
 export const PACK = 2000000000099
@@ -22,11 +24,6 @@ export const CLAIM = 5000000001
 export const BUYER = {
   id: 77001,
   nickname: 'COMPRADORFICTICIO',
-  first_name: 'Maria',
-  last_name: 'Fictícia',
-  email: 'maria.ficticia@exemplo.test',
-  phone: { area_code: '11', number: '988776655' },
-  billing_info: { doc_type: 'CPF', doc_number: '52998224725' },
 }
 
 export const ORDER_BODY = {
@@ -47,6 +44,40 @@ export const ORDER_BODY = {
       unit_price: 44.95,
     },
   ],
+}
+
+let ordersKept: readonly (Record<string, unknown> & { date_last_updated: string })[] | undefined
+
+/** 120 orders, each shaped as a recorded one with its buyer; each changed a minute after the one before, so a changed-since filter keeps the newest. */
+export function ordersOf() {
+  const recorded = rowsOf('pedidos-alterados', 'results')
+  ordersKept ??= Array.from({ length: 120 }, (_, index) => ({
+    ...recorded[index % recorded.length],
+    buyer: BUYER,
+    id: ORDER + index,
+    date_last_updated: new Date(Date.UTC(2026, 8, 10, 13, index)).toISOString(),
+  }))
+  return ordersKept
+}
+
+/** The rows of a scan's page: its `scroll_id` carries where the next page starts (`<route>-<offset>`). */
+export function scanOf<T>(rows: readonly T[], query: URLSearchParams, route: string) {
+  const scroll = query.get('scroll_id')
+  const offset = scroll === null ? 0 : Number(scroll.slice(route.length + 1))
+  const limit = Number(query.get('limit') ?? 50)
+  const page = rows.slice(offset, offset + limit)
+  return { rows: page, scrollId: `${route}-${offset + page.length}`, total: rows.length, limit }
+}
+
+/** A scan's cursor the double never gave. */
+export function badScroll(query: URLSearchParams, route: string): boolean {
+  const scroll = query.get('scroll_id')
+  return scroll !== null && !new RegExp(`^${route}-\\d+$`).test(scroll)
+}
+
+export const BAD_SCROLL = {
+  status: 400,
+  body: { message: 'invalid scroll_id', error: 'bad_request', status: 400 },
 }
 
 export function itemBody(id: string, index: number) {
@@ -106,7 +137,12 @@ export function me(account: { ref: string; label: string }) {
     user_type: 'normal',
     permalink: `https://perfil.exemplo.test/${account.label}`,
     registration_date: '2020-01-01T00:00:00.000-03:00',
+    first_name: 'Joana',
+    last_name: 'Exemplo',
     email: 'dono@exemplo.test',
     phone: { area_code: '11', number: '900000001' },
+    alternative_phone: { area_code: '11', phone: '900000002' },
+    address: { address: 'Rua da Loja 1', city: 'Cidade', state: 'BR-SP', zip_code: '00000000' },
+    identification: { type: 'CPF', number: '11144477735' },
   }
 }

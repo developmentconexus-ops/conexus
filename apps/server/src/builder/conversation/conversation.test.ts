@@ -5,6 +5,8 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { Anthropic } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -12,14 +14,14 @@ import {
   endOf,
   KEY,
   messagesOf,
-  rolesAndParts,
   sent,
   started,
   streamOf,
 } from './test-conversation.ts'
 import { failuresOf, textsOf } from './test-parts.ts'
 import { sessionStateOf } from './test-questions.ts'
-import { printedOf, routedTo, served } from './test-research.ts'
+import { onGroq, printedOf, routedTo, served } from './test-research.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
@@ -85,7 +87,7 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   const answered = await sent(hub, ana, url, 'Compare dois apps')
   assert.equal(answered.statusCode, 200)
   const events = await stream.turn()
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
   assert.equal(endOf(events), 'error')
   const read = await call(hub, ana, 'GET', url)
   const list = await call(hub, ana, 'GET', conversations)
@@ -126,6 +128,19 @@ function resolvesInternally(t: TestContext, name: string) {
   })
 }
 
+/** A model that opens each address in turn with `web_fetch`, then says it could not open them. */
+function fetchingEach(addresses: string[]): Anthropic['chat'] {
+  let step = 0
+  return (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    const url = addresses[step]
+    step += 1
+    return url === undefined
+      ? { kind: 'text', text: 'Não consegui abrir.' }
+      : { kind: 'fetch', url }
+  }
+}
+
 test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento para um: recusado, e o turno segue', async (t) => {
   const internal = await served(t, (_path, response) => response.end('segredo interno'))
   const site = await served(t, (path, response) =>
@@ -141,15 +156,11 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
     'http://site.example.test/pagina',
     'http://site.example.test/cardapio',
   ]
-  let step = 0
-  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
-    if (!asked.stream) return { kind: 'text', text: 'Título' }
-    const url = addresses[step]
-    step += 1
-    return url === undefined
-      ? { kind: 'text', text: 'Não consegui abrir.' }
-      : { kind: 'fetch', url }
-  })
+  const { hub, ana, companyId, conversations, anthropic } = await conversing(t, () => ({
+    kind: 'text',
+    text: 'Título',
+  }))
+  await onGroq({ hub, ana, companyId, anthropic }, fetchingEach(addresses))
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
@@ -177,7 +188,7 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.deepEqual(site.reached, ['/pagina', '/cardapio'])
   assert.deepEqual(internal.reached, [])
   const last =
-    anthropic.sent
+    anthropic.chats
       .filter((each) => each.stream)
       .at(-1)
       ?.texts.join('\n') ?? ''
@@ -191,12 +202,13 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
 
 /** The conversation's title once it has one, read again for at most five seconds. */
 async function titleOf(hub: Hub, person: Person, url: string): Promise<unknown> {
-  for (let attempt = 0; ; attempt += 1) {
+  let found: unknown = null
+  await until(async () => {
     const read = await call(hub, person, 'GET', url)
-    const { title } = Object(read.json()).conversation
-    if (title !== null || attempt === 50) return title
-    await new Promise((done) => setTimeout(done, 100))
-  }
+    found = Object(read.json()).conversation.title
+    return found !== null
+  }, 'the conversation has a title')
+  return found
 }
 
 test('o título nasce na primeira mensagem, pela conta do turno, e fica guardado na conversa', async (t) => {

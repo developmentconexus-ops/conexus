@@ -3,7 +3,7 @@ import { FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { z } from 'zod'
-import { HubFailure } from '../../platform/hub.ts'
+import { HubFailure, unconfirmedText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Form, FormAlert, setServerError, TextField, useSchemaForm } from '../../ui/form.tsx'
@@ -11,7 +11,7 @@ import { undecided } from './client-fields.tsx'
 import { useLeaveClient } from './leave-client.ts'
 import { clientQuery, sendDeletion } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista antes de tentar de novo.'
+const UNCONFIRMED = unconfirmedText('a exclusão', 'Veja a lista antes de tentar de novo.')
 const LOST =
   'Saem a empresa, os membros, os convites e o cadastro. Os Projetos e o banco da empresa também serão apagados. As pessoas continuam com as contas delas.'
 

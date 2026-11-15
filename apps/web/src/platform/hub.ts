@@ -131,10 +131,11 @@ type ReadParts<O extends Operation> = (Has<O, 'params'> extends true
   (Has<O, 'query'> extends true ? { query: PartOf<O, 'query'> } : unknown)
 type ReadArgs<O extends Operation> = [keyof ReadParts<O>] extends [never] ? [] : [ReadParts<O>]
 
-/** What a write is given: the address parameters, the body and, for a create, its attempt key. */
+/** What a write is given: the address parameters and query, the body and, for a create, its attempt key. */
 type WriteParts<O extends Operation> = (Has<O, 'params'> extends true
   ? { params: PartOf<O, 'params'> }
   : unknown) &
+  (Has<O, 'query'> extends true ? { query: PartOf<O, 'query'> } : unknown) &
   (Has<O, 'body'> extends true ? { body: PartOf<O, 'body'> } : unknown) &
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown)
 type WriteVariables<O extends Operation> = unknown extends WriteParts<O> ? undefined : WriteParts<O>
@@ -257,7 +258,16 @@ export function writeFailureText(error: unknown, unconfirmed: string): string {
   return error instanceof HubFailure && !error.outcomeUnknown ? sentenceOf(error) : unconfirmed
 }
 
-const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set(['NOT_FOUND', 'CONVERSATION_NOT_FOUND'])
+/** "Não confirmamos <o quê>. <depois>": the text of a write whose end is not known (code C37, C48). */
+export function unconfirmedText(what: string | undefined, next: string): string {
+  return what === undefined ? `Não confirmamos. ${next}` : `Não confirmamos ${what}. ${next}`
+}
+
+const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set([
+  'NOT_FOUND',
+  'CONVERSATION_NOT_FOUND',
+  'COPY_NOT_FOUND',
+])
 
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */
 export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {

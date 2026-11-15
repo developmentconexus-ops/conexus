@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { HubFailure, sentenceOf, unconfirmedText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -29,7 +29,7 @@ import {
 } from './queries.ts'
 import { continueText, RECONNECT, signInWindowText } from './text.ts'
 
-const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
+const UNCONFIRMED = unconfirmedText('a ligação', 'Tente de novo.')
 const NAME = 'name'
 const LIST_CHANGED: ReadonlySet<string> = new Set(['CONNECTION_NAME_TAKEN', 'CONNECTOR_UNKNOWN'])
 

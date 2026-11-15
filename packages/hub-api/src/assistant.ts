@@ -17,6 +17,7 @@ export const ASSISTANT_TOOL = {
   proposeApp: 'propose_app',
   proposeAppChange: 'propose_app_change',
   proposeAutomation: 'propose_automation',
+  proposeCompanyMemory: 'propose_company_memory',
 } as const
 
 /** An automation's id: Mastra's schedule id of the row (`schedule_<slug>`), its uuid derived from the creation's attempt (step 24.2). */
@@ -34,6 +35,7 @@ const OpenedBy = z.object({ automationId: AutomationId, name: z.string() }).null
 const ConversationHead = z.object({
   id: ConversationId,
   title: z.string().nullable(),
+  createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
 

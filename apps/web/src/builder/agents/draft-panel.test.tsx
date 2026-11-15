@@ -11,7 +11,12 @@ import { agentScreens } from './test-hub.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const UPDATED = '2026-11-02T12:00:00.000Z'
-const CONVERSATION = { id: BUILDER_CHAT, title: 'Meu agente', updatedAt: UPDATED }
+const CONVERSATION = {
+  id: BUILDER_CHAT,
+  title: 'Meu agente',
+  createdAt: UPDATED,
+  updatedAt: UPDATED,
+}
 
 function saved(
   id: string,

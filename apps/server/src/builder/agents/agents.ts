@@ -10,10 +10,10 @@ import type {
 import { AgentConfig, AgentId as AgentIdSchema } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
+import { bodyHashOf } from '../../platform/attempt.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import { bodyHashOf } from '../conversation/public.ts'
 import type {
   InProject,
   OfferedConnection,

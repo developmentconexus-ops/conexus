@@ -16,6 +16,7 @@ export {
   revokeAllAppAccess,
   revokeAppAccess,
 } from './app-access.ts'
+export * from './app-data.ts'
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_OPEN_PATH,
@@ -38,7 +39,7 @@ export {
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
-  type OfProject,
+  OfProject,
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
@@ -90,7 +91,6 @@ export {
   listCompanies,
   listInvitations,
   listMembers,
-  Member,
   Membership,
   Next,
   PAGE_SIZE,
@@ -98,6 +98,8 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export * from './company-data.ts'
+export * from './company-memory.ts'
 export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,
@@ -115,6 +117,7 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
+export * from './connection-copies.ts'
 export {
   CALL_DEADLINE_MS,
   CONNECTION_STATES,
@@ -159,6 +162,9 @@ export {
   setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
+export * from './copies.ts'
+export { CopyProposed, PROOF_PAGE_ROWS, ProveCounts } from './copy-proof.ts'
+export * from './copy-shown.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
@@ -178,6 +184,8 @@ export {
 } from './identity.ts'
 export * from './library-ids.ts'
 export * from './machine.ts'
+export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'
+export { Member } from './members.ts'
 export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
@@ -226,6 +234,7 @@ export {
   readObservationalMemoryModels,
   setObservationalMemoryModel,
 } from './observational-memory.ts'
+export * from './ontology.ts'
 export * from './open-writes.ts'
 export {
   type AccessKind,
@@ -249,7 +258,8 @@ export {
   OwnerInvitation,
   registerClient,
 } from './operations.ts'
-export { PAGES, REDIRECT_PATH } from './pages.ts'
+export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
+export * from './profile-memory.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,

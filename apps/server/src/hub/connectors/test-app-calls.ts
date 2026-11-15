@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { sankhyaFake } from '@conexus/connectors'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
+import { z } from 'zod'
 import { browser, handoff } from '../apps/test-handoff.ts'
 import { folder } from '../apps/test-versions.ts'
 import type { Person } from '../identity/test-hub.ts'
@@ -17,9 +19,9 @@ import {
   plantCompany,
   post,
 } from '../identity/test-hub.ts'
-import { linkSankhya, testOf } from './test-connections.ts'
+import { forward, linkSankhya, testOf } from './test-connections.ts'
 
-export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
+export { CONNECTOR_CALLS_PER_TURN, described, TURNS_KEPT } from './builder-port.ts'
 export { shaped } from './cut.ts'
 export { readOf } from './grants.ts'
 
@@ -83,6 +85,64 @@ async function plantedSession(
 }
 
 /**
+ * In front of the Sankhya double: its data calls (not the login, not the logout) counted while open
+ * and, from `hold()` on, kept at the door until the test lets them go.
+ */
+export function sankhyaDoor(t: TestContext) {
+  let open = 0
+  let most = 0
+  let held: Promise<void> | undefined
+  const waiting: { calls: number; reached: () => void }[] = []
+  return {
+    open: () => open,
+    most: () => most,
+    /** Holds every data call from now on; returns the release of them all. */
+    hold() {
+      const gate = Promise.withResolvers<void>()
+      held = gate.promise
+      return () => {
+        held = undefined
+        gate.resolve()
+      }
+    },
+    /** Settles once `calls` data calls are open at the door together. */
+    reached(calls: number): Promise<void> {
+      if (open >= calls) return Promise.resolve()
+      const { promise, resolve } = Promise.withResolvers<void>()
+      waiting.push({ calls, reached: resolve })
+      return promise
+    },
+    through: async (origin: string) => {
+      const server = createServer(async (incoming, outgoing) => {
+        const chunks: Buffer[] = []
+        for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
+        const url = new URL(incoming.url ?? '/', origin)
+        const data = url.pathname !== '/authenticate' && !url.search.includes('logout')
+        if (data) {
+          open += 1
+          most = Math.max(most, open)
+          for (const each of waiting) if (open >= each.calls) each.reached()
+        }
+        try {
+          if (data) await held
+          const answered = await forward(origin, incoming, Buffer.concat(chunks))
+          outgoing.writeHead(answered.status, answered.headers)
+          outgoing.end(answered.body)
+        } finally {
+          if (data) open -= 1
+        }
+      })
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+      t.after(() => {
+        server.closeAllConnections()
+        server.close()
+      })
+      return `http://127.0.0.1:${z.object({ port: z.number() }).parse(server.address()).port}`
+    },
+  }
+}
+
+/**
  * Empresa A on a Hub whose Sankhya is the kit's double: Ana its owner, Bruno an administrator, Carla
  * a member, the Projeto Pedidos with a published version that declares `declared`, and Ana's app
  * session on its host, as the dispatcher holds it.
@@ -104,7 +164,7 @@ export async function appCalls(
   const hub = await hubWithLog(
     t,
     (config) => ({ ...config, connectorOrigins: new Map([['sankhya', origin]]) }),
-    a.clock,
+    { now: a.clock },
   )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')

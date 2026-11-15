@@ -5,9 +5,12 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
-import type { Connectors } from '../../hub/connectors/public.ts'
+import type { Connectors, Native } from '../../hub/connectors/public.ts'
+import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { ProposeCall } from './copy-propose.ts'
+import { copyProposeTool } from './copy-propose.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
@@ -29,7 +32,9 @@ export type Asker = OfProject & {
  * limit. The tools never decide what may be read: the door behind `read` and `notes` does.
  */
 export type ConnectorAccess = {
-  connections: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
+  connections: readonly (Pick<GrantedConnection, 'connectionId' | 'connector' | 'name'> & {
+    reads: readonly Pick<GrantedConnection['reads'][number], 'operation' | 'label' | 'summary'>[]
+  })[]
   read(
     call: { connectionId: ConnectionId; operation: string; input: unknown; signal?: AbortSignal },
     requestContext: RequestContext,
@@ -50,7 +55,7 @@ type NoteSave = (
 
 type Connection = ConnectorAccess['connections'][number]
 
-const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
+export const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
 function runIn(who: Asker, requestContext: RequestContext): RunId {
   const runId = who.runIdOf(requestContext)
@@ -66,7 +71,7 @@ export function builderAccess(
   granted: readonly GrantedConnection[],
   who: Asker,
   log: FailureLog,
-): { access: ConnectorAccess; save: NoteSave } {
+): { access: ConnectorAccess; save: NoteSave; propose: ProposeCall } {
   const access: ConnectorAccess = {
     connections: granted,
     log,
@@ -81,7 +86,15 @@ export function builderAccess(
   }
   const save: NoteSave = (call, requestContext) =>
     port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
-  return { access, save }
+  const propose: ProposeCall = ({ signal, ...call }, requestContext) =>
+    port.propose(who, {
+      ...call,
+      personId: who.personId,
+      runId: runIn(who, requestContext),
+      // A call Mastra gives no signal is one nobody can stop: the proof's own deadline still holds.
+      signal: signal ?? new AbortController().signal,
+    })
+  return { access, save, propose }
 }
 
 /** The connection a name says; the connector too when the call names one, since two systems may share a name. */
@@ -176,6 +189,51 @@ function otherSystem(access: ConnectorAccess, connection: string, operation: str
 const OPERATION_MAX = 80
 const OPERATION_FORMAT = /^[a-z0-9-]+\.[A-Za-z0-9_]+$/
 
+const WHOLE_FILE =
+  'When `complete` is false and `file` is set, the whole answer is in that file: open it with Python on the machine. Do not read again to see the rest; read again only to filter what the file does not hold. When `saved` is false there is no file: filter with WHERE and COUNT.'
+
+/** What every read tool says of its answer: the cut, the file and the limit (`connector_read` and the Assistant's typed reads). */
+export function answerWords(limit: string): string {
+  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}.`
+}
+
+/**
+ * What the model reads of a read the provider refused for any reason but withholding access
+ * (`deniesAccess`): what it proves is only that access was not shown to be withheld (a Sankhya
+ * refusal comes as HTTP 200 in an envelope), so it says no more. It is the one place the model is told
+ * how to treat a failed read; the prompts and the skills point here. The contract and the log keep
+ * `REFUSED`; only this text changes.
+ */
+function failedRead(answered: { native: Native }) {
+  const said =
+    answered.native.message === null ? '' : ` The provider said: ${answered.native.message}`
+  return {
+    kind: 'READ_FAILED',
+    native: answered.native,
+    reason: `The read failed.${said} This does not show a refusal of access: read the message, correct the request and try another way.`,
+  } as const
+}
+
+/** One read through the access's door: the model gets the cut, and the whole answer goes to the machine's file when there is one. */
+export async function readOn(
+  access: ConnectorAccess,
+  call: { connectionId: ConnectionId; operation: string; input: unknown },
+  context: {
+    requestContext: RequestContext
+    workspace?: { filesystem?: WorkspaceFilesystem } | undefined
+    abortSignal?: AbortSignal | undefined
+  },
+) {
+  const { requestContext, workspace, abortSignal } = context
+  const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
+  if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
+  if (answered.kind !== 'OK' || !('whole' in answered)) return answered
+  const { whole, ...cut } = answered
+  if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
+  const save = { path: access.savedAt(requestContext), log: access.log }
+  return saveWhole(workspace.filesystem, save, whole, cut)
+}
+
 function readTool(access: ConnectorAccess): ToolsInput {
   const { connections } = access
   if (!connections.some((each) => each.reads.length > 0)) return {}
@@ -183,7 +241,7 @@ function readTool(access: ConnectorAccess): ToolsInput {
     [BUILDER_TOOL.connectorRead]: createTool({
       id: BUILDER_TOOL.connectorRead,
       description: [
-        `Reads from a company system ${access.wording.whose}, by the connection's name. The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened): to count or see more rows, run your own SQL read with WHERE and COUNT. At most ${access.wording.limit}.`,
+        `Reads from a company system ${access.wording.whose}, by the connection's name. ${answerWords(access.wording.limit)}`,
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({
@@ -206,15 +264,11 @@ function readTool(access: ConnectorAccess): ToolsInput {
         const found = named(connections, connection, connector)
         if (found === undefined) return otherSystem(access, connection, operation)
         if (requestContext === undefined) return NOT_GRANTED
-        const answered = await access.read(
-          { connectionId: found.connectionId, operation: id.join('.'), input, signal: abortSignal },
-          requestContext,
+        return readOn(
+          access,
+          { connectionId: found.connectionId, operation: id.join('.'), input },
+          { requestContext, workspace, abortSignal },
         )
-        if (answered.kind !== 'OK' || !('whole' in answered)) return answered
-        const { whole, ...cut } = answered
-        if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
-        const save = { path: access.savedAt(requestContext), log: access.log }
-        return saveWhole(workspace.filesystem, save, whole, cut)
       },
     }),
   }
@@ -276,12 +330,22 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
  */
 export function connectorTools(
   access: ConnectorAccess,
-  include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & { reads?: false },
+  include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & {
+    reads?: false
+    /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
+    propose?: {
+      copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
+      call: ProposeCall
+    }
+  },
 ): ToolsInput {
   if (access.connections.length === 0) return {}
   return {
     ...(include.reads === false ? {} : readTool(access)),
     ...notesTool(access),
     ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
+    ...(include.propose === undefined
+      ? {}
+      : copyProposeTool(include.propose.copying, include.propose.call)),
   }
 }

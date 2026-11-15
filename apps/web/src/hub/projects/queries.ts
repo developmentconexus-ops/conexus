@@ -5,10 +5,13 @@ import {
   createProject,
   deleteProject,
   getProject,
+  grantProjectCopy,
   inviteToApp,
   listAppAccess,
+  listProjectCopies,
   listProjects,
   revokeAppAccess,
+  revokeProjectCopy,
 } from '@conexus/hub-api'
 import { infiniteQueryOptions } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
@@ -49,3 +52,10 @@ export const sendAppInvitation = hubMutation(inviteToApp)
 export const sendAppRole = hubMutation(changeAppAccess)
 export const sendAppRevocation = hubMutation(revokeAppAccess)
 export const sendAppInvitationCancel = hubMutation(cancelAppInvitation)
+
+/** The company's copies and whether this Projeto may read each: what a Liberar or a Tirar makes stale. */
+export function projectCopiesQuery(companyId: CompanyId, projectId: ProjectId) {
+  return hubQuery(listProjectCopies, { params: { companyId, projectId } })
+}
+export const sendCopyGrant = hubMutation(grantProjectCopy)
+export const sendCopyRevoke = hubMutation(revokeProjectCopy)

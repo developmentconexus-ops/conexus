@@ -96,7 +96,8 @@ export type TestedResult = z.infer<typeof TestedResult>
 /** A conversation of the person's with the Construtor, in one Projeto. */
 export const ConstrutorConversationSummary = z.object({
   id: ConversationId,
-  title: z.string(),
+  title: z.string().nullable(),
+  createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
 export type ConstrutorConversationSummary = z.infer<typeof ConstrutorConversationSummary>

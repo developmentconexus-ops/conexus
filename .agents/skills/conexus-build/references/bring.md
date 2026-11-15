@@ -30,6 +30,14 @@ clone, never run its scripts or installs.
 - Every line kept passes the study rule ([`conexus-study`](../../conexus-study/SKILL.md)).
   A line that exists only because the old code had it leaves.
 
+## Code from Mastra Code or Factory
+
+The house style applies to it (code C11, C18, C24, C25, C77). Adapt while copying:
+
+- `interface` becomes `type` (C25).
+- A file over 300 lines splits, and a function over 60 lines splits (C77).
+- Remove `as` casts (C24) and `export default` (C11), and a top-level function is a `function` (C18).
+
 ## The measure
 
 Count for each part the measure of the study rule ([`conexus-study`](../../conexus-study/SKILL.md)),

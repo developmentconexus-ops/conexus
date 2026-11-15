@@ -9,6 +9,7 @@ import { ProjectId } from './library-ids.ts'
 import { MACHINE_FILE_FAILURES, MachineFileQuery } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import {
+  APP_DATA_TOOL,
   CodeVersionDetail,
   LatestVersion,
   PresetVersionDetail,
@@ -161,14 +162,15 @@ export type AgentVersionSummary = z.infer<typeof AgentVersionSummary>
 export const AGENTS_CONTROLLER = 'agents'
 
 /** The tools of an agent that are not a tool of the company's library: the name the model reads (step 24.3, U3). */
-export const AGENT_TOOL = { appDataRead: 'app_data_read' } as const
+export const AGENT_TOOL = { appDataRead: APP_DATA_TOOL.read } as const
 
 /** A conversation of the person's with an agent: with its published version, or the test one with its draft. */
 export const AgentConversationSummary = z.object({
   id: ConversationId,
   agentId: AgentId,
   draft: z.boolean(),
-  title: z.string(),
+  title: z.string().nullable(),
+  createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
 export type AgentConversationSummary = z.infer<typeof AgentConversationSummary>
@@ -177,11 +179,7 @@ const InCompany = z.object({ companyId: CompanyId })
 const InProject = InCompany.extend({ projectId: ProjectId })
 const OfAgent = InProject.extend({ agentId: AgentId })
 const BASE = '/api/companies/{companyId}/projects/{projectId}/agents'
-const READ_FAILURES = [
-  'NOT_FOUND',
-  'SESSION_REQUIRED',
-  'DATABASE_UNAVAILABLE',
-] as const satisfies readonly FailureCode[]
+const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 const ONE_FAILURES = [...READ_FAILURES, 'AGENT_NOT_FOUND'] as const
 const NOT_HELD = ['NOT_IN_ROLE', 'AGENT_TOOL_REFUSED'] as const
 const OneAgent = z.object({ agent: AgentDetail })

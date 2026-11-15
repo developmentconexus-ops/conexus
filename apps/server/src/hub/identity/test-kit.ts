@@ -16,8 +16,11 @@ export const SANKHYA_READS = [
   'tiposOperacao',
   'naturezas',
   'centrosResultado',
+  'buscarParceiros',
+  'buscarVendedores',
   'produtos',
   'gruposProduto',
+  'buscarProdutos',
   'pedidos',
   'notasFiscais',
   'notaFiscal',
@@ -26,6 +29,7 @@ export const SANKHYA_READS = [
   'estoque',
   'estoqueDoProduto',
   'locaisEstoque',
+  'estoqueDosProdutos',
   'contasAReceber',
   'contasAPagar',
   'tiposPagamento',
@@ -36,7 +40,7 @@ export const SANKHYA_READS = [
 ] as const
 
 /**
- * The kit the test Hub starts with, written out: two connectors, the door's reads and the
+ * The kit the test Hub starts with, written out: three connectors, the door's reads and the
  * Financeiro subject among them, so a test never moves when the real kit grows (T6).
  */
 export const TEST_KIT = [
@@ -51,7 +55,23 @@ export const TEST_KIT = [
   {
     id: 'mercado-livre',
     resource: 'connector_mercado-livre',
-    operations: [{ id: 'anuncios', class: 'read' }],
+    operations: [
+      { id: 'anuncios', class: 'read' },
+      { id: 'pedidos', class: 'read' },
+      { id: 'perguntas', class: 'read' },
+      { id: 'envio', class: 'read' },
+      { id: 'notaFiscalDoPedido', class: 'read' },
+    ],
+  },
+  {
+    id: 'hubspot',
+    resource: 'connector_hubspot',
+    operations: [
+      { id: 'contatos', class: 'read' },
+      { id: 'empresas', class: 'read' },
+      { id: 'negocios', class: 'read' },
+      { id: 'notaNoContato', class: 'write' },
+    ],
   },
 ] as const satisfies RoleKit
 export const TEST_ROLES = rolesFor(TEST_KIT)

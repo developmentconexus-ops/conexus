@@ -18,12 +18,16 @@ const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 const MANAGE_APP_ACCESS = { appAccess: ['manage'] } as const
 const MANAGE_CONNECTIONS = { connection: ['manage'] } as const
 const PUBLISH_APP = { app: ['publish'] } as const
+const VIEW_APP_DATA = { app: ['viewData'] } as const
 const MANAGE_AGENTS = { agent: ['manage'] } as const
 const PUBLISH_AGENT = { agent: ['publish'] } as const
 const MANAGE_AUTOMATIONS = { automation: ['manage'] } as const
+const MANAGE_COPIES = { copy: ['manage'] } as const
 const ASK_ASSISTANT = { assistant: ['ask'] } as const
+const MANAGE_COMPANY_MEMORY = { companyMemory: ['manage'] } as const
 const REQUEST_PUBLISH = { request: ['create'] } as const
 const DECIDE_REQUEST = { request: ['decide'] } as const
+const PROFILE_OF_ANOTHER = 'o cargo e a área de outra pessoa'
 const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
@@ -39,10 +43,13 @@ type ActionRule = {
     | typeof MANAGE_APP_ACCESS
     | typeof MANAGE_CONNECTIONS
     | typeof PUBLISH_APP
+    | typeof VIEW_APP_DATA
     | typeof MANAGE_AGENTS
     | typeof PUBLISH_AGENT
     | typeof MANAGE_AUTOMATIONS
+    | typeof MANAGE_COPIES
     | typeof ASK_ASSISTANT
+    | typeof MANAGE_COMPANY_MEMORY
     | typeof REQUEST_PUBLISH
     | typeof DECIDE_REQUEST
     | typeof MANAGE_ROLES
@@ -68,6 +75,9 @@ const ACTIONS = {
   // commits.
   readAppVersions: { by: 'MEMBER', statement: undefined, locks: false },
   publishAppVersion: { by: 'MEMBER', statement: PUBLISH_APP, locks: true },
+  // An owner, an administrator or a developer reads the tables and rows of the Projeto's app
+  // (capacity 1, "O banco do app"); a read holds no row.
+  viewAppData: { by: 'MEMBER', statement: VIEW_APP_DATA, locks: false },
   // Withdrawing needs only the membership; `cancel` checks the person is the asker.
   requestPublish: { by: 'MEMBER', statement: REQUEST_PUBLISH, locks: true },
   cancelRequest: { by: 'MEMBER', statement: undefined, locks: true },
@@ -93,6 +103,10 @@ const ACTIONS = {
   manageConnections: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: true },
   // Every member asks the Assistant (step 24.3.4, "5"). Reading holds no row.
   askAssistant: { by: 'MEMBER', statement: ASK_ASSISTANT, locks: false },
+  // The company's memory and instructions are an owner's or an administrator's, as every write that
+  // holds for the whole company (alignment of the Assistant, U9); every member reads them. They live
+  // in Mastra's store, admitted in a read-only transaction, which cannot hold the role.
+  manageCompanyMemory: { by: 'MEMBER', statement: MANAGE_COMPANY_MEMORY, locks: false },
   // A Projeto's agents and the company's tools are an owner's, an administrator's or a developer's
   // (step 24.3, 3.A, and 24.3.4): reading holds no row, a change holds the role until it commits.
   readAgents: { by: 'MEMBER', statement: MANAGE_AGENTS, locks: false },
@@ -101,6 +115,13 @@ const ACTIONS = {
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
+  // The company's copies are an owner's, an administrator's or a developer's (Capacidade 2,
+  // 2026-11-09: "Dono e o admnistrador e desenvolvedor"): reading holds no row, a change the role.
+  readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
+  manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
+  // The rows of a copy's table, which the Dados page's sample shows: an owner's and an
+  // administrator's for now (data, part 1), until the role decides which tables it reads (part 4).
+  readCopyRows: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
   // Creating, changing and deleting the company's roles is the owner's and the administrator's
   // (step Papéis da empresa, U1); the library's own routes then check the same statements.
   manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },
@@ -348,6 +369,24 @@ export async function admit(input: CompanyInput & { action: MemberAction }): Pro
  */
 export async function admitAppUser(tx: ReadTx, input: { companyId: CompanyId }): Promise<void> {
   await refuseIfDeleting({ tx, companyId: input.companyId })
+}
+
+/**
+ * Admits the writer of a member's job title and department: the person for themselves, as any
+ * member reads the company; for another, a member whose role may change roles, or the operator.
+ */
+export async function admitProfileWriter(
+  input: CompanyInput & { owner: PersonId },
+): Promise<CompanyProof> {
+  if (input.owner === input.personId) return await admit({ ...input, action: 'readCompany' })
+  try {
+    return await admitCompany({ ...input, action: 'changeRole' })
+  } catch (error) {
+    if (error instanceof Failure && error.details.reason === 'FORBIDDEN') {
+      throw new Failure('NOT_IN_ROLE', { named: { operation: PROFILE_OF_ANOTHER } })
+    }
+    throw error
+  }
 }
 
 /**

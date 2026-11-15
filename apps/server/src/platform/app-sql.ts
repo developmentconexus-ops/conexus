@@ -8,14 +8,25 @@ export type Row = Readonly<Record<string, unknown>>
 /** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
 export type SqlAnswer =
   | { kind: 'DONE'; value: Row[][] }
-  | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
+  | {
+      kind: 'REFUSED'
+      code: string
+      table?: string
+      column?: string
+      constraint?: string
+      /** For the model's edge alone: never a log or a span (security S41, S42). */
+      message?: string
+    }
   /** `cause` names what went silent (an error's name or class), never its message. */
   | { kind: 'NO_ANSWER'; cause?: string }
   /** A read whose reply passed the cap: only a read ever gets it (code C59). */
   | { kind: 'TOO_LARGE' }
 
-/** A read-only call's first statement: the columns PostgreSQL named, whatever their names, and rows as arrays. */
-export type SqlRead = { kind: 'READ'; columns: string[]; rows: unknown[][] }
+/** One statement's answer: its columns with the type's OID, whatever their names, and its rows as arrays. */
+export type ReadResult = { columns: { name: string; typeId: number }[]; rows: unknown[][] }
+
+/** A read-only call's answer: one result for each of its statements, in order. */
+export type SqlRead = { kind: 'READ'; results: ReadResult[] }
 
 /** Runs the statements in one transaction as the URL's login, all or none; a read-only one answers with its columns. */
 export type SqlTransport = {

@@ -45,4 +45,5 @@ A provider needs a call the kit cannot declare as data, or a Worker cannot reach
 
 ## State
 
-Proposed 2026-10-29 with step 19's card; awaits the founder's approval.
+Proposed 2026-10-29 (step 19), awaiting the founder. Amended by
+[0062](0062-a-write-declares-its-provider-facts.md).

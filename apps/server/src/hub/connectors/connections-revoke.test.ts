@@ -25,7 +25,7 @@ test('Desligar pede ao Mercado Livre que tire a autorização, com a chave viva,
   const sealed = await on.hub.test.asOwner('select count(*)::int as n from connectors.connection')
   assert.equal(sealed[0]?.n, 1)
   const gone = await unlinked(on, id)
-  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'REVOKED' }])
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'REVOKED', tablesLeft: [] }])
   assert.deepEqual(on.fake.revocations(), [
     `${on.fake.switches.account.ref}/${on.fake.app.clientId}`,
   ])
@@ -48,7 +48,7 @@ test('o Mercado Livre recusa: a ligação sai, a pessoa lê REFUSED e o log tem 
   const id = await linked(on)
   on.fake.switches.refuseRevoke = true
   const gone = await unlinked(on, id)
-  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'REFUSED' }])
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'REFUSED', tablesLeft: [] }])
   assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
   const line = lineNamed(on, 'CONNECTION_REVOKE_REFUSED')
   assert.equal(line?.fields.status, 403)
@@ -60,7 +60,7 @@ test('o Mercado Livre fora do ar: a ligação sai, a pessoa lê UNREACHABLE e o 
   const id = await linked(on)
   await on.served.close()
   const gone = await unlinked(on, id)
-  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'UNREACHABLE' }])
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'UNREACHABLE', tablesLeft: [] }])
   assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
   assert.ok(lineNamed(on, 'CONNECTION_REVOKE_UNANSWERED'))
 })
@@ -72,7 +72,7 @@ test('desligar de novo, e quem não pode: nada é enviado', async (t) => {
   assert.equal(member.statusCode, 404)
   assert.equal(on.fake.revocations().length, 0)
   assert.equal((await unlinked(on, id)).body.revocation, 'REVOKED')
-  assert.deepEqual((await unlinked(on, id)).body, { revocation: 'NONE' })
+  assert.deepEqual((await unlinked(on, id)).body, { revocation: 'NONE', tablesLeft: [] })
   assert.equal(on.fake.revocations().length, 1)
 })
 
@@ -81,7 +81,7 @@ test('o selo não abre: nada é enviado, a ligação sai, a pessoa lê NOT_SENT 
   const id = await linked(on)
   await on.hub.test.asOwner(`update connectors.connection set sealed = sealed || '\\x00'::bytea`)
   const gone = await unlinked(on, id)
-  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT' }])
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT', tablesLeft: [] }])
   assert.equal(on.fake.revocations().length, 0)
   assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
   assert.ok(lineNamed(on, 'CONNECTION_REVOKE_NOT_SENT'))
@@ -94,7 +94,7 @@ test('o vendedor já tirou o Conexus no Mercado Livre: sem chave viva nada é en
   on.fake.switches.revoke = true
   on.fake.expireAccess()
   const gone = await unlinked(on, id)
-  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT' }])
+  assert.deepEqual([gone.status, gone.body], [200, { revocation: 'NOT_SENT', tablesLeft: [] }])
   assert.equal(on.fake.revocations().length, 0)
   assert.equal((await on.hub.test.asOwner('select 1 from connectors.connection')).length, 0)
   const line = lineNamed(on, 'CONNECTION_REVOKE_NOT_SENT')

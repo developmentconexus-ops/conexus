@@ -280,7 +280,7 @@ test('cabeçalhos: o Hub emoldura só os apps, na Prévia, e nada emoldura o Hub
   for (const url of ['/api/health', '/api/nope', '/nope', '/apps/open']) {
     const { headers } = await app.inject({ method: 'GET', url })
     const policy = String(headers['content-security-policy']).split(';')
-    assert.ok(policy.includes('frame-src https://*.apps.example.test'), url)
+    assert.ok(policy.includes("frame-src 'self' https://*.apps.example.test"), url)
     assert.ok(policy.includes("frame-ancestors 'none'"), url)
     assert.equal(headers['x-frame-options'], 'DENY')
   }
@@ -298,7 +298,7 @@ test('o CSP da página: as miniaturas do compositor vêm de data:, e nada mais m
     "font-src 'self'",
     "manifest-src 'self'",
     "connect-src 'self'",
-    'frame-src https://*.apps.example.test',
+    "frame-src 'self' https://*.apps.example.test",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

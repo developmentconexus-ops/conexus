@@ -1,6 +1,8 @@
 // Report changed files outside a unit's declared radius in CI without stopping the check (delivery L7).
-// `npm run radius -- U<k> [commit]` reads the table under "O raio da mudança" in the unit's section
-// of the card, prints departures, and appends them to the GitHub Actions step summary.
+// `npm run radius -- U<k> [commit] [card.md]` reads the table under "O raio da mudança" in the unit's
+// section of the card, prints departures, and appends them to the GitHub Actions step summary.
+// Several cards may sit in docs/steps at once, each numbering its units from U1: CI passes the card
+// that owns the unit; without one, the unit must be in exactly one card (`ambiguous-card`).
 // A bare name in a cell may mean the root or the folder of the path before it: both match, and the
 // row is named `ambiguous-row` so the card can say which.
 // Matching is Node's `path.matchesGlob` over a translation of the cell, so the card's grammar stays
@@ -13,7 +15,7 @@ import { STEP_CARD } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const root = process.cwd()
-const [unit = '', commit = 'HEAD'] = process.argv.slice(2)
+const [unit = '', commit = 'HEAD', cardName] = process.argv.slice(2)
 
 function refuse(name: string, detail: string): never {
   console.error(`${name}: ${detail}`)
@@ -111,12 +113,28 @@ function changedFiles(): string[] {
   return listed.split('\n').filter(Boolean)
 }
 
-if (!/^U\d+$/.test(unit)) refuse('usage', 'npm run radius -- U<k> [commit]')
-const cards = readdirSync(join(root, 'docs/steps')).filter((name) => STEP_CARD.test(name))
-const card = readFileSync(
-  join(root, 'docs/steps', cards[0] ?? refuse('no-card', 'docs/steps')),
-  'utf8',
-)
+function cardOfUnit(): string {
+  if (cardName !== undefined) {
+    if (!STEP_CARD.test(cardName)) refuse('usage', `${cardName} is not a card in docs/steps`)
+    return readFileSync(join(root, 'docs/steps', cardName), 'utf8')
+  }
+  const names = readdirSync(join(root, 'docs/steps')).filter((name) => STEP_CARD.test(name))
+  if (names.length === 0) refuse('no-card', 'docs/steps')
+  const owners = names.filter((name) => {
+    const text = readFileSync(join(root, 'docs/steps', name), 'utf8')
+    return text.split(/^## /m).some((part) => part.startsWith(`${unit} `))
+  })
+  if (owners.length > 1) {
+    refuse(
+      'ambiguous-card',
+      `${unit} is in ${owners.join(' and ')}; pass the card as the third argument`,
+    )
+  }
+  return readFileSync(join(root, 'docs/steps', owners[0] ?? names[0] ?? ''), 'utf8')
+}
+
+if (!/^U\d+$/.test(unit)) refuse('usage', 'npm run radius -- U<k> [commit] [card.md]')
+const card = cardOfUnit()
 const radius = radiusOf(card)
 const outside = changedFiles().filter((file) => !radius.some((pattern) => isInside(file, pattern)))
 const report =

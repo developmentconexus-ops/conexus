@@ -10,7 +10,7 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { endOf, messagesOf, title, turnNotices } from '../conversation/test-conversation.ts'
-import { assisting, created, READ, talking } from './test-assistant.ts'
+import { assisting, created, READ, SEARCH, talking } from './test-assistant.ts'
 import { EVAL_SET, HAND_OFF_CASES, ROUNDS, verdictOf } from './test-handoff.ts'
 import { numbersFromReads } from './test-numbers.ts'
 import type { Subscribed } from './test-real-model.ts'
@@ -60,14 +60,18 @@ function reader() {
         text: 'Esta conversa não tem sistema escolhido: escolha um na barra da conversa, ou ligue um em Integrações.',
       }
     }
-    if (!chosen.includes(wanted) || !call.tools.includes(READ)) {
+    const offered = call.tools.includes(READ) || call.tools.includes(SEARCH)
+    if (!chosen.includes(wanted) || !offered) {
       return { kind: 'text', text: `A ${wanted} não está nesta conversa.` }
     }
-    const input = {
-      connection: wanted,
-      operation: 'sankhya.consultar',
-      input: { sql: SOLD_BY_SELLER },
+    // The reads come on demand: a search loads the typed one, then the model reads.
+    if (!call.tools.includes(READ)) {
+      return {
+        kind: 'blocks',
+        blocks: [{ type: 'tool_use', name: SEARCH, input: { query: READ } }],
+      }
     }
+    const input = { connection: wanted, sql: SOLD_BY_SELLER }
     return { kind: 'blocks', blocks: [{ type: 'tool_use', name: READ, input }] }
   }
 }
@@ -238,4 +242,28 @@ test('o modelo de verdade: o caderno, o membro pede e o turno termina com o text
   assert.match(textOf(theirs), /NUNOTA/, `o texto não traz o conceito\n${hers}`)
   assert.match(textOf(theirs), /SELECT/i, `o texto não traz a consulta\n${hers}`)
   assert.match(textOf(theirs), /TGFCAB/, `o texto não traz a tabela\n${hers}`)
+})
+
+test('o modelo de verdade: o web_fetch do provedor Anthropic lê uma página pública pela assinatura, uma chamada, e o turno guarda a ferramenta, as fontes e os tokens (U2, passo 4)', {
+  timeout: 600_000,
+}, async (t) => {
+  if (REAL_MODEL === undefined) return t.skip(OPT_IN)
+  const on = await subscribed(t, REAL_MODEL)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const events = await (await talking(t, on.hub, on.ana, url)).say(
+    'Use a ferramenta web_fetch para abrir https://example.com e me diga o título da página.',
+  )
+  await completed(on, on.ana, url, events)
+  const parts = await answerParts(on.hub, on.ana, url)
+  const fetched = parts.flatMap((part) =>
+    part.type === 'tool-invocation' ? [part.toolInvocation.toolName] : [],
+  )
+  const tokens = events.flatMap((event) =>
+    event.type === 'usage_update' ? [event.usage.promptTokens, event.usage.completionTokens] : [],
+  )
+  writeFileSync(
+    join(REAL_MODEL, 'web-fetch.json'),
+    JSON.stringify({ tools: fetched, tokens, text: textOf(parts) }, null, 2),
+  )
+  assert.ok(fetched.includes('web_fetch'), `o modelo não chamou o web_fetch: ${fetched.join(', ')}`)
 })

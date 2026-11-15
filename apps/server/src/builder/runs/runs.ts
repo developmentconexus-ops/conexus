@@ -22,6 +22,7 @@ import type {
   Opened,
   Outcome,
   Registry,
+  RoundKind,
   RunsContext,
   RunsDeps,
   Settled,
@@ -119,7 +120,7 @@ export class Runs {
     const runId = RunIdSchema.parse(randomUUID())
     this.#writing.set(projectId, {
       ...{ runId, companyId, projectId, personId, conversationId },
-      ...{ check: undefined, rounds: 0 },
+      ...{ check: undefined, rounds: { open: 0, check: 0 } },
       ...{ stopped: false, ends: [input.onEnd], saving: undefined },
     })
     this.#deps.log.info({ ...fields, runId }, 'RUN_ADMITTED')
@@ -213,12 +214,12 @@ export class Runs {
     if (mine !== undefined) mine.check = check
   }
 
-  /** Counts a round of the end of the turn (`conexusCheck`), for the turn's line, and says which it is. */
-  round(requestContext: RequestContext): number {
+  /** Counts a round of the end of the turn (`conexusCheck`) of one kind, for the turn's line, and says which it is of its kind. */
+  round(requestContext: RequestContext, kind: RoundKind): number {
     const mine = this.#mine(requestContext)
     if (mine === undefined) return 0
-    mine.rounds += 1
-    return mine.rounds
+    mine.rounds[kind] += 1
+    return mine.rounds[kind]
   }
 
   /** Takes the conversation's workspace out of Mastra once the run lets go of it: Mastra's shutdown would stop it again. */
@@ -276,7 +277,7 @@ export class Runs {
       this.#deps.log.info(fields, 'RUN_SETTLING')
       const outcome = await saveRun(this.#context, mine)
       if (outcome === 'gone') return outcome
-      const settled = { ...outcome, rounds: mine.rounds }
+      const settled = { ...outcome, rounds: mine.rounds.open + mine.rounds.check }
       if (!passed(outcome)) {
         input.saved(settled)
         return settled
@@ -322,7 +323,7 @@ export class Runs {
     return this.#deps.send({ companyId, projectId, personId, runId, number, folder })
   }
 
-  /** The run lets go of what it keeps open and of its machine, which pauses. */
+  /** The run lets go of what it keeps open and of its machine, which E2B pauses on its own timeout. */
   async #letGo(mine: Driven): Promise<void> {
     const { companyId, conversationId } = mine
     for (const end of mine.ends.splice(0)) end()

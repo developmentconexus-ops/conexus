@@ -25,4 +25,4 @@ export type ConnectorReads = Readonly<{
 }>
 
 /** Each connector's `perProject`, as its definition declares it (checked by a test). */
-export type PerProject = Readonly<{ sankhya: 'one'; 'mercado-livre': 'many' }>
+export type PerProject = Readonly<{ sankhya: 'one'; 'mercado-livre': 'many'; hubspot: 'many' }>

@@ -5,14 +5,20 @@ type Cited = { url: string; title: string }
 
 /**
  * A content block of a streamed answer: thinking, text, which may cite search results, a call of
- * one of the Hub's tools, or the provider's own search with its results (`server_tool_use` and
- * `web_search_tool_result`).
+ * one of the Hub's tools, the provider's own search with its results (`server_tool_use` and
+ * `web_search_tool_result`) or its own page read (`server_tool_use` and `web_fetch_tool_result`).
  */
 export type Block =
   | { type: 'thinking'; thinking: string }
   | { type: 'text'; text: string; cites?: Cited[] }
   | { type: 'tool_use'; name: string; input: object | string }
   | { type: 'search'; query: string; results: { url: string; title: string }[] }
+  | { type: 'fetch'; url: string; title: string; text: string }
+
+/** The blocks of the provider's own tools take two indexes: the call and its result. */
+export function widthOf(block: Block): number {
+  return block.type === 'search' || block.type === 'fetch' ? 2 : 1
+}
 
 /** One block as the Messages API streams it: its start, its deltas, its stop. */
 function framesOf(block: Block, index: number): [string, object][] {
@@ -58,24 +64,47 @@ function framesOf(block: Block, index: number): [string, object][] {
       return [start(call), delta({ type: 'input_json_delta', partial_json: input }), stop]
     }
     case 'search':
+    case 'fetch':
       return []
     default:
       return block satisfies never
   }
 }
 
-/** The provider's search: its call and, as the next block, its results. */
-function searchFrames(block: Extract<Block, { type: 'search' }>, index: number) {
+/** The provider's search or page read: its call and, as the next block, its result. */
+function serverFrames(block: Extract<Block, { type: 'search' | 'fetch' }>, index: number) {
   const id = `srvtoolu_${randomUUID()}`
-  const call = { type: 'server_tool_use', id, name: 'web_search', input: {} }
-  const input = JSON.stringify({ query: block.query })
-  const content = block.results.map((result) => ({
-    type: 'web_search_result',
-    ...result,
-    encrypted_content: 'encrypted-test',
-    page_age: null,
-  }))
-  const result = { type: 'web_search_tool_result', tool_use_id: id, content }
+  const name = block.type === 'search' ? 'web_search' : 'web_fetch'
+  const call = { type: 'server_tool_use', id, name, input: {} }
+  const input = JSON.stringify(
+    block.type === 'search' ? { query: block.query } : { url: block.url },
+  )
+  const result =
+    block.type === 'search'
+      ? {
+          type: 'web_search_tool_result',
+          tool_use_id: id,
+          content: block.results.map((found) => ({
+            type: 'web_search_result',
+            ...found,
+            encrypted_content: 'encrypted-test',
+            page_age: null,
+          })),
+        }
+      : {
+          type: 'web_fetch_tool_result',
+          tool_use_id: id,
+          content: {
+            type: 'web_fetch_result',
+            url: block.url,
+            retrieved_at: '2026-11-11T12:00:00Z',
+            content: {
+              type: 'document',
+              title: block.title,
+              source: { type: 'text', media_type: 'text/plain', data: block.text },
+            },
+          },
+        }
   return [
     ['content_block_start', { type: 'content_block_start', index, content_block: call }],
     [
@@ -106,8 +135,10 @@ export function events(
   let index = 0
   const content = blocks.flatMap((block) => {
     const at = index
-    index += block.type === 'search' ? 2 : 1
-    return block.type === 'search' ? searchFrames(block, at) : framesOf(block, at)
+    index += widthOf(block)
+    return block.type === 'search' || block.type === 'fetch'
+      ? serverFrames(block, at)
+      : framesOf(block, at)
   })
   const all = [
     ['message_start', { type: 'message_start', message: { ...message, stop_reason: null, usage } }],
@@ -119,4 +150,23 @@ export function events(
     ['message_stop', { type: 'message_stop' }],
   ]
   return all.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('')
+}
+
+/** The frames of a Chat Completions stream that ends in one `web_fetch` call, as a provider without a page fetch of its own is asked for it. */
+export function chatFetchFrames(
+  url: string,
+  chunk: (delta: object, finish: string | null) => object,
+  usage: object,
+): object[] {
+  const call = {
+    index: 0,
+    id: `call_${randomUUID().slice(0, 8)}`,
+    type: 'function',
+    function: { name: 'web_fetch', arguments: JSON.stringify({ url }) },
+  }
+  return [
+    chunk({ role: 'assistant', content: '' }, null),
+    chunk({ tool_calls: [call] }, null),
+    { ...chunk({}, 'tool_calls'), usage },
+  ]
 }

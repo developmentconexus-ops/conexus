@@ -1,7 +1,9 @@
+import { COPY_FAILURES } from './copy-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of a company's connections to outside systems (steps 19 and 19.1). */
+/** The failures of a company's connections to outside systems (steps 19 and 19.1), and of the copies made from them (Capacidade 2). */
 export const CONNECTOR_FAILURES = {
+  ...COPY_FAILURES,
   CONNECTOR_UNKNOWN: {
     category: 'USER',
     settles: true,

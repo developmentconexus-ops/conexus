@@ -6,7 +6,7 @@ import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, endOf, messagesOf, sent, started, streamOf } from './test-conversation.ts'
-import { answerTo, ask, stepping, tool, untilCard, WHO } from './test-questions.ts'
+import { answerTo, ask, stepped, tool, untilCard, WHO } from './test-questions.ts'
 
 const READ = 'connector_read'
 const NOTES = 'connector_notes'
@@ -26,10 +26,17 @@ async function connecting(t: TestContext, steps: Block[][], rows = 3) {
   const calls: Sent[] = []
   const fake = await servedSankhya(t)
   const origin = await withRows(t, fake.origin, rows)
-  const on = await conversing(t, stepping(steps, calls), (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', origin]]),
-  }))
+  const on = await conversing(
+    t,
+    stepped(
+      steps.map((blocks) => () => blocks),
+      calls,
+    ),
+    (config) => ({
+      ...config,
+      connectorOrigins: new Map([['sankhya', origin]]),
+    }),
+  )
   const { hub, ana, companyId, projectId } = on
   const connections = `/api/companies/${companyId}/connections`
   const grant = `/api/companies/${companyId}/projects/${projectId}/connections`

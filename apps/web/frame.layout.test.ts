@@ -51,6 +51,7 @@ function owner(conversations: { id: string; title: string }[]): Replies {
     [`GET ${ASSISTANT_API}/conversations`]: ok(listAssistantConversations, {
       conversations: conversations.map((one) => ({
         ...one,
+        createdAt: NOW,
         updatedAt: NOW,
         project: null,
         automation: null,
@@ -100,6 +101,7 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
     'Integrações',
     'Automações',
     'Agentes',
+    'Dados',
     'Configurações',
   ])
   const home = nav.getByRole('link', { name: 'Início' })

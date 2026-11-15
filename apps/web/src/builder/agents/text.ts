@@ -1,5 +1,6 @@
 import type { AgentDetail, ProblemField, ProblemReason, ToolEffect } from '@conexus/hub-api'
-import { agoOf, dayAndHour } from '../../platform/dates.ts'
+import { agoOf } from '../../platform/dates.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 
 /** The words of the Agentes screens (step 24.3, U5); the founder approves them at the step's end. */
 export const AREA_TITLE = 'Agentes'
@@ -33,11 +34,12 @@ export function lastRunText(lastRunAt: string | null, now: Date): string {
 export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT =
   'Só o dono, os administradores e os desenvolvedores usam os agentes do Projeto.'
-export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
-export const UNCONFIRMED_SAVE = 'Não confirmamos a gravação. Confira o painel e tente de novo.'
-export const UNCONFIRMED_PUBLISH =
-  'Não confirmamos a publicação. Confira as versões e tente de novo.'
-export const UNCONFIRMED_DELETE = 'Não confirmamos a exclusão. Confira a lista e tente de novo.'
+export const UNCONFIRMED_SAVE = unconfirmedText('a gravação', 'Confira o painel e tente de novo.')
+export const UNCONFIRMED_PUBLISH = unconfirmedText(
+  'a publicação',
+  'Confira as versões e tente de novo.',
+)
+export const UNCONFIRMED_DELETE = unconfirmedText('a exclusão', 'Confira a lista e tente de novo.')
 export const AGENT_GONE = 'Este agente foi apagado.'
 export const NO_AGENT_CONVERSATIONS = 'Ainda não há conversas com este agente.'
 export const NO_VERSIONS = 'Ainda não publicado.'
@@ -126,13 +128,6 @@ const REASONS = {
 /** The reason a refusal of a tool or of a choice names, in words. */
 export function reasonText(reason: ProblemReason | undefined): string | undefined {
   return reason === undefined ? undefined : REASONS[reason]
-}
-
-/** When a conversation has no title yet, the moment it was last written, the contract's only date. */
-export function titleOf(conversation: { title: string; updatedAt: string }): string {
-  return conversation.title === ''
-    ? `Conversa de ${dayAndHour(conversation.updatedAt)}`
-    : conversation.title
 }
 
 /** The ready read of the kit a tool still is, when its description is the read's own; a tool made by hand, or in code, has none. */

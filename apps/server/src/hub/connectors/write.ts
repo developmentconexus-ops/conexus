@@ -3,7 +3,7 @@ import { connectorOf } from '@conexus/connectors'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import { roleOfSpeaker } from '../identity/public.ts'
+import { roleOfSpeaker, speakerOf } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
 import type { Login, OpenedConnection } from './executor.ts'
 import { issuesOf } from './read.ts'
@@ -17,9 +17,12 @@ import type { WriteRequest, Written } from './write-record.ts'
 import { aboutOf, finish, hashOf, markOf, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
 
-/** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them. */
-export function uncertainText(mark: string): string {
-  return `Do not call this again: the write may already exist. Tell the person to look for the mark "${mark}" in what the system wrote.`
+/** The text the model reads for `WRITE_UNCERTAIN` and for `IDEMPOTENCY_CONFLICT`: the one place that says what to do with them; only the first carries what the system answered. */
+export function uncertainText(mark: string, a: Readonly<{ returned: boolean }>): string {
+  const look = `look for the mark "${mark}" in what the system wrote.`
+  return a.returned
+    ? `Do not call this again: the write may already exist. If "returned" shows what the system did, tell the person what it says; otherwise tell the person to ${look}`
+    : `Do not call this again: the write may already exist. Tell the person to ${look}`
 }
 
 /** The text the model reads for `WRITE_OPEN`: an earlier write of this kind in the conversation may exist, so this one was not sent. */
@@ -33,9 +36,9 @@ type Ended = Wrote<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused | {
 function writtenOf(ended: Ended, mark: string): Written {
   switch (ended.kind) {
     case 'OK':
-      return { kind: 'OK', value: ended.value }
+      return { kind: 'OK', value: ended.value, returned: ended.returned }
     case 'UNCERTAIN':
-      return { kind: 'WRITE_UNCERTAIN', mark }
+      return { kind: 'WRITE_UNCERTAIN', mark, returned: ended.returned }
     case 'REFUSED':
     case 'AUTH_REFUSED':
     case 'TOKEN_EXPIRED':
@@ -78,12 +81,12 @@ async function admitted(deps: Deps, a: WriteRequest): Promise<Admitted> {
   if (!scope.chosen.includes(a.connectionId)) return refused('NOT_GRANTED', 'NOT_CHOSEN')
   const viewer = { person: { id: scope.personId }, companyId: scope.companyId }
   const found = await deps.database.read(scopeOf(viewer), async (tx) => {
-    const role = await deps.identity.roleOf(tx, scope.companyId, scope.personId)
+    const person = await speakerOf(tx, scope.companyId, scope.personId)
     const [row] = await offeredIn(tx, idsOf(scope), a.connectionId)
-    return role === undefined || row === undefined
+    return person === undefined || row === undefined
       ? undefined
       : {
-          role,
+          person,
           connector: row.connector,
           opened: await openedIn(deps, tx, {
             companyId: scope.companyId,
@@ -95,7 +98,7 @@ async function admitted(deps: Deps, a: WriteRequest): Promise<Admitted> {
   const operation = connectorOf(found.connector)?.writes?.find((each) => each.id === a.operation)
   // The tool is built from the version's declared writes: an id that is no write is the caller's mistake.
   if (operation === undefined) throw new Failure('REQUEST_MALFORMED')
-  const speaker = a.speaker.kind === 'PERSON' ? { ...a.speaker, role: found.role } : a.speaker
+  const speaker = a.speaker.kind === 'PERSON' ? found.person : a.speaker
   const allowed = await deps.identity.mayUse(scope.companyId, speaker, {
     connectionId: a.connectionId,
     connectorId: ConnectorId.parse(found.connector),

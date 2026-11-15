@@ -10,6 +10,8 @@ function answer(id: string, status: number, body: unknown) {
   return found.answer({ status, body })
 }
 
+const SEARCHES = ['buscarParceiros', 'buscarProdutos', 'buscarVendedores', 'estoqueDosProdutos']
+
 // The six pages that document the 403 body give `mensagem: { codigo, descricao }`.
 const DOCUMENTED = [
   'clientes',
@@ -63,7 +65,8 @@ function measured(details: string, code = 'RESOURCE_NOT_FOUND') {
 
 test('o 404 que o Sankhya manda para uma página sem linhas lê sem linhas em toda leitura; outro 404 não', () => {
   const empty = measured('Nenhum registro da entidade CabecalhoNota com o identificador informado!')
-  for (const { id } of sankhya.operations) {
+  // The searches answer through the gateway, whose refusals are its own: only the REST reads send this 404.
+  for (const { id } of sankhya.operations.filter((each) => !SEARCHES.includes(each.id))) {
     assert.deepEqual(
       answer(id, 404, empty),
       { kind: 'OK', value: { linhas: [], temMais: false }, empty: true },

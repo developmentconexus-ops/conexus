@@ -11,7 +11,8 @@ import {
 } from './test-recordings.ts'
 
 // Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them,
-// and the ChatGPT subscription's turns of a refused write and a refused read, as `openai-failure.eval.test.ts` records them.
+// and the ChatGPT subscription's calls of a refused write and a refused read, with the closing of the write turn only,
+// as `openai-failure.eval.test.ts` records them.
 const EXPECTED = [
   'anthropic-abort',
   'anthropic-cited',
@@ -52,7 +53,7 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
 })
 
 // The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
-// and `plan`, `files`, `tasks` and `reads`, whose model calls are streamed by the test double's Messages API stream.
+// and `plan`, `files`, `tasks`, `reads`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream.
 const NATIVE = [
   'abort',
   'approval',
@@ -65,20 +66,28 @@ const NATIVE = [
   'handoff',
   'plan',
   'reads',
+  'research',
+  'research-failed',
   'tasks',
   'thinking',
+  'title',
+  'title-observer',
 ]
 const STREAMED = new Set([
   'plan',
   'files',
   'tasks',
   'reads',
+  'research',
+  'research-failed',
   'handoff',
   'approval',
   'approval-declined',
   'approval-interrupted',
   'approval-refused',
   'approval-stopped',
+  'title',
+  'title-observer',
 ])
 
 test('cada gravação do fluxo nativo diz a biblioteca, a versão e a gravação do fornecedor que tocou, e não guarda endereço nem credencial (T24, S40)', () => {

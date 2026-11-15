@@ -78,7 +78,7 @@ const template = SDK_FOLDERS.reduce(
   (built, folder) => built.copy(folder, `${OPT}/${folder}`, { user: 'root' }),
   Template({ fileContextPath: ROOT, fileIgnorePatterns: IGNORED })
     .fromNodeImage('24')
-    .aptInstall(['git', 'python3-pip']),
+    .aptInstall(['git', 'python3-pip', 'poppler-utils', 'pandoc']),
 )
   .runCmd(
     [

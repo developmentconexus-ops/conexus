@@ -24,7 +24,6 @@ export const mensagensDoPacote = readOf({
   label: 'Mensagens do pacote',
   input: z.object({ packId: PathId, offset: Offset.optional(), limit: Limit(100).optional() }),
   list: 'messages',
-  omit: ['from.email', 'from.name', 'to.email', 'to.name'],
   from: [pacote.id],
   probe: chain(pacote.id, 'id', (packId) => ({ packId })),
   request: (input, account) =>

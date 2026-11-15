@@ -7,13 +7,13 @@ import {
   holding,
   hubBeside,
   PARTIAL,
-  rolesAndParts,
   sent,
   started,
   streamOf,
   title,
 } from './test-conversation.ts'
 import { failuresOf } from './test-parts.ts'
+import { rolesAndParts } from './test-transcript.ts'
 
 test('o turno que roda quando o servidor cai fica parado: a sessão volta sem execução nem cartão, a releitura traz o que o Mastra guardou, nada retoma sozinho e a próxima mensagem funciona (49)', {
   timeout: 60_000,
@@ -42,7 +42,7 @@ test('o turno que roda quando o servidor cai fica parado: a sessão volta sem ex
   assert.deepEqual(seed.pendingSuspensions, {})
   // Mastra saves a run's messages from its second step on: the first step's are lost (30).
   assert.deepEqual(await rolesAndParts(next, ana, url), [])
-  await sleep(1000)
+  await sleep(300)
   assert.equal(anthropic.sent.length, calls, 'nothing resumed on its own')
 
   assert.equal((await sent(next, ana, url, 'Depois')).statusCode, 200)

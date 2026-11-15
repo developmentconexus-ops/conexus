@@ -11,16 +11,6 @@ export const conta = readOf({
   label: 'Conta',
   input: z.object({}),
   list: null,
-  // The owner's own contact data is not what any read needs.
-  omit: [
-    'email',
-    'phone',
-    'alternative_phone',
-    'first_name',
-    'last_name',
-    'identification',
-    'address',
-  ],
   probe: () => ({}),
   request: () => get('/users/me'),
 })

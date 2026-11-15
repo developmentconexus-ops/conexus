@@ -23,9 +23,9 @@ import {
 import { talking } from '../assistant/test-assistant.ts'
 import { created, salesSummary } from '../automations/test-automations.ts'
 import { endOf, KEY } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { stepped, tool } from '../conversation/test-questions.ts'
 import type { Step } from './test-construtor.ts'
-import { building, keeping, listOf, opened, resultOf, scripted } from './test-construtor.ts'
+import { building, keeping, listOf, opened, resultOf } from './test-construtor.ts'
 
 const FIRST = 'Responda sobre as vendas do dia.'
 
@@ -94,7 +94,7 @@ test('ler o Projeto: sem app, app é null; com app, as tabelas com as colunas, s
 
   const answers: Record<string, unknown>[] = []
   const writing = versionWriting()
-  const steps = scripted([() => [tool('project_read', {})], keeping(answers)])
+  const steps = stepped([() => [tool('project_read', {})], keeping(answers)])
   const on = await agentsOn(t, (sent) =>
     sent.texts.some((text) => text.startsWith(ASK)) ? writing(sent) : steps(sent),
   )

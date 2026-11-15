@@ -3,12 +3,12 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
+import { until } from '../../platform/test-until.ts'
 import type { Read, StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
@@ -16,16 +16,16 @@ import {
   conversing,
   endOf,
   holding,
+  messagesOf,
   PARTIAL,
   sent,
-  settledOf,
   started,
   stopped,
   streamOf,
   title,
 } from './test-conversation.ts'
 import { dataOf, failuresOf, messagesIn, partsOf } from './test-parts.ts'
-import { routedTo } from './test-research.ts'
+import { onGroq, routedTo } from './test-research.ts'
 
 /** The page the recorded `tool-error` call asks to read, on a site that never answers. */
 const MISSING_SITE = 'padaria-inventada.example.test'
@@ -104,10 +104,8 @@ async function stoppedOf(
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, person, url, 'Liste nomes de padarias')).statusCode, 200)
-  // The journal says text in pieces of 200 characters, so this short text waits for the turn's end:
-  // the stop comes once the recording's words have reached the turn.
   const opening = await stream.next()
-  await setTimeout(1000)
+  await stream.until(() => stream.seen.raw.includes('"type":"text-delta"'))
   assert.equal((await stopped(hub, person, url)).statusCode, 200)
   const events = [opening, ...(await stream.turn())]
   assert.equal(endOf(events), 'aborted')
@@ -145,15 +143,16 @@ test('o pensamento de Claude, tocado da gravação: o raciocínio e o `data-cone
   assert.equal(typeof Object(kept[0]).seconds, 'number')
 })
 
-test('a ferramenta de Claude que falha, tocada da gravação: a leitura da página em erro, lida como ao vivo', async (t) => {
+test('a leitura de página que falha: o erro da ferramenta ao vivo e relido, no provedor cuja leitura é a do Mastra', async (t) => {
   routedTo(t, { [MISSING_SITE]: new Error(`getaddrinfo ENOTFOUND ${MISSING_SITE}`) })
   let calls = 0
-  const { hub, ana, conversations } = await conversing(t, (each) => {
-    const titled = title(each)
-    if (titled !== undefined) return titled
+  const on = await conversing(t, () => ({ kind: 'text', text: 'Título' }))
+  const { hub, ana, conversations } = on
+  await onGroq(on, (each) => {
+    if (!each.stream) return { kind: 'text', text: 'Título' }
     calls += 1
     return calls === 1
-      ? recorded('anthropic-tool-error')
+      ? { kind: 'fetch', url: `http://${MISSING_SITE}/` }
       : { kind: 'text', text: 'Não consegui ler a página.' }
   })
   const said = await asked(t, { hub, person: ana, conversations })
@@ -271,8 +270,13 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, first.url, 'Mude a cor')).statusCode, 200)
   const failed = await stream.turn()
-  assert.deepEqual(failuresOf(failed), ['MODEL_NO_ACCOUNT'])
-  const kinds = (await settledOf(hub, ana, first.url))
+  assert.deepEqual(failuresOf(failed), ['MODEL_ACCOUNTS_REFUSED'])
+  await until(
+    async () =>
+      (await messagesOf(hub, ana, first.url)).filter((each) => each.role === 'person').length === 2,
+    'the second turn saved by Mastra',
+  )
+  const kinds = (await answeredOf(hub, ana, first.url))
     .filter((each) => each.role === 'builder')
     .map((each) =>
       each.parts.map((part) => part.type).filter((type) => type.startsWith('data-conexus-')),
@@ -284,5 +288,8 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
     ['data-conexus-failure'],
   ])
   const toModel = anthropic.sent.filter((each) => each.stream).flatMap((each) => each.texts)
-  assert.doesNotMatch(toModel.join('\n'), /conexus-(version|failure|machine)|MODEL_NO_ACCOUNT/)
+  assert.doesNotMatch(
+    toModel.join('\n'),
+    /conexus-(version|failure|machine)|MODEL_ACCOUNTS_REFUSED/,
+  )
 })

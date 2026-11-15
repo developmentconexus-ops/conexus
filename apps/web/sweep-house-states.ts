@@ -106,6 +106,18 @@ export const HOUSE_STATES: State[] = [
     },
   },
   {
+    name: 'Configurações, memória da empresa',
+    path: `${SETTINGS}/company-memory`,
+    replies: OWNER,
+    settle: (p) => waitFor(p, 'Nenhuma página guardada ainda.'),
+  },
+  {
+    name: 'Configurações, memória da empresa sem permissão',
+    path: `${SETTINGS}/company-memory`,
+    replies: MEMBER,
+    settle: (p) => waitFor(p, 'Só o dono ou um administrador muda a memória da empresa.'),
+  },
+  {
     name: 'Configurações, geral',
     path: `${SETTINGS}/general`,
     replies: OWNER,

@@ -12,12 +12,20 @@ choice of test tools.
   **must** fail; and a test **must not** pass silently when the service it needs is missing. A
   flake on a leak, refusal or isolation assertion **must** be investigated as a defect, never
   skipped or rerun until green. Why: issues #388 and #423 logged the same leak of the provider's
-  text as flakes. [CI, review]
+  text as flakes. On CI only, a failed test of any other class gets one second run
+  (`scripts/test-run.ts`, Node's `--test-rerun-failures`); a test that passes it is flaky, never
+  green unmarked: the job summary shows it and a `flaky` issue takes each occurrence. The second
+  run is never given to a test on `scripts/rerun-never.json`, the one list of the classes above:
+  the files of isolation, refusal, secrets and access, and the tests listed by name, among them
+  those whose name, or its suite's, says another company, another Project, isolation or leak. A new
+  such file or name fails its check until it is listed. A file that failed whole is not rerun
+  either. [CI, review]
 
 ## 2. What a test asserts
 
 - **T5.** A test **must** enter through the server's public door and **must not** import the inside
-  of the server, except the test database, `platform/test-neon.ts` and `hub/identity/test-hub.ts`.
+  of the server, except the helpers a test shares, which are the files named `test-*.ts` (the test database,
+  `platform/test-neon.ts` and `hub/identity/test-hub.ts` among them).
   [lint]
 - **T6.** Tests **should** exercise observable consumer behavior beside its owner, comparing a
   result that distinguishes the failure rather than only existence. For a route, assert literal
@@ -40,9 +48,6 @@ choice of test tools.
   each negative case linked to its protection when replacing tests; remove it only with that
   protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
   origin, so its removal goes unnoticed. [review]
-- **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`.
-  The registry keeps only security protections. Founder, 2026-10-24 (`1a98660`).
-  [`scripts/removals.ts`]
 - **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
   machine or data path with other layers disabled, when authorized. Failure: an outer layer
   refuses first and the test never reaches the wall it claims to prove. [review]
@@ -71,6 +76,13 @@ choice of test tools.
   double. Any turn the screen draws from a stream is also read back after it ends, and the
   test asserts the two are equal. A double plays every tool the model is offered, not only
   those a card names, and the tests and QA read each tool's row on the screen. [review]
+- **T29.** A double of a connector **must** answer with bodies recorded from the real service,
+  refusals included, carrying invented values only (security S40), kept beside the connector and
+  imported by its double and its conformance. A page of the vendor's documentation is not a
+  recording. Until a route's real body is recorded, the card names the proof that records it, and
+  the nearest envelope measured on the real service stands in. Founder, 2026-11-08, to the
+  study's `D3`: "okay". Failure: the Sankhya double refused orders in the documentation's shape,
+  the reader read that shape, and the real gateway's `error.details` was lost. [review]
 - **T28.** In a model double, the arguments of a tool call **must** use only what the model call
   showed the model (names, texts), never an id or a value only the test knows. A double that knows
   more than the model hid the Assistant's `propose_automation` asking for ids it never saw. [review]
@@ -115,12 +127,16 @@ choice of test tools.
   under 16px are the browser checks' (`layout.test.ts`, `fields.layout.test.ts`), not captures to
   read; a new screen state joins their sweep. A fix pull request that changes a screen gets a short
   QA pass on the changed states. [review]
-- **T27.** Lines a change adds in a package with a Stryker configuration (server and web) **must**
-  be mutation-tested with the tests that own them, and every
-  surviving mutant accounted for: a test that kills it, or a line in the report naming it
-  equivalent, style-only or owned by a named test elsewhere. There is no score threshold: a score
-  pushes tests to assert classes of output against T7. Failure: a guard tested with one file passes
-  when the code checks "all files" instead of "any file". [`npm run quality`; review]
+- **T27.** The lines a change adds **must** be proved by hand mutations of their key lines: change
+  one line, run the test that owns it, see it fail, restore it. The build or the review lists each
+  mutation (line, change, owning test, result) in the pull request or the report, and a mutation
+  that survives gets a test that kills it, or a line naming it equivalent. Stryker is an optional
+  manual tool: `npm run quality -- --mutate` mutates the lines changed against the base; no
+  build, review or step closing requires it, and the CI quality job runs only complexity and
+  duplication. There is no score threshold: a score pushes
+  tests to assert classes of output against T7. Failure: a guard tested with one file passes when
+  the code checks "all files" instead of "any file". Founder, 2026-11-13: "Aprovo recomendação".
+  [review]
 
 ## 6. From change to proof
 
@@ -131,4 +147,4 @@ choice of test tools.
 | A route | HTTP status/body and negative cases (T6, T10) |
 | A screen | Screen test beside it, real browser and transitions (T23), end-to-end path when it crosses the Hub |
 | A Builder change | Real turn when authorized (T14) |
-| A security rule | Negative cases, isolation attack, registered removal proof (T10, T12, T13) |
+| A security rule | Negative cases, isolation attack (T10, T13) |

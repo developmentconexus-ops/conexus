@@ -22,6 +22,10 @@ export class TurnTally {
   failedTool: string | undefined
   /** How many times the end of the turn judged it (`conexusCheck`), once the run settled. */
   rounds: number | undefined
+  /** The helpers (researches) that ended in the turn. */
+  helpers = 0
+  /** The tools the helpers called: each is a step of the turn's work that no `usage_update` of the main agent counts. */
+  helperCalls = 0
 
   heard(event: AgentControllerEvent): void {
     if (event.type === 'usage_update') {
@@ -29,6 +33,10 @@ export class TurnTally {
       this.tokens += event.usage.totalTokens
       this.maxInputTokens = Math.max(this.maxInputTokens, event.usage.promptTokens)
       this.cachedInputTokens += event.usage.cachedInputTokens ?? 0
+    } else if (event.type === 'subagent_end') {
+      this.helpers += 1
+    } else if (event.type === 'subagent_tool_start') {
+      this.helperCalls += 1
     } else if (event.type === 'error' && event.finishReason !== undefined) {
       this.finishReason = event.finishReason
     }
@@ -43,7 +51,8 @@ export class TurnTally {
  * The line a turn leaves in the log (cards of steps 14, U10, and 14.2, criterion 17): how long, how
  * many steps and tokens, the fullest step and the cached input, how it ended and how the model
  * finished, the rounds of its end, and the tool and the code of its error, field by field. Never a
- * message, a command or a file (security S41, S42).
+ * message, a command or a file (security S41, S42). A turn with helpers also counts them and the
+ * tools they called (U12).
  */
 export function turnLine(input: {
   runId: RunId | undefined
@@ -63,6 +72,7 @@ export function turnLine(input: {
     end: input.end,
     ...(tally.finishReason && { finishReason: tally.finishReason }),
     ...(tally.rounds !== undefined && { rounds: tally.rounds }),
+    ...(tally.helpers > 0 && { helpers: tally.helpers, helperCalls: tally.helperCalls }),
     ...(tally.failedTool && { failedTool: tally.failedTool }),
     ...(input.errorCode && { errorCode: input.errorCode }),
   }

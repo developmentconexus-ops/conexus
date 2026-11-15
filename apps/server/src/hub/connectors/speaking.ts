@@ -1,7 +1,9 @@
+import type { Connector } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { Speaker } from '../identity/public.ts'
+import { speakerOf } from '../identity/public.ts'
 import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
 
@@ -14,10 +16,9 @@ export async function personSpeaker(
   companyId: CompanyId,
   personId: PersonId,
 ): Promise<Speaker | undefined> {
-  const role = await deps.database.read({ kind: 'COMPANY', companyId, personId }, (tx) =>
-    deps.identity.roleOf(tx, companyId, personId),
+  return deps.database.read({ kind: 'COMPANY', companyId, personId }, (tx) =>
+    speakerOf(tx, companyId, personId),
   )
-  return role === undefined ? undefined : { kind: 'PERSON', personId, role }
 }
 
 type Listed = Readonly<{
@@ -104,4 +105,28 @@ export async function mayUseNotebook(
   return allowed
     ? undefined
     : { kind: 'NOT_IN_ROLE', role: speaker.role, operation: NOTEBOOK_OPERATION }
+}
+
+/**
+ * The first read of the connection's free read door the speaker's role does not hold; none when it
+ * holds them all. Proposing and turning on a proposal ask what `connector_read` asks of that door,
+ * since the copy's own read speaks as a version outside the roles (Capacidade 2).
+ */
+export async function lackedDoorRead(
+  deps: Pick<Deps, 'identity'>,
+  companyId: CompanyId,
+  speaker: Speaker,
+  on: Readonly<{ connectionId: ConnectionId; connector: Connector }>,
+) {
+  const reads = Object.values(on.connector.readDoor ?? {})
+  const answers = await deps.identity.mayUseEach(
+    companyId,
+    speaker,
+    reads.map((read) => ({
+      connectionId: on.connectionId,
+      connectorId: ConnectorId.parse(on.connector.id),
+      operationId: OperationId.parse(read.id),
+    })),
+  )
+  return reads.find((_, index) => !answers[index])
 }

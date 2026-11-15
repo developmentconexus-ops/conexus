@@ -100,6 +100,10 @@ test('máquina: a busca do download lista pela marca, pela conversa e pelo templ
   assert.match(seen[0] ?? '', new RegExp(`^GET .*conexus_conversation=${CONVERSATION}`))
   // The SDK encodes the metadata inside the query, as for the kill.
   assert.match(seen[0] ?? '', /conexus_template=conexus-builder%253A1111111/)
+  seen.length = 0
+  assert.equal(await api.find(CONVERSATION, undefined), 'sb-1')
+  assert.match(seen[0] ?? '', new RegExp(`conexus_conversation=${CONVERSATION}`))
+  assert.doesNotMatch(seen[0] ?? '', /conexus_template/, 'no template filters the list')
   down = true
   await assert.rejects(api.find(CONVERSATION, 'conexus-builder:1111111'))
 })

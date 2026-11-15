@@ -6,7 +6,7 @@ import {
   MailCard,
   MailFallbackLink,
   MailFrame,
-} from '../identity/mail/public.tsx'
+} from '../identity/public-mail.tsx'
 import type {
   AutomationMailProps,
   renderAutomation as RenderAutomation,

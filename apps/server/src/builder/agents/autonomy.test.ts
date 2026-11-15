@@ -1,13 +1,19 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { operationLabel } from '../../hub/connectors/public.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { said } from '../assistant/test-assistant.ts'
 import { endOf, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
-import { agentOf, drafted, publishedAgent, publishedNow, talkedTo } from './test-agents.ts'
+import {
+  agentOf,
+  drafted,
+  madeAgent,
+  publishedAgent,
+  publishedNow,
+  talkedTo,
+} from './test-agents.ts'
 import {
   answer,
   approvalsIn,
@@ -15,8 +21,8 @@ import {
   askedOf,
   developerHolds,
   launched,
-  PERSON_PACE_MS,
   untilAsked,
+  untilCardStored,
   WRITE,
 } from './test-approval.ts'
 
@@ -109,6 +115,48 @@ test('quem publicou guarda a ação e perde a escrita no papel: a escrita em Faz
   await sent(on.hub, on.ana, url, 'Lance outro')
   assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
   assert.equal(on.fake.orders().length, 1, 'the card stops the write before the Sankhya')
+})
+
+/**
+ * The turn reads what its place offers apart from each tool's shape; the place stops offering the
+ * Matriz between the two reads, so the write is made but has no connector to ask about.
+ */
+test('o lugar deixa de oferecer a conexão entre as duas leituras do começo do turno: a escrita em Faz sozinho não tem conector a consultar e pergunta (24.5)', async (t) => {
+  const on = await approving(t, [[launched()]])
+  const agent = await on.writer('AUTO')
+  const { url, stream } = await on.opened(agent.id)
+  const door = on.hub.connectors.assistant
+  const connectionsOf = door.connections.bind(door)
+  door.connections = async (scope) =>
+    (await connectionsOf(scope)).filter((each) => each.connectionId !== on.matriz)
+  await sent(on.hub, on.ana, url, 'Lance o pedido')
+  assert.equal(askedOf(await untilAsked(stream)).toolName, WRITE)
+  assert.deepEqual(on.fake.orders(), [], 'the card stops the write before the Sankhya')
+})
+
+test('na conversa de teste, a escrita em Faz sozinho roda sem cartão mesmo que quem a deixou assim tenha perdido a ação: o rascunho fala como a pessoa (D2-a)', async (t) => {
+  const on = await approving(t, [[launched()], [said('Lançado.')]])
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const made = await madeAgent(on.hub, bia, on.agents)
+  await drafted(on.hub, bia, on.agents, made, {
+    instructions: 'Lance os pedidos que a pessoa pedir.',
+    connections: [on.matriz],
+    tools: [on.write.latest.id],
+    approvals: { [on.write.id]: 'AUTO' },
+  })
+  await developerHolds(on, [...READS, 'lancarPedido'])
+  const demoted = await call(on.hub, on.ana, 'PUT', `${on.company}/members/${bia.id}`, {
+    role: 'developer',
+    from: 'admin',
+  })
+  assert.equal(demoted.statusCode, 200, demoted.body)
+
+  const url = await talkedTo(on.hub, bia, on.agents, made.id, { draft: true })
+  const stream = await streamOf(on.hub, bia, url)
+  t.after(() => stream.close())
+  await sent(on.hub, bia, url, 'Lance o pedido')
+  assert.deepEqual(approvalsIn(await stream.turn()), [], 'the draft in Faz sozinho, no card')
+  assert.equal(on.fake.orders().length, 1)
 })
 
 /**
@@ -243,7 +291,7 @@ test('quem aprova precisa ter a escrita no próprio papel: o Aprovar de quem nã
   await sent(on.hub, dora, url, 'Lance o pedido')
   const asked = askedOf(await untilAsked(stream))
 
-  await sleep(PERSON_PACE_MS)
+  await untilCardStored(on.hub, asked.toolCallId)
   const refused = await post(on.hub, dora, `${sessionUrl(url)}/tool-approval`, {
     toolCallId: asked.toolCallId,
     approved: true,

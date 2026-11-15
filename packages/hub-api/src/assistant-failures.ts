@@ -26,6 +26,16 @@ export const ASSISTANT_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  // A change to the company's memory refused because another changed the page meanwhile
+  // (alignment of the Assistant, U9): the screen reads it again.
+  COMPANY_MEMORY_CHANGED: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'A página mudou enquanto você apagava.',
+    action: '',
+    actionKind: 'NONE',
+  },
   HANDOFF_NOT_DELIVERED: {
     category: 'SYSTEM',
     // The key is kept (W24): the touch again finds the Projeto and the conversation, and sends.

@@ -75,12 +75,8 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   assert.equal(marks?.conexus_agent, agent.id)
   assert.equal(marks?.conexus_conversation, idOf(url))
 
-  const deadline = Date.now() + 5_000
-  while (control.stops < 1) {
-    assert.ok(Date.now() < deadline, 'the machine never slept when the turn ended')
-    await new Promise((done) => setTimeout(done, 20))
-  }
-  assert.equal(control.stops, 1, 'the machine sleeps when the turn ends')
+  await new Promise((done) => setTimeout(done, 200))
+  assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
 
   const [output] = await shown(on, url)
   assert.deepEqual(output, {

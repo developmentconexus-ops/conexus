@@ -44,7 +44,14 @@ function stored(result?: unknown) {
 function open() {
   return at(`${AREA}/construtor/${BUILDER_CHAT}`, {
     agents: [],
-    construtor: [{ id: BUILDER_CHAT, title: 'Ideias', updatedAt: '2026-11-04T12:51:00.000Z' }],
+    construtor: [
+      {
+        id: BUILDER_CHAT,
+        title: 'Ideias',
+        createdAt: '2026-11-04T12:51:00.000Z',
+        updatedAt: '2026-11-04T12:51:00.000Z',
+      },
+    ],
   })
 }
 

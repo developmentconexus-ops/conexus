@@ -235,8 +235,14 @@ export const member = auth.table(
       .references(() => user.id, { onDelete: 'restrict' }),
     role: text('role').notNull(),
     createdAt: instant('created_at').notNull(),
+    // What the person is in the company, in their own words (Alinhamento do Assistente, U8): the
+    // Assistant's block says them, and the person or an administrator writes them through the Hub.
+    jobTitle: text('job_title'),
+    department: text('department'),
   },
   (table) => [
+    check('member_job_title_length', sql`char_length(${table.jobTitle}) <= 80`),
+    check('member_department_length', sql`char_length(${table.department}) <= 80`),
     unique('member_company_id_user_id_key').on(table.organizationId, table.userId),
     index('member_user_id_idx').on(table.userId),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),

@@ -3,6 +3,9 @@
 The failures this prevents: Mastra 1.69 cited for a 1.78 pin; Conexus OS read at a checkout's HEAD
 instead of its frozen commit; lines cited from clones that vanished with a worktree; our own code
 taken as a reference; a warning that sat on an option's reference page, never in the overview.
+Also a reference read in another situation and cited as if it were ours: Airbyte's database discover
+cited for every connector kind, and sync schedules, data-health checks and token renewal cited as
+the limits of a different check.
 
 ## Where each source is read
 
@@ -20,6 +23,9 @@ taken as a reference; a warning that sat on an option's reference page, never in
   there, never inside a task worktree, and add its manifest line.
 - **A closed product**: its official docs. Save each page read, with its date, beside the report.
   Docs say what a product claims, not what it does: label them **documentado**.
+- **A non-official source** (a leaked system prompt, Kiro, Mitra, G4 OS): label it **não oficial**.
+  It shows a shape to study, never a behavior to claim. The row cites the file and its date, and a
+  remendo row never rests on it alone. No text from it enters the repository.
 - When the platform has a feature like the step's (environments, deploy, machine, alerts), read its
   page and public client code, and say what to take and what not.
 
@@ -29,6 +35,16 @@ Each row's "Referência" cell names the version or commit read, and says when it
 Conexus's pin. The report's search line says how each source was read (code, docs, run) and what
 was read whole, by headings, or not at all; a "nenhuma faz" counts only beside it.
 
+## The trace of a built row
+
+A built row needs the closest reference's code read end to end, not its page or a summary: the entry
+(route, tool, hook), the data shape at each hop, where state lives, the library pieces called, and
+how errors travel, each with `file:line` at the pin, labelled **lido**. For Mastra that is Mastra
+Code, Factory and the package's own source beside `dist/docs`; for the AI build flow, vibesdk. The
+maintainers' skills for every library the row touches ([stack](../../../../docs/reference/stack.md))
+are read first. A row whose cell is relay, documentado or "nenhuma faz" without the search list,
+while the code exists, goes back to research.
+
 ## Labels
 
 Every claim, and every cell of the reference table's "Como a referência faz", carries one:
@@ -36,7 +52,29 @@ Every claim, and every cell of the reference table's "Como a referência faz", c
 **herdado** (our own code or decision: it describes, never justifies), **hipótese**, **não
 verificado**.
 
+## The situation
+
+Each reference in a "Referência" cell names the situation it solves (what input, which user, what
+trigger) and carries one match label:
+
+- **mesma situação**: with the `file:line` **lido**, or the docs URL and the quoted sentence.
+- **situação diferente: <a diferença>**: it shows a shape, never grounds a verdict, an option or a
+  recommendation, and the founder's page never says "a referência faz" for it.
+- **não faz**: with where it was searched.
+
+A claim with no `file:line` and no quoted sentence is **não verificado** and never reaches the
+founder's page or an option table.
+
 ## Readers
 
 A reader gets one source and the fixed questions. Its lines are reopened by the author before they
 enter the report, or carried as **relay**. Its notes stay beside the report.
+
+## The verification pass
+
+Before the report is final, a reader that wrote none of it (another agent) gets the rows that ground
+a verdict, an option or the founder's page, and nothing else from the author. For each it reopens
+every cited `file:line` or docs quote and answers two questions: does the source say what the cell
+claims, and is the situation label right. A row that fails either is fixed and checked again, or
+dropped with what rested on it. The report records the pass: the reader, the rows checked, fixed
+and dropped.

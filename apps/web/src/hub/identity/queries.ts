@@ -25,6 +25,7 @@ import {
   requestPasswordRecovery,
   revokeAllAppAccess,
   setCompanyNickname,
+  setMemberProfile,
   setPassword,
   updateRole,
 } from '@conexus/hub-api'
@@ -114,6 +115,7 @@ export const deleteCompanyRole = hubMutation(deleteRole)
 
 export const removePerson = hubMutation(removeMember)
 export const changePersonRole = hubMutation(changeMemberRole)
+export const writeMemberProfile = hubMutation(setMemberProfile)
 
 /** What the cache holds of a company the person has left: its page, its people and its invitations. */
 export function forgetCompany(queryClient: QueryClient, companyId: CompanyId): void {

@@ -5,13 +5,14 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { bellOf } from '../../hub/notifications/test-notifications.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { reading, talking } from '../assistant/test-assistant.ts'
 import {
+  answeredOf,
   endOf,
   holding,
   messagesOf,
   PARTIAL,
-  settledOf,
   title,
 } from '../conversation/test-conversation.ts'
 import { failuresIn } from '../conversation/test-parts.ts'
@@ -147,7 +148,7 @@ test('as ligações de hoje: uma ligação que o Projeto perdeu depois da criaç
 test('a falha do turno: o modelo fora e a conta recusada terminam FAILED com o código que a conversa mostra', async (t) => {
   for (const [status, code] of [
     [529, 'MODEL_CALL_FAILED'],
-    [401, 'MODEL_NO_ACCOUNT'],
+    [401, 'MODEL_ACCOUNTS_REFUSED'],
   ] as const) {
     const on = await automating(t, (asked) => title(asked) ?? { kind: 'refuse', status })
     const automation = await created(on.hub, on.ana, on.automations, salesSummary([]))
@@ -156,7 +157,7 @@ test('a falha do turno: o modelo fora e a conta recusada terminam FAILED com o c
     assert.equal(run.state.kind, 'FAILED')
     assert.equal(run.state.code, code)
     const conversation = `${on.assistant}/${String(run.state.conversationId)}`
-    const parts = (await settledOf(on.hub, on.ana, conversation)).flatMap((each) => each.parts)
+    const parts = (await answeredOf(on.hub, on.ana, conversation)).flatMap((each) => each.parts)
     assert.deepEqual(failuresIn(parts), [code])
     assert.ok(on.lines.some((line) => line.message === 'AUTOMATION_RUN_FAILED'))
   }
@@ -171,7 +172,7 @@ test('a falha do turno: o turno que passa do orçamento é abortado, FAILED com 
   assert.equal(run.state.kind, 'FAILED')
   assert.equal(run.state.code, 'INTERRUPTED')
   const conversation = `${on.assistant}/${String(run.state.conversationId)}`
-  const messages = await settledOf(on.hub, on.ana, conversation)
+  const messages = await answeredOf(on.hub, on.ana, conversation)
   const said = messages.filter((each) => each.role === 'builder').flatMap((each) => each.parts)
   assert.ok(said.some((part) => part.type === 'text' && part.text === PARTIAL))
 })
@@ -205,13 +206,11 @@ test('o dono virou membro: o disparo não abre conversa, SKIPPED com OWNER_CANNO
   const asMember = await post(on.hub, bia, `${on.automations}/${automation.id}/run`, {})
   assert.deepEqual([asMember.statusCode, codeOf(asMember)], [404, 'NOT_FOUND'])
   await dueNow(on.hub, automation.id)
-  const deadline = Date.now() + 90_000
   async function paused() {
     const { notifications } = await bellOf(on.hub, bia, on.company)
     return notifications.some((each) => each.kind === 'AUTOMATION_PAUSED')
   }
-  while (!(await paused()) && Date.now() < deadline) await sleep(200)
-  assert.ok(await paused(), 'the run ended SKIPPED and told its owner')
+  await until(paused, 'the run ended SKIPPED and told its owner', 90_000)
   assert.equal((await role('admin', 'member')).statusCode, 200)
   const [run] = (await runsOf(on.hub, bia, `${on.automations}/${automation.id}`)).runs
   assert.equal(run?.trigger, 'SCHEDULED')
@@ -233,8 +232,9 @@ test('uma pergunta só: o passo refeito no mesmo runId, por outro Hub depois do 
   const url = `${on.automations}/${automation.id}`
   const runId = await ranNow(dying.hub, on.ana, url)
   const running = await conversing(on.hub, on.ana, url, runId)
-  while (on.calls.length < 2) await sleep(50)
+  await until(() => on.calls.length >= 2, 'the model was asked twice')
   await dying.die()
+  // Mastra emits no event when the dead Hub's lease lapses, and restart() takes the run only after it.
   await sleep(LEASE_MS)
   const workflow = on.hub.mastra.getWorkflow(AUTOMATION_WORKFLOW)
   await (await workflow.createRun({ runId })).restart()

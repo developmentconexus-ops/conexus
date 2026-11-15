@@ -83,4 +83,12 @@ export async function salesSankhya(
   }
 }
 
-export { PADARIA_SOL_FILIAL, PADARIA_SOL_MATRIZ, salesDatabase, soldBy } from '@conexus/connectors'
+export type { SalesSet } from '@conexus/connectors'
+export {
+  changedOn,
+  PADARIA_SOL_FILIAL,
+  PADARIA_SOL_MATRIZ,
+  salesDatabase,
+  sankhyaFake,
+  soldBy,
+} from '@conexus/connectors'

@@ -10,6 +10,9 @@ import type { ControllerKind, Owner } from './kinds.ts'
 import { resourceOf } from './kinds.ts'
 
 /**
+ * Not `derivedUuid` (`builder/tools/derived.ts`): the ids this makes are stored, so its input and
+ * shape never change.
+ *
  * A conversation's id by its attempt (code C37): one per controller, company, person and key, so a
  * repeat of the same attempt, or of the same automation run, finds the same thread. The sha256 in
  * the shape of a version 8 uuid; for the Assistant, the id it always had.

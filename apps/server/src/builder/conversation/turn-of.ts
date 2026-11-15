@@ -1,11 +1,10 @@
 import type { ConversationId, ProjectId } from '@conexus/hub-api'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import { z } from 'zod'
-import type { Owner, ResourceOwner } from '../controller-kit/public.ts'
-import { ownerOfResource } from '../controller-kit/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
+import { ownerIn, turnOfOwner } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { memoryModelsFor, setTurn, Turn, turnIn } from '../model-accounts/public.ts'
+import { setTurn, turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
 
@@ -19,13 +18,6 @@ export type ConversationIndex = {
   projectOf(input: Owner & { conversationId: ConversationId }): Promise<ProjectId | undefined>
 }
 
-const Resource = z.object({ resourceId: z.string() })
-
-/** Whose conversation a Mastra run is: the owner Mastra keeps its thread under, of either controller. */
-function ownerIn(requestContext: RequestContext): ResourceOwner | undefined {
-  return ownerOfResource(Resource.safeParse(requestContext.get('controller')).data?.resourceId)
-}
-
 async function conversationOf(
   index: ConversationIndex,
   requestContext: RequestContext,
@@ -36,12 +28,6 @@ async function conversationOf(
   const { companyId, personId } = owner
   const projectId = await index.projectOf({ companyId, personId, conversationId })
   return projectId === undefined ? undefined : { companyId, personId, conversationId, projectId }
-}
-
-/** The turn of a conversation's owner, in the accounts' queue (step 11). */
-export async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<Turn> {
-  const { companyId, personId } = owner
-  return new Turn({ companyId, personId, memoryModels: await memoryModelsFor(queue, owner) })
 }
 
 type Abort = (reason: string) => never
@@ -97,14 +83,6 @@ export function projectIn(index: ConversationIndex) {
           conversationId: found.conversationId,
           personId: found.personId,
         }
-  }
-}
-
-/** A turn for a side call made before the run read its input: the observer's (`accountModel`). */
-export function sideTurn(queue: QueueDeps) {
-  return async (requestContext: RequestContext): Promise<Turn | undefined> => {
-    const owner = ownerIn(requestContext)
-    return owner === undefined ? undefined : turnOfOwner(queue, owner)
   }
 }
 

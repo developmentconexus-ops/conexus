@@ -18,6 +18,7 @@ import { post } from '../identity/test-hub.ts'
 import type { SessionScope, WriteRequest } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
+import { forward } from './test-connections.ts'
 
 /** What a test changes in the request of `byAna`, `byVersion` and `byCarla`. */
 type Over = Partial<{
@@ -38,6 +39,12 @@ export const ORDER = {
 }
 export const LANCAR = OperationId.parse('lancarPedido')
 
+/** What the double answers to an order it took, as a write's `returned` carries it. */
+export function placedAnswer(codigoPedido: number) {
+  const mensagem = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'
+  return { status: 200, body: { codigo: 1, tipo: 'SUCESSO', mensagem, retorno: { codigoPedido } } }
+}
+
 /** What the stand-in before the double does to the order's add: `cut` forwards it and drops the answer. */
 type Mode = { cut: boolean; posts: number }
 
@@ -49,24 +56,13 @@ function counting(t: TestContext, mode: Mode) {
       for await (const chunk of incoming) chunks.push(z.instanceof(Buffer).parse(chunk))
       const adding = incoming.method === 'POST' && incoming.url === '/v1/vendas/pedidos'
       if (adding) mode.posts += 1
-      const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-        typeof value === 'string' && name !== 'host'
-          ? [[name, value] satisfies [string, string]]
-          : [],
-      )
-      const answered = await fetch(`${origin}${incoming.url}`, {
-        method: incoming.method,
-        headers,
-        redirect: 'manual',
-        ...(incoming.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
-      })
-      const body = Buffer.from(await answered.arrayBuffer())
+      const answered = await forward(origin, incoming, Buffer.concat(chunks))
       if (adding && mode.cut) {
         outgoing.destroy()
         return
       }
-      outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-      outgoing.end(body)
+      outgoing.writeHead(answered.status, answered.headers)
+      outgoing.end(answered.body)
     })
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     t.after(() => {

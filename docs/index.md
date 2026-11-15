@@ -4,24 +4,26 @@ One line per document (`check-docs`).
 
 ## Overview
 
-- [AGENTS.md](../AGENTS.md): read first; skill per stage.
-- [README.md](../README.md): this repository.
-- [DESIGN.md](../DESIGN.md): the Pauta, values and pieces.
+- [AGENTS.md](../AGENTS.md): read first.
+- [README.md](../README.md): repo.
+- [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
-- [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
-- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing, rollback; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
-- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
-- [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
-- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
+- [architecture.md](architecture.md): design.
+- [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
+- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).
+- [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
+- [how-to/hub-mail.md](how-to/hub-mail.md): mail.
+- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
-- [steps/](steps/): cards in construction.
-- [reference/boundaries.md](reference/boundaries.md): mechanisms written over libraries'.
+- [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
+- [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).
+- [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
-- [reference/checklist.md](reference/checklist.md): readers' questions.
+- [reference/checklist.md](reference/checklist.md): checklist.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
-- [reference/impeccable.md](reference/impeccable.md): Impeccable's files, commands.
+- [reference/impeccable.md](reference/impeccable.md): files, commands.
 
 ## Guides: the rules
 
@@ -33,7 +35,7 @@ One line per document (`check-docs`).
 - [design](guides/design.md): how screens look, move and speak.
 - [web](guides/web.md): how the Hub's screens are organized.
 
-## Decisions: one choice expensive to undo per file
+## Decisions: one costly choice per file
 
 - [0001](decisions/0001-new-repository-by-transplant.md) transplant.
 - [0002](decisions/0002-typescript-node-24-run-directly.md) TypeScript, Node, React, Vite.
@@ -66,7 +68,6 @@ One line per document (`check-docs`).
 - [0029](decisions/0029-git-on-server-disk.md) Git on disk.
 - [0030](decisions/0030-model-accounts-company-and-person.md) old accounts.
 - [0031](decisions/0031-connectors-single-executor.md) connectors.
-- [0032](decisions/0032-data-leaving-brazil-told.md) data leaving Brazil.
 - [0033](decisions/0033-own-visual-pieces.md) own visual pieces.
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
 - [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish by runner.
@@ -93,10 +94,7 @@ One line per document (`check-docs`).
 - [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit.
 - [0057](decisions/0057-connections-by-oauth.md) OAuth.
 - [0058](decisions/0058-provider-limits-and-queues.md) limits.
-- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
-- [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI.
-- [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope.
-- [0062](decisions/0062-a-write-declares-its-provider-facts.md) write facts.
+- [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries; [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI; [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope; [0062](decisions/0062-a-write-declares-its-provider-facts.md) writes; [0063](decisions/0063-copy-models-proof.md) proofs; [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) Ontologia; [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) Brain; [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md) metamodel; [0068](decisions/0068-mastra-tracing-in-its-own-database.md) traces; [0069](decisions/0069-connectors-one-source-the-kit.md) sources.
 
 ## Skills
 
@@ -104,5 +102,5 @@ One line per document (`check-docs`).
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
-- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
+- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.

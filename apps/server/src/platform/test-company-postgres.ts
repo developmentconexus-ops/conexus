@@ -2,10 +2,17 @@ import { createHash, randomUUID } from 'node:crypto'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
-import type { SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './company-postgres.ts'
+import type {
+  ReadResult,
+  SqlAnswer,
+  SqlRead,
+  SqlStatement,
+  SqlTransport,
+} from './company-postgres.ts'
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
+import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
 import type { Lifetime } from './test-database.ts'
@@ -45,7 +52,7 @@ export async function pgTransport(
     await client.connect()
     await client.query(options?.readOnly ? 'BEGIN READ ONLY' : 'BEGIN')
     const value = []
-    let read: SqlRead | undefined
+    const results: ReadResult[] = []
     for (const statement of statements) {
       const query = { text: statement.text, values: [...(statement.values ?? [])] }
       if (options?.readOnly) {
@@ -53,13 +60,16 @@ export async function pgTransport(
         // command (42601); its types do not list it.
         const config = { ...query, queryMode: 'extended', rowMode: 'array' } as const
         const result = await client.query(config)
-        read = { kind: 'READ', columns: result.fields.map(({ name }) => name), rows: result.rows }
+        results.push({
+          columns: result.fields.map(({ name, dataTypeID }) => ({ name, typeId: dataTypeID })),
+          rows: result.rows,
+        })
       } else {
         value.push((await client.query(query)).rows)
       }
     }
     await client.query('COMMIT')
-    return read ?? { kind: 'DONE', value }
+    return options?.readOnly ? { kind: 'READ', results } : { kind: 'DONE', value }
   } catch (error) {
     return answerOf(error instanceof pg.DatabaseError ? error : { name: errorName(error) })
   } finally {
@@ -103,7 +113,8 @@ export function unreachableAnswer(): Promise<SqlAnswer> {
 
 /**
  * A company's database on the test server, as Neon makes one: its owner may create logins but is
- * no superuser. The apps' logins belong to the whole server, so they go with the database.
+ * no superuser. The apps' logins and the sync login belong to the whole server, so they go with
+ * the database; one another database still uses stays for it.
  */
 export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
   const serverUrl = readTestDatabase().ownerUrl
@@ -119,7 +130,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname ~ '^app_.*_(run|migrate|read)$'`,
+        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync|conexus_read)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)
@@ -304,4 +315,33 @@ export async function forgetReadLogin(owner: DatabaseUrl, projectId: ProjectId) 
   } finally {
     await client.end()
   }
+}
+
+/** The Hub's acts on a company's database over the test server, with the test's app login key. */
+export function testCompanyPostgres(key: AppLoginKey) {
+  return createCompanyPostgres({ transport: pgTransport, appLoginKey: key })
+}
+
+async function loginOf(owner: DatabaseUrl, key: AppLoginKey, login: string): Promise<DatabaseUrl> {
+  const url = new URL(owner.reveal())
+  url.username = login
+  url.password = await appLoginPassword({ key: key.reveal(), login })
+  return DatabaseUrl.parse(url.toString())
+}
+
+/** The sync login's address on the company's database: the owner's, with the login and its password. */
+export function syncLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+  return loginOf(owner, key, SYNC_LOGIN)
+}
+
+/** The same address with another password: a login whose derived one is not this. */
+export function withPassword(url: DatabaseUrl, password: string): DatabaseUrl {
+  const wrong = new URL(url.reveal())
+  wrong.password = password
+  return DatabaseUrl.parse(wrong.toString())
+}
+
+/** The read login's address on the company's database, as `syncLoginOf` gives the sync login's. */
+export function readLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+  return loginOf(owner, key, READ_LOGIN)
 }

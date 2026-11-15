@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
 import { ConversationId, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
@@ -24,11 +23,6 @@ type ReadTx = Parameters<Parameters<Database['read']>[1]>[0]
 
 function scopeOf(input: InProject): Scope {
   return { kind: 'COMPANY', companyId: input.companyId, personId: input.person.id }
-}
-
-/** The hash a repeated Idempotency-Key is compared by (code C37): never the body itself. */
-export function bodyHashOf(body: unknown): string {
-  return createHash('sha256').update(JSON.stringify(body)).digest('base64url')
 }
 
 /** The person may converse in this company, and the Projeto is live; else the same 404 (S10). */

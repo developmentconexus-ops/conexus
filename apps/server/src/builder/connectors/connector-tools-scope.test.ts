@@ -20,9 +20,10 @@ function granted(
     name,
     perProject: 'many',
     skill: { name: `conexus-${connector}`, content: '', references: {} },
-    reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
+    reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta', list: null }],
     writes: [],
     notes: [],
+    copies: false,
   }
 }
 
@@ -39,7 +40,7 @@ function accessOver(
     connections,
     read: async (call) => {
       reads.push({ connectionId: call.connectionId, operation: call.operation, input: call.input })
-      return { kind: 'OK', value: { linhas: [] }, complete: true }
+      return { kind: 'OK', value: { linhas: [] }, complete: true, rows: 0, bytes: 14 }
     },
     log: QUIET,
     notes: async (connectionId) => {
@@ -60,6 +61,8 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
   const seen: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
+    provePage: async () => ({ kind: 'NOT_GRANTED' }),
+    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (_ids, call) => {
       seen.push(call)
       return { kind: 'NOT_GRANTED' }
@@ -111,6 +114,8 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
   const calls: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
+    provePage: async () => ({ kind: 'NOT_GRANTED' }),
+    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (...args) => {
       calls.push(args)
       return { kind: 'NOT_GRANTED' }
@@ -244,6 +249,8 @@ test('a leitura com a máquina: o arquivo inteiro é gravado criando a pasta rea
     kind: 'OK',
     value: { linhas: [] },
     complete: true,
+    rows: 0,
+    bytes: 14,
     whole: { linhas: [1] },
   } as const
   const read = { connection: 'Matriz', operation: 'sankhya.consultar', input: {} }

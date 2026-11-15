@@ -5,7 +5,9 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
-import { ASK_USER_TOOL, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
+import { until } from '../../platform/test-until.ts'
+import { ASK_USER_TOOL } from '../controller-kit/public.ts'
+import { SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import type { StreamEvent } from './test-conversation.ts'
 import { conversing, sent, sessionUrl, started, streamOf } from './test-conversation.ts'
 
@@ -18,9 +20,15 @@ const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
 /** How long a test waits for the card a turn parks, which the double answers at once. */
 const CARD_DEADLINE_MS = 15_000
 
-/** A tool call of the model's. */
+const COMMAND_TOOL = 'mastra_workspace_execute_command'
+
+/**
+ * A tool call of the model's. The machine's command asks for its phrase (card of the alignment,
+ * U10): a test that is not about the phrase gets a placeholder, so each need not carry one.
+ */
 export function tool(name: string, input: object): Block {
-  return { type: 'tool_use', name, input }
+  const filled = name === COMMAND_TOOL ? { description: 'Rodando um teste', ...input } : input
+  return { type: 'tool_use', name, input: filled }
 }
 
 /** An `ask_user` call with these questions. */
@@ -45,22 +53,33 @@ export function submitPlan(path: string): Block {
 export const readPlan = tool('mastra_workspace_read_file', { path: PLAN })
 export const SUBMIT = submitPlan(PLAN)
 
-/** The model's steps in order, then `Pronto.`; each call is kept in `calls` for the test to read. */
-export function stepping(steps: Block[][], calls: Sent[]): Anthropic['answer'] {
-  let step = 0
+/** The model's steps in order, then `Pronto.`; the title request answers `Título`; each call goes to `calls`, when given. */
+export function stepped(
+  steps: readonly ((asked: Sent) => Block[])[],
+  calls?: Sent[],
+): Anthropic['answer'] {
+  let at = 0
   return (asked) => {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
-    calls.push(asked)
-    const blocks = steps[step]
-    step += 1
-    return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
+    calls?.push(asked)
+    const step = steps[at]
+    at += 1
+    return step === undefined
+      ? { kind: 'text', text: 'Pronto.' }
+      : { kind: 'blocks', blocks: step(asked) }
   }
 }
 
 /** The model's steps in order, then `Pronto.`; each call's texts are kept for the test to read. */
 export async function conversingWith(t: TestContext, steps: Block[][]) {
   const calls: Sent[] = []
-  const hub = await conversing(t, stepping(steps, calls))
+  const hub = await conversing(
+    t,
+    stepped(
+      steps.map((blocks) => () => blocks),
+      calls,
+    ),
+  )
   const url = `${hub.conversations}/${await started(hub.hub, hub.ana, hub.conversations)}`
   const stream = await streamOf(hub.hub, hub.ana, url)
   t.after(() => stream.close())
@@ -160,14 +179,11 @@ const LOOP_PARKED = `select 1 from mastra.mastra_workflow_snapshot where workflo
  * turn's end, and its own resume refuses an answer that comes first.
  */
 export async function untilParked(hub: Hub) {
-  for (
-    let attempt = 0;
-    (await hub.test.mastraPool.query(LOOP_PARKED)).rowCount === 0;
-    attempt += 1
-  ) {
-    assert.ok(attempt < 50, 'Mastra keeps the parked run')
-    await sleep(100)
-  }
+  await until(
+    async () => (await hub.test.mastraPool.query(LOOP_PARKED)).rowCount !== 0,
+    'Mastra keeps the parked run',
+    5_000,
+  )
 }
 
 /** Answers a card as a person does, once Mastra keeps its run parked. */

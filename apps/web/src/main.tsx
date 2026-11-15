@@ -20,7 +20,7 @@ import { Failure, Loading, NotFound } from './ui/states.tsx'
 // (web W12), by declaration merging, which needs interfaces.
 declare module '@tanstack/react-query' {
   interface Register {
-    mutationMeta: { keepCache?: true }
+    mutationMeta: { keepCache?: true; before?: string | null }
   }
 }
 declare module '@tanstack/react-router' {

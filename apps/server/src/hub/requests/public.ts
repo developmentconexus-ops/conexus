@@ -4,9 +4,8 @@ import { createRequests } from './requests.ts'
 import { registerRequestRoutes } from './routes.ts'
 
 export type { NoticeRequests } from './requests.ts'
-export { request } from './tables.ts'
-/** For the bell, which joins a notice to its request (code C8). */
-export { NOTICE_VIEW } from './views.ts'
+/** For the bell, which reads what the requests of its notices say now (code C8). */
+export { noticeViewsOf } from './views.ts'
 
 /**
  * The requests to publish a version (step 24.3.4, U2). They reach the apps, Projects and identity

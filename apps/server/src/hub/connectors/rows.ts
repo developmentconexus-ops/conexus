@@ -1,9 +1,9 @@
 import type { Connector, ConnectorId } from '@conexus/connectors'
-import type { CompanyId, Connection, Person } from '@conexus/hub-api'
+import type { CompanyId, Connection, CopyId, CopyOfConnection, Person } from '@conexus/hub-api'
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Database, ReadTx, Scope } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
@@ -13,6 +13,28 @@ import type { ConnectorApps } from './apps.ts'
 import type { Executor } from './executor.ts'
 import type { Limits } from './limits.ts'
 import { connection } from './tables.ts'
+
+type CopiesOf = Readonly<{ companyId: CompanyId; personId: PersonId; connectionId: ConnectionId }>
+
+/**
+ * What Desligar asks of the company's copies (O Sync de qualquer conector): `hub/copies` answers it,
+ * made after the connectors, so the port is lazy and this subject never imports that one.
+ */
+export type ConnectionCopies = Readonly<{
+  /** Each copy that reads the connection, as Desligar shows it before the click. */
+  copiesOf(input: CopiesOf): Promise<CopyOfConnection[]>
+  /** Before anything leaves the Hub: the account's rows out of the copies that go on; COPY_DATABASE_UNAVAILABLE when the company's database is silent. */
+  leave(input: CopiesOf): Promise<void>
+  /** In Desligar's transaction, before its DELETE: the copies the connection is a source of, locked. */
+  locked(tx: CommandTx, input: Omit<CopiesOf, 'personId'>): Promise<CopyId[]>
+  /** In the same transaction, after it: the locked copies left with no source end, their tables noted. */
+  ended(
+    tx: CommandTx,
+    input: { companyId: CompanyId; copyIds: readonly CopyId[] },
+  ): Promise<CopyId[]>
+  /** After the DELETE: the ended copies' tables dropped; those the company's database left, by name. */
+  dropEnded(input: Omit<CopiesOf, 'connectionId'>): Promise<{ tablesLeft: string[] }>
+}>
 
 export type Deps = {
   database: Database
@@ -27,6 +49,16 @@ export type Deps = {
   origins: ReadonlyMap<ConnectorId, string>
   /** The Hub's address as the browser sees it: the provider sends the person back to it. */
   publicOrigin: string
+  /** The connectors the Hub knows: the kit's `CONNECTORS`; a test adds its own. */
+  catalog: readonly Connector[]
+  /** The machine's clock; a test injects its own (T20). */
+  now: () => Date
+  copies: () => ConnectionCopies
+}
+
+/** The catalog's connector of an id; none when the catalog has no such connector. */
+export function connectorIn(deps: Pick<Deps, 'catalog'>, id: string): Connector | undefined {
+  return deps.catalog.find((connector) => connector.id === id)
 }
 /** Who asks: for a call the app, the Builder or the Assistant makes, the person is only the scope (the id). */
 export type Viewer = { person: Pick<Person, 'id'>; companyId: CompanyId }

@@ -1,10 +1,19 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import type { IncomingMessage } from 'node:http'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { AppKeys } from '@conexus/connectors'
-import { mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import type { AppKeys, OAuthFake } from '@conexus/connectors'
+import {
+  hubspotFake,
+  MERCADO_LIVRE_FACTS,
+  mercadoLivreFake,
+  sankhyaFake,
+} from '@conexus/connectors'
+
+export { hubspotFake, MERCADO_LIVRE_FACTS, mercadoLivreFake }
+
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
@@ -50,34 +59,38 @@ export async function connectionsOn(
 }
 
 /** The installation's apps file, as the configuration reads it, with the double's invented app. */
-export function appsOf(app: AppKeys): Config['connectorApps'] {
-  return ConnectorApps.parse(JSON.stringify({ 'mercado-livre': app }))
+export function appsOf(id: string, app: AppKeys): Config['connectorApps'] {
+  return ConnectorApps.parse(JSON.stringify({ [id]: app }))
+}
+
+type OAuthOn = {
+  change?: (config: Config) => Config
+  /** The origin the Hub is given for the double, when something stands in front of it. */
+  through?: (origin: string) => Promise<string>
+  /** The Hub's clock and catalog, when the test sets its own. */
+  tuning?: Parameters<typeof hubWithLog>[2]
 }
 
 /**
- * Empresa Teste on a Hub whose Mercado Livre is the kit's double on this machine, sending the
+ * Empresa Teste on a Hub whose `id` connector is the kit's double on this machine, sending the
  * person back to the Hub's return page, with the double's app keys: Ana its owner, Bruno an
  * administrator, Carla a member.
  */
-export async function mercadoLivreOn(
-  t: TestContext,
-  a: {
-    change?: (config: Config) => Config
-    /** The origin the Hub is given for the double, when something stands in front of it. */
-    through?: (origin: string) => Promise<string>
-  } = {},
-) {
-  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+async function oauthOn<F extends OAuthFake>(t: TestContext, a: OAuthOn & { id: string; fake: F }) {
+  const { fake } = a
   const served = await fake.serve()
   t.after(() => served.close())
   const origin = a.through === undefined ? served.origin : await a.through(served.origin)
   const change = a.change ?? ((config: Config) => config)
-  const hub = await hubWithLog(t, (config) =>
-    change({
-      ...config,
-      connectorOrigins: new Map([['mercado-livre', origin]]),
-      connectorApps: appsOf(fake.app),
-    }),
+  const hub = await hubWithLog(
+    t,
+    (config) =>
+      change({
+        ...config,
+        connectorOrigins: new Map([[a.id, origin]]),
+        connectorApps: appsOf(a.id, fake.app),
+      }),
+    a.tuning,
   )
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
@@ -85,6 +98,33 @@ export async function mercadoLivreOn(
   const carla = await memberOn(hub, companyId, CARLA, 'member')
   const base = `/api/companies/${companyId}/connections`
   return { hub, fake, served, ana, bruno, carla, companyId, base }
+}
+
+/** Empresa Teste on a Hub whose Mercado Livre is the kit's double. */
+export function mercadoLivreOn(t: TestContext, a: OAuthOn = {}) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  return oauthOn(t, { ...a, id: 'mercado-livre', fake })
+}
+
+/** Empresa Teste on a Hub whose HubSpot is the kit's double. */
+export function hubspotOn(t: TestContext, a: OAuthOn = {}) {
+  const fake = hubspotFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  return oauthOn(t, { ...a, id: 'hubspot', fake })
+}
+
+/** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
+export async function mercadoLivreServed(t: TestContext) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  const served = await fake.serve()
+  t.after(() => served.close())
+  function change(config: Config): Config {
+    return {
+      ...config,
+      connectorOrigins: new Map([['mercado-livre', served.origin]]),
+      connectorApps: appsOf('mercado-livre', fake.app),
+    }
+  }
+  return { fake, change }
 }
 
 export function startOf(hub: Hub, person: Person, companyId: string, body: object) {
@@ -160,6 +200,28 @@ export function sealingWith(...lines: string[]) {
   return (config: Config): Config => ({ ...config, sealKeys: parseSealKeys(lines.join('\n')) })
 }
 
+/** Forwards a request to the connector double, without the host header and with a manual redirect; returns the answer for the caller to write, read or cut. */
+export async function forward(
+  origin: string,
+  incoming: IncomingMessage,
+  body: Buffer | undefined,
+): Promise<Readonly<{ status: number; headers: Record<string, string>; body: Buffer }>> {
+  const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
+    typeof value === 'string' && name !== 'host' ? [[name, value] satisfies [string, string]] : [],
+  )
+  const answered = await fetch(`${origin}${incoming.url}`, {
+    method: incoming.method,
+    headers,
+    redirect: 'manual',
+    ...(incoming.method === 'GET' || body === undefined ? {} : { body }),
+  })
+  return {
+    status: answered.status,
+    headers: Object.fromEntries(answered.headers),
+    body: Buffer.from(await answered.arrayBuffer()),
+  }
+}
+
 /**
  * In front of a double: the token route answers as `mode.refresh` says, everything else passes;
  * every body the token route answers is kept in `mode.seen`, to look for its keys elsewhere.
@@ -177,21 +239,10 @@ export function standIn(
         outgoing.writeHead(status, { 'content-type': 'application/json' }).end(body)
         return
       }
-      const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-        typeof value === 'string' && name !== 'host'
-          ? [[name, value] satisfies [string, string]]
-          : [],
-      )
-      const answered = await fetch(`${origin}${incoming.url}`, {
-        method: incoming.method,
-        headers,
-        redirect: 'manual',
-        ...(incoming.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
-      })
-      const body = Buffer.from(await answered.arrayBuffer())
-      if (incoming.url === '/oauth/token') mode.seen?.push(body.toString('utf8'))
-      outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-      outgoing.end(body)
+      const answered = await forward(origin, incoming, Buffer.concat(chunks))
+      if (incoming.url === '/oauth/token') mode.seen?.push(answered.body.toString('utf8'))
+      outgoing.writeHead(answered.status, answered.headers)
+      outgoing.end(answered.body)
     })
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
     t.after(() => {

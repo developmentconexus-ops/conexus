@@ -1,11 +1,11 @@
 import type { ConversationId } from '@conexus/hub-api'
-import type { Connectors } from '../../hub/connectors/public.ts'
+import type { ApprovalDeps, Connectors } from '../../hub/connectors/public.ts'
+import { mayApprove } from '../../hub/connectors/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import type { MayApprove, WriteOf } from '../conversation/public.ts'
 import type { AgentRun } from './agent.ts'
 import type { PresetFrozenTool } from './frozen.ts'
-import type { Holding } from './publish.ts'
-import { holdsWrite, labelOf, targetOf } from './publish.ts'
+import { labelOf, targetOf } from './publish.ts'
 import type { AgentReads } from './registry.ts'
 
 type Kept = (owner: Owner, id: ConversationId) => Promise<AgentRun | undefined>
@@ -47,7 +47,9 @@ export function writeOfAgents(keptRun: Kept, reads: Reads) {
 export function mayApproveAgents(
   keptRun: Kept,
   reads: Reads,
-  deps: Holding & { connectors: Pick<Connectors['assistant'], 'connections'> },
+  deps: Pick<ApprovalDeps, 'database' | 'identity'> & {
+    connectors: Pick<Connectors['assistant'], 'connections'>
+  },
 ) {
   return async (input: Parameters<MayApprove>[0]): ReturnType<MayApprove> => {
     const found = await writeIn(keptRun, reads, input)
@@ -59,7 +61,7 @@ export function mayApproveAgents(
     })
     const target = targetOf(offered, found.tool)
     if (target === undefined) return { held: false }
-    const held = await holdsWrite(deps, input.companyId, input.personId, target)
+    const held = await mayApprove(deps, { ...input, target })
     return held ? { held } : { held, operation: labelOf(target) }
   }
 }

@@ -288,3 +288,14 @@ test('o dublê recusa o produto que não existe com a recusa gravada, como ela e
     assert.equal(fake.orders().length, 0)
   })
 })
+
+test('uma consulta que o dublê não lê, como uma data em outra forma, volta com erro no formato do Oracle em vez de derrubar o servidor', async () => {
+  await withToken(async (origin, token) => {
+    const sql = "SELECT NUNOTA FROM TGFCAB WHERE DTNEG >= TO_DATE('01/09/2026', 'DD/MM/YYYY')"
+    const answered = await send(toRequest(sankhya, door({ sql }), token, origin))
+    assert.equal(answered.status, 200)
+    const body = z.object({ status: z.string(), statusMessage: z.string() }).parse(answered.body)
+    assert.equal(body.status, '0')
+    assert.match(body.statusMessage, /^ORA-\d{5}: /)
+  })
+})

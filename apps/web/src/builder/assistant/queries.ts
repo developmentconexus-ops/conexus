@@ -1,13 +1,25 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, CompanyMemoryPageId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
+  addCompanyMemoryNote,
+  clearProfileMemory,
   createAssistantConversation,
+  createCompanyMemoryPage,
   deleteAssistantConversation,
+  getProfileMemory,
   listAssistantConnections,
   listAssistantConversations,
+  listCompanyMemory,
   readAssistantConversation,
+  readCompanyMemoryPage,
+  removeCompanyMemoryNote,
+  removeCompanyMemoryPage,
   renameAssistantConversation,
   setAssistantConnections,
   setAssistantModel,
+  setProfileMemory,
+  writeCompanyMemoryInstructions,
+  writeCompanyMemoryNote,
+  writeCompanyMemoryPage,
 } from '@conexus/hub-api'
 import type { QueryKey } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -60,3 +72,28 @@ export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantModel = hubMutation(setAssistantModel)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)
 export const sendAssistantRename = hubMutation(renameAssistantConversation)
+
+/** What the Assistant keeps about the person in the company, across their conversations. */
+export function profileMemoryQuery(companyId: CompanyId) {
+  return hubQuery(getProfileMemory, { params: { companyId } })
+}
+
+export const sendProfileMemory = hubMutation(setProfileMemory)
+export const sendProfileMemoryClear = hubMutation(clearProfileMemory)
+
+/** The company's instructions and pages, with whether the person may change them (U9). */
+export function companyMemoryQuery(companyId: CompanyId) {
+  return hubQuery(listCompanyMemory, { params: { companyId } })
+}
+
+export function companyMemoryPageQuery(companyId: CompanyId, pageId: CompanyMemoryPageId) {
+  return hubQuery(readCompanyMemoryPage, { params: { companyId, pageId } })
+}
+
+export const sendCompanyInstructions = hubMutation(writeCompanyMemoryInstructions)
+export const sendCompanyMemoryPage = hubMutation(writeCompanyMemoryPage)
+export const sendCompanyMemoryPageRemoval = hubMutation(removeCompanyMemoryPage)
+export const sendCompanyMemoryNote = hubMutation(writeCompanyMemoryNote)
+export const sendCompanyMemoryNoteRemoval = hubMutation(removeCompanyMemoryNote)
+export const sendCompanyMemoryPageCreation = hubMutation(createCompanyMemoryPage)
+export const sendCompanyMemoryNoteAddition = hubMutation(addCompanyMemoryNote)

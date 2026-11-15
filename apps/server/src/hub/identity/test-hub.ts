@@ -21,6 +21,7 @@ import {
 } from '../../platform/test-database.ts'
 import { mailServer, testMail } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
+import type { ConnectorTuning } from '../connectors/public.ts'
 import { createStatus } from '../status/public.ts'
 import { seededRoles } from './company-roles.ts'
 import { TEST_ROLES, testIdentity } from './test-kit.ts'
@@ -40,6 +41,7 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
+type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'>
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -55,7 +57,7 @@ async function hubServing(
   mailApiUrl?: string,
   log: FailureLog = silent,
   change?: Change,
-  clock?: () => Date,
+  tuning: HubTuning = {},
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
   // the Builder's turns drain and end their streams while the server closes, as at shutdown.
@@ -80,8 +82,9 @@ async function hubServing(
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
-    tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: clock },
+    tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: tuning.now, catalog: tuning.catalog },
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
+    appDataDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
   const { projects, apps, conversations, runs } = subjects
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
@@ -120,10 +123,11 @@ async function hubServing(
     },
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
-    agents: subjects.agents,
-    sendMail,
+    apps,
+    ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
     notify: subjects.notifications.notify,
     mastra: conversations.mastra,
+    ...{ copies: subjects.copies, settle: (bound: AbortSignal) => conversations.settle(bound) },
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,
@@ -138,14 +142,17 @@ export function hubOn(t: TestContext) {
 export type Hub = Awaited<ReturnType<typeof hubOn>>
 export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
 
-/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one, and `clock` dates the connectors' writes. */
-export async function hubWithLog(t: TestContext, change?: Change, clock?: () => Date) {
+/**
+ * A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one,
+ * `tuning.now` dates the connectors' writes and cursors, and `tuning.catalog` adds a connector of the test's own.
+ */
+export async function hubWithLog(t: TestContext, change?: Change, tuning?: HubTuning) {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
   }
-  return { ...(await hubServing(t, undefined, log, change, clock)), lines }
+  return { ...(await hubServing(t, undefined, log, change, tuning)), lines }
 }
 
 /** A Hub whose mail goes to a fake of the provider. */

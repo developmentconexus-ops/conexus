@@ -15,7 +15,7 @@ function suppression(kind: string, cause: string): string {
   return ['//', kind, cause].filter(Boolean).join(' ')
 }
 
-function check(files: Record<string, string>, recorded: Record<string, number>) {
+function check(files: Record<string, string>, recorded: Record<string, number>, git = false) {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-suppressions-'))
   dirs.push(dir)
   const all = { ...files, 'scripts/suppressions.json': JSON.stringify(recorded) }
@@ -23,6 +23,7 @@ function check(files: Record<string, string>, recorded: Record<string, number>) 
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
+  if (git) spawnSync('git', ['init', '-q', dir])
   return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8', timeout: 120_000 })
 }
 
@@ -107,4 +108,21 @@ test('conta o ignore da configuração do zizmor e recusa o que não tem coment�
     check({ [file]: body('') }, { [file]: 1 }).stderr,
     /^suppression-without-cause: \.github\/zizmor\.yml:3$/m,
   )
+})
+
+test('num repositório lê o que o git traz e recusa nele, e deixa de fora a pasta ignorada', () => {
+  const line = suppression('biome-ignore lint/suspicious/noExplicitAny:', 'the vendor type is any')
+  const bare = suppression('biome-ignore lint/suspicious/noExplicitAny', '')
+  const run = check(
+    {
+      '.gitignore': '.lab/\n',
+      '.lab/a.ts': `${line}\n`,
+      'b.ts': `${bare}\nexport const b = 1\n`,
+    },
+    { 'b.ts': 1 },
+    true,
+  )
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^suppression-without-cause: b\.ts:1$/m)
+  assert.doesNotMatch(run.stderr, /\.lab/)
 })

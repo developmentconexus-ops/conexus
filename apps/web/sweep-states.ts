@@ -7,6 +7,9 @@ import { APP_STATES } from './sweep-app-states.ts'
 import { ASSISTANT_STATES } from './sweep-assistant-states.ts'
 import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { COPIES_STATES } from './sweep-copies-states.ts'
+import { COPY_PROPOSAL_STATES } from './sweep-copy-proposal-states.ts'
+import { DATA_STATES } from './sweep-data-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
@@ -33,6 +36,7 @@ import {
   WITH_EXPIRED,
 } from './sweep-replies.ts'
 import { ROLES_STATES } from './sweep-roles-states.ts'
+import { LAYER_STATES, TABLE_STATES } from './sweep-table-states.ts'
 
 /** Submits the invitation form, which the state's replies refuse, and waits for the refusal. */
 async function inviteRefused(page: Page, sentence: string) {
@@ -56,6 +60,11 @@ export const STATES: State[] = [
   ...ACCOUNT_STATES,
   ...INTEGRATIONS_STATES,
   ...PROJECT_INTEGRATIONS_STATES,
+  ...DATA_STATES,
+  ...COPIES_STATES,
+  ...TABLE_STATES,
+  ...LAYER_STATES,
+  ...COPY_PROPOSAL_STATES,
   ...ROLES_STATES,
   {
     name: 'Central sem clientes',

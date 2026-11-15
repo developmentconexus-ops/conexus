@@ -7,7 +7,7 @@ import {
   PAGE_SIZE,
   ProjectId,
 } from '@conexus/hub-api'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -169,6 +169,25 @@ export async function liveProjectOf(
       ),
     )
   return row
+}
+
+/** The names of the company's live Projetos among `ids`, by id; a Projeto deleted or marked is left out. */
+export async function liveProjectNamesOf(
+  tx: ReadTx,
+  input: { companyId: CompanyId; ids: readonly ProjectId[] },
+): Promise<Map<ProjectId, string>> {
+  if (input.ids.length === 0) return new Map()
+  const rows = await tx
+    .select({ id: project.id, name: project.name })
+    .from(project)
+    .where(
+      and(
+        eq(project.companyId, input.companyId),
+        inArray(project.id, [...input.ids]),
+        isNull(project.deletingSince),
+      ),
+    )
+  return new Map(rows.map((row) => [ProjectId.parse(row.id), row.name]))
 }
 
 /** The ids of every live Projeto of the company: what a list across Projetos is limited to. */

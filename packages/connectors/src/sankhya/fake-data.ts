@@ -63,14 +63,30 @@ const ENTITY_ROWS: Record<string, Record<string, string>[]> = {
   })),
 }
 
-export function envelope(service: string, status: string, responseBody?: unknown): Response {
+export function envelope(
+  service: string,
+  status: string,
+  responseBody?: unknown,
+  statusMessage = 'Serviço recusado',
+): Response {
   return json({
     serviceName: service,
     status,
     pendingPrinting: 'false',
-    ...(responseBody === undefined ? { statusMessage: 'Serviço recusado' } : { responseBody }),
+    ...(responseBody === undefined ? { statusMessage } : { responseBody }),
   })
 }
+
+/**
+ * What Sankhya's query door says of an SQL the database cannot run: the database's own error, in
+ * Oracle's words, not a refusal of the service. The text is the form measured on the real service
+ * (an `ORA-00904` naming a column the table does not have, `identificador inválido`), with an
+ * invented column. The rest of the envelope is the double's `envelope` above, not a recording: no
+ * body of this error is recorded beside the connector yet (testing T29), so the next real read
+ * that fails this way is the one to record. The double also answers this for SQL that Oracle runs
+ * (`TO_DATE`, `ROWNUM`), because it runs SQLite.
+ */
+const UNRUNNABLE_SQL = 'ORA-00904: "COLUNA": identificador inválido'
 
 const LoadRecordsBody = z.object({
   dataSet: z
@@ -101,28 +117,26 @@ export function loadRecords(requestBody: unknown): Response {
 }
 
 /**
- * `DbExplorerSP.executeQuery`: with a sales set's `query`, the SQL runs on its tables (`fake-sales.ts`)
- * and a query it cannot run is refused; without one, only the count of empresas answers.
+ * `DbExplorerSP.executeQuery`: the count of empresas answers on its own; any other SQL runs on the
+ * double's tables (`fake-sales.ts`), and a query they cannot run answers an Oracle error, as Sankhya does.
  */
 export function executeQuery(
   requestBody: unknown,
-  query?: (sql: string) => QueryAnswer | undefined,
+  query: (sql: string) => QueryAnswer | undefined,
 ): Response {
   const { sql } = z.object({ sql: z.string() }).parse(requestBody)
-  if (query !== undefined) {
-    const answered = query(sql)
-    if (answered === undefined) return envelope('DbExplorerSP.executeQuery', '0')
+  if (/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
     return envelope('DbExplorerSP.executeQuery', '1', {
-      fieldsMetadata: answered.fields.map((name) => ({ name })),
-      rows: answered.rows,
+      fieldsMetadata: [{ name: 'N' }],
+      rows: [[EMPRESAS.length]],
       burstLimit: false,
     })
-  }
-  if (!/^SELECT COUNT\(\*\) AS N FROM TSIEMP$/i.test(sql.trim()))
-    return envelope('DbExplorerSP.executeQuery', '0')
+  const answered = query(sql)
+  if (answered === undefined)
+    return envelope('DbExplorerSP.executeQuery', '0', undefined, UNRUNNABLE_SQL)
   return envelope('DbExplorerSP.executeQuery', '1', {
-    fieldsMetadata: [{ name: 'N' }],
-    rows: [[EMPRESAS.length]],
+    fieldsMetadata: answered.fields.map((name) => ({ name })),
+    rows: answered.rows,
     burstLimit: false,
   })
 }

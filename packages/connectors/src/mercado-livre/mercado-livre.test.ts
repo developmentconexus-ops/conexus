@@ -9,6 +9,7 @@ import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
 import { AccountRef, requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { Rows } from '../kernel/rows.ts'
+import { readSkill } from '../kernel/skill.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { docsOf } from './operations/shared.ts'
@@ -124,24 +125,38 @@ test('um grupo de permissão recusado dá 403 só nas suas leituras', async () =
   assert.equal((await send('/trends/MLB')).status, 200)
 })
 
-test('nenhuma leitura, resumo, habilidade ou pedido nomeia um cursor de varredura', () => {
+test('só anuncios e perguntas nomeiam o cursor de varredura, no resumo, na entrada e no pedido', () => {
   const cursor = /scroll_?id|search_?type/i
-  assert.doesNotMatch(mercadoLivre.skill.content, cursor, 'SKILL.md')
-  for (const [name, text] of Object.entries(mercadoLivre.skill.references)) {
-    assert.doesNotMatch(text, cursor, name)
-  }
+  const scanning = new Set(['anuncios', 'perguntas'])
   for (const operation of mercadoLivre.operations) {
-    assert.doesNotMatch(operation.summary, cursor, `${operation.id} summary`)
-    assert.doesNotMatch(
-      JSON.stringify(z.toJSONSchema(operation.input)),
-      cursor,
+    assert.equal(
+      cursor.test(JSON.stringify(z.toJSONSchema(operation.input))),
+      scanning.has(operation.id),
       `${operation.id} input`,
+    )
+    assert.equal(
+      cursor.test(operation.summary),
+      scanning.has(operation.id),
+      `${operation.id} summary`,
     )
     const input = operation.probe(new Map())
     if (input === null) continue
     const request = requestOf(operation, input, { ref: AccountRef.parse('123456789') }, SENT_AT)
-    assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} request`)
+    assert.doesNotMatch(JSON.stringify(request), cursor, `${operation.id} probe request`)
   }
+})
+
+test('a skill diz o mesmo que os resumos: a varredura passa de mil e o filtro de alteração existe', () => {
+  const { references } = readSkill(new URL('./skill/', import.meta.url))
+  for (const name of ['anuncios.md', 'perguntas.md'])
+    assert.match(references[name] ?? '', /`scan: true`.*`scrollId`/s, name)
+  assert.match(references['vendas.md'] ?? '', /`changedFrom`/)
+  for (const [name, text] of Object.entries(references))
+    assert.doesNotMatch(text, /no way past 1000/, name)
+})
+
+test('o conector declara que o Mercado Livre conta o limite pelo aplicativo', () => {
+  assert.deepEqual(mercadoLivre.callLimit, { countedBy: 'APP' })
 })
 
 test('um pedido que o Mercado Livre devolve parcial (206) é lido e diz que veio parcial', async () => {

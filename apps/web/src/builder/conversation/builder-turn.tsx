@@ -1,10 +1,18 @@
 import type { ModelId } from '@conexus/hub-api'
-import { FailureData, MachineData, NoticeData, PreviewData, VersionData } from '@conexus/hub-api'
+import {
+  BUILDER_TOOL,
+  FailureData,
+  MachineData,
+  NoticeData,
+  PreviewData,
+  VersionData,
+} from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import { ApprovalCard } from './approval-card.tsx'
+import { CopyProposalCard } from './copy-proposal-card.tsx'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
 import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
@@ -14,6 +22,7 @@ import { PreviewLine } from './preview-line.tsx'
 import { QuestionCard } from './question-card.tsx'
 import { useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
+import { Sources } from './sources.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
@@ -71,11 +80,20 @@ function ItemRow({
     case 'reasoning':
       return <ThinkingLine part={item} />
     case 'tool':
-      return <ToolRow tool={item} />
+      return item.toolName === BUILDER_TOOL.copyPropose ? (
+        <>
+          <ToolRow tool={item} />
+          <CopyProposalCard tool={item} />
+        </>
+      ) : (
+        <ToolRow tool={item} />
+      )
     case 'card':
       return <CardOf item={item} />
     case 'conexus':
       return <ConexusPartRow item={item} live={streaming} onAsk={onAsk} />
+    case 'sources':
+      return <Sources sources={item.sources} />
     default:
       return item satisfies never
   }

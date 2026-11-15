@@ -13,8 +13,8 @@ import { connection } from './tables.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 
-/** Who asked for the read: the app of a click, the Builder's tool, or the Assistant's. */
-type ReadBy = 'app' | 'builder' | 'assistant'
+/** Who asked for the read: the app of a click, the Builder's tool, the Assistant's, or a copy's run. */
+type ReadBy = 'app' | 'builder' | 'assistant' | 'copy'
 
 export type ReadRequest = Readonly<{
   by: ReadBy
@@ -132,9 +132,9 @@ function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
 
 /**
  * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
- * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call
- * leaves one `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated)
- * its own error line (#470).
+ * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call leaves one
+ * `CONNECTOR_CALLED` line with scalars alone, and the envelope "4" (ours, never repeated) its own
+ * error line (#470).
  */
 export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswer | NotInRole> {
   if (isStopped(a)) return stopped(deps, a)

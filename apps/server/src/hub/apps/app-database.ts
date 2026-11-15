@@ -7,7 +7,14 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
-import type { AppRead, CompanyPostgres } from '../../platform/company-postgres.ts'
+import type {
+  AppRead,
+  AppReadAnswer,
+  CompanyPostgres,
+  SqlAnswer,
+  SqlStatement,
+} from '../../platform/company-postgres.ts'
+import { withoutPassColumn } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -19,6 +26,10 @@ export type AppDatabaseDeps = {
   projects: ProjectPorts
   neon: NeonProjects
   companyPostgres: CompanyPostgres
+  /** The copies are made after the apps; the repair of a Projeto's logins gives its releases back. */
+  copies: () => {
+    applyGrants(input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer>
+  }
   log: FailureLog
 }
 
@@ -58,8 +69,42 @@ export async function openAppDatabase(
       return failed
     }
     deps.log.info({ companyId, projectId }, 'APP_DATABASE_READY')
+    // Logins made again lose what was granted them: the Projeto's releases are given back (a repair; a failure is only logged).
+    const regranted = await deps.copies().applyGrants({ companyId, projectId })
+    if (regranted.kind !== 'DONE') {
+      const code = regranted.kind === 'REFUSED' ? regranted.code : regranted.kind
+      deps.log.error({ companyId, projectId, code }, 'COPY_GRANT_FAILED')
+    }
   }
   return { kind: 'OPEN', owner: owner.value }
+}
+
+/**
+ * The Projeto's schema and logins for a copy released to it (Capacidade 2, U2): the app's row made
+ * as its first send makes it, and the schema and logins by `openAppDatabase` when it has none, so
+ * the first send finds them and the Projeto's deletion drops them.
+ */
+export async function projectDatabase(
+  deps: AppDatabaseDeps,
+  input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId },
+): Promise<{ kind: 'OPEN' } | { kind: 'FAILED' }> {
+  const { companyId, projectId } = input
+  const scope = { kind: 'COMPANY', companyId, personId: input.personId } as const
+  const ready = await deps.database.command(scope, async (tx) => {
+    await tx.insert(app).values({ companyId, projectId }).onConflictDoNothing()
+    const [row] = await tx
+      .select({ ready: app.databaseReady })
+      .from(app)
+      .where(eq(app.projectId, projectId))
+    return row?.ready === true
+  })
+  if (ready) return { kind: 'OPEN' }
+  const opened = await openAppDatabase(deps, { scope, companyId, projectId, databaseReady: false })
+  if (opened.kind === 'FAILED') return { kind: 'FAILED' }
+  await deps.database.command(scope, (tx) =>
+    tx.update(app).set({ databaseReady: true }).where(eq(app.projectId, projectId)),
+  )
+  return { kind: 'OPEN' }
 }
 
 /**
@@ -122,35 +167,33 @@ export async function appDatabaseOf(
   })
 }
 
+/** What the read login answered: past `NO_LOGIN`, which the owner's login made good and asked again. */
+type ReadAnswered = Exclude<AppReadAnswer, { kind: 'NO_LOGIN' }>
+
 /**
- * One read of a Projeto's app data for its agents (step 24.3, U3), as the app's read login: its
- * address comes from the host the Hub recorded, with no call to Neon. A Projeto made before the
- * login existed asks the owner's address once to make it, then reads again. The log carries ids and
- * the kind of answer, never the SQL nor a row (code C50).
+ * The statements as the Projeto's app read login, in one read-only transaction: its address comes
+ * from the host the Hub recorded, with no call to Neon. A Projeto made before the login existed asks
+ * the owner's address once to make it, then reads again. The caller logs what it read of the
+ * answer: this logs only the login's own making (code C50).
  */
-export async function readAppData(
+export async function askApp(
   deps: AppDatabaseDeps,
   input: {
     scope: { companyId: CompanyId; personId: PersonId }
     projectId: ProjectId
-    sql: string
+    statements: readonly SqlStatement[]
     signal: AbortSignal
   },
-): Promise<AppRead> {
-  const { projectId, signal } = input
+): Promise<ReadAnswered> {
+  const { projectId, signal, statements } = input
   const { companyId } = input.scope
   const found = await appDatabaseOf(deps, input)
   if (found === undefined) return { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
-  const unavailable = { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' } as const
-  function silent(cause: string): typeof unavailable {
-    deps.log.info(
-      { companyId, projectId, answer: unavailable.kind, code: unavailable.code, cause },
-      'APP_DATA_READ',
-    )
-    return unavailable
+  function silent(cause: string) {
+    return { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE', cause } as const
   }
   const address = await deps.companyPostgres.readAddress(found.host, projectId)
-  let answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+  let answer = await deps.companyPostgres.readApp(address, statements, signal)
   if (answer.kind === 'NO_LOGIN') {
     const owner = await deps.neon.ownerConnection(found.neonProjectId)
     if (owner.kind !== 'DONE') return silent(`OWNER_${owner.kind}`)
@@ -161,12 +204,43 @@ export async function readAppData(
       return silent('READ_LOGIN_NOT_MADE')
     }
     deps.log.info({ companyId, projectId }, 'APP_READ_LOGIN_CREATED')
-    answer = await deps.companyPostgres.readApp(address, input.sql, signal)
+    answer = await deps.companyPostgres.readApp(address, statements, signal)
   }
+  return answer.kind === 'NO_LOGIN' ? silent('NO_LOGIN') : withoutPass(answer)
+}
+
+/**
+ * A copy's pass is the engine's, not data (criterion 34 of Capacidade 3): no column of that name
+ * reaches the model, whether it came from `select *`, a join or an alias.
+ */
+function withoutPass(answer: ReadAnswered): ReadAnswered {
+  if (answer.kind !== 'ROWS') return answer
+  const results = answer.results.map(withoutPassColumn)
+  const [first] = results
+  if (first === undefined) return answer
+  return { ...answer, results, columns: first.columns.map(({ name }) => name), rows: first.rows }
+}
+
+/**
+ * One read of a Projeto's app data for its agents (step 24.3, U3), as the app's read login. The log
+ * carries ids and the kind of answer, never the SQL nor a row (code C50).
+ */
+export async function readAppData(
+  deps: AppDatabaseDeps,
+  input: {
+    scope: { companyId: CompanyId; personId: PersonId }
+    projectId: ProjectId
+    statement: SqlStatement
+    signal: AbortSignal
+  },
+): Promise<AppRead> {
+  const { projectId } = input
+  const { companyId } = input.scope
+  const answer = await askApp(deps, { ...input, statements: [input.statement] })
   switch (answer.kind) {
     case 'ROWS':
       deps.log.info({ companyId, projectId, answer: answer.kind }, 'APP_DATA_READ')
-      return answer
+      return { kind: 'ROWS', columns: answer.columns, rows: answer.rows }
     case 'REFUSED':
       deps.log.info(
         { companyId, projectId, answer: answer.kind, sqlstate: answer.sqlstate },
@@ -174,19 +248,19 @@ export async function readAppData(
       )
       return answer
     case 'FAILED':
-      deps.log.info(
-        {
-          companyId,
-          projectId,
-          answer: answer.kind,
-          code: answer.code,
-          cause: answer.cause ?? 'none',
-        },
-        'APP_DATA_READ',
-      )
+      if (answer.code !== 'APP_DATA_NO_APP') {
+        deps.log.info(
+          {
+            companyId,
+            projectId,
+            answer: answer.kind,
+            code: answer.code,
+            cause: answer.cause ?? 'none',
+          },
+          'APP_DATA_READ',
+        )
+      }
       return { kind: 'FAILED', code: answer.code }
-    case 'NO_LOGIN':
-      return silent('NO_LOGIN')
     default:
       return answer satisfies never
   }

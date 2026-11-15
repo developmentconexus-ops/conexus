@@ -1,8 +1,7 @@
 import type { FailureCode } from '@conexus/hub-api'
 import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
-import { sessionTurns, turnKeyOn } from '../controller-kit/public.ts'
-import { failureOf, modelFailure, TurnTally, turnOfOwner } from '../conversation/public.ts'
-import type { ConversationMachines } from '../machine/public.ts'
+import { sessionTurns, takeOfScope, turnKeyOn } from '../controller-kit/public.ts'
+import { failureOf, modelFailure, TurnTally } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ScopeOf } from './context.ts'
 
@@ -15,24 +14,13 @@ export const turnKey = turnKeyOn('conexus-assistant-turn-key')
  * The Assistant's turns (step 24.1, U2) on the kit's owner of their end: a run of a conversation
  * takes its owner's turn with a new `TurnKey`, and no Projeto (`Runs`): the controller already
  * sends one message at a time to a conversation. A card (`ask_user`) suspends the run, and an
- * automation's run ends then (`endOf`). When the turn ends, the conversation's machine sleeps until
- * the next question; a failed pause is logged there.
+ * automation's run ends then (`endOf`). The turn's end leaves the conversation's machine running:
+ * E2B pauses it on its own timeout, and a later question before then reuses it.
  */
-export function assistantTurns(deps: {
-  queue: QueueDeps
-  scopeOf: ScopeOf
-  machines: ConversationMachines
-}) {
+export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
   return sessionTurns({
     id: TURN_PROCESSOR,
-    async take(requestContext) {
-      const scope = await deps.scopeOf(requestContext)
-      if (scope === undefined) return undefined
-      const turn = await turnOfOwner(deps.queue, scope)
-      turnKey.start(requestContext)
-      return turn
-    },
-    ended: (sessionId) => void deps.machines.stop(sessionId),
+    take: takeOfScope({ queue: deps.queue, scopeOf: deps.scopeOf, turnKey }),
   })
 }
 

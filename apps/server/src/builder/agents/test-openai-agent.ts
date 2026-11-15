@@ -6,11 +6,12 @@ import { z } from 'zod'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Codex } from '../../platform/test-openai-codex.ts'
-import { plantCodex } from '../../platform/test-openai-codex.ts'
+import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../platform/test-recordings.ts'
 import { approving } from './test-approval.ts'
 
-const Sent = z.object({ stream: z.boolean().optional(), input: z.array(z.unknown()) })
+const Sent = z.object({ input: z.array(z.unknown()) })
+
 const Output = z.looseObject({
   type: z.literal('function_call_output'),
   call_id: z.string(),
@@ -19,13 +20,13 @@ const Output = z.looseObject({
 
 /**
  * The Codex endpoint answers the streamed calls of a turn with `names`, recordings of the ChatGPT
- * subscription's own stream, in order (T24). A call that does not stream is the Hub's title call,
- * which the double leaves to its default; a streamed call past the last recording fails the test.
+ * subscription's own stream, in order (T24). A call without tools is the Hub's title call, which
+ * the double leaves to its default; a call of the turn past the last recording fails the test.
  */
 function playing(codex: Codex, names: readonly string[]) {
   const left = [...names]
   codex.responses = (body) => {
-    if (Sent.parse(JSON.parse(body)).stream !== true) return { status: 500 }
+    if (!ofTurn(body)) return { status: 500 }
     const name = left.shift()
     if (name === undefined) throw new Error('The turn asked the model more often than recorded.')
     return { status: 200, stream: recordedBody(name) }
@@ -35,8 +36,8 @@ function playing(codex: Codex, names: readonly string[]) {
 /**
  * The write agents of `approving` (Ana, her Sankhya double, `Lançar pedido` fixed) with the company's
  * model the ChatGPT subscription's `openai/gpt-5.6-luna`, signed in on the vendor's double, which plays
- * `recordings` in order. `outputs` are the `function_call_output` items of the last request the Hub
- * streamed to the model, the failure a refused tool sends back.
+ * `recordings` in order. `outputs` are the `function_call_output` items of the last request of the turn
+ * the Hub streamed to the model, the failure a refused tool sends back.
  */
 export async function approvingOnOpenai(t: TestContext, recordings: readonly string[]) {
   const codex = plantCodex(t)
@@ -69,8 +70,8 @@ export async function approvingOnOpenai(t: TestContext, recordings: readonly str
   function outputs() {
     const streamed = codex.calls
       .filter((made) => made.endpoint === 'responses')
+      .filter((made) => ofTurn(made.body))
       .map((made) => Sent.parse(JSON.parse(made.body)))
-      .filter((sent) => sent.stream === true)
     return (streamed.at(-1)?.input ?? []).flatMap((item) => {
       const output = Output.safeParse(item)
       return output.success ? [output.data] : []

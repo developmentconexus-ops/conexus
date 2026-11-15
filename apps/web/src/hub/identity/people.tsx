@@ -17,6 +17,8 @@ import { AppUsers } from './app-users.tsx'
 import { CancelInvitationForm } from './cancel-invitation-form.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { MemberActions } from './member-actions.tsx'
+import { profileLine } from './member-fields.ts'
+import { EditProfile } from './member-profile.tsx'
 import {
   companyQuery,
   invitationsQuery,
@@ -30,12 +32,14 @@ import { RoleLabels } from './role-labels.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/people')
 
-function Lines({ main, under, role }: { main: string; under: string; role: Role }) {
+function Lines(props: { main: string; under: string; note?: string | undefined; role: Role }) {
+  const { main, under, note, role } = props
   const phone = useIsMobile()
   return (
     <span className="flex flex-col gap-xs">
       <span className="wrap-anywhere">{main}</span>
       <span className="wrap-anywhere text-label text-text-2">{under}</span>
+      {note !== undefined && <span className="wrap-anywhere text-label">{note}</span>}
       {phone && <RoleBadge role={role} />}
     </span>
   )
@@ -44,7 +48,7 @@ function Lines({ main, under, role }: { main: string; under: string; role: Role 
 const COLUMNS = [
   { name: 'Pessoa' },
   { name: 'Papel', leavesOnPhone: true, width: 'lg:w-36' },
-  { name: 'Ações', width: 'lg:w-80' },
+  { name: 'Ações', width: 'lg:w-96' },
 ]
 
 /** One list of the page as a table named by its section; on a phone the role moves under the name. The role and action columns have one width, so the two lists line up. */
@@ -59,11 +63,13 @@ function PeopleTable({ name, children }: { name: string; children: ReactNode }) 
 function Cells({
   name,
   under,
+  note,
   role,
   children,
 }: {
   name: string
   under: string
+  note?: string | undefined
   role: Role
   children: ReactNode
 }) {
@@ -71,7 +77,7 @@ function Cells({
   return (
     <>
       <TableCell className="whitespace-normal px-sm">
-        <Lines main={name} under={under} role={role} />
+        <Lines main={name} under={under} note={note} role={role} />
       </TableCell>
       {!phone && (
         <TableCell className="px-sm">
@@ -105,7 +111,13 @@ function Members({ company, page }: { company: Company; page: string | undefined
       <PeopleTable name="Pessoas">
         {data.members.map((member) => (
           <TableRow key={member.personId}>
-            <Cells name={member.name} under={member.email} role={member.role}>
+            <Cells
+              name={member.name}
+              under={member.email}
+              note={profileLine(member)}
+              role={member.role}
+            >
+              {member.mayEditProfile && <EditProfile companyId={company.id} member={member} />}
               <MemberActions
                 companyId={company.id}
                 companyName={company.name}

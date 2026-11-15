@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
+import type { ConnectorCopy } from './copy.ts'
+import { CopyDefinitionV1 } from './copy.ts'
 import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
@@ -52,6 +54,10 @@ export type Connector = Readonly<{
   subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
+  // Where the provider counts its call limit: by the Conexus app, one for every company, or by each account. Required when an operation declares `list`.
+  callLimit?: Readonly<{ countedBy: 'APP' | 'ACCOUNT' }>
+  // The paged read and the templates of copies (Capacity 2): outside `operations` and the door, so no role, tool or probe sees it.
+  copy?: ConnectorCopy
   // The writes the connector declares, the one list the Hub's write funnel reads (the read door and `operations` refuse a write); never probed.
   writes?: readonly WriteOperation<unknown, unknown>[]
   // The refusals recorded from the real service (see `RecordedRefusal`); the conformance reads each one through its operation.
@@ -72,7 +78,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a copy read that is not 'read' or repeats an operation id, a repeated copy template id or a template the `CopyDefinitionV1` refuses or that lacks the description of its table or of a column, a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, or a check that is not one of its operations or needs an earlier one. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -86,6 +92,8 @@ export function defineConnector<A extends Auth>(
   const ids = declared.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
+  assertCopy(connector.copy, new Set(ids))
+  assertCallLimit(connector, declared)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
@@ -108,6 +116,33 @@ function declaredOf(connector: Pick<Connector, 'operations' | 'readDoor' | 'writ
 function assertWritesWrite(connector: Pick<Connector, 'writes'>): void {
   for (const operation of connector.writes ?? [])
     if (operation.class !== 'write') throw new Error(`Write not write: ${operation.id}`)
+}
+
+function assertCallLimit(
+  connector: Pick<Connector, 'callLimit'> & { id: string },
+  declared: readonly Operation<unknown, unknown>[],
+): void {
+  if (
+    declared.some((operation) => operation.list !== undefined) &&
+    connector.callLimit === undefined
+  )
+    throw new Error(`List read without callLimit in ${connector.id}`)
+}
+
+function assertCopy(copy: ConnectorCopy | undefined, ids: ReadonlySet<string>): void {
+  if (copy === undefined) return
+  if (copy.read.class !== 'read') throw new Error(`Copy read not read: ${copy.read.id}`)
+  if (ids.has(copy.read.id)) throw new Error(`Copy read repeats operation id ${copy.read.id}`)
+  const models = copy.models.map((model) => model.id)
+  if (new Set(models).size !== models.length) throw new Error('Repeated copy template id')
+  for (const model of copy.models) {
+    const definition = CopyDefinitionV1.parse(model.definition)
+    if (definition.description === undefined)
+      throw new Error(`Copy template without description: ${model.id}`)
+    for (const column of definition.columns)
+      if (column.description === undefined)
+        throw new Error(`Copy template column without description: ${model.id}.${column.name}`)
+  }
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {

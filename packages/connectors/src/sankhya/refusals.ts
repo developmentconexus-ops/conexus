@@ -37,3 +37,28 @@ export const MISSING_DATE_AND_HOUR: RecordedRefusal = {
 }
 
 export const refusals: readonly RecordedRefusal[] = [UNKNOWN_PRODUCT, MISSING_DATE_AND_HOUR]
+
+/**
+ * Not a refusal: the DbExplorer's whole answer to a query whose cells the query itself invented
+ * (decision 0063, recorded 2026-11-10 on a real Sankhya on Oracle; the transaction id is invented):
+ * a DATE as `DDMMYYYY HH24:MI:SS`, a decimal as a JSON number. The paged read is checked on it.
+ */
+export const INVENTED_CELLS = {
+  status: 200,
+  body: {
+    serviceName: 'DbExplorerSP.executeQuery',
+    status: '1',
+    pendingPrinting: 'false',
+    transactionId: '00000000000000000000000000000000',
+    responseBody: {
+      fieldsMetadata: [
+        { name: 'D', description: 'D', order: 1, userType: 'H' },
+        { name: 'V', description: 'V', order: 2, userType: 'F', precision: 2 },
+      ],
+      rows: [['02012026 03:04:05', 1234.5]],
+      burstLimit: false,
+      timeQuery: '4ms',
+      timeResultSet: '1ms',
+    },
+  },
+} as const

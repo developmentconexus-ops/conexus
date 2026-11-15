@@ -48,6 +48,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     notifications,
     connectors,
     requests,
+    copies,
   } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
@@ -72,6 +73,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     notifications,
     connectors,
     requests,
+    copies,
     webRoot,
   })
   t.after(() => app.close())
@@ -108,7 +110,7 @@ function problem(response: { json(): unknown }) {
   return rest
 }
 
-test('banco fora: entrar, ler a sessão e sair respondem 503 DATABASE_UNAVAILABLE', async (t) => {
+test('banco fora: entrar, ler a sessão, sair e gravar o cargo e a área respondem 503 DATABASE_UNAVAILABLE', async (t) => {
   // One configuration, so one session secret: only the database differs between the two Hubs.
   const config = testConfig((await createTestDatabase(t)).runtimeUrl)
   const cookie = await liveCookie(t, config)
@@ -122,6 +124,12 @@ test('banco fora: entrar, ler a sessão e sair respondem 503 DATABASE_UNAVAILABL
     }),
     await app.inject({ method: 'GET', url: SESSIONS, headers: { cookie } }),
     await app.inject({ method: 'DELETE', url: SESSIONS, headers: { origin: TEST_ORIGIN, cookie } }),
+    await app.inject({
+      method: 'PUT',
+      url: `/api/companies/${'a'.repeat(32)}/members/${'b'.repeat(32)}/profile`,
+      headers: { origin: TEST_ORIGIN, cookie, 'content-type': 'application/json' },
+      payload: JSON.stringify({ jobTitle: 'Analista', department: null }),
+    }),
   ]
   for (const [index, response] of answers.entries()) {
     assert.equal(response.statusCode, 503, `pedido ${index}`)

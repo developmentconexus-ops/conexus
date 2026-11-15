@@ -4,7 +4,7 @@ import {
   assistantFilePath,
   listAssistantConversations,
 } from '@conexus/hub-api'
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -18,12 +18,14 @@ import {
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
+  titleOf,
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
+import { CompanyMemoryProposal } from './memory-proposal.tsx'
 import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
-import { EMPTY_ASSISTANT, titleOf } from './text.ts'
+import { EMPTY_ASSISTANT } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
 
@@ -59,6 +61,14 @@ function useAssistantRoom(held: {
           toolCallId={toolCallId}
         />
       ),
+      companyMemoryCard: ({ proposed, toolCallId }) => (
+        <CompanyMemoryProposal
+          companyId={companyId}
+          conversation={conversation}
+          proposed={proposed}
+          toolCallId={toolCallId}
+        />
+      ),
     }),
     [companyId, words, conversation, file?.path, setFile],
   )
@@ -66,7 +76,6 @@ function useAssistantRoom(held: {
 
 function Conversation(props: Props) {
   const { companyId, conversationId } = props
-  const queryClient = useQueryClient()
   const { conversation } = useSuspenseQuery(
     assistantConversationQuery(companyId, conversationId),
   ).data
@@ -96,11 +105,7 @@ function Conversation(props: Props) {
                 conversationId={conversationId}
                 place={{ controller: ASSISTANT_CONTROLLER }}
                 conversationKey={assistantConversationQuery(companyId, conversationId).queryKey}
-                onGone={() =>
-                  void queryClient.invalidateQueries({
-                    queryKey: hubQueryPrefix(listAssistantConversations, { companyId }),
-                  })
-                }
+                listKeys={[hubQueryPrefix(listAssistantConversations, { companyId })]}
                 empty={EMPTY_ASSISTANT}
                 noAccount={START_NO_ACCOUNT}
                 tools={tools}

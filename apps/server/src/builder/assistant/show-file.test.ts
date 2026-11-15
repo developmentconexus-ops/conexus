@@ -175,3 +175,15 @@ test('show_file: uma chamada sem caminho, que o Mastra recusa pela entrada, term
   assert.equal(endOf(await say('Mostre')), 'complete')
   assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /validation failed for show_file/i)
 })
+
+test('a descrição diz o que a ferramenta faz', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
+  const description = on.calls[0]?.descriptions[SHOW] ?? ''
+  assert.match(
+    description,
+    /^Opens a file from \S+ beside the chat, to read .*, view .* or download/,
+  )
+  assert.doesNotMatch(description, /Show the|the person sees nothing|you wrote/i)
+})

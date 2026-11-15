@@ -6,18 +6,67 @@ export type Outgoing = { content: string; files: readonly MessageFile[] }
 
 /** The route's ceilings on `files` (`@mastra/server@1.79.0` `agent-controller.js:169-187`), which it does not export. */
 export const LIMITS = { files: 20, data: 14_680_064, total: 29_360_128 } as const
-export const ACCEPT =
+/** Where a file the person sends goes: to the model as a part, or to the conversation's machine. */
+export type FilesGo = 'MODEL' | 'MACHINE'
+
+const MODEL_ACCEPT =
   'application/pdf,text/markdown,.md,text/plain,.txt,image/png,image/jpeg,image/gif,image/webp'
+const SHEET = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const WORD = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const MACHINE_ACCEPT = `${MODEL_ACCEPT},text/csv,.csv,${SHEET},.xlsx,${WORD},.docx`
+
+/** The input's `accept`: the machine's conversations take spreadsheets, Word documents and CSV too. */
+export function acceptOf(files: FilesGo): string {
+  switch (files) {
+    case 'MODEL':
+      return MODEL_ACCEPT
+    case 'MACHINE':
+      return MACHINE_ACCEPT
+    default:
+      return files satisfies never
+  }
+}
 
 export type Refusal = 'too-many' | 'too-large' | 'too-large-together' | 'type' | 'unread'
 
-const TYPES = new Set(ACCEPT.split(',').filter((each) => !each.startsWith('.')))
+function typesOf(files: FilesGo): Set<string> {
+  return new Set(
+    acceptOf(files)
+      .split(',')
+      .filter((each) => !each.startsWith('.')),
+  )
+}
 /** Browsers can leave a text file's type empty (Mastra playground `attachment-kind.ts`). */
 const BY_EXTENSION: Record<string, string> = { md: 'text/markdown', txt: 'text/plain' }
+const MACHINE_BY_EXTENSION: Record<string, string> = {
+  ...BY_EXTENSION,
+  csv: 'text/csv',
+  xlsx: SHEET,
+  docx: WORD,
+}
+/** Mastra's route puts any `text/*` whole into the message (`createMessageInput`); only a file part goes to the machine. */
+const TEXT_TYPES = new Set(['text/markdown', 'text/plain', 'text/csv'])
 
-function mediaTypeOf(file: File): string {
+function extensionOf(file: File): string {
+  return file.name.split('.').pop()?.toLowerCase() ?? ''
+}
+
+function mediaTypeOf(file: File, files: FilesGo): string {
+  const byExtension = files === 'MACHINE' ? MACHINE_BY_EXTENSION : BY_EXTENSION
+  // Some browsers give a `.csv` the Excel type.
+  if (
+    files === 'MACHINE' &&
+    extensionOf(file) === 'csv' &&
+    file.type === 'application/vnd.ms-excel'
+  )
+    return 'text/csv'
   if (file.type !== '') return file.type
-  return BY_EXTENSION[file.name.split('.').pop()?.toLowerCase() ?? ''] ?? ''
+  return byExtension[extensionOf(file)] ?? ''
+}
+
+/** The type the message carries: in a machine's conversation a text file goes as a file part, not as words. */
+function sentTypeOf(mediaType: string, files: FilesGo): string {
+  return files === 'MACHINE' && TEXT_TYPES.has(mediaType) ? 'application/octet-stream' : mediaType
 }
 
 function isDataUrl(read: unknown): read is DataUrl {
@@ -64,18 +113,23 @@ function admitted(
  * draft as it is when the read ends (Factory `useComposerImages.ts`), so what was typed or added
  * meanwhile stays. What does not pass is left out and said (AI Elements `prompt-input`).
  */
-export function useAttachments(draft: {
-  files: readonly MessageFile[]
-  setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => void
-}) {
+export function useAttachments(
+  draft: {
+    files: readonly MessageFile[]
+    setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => void
+  },
+  files: FilesGo,
+) {
   /** Why a file was left out, or `null` when all were taken. */
   async function add(picked: FileList | readonly File[]): Promise<Refusal | null> {
-    const typed = Array.from(picked, (file) => ({ file, mediaType: mediaTypeOf(file) }))
-    const accepted = typed.filter((each) => TYPES.has(each.mediaType))
+    const types = typesOf(files)
+    const typed = Array.from(picked, (file) => ({ file, mediaType: mediaTypeOf(file, files) }))
+    const accepted = typed.filter((each) => types.has(each.mediaType))
     const reads = await Promise.all(
       accepted.map(async ({ file, mediaType }) => {
-        const data = await dataUrlOf(file, mediaType)
-        return data === null ? null : { data, mediaType, filename: file.name }
+        const sentType = sentTypeOf(mediaType, files)
+        const data = await dataUrlOf(file, sentType)
+        return data === null ? null : { data, mediaType: sentType, filename: file.name }
       }),
     )
     const read = reads.filter((each) => each !== null)

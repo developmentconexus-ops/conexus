@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { appCalls } from './test-app-calls.ts'
+import { setTimeout as sleep } from 'node:timers/promises'
+import { appCalls, sankhyaDoor } from './test-app-calls.ts'
 
 test('cada chamada deixa uma linha CONNECTOR_CALLED com escalares; um valor da entrada e da resposta não está no registro', async (t) => {
   const on = await appCalls(t)
@@ -33,10 +34,16 @@ test('cada chamada deixa uma linha CONNECTOR_CALLED com escalares; um valor da e
 })
 
 test('a linha da segunda chamada em fila diz quanto esperou, e a primeira não esperou', async (t) => {
-  const on = await appCalls(t)
+  const door = sankhyaDoor(t)
+  const on = await appCalls(t, { through: door.through })
   await on.connect('Matriz')
-  on.fake.switches.delayMilliseconds = 150
-  await Promise.all([on.read(), on.read()])
+  const release = door.hold()
+  const both = Promise.all([on.read(), on.read()])
+  await door.reached(1)
+  // The second read waits in the connection's line while the first is held at the double.
+  await sleep(300)
+  release()
+  await both
   const waits = on.hub.lines
     .filter((line) => line.message === 'CONNECTOR_CALLED')
     .map((line) => Number(line.fields.queuedMs))

@@ -12,6 +12,7 @@ test('a linha HUB_MEMORY do minuto traz o atraso do laço e o processador', asyn
   watchMemory(log)
   const busyUntil = Date.now() + 50
   while (Date.now() < busyUntil) Math.sqrt(Math.random())
+  // Due after the meter's second timer turn, which records the loop delay of the block above.
   await new Promise((resolve) => setTimeout(resolve, 30))
   t.mock.timers.tick(60_000)
   const [line] = lines

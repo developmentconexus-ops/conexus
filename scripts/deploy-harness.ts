@@ -35,6 +35,7 @@ case "$*" in
     echo "PATH=/usr/bin"; [ -n "\${STUB_RUNNING_TEMPLATE:-}" ] && echo "HUB_E2B_TEMPLATE=$STUB_RUNNING_TEMPLATE"; exit 0 ;;
   "image inspect"*) [ -n "\${STUB_INSPECT_STATUS:-}" ] && exit "$STUB_INSPECT_STATUS"
     case "$*" in *conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;; *) echo "\${STUB_LABEL:-}" ;; esac ;;
+  "image prune"*) exit "\${STUB_PRUNE_STATUS:-0}" ;;
   "pull --quiet"*) exit "\${STUB_PULL_STATUS:-0}" ;;
   *" run --rm migrate")
     n=$(( $(cat "$CALLS.migrate" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$CALLS.migrate"
@@ -61,6 +62,7 @@ export type Stub = {
   resealStatus?: number
   upStatus?: number
   pullStatus?: number
+  pruneStatus?: number
   inspectStatus?: number
   /** A docker call whose arguments contain this text never answers, so only the script's bound ends it. */
   hang?: string
@@ -70,17 +72,23 @@ export type Stub = {
 
 function stubEnv(stub: Stub): Record<string, string> {
   const running = stub.running
+  const statuses = {
+    STUB_MIGRATE_STATUS: stub.migrateStatus,
+    STUB_RESEAL_STATUS: stub.resealStatus,
+    STUB_UP_STATUS: stub.upStatus,
+    STUB_PULL_STATUS: stub.pullStatus,
+    STUB_PRUNE_STATUS: stub.pruneStatus,
+  }
   return {
+    ...Object.fromEntries(
+      Object.entries(statuses).map(([name, code]) => [name, String(code ?? 0)]),
+    ),
     STUB_RUNNING_ID: running === undefined ? '' : 'container-id',
     STUB_RUNNING_IMAGE: running ?? '',
     STUB_RUNNING_TEMPLATE: stub.runningTemplate ?? (running === undefined ? '' : OLD_TEMPLATE),
     STUB_LABEL: stub.labeled === false ? '' : '1',
     STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
-    STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
     STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
-    STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
-    STUB_UP_STATUS: String(stub.upStatus ?? 0),
-    STUB_PULL_STATUS: String(stub.pullStatus ?? 0),
     STUB_INSPECT_STATUS: stub.inspectStatus === undefined ? '' : String(stub.inspectStatus),
     STUB_MISSING_SECRET: stub.missingSecret ?? '',
     STUB_HANG: stub.hang ?? '',

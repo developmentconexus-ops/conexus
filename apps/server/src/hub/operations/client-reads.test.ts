@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { setTimeout } from 'node:timers/promises'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { queued, TEST_ORIGIN } from '../../platform/test-database.ts'
+import { until } from '../../platform/test-until.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { ANA, BRUNO, CARLA, codeOf, hubWithMail, id, personOn, post } from '../identity/test-hub.ts'
 
@@ -138,18 +138,6 @@ test('ler: a lista pagina 50 por token; o ativo traz só os donos; empresa sem c
   assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'])
 })
 
-/** Resolves once `count` requests of this database wait on a lock. */
-async function queued(hub: Hub, count: number) {
-  const waiting = `select count(distinct l.pid)::int as waiting from pg_locks l
-    join pg_stat_activity a on a.pid = l.pid
-    where not l.granted and a.datname = current_database()`
-  const deadline = Date.now() + 5_000
-  while (Object((await hub.test.asOwner(waiting))[0]).waiting < count) {
-    assert.ok(Date.now() < deadline, `${count} requests never queued on the company`)
-    await setTimeout(20)
-  }
-}
-
 /**
  * A test connection holds the company's row until `release`, so requests queue on it in the order
  * they are sent, and the race runs the same way every time.
@@ -161,7 +149,10 @@ async function holdCompany(hub: Hub, companyId: string) {
     .catch((error: unknown) => error)
   const asleep = `select count(*)::int as held from pg_stat_activity
     where query like '%${holding}' and state = 'active' and pid <> pg_backend_pid()`
-  while (Object((await hub.test.asOwner(asleep))[0]).held === 0) await setTimeout(20)
+  await until(
+    async () => Object((await hub.test.asOwner(asleep))[0]).held > 0,
+    'the holder took the company row',
+  )
   return async () => {
     await hub.test.asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
       where query like '%${holding}' and pid <> pg_backend_pid()`)
@@ -176,9 +167,9 @@ test('corrigir: contra o aceite que chega antes, 409 CLIENT_ACTIVE e o nome não
   const client = await registered(hub, ana)
   const release = await holdCompany(hub, client.companyId)
   const accepted = accept(hub, davi, client.state.ownerInvitation.id)
-  await queued(hub, 1)
+  await queued(hub.test, 1)
   const corrected = correct(hub, ana, client.companyId, { name: 'Nome Corrigido' })
-  await queued(hub, 2)
+  await queued(hub.test, 2)
   await release()
   assert.equal((await accepted).statusCode, 200)
   const refused = await corrected
@@ -198,9 +189,9 @@ test('corrigir: contra a renovação do convite de dono, os dois passam em fila,
   const release = await holdCompany(hub, companyId)
   const invitation = `/api/companies/${companyId}/invitations/${client.state.ownerInvitation.id}`
   const renewal = call(hub, ana, 'PUT', invitation, { revision: 0 })
-  await queued(hub, 1)
+  await queued(hub.test, 1)
   const correction = correct(hub, ana, companyId, { name: 'Nome Corrigido' })
-  await queued(hub, 2)
+  await queued(hub.test, 2)
   await release()
   const answers = await Promise.all([renewal, correction])
   assert.deepEqual(

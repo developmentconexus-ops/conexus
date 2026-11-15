@@ -2,6 +2,7 @@ import type { CompanyId, FailureCode, ModelAccount, Owner, Provider } from '@con
 import { ACCOUNT_LABEL_MAX_LENGTH, connectModelAccount } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 import {
   Form,
   FormAlert,
@@ -13,7 +14,7 @@ import {
 import { ProviderChoice } from './provider-choice.tsx'
 import { sendConnection } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
+const UNCONFIRMED = unconfirmedText('a ligação', 'Tente de novo.')
 
 /** The refusals that belong on a field of the form (web W23). */
 const FIELD_OF: Partial<Record<FailureCode, 'provider' | 'label' | 'key'>> = {

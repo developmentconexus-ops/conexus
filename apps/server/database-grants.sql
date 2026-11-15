@@ -8,9 +8,12 @@ ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA connectors OWNER TO test_owner;
+ALTER SCHEMA copies OWNER TO test_owner;
+ALTER SCHEMA data OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA notifications OWNER TO test_owner;
+ALTER SCHEMA ontology OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
 ALTER SCHEMA projects OWNER TO test_owner;
 ALTER SCHEMA requests OWNER TO test_owner;
@@ -74,11 +77,40 @@ ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
+ALTER TABLE copies.copy OWNER TO test_owner;
+ALTER TABLE copies.copy_proposal OWNER TO test_owner;
+ALTER TABLE copies.copy_proposal_source OWNER TO test_owner;
+ALTER TABLE copies.copy_reader OWNER TO test_owner;
+ALTER TABLE copies.copy_run OWNER TO test_owner;
+ALTER TABLE copies.copy_source OWNER TO test_owner;
+ALTER TABLE copies.copy_table_left OWNER TO test_owner;
+ALTER TABLE copies.project_copy OWNER TO test_owner;
+ALTER TABLE data.data_read OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
+ALTER TABLE notifications.alert_recipient OWNER TO test_owner;
+ALTER TABLE notifications.copy_follower OWNER TO test_owner;
+ALTER TABLE notifications.copy_notice OWNER TO test_owner;
 ALTER TABLE notifications.notification OWNER TO test_owner;
 ALTER TABLE notifications.request_notice OWNER TO test_owner;
+ALTER TABLE ontology.code_version OWNER TO test_owner;
+ALTER VIEW ontology.code OWNER TO test_owner;
+ALTER TABLE ontology.concept_version OWNER TO test_owner;
+ALTER VIEW ontology.concept OWNER TO test_owner;
+ALTER TABLE ontology.field_version OWNER TO test_owner;
+ALTER VIEW ontology.field OWNER TO test_owner;
+ALTER TABLE ontology.inventory_end OWNER TO test_owner;
+ALTER TABLE ontology.inventory_entry OWNER TO test_owner;
+ALTER TABLE ontology.inventory_run OWNER TO test_owner;
+ALTER TABLE ontology.proof_run OWNER TO test_owner;
+ALTER TABLE ontology.proposal OWNER TO test_owner;
+ALTER TABLE ontology.proposal_item OWNER TO test_owner;
+ALTER TABLE ontology.relation_version OWNER TO test_owner;
+ALTER VIEW ontology.relation OWNER TO test_owner;
+ALTER TABLE ontology.revision OWNER TO test_owner;
+ALTER TABLE ontology.source_version OWNER TO test_owner;
+ALTER VIEW ontology.source OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER TABLE projects.app_access OWNER TO test_owner;
@@ -114,9 +146,12 @@ GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
+GRANT USAGE ON SCHEMA copies TO hub_company;
+GRANT USAGE ON SCHEMA data TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
+GRANT USAGE ON SCHEMA ontology TO hub_company;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_operator;
 GRANT USAGE ON SCHEMA projects TO hub_company;
@@ -197,6 +232,10 @@ GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
 GRANT SELECT,DELETE ON TABLE auth.member TO hub_operator;
 GRANT UPDATE(role) ON TABLE auth.member TO hub_company;
 GRANT UPDATE(created_at) ON TABLE auth.member TO hub_company;
+-- Alinhamento do Assistente, U8, founder 2026-11-11 ("Decisões: A - A"): a company's routes write a
+-- member's job title and department, the person's own and, for an administrator, another member's.
+GRANT UPDATE(job_title) ON TABLE auth.member TO hub_company;
+GRANT UPDATE(department) ON TABLE auth.member TO hub_company;
 -- Step Papéis da empresa, U1, founder 2026-11-06 ("Aprovo tudo"): a company's routes read, create,
 -- change and delete the roles of their company, and the Central seeds a new company's two editable roles.
 GRANT SELECT,INSERT,DELETE ON TABLE auth.organization_role TO hub_company;
@@ -276,6 +315,7 @@ GRANT SELECT(limited_until),UPDATE(limited_until) ON TABLE builder.model_account
 GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(served_models),UPDATE(served_models) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(limit_reason),UPDATE(limit_reason) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
@@ -332,6 +372,62 @@ GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
+-- Capacity 2, U2, with the founder's word in the pull request of its own (data D11): a company's
+-- routes and its copies' runs turn a copy on, hold its run's lease and save where its pass stands,
+-- record each run and keep the newest, and release a copy to a Projeto and take it back.
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11):
+-- Desligar ends, in the transaction that deletes the connection, the copy left with no source.
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy TO hub_company;
+-- Parte 1 da camada de dados, founder 2026-11-15 ("P2 Okay"): UPDATE(definition) and UPDATE(column_state), the
+-- run fills the template's descriptions the stored definition lacks and writes each source column's state.
+GRANT UPDATE(definition) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(claim_token) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(claimed_until) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(pass) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(pass_started_at) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE("position") ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(watermark) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
+GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
+-- The other half of the grant above, in the order of the table's columns, which the snapshot keeps.
+GRANT UPDATE(column_state) ON TABLE copies.copy TO hub_company;
+-- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
+-- company's routes mark a copy whose readers were written once.
+GRANT UPDATE(readers_set) ON TABLE copies.copy TO hub_company;
+-- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
+-- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
+-- dismiss it; the Hub never deletes one.
+GRANT SELECT,INSERT ON TABLE copies.copy_proposal TO hub_company;
+GRANT UPDATE(state) ON TABLE copies.copy_proposal TO hub_company;
+GRANT UPDATE(copy_id) ON TABLE copies.copy_proposal TO hub_company;
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): the
+-- Builder's run proposes a copy over several connections; a proposal's source leaves by cascade.
+GRANT SELECT,INSERT ON TABLE copies.copy_proposal_source TO hub_company;
+-- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
+-- company's routes read which roles read each copy, and mark and unmark them.
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_reader TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(reason) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(pages) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(read) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(written) ON TABLE copies.copy_run TO hub_company;
+-- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): a
+-- copy's runs read and save where each of its connections stands and until when the provider asked
+-- it to wait; a source leaves by cascade. Desligar writes down the table of a copy that ended while
+-- the company's database did not answer, and drains the row once the table is dropped.
+GRANT SELECT,INSERT ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(pass) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(pass_started_at) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE("position") ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(watermark) ON TABLE copies.copy_source TO hub_company;
+GRANT UPDATE(wait_until) ON TABLE copies.copy_source TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_table_left TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
+-- A governança mínima, grupo 3, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11; E4a): a
+-- company's routes record each read of the company's data and list them; the Hub never changes or deletes one.
+GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
@@ -344,6 +440,35 @@ GRANT UPDATE(read_at) ON TABLE notifications.notification TO hub_company;
 -- leave by cascade, never by the Hub.
 GRANT SELECT,INSERT ON TABLE notifications.request_notice TO hub_company;
 GRANT UPDATE(read_at) ON TABLE notifications.request_notice TO hub_company;
+-- A Ontologia da empresa, U1, with the founder's word in the pull request of its own (data D11; P1,
+-- 2026-11-12, in the card of the step): a company's routes read and write the inventory, the proofs,
+-- the proposals and their items, the revisions and the versions of the concepts, fields, codes,
+-- relations and sources, and read the five views of what is current. A revision, a proof and a
+-- version are never changed or deleted; of a proposal only its state changes, and of an item only
+-- its decision, its reason, who decided and when. The inventory is replaced by run, so its three
+-- tables also delete. Everything else leaves by the cascade from the company.
+GRANT SELECT,INSERT ON TABLE ontology.code_version TO hub_company;
+GRANT SELECT ON TABLE ontology.code TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.concept_version TO hub_company;
+GRANT SELECT ON TABLE ontology.concept TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.field_version TO hub_company;
+GRANT SELECT ON TABLE ontology.field TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_end TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_entry TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE ontology.inventory_run TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proof_run TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proposal TO hub_company;
+GRANT UPDATE(state) ON TABLE ontology.proposal TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decision) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(reason) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decided_by) ON TABLE ontology.proposal_item TO hub_company;
+GRANT UPDATE(decided_at) ON TABLE ontology.proposal_item TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.relation_version TO hub_company;
+GRANT SELECT ON TABLE ontology.relation TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.revision TO hub_company;
+GRANT SELECT,INSERT ON TABLE ontology.source_version TO hub_company;
+GRANT SELECT ON TABLE ontology.source TO hub_company;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.

@@ -14,7 +14,8 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { ADMINISTRATOR, company, member, policy } from '../../hub/identity/public.ts'
+import { ADMINISTRATOR, policy } from '../../hub/identity/public.ts'
+import { company, member } from '../../hub/identity/public-tables.ts'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { builder } from '../schema/public.ts'
 
@@ -68,6 +69,7 @@ export const modelAccount = builder.table(
     attemptKey: text('attempt_key').notNull(),
     // Set by the queue when the provider answered 429 or 402: skipped until then (study D3).
     limitedUntil: instant('limited_until'),
+    limitReason: text('limit_reason', { enum: ['rate', 'credit'] }),
     // The lease of a subscription's token refresh: one refresh at a time (security S34, data D25).
     refreshUntil: instant('refresh_until'),
     // The model ids the provider answered for this credential, as it sent them; null while unread
@@ -88,6 +90,7 @@ export const modelAccount = builder.table(
       sql`${table.kind} IN ('api_key', 'claude_subscription', 'google_cliproxy', 'openai_codex')`,
     ),
     check('model_account_state', sql`${table.state} IN ('ready', 'paused', 'refused')`),
+    check('model_account_limit_reason', sql`${table.limitReason} IN ('rate', 'credit')`),
     check('model_account_label_length', sql`char_length(${table.label}) BETWEEN 1 AND 60`),
     check('model_account_position', sql`${table.position} >= 0`),
     check('model_account_hint', sql`(${table.kind} = 'api_key') = (${table.hint} IS NOT NULL)`),

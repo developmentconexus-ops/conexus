@@ -11,7 +11,7 @@ export const estoque = defineOperation({
   summary:
     'Lista o saldo de estoque por produto, empresa e local (até 50 por página); a página começa em 0. Só traz produto que já teve movimento.',
   label: 'Estoque por produto',
-  input: z.object({ page: Page(0) }),
+  input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'estoque' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/estoque/produtos', { page }),
@@ -25,7 +25,7 @@ export const estoqueDoProduto = defineOperation({
   summary:
     'Lê o saldo de estoque de um produto, por empresa, local e controle. Leia antes de lançar um pedido: o local de cada item vem daqui. Sem linha, o produto não tem estoque lido.',
   label: 'Estoque de um produto',
-  input: z.object({ codigoProduto: Code.positive() }),
+  input: z.strictObject({ codigoProduto: Code.positive() }),
   ...rows({ list: 'estoque' }),
   probe: () => ({ codigoProduto: 11 }),
   request: ({ codigoProduto }) => get(`/v1/estoque/produtos/${codigoProduto}`),
@@ -38,7 +38,7 @@ export const locaisEstoque = defineOperation({
   idempotent: true,
   summary: 'Lista os locais de estoque (código, descrição, local pai); a página começa em 0.',
   label: 'Locais de estoque',
-  input: z.object({ page: Page(0) }),
+  input: z.strictObject({ page: Page(0) }),
   ...rows({ list: 'locais' }),
   probe: () => ({ page: 0 }),
   request: ({ page }) => get('/v1/estoque/locais', { page }),

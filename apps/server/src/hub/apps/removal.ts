@@ -3,7 +3,7 @@ import { AppVersionId, appWorkerOf } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import { removeWorkers } from '../../platform/cloudflare.ts'
-import type { CompanyPostgres } from '../../platform/company-postgres.ts'
+import type { CompanyPostgres, SqlAnswer } from '../../platform/company-postgres.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -13,15 +13,17 @@ import { deleteUnusedBlobs } from './prune.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 import { CLAIM_HELD, failVersion } from './versions.ts'
 
+type Ids = { companyId: CompanyId; projectId: ProjectId }
+
 export type RemovalDeps = {
   database: Database
   cloudflare: CloudflareApps
   neon: NeonProjects
   companyPostgres: CompanyPostgres
+  /** The copies are made after the apps; a removal comes long after both. */
+  copies: () => { revokeAllOf(input: Ids): Promise<SqlAnswer> }
   log: FailureLog
 }
-
-type Ids = { companyId: CompanyId; projectId: ProjectId }
 
 /**
  * Takes the Projeto's app for its deletion, in the caller's transaction: a live send refuses, one
@@ -52,10 +54,14 @@ export async function takeBackRepair(
   if (!dropped) throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
 }
 
-/** The app's schema and logins in the company's database; one never made drops nothing. */
+/**
+ * The app's schema and logins in the company's database; one never made drops nothing. Every copy
+ * released to the Projeto is revoked first: a login holding a privilege cannot be dropped.
+ */
 async function dropAppDatabase(deps: RemovalDeps, input: Ids & { scope: Scope }) {
   const ready = await deps.database.read(input.scope, (tx) => readyDatabaseOf(tx, input.companyId))
   if (ready === undefined) return true
+  if ((await deps.copies().revokeAllOf(input)).kind !== 'DONE') return false
   const owner = await deps.neon.ownerConnection(ready.neonProjectId)
   if (owner.kind !== 'DONE') return false
   return (await deps.companyPostgres.dropApp(owner.value, input.projectId)).kind === 'DONE'

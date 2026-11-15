@@ -4,14 +4,17 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { until } from '../../platform/test-until.ts'
 import {
   COMPANY,
   CONVERSATION,
   INSTALLATION,
+  moveMain,
   OLD_TEMPLATE,
   OTHER_CONVERSATION,
   OTHER_INSTALLATION,
   PROJECT,
+  pausedByE2b,
   restoreRefused,
   sandboxOf,
   TEMPLATE,
@@ -26,8 +29,33 @@ test('máquina: a do Builder recebe só o registro do npm na lista de endereços
   assert.deepEqual(control.allowOut, [['registry.npmjs.org']])
 })
 
+test('máquina: o fim do turno do Builder não para a máquina; depois que o E2B a pausa, a ferramenta seguinte a retoma e o main entra de novo pelo início nativo', async (t) => {
+  const { open, phases, control, machines, folder } = await world(t)
+  await (await open()).filesystem?.writeFile('a.ts', 'um\n')
+  await machines.release(CONVERSATION)
+  assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
+  assert.equal(control.networkClosed, 0)
+  const second = await open()
+  assert.equal(await second.filesystem?.exists('a.ts'), true)
+  assert.equal(control.names.length, 1, 'the next turn used the machine the first left on')
+  moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
+  assert.equal(
+    await second.filesystem?.exists('b.ts'),
+    false,
+    'main does not enter at every message',
+  )
+  await machines.release(CONVERSATION)
+  pausedByE2b(control)
+  phases.length = 0
+  const third = await open()
+  assert.equal(await third.filesystem?.readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
+  assert.equal(await third.filesystem?.exists('a.ts'), true, 'and the work not saved stays')
+  assert.equal(control.networkClosed, 1)
+  assert.deepEqual(phases, ['copying'])
+})
+
 test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
-  const { open, phases, control, machines, base } = await world(t)
+  const { open, phases, control, machines, base, restartHub } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [], 'building the workspace touches no machine')
   await first.filesystem?.writeFile('a.ts', 'um\n')
@@ -35,7 +63,8 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   await machines.release(CONVERSATION)
   phases.length = 0
   control.discoverable = [OWN]
-  const found = await open()
+  const hub = restartHub()
+  const found = await hub.open()
   assert.equal(
     await found.filesystem?.exists('a.ts'),
     true,
@@ -44,13 +73,14 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   assert.deepEqual(phases, ['starting', 'copying'])
   assert.deepEqual(control.attached, [OWN])
   assert.equal(control.networkClosed, 1)
-  await machines.release(CONVERSATION)
+  await hub.machines.release(CONVERSATION)
   phases.length = 0
   control.discoverable = []
-  const fresh = await open()
+  const next = restartHub()
+  const fresh = await next.open()
   assert.equal(await fresh.filesystem?.exists('a.ts'), false)
   assert.deepEqual(phases, ['starting', 'copying'], 'no phase says a machine was there before')
-  assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
+  assert.equal(await next.machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
 })
 
 test('máquina: religada no turno seguinte, a mesma pasta segue no main que o turno salvou, e um commit em outro ramo não apaga a versão anterior', async (t) => {
@@ -75,7 +105,7 @@ test('máquina: religada no turno seguinte, a mesma pasta segue no main que o tu
   assert.ok(received.ok)
   assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
   await machines.release(CONVERSATION)
-  control.outcome = 'connected'
+  pausedByE2b(control)
   const next = await open()
   assert.equal(await next.filesystem?.exists('a.ts'), true, 'the saved version is the folder')
   const head = await (await sandboxOf(next)).executeCommand('sh', [
@@ -135,16 +165,20 @@ test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos 
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
   const { open, folder, control } = await world(t)
-  control.upMs = 300
+  const seed = Promise.withResolvers<void>()
+  t.after(() => seed.resolve())
+  control.holdUp = seed.promise
   const workspace = await open()
   const tools = await createWorkspaceTools(workspace)
   const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
   assert.ok(command, 'the workspace offers execute_command')
-  const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
+  const head = { description: 'Lendo o HEAD', command: `cat ${join(folder, 'app')}/.git/HEAD` }
   const first = command.execute(head, { workspace })
   // The second arrives while the machine already says `running` and the seed is still coming.
-  while (control.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
-  const seen = [await first, await command.execute(head, { workspace })]
+  await until(() => control.sandbox?.status === 'running', 'the machine says it runs')
+  const second = command.execute(head, { workspace })
+  seed.resolve()
+  const seen = [await first, await second]
   for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
 
@@ -214,7 +248,7 @@ test('máquina: o nome leva a instalação e a conversa, sem o Projeto, e a marc
 })
 
 test('máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não', async (t) => {
-  const { open, control, machines } = await world(t)
+  const { open, control, machines, restartHub } = await world(t)
   control.discoverable = [
     `conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`,
     `conexus-${OTHER_INSTALLATION}-${CONVERSATION}`,
@@ -224,7 +258,7 @@ test('máquina: só a máquina de nome igual ao desta conversa é achada; a do P
   assert.deepEqual(control.attached, [], 'a created machine, none of the others')
   await machines.release(CONVERSATION)
   control.discoverable = [OWN]
-  await (await open()).filesystem?.exists('a.ts')
+  await (await restartHub().open()).filesystem?.exists('a.ts')
   assert.deepEqual(control.attached, [OWN], 'its own name is found')
 })
 
@@ -258,7 +292,7 @@ test('máquina: um pacote do turno maior que 64 MiB não entra no Hub', async (t
 })
 
 test('máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main', async (t) => {
-  const { open, phases, control, machines } = await world(t)
+  const { open, phases, control, machines, restartHub } = await world(t)
   control.discoverable = [OWN]
   control.templates = { [OWN]: OLD_TEMPLATE }
   const workspace = await open()
@@ -271,7 +305,7 @@ test('máquina: a pausada de um template anterior ao Release não é retomada; v
   phases.length = 0
   control.discoverable = [OWN]
   control.templates = {}
-  await (await open()).filesystem?.writeFile('b.ts', 'dois\n')
+  await (await restartHub().open()).filesystem?.writeFile('b.ts', 'dois\n')
   assert.deepEqual(control.replaced, [OWN], 'a machine of the Hub template is kept')
   assert.deepEqual(control.attached, [OWN])
 })

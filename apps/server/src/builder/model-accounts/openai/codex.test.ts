@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER, CompanyId, ModelAccountId } from '@conexus/hub-api'
 import { call, post } from '../../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../../platform/test-database.ts'
@@ -12,8 +11,11 @@ import {
   plantCodex,
   RENEWED_ACCESS,
   RENEWED_REFRESH,
+  titledStream,
 } from '../../../platform/test-openai-codex.ts'
+import { recordedBody } from '../../../platform/test-recordings.ts'
 import { testOpened } from '../../../platform/test-seal.ts'
+import { TITLE } from '../../controller-kit/public.ts'
 import {
   asked,
   beside,
@@ -26,8 +28,11 @@ import {
 } from '../../conversation/test-conversation.ts'
 import { failuresOf } from '../../conversation/test-parts.ts'
 import { codexModel } from '../public.ts'
+import { bothOnTheLease, titleOf } from '../test-defaults.ts'
 
 const MODEL = 'openai/gpt-5.2'
+/** The Builder's title phrase as the request carries it inside the JSON body. */
+const TITLE_PHRASE = JSON.stringify(TITLE.app.title).slice(1, -1)
 
 /**
  * Empresa Teste with the ChatGPT subscription "ChatGPT" as the only OpenAI account and the default
@@ -93,7 +98,7 @@ test('o pedido que sai', async (t) => {
   assert.equal(made?.headers.get('thread-id'), request.prompt_cache_key)
   assert.equal(request.store, false)
   assert.equal(typeof request.instructions, 'string')
-  assert.ok(request.instructions.length > 0)
+  assert.match(request.instructions, /^You help people build and run business apps\./)
   assert.equal(request.reasoning.effort, 'medium')
   assert.ok(Array.isArray(request.input) && request.input.length > 0)
   for (const item of request.input) assert.equal('id' in item, false)
@@ -178,6 +183,22 @@ test('os itens de uma resposta anterior saem sem id', async (t) => {
   )
 })
 
+test('o transporte leva o mesmo texto fixo curto para todo modelo, sem regra de agente nem bloco de modelo', async (t) => {
+  const codex = plantCodex(t)
+  codex.responses = () => ({ status: 400 })
+  const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'Oi' }] }]
+  for (const name of ['gpt-6-luna', 'gpt-5.6-luna', 'gpt-5.2']) {
+    const model = codexModel(name, { access: ACCESS, accountId: ACCOUNT_ID })
+    await assert.rejects(async () => model.doStream({ prompt }))
+  }
+  const sent = codex.calls.map((made) => String(Object(JSON.parse(String(made.body))).instructions))
+  assert.equal(new Set(sent).size, 1, 'one text for every model')
+  assert.doesNotMatch(
+    sent[0] ?? '',
+    /autonomy_and_persistence|Reading is always allowed|failed read|ask the person/i,
+  )
+})
+
 test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recusada e o turno diz o nome', async (t) => {
   const f = await subscribed(t, 3600)
   f.codex.responses = () => ({ status: 401 })
@@ -188,7 +209,7 @@ test('401 renova uma vez: o token novo vai, e um segundo 401 marca a conta recus
   )
   assert.equal(renewals(f).length, 1)
   assert.deepEqual(await turnNotices(f.hub, f.ana, url), ['ChatGPT foi recusada. Ligue de novo.'])
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(failuresOf(events), ['MODEL_ACCOUNTS_REFUSED'])
   assert.deepEqual(await f.states(), [['ChatGPT', 'refused']])
 })
 
@@ -197,25 +218,24 @@ test('429 é limite: a conta ganha a hora que o Codex dá', async (t) => {
   f.codex.responses = () => ({ status: 429, headers: { 'retry-after': '120' } })
   const begun = Date.now()
   await asked(t, f.where)
+  const answered = Date.now()
   const [row] = await f.hub.test.asOwner(
     `select limited_until, state from builder.model_account where label = 'ChatGPT'`,
   )
   const until = Object(row).limited_until
   assert.ok(until instanceof Date)
-  const seconds = (until.getTime() - begun) / 1000
-  assert.ok(seconds > 115 && seconds < 135, String(seconds))
+  const [afterStart, afterEnd] = [until.getTime() - begun, until.getTime() - answered]
+  assert.ok(afterStart > 115_000 && afterEnd < 125_000, String([afterStart, afterEnd]))
   assert.equal(Object(row).state, 'ready')
 })
 
 test('renovação com duas conversas: uma só chamada, o token novo nas duas e o refresh novo selado', async (t) => {
   const f = await subscribed(t, 1)
   f.codex.responses = () => ({ status: 400 })
-  const renewed = f.codex.refresh
-  f.codex.refresh = async () => {
-    await sleep(300)
-    return renewed()
-  }
-  const turns = await Promise.all([asked(t, f.where), asked(t, await beside(f.where, 'Estoque'))])
+  const other = await beside(f.where, 'Estoque')
+  const turns = await bothOnTheLease(f.hub, 'ChatGPT', () =>
+    Promise.all([asked(t, f.where), asked(t, other)]),
+  )
   assert.equal(turns.length, 2)
   assert.equal(renewals(f).length, 1)
   const body = new URLSearchParams(renewals(f)[0]?.body)
@@ -260,4 +280,36 @@ test('404 do Codex: o modelo não é atendido, a conta segue pronta e sem lista'
     `select served_models from builder.model_account where label = 'ChatGPT'`,
   )
   assert.equal(Object(row).served_models, null)
+})
+
+const SENTENCE = 'Não foi possível lançar o pedido: o produto **999 não existe**.'
+const NAMED = 'Comparar apps de padaria'
+
+test('o título da conversa pela assinatura: a chamada sem streaming sai com stream true, leva os avisos do Mastra antes da frase do assunto, e o texto juntado do SSE é o título gravado, sem erro no log', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.codex.responses = (body) =>
+    JSON.parse(body).stream === true
+      ? {
+          status: 200,
+          stream: titledStream(recordedBody('openai-refused-write-closing'), SENTENCE, NAMED),
+        }
+      : { status: 400, body: { detail: 'Stream must be set to true' } }
+  const { url } = await asked(t, f.where)
+  assert.equal(await titleOf(f.hub, f.ana, url), NAMED)
+  for (const made of responses(f)) assert.equal(JSON.parse(String(made.body)).stream, true)
+  const [asking, ...more] = responses(f).filter((made) => String(made.body).includes(TITLE_PHRASE))
+  assert.ok(asking !== undefined && more.length === 0, 'one request carries the title phrase')
+  const said = JSON.stringify(JSON.parse(String(asking.body)).input)
+  for (const notice of [
+    /transcrição de uma conversa/,
+    /Nunca responda nem continue essa transcrição/,
+    /usado como o título/,
+  ])
+    assert.match(said, notice)
+  assert.ok(
+    said.indexOf('Nunca responda') < said.indexOf('Dê à conversa um título curto'),
+    'the notices come first',
+  )
+  assert.ok(!f.hub.lines.some((line) => line.message === 'MASTRA_ERROR'))
+  assert.ok(!f.hub.lines.some((line) => line.message === 'MODEL_SIDE_CALL_FAILED'))
 })

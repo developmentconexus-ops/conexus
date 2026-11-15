@@ -25,7 +25,7 @@ closes each step by using it; that stage has no skill.
 
 ## Commands
 
-The root `package.json` lists every command. Run the tests a change touches before each commit.
+The root `package.json` lists every command. Run the tests a change touches before committing.
 
 ## Rules for every task
 
@@ -34,10 +34,10 @@ The root `package.json` lists every command. Run the tests a change touches befo
 - How to use a library is its maintainers' skill at the installed version; the guides decide only
   what it leaves open, and native before custom is code C75.
 - Only the step of each track in [docs/steps/](docs/steps/) is in construction (delivery L1). Work
-  outside it needs a card. A one-line correction stays a fix; a fix that adds a file, a script, a
-  filter or a new state is a unit of a short card (reference table, criteria, a founder's page of a
-  few lines).
-- A missing decision stops the work: report it with evidence. Never invent a product rule, a
+  outside it needs a card, except a small change that uses a native piece already in use, alters no
+  contract, table, migration, new screen or security, and fits one pull request: the author records
+  there the reference-table row (reference file, version, `file:line`); the reviewer checks it.
+- A missing decision stops the work: report it, with evidence. Never invent a product rule, a
   boundary or a value to make a test pass.
 - Delivery L13, L14 and L26 (merge, `main`, shared history); security S40 (no company data,
   secret or machine path).

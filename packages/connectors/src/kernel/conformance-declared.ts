@@ -62,9 +62,24 @@ export function assertFixedExist(connector: Connector): void {
   }
 }
 
-/** What a connector declares of its provider: the recorded refusals, the marks and the fixed fields. */
+/** 2xx bodies that carry neither the written id nor a refusal of the provider's own. */
+const NOT_PROOF = [undefined, null, {}, [], 'texto', { a: 1 }, { mensagem: 'ok' }]
+
+/** A write refuses only with proof: a 2xx with no id and no refusal mark is `UNREADABLE`, never `REFUSED`, since what it wrote may exist (a write that reads a missing id as a refusal fails here). */
+export function assertWriteNeedsProofToRefuse(connector: Connector): void {
+  for (const operation of connector.writes ?? [])
+    for (const body of NOT_PROOF)
+      assert.equal(
+        operation.answer({ status: 200, body }).kind,
+        'UNREADABLE',
+        `${operation.id}: a 200 with ${JSON.stringify(body) ?? 'no body'} is unreadable, not refused`,
+      )
+}
+
+/** What a connector declares of its provider: the recorded refusals, the writes' proof to refuse, the marks and the fixed fields. */
 export function assertDeclaredByProvider(connector: Connector): void {
   assertRefusalsRead(connector)
+  assertWriteNeedsProofToRefuse(connector)
   assertMarkReachesRequest(connector)
   assertFixedExist(connector)
 }

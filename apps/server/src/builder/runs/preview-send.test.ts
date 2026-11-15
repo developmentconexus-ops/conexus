@@ -73,7 +73,7 @@ test('nada guardado, nada sobe: um turno sem mudança e um que falhou ao guardar
   const remove = {
     type: 'tool_use',
     name: 'mastra_workspace_execute_command',
-    input: { command: 'rm -rf .git' },
+    input: { description: 'Rodando um teste', command: 'rm -rf .git' },
   } as const
   let asks = 0
   const subject = await previewing(t, ['passed', 'passed'], (callOf): Reply => {

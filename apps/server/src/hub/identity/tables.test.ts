@@ -70,6 +70,8 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       'member.user_id text NO',
       'member.role text NO',
       `member.created_at ${ts} NO`,
+      'member.job_title text YES',
+      'member.department text YES',
       'organization_role.role text NO',
       'session.active_organization_id text YES',
       'session.impersonated_by text YES',

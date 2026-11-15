@@ -35,6 +35,7 @@ type Hooks = {
   dispatch: (action: Action) => void
   onGone: () => void
   onEnded: () => void
+  onTitled: () => void
   onFollowing: () => void
 }
 
@@ -108,6 +109,10 @@ function heard(hooks: Hooks, event: AgentControllerEvent): void {
   }
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
+  // Mastra names the conversation after the answer ended, and the observer renames it later. The
+  // Mastra Code TUI and the Factory act on these two events; here the server's read stays the owner.
+  if (event.type === 'thread_title_updated' || event.type === 'om_thread_title_updated')
+    hooks.onTitled()
 }
 
 /** A refusal that ends the following: the conversation gone, or the person's session ended. */
@@ -161,6 +166,8 @@ export function useSession(
     gone: () => void
     /** The person's session ended: the caller reads again what it keeps of the conversation. */
     ended: () => void
+    /** Mastra named the conversation, or the observer renamed it: the caller reads its title again. */
+    titled: () => void
   },
 ) {
   const queryClient = useQueryClient()
@@ -169,6 +176,7 @@ export function useSession(
   const [following, setFollowing] = useState(false)
   const gone = useEffectEvent(on.gone)
   const ended = useEffectEvent(on.ended)
+  const titled = useEffectEvent(on.titled)
   const { conversationId, controller } = ids
   const builder = useMemo(() => sessionOf(conversationId, controller), [conversationId, controller])
   // The window of messages read grows by a page for each load of older messages; `Screen` remounts
@@ -205,6 +213,7 @@ export function useSession(
       dispatch,
       onGone: gone,
       onEnded: ended,
+      onTitled: titled,
       onFollowing: () => setFollowing(true),
     }
     void follow(hooks, stop.signal)

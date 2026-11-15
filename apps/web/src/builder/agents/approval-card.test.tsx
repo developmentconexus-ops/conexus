@@ -143,7 +143,7 @@ test('um envio sem resposta diz a marca para procurar no Sankhya', async () => {
   })
   expect(
     await screen.findByText(
-      'Não deu para saber se o pedido foi lançado. Procure no Sankhya a observação Conexus 7F3A2B1C.',
+      'Sem confirmação automática. Veja o que o agente leu e confira a observação Conexus 7F3A2B1C.',
     ),
   ).toBeTruthy()
 })

@@ -24,6 +24,8 @@ import {
 
 /** The read deadline the test below gives its pool, short of production's. */
 const READ_DEADLINE_TEST_MS = 1_000
+// A Node timer starts at the loop's clock in whole milliseconds: up to 1 ms before performance.now().
+const DEADLINE_REACHED_MS = READ_DEADLINE_TEST_MS - 1
 
 function failsWith(code: string, sqlstate?: string) {
   return (error: unknown) => {
@@ -171,8 +173,8 @@ test('uma leitura parada além do prazo dado: 503, o soquete destruído solta as
     )
     const waited = performance.now() - started
     assert.ok(
-      waited >= READ_DEADLINE_TEST_MS,
-      'the read deadline is not shorter than the one given',
+      waited > DEADLINE_REACHED_MS,
+      `the read deadline is not shorter than the one given: ${waited} ms`,
     )
     assert.ok(
       waited < READ_DEADLINE_TEST_MS + 2_000,
@@ -268,7 +270,7 @@ test('uma consulta da biblioteca sem resposta cai no prazo de leitura como conex
       setTimeout(READ_DEADLINE_TEST_MS + 2_000, 'pending', { ref: false }),
     ])
     assert.equal(outcome, 'Connection terminated unexpectedly')
-    assert.ok(performance.now() - started >= READ_DEADLINE_TEST_MS, 'the deadline is the one given')
+    assert.ok(performance.now() - started > DEADLINE_REACHED_MS, 'the deadline is the one given')
     assert.equal(orm.$client.totalCount, 0)
   } finally {
     proxy.close()

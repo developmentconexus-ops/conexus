@@ -1,8 +1,10 @@
 import { ConversationId } from '@conexus/hub-api'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { LIMITS } from './attachments.ts'
+import type { MessageFile } from './attachments.ts'
+import { acceptOf, LIMITS, useAttachments } from './attachments.ts'
+import { ASSISTANT_ROOM, agentRoom, BUILDER_ROOM } from './room.ts'
 import { conversationOf, say, screens } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
@@ -204,5 +206,66 @@ test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga 
   } finally {
     refuse.mockRestore()
     vi.restoreAllMocks()
+  }
+})
+
+const SHEET = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const WORD = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+/** What a room's box takes of `picked`: the files the draft holds, as they would be sent, and why one was left out. */
+async function tookBy(files: 'MODEL' | 'MACHINE', picked: File[]) {
+  let held: readonly MessageFile[] = []
+  const { result } = renderHook(() =>
+    useAttachments(
+      {
+        files: held,
+        setFiles: (update) => {
+          held = update(held)
+        },
+      },
+      files,
+    ),
+  )
+  const refused = await result.current.add(picked)
+  return { refused, sent: held.map((each) => [each.filename, each.mediaType]) }
+}
+
+test('o Assistente aceita planilha, documento e csv; o Builder e os agentes não', async () => {
+  expect(BUILDER_ROOM.files).toBe('MODEL')
+  expect(agentRoom('Compras').files).toBe('MODEL')
+  expect(ASSISTANT_ROOM.files).toBe('MACHINE')
+  for (const extension of ['.xlsx', '.docx', '.csv']) {
+    expect(acceptOf('MACHINE')).toContain(extension)
+    expect(acceptOf('MODEL')).not.toContain(extension)
+  }
+  const sheet = new File(['x'], 'precos.xlsx', { type: SHEET })
+  const word = new File(['x'], 'contrato.docx', { type: '' })
+  const csv = new File(['a,b'], 'vendas.csv', { type: 'application/vnd.ms-excel' })
+  const bare = new File(['c,d'], 'bruto.csv', { type: '' })
+  const txt = new File(['telefone'], 'notas.txt', { type: 'text/plain' })
+  const md = new File(['# Observações'], 'observacoes.md', { type: '' })
+  expect(await tookBy('MACHINE', [sheet, word, csv, bare, txt, md])).toEqual({
+    refused: null,
+    sent: [
+      ['precos.xlsx', SHEET],
+      ['contrato.docx', WORD],
+      ['vendas.csv', 'application/octet-stream'],
+      ['bruto.csv', 'application/octet-stream'],
+      ['notas.txt', 'application/octet-stream'],
+      ['observacoes.md', 'application/octet-stream'],
+    ],
+  })
+  for (const room of [BUILDER_ROOM, agentRoom('Compras')]) {
+    expect(await tookBy(room.files, [sheet, word, csv, bare])).toEqual({
+      refused: 'type',
+      sent: [],
+    })
+    expect(await tookBy(room.files, [txt, md])).toEqual({
+      refused: null,
+      sent: [
+        ['notas.txt', 'text/plain'],
+        ['observacoes.md', 'text/markdown'],
+      ],
+    })
   }
 })

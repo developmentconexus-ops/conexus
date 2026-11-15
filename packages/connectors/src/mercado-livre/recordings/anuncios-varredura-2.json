@@ -1,0 +1,115 @@
+{
+  "service": "Mercado Livre",
+  "connector": "mercado-livre",
+  "case": "anuncios-varredura-2",
+  "route": {
+    "method": "GET",
+    "path": "/users/ACCOUNT/items/search",
+    "query": [
+      "limit",
+      "scroll_id",
+      "search_type"
+    ]
+  },
+  "recordedAt": "2026-11-12",
+  "status": 200,
+  "replaced": [
+    "available_orders.id",
+    "available_orders.id.id",
+    "available_orders.id.missing",
+    "available_orders.name",
+    "orders.id",
+    "orders.name",
+    "scroll_id",
+    "seller",
+    "seller_id"
+  ],
+  "body": {
+    "scroll_id": "000001",
+    "seller_id": "000000002",
+    "results": [],
+    "paging": {
+      "limit": 100,
+      "total": 89
+    },
+    "query": null,
+    "orders": [
+      {
+        "id": "STOPTIMEASC000003",
+        "name": "Texto inventado 4"
+      }
+    ],
+    "available_orders": [
+      {
+        "id": "STOPTIMEASC000003",
+        "name": "Texto inventado 4"
+      },
+      {
+        "id": "STOPTIMEDESC000005",
+        "name": "Texto inventado 6"
+      },
+      {
+        "id": "STARTTIMEASC000007",
+        "name": "Texto inventado 8"
+      },
+      {
+        "id": "STARTTIMEDESC000009",
+        "name": "Texto inventado 10"
+      },
+      {
+        "id": "AVAILABLEQUANTITYASC000011",
+        "name": "Texto inventado 12"
+      },
+      {
+        "id": "AVAILABLEQUANTITYDESC000013",
+        "name": "Texto inventado 14"
+      },
+      {
+        "id": "SOLDQUANTITYASC000015",
+        "name": "Texto inventado 16"
+      },
+      {
+        "id": "SOLDQUANTITYDESC000017",
+        "name": "Texto inventado 18"
+      },
+      {
+        "id": "PRICEASC000019",
+        "name": "Texto inventado 20"
+      },
+      {
+        "id": "PRICEDESC000021",
+        "name": "Texto inventado 22"
+      },
+      {
+        "id": "LASTUPDATEDDESC000023",
+        "name": "Texto inventado 24"
+      },
+      {
+        "id": "LASTUPDATEDASC000025",
+        "name": "Texto inventado 26"
+      },
+      {
+        "id": "TOTALSOLDQUANTITYASC000027",
+        "name": "Texto inventado 28"
+      },
+      {
+        "id": {
+          "id": "TOTALSOLDQUANTITYDESC000029",
+          "field": "sold_quantity",
+          "missing": "Texto inventado 30",
+          "order": "desc"
+        },
+        "name": "Texto inventado 31"
+      },
+      {
+        "id": {
+          "id": "INVENTORYIDASC000032",
+          "field": "inventory_id",
+          "missing": "Texto inventado 30",
+          "order": "asc"
+        },
+        "name": "Texto inventado 33"
+      }
+    ]
+  }
+}

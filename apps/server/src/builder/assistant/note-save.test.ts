@@ -66,7 +66,7 @@ test('a rodada de automação: a conversa que a automação abre não leva conne
   const before = on.calls.length
   const run = await ended(on.hub, on.ana, ran, await ranNow(on.hub, on.ana, ran))
   assert.equal(run.state.kind, 'DONE')
-  const asked = on.calls.slice(before).filter((each) => each.tools.includes('connector_read'))
+  const asked = on.calls.slice(before).filter((each) => each.tools.includes('search_tools'))
   assert.ok(asked.length > 0)
   for (const each of asked) assert.equal(each.tools.includes(SAVE), false)
 })
@@ -89,7 +89,6 @@ test('o membro: a execução de quem não administra ligações não leva connec
     assert.equal(tools.includes('show_file'), true, role)
   }
   const steps: ReturnType<typeof said>[][] = []
-  const invented = await assisting(t, steps)
   steps.push(
     [
       tool(SAVE, {
@@ -101,6 +100,7 @@ test('o membro: a execução de quem não administra ligações não leva connec
     ],
     [said('Peça a um administrador.')],
   )
+  const invented = await assisting(t, steps)
   const bruno = await memberOn(invented.hub, invented.companyId, BRUNO, 'member')
   const link = await created(invented.hub, bruno, invented.assistant, {
     connections: [invented.matriz],

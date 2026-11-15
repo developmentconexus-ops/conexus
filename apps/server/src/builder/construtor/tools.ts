@@ -29,7 +29,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentService } from '../agents/public.ts'
 import type { InProject, OfferedConnection, Tools } from '../tools/public.ts'
-import type { AppTable } from './app-tables.ts'
+import type { TableWithColumnNames } from './app-tables.ts'
 import type { CodeToolDeps } from './code-tool.ts'
 import { codeToolSave } from './code-tool.ts'
 
@@ -45,7 +45,7 @@ export type ConstrutorDeps = Pick<CodeToolDeps, 'machines' | 'read'> & {
   project: (scope: InProject) => Promise<{
     project: { id: ProjectId; name: string }
     offered: readonly OfferedConnection[]
-    app: { tables: AppTable[] } | null
+    app: { tables: TableWithColumnNames[] } | null
   }>
   automations: (scope: InProject) => Promise<{ id: AutomationId; name: string; prompt: string }[]>
   test: (scope: InProject, agentId: AgentId, question: string) => Promise<TestedResult>

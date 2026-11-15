@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -22,7 +23,7 @@ import { DeleteRole } from './role-delete.tsx'
 import { ConnectorPicker } from './role-picker.tsx'
 import { UnattendedAction } from './role-unattended.tsx'
 
-const UNCONFIRMED = 'Não confirmamos a gravação. Veja a lista de papéis.'
+const UNCONFIRMED = unconfirmedText('a gravação', 'Veja a lista de papéis.')
 
 type Connectors = Record<string, string[]>
 

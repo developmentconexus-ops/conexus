@@ -169,7 +169,18 @@ export function providerOptionsOf(model: ModelId, effort: Effort): ProviderOptio
     case 'anthropic':
       // Adaptive thinking is Claude 4.6's and later's; a model that still lists a budget gets it.
       return tokens === undefined
-        ? { anthropic: { thinking: { type: 'adaptive', display: 'summarized' }, effort: level } }
+        ? {
+            anthropic: {
+              // A thinking block is bound to the tools list that produced it; the Assistant adds tools
+              // mid-turn, so on an API key the next request would be refused with 400. Drop the block.
+              thinking: {
+                type: 'adaptive',
+                display: 'summarized',
+                blockBinding: { prefixMismatchBehavior: 'drop_block' },
+              },
+              effort: level,
+            },
+          }
         : {
             anthropic: {
               thinking: { type: 'enabled', budgetTokens: tokens(level) },

@@ -2,14 +2,10 @@
 
 [Code C75](../guides/code.md) says to use the library's own mechanism first. This file records each
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
-versions are the installed ones, except five candidates read from the npm registry and not
-installed: Stryker 10.0.0, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
-and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
-piece of this file that a row of `scripts/removals.json` protects names that row, and its test
-"fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
-not name protect Hub rules that are not boundaries over a library: the replay of an attempt key,
-that only the Operations Central creates a company, the state of a listed invitation, and a write
-refused for its media type or its origin.
+versions are the installed ones, except four candidates read from the npm registry and not
+installed: remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
+and @asteasolutions/zod-to-openapi 9.1.0. When the library
+changes, reread the line it names.
 
 ## GitHub Actions and git
 
@@ -32,7 +28,7 @@ refused for its media type or its origin.
   plus 8 h or later. Both read the total from `endOfLifetime`.
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
   `session.test.ts`, a session read every 25 min through the library, fails without the hook: the
-  row stays (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's
+  row stays. The cost: once `expiresAt` is capped, the library's
   renewal test (`session.mjs:180`) holds on every read, so each read writes the row from
   `createdAt` plus 7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before
   that, a read writes at most once a minute. The idle deadline and the renewal stay the library's,
@@ -43,7 +39,7 @@ refused for its media type or its origin.
   close this: `infra/deploy.sh` runs `migrate` while the earlier Hub still serves, and it brings the
   earlier image back when the new one is not healthy, after the migration ran once. The test
   "versão anterior" in `session.test.ts`, a row renewed at 7 h 59 min and read at 8 h 1 min, fails
-  without the check (removal `session-total-at-read`). Remove it with its removal row once no
+  without the check. Remove it once no
   release without the hook can start on this database: 30 min after such a release last served, no
   row of its own can be open.
 
@@ -57,12 +53,11 @@ refused for its media type or its origin.
   read (`session.ts`) and the route calls (`routes.ts`), mapping a failure through
   `databaseFailure` and a 5xx it cannot name to `DATABASE_UNAVAILABLE`. A library command goes
   through `libraryCommand`, which `databaseFailure` maps in the database module.
-- **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
-  system; unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or
-  unexpected database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md):
-  only a code leaves. The test "banco fora" in `database-down.test.ts` fails without the piece
-  (removal `library-failure-is-database`), and the test "senha que não grava" in
-  `password-write.test.ts` fails without the option (removal `library-errors-thrown`).
+- **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside system;
+  unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or unexpected
+  database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md): only a code
+  leaves. The test "banco fora" in `database-down.test.ts` fails without the piece, and the test
+  "senha que não grava" in `password-write.test.ts` fails without the option.
 
 ### A library refusal becomes the Hub's code by one reader
 
@@ -96,9 +91,8 @@ refused for its media type or its origin.
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` guards it.
   The plugin's own transaction joins ours through `runWithTransaction` and, since
   `joiningTransaction`, through the adapter as well, so the test fails only when both are taken
-  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and
-  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock
-  (removal `first-person-lock`).
+  out, and no single test proves either. The tests "ao mesmo tempo, com dois e-mails" and
+  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock.
 
 ### The plain adapter joins that transaction too
 
@@ -110,9 +104,8 @@ refused for its media type or its origin.
 - **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
   adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
 - **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
-  `invitations.test.ts` fails when the wrapper is taken out (removal
-  `library-adapter-joins-transaction`), and so does "renovar: o administrador renovando o convite
-  de um dono", where the second phase refuses the escaped write.
+  `invitations.test.ts` fails when the wrapper is taken out, and so does "renovar: o administrador
+  renovando o convite de um dono", where the second phase refuses the escaped write.
 
 ### The operator's invitation of an owner, through the plugin's adapter
 
@@ -137,24 +130,22 @@ refused for its media type or its origin.
   the parameter is typed `AuthContext<BetterAuthOptions>`, which no configured auth's context
   matches.
 - **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus never
-  becomes one, so the operator invites an owner without a membership, which no endpoint admits.
-  Step 6 declared the departure: the Central also invites an owner into an active company, since
-  its card has it act on the people as an owner, so the rule "only a company with no member" is
-  gone and the mail says "primeiro dono" only for a company with no member (removal
-  `owner-invitation-first-owner`; "empresa ativa" in `owner-invitation.test.ts` also checks the
-  subject). Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
-  2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
-  `invitations.test.ts` fails when a member's invitation is written by the adapter instead (removal
-  `invitation-member-native-endpoint`): the Hub no longer checks the creator role or an existing
-  member itself. "renovar: o administrador renovando o convite de um dono…" fails when a member's
-  renewal skips the endpoint (removal `invitation-member-native-renewal`). A member's cancel has no
-  such row: the admission already requires `invitation: ["create"]`, every default role that holds
-  it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
-  from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
-  company is created by the endpoint (removal `operator-not-member`); "recusas" guards that the
-  adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
-  `joiningTransaction` alike, so no single removal row proves either. When the library
-  changes, reread `getOrgAdapter`'s signature and these four methods.
+  becomes one, so the operator invites an owner without a membership, which no endpoint admits. Step
+  6 declared the departure: the Central also invites an owner into an active company, since its card
+  has it act on the people as an owner, so the rule "only a company with no member" is gone and the
+  mail says "primeiro dono" only for a company with no member ("empresa ativa" in
+  `owner-invitation.test.ts` also checks the subject). Members keep the native endpoints: the
+  founder's answer A on the 4.2 code audit, 2026-10-17 ([delivery L12](../guides/delivery.md)).
+  "convidar: o administrador pedindo dono…" in `invitations.test.ts` fails when a member's
+  invitation is written by the adapter instead: the Hub no longer checks the creator role or an
+  existing member itself. "renovar: o administrador renovando o convite de um dono…" fails when a
+  member's renewal skips the endpoint. A member's cancel has no such test: the admission already
+  requires `invitation: ["create"]`, every default role that holds it also holds `cancel`, and the
+  endpoint writes the same status, so no test can tell the endpoint from the adapter there. The test
+  "sem membro" in `hub/operations/clients.test.ts` fails when the company is created by the
+  endpoint; "recusas" guards that the adapter writes inside the Hub's transaction, which it joins
+  through `runWithTransaction` and `joiningTransaction` alike, so no single test proves either. When
+  the library changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
 
@@ -204,22 +195,6 @@ refused for its media type or its origin.
   `app-access-journey.test.ts` fail without the table's key, cascade and policies. When the
   library changes, reread the team add and the invitation acceptance above.
 
-### The protections of an app's access that the removal rows do not cover (step 18)
-
-Better Auth 1.7.8 and the Hub's own tables, as in the two entries above. These guards keep a
-person given an app inside the app; each has a test that covers it, and none has a row in
-`scripts/removals.json` yet, so none is proved to fail without it ([T12](../guides/testing.md)):
-
-- the row admits only in the `published` environment (`admitToApp`, `projects/hosts.ts`);
-- `admitAppUser`'s (`identity/admission.ts`) refusal of a row holder while the company is marked for deletion (`DELETING`);
-- the capability `manageAppAccess` on giving, changing, taking and canceling;
-- the cancellation of the app's pending invitations when access is taken;
-- the acceptance's own `LIVE` check of the Projeto and the invitation's deadline.
-
-Two have rows: a removed member takes the person's rows of that company (`member-removal-takes-app-access`),
-and a one-Projeto revoke checks the Projeto is the company's (`app-access-revoke-own-project`). The
-rows for the five above wait on issue #458.
-
 ### Deleting a company: the adapter, with the native route closed
 
 - **Library line.** `organization/routes/crud-org.mjs:255`: with `disableOrganizationDeletion`
@@ -231,10 +206,10 @@ rows for the five above wait on issue #458.
   no row count, and a read afterwards passes the same row policy as the DELETE. A correction and a
   deletion lock the company, then the operator's row, then the client, the order the invitations and
   the accept keep (`lockCompany` first).
-- **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
-  test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal
-  `client-delete-operator-only`); "apagar: concorrência" in `client-deletion.test.ts` deadlocks
-  when the operator's row is locked before the company's.
+- **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The test
+  "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens; "apagar:
+  concorrência" in `client-deletion.test.ts` deadlocks when the operator's row is locked before the
+  company's.
 
 ### Taking a person out and changing a role: the plugin's adapter, with the native routes unused
 
@@ -257,9 +232,8 @@ rows for the five above wait on issue #458.
   and the last-owner rule is one, under the company's lock. The role table is the founder's
   answer A on B1: the owner and the Central change any role; an administrator only between
   administrator and member, also their own; a member none; the sole owner gets 409 `LAST_OWNER`
-  whoever asks, the Central included. A removal row proves each part: the lock
-  (`member-company-lock`), the owner count (`member-last-owner`), the rank (`member-actor-rank`),
-  the role the caller read (`member-role-from`) and the cancellation (`removed-person-invitations`).
+  whoever asks, the Central included. Each part has its test: the lock, the
+  owner count, the rank, the role the caller read and the cancellation.
   The plugin's `organizationHooks` for members are none today; one turned on later would be bypassed
   here. When the library changes, reread `deleteMember` and `updateMember`.
 
@@ -272,8 +246,7 @@ rows for the five above wait on issue #458.
   `user-agent` and `cookie`.
 - **Why.** The library's routes are not mounted (criterion 18), and the limit of
   [security S30](../guides/security.md) must still apply. The test "limite: a 11ª tentativa" in
-  `identity.test.ts` fails when sign-in goes through `auth.api` instead (removal
-  `sign-in-through-router`).
+  `identity.test.ts` fails when sign-in goes through `auth.api` instead.
 
 ### An earlier link stops working when a new one is given
 
@@ -284,7 +257,7 @@ rows for the five above wait on issue #458.
   person's links by their stored value, the person's id, with Drizzle's `delete` in the same
   transaction as the new one.
 - **Why.** [Code C37](../guides/code.md). The test "com a pessoa ainda sem senha" in
-  `first-person.test.ts` fails without it (removal `first-person-forgets-earlier-link`). The
+  `first-person.test.ts` fails without it. The
   invitation password command consumes its reset token in the same transaction; it sends no link.
 
 ### Sign-out: the row first, then the cookies
@@ -296,7 +269,7 @@ rows for the five above wait on issue #458.
   `signOut`, which expires the cookies.
 - **Why.** [Security S13](../guides/security.md). With the library's order, a database failure
   answers "signed out" to a session that is still alive. The test "sair falha" in
-  `session.test.ts` fails without the piece (removal `sign-out-row-first`).
+  `session.test.ts` fails without the piece.
 
 ### Who may act on a company: admission over the plugin's roles
 
@@ -314,10 +287,9 @@ rows for the five above wait on issue #458.
   `CompanyOperatorProof` or `OperatorProof`, which the Hub's reads and writes require.
 - **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
   company and a role without the action get the same 404, with the reason only in the log. The test
-  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company
-  (removal `admission-reads-membership`); "fora: o operador" fails when a person who is not the
-  operator may act on a company as the operator (removal `owner-inviter-is-operator`);
-  "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
+  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company;
+  "fora: o operador" fails when a person who is not the operator may act on a company as the
+  operator; "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
   `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
 ### The lists the Hub reads itself, 50 rows a page
@@ -335,6 +307,30 @@ rows for the five above wait on issue #458.
   (`crud-invites.mjs:503`), and the screen must say it expired or was accepted. The test "fora: a
   segunda página" in `companies.test.ts` reads past the first 50 rows.
 
+### An app's rows, 50 a page by offset (Capacidade 1)
+
+- **Library line.** `@neondatabase/serverless` 1.2.0 `sql.transaction` takes `{ text, values }` and
+  `readOnly` (`index.d.ts:489-504`; `transaction()` at `:521-522` and `:892-893`); PostgreSQL 18 gives `limit` and `offset` as bound values and
+  `left(("c")::text, n)` for the cut. Neither pages by a key's value: a table of an app may have no
+  key, or a composite one of any type, and the page token is 64 characters.
+- **Hand-made piece.** `apps/server/src/hub/apps/app-rows.ts` with `pageOf` and `pageKey` of
+  `platform/pages.ts`: the offset travels inside the token (`Offset`, a positive whole number of at
+  most nine digits), 51 rows are read for a page of 50, ordered by the primary key in key order or,
+  with none, by `ctid`. The table's name comes from the catalog (`app-tables.ts`), quoted, and the
+  count is a `union all` of `count(*)` over a `limit` of the cap plus one.
+- **Why.** An exception to "The lists the Hub reads itself" above: those lists are the Hub's own
+  rows, paged after the last row's id; the app's tables are the app's, and the page shows them as
+  they are. Supabase's table editor pages by offset too, ordered by the key with `ctid` as the
+  tiebreak.
+- **Proof.** "dados: páginas pela chave" and "dados: tabela sem chave" in `app-data.test.ts`. It
+  is a read, with no protection of ours to remove.
+- **Not proved.** A page by offset shifts when a row arrives between two pages. A partitioned table
+  repeats `ctid` across partitions
+  (https://github.com/developmentconexus-ops/conexus/issues/937). The time of the count and of an
+  offset past 10,000 rows on Neon was not measured.
+- **Revisit when** the founder's use shows a page slow on a real company's table, or the Builder
+  generates `PARTITION BY`.
+
 ### Open invitations are counted under the company's lock
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:167-172`.
@@ -346,9 +342,8 @@ rows for the five above wait on issue #458.
   it counts the live pending rows of other addresses in SQL.
 - **Why.** The founder's limit of 100 (step 4, answer 6), and [code C65](../guides/code.md). The
   test "limite: com 100 vivos atrás de 100 vencidos" in `invitations.test.ts` fails without the
-  refusal (removal `invitation-capacity`) and when expired rows count (removal
-  `invitation-capacity-live-only`); "limite: com 99 vivos, dois convidantes juntos" fails without
-  the lock (removal `invitation-company-lock`).
+  refusal and when expired rows count; "limite: com 99 vivos, dois convidantes juntos" fails without
+  the lock.
 
 ### Renewing a live invitation and reissuing an expired one
 
@@ -368,9 +363,9 @@ rows for the five above wait on issue #458.
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
   conflicts, current admission, races and rollback; removing terminal guards fails
-  `invitation-cancel-terminal-guard` and `invitation-create-replay-terminal`. Existing expired-row cancellation and parsing
-  tests in `invitations.test.ts` fail without `re-invite-cancels-expired` and
-  `open-invitation-row-parsed`.
+  "accepted or declined never become canceled" and "binds the complete replay payload". The tests
+  "de novo: o anterior vencido" and "de novo: o anterior com um id fora de forma" in
+  `invitations.test.ts` fail without the expired-row cancellation and the row parse.
 
 ### Three reads through the library's internal adapter
 
@@ -389,8 +384,7 @@ rows for the five above wait on issue #458.
   `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
   tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "password" in
   `invitation-link.test.ts` cover them. The tests "id vazio" in `first-person-rows.test.ts` and
-  "empty name" in `invitation-link.test.ts` fail without the person-row parse (removals
-  `first-person-rows-parsed` and `link-person-row-parsed`).
+  "empty name" in `invitation-link.test.ts` fail without the person-row parse.
 
 ### A password link's token goes back to the command that asked for it
 
@@ -425,11 +419,10 @@ rows for the five above wait on issue #458.
   company's lock, and a rollback after the send mails an invitation that does not exist; sent after
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
-  `invitation-replay.test.ts` fails without the replay branch (removal
-  `invitation-replay-resends-unmailed`), and "de novo com a mesma chave: depois do correio fora" in
-  `invitations.test.ts` fails without the mark on a bounce (removal `invitation-bounce-marked`).
+  `invitation-replay.test.ts` fails without the replay branch, and "de novo com a mesma chave:
+  depois do correio fora" in `invitations.test.ts` fails without the mark on a bounce.
   `invitation-lifecycle.test.ts` proves a failed mark permits at-least-once delivery on replay, and
-  the late-send test fails without the revision comparison (`invitation-mark-current-revision`).
+  the test "a late send cannot mark" fails without the revision comparison.
 
 ### The pace of invitations
 
@@ -441,7 +434,7 @@ rows for the five above wait on issue #458.
   leaves with the second e-mail.
 - **Why.** [Security S28](../guides/security.md): behind the Tunnel the Hub keys on the account;
   the founder's numbers (step 4, answer 6). The tests "limite: o 11º convite" in
-  `invitations.test.ts` fails without it (removal `invitation-pace`).
+  `invitations.test.ts` fails without it.
 
 ### The library writes its timestamps with the application's clock
 
@@ -469,8 +462,8 @@ rows for the five above wait on issue #458.
   already accepted with its company; otherwise it calls the plugin's accept.
 - **Why.** [Security S10](../guides/security.md), [code C37 and C65](../guides/code.md). In
   `invitation-acceptance.test.ts`, "aceitar: 200 e um membro" fails when the recipient is not
-  checked first (removal `accept-recipient-first`), "aceitar: com um re-convite ao mesmo tempo"
-  fails without the lock (removal `accept-company-lock`), and "aceitar: dois juntos" covers it.
+  checked first, "aceitar: com um re-convite ao mesmo tempo"
+  fails without the lock, and "aceitar: dois juntos" covers it.
 
 ### Public invitation responses and terminal replay
 
@@ -515,12 +508,10 @@ rows for the five above wait on issue #458.
   the answer is 202 and empty whether or not a mail leaves, and an unavailable provider is logged
   as `MAIL_UNAVAILABLE`, never answered. The library has no per-person pace and no way to ask for
   a link without sending it.
-- **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour),
-  P3 (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
-  `password-recovery.test.ts` fail without each piece (removals `recovery-pace-per-person`,
-  `recovery-attempt-path`, `recovery-mail-after-commit`, `revoke-sessions-on-reset`,
-  `recovery-link-validity`). A mail still in flight when the Hub stops is lost; the person asks
-  again.
+- **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour), P3
+  (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
+  `password-recovery.test.ts` fail without each piece. A mail still in flight when the Hub stops is
+  lost; the person asks again.
 
 ### The leaked-password check is the library's function, run before the transaction
 
@@ -536,9 +527,8 @@ rows for the five above wait on issue #458.
   tests use the `fetch` that `createTestDatabase` plants (`platform/test-password-service.ts`).
   Hubs that tests spawn load `platform/test-password-preload.ts`. The Docker image test
   (`tests/e2e/invitation-image.test.ts`) blocks the host with `--add-host` and sets the password in
-  the database; the review found it reaching the service. Removals `password-check-before-link`,
-  `password-check-invitation`, `password-check-deadline` and `password-check-error` take each
-  protection out.
+  the database; the review found it reaching the service. The password-check tests cover the
+  protections.
 
 ## TanStack Router 1.170.44: stable public-page data
 
@@ -570,13 +560,12 @@ rows for the five above wait on issue #458.
 - **Packaging.** Native esbuild 0.28.2 bundles, for us, `invitation-email.tsx` (which also exports the
   recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) and
   `automation-email.tsx` of the notifications (step 24.2, in the same page through
-  `identity/mail/public.tsx`, the frame's door) as two ignored ESM artifacts, one command each, with
+  `identity/public-mail.tsx`) as two ignored ESM artifacts, one command each, with
   React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
   branch or template substitution is added. `invitation-render.d.mts` and `notification-render.d.mts`
-  own the ports used by source and consumer. Local prestart/pretest, pree2e/preremovals and the image
-  build generate the same artifacts; removal scratch copies carry these generated inputs as well as
-  source.
+  own the ports used by source and consumer. Local prestart/pretest, pree2e and the image
+  build generate the same artifacts.
 - **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
   conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
   `invitation-email.test.ts` sends through the Hub and HTTP provider fake;
@@ -636,8 +625,7 @@ rows for the five above wait on issue #458.
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
   "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since
   step 5 the person scope's member policy holds the same rule, so removing the anchor's filter
-  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
-  `person-member-policy`).
+  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens.
 
 ### Every transaction opens in a scope
 
@@ -662,9 +650,8 @@ rows for the five above wait on issue #458.
   `FOR SHARE` and `FOR NO KEY UPDATE` need the UPDATE grant and policy, so a scope that locks a row
   holds UPDATE on it, on one column no command writes where it only locks.
 - **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
-  esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
-  opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
-  `scope-in-signature`).
+  esquecido" fails without the role switch and with the member policy
+  opened; "o tipo" fails when a read stops naming its scope.
 
 ### The operator's administrator, answered by one function (provisional)
 
@@ -679,8 +666,7 @@ rows for the five above wait on issue #458.
   founder's word, beside the U2 list.
 - **Why.** The card's rule that every operator policy needs an installation administrator
   (security S11) with the Central's owners in auth.user. "operador sem papel" in
-  `isolation.test.ts` fails without the check on auth.member (removal
-  `operator-policy-admin-only`).
+  `isolation.test.ts` fails without the check on auth.member.
 
 ### A deadline on every checkout of a database connection
 
@@ -825,27 +811,6 @@ rows for the five above wait on issue #458.
   `apps/server/src/platform/test-database.test.ts` cover it. Revalidate by 2027-04-13,
   or when `JSON.parse` reports duplicate keys.
 
-### Removals: one protection taken out in a scratch copy, then its test
-
-- **Library line.** Node `node:test` `run({ files, cwd, testNamePatterns, signal, timeout })` runs
-  the test. Stryker core 10.0.0 supplies a sandbox, a dry run and `testRunner: 'command'`
-  (`dist/src/test-runner/command-test-runner.js:9-12,45-52,114-143`), which reads one aggregate test
-  from an exit code. Its instrumenter 10.0.0 has fixed replacement maps
-  (`mutators/method-expression-mutator.ts:9-32,61-63`), `string-literal-mutator.ts:11-26` empties a
-  literal, and `object-literal-mutator.ts:10-13` empties an object. None of them removes a named
-  text, such as one SQL predicate or one adapter call, from one named file.
-- **Hand-made piece.** `scripts/removals.ts` and `scripts/removals.json`. Each row replaces an exact
-  text once in a scratch copy and runs the row's test. It reports `caught`, `survived`, `stale`,
-  `unreachable` or `broken-baseline`. A row is `caught` only when a `test:fail` event whose own name
-  matches the row's `test.name` pattern appears (a matching failing suite counts); the failure of
-  another test, a hook of another suite or a file that cannot load is not a catch. The manifest is
-  loaded by one strict Zod schema that refuses an unknown key and a repeated id.
-- **Why.** [Testing T12 and T4](../guides/testing.md). Stryker's command runner does not tell zero
-  real tests or an import failure apart from a pass, and its mutators cannot target a row. A custom
-  Stryker mutator and runner could bridge that, but would not delete code. The planted outcomes in
-  `scripts/removals.test.ts` cover the runner. Revalidate when Stryker can address a mutation
-  by file and text.
-
 ### Radius: the card's grammar over Node's matcher
 
 - **Library line.** `node:path` `matchesGlob(path, pattern)`, stable since Node 24.8.0. It reads
@@ -867,11 +832,13 @@ rows for the five above wait on issue #458.
   not check them. Undefined reference labels belong to another plugin.
 - **Hand-made piece.** `scripts/check-docs.ts`. Inline links, reference definitions and fragments
   are checked by a small reader. The rest is Conexus policy: word ceilings, the index, rule ids,
-  retired names, the one card, skill names.
+  retired names, the one card, skill names, and a backticked path that some file of the
+  repository ends with (`scripts/check-docs-paths.ts`, which lists what is not the repository's: libraries,
+  reference checkouts, dated records and cards).
 - **Why.** [Delivery L24](../guides/delivery.md) and [code C75](../guides/code.md). The plugin would
   remove only the link reader, while `docs/index.md` coverage and code stripping still need ours.
   The planted cases (broken inline link, definition, same-file and cross-file fragment) in
-  `check-docs.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
+  `check-docs.test.ts` and the missing path in `check-docs-paths.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
   file without the engine.
 
 ## Zod 4.6.5
@@ -936,7 +903,7 @@ rows for the five above wait on issue #458.
   a cut reply left is found by the exact `-<companyId>` ending of its name (`find`, decision 0048)
   and adopted, never created twice. A refusal from Neon releases the claim, silence keeps it until
   it ends; `projects-database.test.ts` and `neon.test.ts` cover it, and the exact ending fails without
-  it (removal `neon-exact-suffix`).
+  it.
 - **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
@@ -944,9 +911,8 @@ rows for the five above wait on issue #458.
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owner `runs/copy-retry.ts`, and `node:timers` and
-  `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
-  short text (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
+  owner `runs/copy-retry.ts`, and so are `node:timers` and
+  `node:timers/promises` (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change
   that touches their timers moves each to a named owner.
 - **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
@@ -969,8 +935,8 @@ rows for the five above wait on issue #458.
   (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
   failed app check, scores 0 and Mastra gives the scorer's reason to the model and calls it again
   (`formatCompletionFeedback`, the `task_complete_evaluation` event reaches the screen). Mastra's loop
-  has no cap of its own for this, so the rounds count in `CHECK_LIMITS.checks`, kept by the run
-  (`Runs.round`); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
+  has no cap of its own for this, so ends with tasks open and failed checks each count up to `CHECK_LIMITS.checks`, kept by the run
+  (`Runs.round`, by kind); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
@@ -1000,8 +966,8 @@ rows for the five above wait on issue #458.
 
 ## Mastra 1.82.0 and @mastra/fastify 1.5.26: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `conversation/guard.ts` registers six of Mastra's own
-  agent-controller routes (a session's state, stream, message, Parar, a card's answer, transcript;
+- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
+  agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript;
   `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
   of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`
@@ -1038,6 +1004,24 @@ rows for the five above wait on issue #458.
   "uma página 8 MiB atrás perde o stream…" fails without `paced`. "uma página que lê devagar…" holds
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
+
+## Mastra 1.82.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
+
+- **Library line.** `@mastra/core` 1.82.0 (`6e8dfcb8`): the session's native "never ask" is the `allow`
+  policy, which suspends the call and approves it at once
+  (`packages/core/src/agent-controller/session.ts:4768-4789` and `:6459-6504`). With `@mastra/pg`
+  1.35.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
+  at `packages/core/src/agent/agent.ts:8522`).
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` in `apps/server/src/builder/agents/tools.ts` (the
+  reads) and in `agents/agent.ts` (`neverAsking`, the shared tools, on a copy), and
+  `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+  Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
+- **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
+  (the study of step 24.5; Papéis P1).
+- **Proof.** Covered, not fails without: `approval.test.ts`, "a escrita espera, o resto não", reads
+  every tool of an agent running without asking while a write in Pergunta antes waits. No test
+  swaps the rule for `allow` against Postgres, and nothing else protects it.
+- **Revisit when** Mastra fixes the approval race, or `allow` stops suspending.
 
 ## Mastra 1.82.0: a step's answer without the body of its request
 
@@ -1115,11 +1099,10 @@ sealed credential, so both rows of the card's reference table that read "remendo
   the Hub's configuration) and a checked path, with `redirect: 'error'` (`request.ts:48`).
 - **Why.** A caller's text must never choose the host the Hub sends a credential to (S36), and a
   write must never pass as a read for lack of a class.
-- **Proof.** Removals `connector-request-origin`, `connector-redirect-refused`,
-  `connector-origin-only-local` and `sankhya-read-only-words` (the read door's statement words).
-  Tests without a row: `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só aceita
-  operações read", which fail at compile time or at definition rather than by a line a scratch copy
-  could remove.
+- **Proof.** Tests on the request origin, the refused redirect, the local-only origin and the read
+  door's statement words. Also `kernel.test.ts` "a classe é obrigatória" and "a porta de leitura só
+  aceita operações read", which fail at compile time or at definition rather than by a line a test
+  could fail on.
 - **Revisit when** a connector library runs a provider call in the Hub's region with the credential
   sealed.
 
@@ -1139,12 +1122,11 @@ sealed credential, so both rows of the card's reference table that read "remendo
 - **Why.** A provider's body is its own and can be large or carry the credential back; and a bug in
   the executor must not read as "the provider is down" (the founder, 2026-10-29: "a gente estava
   suprimindo alguns erros. Para mim isso não é bom").
-- **Proof.** Removals `connector-redirect-refused` and `connector-response-cap`, both through
-  `executor.test.ts` "a origem, o redirecionamento e o teto". Tests without a row, each on the
-  public door: "o corpo de erro perde os valores da credencial antes de ser lido", "o token sai de
-  todo corpo de uma operação, no envelope do gateway e no erro REST", "um erro de programação dentro
-  do envio sobe como falha, não vira UNREACHABLE" and "um corpo de erro que não é JSON chega como
-  texto e o status decide".
+- **Proof.** `executor.test.ts` "a origem, o redirecionamento e o teto" covers the refused redirect
+  and the response cap. Also, each on the public door: "o corpo de erro perde os valores da
+  credencial antes de ser lido", "o token sai de todo corpo de uma operação, no envelope do gateway
+  e no erro REST", "um erro de programação dentro do envio sobe como falha, não vira UNREACHABLE"
+  and "um corpo de erro que não é JSON chega como texto e o status decide".
 - **Revisit when** Node's `fetch` takes a body cap, or a connector library runs the call in Brazil
   with the credential outside the caller.
 
@@ -1163,10 +1145,35 @@ reference tool checks a read against its documentation.
   @conexus/connectors`, by hand on a desktop, never in CI).
 - **Why.** The founder, 2026-10-29: "não guardar e baixar na hora". The check is weaker than
   Sankhya's: it does not check the shape of the answer.
-- **Proof.** Card criterion 21: a read whose route is not in the page fails. No removal row: the test
+- **Proof.** Card criterion 21: a read whose route is not in the page fails. The test
   needs the live site.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
+
+## Connectors (As buscas do Sankhya): the searches' SQL, with one literal we escape
+
+- **Library line.** Zod 4.6.5 validates the integers and the text of a search; it builds no SQL.
+  The kit sends Sankhya's `DbExplorerSP.executeQuery` only `{ sql }` (`queryRequest` in
+  `packages/connectors/src/sankhya/door.ts`); whether it takes bound values is not verified, because
+  the step made no call to the real Sankhya. The step's study measured `TRANSLATE`,
+  `LIKE ... ESCAPE` and `OFFSET/FETCH` on Oracle 19.0.0.0.0, without the `ROW_NUMBER()` window.
+- **Hand-made piece.** `packages/connectors/src/sankhya/search-sql.ts`. The text of each search is
+  a constant of its read (`operations/buscas.ts`, `operations/buscas-estoque.ts`); a number enters
+  only as a Zod integer; a name enters only through `SearchText` (2 to 60 characters, no control
+  character, line or paragraph separator, `--`, `/*`, `*/` or `;`) and `escaped`, which folds case
+  and accent as `TRANSLATE(UPPER(column), ...)` does, escapes `\`, `%` and `_` under `ESCAPE '\'`
+  and doubles the single quote. `queryRequest` judges the whole statement again with
+  `isOneReadStatement`. The double (`fake-sales.ts`) runs the same SQL in SQLite with Oracle's
+  `TRANSLATE`, a Unicode `UPPER` and a case-sensitive `LIKE`.
+- **Why.** The founder's choice B, 2026-11-09: one search in the connector that the Project's
+  agent, the apps and the Assistant share, and one call that returns many rows. What the model
+  writes is hostile input (S2, S15).
+- **Proof.** `search.test.ts` covers the text marks, the `LIKE` escape and the doubled quote. The
+  check in `queryRequest` fails the same file's hostile-input test without it.
+- **Not proved.** On SQL Server, `[` and `]` are wildcards in `LIKE` and `escaped` leaves them
+  (https://github.com/developmentconexus-ops/conexus/issues/929).
+- **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
+  values (then the literal goes), or the first company runs Sankhya on SQL Server.
 
 ## Mastra 1.82.0: a conversation's changing state lives in a Hub table (step 24.1)
 
@@ -1218,10 +1225,8 @@ reference tool checks a read against its documentation.
   and Gemini never called the tool. With `cadence` flat it called it correctly 6 of 6 in a local proof
   of 18 calls to the company's Google login.
 - **Proof.** `google/flat-unions.test.ts` "sem união": the declaration the proxy receives has no union.
-  The row `cliproxy-flat-unions` in `scripts/removals.json` takes the lines out of `accountPick`
-  and the test fails.
 - **Revisit when** CLIProxyAPI keeps the tools' `enum` for Gemini, or the `google_cliproxy` path leaves
-  the product. Then delete the file, its test, the lines in `processors.ts`, the removal row and this entry.
+  the product. Then delete the file, its test, the lines in `processors.ts` and this entry.
 
 ## `@mastra/memory` 1.41.0 and CLIProxyAPI v8.0.33: the Automático model on the Google sign-in (fix)
 
@@ -1235,10 +1240,9 @@ reference tool checks a read against its documentation.
   fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
   resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
 - **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
-  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it. The row
-  `cliproxy-auto-memory-model` in `scripts/removals.json` takes the piece out and the test fails.
+  `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it.
 - **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
-  Then delete the constant, the `kind` argument, the test, the removal row and this entry.
+  Then delete the constant, the `kind` argument, the test and this entry.
 
 ## Mastra 1.82.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 
@@ -1259,3 +1263,238 @@ reference tool checks a read against its documentation.
   MODEL_ACCOUNT_KIND_OFF"; `openai/sign-in-refusals.test.ts` "tipo desligado: recusa sem chamar a
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
+
+## Mastra 1.82.0: the company's memory through one file (Alinhamento do Assistente)
+
+- **Library line.** `Knowledge` is experimental in `@mastra/core` 1.82.0: the API can change without
+  notice, its storage has no migration (`KNOWLEDGE_STORAGE_SCHEMA_VERSION` 4,
+  `dist/knowledge/`), a new Mastra that changes the format asks to drop its tables, and
+  `knowledgeMemoryScopes` (`dist/agent-BP9OWM6D.js:62599-62624`) makes every run an editor of its
+  tenant. The library's pinned text still names the write tool
+  (`PinnedStateProcessor`, `dist/agent-BP9OWM6D.js:73833-73840`); its `instructions` option changes
+  only the usage block.
+- **Hand-made piece.** `apps/server/src/builder/assistant/company-memory.ts` is the only file that
+  talks to `Knowledge`. Its scopes make a run a viewer of its thread, its resource and its company
+  (`org:$orgId`), and the tool set is the closed `COMPANY_MEMORY_TOOLS` (search, read, list: the
+  model never writes, it proposes with `propose_company_memory` and a person who may saves from the
+  card, decision 0064). The company's instructions are a page declared and pinned by the
+  configuration, written by the host through `PUT .../instructions`. The Mastra navigation routes
+  stay off by default and the Hub exposes only its own (`conversation/guard.ts`, S39). The
+  permission "Memória da empresa" is the Hub's, in `hub/identity/admission.ts`.
+- **Why.** A model that may write to the company's memory by the library's own tools would bypass
+  the roles; one file and one test keep an experimental storage from spreading.
+- **Proof.** `company-memory.test.ts` "o formato do Knowledge" (fails when a Mastra changes the
+  schema version: export the pages with `readKnowledgePage` and `listKnowledgeTreeChildren`,
+  write them back with `upsertPage` after the reset).
+- **Revisit when** Mastra takes `Knowledge` out of experimental, or adds a migration or a way to
+  rewrite the pinned text.
+
+## Mastra 1.82.0: the research helper's account, tools and numbered files (Alinhamento do Assistente)
+
+- **Library line.** `AgentController` runs a subagent as a new `Agent` with no processors; its model
+  comes only from the synchronous `resolveSubagentModel`, its context is a new object with an empty
+  `resourceId`, and the controller's tools are copied from the main agent's
+  (`@mastra/core@1.82.0` `dist/agent-controller-BDds1y5w.js:6830-6866`, `:6719-6994`). Mastra's own
+  `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
+  itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
+- **Hand-made piece.** `apps/server/src/builder/assistant/research.ts`: the one type `pesquisar`
+  with the four read tools of the machine and `connector_read`; `researchOnly`, a processor that
+  closes the `subagent` tool to `agentType` and `task` and always calls Mastra's `execute` not
+  forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
+  whoever asks, through the same door as the main agent (the 50 calls count by the turn);
+  `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
+  `controller-kit/factories.ts`) returns the model of the account the turn is calling, as the
+  conversation's title does; and
+  `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
+  helper's context is another object and its first file would overwrite the turn's first.
+- **Why.** The helper must read with the asker's scope and the turn's account, write nothing and never
+  open another helper; a count per context object loses the file of one of them.
+- **Proof.** `research.test.ts` "o ajudante só lê", "a porta, as 50 e o arquivo", "a conta da
+  conversa" and "a falha da conta".
+- **Revisit when** Mastra lets a subagent run the input processors, take its tools from the asker's
+  context, or report its usage (today a subagent emits none, `:6898-6931`).
+
+## The ceiling of 50 reads per answer (Alinhamento do Assistente)
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 counts a turn's calls to a system outside the
+  model: `stopWhen` sees only the model's loop, and no reference has such a ceiling.
+- **Hand-made piece.** `CONNECTOR_CALLS_PER_TURN` and `createSpending` (`hub/connectors/builder-port.ts`):
+  a synchronous counter by key (a run for the Builder, a turn for the Assistant), the oldest key
+  forgotten past `TURNS_KEPT`, at the Hub's door. It counts the typed reads, the notebook's saves and
+  the research helper's reads together, with the tools in parallel.
+- **Why.** It protects the company's system; the door is where every read passes.
+- **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
+  helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
+
+## Mastra 1.82.0, @neondatabase/serverless 1.2.0 and PostgreSQL 18: the company's copies (Capacidade 2)
+
+Five pieces of `apps/server/src/hub/copies/run.ts` and `platform/copy-sql.ts` are ours, because no
+installed library keeps what a source outside Conexus did between one run and the next. The first
+four are the same rule seen from four sides: a pass reads the whole window, and only a complete pass
+moves the watermark or takes a row out.
+
+### How far a pass has read
+
+- **Library line.** `@mastra/core` 1.82.0 keeps a workflow's state inside one run
+  (`dist/docs/references/docs-workflows-workflow-state.md`); the schedule only knows when to fire
+  (`dist/scheduler-Me4rCjO2.js:340-372`). Nothing in `@neondatabase/serverless` 1.2.0 or in
+  PostgreSQL 18 knows what a source's last read reached.
+- **Hand-made piece.** `position` (where the read stopped: a key, an offset or the provider's cursor,
+  `CopyPosition` in `packages/connectors/src/kernel/copy.ts`) and `watermark` (when the last complete
+  pass began) on each source of the copy, `copies.copy_source`, with `pass_started_at`
+  (`hub/copies/tables.ts`). `saved` in `hub/copies/sources.ts` writes the position
+  after each page; `passed` moves the watermark to the instant the pass began, only at the end of a
+  complete one (`run.ts`). The paged read adds the dates to the guarded query
+  (`packages/connectors/src/sankhya/copy-read.ts`): the watermark less a day and the window from the
+  pass's start. The engine never compares a date that came from the source.
+- **Why.** Written to the order of the references it follows: ML-VIGIA moves its cursor only after a
+  complete pass, and Nango checkpoints inside one.
+- **Proof.** `run.test.ts` "a passada completa", "a rodada órfã e a trava perdida" and "o erro não
+  vira vazio".
+
+### One run at a time
+
+- **Library line.** `@mastra/core` 1.82.0 does not look at the previous run when a schedule fires
+  (`dist/scheduler-Me4rCjO2.js:340-372`); four runs of one schedule overlapped in the study.
+  [Data D25](../guides/data.md) forbids a session lock.
+- **Hand-made piece.** `claim` in `run.ts`: `claim_token` and `claimed_until` on the copy's row, taken
+  by one `UPDATE` that fires only on a free or expired lease (code C65). The position, the watermark
+  and the closing are written only `WHERE claim_token = $token` (`held`). A run that finds an expired
+  lease closes the open one `INTERRUPTED` and goes on from the saved position; the workflow has
+  `autoRestartActiveRuns: false`, because the library restarts an active run without fencing its
+  writes.
+- **Why.** The same lease as the Mastra Factory's per-project run (`mastracode/factory`,
+  `environment/build.ts`, read for the card at `mastra-1.82@6e8dfcb8`).
+- **Proof.** `run.test.ts` "uma rodada por vez" and "a rodada órfã e a trava perdida";
+  `builder/copy-clock/clock.test.ts` "a órfã não recomeça sozinha", which fails with
+  `autoRestartActiveRuns: true`.
+
+### A ceiling per run
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 limits a step by the pages it read.
+- **Hand-made piece.** `RUN_DEFAULTS` in `run.ts`: 200 pages or 10 minutes, checked before each page;
+  the run closes `PARTIAL` with the reason `CAP`, keeps the position, moves nothing, takes nothing out,
+  and asks the clock for another run.
+- **Proof.** `run.test.ts` "o teto", with the ceilings injected (T20).
+
+### What left the source
+
+- **Library line.** Neither `@mastra/core` 1.82.0 nor `@neondatabase/serverless` 1.2.0 nor
+  PostgreSQL 18 knows what a source deleted. The references differ: Nango deletes what a complete
+  pass did not see, Mitra never deletes.
+- **Hand-made piece.** Each row carries `_pass`, the engine's own column (`COPY_PASS_COLUMN`,
+  `platform/copy-sql.ts`; the catalog of `hub/apps/app-tables.ts` leaves it out, so no screen reads
+  it). `closePass` deletes, at the end of a complete pass only, the rows of a copy with no change date
+  that the pass did not write, or the rows inside the window that it did not write
+  (`DELETE ... WHERE <window> >= $from AND _pass <> $pass`), and counts, in one transaction. A
+  partial pass or an error never deletes; outside the window nothing is deleted.
+- **Why.** The delete is safe because the read brings the whole window on every pass, changed or not.
+- **Proof.** `run.test.ts` "a janela apaga o que sumiu" and "a janela relê o que não mudou";
+  `hub/apps/copy-data.test.ts` "Dados: as linhas de uma cópia" fails if `_pass` reaches a screen.
+- **Not proved.** A row whose change date is null is never read on the first pass
+  (https://github.com/developmentconexus-ops/conexus/issues/940).
+
+### The column that stops coming (parte 1 da camada de dados)
+
+- **Library line.** `zod` 4.6.5 and the kit have no schema of a source: a list answer is rows of any
+  shape, and `cellOf` (`packages/connectors/src/kernel/list.ts`) reads an absent path and a null the
+  same. Nothing in `@mastra/core` 1.82.0, `@neondatabase/serverless` 1.2.0 or PostgreSQL 18 keeps
+  which columns a source sent in the runs before.
+- **Hand-made piece.** `present` (the columns whose path exists in a row of the page, `cellsOf` and
+  `listPageOf` in the kit, `CopyRead` in `hub/connectors/copy-port.ts`); `seen` of the run
+  (`source-pass.ts`: the present columns, whether every source read the whole window, the rows read);
+  `nextColumnState` (`hub/copies/column-state.ts`) and its write into `copies.copy.column_state`, in
+  the same `UPDATE` that ends a `COMPLETE` run of a version 2 copy (`run.ts`, `ended`). A column that
+  came is active; one seen before and absent from a whole read with rows is inactive since the run
+  began. A whole read is a source that began with no position and either has no `since` or has no
+  `changedSince`.
+- **Why.** The founder's decision: the column stays, marked inactive (`design.md` C5 of the data
+  spec). "Only after it was seen" is ours, so a column that is just empty is never accused.
+- **Proof.** `hub/copies/column-state.test.ts` and `packages/connectors/src/kernel/list-present.test.ts`.
+- **Not proved.** A copy that reads only what changed cannot see a column vanish after its first
+  whole pass; a complete pass now and then is in no milestone.
+
+### The record of each run
+
+- **Library line.** The schedule keeps its triggers, not a run asked for at once: "Trigger history"
+  in `dist/docs/references/docs-workflows-scheduled-workflows.md:117-125` says a trigger can have no
+  run record yet, and a manual `run()` left no trigger in the study.
+- **Hand-made piece.** `copies.copy_run` (`hub/copies/tables.ts`), one open run per copy by a partial
+  unique index, the last run on the copy's row (`last_run_id`) and the newest 100 of each copy kept
+  (`KEPT_RUNS`, `run.ts`).
+- **Proof.** `run.test.ts` "a passada completa" and "o registro não leva dado" (only ids, counts, codes
+  and milliseconds, never a query, a column read or a row).
+- **Revisit when** a Mastra release records a manual run.
+
+### One source per account (O Sync de qualquer conector)
+
+- **Library line.** `@mastra/core` 1.82.0 keeps a workflow's state inside one run
+  (`dist/docs/references/docs-workflows-workflow-state.md`), and `drizzle-orm` 1.0.0-rc.4 only writes
+  what it is given; nothing installed keeps a read's point per connection of one definition. Nango
+  keeps one checkpoint per execution of one sync
+  (`nango@e6c6131` `docs/guides/functions/syncs/sync-partitioning.mdx:7-17`).
+- **Hand-made piece.** `copies.copy_source` (`hub/copies/tables.ts`), one row per connection of a
+  copy with its account (`account_ref`), its pass, position, watermark and wait; the copy no longer
+  hangs from a connection. A version 2 copy's table carries `_account` and `_account_name`
+  (`platform/copy-sql.ts`); `closePass` deletes only the rows of the account whose pass ended, and
+  the run's net (`dropForeignRows`) the rows of an account that is no source's. Desligar takes the
+  account's rows out of each copy that goes on and ends, with its table, a copy whose last source it
+  was (`hub/copies/sources.ts`, `leaveCopies` and `dropEndedCopies`); a table the company's database
+  did not drop is noted in `copies.copy_table_left` and dropped on the company's next Desligar or
+  Ligar.
+- **Why.** One definition, the state per connection, as Nango partitions a sync; the founder's
+  decision to remove the rows at once (#953).
+- **Proof.** `hub/copies/run-v2.test.ts` "duas contas numa tabela" and "a conta desligada";
+  `platform/copy-sql.test.ts` "o fim da passada de uma conta não toca a outra, e o nome da conta segue
+  a conexão"; `hub/connectors/unlink-copies.test.ts` "desligar tira as linhas e a leitura do app" and
+  its three cases; `hub/copies/migrate-copy-source.test.ts` "a fonte de cada cópia de hoje".
+
+### The provider's wait and the cursor that expires (O Sync de qualquer conector)
+
+- **Library line.** Nothing in `@mastra/core` 1.82.0 or `drizzle-orm` 1.0.0-rc.4 carries a wait or a
+  cursor from one run to the next. Airbyte and Nango wait on a 429 by its `Retry-After` and go on
+  (`airbyte@8aed3123` `connector-builder-ui/error-handling.md:15,107`; `nango@e6c6131`
+  `docs/guides/functions/rate-limits.mdx:15-38`). The Mercado Livre `scroll_id` lives 5 minutes.
+- **Hand-made piece.** A 429 left after the executor's own wait inside the call's deadline (0058)
+  ends the run `PARTIAL` with the reason `WAIT`: the source keeps its position, and `wait_until`
+  when the provider said how long (`run.ts`, `sources.ts` `waiting`); the next run skips a source
+  still waiting. A list read declares its cursor's life in `paging.ttlMs`; a saved cursor older than
+  that (by the injected clock) is never sent: the source's pass starts again (`restarted`), logged
+  `COPY_PASS_RESTARTED`.
+- **Why.** The platforms wait and resume; no one recorded how a provider refuses an expired cursor,
+  so the run does not depend on reading that refusal.
+- **Proof.** `hub/copies/run-v2.test.ts` "o fornecedor pede para esperar" and its two cases, and "o
+  cursor vencido recomeça".
+
+### One copy call at a time per connector counted by the app (O Sync de qualquer conector)
+
+- **Library line.** No limiter is installed: `node_modules` has no `p-limit`, `p-queue` or
+  `bottleneck`, only `p-retry` 7.1.1 from another package, which repeats and does not limit.
+  Airbyte's `HTTPAPIBudget` limits one connection's calls per window
+  (`airbyte@8aed3123` `config-based/understanding-the-yaml-file/rate-limit-api-budget.md:3-30`);
+  nothing sums the calls of many companies' connections on one OAuth app.
+- **Hand-made piece.** `callLimit` (`countedBy` `APP` or `ACCOUNT`) on the connector's declaration
+  (`packages/connectors/src/kernel/definition.ts`; Mercado Livre `APP`, Sankhya `ACCOUNT`), and
+  `inCopyTurn` in `hub/connectors/limits.ts`: the same in-process line as each connection's calls,
+  keyed by the connector, which `copy-port.ts` takes for every copy read of a connector that counts
+  by the app. A read whose deadline passes in the line asks nothing, and the run ends `PARTIAL`
+  `WAIT` with the position kept and no `wait_until`. No number is invented: Mercado Livre publishes
+  none.
+- **Why.** Mercado Livre counts its limit "per Client ID (application)", one app for every company.
+- **Proof.** `hub/connectors/copy-lane.test.ts` "uma chamada de cópia por vez por conector" and its
+  two cases; the first and third fail when `copy-port.ts` skips the line.
+- **Revisit when** the Hub runs in more than one process (0058).
+
+### The clock of each copy
+
+- **Library line.** `@mastra/core` 1.82.0 canonicalizes the id of a workflow schedule with a prefix and
+  looks an id without it up as an agent's; `schedules.run` publishes even when the scheduler is
+  stopped (`dist/docs/references/reference-schedules-overview.md`); after three failed publishes the
+  scheduler logs the id and calls the `scheduler.onError` it was given at creation.
+- **Hand-made piece.** `scheduleIdOf` in `builder/copy-clock/workflow.ts` names the row
+  `schedule_<copy id>`; `hub/copies/schedule.ts` refuses with `HUB_UPDATING` to create a schedule
+  while the Hub is updating; `builder/copy-clock/clock.ts` logs an unreadable row as
+  `COPY_SCHEDULE_UNREADABLE`; `schedulerOf` in `builder/mastra/mastra.ts` passes the `onError` that logs
+  `SCHEDULE_PUBLISH_FAILED`.
+- **Proof.** `builder/copy-clock/clock.test.ts` "rodar agora e o disparo", "uma agenda ilegível
+  aparece no registro" and "a empresa apagada leva as agendas".

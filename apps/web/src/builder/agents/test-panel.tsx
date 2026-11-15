@@ -13,10 +13,11 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '../../ui/combobox.tsx'
+import { titleOf } from '../conversation/public.ts'
 import type { useOpenAgentConversation } from './open-conversation.ts'
 import { agentConversationsQuery } from './queries.ts'
 import { ReadStates } from './read-states.tsx'
-import { NO_AGENT_CONVERSATIONS, titleOf } from './text.ts'
+import { NO_AGENT_CONVERSATIONS } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 type Item = { value: ConversationId; label: string; age: string }

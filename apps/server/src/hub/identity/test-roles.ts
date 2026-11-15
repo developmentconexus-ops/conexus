@@ -5,7 +5,7 @@ import { CompanyId, listRoles, PersonId } from '@conexus/hub-api'
 import { hasPermission } from 'better-auth/plugins'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import { silent, testConfig } from '../../platform/test-database.ts'
-import { libraryCommandOn } from './auth.ts'
+import { libraryCommandOn, organizationAdapter } from './auth.ts'
 import { organizationWith } from './organization.ts'
 import { createAuth } from './public.ts'
 import type { Person } from './test-hub.ts'
@@ -58,11 +58,13 @@ export function roleOf(list: Awaited<ReturnType<typeof roles>>, name: string) {
 /** What the test kit offers, written out so a change of the kit's code moves nothing here (T6). */
 export const everyRead = {
   sankhya: [...SANKHYA_READS],
-  'mercado-livre': ['anuncios'],
+  'mercado-livre': ['anuncios', 'pedidos', 'perguntas', 'envio', 'notaFiscalDoPedido'],
+  hubspot: ['contatos', 'empresas', 'negocios'],
 }
 export const everyOperation = {
   sankhya: [...everyRead.sankhya, 'lancarPedido'],
   'mercado-livre': everyRead['mercado-livre'],
+  hubspot: [...everyRead.hubspot, 'notaNoContato'],
 }
 
 /** Asks the library whether the company's `member` role holds the statements, as the Hub's adapter reads its rows. */
@@ -96,10 +98,33 @@ export async function memberMay(database: TestDatabase, companyId: string, owner
     )
 }
 
+/** Makes the member an administrator through the plugin's own adapter, which answers the row with its extra fields. */
+export async function promoteThroughPlugin(w: World, personId: string) {
+  const auth = createAuth({
+    roles: TEST_ROLES,
+    database: w.hub.test.database,
+    config: testConfig(w.hub.test.runtimeUrl),
+    log: silent,
+  })
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse(w.companyId),
+    personId: PersonId.parse(w.ana.id),
+  } as const
+  return await libraryCommandOn(auth, w.hub.test.database)(scope, async () => {
+    const adapter = await organizationAdapter(auth)
+    const found = await adapter.findMemberByOrgId({ userId: personId, organizationId: w.companyId })
+    return await adapter.updateMember(String(found?.id), 'admin')
+  })
+}
+
 /** What a person who may do nothing of the company's actions reads of `may`. */
 export const NO_MAY = {
   manageAgents: false,
   manageAutomations: false,
+  manageCopies: false,
   manageRoles: false,
+  readCopyRows: false,
+  viewAppData: false,
   publishUnattendedWrite: false,
 }

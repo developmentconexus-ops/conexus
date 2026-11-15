@@ -4,6 +4,7 @@ import { useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import type { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 import {
   Form,
   FormAlert,
@@ -16,7 +17,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { ClientFields, fieldOf, undecided } from './client-fields.tsx'
 import { sendRegistration } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos o cadastro. Veja a lista antes de tentar de novo.'
+const UNCONFIRMED = unconfirmedText('o cadastro', 'Veja a lista antes de tentar de novo.')
 // Set while a registration has no whole answer, in the tab's own storage, so a reload that loses the
 // attempt key shows the current list and asks instead of a blank form (the founder's answer J).
 const IN_FLIGHT = 'conexus-registration-in-flight'

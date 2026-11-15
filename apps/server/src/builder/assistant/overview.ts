@@ -4,7 +4,11 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { SessionScope } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { admitAsker } from '../controller-kit/public.ts'
+import type { AssistantProjects } from './ports.ts'
 
 /**
  * `conexus_overview` (Factory `factory_overview`, `supervisor/read-tools.ts:187`): the company's
@@ -35,5 +39,31 @@ export function overviewTool(deps: {
       ])
       return { ...projects, connections } satisfies Overview
     },
+  })
+}
+
+/**
+ * The live Projetos of the company with their app, published or not, a page of them and whether
+ * there are more.
+ */
+export function projectsOf(
+  deps: { database: Database; identity: IdentityPorts; projects: AssistantProjects },
+  scope: SessionScope,
+): Promise<Omit<Overview, 'connections'>> {
+  const { companyId, personId } = scope
+  return deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
+    await admitAsker(deps.identity, tx, scope)
+    const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
+    const ids = live.projects.map((each) => each.projectId)
+    const published = await deps.projects.publishedVersionsOf(tx, ids)
+    const projects = live.projects.map((each) => {
+      const version = published.get(each.projectId)
+      const app =
+        version === undefined
+          ? ({ kind: 'NOT_PUBLISHED' } as const)
+          : ({ kind: 'PUBLISHED', version: String(version) } as const)
+      return { ...each, app }
+    })
+    return { projects, moreProjects: live.more }
   })
 }

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import { defineConnector } from '../kernel/definition.ts'
-import { oauth2Code } from '../kernel/oauth.ts'
+import { oauth2Code, rfc6749Answer } from '../kernel/oauth.ts'
 import { AccountRef } from '../kernel/operation.ts'
 import { readSkill } from '../kernel/skill.ts'
 import { conta } from './operations/conta.ts'
@@ -29,17 +29,7 @@ export const mercadoLivre = defineConnector({
     // Revoga a permissão do aplicativo para o usuário, with the seller's own bearer
     // (developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/usuarios-e-aplicativos).
     revoke: { method: 'DELETE', path: '/users/{account}/applications/{app}' },
-    answer: z
-      .object({
-        access_token: z.string().min(1).max(8192),
-        refresh_token: z.string().min(1).max(8192).optional(),
-        expires_in: z.number().int().positive(),
-      })
-      .transform(({ access_token, refresh_token, expires_in }) => ({
-        accessToken: access_token,
-        ...(refresh_token === undefined ? {} : { refreshToken: refresh_token }),
-        expiresInSeconds: expires_in,
-      })),
+    answer: rfc6749Answer,
     refusals: {
       grant: ['invalid_grant', 'unauthorized_client'],
       app: ['invalid_client', 'unauthorized_application', 'invalid_scope'],
@@ -59,6 +49,7 @@ export const mercadoLivre = defineConnector({
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
   logo: LOGO,
   perProject: 'many', // a Projeto may read several stores
+  callLimit: { countedBy: 'APP' }, // "per Client ID (application)": one Conexus app serves every company
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
   check: conta,

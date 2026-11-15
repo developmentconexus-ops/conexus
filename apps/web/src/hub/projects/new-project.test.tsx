@@ -62,8 +62,11 @@ function hub(answer?: () => Response | Promise<Response>) {
 }
 
 async function openDialog() {
-  const main = within(await screen.findByRole('main'))
-  fireEvent.click(await main.findByRole('button', { name: 'Novo projeto' }))
+  // The screen swaps its loading <main> for the real one: ask the page again, never keep the first <main> found.
+  const button = await waitFor(() =>
+    within(screen.getByRole('main')).getByRole('button', { name: 'Novo projeto' }),
+  )
+  fireEvent.click(button)
   return within(await screen.findByRole('dialog', { name: 'Novo projeto' }))
 }
 
@@ -121,6 +124,16 @@ test('um nome já usado: a frase no campo do nome, e o diálogo fica aberto', as
     expect(dialog.getByLabelText('Nome do projeto').getAttribute('aria-invalid')).toBe('true'),
   )
   expect(router.state.location.pathname).toBe(`${HOME}/projects`)
+})
+
+test('uma criação cujo fim não se sabe: "Não confirmamos a criação. Tente de novo.", letra por letra', async () => {
+  hub(() => HttpResponse.error())
+  const dialog = await openDialog()
+  name(dialog, 'Pedidos')
+  fireEvent.click(dialog.getByRole('button', { name: 'Criar projeto' }))
+  expect(
+    await dialog.findByText('Não confirmamos a criação. Tente de novo.', {}, { timeout: 5000 }),
+  ).toBeTruthy()
 })
 
 test('Cancelar fecha o diálogo sem criar', async () => {

@@ -13,6 +13,9 @@ export const CARD_TOOLS = { question: 'ask_user', plan: 'submit_plan' } as const
 /** The controller's tools that keep the task list, which the screen shows as one list and not as calls. */
 export const TASK_TOOLS = ['task_write', 'task_update', 'task_complete', 'task_check'] as const
 
+/** The controller's tool that starts a helper, which the screen shows as the research line (U12). */
+export const SUBAGENT_TOOL = 'subagent'
+
 /** The tools that load a skill, which the Builder calls on its own. */
 export const SKILL_TOOLS = ['skill', 'skill_read', 'skill_search'] as const
 
@@ -34,9 +37,13 @@ export const WORKSPACE_TOOL = {
   killProcess: 'mastra_workspace_kill_process',
 } as const
 
+/** The app-data tools, the Builder's and the agents' (one name per tool, code C26). */
+export const APP_DATA_TOOL = { read: 'app_data_read', check: 'app_data_check' } as const
+
 /**
- * The Builder's own tools besides the workspace's: the web, the memory's recall, the check and the
- * three of a Projeto's granted connections (the server proves them equal to its own, code C27).
+ * The Builder's own tools besides the workspace's: the web, the memory's recall, the check, the
+ * three of a Projeto's granted connections, the two that read its app's data and the one that
+ * proposes a copy (Capacidade 3); the server proves them equal to its own (code C27).
  */
 export const BUILDER_TOOL = {
   webSearch: 'web_search',
@@ -46,6 +53,9 @@ export const BUILDER_TOOL = {
   connectorRead: 'connector_read',
   connectorNotes: 'connector_notes',
   connectorNoteSave: 'connector_note_save',
+  appDataRead: APP_DATA_TOOL.read,
+  appDataCheck: APP_DATA_TOOL.check,
+  copyPropose: 'copy_propose',
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

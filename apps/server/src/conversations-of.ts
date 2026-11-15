@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
-import type { AppDataPort } from './builder/agents/public.ts'
 import { agentsAlive } from './builder/agents/public.ts'
+import type { AppDataPort } from './builder/app-data/public.ts'
 import type { HandOffDoors } from './builder/assistant/public.ts'
 import { createAssistant, speakersOf } from './builder/assistant/public.ts'
 import {
@@ -9,15 +9,17 @@ import {
   automationRun,
   automationsOf,
 } from './builder/automations/public.ts'
-import { appTablesOf, createConstrutor } from './builder/construtor/public.ts'
+import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
+import { COPY_WORKFLOW, copyClockOf, copyRun } from './builder/copy-clock/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
-import type { Apps } from './hub/apps/public.ts'
+import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
+import type { CopyService } from './hub/copies/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
@@ -46,16 +48,72 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
   }
 }
 
+/** The connectors' Builder door, reached when a turn calls it. */
+function builderDoorOf(connectors: () => Connectors) {
+  return {
+    granted: (ids: Parameters<Connectors['builder']['granted']>[0]) =>
+      connectors().builder.granted(ids),
+    read: (
+      ids: Parameters<Connectors['builder']['read']>[0],
+      a: Parameters<Connectors['builder']['read']>[1],
+    ) => connectors().builder.read(ids, a),
+    notes: (
+      ids: Parameters<Connectors['builder']['notes']>[0],
+      connectionId: Parameters<Connectors['builder']['notes']>[1],
+    ) => connectors().builder.notes(ids, connectionId),
+    saveNote: (
+      ids: Parameters<Connectors['builder']['saveNote']>[0],
+      a: Parameters<Connectors['builder']['saveNote']>[1],
+    ) => connectors().builder.saveNote(ids, a),
+    provePage: (
+      ids: Parameters<Connectors['builder']['provePage']>[0],
+      a: Parameters<Connectors['builder']['provePage']>[1],
+    ) => connectors().builder.provePage(ids, a),
+    propose: (
+      ids: Parameters<Connectors['builder']['propose']>[0],
+      a: Parameters<Connectors['builder']['propose']>[1],
+    ) => connectors().builder.propose(ids, a),
+  }
+}
+
 /** The saved tools' live calls (step 24.4): reached when an agent's turn calls one. */
 function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
   return { open: (call) => connectors().tools.open(call) }
 }
 
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
-function appDataOf(apps: () => Pick<Apps, 'hasAppData' | 'readAppData'>): AppDataPort {
+function appDataOf(
+  apps: () => Pick<Apps, 'hasAppData' | 'readAppData' | 'appTables'>,
+): AppDataPort {
   return {
     hasApp: (input) => apps().hasAppData(input),
+    tables: (input) => apps().appTables(input),
     read: (input) => apps().readAppData(input),
+  }
+}
+
+/** The apps' door as the Builder reads and checks its Projeto's data (Capacidade 3): reached when a turn calls it. */
+function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
+  return {
+    access: (ids) => apps().builderData.access(ids),
+    read: (ids, statement, signal) => apps().builderData.read(ids, statement, signal),
+    check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
+  }
+}
+
+/** The copies' view for the Builder's turn, reached when a turn starts: the copies are made after the conversations. */
+function copiesOf(
+  copies: () => Pick<CopyService, 'projectView'>,
+): Pick<CopyService, 'projectView'> {
+  return { projectView: (ids) => copies().projectView(ids) }
+}
+
+/** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
+function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+  return {
+    connectors: builderDoorOf(deps.connectors),
+    data: builderDataOf(deps.apps),
+    copies: copiesOf(deps.copies),
   }
 }
 
@@ -81,16 +139,7 @@ function machineOf(deps: { machine: ConversationMachine; machineTuning?: Machine
   return { machine: deps.machine, machineTuning: deps.machineTuning }
 }
 
-/**
- * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
- * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
- * shared by both controllers. The connectors are made after the apps whose door they read, and a
- * turn comes long after: each door is reached when called. The automations' run is made before the
- * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
- * removal come long after both. The Construtor (step 24.3, U4) builds the agents through their
- * service and lists the automations made below.
- */
-export function conversationsOf(deps: {
+type ConversationsDeps = {
   database: Database
   identity: IdentityPorts
   sealKeys: SealKeys
@@ -107,10 +156,24 @@ export function conversationsOf(deps: {
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
+  /** The copies are made after the conversations; a run comes long after both. */
+  copies: () => Pick<CopyService, 'run' | 'projectView'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
-}) {
+}
+
+/**
+ * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
+ * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
+ * shared by both controllers. The connectors are made after the apps whose door they read, and a
+ * turn comes long after: each door is reached when called. The automations' run is made before the
+ * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
+ * removal come long after both. The Construtor (step 24.3, U4) builds the agents through their
+ * service and lists the automations made below. The copies' clock (Capacidade 2) is made beside
+ * the automations, on the same schedules, and runs the copies made after it.
+ */
+export function conversationsOf(deps: ConversationsDeps) {
   const { database, identity, log } = deps
   const storage = createMastraStorage(deps.mastraPool)
   const queue = {
@@ -141,7 +204,7 @@ export function conversationsOf(deps: {
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ automations: () => automations, appTables: appTablesOf(appData) },
+    ...{ automations: () => automations, appTables: tablesWithColumnNamesOf(appData) },
     ...machineOf(deps),
   })
   const clock = deps.automationClock
@@ -153,22 +216,21 @@ export function conversationsOf(deps: {
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
     ...{ storage, queue, runs: deps.runs },
-    connectors: {
-      granted: (ids) => deps.connectors().builder.granted(ids),
-      read: (ids, a) => deps.connectors().builder.read(ids, a),
-      notes: (ids, connectionId) => deps.connectors().builder.notes(ids, connectionId),
-      saveNote: (ids, a) => deps.connectors().builder.saveNote(ids, a),
-    },
+    ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
   // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and
   // the runs.
   const hub = createHubMastra({
     ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
-    workflows: { [AUTOMATION_WORKFLOW]: run },
+    workflows: {
+      [AUTOMATION_WORKFLOW]: run,
+      [COPY_WORKFLOW]: copyRun({ copies: deps.copies, log }),
+    },
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [
       (scope) => automations.release(scope),
+      (scope) => copyClock.release(scope),
       async (scope) => {
         await agents.release(scope)
       },
@@ -187,5 +249,6 @@ export function conversationsOf(deps: {
     connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
     updating: hub.updating,
   })
-  return { conversations, assistant, automations, agents }
+  const copyClock = copyClockOf({ mastra: hub.mastra, log })
+  return { conversations, assistant, automations, agents, copyClock: copyClock.clock }
 }

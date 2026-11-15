@@ -240,3 +240,34 @@ test('deploy.sh aceita um template exatamente quando o Hub o aceita', () => {
     }
   }
 })
+
+test('o deploy no ar limpa as imagens sem uso há 48 h, depois de o Hub subir', () => {
+  const { run, log, count } = deploy('hub@sha256:new', { running: 'hub@sha256:old' })
+  assert.equal(run.status, 0, run.stderr)
+  assert.equal(count('image prune'), 1)
+  assert.ok(
+    log.includes('image prune --all --force --filter until=48h [HUB_IMAGE=] [HUB_E2B_TEMPLATE=]'),
+  )
+  assert.ok(
+    log.findIndex((call) => call.includes(' up ')) <
+      log.findIndex((call) => call.includes('image prune')),
+  )
+  assert.match(run.stderr, /removing images unused for 48 h/)
+})
+
+test('a limpeza que falha não desfaz o deploy no ar e diz que falhou', () => {
+  const { run } = deploy('hub@sha256:new', { pruneStatus: 1 })
+  assert.equal(run.status, 0, run.stderr)
+  assert.match(run.stdout, /live: hub@sha256:new/)
+  assert.match(run.stderr, /clean-up of old images failed; the deploy stands: hub@sha256:new/)
+})
+
+test('só o deploy que ficou no ar limpa: --restart, o que já roda, o que volta atrás e o que falha não', () => {
+  const cases = [
+    deploy('--restart', { running: 'hub@sha256:old' }),
+    deploy('hub@sha256:same', { running: 'hub@sha256:same', runningTemplate: NEW_TEMPLATE }),
+    deploy('hub@sha256:new', { running: 'hub@sha256:old', upStatus: 1 }),
+    deploy('hub@sha256:new', { migrateStatus: 1 }),
+  ]
+  for (const { log } of cases) assert.equal(log.filter((c) => c.includes('image prune')).length, 0)
+})

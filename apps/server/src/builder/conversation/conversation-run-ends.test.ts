@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ANA } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   conversing,
   endOf,
@@ -82,14 +83,12 @@ test('a linha cai e o turno acaba sem ela: o stream seguinte abre dizendo que na
   assert.equal(await first.text(), PARTIAL)
   first.close()
   held.release()
-  for (let attempt = 0; ; attempt += 1) {
+  await until(async () => {
     const again = await streamOf(hub, ana, url)
     const running = (await again.seed()).isRunning
     again.close()
-    if (!running) break
-    assert.ok(attempt < 50, 'the session says the run is over')
-    await new Promise((done) => setTimeout(done, 100))
-  }
+    return !running
+  }, 'the session says the run is over')
 })
 
 test('a execução recusada termina uma vez e solta só a trava da sua conversa: a outra segue dona do Projeto (48)', {

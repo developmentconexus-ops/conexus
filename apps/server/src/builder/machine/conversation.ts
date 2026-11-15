@@ -1,5 +1,4 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { ConversationId as ConversationIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CodeModeTransport } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
@@ -7,13 +6,14 @@ import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { controllerIn } from '../controller-context/public.ts'
 import { MAX_BYTES } from '../git/public.ts'
 import { locate } from './conversation-file.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
 import { MARK, readCapped } from './kit.ts'
-import { execIn, within } from './machines.ts'
 import type { Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
+import { execIn, within } from './session.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
@@ -48,11 +48,9 @@ export type ConversationMachines = {
   /** The controller's workspace resolver; undefined outside a conversation, as the Builder's. */
   workspace(requestContext: RequestContext): Promise<Workspace | undefined>
   /**
-   * The turn ended: the machine stops (E2B pauses it); a machine never started is left alone. It
-   * never rejects: a pause that fails is logged, and the provider's own timeout pauses the machine.
+   * The Hub ends: every machine a turn held pauses, each failure logged and a machine never started
+   * left alone. A turn's end stops nothing: E2B pauses the machine on its own timeout.
    */
-  stop(conversationId: ConversationId): Promise<void>
-  /** The Hub ends: every machine of a turn in flight stops, each failure logged. */
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (`MachineApi.kill`). */
   kill(conversationId: ConversationId): Promise<void>
@@ -62,8 +60,8 @@ export type ConversationMachines = {
    */
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined
   /**
-   * The download: the machine the turn holds, or the one the provider has under the
-   * conversation's mark, woken and paused again; it never makes a machine. One file inside
+   * The download: the machine the Hub holds (left to E2B's timeout), or, with no session, the one
+   * the provider has under the conversation's mark, woken and paused again; it never makes a machine. One file inside
    * `WORK_FOLDER`, capped; `signal` stops the read when the browser leaves.
    */
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead>
@@ -77,6 +75,11 @@ export type MachineTuning = { workFolder: string; toolchain: string; startMs: nu
 const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, toolchain: TOOLCHAIN, startMs: START_MS }
 
 type Deps = ConversationMachine & {
+  /**
+   * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
+   * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.
+   */
+  otherTemplate: 'resume' | 'replace'
   log: FailureLog
   /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
   hosts: readonly string[]
@@ -85,6 +88,8 @@ type Deps = ConversationMachine & {
    * undefined outside a conversation the user serves, which gets no machine.
    */
   marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
+  /** The media types `read_file` hands the model as media; absent, Mastra's default (a PDF included). */
+  readMedia?: readonly string[]
 }
 
 type Session = {
@@ -111,8 +116,6 @@ type Session = {
   found: string | undefined
 }
 
-const Controller = z.object({ sessionId: ConversationIdSchema })
-
 class Machines implements ConversationMachines {
   private readonly deps: Deps
   readonly folder: string
@@ -120,8 +123,6 @@ class Machines implements ConversationMachines {
   readonly codeMode: CodeModeTransport
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
-  /** The pauses in flight, which the Hub's end waits for (code C62). */
-  private readonly pausing = new Set<Promise<void>>()
   /**
    * Each conversation's line (code C65): a turn's opening of its workspace, its pause and a
    * download run one after another, so neither a download nor the next turn starts a machine
@@ -158,8 +159,8 @@ class Machines implements ConversationMachines {
   }
 
   /**
-   * Wakes or creates the machine, once per session; a machine from another template is killed
-   * first.
+   * Wakes or creates the machine, once per session; with `replace`, a machine from another
+   * template is killed first.
    */
   private ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)
@@ -168,10 +169,13 @@ class Machines implements ConversationMachines {
 
   private async boot(session: Session): Promise<Kit> {
     const { conversationId } = session
-    const { api, template, log } = this.deps
+    const { api, template, log, otherTemplate } = this.deps
     this.phases.get(conversationId)?.('starting')
     // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
-    const stale = session.found === undefined ? api.killStale(conversationId, template) : undefined
+    const stale =
+      session.found === undefined && otherTemplate === 'replace'
+        ? api.killStale(conversationId, template)
+        : undefined
     const starting = Promise.resolve(stale).then(() => session.kit.sandbox.start?.())
     session.starting = starting
     try {
@@ -268,9 +272,8 @@ class Machines implements ConversationMachines {
 
   async workspace(requestContext: RequestContext): Promise<Workspace | undefined> {
     const marks = await this.deps.marksOf(requestContext)
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    if (marks === undefined || !controller.success) return undefined
-    const { sessionId: conversationId } = controller.data
+    const conversationId = controllerIn(requestContext).sessionId
+    if (marks === undefined || conversationId === undefined) return undefined
     const held = this.sessions.get(conversationId)?.workspace
     if (held !== undefined) return held
     return this.inLane(conversationId, async () => {
@@ -293,6 +296,10 @@ class Machines implements ConversationMachines {
             },
           },
           [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
+          [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true },
+          ...(this.deps.readMedia === undefined
+            ? {}
+            : { [WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: { mediaTypes: [...this.deps.readMedia] } }),
         },
       })
       return session.workspace
@@ -320,24 +327,20 @@ class Machines implements ConversationMachines {
     }
   }
 
-  stop(conversationId: ConversationId): Promise<void> {
+  private stop(conversationId: ConversationId): Promise<void> {
     const session = this.sessions.get(conversationId)
     this.sessions.delete(conversationId)
     if (session === undefined) return Promise.resolve()
-    const pausing = this.inLane(conversationId, () => this.pauseLogged(session))
-    this.pausing.add(pausing)
-    return pausing.finally(() => this.pausing.delete(pausing))
+    return this.inLane(conversationId, () => this.pauseLogged(session))
   }
 
-  /** Stops every machine of a turn in flight and waits for the pauses already begun. */
   async stopAll(): Promise<void> {
     await Promise.all([...this.sessions.keys()].map((each) => this.stop(each)))
-    await Promise.all([...this.pausing])
   }
 
   serving(requestContext: RequestContext): WorkspaceFilesystem | undefined {
-    const controller = Controller.safeParse(requestContext.get('controller'))
-    const session = controller.success ? this.sessions.get(controller.data.sessionId) : undefined
+    const conversationId = controllerIn(requestContext).sessionId
+    const session = conversationId === undefined ? undefined : this.sessions.get(conversationId)
     return session === undefined ? undefined : this.shortLived(session)
   }
 
@@ -348,7 +351,9 @@ class Machines implements ConversationMachines {
 
   read(conversationId: ConversationId, path: string, signal: AbortSignal): Promise<FileRead> {
     return this.inLane(conversationId, async () => {
-      // A turn in flight holds the conversation's machine: the download reads it there.
+      // The Hub holds the conversation's machine from its first turn on, running or paused by E2B's
+      // own timeout (a tool that finds it paused resumes it): the download reads it there, and
+      // pauses nothing. Without a session (the Hub restarted) the provider's list finds it.
       const held = this.sessions.get(conversationId)
       if (held !== undefined) return this.readFrom(held, path, signal)
       const found = await this.found(conversationId)
@@ -366,7 +371,8 @@ class Machines implements ConversationMachines {
   /** The machine the provider has for the conversation, by its mark; a failed list is no answer. */
   private async found(conversationId: ConversationId): Promise<string | 'UNAVAILABLE' | undefined> {
     try {
-      return await this.deps.api.find(conversationId, this.deps.template)
+      const { api, template, otherTemplate } = this.deps
+      return await api.find(conversationId, otherTemplate === 'replace' ? template : undefined)
     } catch (cause) {
       const failure = new Failure('MACHINE_UNAVAILABLE', { cause, details: { reason: 'FIND' } })
       logFailure(this.deps.log, failure, { conversationId })

@@ -5,13 +5,13 @@ import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { keepsAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure } from '../../platform/hub.ts'
+import { HubFailure, unconfirmedText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Form, FormAlert, setServerError, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { allProjectsQueryKey, projectQuery, sendProjectDeletion } from './queries.ts'
 
-const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista.'
+const UNCONFIRMED = unconfirmedText('a exclusão', 'Veja a lista.')
 
 /** The confirm button: off until the typed name is the Project's, so Enter cannot confirm without it. */
 function Confirm({ ready, pending }: { ready: boolean; pending: boolean }) {

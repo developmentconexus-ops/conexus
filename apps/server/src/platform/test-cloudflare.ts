@@ -12,10 +12,17 @@ const TEST_TOOLS_NAMESPACE = 'conexus-tools-test'
 // Nothing listens on the discard port: a Hub that calls the tools' host without a double fails loudly.
 const NO_TOOLS_ORIGIN = 'http://127.0.0.1:9'
 
-/** The apps' part of a test configuration; the key and the token are fresh for each call. */
+/**
+ * One app login key for every test Hub: the sync login (`conexus_sync`) belongs to the whole test
+ * server, as it belongs to each company's Neon project, so its derived password is the same in
+ * every test.
+ */
+export const TEST_APP_LOGIN_KEY = 'a1'.repeat(32)
+
+/** The apps' part of a test configuration; the token is fresh for each call. */
 export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
   return {
-    appLoginKey: AppLoginKey.parse(randomBytes(32).toString('hex')),
+    appLoginKey: AppLoginKey.parse(TEST_APP_LOGIN_KEY),
     cloudflareApiUrl: CloudflareApiUrl.parse(apiUrl),
     cloudflareAccountId: CloudflareName.parse(TEST_ACCOUNT),
     appsNamespace: CloudflareName.parse(TEST_NAMESPACE),

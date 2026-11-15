@@ -15,6 +15,9 @@ const DELETING_FIELD = { type: 'date', required: false, input: false } as const
 // The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
 const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
 
+// What a member writes of their work: only the Hub's routes set it, never the plugin's request.
+const PROFILE_FIELD = { type: 'string', required: false, input: false } as const
+
 // The name a person reads for a role of the company; the stored name is derived from it.
 const LABEL_FIELD = { type: 'string', required: true } as const
 // The attempt that created a role: the two seeded roles have none.
@@ -36,6 +39,7 @@ export function organizationWith(set: RoleSet) {
           nickname: NICKNAME_FIELD,
         },
       },
+      member: { additionalFields: { jobTitle: PROFILE_FIELD, department: PROFILE_FIELD } },
       invitation: {
         additionalFields: {
           attemptKey: KEY_FIELD,

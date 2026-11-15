@@ -12,7 +12,7 @@ export const precosDoProduto = defineOperation({
   summary:
     'Lista os preços de um produto em cada tabela de preço; a página se chama `pagina` e começa em 1.',
   label: 'Preços de um produto',
-  input: z.object({ codigoProduto: Code, pagina: Page(1) }),
+  input: z.strictObject({ codigoProduto: Code, pagina: Page(1) }),
   ...rows({ list: 'produtos' }),
   from: [produtos.id],
   probe: (earlier) => {
@@ -30,7 +30,7 @@ export const precosDaTabela = defineOperation({
   summary:
     'Lista os preços de uma tabela de preço, de todos os produtos; a página se chama `pagina` e começa em 1.',
   label: 'Preços de uma tabela',
-  input: z.object({ codigoTabela: Code, pagina: Page(1) }),
+  input: z.strictObject({ codigoTabela: Code, pagina: Page(1) }),
   ...rows({ list: 'produtos' }),
   from: [precosDoProduto.id],
   probe: (earlier) => {

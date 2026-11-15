@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, codeOf, memberOn, personOn, post } from '../../hub/identity/test-hub.ts'
 import { talking } from '../assistant/test-assistant.ts'
+import { building } from '../construtor/test-construtor.ts'
 import {
   endOf,
   holding,
@@ -123,8 +124,27 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.equal(changed.revision, agent.revision + 1)
 })
 
+test('o texto fixo: o agente e o Construtor mandam a mensagem do Conexus com a marca de cache de 1 h', async (t) => {
+  const on = await agentsOn(t)
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda sobre as vendas.',
+  })
+  const talk = await talking(t, on.hub, on.ana, await talkedTo(on.hub, on.ana, on.agents, agent.id))
+  assert.equal(endOf(await talk.say('Oi')), 'complete')
+  const builder = await building(t, [])
+  assert.equal(endOf(await builder.conversation.say('Oi')), 'complete')
+
+  for (const asked of [on.calls.at(-1), builder.calls.at(-1)]) {
+    assert.ok(asked)
+    const [fixed] = asked.systems
+    assert.ok(fixed?.text.startsWith(CONEXUS.trim().slice(0, 200)))
+    assert.equal(fixed?.cached, true)
+    assert.deepEqual(asked.cached[0], { at: 'system', ttl: '1h' })
+  }
+})
+
 test('o recorte: a ferramenta chama a leitura pela porta com os valores fixos por cima do que o modelo mandou; uma versão nova dela não muda o publicado; a ligação perdida responde NOT_GRANTED', async (t) => {
-  const asked = { page: 1, codigoEmpresa: 99, dataNegociacaoInicio: '01/11/2026' }
+  const asked = { page: 1, dataNegociacaoInicio: '01/11/2026' }
   const on = await agentsOn(t, [[tool(ORDERS, asked)], [], [tool(ORDERS, asked)], []])
   const inputs: unknown[] = []
   const door = on.hub.connectors.assistant

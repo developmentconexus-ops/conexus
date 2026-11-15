@@ -18,7 +18,7 @@ export const ConnectionSignInId = z.uuid().brand('ConnectionSignInId')
 export type ConnectionSignInId = z.infer<typeof ConnectionSignInId>
 
 /** What an operation does to the provider's data, as a role's screen says it: reads, writes, deletes. */
-const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
+export const OperationEffect = z.enum(['READ', 'WRITE', 'DESTROY'])
 
 /**
  * A subject of the kit with its operations, for the screens that choose among them (a role, an
@@ -261,14 +261,20 @@ export type Revocation = z.infer<typeof Revocation>
 export const unlinkConnection = defineOperation({
   id: 'unlinkConnection',
   summary:
-    'Removes a connection and its sealed fields, after asking the provider to take the authorization back when the connector can; removing it again answers the same.',
+    "Removes a connection and its sealed fields, after taking its account's rows out of the company's copies and asking the provider to take the authorization back when the connector can; a copy left with no source ends with its table; removing it again answers the same.",
   access: 'session',
   method: 'DELETE',
   path: '/api/companies/{companyId}/connections/{connectionId}',
   bodyLimit: 1024,
   input: { params: OfConnection },
-  success: { status: 200, body: z.object({ revocation: Revocation }) },
-  failures: READ_FAILURES,
+  // tablesLeft: the tables of the copies Desligar ended that the company's database did not drop
+  // yet; the connection is gone all the same, and the next Desligar or Ligar drops them.
+  success: {
+    status: 200,
+    body: z.object({ revocation: Revocation, tablesLeft: z.array(z.string()) }),
+  },
+  // COPY_DATABASE_UNAVAILABLE: the company's database did not answer before anything left the Hub.
+  failures: [...READ_FAILURES, 'COPY_DATABASE_UNAVAILABLE'],
 })
 
 export const startConnectionSignIn = defineOperation({

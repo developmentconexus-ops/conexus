@@ -53,7 +53,14 @@ export function conversation(
       },
     ],
     conversations: [
-      { id: CHAT, agentId: AGENT, draft: false, title: 'Pedido', updatedAt: UPDATED },
+      {
+        id: CHAT,
+        agentId: AGENT,
+        draft: false,
+        title: 'Pedido',
+        createdAt: UPDATED,
+        updatedAt: UPDATED,
+      },
     ],
     writes: held.writes ?? [],
     writesAnswer: held.writesAnswer,

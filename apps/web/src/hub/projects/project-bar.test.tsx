@@ -39,7 +39,7 @@ async function rail() {
   return within(column)
 }
 
-test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações', async () => {
+test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações, Dados', async () => {
   open(PROJECT)
   const list = await bar()
   expect(
@@ -54,6 +54,7 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
     'Sobre',
     'Quem usa o app',
     'Integrações',
+    'Dados',
   ])
   expect(screen.queryByText(/em breve/i)).toBeNull()
   expect(list.queryByText('Projetos recentes')).toBeNull()
@@ -63,12 +64,13 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
   expect(places.getByRole('link', { name: 'Início' })).toBeTruthy()
 })
 
-test('o membro não vê Agentes nem Automações na barra do Projeto (steps 24.2 e 24.3)', async () => {
+test('o membro não vê Agentes, Automações nem Dados na barra do Projeto (steps 24.2 e 24.3, capacidade 1)', async () => {
   open(PROJECT, { role: 'member' })
   const list = await bar()
   await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
   expect(list.queryByRole('link', { name: 'Agentes' })).toBeNull()
   expect(list.queryByRole('link', { name: 'Automações' })).toBeNull()
+  expect(list.queryByRole('link', { name: 'Dados' })).toBeNull()
   expect(list.getByRole('link', { name: 'Integrações' })).toBeTruthy()
 })
 

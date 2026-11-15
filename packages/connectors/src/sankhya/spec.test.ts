@@ -114,6 +114,8 @@ async function samples(): Promise<Sample[]> {
     const input = operation.probe(earlier)
     assert.notEqual(input, null, operation.id)
     const request = requestOf(operation, input, { ref: null }, SENT_AT)
+    // The searches go through the gateway's DbExplorer, which the documentation of the REST routes does not describe.
+    if (request.method !== 'GET') continue
     const response = await fake.handle(toRequest(sankhya, request, token.accessToken))
     const body = z.unknown().parse(await response.json())
     const answered = operation.answer({ status: response.status, body })

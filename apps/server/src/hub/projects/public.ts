@@ -12,7 +12,7 @@ import {
   hasCompanyDatabase,
   releaseCompanyDatabase,
 } from './company-deletion.ts'
-import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
+import { admitToApp, liveProjectNamesOf, liveProjectOf, projectOfHost } from './hosts.ts'
 import { finishMarkedProject, markedProjectsOf } from './marked.ts'
 import type {
   AppRemoval,
@@ -28,7 +28,11 @@ import { registerProjectRoutes } from './routes.ts'
 /** For the apps' removal, which Projects and the Central call before Projects exist to hand it. */
 export { readyDatabaseOf } from './company-database.ts'
 /** For the Builder's conversations, made before Projects to hand Projects their release. */
-export { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hosts.ts'
+export {
+  liveProjectIdsOf,
+  liveProjectOf,
+  liveProjectsOf,
+} from './hosts.ts'
 export { projectIdsOf } from './ids.ts'
 export type {
   AppRemoval,
@@ -38,8 +42,8 @@ export type {
   PublishedRolesOf,
   PublishRequestOf,
 } from './ports.ts'
-/** For the apps' and the requests' foreign keys, and the name a notice shows (code C8). */
-export { project, projectNameColumn } from './tables.ts'
+/** The name a notice shows (code C8); the table itself leaves by `public-tables.ts`. */
+export { projectNameColumn } from './tables.ts'
 export type ProjectPorts = ReturnType<typeof createProjects>['ports']
 
 /**
@@ -80,6 +84,7 @@ export function createProjects(deps: {
       createProject: (input: Parameters<typeof store.create>[0]) => store.create(input),
       // What the apps' versions reach Projects through: the Projeto, and its company's database.
       liveProjectOf,
+      liveProjectNamesOf,
       readyDatabaseOf,
       recordDatabaseHost,
       // What the apps' repair at start reaches Projects through: the Projetos marked for deletion.

@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { z } from 'zod'
+import { forward } from './test-connections.ts'
 
 /** The row of `withRows` that carries a value the tests look for in the model's copy and the saved file. */
 export const PLANTED = 'VALOR-PLANTADO-NA-RESPOSTA'
@@ -30,19 +31,9 @@ export async function withRows(t: TestContext, origin: string, rows: number) {
       )
       return
     }
-    const headers = Object.entries(incoming.headers).flatMap(([name, value]) =>
-      typeof value === 'string' && name !== 'host'
-        ? [[name, value] satisfies [string, string]]
-        : [],
-    )
-    const answered = await fetch(`${origin}${incoming.url}`, {
-      method: incoming.method,
-      headers,
-      redirect: 'manual',
-      ...(incoming.method === 'GET' ? {} : { body }),
-    })
-    outgoing.writeHead(answered.status, Object.fromEntries(answered.headers))
-    outgoing.end(Buffer.from(await answered.arrayBuffer()))
+    const answered = await forward(origin, incoming, body)
+    outgoing.writeHead(answered.status, answered.headers)
+    outgoing.end(answered.body)
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   t.after(() => {

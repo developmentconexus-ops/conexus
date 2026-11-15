@@ -15,8 +15,13 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 ## 1. Modules and owners
 
 - **C3.** Inside a subject, imports **must** be relative and end in `.ts`. [dependency-cruiser]
-- **C4.** Another subject or module **must** be reached only through its `public.ts`, and the Hub
-  **must not** import the Builder. [dependency-cruiser]
+- **C4.** Another subject or module **must** be reached only through its `public.ts`, the one at
+  the root of the subject (a folder inside a subject has no door of its own; a
+  `public-<name>.tsx` at the root is a door too, for what Node cannot re-export from
+  `public.ts`), and the Hub **must not** import the Builder. The rule holds for the files at the
+  root of the server too. The contract (`@conexus/hub-api`) is the common vocabulary of the programs
+  and the subjects: the Hub may use its types, the Builder's included, without that counting as
+  importing the Builder. [dependency-cruiser]
 - **C5.** Between programs, code **must** import by package name, such as `@conexus/hub-api`, never
   by path. [dependency-cruiser]
 - **C6.** There **must not** be an import cycle, or a file loose in `hub/` or `builder/` outside a
@@ -24,8 +29,10 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C7.** `platform/` **must not** import a subject or hold a subject file. [dependency-cruiser]
 - **C8.** A module **must not** import another owner's table object; it calls the owner's
   operation, in the same transaction when needed. The exceptions are a foreign key and the file that
-  gathers the schema for migrations. Hand-written SQL that reads another owner's table is for the
-  reader. [dependency-cruiser, review]
+  gathers the schema for migrations. The tables of an owner leave by its `public-tables.ts`,
+  which only a `tables.ts` (the foreign key) imports; the schema is gathered by reading every
+  `tables.ts`. Hand-written SQL that reads another owner's table is for
+  the reader. [dependency-cruiser, review]
 - **C11.** Code **must** use named exports, and **must not** use a default export except where a
   tool requires one. [Biome noDefaultExport]
 - **C12.** Code **must not** export a mutable binding (`export let`). [review]
@@ -158,6 +165,19 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   id, with route, status and duration for requests, and security events such as sign-in, refusal,
   session end and administrator change. No raw object is needed. Failure: duplicate `level` keys
   change the severity a reader sees. The existing log-line guard proves format only. [review]
+- **C79.** A failure the model reads **must** carry the provider's whole answer (status, code,
+  message and body) as the tool's error, through the library's native failure path, never as a
+  successful result. The connector's reader composes the message from every text of the refusal,
+  with no sentence per connector or per error. Each other consumer cuts at its own edge: the app
+  (C51), logs and spans ([security S41, S42](security.md)); the screen branches by code (C49) and
+  may show the system's message as it came. An answer that may have been taken, such as an
+  uncertain write, stays a result that tells the model not to repeat it. A write's result, taken
+  or uncertain, carries what the system answered, and only the system's own refusal is a refusal.
+  The model's edge has the one ceiling: past 40,000 characters, the first and the last 20,000,
+  cut by character, with how much was left out; the record keeps the whole answer. Failure: the Sankhya reader dropped
+  `error.details`, the funnel dropped the body for every reader, and the agent invented a cause
+  for a refused order; then an order the system took reached the model as unknown, its answer
+  dropped. [review]
 
 ## 8. Outside calls and time
 
@@ -215,8 +235,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   the piece, and a verdict. **Nativo** uses the library's public API as is; **embrulhado** adds our
   code to it, and one line says what ours adds; **remendo** is our own mechanism, and needs the
   proof that no reference serves, its [boundaries](../reference/boundaries.md) entry naming the
-  package version, and the founder's word. Every remendo row new in a step reaches him with the
-  native how beside it; one already approved returns only when its library's version changes.
+  package version, and its decision ([delivery L6](delivery.md)). Every remendo row new in a step
+  reaches its decider with the native how beside it; one already decided returns only when its
+  library's version changes.
   Founder, 2026-10-22: "A"; 2026-10-25: "1. A". Code that no row or contract explains, or a row
   without its proof, is a Bloqueia in review. A correct native solution stays when a guide
   conflicts: record the conflict for closing; ask the founder when behavior or scope changes

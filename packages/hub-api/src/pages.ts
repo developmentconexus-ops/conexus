@@ -14,6 +14,9 @@ export const PAGES = [
   '/companies/$companyId/projects/$projectId/about',
   '/companies/$companyId/projects/$projectId/access',
   '/companies/$companyId/projects/$projectId/integrations',
+  '/companies/$companyId/projects/$projectId/data',
+  '/companies/$companyId/projects/$projectId/data/$table',
+  '/companies/$companyId/projects/$projectId/data/copies/$table',
   '/companies/$companyId/projects/$projectId/conversations/$conversationId',
   '/companies/$companyId/projects/$projectId/assistant',
   '/companies/$companyId/projects/$projectId/assistant/$conversationId',
@@ -27,6 +30,10 @@ export const PAGES = [
   '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId',
   '/companies/$companyId/conversations/$conversationId',
   '/companies/$companyId/agents',
+  '/companies/$companyId/copies',
+  '/companies/$companyId/copies/$copyId',
+  '/companies/$companyId/data',
+  '/companies/$companyId/data/$copyId',
   '/companies/$companyId/automations',
   '/companies/$companyId/automations/$automationId',
   '/companies/$companyId/integrations',
@@ -39,6 +46,7 @@ export const PAGES = [
   '/companies/$companyId/settings/roles',
   '/companies/$companyId/settings/model-accounts',
   '/companies/$companyId/settings/observational-memory',
+  '/companies/$companyId/settings/company-memory',
   '/companies/$companyId/settings/defaults',
   '/companies/$companyId/welcome',
   '/companies/$companyId/welcome/company',
@@ -56,3 +64,14 @@ export const PAGES = [
 
 /** Where a provider sends the person back after an OAuth authorization: the Hub's redirect address is its public origin plus this (C26). */
 export const REDIRECT_PATH = '/integrations/return'
+
+/**
+ * The drawing frame of the conversation: the one page the Hub frames from its own origin. It runs
+ * the diagram library in a sandbox of an opaque origin, under its own policy, so the Hub's page
+ * keeps `style-src 'self'`; the page hears the drawn picture from it as a message (security S24).
+ */
+export const DIAGRAM_FRAME = {
+  path: '/diagram-frame.html',
+  policy:
+    "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+} as const

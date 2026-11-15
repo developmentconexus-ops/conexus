@@ -1,6 +1,8 @@
 import type { Route } from './fake-data.ts'
 import {
+  BAD_SCROLL,
   BUYER,
+  badScroll,
   CLAIM,
   ITEMS,
   ORDER,
@@ -9,25 +11,30 @@ import {
   paging,
   SELLER,
   SELLER_PATH,
+  scanOf,
 } from './fake-data.ts'
+import { envelope, rowsOf } from './recordings.ts'
 
-const QUESTIONS = Array.from({ length: 12 }, (_, index) => ({
-  id: 9000000001 + index,
-  text: `Tem na cor azul? (${index + 1})`,
-  status: 'UNANSWERED',
-  date_created: '2026-09-11T09:00:00.000-03:00',
-  item_id: ITEMS[0],
-  seller_id: Number(SELLER.ref),
-  from: {
-    id: BUYER.id,
-    answered_questions: 3,
-    nickname: BUYER.nickname,
-    email: BUYER.email,
-  },
-  answer: null,
-}))
+const MAIL = 'maria.ficticia@exemplo.test'
 
-const PERIODS = Array.from({ length: 14 }, (_, index) => {
+let questionsKept: readonly Record<string, unknown>[] | undefined
+
+/** 12 questions shaped as the recorded one, every fourth answered as it was, the asker with only the `id` the service sends. */
+export function questionsOf() {
+  const recorded = rowsOf('perguntas-varredura', 'questions')
+  questionsKept ??= Array.from({ length: 12 }, (_, index) => ({
+    ...recorded[0],
+    id: 9000000001 + index,
+    text: `Tem na cor azul? (${index + 1})`,
+    ...(index % 4 === 3 ? {} : { status: 'UNANSWERED', answer: null }),
+    item_id: ITEMS[0],
+    seller_id: Number(SELLER.ref),
+    from: { id: BUYER.id },
+  }))
+  return questionsKept
+}
+
+export const PERIODS = Array.from({ length: 14 }, (_, index) => {
   const month = String(index + 1).padStart(2, '0')
   return {
     key: `2025-${month}-01`,
@@ -38,6 +45,20 @@ const PERIODS = Array.from({ length: 14 }, (_, index) => {
     period_status: 'CLOSED',
   }
 })
+
+/** The reason of the double's one open claim. */
+export const CLAIM_REASON = 'PNR'
+/** The one promotion of the double: still a candidate, it starts on 1 October 2026. */
+export const PROMOTION = {
+  id: 'P-MLB1000',
+  type: 'DEAL',
+  status: 'candidate',
+  name: 'Semana do Pão',
+  start_date: '2026-10-01T00:00:00',
+  finish_date: '2026-10-07T23:59:59',
+}
+/** The visits of the double: one total, none by listing. */
+export const TOTAL_VISITS = 321
 
 const NEEDS_DOCUMENT_TYPE = {
   status: 400,
@@ -50,7 +71,20 @@ export const MORE_ROUTES: readonly Route[] = [
     group: 'perguntas',
     pattern: /^\/questions\/search$/,
     answer: ({ query }) => {
-      const page = pageOf(QUESTIONS, query, 50)
+      if (query.get('search_type') === 'scan') {
+        if (badScroll(query, 'questions')) return BAD_SCROLL
+        const scan = scanOf(questionsOf(), query, 'questions')
+        return {
+          body: {
+            ...envelope('perguntas-varredura', 'questions'),
+            total: scan.total,
+            limit: scan.limit,
+            questions: scan.rows,
+            scroll_id: scan.scrollId,
+          },
+        }
+      }
+      const page = pageOf(questionsOf(), query, 50)
       return {
         body: {
           total: page.total,
@@ -91,8 +125,8 @@ export const MORE_ROUTES: readonly Route[] = [
             text: { plain: 'Quando chega?' },
             status: query.get('mark_as_read') === 'false' ? 'available' : 'read',
             message_date: { created: '2026-09-11T10:00:00.000-03:00', read: null },
-            from: { user_id: BUYER.id, email: BUYER.email },
-            to: { user_id: Number(SELLER.ref) },
+            from: { user_id: BUYER.id, email: MAIL, name: 'Maria Fictícia' },
+            to: { user_id: Number(SELLER.ref), email: 'dono@exemplo.test', name: 'Joana Exemplo' },
           },
         ],
       },
@@ -112,7 +146,7 @@ export const MORE_ROUTES: readonly Route[] = [
             status: query.get('status') ?? 'opened',
             type: 'mediations',
             stage: 'claim',
-            reason_id: 'PNR',
+            reason_id: CLAIM_REASON,
             date_created: '2026-09-12T09:00:00.000-03:00',
             last_updated: '2026-09-12T10:00:00.000-03:00',
             players: [{ role: 'respondent', type: 'seller', user_id: Number(SELLER.ref) }],
@@ -134,7 +168,7 @@ export const MORE_ROUTES: readonly Route[] = [
         status: 'opened',
         type: 'mediations',
         stage: 'claim',
-        reason_id: 'PNR',
+        reason_id: CLAIM_REASON,
         date_created: '2026-09-12T09:00:00.000-03:00',
         last_updated: '2026-09-12T10:00:00.000-03:00',
         resolution: null,
@@ -162,16 +196,7 @@ export const MORE_ROUTES: readonly Route[] = [
     pattern: new RegExp(`^/seller-promotions/users/${SELLER_PATH}$`),
     answer: () => ({
       body: {
-        results: [
-          {
-            id: 'P-MLB1000',
-            type: 'DEAL',
-            status: 'candidate',
-            name: 'Semana do Pão',
-            start_date: '2026-10-01T00:00:00',
-            finish_date: '2026-10-07T23:59:59',
-          },
-        ],
+        results: [PROMOTION],
         paging: { total: 1 },
       },
     }),
@@ -184,8 +209,8 @@ export const MORE_ROUTES: readonly Route[] = [
       body: {
         date_from: query.get('date_from'),
         date_to: query.get('date_to'),
-        total_visits: 321,
-        visits_detail: [{ company: 'mercadolibre', quantity: 321 }],
+        total_visits: TOTAL_VISITS,
+        visits_detail: [{ company: 'mercadolibre', quantity: TOTAL_VISITS }],
       },
     }),
   },
@@ -244,7 +269,7 @@ export const MORE_ROUTES: readonly Route[] = [
         invoice_series: '1',
         invoice_number: '1234',
         issued_date: '2026-09-10T12:00:00.000-03:00',
-        recipient: { name: 'Maria Fictícia', tax_id: '52998224725', email: BUYER.email },
+        recipient: { name: 'Maria Fictícia', tax_id: '52998224725', email: MAIL },
       },
     }),
   },

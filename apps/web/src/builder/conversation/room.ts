@@ -3,12 +3,14 @@ import type {
   FailureCode,
   ProposedApp,
   ProposedAutomation,
+  ProposedCompanyMemory,
   ShownFile,
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import type { WritesRead } from './approval-item.ts'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
+import type { FilesGo } from './attachments.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
 import type { BuilderSession } from './session.ts'
 import { START_NO_ACCOUNT } from './text.ts'
@@ -49,6 +51,11 @@ export type Room = {
   appCard?: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
   /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
   automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
+  /** Draws the card of what the call `toolCallId` proposed to save in the company's memory; none in the Builder's conversation. */
+  companyMemoryCard?: (proposal: {
+    proposed: ProposedCompanyMemory
+    toolCallId: string
+  }) => ReactNode
   /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line; none outside the Construtor's conversation. */
   openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
   /** The agent now open, for its row to say so; `undefined` until one is. */
@@ -66,6 +73,8 @@ export type Room = {
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
   failures: Partial<Record<FailureCode, string>>
+  /** Where the files the person sends go, which decides the types the box accepts. */
+  files: FilesGo
 }
 
 export const BUILDER_ROOM: Room = {
@@ -73,6 +82,7 @@ export const BUILDER_ROOM: Room = {
   connectors: PLAIN_WORDS,
   overrides: {},
   failures: {},
+  files: 'MODEL',
 }
 
 /** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
@@ -81,11 +91,12 @@ export const ASSISTANT_ROOM: Room = {
   connectors: PLAIN_WORDS,
   overrides: ASSISTANT_OVERRIDES,
   failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+  files: 'MACHINE',
 }
 
 /** The room of a conversation with the Construtor or with an agent of the Projeto: the rows are the Assistant's, the name is the one the person talks to and the connectors are named by the catalog the screen read. */
 export function agentRoom(agent: string, connectors: ConnectorWords = PLAIN_WORDS): Room {
-  return { ...ASSISTANT_ROOM, agent, connectors }
+  return { ...ASSISTANT_ROOM, agent, connectors, files: 'MODEL' }
 }
 
 export const RoomContext = createContext<Room>(BUILDER_ROOM)

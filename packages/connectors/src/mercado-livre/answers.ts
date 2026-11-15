@@ -26,70 +26,68 @@ const Row = z.union([
   z.union([z.string(), z.number()]).transform((id) => ({ id })),
 ])
 
-const Counts = z.looseObject({ total: z.number(), offset: z.number(), limit: z.number() })
+/** What a route counts: the total always, and the offset and limit when it sends them (a scan's `paging` has no offset). */
+const Counts = z.looseObject({
+  total: z.int().min(0),
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+})
+type Counted = z.infer<typeof Counts>
 
 /** The offset a route that counts at the top level keeps in `filters` (the questions search). */
 const Filtered = z.looseObject({
-  total: z.number(),
+  total: z.int().min(0),
   limit: z.number(),
   filters: z.looseObject({ offset: z.number() }),
 })
 
 /**
- * Whether another page follows, from the counts as the route sends them: `paging` (orders, claims),
- * or the top level (billing periods: `total`, `offset`, `limit`; questions: `total`, `limit` and
- * the offset in `filters`). A route that sends none says null.
+ * The counts of a page as the route sends them, the one reading `temMais` and `total` both come from:
+ * `paging` (orders, claims, a scan's), or the top level (billing periods: `total`, `offset`, `limit`;
+ * questions: `total`, `limit` and the offset in `filters`). A route that sends none says null.
  */
-function moreOf(body: unknown): boolean | null {
+function countsOf(body: unknown): Counted | null {
   const nested = z.looseObject({ paging: Counts }).safeParse(body)
-  const flat = Counts.safeParse(body)
+  if (nested.success) return nested.data.paging
   const filtered = Filtered.safeParse(body)
-  const counts = nested.success
-    ? nested.data.paging
-    : flat.success
-      ? flat.data
-      : filtered.success
-        ? {
-            total: filtered.data.total,
-            limit: filtered.data.limit,
-            offset: filtered.data.filters.offset,
-          }
-        : null
-  return counts === null ? null : counts.offset + counts.limit < counts.total
+  if (filtered.success) return { ...filtered.data, offset: filtered.data.filters.offset }
+  const flat = Counts.safeParse(body)
+  return flat.success ? flat.data : null
 }
 
-/** The row without the keys named by dotted path (`buyer`, `from.email`): the buyer's personal data never leaves the kit. */
-function without(value: unknown, path: readonly string[]): unknown {
-  const [key, ...rest] = path
-  if (key === undefined || typeof value !== 'object' || value === null || Array.isArray(value))
-    return value
-  if (rest.length === 0) return Object.fromEntries(Object.entries(value).filter(([k]) => k !== key))
-  return Object.fromEntries(
-    Object.entries(value).map(([k, v]) => [k, k === key ? without(v, rest) : v]),
-  )
+/** Whether another page follows: null when the counts lack the offset or the limit. */
+function moreOf(counts: Counted | null): boolean | null {
+  if (counts?.offset === undefined || counts.limit === undefined) return null
+  return counts.offset + counts.limit < counts.total
+}
+
+/**
+ * A scan's answer carries a `scroll_id` (the cursor of the next page); it counts nothing, so the page
+ * with no rows is the end and a page with rows has more. A body with no `scroll_id` is paged by its counts.
+ */
+function pagedOf(
+  body: unknown,
+  count: number,
+  counts: Counted | null,
+): Pick<Rows, 'temMais' | 'seguinte'> {
+  const scroll = z.looseObject({ scroll_id: z.string().min(1).max(4000) }).safeParse(body)
+  if (!scroll.success) return { temMais: moreOf(counts) }
+  return count === 0 ? { temMais: false } : { temMais: true, seguinte: scroll.data.scroll_id }
 }
 
 type Built = { success: true; data: Rows } | { success: false; error: z.ZodError }
 
 /**
  * A ready read: the envelope checked (the list under `list`, or the body itself when it is the list
- * or one object, read as a list of one), the paging, and every row as Mercado Livre sent it minus
- * the `omit` keys. 401 is an expired access token (the Hub renews once and repeats), 403 a
- * permission the app lacks, and a 206 is an order the API could not fill whole (`X-Content-Missing`):
- * it says in its docs that the rest usually suffices, so the rows are read and carry `parcial`.
+ * or one object, read as a list of one), the paging, and every row as Mercado Livre sent it. 401
+ * is an expired access token (the Hub renews once and repeats), 403 a permission the app lacks,
+ * and a 206 is an order the API could not fill whole (`X-Content-Missing`): it says in its docs
+ * that the rest usually suffices, so the rows are read and carry `parcial`.
  * Any other status is the kernel's table, except the one 404 a read declares in `emptyNotFound`
  * (the start of its `message`, with `error: "not_found"`): the seller has no data yet, so it reads
  * as an empty answer; any other 404 stays a refusal.
  */
-export function rows({
-  list,
-  omit = [],
-  emptyNotFound,
-}: {
-  list: string | null
-  omit?: readonly string[]
-  emptyNotFound?: string
-}) {
+export function rows({ list, emptyNotFound }: { list: string | null; emptyNotFound?: string }) {
   const NothingFound = z.looseObject({
     error: z.literal('not_found'),
     message: z.string().startsWith(emptyNotFound ?? ''),
@@ -104,10 +102,14 @@ export function rows({
   function build(body: unknown, parcial = false): Built {
     const parsed = Found.safeParse(body)
     if (!parsed.success) return { success: false, error: parsed.error }
-    const linhas = parsed.data.map((row) =>
-      omit.reduce<unknown>((kept, path) => without(kept, path.split('.')), row),
-    )
-    return Rows.safeParse({ linhas, temMais: moreOf(body), ...(parcial ? { parcial } : {}) })
+    const linhas = parsed.data
+    const counts = countsOf(body)
+    return Rows.safeParse({
+      linhas,
+      ...pagedOf(body, linhas.length, counts),
+      ...(counts === null ? {} : { total: counts.total }),
+      ...(parcial ? { parcial } : {}),
+    })
   }
   const output = z.unknown().transform((body, context): Rows => {
     const built = build(body)

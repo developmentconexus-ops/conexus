@@ -187,6 +187,12 @@ reseal_if_labeled "$image"
 phase "starting the Hub from $image with $template (up to 90 s to be healthy)"
 if HUB_IMAGE="$image" HUB_E2B_TEMPLATE="$template" "${compose[@]}" up --detach --wait --wait-timeout 90; then
   echo "live: $image with $template"
+  # The Hub is already live, so a clean-up that fails or hangs says so and leaves the deploy green.
+  # 120 s, like the pull: the first run removes every image the deploys left behind, later ones
+  # only what has gone unused for 48 h. A rollback pulls by digest, so it never needs a local copy.
+  phase "removing images unused for 48 h (up to 120 s)"
+  bounded 120 docker image prune --all --force --filter until=48h > /dev/null ||
+    echo "clean-up of old images failed; the deploy stands: $image with $template" >&2
   exit 0
 fi
 

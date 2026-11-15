@@ -1,28 +1,52 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { chain, ids, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import {
+  chain,
+  ids,
+  Limit,
+  Offset,
+  PathId,
+  readOf,
+  SCROLL_TTL_MS,
+  Scan,
+  scanAlone,
+  searchTypeOf,
+  sellerOf,
+} from './shared.ts'
 
 export const anuncios = readOf({
   id: 'anuncios',
   subject: 'anuncios',
   docs: 'itens-e-buscas',
   summary:
-    'Lista os ids dos anúncios do vendedor, filtrando por status ou SKU, uma página por chamada (até 100). A busca lê no máximo 1000 anúncios (o limite de offset do Mercado Livre); um vendedor com mais usa os filtros de status ou SKU.',
+    'Lista os ids dos anúncios do vendedor, filtrando por status ou SKU, uma página por chamada (até 100). Com `scan` a busca é uma varredura que passa de mil: a primeira página manda `scan`, e a resposta traz o `seguinte` (o `scrollId` da próxima, que vale 5 minutos).',
   label: 'Anúncios',
-  input: z.object({
-    status: z
-      .enum(['active', 'paused', 'closed', 'under_review', 'inactive', 'pending'])
-      .optional(),
-    sku: z.string().min(1).max(100).optional(),
-    offset: Offset,
-    limit: Limit(100),
-  }),
+  input: z
+    .object({
+      status: z
+        .enum(['active', 'paused', 'closed', 'under_review', 'inactive', 'pending'])
+        .optional(),
+      sku: z.string().min(1).max(100).optional(),
+      offset: Offset.optional(),
+      ...Scan,
+      limit: Limit(100),
+    })
+    .refine(scanAlone.check, scanAlone.issue),
   list: 'results',
-  probe: () => ({ offset: 0, limit: 5 }),
+  paged: {
+    paging: {
+      ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 100 },
+      ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
+    },
+    changed: null,
+  },
+  probe: () => ({ limit: 5 }),
   request: (input, account) =>
     get(`/users/${sellerOf(account)}/items/search`, {
       status: input.status,
       seller_sku: input.sku,
+      search_type: searchTypeOf(input),
+      scroll_id: input.scrollId,
       offset: input.offset,
       limit: input.limit,
     }),

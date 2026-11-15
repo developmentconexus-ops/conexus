@@ -48,11 +48,17 @@ type MemberFields = {
   email: string
   role: string
   mayChangeTo?: string[]
-} & Partial<Pick<MemberRow, 'mayRemove' | 'invitationsSent'>>
+} & Partial<
+  Pick<MemberRow, 'mayRemove' | 'invitationsSent' | 'jobTitle' | 'department' | 'mayEditProfile'>
+>
 
 /** A person of a company as the Hub lists them: nothing to do to them unless the test says so. */
 export function memberView(person: MemberFields) {
-  return Member.parse({ mayRemove: false, mayChangeTo: [], invitationsSent: 0, ...person })
+  return Member.parse({
+    ...{ mayRemove: false, mayChangeTo: [], invitationsSent: 0 },
+    ...{ jobTitle: null, department: null, mayEditProfile: false },
+    ...person,
+  })
 }
 
 /** The company page's reads: the company as `role` sees it, and its members. */
@@ -218,6 +224,9 @@ export function hubServer() {
     http.get('*/api/companies/:companyId/assistant/conversations', () =>
       HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
     ),
+    http.get('*/api/companies/:companyId/assistant/profile-memory', () =>
+      HttpResponse.json({ text: null }),
+    ),
     http.get('*/api/companies/:companyId/projects/:projectId/conversations', () =>
       HttpResponse.json(
         listConversations.success.body.parse({ conversations: [], next: { kind: 'END' } }),
@@ -277,6 +286,12 @@ export const PEDIDOS = ProjectSummary.parse({
 export const conversationsNone = http.get(
   `*/api/companies/${COMPANY.id}/projects/:projectId/conversations`,
   () => HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
+)
+
+/** Integrações do Projeto asks for the company's copies; for a test that has none to speak of. */
+export const projectCopiesNone = http.get(
+  `*/api/companies/${COMPANY.id}/projects/:projectId/copies`,
+  () => HttpResponse.json({ copies: [] }),
 )
 
 /** What the Hub shows of Empresa Teste's Projects; a test changes it between reads. */

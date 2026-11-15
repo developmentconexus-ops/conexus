@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
-import { setTimeout as sleep } from 'node:timers/promises'
 import { salesSankhya } from '../../hub/connectors/test-sales.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { assisting } from '../assistant/test-assistant.ts'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
 import { sessionUrl, streamOf } from '../conversation/test-conversation.ts'
@@ -67,13 +67,25 @@ export async function approving(
 }
 
 /**
- * How long a person takes to read the card before answering. Mastra 1.82 publishes the card before
- * it stores the run as suspended, and an answer in that instant loses the resume (#27831): the
- * card's failure table keeps the person's pace, never a retry.
+ * Waits until Mastra stores the run of the card `toolCallId` as suspended. Mastra 1.82 publishes the
+ * card before it stores the run, and an answer in that instant loses the resume (#27831).
  */
-export const PERSON_PACE_MS = 1_500
+export async function untilCardStored(hub: Hub, toolCallId: string) {
+  await until(
+    async () =>
+      (
+        await hub.test.mastraPool.query(
+          `select 1 from mastra.mastra_workflow_snapshot
+            where workflow_name = 'agentic-loop' and snapshot->>'status' = 'suspended'
+              and position($1 in snapshot::text) > 0`,
+          [toolCallId],
+        )
+      ).rowCount === 1,
+    `Mastra stored the run of the card ${toolCallId}`,
+  )
+}
 
-/** A person's answer to the card of `toolCallId`, through Mastra's own route, at a person's pace; its body. */
+/** A person's answer to the card of `toolCallId`, through Mastra's own route, once Mastra stores its run; its body. */
 export async function answer(
   hub: Hub,
   person: Person,
@@ -81,7 +93,18 @@ export async function answer(
   toolCallId: string,
   approved: boolean,
 ) {
-  await sleep(PERSON_PACE_MS)
+  await untilCardStored(hub, toolCallId)
+  return answerLate(hub, person, url, toolCallId, approved)
+}
+
+/** An answer to a card that no longer waits: sent without waiting for its run. */
+export async function answerLate(
+  hub: Hub,
+  person: Person,
+  url: string,
+  toolCallId: string,
+  approved: boolean,
+) {
   const answered = await post(hub, person, `${sessionUrl(url)}/tool-approval`, {
     toolCallId,
     approved,

@@ -2,6 +2,7 @@ import type {
   Connection,
   ConnectionState,
   ConnectorEntry,
+  CopyOfConnection,
   Native,
   ProjectAccess,
   SignInCompleted,
@@ -238,4 +239,22 @@ export function provedText(note: {
   const by = note.writtenBy === null ? 'quem já saiu da empresa' : note.writtenBy
   const rows = note.provedRows === 1 ? '1 linha' : `${note.provedRows} linhas`
   return `provado em ${dayAndMonth(note.provedAt)} por ${by}, com ${rows}`
+}
+
+/** What Desligar takes from one copy, said before the click (O Sync de qualquer conector, U4). */
+export function copyLossText(copy: Pick<CopyOfConnection, 'name' | 'last' | 'rows'>): string {
+  if (copy.last) return `A cópia ${copy.name} acaba.`
+  if (copy.rows === null) return `A cópia ${copy.name} perde as linhas desta conta.`
+  return `A cópia ${copy.name} perde as ${copy.rows.toLocaleString('pt-BR')} linhas desta conta.`
+}
+
+export function notBackText(connector: string): string {
+  return `O que o ${connector} já não mostra não volta se você ligar esta conta de novo.`
+}
+
+export const COPIES_UNREAD = 'Não conseguiu ler as cópias desta conta.'
+
+/** The table of an ended copy that the company's database did not drop yet; the connection is gone all the same. */
+export function tableLeftText(name: string): string {
+  return `A conexão foi removida. A tabela da cópia ${name} ainda não saiu do banco da empresa; o Conexus a apaga no próximo Desligar ou quando uma cópia for ligada.`
 }

@@ -9,6 +9,9 @@
 // run shows where its time went; the test "a lista dos mais lentos" holds that. It appends and
 // prints the time of each test file too: scripts/server-shards.ts reads those lines from a job's
 // log to balance the shards (test "o tempo de cada arquivo").
+// When CONEXUS_FAILURES_FILE names a file, each failed test is appended there as one JSON line, for
+// scripts/test-run.ts to decide on the second run; the second run (CONEXUS_TEST_ATTEMPT) prints no
+// file table, since its times are not the files'.
 // Revalidate by 2027-04-13, or when Node changes the test event stream.
 import { appendFileSync } from 'node:fs'
 import { relative } from 'node:path'
@@ -53,12 +56,39 @@ function filesTable(files: Map<string, number>): string {
   ].join('\n')
 }
 
+type Started = Map<string, { name: string; parent: number }>
+
+function chainOf(started: Started, file: string, id: number): string[] {
+  const names: string[] = []
+  for (let at = started.get(`${file}#${id}`); at !== undefined; ) {
+    names.unshift(at.name)
+    at = at.parent === 0 ? undefined : started.get(`${file}#${at.parent}`)
+  }
+  return names
+}
+
+function recordFailure(
+  file: string,
+  event: TestEvent & { type: 'test:fail' },
+  started: Started,
+): void {
+  const path = process.env.CONEXUS_FAILURES_FILE
+  const { name, details, testId } = event.data
+  if (path === undefined || Reflect.get(details.error, 'failureType') === 'subtestsFailed') return
+  const names = chainOf(started, event.data.file ?? '', testId ?? 0)
+  appendFileSync(
+    path,
+    `${JSON.stringify({ file, name, names: names.length > 0 ? names : [name] })}\n`,
+  )
+}
+
 function isLogLine(line: string): boolean {
   return parseLogLine(line) !== undefined
 }
 
 async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEvent, void> {
   const pending = new Map<string, string>()
+  const started: Started = new Map()
   const timed: Timed[] = []
   const files = new Map<string, number>()
   for await (const event of source) {
@@ -73,6 +103,12 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
         }
       }
     }
+    if (event.type === 'test:start') {
+      const { file, testId, parentId, name } = event.data
+      started.set(`${file ?? ''}#${testId}`, { name, parent: parentId ?? 0 })
+    }
+    if (event.type === 'test:fail')
+      recordFailure(relative(process.cwd(), event.data.file ?? ''), event, started)
     if (event.type === 'test:pass' || event.type === 'test:fail') {
       const { name, file, details } = event.data
       if (details.type !== 'suite' && name !== file) {
@@ -106,9 +142,11 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
       const summary = process.env.GITHUB_STEP_SUMMARY
       if (summary !== undefined && timed.length > 0) {
         appendFileSync(summary, slowestTable(timed, event.data.duration_ms))
-        const table = filesTable(files)
-        appendFileSync(summary, table)
-        process.stdout.write(table)
+        if (process.env.CONEXUS_TEST_ATTEMPT === undefined) {
+          const table = filesTable(files)
+          appendFileSync(summary, table)
+          process.stdout.write(table)
+        }
       }
     }
     yield event

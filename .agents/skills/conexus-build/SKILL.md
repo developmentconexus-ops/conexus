@@ -1,6 +1,6 @@
 ---
 name: conexus-build
-description: "Builds one unit of an approved Conexus step card as its own pull request on `main`: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
+description: "Builds one unit of an approved Conexus step card as one commit of the step's pull request: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
 ---
 
 # Build
@@ -12,17 +12,19 @@ the session that wrote the card.
 
 ## What it receives
 
-The card (in `docs/steps/` or its pull request) and the unit. It reads the card's top
-tables and its unit's section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit. Nothing else is pasted in: a ruling
+not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
+unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
 `typescript-best-practices` before writing code; [bring](references/bring.md) for brought code,
 [bug](references/bug.md) for a defect.
 
 ## Steps
 
-1. Read the unit's criteria, its reference table rows and its section.
+1. Read the unit's criteria, reference table rows and section, whose order of the work
+   gives each step's files, reference, code, tests, hand mutations and done line; a group's last
+   unit adds its checkpoint.
 2. Every type, contract and value the unit needs exists on `main` or comes from this
    unit; if not, stop.
 2a. Build each of the unit's reference table rows as its verdict says
@@ -36,16 +38,15 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
    [T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
-6. Run the result for real: the server, the route, the migration on a disposable database, and a
+6. Run the result: the server, the route, the migration on a disposable database, and a
    changed screen looked at per [T23](../../../docs/guides/testing.md), through a
    verification skill when one exists ([screen](references/screen.md)). A state fix reruns
-   A→B→A, a layout fix the card's failure states, and a new
-   security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
+   A→B→A, a layout fix the card's failure states. A remendo row keeps the card's proof beside its
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
-   `npm run quality` ([T27](../../../docs/guides/testing.md)): answer every survivor; code C70 and
-   C73 decide what leaves.
-7. One pull request for the unit, its commits kept; the tests and proofs its section names are green
-   locally ([delivery L9](../../../docs/guides/delivery.md)).
+   `npm run quality`, hand-mutate key lines
+   ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
+7. One commit for the unit, kept on merge; `npm run check`, the tests and proofs its section names are green
+   locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { AppEntry, CompanyNickname } from './address.ts'
 import { Email, Password, PersonId } from './identity.ts'
 import { LIBRARY_ID } from './library-ids.ts'
+import { Member } from './members.ts'
 import { defineOperation } from './operation.ts'
 import { CompanyMay, Role } from './roles.ts'
 
@@ -26,21 +27,6 @@ export type CompanyDetail = z.infer<typeof CompanyDetail>
 
 export const Membership = z.object({ company: Company, role: Role })
 export type Membership = z.infer<typeof Membership>
-
-/**
- * A person of a company. `mayRemove` and `mayChangeTo` are what the viewer may do to this row, the
- * Hub's one answer (code C26); `invitationsSent` counts the invitations a removal would cancel.
- */
-export const Member = z.object({
-  personId: PersonId,
-  name: z.string().min(1),
-  email: Email,
-  role: Role,
-  mayRemove: z.boolean(),
-  mayChangeTo: z.array(Role),
-  invitationsSent: z.number().int().nonnegative(),
-})
-export type Member = z.infer<typeof Member>
 
 export const PendingInvitation = z.object({
   state: z.literal('PENDING'),
@@ -150,7 +136,7 @@ export const listMembers = defineOperation({
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
-const OfMember = InCompany.extend({ personId: PersonId })
+export const OfMember = InCompany.extend({ personId: PersonId })
 
 const MEMBER_READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 

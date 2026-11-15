@@ -18,6 +18,7 @@ import {
   removeMember,
   renewInvitation,
   setCompanyNickname,
+  setMemberProfile,
   updateRole,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -46,6 +47,7 @@ import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { appInvitationOf, companyScope, pendingOf } from './invitations.ts'
 import { createMayUse } from './may-use.ts'
+import { writeMemberProfile } from './member-profile.ts'
 import type { PersonConversationRelease } from './memberships.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { chooseNickname } from './nickname.ts'
@@ -234,6 +236,11 @@ function registerMemberships(app: FastifyInstance, deps: Deps): void {
     const fields = { ...params, by: person.id, from: body.from, role: changed.role }
     if (body.role !== body.from) log.info(fields, 'MEMBER_ROLE_CHANGED')
     return answer({ member: changed })
+  })
+  serve(app, setMemberProfile, async ({ person, params, body, log }) => {
+    const written = await writeMemberProfile(deps.database, { person, ...params, ...body })
+    log.info({ ...params, by: person.id }, 'MEMBER_PROFILE_SET')
+    return answer({ member: written })
   })
 }
 

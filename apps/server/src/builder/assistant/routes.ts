@@ -30,16 +30,19 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, changeModel, releaseThreads, resourceOf } from '../controller-kit/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
+import { attemptIdOf, changeModel, ownThread, releaseThreads } from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
-import type { Owner } from './context.ts'
+import type { CompanyMemory } from './company-memory.ts'
+import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'
 import { SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
 import type { AssistantProjects } from './ports.ts'
+import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import { listedPage } from './search.ts'
 
 /**
@@ -56,6 +59,7 @@ type Deps = {
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
+  company: CompanyMemory
   machines: ConversationMachines
   chosen: ChosenConnections
   log: FailureLog
@@ -65,21 +69,10 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
   return { companyId: input.params.companyId, personId: input.person.id }
 }
 
-/**
- * The person's own thread of the Assistant, or `CONVERSATION_NOT_FOUND`; another's and one that
- * does not exist answer the same (S10).
- */
-async function ownThread(deps: Deps, owner: Owner, conversationId: ConversationId) {
-  const resourceId = resourceOf('assistant', owner)
-  const thread = await deps.memory.getThreadById({ threadId: conversationId, resourceId })
-  if (thread === null) throw new Failure('CONVERSATION_NOT_FOUND')
-  return thread
-}
-
 /** Admits the person who may ask, then reads the thread they own and its scope. */
 async function ownScoped(deps: Deps, owner: Owner, conversationId: ConversationId) {
   await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-  const thread = await ownThread(deps, owner, conversationId)
+  const thread = await ownThread(deps.memory, 'assistant', owner, conversationId)
   return { thread, scope: await scopeOfThread(deps, owner, thread) }
 }
 
@@ -100,6 +93,7 @@ async function conversationOf(deps: Deps, thread: StorageThreadType, scope: Sess
   return {
     id: ConversationId.parse(thread.id),
     title: thread.title || null,
+    createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
     projectId: scope.place.kind === 'PROJECT' ? scope.place.projectId : null,
     automation: automationOf(thread.metadata),
@@ -132,7 +126,7 @@ async function created(deps: Deps, owner: Owner, input: { attemptKey: string; bo
     ...{ owner, place, id, connections: body.connections },
     ...{ model: body.model, effort: body.effort },
   })
-  const thread = await ownThread(deps, owner, id)
+  const thread = await ownThread(deps.memory, 'assistant', owner, id)
   return { made: opened.made, thread, model: opened.model }
 }
 
@@ -190,6 +184,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const conversations = listed.threads.map((thread, at) => ({
       id: ConversationId.parse(thread.id),
       title: thread.title || null,
+      createdAt: thread.createdAt.toISOString(),
       updatedAt: thread.updatedAt.toISOString(),
       project: projectShown(marks[at] ?? null, names),
       automation: automationOf(thread.metadata),
@@ -223,7 +218,7 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    await ownThread(deps, owner, conversationId)
+    await ownThread(deps.memory, 'assistant', owner, conversationId)
     const { title } = input.body
     // `titlePinned`: the memory's own titling no longer replaces the one the person chose. The
     // memory merges the metadata with what is stored.
@@ -239,7 +234,7 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    await ownThread(deps, owner, conversationId)
+    await ownThread(deps.memory, 'assistant', owner, conversationId)
     // The session first, so its answer stops; then its machines; the thread last, so a failure
     // halfway leaves what the next delete finds again. The row of its choice stays until
     // its Projeto, person or company leaves: the Hub holds no `DELETE` on it (data D11).
@@ -318,6 +313,8 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
   registerReads(app, deps)
   registerWrites(app, deps)
   registerChanges(app, deps)
+  registerProfileMemoryRoutes(app, deps)
+  registerCompanyMemoryRoutes(app, deps)
   registerFile(app, {
     route: ASSISTANT_FILE,
     machines: deps.machines,
@@ -325,7 +322,7 @@ export function registerAssistantRoutes(app: FastifyInstance, deps: Deps): void 
     served: 'ASSISTANT_FILE_READ',
     ownConversation: async (owner, conversationId) => {
       await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-      await ownThread(deps, owner, conversationId)
+      await ownThread(deps.memory, 'assistant', owner, conversationId)
     },
   })
 }

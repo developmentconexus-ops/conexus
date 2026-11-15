@@ -243,3 +243,48 @@ test('raio: um cartão curto, sem o prefixo e<número>-, é lido como cartão', 
   assert.match(result.stdout, /out-of-radius U1 outside\/contract\.ts/)
   assert.doesNotMatch(result.stdout, /out-of-radius U1 apps\/server\/src\/c\.ts/)
 })
+
+function unitsCard(title: string, units: number, folder: string): string {
+  return [
+    `# ${title}`,
+    '',
+    ...Array.from({ length: units }, (_, index) => [
+      `## U${index + 1} Unidade`,
+      '',
+      '### O raio da mudança',
+      '',
+      '| Arquivo | Cria, muda ou apaga | Quem importa ou chama |',
+      '| --- | --- | --- |',
+      `| \`${folder}/u${index + 1}.ts\` | Muda | CI |`,
+      '',
+    ]).flat(),
+  ].join('\n')
+}
+
+function twoCards(file: string): string {
+  const repo = committed([file], unitsCard('Fronteira', 5, 'frontier'), 'a-fronteira.md')
+  writeFileSync(join(repo, 'docs/steps/b-assistente.md'), unitsCard('Assistente', 4, 'assistant'))
+  return repo
+}
+
+test('raio: com dois cartões, a unidade é medida contra o cartão que a passa', () => {
+  const frontier = radius(twoCards('frontier/u5.ts'), 'U5', 'HEAD', 'a-fronteira.md')
+  assert.equal(frontier.status, 0, frontier.stdout + frontier.stderr)
+  assert.match(frontier.stdout, /^radius: U5 HEAD inside$/m)
+  const assistant = radius(twoCards('assistant/u2.ts'), 'U2', 'HEAD', 'b-assistente.md')
+  assert.match(assistant.stdout, /^radius: U2 HEAD inside$/m)
+  const wrong = radius(twoCards('assistant/u2.ts'), 'U2', 'HEAD', 'a-fronteira.md')
+  assert.match(wrong.stdout, /out-of-radius U2 assistant\/u2\.ts/)
+})
+
+test('raio: sem o cartão, a unidade que só um cartão tem acha o seu', () => {
+  const result = radius(twoCards('frontier/u5.ts'), 'U5')
+  assert.equal(result.status, 0, result.stdout + result.stderr)
+  assert.match(result.stdout, /^radius: U5 HEAD inside$/m)
+})
+
+test('raio: sem o cartão, a unidade que dois cartões têm recusa com ambiguous-card', () => {
+  const result = radius(twoCards('frontier/u1.ts'), 'U1')
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^ambiguous-card: U1 is in a-fronteira\.md and b-assistente\.md/m)
+})

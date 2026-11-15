@@ -1,8 +1,8 @@
-import type { ConnectionId, ProjectId } from '@conexus/hub-api'
-import { ConversationId } from '@conexus/hub-api'
+import type { ConnectionId, ConversationId, ProjectId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
-import { z } from 'zod'
 import type { SessionScope } from '../../hub/connectors/public.ts'
+import { conversationRun } from '../controller-context/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
 import { oncePerRun, ownerOfResource } from '../controller-kit/public.ts'
 import { MARK } from '../machine/public.ts'
 
@@ -18,9 +18,6 @@ export const SESSION_MARK = {
   automation: 'conexusAutomation',
   automationName: 'conexusAutomationName',
 } as const
-
-/** The person an Assistant conversation belongs to, in a company. */
-export type Owner = { companyId: SessionScope['companyId']; personId: SessionScope['personId'] }
 
 /** A conversation's place and choice, as the Hub keeps them (`chosen.ts`). */
 export type Kept = { projectId: ProjectId | null; connections: readonly ConnectionId[] }
@@ -40,18 +37,7 @@ export function scopeOn(owner: Owner, kept: Kept): SessionScope {
   }
 }
 
-const Controller = z.object({
-  resourceId: z.string(),
-  sessionId: ConversationId,
-})
-
 export type ScopeOf = (requestContext: RequestContext) => Promise<SessionScope | undefined>
-
-/** The conversation a run belongs to, from the controller's mark on its context; none outside one. */
-export function runConversation(requestContext: RequestContext) {
-  const controller = Controller.safeParse(requestContext.get('controller'))
-  return controller.success ? controller.data : undefined
-}
 
 /**
  * The scope for each turn: the owner from the thread's resource, the place and the
@@ -61,7 +47,7 @@ export function runConversation(requestContext: RequestContext) {
  */
 export function sessionScopes(deps: { chosenOf: ChosenOf }): ScopeOf {
   return oncePerRun(async (requestContext) => {
-    const run = runConversation(requestContext)
+    const run = conversationRun(requestContext)
     if (run === undefined) return undefined
     const owner = ownerOfResource(run.resourceId)
     if (owner?.kind !== 'assistant') return undefined

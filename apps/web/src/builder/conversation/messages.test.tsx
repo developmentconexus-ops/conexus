@@ -52,3 +52,13 @@ test('o pedido que o Assistente entrega traz a origem igual ao vivo e relido; a 
   expect(originsIn(handoff.read)).toEqual(['assistant'])
   expect(originsIn(recordedRun('files').read)).toEqual([null, null])
 })
+
+test('a lista da passagem aparece como veio, na mensagem gravada', () => {
+  const { events, read } = recordedRun('handoff')
+  const live = events.flatMap((event) => (event.type === 'message_start' ? [event.message] : []))
+  const [handed] = sentIn(read)
+  expect(handed?.text.endsWith('o que o Assistente leu.')).toBe(true)
+  expect(handed?.text).toContain('- politica-comercial.pdf (PDF, 1,5 MB)')
+  expect(handed?.files).toEqual([])
+  expect(sentIn(live)).toEqual(sentIn(read))
+})

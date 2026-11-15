@@ -2,6 +2,7 @@ import type { PersonId } from '@conexus/hub-api'
 import { ConnectionId, ConnectorId, OperationId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import type { IdentityPorts } from '../identity/public.ts'
+import { speakerOf } from '../identity/public.ts'
 import { ungranted } from './grants.ts'
 import { operationLabel } from './role-kit.ts'
 import { projectConnection } from './tables.ts'
@@ -31,7 +32,7 @@ function refusedByRole(each: { connector: string; operation: string | null }) {
   return { ...each, reason: 'NOT_IN_ROLE' as const, ...(label === undefined ? {} : { label }) }
 }
 
-export function ungrantedBy(identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach'>): UngrantedBy {
+export function ungrantedBy(identity: Pick<IdentityPorts, 'mayUseEach'>): UngrantedBy {
   return async (tx, ids, declared, by) => {
     const lacking = await ungranted(tx, ids, declared)
     if (lacking.length > 0)
@@ -39,15 +40,15 @@ export function ungrantedBy(identity: Pick<IdentityPorts, 'roleOf' | 'mayUseEach
     const targets = declared.flatMap((one) =>
       one.operations.map((operation) => ({ connector: one.connector, operation })),
     )
-    const role = await identity.roleOf(tx, ids.companyId, by)
-    if (role === undefined) return targets.slice(0, 1).map(refusedByRole)
+    const speaker = await speakerOf(tx, ids.companyId, by)
+    if (speaker === undefined) return targets.slice(0, 1).map(refusedByRole)
     const homes = await tx
       .select({ id: projectConnection.connectionId, connector: projectConnection.connectorId })
       .from(projectConnection)
       .where(eq(projectConnection.projectId, ids.projectId))
     const answers = await identity.mayUseEach(
       ids.companyId,
-      { kind: 'PERSON', personId: by, role },
+      speaker,
       targets.map((each) => ({
         connectionId: ConnectionId.parse(homes.find((row) => row.connector === each.connector)?.id),
         connectorId: ConnectorId.parse(each.connector),

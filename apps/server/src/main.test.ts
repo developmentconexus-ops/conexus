@@ -211,6 +211,13 @@ test('log por pedido', async (t) => {
   assert.doesNotMatch(JSON.stringify(lines), /0af7651916cd43dd8448eb211c80319c/)
 })
 
+test('ao subir, o Hub passa as linhas semanais', async (t) => {
+  const { lines, stop, until } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
+  await until('COPY_WHOLE_LINES')
+  await stop()
+  assert.equal(lines.filter((line) => line.msg === 'COPY_WHOLE_LINES').length, 1)
+})
+
 test('desligamento', async (t) => {
   const { lines, stop } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
   await stop()
@@ -263,6 +270,7 @@ const HEALTH_PIPELINE = 'GET /api/health HTTP/1.1\r\nHost: x\r\n'
 
 /** Until the listener refuses a new connection: the Hub's close has begun. */
 async function refusesNew(port: number) {
+  const deadline = Date.now() + 10_000
   for (;;) {
     const probe = connect(port, '127.0.0.1')
     try {
@@ -271,6 +279,7 @@ async function refusesNew(port: number) {
       return
     }
     probe.destroy()
+    assert.ok(Date.now() < deadline, 'the listener refuses a new connection within 10000 ms')
     await new Promise((done) => setTimeout(done, 10))
   }
 }

@@ -1,10 +1,10 @@
-# Review the health of the CI at a step's closing
+# Review the health of the CI each week
 
-Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that did not build the step. The job is to find why the CI got slower and to propose root-cause fixes; the founder decides between the root now and a bridge with a date to leave.
+Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that built none of the week's steps. The job is to find why the CI got slower and to propose root-cause fixes; firstmate decides between the root now and a bridge with a date to leave (delivery L6).
 
 ## Measure
 
-1. List the last 10 completed `main` runs of `ci.yml` with `gh run list --workflow ci.yml --branch main --status completed`. Skip the cancelled ones: the concurrency rule cancels a run that a newer push overtakes.
+1. List the last 10 completed `main` runs of `ci.yml` with `gh run list --workflow ci.yml --branch main --status completed`. Skip the cancelled ones: the concurrency rule cancels a run that a newer push overtakes. Skip the runs whose summary says `Run: code=false` too: a push of documents only skips the suites, so no shard ran.
 2. For each run, read the "Jobs contra o orçamento" table of its summary: the minutes each job used against its `timeout-minutes`. Take the largest `server` shard (the job, not only the test step) and the sum of the `npm test` step of all the shards (their count is the `server-plan` job's, from the recorded seconds).
 3. Take the median of each over the 10 runs. Put them beside the medians of the last review; the first review compares with the numbers the approvals ledger line of "Saúde do CI" records.
 4. A median above 70% of a job's limit already shows as `::warning::` in every run (the job `ci`), and above 85% in the three latest runs opens the issue "CI acima do orçamento" (`.github/workflows/ci-budget.yml`).
@@ -17,4 +17,4 @@ Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that did n
 
 ## Report
 
-One report to the founder, outside the repository: the medians against the last review, each jump with its cause and its measured gain, and the fixes in two lists, root now and bridge with a date. Close the issue "CI acima do orçamento" when the median of the largest shard is back under 85%.
+One report to firstmate, outside the repository: the medians against the last review, each jump with its cause and its measured gain, and the fixes in two lists, root now and bridge with a date. Close the issue "CI acima do orçamento" when the median of the largest shard is back under 85%.

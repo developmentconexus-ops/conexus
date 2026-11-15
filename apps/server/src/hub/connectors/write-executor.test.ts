@@ -22,18 +22,32 @@ test('uma conexão que nunca se fez não enviou nada: a falha vai ao modelo, e a
   assert.equal(Object((await on.ledger())[0]).state, 'REFUSED')
 })
 
-test('o corte depois de sair, o 5xx e o GTW3503 dão WRITE_UNCERTAIN com a marca, enviados uma vez', async (t) => {
+test('o corte depois de sair, o 5xx e o GTW3503 dão WRITE_UNCERTAIN com a marca e o que voltou, enviados uma vez', async (t) => {
+  const timeout = { code: 'GTW3503', message: 'tempo' }
   const answers = [
-    () => Promise.reject(new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET' } })),
-    () => Promise.resolve(Response.json({ code: 'X' }, { status: 502 })),
-    () => Promise.resolve(Response.json({ code: 'GTW3503', message: 'tempo' }, { status: 504 })),
+    {
+      order: () =>
+        Promise.reject(new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET' } })),
+      returned: null,
+    },
+    {
+      order: () => Promise.resolve(Response.json({ code: 'X' }, { status: 502 })),
+      returned: { status: 502, body: { code: 'X' } },
+    },
+    {
+      order: () => Promise.resolve(Response.json(timeout, { status: 504 })),
+      returned: { status: 504, body: timeout },
+    },
     // The gateway's own code decides, whatever the status it travels under.
-    () => Promise.resolve(Response.json({ code: 'GTW3503', message: 'tempo' }, { status: 408 })),
+    {
+      order: () => Promise.resolve(Response.json(timeout, { status: 408 })),
+      returned: { status: 408, body: timeout },
+    },
   ]
-  for (const order of answers) {
+  for (const { order, returned } of answers) {
     const { on, request, first, again } = await scripted(t, order)
     const mark = markOf(request.threadId, request.toolCallId)
-    assert.deepEqual(first, { kind: 'WRITE_UNCERTAIN', mark })
+    assert.deepEqual(first, { kind: 'WRITE_UNCERTAIN', mark, returned })
     assert.deepEqual(again, first)
     assert.equal(on.mode.posts, 1)
   }
