@@ -9,6 +9,7 @@ test('o kit dos papéis: cada conector vira o recurso connector_<id>, com a port
     [
       ['sankhya', 'connector_sankhya'],
       ['mercado-livre', 'connector_mercado-livre'],
+      ['hubspot', 'connector_hubspot'],
     ],
   )
   const sankhya = new Set(

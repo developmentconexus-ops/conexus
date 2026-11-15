@@ -4,10 +4,15 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { AppKeys } from '@conexus/connectors'
-import { MERCADO_LIVRE_FACTS, mercadoLivreFake, sankhyaFake } from '@conexus/connectors'
+import type { AppKeys, OAuthFake } from '@conexus/connectors'
+import {
+  hubspotFake,
+  MERCADO_LIVRE_FACTS,
+  mercadoLivreFake,
+  sankhyaFake,
+} from '@conexus/connectors'
 
-export { MERCADO_LIVRE_FACTS, mercadoLivreFake }
+export { hubspotFake, MERCADO_LIVRE_FACTS, mercadoLivreFake }
 
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -54,26 +59,25 @@ export async function connectionsOn(
 }
 
 /** The installation's apps file, as the configuration reads it, with the double's invented app. */
-export function appsOf(app: AppKeys): Config['connectorApps'] {
-  return ConnectorApps.parse(JSON.stringify({ 'mercado-livre': app }))
+export function appsOf(id: string, app: AppKeys): Config['connectorApps'] {
+  return ConnectorApps.parse(JSON.stringify({ [id]: app }))
+}
+
+type OAuthOn = {
+  change?: (config: Config) => Config
+  /** The origin the Hub is given for the double, when something stands in front of it. */
+  through?: (origin: string) => Promise<string>
+  /** The Hub's clock and catalog, when the test sets its own. */
+  tuning?: Parameters<typeof hubWithLog>[2]
 }
 
 /**
- * Empresa Teste on a Hub whose Mercado Livre is the kit's double on this machine, sending the
+ * Empresa Teste on a Hub whose `id` connector is the kit's double on this machine, sending the
  * person back to the Hub's return page, with the double's app keys: Ana its owner, Bruno an
  * administrator, Carla a member.
  */
-export async function mercadoLivreOn(
-  t: TestContext,
-  a: {
-    change?: (config: Config) => Config
-    /** The origin the Hub is given for the double, when something stands in front of it. */
-    through?: (origin: string) => Promise<string>
-    /** The Hub's clock and catalog, when the test sets its own. */
-    tuning?: Parameters<typeof hubWithLog>[2]
-  } = {},
-) {
-  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+async function oauthOn<F extends OAuthFake>(t: TestContext, a: OAuthOn & { id: string; fake: F }) {
+  const { fake } = a
   const served = await fake.serve()
   t.after(() => served.close())
   const origin = a.through === undefined ? served.origin : await a.through(served.origin)
@@ -83,8 +87,8 @@ export async function mercadoLivreOn(
     (config) =>
       change({
         ...config,
-        connectorOrigins: new Map([['mercado-livre', origin]]),
-        connectorApps: appsOf(fake.app),
+        connectorOrigins: new Map([[a.id, origin]]),
+        connectorApps: appsOf(a.id, fake.app),
       }),
     a.tuning,
   )
@@ -96,6 +100,18 @@ export async function mercadoLivreOn(
   return { hub, fake, served, ana, bruno, carla, companyId, base }
 }
 
+/** Empresa Teste on a Hub whose Mercado Livre is the kit's double. */
+export function mercadoLivreOn(t: TestContext, a: OAuthOn = {}) {
+  const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  return oauthOn(t, { ...a, id: 'mercado-livre', fake })
+}
+
+/** Empresa Teste on a Hub whose HubSpot is the kit's double. */
+export function hubspotOn(t: TestContext, a: OAuthOn = {}) {
+  const fake = hubspotFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
+  return oauthOn(t, { ...a, id: 'hubspot', fake })
+}
+
 /** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
 export async function mercadoLivreServed(t: TestContext) {
   const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
@@ -105,7 +121,7 @@ export async function mercadoLivreServed(t: TestContext) {
     return {
       ...config,
       connectorOrigins: new Map([['mercado-livre', served.origin]]),
-      connectorApps: appsOf(fake.app),
+      connectorApps: appsOf('mercado-livre', fake.app),
     }
   }
   return { fake, change }

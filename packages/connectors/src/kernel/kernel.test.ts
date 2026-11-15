@@ -126,7 +126,7 @@ test('o conector declara quantas ligações um Projeto usa, e nada mais diz uma 
   assert.throws(() => defineConnector({ ...sankhya, perProject: undefined }))
   // @ts-expect-error the old flag left the connector
   assert.equal(sankhya.oneRequestAtATime, undefined)
-  const declared: PerProject = { sankhya: 'one', 'mercado-livre': 'many' }
+  const declared: PerProject = { sankhya: 'one', 'mercado-livre': 'many', hubspot: 'many' }
   assert.deepEqual(
     Object.fromEntries(CONNECTORS.map(({ id, perProject }) => [id, perProject])),
     declared,

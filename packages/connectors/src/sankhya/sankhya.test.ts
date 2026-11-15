@@ -42,10 +42,10 @@ function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
 
-test('o catálogo tem o Sankhya e o Mercado Livre, o Sankhya achado pelo id', () => {
+test('o catálogo tem o Sankhya, o Mercado Livre e o HubSpot, o Sankhya achado pelo id', () => {
   assert.deepEqual(
     CONNECTORS.map((connector) => connector.id),
-    ['sankhya', 'mercado-livre'],
+    ['sankhya', 'mercado-livre', 'hubspot'],
   )
   assert.equal(connectorOf('sankhya'), sankhya)
   assert.equal(connectorOf('Sankhya'), undefined)

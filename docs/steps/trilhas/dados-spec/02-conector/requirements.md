@@ -135,7 +135,7 @@ No fim desta parte a dona da empresa liga o Sankhya, o HubSpot e o Gmail pelo me
 3. SE o HubSpot responde 401, ENTÃO O Hub DEVE marcar a ligação como `NEEDS_REAUTH`.
 4. QUANDO um agente pede a escrita de uma nota num contato, O Hub DEVE mostrar o cartão de aprovação e enviar a escrita uma vez.
 5. O Hub DEVE contar as chamadas do HubSpot no mesmo limite por turno das chamadas de outro conector.
-6. O Hub DEVE retirar o e-mail e o telefone dos contatos do HubSpot como dado pessoal, pela regra de hoje.
+6. O Hub DEVE tratar o e-mail e o telefone dos contatos do HubSpot como dado pessoal `contato`, pela regra de hoje.
 
 ### Requisito 8: O primeiro sistema comum e o primeiro só ao vivo
 

@@ -93,6 +93,7 @@ test('completar: cria a ligação uma vez; a autorização gasta, alheia ou venc
   assert.deepEqual(auths, [
     ['sankhya', 'client_credentials', true],
     ['mercado-livre', 'oauth2_code', false],
+    ['hubspot', 'oauth2_code', false],
   ])
   assert.deepEqual(list.connections[0].account, { label: 'PADARIASOL' })
   const again = await completeOf(hub, ana, companyId, back.signInId, answer)
