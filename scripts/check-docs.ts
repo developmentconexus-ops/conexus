@@ -6,13 +6,13 @@
 // A link is inline or a reference definition, and a fragment must name a heading of the Markdown
 // file it points to, an ATX or a Setext heading, read by its rendered text. Refusals are proved by planting each one in check-docs.test.ts.
 // Revalidate by 2027-04-13, or when the list in delivery L24 changes.
-import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
 import { methodProblems, RULE_DEFINITION, withoutFences, words } from './check-docs-method.ts'
 import { pathProblems, suffixesOf } from './check-docs-paths.ts'
+import { repositoryFiles } from './repository-files.ts'
 
 const root = resolve(process.argv[2] ?? '.')
 
@@ -222,18 +222,6 @@ function checkRetired(file: string, text: string) {
   }
 }
 
-/** The files a pull request of this tree would hold: git's list, so a build output is not one; a tree with no git, by walking it. */
-function repositoryFiles(): string[] {
-  const listed = existsSync(join(root, '.git'))
-    ? spawnSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard'], {
-        encoding: 'utf8',
-      })
-    : undefined
-  return listed?.status === 0
-    ? listed.stdout.split('\n').filter(Boolean)
-    : walk(root).map((path) => relative(root, path))
-}
-
 const STACK = 'docs/reference/stack.md'
 /** What the repository runs that no package.json declares: the database, the runtime, the images and the Hub image's Google sign-in binary. */
 const OTHER_PIECES = ['PostgreSQL', 'Node', 'Docker', 'cloudflared', 'CLIProxyAPI']
@@ -321,7 +309,11 @@ for (const [file, text] of texts) {
 checkIndex()
 checkRules(texts)
 problems.push(...methodProblems(texts))
-pathProblems(texts, suffixesOf(repositoryFiles()), fail)
+pathProblems(
+  texts,
+  suffixesOf(repositoryFiles(root, () => walk(root)).map((path) => relative(root, path))),
+  fail,
+)
 checkStack()
 
 if (problems.length > 0) {

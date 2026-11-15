@@ -5,6 +5,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { z } from 'zod'
+import { repositoryFiles } from './repository-files.ts'
 
 const root = resolve(process.argv[2] ?? '.')
 const SKIPPED = new Set(['node_modules', '.git', 'dist', 'coverage'])
@@ -34,7 +35,7 @@ function hasCause(kind: string, rest: string): boolean {
 
 const counts: Record<string, number> = {}
 const problems: string[] = []
-for (const path of walk(root)) {
+for (const path of repositoryFiles(root, () => walk(root))) {
   const file = relative(root, path)
   const workflow = WORKFLOW.test(file)
   if (!workflow && !SOURCE.test(file)) continue

@@ -141,6 +141,37 @@ test('dois de três, ou um run abaixo de 85% no meio, não é uma sequência', (
   )
 })
 
+test('um run só de documento, com o shard pulado, não esconde a sequência dos runs em que ele rodou', () => {
+  const high = 560
+  const documents = {
+    ...shardRun(3, 'success', 0, 'skipped'),
+    jobs: [job('server (2)', 'skipped', '12:00:00', '12:00:00')],
+  }
+  const over = overBudget(
+    runsOf([
+      shardRun(4, 'success', high),
+      documents,
+      shardRun(2, 'success', high),
+      shardRun(1, 'success', high),
+    ]),
+    BUDGETS,
+  )
+  assert.deepEqual(
+    over.map((entry) => [entry.job, entry.runs]),
+    [['server', [4, 2, 1]]],
+  )
+  const baixo = overBudget(
+    runsOf([
+      shardRun(4, 'success', high),
+      documents,
+      shardRun(2, 'success', 300),
+      shardRun(1, 'success', high),
+    ]),
+    BUDGETS,
+  )
+  assert.deepEqual(baixo, [])
+})
+
 test('um run cancelado pela concorrência não quebra a sequência nem conta', () => {
   const high = 560
   const runs = runsOf([

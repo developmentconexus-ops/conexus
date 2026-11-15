@@ -24,10 +24,11 @@ env:
   NODE_COMPILE_CACHE: /tmp/node-compile-cache
 
 jobs:
-  # Whether the suites have anything to read. `code` is false only for a pull request whose every
-  # changed path is a document the suites never read (docs/, .agents/, the root AGENTS, CLAUDE, README
-  # and PRODUCT); any other path, a rename's old path, a failed `git diff` or a failed job counts as
-  # code, so the suites run and `ci` ends red, never skipped. DESIGN.md and the prompts and skills
+  # Whether the suites have anything to read. `code` is false only for a pull request, or a push to
+  # main, whose every changed path is a document the suites never read (docs/, .agents/, the root
+  # AGENTS, CLAUDE, README and PRODUCT); a push is read from the tip main had before it to the new one.
+  # Any other path, a rename's old path, a failed `git diff` (a tip the clone lacks, a new branch's
+  # zero before) or a failed job counts as code, so the suites run and `ci` ends red, never skipped. DESIGN.md and the prompts and skills
   # under apps/ and packages/ are read by tests, so they are code.
   scope:
     runs-on: ubuntu-24.04
@@ -43,10 +44,17 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
         run: |
           code=true
-          if [ "$EVENT" = pull_request ]; then
-            if changed="$(git diff --no-renames --name-only "origin/${BASE_REF}...HEAD")" && [ -n "$changed" ] \
+          case "$EVENT" in
+            pull_request) range="origin/${BASE_REF}...HEAD" ;;
+            push) range="${BEFORE}..${SHA}" ;;
+            *) range= ;;
+          esac
+          if [ -n "$range" ]; then
+            if changed="$(git diff --no-renames --name-only "$range")" && [ -n "$changed" ] \
               && ! grep -qvE '^(docs/|\.agents/|(AGENTS|CLAUDE|README|PRODUCT)\.md$)' <<<"$changed"; then
               code=false
             fi
@@ -479,7 +487,7 @@ jobs:
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
-            # A document-only pull request skips the suites (scope), which is a pass.
+            # A document-only pull request, or push to main, skips the suites (scope), which is a pass.
             if [ "$result" = skipped ] && [ "$CODE" = false ]; then
               continue
             fi
