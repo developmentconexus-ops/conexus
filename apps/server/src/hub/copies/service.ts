@@ -42,8 +42,8 @@ export function createCopyService(
     /** Ligar: the row, the company's table and the clock. */
     enable: (input: Enabling) => enableCopy(full, input),
     /** One run of one copy; the clock's workflow calls it. */
-    run: (input: { companyId: CompanyId; copyId: CopyId }, signal: AbortSignal) =>
-      runCopy(full, input, signal),
+    run: (input: { companyId: CompanyId; copyId: CopyId; whole?: boolean }, signal: AbortSignal) =>
+      runCopy(full, { ...input, whole: input.whole === true }, signal),
     /** The reads, admitting `readCopies`: the copies, the open proposals and those named. */
     list: (input: InCompany & { named: readonly CopyProposalId[] }) => listed(full, input),
     summaryOf: (input: Of) => summaryOf(full, input),

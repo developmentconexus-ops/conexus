@@ -194,8 +194,8 @@ export async function copiesOn(
       attemptKey: options.key ?? randomUUID(),
     })
   }
-  function run(copyId: CopyId, signal = new AbortController().signal) {
-    return copies.run({ companyId, copyId }, signal)
+  function run(copyId: CopyId, signal = new AbortController().signal, whole = false) {
+    return copies.run({ companyId, copyId, whole }, signal)
   }
   return {
     ...{ hub, fake, gate, ana, anaId, carla, companyId, projectId, owner, connectionId },

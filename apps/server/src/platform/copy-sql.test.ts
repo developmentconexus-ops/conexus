@@ -142,7 +142,7 @@ test('o fim da passada de uma conta não toca a outra, e o nome da conta segue a
   const renamed = { ref: 'A', name: 'Loja A nova' }
   const closed = await postgres.closePass(
     sync,
-    { ...PEDIDOS, pass: 1, windowFrom: null, account: renamed },
+    { ...PEDIDOS, pass: 1, windowFrom: null, readAll: true, account: renamed },
     signal,
   )
   assert.deepEqual(closed, { kind: 'DONE', rows: 3 })
