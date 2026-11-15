@@ -15,6 +15,8 @@ import {
 } from './fake-data.ts'
 import { envelope, rowsOf } from './recordings.ts'
 
+const MAIL = 'maria.ficticia@exemplo.test'
+
 let questionsKept: readonly Record<string, unknown>[] | undefined
 
 /** 12 questions shaped as the recorded one, every fourth answered as it was; the asker's name and e-mail are planted for the kit to drop. */
@@ -27,7 +29,7 @@ export function questionsOf() {
     ...(index % 4 === 3 ? {} : { status: 'UNANSWERED', answer: null }),
     item_id: ITEMS[0],
     seller_id: Number(SELLER.ref),
-    from: { id: BUYER.id, answered_questions: 3, nickname: BUYER.nickname, email: BUYER.email },
+    from: { id: BUYER.id },
   }))
   return questionsKept
 }
@@ -123,7 +125,7 @@ export const MORE_ROUTES: readonly Route[] = [
             text: { plain: 'Quando chega?' },
             status: query.get('mark_as_read') === 'false' ? 'available' : 'read',
             message_date: { created: '2026-09-11T10:00:00.000-03:00', read: null },
-            from: { user_id: BUYER.id, email: BUYER.email, name: 'Maria Fictícia' },
+            from: { user_id: BUYER.id, email: MAIL, name: 'Maria Fictícia' },
             to: { user_id: Number(SELLER.ref), email: 'dono@exemplo.test', name: 'Joana Exemplo' },
           },
         ],
@@ -267,7 +269,7 @@ export const MORE_ROUTES: readonly Route[] = [
         invoice_series: '1',
         invoice_number: '1234',
         issued_date: '2026-09-10T12:00:00.000-03:00',
-        recipient: { name: 'Maria Fictícia', tax_id: '52998224725', email: BUYER.email },
+        recipient: { name: 'Maria Fictícia', tax_id: '52998224725', email: MAIL },
       },
     }),
   },

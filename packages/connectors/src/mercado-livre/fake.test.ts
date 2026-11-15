@@ -111,9 +111,6 @@ function shapeOf(value: unknown, at = '', found = new Map<string, Set<string>>()
   return found
 }
 
-/** What the double plants where its reads declare personal data, for the Hub to withhold: the service never sends it on these routes. */
-const PLANTED = ['.results[].buyer.', '.questions[].from.']
-
 const SCAN = { scan: true } as const
 
 function bodyOf(answered: { body?: unknown }) {
@@ -168,10 +165,7 @@ test('as respostas gravadas: o dublê responde as quatro formas com as chaves, o
       for (const type of types)
         assert.ok(given.get(at)?.has(type), `${name}: o dublê não manda ${at} como ${type}`)
     for (const at of given.keys())
-      assert.ok(
-        recorded.has(at) || PLANTED.some((planted) => at.startsWith(planted)),
-        `${name}: o serviço real não manda ${at}`,
-      )
+      assert.ok(recorded.has(at), `${name}: o serviço real não manda ${at}`)
   }
   assert.deepEqual(bodyOf(last.answered).results, [], 'a varredura acaba numa página sem linhas')
   assert.equal(typeof bodyOf(last.answered).scroll_id, 'string', '...que ainda traz o scroll_id')
