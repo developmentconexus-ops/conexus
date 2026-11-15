@@ -33,7 +33,7 @@ product decision, security boundary or operational prohibition.
 ## 2. The card
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A track's
-  page in `docs/steps/trilhas/` is not a card. The `processo` check reads a card's track from its old marks (`scripts/tracks.ts`). The next card of a track waits in its own draft pull request, its units built on branches once
+  page in `docs/steps/trilhas/` is not a card. The `processo` check reads a card's track from its old marks (`scripts/cli.ts`). The next card of a track waits in its own draft pull request, its units built on branches once
   approved, and enters when the track's step closes; the `processo` check stays red on it only when the pull request is not a draft. [processo]
 - **L6.** The founder **must** approve the card's page in Portuguese, with his words, the date and
   the card's commit in its approval file, named as the card in `docs/approvals/`, with its
