@@ -68,6 +68,7 @@ export function createBuilderConversations(deps: {
   runs: Runs
   connectors: BuilderConnectors
   data: BuilderData
+  companyData: Parameters<typeof createBuilder>[0]['companyData']
   copies: Pick<CopyService, 'projectView'>
   log: FailureLog
 }) {
@@ -76,6 +77,7 @@ export function createBuilderConversations(deps: {
   const builder = createBuilder({
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
     ...{ index: store, connectors: deps.connectors, data: deps.data },
+    companyData: deps.companyData,
     copies: (ids) => deps.copies.projectView(ids),
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {

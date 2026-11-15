@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { GrantedConnection } from '../connectors/public.ts'
 import { turnDate } from '../controller-kit/public.ts'
+import { dataOrder } from '../data-tools/public.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { chosenModel } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -52,7 +53,7 @@ export function builderInstructions(deps: {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_PROJECT_GONE' } })
     }
     const modelId = chosenModel(requestContext)
-    return fillPrompt({
+    const prompt = fillPrompt({
       ...context,
       projectName,
       date: turnDate(),
@@ -64,6 +65,7 @@ export function builderInstructions(deps: {
       connections: connectionsContext(granted),
       data,
     })
+    return `${prompt}\n\n${dataOrder()}`
   }
 }
 

@@ -33,7 +33,7 @@ test('o cargo e a área', async (t) => {
     assert.equal((await profile(on.ana, body)).statusCode, 200)
     assert.equal(endOf(await mine.say('Oi')), 'complete')
     assert.match(
-      on.calls.at(index)?.systems.at(1)?.text ?? '',
+      on.calls.at(index)?.systems.at(2)?.text ?? '',
       new RegExp(`Person: Ana Lima \\(${line}\\)\\. Today:`),
     )
   }
@@ -46,7 +46,7 @@ test('o cargo e a área', async (t) => {
     await created(on.hub, bruno, on.assistant, { connections: [] }),
   )
   assert.equal(endOf(await his.say('Oi')), 'complete')
-  const block = on.calls.at(steps.length)?.systems.at(1)?.text ?? ''
+  const block = on.calls.at(steps.length)?.systems.at(2)?.text ?? ''
   assert.match(block, /Person: Bruno Reis \(member; Analista, Compras\)\. Today:/)
   assert.doesNotMatch(block, /Diretora|Vendas/)
 })

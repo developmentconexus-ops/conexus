@@ -18,7 +18,7 @@ const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-
 // only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
 // the apps are the conversations, their tool adapters and the app packages.
 const DATA = `^(${SERVER}/(hub/(connectors|copies|ontology|data)/|builder/copy-clock/|platform/copy-sql\\.ts$)|packages/connectors/)`
-const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|tools)/|packages/app(-contract)?/)`
+const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|data-tools|tools)/|packages/app(-contract)?/)`
 // The files that still reach the data directly, each removed by its move onto the contract; nothing joins the list.
 const CONTRACT_MIGRATION = [
   'agents/agent',

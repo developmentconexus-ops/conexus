@@ -19,6 +19,11 @@ import { plantGemini } from './test-gemini.ts'
 import { partsOf } from './test-parts.ts'
 import { onGroq, routedTo, served } from './test-research.ts'
 
+const OFFERED = [
+  ...['app_data_check', 'app_data_read', 'conexus_check', 'data_describe', 'data_query'],
+  ...['recall', 'web_fetch'],
+]
+
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) => ({
     kind: 'text',
@@ -55,21 +60,15 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   }
   assert.deepEqual(
     anthropic.chats.filter(streamed).map((each) => searches(each.tools)),
-    [['app_data_check', 'app_data_read', 'conexus_check', 'recall', 'web_fetch']],
+    [OFFERED],
   )
   assert.ok(gemini.length > 0, 'Gemini was called')
   for (const tools of gemini.filter((each) => each.length > 0)) {
-    assert.deepEqual(searches(tools), [
-      'app_data_check',
-      'app_data_read',
-      'conexus_check',
-      'recall',
-      'web_fetch',
-    ])
+    assert.deepEqual(searches(tools), OFFERED)
   }
   assert.deepEqual(
     anthropic.sent.filter(streamed).map((each) => searches(each.tools)),
-    [['app_data_check', 'app_data_read', 'conexus_check', 'recall', 'web_fetch', 'web_search']],
+    [[...OFFERED, 'web_search']],
   )
 })
 

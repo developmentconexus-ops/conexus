@@ -1,4 +1,4 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyData, CompanyId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
@@ -6,6 +6,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { BuilderData } from '../../hub/apps/public.ts'
+import type { SessionScope } from '../../hub/connectors/public.ts'
 import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { builderAppDataTools, dataContext } from '../app-data/public.ts'
@@ -22,6 +23,8 @@ import {
   TITLE,
   toolsOf,
 } from '../controller-kit/public.ts'
+import type { DataOf } from '../data-tools/public.ts'
+import { dataTools } from '../data-tools/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
@@ -63,6 +66,24 @@ function admittedFor(
     if (ids === undefined) return undefined
     return (await data.access(ids)).kind === 'ADMITTED' ? ids : undefined
   })
+}
+
+/** The company's data as the Builder reads it: the Projeto's, with its granted connections, where the person converses in it. */
+function builderDataOf(a: {
+  admitted: ReturnType<typeof admittedFor>
+  granted: ReturnType<typeof grantedFor>
+  companyData: (scope: SessionScope) => CompanyData
+}): DataOf {
+  return async (requestContext) => {
+    const ids = await a.admitted(requestContext)
+    if (ids === undefined) return undefined
+    const chosen = (await a.granted(requestContext)).map((each) => each.connectionId)
+    return a.companyData({
+      ...{ companyId: ids.companyId, personId: ids.personId },
+      place: { kind: 'PROJECT', projectId: ids.projectId },
+      chosen,
+    })
+  }
 }
 
 /**
@@ -108,6 +129,8 @@ export function createBuilder(deps: {
   index: ConversationIndex
   connectors: BuilderConnectors
   data: BuilderData
+  /** The company's data, bound to the Projeto and its granted connections; the Builder passes no `by` yet (decision 6 of the card). */
+  companyData: (scope: SessionScope) => CompanyData
   copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
@@ -152,6 +175,10 @@ export function createBuilder(deps: {
         ...(conversant === undefined
           ? {}
           : builderAppDataTools({ data: deps.data, ids: conversant })),
+        ...dataTools({
+          dataOf: builderDataOf({ admitted, granted, companyData: deps.companyData }),
+          log: deps.log,
+        }),
       }
     },
     ...defaults,

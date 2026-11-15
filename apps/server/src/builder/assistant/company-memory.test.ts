@@ -74,7 +74,7 @@ test('quem escreve, o bloco: o do dono e do administrador não diz nada; o do de
   for (const [at, [role, person, refused]] of people.entries()) {
     const url = await created(on.hub, person, on.assistant, { connections: [] })
     assert.equal(endOf(await (await talking(t, on.hub, person, url)).say('Oi')), 'complete')
-    const block = on.calls.at(at)?.systems.at(1)?.text ?? ''
+    const block = on.calls.at(at)?.systems.at(2)?.text ?? ''
     assert.equal(block.includes(NO_SAVE), refused, role)
   }
 })

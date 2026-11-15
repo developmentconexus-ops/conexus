@@ -27,7 +27,7 @@ const BAD: Record<string, [string, string]> = {
     '../assistant/public.ts',
   ],
   'agents-and-apps-reach-data-only-through-the-contract': [
-    `${SRC}/builder/assistant/rows.ts`,
+    `${SRC}/builder/data-tools/x.ts`,
     '../../hub/connectors/public.ts',
   ],
 }
