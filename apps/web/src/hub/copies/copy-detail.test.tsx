@@ -85,8 +85,9 @@ test('a tabela abre em Colunas com tipo, chave e descrição', async () => {
   expect(table.getByText('Número')).toBeTruthy()
   expect(table.getByText('Valor')).toBeTruthy()
   expect(table.getByText('Chave')).toBeTruthy()
-  expect(screen.getByText('Camada')).toBeTruthy()
-  expect(screen.getByText('Bruto')).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(main.getByText('Camada')).toBeTruthy()
+  expect(main.getByText('Bruto')).toBeTruthy()
 })
 
 test('a tabela de uma cópia da versão 1 também abre em Colunas', async () => {
@@ -155,7 +156,8 @@ test('a falha das conexões: a frase e Tentar de novo, e não o id do conector',
         : HttpResponse.json({ connectors: CATALOG, connections: [connection()], mayManage: true }),
     ),
   )
-  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  const main = within(await screen.findByRole('main'))
+  const retry = await main.findByRole('button', { name: 'Tentar de novo' })
   expect(screen.queryByText(/sankhya/)).toBeNull()
   fail = false
   fireEvent.click(retry)

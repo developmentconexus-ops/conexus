@@ -1,16 +1,7 @@
-import type {
-  CompanyId,
-  Connection,
-  ConnectorEntry,
-  CopyProposalSummary,
-  CopySummary,
-} from '@conexus/hub-api'
+import type { CompanyId, ConnectorEntry, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { SearchIcon } from 'lucide-react'
-import { useState } from 'react'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
+import { Link } from '@tanstack/react-router'
 import { List } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
@@ -18,9 +9,9 @@ import { Table, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import type { Props } from './copy-list.tsx'
-import { CELL, CopyPhoneRow, CopyTableRow, describedAs, HeadRow, Proposals } from './copy-list.tsx'
-import { folded } from './search.ts'
-import { originOf } from './source.ts'
+import { CELL, CopyPhoneRow, CopyTableRow, HeadRow, Proposals } from './copy-list.tsx'
+import type { System } from './data-systems.ts'
+import { narrowed, systemsOf } from './data-systems.ts'
 import {
   CATALOG_FAILED,
   DATA_COLUMNS,
@@ -30,39 +21,8 @@ import {
   NO_SYSTEM_HINT,
   NO_TABLE_COPIED,
   RAW_INTRO,
-  SEARCH_TABLES,
   systemText,
 } from './text.ts'
-
-type System = { connector: string; accounts: Set<string>; copies: CopySummary[] }
-
-/** The company's systems: each connector a copy reads or an active connection links, with its connections' names and its copies. */
-function systemsOf(copies: readonly CopySummary[], connections: readonly Connection[]): System[] {
-  const found = new Map<string, System>()
-  function system(connector: string): System {
-    const known = found.get(connector)
-    if (known !== undefined) return known
-    const made = { connector, accounts: new Set<string>(), copies: [] }
-    found.set(connector, made)
-    return made
-  }
-  for (const copy of copies) {
-    const one = system(originOf(copy).connector)
-    one.copies.push(copy)
-    for (const name of originOf(copy).accounts) one.accounts.add(name)
-  }
-  for (const connection of connections) {
-    if (connection.state === 'ACTIVE') system(connection.connector).accounts.add(connection.name)
-  }
-  return [...found.values()]
-}
-
-/** Whether a copy answers the search: its name, its description or the name of one of its columns. */
-function answers(copy: CopySummary, query: string): boolean {
-  const needle = folded(query.trim())
-  const fields = [copy.name, describedAs(copy), ...copy.shown.columns.map((column) => column.name)]
-  return fields.some((field) => folded(field).includes(needle))
-}
 
 function SystemTitle(props: { system: System; connectors: readonly ConnectorEntry[] }) {
   const { system, connectors } = props
@@ -139,33 +99,6 @@ function SystemPhoneList(props: {
   )
 }
 
-/** The search of the layer: the text is kept in the address, `q` (web W18), and the list answers at once. */
-function TableSearch({ initial }: { initial: string | undefined }) {
-  const [text, setText] = useState(initial ?? '')
-  const navigate = useNavigate()
-  return (
-    <InputGroup className="h-control max-w-column">
-      <InputGroupAddon>
-        <SearchIcon aria-hidden="true" />
-      </InputGroupAddon>
-      <InputGroupInput
-        type="search"
-        aria-label={SEARCH_TABLES}
-        placeholder={SEARCH_TABLES}
-        value={text}
-        onChange={(event) => {
-          setText(event.target.value)
-          void navigate({
-            to: '.',
-            search: (previous) => ({ ...previous, q: event.target.value || undefined }),
-            replace: true,
-          })
-        }}
-      />
-    </InputGroup>
-  )
-}
-
 type Read = UseQueryResult<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }>
 
 /** What the layer says when the company has no system linked and no proposal. */
@@ -210,21 +143,12 @@ export function RawLayer(props: {
   const { copies, proposals } = read.data
   const { connectors } = connections.data
   const all = systemsOf(copies, connections.data.connections)
-  const query = q?.trim() ?? ''
-  const systems = all
-    .map((system) => ({
-      ...system,
-      copies: system.copies.filter((copy) => query === '' || answers(copy, query)),
-    }))
-    .filter((system) => query === '' || system.copies.length > 0)
+  const systems = narrowed(all, q)
   if (all.length === 0 && proposals.length === 0) return <NoSystem companyId={companyId} />
   return (
     <div className="flex flex-col gap-lg">
       <Proposals companyId={companyId} proposals={proposals} onNote={onNote} />
-      <div className="flex flex-wrap items-center justify-between gap-md">
-        <TableSearch initial={q} />
-        <p className="text-text-2">{RAW_INTRO}</p>
-      </div>
+      <p className="text-text-2">{RAW_INTRO}</p>
       {systems.length === 0 && <Empty>{NO_MATCH}</Empty>}
       {systems.length > 0 &&
         (phone ? (
