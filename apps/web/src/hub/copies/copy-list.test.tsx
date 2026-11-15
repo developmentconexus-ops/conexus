@@ -96,14 +96,16 @@ test('a rodada que esperou', async () => {
 
 test('Dados: um sistema sem cópia e nenhum sistema ligado', async () => {
   openCopies(server, { copies: [] }, LIST)
-  expect(await screen.findByText('Sankhya · Matriz')).toBeTruthy()
-  expect(screen.getByText('Nenhuma tabela copiada')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Ligar uma cópia' })).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(main.getByText('Nenhuma tabela copiada')).toBeTruthy()
+  expect(main.getByRole('button', { name: 'Ligar uma cópia' })).toBeTruthy()
 })
 
 test('Cópias: a falha de leitura mostra a frase e Tentar de novo', async () => {
   openCopies(server, { copies: [], answers: { list: () => refusal('DATABASE_UNAVAILABLE') } }, LIST)
-  expect(await screen.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
 })
 
 test('Cópias: as ações chamam a rota e a linha mostra o estado novo; uma rodando mostra a frase do código', async () => {

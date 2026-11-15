@@ -117,10 +117,10 @@ test('Apps: Abrir o Projeto leva à página Dados do Projeto', async () => {
   expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/projects/${CRM.id}/data`)
 })
 
-test('Apps: a aba aparece e a camada fica no endereço', async () => {
+test('Apps: o grupo Apps abre a camada Apps', async () => {
   answering({ [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })) })
   openCopies(server, { copies: [copy()] }, LIST, 'owner', [CRM])
-  fireEvent.click(await screen.findByRole('tab', { name: 'Apps' }))
+  fireEvent.click(await screen.findByRole('link', { name: 'Apps' }))
   await waitFor(() => expect(screen.getByText('clientes')).toBeTruthy())
 })
 

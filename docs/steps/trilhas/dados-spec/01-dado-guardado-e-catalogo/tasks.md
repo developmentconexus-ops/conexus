@@ -610,7 +610,7 @@ Sete grupos, cada um um PR com uma rodada de CI. A ordem é a do grafo no fim.
 
 **Lacunas que pedem decisão.** Cada uma para a unidade que a toca.
 
-- **`L1`, decidida.** `CGC_CPF` recebe a descrição "CPF ou CNPJ do parceiro. Retido em toda leitura." nesta parte (`design.md`, "As descrições das cinco cópias do Sankhya"). A coluna sai da cópia na parte 4 (decisão E5a).
+- **`L1`, decidida.** `CGC_CPF` recebe a descrição "CPF ou CNPJ do parceiro." nesta parte (`design.md`, "As descrições das cinco cópias do Sankhya").
 - **`L2`, decidida.** O protótipo `p1-01` tem a coluna **Quem lê**, e `p1-02` tem as abas **Quem lê** e **Leituras**. As três dependem da parte 4, que as constrói. Esta parte mantém a coluna **Projetos** de hoje e não cria as abas.
 - **`L3`, decidida.** O protótipo traz o botão **Ligar um sistema** no topo. A janela de ligar é da parte 2, que troca o botão. Esta parte mantém **Ligar uma cópia** (`NewCopy`) no topo e usa **Ligar um sistema** só no estado vazio, como link para Integrações.
 - **`L4`, textos propostos.** Nenhum protótipo traz "A cópia tem mais linhas que estas cinco.", "A cópia ainda não tem linhas.", "Nenhum app guarda tabelas ainda.", "Nenhuma tabela copiada", "Ver a rodada" nem o rótulo dos tipos `boolean` ("Sim ou não") e `json` ("Estrutura"). O construtor usa estes, e o PR os lista para a aprovação do fundador no fim da etapa, como `text.ts:11` já diz.

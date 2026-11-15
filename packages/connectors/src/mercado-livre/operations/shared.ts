@@ -7,7 +7,6 @@ import type {
   ProviderRequest,
 } from '../../kernel/operation.ts'
 import { defineOperation, valueAt } from '../../kernel/operation.ts'
-import type { PersonalField } from '../../kernel/personal.ts'
 import type { Rows } from '../../kernel/rows.ts'
 import { Rows as RowsOut } from '../../kernel/rows.ts'
 import { rows } from '../answers.ts'
@@ -65,7 +64,6 @@ type ReadSpec<I> = Readonly<{
   input: z.ZodType<I>
   list: string | null // where the rows are: a key of the body, or the body itself
   paged?: ListRead // how the list pages and asks only what changed: the copy engine reads it as the operation's `list`
-  personal?: readonly PersonalField[]
   emptyNotFound?: string // the start of the message of the 404 that means the seller has no data yet
   from?: readonly string[]
   probe(earlier: ReadonlyMap<OperationId, unknown>): NoInfer<I> | null

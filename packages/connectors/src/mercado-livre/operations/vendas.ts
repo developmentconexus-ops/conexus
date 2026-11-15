@@ -4,12 +4,6 @@ import type { OperationId } from '../../kernel/operation.ts'
 import { get } from '../../kernel/operation.ts'
 import { chain, firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
 
-/** The buyer: a nickname, a name and, on some routes, an e-mail and a phone; the CPF under `billing_info`. */
-const BUYER = [
-  { path: 'buyer', kind: 'contato' },
-  { path: 'buyer.billing_info', kind: 'documento' },
-] as const
-
 export const pedidos = readOf({
   id: 'pedidos',
   subject: 'vendas',
@@ -33,7 +27,6 @@ export const pedidos = readOf({
     paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 50, ceiling: null },
     changed: { input: 'changedFrom', field: 'date_last_updated' },
   },
-  personal: BUYER,
   probe: () => ({ offset: 0, limit: 5 }),
   request: (input, account) =>
     get('/orders/search', {
@@ -62,7 +55,6 @@ export const pedido = readOf({
   label: 'Pedido',
   input: z.object({ orderId: PathId }),
   list: null,
-  personal: BUYER,
   from: [pedidos.id],
   probe: firstOrder,
   request: (input) => get(`/orders/${input.orderId}`),

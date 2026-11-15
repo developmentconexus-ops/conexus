@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import type { Answered, Failure, Native, ProviderAnswer } from '../../kernel/operation.ts'
 import { defineOperation, failedBy, get, shapeOf } from '../../kernel/operation.ts'
-import type { PersonalField } from '../../kernel/personal.ts'
 import type { Rows } from '../../kernel/rows.ts'
 
 /** An error body of HubSpot: `{ status: "error", message, category, correlationId }`. */
@@ -78,7 +77,6 @@ export function listRead(spec: {
   summary: string
   label: string
   properties: readonly string[]
-  personal?: readonly PersonalField[]
 }) {
   return defineOperation({
     id: spec.id,
@@ -88,7 +86,6 @@ export function listRead(spec: {
     summary: spec.summary,
     label: spec.label,
     input: Input,
-    ...(spec.personal === undefined ? {} : { personal: spec.personal }),
     list: {
       paging: {
         kind: 'CURSOR',

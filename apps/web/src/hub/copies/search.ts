@@ -16,6 +16,7 @@ export type TableTab = z.infer<typeof TableTab>
 export const TableSearch = z.object({
   tab: TableTab.optional().catch(undefined),
   page: z.string().optional().catch(undefined),
+  q: z.string().optional().catch(undefined),
 })
 
 /** A text as the search compares it: no accent, no case. */

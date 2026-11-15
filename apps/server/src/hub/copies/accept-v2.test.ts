@@ -91,20 +91,20 @@ async function proposed(on: ListProposalsOn, name: string, column: object) {
   return CopyProposalId.parse(Object(answer).proposalId)
 }
 
-test('a cópia guarda a coluna de documento', async (t) => {
+test('a cópia guarda a coluna do comprador como o serviço manda', async (t) => {
   const on = await listProposalsOn(t)
-  const cpf = {
-    name: 'cpf',
+  const nickname = {
+    name: 'apelido',
     type: 'text',
-    path: 'buyer.billing_info.doc_number',
-    description: 'O documento',
+    path: 'buyer.nickname',
+    description: 'O apelido do comprador',
   }
-  const made = await on.enable(on.ana, await proposed(on, 'mercado_livre_documento', cpf))
+  const made = await on.enable(on.ana, await proposed(on, 'mercado_livre_comprador', nickname))
   assert.equal(made.statusCode, 201, made.body)
   assert.equal((await firstEnded(on, Object(made.json()).copy.id)).outcome.kind, 'COMPLETE')
   const kept = await asSync(on.owner, async (client) => {
-    const result = await client.query('select distinct cpf from sync.mercado_livre_documento')
-    return result.rows.map((row) => row.cpf)
+    const result = await client.query('select distinct apelido from sync.mercado_livre_comprador')
+    return result.rows.map((row) => row.apelido)
   })
-  assert.deepEqual(kept, ['52998224725'])
+  assert.deepEqual(kept, ['COMPRADORFICTICIO'])
 })
