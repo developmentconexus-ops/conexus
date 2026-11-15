@@ -119,6 +119,9 @@ const ACTIONS = {
   // 2026-11-09: "Dono e o admnistrador e desenvolvedor"): reading holds no row, a change the role.
   readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
   manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
+  // The rows of a copy's table, which the Dados page's sample shows: an owner's and an
+  // administrator's for now (data, part 1), until the role decides which tables it reads (part 4).
+  readCopyRows: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
   // Creating, changing and deleting the company's roles is the owner's and the administrator's
   // (step Papéis da empresa, U1); the library's own routes then check the same statements.
   manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },
