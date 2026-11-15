@@ -56,7 +56,7 @@ async function withRole(
   return { ...on, read }
 }
 
-/** Empresa A's Sankhya, the member's role holding the search and the door. */
+/** Empresa A's Sankhya, the member's role holding the search. */
 async function sankhyaOn(t: TestContext) {
   const on = await appCalls(t, {
     declared: [{ connector: 'sankhya', operations: ['buscarParceiros'] }],
@@ -64,7 +64,7 @@ async function sankhyaOn(t: TestContext) {
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
-  const reads = { sankhya: ['buscarParceiros', 'consultar', 'carregar'] }
+  const reads = { sankhya: ['buscarParceiros'] }
   const role = await call(on.hub, on.ana, 'PUT', `/api/companies/${companyId}/roles/member`, {
     connectors: reads,
     unattended: false,
