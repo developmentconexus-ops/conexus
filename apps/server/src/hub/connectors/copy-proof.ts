@@ -84,9 +84,6 @@ export async function provedPage(
     a.definition.columns.map((one) => one.name),
     page.page.rows,
   )
-  if (column !== undefined) {
-    deps.log.info({ ...ids, connectionId, column }, 'COPY_DOCUMENT_REFUSED')
-    return { kind: 'DOCUMENT_COLUMN', column }
-  }
+  if (column !== undefined) return { kind: 'DOCUMENT_COLUMN', column }
   return { kind: 'PROVED', rows: page.page.rows.length, more: page.page.more, counts: null }
 }
