@@ -202,6 +202,32 @@ test('a lei do sistema só ao vivo falha quando uma tabela o tem como origem', a
   )
 })
 
+test('a lei do sistema só ao vivo falha quando o mundo não tem sistema só ao vivo', async () => {
+  const systems = CATALOG.systems.map((system) => ({ ...system, liveOnly: false }))
+  const world = fakeWorld({ ...CATALOG, systems })
+  await assert.rejects(
+    keepsLiveOnlyOutOfTables(world, companyData({ sources: world.sources, now: () => new Date() })),
+    /a live-only system in the world/,
+  )
+})
+
+test('a lei do sistema só ao vivo falha quando describe não devolve o catálogo da fonte', async () => {
+  const world = fakeWorld()
+  const [first, ...rest] = CATALOG.systems
+  assert.ok(first)
+  const changed = { ...CATALOG, systems: [{ ...first, name: 'outro nome' }, ...rest] }
+  let asked = 0
+  const catalog: DataSources['catalog'] = async () => (++asked === 1 ? CATALOG : changed)
+  const sources: DataSources = { ...world.sources, catalog }
+  await assert.rejects(
+    keepsLiveOnlyOutOfTables(
+      { ...world, sources },
+      companyData({ sources, now: () => new Date() }),
+    ),
+    assert.AssertionError,
+  )
+})
+
 test('o contrato recusa o sistema do catálogo que não diz se é só ao vivo', () => {
   const [first, ...rest] = CATALOG.systems
   assert.ok(first)
