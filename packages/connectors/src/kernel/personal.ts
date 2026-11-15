@@ -1,9 +1,4 @@
-import {
-  isValidCnpj,
-  isValidCpf,
-  isValidEmail,
-  isValidPhone,
-} from '@brazilian-utils/brazilian-utils'
+import { isValidCpf, isValidEmail, isValidPhone } from '@brazilian-utils/brazilian-utils'
 
 /** The kinds of personal data a connector's read may carry, fixed for every connector (step "a política de dados pessoais"). */
 export const PERSONAL_KINDS = ['contato', 'endereco', 'documento', 'sensivel'] as const
@@ -70,24 +65,4 @@ export function findUndeclared(
       if (kind !== null) seen.set(`${path}:${kind}`, { path, kind })
     }
   return [...seen.values()]
-}
-
-const DOCUMENT_MIN_CELLS = 3
-
-/** As colunas de uma página cujas células não nulas, ao menos 3, são em mais da metade um CPF ou um CNPJ válido. */
-export function documentColumns(
-  columns: readonly string[],
-  rows: readonly (readonly (string | null)[])[],
-): string[] {
-  return columns.filter((_, at) => {
-    const cells = rows.flatMap((row) => {
-      const cell = row[at] ?? null
-      return cell === null || cell.trim() === '' ? [] : [cell]
-    })
-    if (cells.length < DOCUMENT_MIN_CELLS) return false
-    const documents = cells.filter(
-      (cell) => isValidCpf(cell) || isValidCnpj(cell, { version: 2 }),
-    ).length
-    return documents * 2 > cells.length
-  })
 }

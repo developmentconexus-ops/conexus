@@ -9,7 +9,6 @@
     "apps/server/src/hub/apps/app-access-journey.test.ts",
     "apps/server/src/hub/connectors/connections-oauth-logs.test.ts",
     "apps/server/src/hub/connectors/hubspot-door.test.ts",
-    "apps/server/src/hub/copies/propose-document.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
     "apps/server/src/platform/isolation-apps.test.ts",
