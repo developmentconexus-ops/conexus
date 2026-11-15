@@ -1,4 +1,4 @@
-import type { CopySummary } from '@conexus/hub-api'
+import type { CopySample, CopySummary } from '@conexus/hub-api'
 import { ConnectionId, ConnectorEntry, ConnectorId } from '@conexus/hub-api'
 
 // The stores of Mercado Livre and the catalog the Cópias tests read (O Sync de qualquer conector, U4).
@@ -38,3 +38,10 @@ export const CATALOG = [
     fields: [],
   }),
 )
+
+/** What the sample of a copy shows: five rows of two columns, and more behind them. */
+export const SAMPLE: CopySample = {
+  columns: ['NUNOTA', 'CODPARC'],
+  rows: [1, 2, 3, 4, 5].map((n) => [n * 100, `P${n}`]),
+  complete: false,
+}

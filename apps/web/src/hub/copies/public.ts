@@ -2,7 +2,6 @@ import type { CompanyId, CompanyMay } from '@conexus/hub-api'
 import { CopyId } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
-import { z } from 'zod'
 import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
@@ -10,7 +9,7 @@ export { CopyDetail } from './copy-detail.tsx'
 export { ProposalDialog } from './copy-proposal.tsx'
 export { DataPage, DataReadFailure } from './data-page.tsx'
 export { proposalsQuery } from './queries.ts'
-export { DataLayer, DataSearch } from './search.ts'
+export { DataLayer, DataSearch, TableSearch } from './search.ts'
 export { useSourceText, withAccounts } from './source.ts'
 export {
   callsText,
@@ -31,9 +30,6 @@ export const copyParams = {
   parse: (raw: { copyId: string }) => ({ copyId: idOrNotFound(CopyId, raw.copyId) }),
   stringify: (p: { copyId: CopyId }) => p,
 }
-
-/** The page of the runs a detail shows, in the address (web W18). */
-export const CopyRunsSearch = z.object({ page: z.string().optional().catch(undefined) })
 
 /** What the list reads before it opens, fresh (web W12). */
 export function loadCopies(queryClient: QueryClient, companyId: CompanyId) {

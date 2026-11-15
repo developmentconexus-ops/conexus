@@ -6,6 +6,7 @@ import type {
   CopySummary,
 } from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
+import { dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 
 /** The words of the Cópias screens (Capacidade 2, U4); the founder approves them at the step's end. */
@@ -38,7 +39,59 @@ export const ENABLE_COPY = 'Ligar uma cópia'
 export const NO_MODEL_CONNECTION = 'Ligue em Integrações uma conexão que ofereça cópias.'
 export const TO_INTEGRATIONS = 'Ir para Integrações'
 export const NO_RUNS_YET = 'A primeira rodada ainda não terminou.'
-export const COPIED_TITLE = 'O que é copiado'
+export const COLUMNS_TITLE = 'Colunas'
+export const SAMPLE_TITLE = 'Amostra'
+export const KEY_MARK = 'Chave'
+export const SEE_RUN = 'Ver a rodada'
+export const SAMPLE_INTRO = 'Cinco linhas da cópia.'
+export const SAMPLE_MORE = 'A cópia tem mais linhas que estas cinco.'
+export const SAMPLE_EMPTY = 'A cópia ainda não tem linhas.'
+export const COLUMN_HEADS = ['Coluna', 'Tipo', 'O que guarda'] as const
+export const PANEL_LABELS = {
+  system: 'Sistema',
+  connection: 'Ligação',
+  key: 'Chave',
+  mode: 'Modo',
+  interval: 'Intervalo',
+  lastRun: 'Última rodada',
+  rows: 'Linhas',
+  layer: 'Camada',
+} as const
+export const RAW_LAYER = 'Bruto'
+
+const TYPE_LABEL: Readonly<Record<string, string>> = {
+  bigint: 'Número',
+  numeric: 'Valor',
+  text: 'Texto',
+  date: 'Data',
+  timestamp: 'Data e hora',
+  boolean: 'Sim ou não',
+  json: 'Estrutura',
+}
+
+/** A column's type in the company's words; a type the screen has no word for shows as the source named it. */
+export function typeText(type: string): string {
+  return TYPE_LABEL[type] ?? type
+}
+
+export function inactiveMark(since: string): string {
+  return `Inativa desde ${dayAndMonth(since)}`
+}
+
+/** "A", "A e B", "A, B e C". */
+function listed(names: readonly string[]): string {
+  if (names.length < 2) return names.join('')
+  return `${names.slice(0, -1).join(', ')} e ${names.at(-1)}`
+}
+
+/** The notice on top of a table whose source stopped sending columns: nothing was erased. */
+export function inactiveNotice(system: string, names: readonly string[], since: string): string {
+  const day = dayAndMonth(since)
+  if (names.length === 1) {
+    return `O ${system} parou de enviar a coluna ${listed(names)} desde ${day}. Ela fica aqui, inativa, e nada foi apagado.`
+  }
+  return `O ${system} parou de enviar as colunas ${listed(names)} desde ${day}. Elas ficam aqui, inativas, e nada foi apagado.`
+}
 export const RUNS_TITLE = 'Rodadas'
 export const RUN_REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
 export const NO_SCHEDULE = '—'
@@ -149,19 +202,6 @@ export function modeText(mode: CopyMode): string {
       return `por janela de ${mode.days} dias`
     case 'CHANGES':
       return 'só o alterado'
-  }
-}
-
-/** What each run rereads, as the mode says, with the window's column from `shown`. */
-export function windowText(mode: CopyMode, shown: Pick<CopySummary['shown'], 'window'>): string {
-  const first = 'A primeira carga traz tudo; a cada rodada relê o que mudou desde a anterior'
-  switch (mode.kind) {
-    case 'WHOLE':
-      return 'A fonte inteira, a cada rodada.'
-    case 'CHANGES':
-      return `${first}.`
-    case 'WINDOW':
-      return `${first} e ${shown.window?.column ?? 'a janela'} dos últimos ${mode.days} dias.`
   }
 }
 

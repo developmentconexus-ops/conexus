@@ -218,7 +218,7 @@ export function describedAs(copy: CopySummary): string {
 function CopyLink({ companyId, copy }: { companyId: CompanyId; copy: CopySummary }) {
   return (
     <Link
-      to="/companies/$companyId/copies/$copyId"
+      to="/companies/$companyId/data/$copyId"
       params={{ companyId, copyId: copy.id }}
       className="font-medium font-mono text-fact hover:underline"
     >
