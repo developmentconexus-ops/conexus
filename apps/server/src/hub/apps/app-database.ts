@@ -7,7 +7,6 @@ import type {
   ProjectId,
 } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
-import type { ReadResult } from '../../platform/app-sql.ts'
 import type {
   AppRead,
   AppReadAnswer,
@@ -15,7 +14,7 @@ import type {
   SqlAnswer,
   SqlStatement,
 } from '../../platform/company-postgres.ts'
-import { COPY_PASS_COLUMN } from '../../platform/copy-sql.ts'
+import { withoutPassColumn } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -208,16 +207,6 @@ export async function askApp(
     answer = await deps.companyPostgres.readApp(address, statements, signal)
   }
   return answer.kind === 'NO_LOGIN' ? silent('NO_LOGIN') : withoutPass(answer)
-}
-
-/** One result with every column named `COPY_PASS_COLUMN` taken out, its rows kept in step. */
-function withoutPassColumn(result: ReadResult): ReadResult {
-  const keep = result.columns.flatMap(({ name }, at) => (name === COPY_PASS_COLUMN ? [] : [at]))
-  if (keep.length === result.columns.length) return result
-  return {
-    columns: result.columns.filter(({ name }) => name !== COPY_PASS_COLUMN),
-    rows: result.rows.map((row) => keep.map((at) => row[at])),
-  }
 }
 
 /**

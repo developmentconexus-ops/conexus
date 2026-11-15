@@ -14,7 +14,7 @@ export type SqlAnswer =
       table?: string
       column?: string
       constraint?: string
-      /** PostgreSQL's own message, for the model's edge alone (code C79); never a log or a span (security S41, S42). */
+      /** For the model's edge alone: never a log or a span (security S41, S42). */
       message?: string
     }
   /** `cause` names what went silent (an error's name or class), never its message. */

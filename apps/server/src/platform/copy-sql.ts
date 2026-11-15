@@ -1,6 +1,6 @@
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import type { Context, SqlAnswer, SqlStatement } from './app-sql.ts'
+import type { Context, ReadResult, SqlAnswer, SqlStatement } from './app-sql.ts'
 import { missingLogins, quoted } from './app-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
@@ -12,6 +12,14 @@ export const READ_LOGIN = 'conexus_read'
 export const SYNC_SCHEMA = quoted('sync')
 /** The column that holds the pass that last wrote each row: the engine's own. Only the Hub's catalog leaves it out; a read of the table itself still returns it (issue 946). */
 export const COPY_PASS_COLUMN = '_pass'
+export function withoutPassColumn(result: ReadResult): ReadResult {
+  const keep = result.columns.flatMap(({ name }, at) => (name === COPY_PASS_COLUMN ? [] : [at]))
+  if (keep.length === result.columns.length) return result
+  return {
+    columns: result.columns.filter(({ name }) => name !== COPY_PASS_COLUMN),
+    rows: result.rows.map((row) => keep.map((at) => row[at])),
+  }
+}
 /** The columns of a copy of accounts, the engine's own beside `_pass`: the provider's account and the company's name for its connection. */
 const COPY_ACCOUNT_COLUMN = '_account'
 const COPY_ACCOUNT_NAME_COLUMN = '_account_name'

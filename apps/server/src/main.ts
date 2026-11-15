@@ -205,6 +205,7 @@ export function subjectsOf(deps: {
   const data = createCompanyData({
     ...{ database, identity, log },
     ...{ connectors: () => connectors, copies: () => copies.data },
+    ...{ projects: projects.ports, companyPostgres: deps.companyPostgres, neon },
   })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
