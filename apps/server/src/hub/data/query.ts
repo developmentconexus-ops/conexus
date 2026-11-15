@@ -72,7 +72,12 @@ async function readAs(
     place.kind === 'PROJECT'
       ? await deps.companyPostgres.ensureReadLogin(owner.value, place.projectId)
       : await deps.companyPostgres.ensureReader(owner.value)
-  if (made.kind !== 'DONE') return { kind: 'FAILED', cause: 'READ_LOGIN_NOT_MADE' }
+  if (made.kind !== 'DONE') {
+    return {
+      kind: 'FAILED',
+      cause: `READ_LOGIN_${made.kind === 'REFUSED' ? made.code : made.kind}`,
+    }
+  }
   return deps.companyPostgres.readCopies(address, statements, signal)
 }
 

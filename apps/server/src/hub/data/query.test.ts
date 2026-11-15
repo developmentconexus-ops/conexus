@@ -208,6 +208,65 @@ test('o plano ilegível falha com INTERNAL_UNEXPECTED depois do log DATA_PLAN_UN
   assert.ok(on.hub.lines.some(({ message }) => message === 'DATA_PLAN_UNREAD'))
 })
 
+function readingAfterNoLogin(t: Parameters<typeof copiesOn>[0], on: CopiesOn) {
+  const postgres = on.hub.postgres.companyPostgres
+  const original = postgres.readCopies.bind(postgres)
+  let asked = 0
+  t.mock.method(postgres, 'readCopies', async (...args: Parameters<typeof original>) =>
+    asked++ === 0 ? { kind: 'NO_LOGIN' as const } : original(...args),
+  )
+  return {
+    asked: () => asked,
+    reader: t.mock.method(postgres, 'ensureReader'),
+    readLogin: t.mock.method(postgres, 'ensureReadLogin'),
+  }
+}
+
+test('NO_LOGIN no Início: o login é feito como o dono e a consulta lida de novo uma vez', async (t) => {
+  const { on } = await withCopies(t)
+  const spies = readingAfterNoLogin(t, on)
+  queryOf(await queried(on, 'select generate_series(1, 2) as n'))
+  assert.equal(spies.asked(), 2)
+  assert.equal(spies.reader.mock.callCount(), 1)
+  assert.equal(spies.readLogin.mock.callCount(), 0)
+})
+
+test('NO_LOGIN num Projeto: o login do Projeto é feito e a consulta lida de novo uma vez', async (t) => {
+  const { on, sellers } = await withCopies(t)
+  await on.copies.grant({
+    ...{ companyId: on.companyId, personId: on.anaId },
+    ...{ copyId: sellers, projectId: on.projectId },
+  })
+  const spies = readingAfterNoLogin(t, on)
+  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }))
+  const sql = 'select * from sync.sankhya_vendedores limit 1'
+  queryOf(await project.read({ kind: 'QUERY', sql }))
+  assert.equal(spies.asked(), 2)
+  assert.equal(spies.reader.mock.callCount(), 0)
+  assert.equal(spies.readLogin.mock.callCount(), 1)
+})
+
+test('NO_LOGIN e o dono sem resposta dá TABLE_UNAVAILABLE com a causa', async (t) => {
+  const { on } = await withCopies(t)
+  readingAfterNoLogin(t, on)
+  t.mock.method(on.hub.neon.neon, 'ownerConnection', async () => ({ kind: 'NO_ANSWER' as const }))
+  assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
+  const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
+  assert.equal(failed?.fields.cause, 'OWNER_NO_ANSWER')
+})
+
+test('NO_LOGIN e o login não feito dá TABLE_UNAVAILABLE com o código da recusa', async (t) => {
+  const { on } = await withCopies(t)
+  readingAfterNoLogin(t, on)
+  t.mock.method(on.hub.postgres.companyPostgres, 'ensureReader', async () => ({
+    kind: 'REFUSED' as const,
+    code: '42501',
+  }))
+  assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
+  const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
+  assert.equal(failed?.fields.cause, 'READ_LOGIN_42501')
+})
+
 test('o membro no Início não lê: NOT_IN_ROLE', async (t) => {
   const { on } = await withCopies(t)
   const answer = await inCompany(on, PersonId.parse(on.carla.id)).read({
