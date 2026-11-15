@@ -20,15 +20,15 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 1. Write the sentence of use first and the use script: three to six actions, written as what a
    person sees, done by the founder on the cloud installation without a terminal (a vendor's
    console is not one).
-2. List what enters and what stays out, and why. Estimate each unit's changed lines; past
-   the budget of [delivery L2](../../../docs/guides/delivery.md), split the step before the build.
+2. List what enters and what stays out, and why. Estimate each unit's changed lines against
+   [delivery L2](../../../docs/guides/delivery.md).
 3. Write the acceptance criteria, each observable from outside, refusals included; each refusal
    names the step's route that reaches it. Fill the failure table for every write the step
    adds, with its ambiguous replies (a cut reply, a 502, a 503) and the client's response; each row
    yields criteria.
-4. Design from zero (pstack `poteto-mode`: first principles, subtract before adding). Split the step
-   into units that each end green on their own: a contract lands with its first implementer, and a
-   migration that changes the catalog snapshot lands with the unit that owns `database-grants.sql`.
+4. Design from zero (pstack `poteto-mode`). Split the step into units that each end green on their
+   own, grouped by pull request: a contract lands with its first implementer, and a migration that
+   changes the catalog snapshot lands with the unit that owns `database-grants.sql`.
    Shape a contract that crosses a module with pstack `architect` (`arena` if shapes compete);
    else compare two shapes in writing. Copy the study's reference table and give every row its unit,
    or "fica de fora" with its reason, and its new file ([card](references/card.md)). A built row
@@ -45,8 +45,9 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    changed; his words go to the ledger.
 7a. Write each unit's section as its build spec ([card](references/card.md)): its builder reads
    only its unit's top-table rows and that section, so the section lists its reference table rows and
-   holds every file, reference line, shape, step and recording the unit needs. One Opus session per
-   unit when the step does not fit one context; never the session that will build it.
+   holds every file, reference line, shape and recording the unit needs, with its order of the work
+   in the template's form, each step citing its criteria. One Opus session per unit when the step
+   does not fit one context; never the session that will build it.
 8. Give the card, at the exact commit the founder will approve, to a reader of another model who
    did not write it, with [the template](references/card.md)'s questions. The reader reads
    the whole card once, opening every cell of the reference table and every cited line at the
@@ -55,8 +56,7 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 ## What it produces
 
 The card in `docs/steps/` ([delivery L24](../../../docs/guides/delivery.md)), from [the
-template](references/card.md), in a pull request. Firstmate takes the founder's page to him, who
-approves only that.
+template](references/card.md), in a pull request. Firstmate takes the founder's page to him.
 
 ## Stop and ask
 

@@ -12,8 +12,8 @@ the session that wrote the card.
 
 ## What it receives
 
-The card (in `docs/steps/` or its pull request) and the unit. It reads its unit's top-table
-rows and section, its spec. Nothing else is pasted in: a ruling not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit. Nothing else is pasted in: a ruling
+not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
@@ -22,7 +22,9 @@ unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mod
 
 ## Steps
 
-1. Read the unit's criteria, its reference table rows and its section.
+1. Read the unit's criteria, reference table rows and section, whose order of the work
+   gives each step's files, reference, code, tests, hand mutations and done line; a group's last
+   unit adds its checkpoint.
 2. Every type, contract and value the unit needs exists on `main` or comes from this
    unit; if not, stop.
 2a. Build each of the unit's reference table rows as its verdict says
