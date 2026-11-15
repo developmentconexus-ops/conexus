@@ -17,11 +17,11 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 
 ## Steps
 
-1. Write the sentence of use first and the use script: three to six actions, written as what a
-   person sees, done by the founder on the cloud installation without a terminal (a vendor's
+1. Write the sentence of use first and the use script: three to six actions, as a person
+   sees them, done by the founder on the cloud installation without a terminal (a vendor's
    console is not one).
-2. List what enters and what stays out, and why. Estimate each unit's changed lines against
-   [delivery L2](../../../docs/guides/delivery.md).
+2. List what enters and what stays out, and why. Estimate each unit's changed lines; past
+   the budget of [delivery L2](../../../docs/guides/delivery.md), split the step before the build.
 3. Write the acceptance criteria, each observable from outside, refusals included; each refusal
    names the step's route that reaches it. Fill the failure table for every write the step
    adds, with its ambiguous replies (a cut reply, a 502, a 503) and the client's response; each row
@@ -33,12 +33,12 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    else compare two shapes in writing. Copy the study's reference table and give every row its unit,
    or "fica de fora" with its reason, and its new file ([card](references/card.md)). A built row
    without a traced reference goes back to the study.
-5. Fill the state matrix: each screen's states, and for each contract field who writes and who
+5. Fill the state matrix: each screen's states, and for each contract field who writes and
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
    rules](../../../docs/reference/impeccable.md). A brought part passes the study rule
    ([`conexus-study`](../conexus-study/SKILL.md)).
 6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads; its
-   skills come from the rows of `docs/reference/stack.md` for its folders, never from memory, and
+   skills come from the `docs/reference/stack.md` rows for its folders, never from memory, and
    the reference lines it follows.
 7. Write the founder's page in Portuguese, as [the template](references/card.md) says: what he
    will do at the end and only his real decisions. An amendment rewrites the page, listing what
@@ -50,8 +50,8 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    does not fit one context; never the session that will build it.
 8. Give the card, at the exact commit the founder will approve, to a reader of another model who
    did not write it, with [the template](references/card.md)'s questions. The reader reads
-   the whole card once, opening every cell of the reference table and every cited line at the
-   installed version, before any build; a later commit, as its diff only.
+   the whole card once before any build, opening every reference table cell and cited line at the
+   installed version; a later commit, as its diff only.
 
 ## What it produces
 
@@ -67,5 +67,5 @@ template](references/card.md), in a pull request. Firstmate takes the founder's 
 
 ## When it closes
 
-The founder approves the page, and the ledger records his words, the date and the commit of the
-card ([delivery](../../../docs/guides/delivery.md)).
+The founder approves the page; the ledger records his words, the date and the card's commit
+([delivery](../../../docs/guides/delivery.md)).
