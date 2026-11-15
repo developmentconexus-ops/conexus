@@ -124,7 +124,7 @@ async function hubServing(
     assistantMachines: ports.assistantMachines,
     connectors: subjects.connectors,
     apps,
-    ...{ identity: identity.ports, agents: subjects.agents, sendMail },
+    ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
     notify: subjects.notifications.notify,
     mastra: conversations.mastra,
     ...{ copies: subjects.copies, settle: (bound: AbortSignal) => conversations.settle(bound) },
