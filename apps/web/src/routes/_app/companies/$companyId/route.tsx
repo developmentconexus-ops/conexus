@@ -2,7 +2,7 @@ import type { CompanyId, CompanyMay } from '@conexus/hub-api'
 import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import {
   BotIcon,
-  CopyIcon,
+  DatabaseIcon,
   FolderIcon,
   HouseIcon,
   PlugIcon,
@@ -39,7 +39,7 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   component: HouseFrame,
 })
 
-/** The rail's places at the top: Automações follows Integrações, Agentes follows it and Cópias follows Agentes, each for whoever the Hub says may. */
+/** The rail's places at the top: Automações follows Integrações, Agentes follows it and Dados follows Agentes, each for whoever the Hub says may. */
 function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
   const { companyId, may } = props
   const inInicio = useMatches({
@@ -86,10 +86,10 @@ function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
       )}
       {may.manageCopies && (
         <SidebarRailButton
-          to="/companies/$companyId/copies"
+          to="/companies/$companyId/data"
           params={params}
-          icon={CopyIcon}
-          label="Cópias"
+          icon={DatabaseIcon}
+          label="Dados"
         />
       )}
     </>

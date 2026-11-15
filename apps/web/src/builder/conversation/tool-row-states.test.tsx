@@ -83,7 +83,7 @@ test.each([
 })
 
 test.each([
-  [{ kind: 'EXISTS', name: 'vendas', releasedHere: false }, /peça na página Cópias/],
+  [{ kind: 'EXISTS', name: 'vendas', releasedHere: false }, /peça na página Dados/],
   [{ kind: 'EXISTS', name: 'vendas', releasedHere: true }, /já está liberada a este Projeto/],
   [{ kind: 'NOT_IN_ROLE', role: 'developer', operation: 'Consulta' }, /leitura Consulta/],
   [{ kind: 'MALFORMED', issues: ['name: Too long'] }, /name: Too long/],

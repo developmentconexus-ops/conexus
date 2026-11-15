@@ -127,11 +127,8 @@ test('a proposta diz o modo', async () => {
   expect(dialog.getByText('por janela de 7 dias')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
   // The copy made from the proposal has the mode of its definition.
-  const made = await waitFor(async () => {
-    expect(screen.queryByText('Proposta')).toBeNull()
-    return rowOf('Devoluções')
-  })
-  expect(within(made).getByText('por janela de 7 dias')).toBeTruthy()
+  await waitFor(() => expect(screen.queryByText('Proposta')).toBeNull())
+  expect(await screen.findByRole('link', { name: 'devolucoes' })).toBeTruthy()
 })
 
 test('no celular', async () => {

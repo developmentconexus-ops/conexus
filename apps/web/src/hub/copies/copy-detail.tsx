@@ -4,44 +4,34 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { List, PageTitle, Row, SectionTitle } from '../../ui/list.tsx'
+import { Alert } from '../../ui/alert.tsx'
+import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import { connectionsQuery, connectorName } from '../connectors/public.ts'
+import { ColumnsTab, TablePanel } from './copy-columns.tsx'
 import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
-import { ReadFacts } from './copy-proposal.tsx'
+import { CopySample } from './copy-sample.tsx'
 import { copyRunsQuery } from './queries.ts'
 import { useRunRequests } from './run-requests.ts'
-import { originOf, useSourceText } from './source.ts'
+import { TableTab } from './search.ts'
 import {
-  BACK_TO_COPIES,
-  COPIED_TITLE,
+  BACK_TO_DATA,
+  COLUMNS_TITLE,
   countText,
   durationText,
   INTERVAL_LABEL,
-  modeText,
+  inactiveNotice,
   NO_RUNS_YET,
   outcomeText,
   RUNS_TITLE,
-  windowText,
+  SAMPLE_TITLE,
+  SEE_RUN,
 } from './text.ts'
-
-/** A list read's columns: each name in mono, its type, and its description when the definition gives one. */
-function ColumnList({ columns }: { columns: CopySummary['shown']['columns'] }) {
-  return (
-    <ul aria-label="Colunas" className="flex min-w-0 flex-col gap-xs">
-      {columns.map((column) => (
-        <li key={column.name} className="break-words">
-          <span className="font-mono text-fact">{column.name}</span>
-          <span className="text-text-2">{` ${column.type}`}</span>
-          {column.description !== null && <span>{` · ${column.description}`}</span>}
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 function RunRow({ run }: { run: CopyRun }) {
   return (
@@ -112,43 +102,69 @@ function Runs(props: {
   )
 }
 
+/** The columns the source stopped sending, as the notice on top of the page names them: the day is the earliest. */
+function inactiveOf(copy: CopySummary) {
+  const stopped = copy.shown.columns.flatMap((column) =>
+    column.inactiveSince === null ? [] : [{ name: column.name, since: column.inactiveSince }],
+  )
+  const since = stopped.map((one) => one.since).sort()[0]
+  return since === undefined ? undefined : { names: stopped.map((one) => one.name), since }
+}
+
 /**
- * **Uma cópia** (Capacidade 2, U4; web W29, W34): what it copies (the query in mono, scrolling inside
- * its box, or a list read with its fixed input, the accounts, the descriptions and the columns; the
- * key; the window it rereads), its actions, and its runs, newest first, 20 to a page.
+ * **A tabela** (Dados, parte 1; web W29, W34): its name, state and system on top, then the tabs
+ * **Colunas**, **Amostra** (for whoever may read rows) and **Rodadas**, the tab in the address, with
+ * the panel of where it comes from beside. A column the source stopped sending is told on top.
  * The route's loader has already refused a copy the Hub does not have.
  */
-export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?: string }) {
-  const { companyId, copyId, page } = props
+export function CopyDetail(props: {
+  companyId: CompanyId
+  copyId: CopyId
+  tab: TableTab | undefined
+  page?: string
+  mayReadRows: boolean
+}) {
+  const { companyId, copyId, page, mayReadRows } = props
   const requests = useRunRequests()
   const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
-  const sourceOf = useSourceText(companyId)
+  const connections = useQuery(connectionsQuery(companyId))
   const navigate = useNavigate()
   const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
-  if (read.isPending) return <Skeleton className="h-24 w-full" />
+  if (read.isPending || connections.isPending) return <Skeleton className="h-24 w-full" />
+  if (connections.isError) {
+    return (
+      <ReadFailure
+        text={sentenceOf(connections.error)}
+        onRetry={() => void connections.refetch()}
+      />
+    )
+  }
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
-  const origin = originOf(copy)
-  const source = sourceOf(origin)
+  const shown = props.tab === TableTab.enum.sample && !mayReadRows ? undefined : props.tab
+  const tab = shown ?? TableTab.enum.columns
+  const connector = copy.sources[0]?.connection.connector ?? ''
+  const system = connectorName(connections.data.connectors, connector)
+  const inactive = inactiveOf(copy)
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
       <Link
-        to="/companies/$companyId/copies"
+        to="/companies/$companyId/data"
         params={{ companyId }}
         className="inline-flex items-center gap-xs text-label text-text-2"
       >
         <ArrowLeftIcon aria-hidden="true" className="size-3.5" />
-        {BACK_TO_COPIES}
+        {BACK_TO_DATA}
       </Link>
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-md">
         <div className="flex min-w-0 flex-wrap items-center gap-md">
-          <PageTitle className="min-w-0 break-words">{copy.label}</PageTitle>
+          <PageTitle className="min-w-0 break-words font-mono">{copy.name}</PageTitle>
           <StateBadge copy={copy} />
           <span className="text-text-2">
             {copy.interval === null
-              ? source
-              : `${source} · a cada ${INTERVAL_LABEL[copy.interval]}`}
+              ? system
+              : `${system} · a cada ${INTERVAL_LABEL[copy.interval]}`}
           </span>
         </div>
         <div className="flex items-center gap-sm">
@@ -159,34 +175,57 @@ export function CopyDetail(props: { companyId: CompanyId; copyId: CopyId; page?:
             onNote={setNote}
             withRun={false}
             onDeleted={() =>
-              void navigate({ to: '/companies/$companyId/copies', params: { companyId } })
+              void navigate({ to: '/companies/$companyId/data', params: { companyId } })
             }
           />
         </div>
       </div>
       {note !== undefined && <NoteLine note={note} />}
-      <section aria-label={COPIED_TITLE} className="flex min-w-0 flex-col gap-md">
-        <SectionTitle>{COPIED_TITLE}</SectionTitle>
-        {copy.shown.description !== null && <p className="break-words">{copy.shown.description}</p>}
-        <ReadFacts origin={origin} source={source} />
-        <p className="break-words">
-          <span className="text-text-2">Chave </span>
-          <span className="font-mono text-fact">{copy.shown.key.join(', ')}</span>
-        </p>
-        <p className="break-words">
-          <span className="text-text-2">Modo </span>
-          {modeText(copy.mode)}
-        </p>
-        <p className="break-words">
-          <span className="text-text-2">Releitura </span>
-          {windowText(copy.mode, copy.shown)}
-        </p>
-        {origin.source.kind === 'OPERATION' && <ColumnList columns={copy.shown.columns} />}
-      </section>
-      <section aria-label={RUNS_TITLE} className="flex min-w-0 flex-col gap-md">
-        <SectionTitle>{RUNS_TITLE}</SectionTitle>
-        <Runs runs={runs} next={next} page={page} />
-      </section>
+      {inactive !== undefined && (
+        <div className="flex flex-wrap items-baseline gap-md">
+          <Alert tone="danger">{inactiveNotice(system, inactive.names, inactive.since)}</Alert>
+          <Link
+            to="."
+            search={(old) => ({ ...old, tab: TableTab.enum.runs })}
+            className="underline"
+          >
+            {SEE_RUN}
+          </Link>
+        </div>
+      )}
+      <div className="flex min-w-0 flex-col gap-lg md:flex-row">
+        <Tabs
+          value={tab}
+          className="min-w-0 flex-1"
+          onValueChange={(next) => {
+            const chosen = TableTab.safeParse(next)
+            if (chosen.success) {
+              void navigate({
+                to: '.',
+                search: (old) => ({ ...old, tab: chosen.data, page: undefined }),
+              })
+            }
+          }}
+        >
+          <TabsList aria-label="Tabela">
+            <TabsTrigger value={TableTab.enum.columns}>{COLUMNS_TITLE}</TabsTrigger>
+            {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
+            <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
+          </TabsList>
+          <TabsContent value={TableTab.enum.columns} className="pt-md">
+            <ColumnsTab copy={copy} />
+          </TabsContent>
+          {mayReadRows && (
+            <TabsContent value={TableTab.enum.sample} className="pt-md">
+              <CopySample companyId={companyId} copyId={copyId} />
+            </TabsContent>
+          )}
+          <TabsContent value={TableTab.enum.runs} className="pt-md">
+            <Runs runs={runs} next={next} page={page} />
+          </TabsContent>
+        </Tabs>
+        <TablePanel copy={copy} system={system} />
+      </div>
     </div>
   )
 }

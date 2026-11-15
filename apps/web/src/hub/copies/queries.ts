@@ -10,6 +10,7 @@ import {
   pauseCopy,
   resumeCopy,
   runCopy,
+  sampleCopy,
 } from '@conexus/hub-api'
 import { queryOptions } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -81,6 +82,11 @@ export function copyRunsQuery(
         ? WHILE_RUNNING
         : false,
   })
+}
+
+/** The first rows of a copy's table, for whoever may read them. */
+export function copySampleQuery(companyId: CompanyId, copyId: CopyId) {
+  return hubQuery(sampleCopy, { params: { companyId, copyId } })
 }
 
 export const sendCopyEnable = hubMutation(enableCopy)

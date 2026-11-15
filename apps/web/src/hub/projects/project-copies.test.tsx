@@ -114,11 +114,11 @@ test('liberar, o banco da empresa não respondeu: a frase e o botão de novo', a
   })
 })
 
-test('nenhuma cópia na empresa: a frase e o caminho para Cópias', async () => {
+test('nenhuma cópia na empresa: a frase e o caminho para Dados', async () => {
   open([], 'owner')
   expect(await screen.findByText('A empresa ainda não tem cópias.')).toBeTruthy()
   const link = screen.getByRole('link', { name: 'Ligar uma cópia' })
-  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/copies`)
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data`)
 })
 
 test('quem não gerencia cópias lê quem pode e não pede a lista', async () => {

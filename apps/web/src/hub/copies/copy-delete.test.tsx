@@ -63,7 +63,7 @@ test('Apagar: no detalhe, o sucesso volta para a lista', async () => {
   fireEvent.click(
     within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Apagar' }),
   )
-  expect(await screen.findByRole('heading', { name: 'Cópias' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
   expect(await screen.findByText('Clientes')).toBeTruthy()
   expect(screen.queryByText('Vendas')).toBeNull()
 })

@@ -84,7 +84,7 @@ test('Rodar agora no detalhe: o botão é da página, a rodada pedida aparece se
     copies: [copy({ run: copyRun({ id: OLD }) })],
     runs: [copyRun({ id: OLD })],
   }
-  openCopies(server, held, detailOf(VENDAS))
+  openCopies(server, held, `${detailOf(VENDAS)}?tab=runs`)
   fireEvent.click(await screen.findByRole('button', { name: 'Rodar agora' }))
   await screen.findByText('Pedido enviado. A rodada aparece na lista.')
   expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2)
@@ -103,9 +103,9 @@ test('o detalhe de uma cópia sem relógio não tem Rodar agora', async () => {
   openCopies(
     server,
     { copies: [copy({ schedule: { kind: 'MISSING' } })], runs: [] },
-    detailOf(VENDAS),
+    `${detailOf(VENDAS)}?tab=runs`,
   )
-  await screen.findByRole('heading', { name: 'Vendas' })
+  await screen.findByRole('heading', { name: 'vendas' })
   expect(screen.queryByRole('button', { name: 'Rodar agora' })).toBeNull()
 })
 
@@ -113,7 +113,7 @@ test('as rodadas, 20 por página: Ver mais abre a seguinte e Primeira página vo
   openCopies(
     server,
     { copies: [copy()], runs: [copyRun()], later: [copyRun({ read: 7 })] },
-    detailOf(VENDAS),
+    `${detailOf(VENDAS)}?tab=runs`,
   )
   fireEvent.click(await screen.findByRole('link', { name: 'Ver mais: Rodadas' }))
   expect(await screen.findByText('7')).toBeTruthy()
@@ -126,7 +126,7 @@ test('as rodadas num celular: linhas empilhadas, não tabela', async () => {
     openCopies(
       server,
       { copies: [copy()], runs: [copyRun({ read: 1204, written: 1100 })] },
-      detailOf(VENDAS),
+      `${detailOf(VENDAS)}?tab=runs`,
     )
     expect(await screen.findByText(/1\.204 lidas · 1\.100 gravadas · Completa/)).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()

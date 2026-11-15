@@ -57,7 +57,7 @@ function Fact(props: { label: string; children: string }) {
  * What a copy reads, before its key: a query in mono; a list read by its label and connector, its
  * fixed input, the accounts and, for a proposal, the calls a whole pass spends.
  */
-export function ReadFacts(props: { origin: Origin; source: string; calls?: number | null }) {
+function ReadFacts(props: { origin: Origin; source: string; calls?: number | null }) {
   const { origin } = props
   if (origin.source.kind === 'QUERY')
     return (
@@ -83,7 +83,7 @@ function decidedElsewhere(error: unknown) {
 
 /**
  * **Ligar a proposta** (Capacidade 3; O Sync de qualquer conector, U4): what it reads, the key, the mode, the interval (30 minutes
- * marked) and the Projeto it is released to. The Cópias row and the conversation's card open this one
+ * marked) and the Projeto it is released to. The Dados row and the conversation's card open this one
  * dialog, which calls `enableCopy` from the proposal; one request per attempt (web W24). A proposal
  * decided elsewhere closes it with the phrase, through `onRefused`; any other refusal stays inside.
  */

@@ -4,7 +4,7 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { CLIENTES, copy, copyRun, LIST, onPhone, openCopies, PRODUTOS } from './test-hub.tsx'
 import { ORDERS_SHOWN, STORES } from './test-sources.ts'
 
-// Cópias: the rail, the list and the actions of a row (Capacidade 2, criteria 30, 31, 33 and 35).
+// Dados: the rail, the list and the actions of a row (Capacidade 2, criteria 30, 31, 33 and 35).
 const server = hubServer()
 
 async function rowOf(name: string): Promise<HTMLElement> {
@@ -13,16 +13,16 @@ async function rowOf(name: string): Promise<HTMLElement> {
   return row
 }
 
-test('Cópias: a faixa mostra a entrada ao dono e ao desenvolvedor', async () => {
+test('Dados: a faixa mostra a entrada ao dono e ao desenvolvedor', async () => {
   openCopies(server, { copies: [copy()] }, LIST, 'developer')
-  expect(await screen.findByRole('heading', { name: 'Cópias' })).toBeTruthy()
-  expect(screen.getAllByRole('link', { name: 'Cópias' }).length).toBeGreaterThan(0)
+  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
+  expect(screen.getAllByRole('link', { name: 'Dados' }).length).toBeGreaterThan(0)
 })
 
-test('Cópias: a faixa e quem não vê: o membro não tem a entrada e o endereço dá não encontrado', async () => {
+test('Dados: a faixa e quem não vê: o membro não tem a entrada e o endereço dá não encontrado', async () => {
   const hub = openCopies(server, { copies: [copy()] }, LIST, 'member')
   expect(await screen.findByText('Não encontramos o que você procurou.')).toBeTruthy()
-  expect(screen.queryByRole('link', { name: 'Cópias' })).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Dados' })).toBeNull()
   expect(hub.sent.filter((one) => one.path.endsWith('/copies'))).toHaveLength(0)
 })
 
@@ -47,8 +47,6 @@ test('Cópias: a lista mostra cada cópia com o estado em palavras e os números
   )
   const vendas = await rowOf('Vendas')
   expect(within(vendas).getByText('Em dia')).toBeTruthy()
-  expect(within(vendas).getByText('Matriz')).toBeTruthy()
-  expect(within(vendas).getByText('42 s')).toBeTruthy()
   expect(within(vendas).getByText('118.402')).toBeTruthy()
   expect(within(vendas).getByText('30 min')).toBeTruthy()
   expect(within(vendas).getByText('Vendedores')).toBeTruthy()
@@ -96,13 +94,10 @@ test('a rodada que esperou', async () => {
   ).toBeTruthy()
 })
 
-test('Cópias: sem cópias, a frase de primeira vez e Ligar uma cópia', async () => {
+test('Dados: um sistema sem cópia e nenhum sistema ligado', async () => {
   openCopies(server, { copies: [] }, LIST)
-  expect(
-    await screen.findByText(
-      'Copie um dado de uma conexão para o banco da empresa e libere aos Projetos que usam.',
-    ),
-  ).toBeTruthy()
+  expect(await screen.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(screen.getByText('Nenhuma tabela copiada')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ligar uma cópia' })).toBeTruthy()
 })
 
@@ -185,21 +180,23 @@ test('Cópias: no celular, a lista vira linhas que quebram', async () => {
 test('o modo da cópia', async () => {
   const whole = { kind: 'WHOLE' } as const
   const changes = { kind: 'CHANGES' } as const
-  openCopies(
-    server,
-    {
-      copies: [
-        copy(),
-        copy({ id: CLIENTES, name: 'clientes', label: 'Clientes', mode: changes }),
-        copy({ id: PRODUTOS, name: 'produtos', label: 'Produtos', mode: whole }),
-      ],
-    },
-    LIST,
-  )
-  // The words come from `copy.mode`, as the Hub classified it; the screen never reads the definition.
-  expect(within(await rowOf('Vendas')).getByText('por janela de 30 dias')).toBeTruthy()
-  expect(within(await rowOf('Clientes')).getByText('só o alterado')).toBeTruthy()
-  expect(within(await rowOf('Produtos')).getByText('cópia inteira')).toBeTruthy()
+  await onPhone(async () => {
+    openCopies(
+      server,
+      {
+        copies: [
+          copy(),
+          copy({ id: CLIENTES, name: 'clientes', label: 'Clientes', mode: changes }),
+          copy({ id: PRODUTOS, name: 'produtos', label: 'Produtos', mode: whole }),
+        ],
+      },
+      LIST,
+    )
+    // The words come from `copy.mode`, as the Hub classified it; the screen never reads the definition.
+    expect(within(await rowOf('Vendas')).getByText('por janela de 30 dias')).toBeTruthy()
+    expect(within(await rowOf('Clientes')).getByText('só o alterado')).toBeTruthy()
+    expect(within(await rowOf('Produtos')).getByText('cópia inteira')).toBeTruthy()
+  })
 })
 
 test('a origem da cópia', async () => {
@@ -208,36 +205,17 @@ test('a origem da cópia', async () => {
     ...{ shown: ORDERS_SHOWN, mode: { kind: 'CHANGES' }, interval: null },
   })
   openCopies(server, { copies: [orders], runs: [] }, LIST)
-  const row = await rowOf('Pedidos das lojas')
-  // The read's label and the connector's name, from the catalog; the accounts before the mode.
-  expect(await within(row).findByText('Pedidos · Mercado Livre')).toBeTruthy()
-  expect(within(row).getByText('Loja A, Loja B · só o alterado')).toBeTruthy()
-  fireEvent.click(within(row).getByRole('link', { name: 'Pedidos das lojas' }))
-  const copied = within(await screen.findByRole('region', { name: 'O que é copiado' }))
-  expect(copied.getByText('Os pedidos de cada loja')).toBeTruthy()
-  expect(copied.getByText('Pedidos · Mercado Livre')).toBeTruthy()
-  expect(copied.getByText('status: paid')).toBeTruthy()
-  expect(copied.getByText('Loja A, Loja B')).toBeTruthy()
-  const columns = within(copied.getByRole('list', { name: 'Colunas' }))
-  expect(columns.getByText(/O número do pedido/)).toBeTruthy()
-  // A column with no description: its name and type alone.
-  const plain = columns.getByText('atualizado').closest('li')
-  expect(plain?.textContent).toBe('atualizado timestamp')
-})
-
-test('a origem da cópia: no telefone, as contas quebram a linha', async () => {
-  const orders = copy({
-    ...{ name: 'ml_pedidos', label: 'Pedidos das lojas', sources: STORES },
-    ...{ shown: ORDERS_SHOWN, mode: { kind: 'CHANGES' } },
-  })
-  await onPhone(async () => {
-    openCopies(server, { copies: [orders] }, LIST)
-    const row = await rowOf('Pedidos das lojas')
-    expect(
-      await within(row).findByText(' · Pedidos · Mercado Livre', { normalizer: (text) => text }),
-    ).toBeTruthy()
-    expect(within(row).getByText('Loja A, Loja B · só o alterado').className).toContain(
-      'break-words',
-    )
-  })
+  // The system of the group is the connector's name from the catalog, with the accounts' names.
+  expect(await screen.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(await screen.findByText('Mercado Livre · Loja A, Loja B · 1 tabela')).toBeTruthy()
+  const row = await rowOf('Os pedidos de cada loja')
+  fireEvent.click(within(row).getByRole('link', { name: 'ml_pedidos' }))
+  await screen.findByRole('heading', { name: 'ml_pedidos' })
+  const columns = within(screen.getByRole('table'))
+  expect(columns.getByText('O número do pedido')).toBeTruthy()
+  expect(columns.getByText('Número')).toBeTruthy()
+  // A column with no description: its name and the type in words alone.
+  expect(columns.getByText('Data e hora')).toBeTruthy()
+  expect(screen.getByText('Loja A, Loja B')).toBeTruthy()
+  expect(screen.getByText('só o alterado')).toBeTruthy()
 })

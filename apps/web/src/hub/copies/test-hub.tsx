@@ -3,6 +3,7 @@ import type {
   CopyModelSummary,
   CopyProposalSummary,
   CopyRun,
+  CopySample,
   CopySummary,
 } from '@conexus/hub-api'
 import {
@@ -18,6 +19,7 @@ import {
   listCopies,
   listCopyRuns,
   PersonId,
+  sampleCopy,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
@@ -27,7 +29,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
-import { CATALOG } from './test-sources.ts'
+import { CATALOG, SAMPLE } from './test-sources.ts'
 
 export const VENDAS = CopyId.parse('11111111-1111-4111-8111-111111111111')
 export const CLIENTES = CopyId.parse('22222222-2222-4222-8222-222222222222')
@@ -124,18 +126,32 @@ export function connection(fields: Partial<Connection> = {}): Connection {
   })
 }
 
-export type Answers = {
+type Answers = {
   /** What a write answers instead of the Hub's success. */
   write?: () => Response | undefined
   /** What the list of copies answers instead of its rows. */
   list?: () => Response | undefined
+  /** What the sample of a copy answers instead of its rows. */
+  sample?: () => Response | undefined
   /** What a proposal's Ligar or Dispensar answers instead of the Hub's success. */
   decide?: () => Response | undefined
 }
 
 type Sent = { method: string; path: string; body: unknown; key: string | null }
 
-type Held = Parameters<typeof copiesHub>[1]
+/** What a test holds on the Hub of the copies. */
+type Held = {
+  copies: CopySummary[]
+  runs?: CopyRun[]
+  /** The runs of the page `NTA` that a `MORE` after the first points to. */
+  later?: CopyRun[]
+  models?: CopyModelSummary[]
+  connections?: Connection[]
+  /** The five rows of a copy's sample. */
+  sample?: CopySample
+  proposals?: CopyProposalSummary[]
+  answers?: Answers
+}
 
 /** Apagar: the copy leaves the list, and no table is left in the company's database. */
 function removed(copies: CopySummary[], id: unknown) {
@@ -190,23 +206,29 @@ function proposalsOf(held: Held, note: (request: Request) => Promise<unknown>) {
   return { listed, accepted, dismiss }
 }
 
+/** A write that changes a copy: its fields take the new values and the copy comes back. */
+function changed(held: Held, id: unknown, fields: Partial<CopySummary>) {
+  const found = held.copies.find((one) => one.id === id)
+  if (found === undefined) return refusal('COPY_NOT_FOUND')
+  Object.assign(found, fields)
+  return HttpResponse.json({ copy: found })
+}
+
+/** The sample of a copy: its five rows, or what `answers.sample` refuses with. */
+function sampleOf(held: Held) {
+  return http.get(
+    `${BASE}/copies/:id/sample`,
+    () =>
+      held.answers?.sample?.() ??
+      HttpResponse.json(sampleCopy.success.body.parse({ sample: held.sample ?? SAMPLE })),
+  )
+}
+
 /**
  * The Hub's copies on `server`: a list that changes as the writes land, the models, the connections
  * and the runs of each copy. `sent` holds every request, with its attempt key.
  */
-function copiesHub(
-  server: ReturnType<typeof hubServer>,
-  held: {
-    copies: CopySummary[]
-    runs?: CopyRun[]
-    /** The runs of the page `NTA` that a `MORE` after the first points to. */
-    later?: CopyRun[]
-    models?: CopyModelSummary[]
-    connections?: Connection[]
-    proposals?: CopyProposalSummary[]
-    answers?: Answers
-  },
-) {
+function copiesHub(server: ReturnType<typeof hubServer>, held: Held) {
   const sent: Sent[] = []
   const { answers = {} } = held
   async function note(request: Request) {
@@ -221,10 +243,7 @@ function copiesHub(
     return body
   }
   function change(id: unknown, fields: Partial<CopySummary>) {
-    const found = held.copies.find((one) => one.id === id)
-    if (found === undefined) return refusal('COPY_NOT_FOUND')
-    Object.assign(found, fields)
-    return HttpResponse.json({ copy: found })
+    return changed(held, id, fields)
   }
   const proposals = proposalsOf(held, note)
   server.use(
@@ -273,6 +292,7 @@ function copiesHub(
       await note(request)
       return answers.write?.() ?? removed(held.copies, params.id)
     }),
+    sampleOf(held),
     http.get(`${BASE}/copies/:id/runs`, ({ params, request }) => runsOf(held, params.id, request)),
   )
   return {
@@ -282,7 +302,7 @@ function copiesHub(
 }
 
 const COMPANY_ROOT = `/companies/${COMPANY.id}`
-export const LIST = `${COMPANY_ROOT}/copies`
+export const LIST = `${COMPANY_ROOT}/data`
 export function detailOf(copyId: string) {
   return `${LIST}/${copyId}`
 }
@@ -293,9 +313,10 @@ export function openCopies(
   held: Parameters<typeof copiesHub>[1],
   path: string,
   role = 'owner',
+  projects = [PEDIDOS],
 ) {
   const hub = copiesHub(server, held)
-  server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }))
+  server.use(...projectsRead({ projects, databaseReady: true, mayDelete: false, role }))
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [path] }))} />)
   return hub
 }

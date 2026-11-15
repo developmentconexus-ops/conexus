@@ -1,7 +1,7 @@
-import type { CopySummary } from '@conexus/hub-api'
+import type { CopySample, CopySummary } from '@conexus/hub-api'
 import { ConnectionId, ConnectorEntry, ConnectorId } from '@conexus/hub-api'
 
-// The stores of Mercado Livre and the catalog the Cópias tests read (O Sync de qualquer conector, U4).
+// The stores of Mercado Livre and the catalog the Dados tests read (O Sync de qualquer conector, U4).
 const LOJA_A = ConnectionId.parse('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')
 const LOJA_B = ConnectionId.parse('cccccccc-cccc-4ccc-8ccc-cccccccccccc')
 /** Two stores of Mercado Livre, by the names the company gave them. */
@@ -38,3 +38,10 @@ export const CATALOG = [
     fields: [],
   }),
 )
+
+/** What the sample of a copy shows: five rows of two columns, and more behind them. */
+export const SAMPLE: CopySample = {
+  columns: ['NUNOTA', 'CODPARC'],
+  rows: [1, 2, 3, 4, 5].map((n) => [n * 100, `P${n}`]),
+  complete: false,
+}

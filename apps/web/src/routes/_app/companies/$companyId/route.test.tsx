@@ -79,7 +79,7 @@ test('o membro: o trilho tem Início, Projetos, Integrações, Configurações e
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('o desenvolvedor: o trilho tem Automações, Agentes e Cópias depois de Integrações, como a dona; o membro não os tem', async () => {
+test('o desenvolvedor: o trilho tem Automações, Agentes e Dados depois de Integrações, como a dona; o membro não os tem', async () => {
   open(HOME, PROJECTS, 'developer')
   const developer = await sidebar()
   expect(linkNames(developer.rail)).toEqual([
@@ -88,13 +88,13 @@ test('o desenvolvedor: o trilho tem Automações, Agentes e Cópias depois de In
     'Integrações',
     'Automações',
     'Agentes',
-    'Cópias',
+    'Dados',
     'Configurações',
   ])
   expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
-test('o trilho da dona tem Automações, Agentes e Cópias logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações, Agentes nem Cópias', async () => {
+test('o trilho da dona tem Automações, Agentes e Dados logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações, Agentes nem Dados', async () => {
   open(HOME, PROJECTS, 'owner')
   const owner = await sidebar()
   expect(linkNames(owner.rail)).toEqual([
@@ -103,7 +103,7 @@ test('o trilho da dona tem Automações, Agentes e Cópias logo depois de Integr
     'Integrações',
     'Automações',
     'Agentes',
-    'Cópias',
+    'Dados',
     'Configurações',
   ])
   expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
@@ -113,7 +113,7 @@ test('o trilho da dona tem Automações, Agentes e Cópias logo depois de Integr
   const member = await sidebar()
   expect(member.rail.queryByRole('link', { name: 'Automações' })).toBeNull()
   expect(member.rail.queryByRole('link', { name: 'Agentes' })).toBeNull()
-  expect(member.rail.queryByRole('link', { name: 'Cópias' })).toBeNull()
+  expect(member.rail.queryByRole('link', { name: 'Dados' })).toBeNull()
 })
 
 /** The Projetos the Projeto's own header offers to switch to, in order, without "Todos os projetos". */

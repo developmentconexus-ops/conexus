@@ -124,7 +124,7 @@ test('o cartão da proposta: ligar pela conversa', async () => {
   expect(within(card).queryByRole('button', { name: 'Dispensar' })).toBeNull()
   expect(hub.reads.some((search) => search.includes(held.id))).toBe(true)
   fireEvent.click(ligar)
-  // The Cópias page's own dialog, and its one operation.
+  // The Dados page's own dialog, and its one operation.
   const dialog = within(await screen.findByRole('dialog'))
   expect(dialog.getByText('Libera ao Projeto Vendedores')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
@@ -164,7 +164,7 @@ test('o cartão de quem não gerencia cópias', async () => {
   expect(within(card).getByText('devolucoes · Matriz · só o alterado')).toBeTruthy()
   expect(
     within(card).getByText(
-      'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.',
+      'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Dados.',
     ),
   ).toBeTruthy()
   expect(within(card).queryByRole('button')).toBeNull()

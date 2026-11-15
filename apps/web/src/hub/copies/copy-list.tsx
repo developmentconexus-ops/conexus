@@ -1,11 +1,10 @@
 import type { CompanyId, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
-import type { UseQueryResult } from '@tanstack/react-query'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { MoreHorizontalIcon } from 'lucide-react'
 import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
-import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
+import { writeFailureText } from '../../platform/hub.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -16,26 +15,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
-import { List, PageTitle, Row } from '../../ui/list.tsx'
-import { Skeleton } from '../../ui/skeleton.tsx'
-import { Empty, ReadFailure } from '../../ui/states.tsx'
+import { List, Row } from '../../ui/list.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CopyDeleteDialog } from './copy-delete.tsx'
 import { ProposalPhoneRow, ProposalTableRow } from './copy-proposal.tsx'
 import { IntervalDialog } from './interval.tsx'
-import { NewCopy } from './new-copy.tsx'
 import type { RunRequest } from './queries.ts'
-import { copiesQuery, requestOpen, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
-import { useRunRequests } from './run-requests.ts'
-import { originOf, useSourceText, withAccounts } from './source.ts'
+import { requestOpen, sendCopyPause, sendCopyResume, sendCopyRun } from './queries.ts'
 import {
-  COPIES_TITLE,
   countText,
-  durationText,
   INTERVAL_LABEL,
   modeText,
-  NO_COPIES,
   NO_SCHEDULE,
   outcomeText,
   RUN_REQUESTED,
@@ -44,7 +35,7 @@ import {
 } from './text.ts'
 
 // The eight columns and the menu fit beside the rail at 1280px, so a cell's padding is `sm`, not the table's `md`.
-const CELL = 'px-sm'
+export const CELL = 'px-sm'
 
 /** What an action told: a refusal, or that the request went, with the run it asked for. */
 export type Note =
@@ -219,45 +210,44 @@ function intervalText(copy: CopySummary): string {
   return copy.interval === null ? NO_SCHEDULE : INTERVAL_LABEL[copy.interval]
 }
 
+/** What the row says a table holds: its description, or the label of the copy when it has none. */
+export function describedAs(copy: CopySummary): string {
+  return copy.shown.description ?? copy.label
+}
+
 function CopyLink({ companyId, copy }: { companyId: CompanyId; copy: CopySummary }) {
   return (
     <Link
-      to="/companies/$companyId/copies/$copyId"
+      to="/companies/$companyId/data/$copyId"
       params={{ companyId, copyId: copy.id }}
-      className="font-medium hover:underline"
+      className="font-medium font-mono text-fact hover:underline"
     >
-      {copy.label}
+      {copy.name}
     </Link>
   )
 }
 
-function CopyTableRow(props: { companyId: CompanyId; copy: CopySummary; onNote: Props['onNote'] }) {
+export function CopyTableRow(props: {
+  companyId: CompanyId
+  copy: CopySummary
+  onNote: Props['onNote']
+}) {
   const { companyId, copy } = props
   const { run } = copy
-  const origin = originOf(copy)
-  const source = useSourceText(companyId)(origin)
   return (
     <TableRow>
-      <TableCell className={`${CELL} max-w-36 truncate`} title={source}>
-        {source}
-      </TableCell>
       <TableCell className={`${CELL} whitespace-normal`}>
         <div className="flex flex-col">
           <CopyLink companyId={companyId} copy={copy} />
-          <span className="text-text-2">{withAccounts(origin, modeText(copy.mode))}</span>
+          <span className="text-text-2">{describedAs(copy)}</span>
         </div>
       </TableCell>
       <TableCell className={`${CELL} whitespace-normal`}>
         <div className="flex flex-col items-start gap-xs">
           <StateBadge copy={copy} />
+          <span className="tabular-nums">{run === null ? '—' : dayAndHour(run.startedAt)}</span>
           <RunPhrase copy={copy} />
         </div>
-      </TableCell>
-      <TableCell className={`${CELL} tabular-nums`}>
-        {run === null ? '—' : dayAndHour(run.startedAt)}
-      </TableCell>
-      <TableCell className={`${CELL} tabular-nums`}>
-        {run === null ? '—' : durationText(run)}
       </TableCell>
       <TableCell className={`${CELL} text-right tabular-nums`}>
         {copy.rows === null ? '—' : countText(copy.rows)}
@@ -271,7 +261,7 @@ function CopyTableRow(props: { companyId: CompanyId; copy: CopySummary; onNote: 
   )
 }
 
-const HEADS = [
+const PROPOSAL_HEADS = [
   'Fonte',
   'Dado',
   'Estado',
@@ -282,7 +272,7 @@ const HEADS = [
   'Projetos',
 ] as const
 
-type Props = {
+export type Props = {
   companyId: CompanyId
   copies: CopySummary[]
   proposals: CopyProposalSummary[]
@@ -294,21 +284,47 @@ function refusedOf(onNote: Props['onNote']) {
   return (text: string) => onNote({ kind: 'error', text })
 }
 
-function CopyTable({ companyId, copies, proposals, onNote }: Props) {
+/** A table's head: the named columns, the `right` one aligned to the right, and one for the row's actions. */
+export function HeadRow(props: { heads: readonly string[]; right?: string }) {
+  const { heads, right } = props
+  return (
+    <TableHeader>
+      <TableRow>
+        {heads.map((head) => (
+          <TableHead key={head} className={head === right ? `${CELL} text-right` : CELL}>
+            {head}
+          </TableHead>
+        ))}
+        <TableHead className={CELL}>
+          <span className="sr-only">Ações</span>
+        </TableHead>
+      </TableRow>
+    </TableHeader>
+  )
+}
+
+/** The Builder's open proposals, above the systems, each with **Ligar** and **Dispensar**. */
+export function Proposals(props: Pick<Props, 'companyId' | 'proposals' | 'onNote'>) {
+  const { companyId, proposals, onNote } = props
+  const phone = useIsMobile()
+  if (proposals.length === 0) return null
+  if (phone) {
+    return (
+      <List>
+        {proposals.map((proposal) => (
+          <ProposalPhoneRow
+            key={proposal.id}
+            companyId={companyId}
+            proposal={proposal}
+            onRefused={refusedOf(onNote)}
+          />
+        ))}
+      </List>
+    )
+  }
   return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          {HEADS.map((head) => (
-            <TableHead key={head} className={CELL}>
-              {head}
-            </TableHead>
-          ))}
-          <TableHead className={CELL}>
-            <span className="sr-only">Ações</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
+      <HeadRow heads={PROPOSAL_HEADS} />
       <TableBody>
         {proposals.map((proposal) => (
           <ProposalTableRow
@@ -319,32 +335,31 @@ function CopyTable({ companyId, copies, proposals, onNote }: Props) {
             cell={CELL}
           />
         ))}
-        {copies.map((copy) => (
-          <CopyTableRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
-        ))}
       </TableBody>
     </Table>
   )
 }
 
 /** The phone's row: the same facts in lines that break, as the Agentes' do. */
-function CopyPhoneRow(props: { companyId: CompanyId; copy: CopySummary; onNote: Props['onNote'] }) {
+export function CopyPhoneRow(props: {
+  companyId: CompanyId
+  copy: CopySummary
+  onNote: Props['onNote']
+}) {
   const { companyId, copy } = props
-  const origin = originOf(copy)
-  const source = useSourceText(companyId)(origin)
   return (
     <Row>
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md">
         <div className="flex min-w-0 items-center justify-between gap-md">
           <span className="min-w-0 truncate">
             <CopyLink companyId={companyId} copy={copy} />
-            <span className="text-text-2">{` · ${source}`}</span>
           </span>
           <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />
         </div>
+        <p className="break-words text-text-2">{describedAs(copy)}</p>
         <div className="flex flex-wrap items-center gap-x-md gap-y-xs text-text-2">
           <StateBadge copy={copy} />
-          <span className="break-words">{withAccounts(origin, modeText(copy.mode))}</span>
+          <span className="break-words">{modeText(copy.mode)}</span>
           {copy.run !== null && <span>{dayAndHour(copy.run.startedAt)}</span>}
         </div>
         <RunPhrase copy={copy} />
@@ -354,61 +369,5 @@ function CopyPhoneRow(props: { companyId: CompanyId; copy: CopySummary; onNote: 
         {copy.projects.length > 0 && <p className="break-words">{projectsText(copy)}</p>}
       </div>
     </Row>
-  )
-}
-
-/** The copies of the read in the shape of the screen: a table, or on a phone rows that break. */
-function Copies(props: {
-  companyId: CompanyId
-  read: UseQueryResult<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }>
-  onNote: Props['onNote']
-}) {
-  const { companyId, read, onNote } = props
-  const phone = useIsMobile()
-  if (read.isPending) return <Skeleton className="h-24 w-full" />
-  if (read.isError) {
-    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  }
-  const { copies, proposals } = read.data
-  if (copies.length === 0 && proposals.length === 0) return <Empty>{NO_COPIES}</Empty>
-  if (!phone) {
-    return <CopyTable companyId={companyId} copies={copies} proposals={proposals} onNote={onNote} />
-  }
-  return (
-    <List>
-      {proposals.map((proposal) => (
-        <ProposalPhoneRow
-          key={proposal.id}
-          companyId={companyId}
-          proposal={proposal}
-          onRefused={refusedOf(onNote)}
-        />
-      ))}
-      {copies.map((copy) => (
-        <CopyPhoneRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
-      ))}
-    </List>
-  )
-}
-
-/**
- * **Cópias** (Capacidade 2, U4; web W29): every copy of the company with its source, its mode, its
- * state and last run, its rows, interval and Projetos, and the actions of its row; above them the
- * Builder's open proposals, each with **Ligar** and **Dispensar** (Capacidade 3). Empty, it says what
- * a copy is and offers **Ligar uma cópia**. The list follows itself while a run is open.
- */
-export function CopyList({ companyId }: { companyId: CompanyId }) {
-  const requests = useRunRequests()
-  const read = useQuery(copiesQuery(companyId, requests))
-  const [note, setNote] = useNote(read.data?.copies ?? [])
-  return (
-    <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
-      <div className="flex flex-wrap items-center justify-between gap-md">
-        <PageTitle>{COPIES_TITLE}</PageTitle>
-        <NewCopy companyId={companyId} />
-      </div>
-      {note !== undefined && <NoteLine note={note} />}
-      <Copies companyId={companyId} read={read} onNote={setNote} />
-    </div>
   )
 }

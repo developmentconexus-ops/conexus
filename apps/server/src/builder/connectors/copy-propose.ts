@@ -29,7 +29,7 @@ export const COPY_SHAPE_RULE =
 
 /** What the proposal becomes, the same sentence here and in `conexus-data`: the card in this conversation, and who turns it on. */
 export const COPY_TURN_ON_RULE =
-  'The proposal shows as a card in this conversation; whoever may turn copies on turns it on with the card\'s Ligar (the Cópias page shows it too), and you never turn it on. Once it is on, it is listed in the "## Data" block: read that block on the next turn, and never write in the plan or the code that the data waits for activation without checking it.'
+  'The proposal shows as a card in this conversation; whoever may turn copies on turns it on with the card\'s Ligar (the Dados page shows it too), and you never turn it on. Once it is on, it is listed in the "## Data" block: read that block on the next turn, and never write in the plan or the code that the data waits for activation without checking it.'
 
 /**
  * The six questions the Builder answers before it proposes (Nango's "For agents": paging, the
