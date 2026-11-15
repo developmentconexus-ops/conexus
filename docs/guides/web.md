@@ -130,10 +130,10 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações,
-  Agentes (founder, 2026-11-02, `V1`) and Cópias (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
+  Agentes (founder, 2026-11-02, `V1`) and Dados (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
   Aprovo"), and Configurações, the bell and the account at the foot) with
   the place's list beside it. In the company the list is Nova conversa and Conversas by day, for
-  every role, since the member talks with the Assistant too. Inside a Projeto
+  every role, since the member talks with the Assistant too. In Dados the data tree replaces it (founder, 2026-11-15). Inside a Projeto
   the rail stays and the list is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
   24.1), Sobre, Quem usa o app and Integrações (founder, 2026-10-30, R2). The account menu holds the
   name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
@@ -147,13 +147,13 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   Sobre, Versões, Publicação (founder, 2026-10-30, A1). Each other part of a Projeto is an entry of
   its sidebar, added by its step (Quem usa o app, Integrações, then Dados and Capacidades). [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  two groups: Você (Minha conta, Contas de modelo, Meus padrões; the theme lives in the account menu) and the company's,
-  headed by its name (Geral, Pessoas e convites, Padrões da empresa, Memória observacional); founder,
+  two groups: Você (Minha conta, Contas de modelo, Meus padrões) and the company's,
+  headed by its name (Geral, Pessoas e convites, Padrões da empresa, Avisos, Memória observacional); founder,
   2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
-  there: it is a company sidebar entry between Projetos and Configurações (founder, 2026-10-28, on
+  there: it is a company sidebar entry (founder, 2026-10-28, on
   the connectors study: "O1"). Owner and administrator change the company's group; a developer or a member
-  reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo").
-  Atividade and Uso have their place reserved there and appear only when a card asks for them. [review]
+  reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: each person's own readings (founder, 2026-11-15: "3. Sim").
+  Atividade and Uso are reserved there and appear only when a card asks. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
   two and three are skippable; what was skipped becomes the card "Termine de preparar a empresa" on
