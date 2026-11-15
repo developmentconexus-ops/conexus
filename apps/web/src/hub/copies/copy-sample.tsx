@@ -1,11 +1,12 @@
-import type { CompanyId, CopyId } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { ColumnTypeIcon } from './column-type.tsx'
 import { copySampleQuery } from './queries.ts'
-import { SAMPLE_EMPTY, SAMPLE_INTRO, SAMPLE_MORE } from './text.ts'
+import { ROW_NUMBER, SAMPLE_EMPTY, SAMPLE_INTRO, SAMPLE_MORE } from './text.ts'
 
 /** A value of a sample as the cell shows it: a missing one as a dash, a structure as its JSON. */
 function cellText(value: unknown): string {
@@ -16,7 +17,13 @@ function cellText(value: unknown): string {
 }
 
 /** The **Amostra** tab: the first rows of the copy's table, read when the tab opens, for whoever may read rows. */
-export function CopySample({ companyId, copyId }: { companyId: CompanyId; copyId: CopyId }) {
+export function CopySample(props: {
+  companyId: CompanyId
+  copyId: CopyId
+  columns: CopySummary['shown']['columns']
+}) {
+  const { companyId, copyId } = props
+  const types = new Map(props.columns.map((one) => [one.name, one.type]))
   const read = useQuery(copySampleQuery(companyId, copyId))
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError) {
@@ -30,9 +37,15 @@ export function CopySample({ companyId, copyId }: { companyId: CompanyId; copyId
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-8">
+              <span className="sr-only">{ROW_NUMBER}</span>
+            </TableHead>
             {columns.map((column) => (
-              <TableHead key={column} className="font-mono text-fact">
-                {column}
+              <TableHead key={column}>
+                <span className="inline-flex items-center gap-xs">
+                  <ColumnTypeIcon type={types.get(column)} />
+                  <span className="font-mono text-fact">{column}</span>
+                </span>
               </TableHead>
             ))}
           </TableRow>
@@ -40,6 +53,7 @@ export function CopySample({ companyId, copyId }: { companyId: CompanyId; copyId
         <TableBody>
           {rows.map((row, at) => (
             <TableRow key={rowKey(row, at)}>
+              <TableCell className="text-text-2 tabular-nums">{at + 1}</TableCell>
               {columns.map((column, index) => (
                 <TableCell key={column} className="whitespace-normal break-words tabular-nums">
                   {cellText(row[index])}

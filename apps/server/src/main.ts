@@ -240,7 +240,7 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors, copies } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
@@ -268,6 +268,9 @@ async function runServer(): Promise<void> {
         .catch((error: unknown) =>
           logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
         )
+      void copies
+        .ensureWholeLines()
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))

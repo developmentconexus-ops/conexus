@@ -241,3 +241,16 @@ test('a agenda', async (t) => {
   const stopping = await interval('6h')
   assert.deepEqual([stopping.statusCode, codeOf(stopping)], [503, 'HUB_UPDATING'])
 })
+
+test('as rodadas dizem qual foi inteira', async (t) => {
+  const on = await copiesOn(t)
+  const made = await enabled(on, 'produtos')
+  await firstEnded(on, made.id)
+  assert.equal((await on.run(made.id, undefined, true)).kind, 'ENDED')
+  const { runs } = await runsPage(on, on.ana, made.id)
+  assert.deepEqual(
+    runs.map((run) => run.whole),
+    [true, false],
+    'a mais nova, a inteira, vem primeiro',
+  )
+})

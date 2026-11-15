@@ -44,14 +44,19 @@ import { copy, copyProposal, copyProposalSource } from './tables.ts'
 /** What the clock holds for a copy: its schedule, and the interval it was set with. */
 export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterval }>
 
-/** What the clock does for a copy: the Builder implements it, and the Hub never imports the Builder. */
+/** What the clock does for a copy (the weekly row follows the normal one in `pause`, `resume` and `remove`; `runNow` is the normal's): the Builder implements it, and the Hub never imports the Builder. */
 export type CopyClock = {
   /** CREATED for the one call that made the schedule, even among concurrent ones; UPDATED otherwise. */
   set(input: {
     companyId: CompanyId
     copyId: CopyId
     interval: CopyInterval
+    incremental: boolean
   }): Promise<'CREATED' | 'UPDATED'>
+  /** The weekly whole pass's row for a copy that has the normal one and no weekly; a pause of the normal row carries over, and the normal row is left as it is. */
+  ensureWhole(input: { companyId: CompanyId; copyId: CopyId }): Promise<void>
+  /** The copies with a normal row and no weekly one, whether or not they are incremental. */
+  wholeMissing(): Promise<readonly { companyId: CompanyId; copyId: CopyId }[]>
   pause(copyId: CopyId): Promise<void>
   /** A MISSING copy is not resumed here: the service calls `set`. */
   resume(copyId: CopyId): Promise<void>

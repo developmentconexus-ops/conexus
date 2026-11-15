@@ -8,7 +8,7 @@ import { describedCopy } from './describe.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
 import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
 import type { StoredSource } from './sources.ts'
-import { datedPasses, sourcesOf } from './sources.ts'
+import { datedPasses, sourcesOf, wholePasses } from './sources.ts'
 import type { CopiesDeps, CopyOutcome, CopyRunEnd, CopyTuning } from './store.ts'
 import { companyOwner, companyScope, copyTableOf, parsedCopy, syncOf } from './store.ts'
 import { copy, copyRun } from './tables.ts'
@@ -33,7 +33,7 @@ function leaseFrom(deps: CopiesDeps) {
  * by the `UPDATE` itself (code C65). The open run a lost holder left ends `INTERRUPTED`, and the new
  * one begins; each source's open pass keeps the instant it began, and one with none begins now.
  */
-async function claim(deps: CopiesDeps, ids: Ids) {
+async function claim(deps: CopiesDeps, ids: Ids, whole: boolean) {
   const token = randomUUID()
   const same = and(eq(copy.id, ids.copyId), eq(copy.companyId, ids.companyId))
   return deps.database.command(companyScope(ids.companyId), async (tx) => {
@@ -53,8 +53,11 @@ async function claim(deps: CopiesDeps, ids: Ids) {
       .set({ endedAt: sql`statement_timestamp()`, outcome: 'INTERRUPTED' })
       .where(and(eq(copyRun.copyId, ids.copyId), isNull(copyRun.endedAt)))
     const runId = CopyRunId.parse(randomUUID())
-    await tx.insert(copyRun).values({ id: runId, ...ids, startedAt: sql`statement_timestamp()` })
+    await tx
+      .insert(copyRun)
+      .values({ id: runId, ...ids, whole, startedAt: sql`statement_timestamp()` })
     await datedPasses(tx, ids)
+    if (whole) await wholePasses(tx, ids)
     const sources = await sourcesOf(tx, ids)
     const claimed: Claimed = {
       copy: parsedCopy(row),
@@ -180,14 +183,15 @@ async function ensuredSync(deps: CopiesDeps, claimed: Claimed) {
  * account that is no source's out of the table (Desligar's net), then each source's pass. A source
  * the provider asked to wait ends the run when the provider counts its limit by the app, which every
  * account shares; by the account, the run goes on to the next source and ends `PARTIAL` `WAIT`. The
- * last source closed ends it `COMPLETE`; the ceilings hold for the whole run.
+ * last source closed ends it `COMPLETE`; the ceilings hold for the whole run. A whole run starts each
+ * source from nothing, so its closing pass reads everything and deletes what did not come back.
  */
 export async function runCopy(
   deps: CopiesDeps,
-  ids: Ids,
+  { whole, ...ids }: Ids & { whole: boolean },
   signal: AbortSignal,
 ): Promise<CopyRunEnd> {
-  const claimed = await claim(deps, ids)
+  const claimed = await claim(deps, ids, whole)
   if (claimed.kind !== 'CLAIMED') return claimed
   const held: Claimed = claimed
   const counts = { pages: 0, read: 0, written: 0, started: performance.now() }

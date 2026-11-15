@@ -102,12 +102,14 @@ export function clockDouble() {
   const calls: string[] = []
   const made = new Set<CopyId>()
   const clock: CopyClock = {
-    set: async ({ copyId, interval }) => {
-      calls.push(`set ${copyId} ${interval}`)
+    set: async ({ copyId, interval, incremental }) => {
+      calls.push(`set ${copyId} ${interval} ${incremental}`)
       if (made.has(copyId)) return 'UPDATED'
       made.add(copyId)
       return 'CREATED'
     },
+    ensureWhole: async () => undefined,
+    wholeMissing: async () => [],
     pause: async (copyId) => void calls.push(`pause ${copyId}`),
     resume: async (copyId) => void calls.push(`resume ${copyId}`),
     runNow: async (copyId) => void calls.push(`runNow ${copyId}`),
@@ -194,8 +196,8 @@ export async function copiesOn(
       attemptKey: options.key ?? randomUUID(),
     })
   }
-  function run(copyId: CopyId, signal = new AbortController().signal) {
-    return copies.run({ companyId, copyId }, signal)
+  function run(copyId: CopyId, signal = new AbortController().signal, whole = false) {
+    return copies.run({ companyId, copyId, whole }, signal)
   }
   return {
     ...{ hub, fake, gate, ana, anaId, carla, companyId, projectId, owner, connectionId },

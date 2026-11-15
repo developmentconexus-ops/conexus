@@ -25,6 +25,7 @@ export const DONE: RunIn = {
   outcome: { kind: 'COMPLETE' },
   read: 118402,
   written: 118402,
+  whole: false,
 }
 export const RUNNING: RunIn = {
   ...DONE,

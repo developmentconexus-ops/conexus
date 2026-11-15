@@ -60,6 +60,23 @@ export function datedPasses(tx: CommandTx, ids: Ids) {
     .where(and(ofCopy(ids), sql`${copySource.passStartedAt} IS NULL`))
 }
 
+/**
+ * A whole run starts each source from nothing, even in the middle of a pass: no starting point, no
+ * position, the pass dated now, and one added to its number so the rows the interrupted pass wrote
+ * count as old ones the closing pass deletes if it does not read them again.
+ */
+export function wholePasses(tx: CommandTx, ids: Ids) {
+  return tx
+    .update(copySource)
+    .set({
+      watermark: null,
+      position: null,
+      passStartedAt: sql`statement_timestamp()`,
+      pass: sql`${copySource.pass} + 1`,
+    })
+    .where(ofCopy(ids))
+}
+
 /** A run that holds the copy's lease: what it writes of a source goes in only while it holds it. */
 export type Holder = Readonly<{
   companyId: CompanyId

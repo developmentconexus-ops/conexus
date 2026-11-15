@@ -1,10 +1,10 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connection, copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
-import { CATALOG } from './test-sources.ts'
+import { CATALOG, ORDERS_SHOWN } from './test-sources.ts'
 
 // Uma cópia: o que é copiado e as rodadas (Capacidade 2, criterion 34).
 const server = hubServer()
@@ -33,7 +33,7 @@ test('as rodadas: cada uma em palavras, na aba Rodadas', async () => {
   )
   expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
   expect(screen.getByText('Em dia')).toBeTruthy()
-  expect(screen.getByText(/Sankhya · a cada 30 min/)).toBeTruthy()
+  expect(screen.getByText(/^Copiada do Sankhya em .+ · 118\.402 linhas$/)).toBeTruthy()
   const table = within(screen.getByRole('table'))
   expect(table.getByText('Completa')).toBeTruthy()
   expect(table.getByText('O sistema não respondeu.')).toBeTruthy()
@@ -44,11 +44,117 @@ test('as rodadas: cada uma em palavras, na aba Rodadas', async () => {
   expect(table.getAllByText('1.204')).toHaveLength(6)
 })
 
-test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e Voltar a Dados estão à mão', async () => {
+const WHOLE_AND_NORMAL = {
+  copies: [copy()],
+  runs: [
+    copyRun({ whole: true, read: 2000, written: 2000 }),
+    copyRun({ whole: false, read: 3000, written: 3000 }),
+  ],
+}
+
+test('as rodadas: a passada inteira aparece ao lado do resultado', async () => {
+  openCopies(server, WHOLE_AND_NORMAL, RUNS)
+  expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
+  const rows = screen.getAllByRole('row')
+  const whole = rows.find((row) => row.textContent?.includes('2.000'))
+  const normal = rows.find((row) => row.textContent?.includes('3.000'))
+  expect(whole?.textContent).toContain('Completa · Passada inteira')
+  expect(normal?.textContent).not.toContain('Passada inteira')
+})
+
+test('as rodadas: a passada inteira aparece na linha do celular', async () => {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: media.includes('767'),
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    openCopies(server, WHOLE_AND_NORMAL, RUNS)
+    expect(
+      await screen.findByText('2.000 lidas · 2.000 gravadas · Completa · Passada inteira'),
+    ).toBeTruthy()
+    expect(screen.getByText('3.000 lidas · 3.000 gravadas · Completa')).toBeTruthy()
+  } finally {
+    phone.mockRestore()
+  }
+})
+
+test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e o caminho para Dados estão à mão', async () => {
   openCopies(server, { copies: [copy({ run: null })], runs: [] }, RUNS)
   expect(await screen.findByText('A primeira rodada ainda não terminou.')).toBeTruthy()
   expect(within(screen.getByRole('main')).getByRole('link', { name: 'Dados' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ações: Vendas' })).toBeTruthy()
+})
+
+test('o caminho leva a Dados', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
+  expect(path.getByRole('link', { name: 'Dados' })).toBeTruthy()
+  expect(path.getByRole('link', { name: 'Sankhya' })).toBeTruthy()
+  expect(path.getByText('vendas')).toBeTruthy()
+  expect(screen.queryByRole('link', { name: /← Dados/ })).toBeNull()
+  expect(screen.queryByText(/a cada 30 min/)).toBeNull()
+})
+
+test('o caminho', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
+  expect(path.getAllByRole('link')).toHaveLength(2)
+  for (const link of path.getAllByRole('link')) expect(link.getAttribute('aria-current')).toBeNull()
+  fireEvent.click(path.getByRole('link', { name: 'Sankhya' }))
+  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
+})
+
+test('o caminho leva a busca', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, `${DETAIL}?q=NUNOTA`)
+  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
+  for (const link of path.getAllByRole('link')) {
+    const href = link.getAttribute('href') ?? ''
+    expect(href).toContain('q=NUNOTA')
+    expect(href).not.toContain('layer')
+  }
+})
+
+const COPIED = /^Copiada do Sankhya em .+ · 118\.402 linhas$/
+
+test('a linha da cópia: a hora do fim da rodada e as linhas', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  expect((await screen.findByText(COPIED)).textContent).toMatch(COPIED)
+})
+
+test('a linha da cópia: uma rodada parcial também copiou', async () => {
+  const run = copyRun({ outcome: { kind: 'PARTIAL', reason: 'CAP' } })
+  openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
+  expect(await screen.findByText(COPIED)).toBeTruthy()
+})
+
+test.each([
+  ['a rodada aberta', copyRun({ outcome: { kind: 'RUNNING' }, endedAt: null })],
+  ['o erro', copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } })],
+  ['a rodada interrompida', copyRun({ outcome: { kind: 'INTERRUPTED' } })],
+])('a linha da cópia sem hora quando a rodada não copiou: %s', async (_name, run) => {
+  openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
+  expect(await screen.findByText('Sankhya · 118.402 linhas')).toBeTruthy()
+  expect(screen.queryByText(/Copiada/)).toBeNull()
+})
+
+test('a linha da cópia sem rodada e sem linhas', async () => {
+  openCopies(server, { copies: [copy({ run: null })], runs: [] }, DETAIL)
+  expect(await screen.findByText('Sankhya · a primeira rodada ainda não terminou')).toBeTruthy()
+})
+
+test.each([
+  ['a rodada completa', copyRun()],
+  ['o erro', copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } })],
+])('a linha da cópia sem linhas: só o sistema, com %s', async (_name, run) => {
+  openCopies(server, { copies: [copy({ run, rows: null })], runs: [] }, DETAIL)
+  const line = await screen.findByText('Sankhya', { selector: 'p' })
+  expect(line.textContent).toBe('Sankhya')
 })
 
 test('a cópia e as rodadas: uma cópia que não existe mostra não encontrado', async () => {
@@ -77,22 +183,71 @@ const INACTIVE_SHOWN = {
   ],
 }
 
-test('a tabela abre em Colunas com tipo, chave e descrição', async () => {
-  openCopies(server, { copies: [copy({ shown: INACTIVE_SHOWN })], runs: [] }, DETAIL)
+test('a aba Colunas tem tipo, chave e descrição', async () => {
+  openCopies(
+    server,
+    { copies: [copy({ shown: INACTIVE_SHOWN })], runs: [] },
+    `${DETAIL}?tab=columns`,
+  )
   expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
   const table = within(await screen.findByRole('table'))
   expect(table.getByText('O número da nota')).toBeTruthy()
   expect(table.getByText('Número')).toBeTruthy()
   expect(table.getByText('Valor')).toBeTruthy()
   expect(table.getByText('Chave')).toBeTruthy()
-  const main = within(await screen.findByRole('main'))
-  expect(main.getByText('Camada')).toBeTruthy()
-  expect(main.getByText('Bruto')).toBeTruthy()
 })
 
-test('a tabela de uma cópia da versão 1 também abre em Colunas', async () => {
+test('a tabela abre na Visão geral', async () => {
+  openCopies(server, { copies: [copy({ shown: INACTIVE_SHOWN })], runs: [] }, DETAIL)
+  expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
+  const tab = await screen.findByRole('tab', { name: 'Visão geral' })
+  expect(tab.getAttribute('aria-selected')).toBe('true')
+  const panel = within(screen.getByRole('tabpanel'))
+  for (const text of ['As notas de venda', 'Ligação', 'Matriz', 'Chave', 'NUNOTA', 'Modo']) {
+    expect(panel.getByText(text)).toBeTruthy()
+  }
+  expect(panel.queryByText('Leitura de origem')).toBeNull()
+})
+
+test('a Visão geral de uma leitura da versão 2 diz a leitura de origem', async () => {
+  openCopies(server, { copies: [copy({ shown: ORDERS_SHOWN })], runs: [] }, DETAIL)
+  const panel = within(await screen.findByRole('tabpanel'))
+  expect(await panel.findByText('Leitura de origem')).toBeTruthy()
+  expect(panel.getByText('Pedidos')).toBeTruthy()
+})
+
+test('a descrição na cor do texto, a frase de vazio em cinza', async () => {
+  openCopies(server, { copies: [copy({ shown: INACTIVE_SHOWN })], runs: [] }, DETAIL)
+  const described = await within(await screen.findByRole('tabpanel')).findByText(
+    'As notas de venda',
+  )
+  expect(described.className).not.toContain('text-text-2')
+})
+
+test('sem descrição, a frase de vazio', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  const empty = await within(await screen.findByRole('tabpanel')).findByText('Sem descrição.')
+  expect(empty.className).toContain('text-text-2')
+})
+
+test('as abas na ordem, com a contagem de colunas', async () => {
+  openCopies(server, { copies: [copy({ shown: INACTIVE_SHOWN })], runs: [] }, DETAIL)
+  const tabs = await screen.findAllByRole('tab')
+  expect(tabs.map((one) => one.textContent)).toEqual([
+    'Visão geral',
+    'Colunas 3',
+    'Amostra',
+    'Rodadas',
+  ])
+})
+
+test('a aba Colunas de uma cópia da versão 1', async () => {
   const columns = [{ name: 'CODPARC', type: 'text', description: null, inactiveSince: null }]
-  openCopies(server, { copies: [copy({ shown: { ...copy().shown, columns } })], runs: [] }, DETAIL)
+  openCopies(
+    server,
+    { copies: [copy({ shown: { ...copy().shown, columns } })], runs: [] },
+    `${DETAIL}?tab=columns`,
+  )
   expect(await screen.findByText('CODPARC')).toBeTruthy()
   expect(screen.getByText('Texto')).toBeTruthy()
 })
@@ -102,7 +257,9 @@ test('a coluna inativa: o aviso no topo e a marca na coluna', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe(
     'O Sankhya parou de enviar a coluna OBS desde 10/11. Ela fica aqui, inativa, e nada foi apagado.',
   )
-  expect(screen.getByText('Inativa desde 10/11')).toBeTruthy()
+  expect(screen.queryByText('Inativa desde 10/11')).toBeNull()
+  fireEvent.click(screen.getByRole('tab', { name: /Colunas/ }))
+  expect(await screen.findByText('Inativa desde 10/11')).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Ver a rodada' })).toBeTruthy()
 })
 
@@ -131,9 +288,15 @@ test('a aba fica no endereço', async () => {
   openCopies(server, { copies: [copy()], runs: [copyRun()] }, RUNS)
   expect(await screen.findByText('Completa')).toBeTruthy()
   expect(screen.getByRole('tab', { name: 'Rodadas' }).getAttribute('aria-selected')).toBe('true')
-  fireEvent.click(screen.getByRole('tab', { name: 'Colunas' }))
+  fireEvent.click(screen.getByRole('tab', { name: /Colunas/ }))
   await within(document.body).findByRole('table')
   expect(screen.queryByText('Completa')).toBeNull()
+})
+
+test('a aba desconhecida abre a Visão geral', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, `${DETAIL}?tab=zzz`)
+  const tab = await screen.findByRole('tab', { name: 'Visão geral' })
+  expect(tab.getAttribute('aria-selected')).toBe('true')
 })
 
 test('o endereço antigo leva à tabela', async () => {
@@ -161,5 +324,5 @@ test('a falha das conexões: a frase e Tentar de novo, e não o id do conector',
   expect(screen.queryByText(/sankhya/)).toBeNull()
   fail = false
   fireEvent.click(retry)
-  expect(await screen.findByText(/Sankhya · a cada 30 min/)).toBeTruthy()
+  expect(await screen.findByText(COPIED)).toBeTruthy()
 })

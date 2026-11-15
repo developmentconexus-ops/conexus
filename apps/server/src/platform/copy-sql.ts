@@ -236,37 +236,41 @@ function ofAccount(
 }
 
 /**
- * The end of a complete pass of one source: a copy with no change date leaves every row of the
+ * The end of a complete pass of one source: a pass that read everything leaves every row of the
  * source's account the pass did not write; one with a window, every such row of the window; the
  * account's rows take the connection's name as it is now; then the count of the whole table.
  */
 export async function closePass(
   context: Context,
   sync: DatabaseUrl,
-  input: CopyTable & { pass: number; windowFrom: string | null; account: CopyAccount },
+  input: CopyTable & {
+    pass: number
+    windowFrom: string | null
+    readAll: boolean
+    account: CopyAccount
+  },
   signal: AbortSignal,
 ): Promise<{ kind: 'DONE'; rows: number } | Exclude<SqlAnswer, { kind: 'DONE' }>> {
-  const { changedSince, window } = input.definition
+  const { window } = input.definition
   const { account } = input
   const table = tableOf(input.name)
   const whole = ofAccount(account, 2)
   const windowed = ofAccount(account, 3)
-  const gone: SqlStatement[] =
-    changedSince === null
+  const gone: SqlStatement[] = input.readAll
+    ? [
+        {
+          text: `DELETE FROM ${table} WHERE ${COPY_PASS_COLUMN} <> $1${whole.where}`,
+          values: [input.pass, ...whole.values],
+        },
+      ]
+    : window !== undefined && input.windowFrom !== null
       ? [
           {
-            text: `DELETE FROM ${table} WHERE ${COPY_PASS_COLUMN} <> $1${whole.where}`,
-            values: [input.pass, ...whole.values],
+            text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND ${COPY_PASS_COLUMN} <> $2${windowed.where}`,
+            values: [input.windowFrom, input.pass, ...windowed.values],
           },
         ]
-      : window !== undefined && input.windowFrom !== null
-        ? [
-            {
-              text: `DELETE FROM ${table} WHERE ${quoted(window.column)} >= $1::date AND ${COPY_PASS_COLUMN} <> $2${windowed.where}`,
-              values: [input.windowFrom, input.pass, ...windowed.values],
-            },
-          ]
-        : []
+      : []
   const named: SqlStatement[] =
     account === null
       ? []
