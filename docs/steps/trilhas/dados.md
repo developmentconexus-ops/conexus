@@ -14,7 +14,7 @@ Ela é dona do contrato de acesso e mede o sucesso em sistemas reais que passam 
 
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
-| **`D1`. O primeiro sistema de catálogo** | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pela Nango. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
+| **`D1`. O primeiro sistema de catálogo** | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do nosso kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. As duas perguntas abertas do estudo de custo estão respondidas com a conta grátis |
 
 Antes de `D1`, as duas trilhas desenham juntas o contrato, uma vez: um arquivo com os três verbos e um
 teste de conformidade verde contra um conector falso. Esse arquivo é de outra tarefa. Depois de `D1`, a
@@ -28,10 +28,10 @@ ou o PR entra como está. O primeiro marco a construir é `D1`.
 
 ## O que a trilha possui
 
-- `packages/connectors/` e as funções da Nango.
+- `packages/connectors/`, o nosso kit de conectores.
 - `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/` e `apps/server/src/hub/ontology/`.
 - `apps/server/src/builder/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
-- As telas de Integrações, Cópias e Conhecimento.
+- As telas de Integrações, Dados (que toma o lugar de Cópias, resposta E1a) e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.
 
 A Plataforma (identidade, Projetos, publicação, `apps/server/src/platform/` menos `copy-sql.ts`, e
@@ -57,6 +57,18 @@ ligado hoje já serve pelo catálogo.
 Uma regra do `dependency-cruiser` virá com o arquivo do contrato e proibirá a trilha Agentes e Apps
 de importar de dados qualquer coisa que não seja o contrato.
 
+## A spec da camada de dados
+
+A spec do armazenar e do interagir, no formato do Kiro (`requirements.md`, `design.md` e `tasks.md`
+por parte), está em [dados-spec/](dados-spec/README.md). Ela cobre as partes 1 a 4: o dado guardado e
+o catálogo, o conector, a leitura para análise e a governança mínima. O fundador aprovou o escopo
+em 2026-11-14 ("Aprovado", E1a a E5a) e respondeu às três perguntas da spec: P1 ("P1 OKAY"), P2 ("P2
+Okay") e P3, a fonte única de conectores, o kit (decisão
+[0069](../../decisions/0069-connectors-one-source-the-kit.md)). A entrada conversada entra pelo
+cartão em rascunho do PR 982 (E2a). A consulta fica visível a quem lê a tabela, recolhida (E3a). O
+Registro de dados é do dono e do administrador, sem prazo por ora (E4a), e o documento do cliente não
+fica na cópia (E5a).
+
 ## Como a outra trilha pede uma mudança no contrato
 
 1. A trilha Agentes e Apps abre uma issue com o rótulo `contrato`. A issue diz o que a pessoa veria,
@@ -67,12 +79,14 @@ de importar de dados qualquer coisa que não seja o contrato.
 
 ## Os sistemas de `D3`
 
-Os dez sistemas de `D3` saem da antiga fila do molde (2026-10-30: "1. Sim 2. Sim 3. Sim"). A Fábrica
-de conectores muda de forma: o esqueleto é uma função da Nango gerada do kit.
+Os dez sistemas de `D3` saem da antiga fila do molde (2026-10-30: "1. Sim 2. Sim 3. Sim"). Há uma
+fonte só de conectores, o nosso kit (decisão
+[0069](../../decisions/0069-connectors-one-source-the-kit.md)). A Fábrica de conectores gera
+declarações do kit, escritas pela IA a partir da documentação do sistema e conferidas com uma leitura
+de teste.
 
 1. Os sistemas das quatro empresas.
-2. Bling, Omie (login por chave fixa) e Conta Azul. A Conta Azul está na lista da Nango. Bling e Omie
-   não estão, e seguem o caminho da decisão H do estudo de custo.
+2. Bling, Omie (login por chave fixa) e Conta Azul, todos declarações do kit.
 3. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco. A Jet (20.3) quando alguém a
    usar.
 
