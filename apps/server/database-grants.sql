@@ -387,6 +387,9 @@ GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
 -- The other half of the grant above, in the order of the table's columns, which the snapshot keeps.
 GRANT UPDATE(column_state) ON TABLE copies.copy TO hub_company;
+-- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
+-- company's routes mark a copy whose readers were written once.
+GRANT UPDATE(readers_set) ON TABLE copies.copy TO hub_company;
 -- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
 -- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
 -- dismiss it; the Hub never deletes one.
@@ -396,6 +399,9 @@ GRANT UPDATE(copy_id) ON TABLE copies.copy_proposal TO hub_company;
 -- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): the
 -- Builder's run proposes a copy over several connections; a proposal's source leaves by cascade.
 GRANT SELECT,INSERT ON TABLE copies.copy_proposal_source TO hub_company;
+-- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
+-- company's routes read which roles read each copy, and mark and unmark them.
+GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_reader TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;
