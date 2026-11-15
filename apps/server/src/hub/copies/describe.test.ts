@@ -3,7 +3,6 @@ import { test } from 'node:test'
 import type { CopyId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { CopyDefinition } from '../connectors/public.ts'
-import { filledFrom } from './describe.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { asSync, copiesOn, plantCopy } from './test-copies.ts'
 
@@ -82,8 +81,10 @@ test('preencher não troca uma descrição que existe', async (t) => {
     copyId,
     `definition = jsonb_set(definition, '{columns,0,description}', '"A minha"')`,
   )
-  for (let round = 0; round < 2; round++) assert.equal((await on.run(copyId)).kind, 'ENDED')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
   const filled = await storedDefinition(on, copyId)
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  assert.deepEqual(await storedDefinition(on, copyId), filled, 'a second run changes nothing')
   assert.equal(filled.columns[0]?.description, 'A minha')
   assert.ok(filled.columns[1]?.description)
 })
@@ -116,25 +117,4 @@ test('o banco da empresa cai ao preencher', async (t) => {
   silent.mock.restore()
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   assert.ok((await storedDefinition(on, copyId)).description)
-})
-
-test('preencher duas vezes dá o mesmo que preencher uma', () => {
-  const model: DefinitionV1 = {
-    version: 1,
-    source: { kind: 'QUERY', sql: 'SELECT ID FROM T' },
-    description: 'A tabela.',
-    columns: [{ name: 'ID', type: 'bigint', description: 'O código.' }],
-    key: ['ID'],
-    changedSince: null,
-  }
-  const stored: DefinitionV1 = {
-    ...model,
-    description: undefined,
-    columns: [{ name: 'ID', type: 'bigint' }],
-  }
-  const once = filledFrom(stored, model)
-  assert.equal(once?.description, 'A tabela.')
-  assert.equal(once?.columns[0]?.description, 'O código.')
-  assert.ok(once)
-  assert.equal(filledFrom(once, model), undefined)
 })

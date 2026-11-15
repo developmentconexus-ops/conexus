@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
+import { CONNECTORS } from '../index.ts'
 import { sankhya } from '../sankhya/definition.ts'
 import type { ConnectorCopy } from './copy.ts'
+import { CopyName } from './copy.ts'
 import { defineConnector } from './definition.ts'
 
 const Unchecked = z.custom<ConnectorCopy>()
@@ -32,4 +34,13 @@ test('o kit recusa o modelo com uma coluna sem descrição', () => {
     })),
     /Copy template column without description: clientes\.CODPARC/,
   )
+})
+
+test('cada modelo do kit cabe em 40 caracteres com o prefixo do conector', () => {
+  for (const connector of CONNECTORS)
+    for (const model of connector.copy?.models ?? [])
+      assert.ok(
+        CopyName.safeParse(`${connector.id.replaceAll('-', '_')}_${model.id}`).success,
+        `${connector.id}.${model.id}`,
+      )
 })
