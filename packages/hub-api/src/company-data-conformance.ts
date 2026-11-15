@@ -8,25 +8,11 @@ import type {
   ReadRequest,
 } from './company-data.ts'
 import { ActAnswer, companyData, Described, ReadAnswer } from './company-data.ts'
+import { queryLaws } from './company-data-query-conformance.ts'
+import type { DataWorld } from './company-data-world.ts'
 import { ConversationId } from './conversations.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
-
-type Gave<K extends 'rows' | 'live' | 'funnel'> = Awaited<ReturnType<DataSources[K]>>
-
-/** A fake connector behind the data track's sources, what each call reached and what each source answered. */
-export type DataWorld = Readonly<{
-  sources: DataSources
-  reached: Readonly<{
-    live: unknown[]
-    rows: string[]
-    funnel: unknown[]
-    signals: (AbortSignal | undefined)[]
-  }>
-  gave: Readonly<{ rows: Gave<'rows'>[]; live: Gave<'live'>[]; funnel: Gave<'funnel'>[] }>
-  /** The Hub's database or whoever keeps the tables stops answering, until the world is made again. */
-  down(part: 'catalog' | 'rows'): void
-}>
 
 const AT = new Date('2026-11-14T12:00:00.000Z')
 const UNKNOWN = OperationId.parse('naoDeclarada')
@@ -285,6 +271,7 @@ const LAWS: readonly (readonly [string, Law])[] = [
     'recusa, sem chamar nada, a leitura ou a tabela fora do catálogo e a ação lida como leitura',
     refusesReadOutsideCatalog,
   ],
+  ...queryLaws,
   [
     'age só pelo funil, uma vez, com o pedido e a chamada intactos, e devolve a resposta do funil',
     actsThroughTheFunnel,

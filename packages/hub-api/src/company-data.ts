@@ -263,6 +263,28 @@ function declaresAction(catalog: Catalog, request: ActRequest): boolean {
   return system?.actions.some(({ operation }) => operation === request.operation) === true
 }
 
+async function queried(
+  sources: DataSources,
+  catalog: Catalog,
+  request: Signal & Readonly<{ sql: string }>,
+): Promise<ReadAnswer> {
+  const answered = await sources.query(request)
+  if (answered.kind !== 'ROWS') return answered
+  const tables = answered.used.map((name) => catalog.tables.find((one) => one.name === name))
+  // A table read outside the asker's catalog: no row leaves.
+  if (tables.some((one) => one === undefined)) return NOT_IN_CATALOG
+  const { columns, rows, complete } = answered
+  return {
+    kind: 'QUERY',
+    columns,
+    rows,
+    complete,
+    tables: tables.flatMap((one) =>
+      one === undefined ? [] : [{ table: one.name, kept: one.kept }],
+    ),
+  }
+}
+
 export function companyData(a: Readonly<{ sources: DataSources; now: () => Date }>): CompanyData {
   const { sources, now } = a
   return {
@@ -272,23 +294,7 @@ export function companyData(a: Readonly<{ sources: DataSources; now: () => Date 
       const { signal } = request
       const catalog = await sources.catalog({ signal })
       if (catalog.kind === 'CATALOG_UNAVAILABLE') return catalog
-      if (request.kind === 'QUERY') {
-        const answered = await sources.query({ sql: request.sql, signal })
-        if (answered.kind !== 'ROWS') return answered
-        const tables = answered.used.map((name) => catalog.tables.find((one) => one.name === name))
-        // A table read outside the asker's catalog: no row leaves.
-        if (tables.some((one) => one === undefined)) return NOT_IN_CATALOG
-        const { columns, rows, complete } = answered
-        return {
-          kind: 'QUERY',
-          columns,
-          rows,
-          complete,
-          tables: tables.flatMap((one) =>
-            one === undefined ? [] : [{ table: one.name, kept: one.kept }],
-          ),
-        }
-      }
+      if (request.kind === 'QUERY') return queried(sources, catalog, { sql: request.sql, signal })
       const source = sourceOf(catalog, request)
       switch (source.kind) {
         case 'NOT_IN_CATALOG':

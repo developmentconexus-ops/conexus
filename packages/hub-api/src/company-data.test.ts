@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { DataSources } from './company-data.ts'
 import { Catalog, Described } from './company-data.ts'
-import type { DataWorld } from './company-data-conformance.ts'
 import { runDataConformance } from './company-data-conformance.ts'
+import type { DataWorld } from './company-data-world.ts'
 
 const ERP = '00000000-0000-4000-8000-0000000000e1'
 const BRANCH = '00000000-0000-4000-8000-0000000000e2'
@@ -112,12 +112,18 @@ const CATALOG = Catalog.parse({
   ],
 })
 
-type Answer<K extends 'rows' | 'live' | 'funnel'> = Awaited<ReturnType<DataSources[K]>>
+type Answer<K extends 'rows' | 'live' | 'funnel' | 'query'> = Awaited<ReturnType<DataSources[K]>>
+
+const QUERIES: DataWorld['queries'] = {
+  reads: 'select 1 from pedidos_abertos',
+  outside: 'select 1 from fora',
+  refused: 'select nao_existe',
+}
 
 function fakeWorld(): DataWorld {
-  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], signals: [] }
-  const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [] }
-  const isDown = { catalog: false, rows: false }
+  const reached: DataWorld['reached'] = { live: [], rows: [], funnel: [], query: [], signals: [] }
+  const gave: DataWorld['gave'] = { rows: [], live: [], funnel: [], query: [] }
+  const isDown = { catalog: false, rows: false, query: false }
   const sources: DataSources = {
     async catalog({ signal }) {
       reached.signals.push(signal)
@@ -139,8 +145,22 @@ function fakeWorld(): DataWorld {
       gave.live.push(answer)
       return answer
     },
-    async query() {
-      return { kind: 'TABLE_UNAVAILABLE' }
+    async query({ sql, signal }) {
+      reached.signals.push(signal)
+      if (!isDown.query) reached.query.push(sql)
+      const answer: Answer<'query'> = isDown.query
+        ? { kind: 'TABLE_UNAVAILABLE' }
+        : sql === QUERIES.refused
+          ? { kind: 'QUERY_REFUSED', sqlstate: '42703' }
+          : {
+              kind: 'ROWS',
+              columns: ['?column?'],
+              rows: [[1]],
+              complete: true,
+              used: [sql === QUERIES.outside ? 'fora' : 'pedidos_abertos'],
+            }
+      gave.query.push(answer)
+      return answer
     },
     async funnel({ connection, operation, input, call, signal }) {
       reached.signals.push(signal)
@@ -154,6 +174,7 @@ function fakeWorld(): DataWorld {
     sources,
     reached,
     gave,
+    queries: QUERIES,
     down(part) {
       isDown[part] = true
     },
