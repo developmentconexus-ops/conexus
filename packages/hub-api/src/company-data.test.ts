@@ -114,9 +114,15 @@ const CATALOG = Catalog.parse({
       },
     },
   ],
+  withheld: [{ name: 'erp_titulos', label: 'Títulos a receber' }],
 })
 
 type Answer<K extends 'rows' | 'live' | 'funnel' | 'query'> = Awaited<ReturnType<DataSources[K]>>
+
+const WITHHELD: DataWorld['withheld'] = {
+  table: 'erp_titulos',
+  query: 'select 1 from erp_titulos',
+}
 
 const QUERIES: DataWorld['queries'] = {
   reads: 'select 1 from pedidos_abertos',
@@ -154,19 +160,21 @@ function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
       if (!isDown.query) reached.query.push(sql)
       const answer: Answer<'query'> = isDown.query
         ? { kind: 'TABLE_UNAVAILABLE' }
-        : sql === QUERIES.refused
-          ? {
-              kind: 'QUERY_REFUSED',
-              sqlstate: '42703',
-              message: 'column "nao_existe" does not exist',
-            }
-          : {
-              kind: 'ROWS',
-              columns: ['?column?'],
-              rows: [[1]],
-              complete: false,
-              used: [sql === QUERIES.outside ? 'fora' : 'pedidos_abertos'],
-            }
+        : sql === WITHHELD.query
+          ? { kind: 'NOT_IN_ROLE' }
+          : sql === QUERIES.refused
+            ? {
+                kind: 'QUERY_REFUSED',
+                sqlstate: '42703',
+                message: 'column "nao_existe" does not exist',
+              }
+            : {
+                kind: 'ROWS',
+                columns: ['?column?'],
+                rows: [[1]],
+                complete: false,
+                used: [sql === QUERIES.outside ? 'fora' : 'pedidos_abertos'],
+              }
       gave.query.push(answer)
       return answer
     },
@@ -183,6 +191,7 @@ function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
     reached,
     gave,
     queries: QUERIES,
+    withheld: WITHHELD,
     down(part) {
       isDown[part] = true
     },
