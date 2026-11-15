@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { DataSources } from './company-data.ts'
-import { Catalog, Described } from './company-data.ts'
+import { Catalog, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
 import { runDataConformance } from './company-data-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
 
@@ -151,12 +151,16 @@ function fakeWorld(): DataWorld {
       const answer: Answer<'query'> = isDown.query
         ? { kind: 'TABLE_UNAVAILABLE' }
         : sql === QUERIES.refused
-          ? { kind: 'QUERY_REFUSED', sqlstate: '42703' }
+          ? {
+              kind: 'QUERY_REFUSED',
+              sqlstate: '42703',
+              message: 'column "nao_existe" does not exist',
+            }
           : {
               kind: 'ROWS',
               columns: ['?column?'],
               rows: [[1]],
-              complete: true,
+              complete: false,
               used: [sql === QUERIES.outside ? 'fora' : 'pedidos_abertos'],
             }
       gave.query.push(answer)
@@ -205,4 +209,21 @@ test('o contrato recusa a coluna inativa desde uma data que não é data', () =>
   assert.ok(column)
   const dated = { ...first, columns: [{ ...column, inactiveSince: 'ontem' }, ...columns] }
   assert.equal(Catalog.safeParse({ ...CATALOG, tables: [dated, ...rest] }).success, false)
+})
+
+test('o pedido de consulta tira os espaços das pontas e recusa o texto vazio ou maior que o teto', () => {
+  assert.equal(ReadRequest.parse({ kind: 'QUERY', sql: '  select 1  ' }).kind, 'QUERY')
+  assert.deepEqual(ReadRequest.parse({ kind: 'QUERY', sql: '  select 1  ' }), {
+    kind: 'QUERY',
+    sql: 'select 1',
+  })
+  assert.equal(ReadRequest.safeParse({ kind: 'QUERY', sql: ' ' }).success, false)
+  assert.equal(
+    ReadRequest.safeParse({ kind: 'QUERY', sql: 'x'.repeat(QUERY_SQL_MAX) }).success,
+    true,
+  )
+  assert.equal(
+    ReadRequest.safeParse({ kind: 'QUERY', sql: 'x'.repeat(QUERY_SQL_MAX + 1) }).success,
+    false,
+  )
 })

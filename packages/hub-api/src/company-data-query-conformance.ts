@@ -9,6 +9,17 @@ async function queriesTheCatalog(world: DataWorld, data: CompanyData): Promise<v
   const answer = ReadAnswer.parse(await data.read({ kind: 'QUERY', sql: world.queries.reads }))
   assert.equal(answer.kind, 'QUERY')
   assert.ok(answer.rows.length > 0)
+  const gave = world.gave.query.at(-1)
+  assert.ok(gave?.kind === 'ROWS')
+  const { columns, rows, complete } = answer
+  assert.deepEqual(
+    { columns, rows, complete },
+    { columns: gave.columns, rows: gave.rows, complete: gave.complete },
+  )
+  assert.deepEqual(
+    answer.tables.map(({ table }) => table),
+    gave.used,
+  )
   const described = Described.parse(await world.sources.catalog({}))
   assert.equal(described.kind, 'CATALOG')
   const { tables } = described

@@ -127,8 +127,12 @@ export const ReadAnswer = z.discriminatedUnion('kind', [
     /** The catalog's tables the query read, each with who keeps it and its last run. */
     tables: z.array(z.object({ table: z.string(), kept: TableKept })),
   }),
-  /** The database refused the query. The SQLSTATE goes whole. */
-  z.object({ kind: z.literal('QUERY_REFUSED'), sqlstate: z.string().regex(/^[0-9A-Z]{5}$/) }),
+  /** The database refused the query: the SQLSTATE and PostgreSQL's whole message go to the model (code C79). */
+  z.object({
+    kind: z.literal('QUERY_REFUSED'),
+    sqlstate: z.string().regex(/^[0-9A-Z]{5}$/),
+    message: z.string(),
+  }),
   z.object({ kind: z.literal('QUERY_TOO_LARGE') }),
   NotInCatalog,
   CatalogUnavailable,
@@ -202,9 +206,9 @@ export type DataSources = Readonly<{
   rows(a: Signal & Readonly<{ table: CatalogTable }>): Promise<Page>
   /** One read of a system now, through the executor, whatever logs in beneath it. */
   live(a: Signal & OperationRead): Promise<LiveAnswer>
-  /** One write through the funnel, which records it and asks with the approval card; who approved it is bound here by the card's path, never carried by the request. */
   /** The query as the read login of whoever asks, and the names of the sync tables it read. */
   query(a: Signal & Readonly<{ sql: string }>): Promise<QueryPage>
+  /** One write through the funnel, which records it and asks with the approval card; who approved it is bound here by the card's path, never carried by the request. */
   funnel(a: Signal & ActRequest): Promise<Exclude<ActAnswer, { kind: CatalogOnly }>>
 }>
 
