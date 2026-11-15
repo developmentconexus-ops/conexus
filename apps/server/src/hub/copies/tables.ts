@@ -19,7 +19,7 @@ import {
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
 import { connection } from '../connectors/public-tables.ts'
 import { policy } from '../identity/public.ts'
-import { company } from '../identity/public-tables.ts'
+import { company, organizationRole } from '../identity/public-tables.ts'
 import { project } from '../projects/public-tables.ts'
 
 // The copies' own schema in the Hub's database (data D1, Capacity 2): what each copy reads, where its
@@ -73,6 +73,8 @@ export const copy = copies.table(
     lastRunId: uuid('last_run_id'),
     // Each source column's state: when it last came in a row, and since when it has not.
     columnState: jsonb('column_state').notNull().default({}),
+    // True once the copy's readers were written, by the copy's turning on, by the seeding or by a person.
+    readersSet: boolean('readers_set').notNull().default(false),
   },
   (table) => [
     unique('copy_company_id_name_key').on(table.companyId, table.name),
@@ -151,6 +153,35 @@ export const projectCopy = copies.table(
       columns: [table.companyId, table.copyId],
       foreignColumns: [copy.companyId, copy.id],
     }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/** A company role that reads a copy (N3b). The owner and the administrator read every copy and have no row. */
+export const copyReader = copies.table(
+  'copy_reader',
+  {
+    companyId: text('company_id').notNull(),
+    copyId: uuid('copy_id').notNull(),
+    // The id of the role's row in auth.organization_role: the developer, the member or a company's own.
+    roleId: text('role_id').notNull(),
+    // No foreign key to the person, as project_copy.granted_by.
+    grantedBy: text('granted_by').notNull(),
+    grantedAt: instant('granted_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.copyId, table.roleId] }),
+    foreignKey({
+      name: 'copy_reader_copy_fkey',
+      columns: [table.companyId, table.copyId],
+      foreignColumns: [copy.companyId, copy.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_reader_role_fkey',
+      columns: [table.roleId],
+      foreignColumns: [organizationRole.id],
+    }).onDelete('cascade'),
+    index('copy_reader_role_idx').on(table.roleId),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
