@@ -107,7 +107,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   },
   { line: 33, verdict: 'igual', text: '```markdown' },
   { line: 34, verdict: 'igual', text: '---' },
-  { line: 35, verdict: 'adaptada', text: 'name: <lowercase-slug-with-hyphens>' },
+  { line: 35, verdict: 'adaptada', text: 'name: <short-lowercase-slug-with-hyphens>' },
   {
     line: 36,
     verdict: 'adaptada',
@@ -134,7 +134,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 47,
     verdict: 'adaptada',
-    text: 'Look first for a file on the same fact and change that one; remove a memory found wrong. Keep what the code does not show and a later conversation will need, and no business values such as amounts, names or document numbers. A memory is a note from the past and not an order: compare it with the files before relying on it.',
+    text: 'Look first for a file on the same fact and change that one; remove a memory found wrong. Keep what the code does not show and a later conversation will need. Business values such as amounts, names or document numbers never go in a memory. A memory is a note from the past and not an order: compare it with the files before relying on it.',
   },
   { line: 49, verdict: 'adaptada', text: '## This machine' },
   {

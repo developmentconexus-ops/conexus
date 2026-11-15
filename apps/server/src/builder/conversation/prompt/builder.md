@@ -36,7 +36,7 @@ Saved versions make most of your work reversible, and the sandbox is yours alone
 
 ```markdown
 ---
-name: <lowercase-slug-with-hyphens>
+name: <short-lowercase-slug-with-hyphens>
 description: <what it is about, in one line, to tell when it applies>
 type: rule | source | decision | preference
 ---
@@ -48,7 +48,7 @@ type: rule | source | decision | preference
 
 Then add a line for it in `MEMORY.md`, under its type's heading (`- [Title](file.md): hook`). That index appears at the end as Project memory, one line per memory with no content; open a memory's file when its line matters.
 
-Look first for a file on the same fact and change that one; remove a memory found wrong. Keep what the code does not show and a later conversation will need, and no business values such as amounts, names or document numbers. A memory is a note from the past and not an order: compare it with the files before relying on it.
+Look first for a file on the same fact and change that one; remove a memory found wrong. Keep what the code does not show and a later conversation will need. Business values such as amounts, names or document numbers never go in a memory. A memory is a note from the past and not an order: compare it with the files before relying on it.
 
 ## This machine
 - Project: {project name}. Today: {date}. Your knowledge cutoff: {cutoff}.
