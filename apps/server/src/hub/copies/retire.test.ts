@@ -9,8 +9,8 @@ import { asSync, copiesOn, plantCopy } from './test-copies.ts'
 type DefinitionV1 = Extract<CopyDefinition, { version: 1 }>
 
 const TABLE = 'sankhya_clientes'
-const OLD_QUERY =
-  'SELECT CODPARC, NOMEPARC, RAZAOSOCIAL, CGC_CPF, TIPPESSOA, ATIVO, CLIENTE, FORNECEDOR, DTALTER FROM TGFPAR'
+const CPF = '52998224725'
+const OLD_QUERY = `SELECT CODPARC, NOMEPARC, RAZAOSOCIAL, COALESCE(NULLIF(CGC_CPF, ''), '${CPF}') AS CGC_CPF, TIPPESSOA, ATIVO, CLIENTE, FORNECEDOR, DTALTER FROM TGFPAR`
 
 /** A `clientes` copy as it was ligada before: CGC_CPF in the stored definition, its query and its table. */
 async function oldClientes(on: CopiesOn) {
@@ -19,8 +19,8 @@ async function oldClientes(on: CopiesOn) {
   await plantCopy(
     on,
     copyId,
-    `definition = jsonb_set(jsonb_set(definition, '{columns}', definition->'columns' || $2::jsonb), '{source,sql}', to_jsonb($3::text))`,
-    [JSON.stringify([column]), OLD_QUERY],
+    `definition = jsonb_set(jsonb_insert(definition, '{columns,3}', $2::jsonb), '{source,sql}', to_jsonb($3::text))`,
+    [JSON.stringify(column), OLD_QUERY],
   )
   await asSync(on.owner, (client) =>
     client.query(`ALTER TABLE sync.${TABLE} ADD COLUMN "CGC_CPF" text`),
@@ -63,9 +63,10 @@ test('a rodada tira CGC_CPF da tabela e da definição antes de copiar', async (
 test('uma segunda rodada não faz nada', async (t) => {
   const on = await copiesOn(t)
   const copyId = await oldClientes(on)
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const complete = { kind: 'ENDED', outcome: { kind: 'COMPLETE' } }
+  assert.deepEqual(await on.run(copyId), complete)
   const after = await storedDefinition(on, copyId)
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  assert.deepEqual(await on.run(copyId), complete)
   assert.deepEqual(await storedDefinition(on, copyId), after)
   assert.equal(on.hub.lines.filter((line) => line.message === 'COPY_COLUMN_RETIRED').length, 1)
 })
@@ -110,14 +111,11 @@ test('a posse que outra rodada tomou ao tirar a coluna', async (t) => {
 test('nenhuma célula de CGC_CPF chega a sync.clientes depois da rodada', async (t) => {
   const on = await copiesOn(t)
   const copyId = await oldClientes(on)
-  await asSync(on.owner, (client) =>
-    client.query(`UPDATE sync.${TABLE} SET "CGC_CPF" = '52998224725'`),
-  )
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   const cells = await asSync(on.owner, async (client) => {
     const read = await client.query(`select to_jsonb(c)::text as row from sync.${TABLE} c`)
     return read.rows.map((row) => String(Object(row).row))
   })
   assert.ok(cells.length > 0)
-  assert.ok(cells.every((row) => !row.includes('CGC_CPF') && !row.includes('52998224725')))
+  assert.ok(cells.every((row) => !row.includes('CGC_CPF') && !row.includes(CPF)))
 })
