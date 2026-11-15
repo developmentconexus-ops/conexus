@@ -46,6 +46,7 @@ export const TABLE_PAGE_ROWS = 200
 export const CatalogTable = z.object({
   name: z.string(),
   label: z.string(),
+  /** Required: the agent picks the table by it. */
   description: z.string().min(1),
   columns: CopyShown.shape.columns,
   kept: TableKept,

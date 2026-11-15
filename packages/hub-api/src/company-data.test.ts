@@ -166,3 +166,19 @@ test('o contrato recusa a tabela do catálogo sem descrição', () => {
   assert.equal(Catalog.safeParse(undescribed).success, false)
   assert.equal(Described.safeParse(undescribed).success, false)
 })
+
+test('o contrato recusa a tabela do catálogo sem rótulo', () => {
+  const [first, ...rest] = CATALOG.tables
+  assert.ok(first)
+  const { label: _, ...unlabeled } = first
+  assert.equal(Catalog.safeParse({ ...CATALOG, tables: [unlabeled, ...rest] }).success, false)
+})
+
+test('o contrato recusa a coluna inativa desde uma data que não é data', () => {
+  const [first, ...rest] = CATALOG.tables
+  assert.ok(first)
+  const [column, ...columns] = first.columns
+  assert.ok(column)
+  const dated = { ...first, columns: [{ ...column, inactiveSince: 'ontem' }, ...columns] }
+  assert.equal(Catalog.safeParse({ ...CATALOG, tables: [dated, ...rest] }).success, false)
+})
