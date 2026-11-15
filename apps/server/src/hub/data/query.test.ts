@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ReadAnswer } from '@conexus/hub-api'
 import { ConversationId, PersonId } from '@conexus/hub-api'
+import pg from 'pg'
 import { testAppsConfig } from '../../platform/test-cloudflare.ts'
 import { readLoginOf } from '../../platform/test-company-postgres.ts'
 import type { SessionScope } from '../connectors/public.ts'
@@ -70,6 +71,20 @@ test('a junção nomeia as duas tabelas', async (t) => {
     assert.deepEqual(kept, catalog.tables.find(({ name }) => name === table)?.kept)
   }
   assert.ok(answer.rows.length > 0)
+})
+
+test('uma autojunção nomeia a tabela uma vez só', async (t) => {
+  const { on } = await withCopies(t)
+  const answer = queryOf(
+    await queried(
+      on,
+      'select count(*) from sync.sankhya_vendas a join sync.sankhya_vendas b using ("NUNOTA")',
+    ),
+  )
+  assert.deepEqual(
+    answer.tables.map(({ table }) => table),
+    ['sankhya_vendas'],
+  )
 })
 
 test('uma CTE e uma subconsulta nomeiam a tabela de baixo', async (t) => {
@@ -139,6 +154,22 @@ test('a tabela fora do catálogo dá NOT_IN_CATALOG', async (t) => {
   assert.deepEqual(await queried(on, 'select * from sync.fora'), { kind: 'NOT_IN_CATALOG' })
 })
 
+test('a empresa sem banco pronto dá TABLE_UNAVAILABLE com a causa NO_DATABASE', async (t) => {
+  const { on } = await withCopies(t)
+  const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
+  await client.connect()
+  try {
+    await client.query('update projects.company_database set host = null where company_id = $1', [
+      on.companyId,
+    ])
+  } finally {
+    await client.end()
+  }
+  assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
+  const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
+  assert.equal(failed?.fields.cause, 'NO_DATABASE')
+})
+
 test('a recusa inteira: o SQLSTATE e a mensagem vão ao modelo e o log não tem a consulta nem a mensagem', async (t) => {
   const { on } = await withCopies(t)
   const answer = await queried(on, 'select nao_existe from sync.sankhya_vendas')
@@ -192,8 +223,9 @@ test('quem não é da empresa é recusado e a consulta não chega ao banco da em
   const { on } = await withCopies(t)
   const stranger = await personOn(on.hub, { name: 'Zé Fora', email: 'ze@example.test' })
   const reads = t.mock.method(on.hub.postgres.companyPostgres, 'readCopies')
-  await assert.rejects(() =>
-    inCompany(on, PersonId.parse(stranger.id)).read({ kind: 'QUERY', sql: 'select 1' }),
+  await assert.rejects(
+    () => inCompany(on, PersonId.parse(stranger.id)).read({ kind: 'QUERY', sql: 'select 1' }),
+    (error: unknown) => Object(error).code === 'NOT_FOUND',
   )
   assert.equal(reads.mock.callCount(), 0)
 })
