@@ -1,9 +1,11 @@
 import { CopyId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { CLIENTES, connection, copy, LIST, openCopies } from './test-hub.tsx'
+import { CLIENTES, connection, copy, LIST, openCopies, proposal } from './test-hub.tsx'
+import { CATALOG, STORES } from './test-sources.ts'
 
 // Dados: the Bruto layer by system, the search, the empty states and the layer in the address (parte 1, 8.1 to 8.14).
 const server = hubServer()
@@ -19,12 +21,13 @@ test('Dados: a camada Bruto agrupa por sistema', async () => {
       copies: [
         copy(),
         copy({ id: CLIENTES, name: 'clientes', label: 'Clientes' }),
-        copy({ id: OTHER, name: 'ml_pedidos', label: 'Pedidos', sources: copy().sources }),
+        copy({ id: OTHER, name: 'ml_pedidos', label: 'Pedidos', sources: STORES }),
       ],
     },
     LIST,
   )
-  expect(await screen.findByText('Sankhya · Matriz · 3 tabelas')).toBeTruthy()
+  expect(await screen.findByText('Sankhya · Matriz · 2 tabelas')).toBeTruthy()
+  expect(screen.getByText('Mercado Livre · Loja A, Loja B · 1 tabela')).toBeTruthy()
 })
 
 test('Dados: a linha mostra a descrição, ou o rótulo', async () => {
@@ -140,4 +143,33 @@ test('Dados: a camada fica no endereço', async () => {
 test('Cópias leva a Dados', async () => {
   openCopies(server, { copies: [copy()] }, LIST.replace(/\/data$/, '/copies'))
   expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
+})
+
+test('Dados: uma conexão que não está ativa não vira sistema', async () => {
+  const waiting = connection({ state: 'NEEDS_REAUTH' })
+  openCopies(server, { copies: [], connections: [waiting] }, LIST)
+  expect(await screen.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
+  expect(screen.queryByText('Nenhuma tabela copiada')).toBeNull()
+})
+
+test('Dados: sem sistema ligado, uma proposta aberta ainda aparece e a frase de vazio some', async () => {
+  openCopies(server, { copies: [], connections: [], proposals: [proposal()] }, LIST)
+  expect(await screen.findByText('Proposta')).toBeTruthy()
+  expect(screen.queryByText('Nenhum sistema ligado ainda')).toBeNull()
+})
+
+test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {
+  let fail = true
+  openCopies(server, { copies: [copy()] }, LIST)
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+      fail
+        ? refusal('DATABASE_UNAVAILABLE')
+        : HttpResponse.json({ connectors: CATALOG, connections: [connection()], mayManage: true }),
+    ),
+  )
+  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  fail = false
+  fireEvent.click(retry)
+  expect(await screen.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
 })

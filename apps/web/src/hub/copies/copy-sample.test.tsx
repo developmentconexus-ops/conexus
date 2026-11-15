@@ -50,3 +50,10 @@ test('a amostra que falha tem Tentar de novo', async () => {
   fireEvent.click(retry)
   expect(await screen.findByText('Cinco linhas da cópia.')).toBeTruthy()
 })
+
+test('o desenvolvedor que abre ?tab=sample cai em Colunas, sem a amostra', async () => {
+  openCopies(server, { copies: [copy()] }, SAMPLE, 'developer')
+  await screen.findByRole('heading', { name: 'vendas' })
+  expect(screen.getByRole('tab', { name: 'Colunas' }).getAttribute('aria-selected')).toBe('true')
+  expect(screen.queryByText('Cinco linhas da cópia.')).toBeNull()
+})

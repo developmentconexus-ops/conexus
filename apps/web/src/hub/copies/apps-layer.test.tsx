@@ -121,3 +121,30 @@ test('Apps: a aba aparece e a camada fica no endereço', async () => {
   fireEvent.click(await screen.findByRole('tab', { name: 'Apps' }))
   await waitFor(() => expect(screen.getByText('clientes')).toBeTruthy())
 })
+
+test('Apps: a segunda página de Projetos só é lida no toque em Mais Projetos', async () => {
+  const asked: (string | null)[] = []
+  answering({
+    [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })),
+    [ACOMPANHAMENTO.id]: tablesOf(table('metas', { kind: 'EXACT', rows: 0 })),
+  })
+  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, ({ request }) => {
+      const page = new URL(request.url).searchParams.get('page')
+      asked.push(page)
+      const first = page === null
+      return HttpResponse.json({
+        projects: [first ? CRM : ACOMPANHAMENTO],
+        next: first ? { kind: 'MORE', page: 'UDI' } : { kind: 'END' },
+        databaseReady: true,
+      })
+    }),
+  )
+  await screen.findByRole('region', { name: 'CRM' })
+  expect(asked.filter((page) => page !== null)).toEqual([])
+  fireEvent.click(screen.getByRole('button', { name: 'Mais Projetos' }))
+  await screen.findByRole('region', { name: 'Acompanhamento' })
+  expect(asked.filter((page) => page !== null)).toEqual(['UDI'])
+  expect(screen.queryByRole('button', { name: 'Mais Projetos' })).toBeNull()
+})
