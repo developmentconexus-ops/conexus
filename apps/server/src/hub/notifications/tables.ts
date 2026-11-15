@@ -1,17 +1,20 @@
 import { AutomationFailureCode } from '@conexus/hub-api'
 import type { AnyColumn } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
+import type { ExtraConfigColumn } from 'drizzle-orm/pg-core'
 import {
   check,
   foreignKey,
   index,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
+import { copy } from '../copies/public-tables.ts'
 import { policy } from '../identity/public.ts'
 import { company, member } from '../identity/public-tables.ts'
 import { request } from '../requests/public-tables.ts'
@@ -27,6 +30,24 @@ const FAILURE_CODES = sql.raw(AutomationFailureCode.options.map((code) => `'${co
 
 // A notification is its person's alone: the company's routes reach only their own rows.
 const OWN = sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`
+
+/** The index of a person's newest notices and the policies of a table beside `notification`. */
+function noticeIndexAndPolicies(
+  indexName: string,
+  table: {
+    companyId: ExtraConfigColumn
+    personId: ExtraConfigColumn
+    createdAt: ExtraConfigColumn
+    id: ExtraConfigColumn
+  },
+) {
+  return [
+    index(indexName).on(table.companyId, table.personId, table.createdAt.desc(), table.id.desc()),
+    policy(SCOPE_ROLES.COMPANY, 'select', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'update', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'insert', sql`company_id = ${scoped.companyId}`),
+  ]
+}
 
 /**
  * What the Hub tells a person: an automation's run ended (step 24.2, U2). One per run, by
@@ -119,14 +140,88 @@ export const requestNotice = notifications.table(
     }).onDelete('cascade'),
     check('request_notice_kind', sql`${table.kind} in ('REQUEST_OPENED', 'REQUEST_DECIDED')`),
     unique('request_notice_key').on(table.requestId, table.personId, table.kind),
-    index('request_notice_person_created').on(
-      table.companyId,
-      table.personId,
-      table.createdAt.desc(),
-      table.id.desc(),
-    ),
-    policy(SCOPE_ROLES.COMPANY, 'select', OWN),
-    policy(SCOPE_ROLES.COMPANY, 'update', OWN),
-    policy(SCOPE_ROLES.COMPANY, 'insert', sql`company_id = ${scoped.companyId}`),
+    ...noticeIndexAndPolicies('request_notice_person_created', table),
+  ],
+)
+
+/** An e-mail that receives every failure of the company's copies (Configurações, Avisos). */
+export const alertRecipient = notifications.table(
+  'alert_recipient',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    // Lower case, as `Email` of the contract.
+    email: text('email').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'alert_recipient_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    unique('alert_recipient_key').on(table.companyId, table.email),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
+/** A person who follows a copy: the failure reaches their bell and their login's e-mail. */
+export const copyFollower = notifications.table(
+  'copy_follower',
+  {
+    companyId: text('company_id').notNull(),
+    copyId: uuid('copy_id').notNull(),
+    personId: text('person_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.copyId, table.personId] }),
+    foreignKey({
+      name: 'copy_follower_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_follower_copy_fkey',
+      columns: [table.companyId, table.copyId],
+      foreignColumns: [copy.companyId, copy.id],
+    }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'select', sql`company_id = ${scoped.companyId}`),
+    policy(SCOPE_ROLES.COMPANY, 'insert', OWN),
+    policy(SCOPE_ROLES.COMPANY, 'delete', OWN),
+  ],
+)
+
+/**
+ * A copy's failure told to a person, one per run and person, beside `notification` (data D6). It
+ * keeps the copy's name and the failure's code because the run leaves with the 100 newest and the
+ * notice stays.
+ */
+export const copyNotice = notifications.table(
+  'copy_notice',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    copyId: uuid('copy_id').notNull(),
+    runId: uuid('run_id').notNull(),
+    copyName: text('copy_name').notNull(),
+    code: text('code').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+  },
+  (table) => [
+    foreignKey({
+      name: 'copy_notice_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'copy_notice_copy_fkey',
+      columns: [table.companyId, table.copyId],
+      foreignColumns: [copy.companyId, copy.id],
+    }).onDelete('cascade'),
+    unique('copy_notice_key').on(table.runId, table.personId),
+    ...noticeIndexAndPolicies('copy_notice_person_created', table),
   ],
 )
