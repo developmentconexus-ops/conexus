@@ -1,3 +1,4 @@
+import type { CompanyData } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { agentsAlive } from './builder/agents/public.ts'
 import type { AppDataPort } from './builder/app-data/public.ts'
@@ -18,8 +19,9 @@ import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
-import type { Connectors } from './hub/connectors/public.ts'
+import type { Connectors, SessionScope } from './hub/connectors/public.ts'
 import type { CopyService } from './hub/copies/public.ts'
+import type { DataContext } from './hub/data/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
 import type { ProjectPorts } from './hub/projects/public.ts'
@@ -158,6 +160,8 @@ type ConversationsDeps = {
   apps: () => Apps
   /** The copies are made after the conversations; a run comes long after both. */
   copies: () => Pick<CopyService, 'run' | 'projectView'>
+  /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
+  companyData: (scope: SessionScope, context?: DataContext) => CompanyData
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -185,7 +189,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   }
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
-    ...{ storage, database, identity, queue, log },
+    ...{ storage, database, identity, queue, log, companyData: deps.companyData },
     ...machineOf(deps),
     connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
@@ -198,7 +202,7 @@ export function conversationsOf(deps: ConversationsDeps) {
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
     ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    appData,
+    ...{ appData, companyData: deps.companyData },
     mastra: () => hub.mastra,
   })
   const construtor = createConstrutor({
@@ -215,7 +219,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   })
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
-    ...{ storage, queue, runs: deps.runs },
+    ...{ storage, queue, runs: deps.runs, companyData: deps.companyData },
     ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the

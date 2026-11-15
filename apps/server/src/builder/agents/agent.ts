@@ -1,19 +1,13 @@
 import { readFileSync } from 'node:fs'
 import type {
   AgentId as AgentIdType,
+  CompanyData,
   ConnectionId,
   Effort,
   ModelId,
   OfProject,
 } from '@conexus/hub-api'
-import {
-  AgentId,
-  CompanyId,
-  MACHINE_TOOL,
-  OperationId,
-  PersonId,
-  ProjectId,
-} from '@conexus/hub-api'
+import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/hub-api'
 import type { AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
@@ -39,6 +33,7 @@ import {
   toolsOf,
   turnKeyOn,
 } from '../controller-kit/public.ts'
+import { dataOrder, dataTools } from '../data-tools/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -47,6 +42,7 @@ import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
+import { declaredOf } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
@@ -115,6 +111,8 @@ export type AgentDeps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
+  /** The company's data, bound to the run's scope; an agent passes no `by` yet (decision 6 of the card). */
+  companyData: (scope: SessionScope) => CompanyData
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
@@ -140,18 +138,6 @@ export type Plan = {
   tools: readonly FrozenTool[]
   /** The connections the version selected: the notebook of each, and the home of every tool. */
   selected: ReadonlySet<ConnectionId>
-}
-
-/** What a version declares it reads: each chosen tool's connection and operations (decision C1). */
-function declaredOf(tools: readonly FrozenTool[]) {
-  return tools.flatMap((tool) =>
-    tool.kind === 'PRESET'
-      ? [{ connectionId: tool.connectionId, operation: tool.operation }]
-      : tool.reads.map((operation) => ({
-          connectionId: tool.connectionId,
-          operation: OperationId.parse(operation),
-        })),
-  )
 }
 
 const plans = new WeakMap<Agent, (requestContext: RequestContext) => Promise<Plan>>()
@@ -284,6 +270,7 @@ function runToolsOf(
           ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
           : {}),
         ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
+        ...dataTools({ dataOf: async () => deps.companyData(scope), log: deps.log }),
       }),
       ...preset.reads,
     }
@@ -344,6 +331,7 @@ export function agentOf(
       const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
         fixedSystem(FIXED),
+        { role: 'system', content: dataOrder() },
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
         { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },
         ...(program === undefined

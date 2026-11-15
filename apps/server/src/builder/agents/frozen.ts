@@ -257,3 +257,15 @@ export async function publishedAll(database: Database) {
   }
   return all
 }
+
+/** What a version declares it reads: each chosen tool's connection and operations (decision C1). */
+export function declaredOf(tools: readonly FrozenTool[]) {
+  return tools.flatMap((tool) =>
+    tool.kind === 'PRESET'
+      ? [{ connectionId: tool.connectionId, operation: tool.operation }]
+      : tool.reads.map((operation) => ({
+          connectionId: tool.connectionId,
+          operation: OperationId.parse(operation),
+        })),
+  )
+}

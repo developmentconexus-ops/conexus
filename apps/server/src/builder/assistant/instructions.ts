@@ -4,6 +4,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
 import type { Mays, Speakers } from '../controller-kit/public.ts'
 import { blockOf, fixedSystem, sessionModel, TITLE } from '../controller-kit/public.ts'
+import { dataOrder } from '../data-tools/public.ts'
 
 /**
  * The Assistant's observer: the conversation's title and what a business conversation keeps, never
@@ -63,6 +64,7 @@ export function assistantInstructions(deps: {
     const model = MODEL_BLOCKS[sessionModel(requestContext)]
     return [
       fixedSystem(FIXED),
+      { role: 'system', content: dataOrder() },
       ...(model === undefined ? [] : [{ role: 'system' as const, content: model }]),
       { role: 'system', content: blockOf(speakers, chosen, may) },
     ] satisfies AgentInstructions

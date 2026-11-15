@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
-import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
+import type { CompanyData, CompanyId, ConversationId, Person } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
   BUILDER_TOOL,
+  DATA_TOOL,
   SKILL_TOOLS,
   SUBAGENT_TOOL,
   TASK_TOOLS,
@@ -33,6 +34,8 @@ import {
   toolsOf,
 } from '../controller-kit/public.ts'
 import { skillOf } from '../conversation/public.ts'
+import type { DataOf } from '../data-tools/public.ts'
+import { dataTools } from '../data-tools/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -87,6 +90,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...TYPED_READ_NAMES,
   BUILDER_TOOL.connectorNotes,
   BUILDER_TOOL.connectorNoteSave,
+  ...Object.values(DATA_TOOL),
   ...Object.values(ASSISTANT_TOOL),
   BUILDER_TOOL.webFetch,
   BUILDER_TOOL.webSearch,
@@ -110,6 +114,8 @@ type Deps = {
   database: Database
   identity: IdentityPorts
   connectors: AssistantConnectors
+  /** The company's data, bound to the conversation's scope; the Assistant passes no `by` yet (decision 6 of the card). */
+  companyData: (scope: SessionScope) => CompanyData
   projects: AssistantProjects
   queue: QueueDeps
   /**
@@ -169,6 +175,14 @@ function offeredFor(deps: Deps, scopeOf: ScopeOf): Offered {
     const scope = await scopeOf(requestContext)
     return scope === undefined ? [] : deps.connectors.connections(scope)
   })
+}
+
+/** The data the conversation reads, bound to its scope; none when it has no scope. */
+function dataOfScope(scopeOf: ScopeOf, companyData: Deps['companyData']): DataOf {
+  return async (requestContext) => {
+    const scope = await scopeOf(requestContext)
+    return scope === undefined ? undefined : companyData(scope)
+  }
 }
 
 /**
@@ -246,6 +260,7 @@ function assistantAgent(
         ...(scope === undefined
           ? {}
           : assistantConnectorTools(deps, { scope, chosen, mayNote: note })),
+        ...dataTools({ dataOf: dataOfScope(scopeOf, deps.companyData), log: deps.log }),
       }
     },
     skills: async ({ requestContext }) => [

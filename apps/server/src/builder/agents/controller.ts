@@ -200,6 +200,7 @@ type Deps = {
   connectors: Connectors['assistant']
   speakersOf: (scope: SessionScope) => Promise<Speakers>
   appData: AppDataPort
+  companyData: AgentDeps['companyData']
   agents: AgentReads & Pick<AgentEvents, 'onChange'>
   /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
   machine: ConversationMachine
