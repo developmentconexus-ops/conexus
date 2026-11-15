@@ -43,33 +43,7 @@ export {
   publishAppVersion,
   VersionFileInput,
 } from './apps.ts'
-export {
-  ASSISTANT_CONTROLLER,
-  ASSISTANT_FILE,
-  ASSISTANT_TOOL,
-  AssistantConversation,
-  AssistantConversationSummary,
-  assistantFilePath,
-  Briefing,
-  CONVERSATION_SEARCH_MAX,
-  CONVERSATION_TITLE_MAX,
-  createAssistantConversation,
-  deleteAssistantConversation,
-  listAssistantConnections,
-  listAssistantConversations,
-  type Overview,
-  ProposeAppInput,
-  ProposedApp,
-  ProposeRefused,
-  ReadBusy,
-  ReadCut,
-  ReadRows,
-  readAssistantConversation,
-  renameAssistantConversation,
-  SessionConnection,
-  setAssistantConnections,
-  setAssistantModel,
-} from './assistant.ts'
+export * from './assistant.ts'
 export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {
