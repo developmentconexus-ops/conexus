@@ -41,8 +41,8 @@ export { quoted } from './app-sql.ts'
 const CONNECTION_LOST = /^(08|57P0)/
 
 /**
- * A SQLSTATE refuses with the names it carries; none, or a lost connection, is silence. Never
- * `detail`, which holds values (code C52, security S40).
+ * A SQLSTATE refuses with the names it carries and the message PostgreSQL gave; none, or a lost
+ * connection, is silence. Never `detail` nor `hint`, which hold values (code C52, security S40).
  */
 export function answerOf(
   error:
@@ -52,14 +52,15 @@ export function answerOf(
         table?: string
         column?: string
         constraint?: string
+        message?: string
       }>
     | undefined,
 ): SqlAnswer {
   const code = error?.code
   if (code === undefined || CONNECTION_LOST.test(code))
     return { kind: 'NO_ANSWER', cause: code ?? error?.name }
-  const { table, column, constraint } = error ?? {}
-  return { kind: 'REFUSED', code, table, column, constraint }
+  const { table, column, constraint, message } = error ?? {}
+  return { kind: 'REFUSED', code, table, column, constraint, message }
 }
 
 /** The class of whatever was thrown: enough to say what went silent, never its message. */

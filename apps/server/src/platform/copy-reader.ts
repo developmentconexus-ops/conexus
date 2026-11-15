@@ -54,7 +54,7 @@ async function readerAddress(context: Context, host: string): Promise<DatabaseUr
 /** What a read of the copies gives: the rows, a refusal by the database, or a failure. */
 export type SyncRead =
   | { kind: 'ROWS'; results: readonly ReadResult[] }
-  | { kind: 'REFUSED'; sqlstate: string }
+  | { kind: 'REFUSED'; sqlstate: string; message: string }
   | { kind: 'NO_LOGIN' }
   | { kind: 'TOO_LARGE' }
   | { kind: 'TIMEOUT' }
@@ -90,7 +90,7 @@ async function readCopies(
     case 'REFUSED':
       if (NO_LOGIN.has(answer.code)) return { kind: 'NO_LOGIN' }
       if (TIMED_OUT.has(answer.code)) return { kind: 'TIMEOUT' }
-      return { kind: 'REFUSED', sqlstate: answer.code }
+      return { kind: 'REFUSED', sqlstate: answer.code, message: answer.message ?? '' }
     default:
       return answer satisfies never
   }
