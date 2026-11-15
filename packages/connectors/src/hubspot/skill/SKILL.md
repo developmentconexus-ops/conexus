@@ -13,7 +13,6 @@ Three operations read and one writes. A refusal is the answer, never a thing to 
 
 - Every read answers `{ linhas, temMais }`: the records as HubSpot sent them (`id`, `properties`, `createdAt`, `updatedAt`, `archived`), and whether another page follows. When one does, `seguinte` is the cursor: send it back as `after` to read the next page. A list ends on a page with no `seguinte`.
 - One page per call, up to 100 records (`limit`). Read the next page only when the person's question needs it.
-- `contatos`, `empresas` and `negocios` declare how their list pages, so each can become a copy the Conexus keeps in the company's database: for data an app reads again and again, propose the copy instead of paging live.
 - A refusal comes with what HubSpot answered: its `message` and its `category` (`MISSING_SCOPES` when the login lacks a scope). A scope the company did not grant refuses only that subject; the others still work.
 - A contact's e-mail and phone come only to whoever may see that kind of data: the Hub leaves out of the answer what the reader may not see. Never ask for or guess what is not in the answer.
 

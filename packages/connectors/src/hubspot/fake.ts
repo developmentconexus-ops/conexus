@@ -12,7 +12,7 @@ type Switches = {
   refuse: boolean
   /** Every renewal answers 400 `invalid_grant`, as after the user took the app's access away. */
   revoke: boolean
-  /** Every read answers 403 `MISSING_SCOPES`, as when the app lacks the scope. */
+  /** Every call to the CRM, the reads and the note's create, answers 403 `MISSING_SCOPES`, as when the app lacks the scope. */
   readRefused: boolean
   /** The `expires_in` the exchange and the renewal give. */
   expiresInSeconds: number

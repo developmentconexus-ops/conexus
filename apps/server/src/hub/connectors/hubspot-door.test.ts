@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { Rows } from '@conexus/connectors'
+import { connectorOf, Rows } from '@conexus/connectors'
 import {
   CompanyId,
   ConnectionId,
@@ -172,6 +172,14 @@ test('o Builder lê os contatos com a mesma forma de uma leitura do Mercado Livr
 })
 
 test('o e-mail e o telefone saem como dado pessoal', async (t) => {
+  const declared = connectorOf('hubspot')?.operations.find((each) => each.id === 'contatos')
+  assert.deepEqual(
+    declared?.personal?.map(({ path, kind }) => [path, kind]),
+    [
+      ['properties.email', 'contato'],
+      ['properties.phone', 'contato'],
+    ],
+  )
   const on = await portalOn(t)
   for (const read of [
     await on.builderRead(on.carla, 'contatos', { limit: 1 }),
@@ -266,6 +274,16 @@ test('a nota num contato mostra o cartão e sai uma vez', async (t) => {
   assert.equal(sent.length, 1)
   assert.equal(sent[0]?.fields.writtenId, '9001')
   assert.equal(JSON.stringify(on.hub.lines).includes('Ligou pedindo'), false)
+})
+
+test('a nota num contato que não existe volta recusada, não incerta, e nada foi criado', async (t) => {
+  const on = await portalOn(t)
+  const refused = await on.hub.connectors.assistant.write(
+    on.noteBy(on.ana, { contactId: '1', body: 'Contato que não existe.' }),
+  )
+  assert.equal(refused.kind, 'REFUSED')
+  assert.equal(Object(refused).native.status, 400)
+  assert.equal(on.fake.notes().length, 0)
 })
 
 test('o limite por turno conta a chamada do HubSpot', async (t) => {
