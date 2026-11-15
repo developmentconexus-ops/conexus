@@ -1416,6 +1416,27 @@ moves the watermark or takes a row out.
 - **Not proved.** A row whose change date is null is never read on the first pass
   (https://github.com/developmentconexus-ops/conexus/issues/940).
 
+### The column that stops coming (parte 1 da camada de dados)
+
+- **Library line.** `zod` 4.6.5 and the kit have no schema of a source: a list answer is rows of any
+  shape, and `cellOf` (`packages/connectors/src/kernel/list.ts`) reads an absent path and a null the
+  same. Nothing in `@mastra/core` 1.82.0, `@neondatabase/serverless` 1.2.0 or PostgreSQL 18 keeps
+  which columns a source sent in the runs before. Databricks' Lakeflow Connect marks a column
+  inactive from the source's schema, which an API does not have.
+- **Hand-made piece.** `present` (the columns whose path exists in a row of the page, `cellsOf` and
+  `listPageOf` in the kit, `CopyRead` in `hub/connectors/copy-port.ts`); `seen` of the run
+  (`source-pass.ts`: the present columns, whether every source read the whole window, the rows read);
+  `nextColumnState` (`hub/copies/column-state.ts`) and its write into `copies.copy.column_state`, in
+  the same `UPDATE` that ends a `COMPLETE` run of a version 2 copy (`run.ts`, `ended`). A column that
+  came is active; one seen before and absent from a whole read with rows is inactive since the run
+  began. A whole read is a source that began with no position and either has no `since` or has no
+  `changedSince`.
+- **Why.** The founder's decision: the column stays, marked inactive (`design.md` C5 of the data
+  spec). "Only after it was seen" is ours, so a column that is just empty is never accused.
+- **Proof.** `hub/copies/column-state.test.ts` and `packages/connectors/src/kernel/list-present.test.ts`.
+- **Not proved.** A copy that reads only what changed cannot see a column vanish after its first
+  whole pass; a complete pass now and then is in no milestone.
+
 ### The record of each run
 
 - **Library line.** The schedule keeps its triggers, not a run asked for at once: "Trigger history"
