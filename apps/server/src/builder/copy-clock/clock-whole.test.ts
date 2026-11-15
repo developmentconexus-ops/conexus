@@ -209,7 +209,10 @@ test('ao subir, a cópia antiga ganha a linha semanal', { timeout: 120_000 }, as
   const weekly = await hub.mastra.schedules.get(wholeId(copy.id))
   assert.equal(weekly?.status, 'paused', 'a semanal nasce no estado da normal')
   assert.equal((await hub.mastra.schedules.get(normalId(copy.id)))?.nextFireAt, before)
-  assert.equal((await hub.mastra.schedules.get(normalId(copy.id)))?.updatedAt, normalBefore?.updatedAt)
+  assert.equal(
+    (await hub.mastra.schedules.get(normalId(copy.id)))?.updatedAt,
+    normalBefore?.updatedAt,
+  )
   const stamp = weekly?.updatedAt
   await hub.copies.ensureWholeLines()
   assert.equal((await hub.mastra.schedules.get(wholeId(copy.id)))?.updatedAt, stamp)
