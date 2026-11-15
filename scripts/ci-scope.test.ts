@@ -33,6 +33,7 @@ function scope(dir: string, event: string, before: string, sha: string): string 
   writeFileSync(output, '')
   execFileSync('bash', ['--noprofile', '--norc', '-e', '-c', SCRIPT], {
     cwd: dir,
+    stdio: 'pipe',
     env: {
       PATH: process.env.PATH ?? '',
       EVENT: event,
