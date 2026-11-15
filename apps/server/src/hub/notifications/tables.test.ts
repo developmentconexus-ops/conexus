@@ -215,7 +215,7 @@ test('a cópia apagada leva quem a segue e os avisos dela', async (t) => {
   assert.equal(await countOf(test, 'copy_notice'), 0)
 })
 
-test('o mesmo e-mail duas vezes na mesma empresa é recusado, e em outra empresa cabe', async (t) => {
+test('o mesmo e-mail só entra uma vez na lista de cada empresa', async (t) => {
   const { asOwner } = await seeded(t)
   function insert(company: string) {
     return asOwner(
