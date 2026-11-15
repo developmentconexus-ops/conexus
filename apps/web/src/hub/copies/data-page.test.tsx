@@ -64,7 +64,8 @@ function searchable() {
 test('Dados: a busca acha pela coluna', async () => {
   openCopies(server, { copies: searchable() }, LIST)
   const main = within(await screen.findByRole('main'))
-  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+  const box = await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'NUNOTA' } })
   await waitFor(() => expect(screen.queryByText('sankhya_clientes')).toBeNull())
   expect(main.getByText('sankhya_vendas')).toBeTruthy()
@@ -73,7 +74,8 @@ test('Dados: a busca acha pela coluna', async () => {
 test('Dados: a busca não liga para acento', async () => {
   openCopies(server, { copies: searchable() }, LIST)
   const main = within(await screen.findByRole('main'))
-  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+  const box = await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'devolucoes' } })
   await waitFor(() => expect(screen.queryByText('sankhya_vendas')).toBeNull())
   expect(main.getByText('sankhya_clientes')).toBeTruthy()
@@ -82,7 +84,8 @@ test('Dados: a busca não liga para acento', async () => {
 test('Dados: a busca sem resposta diz que nada bate', async () => {
   openCopies(server, { copies: searchable() }, LIST)
   const main = within(await screen.findByRole('main'))
-  const box = await main.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+  const box = await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
   fireEvent.change(box, { target: { value: 'zzz' } })
   expect(await main.findByText('Nenhuma tabela com esse texto.')).toBeTruthy()
 })
@@ -130,20 +133,20 @@ test('Dados: a falha de leitura e Tentar de novo', async () => {
   expect(await main.findByText('Sankhya · Matriz · 1 tabela')).toBeTruthy()
 })
 
-test('Dados: a camada Negócio vazia', async () => {
-  openCopies(server, { copies: [copy()] }, `${LIST}?layer=business`)
-  expect(await screen.findByText('Nenhum conceito aprovado ainda')).toBeTruthy()
-  expect(screen.getByRole('tab', { name: /Negócio/ }).getAttribute('aria-selected')).toBe('true')
+test('Dados: o grupo Negócio abre a camada Negócio', async () => {
+  openCopies(server, { copies: [copy()] }, LIST)
+  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+  fireEvent.click(await nav.findByRole('link', { name: 'Negócio 0' }))
+  const main = within(await screen.findByRole('main'))
+  expect(await main.findByText('Nenhum conceito aprovado ainda')).toBeTruthy()
+  expect(screen.queryByRole('tablist')).toBeNull()
 })
 
 test('Dados: a camada fica no endereço', async () => {
-  openCopies(server, { copies: [copy()] }, LIST)
-  fireEvent.mouseDown(await screen.findByRole('tab', { name: /Negócio/ }), { button: 0 })
-  fireEvent.click(screen.getByRole('tab', { name: /Negócio/ }))
-  expect(await screen.findByText('Nenhum conceito aprovado ainda')).toBeTruthy()
-  expect(
-    within(screen.getByRole('tablist', { name: 'Camada' })).getByRole('tab', { name: /Bruto/ }),
-  ).toBeTruthy()
+  openCopies(server, { copies: [copy()] }, `${LIST}?layer=apps`)
+  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+  expect((await nav.findByRole('link', { name: 'Apps' })).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Negócio 0' }).getAttribute('aria-current')).toBeNull()
 })
 
 test('Cópias leva a Dados', async () => {

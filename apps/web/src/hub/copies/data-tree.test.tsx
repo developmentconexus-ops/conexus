@@ -247,3 +247,51 @@ test('a árvore no celular: tocar numa tabela fecha a gaveta', async () => {
     expect(await screen.findByRole('heading', { name: 'vendas' })).toBeTruthy()
   })
 })
+
+test('a busca da árvore filtra e fica no endereço', async () => {
+  openCopies(server, { copies: searchable() }, LIST)
+  const nav = await tree()
+  expect(await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })).toBeTruthy()
+  expect(screen.getAllByRole('searchbox')).toHaveLength(1)
+  fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
+    target: { value: 'NUNOTA' },
+  })
+  await waitFor(() => expect(nav.queryByText('sankhya_clientes')).toBeNull())
+  expect(nav.getByText('sankhya_vendas')).toBeTruthy()
+  const main = within(await screen.findByRole('main'))
+  expect(main.queryByText('sankhya_clientes')).toBeNull()
+  expect(main.getByText('sankhya_vendas')).toBeTruthy()
+  expect(nav.getByRole('link', { name: /^sankhya_vendas/ }).getAttribute('href')).toContain(
+    'q=NUNOTA',
+  )
+})
+
+test('o campo mostra o q do endereço', async () => {
+  openCopies(server, { copies: searchable() }, `${LIST}?q=NUNOTA`)
+  const nav = await tree()
+  const box = await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
+  expect(box).toHaveProperty('value', 'NUNOTA')
+})
+
+test('a busca sem resposta', async () => {
+  openCopies(server, { copies: searchable() }, LIST)
+  const nav = await tree()
+  fireEvent.change(await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
+    target: { value: 'zzz' },
+  })
+  expect(await nav.findByText('Nenhuma tabela com esse texto.')).toBeTruthy()
+})
+
+test('no celular, digitar não fecha a gaveta', async () => {
+  await onPhone(async () => {
+    openCopies(server, { copies: searchable() }, LIST)
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir navegação' }))
+    const drawer = within(await screen.findByRole('dialog'))
+    fireEvent.change(await drawer.findByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
+      target: { value: 'NUNOTA' },
+    })
+    await waitFor(() => expect(drawer.queryByText('sankhya_clientes')).toBeNull())
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(drawer.getByRole('navigation', { name: 'Dados' })).toBeTruthy()
+  })
+})

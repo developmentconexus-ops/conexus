@@ -1,8 +1,10 @@
 import type { CompanyId, ConnectorEntry, CopyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams } from '@tanstack/react-router'
-import { ChevronDownIcon, CirclePauseIcon, Table2Icon } from 'lucide-react'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { ChevronDownIcon, CirclePauseIcon, SearchIcon, Table2Icon } from 'lucide-react'
+import { useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
 import {
   SidebarGroup,
   SidebarMenu,
@@ -25,6 +27,7 @@ import {
   NO_SYSTEM,
   NO_TABLE_COPIED,
   PAUSED_LABEL,
+  SEARCH_TABLES,
   TREE_LABEL,
 } from './text.ts'
 
@@ -46,7 +49,7 @@ function LayerGroup(props: {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
-            className={ICON}
+            className={`${ICON} font-medium text-text`}
             render={
               <Link
                 to="/companies/$companyId/data"
@@ -62,6 +65,35 @@ function LayerGroup(props: {
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
+  )
+}
+
+/** The search of the tree: the text is kept in the address, `q` (web W18), replaced as the person types; the phone's drawer stays open. */
+function TreeSearch({ q }: { q: string | undefined }) {
+  const [typed, setTyped] = useState(q ?? '')
+  const navigate = useNavigate()
+  return (
+    <InputGroup>
+      <InputGroupAddon>
+        <SearchIcon aria-hidden="true" />
+      </InputGroupAddon>
+      <InputGroupInput
+        type="search"
+        aria-label={SEARCH_TABLES}
+        placeholder={SEARCH_TABLES}
+        className="[&::-webkit-search-cancel-button]:appearance-none"
+        value={typed}
+        onChange={(event) => {
+          setTyped(event.target.value)
+          void navigate({
+            to: '.',
+            search: (old) => ({ ...old, q: event.target.value || undefined }),
+            replace: true,
+            state: { keepDrawer: true },
+          })
+        }}
+      />
+    </InputGroup>
   )
 }
 
@@ -133,13 +165,15 @@ function RawGroup(props: {
   return (
     <>
       <LayerGroup companyId={companyId} layer="raw" q={q} count={copies.data?.copies.length} />
-      <RawBody
-        companyId={companyId}
-        copies={copies}
-        connections={connections}
-        current={current}
-        q={q}
-      />
+      <SidebarGroup className="pt-0">
+        <RawBody
+          companyId={companyId}
+          copies={copies}
+          connections={connections}
+          current={current}
+          q={q}
+        />
+      </SidebarGroup>
     </>
   )
 }
@@ -219,6 +253,9 @@ export function DataTree({ companyId, q }: { companyId: CompanyId; q: string | u
   const current = useParams({ strict: false, select: (params) => params.copyId })
   return (
     <nav aria-label={TREE_LABEL} className="flex min-w-0 flex-col">
+      <SidebarGroup>
+        <TreeSearch q={q} />
+      </SidebarGroup>
       <LayerGroup companyId={companyId} layer="business" q={q} count={0} />
       <RawGroup
         companyId={companyId}

@@ -1,10 +1,7 @@
 import type { CompanyId, ConnectorEntry, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { SearchIcon } from 'lucide-react'
-import { useState } from 'react'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
+import { Link } from '@tanstack/react-router'
 import { List } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
@@ -24,7 +21,6 @@ import {
   NO_SYSTEM_HINT,
   NO_TABLE_COPIED,
   RAW_INTRO,
-  SEARCH_TABLES,
   systemText,
 } from './text.ts'
 
@@ -103,33 +99,6 @@ function SystemPhoneList(props: {
   )
 }
 
-/** The search of the layer: the text is kept in the address, `q` (web W18), and the list answers at once. */
-function TableSearch({ initial }: { initial: string | undefined }) {
-  const [text, setText] = useState(initial ?? '')
-  const navigate = useNavigate()
-  return (
-    <InputGroup className="h-control max-w-column">
-      <InputGroupAddon>
-        <SearchIcon aria-hidden="true" />
-      </InputGroupAddon>
-      <InputGroupInput
-        type="search"
-        aria-label={SEARCH_TABLES}
-        placeholder={SEARCH_TABLES}
-        value={text}
-        onChange={(event) => {
-          setText(event.target.value)
-          void navigate({
-            to: '.',
-            search: (previous) => ({ ...previous, q: event.target.value || undefined }),
-            replace: true,
-          })
-        }}
-      />
-    </InputGroup>
-  )
-}
-
 type Read = UseQueryResult<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }>
 
 /** What the layer says when the company has no system linked and no proposal. */
@@ -185,10 +154,7 @@ export function RawLayer(props: {
   return (
     <div className="flex flex-col gap-lg">
       <Proposals companyId={companyId} proposals={proposals} onNote={onNote} />
-      <div className="flex flex-wrap items-center justify-between gap-md">
-        <TableSearch initial={q} />
-        <p className="text-text-2">{RAW_INTRO}</p>
-      </div>
+      <p className="text-text-2">{RAW_INTRO}</p>
       {systems.length === 0 && <Empty>{NO_MATCH}</Empty>}
       {systems.length > 0 &&
         (phone ? (
