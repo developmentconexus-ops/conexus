@@ -181,7 +181,13 @@ export const CopyPosition = z.discriminatedUnion('kind', [
 export type CopyPosition = z.infer<typeof CopyPosition>
 
 /** A starting point a connector offers; turning a copy on copies `definition` into the company's row. */
-export type CopyModel = Readonly<{ id: CopyName; label: string; definition: CopyDefinitionV1 }>
+export type CopyModel = Readonly<{
+  id: CopyName
+  label: string
+  definition: CopyDefinitionV1
+  /** Colunas que o modelo copiava e deixou de copiar. A rodada as tira da cópia já ligada. */
+  retired?: readonly string[]
+}>
 
 /** One page: the definition, the last key read (none on a pass's first page), the two dates of the pass, and the size. */
 export const PageInput = z

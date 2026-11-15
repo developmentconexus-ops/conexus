@@ -78,6 +78,7 @@ export {
   requestOf,
 } from './kernel/operation.ts'
 export {
+  documentColumns,
   PERSONAL_KINDS,
   type PersonalField,
   type PersonalKind,

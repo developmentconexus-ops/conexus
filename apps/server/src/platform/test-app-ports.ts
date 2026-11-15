@@ -84,6 +84,7 @@ export function heldCompanyPostgres(config: Config) {
     dropForeignRows: (sync, input, signal) => inner.dropForeignRows(sync, input, signal),
     accountRows: (sync, input) => inner.accountRows(sync, input),
     dropCopyTable: (sync, input) => inner.dropCopyTable(sync, input),
+    dropCopyColumns: (sync, input) => inner.dropCopyColumns(sync, input),
     grantCopy: (sync, input) => inner.grantCopy(sync, input),
     revokeCopy: (sync, input) => inner.revokeCopy(sync, input),
   }

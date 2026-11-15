@@ -5,7 +5,7 @@ import type { Claimed } from './source-pass.ts'
 import { DATABASE_DOWN, lost } from './source-pass.ts'
 import { whileHeld } from './sources.ts'
 import type { CopiesDeps, CopyOutcome, CopyRunEnd, StoredCopy } from './store.ts'
-import { copyTableOf } from './store.ts'
+import { copyTableOf, modelOf } from './store.ts'
 import { copy } from './tables.ts'
 
 type DefinitionV1 = Extract<CopyDefinition, { version: 1 }>
@@ -45,10 +45,7 @@ export async function describedCopy(
   const { companyId, id: copyId } = stored
   if (stored.definition.version !== 1 || stored.model === null)
     return { kind: 'COPY', copy: stored }
-  const model = deps
-    .connectors()
-    .catalog()
-    .find((entry) => entry.connector === stored.connectorId && entry.model.id === stored.model)
+  const model = modelOf(deps, stored)
   if (model === undefined) {
     deps.log.error({ companyId, copyId, model: stored.model }, 'COPY_MODEL_GONE')
     return { kind: 'COPY', copy: stored }

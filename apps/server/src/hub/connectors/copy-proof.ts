@@ -1,4 +1,5 @@
 import type { CopyDefinitionV1 } from '@conexus/connectors'
+import { documentColumns } from '@conexus/connectors'
 import type { ConnectionId, OfProject, PersonId } from '@conexus/hub-api'
 import { PROOF_PAGE_ROWS } from '@conexus/hub-api'
 import { roleOfSpeaker } from '../identity/public.ts'
@@ -11,9 +12,12 @@ import { lackedDoorRead, personSpeaker } from './speaking.ts'
 
 /** One page of a proposed version 1 copy, counted: never a row (Capacidade 3). */
 export type Proved = Readonly<{ kind: 'PROVED'; rows: number; more: boolean; counts: null }>
+/** A column of the page holds a CPF or a CNPJ: a copy never keeps a document. */
+export type DocumentColumn = Readonly<{ kind: 'DOCUMENT_COLUMN'; column: string }>
 
 type ProofAnswer =
   | Proved
+  | DocumentColumn
   | CopyRefusal
   | NotInRole
   | Readonly<{ kind: 'NOT_GRANTED' }>
@@ -76,5 +80,10 @@ export async function provedPage(
   if (page.kind === 'NO_CONNECTION') return { kind: 'NOT_GRANTED' }
   if (page.kind === 'REFUSED') return page.refusal
   if (page.kind === 'IN_LINE') return { kind: 'DEADLINE' }
+  const [column] = documentColumns(
+    a.definition.columns.map((one) => one.name),
+    page.page.rows,
+  )
+  if (column !== undefined) return { kind: 'DOCUMENT_COLUMN', column }
   return { kind: 'PROVED', rows: page.page.rows.length, more: page.page.more, counts: null }
 }

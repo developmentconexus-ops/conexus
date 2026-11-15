@@ -17,6 +17,7 @@ import {
   accountRows,
   closePass,
   dropAccountRows,
+  dropCopyColumns,
   dropCopyTable,
   dropForeignRows,
   ensureCopyTable,
@@ -55,9 +56,8 @@ export function answerOf(
     | undefined,
 ): SqlAnswer {
   const code = error?.code
-  if (code === undefined || CONNECTION_LOST.test(code)) {
+  if (code === undefined || CONNECTION_LOST.test(code))
     return { kind: 'NO_ANSWER', cause: code ?? error?.name }
-  }
   const { table, column, constraint } = error ?? {}
   return { kind: 'REFUSED', code, table, column, constraint }
 }
@@ -127,11 +127,8 @@ export async function neonTransport(
     const queries = statements.map(({ text, values }) => sql.query(text, [...(values ?? [])]))
     if (options?.readOnly) {
       // Rows as arrays with the result's own fields: two columns of one name stay two, an empty read keeps its columns.
-      const results = await sql.transaction(queries, {
-        ...options,
-        arrayMode: true,
-        fullResults: true,
-      })
+      const mode = { ...options, arrayMode: true, fullResults: true } as const
+      const results = await sql.transaction(queries, mode)
       return {
         kind: 'READ',
         results: results.map(({ fields, rows }) => ({
@@ -143,9 +140,8 @@ export async function neonTransport(
     const value: Row[][] = await sql.transaction(queries)
     return { kind: 'DONE', value }
   } catch (error) {
-    if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge) {
+    if (error instanceof NeonDbError && error.sourceError instanceof ReplyTooLarge)
       return options?.readOnly ? { kind: 'TOO_LARGE' } : { kind: 'NO_ANSWER' }
-    }
     return answerOf(error instanceof NeonDbError ? error : { name: errorName(error) })
   }
 }
@@ -193,6 +189,7 @@ export type CompanyPostgres = {
   accountRows: Bound<typeof accountRows>
   /** The table of a copy that ended, with the app logins' read of it; repeatable. */
   dropCopyTable: Bound<typeof dropCopyTable>
+  dropCopyColumns: Bound<typeof dropCopyColumns>
   /** A copy released to a Projeto's run and read logins. */
   grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
   /** A release taken back; `ALL`, every one of the Projeto and the schema. */
@@ -366,6 +363,7 @@ export function createCompanyPostgres(deps: {
     dropForeignRows: (sync, input, signal) => dropForeignRows(context, sync, input, signal),
     accountRows: (sync, input) => accountRows(context, sync, input),
     dropCopyTable: (sync, input) => dropCopyTable(context, sync, input),
+    dropCopyColumns: (sync, input) => dropCopyColumns(context, sync, input),
     grantCopy: (sync, input) => grantCopy(context, sync, input),
     revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })

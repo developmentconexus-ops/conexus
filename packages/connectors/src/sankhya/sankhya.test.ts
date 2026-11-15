@@ -6,6 +6,7 @@ import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { answeredEach } from '../kernel/conformance-session.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
+import { sankhyaCopyModels } from './copies.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaDoor } from './door.ts'
 import { sankhyaFake } from './fake.ts'
@@ -41,6 +42,14 @@ test('tirar email de clientes faz a conformidade falhar', async () => {
 function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
+
+test('o modelo clientes não copia CGC_CPF e o declara aposentado', () => {
+  const clientes = sankhyaCopyModels.find((each) => each.id === 'clientes')
+  assert.ok(clientes)
+  assert.deepEqual(clientes.retired, ['CGC_CPF'])
+  assert.ok(!clientes.definition.columns.some((column) => column.name === 'CGC_CPF'))
+  assert.ok(!clientes.definition.source.sql.includes('CGC_CPF'))
+})
 
 test('o catálogo tem o Sankhya, o Mercado Livre e o HubSpot, o Sankhya achado pelo id', () => {
   assert.deepEqual(
