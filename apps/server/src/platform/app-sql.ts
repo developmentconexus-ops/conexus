@@ -8,7 +8,15 @@ export type Row = Readonly<Record<string, unknown>>
 /** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
 export type SqlAnswer =
   | { kind: 'DONE'; value: Row[][] }
-  | { kind: 'REFUSED'; code: string; table?: string; column?: string; constraint?: string }
+  | {
+      kind: 'REFUSED'
+      code: string
+      table?: string
+      column?: string
+      constraint?: string
+      /** For the model's edge alone: never a log or a span (security S41, S42). */
+      message?: string
+    }
   /** `cause` names what went silent (an error's name or class), never its message. */
   | { kind: 'NO_ANSWER'; cause?: string }
   /** A read whose reply passed the cap: only a read ever gets it (code C59). */

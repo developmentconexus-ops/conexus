@@ -130,6 +130,8 @@ test('o Hub calado dá CATALOG_UNAVAILABLE', async (t) => {
   const silent = createCompanyData({
     ...{ identity: on.hub.identity, connectors: () => on.hub.connectors },
     ...{ copies: () => on.hub.copies.data, log: logOf(on) },
+    ...{ projects: on.hub.projects.ports, companyPostgres: on.hub.postgres.companyPostgres },
+    neon: on.hub.neon.neon,
     database: await unreachableDatabase(t),
   })
   const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' })).describe()

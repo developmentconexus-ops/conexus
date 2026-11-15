@@ -88,7 +88,21 @@ test('o login de leitura lê sync e só sync', async (t) => {
     [{ text: `select * from "${schema}".x` }],
     signal,
   )
-  assert.deepEqual(outside, { kind: 'REFUSED', sqlstate: '42501' })
+  assert.partialDeepStrictEqual(outside, { kind: 'REFUSED', sqlstate: '42501' })
+  assert.ok(outside.kind === 'REFUSED' && /permission denied/.test(outside.message))
+})
+
+test('a recusa leva a mensagem do banco e nada do detail', async (t) => {
+  const { reader } = await readerOf(t)
+  const refused = await postgres.readCopies(
+    reader,
+    [{ text: 'select nao_existe from sync.antes' }],
+    signal,
+  )
+  assert.ok(refused.kind === 'REFUSED')
+  assert.equal(refused.sqlstate, '42703')
+  assert.match(refused.message, /nao_existe/)
+  assert.deepEqual(Object.keys(refused).sort(), ['kind', 'message', 'sqlstate'])
 })
 
 test('o login de leitura não escreve', async (t) => {
