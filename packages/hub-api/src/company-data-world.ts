@@ -27,6 +27,8 @@ export type DataWorld = Readonly<{
     /** The database refuses it. */
     refused: string
   }>
+  /** A table the world's catalog puts in `withheld`, and a query only it answers. */
+  withheld: Readonly<{ table: string; query: string }>
   /** The Hub's database or whoever keeps the tables stops answering, until the world is made again. */
   down(part: 'catalog' | 'rows' | 'query'): void
 }>
