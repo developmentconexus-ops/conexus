@@ -50,7 +50,7 @@ function LayerGroup(props: {
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
-            className={`${ICON} font-medium text-text`}
+            className={`${ICON} font-semibold text-text`}
             render={
               <Link
                 to="/companies/$companyId/data"
@@ -79,7 +79,7 @@ function TreeSearch({ q }: { q: string | undefined }) {
     setTyped(q ?? '')
   }, [q])
   return (
-    <InputGroup>
+    <InputGroup className="h-control">
       <InputGroupAddon>
         <SearchIcon aria-hidden="true" />
       </InputGroupAddon>
@@ -122,17 +122,19 @@ function SystemBranch(props: {
             className="-rotate-90 motion-safe:transition-transform [[data-panel-open]>&]:rotate-0"
           />
           {entry !== undefined && <ConnectorLogo entry={entry} small />}
-          <span className="min-w-0 truncate">{connectorName(connectors, system.connector)}</span>{' '}
+          <span className="min-w-0 truncate font-medium text-text">
+            {connectorName(connectors, system.connector)}
+          </span>{' '}
           <span className={TAIL}>{system.copies.length}</span>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <SidebarMenu className="ps-lg">
+          <SidebarMenu>
             {system.copies.map((copy) => {
               const paused = copy.schedule.kind === 'PAUSED'
               return (
                 <SidebarMenuItem key={copy.id}>
                   <SidebarMenuButton
-                    className={ICON}
+                    className={`${ICON} ps-[2.2rem]`}
                     render={
                       <Link
                         to="/companies/$companyId/data/$copyId"
