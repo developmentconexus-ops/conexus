@@ -295,3 +295,34 @@ test('no celular, digitar não fecha a gaveta', async () => {
     expect(drawer.getByRole('navigation', { name: 'Dados' })).toBeTruthy()
   })
 })
+
+test('a árvore já montada: digitar na busca abre o sistema que sobra', async () => {
+  openCopies(server, { copies: three() }, LIST)
+  const nav = await tree()
+  expect(await nav.findByRole('button', { name: 'Mercado Livre 1' })).toHaveProperty(
+    'ariaExpanded',
+    'false',
+  )
+  fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
+    target: { value: 'ml_' },
+  })
+  expect(await nav.findByRole('link', { name: /^ml_pedidos/ })).toBeTruthy()
+  expect(nav.getByRole('button', { name: 'Mercado Livre 1' })).toHaveProperty(
+    'ariaExpanded',
+    'true',
+  )
+})
+
+test('a árvore já montada: abrir uma tabela pela lista da página abre o sistema dela', async () => {
+  openCopies(server, { copies: three() }, LIST)
+  const nav = await tree()
+  expect(await nav.findByRole('button', { name: 'Mercado Livre 1' })).toHaveProperty(
+    'ariaExpanded',
+    'false',
+  )
+  const main = within(await screen.findByRole('main'))
+  fireEvent.click(await main.findByRole('link', { name: 'ml_pedidos' }))
+  expect(await screen.findByRole('heading', { name: 'ml_pedidos' })).toBeTruthy()
+  const row = await nav.findByRole('link', { name: /^ml_pedidos/ })
+  expect(row.getAttribute('aria-current')).toBe('page')
+})

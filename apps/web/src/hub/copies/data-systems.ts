@@ -35,3 +35,12 @@ export function answers(copy: CopySummary, query: string): boolean {
   const fields = [copy.name, describedAs(copy), ...copy.shown.columns.map((column) => column.name)]
   return fields.some((field) => folded(field).includes(needle))
 }
+
+/** The systems as the search leaves them: only the copies that answer it, and a system with none is gone. No search leaves them all. */
+export function narrowed(systems: readonly System[], q: string | undefined): System[] {
+  const query = q?.trim() ?? ''
+  if (query === '') return [...systems]
+  return systems
+    .map((system) => ({ ...system, copies: system.copies.filter((copy) => answers(copy, query)) }))
+    .filter((system) => system.copies.length > 0)
+}

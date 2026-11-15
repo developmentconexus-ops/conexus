@@ -15,7 +15,7 @@ import {
 import { ReadFailure } from '../../ui/states.tsx'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import type { System } from './data-systems.ts'
-import { answers, systemsOf } from './data-systems.ts'
+import { narrowed, systemsOf } from './data-systems.ts'
 import { copiesQuery } from './queries.ts'
 import type { DataLayer } from './search.ts'
 import {
@@ -210,30 +210,24 @@ function RawBody(props: {
   if (all.length === 0) return <p className={NOTE}>{NO_SYSTEM}</p>
   const withCopies = all.filter((system) => system.copies.length > 0)
   if (withCopies.length === 0) return <p className={NOTE}>{NO_TABLE_COPIED}</p>
-  const query = q?.trim() ?? ''
-  const shown = withCopies
-    .map((system) => ({
-      ...system,
-      copies: system.copies.filter((copy) => query === '' || answers(copy, query)),
-    }))
-    .filter((system) => system.copies.length > 0)
+  const searching = (q?.trim() ?? '') !== ''
+  const shown = narrowed(withCopies, q)
   if (shown.length === 0) return <p className={NOTE}>{NO_MATCH}</p>
   return (
     <SidebarMenu>
-      {shown.map((system, at) => (
-        <SystemBranch
-          key={system.connector}
-          companyId={companyId}
-          system={system}
-          connectors={connections.data.connectors}
-          q={q}
-          defaultOpen={
-            query !== '' ||
-            system.copies.some((copy) => copy.id === current) ||
-            (current === undefined && at === 0)
-          }
-        />
-      ))}
+      {shown.map((system, at) => {
+        const forced = searching || system.copies.some((copy) => copy.id === current)
+        return (
+          <SystemBranch
+            key={`${system.connector}:${forced ? 'open' : 'free'}`}
+            companyId={companyId}
+            system={system}
+            connectors={connections.data.connectors}
+            q={q}
+            defaultOpen={forced || (current === undefined && at === 0)}
+          />
+        )
+      })}
     </SidebarMenu>
   )
 }

@@ -11,7 +11,7 @@ import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/pu
 import type { Props } from './copy-list.tsx'
 import { CELL, CopyPhoneRow, CopyTableRow, HeadRow, Proposals } from './copy-list.tsx'
 import type { System } from './data-systems.ts'
-import { answers, systemsOf } from './data-systems.ts'
+import { narrowed, systemsOf } from './data-systems.ts'
 import {
   CATALOG_FAILED,
   DATA_COLUMNS,
@@ -143,13 +143,7 @@ export function RawLayer(props: {
   const { copies, proposals } = read.data
   const { connectors } = connections.data
   const all = systemsOf(copies, connections.data.connections)
-  const query = q?.trim() ?? ''
-  const systems = all
-    .map((system) => ({
-      ...system,
-      copies: system.copies.filter((copy) => query === '' || answers(copy, query)),
-    }))
-    .filter((system) => query === '' || system.copies.length > 0)
+  const systems = narrowed(all, q)
   if (all.length === 0 && proposals.length === 0) return <NoSystem companyId={companyId} />
   return (
     <div className="flex flex-col gap-lg">
