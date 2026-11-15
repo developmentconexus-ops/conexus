@@ -67,18 +67,22 @@ test('só ela: a outra cópia, a posição dela e a conexão ficam', async (t) =
   const on = await copiesOn(t)
   const vendas = await released(on, 'vendas')
   const clientes = await released(on, 'clientes')
-  const before = await asApp(on, on.projectId, 'select * from sync.clientes')
+  const before = await asApp(on, on.projectId, 'select * from sync.sankhya_clientes')
   const sourcesBefore = await owner(
     on,
     'select pass, position, watermark from copies.copy_source where copy_id = $1',
     [clientes],
   )
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { rows: 183 })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    rows: 183,
+  })
 
   const done = await apagar(on, vendas)
   assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: [] }])
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42P01' })
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.clientes'), before)
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    refused: '42P01',
+  })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_clientes'), before)
   assert.deepEqual(
     await owner(on, 'select pass, position, watermark from copies.copy_source where copy_id = $1', [
       clientes,
@@ -147,7 +151,9 @@ test('sem permissão: a recusa do Pausar, e nada muda', async (t) => {
   assert.deepEqual([refused.statusCode, codeOf(refused)], [pause.statusCode, codeOf(pause)])
   assert.equal(refused.statusCode, 404)
   assert.equal((await rowsOf(on, vendas)).copy, 1)
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { rows: 183 })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    rows: 183,
+  })
   const unknown = await apagar(on, randomUUID(), on.carla)
   assert.equal(unknown.statusCode, 404)
 })
@@ -161,7 +167,9 @@ test('rodada em andamento: ela termina INTERRUPTED e não deixa nada', async (t)
   assert.equal((await apagar(on, vendas)).statusCode, 200)
   held.release()
   assert.deepEqual(await running, { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } })
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42P01' })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    refused: '42P01',
+  })
   assert.deepEqual(await owner(on, 'select count(*)::int n from copies.copy_run'), [{ n: 0 }])
 })
 
@@ -196,7 +204,9 @@ test('banco calado antes: nada muda, e apagar de novo dá certo', async (t) => {
   const refused = await apagar(on, vendas)
   assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'COPY_DATABASE_UNAVAILABLE'])
   assert.equal((await rowsOf(on, vendas)).copy, 1)
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { rows: 183 })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    rows: 183,
+  })
   silent.mock.restore()
   const again = await apagar(on, vendas)
   assert.deepEqual([again.statusCode, Object(again.json())], [200, { tablesLeft: [] }])
@@ -209,13 +219,20 @@ test('banco calado depois: a cópia sai, o app não lê mais e a tabela cai na v
     kind: 'NO_ANSWER' as const,
   }))
   const done = await apagar(on, vendas)
-  assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: ['vendas'] }])
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42501' })
+  assert.deepEqual(
+    [done.statusCode, Object(done.json())],
+    [200, { tablesLeft: ['sankhya_vendas'] }],
+  )
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    refused: '42501',
+  })
   silent.mock.restore()
   const next = await released(on, 'clientes')
   assert.deepEqual(Object(await apagar(on, next).then((r) => r.json())), { tablesLeft: [] })
   assert.deepEqual(await owner(on, 'select name from copies.copy_table_left'), [])
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42P01' })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    refused: '42P01',
+  })
 })
 
 test('religar: o mesmo nome começa vazio e sem a leitura do app', async (t) => {
@@ -224,7 +241,9 @@ test('religar: o mesmo nome começa vazio e sem a leitura do app', async (t) => 
   assert.equal((await apagar(on, vendas)).statusCode, 200)
   const again = await on.enable('vendas')
   assert.notEqual(again, vendas)
-  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.vendas'), { refused: '42501' })
+  assert.deepEqual(await asApp(on, on.projectId, 'select * from sync.sankhya_vendas'), {
+    refused: '42501',
+  })
   const [fresh] = await owner(on, 'select rows from copies.copy where id = $1', [again])
   assert.equal(fresh?.rows, null)
 })
@@ -252,7 +271,10 @@ test('sem banco da empresa: a cópia sai sem REVOKE e a tabela fica anotada', as
   const revoke = t.mock.method(on.hub.postgres.companyPostgres, 'revokeCopy')
   await owner(on, 'update projects.company_database set host = null')
   const done = await apagar(on, vendas)
-  assert.deepEqual([done.statusCode, Object(done.json())], [200, { tablesLeft: ['vendas'] }])
+  assert.deepEqual(
+    [done.statusCode, Object(done.json())],
+    [200, { tablesLeft: ['sankhya_vendas'] }],
+  )
   assert.equal(revoke.mock.callCount(), 0)
   assert.equal((await rowsOf(on, vendas)).copy, 0)
 })

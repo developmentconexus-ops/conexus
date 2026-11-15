@@ -155,10 +155,18 @@ test('Projeto sem app com cópia liberada: conta e lê sem nenhuma versão envia
   assert.deepEqual(await builderData.check(bare, { text: 'select 1' }, signal), noApp)
   assert.deepEqual(await builderData.read(bare, { text: 'select 1' }, signal), noApp)
   await releasing(t, on, served, ['vendas'])
-  const checked = await builderData.check(bare, { text: 'select * from sync.vendas' }, signal)
+  const checked = await builderData.check(
+    bare,
+    { text: 'select * from sync.sankhya_vendas' },
+    signal,
+  )
   assert.ok(checked.kind === 'COUNTED', JSON.stringify(checked))
   assert.deepEqual(checked.rows, { kind: 'EXACT', rows: 183 })
-  const read = await builderData.read(bare, { text: 'select "CODVEND" from sync.vendas' }, signal)
+  const read = await builderData.read(
+    bare,
+    { text: 'select "CODVEND" from sync.sankhya_vendas' },
+    signal,
+  )
   assert.ok(read.kind === 'ROWS', JSON.stringify(read))
   assert.deepEqual(read.columns, ['CODVEND'])
 })
@@ -169,11 +177,15 @@ test('as cópias se leem em PostgreSQL comum: contar, ler e a cópia não libera
   const signal = AbortSignal.timeout(20_000)
   const joined = await builderData.check(
     on.ids,
-    { text: 'select count(*) from sync.vendas where "CODVEND" > $1', values: [0] },
+    { text: 'select count(*) from sync.sankhya_vendas where "CODVEND" > $1', values: [0] },
     signal,
   )
   assert.ok(joined.kind === 'COUNTED')
-  const refused = await builderData.read(on.ids, { text: 'select * from sync.vendedores' }, signal)
+  const refused = await builderData.read(
+    on.ids,
+    { text: 'select * from sync.sankhya_vendedores' },
+    signal,
+  )
   assert.deepEqual(refused, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42501' })
 })
 
@@ -182,9 +194,9 @@ test('a coluna interna não chega ao Builder: nem de select *, nem de junção, 
   const { builderData } = on.hub.apps
   const signal = AbortSignal.timeout(20_000)
   const reads = [
-    'select * from sync.vendas order by "NUNOTA" limit 2',
-    'select a.*, b.* from sync.vendas a join sync.vendas b on a."NUNOTA" = b."NUNOTA" limit 2',
-    'select v.*, v."CODVEND" as c from sync.vendas as v limit 2',
+    'select * from sync.sankhya_vendas order by "NUNOTA" limit 2',
+    'select a.*, b.* from sync.sankhya_vendas a join sync.sankhya_vendas b on a."NUNOTA" = b."NUNOTA" limit 2',
+    'select v.*, v."CODVEND" as c from sync.sankhya_vendas as v limit 2',
   ]
   for (const text of reads) {
     const read = await builderData.read(on.ids, { text }, signal)

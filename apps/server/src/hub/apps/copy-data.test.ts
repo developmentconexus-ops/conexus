@@ -59,7 +59,9 @@ test('Dados: as cópias liberadas', async (t) => {
     await on.tables(),
     {
       kind: 'TABLES',
-      tables: [{ schema: 'COPY', name: 'vendas', rows: { kind: 'EXACT', rows: VENDAS_ROWS } }],
+      tables: [
+        { schema: 'COPY', name: 'sankhya_vendas', rows: { kind: 'EXACT', rows: VENDAS_ROWS } },
+      ],
     },
     'a liberada aparece, a outra não; o Projeto ganhou o esquema ao liberar',
   )
@@ -72,9 +74,9 @@ test('Dados: as cópias liberadas', async (t) => {
     [
       ['APP', 'recado', { kind: 'EXACT', rows: 0 }],
       ['APP', 'vendas', { kind: 'EXACT', rows: 2 }],
-      ['COPY', 'vendas', { kind: 'EXACT', rows: VENDAS_ROWS }],
+      ['COPY', 'sankhya_vendas', { kind: 'EXACT', rows: VENDAS_ROWS }],
     ],
-    'uma tabela do app e uma cópia com o mesmo nome contam cada uma as suas linhas',
+    'uma tabela do app e uma cópia contam cada uma as suas linhas',
   )
 
   await on.revoke()
@@ -98,7 +100,7 @@ test('Dados: Projeto sem app com liberação desfeita', async (t) => {
     (error: unknown) => Object(error).code === 'COPY_DATABASE_UNAVAILABLE',
   )
   assert.deepEqual(await on.tables(), { kind: 'NO_APP' }, 'a liberação que falhou foi desfeita')
-  const rows = await on.rows('copy-tables', 'vendas')
+  const rows = await on.rows('copy-tables', 'sankhya_vendas')
   assert.deepEqual([rows.statusCode, codeOf(rows)], [404, 'NOT_FOUND'])
 })
 
@@ -107,7 +109,7 @@ test('Dados: as linhas de uma cópia', async (t) => {
   await on.grant()
   await on.app()
 
-  const first = await on.rows('copy-tables', 'vendas')
+  const first = await on.rows('copy-tables', 'sankhya_vendas')
   assert.equal(first.statusCode, 200, first.body)
   const page = AppRows.parse(first.json())
   assert.equal(page.rows.length, PAGE_SIZE)
@@ -122,7 +124,7 @@ test('Dados: as linhas de uma cópia', async (t) => {
   let seen = page.rows.length
   let next: Next = page.next
   while (next.kind === 'MORE') {
-    const more = await on.rows('copy-tables', 'vendas', next.page)
+    const more = await on.rows('copy-tables', 'sankhya_vendas', next.page)
     assert.equal(more.statusCode, 200, more.body)
     const read = AppRows.parse(more.json())
     seen += read.rows.length
@@ -131,10 +133,10 @@ test('Dados: as linhas de uma cópia', async (t) => {
   assert.equal(seen, VENDAS_ROWS, 'as páginas somam as linhas da cópia')
 
   const own = AppRows.parse((await on.rows('tables', 'vendas')).json())
-  assert.equal(own.rows.length, 2, 'a tabela do app de mesmo nome segue pela sua rota')
+  assert.equal(own.rows.length, 2, 'a tabela do app segue pela sua rota')
 
   for (const [door, table] of [
-    ['copy-tables', 'clientes'],
+    ['copy-tables', 'sankhya_clientes'],
     ['copy-tables', 'recado'],
     ['copy-tables', 'nao_existe'],
     ['tables', 'clientes'],
@@ -142,10 +144,10 @@ test('Dados: as linhas de uma cópia', async (t) => {
     const refused = await on.rows(door, table)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'], `${door}/${table}`)
   }
-  const member = await on.rows('copy-tables', 'vendas', undefined, on.carla)
+  const member = await on.rows('copy-tables', 'sankhya_vendas', undefined, on.carla)
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'], 'quem só usa não vê')
 
   await on.revoke()
-  const gone = await on.rows('copy-tables', 'vendas')
+  const gone = await on.rows('copy-tables', 'sankhya_vendas')
   assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'NOT_FOUND'], 'tirada, as linhas saem')
 })

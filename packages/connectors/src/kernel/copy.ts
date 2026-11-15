@@ -12,6 +12,11 @@ export const CopyName = z
   .brand<'CopyName'>()
 export type CopyName = z.infer<typeof CopyName>
 
+/** `mercado-livre` + `pedidos` = `mercado_livre_pedidos`: the connector's id with `-` as `_`. */
+export function copyPrefixOf(connectorId: string): string {
+  return `${connectorId.replaceAll('-', '_')}_`
+}
+
 /** A column of the source as the source names it, in any case; quoted wherever it is written. */
 const CopyColumnName = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,59}$/)
 export const CopyColumnType = z.enum(['text', 'numeric', 'bigint', 'date', 'timestamp', 'boolean'])
@@ -52,16 +57,20 @@ function datedColumn(
     })
 }
 
+const ColumnV1 = z.object({
+  name: CopyColumnName,
+  type: CopyColumnType,
+  description: z.string().trim().min(1).max(200).optional(),
+})
+
 /** What a copy reads, the company's data from the moment it is turned on (version 1, one kind of source). */
 export const CopyDefinitionV1 = z
   .object({
     version: z.literal(1),
     // No date filter in it: the paged read adds the dates of each pass.
     source: z.object({ kind: z.literal('QUERY'), sql: z.string().min(1).max(8000) }),
-    columns: z
-      .array(z.object({ name: CopyColumnName, type: CopyColumnType }))
-      .min(1)
-      .max(100),
+    description: z.string().trim().min(1).max(500).optional(),
+    columns: z.array(ColumnV1).min(1).max(100),
     key: z.array(CopyColumnName).min(1).max(4), // bigint columns, in page order (version 1)
     changedSince: z.object({ column: CopyColumnName }).nullable(), // none: every pass reads the whole source
     window: z.object({ column: CopyColumnName, days: z.int().min(1).max(90) }).optional(),
@@ -110,6 +119,13 @@ const Dotted = z
   .max(200)
 const Scalar = z.union([z.string().max(200), z.number(), z.boolean()])
 
+const ColumnV2 = z.object({
+  name: CopyColumnName,
+  type: CopyColumnTypeV2,
+  path: Dotted,
+  description: z.string().trim().max(200).optional(),
+})
+
 /** What a copy reads from an operation of the connector (version 2): the column's `path` is where its value sits in a row of the read. No `window`: a key it does not know is refused. */
 export const CopyDefinitionV2 = z
   .strictObject({
@@ -120,17 +136,7 @@ export const CopyDefinitionV2 = z
       input: z.record(z.string(), Scalar).default({}),
     }),
     description: z.string().trim().min(1).max(500),
-    columns: z
-      .array(
-        z.object({
-          name: CopyColumnName,
-          type: CopyColumnTypeV2,
-          path: Dotted,
-          description: z.string().trim().max(200).optional(),
-        }),
-      )
-      .min(1)
-      .max(100),
+    columns: z.array(ColumnV2).min(1).max(100),
     key: z.array(CopyColumnName).min(1).max(4), // bigint or text columns
     changedSince: z.object({ column: CopyColumnName }).nullable(), // none: every pass reads the whole source
   })

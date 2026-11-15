@@ -7,7 +7,7 @@ import pg from 'pg'
 import { CopyName } from '../connectors/public.ts'
 import type { CopiesOn } from './test-copies.ts'
 
-import { asSync, copiesOn } from './test-copies.ts'
+import { asSync, copiesOn, plantCopy } from './test-copies.ts'
 
 async function refusedWith(code: string, act: () => Promise<unknown>) {
   await assert.rejects(act, (error: unknown) => Object(error).code === code)
@@ -58,14 +58,14 @@ test('ligar: a linha, o esquema e a tabela', async (t) => {
     { id: row.id, name: row.name, label: row.label, model: row.model, definition: row.definition },
     {
       id: copyId,
-      name: 'vendas',
+      name: 'sankhya_vendas',
       label: model.model.label,
       model: 'vendas',
       definition: model.model.definition,
     },
     'a definição igual à do modelo',
   )
-  const table = await tableOf(on, 'vendas')
+  const table = await tableOf(on, 'sankhya_vendas')
   assert.equal(table.owner, 'conexus_sync')
   assert.deepEqual(table.key, ['NUNOTA'])
   assert.deepEqual(table.columns.at(-1), '_pass integer')
@@ -123,6 +123,14 @@ async function connectionState(on: CopiesOn, state: string) {
   }
 }
 
+test('ligar: o modelo que a conexão já copia, com o nome de antes desta parte', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  await plantCopy(on, copyId, "name = 'vendas'")
+  await refusedWith('COPY_EXISTS', () => on.enable('vendas'))
+  assert.equal((await on.hub.test.asOwner('select id from copies.copy')).length, 1)
+})
+
 test('ligar: as recusas', async (t) => {
   const on = await copiesOn(t)
   await on.enable('vendas')
@@ -178,11 +186,11 @@ test('ligar: o banco da empresa cai no meio', async (t) => {
   on.hub.neon.script('ownerConnection', 'NO_ANSWER')
   await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.enable('produtos', { key }))
   const [kept] = await copiesOf(on)
-  assert.equal(kept?.name, 'produtos', 'a linha fica')
+  assert.equal(kept?.name, 'sankhya_produtos', 'a linha fica')
   assert.equal(on.calls.length, 0, 'o relógio só depois da tabela')
   const copyId = await on.enable('produtos', { key })
   assert.equal(copyId, kept.id, 'a mesma chave termina o que faltou')
-  assert.deepEqual((await tableOf(on, 'produtos')).key, ['CODPROD'])
+  assert.deepEqual((await tableOf(on, 'sankhya_produtos')).key, ['CODPROD'])
   assert.deepEqual(
     on.calls.filter((call) => call.startsWith('runNow')),
     [`runNow ${copyId}`],

@@ -7,10 +7,7 @@ import { call, codeOf, memberOn, personOn, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { copiesOn } from './test-copies.ts'
-import { listProposalsOn } from './test-list-proposals.ts'
-import { definitionOf, dismiss, grantMatriz, listedBy, proposed } from './test-proposals.ts'
 import { copiesUrl, enabled, firstEnded, listed, runsPage } from './test-routes.ts'
-import { ordersCopy, STORE_A, STORE_B } from './test-sources.ts'
 
 /** Every route of the copies, for a copy id, as method and address. */
 function surface(on: CopiesOn, copyId: string) {
@@ -59,9 +56,6 @@ async function people(on: CopiesOn) {
     outsider: await personOn(hub, { name: 'Edu Lima', email: 'edu@example.test' }),
   }
 }
-
-/** A column of a copy no template described, that the source still sends. */
-const UNDESCRIBED = { description: null, inactiveSince: null }
 
 test('cópias: quem vê e quem recebe não encontrado', async (t) => {
   const on = await copiesOn(t)
@@ -143,7 +137,7 @@ test('a lista e as rodadas', async (t) => {
   assert.ok(model)
   assert.deepEqual(
     [copy.name, copy.label, copy.sources.map((each) => each.connection.id), copy.interval],
-    ['vendas', model.model.label, [on.connectionId], '30m'],
+    ['sankhya_vendas', model.model.label, [on.connectionId], '30m'],
   )
   assert.equal(copy.sources[0]?.connection.connector, 'sankhya')
   assert.ok((copy.sources[0]?.connection.name ?? '').length > 0)
@@ -157,10 +151,18 @@ test('a lista e as rodadas', async (t) => {
     key: definition.key,
     changedSince: definition.changedSince,
     window: definition.window ?? null,
-    description: null,
-    columns: definition.columns.map(({ name, type }) => ({ name, type, ...UNDESCRIBED })),
+    description: definition.description ?? null,
+    columns: definition.columns.map((c) => ({
+      ...c,
+      description: c.description ?? null,
+      inactiveSince: null,
+    })),
   })
 
+  assert.equal(
+    copy.shown.columns.find((column) => column.name === 'NUNOTA')?.description,
+    'Número único da nota no Sankhya. É a chave da venda.',
+  )
   await plantRuns(on, made.id)
   const page = await runsPage(on, on.ana, made.id)
   assert.deepEqual([page.runs.length, page.copy.id, page.runs[0]?.id], [20, made.id, first.id])
@@ -238,87 +240,4 @@ test('a agenda', async (t) => {
   await hub.settle(AbortSignal.timeout(10_000))
   const stopping = await interval('6h')
   assert.deepEqual([stopping.statusCode, codeOf(stopping)], [503, 'HUB_UPDATING'])
-})
-
-test('a lista com as propostas', async (t) => {
-  const on = await copiesOn(t)
-  await grantMatriz(on)
-  const definition = definitionOf(on)
-  const open = await proposed(on)
-  const gone = await proposed(on, 'dispensada')
-  assert.equal((await dismiss(on, on.ana, gone)).statusCode, 200)
-  const { proposals } = await listedBy(on, on.ana)
-  assert.deepEqual(
-    proposals.map((each) => [each.id, each.state]),
-    [[open, 'OPEN']],
-  )
-  const [one] = proposals
-  assert.ok(one)
-  assert.deepEqual(
-    { ...one, proved: { ...one.proved, rows: one.proved.rows > 0 } },
-    {
-      id: open,
-      name: 'devolucoes',
-      label: 'Devoluções',
-      sources: [{ connection: { id: on.connectionId, name: 'Matriz', connector: 'sankhya' } }],
-      project: { id: on.projectId, name: 'Pedidos' },
-      shown: {
-        source: { kind: 'QUERY', query: definition.source.sql },
-        key: definition.key,
-        changedSince: definition.changedSince,
-        window: definition.window ?? null,
-        description: null,
-        columns: definition.columns.map(({ name, type }) => ({ name, type, ...UNDESCRIBED })),
-      },
-      mode: { kind: 'WINDOW', days: definition.window?.days },
-      proved: { rows: true, more: one.proved.more, calls: null },
-      proposedBy: { id: on.ana.id, name: 'Ana Lima' },
-      state: 'OPEN',
-    },
-  )
-  const named = await listedBy(on, on.ana, [gone])
-  assert.deepEqual(
-    named.proposals.map((each) => [each.id, each.state]).sort(),
-    [
-      [open, 'OPEN'],
-      [gone, 'DISMISSED'],
-    ].sort(),
-  )
-  const tooMany = Array.from({ length: 21 }, () => randomUUID())
-  const refused = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${tooMany}`)
-  assert.equal(refused.statusCode, 400, refused.body)
-  for (const notUuid of ['-'.repeat(36), 'abc', `${open},`, '']) {
-    const bad = await call(on.hub, on.ana, 'GET', `${copiesUrl(on)}?proposalId=${notUuid}`)
-    assert.equal(bad.statusCode, 400, `${notUuid}: ${bad.body}`)
-    assert.equal(codeOf(bad), 'REQUEST_MALFORMED', bad.body)
-  }
-})
-
-test('a lista com a origem', async (t) => {
-  const on = await listProposalsOn(t)
-  const answer = await on.propose()
-  assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
-  const connector = 'mercado-livre'
-  const sources = [STORE_A, STORE_B].map((store, at) => {
-    return { connection: { id: on.store(store.ref), name: `Loja ${'AB'[at]}`, connector } }
-  })
-  const shown = {
-    source: { kind: 'OPERATION', operation: 'pedidos', label: 'Pedidos', input: {} },
-    key: ['id'],
-    changedSince: { column: 'atualizado' },
-    window: null,
-    description: 'Os pedidos de cada loja',
-    columns: ordersCopy(true).columns.map(({ name, type, description }) => {
-      return { name, type, description: description ?? null, inactiveSince: null }
-    }),
-  }
-  const [proposal] = (await on.listed(on.ana)).proposals
-  assert.deepEqual(
-    [proposal?.sources, proposal?.shown, proposal?.proved],
-    [sources, shown, { rows: 50, more: true, calls: 6 }],
-  )
-  const made = await on.enable(on.ana, Object(answer).proposalId)
-  assert.equal(made.statusCode, 201, made.body)
-  const [copy] = (await on.listed(on.ana)).copies
-  assert.deepEqual([copy?.sources, copy?.shown], [sources, shown])
 })

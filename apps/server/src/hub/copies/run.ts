@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { CopyRunId } from '@conexus/hub-api'
 import { and, desc, eq, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import { connectionNamesOf } from '../connectors/public.ts'
+import { describedCopy } from './describe.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
 import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
 import type { StoredSource } from './sources.ts'
@@ -160,8 +161,11 @@ export async function runCopy(
   }
   const { sync } = claimed
   if (sync === undefined) return end(DATABASE_DOWN)
-  const table = copyTableOf(held.copy, held.sources)
-  const run: Run = { deps, ids, signal, claimed: held, sync, table, counts, end }
+  const described = await describedCopy(deps, { claimed: held, sync, end })
+  if (described.kind === 'END') return described.end
+  const current: Claimed = { ...held, copy: described.copy }
+  const table = copyTableOf(current.copy, current.sources)
+  const run: Run = { deps, ids, signal, claimed: current, sync, table, counts, end }
   if (!(await netDropped(run))) return end(DATABASE_DOWN)
   const byApp = deps.connectors().countedBy(held.copy.connectorId) === 'APP'
   let waited = false

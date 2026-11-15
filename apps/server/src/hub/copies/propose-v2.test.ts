@@ -26,7 +26,10 @@ test('a definição contra a leitura', async (t) => {
       'definition.changedSince: anuncios does not filter by change',
       {
         ...ITEMS_COPY,
-        columns: [...ITEMS_COPY.columns, { name: 'criado', type: 'timestamp', path: 'x' }],
+        columns: [
+          ...ITEMS_COPY.columns,
+          { name: 'criado', type: 'timestamp', path: 'x', description: 'Quando foi criado' },
+        ],
         changedSince: { column: 'criado' },
       },
     ],
@@ -143,7 +146,7 @@ test('a prova conta e não mostra: as recusas da prova', async (t) => {
   repeated.columns = repeated.columns.map((column) =>
     column.name === 'id' ? { ...column, path: 'status', type: 'text' } : column,
   )
-  const notUnique = await on.propose({ definition: repeated, name: 'repetida' })
+  const notUnique = await on.propose({ definition: repeated, name: 'mercado_livre_repetida' })
   assert.equal(notUnique.kind, 'KEY_NOT_UNIQUE', issuesOf(notUnique))
   assert.equal(Object(notUnique).connection, 'Loja A')
   assert.ok(Object(notUnique).keyRepeated > 0)
@@ -151,7 +154,7 @@ test('a prova conta e não mostra: as recusas da prova', async (t) => {
   nullKey.columns = nullKey.columns.map((column) =>
     column.name === 'id' ? { ...column, path: 'nao_existe' } : column,
   )
-  const keyNull = await on.propose({ definition: nullKey, name: 'nula' })
+  const keyNull = await on.propose({ definition: nullKey, name: 'mercado_livre_nula' })
   assert.deepEqual(keyNull, {
     kind: 'KEY_NOT_UNIQUE',
     connection: 'Loja A',
@@ -162,7 +165,7 @@ test('a prova conta e não mostra: as recusas da prova', async (t) => {
   misfit.columns = misfit.columns.map((column) =>
     column.name === 'status' ? { ...column, type: 'bigint' } : column,
   )
-  const typed = await on.propose({ definition: misfit, name: 'torta' })
+  const typed = await on.propose({ definition: misfit, name: 'mercado_livre_torta' })
   assert.deepEqual(typed, {
     kind: 'TYPE_MISFIT',
     connection: 'Loja A',
@@ -187,7 +190,9 @@ test('a prova conta e não mostra: as recusas da prova', async (t) => {
     )
     assert.equal(read.kind, 'REFUSED')
   }
-  assert.deepEqual(await on.propose({ runId, name: 'gasta' }), { kind: 'CALLS_SPENT' })
+  assert.deepEqual(await on.propose({ runId, name: 'mercado_livre_gasta' }), {
+    kind: 'CALLS_SPENT',
+  })
 })
 
 test('várias contas', async (t) => {
@@ -205,7 +210,7 @@ test('várias contas', async (t) => {
   // A connection that is not released to the Projeto.
   const url = `/api/companies/${on.companyId}/projects/${on.projectId}/connections/${storeB}`
   assert.equal((await call(on.hub, on.ana, 'DELETE', url)).statusCode, 204)
-  assert.deepEqual(await on.propose({ name: 'sem_b' }), { kind: 'NOT_GRANTED' })
+  assert.deepEqual(await on.propose({ name: 'mercado_livre_sem_b' }), { kind: 'NOT_GRANTED' })
   assert.equal((await call(on.hub, on.ana, 'PUT', url)).statusCode, 200)
   // A role that does not use the read: refused with its name, and nothing is read.
   const role = { label: 'Perguntas', connectors: { 'mercado-livre': ['perguntas'] } }
@@ -214,11 +219,14 @@ test('várias contas', async (t) => {
   const who = { name: 'Enzo Alves', email: 'enzo@example.test' }
   const enzo = await memberOn(on.hub, on.companyId, who, 'perguntas')
   on.door.seen.length = 0
-  const refused = await on.propose({ name: 'do_enzo', personId: PersonId.parse(enzo.id) })
+  const refused = await on.propose({
+    name: 'mercado_livre_do_enzo',
+    personId: PersonId.parse(enzo.id),
+  })
   assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'perguntas', operation: 'Pedidos' })
   assert.deepEqual(on.door.seen, [])
   // The same connection twice, and a connection of another connector.
-  const twice = await on.propose({ name: 'duas', connections: [storeA, storeA] })
+  const twice = await on.propose({ name: 'mercado_livre_duas', connections: [storeA, storeA] })
   assert.match(issuesOf(twice), /"kind":"MALFORMED".*connections: A connection is named once/)
   assert.equal((await on.proposalRows()).length, 1)
 })
@@ -249,7 +257,7 @@ test('várias contas: um conector sem conta lê uma conexão só', async (t) => 
       connections: ids.map((id) => ConnectionId.parse(id)),
       personId: PersonId.parse(on.ana.id),
       runId: RunId.parse(randomUUID()),
-      name: 'ml_pedidos',
+      name: 'mercado_livre_pedidos',
       label: 'Pedidos',
       definition: ordersCopy(true),
       signal: new AbortController().signal,
@@ -278,4 +286,20 @@ test('o registro não leva dado', async (t) => {
   const written = JSON.stringify(on.hub.lines)
   for (const kept of ['paid', 'date_last_updated', 'Os pedidos de cada loja'])
     assert.ok(!written.includes(kept), kept)
+})
+
+test('propor: a coluna sem descrição', async (t) => {
+  const on = await listProposalsOn(t)
+  const orders = ordersCopy(true)
+  const [id, ...rest] = orders.columns
+  assert.ok(id)
+  const { description: _described, ...bare } = id
+  const answer = await on.propose({ definition: { ...orders, columns: [bare, ...rest] } })
+  assert.deepEqual(answer, {
+    kind: 'MALFORMED',
+    issues: [
+      'definition.columns.0.description: COPY_COLUMN_UNDESCRIBED: every column has a description.',
+    ],
+  })
+  assert.deepEqual(await on.proposalRows(), [])
 })

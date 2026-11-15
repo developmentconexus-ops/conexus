@@ -5,6 +5,7 @@ import type {
   CopyProposalId,
   ProjectId,
 } from '@conexus/hub-api'
+import { and, eq } from 'drizzle-orm'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -12,10 +13,12 @@ import { connectionForCopy } from '../connectors/public.ts'
 import { acceptedIn, acceptedProjectOf, earlierAttempt, insertedCopy } from './accept.ts'
 import { grantedInDatabase } from './grants.ts'
 import { dropEndedCopies } from './leave.ts'
+import { modelCopyName } from './naming.ts'
 import { mayCreate } from './schedule.ts'
 import { sourcesOf } from './sources.ts'
 import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
 import { companyOwner, copyTableOf, parsedCopy, personScope, syncOf } from './store.ts'
+import { copy } from './tables.ts'
 
 /** What a copy's definition comes from: a template of the connection's connector, or the Builder's proposal (Capacidade 3). */
 type CopySource =
@@ -67,10 +70,22 @@ async function fromModel(
   if (linked.kind !== 'ACTIVE') throw new Failure('COPY_CONNECTION_NOT_READY')
   if (made.model === undefined) throw new Failure('COPY_MODEL_UNKNOWN')
   const { model } = made
+  const [copied] = await tx
+    .select({ id: copy.id })
+    .from(copy)
+    .where(
+      and(
+        eq(copy.companyId, input.companyId),
+        eq(copy.connectionId, connectionId),
+        eq(copy.model, model.id),
+      ),
+    )
+    .limit(1)
+  if (copied !== undefined) throw new Failure('COPY_EXISTS')
   const row = await insertedCopy(tx, input, {
     connectorId: linked.connectorId,
     sources: [{ connectionId, accountRef: linked.accountRef }],
-    ...{ name: model.id, label: model.label },
+    ...{ name: modelCopyName(linked.connectorId, model.id), label: model.label },
     ...{ model: model.id, definition: model.definition, bodyHash: made.bodyHash },
   })
   return parsedCopy(row)

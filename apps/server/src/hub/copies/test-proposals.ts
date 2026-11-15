@@ -44,7 +44,7 @@ export function proposeAs(
       connections: options.connections ?? [on.connectionId],
       personId: options.personId ?? PersonIdSchema.parse(on.ana.id),
       runId: options.runId ?? RunId.parse(randomUUID()),
-      name: options.name ?? 'devolucoes',
+      name: options.name ?? 'sankhya_devolucoes',
       label: 'Devoluções',
       definition: options.definition ?? definitionOf(on),
       signal: new AbortController().signal,
@@ -53,7 +53,7 @@ export function proposeAs(
 }
 
 /** A proposal Ana made, by its id. */
-export async function proposed(on: CopiesOn, name = 'devolucoes') {
+export async function proposed(on: CopiesOn, name = 'sankhya_devolucoes') {
   const answer = await proposeAs(on, { name })
   assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
   return CopyProposalIdSchema.parse(Object(answer).proposalId)

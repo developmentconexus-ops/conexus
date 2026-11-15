@@ -45,14 +45,14 @@ test('a passada completa', async (t) => {
   assert.equal(row.pass_started_at, null)
   assert.equal(row.claim_token, null)
   assert.ok(row.watermark !== null, 'a marca é a hora em que a passada começou')
-  const first = await syncRows(on.owner, 'vendas', ['NUNOTA'])
+  const first = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
   assert.deepEqual(
     nunotasOf(first),
     [...NOTAS.map((n) => n.nunota)].sort((a, b) => a - b),
   )
 
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
-  const again = await syncRows(on.owner, 'vendas', ['NUNOTA'])
+  const again = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
   assert.equal(again.length, NOTAS.length, 'gravar de novo não duplica')
   assert.equal(Number((await copyRowOf(on, copyId)).rows), NOTAS.length)
   assert.equal((await copyRowOf(on, copyId)).pass, 2)
@@ -123,12 +123,12 @@ test('o teto', async (t) => {
   const capped = await copyRowOf(on, copyId)
   assert.deepEqual(capped.position, [NOTAS.map((n) => n.nunota).sort((a, b) => a - b)[99]])
   assert.equal(capped.watermark, null, 'a marca não avança')
-  assert.equal((await syncRows(on.owner, 'vendas', ['NUNOTA'])).length, 100)
+  assert.equal((await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])).length, 100)
   assert.deepEqual(on.calls, [`runNow ${copyId}`], 'pede outra rodada ao relógio')
   const [run] = await runsOf(on, copyId)
   assert.deepEqual([run.outcome, run.reason, run.pages], ['PARTIAL', 'CAP', 2])
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
-  assert.equal((await syncRows(on.owner, 'vendas', ['NUNOTA'])).length, NOTAS.length)
+  assert.equal((await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])).length, NOTAS.length)
   assert.equal((await copyRowOf(on, copyId)).pass, 1)
 })
 
@@ -155,16 +155,16 @@ test('a janela apaga o que sumiu', async (t) => {
   const on = await copiesOn(t, { ...TEST_TUNING, pageRows: 500 })
   const copyId = await twoPasses(on, 'vendas')
   const key = ['NUNOTA']
-  const before = await syncRows(on.owner, 'vendas', key)
+  const before = await syncRows(on.owner, 'sankhya_vendas', key)
   on.gate.gone.add(String(notaOf(GONE_IN_WINDOW)))
   on.gate.gone.add(String(notaOf(GONE_OUTSIDE)))
   await plantSource(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
   on.fake.switches.refuse.add('consultar')
   assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED' })
-  assert.deepEqual(await syncRows(on.owner, 'vendas', key), before, 'com erro nada sai')
+  assert.deepEqual(await syncRows(on.owner, 'sankhya_vendas', key), before, 'com erro nada sai')
   on.fake.switches.refuse.delete('consultar')
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
-  const after = nunotasOf(await syncRows(on.owner, 'vendas', key))
+  const after = nunotasOf(await syncRows(on.owner, 'sankhya_vendas', key))
   assert.ok(!after.includes(notaOf(GONE_IN_WINDOW)), 'o que sumiu dentro da janela sai')
   assert.ok(after.includes(notaOf(GONE_OUTSIDE)), 'fora da janela nada sai')
   assert.equal(after.length, NOTAS.length - 1)
@@ -176,13 +176,13 @@ test('a janela relê o que não mudou', async (t) => {
     const copyId = await twoPasses(on, model)
     const key = model === 'vendas' ? ['NUNOTA'] : ['NUNOTA', 'SEQUENCIA']
     assert.equal(
-      (await syncRows(on.owner, model, key)).length,
+      (await syncRows(on.owner, `sankhya_${model}`, key)).length,
       model === 'vendas' ? NOTAS.length : ITENS.length,
     )
     on.gate.gone.add(String(notaOf(GONE_IN_WINDOW, 1)))
     await plantSource(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
     assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
-    const rows = await syncRows(on.owner, model, key)
+    const rows = await syncRows(on.owner, `sankhya_${model}`, key)
     const kept = rows.filter((row) => Number(row[0]) === notaOf(KEPT_IN_WINDOW))
     assert.ok(kept.length > 0, `${model}: a venda da janela que não mudou continua`)
     assert.ok(
@@ -217,7 +217,7 @@ test('o erro não vira vazio', async (t) => {
   const row = await copyRowOf(on, copyId)
   assert.equal(row.watermark, null, 'a marca não avança')
   assert.equal(row.rows, null, 'nunca "0 linhas"')
-  assert.deepEqual(await syncRows(on.owner, 'clientes', ['CODPARC']), [])
+  assert.deepEqual(await syncRows(on.owner, 'sankhya_clientes', ['CODPARC']), [])
   assert.deepEqual(
     (await runsOf(on, copyId)).map((run) => [run.outcome, run.reason]),
     [

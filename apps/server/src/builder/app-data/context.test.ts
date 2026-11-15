@@ -138,7 +138,7 @@ test('as cópias não responderam: a vista diz FAILED e o bloco é a linha; sem 
   const real = await on.hub.copies.projectView({ companyId, projectId })
   assert.ok(real.kind === 'COPIES')
   assert.deepEqual(real.released, [])
-  assert.deepEqual(real.unreleased, ['vendas'])
+  assert.deepEqual(real.unreleased, ['sankhya_vendas'])
 })
 
 test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) => {
@@ -148,8 +148,8 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   const { companyId, projectId, personId, ids } = released
   const first = dataContext(await on.hub.copies.projectView({ companyId, projectId }))
   assert.ok(first.includes('"CODVEND" bigint'))
-  assert.ok(first.includes('`sync.vendedores`'), 'the unreleased one by name')
-  assert.ok(!first.includes('- `sync.vendedores`'))
+  assert.ok(first.includes('`sync.sankhya_vendedores`'), 'the unreleased one by name')
+  assert.ok(!first.includes('- `sync.sankhya_vendedores`'))
   const vendas = ids.get('vendas')
   assert.ok(vendas)
   const again = await on.hub.copies.run({ companyId, copyId: vendas }, AbortSignal.timeout(60_000))
@@ -160,7 +160,7 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   await on.hub.copies.grant({ companyId, personId, projectId, copyId: other })
   const after = dataContext(await on.hub.copies.projectView({ companyId, projectId }))
   assert.notEqual(after, first)
-  assert.ok(after.includes('- `sync.vendedores`'))
+  assert.ok(after.includes('- `sync.sankhya_vendedores`'))
 })
 
 test('a origem e as descrições', async (t) => {
@@ -174,10 +174,10 @@ test('a origem e as descrições', async (t) => {
   const ids = { companyId: on.companyId, projectId: on.projectId }
   const first = dataContext(await on.hub.copies.projectView(ids))
   for (const part of [
-    '- `sync.ml_pedidos` [your proposal, turned on] (only what changed',
+    '- `sync.mercado_livre_pedidos` [your proposal, turned on] (only what changed',
     'from the read `pedidos` (Pedidos) of `mercado-livre`, fixed input {"status":"paid"}.',
     'Os pedidos de cada loja.',
-    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text, "atualizado" timestamp`,
+    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text (A situação do pedido), "atualizado" timestamp (Quando o pedido mudou pela última vez)`,
   ])
     assert.ok(first.includes(part), `${part}\n${first}`)
   const copyId = CopyId.parse(Object(made.json()).copy.id)
@@ -231,12 +231,15 @@ test('a proposta ligada entre dois turnos: o bloco do turno seguinte a marca, se
   const proposed = await on.propose({ definition: ordersCopy(true) })
   assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
   const before = dataContext(await on.hub.copies.projectView(ids))
-  assert.ok(before.includes('Your proposal `sync.ml_pedidos` (Pedidos das lojas) is open'), before)
+  assert.ok(
+    before.includes('Your proposal `sync.mercado_livre_pedidos` (Pedidos das lojas) is open'),
+    before,
+  )
   assert.ok(!before.includes('[your proposal, turned on]'))
   const made = await on.enable(on.ana, Object(proposed).proposalId)
   assert.equal(made.statusCode, 201, made.body)
   await firstEnded(on, Object(made.json()).copy.id)
   const after = dataContext(await on.hub.copies.projectView(ids))
-  assert.ok(after.includes('- `sync.ml_pedidos` [your proposal, turned on] ('), after)
+  assert.ok(after.includes('- `sync.mercado_livre_pedidos` [your proposal, turned on] ('), after)
   assert.ok(!after.includes('is open'), after)
 })

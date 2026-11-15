@@ -132,7 +132,14 @@ const copyRead = defineOperation({
 const MODEL: CopyModel = {
   id: CopyName.parse('modelo'),
   label: 'Modelo',
-  definition: CopyDefinitionV1.parse(DEFINITION),
+  definition: CopyDefinitionV1.parse({
+    ...DEFINITION,
+    description: 'Linhas do modelo.',
+    columns: DEFINITION.columns.map((column) => ({
+      ...column,
+      description: `A coluna ${column.name}.`,
+    })),
+  }),
 }
 
 /** A copy the types would refuse, to meet the run-time checks of `defineConnector`. */

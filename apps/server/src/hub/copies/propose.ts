@@ -12,6 +12,7 @@ import {
   lackedSourceReadOf,
 } from '../connectors/public.ts'
 import { copyModeOf } from './mode.ts'
+import { namePrefixIssue } from './naming.ts'
 import type { CopiesDeps } from './store.ts'
 import { companyScope, originOf } from './store.ts'
 import { copy, copyProposal, copyProposalSource, projectCopy } from './tables.ts'
@@ -223,11 +224,21 @@ export async function propose(
     return malformed(deps, ids, a, { name: parsedName, definition: parsed, connections: named })
   const name = parsedName.data
   const definition = parsed.data
+  const undescribed = definition.columns.flatMap((column, at) =>
+    column.description
+      ? []
+      : [
+          `definition.columns.${at}.description: COPY_COLUMN_UNDESCRIBED: every column has a description.`,
+        ],
+  )
+  if (undescribed.length > 0) return { kind: 'MALFORMED', issues: undescribed }
   const taken = await existing(deps, ids, name)
   if (taken !== undefined) return taken
   const sourced = await sourcesOf(deps, ids, { ...a, definition })
   if (sourced.kind !== 'SOURCES') return sourced
   const { sources, connector } = sourced
+  const prefixed = namePrefixIssue(connector, name)
+  if (prefixed !== undefined) return { kind: 'MALFORMED', issues: [prefixed] }
   const proved = await proofs(deps, ids, { ...a, definition, sources })
   if (proved.kind !== 'PROVED') return proved
   const { rows, more, counts } = proved

@@ -257,9 +257,9 @@ test('o agente lê a cópia liberada: sync.<nome> com a coluna entre aspas, sem 
   const on = await readingOn(
     t,
     [
-      'SELECT "CODVEND" FROM sync.vendas ORDER BY 1 LIMIT 2',
-      'SELECT * FROM sync.vendas LIMIT 1',
-      'SELECT * FROM sync.vendedores',
+      'SELECT "CODVEND" FROM sync.sankhya_vendas ORDER BY 1 LIMIT 2',
+      'SELECT * FROM sync.sankhya_vendas LIMIT 1',
+      'SELECT * FROM sync.sankhya_vendedores',
     ],
     false,
     'released',

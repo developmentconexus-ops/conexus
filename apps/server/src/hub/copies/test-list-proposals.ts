@@ -44,7 +44,7 @@ export async function listProposalsOn(t: TestContext, a: Parameters<typeof store
           connections: options.connections ?? both,
           personId: options.personId ?? on.anaId,
           runId: options.runId ?? RunId.parse(randomUUID()),
-          name: options.name ?? 'ml_pedidos',
+          name: options.name ?? 'mercado_livre_pedidos',
           label: 'Pedidos das lojas',
           definition: options.definition ?? ordersCopy(true),
           signal: new AbortController().signal,

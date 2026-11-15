@@ -67,10 +67,10 @@ test('liberar e tirar', async (t) => {
   const { runLogin, readLogin } = appLogin(on.projectId)
   await on.copies.grant(release(on, copyId))
   assert.equal(await releasesOf(on), 1)
-  assert.equal((await asApp(on.owner, readLogin, 'select * from sync.vendas')).rows, 183)
-  assert.equal((await asApp(on.owner, runLogin, 'select * from sync.vendas')).rows, 183)
+  assert.equal((await asApp(on.owner, readLogin, 'select * from sync.sankhya_vendas')).rows, 183)
+  assert.equal((await asApp(on.owner, runLogin, 'select * from sync.sankhya_vendas')).rows, 183)
   assert.deepEqual(
-    await asApp(on.owner, runLogin, 'delete from sync.vendas'),
+    await asApp(on.owner, runLogin, 'delete from sync.sankhya_vendas'),
     { refused: '42501' },
     'o login de execução não escreve na cópia',
   )
@@ -86,7 +86,7 @@ test('liberar e tirar', async (t) => {
   silent.mock.restore()
   await on.copies.revoke(release(on, copyId))
   assert.equal(await releasesOf(on), 0)
-  assert.deepEqual(await asApp(on.owner, readLogin, 'select * from sync.vendas'), {
+  assert.deepEqual(await asApp(on.owner, readLogin, 'select * from sync.sankhya_vendas'), {
     refused: '42501',
   })
   await refusedWith('NOT_FOUND', () =>
@@ -113,15 +113,15 @@ test('liberar: o GRANT que falha desfaz a linha, e a lista diz não liberada', a
   const put = await call(on.hub, on.ana, 'PUT', `${on.projects}/${on.projectId}/copies/${copyId}`)
   assert.deepEqual([put.statusCode, Object(put.json()).code], [503, 'COPY_DATABASE_UNAVAILABLE'])
   assert.equal(await releasesOf(on), 0, 'a linha que este ato fez foi desfeita')
-  assert.deepEqual(await listedGrants(on), [['vendas', false]])
+  assert.deepEqual(await listedGrants(on), [['sankhya_vendas', false]])
   silent.mock.restore()
   await on.copies.grant(release(on, copyId))
-  assert.deepEqual(await listedGrants(on), [['vendas', true]])
+  assert.deepEqual(await listedGrants(on), [['sankhya_vendas', true]])
   t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
     kind: 'NO_ANSWER' as const,
   }))
   await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.copies.grant(release(on, copyId)))
-  assert.deepEqual(await listedGrants(on), [['vendas', true]], 'a liberação de antes fica')
+  assert.deepEqual(await listedGrants(on), [['sankhya_vendas', true]], 'a liberação de antes fica')
 })
 
 /** As the Hub's owner: the release's row can no longer be deleted, as when the Hub's database falls between the two acts. */
@@ -169,14 +169,14 @@ test('liberar a um Projeto sem app', async (t) => {
   const made = await loginsOf(on.owner, on.projectId)
   assert.equal(made.length, 3, 'o esquema e os logins pelo dono de hoje')
   const { readLogin } = appLogin(on.projectId)
-  const read = await asApp(on.owner, readLogin, 'select * from sync.clientes')
+  const read = await asApp(on.owner, readLogin, 'select * from sync.sankhya_clientes')
   assert.ok((read.rows ?? 0) > 0, 'o login de leitura do Projeto lê a cópia')
 
   const subject = { t, hub: on.hub, projects: on.projects, projectId: on.projectId }
   const sent = await send(subject, on.ana, folder())
   assert.equal(sent.preview?.state, 'ready', 'o primeiro envio acha os logins')
   assert.deepEqual(await loginsOf(on.owner, on.projectId), made, 'e não os recria')
-  assert.deepEqual(await asApp(on.owner, readLogin, 'select * from sync.clientes'), read)
+  assert.deepEqual(await asApp(on.owner, readLogin, 'select * from sync.sankhya_clientes'), read)
 })
 
 test('apagar o Projeto com a cópia liberada', async (t) => {
@@ -206,7 +206,7 @@ test('apagar o Projeto com a cópia liberada', async (t) => {
   assert.equal(Object(kept.rows[0]).project_id, other)
   const { readLogin } = appLogin(other)
   assert.equal(
-    (await asApp(on.owner, readLogin, 'select * from sync.vendas')).rows,
+    (await asApp(on.owner, readLogin, 'select * from sync.sankhya_vendas')).rows,
     183,
     'a cópia continua para o outro Projeto',
   )
