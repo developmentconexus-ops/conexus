@@ -1,3 +1,4 @@
+import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { CopyId, CopySample } from '@conexus/hub-api'
 import { COPY_SAMPLE_ROWS } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
@@ -10,7 +11,11 @@ export async function sampleOf(
   deps: CopiesDeps,
   input: InCompany & { copyId: CopyId; signal: AbortSignal },
 ): Promise<CopySample> {
-  const { companyId, copyId, signal } = input
+  const { companyId, copyId } = input
+  const signal = AbortSignal.any([
+    input.signal,
+    AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs),
+  ])
   const stored = await deps.database.read(personScope(input), async (tx) => {
     await deps.identity.admitMember({ tx, ...input, action: 'readCopyRows' })
     return storedCopy(tx, input)
