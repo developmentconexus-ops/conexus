@@ -1146,3 +1146,7 @@ Emenda do cartão curto de O rastreio do Mastra, guardado no nosso banco (`docs/
 ## Mudança de método: o cartão com a ficha de cada unidade
 
 Em 2026-11-15, como mudança de método (L20), à pergunta sobre qual padrão o documento de etapa segue (A: um cartão só, escrito pela skill `conexus-scope`, com o passo a passo de cada unidade na ficha que a spec de três arquivos trouxe; B: a spec de três arquivos vira o método, com o que lhe falta; C: deixar como está), o fundador disse: "A". Mudam o modelo do cartão (`conexus-scope/references/card.md`: as unidades agrupadas por pull request, a ficha de cada passo da ordem do trabalho com os critérios que ele prova, as decisões do firstmate e o ponto de conferência de cada grupo), o passo 7a da skill `conexus-scope` e o passo 1 da skill `conexus-build`. A pasta `docs/steps/trilhas/dados-spec/` sai quando o próximo cartão da trilha Dados a substituir.
+
+## O cartão da Ontologia da empresa sai sem a etapa fechar
+
+Em 2026-11-15, à pergunta de como dar a vez ao cartão novo da trilha Dados (aposentar o cartão antigo da Ontologia da empresa num pull request só de documento, com o PR 1030 aberto como fonte, ou manter o cartão novo em rascunho), o fundador disse: "Aposentar". O cartão `docs/steps/a-ontologia-da-empresa.md` sai; a Ontologia volta como a etapa do Negócio, com estudo e cartão próprios (delivery L5, L19).

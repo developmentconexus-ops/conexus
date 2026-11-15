@@ -22,9 +22,11 @@ trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-O cartão desta trilha em `docs/steps/` é `a-ontologia-da-empresa.md`, a Ontologia da empresa. Ele
-espera o estudo do contrato, que decide o destino do PR 1030: o inventário passa a ler do catálogo,
-ou o PR entra como está. O primeiro marco a construir é `D1`.
+A trilha está sem cartão em `docs/steps/` desde 2026-11-15: o cartão antigo da Ontologia da empresa
+saiu sem a etapa fechar, por palavra do fundador ("Aposentar"), e o cartão que entra é o da pergunta
+respondida com a origem, em rascunho no PR 1090. A Ontologia volta como a etapa do Negócio, com
+estudo e cartão próprios. O PR 1030 fica aberto como a fonte dela; o cartão aposentado está no
+histórico do `main`, no commit `8ced9430`.
 
 ## O que a trilha possui
 
@@ -97,7 +99,7 @@ A ordem de 2026-11-12 (`"A1 B1 C1"`, `"E1"`, `"F1"`, "D Aprovado", `"H1"`, `"I1"
 [0064](../../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md),
 [0065](../../decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) e
 [0067](../../decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md)). A Ontologia
-da empresa, o item 1, tem cartão em `docs/steps/` e passa a ler do catálogo em `D4`. Os itens 5 a 7 são
+da empresa, o item 1, volta como a etapa do Negócio, com cartão próprio, e passa a ler do catálogo em `D4`. Os itens 5 a 7 são
 consumidos pela trilha Agentes e Apps.
 
 1. **A Ontologia da empresa**: os conceitos de cada demanda, provados e aprovados na página Conhecimento.
