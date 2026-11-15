@@ -67,7 +67,12 @@ export type Catalog = z.infer<typeof Catalog>
 export const Described = z.discriminatedUnion('kind', [Catalog, CatalogUnavailable])
 export type Described = z.infer<typeof Described>
 
-/** Read: one table by name, or one read of a system, which the catalog serves from a table when one keeps it. */
+/** The rows one query carries at most. */
+export const QUERY_ROWS = 200
+/** The same ceiling as app_data_read (apps/server/src/builder/app-data/tools.ts:12). */
+export const QUERY_SQL_MAX = 4000
+
+/** Read: one table by name, one read of a system, which the catalog serves from a table when one keeps it, or a read-only query over the catalog's tables. */
 export const ReadRequest = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('TABLE'), table: z.string() }),
   z.object({
@@ -76,9 +81,12 @@ export const ReadRequest = z.discriminatedUnion('kind', [
     operation: OperationId,
     input: z.unknown(),
   }),
+  /** A read-only query over the catalog's tables. The database refuses what it must. */
+  z.object({ kind: z.literal('QUERY'), sql: z.string().trim().min(1).max(QUERY_SQL_MAX) }),
 ])
 export type ReadRequest = z.infer<typeof ReadRequest>
 type OperationRead = Omit<Extract<ReadRequest, { kind: 'OPERATION' }>, 'kind'>
+type TableOrOperation = Exclude<ReadRequest, { kind: 'QUERY' }>
 
 /** The system's refusals, whole (code C79), and the Hub's own before it called. */
 const REFUSALS = [
@@ -110,6 +118,18 @@ export const ReadAnswer = z.discriminatedUnion('kind', [
   }),
   /** Whoever keeps the table did not answer: the table is not read live in its place. */
   z.object({ kind: z.literal('TABLE_UNAVAILABLE') }),
+  z.object({
+    kind: z.literal('QUERY'),
+    columns: z.array(z.string()),
+    rows: z.array(z.array(z.unknown())),
+    /** False when the query brought more rows than QUERY_ROWS. */
+    complete: z.boolean(),
+    /** The catalog's tables the query read, each with who keeps it and its last run. */
+    tables: z.array(z.object({ table: z.string(), kept: TableKept })),
+  }),
+  /** The database refused the query. The SQLSTATE goes whole. */
+  z.object({ kind: z.literal('QUERY_REFUSED'), sqlstate: z.string().regex(/^[0-9A-Z]{5}$/) }),
+  z.object({ kind: z.literal('QUERY_TOO_LARGE') }),
   NotInCatalog,
   CatalogUnavailable,
   ...REFUSALS,
@@ -147,7 +167,32 @@ type Page =
   | Extract<ReadAnswer, { kind: 'TABLE_UNAVAILABLE' }>
 type LiveAnswer =
   | Readonly<{ kind: 'OK'; value: unknown; empty?: true }>
-  | Exclude<ReadAnswer, { kind: 'TABLE' | 'LIVE' | 'TABLE_UNAVAILABLE' | CatalogOnly }>
+  | Exclude<
+      ReadAnswer,
+      {
+        kind:
+          | 'TABLE'
+          | 'LIVE'
+          | 'TABLE_UNAVAILABLE'
+          | 'QUERY'
+          | 'QUERY_REFUSED'
+          | 'QUERY_TOO_LARGE'
+          | CatalogOnly
+      }
+    >
+
+/** What the query source gives back. NOT_IN_ROLE and DEADLINE sit in members with an enum (REFUSALS), and Extract would give never. */
+export type QueryPage =
+  | Readonly<{
+      kind: 'ROWS'
+      columns: string[]
+      rows: unknown[][]
+      complete: boolean
+      used: readonly string[]
+    }>
+  | Extract<ReadAnswer, { kind: 'QUERY_REFUSED' | 'QUERY_TOO_LARGE' | 'TABLE_UNAVAILABLE' }>
+  | Readonly<{ kind: 'NOT_IN_ROLE' }>
+  | Readonly<{ kind: 'DEADLINE' }>
 
 /** What the data track gives the contract, already bound to who asks and where. */
 export type DataSources = Readonly<{
@@ -158,6 +203,8 @@ export type DataSources = Readonly<{
   /** One read of a system now, through the executor, whatever logs in beneath it. */
   live(a: Signal & OperationRead): Promise<LiveAnswer>
   /** One write through the funnel, which records it and asks with the approval card; who approved it is bound here by the card's path, never carried by the request. */
+  /** The query as the read login of whoever asks, and the names of the sync tables it read. */
+  query(a: Signal & Readonly<{ sql: string }>): Promise<QueryPage>
   funnel(a: Signal & ActRequest): Promise<Exclude<ActAnswer, { kind: CatalogOnly }>>
 }>
 
@@ -194,7 +241,7 @@ type Source =
   | Readonly<{ kind: 'LIVE'; read: OperationRead }>
   | typeof NOT_IN_CATALOG
 
-function sourceOf(catalog: Catalog, request: ReadRequest): Source {
+function sourceOf(catalog: Catalog, request: TableOrOperation): Source {
   if (request.kind === 'TABLE') {
     const table = catalog.tables.find(({ name }) => name === request.table)
     return table === undefined ? NOT_IN_CATALOG : { kind: 'TABLE', table }
@@ -225,6 +272,23 @@ export function companyData(a: Readonly<{ sources: DataSources; now: () => Date 
       const { signal } = request
       const catalog = await sources.catalog({ signal })
       if (catalog.kind === 'CATALOG_UNAVAILABLE') return catalog
+      if (request.kind === 'QUERY') {
+        const answered = await sources.query({ sql: request.sql, signal })
+        if (answered.kind !== 'ROWS') return answered
+        const tables = answered.used.map((name) => catalog.tables.find((one) => one.name === name))
+        // A table read outside the asker's catalog: no row leaves.
+        if (tables.some((one) => one === undefined)) return NOT_IN_CATALOG
+        const { columns, rows, complete } = answered
+        return {
+          kind: 'QUERY',
+          columns,
+          rows,
+          complete,
+          tables: tables.flatMap((one) =>
+            one === undefined ? [] : [{ table: one.name, kept: one.kept }],
+          ),
+        }
+      }
       const source = sourceOf(catalog, request)
       switch (source.kind) {
         case 'NOT_IN_CATALOG':

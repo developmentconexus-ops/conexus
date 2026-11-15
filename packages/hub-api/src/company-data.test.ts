@@ -139,6 +139,9 @@ function fakeWorld(): DataWorld {
       gave.live.push(answer)
       return answer
     },
+    async query() {
+      return { kind: 'TABLE_UNAVAILABLE' }
+    },
     async funnel({ connection, operation, input, call, signal }) {
       reached.signals.push(signal)
       reached.funnel.push({ connection, operation, input, call })
