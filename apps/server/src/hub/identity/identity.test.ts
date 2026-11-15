@@ -23,8 +23,8 @@ import {
   signOut,
 } from './test-hub.ts'
 
-/** What the pass at start writes when Neon does not answer (architecture §8, decision 0048). */
-const START_PASS_LINES = ['NEON_FAILED', 'COMPANY_DATABASE_RENAME_FAILED']
+/** What the passes at start write: when Neon does not answer (architecture §8, decision 0048), and the copies' weekly rows pass, which writes its line even with no company. */
+const START_PASS_LINES = ['NEON_FAILED', 'COMPANY_DATABASE_RENAME_FAILED', 'COPY_WHOLE_LINES']
 
 test('entrar: 200 com a pessoa e um só cookie, __Host-, Secure, HttpOnly, SameSite=Lax, sem Domain', async (t) => {
   const hub = await hubWithAna(t)
