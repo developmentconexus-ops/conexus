@@ -81,4 +81,4 @@ Em 2026-11-15, sobre as referências: "tudo que a gente está fazendo, na parte 
 
 Em 2026-11-15, sobre mudança de método: "se ela tá aí, ela tinha que estar nas skills, ela tinha que estar na nossa metodologia, em algum lugar registrado e tirar tudo que é legacy relacionado." Por isso as skills mudam com o guia, e o arquivo único do registro sai sem nada de compatibilidade.
 
-Com três cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`, que o fundador autorizou em 2026-11-15 e o firstmate aplicou.
+Com três cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`. Em 2026-11-15, perguntado pelo firstmate se autorizava o rótulo de emergência neste pull request, o fundador respondeu: "2. Sim". O firstmate aplicou o rótulo.
