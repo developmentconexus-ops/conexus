@@ -127,11 +127,8 @@ export async function neonTransport(
     const queries = statements.map(({ text, values }) => sql.query(text, [...(values ?? [])]))
     if (options?.readOnly) {
       // Rows as arrays with the result's own fields: two columns of one name stay two, an empty read keeps its columns.
-      const results = await sql.transaction(queries, {
-        ...options,
-        arrayMode: true,
-        fullResults: true,
-      })
+      const mode = { ...options, arrayMode: true, fullResults: true } as const
+      const results = await sql.transaction(queries, mode)
       return {
         kind: 'READ',
         results: results.map(({ fields, rows }) => ({
