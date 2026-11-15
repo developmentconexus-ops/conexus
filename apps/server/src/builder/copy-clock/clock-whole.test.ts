@@ -106,6 +106,11 @@ test('a cópia que relê tudo não tem linha semanal', { timeout: 120_000 }, asy
   assert.equal(changed.statusCode, 200, changed.body)
   assert.equal(await on.hub.mastra.schedules.get(wholeId(copy.id)), null)
   assert.equal((await on.hub.mastra.schedules.get(normalId(copy.id)))?.cron, '0 */2 * * *')
+  const url = `${copiesUrl(on)}/${copy.id}`
+  assert.equal((await post(on.hub, on.ana, `${url}/pause`, {})).statusCode, 200)
+  assert.equal((await on.hub.mastra.schedules.get(normalId(copy.id)))?.status, 'paused')
+  assert.equal((await post(on.hub, on.ana, `${url}/resume`, {})).statusCode, 200)
+  assert.equal((await on.hub.mastra.schedules.get(normalId(copy.id)))?.status, 'active')
 })
 
 test('a lista de cópias mostra uma entrada por cópia', { timeout: 120_000 }, async (t) => {
@@ -198,11 +203,13 @@ test('ao subir, a cópia antiga ganha a linha semanal', { timeout: 120_000 }, as
   const copy = await started(on, 'clientes')
   assert.equal((await post(hub, on.ana, `${copiesUrl(on)}/${copy.id}/pause`, {})).statusCode, 200)
   await hub.mastra.schedules.delete(wholeId(copy.id))
-  const before = (await hub.mastra.schedules.get(normalId(copy.id)))?.nextFireAt
+  const normalBefore = await hub.mastra.schedules.get(normalId(copy.id))
+  const before = normalBefore?.nextFireAt
   await hub.copies.ensureWholeLines()
   const weekly = await hub.mastra.schedules.get(wholeId(copy.id))
   assert.equal(weekly?.status, 'paused', 'a semanal nasce no estado da normal')
   assert.equal((await hub.mastra.schedules.get(normalId(copy.id)))?.nextFireAt, before)
+  assert.equal((await hub.mastra.schedules.get(normalId(copy.id)))?.updatedAt, normalBefore?.updatedAt)
   const stamp = weekly?.updatedAt
   await hub.copies.ensureWholeLines()
   assert.equal((await hub.mastra.schedules.get(wholeId(copy.id)))?.updatedAt, stamp)
