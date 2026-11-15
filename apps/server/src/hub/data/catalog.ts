@@ -20,7 +20,7 @@ export async function catalogOf(deps: DataDeps, scope: SessionScope): Promise<De
           : deps.identity.allows(proof.role, 'readCopyRows')
             ? await catalogTables(tx, { companyId, only: 'ALL' })
             : []
-      return { kind: 'CATALOG', systems, tables, withheld: [] }
+      return { kind: 'CATALOG', systems, tables }
     })
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
