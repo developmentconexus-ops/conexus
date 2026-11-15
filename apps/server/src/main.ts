@@ -23,6 +23,7 @@ import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './h
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
+import { createCompanyData } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
@@ -68,7 +69,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs'> & { status: Status; identity: Identity; webRoot?: string },
+  deps: Omit<Subjects, 'runs' | 'data'> & { status: Status; identity: Identity; webRoot?: string },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -202,9 +203,13 @@ export function subjectsOf(deps: {
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })
+  const data = createCompanyData({
+    ...{ database, identity, log },
+    ...{ connectors: () => connectors, copies: () => copies.data },
+  })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests },
-    ...{ conversations, assistant, automations, agents, notifications, connectors, copies },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
 }
 
