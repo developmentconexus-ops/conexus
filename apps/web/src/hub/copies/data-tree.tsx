@@ -1,8 +1,9 @@
-import type { CompanyId, ConnectorEntry, CopyId } from '@conexus/hub-api'
+import type { CompanyId, Connection, ConnectorEntry, CopyId, CopySummary } from '@conexus/hub-api'
+import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { ChevronDownIcon, CirclePauseIcon, SearchIcon, Table2Icon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
 import {
@@ -71,7 +72,12 @@ function LayerGroup(props: {
 /** The search of the tree: the text is kept in the address, `q` (web W18), replaced as the person types; the phone's drawer stays open. */
 function TreeSearch({ q }: { q: string | undefined }) {
   const [typed, setTyped] = useState(q ?? '')
+  const sent = useRef(new Set<string>())
   const navigate = useNavigate()
+  useEffect(() => {
+    if (sent.current.delete(q ?? '')) return
+    setTyped(q ?? '')
+  }, [q])
   return (
     <InputGroup>
       <InputGroupAddon>
@@ -85,6 +91,7 @@ function TreeSearch({ q }: { q: string | undefined }) {
         value={typed}
         onChange={(event) => {
           setTyped(event.target.value)
+          sent.current.add(event.target.value)
           void navigate({
             to: '.',
             search: (old) => ({ ...old, q: event.target.value || undefined }),
@@ -154,10 +161,13 @@ function SystemBranch(props: {
   )
 }
 
+type CopiesRead = UseQueryResult<{ copies: CopySummary[] }>
+type ConnectionsRead = UseQueryResult<{ connections: Connection[]; connectors: ConnectorEntry[] }>
+
 function RawGroup(props: {
   companyId: CompanyId
-  copies: ReturnType<typeof useCopies>
-  connections: ReturnType<typeof useConnections>
+  copies: CopiesRead
+  connections: ConnectionsRead
   current: CopyId | undefined
   q: string | undefined
 }) {
@@ -180,8 +190,8 @@ function RawGroup(props: {
 
 function RawBody(props: {
   companyId: CompanyId
-  copies: ReturnType<typeof useCopies>
-  connections: ReturnType<typeof useConnections>
+  copies: CopiesRead
+  connections: ConnectionsRead
   current: CopyId | undefined
   q: string | undefined
 }) {
@@ -197,11 +207,14 @@ function RawBody(props: {
     )
   }
   if (copies.isError || connections.isError) {
+    const failed = [copies, connections].filter((read) => read.isError)
     return (
       <div className="px-[0.6rem]">
         <ReadFailure
           text={CATALOG_FAILED}
-          onRetry={() => void (copies.isError ? copies.refetch() : connections.refetch())}
+          onRetry={() => {
+            for (const read of failed) void read.refetch()
+          }}
         />
       </div>
     )
@@ -232,18 +245,10 @@ function RawBody(props: {
   )
 }
 
-function useCopies(companyId: CompanyId) {
-  return useQuery(copiesQuery(companyId))
-}
-
-function useConnections(companyId: CompanyId) {
-  return useQuery(connectionsQuery(companyId))
-}
-
 /** The tree of Dados in the frame's `nav`, in place of the conversations: Negócio, Bruto by system with its tables, Apps. */
 export function DataTree({ companyId, q }: { companyId: CompanyId; q: string | undefined }) {
-  const copies = useCopies(companyId)
-  const connections = useConnections(companyId)
+  const copies = useQuery(copiesQuery(companyId))
+  const connections = useQuery(connectionsQuery(companyId))
   const current = useParams({ strict: false, select: (params) => params.copyId })
   return (
     <nav aria-label={TREE_LABEL} className="flex min-w-0 flex-col">

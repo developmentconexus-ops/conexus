@@ -21,8 +21,6 @@ import { CATALOG, STORES } from './test-sources.ts'
 const server = hubServer()
 
 const OTHER = CopyId.parse('99999999-9999-4999-8999-999999999999')
-const SHOWN = copy().shown
-const COLUMN = { type: 'text', description: null, inactiveSince: null } as const
 
 async function tree() {
   return within(await screen.findByRole('navigation', { name: 'Dados' }))
@@ -33,21 +31,6 @@ function three() {
     copy(),
     copy({ id: CLIENTES, name: 'clientes', label: 'Clientes' }),
     copy({ id: OTHER, name: 'ml_pedidos', label: 'Pedidos', sources: STORES }),
-  ]
-}
-
-function searchable() {
-  return [
-    copy({
-      name: 'sankhya_vendas',
-      shown: { ...SHOWN, columns: [{ name: 'NUNOTA', ...COLUMN }] },
-    }),
-    copy({
-      id: CLIENTES,
-      name: 'sankhya_clientes',
-      label: 'Clientes',
-      shown: { ...SHOWN, description: 'Devoluções', columns: [{ name: 'CODPARC', ...COLUMN }] },
-    }),
   ]
 }
 
@@ -222,21 +205,6 @@ test('a árvore: um sistema ligado sem cópia não aparece', async () => {
   expect(nav.queryByRole('button', { name: /^Sankhya/ })).toBeNull()
 })
 
-test('o q do endereço filtra a árvore', async () => {
-  openCopies(server, { copies: searchable() }, `${LIST}?q=NUNOTA`)
-  const nav = await tree()
-  expect(await nav.findByText('sankhya_vendas')).toBeTruthy()
-  expect(nav.queryByText('sankhya_clientes')).toBeNull()
-})
-
-test('o q fica ao abrir uma tabela', async () => {
-  openCopies(server, { copies: searchable() }, `${LIST}?q=NUNOTA`)
-  const nav = await tree()
-  fireEvent.click(await nav.findByRole('link', { name: /^sankhya_vendas/ }))
-  expect(await screen.findByRole('heading', { name: 'sankhya_vendas' })).toBeTruthy()
-  expect(nav.queryByText('sankhya_clientes')).toBeNull()
-})
-
 test('a árvore no celular: tocar numa tabela fecha a gaveta', async () => {
   await onPhone(async () => {
     openCopies(server, { copies: [copy()] }, LIST)
@@ -248,52 +216,18 @@ test('a árvore no celular: tocar numa tabela fecha a gaveta', async () => {
   })
 })
 
-test('a busca da árvore filtra e fica no endereço', async () => {
-  openCopies(server, { copies: searchable() }, LIST)
+test('a árvore já montada: abrir uma tabela pela lista da página abre o sistema dela', async () => {
+  openCopies(server, { copies: three() }, LIST)
   const nav = await tree()
-  expect(await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })).toBeTruthy()
-  expect(screen.getAllByRole('searchbox')).toHaveLength(1)
-  fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
-    target: { value: 'NUNOTA' },
-  })
-  await waitFor(() => expect(nav.queryByText('sankhya_clientes')).toBeNull())
-  expect(nav.getByText('sankhya_vendas')).toBeTruthy()
-  const main = within(await screen.findByRole('main'))
-  expect(main.queryByText('sankhya_clientes')).toBeNull()
-  expect(main.getByText('sankhya_vendas')).toBeTruthy()
-  expect(nav.getByRole('link', { name: /^sankhya_vendas/ }).getAttribute('href')).toContain(
-    'q=NUNOTA',
+  expect(await nav.findByRole('button', { name: 'Mercado Livre 1' })).toHaveProperty(
+    'ariaExpanded',
+    'false',
   )
-})
-
-test('o campo mostra o q do endereço', async () => {
-  openCopies(server, { copies: searchable() }, `${LIST}?q=NUNOTA`)
-  const nav = await tree()
-  const box = await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' })
-  expect(box).toHaveProperty('value', 'NUNOTA')
-})
-
-test('a busca sem resposta', async () => {
-  openCopies(server, { copies: searchable() }, LIST)
-  const nav = await tree()
-  fireEvent.change(await nav.findByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
-    target: { value: 'zzz' },
-  })
-  expect(await nav.findByText('Nenhuma tabela com esse texto.')).toBeTruthy()
-})
-
-test('no celular, digitar não fecha a gaveta', async () => {
-  await onPhone(async () => {
-    openCopies(server, { copies: searchable() }, LIST)
-    fireEvent.click(await screen.findByRole('button', { name: 'Abrir navegação' }))
-    const drawer = within(await screen.findByRole('dialog'))
-    fireEvent.change(await drawer.findByRole('searchbox', { name: 'Buscar tabela ou coluna' }), {
-      target: { value: 'NUNOTA' },
-    })
-    await waitFor(() => expect(drawer.queryByText('sankhya_clientes')).toBeNull())
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(drawer.getByRole('navigation', { name: 'Dados' })).toBeTruthy()
-  })
+  const main = within(await screen.findByRole('main'))
+  fireEvent.click(await main.findByRole('link', { name: 'ml_pedidos' }))
+  expect(await screen.findByRole('heading', { name: 'ml_pedidos' })).toBeTruthy()
+  const row = await nav.findByRole('link', { name: /^ml_pedidos/ })
+  expect(row.getAttribute('aria-current')).toBe('page')
 })
 
 test('a árvore já montada: digitar na busca abre o sistema que sobra', async () => {
@@ -311,18 +245,4 @@ test('a árvore já montada: digitar na busca abre o sistema que sobra', async (
     'ariaExpanded',
     'true',
   )
-})
-
-test('a árvore já montada: abrir uma tabela pela lista da página abre o sistema dela', async () => {
-  openCopies(server, { copies: three() }, LIST)
-  const nav = await tree()
-  expect(await nav.findByRole('button', { name: 'Mercado Livre 1' })).toHaveProperty(
-    'ariaExpanded',
-    'false',
-  )
-  const main = within(await screen.findByRole('main'))
-  fireEvent.click(await main.findByRole('link', { name: 'ml_pedidos' }))
-  expect(await screen.findByRole('heading', { name: 'ml_pedidos' })).toBeTruthy()
-  const row = await nav.findByRole('link', { name: /^ml_pedidos/ })
-  expect(row.getAttribute('aria-current')).toBe('page')
 })

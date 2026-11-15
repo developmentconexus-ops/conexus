@@ -146,6 +146,9 @@ test('Dados: a camada fica no endereço', async () => {
   openCopies(server, { copies: [copy()] }, `${LIST}?layer=apps`)
   const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
   expect((await nav.findByRole('link', { name: 'Apps' })).getAttribute('aria-current')).toBe('page')
+  expect(
+    await within(await screen.findByRole('main')).findByText(/^As tabelas que cada app guarda/),
+  ).toBeTruthy()
   expect(nav.getByRole('link', { name: 'Negócio 0' }).getAttribute('aria-current')).toBeNull()
 })
 
