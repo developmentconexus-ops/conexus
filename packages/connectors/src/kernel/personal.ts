@@ -22,7 +22,7 @@ export function personalRowsOf(value: unknown) {
 }
 
 /** The declared fields that hold a column's or leaf's path: the field's own path or one above it, the most specific first. */
-export function personalHolding(
+function personalHolding(
   declared: readonly PersonalField[],
   path: string,
 ): readonly PersonalField[] {
