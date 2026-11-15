@@ -3,12 +3,19 @@ import { testBuilderPorts } from '../builder/runs/test-runs.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
 import type { Config } from './config.ts'
-import { SYNC_LOGIN } from './copy-sql.ts'
+import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { fakeCloudflare } from './test-cloudflare.ts'
 import { pgTransport } from './test-company-postgres.ts'
 import { silent, withRoleLock } from './test-database.ts'
 import { fakeNeon } from './test-neon.ts'
+
+async function asLogin(config: Config, owner: DatabaseUrl, login: string) {
+  const url = new URL(owner.reveal())
+  url.username = login
+  url.password = await appLoginPassword({ key: config.appLoginKey.reveal(), login })
+  return DatabaseUrl.parse(url.toString())
+}
 
 /**
  * The company's database on the test server (T19), whose next migration can be kept before it runs,
@@ -23,11 +30,12 @@ export function heldCompanyPostgres(config: Config) {
   // The sync login's address likewise, by the host the Hub recorded: the test server is one host,
   // so a second company's owner on it makes the address unknown rather than another company's.
   const syncOwners = new Map<string, DatabaseUrl | 'TWO_COMPANIES'>()
-  async function asLogin(owner: DatabaseUrl, login: string) {
-    const url = new URL(owner.reveal())
-    url.username = login
-    url.password = await appLoginPassword({ key: config.appLoginKey.reveal(), login })
-    return DatabaseUrl.parse(url.toString())
+  async function addressOn(host: string, login: string) {
+    const owner = syncOwners.get(host)
+    if (owner === undefined || owner === 'TWO_COMPANIES') {
+      throw new Error(`the ${login} address on the test host is ${owner ?? 'unseen'}`)
+    }
+    return asLogin(config, owner, login)
   }
   const companyPostgres: CompanyPostgres = {
     ensureApp(owner, projectId) {
@@ -42,7 +50,7 @@ export function heldCompanyPostgres(config: Config) {
     async readAddress(_host, projectId) {
       const owner = owners.get(projectId)
       if (owner === undefined) throw new Error('no owner address was seen for the Projeto')
-      return asLogin(owner, appLogin(projectId).readLogin)
+      return asLogin(config, owner, appLogin(projectId).readLogin)
     },
     async migrate(owner, projectId, migrations) {
       owners.set(projectId, owner)
@@ -65,14 +73,11 @@ export function heldCompanyPostgres(config: Config) {
       // owns exists here, a drop refuses (2BP01).
       return withRoleLock(() => inner.ensureSync(owner))
     },
+    ensureReader: (owner) => withRoleLock(() => inner.ensureReader(owner)),
+    readerAddress: (host) => addressOn(host, READ_LOGIN),
+    readCopies: (reader, statements, signal) => inner.readCopies(reader, statements, signal),
     ensureCopyTable: (sync, table) => inner.ensureCopyTable(sync, table),
-    async syncAddress(host) {
-      const owner = syncOwners.get(host)
-      if (owner === undefined || owner === 'TWO_COMPANIES') {
-        throw new Error(`the sync login's address on the test host is ${owner ?? 'unseen'}`)
-      }
-      return asLogin(owner, SYNC_LOGIN)
-    },
+    syncAddress: (host) => addressOn(host, SYNC_LOGIN),
     writePage: (sync, input, signal) => inner.writePage(sync, input, signal),
     closePass: (sync, input, signal) => inner.closePass(sync, input, signal),
     dropAccountRows: (sync, input) => inner.dropAccountRows(sync, input),

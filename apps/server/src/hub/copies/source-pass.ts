@@ -2,6 +2,7 @@ import type { CompanyId, CopyId } from '@conexus/hub-api'
 import type { CopyAccount, CopyTable } from '../../platform/copy-sql.ts'
 import type { DatabaseUrl } from '../../platform/database.ts'
 import type { CopyPosition } from '../connectors/public.ts'
+import type { Seen } from './column-state.ts'
 import type { Holder, StoredSource } from './sources.ts'
 import { passed, restarted, saved, waiting } from './sources.ts'
 import type { CopiesDeps, CopyOutcome, CopyRunEnd, StoredCopy } from './store.ts'
@@ -56,6 +57,7 @@ export type Run = {
   sync: DatabaseUrl
   table: CopyTable
   counts: Counts & { started: number }
+  seen: Seen
   end: (outcome: CopyOutcome) => Promise<CopyRunEnd>
 }
 
@@ -143,6 +145,9 @@ async function pageStep(
 ): Promise<PageStep> {
   const { deps, claimed, sync, signal, counts, table } = run
   const { rows, more } = read.page
+  if (read.present === null) run.seen.whole = false
+  else for (const name of read.present) run.seen.present.add(name)
+  run.seen.rows += rows.length
   const written = await deps.companyPostgres.writePage(
     sync,
     { ...table, pass: source.pass, rows, account: account(run, source) },
@@ -191,6 +196,8 @@ export async function sourcePass(run: Run, source: StoredSource): Promise<Source
   const { connectionId } = source
   const { definition, createdBy } = claimed.copy
   const { since, windowFrom } = datesOf(definition, source)
+  if (!(source.position === null && (since === null || definition.changedSince === null)))
+    run.seen.whole = false
   let position: CopyPosition | null = source.position
   for (;;) {
     const stopped = await halted(run)

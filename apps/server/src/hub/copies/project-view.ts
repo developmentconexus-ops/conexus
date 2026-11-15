@@ -115,7 +115,7 @@ export async function projectView(
   return {
     kind: 'COPIES',
     released: released.map(({ copy }) => {
-      const shown = shownOf(copy.connectorId, copy.definition)
+      const shown = shownOf(copy.connectorId, copy.definition, copy.columnState)
       return {
         ...{ name: copy.name, connector: ConnectorIdSchema.parse(copy.connectorId) },
         ...{ source: shown.source, description: shown.description, columns: shown.columns },

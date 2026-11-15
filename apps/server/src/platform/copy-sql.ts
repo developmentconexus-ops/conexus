@@ -7,7 +7,9 @@ import { COMPANY_DATABASE, NEON_CALL_BUDGET_MS } from './neon.ts'
 
 /** The login that owns the copies in a company's database, and their schema. */
 export const SYNC_LOGIN = 'conexus_sync'
-const SYNC_SCHEMA = quoted('sync')
+/** The login that reads the whole `sync` schema and nothing else. */
+export const READ_LOGIN = 'conexus_read'
+export const SYNC_SCHEMA = quoted('sync')
 /** The column that holds the pass that last wrote each row: the engine's own. Only the Hub's catalog leaves it out; a read of the table itself still returns it (issue 946). */
 export const COPY_PASS_COLUMN = '_pass'
 /** The columns of a copy of accounts, the engine's own beside `_pass`: the provider's account and the company's name for its connection. */
@@ -92,13 +94,13 @@ function tableOf(name: string): string {
 }
 
 /** The call's budget, and the caller's signal when it has one (code C57). */
-function budget(signal?: AbortSignal): AbortSignal {
+export function budget(signal?: AbortSignal): AbortSignal {
   const own = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
   return signal === undefined ? own : AbortSignal.any([signal, own])
 }
 
 /** SQLSTATE of a role that exists already: a second act made it between the look and the act. */
-const DUPLICATE_OBJECT = '42710'
+export const DUPLICATE_OBJECT = '42710'
 
 /**
  * The `sync` schema and the login that owns it, as the company's owner, who holds that login by SET

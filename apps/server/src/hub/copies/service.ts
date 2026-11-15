@@ -26,6 +26,7 @@ import { listed, models, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
 import { propose } from './propose.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
+import { sampleOf } from './sample.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
 import type { CopiesDeps, CopyTuning, InCompany } from './store.ts'
 
@@ -48,6 +49,8 @@ export function createCopyService(
     models: (input: InCompany) => models(full, input),
     runs: (input: Of & { page: string | undefined }) => runs(full, input),
     ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
+    /** The first rows of a copy's table, admitting `readCopyRows`. */
+    sample: (input: Of & { signal: AbortSignal }) => sampleOf(full, input),
     /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
     projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
       projectView(full, input),

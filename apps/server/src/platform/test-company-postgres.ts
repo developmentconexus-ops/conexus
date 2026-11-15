@@ -12,7 +12,7 @@ import type {
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
-import { SYNC_LOGIN } from './copy-sql.ts'
+import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
 import type { Lifetime } from './test-database.ts'
@@ -130,7 +130,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync)$'`,
+        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync|conexus_read)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)
@@ -322,10 +322,26 @@ export function testCompanyPostgres(key: AppLoginKey) {
   return createCompanyPostgres({ transport: pgTransport, appLoginKey: key })
 }
 
-/** The sync login's address on the company's database: the owner's, with the login and its password. */
-export async function syncLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+async function loginOf(owner: DatabaseUrl, key: AppLoginKey, login: string): Promise<DatabaseUrl> {
   const url = new URL(owner.reveal())
-  url.username = SYNC_LOGIN
-  url.password = await appLoginPassword({ key: key.reveal(), login: SYNC_LOGIN })
+  url.username = login
+  url.password = await appLoginPassword({ key: key.reveal(), login })
   return DatabaseUrl.parse(url.toString())
+}
+
+/** The sync login's address on the company's database: the owner's, with the login and its password. */
+export function syncLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+  return loginOf(owner, key, SYNC_LOGIN)
+}
+
+/** The same address with another password: a login whose derived one is not this. */
+export function withPassword(url: DatabaseUrl, password: string): DatabaseUrl {
+  const wrong = new URL(url.reveal())
+  wrong.password = password
+  return DatabaseUrl.parse(wrong.toString())
+}
+
+/** The read login's address on the company's database, as `syncLoginOf` gives the sync login's. */
+export function readLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
+  return loginOf(owner, key, READ_LOGIN)
 }
