@@ -39,10 +39,15 @@ const TableKept = z.discriminatedUnion('kind', [
   }),
 ])
 
+/** The rows one read of a table carries at most: what the consumer gets in place of the live read. */
+export const TABLE_PAGE_ROWS = 200
+
 /** One table the place may read: what it holds, what each column means, and who keeps it. */
 export const CatalogTable = z.object({
   name: z.string(),
-  description: CopyShown.shape.description,
+  label: z.string(),
+  /** Required: the agent picks the table by it. */
+  description: z.string().min(1),
   columns: CopyShown.shape.columns,
   kept: TableKept,
 })

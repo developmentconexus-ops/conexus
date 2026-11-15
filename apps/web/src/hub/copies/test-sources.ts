@@ -17,8 +17,8 @@ export const ORDERS_SHOWN: CopySummary['shown'] = {
   window: null,
   description: 'Os pedidos de cada loja',
   columns: [
-    { name: 'id', type: 'bigint', description: 'O número do pedido' },
-    { name: 'atualizado', type: 'timestamp', description: null },
+    { name: 'id', type: 'bigint', description: 'O número do pedido', inactiveSince: null },
+    { name: 'atualizado', type: 'timestamp', description: null, inactiveSince: null },
   ],
 }
 

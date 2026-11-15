@@ -30,7 +30,13 @@ export const CopyShown = z.object({
   // The table's description and each column's, written by whoever wrote the definition; version 1 has none.
   description: z.string().nullable(),
   columns: z.array(
-    z.object({ name: z.string(), type: z.string(), description: z.string().nullable() }),
+    z.object({
+      name: z.string(),
+      type: z.string(),
+      description: z.string().nullable(),
+      /** Since when the source stopped sending the column; null while it comes. */
+      inactiveSince: z.iso.datetime().nullable(),
+    }),
   ),
 })
 export type CopyShown = z.infer<typeof CopyShown>

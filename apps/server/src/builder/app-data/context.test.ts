@@ -30,7 +30,12 @@ function copy(
     mode,
     accounts: false,
     proposedHere: false,
-    columns: columns.map(([column, type]) => ({ name: column, type, description: null })),
+    columns: columns.map(([column, type]) => ({
+      name: column,
+      type,
+      description: null,
+      inactiveSince: null,
+    })),
   }
 }
 
@@ -193,6 +198,7 @@ test('a origem e as descrições', async (t) => {
         name: `coluna_${n}`,
         type: 'text',
         description: `O campo ${n} como o sistema o chama`,
+        inactiveSince: null,
       })),
     }
   }
