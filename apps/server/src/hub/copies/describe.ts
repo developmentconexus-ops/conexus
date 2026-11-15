@@ -2,8 +2,9 @@ import { eq } from 'drizzle-orm'
 import type { DatabaseUrl } from '../../platform/database.ts'
 import type { CopyDefinition } from '../connectors/public.ts'
 import type { Claimed } from './source-pass.ts'
+import { DATABASE_DOWN, lost } from './source-pass.ts'
 import { whileHeld } from './sources.ts'
-import type { CopiesDeps, StoredCopy } from './store.ts'
+import type { CopiesDeps, CopyOutcome, CopyRunEnd, StoredCopy } from './store.ts'
 import { copyTableOf } from './store.ts'
 import { copy } from './tables.ts'
 
@@ -29,14 +30,17 @@ export function filledFrom(stored: DefinitionV1, model: DefinitionV1): Definitio
 
 export type Described =
   | Readonly<{ kind: 'COPY'; copy: StoredCopy }>
-  | Readonly<{ kind: 'DATABASE_DOWN' }>
-  | Readonly<{ kind: 'LOST' }>
+  | Readonly<{ kind: 'END'; end: CopyRunEnd }>
 
 export async function describedCopy(
   deps: CopiesDeps,
-  input: { claimed: Claimed; sync: DatabaseUrl },
+  input: {
+    claimed: Claimed
+    sync: DatabaseUrl
+    end: (outcome: CopyOutcome) => Promise<CopyRunEnd>
+  },
 ): Promise<Described> {
-  const { claimed, sync } = input
+  const { claimed, sync, end } = input
   const { copy: stored } = claimed
   const { companyId, id: copyId } = stored
   if (stored.definition.version !== 1 || stored.model === null)
@@ -58,10 +62,12 @@ export async function describedCopy(
   if (table.kind !== 'DONE') {
     const code = table.kind === 'REFUSED' ? table.code : table.kind
     deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
-    return { kind: 'DATABASE_DOWN' }
+    return { kind: 'END', end: await end(DATABASE_DOWN) }
   }
   const written = await whileHeld(deps, claimed.holder, (tx) =>
     tx.update(copy).set({ definition }).where(eq(copy.id, copyId)),
   )
-  return written ? { kind: 'COPY', copy: { ...stored, definition } } : { kind: 'LOST' }
+  return written
+    ? { kind: 'COPY', copy: { ...stored, definition } }
+    : { kind: 'END', end: lost(deps, claimed) }
 }

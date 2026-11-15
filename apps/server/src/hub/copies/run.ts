@@ -161,9 +161,8 @@ export async function runCopy(
   }
   const { sync } = claimed
   if (sync === undefined) return end(DATABASE_DOWN)
-  const described = await describedCopy(deps, { claimed: held, sync })
-  if (described.kind === 'DATABASE_DOWN') return end(DATABASE_DOWN)
-  if (described.kind === 'LOST') return lost(deps, held)
+  const described = await describedCopy(deps, { claimed: held, sync, end })
+  if (described.kind === 'END') return described.end
   const current: Claimed = { ...held, copy: described.copy }
   const table = copyTableOf(current.copy, current.sources)
   const run: Run = { deps, ids, signal, claimed: current, sync, table, counts, end }
