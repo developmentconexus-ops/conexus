@@ -116,7 +116,10 @@ function proposalFrom(description: string) {
       description: 'Os pedidos da loja',
       columns: [
         { name: 'id', type: 'bigint', path: 'id', description: 'O número do pedido' },
-        { name: 'atualizado', type: 'timestamp', path: read.field },
+        {
+          ...{ name: 'atualizado', type: 'timestamp', path: read.field },
+          description: 'Quando mudou',
+        },
       ],
       key: ['id'],
       changedSince: { column: 'atualizado' },

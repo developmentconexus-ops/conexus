@@ -177,7 +177,7 @@ test('a origem e as descrições', async (t) => {
     '- `sync.mercado_livre_pedidos` [your proposal, turned on] (only what changed',
     'from the read `pedidos` (Pedidos) of `mercado-livre`, fixed input {"status":"paid"}.',
     'Os pedidos de cada loja.',
-    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text, "atualizado" timestamp`,
+    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text (A situação do pedido), "atualizado" timestamp (Quando o pedido mudou pela última vez)`,
   ])
     assert.ok(first.includes(part), `${part}\n${first}`)
   const copyId = CopyId.parse(Object(made.json()).copy.id)
