@@ -413,6 +413,12 @@ GRANT UPDATE(reason) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(pages) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(read) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(written) ON TABLE copies.copy_run TO hub_company;
+-- A pergunta respondida com a origem, U10, founder 2026-11-15 ("A1", the seven in a pull request of their own; data D11): a
+-- run closes with the message its source's system gave (status, code and message), so a company's
+-- routes write the three columns once the run ends; `whole` is never changed after the run starts.
+GRANT UPDATE(system_status) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(system_code) ON TABLE copies.copy_run TO hub_company;
+GRANT UPDATE(system_message) ON TABLE copies.copy_run TO hub_company;
 -- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): a
 -- copy's runs read and save where each of its connections stands and until when the provider asked
 -- it to wait; a source leaves by cascade. Desligar writes down the table of a copy that ended while
@@ -430,6 +436,14 @@ GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
 GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
+-- A pergunta respondida com a origem, U10, founder 2026-11-15 ("A1", the seven in a pull request of their own; data D11): a
+-- company's routes read, add and remove who a copy's failure alerts reach, and read, add and remove
+-- who follows a copy (both rows are deleted when someone is taken out or stops following); they read
+-- and create the notice of a copy and mark it read. A notice leaves by cascade, never by the Hub.
+GRANT SELECT,INSERT,DELETE ON TABLE notifications.alert_recipient TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE notifications.copy_follower TO hub_company;
+GRANT SELECT,INSERT ON TABLE notifications.copy_notice TO hub_company;
+GRANT UPDATE(read_at) ON TABLE notifications.copy_notice TO hub_company;
 -- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
 -- owner, so a company's routes write a notification, list the person's own and mark them read; the row
 -- leaves by cascade, never by the Hub.
