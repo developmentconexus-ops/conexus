@@ -30,7 +30,7 @@ export function systemsOf(
 }
 
 /** Whether a copy answers the search: its name, its description or the name of one of its columns. */
-export function answers(copy: CopySummary, query: string): boolean {
+function answers(copy: CopySummary, query: string): boolean {
   const needle = folded(query.trim())
   const fields = [copy.name, describedAs(copy), ...copy.shown.columns.map((column) => column.name)]
   return fields.some((field) => folded(field).includes(needle))
