@@ -7,7 +7,7 @@ import pg from 'pg'
 import { CopyName } from '../connectors/public.ts'
 import type { CopiesOn } from './test-copies.ts'
 
-import { asSync, copiesOn } from './test-copies.ts'
+import { asSync, copiesOn, plantCopy } from './test-copies.ts'
 
 async function refusedWith(code: string, act: () => Promise<unknown>) {
   await assert.rejects(act, (error: unknown) => Object(error).code === code)
@@ -122,6 +122,14 @@ async function connectionState(on: CopiesOn, state: string) {
     await client.end()
   }
 }
+
+test('ligar: o modelo que a conexão já copia, com o nome de antes desta parte', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  await plantCopy(on, copyId, "name = 'vendas'")
+  await refusedWith('COPY_EXISTS', () => on.enable('vendas'))
+  assert.equal((await on.hub.test.asOwner('select id from copies.copy')).length, 1)
+})
 
 test('ligar: as recusas', async (t) => {
   const on = await copiesOn(t)

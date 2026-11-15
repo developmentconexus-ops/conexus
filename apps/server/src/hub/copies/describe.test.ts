@@ -81,10 +81,16 @@ test('preencher não troca uma descrição que existe', async (t) => {
     copyId,
     `definition = jsonb_set(definition, '{columns,0,description}', '"A minha"')`,
   )
+  await plantCopy(
+    on,
+    copyId,
+    `definition = jsonb_set(definition, '{description}', '"A minha tabela"')`,
+  )
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   const filled = await storedDefinition(on, copyId)
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   assert.deepEqual(await storedDefinition(on, copyId), filled, 'a second run changes nothing')
+  assert.equal(filled.description, 'A minha tabela')
   assert.equal(filled.columns[0]?.description, 'A minha')
   assert.ok(filled.columns[1]?.description)
 })
@@ -117,4 +123,20 @@ test('o banco da empresa cai ao preencher', async (t) => {
   silent.mock.restore()
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   assert.ok((await storedDefinition(on, copyId)).description)
+})
+
+test('a posse que outra rodada tomou ao preencher', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  await undescribed(on, copyId)
+  const { companyPostgres } = on.hub.postgres
+  const ensure = companyPostgres.ensureCopyTable.bind(companyPostgres)
+  t.mock.method(companyPostgres, 'ensureCopyTable', async (...args: Parameters<typeof ensure>) => {
+    const answer = await ensure(...args)
+    await plantCopy(on, copyId, "claim_token = gen_random_uuid()")
+    return answer
+  })
+  assert.deepEqual(await on.run(copyId), { kind: 'ENDED', outcome: { kind: 'INTERRUPTED' } })
+  assert.ok(on.hub.lines.some((line) => line.message === 'COPY_CLAIM_LOST'))
+  assert.equal((await storedDefinition(on, copyId)).description, undefined)
 })

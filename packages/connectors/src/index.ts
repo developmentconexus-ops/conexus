@@ -35,6 +35,7 @@ export {
   CopyName,
   CopyPageSchema,
   CopyPosition,
+  copyPrefixOf,
   PAGE_ROWS,
   PageInput,
 } from './kernel/copy.ts'

@@ -1,9 +1,5 @@
 import type { ConnectorId } from '@conexus/hub-api'
-import { CopyName } from '../connectors/public.ts'
-
-function copyPrefixOf(connectorId: ConnectorId): string {
-  return `${connectorId.replaceAll('-', '_')}_`
-}
+import { CopyName, copyPrefixOf } from '../connectors/public.ts'
 
 export function modelCopyName(connectorId: ConnectorId, model: string): CopyName {
   return CopyName.parse(`${copyPrefixOf(connectorId)}${model}`)

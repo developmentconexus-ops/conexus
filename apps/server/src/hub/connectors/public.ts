@@ -40,6 +40,7 @@ export {
   CopyDefinitionV2,
   CopyName,
   CopyPosition,
+  copyPrefixOf,
   deniesAccess,
 } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'

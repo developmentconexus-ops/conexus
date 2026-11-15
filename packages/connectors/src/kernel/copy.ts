@@ -12,6 +12,11 @@ export const CopyName = z
   .brand<'CopyName'>()
 export type CopyName = z.infer<typeof CopyName>
 
+/** `mercado-livre` + `pedidos` = `mercado_livre_pedidos`: the connector's id with `-` as `_`. */
+export function copyPrefixOf(connectorId: string): string {
+  return `${connectorId.replaceAll('-', '_')}_`
+}
+
 /** A column of the source as the source names it, in any case; quoted wherever it is written. */
 const CopyColumnName = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]{0,59}$/)
 export const CopyColumnType = z.enum(['text', 'numeric', 'bigint', 'date', 'timestamp', 'boolean'])

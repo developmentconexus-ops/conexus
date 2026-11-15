@@ -77,8 +77,8 @@ function leaseFrom(deps: CopiesDeps) {
 }
 
 /**
- * One source's write while the lease is the run's: the lease renewed in the same transaction, which
- * holds the copy's row until the source is written. False when the lease went to another run.
+ * A write of the run while the lease is the run's: the lease renewed in the same transaction, which
+ * holds the copy's row until the write is made. False when the lease went to another run.
  */
 export function whileHeld(
   deps: CopiesDeps,
