@@ -135,12 +135,12 @@ test('a empresa apagada leva as agendas', { timeout: 120_000 }, async (t) => {
   function schedules() {
     return hub.mastra.schedules.list({ workflowId: COPY_WORKFLOW })
   }
-  assert.equal((await schedules()).length, 2)
+  assert.equal((await schedules()).length, 4, 'a linha normal e a semanal de cada cópia')
 
   // A Projeto removed leaves the company's copies, and their schedules, alone.
   const project = `/api/companies/${companyId}/projects/${on.projectId}`
   assert.equal((await call(hub, on.ana, 'DELETE', project, { name: 'Pedidos' })).statusCode, 204)
-  assert.equal((await schedules()).length, 2)
+  assert.equal((await schedules()).length, 4, 'a linha normal e a semanal de cada cópia')
 
   // The schedules go before the rows: one that cannot be deleted keeps the company and its copies.
   const operator = await operatorOf(on)

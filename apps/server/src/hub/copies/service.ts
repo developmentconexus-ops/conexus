@@ -30,6 +30,7 @@ import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { sampleOf } from './sample.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
 import type { CopiesDeps, CopyTuning, InCompany } from './store.ts'
+import { ensureWholeLines } from './whole.ts'
 
 type Of = InCompany & { copyId: CopyId }
 
@@ -66,6 +67,8 @@ export function createCopyService(
     changeInterval: (input: Of & Parameters<typeof changeInterval>[1]) =>
       changeInterval(full, input),
     runNow: (input: Of) => runNow(full, input),
+    /** Once at start: the copies made before the weekly row get it. */
+    ensureWholeLines: () => ensureWholeLines(full),
     /** Apagar a copy with its table, admitting `manageCopies`. */
     delete: (input: Of) => deleteCopy(full, input),
     /** Propor (Capacidade 3): the Builder's turn, through the connectors' door; admits nobody, the turn did. */

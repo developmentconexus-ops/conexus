@@ -6,7 +6,7 @@ import type { CopyClock, CopyState } from '../../hub/copies/public.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
-import { COPY_WORKFLOW, CopyInput, scheduleIdOf } from './workflow.ts'
+import { COPY_WORKFLOW, CopyInput, scheduleIdOf, wholeScheduleIdOf } from './workflow.ts'
 
 /** Every copy's schedule is read in São Paulo, as the automations'. */
 const COPY_TIMEZONE = 'America/Sao_Paulo'
@@ -20,6 +20,9 @@ const CRONS = {
   '6h': '0 */6 * * *',
   '24h': '0 3 * * *',
 } as const satisfies Record<CopyInterval, string>
+
+/** Sundays at 04:07, once a week: the whole pass of an incremental copy, the only place of its cron (code C26). */
+const WHOLE_CRON = '7 4 * * 0'
 
 /** What the row's `metadata` keeps beside its `inputData`: the company, for the list of its copies, and the interval chosen. */
 const Metadata = z.object({ companyId: CompanyIdSchema, interval: CopyIntervalSchema })
@@ -53,52 +56,109 @@ function stateOf(owned: NonNullable<ReturnType<typeof ownedOf>>): CopyState {
   return { schedule, interval: owned.metadata.interval }
 }
 
-/** The copies' clock on `mastra.schedules`: one schedule row for each copy, with nothing of its own beside them. */
-export function createCopyClock(deps: { mastra: Mastra; log: FailureLog }): CopyClock {
+/** The rows' common acts on `mastra.schedules`: reads, the race-tolerant create and the weekly row's creation. */
+function rowsOf(deps: { mastra: Mastra; log: FailureLog }) {
   const { schedules } = deps.mastra
   async function update(id: string, patch: { cron: string; metadata: Metadata }) {
     await stored(schedules.update(id, patch))
     return 'UPDATED' as const
   }
+  /**
+   * The row made, or found made by the call that won the race: no stable field tells a race lost at
+   * the row's id (code C52), so the row read again is the race.
+   */
+  async function created(id: string, spec: Omit<Parameters<typeof schedules.create>[0], 'id'>) {
+    try {
+      await schedules.create({ id, ...spec })
+      return 'CREATED' as const
+    } catch (error) {
+      if (ownedOf(await stored(schedules.get(id)), deps.log) === undefined)
+        throw databaseFailure(error)
+      return 'EXISTS' as const
+    }
+  }
+  /** The weekly row made when missing, in the normal row's status when there is one; never an `update` of either. */
+  async function ensuredWhole(copy: {
+    companyId: CompanyId
+    copyId: CopyId
+    interval: CopyInterval
+  }) {
+    const { companyId, copyId, interval } = copy
+    const id = wholeScheduleIdOf(copyId)
+    if (ownedOf(await stored(schedules.get(id)), deps.log) !== undefined) return
+    const normal = ownedOf(await stored(schedules.get(scheduleIdOf(copyId))), deps.log)
+    await created(id, {
+      ...{ workflowId: COPY_WORKFLOW, cron: WHOLE_CRON, timezone: COPY_TIMEZONE },
+      ...{
+        metadata: { companyId, interval },
+        inputData: { version: 1, companyId, copyId, whole: true },
+      },
+      status: normal?.row.status === 'paused' ? 'paused' : 'active',
+    })
+  }
+  async function ownedRows() {
+    const rows = await stored(schedules.list({ workflowId: COPY_WORKFLOW }))
+    return rows.flatMap((row) => ownedOf(row, deps.log) ?? [])
+  }
+  return { schedules, update, created, ensuredWhole, ownedRows }
+}
+
+/** The copies' clock on `mastra.schedules`: a copy's normal row, and the weekly whole pass's row beside it when the copy is incremental. */
+export function createCopyClock(deps: { mastra: Mastra; log: FailureLog }): CopyClock {
+  const { schedules, update, created, ensuredWhole, ownedRows } = rowsOf(deps)
   return {
-    async set({ companyId, copyId, interval }) {
+    async set({ companyId, copyId, interval, incremental }) {
       const id = scheduleIdOf(copyId)
       const metadata = { companyId, interval }
       const cron = CRONS[interval]
+      // The weekly row comes first: if it fails, the normal row does not exist, and Ligar again still starts the first run.
+      if (incremental) await ensuredWhole({ companyId, copyId, interval })
+      else await stored(schedules.delete(wholeScheduleIdOf(copyId)))
       // `update` keeps a pause (the study's P1).
       if (ownedOf(await stored(schedules.get(id)), deps.log) !== undefined)
         return update(id, { cron, metadata })
-      try {
-        await schedules.create({
-          ...{ id, workflowId: COPY_WORKFLOW, cron, timezone: COPY_TIMEZONE, metadata },
-          inputData: { version: 1, companyId, copyId },
-        })
-        return 'CREATED'
-      } catch (error) {
-        // No stable field tells a race lost at the row's id (code C52): the row read again is the race.
-        if (ownedOf(await stored(schedules.get(id)), deps.log) === undefined)
-          throw databaseFailure(error)
-        return update(id, { cron, metadata })
-      }
+      const made = await created(id, {
+        ...{ workflowId: COPY_WORKFLOW, cron, timezone: COPY_TIMEZONE, metadata },
+        inputData: { version: 1, companyId, copyId },
+      })
+      return made === 'CREATED' ? 'CREATED' : update(id, { cron, metadata })
+    },
+    async ensureWhole({ companyId, copyId }) {
+      const normal = ownedOf(await stored(schedules.get(scheduleIdOf(copyId))), deps.log)
+      if (normal === undefined) return
+      await ensuredWhole({ companyId, copyId, interval: normal.metadata.interval })
+    },
+    async wholeMissing() {
+      const found = await ownedRows()
+      const withWhole = new Set(
+        found.filter((o) => o.input.whole === true).map((o) => o.input.copyId),
+      )
+      return found
+        .filter((o) => o.input.whole !== true && !withWhole.has(o.input.copyId))
+        .map((o) => ({ companyId: o.input.companyId, copyId: o.input.copyId }))
     },
     async pause(copyId) {
       await stored(schedules.pause(scheduleIdOf(copyId)))
+      if (await stored(schedules.get(wholeScheduleIdOf(copyId))))
+        await stored(schedules.pause(wholeScheduleIdOf(copyId)))
     },
     async resume(copyId) {
       await stored(schedules.resume(scheduleIdOf(copyId)))
+      if (await stored(schedules.get(wholeScheduleIdOf(copyId))))
+        await stored(schedules.resume(wholeScheduleIdOf(copyId)))
     },
     async runNow(copyId) {
       await stored(schedules.run(scheduleIdOf(copyId)))
     },
     async remove(copyId) {
+      await stored(schedules.delete(wholeScheduleIdOf(copyId)))
       await stored(schedules.delete(scheduleIdOf(copyId)))
     },
     async states(companyId: CompanyId) {
-      const rows = await stored(schedules.list({ workflowId: COPY_WORKFLOW }))
       const found = new Map<CopyId, CopyState>()
-      for (const row of rows) {
-        const owned = ownedOf(row, deps.log)
-        if (owned?.input.companyId === companyId) found.set(owned.input.copyId, stateOf(owned))
+      for (const owned of await ownedRows()) {
+        if (owned.input.whole !== true && owned.input.companyId === companyId)
+          found.set(owned.input.copyId, stateOf(owned))
       }
       return found
     },
