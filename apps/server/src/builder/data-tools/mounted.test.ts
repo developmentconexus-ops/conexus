@@ -156,3 +156,15 @@ test('o agente salvo usado por um membro lê o catálogo do Projeto, como o auto
   assert.deepEqual(await describedBy(on, byMember), author)
   assert.deepEqual(author, ['sankhya_vendas'])
 })
+
+test('uma conexão à espera de nova autorização tira a sua tabela da lista e não recusa o catálogo', async (t) => {
+  const on = await agentsOn(t, LISTING)
+  await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
+  const { assistant } = await conversationsOf(t, on)
+  await on.hub.test.asOwner(
+    "update connectors.connection set state = 'NEEDS_REAUTH' where id = $1",
+    [on.matriz],
+  )
+  assert.deepEqual(await describedBy(on, assistant), [])
+  assert.equal(resultOf(on).kind, 'CATALOG')
+})

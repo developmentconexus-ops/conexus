@@ -30,7 +30,7 @@ async function offeredTo(
   return on.calls.at(-1)?.tools.toSorted()
 }
 
-test('selecionar a ligação não dá leitura: o modelo recebe só o caderno dela, e a Consulta livre só chega com a ferramenta marcada', async (t) => {
+test('selecionar a ligação não dá leitura ao vivo: o modelo recebe o caderno dela e as duas ferramentas do dado copiado, e a Consulta livre só chega com a ferramenta marcada', async (t) => {
   const on = await agentsOn(t)
   const only = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda sobre as vendas.',

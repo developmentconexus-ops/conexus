@@ -29,7 +29,7 @@ import {
 } from './test-agents.ts'
 
 const CONEXUS = readFileSync(new URL('../conversation/prompt/conexus.md', import.meta.url), 'utf8')
-const ORDERS = 'tool_pedidos_matriz'
+const [ORDERS, ...DATA] = ['tool_pedidos_matriz', 'data_describe', 'data_query'] as const
 
 /** The model and effort the conversation's session holds, by Mastra's own route. */
 async function sessionModel(hub: Hub, person: Parameters<typeof call>[1], url: string) {
@@ -102,7 +102,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.ok(asked)
   assert.ok(asked.system.startsWith(CONEXUS.trim().slice(0, 200)))
   assert.ok(asked.system.indexOf('Responda sobre as vendas.') > asked.system.indexOf('Company:'))
-  assert.deepEqual(asked.tools.sort(), ['connector_notes', 'data_describe', 'data_query', ORDERS])
+  assert.deepEqual(asked.tools.toSorted(), ['connector_notes', ...DATA, ORDERS])
 
   const draft = await talking(
     t,
@@ -110,8 +110,8 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
     on.ana,
     await talkedTo(on.hub, on.ana, on.agents, agent.id, { draft: true }),
   )
-  const read = await call(on.hub, on.ana, 'GET', `${on.agents}/${agent.id}`)
-  const changed = await drafted(on.hub, on.ana, on.agents, Object(read.json()).agent, {
+  const read = Object((await call(on.hub, on.ana, 'GET', `${on.agents}/${agent.id}`)).json())
+  const changed = await drafted(on.hub, on.ana, on.agents, read.agent, {
     instructions: 'Responda sobre o estoque.',
     web: true,
     tools: [],
@@ -120,7 +120,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.equal(endOf(await draft.say('E o estoque?')), 'complete')
   const tested = on.calls.at(-1)
   assert.match(tested?.system ?? '', /Responda sobre o estoque\./)
-  assert.deepEqual(tested?.tools.sort(), ['data_describe', 'data_query', 'web_fetch', 'web_search'])
+  assert.deepEqual(tested?.tools.toSorted(), [...DATA, 'web_fetch', 'web_search'])
   assert.equal(changed.revision, agent.revision + 1)
 })
 

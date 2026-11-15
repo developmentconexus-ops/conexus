@@ -78,31 +78,37 @@ function refusedBy(answer: ReadAnswer | { kind: 'CATALOG_UNAVAILABLE' }): never 
   }
 }
 
-/** Where a table's rows came from, by the names the catalog gives its systems; a connection the catalog does not carry is never named by its id. */
-function originOf(
+/** Where a table's rows came from, by the names the catalog gives its systems; none, with a log, when a connection is not in the catalog: its id is never a name. */
+function originIn(
   table: string,
   kept: Kept,
   catalog: Described,
   log: Pick<FailureLog, 'error'>,
-): DataOrigin {
-  const systems = kept.connections.map((connection) => {
+): DataOrigin | undefined {
+  const systems: Described['systems'] = []
+  for (const connection of kept.connections) {
     const found = catalog.systems.find((each) => each.connection === connection)
     if (found === undefined) {
       log.error({ table, connection: String(connection) }, 'DATA_ORIGIN_UNREAD')
-      return refused({ kind: 'CATALOG_UNAVAILABLE' })
+      return undefined
     }
-    return found
-  })
-  const [first, ...others] = systems
-  if (first === undefined) return refused({ kind: 'CATALOG_UNAVAILABLE' })
+    systems.push(found)
+  }
+  const [first] = systems
+  if (first === undefined) return undefined
   const { lastRun } = kept
   return {
-    systems: [first, ...others].map((each) => each.name),
+    systems: systems.map((each) => each.name),
     connector: first.connector,
     table,
     lastRunEndedAt: lastRun?.endedAt ?? null,
     lastRun: lastRun?.outcome.kind ?? 'NONE',
   }
+}
+
+/** The origin of a table that was asked for by name or read by a query: without it the answer is refused. */
+function originOf(table: string, kept: Kept, catalog: Described, log: Pick<FailureLog, 'error'>) {
+  return originIn(table, kept, catalog, log) ?? refused({ kind: 'CATALOG_UNAVAILABLE' })
 }
 
 const DESCRIBE_DESCRIPTION =
@@ -127,9 +133,11 @@ function listed(catalog: Described, log: Log): DataResult {
       connector,
       reads: reads.map(({ operation, label, summary }) => ({ operation, label, summary })),
     })),
-    tables: catalog.tables.map((each) => {
-      const { table: _table, ...origin } = originOf(each.name, each.kept, catalog, log)
-      return { name: each.name, label: each.label, description: each.description, ...origin }
+    tables: catalog.tables.flatMap((each) => {
+      const found = originIn(each.name, each.kept, catalog, log)
+      if (found === undefined) return []
+      const { table: _table, ...origin } = found
+      return [{ name: each.name, label: each.label, description: each.description, ...origin }]
     }),
   }
 }
