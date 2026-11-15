@@ -2,6 +2,7 @@
 // changing, so a pull request can hide one (code C76).
 // Refusals are proved by planting each one in check-suppressions.test.ts.
 // Revalidate by 2027-04-13, or when Biome or TypeScript gain a second suppression syntax.
+import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { z } from 'zod'
@@ -26,6 +27,27 @@ function walk(dir: string): string[] {
   })
 }
 
+/** The files a pull request of this tree would hold: git's list, so a scratch folder outside git is not one; a tree with no git, by walking it. */
+function repositoryFiles(): string[] {
+  const listed = existsSync(join(root, '.git'))
+    ? spawnSync(
+        'git',
+        ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+        {
+          encoding: 'utf8',
+          maxBuffer: 64 * 1024 * 1024,
+        },
+      )
+    : undefined
+  return listed?.status === 0
+    ? listed.stdout
+        .split('\0')
+        .filter(Boolean)
+        .map((file) => join(root, file))
+        .filter((path) => existsSync(path))
+    : walk(root)
+}
+
 function hasCause(kind: string, rest: string): boolean {
   if (kind === 'biome-ignore-end') return true
   if (kind.startsWith('biome-ignore')) return CAUSE_AFTER_COLON.test(rest)
@@ -34,7 +56,7 @@ function hasCause(kind: string, rest: string): boolean {
 
 const counts: Record<string, number> = {}
 const problems: string[] = []
-for (const path of walk(root)) {
+for (const path of repositoryFiles()) {
   const file = relative(root, path)
   const workflow = WORKFLOW.test(file)
   if (!workflow && !SOURCE.test(file)) continue
