@@ -58,8 +58,16 @@ export const CopyDefinitionV1 = z
     version: z.literal(1),
     // No date filter in it: the paged read adds the dates of each pass.
     source: z.object({ kind: z.literal('QUERY'), sql: z.string().min(1).max(8000) }),
+    // Optional in the schema: a definition stored before the description existed is read again on every run (code C27).
+    description: z.string().trim().min(1).max(500).optional(),
     columns: z
-      .array(z.object({ name: CopyColumnName, type: CopyColumnType }))
+      .array(
+        z.object({
+          name: CopyColumnName,
+          type: CopyColumnType,
+          description: z.string().trim().min(1).max(200).optional(),
+        }),
+      )
       .min(1)
       .max(100),
     key: z.array(CopyColumnName).min(1).max(4), // bigint columns, in page order (version 1)

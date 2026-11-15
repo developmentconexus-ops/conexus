@@ -224,6 +224,14 @@ export async function propose(
     return malformed(deps, ids, a, { name: parsedName, definition: parsed, connections: named })
   const name = parsedName.data
   const definition = parsed.data
+  const undescribed = definition.columns.flatMap((column, at) =>
+    column.description
+      ? []
+      : [
+          `definition.columns.${at}.description: COPY_COLUMN_UNDESCRIBED: every column has a description.`,
+        ],
+  )
+  if (undescribed.length > 0) return { kind: 'MALFORMED', issues: undescribed }
   const taken = await existing(deps, ids, name)
   if (taken !== undefined) return taken
   const sourced = await sourcesOf(deps, ids, { ...a, definition })

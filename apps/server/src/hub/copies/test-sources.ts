@@ -39,8 +39,11 @@ export function ordersCopy(changed: boolean): CopyDefinitionV2 {
     description: 'Os pedidos de cada loja',
     columns: [
       { name: 'id', type: 'bigint', path: 'id', description: 'O número do pedido' },
-      { name: 'status', type: 'text', path: 'status' },
-      { name: 'atualizado', type: 'timestamp', path: 'date_last_updated' },
+      { name: 'status', type: 'text', path: 'status', description: 'A situação do pedido' },
+      {
+        ...{ name: 'atualizado', type: 'timestamp', path: 'date_last_updated' },
+        description: 'Quando o pedido mudou pela última vez',
+      },
     ],
     key: ['id'],
     changedSince: changed ? { column: 'atualizado' } : null,
@@ -52,7 +55,7 @@ export const ITEMS_COPY = CopyDefinitionV2.parse({
   version: 2,
   source: { kind: 'OPERATION', operation: 'anuncios', input: {} },
   description: 'Os anúncios da loja',
-  columns: [{ name: 'id', type: 'text', path: 'id' }],
+  columns: [{ name: 'id', type: 'text', path: 'id', description: 'O código do anúncio' }],
   key: ['id'],
   changedSince: null,
 })

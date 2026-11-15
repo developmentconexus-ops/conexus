@@ -83,7 +83,7 @@ test('ligar a proposta de uma leitura de lista: as recusas', async (t) => {
 })
 
 async function proposed(on: ListProposalsOn, name: string, column: object) {
-  const id = { name: 'id', type: 'bigint', path: 'id' }
+  const id = { name: 'id', type: 'bigint', path: 'id', description: 'O número do pedido' }
   const definition = { ...ordersCopy(false), columns: [id, column] }
   const answer = await on.propose({ name, definition })
   assert.equal(answer.kind, 'PROPOSED', JSON.stringify(answer))
@@ -92,10 +92,20 @@ async function proposed(on: ListProposalsOn, name: string, column: object) {
 
 test('uma cópia não guarda documento: o Ligar recusa a coluna de documento, e liga a de contato', async (t) => {
   const on = await listProposalsOn(t)
-  const cpf = { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' }
+  const cpf = {
+    name: 'cpf',
+    type: 'text',
+    path: 'buyer.billing_info.doc_number',
+    description: 'O documento',
+  }
   const refused = await on.enable(on.ana, await proposed(on, 'mercado_livre_documento', cpf))
   assert.equal(codeOf(refused), 'COPY_PERSONAL_NOT_KEPT', refused.body)
-  const nickname = { name: 'comprador', type: 'text', path: 'buyer.nickname' }
+  const nickname = {
+    name: 'comprador',
+    type: 'text',
+    path: 'buyer.nickname',
+    description: 'O apelido',
+  }
   assert.equal(
     (await on.enable(on.ana, await proposed(on, 'mercado_livre_comprador', nickname))).statusCode,
     201,

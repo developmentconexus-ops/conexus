@@ -26,7 +26,10 @@ test('a definição contra a leitura', async (t) => {
       'definition.changedSince: anuncios does not filter by change',
       {
         ...ITEMS_COPY,
-        columns: [...ITEMS_COPY.columns, { name: 'criado', type: 'timestamp', path: 'x' }],
+        columns: [
+          ...ITEMS_COPY.columns,
+          { name: 'criado', type: 'timestamp', path: 'x', description: 'Quando foi criado' },
+        ],
         changedSince: { column: 'criado' },
       },
     ],
@@ -283,4 +286,20 @@ test('o registro não leva dado', async (t) => {
   const written = JSON.stringify(on.hub.lines)
   for (const kept of ['paid', 'date_last_updated', 'Os pedidos de cada loja'])
     assert.ok(!written.includes(kept), kept)
+})
+
+test('propor: a coluna sem descrição', async (t) => {
+  const on = await listProposalsOn(t)
+  const orders = ordersCopy(true)
+  const [id, ...rest] = orders.columns
+  assert.ok(id)
+  const { description: _described, ...bare } = id
+  const answer = await on.propose({ definition: { ...orders, columns: [bare, ...rest] } })
+  assert.deepEqual(answer, {
+    kind: 'MALFORMED',
+    issues: [
+      'definition.columns.0.description: COPY_COLUMN_UNDESCRIBED: every column has a description.',
+    ],
+  })
+  assert.deepEqual(await on.proposalRows(), [])
 })

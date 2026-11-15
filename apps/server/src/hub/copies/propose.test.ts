@@ -201,3 +201,24 @@ test('o registro não leva dado', async (t) => {
   const written = JSON.stringify(on.hub.lines)
   assert.ok(!written.includes(definition.source.sql), 'the query is never logged')
 })
+
+test('propor: a coluna sem descrição', async (t) => {
+  const on = await copiesOn(t)
+  await grantMatriz(on)
+  const definition = definitionOf(on)
+  const [first, second, ...rest] = definition.columns
+  assert.ok(first && second)
+  const bare = {
+    ...definition,
+    columns: [{ name: first.name, type: first.type }, second, { name: 'X', type: 'text' }, ...rest],
+  }
+  const answer = await proposeAs(on, { definition: bare })
+  assert.deepEqual(answer, {
+    kind: 'MALFORMED',
+    issues: [
+      'definition.columns.0.description: COPY_COLUMN_UNDESCRIBED: every column has a description.',
+      'definition.columns.2.description: COPY_COLUMN_UNDESCRIBED: every column has a description.',
+    ],
+  })
+  assert.deepEqual(await proposalRows(on), [])
+})
