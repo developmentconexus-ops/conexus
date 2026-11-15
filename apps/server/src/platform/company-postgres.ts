@@ -17,7 +17,6 @@ import {
   accountRows,
   closePass,
   dropAccountRows,
-  dropCopyColumns,
   dropCopyTable,
   dropForeignRows,
   ensureCopyTable,
@@ -189,7 +188,6 @@ export type CompanyPostgres = {
   accountRows: Bound<typeof accountRows>
   /** The table of a copy that ended, with the app logins' read of it; repeatable. */
   dropCopyTable: Bound<typeof dropCopyTable>
-  dropCopyColumns: Bound<typeof dropCopyColumns>
   /** A copy released to a Projeto's run and read logins. */
   grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
   /** A release taken back; `ALL`, every one of the Projeto and the schema. */
@@ -363,7 +361,6 @@ export function createCompanyPostgres(deps: {
     dropForeignRows: (sync, input, signal) => dropForeignRows(context, sync, input, signal),
     accountRows: (sync, input) => accountRows(context, sync, input),
     dropCopyTable: (sync, input) => dropCopyTable(context, sync, input),
-    dropCopyColumns: (sync, input) => dropCopyColumns(context, sync, input),
     grantCopy: (sync, input) => grantCopy(context, sync, input),
     revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })

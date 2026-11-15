@@ -330,16 +330,6 @@ export function dropCopyTable(
   return sent(context, sync, { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` })
 }
 
-/** The columns a copy no longer keeps leave its table; repeatable. */
-export function dropCopyColumns(
-  context: Context,
-  sync: DatabaseUrl,
-  input: { copy: string; columns: readonly string[] },
-): Promise<SqlAnswer> {
-  const drops = input.columns.map((column) => `DROP COLUMN IF EXISTS ${quoted(column)}`)
-  return sent(context, sync, { text: `ALTER TABLE ${tableOf(input.copy)} ${drops.join(', ')}` })
-}
-
 /** What the sync login gives a Projeto's run and read logins, which its owner made first. */
 export function grantCopy(
   context: Context,
