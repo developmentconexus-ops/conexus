@@ -1,8 +1,10 @@
 import { fireEvent, screen, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer } from '../../platform/test-hub.tsx'
-import { copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { connection, copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
+import { CATALOG } from './test-sources.ts'
 
 // Uma cópia: o que é copiado e as rodadas (Capacidade 2, criterion 34).
 const server = hubServer()
@@ -141,4 +143,21 @@ test('o endereço antigo leva à tabela', async () => {
   )
   expect(await screen.findByText('Completa')).toBeTruthy()
   expect(screen.getByRole('heading', { name: 'vendas' })).toBeTruthy()
+})
+
+test('a falha das conexões: a frase e Tentar de novo, e não o id do conector', async () => {
+  let fail = true
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/connections`, () =>
+      fail
+        ? refusal('DATABASE_UNAVAILABLE')
+        : HttpResponse.json({ connectors: CATALOG, connections: [connection()], mayManage: true }),
+    ),
+  )
+  const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+  expect(screen.queryByText(/sankhya/)).toBeNull()
+  fail = false
+  fireEvent.click(retry)
+  expect(await screen.findByText(/Sankhya · a cada 30 min/)).toBeTruthy()
 })

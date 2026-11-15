@@ -131,16 +131,21 @@ export function CopyDetail(props: {
   const navigate = useNavigate()
   const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
   if (read.isPending || connections.isPending) return <Skeleton className="h-24 w-full" />
+  if (connections.isError) {
+    return (
+      <ReadFailure
+        text={sentenceOf(connections.error)}
+        onRetry={() => void connections.refetch()}
+      />
+    )
+  }
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
   const shown = props.tab === TableTab.enum.sample && !mayReadRows ? undefined : props.tab
   const tab = shown ?? TableTab.enum.columns
   const connector = copy.sources[0]?.connection.connector ?? ''
-  const system =
-    connections.data === undefined
-      ? connector
-      : connectorName(connections.data.connectors, connector)
+  const system = connectorName(connections.data.connectors, connector)
   const inactive = inactiveOf(copy)
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-lg">
