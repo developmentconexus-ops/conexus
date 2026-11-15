@@ -79,6 +79,7 @@ ALTER TABLE connectors.project_connection OWNER TO test_owner;
 ALTER TABLE copies.copy OWNER TO test_owner;
 ALTER TABLE copies.copy_proposal OWNER TO test_owner;
 ALTER TABLE copies.copy_proposal_source OWNER TO test_owner;
+ALTER TABLE copies.copy_reader OWNER TO test_owner;
 ALTER TABLE copies.copy_run OWNER TO test_owner;
 ALTER TABLE copies.copy_source OWNER TO test_owner;
 ALTER TABLE copies.copy_table_left OWNER TO test_owner;
