@@ -23,6 +23,32 @@ test('a amostra completa não leva a marca de que há mais', async () => {
   expect(screen.queryByText('A cópia tem mais linhas que estas cinco.')).toBeNull()
 })
 
+test('a amostra mostra o tipo de cada coluna', async () => {
+  const columns = [
+    { name: 'NUNOTA', type: 'bigint', description: null, inactiveSince: null },
+    { name: 'CODPARC', type: 'text', description: null, inactiveSince: null },
+  ]
+  openCopies(server, { copies: [copy({ shown: { ...copy().shown, columns } })] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByRole('img', { name: 'Número' })).toBeTruthy()
+  expect(table.getByRole('img', { name: 'Texto' })).toBeTruthy()
+})
+
+test('uma coluna fora da definição fica só com o nome', async () => {
+  openCopies(server, { copies: [copy()] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByText('NUNOTA')).toBeTruthy()
+  expect(table.queryByRole('img')).toBeNull()
+})
+
+test('o número da linha', async () => {
+  openCopies(server, { copies: [copy()] }, SAMPLE)
+  const table = within(await screen.findByRole('table'))
+  const rows = table.getAllByRole('row').slice(1)
+  expect(rows.map((row) => row.querySelector('td')?.textContent)).toEqual(['1', '2', '3', '4', '5'])
+  expect(table.getAllByRole('columnheader')[0]?.textContent).toBe('Linha')
+})
+
 test('o desenvolvedor não vê a aba Amostra', async () => {
   openCopies(server, { copies: [copy()] }, detailOf(VENDAS), 'developer')
   await screen.findByRole('heading', { name: 'vendas' })

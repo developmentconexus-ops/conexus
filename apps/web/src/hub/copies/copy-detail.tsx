@@ -237,7 +237,7 @@ export function CopyDetail(props: {
           </TabsContent>
           {mayReadRows && (
             <TabsContent value={TableTab.enum.sample} className="pt-md">
-              <CopySample companyId={companyId} copyId={copyId} />
+              <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
             </TabsContent>
           )}
           <TabsContent value={TableTab.enum.runs} className="pt-md">

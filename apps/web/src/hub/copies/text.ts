@@ -69,6 +69,7 @@ export const KEY_MARK = 'Chave'
 export const SEE_RUN = 'Ver a rodada'
 export const SAMPLE_INTRO = 'Cinco linhas da cópia.'
 export const SAMPLE_MORE = 'A cópia tem mais linhas que estas cinco.'
+export const ROW_NUMBER = 'Linha'
 export const SAMPLE_EMPTY = 'A cópia ainda não tem linhas.'
 export const COLUMN_HEADS = ['Coluna', 'Tipo', 'O que guarda'] as const
 export const DETAILS_TITLE = 'Detalhes'

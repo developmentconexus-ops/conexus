@@ -42,6 +42,20 @@ const COLUMNED = copyOf(VENDAS, 'vendas', 'Vendas', {
   },
 })
 
+const WIDE_COLUMNS = [
+  'NUNOTA',
+  'CODPARC',
+  'CODEMP',
+  'DTNEG',
+  'VLRNOTA',
+  'CODVEND',
+  'TIPMOV',
+  'STATUSNOTA',
+  'NUMNOTA',
+  'DTALTER',
+  'OBSERVACAO',
+]
+
 function columnedPage() {
   return {
     ...copiesPage([COLUMNED]),
@@ -169,6 +183,21 @@ export const TABLE_STATES: State[] = [
       }),
     },
     settle: (p) => waitFor(p, 'A cópia tem mais linhas que estas cinco.'),
+  },
+  {
+    name: 'A tabela, a amostra larga',
+    path: `${PAGE}/${VENDAS}?tab=sample`,
+    replies: {
+      ...columnedPage(),
+      [`GET ${COMPANY_API}/copies/${VENDAS}/sample`]: ok(sampleCopy, {
+        sample: {
+          columns: WIDE_COLUMNS,
+          rows: [1, 2, 3, 4, 5].map((n) => WIDE_COLUMNS.map((name) => `${name.slice(0, 3)}-${n}`)),
+          complete: true,
+        },
+      }),
+    },
+    settle: (p) => waitFor(p, 'Cinco linhas da cópia.'),
   },
   {
     name: 'Uma cópia que não existe',
