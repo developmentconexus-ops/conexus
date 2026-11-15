@@ -102,7 +102,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.ok(asked)
   assert.ok(asked.system.startsWith(CONEXUS.trim().slice(0, 200)))
   assert.ok(asked.system.indexOf('Responda sobre as vendas.') > asked.system.indexOf('Company:'))
-  assert.deepEqual(asked.tools.toSorted(), ['connector_notes', ORDERS])
+  assert.deepEqual(asked.tools.sort(), ['connector_notes', 'data_describe', 'data_query', ORDERS])
 
   const draft = await talking(
     t,
@@ -120,7 +120,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.equal(endOf(await draft.say('E o estoque?')), 'complete')
   const tested = on.calls.at(-1)
   assert.match(tested?.system ?? '', /Responda sobre o estoque\./)
-  assert.deepEqual(tested?.tools.toSorted(), ['web_fetch', 'web_search'])
+  assert.deepEqual(tested?.tools.sort(), ['data_describe', 'data_query', 'web_fetch', 'web_search'])
   assert.equal(changed.revision, agent.revision + 1)
 })
 

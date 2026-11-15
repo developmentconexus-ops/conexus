@@ -33,9 +33,9 @@ test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, inProject)).say('Oi')), 'complete')
 
   for (const asked of on.calls) {
-    const [fixed, block, ...mastra] = asked.systems
+    const [fixed, order, block, ...mastra] = asked.systems
     assert.equal(fixed?.text, FIXED)
-    assert.equal(fixed?.cached, true)
+    assert.deepEqual([fixed?.cached, order?.text.slice(0, 15)], [true, '## Company data'])
     assert.ok(block?.text.startsWith('Company: Empresa Teste.'), block?.text)
     assert.doesNotMatch(fixed.text, /Prévia|preview|conexus_check|submit_plan/i)
     assert.ok(
@@ -67,11 +67,11 @@ test('o bloco da conversa: a empresa, a pessoa e o papel, hoje e o fuso, o lugar
   assert.equal(endOf(await project.say('Oi')), 'complete')
   const today = `Today: ${turnDate()} (${weekdayOf(turnDate())}), America/Sao_Paulo.`
   assert.equal(
-    on.calls.at(0)?.systems.at(1)?.text,
+    on.calls.at(0)?.systems.at(2)?.text,
     `Company: Empresa Teste. Person: Ana Lima (owner). ${today} Place: Início. Connections in this conversation: Matriz (sankhya).`,
   )
   assert.equal(
-    on.calls.at(1)?.systems.at(1)?.text,
+    on.calls.at(1)?.systems.at(2)?.text,
     `Company: Empresa Teste. Person: Ana Lima (owner). ${today} Place: Projeto "Encomendas", which reads only the connections it received. Connections in this conversation: Matriz (sankhya).`,
   )
   assert.ok(on.calls.at(1)?.tools.includes('search_tools'))
@@ -81,7 +81,7 @@ test('o bloco da conversa: a empresa, a pessoa e o papel, hoje e o fuso, o lugar
   assert.equal(changed.statusCode, 200, changed.body)
   assert.equal(endOf(await project.say('E agora?')), 'complete')
   const after = on.calls.at(2)
-  assert.match(String(after?.systems.at(1)?.text), /Connections in this conversation: none\.$/)
+  assert.match(String(after?.systems.at(2)?.text), /Connections in this conversation: none\.$/)
   assert.ok(!after?.tools.includes('connector_read'))
   assert.doesNotMatch(String(after?.system), /<name>conexus-sankhya<\/name>/)
 })
@@ -124,7 +124,7 @@ test('trocar a escolha enquanto o Mastra grava o título: o turno seguinte lê s
 
   assert.equal(endOf(await conversation.say('E agora?')), 'complete')
   const after = on.calls.at(-1)
-  assert.match(String(after?.systems.at(1)?.text), /Connections in this conversation: none\.$/)
+  assert.match(String(after?.systems.at(2)?.text), /Connections in this conversation: none\.$/)
   assert.ok(!after?.tools.includes('connector_read'))
   assert.doesNotMatch(String(after?.system), /<name>conexus-sankhya<\/name>/)
   const now = Object((await call(on.hub, on.ana, 'GET', url)).json()).conversation
@@ -249,7 +249,7 @@ test('o dia da semana', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
-  const block = on.calls.at(0)?.systems.at(1)?.text ?? ''
+  const block = on.calls.at(0)?.systems.at(2)?.text ?? ''
   assert.match(
     block,
     /Today: \d{4}-\d{2}-\d{2} \((Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\), America\/Sao_Paulo\./,
@@ -275,8 +275,8 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
   const [forOwner, forMember] = on.calls
   assert.equal(forOwner?.systems.at(0)?.text, FIXED)
   assert.equal(forMember?.systems.at(0)?.text, FIXED, 'the fixed message is the same bytes')
-  const mine = forOwner?.systems.at(1)?.text ?? ''
-  const his = forMember?.systems.at(1)?.text ?? ''
+  const mine = forOwner?.systems.at(2)?.text ?? ''
+  const his = forMember?.systems.at(2)?.text ?? ''
   assert.doesNotMatch(mine, /You cannot note on a connection/)
   assert.doesNotMatch(mine, /does not create automations/)
   assert.match(his, /You cannot note on a connection here/)

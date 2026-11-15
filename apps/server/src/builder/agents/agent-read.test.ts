@@ -36,7 +36,11 @@ test('selecionar a ligação não dá leitura: o modelo recebe só o caderno del
     instructions: 'Responda sobre as vendas.',
     connections: [on.matriz],
   })
-  assert.deepEqual(await offeredTo(t, on, only.id), ['connector_notes'])
+  assert.deepEqual(await offeredTo(t, on, only.id), [
+    'connector_notes',
+    'data_describe',
+    'data_query',
+  ])
 
   const orders = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
   const made = await madeAgent(on.hub, on.ana, on.agents, 'Com pedidos')

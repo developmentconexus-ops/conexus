@@ -84,7 +84,7 @@ test('depois do reinício: um Hub novo sobre o mesmo banco continua o fio da con
     'one thread holds both questions',
   )
   const afterRestart = on.calls.at(-1)
-  assert.match(String(afterRestart?.systems.at(1)?.text), /Place: Projeto "Encomendas"/)
+  assert.match(String(afterRestart?.systems.at(2)?.text), /Place: Projeto "Encomendas"/)
   assert.ok(afterRestart?.texts.some((text) => text.includes('"kind":"OK"')))
   const listed = Object((await call(restarted, on.ana, 'GET', on.assistant)).json())
   assert.deepEqual(

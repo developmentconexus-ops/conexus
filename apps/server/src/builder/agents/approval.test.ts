@@ -31,6 +31,8 @@ const EVERY_OTHER: Extract<Reply, { kind: 'blocks' }>['blocks'] = [
   tool('tool_pedidos_matriz', { page: 1 }),
   tool('tool_vendas_do_mes', { mes: '2026-10' }),
   tool('connector_notes', {}),
+  tool('data_describe', {}),
+  tool('data_query', { sql: 'select 1' }),
   tool('web_fetch', { url: 'http://127.0.0.1:9/' }),
   { type: 'search', query: 'pedidos', results: [{ url: 'https://example.com', title: 'x' }] },
   tool('show_file', { path: 'nada.md' }),
