@@ -1141,7 +1141,7 @@ A mesma decisão de 2026-11-15, agora na leitura ao vivo: o Assistente e o Build
 
 A mesma decisão de 2026-11-15, agora no kit dos conectores e nos textos: nenhum conector declara onde mora dado pessoal, a conformidade não procura CPF, e-mail nem telefone nas respostas do dublê, e o dublê do Mercado Livre manda só o que a gravação do serviço real tem. Este pull request tira a declaração das operações, o tipo, a conformidade e a biblioteca do kit, e os textos da spec e das páginas de etapa que ainda diziam a regra antiga.
 
-Emenda do cartão curto de O rastreio do Mastra, guardado no nosso banco (`docs/steps/pattern-o-rastreio-do-mastra.md`) aprovada em 2026-11-15 (commit 618493cc7a5327578ee838ae6dce9a618d5fd8c3), à pergunta do firstmate se podia acertar essa frase do cartão do rastreio para a regra nova, registrando a aprovação dele, ou deixá-la como estava (a pergunta está descrita, não citada); a emenda só acerta essa frase à regra nova (a leitura respeita só o papel de quem pergunta) e não muda mais nada do cartão: "2. Acertar"
+Emenda do cartão curto de O rastreio do Mastra, guardado no nosso banco (`docs/steps/pattern-o-rastreio-do-mastra.md`) aprovada em 2026-11-15 (commit e8d5efe818de2c64f48b10a12ad3391fdf544351), à pergunta do firstmate se podia acertar essa frase do cartão do rastreio para a regra nova, registrando a aprovação dele, ou deixá-la como estava (a pergunta está descrita, não citada); a emenda só acerta essa frase à regra nova (a leitura respeita só o papel de quem pergunta) e não muda mais nada do cartão: "2. Acertar"
 
 ## Mudança de método: o cartão com a ficha de cada unidade
 
