@@ -36,7 +36,7 @@ import {
   WITH_EXPIRED,
 } from './sweep-replies.ts'
 import { ROLES_STATES } from './sweep-roles-states.ts'
-import { TABLE_STATES } from './sweep-table-states.ts'
+import { LAYER_STATES, TABLE_STATES } from './sweep-table-states.ts'
 
 /** Submits the invitation form, which the state's replies refuse, and waits for the refusal. */
 async function inviteRefused(page: Page, sentence: string) {
@@ -63,6 +63,7 @@ export const STATES: State[] = [
   ...DATA_STATES,
   ...COPIES_STATES,
   ...TABLE_STATES,
+  ...LAYER_STATES,
   ...COPY_PROPOSAL_STATES,
   ...ROLES_STATES,
   {

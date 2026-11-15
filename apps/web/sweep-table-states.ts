@@ -1,5 +1,13 @@
-import { listCopyRuns, sampleCopy } from '@conexus/hub-api'
+import {
+  AppTableName,
+  listAppTables,
+  listConnections,
+  listCopyRuns,
+  listProjects,
+  sampleCopy,
+} from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
+import { COMPANY } from './src/platform/fixtures.ts'
 import type { RunIn } from './sweep-copies-states.ts'
 import {
   CLIENTES,
@@ -15,6 +23,7 @@ import {
 } from './sweep-copies-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { PROJECT_ID } from './sweep-replies.ts'
 
 const COLUMNED = copyOf(VENDAS, 'vendas', 'Vendas', {
   shown: {
@@ -54,6 +63,71 @@ function detailPage(runs: RunIn[]) {
     }),
   }
 }
+
+const WITH_APP = {
+  id: PROJECT_ID,
+  name: 'Vendedores',
+  createdAt: '2026-10-17T12:00:00.000Z',
+  appVersion: 2,
+  publishedVersion: 2,
+}
+
+function appsPage() {
+  return {
+    ...copiesPage(LISTED),
+    [`GET /api/companies/${COMPANY.id}/projects`]: ok(listProjects, {
+      projects: [WITH_APP],
+      next: { kind: 'END' },
+      databaseReady: true,
+    }),
+    [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/tables`]: ok(listAppTables, {
+      kind: 'TABLES',
+      tables: [
+        {
+          schema: 'APP',
+          name: AppTableName.parse('clientes'),
+          rows: { kind: 'EXACT', rows: 1284 },
+        },
+        { schema: 'APP', name: AppTableName.parse('sobras'), rows: { kind: 'UNKNOWN' } },
+      ],
+    }),
+  }
+}
+
+/** The layers and the empty states of Dados itself. */
+export const LAYER_STATES: State[] = [
+  {
+    name: 'Dados, a camada Negócio vazia',
+    path: `${PAGE}?layer=business`,
+    replies: copiesPage(LISTED),
+    settle: (p) => waitFor(p, 'Nenhum conceito aprovado ainda'),
+  },
+  {
+    name: 'Dados, a camada Apps',
+    path: `${PAGE}?layer=apps`,
+    replies: appsPage(),
+    settle: (p) => waitFor(p, 'Publicado · v2'),
+  },
+  {
+    name: 'Dados, nenhum sistema ligado',
+    path: PAGE,
+    replies: {
+      ...copiesPage([]),
+      [`GET ${COMPANY_API}/connections`]: ok(listConnections, {
+        connectors: [],
+        connections: [],
+        mayManage: true,
+      }),
+    },
+    settle: (p) => waitFor(p, 'Nenhum sistema ligado ainda'),
+  },
+  {
+    name: 'Dados, a busca sem resposta',
+    path: `${PAGE}?q=zzz`,
+    replies: copiesPage(LISTED),
+    settle: (p) => waitFor(p, 'Nenhuma tabela com esse texto.'),
+  },
+]
 
 /** The page of one table of Dados: its tabs, the notice of a column that stopped, and the failures. */
 export const TABLE_STATES: State[] = [
