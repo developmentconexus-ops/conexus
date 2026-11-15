@@ -71,17 +71,15 @@ export const SAMPLE_INTRO = 'Cinco linhas da cópia.'
 export const SAMPLE_MORE = 'A cópia tem mais linhas que estas cinco.'
 export const SAMPLE_EMPTY = 'A cópia ainda não tem linhas.'
 export const COLUMN_HEADS = ['Coluna', 'Tipo', 'O que guarda'] as const
+export const DETAILS_TITLE = 'Detalhes'
 export const PANEL_LABELS = {
   system: 'Sistema',
-  connection: 'Ligação',
-  key: 'Chave',
-  mode: 'Modo',
-  interval: 'Intervalo',
+  frequency: 'Frequência',
   lastRun: 'Última rodada',
   rows: 'Linhas',
-  layer: 'Camada',
 } as const
-export const RAW_LAYER = 'Bruto'
+export const KEPT_IN_HUB =
+  'Só os nomes e as descrições ficam no Hub. As linhas ficam na cópia, no banco da empresa.'
 
 /** The line under a table's title: when the last pass copied it and how many rows, never an hour of a run that did not copy. */
 export function copiedText(system: string, copy: Pick<CopySummary, 'run' | 'rows'>): string {
@@ -205,6 +203,19 @@ export function outcomeText(run: CopyRun): string {
     case 'ERROR':
       return phraseOf(outcome.code)
   }
+}
+
+/** How often the copy runs, "A cada 30 min"; a copy with no clock has a dash. */
+export function frequencyText(interval: CopyInterval | null): string {
+  return interval === null ? NO_SCHEDULE : `A cada ${INTERVAL_LABEL[interval]}`
+}
+
+/** The last run as the panel says it: how it ended and when it ended, the same hour as the line under the title; an open run has no hour. */
+export function lastRunText(run: CopyRun | null): string {
+  if (run === null) return '—'
+  return run.endedAt === null
+    ? outcomeText(run)
+    : `${outcomeText(run)} · ${dayAndHour(run.endedAt)}`
 }
 
 /** A count in the person's own notation, "118.402". */

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
-import { ColumnsTab, OverviewTab, TablePanel } from './copy-facts.tsx'
+import { ColumnsTab, DetailsPanel, OverviewTab } from './copy-facts.tsx'
 import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
 import { CopySample } from './copy-sample.tsx'
 import { copyRunsQuery } from './queries.ts'
@@ -244,7 +244,7 @@ export function CopyDetail(props: {
             <Runs runs={runs} next={next} page={page} />
           </TabsContent>
         </Tabs>
-        <TablePanel copy={copy} system={system} />
+        <DetailsPanel copy={copy} system={system} entry={entry} />
       </div>
     </div>
   )

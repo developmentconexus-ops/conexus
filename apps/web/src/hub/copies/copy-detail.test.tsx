@@ -5,6 +5,7 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connection, copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
 import { CATALOG, ORDERS_SHOWN } from './test-sources.ts'
+import { KEPT_IN_HUB } from './text.ts'
 
 // Uma cópia: o que é copiado e as rodadas (Capacidade 2, criterion 34).
 const server = hubServer()
@@ -240,6 +241,59 @@ test('a aba fica no endereço', async () => {
   fireEvent.click(screen.getByRole('tab', { name: /Colunas/ }))
   await within(document.body).findByRole('table')
   expect(screen.queryByText('Completa')).toBeNull()
+})
+
+test('o painel Detalhes', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  const panel = within(await screen.findByRole('complementary', { name: 'Detalhes' }))
+  for (const text of [
+    'Sistema',
+    'Sankhya',
+    'Frequência',
+    'A cada 30 min',
+    'Última rodada',
+    'Linhas',
+    '118.402',
+  ]) {
+    expect(panel.getByText(text)).toBeTruthy()
+  }
+  expect(panel.getByText(/^Completa · .+/)).toBeTruthy()
+  expect(panel.getByText(KEPT_IN_HUB)).toBeTruthy()
+  expect(screen.queryByText('Camada')).toBeNull()
+  for (const gone of ['Ligação', 'Chave', 'Modo']) expect(panel.queryByText(gone)).toBeNull()
+})
+
+test('o painel e a linha da cópia dizem a mesma hora', async () => {
+  const run = copyRun({ startedAt: '2026-11-02T09:00:00.000Z' })
+  openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
+  const panel = within(await screen.findByRole('complementary', { name: 'Detalhes' }))
+  const inPanel = panel.getByText(/^Completa · /).textContent?.replace('Completa · ', '')
+  const line = (await screen.findByText(COPIED)).textContent ?? ''
+  expect(line.slice(line.indexOf('em ') + 3, line.indexOf(' · '))).toBe(inPanel)
+})
+
+test('a última rodada de um painel com a rodada aberta não diz hora', async () => {
+  const run = copyRun({ outcome: { kind: 'RUNNING' }, endedAt: null })
+  openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
+  const panel = within(await screen.findByRole('complementary', { name: 'Detalhes' }))
+  expect(panel.getByText('Rodando…')).toBeTruthy()
+})
+
+test('sem agendamento, a frequência é um traço', async () => {
+  openCopies(
+    server,
+    { copies: [copy({ interval: null, schedule: { kind: 'MISSING' } })], runs: [] },
+    DETAIL,
+  )
+  const panel = within(await screen.findByRole('complementary', { name: 'Detalhes' }))
+  expect(panel.getByText('Frequência').nextElementSibling?.textContent).toBe('—')
+})
+
+test('o painel vem depois das abas', async () => {
+  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
+  const panel = await screen.findByRole('complementary', { name: 'Detalhes' })
+  const tabs = screen.getByRole('tablist', { name: 'Tabela' })
+  expect(tabs.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 
 test('a aba desconhecida abre a Visão geral', async () => {

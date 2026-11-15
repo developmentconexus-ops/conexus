@@ -1,21 +1,22 @@
-import type { CopySummary } from '@conexus/hub-api'
+import type { ConnectorEntry, CopySummary } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
-import { dayAndHour } from '../../platform/dates.ts'
 import { Badge } from '../../ui/badge.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
+import { ConnectorLogo } from '../connectors/public.ts'
 import {
   COLUMN_HEADS,
   countText,
-  INTERVAL_LABEL,
+  DETAILS_TITLE,
+  frequencyText,
   inactiveMark,
+  KEPT_IN_HUB,
   KEY_MARK,
+  lastRunText,
   modeText,
   NO_DESCRIPTION,
-  NO_SCHEDULE,
   ORIGIN_READ,
   OVERVIEW_LABELS,
   PANEL_LABELS,
-  RAW_LAYER,
   typeText,
 } from './text.ts'
 
@@ -81,26 +82,34 @@ export function OverviewTab({ copy }: { copy: CopySummary }) {
   )
 }
 
-/** The panel beside the tabs: where the table comes from and how it is kept. */
-export function TablePanel(props: { copy: CopySummary; system: string }) {
-  const { copy, system } = props
-  const lines: [string, string][] = [
-    [PANEL_LABELS.system, system],
-    [PANEL_LABELS.connection, copy.sources.map((one) => one.connection.name).join(', ')],
-    [PANEL_LABELS.key, copy.shown.key.join(', ')],
-    [PANEL_LABELS.mode, modeText(copy.mode)],
-    [PANEL_LABELS.interval, copy.interval === null ? NO_SCHEDULE : INTERVAL_LABEL[copy.interval]],
-    [PANEL_LABELS.lastRun, copy.run === null ? '—' : dayAndHour(copy.run.startedAt)],
-    [PANEL_LABELS.rows, copy.rows === null ? '—' : countText(copy.rows)],
-    [PANEL_LABELS.layer, RAW_LAYER],
-  ]
+/** The panel beside the tabs: the system, how often the table is copied, the last run and the rows, and what stays in the Hub. */
+export function DetailsPanel(props: {
+  copy: CopySummary
+  system: string
+  entry: ConnectorEntry | undefined
+}) {
+  const { copy, system, entry } = props
   return (
-    <dl className="flex min-w-0 flex-col gap-md md:w-list md:shrink-0">
-      {lines.map(([label, value]) => (
-        <Line key={label} label={label}>
-          {value}
+    <aside
+      aria-labelledby="table-details"
+      className="flex min-w-0 flex-col gap-md md:w-list md:shrink-0"
+    >
+      <h2 id="table-details" className="text-label">
+        {DETAILS_TITLE}
+      </h2>
+      <dl className="flex min-w-0 flex-col gap-md">
+        <Line label={PANEL_LABELS.system}>
+          <span className="flex items-center gap-sm">
+            {entry !== undefined && <ConnectorLogo entry={entry} small />}
+            {system}
+          </span>
         </Line>
-      ))}
-    </dl>
+        <Line label={PANEL_LABELS.frequency}>{frequencyText(copy.interval)}</Line>
+        <Line label={PANEL_LABELS.lastRun}>{lastRunText(copy.run)}</Line>
+        <Line label={PANEL_LABELS.rows}>{copy.rows === null ? '—' : countText(copy.rows)}</Line>
+      </dl>
+      <hr className="border-line" />
+      <p className="text-text-2">{KEPT_IN_HUB}</p>
+    </aside>
   )
 }
