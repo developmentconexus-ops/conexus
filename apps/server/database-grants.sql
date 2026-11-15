@@ -371,6 +371,9 @@ GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company
 -- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11):
 -- Desligar ends, in the transaction that deletes the connection, the copy left with no source.
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy TO hub_company;
+-- Parte 1 da camada de dados, founder 2026-11-15 ("P2 Okay"): UPDATE(definition) and UPDATE(column_state), the
+-- run fills the template's descriptions the stored definition lacks and writes each source column's state.
+GRANT UPDATE(definition) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(claim_token) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(claimed_until) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(pass) ON TABLE copies.copy TO hub_company;
@@ -379,6 +382,8 @@ GRANT UPDATE("position") ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(watermark) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
+-- The other half of the grant above, in the order of the table's columns, which the snapshot keeps.
+GRANT UPDATE(column_state) ON TABLE copies.copy TO hub_company;
 -- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
 -- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
 -- dismiss it; the Hub never deletes one.
