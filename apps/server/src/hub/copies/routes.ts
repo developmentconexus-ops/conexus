@@ -13,6 +13,7 @@ import {
   resumeCopy,
   revokeProjectCopy,
   runCopy,
+  sampleCopy,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
@@ -77,6 +78,15 @@ export function registerCopyRoutes(app: FastifyInstance, copies: CopyService): v
         page: input.query.page,
       }),
     ),
+  )
+  serve(app, sampleCopy, async (input) =>
+    answer({
+      sample: await copies.sample({
+        ...inCompany(input),
+        copyId: input.params.copyId,
+        signal: input.signal,
+      }),
+    }),
   )
   serve(app, listProjectCopies, async (input) =>
     answer({

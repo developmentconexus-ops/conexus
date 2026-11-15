@@ -39,6 +39,8 @@ export type ListPage =
   | Readonly<{
       kind: 'PAGE'
       rows: readonly (readonly (string | null)[])[]
+      /** The columns whose path exists in at least one row of the page, in the definition's order. */
+      present: readonly string[]
       more: boolean
       next: CopyPosition | null
       total: number | null
@@ -99,21 +101,24 @@ function cellOf(type: CopyColumnTypeV2, value: unknown): Cell {
 }
 
 type Rowed =
-  | Readonly<{ kind: 'ROWS'; rows: (string | null)[][] }>
+  | Readonly<{ kind: 'ROWS'; rows: (string | null)[][]; present: ReadonlySet<string> }>
   | Extract<ListPage, { kind: 'MISFIT' }>
 
 function cellsOf(definition: CopyDefinitionV2, rows: Rows): Rowed {
   const read: (string | null)[][] = []
+  const present = new Set<string>()
   for (const row of rows.linhas) {
     const cells: (string | null)[] = []
     for (const { name, type, path } of definition.columns) {
-      const cell = cellOf(type, valueAt(row, path))
+      const value = valueAt(row, path)
+      if (value !== undefined) present.add(name)
+      const cell = cellOf(type, value)
       if (cell === undefined) return { kind: 'MISFIT', column: name, path }
       cells.push(cell)
     }
     read.push(cells)
   }
-  return { kind: 'ROWS', rows: read }
+  return { kind: 'ROWS', rows: read, present }
 }
 
 type Next =
@@ -178,6 +183,7 @@ export function listPageOf(a: {
   return {
     kind: 'PAGE',
     rows: read.rows,
+    present: definition.columns.map(({ name }) => name).filter((name) => read.present.has(name)),
     more: more && next.position !== null,
     next: next.position,
     total: rows.total ?? null,

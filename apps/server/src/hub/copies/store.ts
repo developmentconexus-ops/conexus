@@ -37,6 +37,7 @@ import {
 import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
+import { ColumnState } from './column-state.ts'
 import { copyModeOf } from './mode.ts'
 import { copy, copyProposal, copyProposalSource } from './tables.ts'
 
@@ -131,6 +132,7 @@ export function parsedCopy(row: typeof copy.$inferSelect) {
     createdBy: PersonIdSchema.parse(row.createdBy),
     name: CopyName.parse(row.name),
     definition: CopyDefinition.parse(row.definition),
+    columnState: ColumnState.parse(row.columnState),
   }
 }
 export type StoredCopy = ReturnType<typeof parsedCopy>
@@ -197,7 +199,11 @@ export function originOf(connector: string, definition: CopyDefinition): CopyOri
 }
 
 /** What the list shows of a definition: where it reads, its key, the two date filters, and the descriptions. */
-export function shownOf(connector: string, definition: CopyDefinition): CopyShown {
+export function shownOf(
+  connector: string,
+  definition: CopyDefinition,
+  state: ColumnState = {},
+): CopyShown {
   const window = definition.version === 1 ? definition.window : undefined
   return {
     source: originOf(connector, definition),
@@ -208,7 +214,7 @@ export function shownOf(connector: string, definition: CopyDefinition): CopyShow
     columns: definition.columns.map(({ name, type, description }) => ({
       ...{ name, type },
       description: description ?? null,
-      inactiveSince: null,
+      inactiveSince: state[name]?.inactiveSince ?? null,
     })),
   }
 }

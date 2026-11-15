@@ -254,6 +254,7 @@ function offsetPages() {
   assert.deepEqual(more, {
     kind: 'PAGE',
     rows: [['a'], ['b']],
+    present: ['id'],
     more: true,
     next: { kind: 'OFFSET', offset: 2 },
     total: 9,
@@ -266,7 +267,7 @@ function offsetPages() {
   assert.equal(later.kind === 'PAGE' && later.next?.kind === 'OFFSET' && later.next.offset, 51)
   assert.deepEqual(
     pageOf(RIGHT, { linhas: [], temMais: true, total: 9 }, { kind: 'OFFSET', offset: 50 }),
-    { kind: 'PAGE', rows: [], more: false, next: null, total: 9 },
+    { kind: 'PAGE', rows: [], present: [], more: false, next: null, total: 9 },
     'uma página vazia termina a passada, mesmo dizendo que há mais',
   )
   const last = pageOf(RIGHT, { linhas: [{ id: 'a' }], temMais: false })

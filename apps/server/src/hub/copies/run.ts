@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { CopyRunId } from '@conexus/hub-api'
 import { and, desc, eq, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import { connectionNamesOf } from '../connectors/public.ts'
+import type { Seen } from './column-state.ts'
+import { nextColumnState } from './column-state.ts'
 import { describedCopy } from './describe.ts'
 import { retiredColumns } from './retire.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
@@ -87,18 +89,32 @@ function reasonOf(outcome: CopyOutcome): string | null {
   }
 }
 
+type Finish = Readonly<{ began: Date; seen: Seen }>
+
+/** A COMPLETE run of a version 2 copy writes its columns' state with the lease's end; no other run touches it. */
+function columnStateOf(claimed: Claimed, outcome: CopyOutcome, finish: Finish) {
+  const { definition, columnState } = claimed.copy
+  if (outcome.kind !== 'COMPLETE' || definition.version !== 2) return {}
+  const columns = definition.columns.map(({ name }) => name)
+  return { columnState: nextColumnState({ previous: columnState, columns, ...finish }) }
+}
+
 /** The end: the lease let go, the run's row closed and pointed at, the runs past the newest 100 gone. */
 async function ended(
   deps: CopiesDeps,
   claimed: Claimed,
   outcome: CopyOutcome,
   counts: Counts & { started: number },
+  finish: Finish,
 ): Promise<CopyRunEnd> {
   const { companyId, id: copyId } = claimed.copy
   const done = await deps.database.command(companyScope(companyId), async (tx) => {
     const [row] = await tx
       .update(copy)
-      .set({ claimToken: null, claimedUntil: null, lastRunId: claimed.holder.runId })
+      .set({
+        ...{ claimToken: null, claimedUntil: null, lastRunId: claimed.holder.runId },
+        ...columnStateOf(claimed, outcome, finish),
+      })
       .where(held(claimed))
       .returning({ id: copy.id })
     if (row === undefined) return false
@@ -172,8 +188,9 @@ export async function runCopy(
   if (claimed.kind !== 'CLAIMED') return claimed
   const held: Claimed = claimed
   const counts = { pages: 0, read: 0, written: 0, started: performance.now() }
+  const finish: Finish = { began: new Date(), seen: { present: new Set(), whole: true, rows: 0 } }
   function end(outcome: CopyOutcome) {
-    return ended(deps, held, outcome, counts)
+    return ended(deps, held, outcome, counts, finish)
   }
   const { sync } = claimed
   if (sync === undefined) return end(DATABASE_DOWN)
@@ -181,7 +198,17 @@ export async function runCopy(
   if (described.kind === 'END') return described.end
   const current: Claimed = { ...held, copy: described.copy }
   const table = copyTableOf(current.copy, current.sources)
-  const run: Run = { deps, ids, signal, claimed: current, sync, table, counts, end }
+  const run: Run = {
+    deps,
+    ids,
+    signal,
+    claimed: current,
+    sync,
+    table,
+    counts,
+    seen: finish.seen,
+    end,
+  }
   const trimmed = await trimmedRun(run)
   if (trimmed.kind === 'END') return trimmed.end
   const pass = trimmed.run

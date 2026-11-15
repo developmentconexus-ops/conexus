@@ -155,7 +155,7 @@ async function summaries(
       rows: row.rows,
       mode: copyModeOf(row.definition),
       projects: read.released.get(row.id) ?? [],
-      shown: shownOf(row.connectorId, row.definition),
+      shown: shownOf(row.connectorId, row.definition, row.columnState),
     }
   })
 }

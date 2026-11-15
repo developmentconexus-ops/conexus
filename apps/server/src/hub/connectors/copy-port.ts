@@ -44,7 +44,14 @@ type PagedRead =
 
 /** One page of a copy's source as the run reads it. */
 export type CopyRead =
-  | Readonly<{ kind: 'PAGE'; page: CopyPage; next: CopyPosition | null; total: number | null }>
+  | Readonly<{
+      kind: 'PAGE'
+      page: CopyPage
+      next: CopyPosition | null
+      total: number | null
+      /** The columns that came in a row of the page; null in version 1, whose columns are our own query's. */
+      present: readonly string[] | null
+    }>
   /** The provider answered 429 (decision 0058), or the connector's lane passed its deadline (`waitMs` null). */
   | Readonly<{ kind: 'WAIT'; waitMs: number | null }>
   /** The cursor is older than the read's declared validity: nothing was called, the pass starts again. */
@@ -206,7 +213,7 @@ async function pageV1(deps: Deps, a: SourcePage & { definition: CopyDefinitionV1
   if (read.kind === 'IN_LINE') return { kind: 'WAIT', waitMs: null } as const
   if (read.kind === 'REFUSED') return refusedRead(read.refusal)
   const next = lastKey(definition, read.page, a.position)
-  return { kind: 'PAGE', page: read.page, next, total: null } as const
+  return { kind: 'PAGE', page: read.page, next, total: null, present: null } as const
 }
 
 type ListAsked = Readonly<{
@@ -282,8 +289,8 @@ async function pageV2(
   const page = listPageOf({ list: read.list, definition, position, rows: read.rows, at: read.at })
   switch (page.kind) {
     case 'PAGE': {
-      const { rows: cells, more, next, total } = page
-      return { kind: 'PAGE', page: { rows: cells, more }, next, total }
+      const { rows: cells, more, next, total, present } = page
+      return { kind: 'PAGE', page: { rows: cells, more }, next, total, present }
     }
     case 'MISFIT':
     case 'UNREADABLE':

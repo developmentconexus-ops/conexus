@@ -155,6 +155,8 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
   const { companyId } = input
   const copyId = stored.id
   const answered = await deps.companyPostgres.ensureSync(owner)
+  const reader =
+    answered.kind === 'DONE' ? await deps.companyPostgres.ensureReader(owner) : answered
   const { tablesLeft } = await dropEndedCopies(deps, input)
   if (tablesLeft.includes(stored.name)) throw unavailable
   const host = new URL(owner.reveal()).hostname
@@ -162,12 +164,12 @@ export async function enableCopy(deps: CopiesDeps, input: Enabling): Promise<Cop
     sourcesOf(tx, { companyId, copyId }),
   )
   const table =
-    answered.kind === 'DONE'
+    reader.kind === 'DONE'
       ? await deps.companyPostgres.ensureCopyTable(
           await deps.companyPostgres.syncAddress(host),
           copyTableOf(stored, sources),
         )
-      : answered
+      : reader
   if (table.kind !== 'DONE') {
     const code = table.kind === 'REFUSED' ? table.code : table.kind
     deps.log.error({ companyId, copyId, code }, 'COPY_DATABASE_FAILED')
