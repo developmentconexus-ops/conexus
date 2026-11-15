@@ -5,6 +5,7 @@ import type { Claimed } from './source-pass.ts'
 import { DATABASE_DOWN, lost } from './source-pass.ts'
 import { whileHeld } from './sources.ts'
 import type { CopiesDeps, CopyRunEnd, StoredCopy } from './store.ts'
+import { modelOf } from './store.ts'
 import { copy } from './tables.ts'
 
 export type Retired =
@@ -28,12 +29,8 @@ export async function retiredColumns(
   const { claimed, sync, table, end } = input
   const { copy: stored } = claimed
   const { companyId, id: copyId } = stored
-  if (stored.definition.version !== 1 || stored.model === null)
-    return { kind: 'COPY', copy: stored }
-  const entry = deps
-    .connectors()
-    .catalog()
-    .find((each) => each.connector === stored.connectorId && each.model.id === stored.model)
+  if (stored.definition.version !== 1) return { kind: 'COPY', copy: stored }
+  const entry = modelOf(deps, stored)
   const kept = stored.definition
   const gone = (entry?.model.retired ?? []).filter((name) =>
     kept.columns.some((column) => column.name === name),

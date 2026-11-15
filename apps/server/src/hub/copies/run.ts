@@ -141,6 +141,21 @@ function inRunOrder(sources: readonly StoredSource[]): StoredSource[] {
   ]
 }
 
+type Trimmed = Readonly<{ kind: 'RUN'; run: Run }> | Readonly<{ kind: 'END'; end: CopyRunEnd }>
+
+/** What leaves a copy before its sources are read: an account no source holds, then the columns its model retired. */
+async function trimmedRun(run: Run): Promise<Trimmed> {
+  if (!(await netDropped(run))) return { kind: 'END', end: await run.end(DATABASE_DOWN) }
+  const { deps, claimed, sync, table, end } = run
+  const retired = await retiredColumns(deps, { claimed, sync, table: table.name, end })
+  if (retired.kind === 'END') return retired
+  const next = { ...claimed, copy: retired.copy }
+  return {
+    kind: 'RUN',
+    run: { ...run, claimed: next, table: copyTableOf(retired.copy, claimed.sources) },
+  }
+}
+
 /**
  * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then the rows of an
  * account that is no source's out of the table (Desligar's net), then each source's pass. A source
@@ -167,11 +182,9 @@ export async function runCopy(
   const current: Claimed = { ...held, copy: described.copy }
   const table = copyTableOf(current.copy, current.sources)
   const run: Run = { deps, ids, signal, claimed: current, sync, table, counts, end }
-  if (!(await netDropped(run))) return end(DATABASE_DOWN)
-  const retired = await retiredColumns(deps, { claimed: current, sync, table: table.name, end })
-  if (retired.kind === 'END') return retired.end
-  const kept: Claimed = { ...current, copy: retired.copy }
-  const pass: Run = { ...run, claimed: kept, table: copyTableOf(retired.copy, current.sources) }
+  const trimmed = await trimmedRun(run)
+  if (trimmed.kind === 'END') return trimmed.end
+  const pass = trimmed.run
   const byApp = deps.connectors().countedBy(held.copy.connectorId) === 'APP'
   let waited = false
   for (const source of inRunOrder(held.sources)) {

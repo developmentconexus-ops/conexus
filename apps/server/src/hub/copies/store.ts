@@ -311,3 +311,15 @@ export async function proposalsOf(
     ]
   })
 }
+
+/** The connector's model a copy was ligada from, as the kit offers it now; none when the copy has no model or the kit dropped it. */
+export function modelOf(
+  deps: Pick<CopiesDeps, 'connectors'>,
+  stored: Pick<StoredCopy, 'connectorId' | 'model'>,
+) {
+  if (stored.model === null) return undefined
+  return deps
+    .connectors()
+    .catalog()
+    .find((entry) => entry.connector === stored.connectorId && entry.model.id === stored.model)
+}
