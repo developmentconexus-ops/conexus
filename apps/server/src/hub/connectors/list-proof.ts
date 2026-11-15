@@ -46,8 +46,8 @@ type Counted =
   | Readonly<{ kind: 'UNREADABLE'; reason: string }>
 
 /** A page whose proof stops the proposal: a cell that does not fit its type, or a column that holds a document. */
-function turnedAway(counted: Counted): ListMisfit | DocumentColumn | undefined {
-  return counted.kind === 'MISFIT' || counted.kind === 'DOCUMENT_COLUMN' ? counted : undefined
+function isTurnedAway(counted: Counted): counted is ListMisfit | DocumentColumn {
+  return counted.kind === 'MISFIT' || counted.kind === 'DOCUMENT_COLUMN'
 }
 
 /** A page of proof as counts: its rows and whether more follow, the key's nulls and repeats, each column's nulls. */
@@ -143,8 +143,7 @@ export async function provedList(
   const first = await listAnswer(deps, { ...asked, since: null })
   if (first.kind !== 'ROWS') return refusalOf(first)
   const counted = countedOf(definition, first)
-  const away = turnedAway(counted)
-  if (away !== undefined) return away
+  if (isTurnedAway(counted)) return counted
   if (counted.kind === 'UNREADABLE') return unreadable(counted.reason)
   const { counts } = counted
   if (definition.changedSince === null || first.list.changed === null)
@@ -159,8 +158,7 @@ export async function provedList(
   const changed = await listAnswer(deps, { ...asked, since })
   if (changed.kind !== 'ROWS') return refusalOf(changed)
   const day = countedOf(definition, changed)
-  const awayDay = turnedAway(day)
-  if (awayDay !== undefined) return awayDay
+  if (isTurnedAway(day)) return day
   if (day.kind === 'UNREADABLE') return unreadable(day.reason)
   const changedLastDay = day.counts.total ?? day.counts.rows
   return {
