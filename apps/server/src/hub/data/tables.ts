@@ -20,6 +20,10 @@ export const DATA_READ_AGENTS = ['ASSISTANT', 'BUILDER', 'AGENT', 'APP'] as cons
 export const DATA_READ_VERBS = ['SAMPLE', 'QUERY', 'LIVE'] as const
 export const DATA_READ_QUERY_MAX = 4000
 
+function listed(values: readonly string[]) {
+  return sql.raw(values.map((value) => `'${value}'`).join(', '))
+}
+
 function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
@@ -56,15 +60,15 @@ export const dataRead = data.table(
       foreignColumns: [company.id],
     }).onDelete('cascade'),
     index('data_read_company_at_idx').on(table.companyId, table.at),
-    check('data_read_agent', sql`${table.agent} in ('ASSISTANT', 'BUILDER', 'AGENT', 'APP')`),
-    check('data_read_verb', sql`${table.verb} in ('SAMPLE', 'QUERY', 'LIVE')`),
+    check('data_read_agent', sql`${table.agent} in (${listed(DATA_READ_AGENTS)})`),
+    check('data_read_verb', sql`${table.verb} in (${listed(DATA_READ_VERBS)})`),
     check(
       'data_read_live',
       sql`(${table.verb} = 'LIVE') = (${table.connectionId} is not null and ${table.operation} is not null)`,
     ),
     check(
       'data_read_query',
-      sql`(${table.query} is null or ${table.verb} = 'QUERY') and char_length(${table.query}) <= 4000`,
+      sql`(${table.query} is null or ${table.verb} = 'QUERY') and char_length(${table.query}) <= ${sql.raw(String(DATA_READ_QUERY_MAX))}`,
     ),
     check(
       'data_read_counts',
