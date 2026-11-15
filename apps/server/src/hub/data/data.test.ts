@@ -50,7 +50,9 @@ test('descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro n�
   const on = await copiesOn(t)
   const developer = await memberOn(on.hub, on.companyId, DAVI, 'developer')
   await on.enable('vendas')
-  const owner = await catalogOf(inCompany(on))
+  const described = await inCompany(on).describe()
+  assert.deepEqual(Object.keys(described).sort(), ['kind', 'systems', 'tables'])
+  const owner = Catalog.parse(described)
   assert.deepEqual(
     owner.tables.map(({ name }) => name),
     ['sankhya_vendas'],

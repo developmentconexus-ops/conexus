@@ -114,12 +114,11 @@ const CATALOG = Catalog.parse({
       },
     },
   ],
-  withheld: [{ name: 'erp_titulos', label: 'Títulos a receber' }],
 })
 
 type Answer<K extends 'rows' | 'live' | 'funnel' | 'query'> = Awaited<ReturnType<DataSources[K]>>
 
-const WITHHELD: DataWorld['withheld'] = {
+const HIDDEN: DataWorld['hidden'] = {
   table: 'erp_titulos',
   query: 'select 1 from erp_titulos',
 }
@@ -160,7 +159,7 @@ function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
       if (!isDown.query) reached.query.push(sql)
       const answer: Answer<'query'> = isDown.query
         ? { kind: 'TABLE_UNAVAILABLE' }
-        : sql === WITHHELD.query
+        : sql === HIDDEN.query
           ? { kind: 'NOT_IN_ROLE' }
           : sql === QUERIES.refused
             ? {
@@ -191,7 +190,7 @@ function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
     reached,
     gave,
     queries: QUERIES,
-    withheld: WITHHELD,
+    hidden: HIDDEN,
     down(part) {
       isDown[part] = true
     },
