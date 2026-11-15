@@ -78,11 +78,33 @@ test('ligar: a linha, o esquema e a tabela', async (t) => {
     [`runNow ${copyId}`],
   )
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_ENABLED'))
+  const owner = new pg.Client({ connectionString: on.owner.reveal() })
+  await owner.connect()
+  try {
+    const roles = await owner.query(`select 1 from pg_roles where rolname = 'conexus_read'`)
+    assert.equal(roles.rowCount, 1, 'o login de leitura existe depois de ligar')
+  } finally {
+    await owner.end()
+  }
 
   assert.equal(await on.enable('vendas', { key }), copyId, 'a mesma chave acha a mesma cópia')
   assert.equal((await copiesOf(on)).length, 1, 'nada a mais')
   await refusedWith('IDEMPOTENCY_CONFLICT', () => on.enable('vendas', { key, interval: '1h' }))
   await refusedWith('IDEMPOTENCY_CONFLICT', () => on.enable('clientes', { key }))
+})
+
+test('ligar: o banco recusa o login de leitura', async (t) => {
+  const on = await copiesOn(t)
+  t.mock.method(on.hub.postgres.companyPostgres, 'ensureReader', async () => ({
+    kind: 'REFUSED' as const,
+    code: '42501',
+  }))
+  await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.enable('vendas'))
+  assert.ok(
+    on.hub.lines.some(
+      (line) => line.message === 'COPY_DATABASE_FAILED' && line.fields.code === '42501',
+    ),
+  )
 })
 
 test('ligar: o banco recusa um column_state que não é objeto nem nulo', async (t) => {

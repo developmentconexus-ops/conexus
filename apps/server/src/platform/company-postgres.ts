@@ -10,6 +10,8 @@ import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } fro
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
+import type { Bound, CopyReader } from './copy-reader.ts'
+import { copyReader } from './copy-reader.ts'
 import type { CopyTable } from './copy-sql.ts'
 import {
   accountRows,
@@ -32,6 +34,7 @@ import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
 export type { AppRead, AppReadAnswer } from './app-read.ts'
 export type { ReadResult, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
+export { quoted } from './app-sql.ts'
 
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
@@ -154,11 +157,6 @@ type MigrateAnswer =
   | { kind: 'REFUSED_BY_RULE'; rule: RuleBreak }
   | Extract<SqlAnswer, { kind: 'REFUSED' | 'NO_ANSWER' | 'TOO_LARGE' }>
 
-/** A copy act of `copy-sql.ts` with the context already given. */
-type Bound<F> = F extends (context: Context, ...rest: infer A) => infer R
-  ? (...rest: A) => R
-  : never
-
 export type CompanyPostgres = {
   ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
   /** The read login of an app made before it existed, or whose creation a cut left (step 24.3, U3). */
@@ -202,7 +200,7 @@ export type CompanyPostgres = {
     sync: DatabaseUrl,
     input: { copy: string | 'ALL'; projectId: ProjectId },
   ): Promise<SqlAnswer>
-}
+} & CopyReader
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
 function migrationDigest(migration: AppMigration): string {
@@ -352,6 +350,7 @@ export function createCompanyPostgres(deps: {
 }): CompanyPostgres {
   const context: Context = { transport: deps.transport, key: deps.appLoginKey.reveal() }
   return Object.freeze({
+    ...copyReader(context),
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
     readApp: (read, statements, signal) => readApp(context, read, statements, signal),
