@@ -8,18 +8,17 @@ import { waitFor } from './sweep-kit.ts'
 import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
 type CopyIn = z.input<typeof CopySummary>
-type RunIn = z.input<typeof CopyRun>
+export type RunIn = z.input<typeof CopyRun>
 export type ProposalIn = z.input<typeof CopyProposalSummary>
 
-const COMPANY_API = `/api/companies/${COMPANY.id}`
+export const COMPANY_API = `/api/companies/${COMPANY.id}`
 export const PAGE = `/companies/${COMPANY.id}/data`
-const COPY_PAGE = `/companies/${COMPANY.id}/copies`
-const VENDAS = '11111111-1111-4111-8111-111111111111'
-const CLIENTES = '22222222-2222-4222-8222-222222222222'
+export const VENDAS = '11111111-1111-4111-8111-111111111111'
+export const CLIENTES = '22222222-2222-4222-8222-222222222222'
 const PRODUTOS = '33333333-3333-4333-8333-333333333333'
 export const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 
-const DONE: RunIn = {
+export const DONE: RunIn = {
   id: '44444444-4444-4444-8444-444444444444',
   startedAt: '2026-11-02T10:00:00.000Z',
   endedAt: '2026-11-02T10:00:42.000Z',
@@ -27,21 +26,21 @@ const DONE: RunIn = {
   read: 118402,
   written: 118402,
 }
-const RUNNING: RunIn = {
+export const RUNNING: RunIn = {
   ...DONE,
   outcome: { kind: 'RUNNING' },
   endedAt: null,
   read: 9871,
   written: 9871,
 } as const
-const SOURCE_DOWN: RunIn = {
+export const SOURCE_DOWN: RunIn = {
   ...DONE,
   outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' },
   read: 500,
   written: 500,
 } as const
 
-function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>): CopyIn {
+export function copyOf(id: string, name: string, label: string, fields: Partial<CopyIn>): CopyIn {
   return {
     id,
     name,
@@ -138,17 +137,6 @@ export function copiesPage(copies: CopyIn[], proposals: ProposalIn[] = []) {
   }
 }
 
-function detailPage(runs: RunIn[]) {
-  return {
-    ...copiesPage(LISTED),
-    [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: ok(listCopyRuns, {
-      copy: copyOf(VENDAS, 'vendas', 'Vendas', {}),
-      runs,
-      next: { kind: 'END' },
-    }),
-  }
-}
-
 /** The dialog of Ligar with a connection and a model chosen, then Ligar pressed: the Hub refuses with `replies`. */
 function linkRefused(code: 'COPY_DATABASE_UNAVAILABLE' | 'COPY_EXISTS', sentence: string): State {
   return {
@@ -224,27 +212,6 @@ export const COPIES_STATES: State[] = [
     },
   },
   {
-    name: 'Uma cópia, a consulta e as rodadas',
-    path: `${COPY_PAGE}/${VENDAS}`,
-    replies: detailPage([RUNNING, SOURCE_DOWN, DONE]),
-    settle: (p) => waitFor(p, 'O sistema não respondeu.'),
-  },
-  {
-    name: 'Uma cópia, sem rodada ainda',
-    path: `${COPY_PAGE}/${VENDAS}`,
-    replies: detailPage([]),
-    settle: (p) => waitFor(p, 'A primeira rodada ainda não terminou.'),
-  },
-  {
-    name: 'Uma cópia que não existe',
-    path: `${COPY_PAGE}/${CLIENTES.replace('2', '9')}`,
-    replies: {
-      ...copiesPage(LISTED),
-      [`GET ${COMPANY_API}/copies/${CLIENTES.replace('2', '9')}/runs`]: failure('COPY_NOT_FOUND'),
-    },
-    settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
-  },
-  {
     name: 'Dados, o menu da linha',
     path: PAGE,
     replies: copiesPage(LISTED),
@@ -281,13 +248,4 @@ export const COPIES_STATES: State[] = [
   },
   linkRefused('COPY_DATABASE_UNAVAILABLE', 'O banco da empresa não respondeu.'),
   linkRefused('COPY_EXISTS', 'A empresa já tem esta cópia.'),
-  {
-    name: 'Uma cópia, a leitura das rodadas que falhou',
-    path: `${COPY_PAGE}/${VENDAS}`,
-    replies: {
-      ...detailPage([]),
-      [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: failure('DATABASE_UNAVAILABLE'),
-    },
-    settle: (p) => waitFor(p, 'O banco do Conexus não respondeu.'),
-  },
 ]
