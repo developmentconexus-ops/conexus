@@ -16,6 +16,7 @@ const CATALOG = Catalog.parse({
       connection: ERP,
       connector: 'erp-falso',
       name: 'ERP da matriz',
+      liveOnly: false,
       reads: [
         { operation: 'listarPedidos', label: 'Pedidos', summary: 'Os pedidos de uma situação.' },
         { operation: 'listarClientes', label: 'Clientes', summary: 'Os clientes ativos.' },
@@ -33,6 +34,7 @@ const CATALOG = Catalog.parse({
       connection: BRANCH,
       connector: 'erp-falso',
       name: 'ERP da filial',
+      liveOnly: false,
       reads: [
         { operation: 'listarPedidos', label: 'Pedidos', summary: 'Os pedidos de uma situação.' },
       ],
@@ -42,6 +44,7 @@ const CATALOG = Catalog.parse({
       connection: MAIL,
       connector: 'correio-falso',
       name: 'Correio',
+      liveOnly: true,
       reads: [{ operation: 'buscarMensagens', label: 'Mensagens', summary: 'Busca por texto.' }],
       actions: [
         { operation: 'enviarMensagem', label: 'Enviar', summary: 'Uma mensagem.', effect: 'WRITE' },
