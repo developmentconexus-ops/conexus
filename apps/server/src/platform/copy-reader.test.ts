@@ -129,3 +129,15 @@ test('a senha errada é NO_LOGIN', async (t) => {
   )
   assert.deepEqual(wrong, { kind: 'NO_LOGIN' })
 })
+
+test('uma resposta maior que o teto é TOO_LARGE', async (t) => {
+  const { reader } = await readerOf(t)
+  const big = await postgres.readCopies(reader, [{ text: `select repeat('x', 2000000)` }], signal)
+  assert.deepEqual(big, { kind: 'TOO_LARGE' })
+})
+
+test('a consulta que passa do prazo do login é TIMEOUT', async (t) => {
+  const { reader } = await readerOf(t)
+  const slow = await postgres.readCopies(reader, [{ text: 'select pg_sleep(6)' }], signal)
+  assert.deepEqual(slow, { kind: 'TIMEOUT' })
+})

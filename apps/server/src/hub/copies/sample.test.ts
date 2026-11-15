@@ -106,3 +106,20 @@ test('a amostra de uma cópia que não existe', async (t) => {
   const read = await sample(on, on.ana, randomUUID())
   assert.deepEqual([read.statusCode, codeOf(read)], [404, 'COPY_NOT_FOUND'])
 })
+
+test('a amostra de uma tabela com até 5 linhas está completa', async (t) => {
+  const on = await copiesOn(t)
+  const copy = await enabled(on, 'vendas')
+  await firstEnded(on, copy.id)
+  for (const kept of [5, 3]) {
+    await asSync(on.owner, (client) =>
+      client.query(
+        `DELETE FROM sync.${copy.name} WHERE ctid NOT IN (SELECT ctid FROM sync.${copy.name} LIMIT ${kept})`,
+      ),
+    )
+    const read = await sample(on, on.ana, copy.id)
+    assert.equal(read.statusCode, 200, read.body)
+    const shown = CopySample.parse(Object(read.json()).sample)
+    assert.deepEqual([shown.rows.length, shown.complete], [kept, true])
+  }
+})
