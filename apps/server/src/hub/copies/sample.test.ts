@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CopySample } from '@conexus/hub-api'
-import pg from 'pg'
 import { call, codeOf, memberOn, personOn } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { asSync, copiesOn } from './test-copies.ts'
@@ -94,25 +93,16 @@ test('a amostra de uma empresa cuja cópia veio antes do login de leitura', asyn
   const on = await copiesOn(t)
   const copy = await enabled(on, 'vendas')
   await firstEnded(on, copy.id)
-  const owner = new pg.Client({ connectionString: on.owner.reveal() })
-  await owner.connect()
-  try {
-    await owner.query(`ALTER ROLE conexus_read RENAME TO conexus_read_${randomUUID().slice(0, 8)}`)
-    const postgres = on.hub.postgres.companyPostgres
-    const read = postgres.readCopies.bind(postgres)
-    t.mock.method(postgres, 'readCopies', async (...args: Parameters<typeof read>) => {
-      const { rowCount } = await owner.query(
-        "SELECT 1 FROM pg_roles WHERE rolname = 'conexus_read'",
-      )
-      return rowCount === 0 ? { kind: 'UNAVAILABLE' as const } : read(...args)
-    })
-    await on.run(copy.id)
-    const answered = await sample(on, on.ana, copy.id)
-    assert.equal(answered.statusCode, 200, answered.body)
-    assert.equal(CopySample.parse(Object(answered.json()).sample).rows.length, 5)
-  } finally {
-    await owner.end()
-  }
+  const postgres = on.hub.postgres.companyPostgres
+  const made = t.mock.method(postgres, 'ensureReader')
+  const read = postgres.readCopies.bind(postgres)
+  t.mock.method(postgres, 'readCopies', async (...args: Parameters<typeof read>) =>
+    made.mock.callCount() === 0 ? { kind: 'UNAVAILABLE' as const } : read(...args),
+  )
+  await on.run(copy.id)
+  const answered = await sample(on, on.ana, copy.id)
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.equal(CopySample.parse(Object(answered.json()).sample).rows.length, 5)
 })
 
 test('a amostra com o banco calado', async (t) => {
