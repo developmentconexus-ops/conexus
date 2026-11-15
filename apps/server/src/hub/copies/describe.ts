@@ -9,7 +9,6 @@ import { copy } from './tables.ts'
 
 type DefinitionV1 = Extract<CopyDefinition, { version: 1 }>
 
-/** The template's descriptions the stored definition lacks, copied in; none replaced (C2, passo 3). Undefined: nothing to fill. */
 export function filledFrom(stored: DefinitionV1, model: DefinitionV1): DefinitionV1 | undefined {
   const texts = new Map(
     model.columns.flatMap((column) =>
@@ -33,11 +32,6 @@ export type Described =
   | Readonly<{ kind: 'DATABASE_DOWN' }>
   | Readonly<{ kind: 'LOST' }>
 
-/**
- * The copy a run starts from: a copy that came from a template and lacks its descriptions gets them
- * in the company's table first (`COMMENT ON`, through `ensureCopyTable`), and in the stored definition
- * only after, so a silent company database leaves the definition for the next run (C2, passo 3).
- */
 export async function describedCopy(
   deps: CopiesDeps,
   input: { claimed: Claimed; sync: DatabaseUrl },

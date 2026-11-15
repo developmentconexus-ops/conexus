@@ -12,7 +12,6 @@ const SALE = "TIPMOV IN ('V', 'P')"
 
 type Columns = readonly (readonly [string, CopyColumnType])[]
 
-/** What each column means, one text for the column wherever the five templates carry it. */
 const DESCRIBED: Readonly<Record<string, string>> = {
   CODPARC: 'Código do parceiro no Sankhya.',
   NOMEPARC: 'Nome do parceiro.',

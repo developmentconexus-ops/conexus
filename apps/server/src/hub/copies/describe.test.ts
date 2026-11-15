@@ -11,7 +11,6 @@ type DefinitionV1 = Extract<CopyDefinition, { version: 1 }>
 
 const TABLE = 'sankhya_vendas'
 
-/** A copy as one turned on before the descriptions existed: none in the row, none in the table. */
 async function undescribed(on: CopiesOn, copyId: CopyId) {
   await plantCopy(on, copyId, "definition = definition - 'description'")
   await plantCopy(

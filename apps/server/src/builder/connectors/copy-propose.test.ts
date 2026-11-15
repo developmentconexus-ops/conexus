@@ -16,7 +16,6 @@ import { ordersConversing } from './test-orders-turn.ts'
 const PROPOSE = BUILDER_TOOL.copyPropose
 const SKILL = new URL('../../../../../packages/app/skills/conexus-data/SKILL.md', import.meta.url)
 
-/** A conversation whose model proposes the copy `sankhya_devolucoes` from the double's sales query, once. */
 async function proposing(t: TestContext) {
   const calls: Sent[] = []
   const served = await sankhyaServed(t)
