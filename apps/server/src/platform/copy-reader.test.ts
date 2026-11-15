@@ -3,11 +3,9 @@ import { randomBytes } from 'node:crypto'
 import { test } from 'node:test'
 import { appLogin, appLoginPassword, ProjectId } from '@conexus/hub-api'
 import pg from 'pg'
-import { createCompanyPostgres } from './company-postgres.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
 import {
   createCompanyDatabase,
-  pgTransport,
   readLoginOf,
   syncLoginOf,
   testCompanyPostgres,
@@ -147,15 +145,14 @@ test('a consulta que passa do prazo do login é TIMEOUT', async (t) => {
 
 test('as garantias dos logins da mesma empresa, juntas, nenhuma é recusada', async (t) => {
   const owner = await createCompanyDatabase(t)
-  const real = createCompanyPostgres({ transport: pgTransport, appLoginKey: KEY })
   await withRoleLock(async () => {
-    assert.equal((await real.ensureSync(owner)).kind, 'DONE')
-    assert.equal((await real.ensureReader(owner)).kind, 'DONE')
+    assert.equal((await postgres.ensureSync(owner)).kind, 'DONE')
+    assert.equal((await postgres.ensureReader(owner)).kind, 'DONE')
     for (let attempt = 0; attempt < 10; attempt++) {
       const answers = await Promise.all(
         Array.from({ length: 4 }, async () => {
-          const synced = await real.ensureSync(owner)
-          return synced.kind === 'DONE' ? real.ensureReader(owner) : synced
+          const synced = await postgres.ensureSync(owner)
+          return synced.kind === 'DONE' ? postgres.ensureReader(owner) : synced
         }),
       )
       assert.deepEqual(
