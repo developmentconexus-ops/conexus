@@ -44,3 +44,29 @@ test('o status do sistema só cabe numa rodada que terminou em ERROR', async (t)
     { code: '23514' },
   )
 })
+
+test('o código e a mensagem do sistema também só cabem numa rodada que terminou em ERROR', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  await on.hub.test.asOwner('delete from copies.copy_run where copy_id = $1', [copyId])
+  await insertRun(on, copyId, 'COMPLETE')
+  for (const column of ['system_code', 'system_message']) {
+    await assert.rejects(
+      on.hub.test.asOwner(`update copies.copy_run set ${column} = 'x' where copy_id = $1`, [
+        copyId,
+      ]),
+      { code: '23514' },
+    )
+  }
+})
+
+test('whole não aceita nulo', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  await on.hub.test.asOwner('delete from copies.copy_run where copy_id = $1', [copyId])
+  await insertRun(on, copyId, 'COMPLETE')
+  await assert.rejects(
+    on.hub.test.asOwner('update copies.copy_run set whole = null where copy_id = $1', [copyId]),
+    { code: '23502' },
+  )
+})

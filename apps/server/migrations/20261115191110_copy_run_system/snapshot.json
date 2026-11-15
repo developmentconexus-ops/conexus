@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "4bcdea6d-afc6-4d24-bea2-d667fb33dc89",
+  "id": "be6bda1b-ea2b-4943-991c-7e29a965cf4e",
   "prevIds": ["85b02ccf-5823-4767-8a3f-5a4336ec9d4a"],
   "ddl": [
     {
@@ -10655,7 +10655,7 @@
       "table": "copy_run"
     },
     {
-      "value": "\"system_status\" IS NULL OR \"outcome\" = 'ERROR'",
+      "value": "(\"system_status\" IS NULL AND \"system_code\" IS NULL AND \"system_message\" IS NULL) OR \"outcome\" = 'ERROR'",
       "name": "copy_run_system",
       "entityType": "checks",
       "schema": "copies",

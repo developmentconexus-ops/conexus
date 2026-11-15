@@ -129,7 +129,10 @@ export const copyRun = copies.table(
       'copy_run_outcome',
       sql`${table.outcome} IS NULL OR ${table.outcome} IN ('COMPLETE', 'PARTIAL', 'ERROR', 'INTERRUPTED')`,
     ),
-    check('copy_run_system', sql`${table.systemStatus} IS NULL OR ${table.outcome} = 'ERROR'`),
+    check(
+      'copy_run_system',
+      sql`(${table.systemStatus} IS NULL AND ${table.systemCode} IS NULL AND ${table.systemMessage} IS NULL) OR ${table.outcome} = 'ERROR'`,
+    ),
     check(
       'copy_run_system_message',
       sql`char_length(${table.systemMessage}) <= ${sql.raw(String(SYSTEM_MESSAGE_MAX))}`,

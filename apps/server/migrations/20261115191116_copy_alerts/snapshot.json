@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "e3af4b41-1e1b-47bc-be22-684d92be9da0",
-  "prevIds": ["4bcdea6d-afc6-4d24-bea2-d667fb33dc89"],
+  "id": "93fc890c-b4f8-4ee1-9ab3-b6182cf56bd8",
+  "prevIds": ["be6bda1b-ea2b-4943-991c-7e29a965cf4e"],
   "ddl": [
     {
       "name": "builder",
@@ -8251,6 +8251,34 @@
           "opclass": null
         },
         {
+          "value": "lower(\"email\")",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "alert_recipient_key",
+      "entityType": "indexes",
+      "schema": "notifications",
+      "table": "alert_recipient"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "company_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
           "value": "person_id",
           "isExpression": false,
           "asc": true,
@@ -10519,15 +10547,6 @@
     },
     {
       "nameExplicit": true,
-      "columns": ["company_id", "email"],
-      "nullsNotDistinct": false,
-      "name": "alert_recipient_key",
-      "entityType": "uniques",
-      "schema": "notifications",
-      "table": "alert_recipient"
-    },
-    {
-      "nameExplicit": true,
       "columns": ["run_id", "person_id"],
       "nullsNotDistinct": false,
       "name": "copy_notice_key",
@@ -11043,7 +11062,7 @@
       "table": "copy_run"
     },
     {
-      "value": "\"system_status\" IS NULL OR \"outcome\" = 'ERROR'",
+      "value": "(\"system_status\" IS NULL AND \"system_code\" IS NULL AND \"system_message\" IS NULL) OR \"outcome\" = 'ERROR'",
       "name": "copy_run_system",
       "entityType": "checks",
       "schema": "copies",
@@ -11132,6 +11151,13 @@
       "entityType": "checks",
       "schema": "auth",
       "table": "member"
+    },
+    {
+      "value": "\"code\" in ('COPY_SOURCE_REFUSED', 'COPY_SOURCE_NEEDS_REAUTH', 'COPY_SOURCE_UNREACHABLE', 'COPY_SOURCE_UNREADABLE', 'COPY_SOURCE_CEILING', 'COPY_DATABASE_UNAVAILABLE')",
+      "name": "copy_notice_code",
+      "entityType": "checks",
+      "schema": "notifications",
+      "table": "copy_notice"
     },
     {
       "value": "\"kind\" in ('AUTOMATION_DONE', 'AUTOMATION_FAILED', 'AUTOMATION_PAUSED')",

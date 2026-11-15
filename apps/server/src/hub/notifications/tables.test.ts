@@ -215,16 +215,55 @@ test('a cópia apagada leva quem a segue e os avisos dela', async (t) => {
   assert.equal(await countOf(test, 'copy_notice'), 0)
 })
 
-test('o mesmo e-mail só entra uma vez na lista de cada empresa', async (t) => {
+test('o mesmo e-mail só entra uma vez na lista de cada empresa, com as letras como vierem', async (t) => {
   const { asOwner } = await seeded(t)
-  function insert(company: string) {
+  function insert(company: string, email: string) {
     return asOwner(
       `insert into notifications.alert_recipient (id, company_id, email, created_at)
-       values ($1, $2, 'ti@lume.example', now())`,
-      [randomUUID(), company],
+       values ($1, $2, $3, now())`,
+      [randomUUID(), company, email],
     )
   }
-  await insert(A)
-  await assert.rejects(insert(A), { code: '23505', constraint: 'alert_recipient_key' })
-  await insert(B)
+  await insert(A, 'ti@lume.example')
+  for (const again of ['ti@lume.example', 'TI@Lume.example']) {
+    await assert.rejects(insert(A, again), { code: '23505', constraint: 'alert_recipient_key' })
+  }
+  await insert(B, 'ti@lume.example')
+})
+
+test('a empresa apagada leva a lista de e-mails dela', async (t) => {
+  const test = await seeded(t)
+  await test.asOwner(
+    `insert into notifications.alert_recipient (id, company_id, email, created_at)
+     values ($1, $2, 'ti@lume.example', now())`,
+    [randomUUID(), A],
+  )
+  await test.asOwner('delete from auth.member where company_id = $1', [A])
+  await test.asOwner('delete from auth.company where id = $1', [A])
+  assert.equal(await countOf(test, 'alert_recipient'), 0)
+})
+
+test('quem já segue uma cópia não a segue de novo', async (t) => {
+  const { asOwner, copyId } = await withCopyNotices(t)
+  await assert.rejects(
+    asOwner(
+      `insert into notifications.copy_follower (company_id, copy_id, person_id, created_at)
+       values ($1, $2, $3, now())`,
+      [A, copyId, ANA],
+    ),
+    { code: '23505', constraint: 'copy_follower_pkey' },
+  )
+})
+
+test('o aviso de cópia só guarda um código de falha de cópia', async (t) => {
+  const { asOwner, copyId } = await withCopyNotices(t)
+  await assert.rejects(
+    asOwner(
+      `insert into notifications.copy_notice
+         (id, company_id, person_id, copy_id, run_id, copy_name, code, created_at)
+       values ($1, $2, $3, $4, $5, 'sankhya_vendas', 'AUTOMATION_TIMEOUT', now())`,
+      [randomUUID(), A, ANA, copyId, randomUUID()],
+    ),
+    { code: '23514', constraint: 'copy_notice_code' },
+  )
 })

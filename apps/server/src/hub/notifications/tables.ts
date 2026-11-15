@@ -1,4 +1,4 @@
-import { AutomationFailureCode } from '@conexus/hub-api'
+import { AutomationFailureCode, CopyRunFailureCode } from '@conexus/hub-api'
 import type { AnyColumn } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import type { ExtraConfigColumn } from 'drizzle-orm/pg-core'
@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
@@ -26,7 +27,12 @@ export function microsOf(column: AnyColumn) {
 
 export const notifications = pgSchema('notifications')
 
-const FAILURE_CODES = sql.raw(AutomationFailureCode.options.map((code) => `'${code}'`).join(', '))
+function listOf(codes: readonly string[]) {
+  return sql.raw(codes.map((code) => `'${code}'`).join(', '))
+}
+
+const FAILURE_CODES = listOf(AutomationFailureCode.options)
+const COPY_FAILURE_CODES = listOf(CopyRunFailureCode.options)
 
 // A notification is its person's alone: the company's routes reach only their own rows.
 const OWN = sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`
@@ -150,7 +156,6 @@ export const alertRecipient = notifications.table(
   {
     id: uuid('id').primaryKey(),
     companyId: text('company_id').notNull(),
-    // Lower case, as `Email` of the contract.
     email: text('email').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   },
@@ -160,7 +165,8 @@ export const alertRecipient = notifications.table(
       columns: [table.companyId],
       foreignColumns: [company.id],
     }).onDelete('cascade'),
-    unique('alert_recipient_key').on(table.companyId, table.email),
+    // One address once per company however it is cased, as `invitation_pending_email_key`.
+    uniqueIndex('alert_recipient_key').on(table.companyId, sql`lower(${table.email})`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
@@ -221,6 +227,7 @@ export const copyNotice = notifications.table(
       columns: [table.companyId, table.copyId],
       foreignColumns: [copy.companyId, copy.id],
     }).onDelete('cascade'),
+    check('copy_notice_code', sql`${table.code} in (${COPY_FAILURE_CODES})`),
     unique('copy_notice_key').on(table.runId, table.personId),
     ...noticeIndexAndPolicies('copy_notice_person_created', table),
   ],
