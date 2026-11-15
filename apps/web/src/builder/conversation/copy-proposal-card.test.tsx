@@ -164,7 +164,7 @@ test('o cartão de quem não gerencia cópias', async () => {
   expect(within(card).getByText('devolucoes · Matriz · só o alterado')).toBeTruthy()
   expect(
     within(card).getByText(
-      'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Cópias.',
+      'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Dados.',
     ),
   ).toBeTruthy()
   expect(within(card).queryByRole('button')).toBeNull()
