@@ -41,6 +41,7 @@ function runOf(row: typeof copyRun.$inferSelect): CopyRun {
     endedAt: row.endedAt?.toISOString() ?? null,
     read: row.read,
     written: row.written,
+    whole: row.whole,
   }
   switch (row.outcome) {
     case null:

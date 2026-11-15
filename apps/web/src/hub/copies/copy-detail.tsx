@@ -31,6 +31,7 @@ import {
   RUNS_TITLE,
   SAMPLE_TITLE,
   SEE_RUN,
+  WHOLE_PASS,
 } from './text.ts'
 
 function RunRow({ run }: { run: CopyRun }) {
@@ -40,7 +41,10 @@ function RunRow({ run }: { run: CopyRun }) {
       <TableCell className="tabular-nums">{durationText(run)}</TableCell>
       <TableCell className="text-right tabular-nums">{countText(run.read)}</TableCell>
       <TableCell className="text-right tabular-nums">{countText(run.written)}</TableCell>
-      <TableCell className="whitespace-normal">{outcomeText(run)}</TableCell>
+      <TableCell className="whitespace-normal">
+        {outcomeText(run)}
+        {run.whole && <span className="text-text-2"> · {WHOLE_PASS}</span>}
+      </TableCell>
     </TableRow>
   )
 }
@@ -52,7 +56,7 @@ function RunPhoneRow({ run }: { run: CopyRun }) {
       <div className="flex min-w-0 flex-col gap-xs px-sm py-md tabular-nums">
         <span>{`${dayAndHour(run.startedAt)} · ${durationText(run)}`}</span>
         <span className="break-words text-text-2">
-          {`${countText(run.read)} lidas · ${countText(run.written)} gravadas · ${outcomeText(run)}`}
+          {`${countText(run.read)} lidas · ${countText(run.written)} gravadas · ${outcomeText(run)}${run.whole ? ` · ${WHOLE_PASS}` : ''}`}
         </span>
       </div>
     </Row>

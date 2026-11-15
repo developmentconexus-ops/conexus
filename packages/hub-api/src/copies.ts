@@ -57,6 +57,7 @@ export const CopyRun = z.object({
   ]),
   read: z.int().min(0),
   written: z.int().min(0),
+  whole: z.boolean(), // the run began each source from nothing
 })
 export type CopyRun = z.infer<typeof CopyRun>
 

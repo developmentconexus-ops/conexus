@@ -27,6 +27,7 @@ export const CONCEPT_HINT =
 export const CATALOG_FAILED =
   'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
 export const BACK_TO_DATA = 'Dados'
+export const WHOLE_PASS = 'Passada inteira'
 export const TREE_LABEL = 'Dados'
 export const PAUSED_LABEL = 'Pausada'
 export const LOADING_LABEL = 'Carregando'
