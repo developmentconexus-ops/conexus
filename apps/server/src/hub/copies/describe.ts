@@ -10,7 +10,7 @@ import { copy } from './tables.ts'
 
 type DefinitionV1 = Extract<CopyDefinition, { version: 1 }>
 
-export function filledFrom(stored: DefinitionV1, model: DefinitionV1): DefinitionV1 | undefined {
+function filledFrom(stored: DefinitionV1, model: DefinitionV1): DefinitionV1 | undefined {
   const texts = new Map(
     model.columns.flatMap((column) =>
       column.description === undefined ? [] : [[column.name, column.description] as const],

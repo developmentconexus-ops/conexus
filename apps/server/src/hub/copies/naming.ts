@@ -1,7 +1,7 @@
 import type { ConnectorId } from '@conexus/hub-api'
 import { CopyName } from '../connectors/public.ts'
 
-export function copyPrefixOf(connectorId: ConnectorId): string {
+function copyPrefixOf(connectorId: ConnectorId): string {
   return `${connectorId.replaceAll('-', '_')}_`
 }
 
