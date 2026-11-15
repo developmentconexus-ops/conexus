@@ -123,3 +123,18 @@ test('a amostra de uma tabela com até 5 linhas está completa', async (t) => {
     assert.deepEqual([shown.rows.length, shown.complete], [kept, true])
   }
 })
+
+test('a amostra do modelo clientes mostra o CPF ou CNPJ que o Sankhya mandou', async (t) => {
+  const on = await copiesOn(t)
+  const copy = await enabled(on, 'clientes')
+  await firstEnded(on, copy.id)
+  const read = await sample(on, on.ana, copy.id)
+  assert.equal(read.statusCode, 200, read.body)
+  const shown = CopySample.parse(Object(read.json()).sample)
+  const at = shown.columns.indexOf('CGC_CPF')
+  assert.notEqual(at, -1, shown.columns.join(','))
+  assert.ok(
+    shown.rows.some((row) => /^\d{11,14}$/.test(String(row[at] ?? ''))),
+    JSON.stringify(shown.rows),
+  )
+})

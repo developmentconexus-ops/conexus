@@ -5,7 +5,6 @@ import { connectionNamesOf } from '../connectors/public.ts'
 import type { Seen } from './column-state.ts'
 import { nextColumnState } from './column-state.ts'
 import { describedCopy } from './describe.ts'
-import { retiredColumns } from './retire.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
 import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
 import type { StoredSource } from './sources.ts'
@@ -157,21 +156,6 @@ function inRunOrder(sources: readonly StoredSource[]): StoredSource[] {
   ]
 }
 
-type Trimmed = Readonly<{ kind: 'RUN'; run: Run }> | Readonly<{ kind: 'END'; end: CopyRunEnd }>
-
-/** What leaves a copy before its sources are read: an account no source holds, then the columns its model retired. */
-async function trimmedRun(run: Run): Promise<Trimmed> {
-  if (!(await netDropped(run))) return { kind: 'END', end: await run.end(DATABASE_DOWN) }
-  const { deps, claimed, sync, table, end } = run
-  const retired = await retiredColumns(deps, { claimed, sync, table: table.name, end })
-  if (retired.kind === 'END') return retired
-  const next = { ...claimed, copy: retired.copy }
-  return {
-    kind: 'RUN',
-    run: { ...run, claimed: next, table: copyTableOf(retired.copy, claimed.sources) },
-  }
-}
-
 /**
  * One run of one copy, the Factory's shape (`build.ts:139-216`): the lease, then the rows of an
  * account that is no source's out of the table (Desligar's net), then each source's pass. A source
@@ -209,13 +193,11 @@ export async function runCopy(
     seen: finish.seen,
     end,
   }
-  const trimmed = await trimmedRun(run)
-  if (trimmed.kind === 'END') return trimmed.end
-  const pass = trimmed.run
+  if (!(await netDropped(run))) return end(DATABASE_DOWN)
   const byApp = deps.connectors().countedBy(held.copy.connectorId) === 'APP'
   let waited = false
   for (const source of inRunOrder(held.sources)) {
-    const step: SourceStep = source.waits ? { kind: 'WAIT' } : await sourcePass(pass, source)
+    const step: SourceStep = source.waits ? { kind: 'WAIT' } : await sourcePass(run, source)
     if (step.kind === 'END') return step.end
     if (step.kind === 'WAIT') {
       if (byApp) return end(WAIT)

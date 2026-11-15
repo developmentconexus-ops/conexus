@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CopyProposalId } from '@conexus/hub-api'
 import { call, codeOf, memberOn } from '../identity/test-hub.ts'
+import { asSync } from './test-copies.ts'
 import type { ListProposalsOn } from './test-list-proposals.ts'
 import { listProposalsOn } from './test-list-proposals.ts'
 import { firstEnded } from './test-routes.ts'
@@ -90,7 +91,7 @@ async function proposed(on: ListProposalsOn, name: string, column: object) {
   return CopyProposalId.parse(Object(answer).proposalId)
 }
 
-test('uma cópia não guarda documento: o Ligar recusa a coluna de documento, e liga a de contato', async (t) => {
+test('a cópia guarda a coluna de documento', async (t) => {
   const on = await listProposalsOn(t)
   const cpf = {
     name: 'cpf',
@@ -98,16 +99,12 @@ test('uma cópia não guarda documento: o Ligar recusa a coluna de documento, e 
     path: 'buyer.billing_info.doc_number',
     description: 'O documento',
   }
-  const refused = await on.enable(on.ana, await proposed(on, 'mercado_livre_documento', cpf))
-  assert.equal(codeOf(refused), 'COPY_PERSONAL_NOT_KEPT', refused.body)
-  const nickname = {
-    name: 'comprador',
-    type: 'text',
-    path: 'buyer.nickname',
-    description: 'O apelido',
-  }
-  assert.equal(
-    (await on.enable(on.ana, await proposed(on, 'mercado_livre_comprador', nickname))).statusCode,
-    201,
-  )
+  const made = await on.enable(on.ana, await proposed(on, 'mercado_livre_documento', cpf))
+  assert.equal(made.statusCode, 201, made.body)
+  assert.equal((await firstEnded(on, Object(made.json()).copy.id)).outcome.kind, 'COMPLETE')
+  const kept = await asSync(on.owner, async (client) => {
+    const result = await client.query('select distinct cpf from sync.mercado_livre_documento')
+    return result.rows.map((row) => row.cpf)
+  })
+  assert.deepEqual(kept, ['52998224725'])
 })

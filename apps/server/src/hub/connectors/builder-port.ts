@@ -12,7 +12,7 @@ import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { Speaker } from '../identity/public.ts'
-import type { DocumentColumn, Proved } from './copy-proof.ts'
+import type { Proved } from './copy-proof.ts'
 import { provedPage } from './copy-proof.ts'
 import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
@@ -75,8 +75,6 @@ export type ProposeAnswer =
   | Readonly<{ kind: 'KEY_NOT_UNIQUE'; connection: string; keyNull: number; keyRepeated: number }>
   /** The proof of a connection found cells of `column` that do not fit its type. */
   | Readonly<{ kind: 'TYPE_MISFIT'; connection: string; column: string; count: number }>
-  /** The proof of a connection found a column that holds a CPF or a CNPJ: a copy never keeps a document. */
-  | Readonly<{ kind: 'COPY_PERSONAL_NOT_KEPT'; connection: string; column: string }>
   /** A copy of the company or an open proposal has the name; `releasedHere` when it is a copy released to this Projeto. */
   | Readonly<{ kind: 'EXISTS'; name: string; releasedHere: boolean }>
   /** `CopyDefinition`'s paths and messages, or the name's. */
@@ -115,7 +113,7 @@ export type BuilderConnectors = {
   provePage(
     ids: OfProject,
     a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
-  ): Promise<Proved | ListProved | ListMisfit | DocumentColumn | BuilderReadRefusal>
+  ): Promise<Proved | ListProved | ListMisfit | BuilderReadRefusal>
   /** A copy proposed in the Projeto's conversation, proved by one page; `hub/copies` owns it. */
   propose: Propose
 }

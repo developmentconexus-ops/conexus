@@ -137,20 +137,19 @@ test('a cópia sem tipo', async (t) => {
   for (const value of PLANTED_BUYER) assert.ok(!text.includes(value), `a cópia guarda ${value}`)
 })
 
-test('a cópia com o tipo da coluna: o que o Ligar conferiu entra, e o documento nunca', async (t) => {
+test('a cópia com a coluna do comprador guarda o comprador e o documento', async (t) => {
   const text = await pageOf(t, [
     { name: 'id', type: 'bigint', path: 'id' },
     { name: 'comprador', type: 'json', path: 'buyer' },
   ])
-  assert.ok(text.includes('COMPRADORFICTICIO'), 'the column of kind contato holds the buyer')
-  assert.ok(!text.includes('52998224725'), 'the document is withheld from a copy')
+  assert.ok(text.includes('COMPRADORFICTICIO'), 'the column holds the buyer')
+  assert.ok(text.includes('52998224725'), 'the document is kept')
 })
 
-test('uma cópia antiga com coluna de documento: a rodada grava a coluna sem valor', async (t) => {
+test('uma cópia com coluna de documento grava o valor', async (t) => {
   const text = await pageOf(t, [
     { name: 'id', type: 'bigint', path: 'id' },
     { name: 'cpf', type: 'text', path: 'buyer.billing_info.doc_number' },
   ])
-  assert.match(text, /\d{8,}/, 'the orders are read, by their ids')
-  assert.ok(!text.includes('52998224725'), 'the document is never kept')
+  assert.ok(text.includes('52998224725'), 'the document is kept')
 })

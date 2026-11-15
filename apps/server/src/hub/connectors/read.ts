@@ -119,16 +119,16 @@ async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) 
 }
 
 /**
- * The kinds a reader never receives: a document (a CPF) never goes to a model, nor to a copy, which
- * a model reads later, whoever the person is (B1). The one rule of the step; the Ligar reads it too.
+ * The kinds a reader never receives: a document (a CPF) never goes to the Assistant or the Builder,
+ * whoever the person is (B1). A copy and an app receive the answer whole.
  */
-export function withheldKinds(by: ReadBy): readonly PersonalKind[] {
+function withheldKinds(by: ReadBy): readonly PersonalKind[] {
   switch (by) {
     case 'assistant':
     case 'builder':
-    case 'copy':
       return ['documento']
     case 'app':
+    case 'copy':
       return []
     default:
       return by satisfies never

@@ -43,12 +43,11 @@ function envelope(responseBody: unknown, status = '1') {
   return { serviceName: 'x', status, responseBody }
 }
 
-test('o modelo clientes não copia CGC_CPF e o declara aposentado', () => {
+test('o modelo clientes copia CGC_CPF', () => {
   const clientes = sankhyaCopyModels.find((each) => each.id === 'clientes')
   assert.ok(clientes)
-  assert.deepEqual(clientes.retired, ['CGC_CPF'])
-  assert.ok(!clientes.definition.columns.some((column) => column.name === 'CGC_CPF'))
-  assert.ok(!clientes.definition.source.sql.includes('CGC_CPF'))
+  assert.ok(clientes.definition.columns.some((column) => column.name === 'CGC_CPF'))
+  assert.ok(clientes.definition.source.sql.includes('CGC_CPF'))
 })
 
 test('o catálogo tem o Sankhya, o Mercado Livre e o HubSpot, o Sankhya achado pelo id', () => {

@@ -16,6 +16,7 @@ const DESCRIBED: Readonly<Record<string, string>> = {
   CODPARC: 'Código do parceiro no Sankhya.',
   NOMEPARC: 'Nome do parceiro.',
   RAZAOSOCIAL: 'Razão social do parceiro.',
+  CGC_CPF: 'CPF ou CNPJ do parceiro.',
   TIPPESSOA: 'Tipo de pessoa: F física, J jurídica.',
   ATIVO: 'S quando o cadastro está ativo, N quando não.',
   CLIENTE: 'S quando o parceiro é cliente.',
@@ -59,7 +60,6 @@ function model(
     columns: Columns
     key: readonly string[]
     window?: { column: string; days: number }
-    retired?: readonly string[]
   },
 ): CopyModel {
   return Object.freeze({
@@ -77,7 +77,6 @@ function model(
       changedSince: { column: 'DTALTER' },
       ...(definition.window && { window: definition.window }),
     }),
-    ...(definition.retired && { retired: definition.retired }),
   })
 }
 
@@ -87,11 +86,12 @@ export const sankhyaCopyModels: readonly CopyModel[] = [
   model('clientes', 'Clientes', {
     description:
       'Parceiros do Sankhya: clientes e fornecedores, um por linha, com nome, tipo de pessoa e se está ativo.',
-    sql: 'SELECT CODPARC, NOMEPARC, RAZAOSOCIAL, TIPPESSOA, ATIVO, CLIENTE, FORNECEDOR, DTALTER FROM TGFPAR',
+    sql: 'SELECT CODPARC, NOMEPARC, RAZAOSOCIAL, CGC_CPF, TIPPESSOA, ATIVO, CLIENTE, FORNECEDOR, DTALTER FROM TGFPAR',
     columns: [
       ['CODPARC', 'bigint'],
       ['NOMEPARC', 'text'],
       ['RAZAOSOCIAL', 'text'],
+      ['CGC_CPF', 'text'],
       ['TIPPESSOA', 'text'],
       ['ATIVO', 'text'],
       ['CLIENTE', 'text'],
@@ -99,7 +99,6 @@ export const sankhyaCopyModels: readonly CopyModel[] = [
       ['DTALTER', 'timestamp'],
     ],
     key: ['CODPARC'],
-    retired: ['CGC_CPF'],
   }),
   model('vendedores', 'Vendedores', {
     description: 'Vendedores do Sankhya, um por linha, com o apelido e se está ativo.',

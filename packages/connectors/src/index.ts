@@ -78,11 +78,9 @@ export {
   requestOf,
 } from './kernel/operation.ts'
 export {
-  documentColumns,
   PERSONAL_KINDS,
   type PersonalField,
   type PersonalKind,
-  personalHolding,
   personalRowsOf,
 } from './kernel/personal.ts'
 export { toRequest } from './kernel/request.ts'
