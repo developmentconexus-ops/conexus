@@ -1164,6 +1164,14 @@
       "name": "endereço: o nome sem acento, minúsculo, cada trecho de outro caractere um hífen"
     },
     {
+      "file": "packages/hub-api/src/company-data.test.ts",
+      "name": "uma tabela retida nunca aparece em tables e a leitura dela responde NOT_IN_ROLE sem pedir linhas"
+    },
+    {
+      "file": "packages/hub-api/src/company-data.test.ts",
+      "name": "uma consulta que o banco recusa por permissão responde NOT_IN_ROLE e não devolve linha"
+    },
+    {
       "file": "scripts/deploy.test.ts",
       "name": "a imagem nova que não fica saudável volta à imagem e ao template de antes"
     },
