@@ -59,10 +59,12 @@ export function roleOf(list: Awaited<ReturnType<typeof roles>>, name: string) {
 export const everyRead = {
   sankhya: [...SANKHYA_READS],
   'mercado-livre': ['anuncios', 'pedidos', 'perguntas', 'envio', 'notaFiscalDoPedido'],
+  hubspot: ['contatos', 'empresas', 'negocios'],
 }
 export const everyOperation = {
   sankhya: [...everyRead.sankhya, 'lancarPedido'],
   'mercado-livre': everyRead['mercado-livre'],
+  hubspot: [...everyRead.hubspot, 'notaNoContato'],
 }
 
 /** Asks the library whether the company's `member` role holds the statements, as the Hub's adapter reads its rows. */
