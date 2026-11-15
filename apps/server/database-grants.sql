@@ -144,6 +144,7 @@ GRANT USAGE ON SCHEMA connectors TO hub_company;
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
 GRANT USAGE ON SCHEMA copies TO hub_company;
+GRANT USAGE ON SCHEMA data TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
@@ -421,6 +422,9 @@ GRANT UPDATE(watermark) ON TABLE copies.copy_source TO hub_company;
 GRANT UPDATE(wait_until) ON TABLE copies.copy_source TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_table_left TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
+-- A governança mínima, grupo 3, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11; E4a): a
+-- company's routes record each read of the company's data and list them; the Hub never changes or deletes one.
+GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
