@@ -18,7 +18,6 @@ The connection is read only. Never write, never ask for values to store, and nev
 - Use the ready operations before the read doors. They are the same routes for every company and cost one call.
 - To find a record, search; to walk a whole list, list. `buscarParceiros`, `buscarProdutos` and `buscarVendedores` take any mix of filters (name, code list or range, active, and the subject's own), answer up to 20 rows in code order and say `temMais`; the next rows are the same call with `depoisDe` set to the last code read. A name matches with no regard to case or accent. An unknown field is refused by name.
 - Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
-- Leave the HR and payroll tables alone: never read them through the read doors (tables that start with `TFP`, and employees' personal data); no ready operation covers them.
 
 ## The ready operations, by subject
 

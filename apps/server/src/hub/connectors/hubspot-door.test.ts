@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { connectorOf, Rows } from '@conexus/connectors'
+import { Rows } from '@conexus/connectors'
 import {
   CompanyId,
   ConnectionId,
@@ -171,15 +171,7 @@ test('o Builder lê os contatos com a mesma forma de uma leitura do Mercado Livr
   assert.equal(Rows.parse(Object(next).value).linhas[0]?.id, '1005')
 })
 
-test('o e-mail e o telefone saem como dado pessoal', async (t) => {
-  const declared = connectorOf('hubspot')?.operations.find((each) => each.id === 'contatos')
-  assert.deepEqual(
-    declared?.personal?.map(({ path, kind }) => [path, kind]),
-    [
-      ['properties.email', 'contato'],
-      ['properties.phone', 'contato'],
-    ],
-  )
+test('o Assistente e o Builder recebem o e-mail e o telefone', async (t) => {
   const on = await portalOn(t)
   for (const read of [
     await on.builderRead(on.carla, 'contatos', { limit: 1 }),
@@ -189,14 +181,6 @@ test('o e-mail e o telefone saem como dado pessoal', async (t) => {
     const shown = JSON.stringify(read)
     assert.ok(shown.includes(FIRST_CONTACT_EMAIL) && shown.includes(FIRST_CONTACT_PHONE))
   }
-  const called = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED')
-  assert.deepEqual(
-    called.map(({ fields }) => [fields.operation, fields.personal, fields.withheld]),
-    [
-      ['contatos', 'contato', ''],
-      ['contatos', 'contato', ''],
-    ],
-  )
   const logged = JSON.stringify(on.hub.lines)
   for (const value of [FIRST_CONTACT_EMAIL, FIRST_CONTACT_PHONE])
     assert.equal(logged.includes(value), false, `the log carries ${value}`)

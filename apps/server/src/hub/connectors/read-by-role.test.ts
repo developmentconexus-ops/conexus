@@ -10,11 +10,6 @@ import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 import { linkMercadoLivre, mercadoLivreOn, testOf } from './test-connections.ts'
 
-const BUYER_NAME = 'Fictícia'
-const CPF = '52998224725'
-const PLANTED = [BUYER_NAME, 'maria.ficticia', CPF, 'COMPRADORFICTICIO', 'Rua Inventada']
-const ORDER = { orderId: '2000000000001' }
-
 type Reader = { kind: 'assistant' | 'builder'; person: Person }
 
 /** Empresa Teste with Loja 1 linked, tested and released to the Projeto; the member's role holds `reads`. */
@@ -61,51 +56,7 @@ async function withRole(
   return { ...on, read }
 }
 
-const ML_READS = { 'mercado-livre': ['pedidos', 'envio', 'notaFiscalDoPedido'] }
-
-test('Assistente e Builder recebem contato e endereço, e perdem o documento', async (t) => {
-  const on = await shopOn(t, ML_READS)
-  for (const kind of ['assistant', 'builder'] as const) {
-    const reader = { kind, person: on.carla }
-    const orders = JSON.stringify(await on.read(reader, 'pedidos', { limit: 2 }))
-    assert.ok(orders.includes(BUYER_NAME) && orders.includes('COMPRADORFICTICIO'), `${kind}: buyer`)
-    assert.ok(!orders.includes('billing_info') && !orders.includes(CPF), `${kind}: no document`)
-    const shipment = JSON.stringify(await on.read(reader, 'envio', { shipmentId: '40000000001' }))
-    assert.ok(shipment.includes('receiver_name') && shipment.includes('Campinas'), `${kind}: envio`)
-  }
-})
-
-test('o documento não vai ao modelo, nem para o dono', async (t) => {
-  const on = await shopOn(t, ML_READS)
-  for (const kind of ['assistant', 'builder'] as const) {
-    const owner = { kind, person: on.ana }
-    const orders = JSON.stringify(await on.read(owner, 'pedidos', { limit: 2 }))
-    assert.ok(orders.includes(BUYER_NAME), `${kind}: the owner reads the buyer`)
-    assert.ok(!orders.includes(CPF) && !orders.includes('billing_info'), `${kind}: pedidos`)
-    const invoice = await on.read(owner, 'notaFiscalDoPedido', ORDER)
-    assert.equal(invoice.kind, 'OK')
-    assert.ok(!JSON.stringify(invoice).includes(CPF), `${kind}: notaFiscalDoPedido`)
-    assert.ok(!JSON.stringify(invoice).includes('recipient'), `${kind}: notaFiscalDoPedido`)
-  }
-})
-
-test('o registro sem o valor', async (t) => {
-  const on = await shopOn(t, ML_READS)
-  await on.read({ kind: 'assistant', person: on.carla }, 'pedidos', { limit: 2 })
-  await on.read({ kind: 'builder', person: on.ana }, 'notaFiscalDoPedido', ORDER)
-  const called = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED')
-  assert.deepEqual(
-    called.map(({ fields }) => [fields.operation, fields.personal, fields.withheld]),
-    [
-      ['pedidos', 'contato', 'documento'],
-      ['notaFiscalDoPedido', '', 'documento'],
-    ],
-  )
-  const logged = JSON.stringify(on.hub.lines)
-  for (const value of PLANTED) assert.ok(!logged.includes(value), `the log carries ${value}`)
-})
-
-/** Empresa A's Sankhya, the member's role holding the search and the door. */
+/** Empresa A's Sankhya, the member's role holding the search. */
 async function sankhyaOn(t: TestContext) {
   const on = await appCalls(t, {
     declared: [{ connector: 'sankhya', operations: ['buscarParceiros'] }],
@@ -113,7 +64,7 @@ async function sankhyaOn(t: TestContext) {
   const connectionId = ConnectionId.parse(await on.connect('Matriz'))
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
-  const reads = { sankhya: ['buscarParceiros', 'consultar', 'carregar'] }
+  const reads = { sankhya: ['buscarParceiros'] }
   const role = await call(on.hub, on.ana, 'PUT', `/api/companies/${companyId}/roles/member`, {
     connectors: reads,
     unattended: false,
@@ -132,36 +83,55 @@ async function sankhyaOn(t: TestContext) {
   return { ...on, ask }
 }
 
+const ML_READS = { 'mercado-livre': ['pedidos', 'notaFiscalDoPedido'] }
 const PARTNER = { codigos: [202] }
+const PARTNER_DOCUMENT = '11122233344'
 
-test('Sankhya: o membro com a leitura recebe o parceiro, sem o documento', async (t) => {
+test('o Builder lê pedidos e recebe o comprador como o dublê manda', async (t) => {
+  const on = await shopOn(t, ML_READS)
+  const orders = await on.read({ kind: 'builder', person: on.carla }, 'pedidos', { limit: 2 })
+  assert.equal(orders.kind, 'OK')
+  const shown = JSON.stringify(orders)
+  assert.ok(
+    shown.includes('"buyer"') && shown.includes('COMPRADORFICTICIO'),
+    'the buyer comes whole',
+  )
+})
+
+test('o Assistente e o Builder recebem a nota com o documento de quem recebe', async (t) => {
+  const on = await shopOn(t, ML_READS)
+  for (const kind of ['assistant', 'builder'] as const) {
+    const invoice = await on.read({ kind, person: on.carla }, 'notaFiscalDoPedido', {
+      orderId: '2000000000001',
+    })
+    assert.equal(invoice.kind, 'OK', kind)
+    assert.ok(JSON.stringify(invoice).includes('52998224725'), `${kind}: the recipient's document`)
+  }
+})
+
+test('o membro com a leitura buscarParceiros recebe o parceiro com o documento', async (t) => {
   const on = await sankhyaOn(t)
   for (const person of [on.carla, on.ana]) {
     const text = JSON.stringify(await on.ask(person, 'buscarParceiros', PARTNER))
     assert.ok(text.includes('MARIA APARECIDA'), 'the partner comes with its name')
-    assert.ok(!text.includes('11122233344') && !text.includes('"documento"'), 'no document')
+    assert.ok(text.includes(PARTNER_DOCUMENT), 'the partner comes with its document')
   }
 })
 
-test('a porta fica como hoje', async (t) => {
+test('o membro sem a leitura recebe NOT_IN_ROLE', async (t) => {
   const on = await sankhyaOn(t)
-  const sql = 'SELECT CODPARC, NOMEPARC, CGC_CPF FROM TGFPAR WHERE CODPARC = 202'
-  const loading = { entidade: 'Empresa', campos: ['CODEMP', 'NOMEFANTASIA'], pagina: 0 }
-  for (const [operation, input] of [
-    ['consultar', { sql }],
-    ['carregar', loading],
-  ] as const) {
-    const byOwner = await on.ask(on.ana, operation, input)
-    assert.equal(byOwner.kind, 'OK', operation)
-    assert.deepEqual(await on.ask(on.carla, operation, input), byOwner, operation)
-  }
-  assert.ok(JSON.stringify(await on.ask(on.carla, 'consultar', { sql })).includes('11122233344'))
+  const role = await call(on.hub, on.ana, 'PUT', `/api/companies/${on.companyId}/roles/member`, {
+    connectors: { sankhya: ['consultar'] },
+    unattended: false,
+  })
+  assert.equal(role.statusCode, 200, role.body)
+  const refused = await on.ask(on.carla, 'buscarParceiros', PARTNER)
+  assert.equal(refused.kind, 'NOT_IN_ROLE')
+  assert.ok(!JSON.stringify(refused).includes(PARTNER_DOCUMENT))
 })
 
-test('o documento vai ao app e não ao Assistente', async (t) => {
+test('o app recebe o mesmo parceiro, com o documento', async (t) => {
   const on = await sankhyaOn(t)
-  const byAssistant = JSON.stringify(await on.ask(on.ana, 'buscarParceiros', PARTNER))
-  assert.ok(byAssistant.includes('MARIA APARECIDA') && !byAssistant.includes('11122233344'))
   const byApp = await on.read({ operation: 'buscarParceiros', input: PARTNER })
-  assert.ok(JSON.stringify(byApp.json()).includes('11122233344'), 'the app receives every kind')
+  assert.ok(JSON.stringify(byApp.json()).includes(PARTNER_DOCUMENT))
 })

@@ -240,7 +240,6 @@
   "src/hub/connectors/grants.test.ts": 8.1,
   "src/hub/connectors/limits.test.ts": 15.4,
   "src/hub/connectors/notes.test.ts": 7.8,
-  "src/hub/connectors/personal-read.test.ts": 5.4,
   "src/hub/connectors/project-connection.test.ts": 0.4,
   "src/hub/connectors/publish.test.ts": 2,
   "src/hub/connectors/role-doors.test.ts": 10.2,
