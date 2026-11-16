@@ -6,6 +6,11 @@ export function stringArg(args: unknown, key: string): string | undefined {
   return undefined
 }
 
+/** The connector a read's operation names ("sankhya.consultar" is Sankhya's). */
+export function connectorOf(args: unknown): string | undefined {
+  return stringArg(args, 'operation')?.split('.')[0]
+}
+
 /** Like `stringArg`, but an empty string is kept: an edit that deletes text has `new_string: ''`. */
 function stringField(args: unknown, key: string): string | undefined {
   if (args && typeof args === 'object' && key in args) {

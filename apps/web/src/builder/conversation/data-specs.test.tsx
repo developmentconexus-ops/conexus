@@ -236,3 +236,13 @@ test.each([
   )
   expect(screen.getByRole('button', { name: 'Copiar a consulta' })).toBeTruthy()
 })
+
+test('a tabela pedida: NOT_IN_CATALOG diz que não está no catálogo, e o erro sem kind conhecido diz que não leu a tabela', () => {
+  const inv = table()
+  const missing = draw(itemOf(thrown(inv, 'NOT_IN_CATALOG')))
+  expect(screen.getByText('Essa tabela não está no catálogo.')).toBeTruthy()
+  missing.unmount()
+  const { result: _result, ...call } = inv
+  draw(itemOf({ ...call, state: 'output-error', errorText: 'falhou' }))
+  expect(screen.getByText('Não conseguiu ler a tabela agora.')).toBeTruthy()
+})

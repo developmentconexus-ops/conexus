@@ -1,6 +1,7 @@
 import { DATA_TOOL, DataResult } from '@conexus/hub-api'
 import { DatabaseIcon } from 'lucide-react'
-import { LOCAL_REFUSALS, said, thrownOf } from './connector-specs.ts'
+import type { ReadOutcome } from './connector-specs.ts'
+import { LOCAL_REFUSALS, rowsText, said, thrownOf } from './connector-specs.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, ToolSpec, ToolStatus } from './tool-spec.ts'
@@ -43,9 +44,8 @@ function failedSentence(tool: Call, generic: string): Presented {
   return said(kind !== undefined && isDataRefusal(kind) ? REFUSED_TEXT[kind] : generic)
 }
 
-function rowsText(rows: number, more: boolean): string {
-  if (rows === 0 && !more) return 'Nenhuma linha.'
-  return `${rows} ${rows === 1 ? 'linha' : 'linhas'}${more ? ', há mais' : ''}`
+function rowsOf(rows: number, complete: boolean): ReadOutcome {
+  return rows === 0 && complete ? { kind: 'EMPTY' } : { kind: 'ROWS', rows, complete }
 }
 
 function line(sentence: string, detail: string | undefined, status: ToolStatus): Presented {
@@ -66,7 +66,9 @@ function presentDescribe(tool: Call, status: ToolStatus): Presented {
   const result = DataResult.safeParse(tool.result).data
   if (table !== undefined) {
     const detail =
-      result?.kind === 'TABLE' ? rowsText(result.sample.rows.length, result.sample.more) : undefined
+      result?.kind === 'TABLE'
+        ? rowsText(rowsOf(result.sample.rows.length, !result.sample.more))
+        : undefined
     return line(running ? `Vendo ${table}` : `Viu ${table}`, detail, status)
   }
   const count = result?.kind === 'CATALOG' ? result.tables.length : undefined
@@ -82,7 +84,7 @@ function presentQuery(tool: Call, status: ToolStatus): Presented {
   const tables = result.origin.map((each) => each.table).join(', ')
   return line(
     tables === '' ? 'Consultou os dados' : `Consultou ${tables}`,
-    rowsText(result.rows.length, !result.complete),
+    rowsText(rowsOf(result.rows.length, result.complete)),
     status,
   )
 }

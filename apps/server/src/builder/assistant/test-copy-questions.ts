@@ -1,6 +1,7 @@
 import { BUILDER_TOOL, DATA_TOOL, DataResult } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { PADARIA_SOL_MATRIZ, salesDatabase, soldBy } from '../../hub/connectors/test-sales.ts'
+import { TOTAL_OUTUBRO } from '../data-tools/test-data.ts'
 import { textOf } from './test-real-model.ts'
 import { failed, invocationsOf } from './test-scorecard.ts'
 import { keyOf, shows } from './test-truths.ts'
@@ -24,21 +25,6 @@ export type CopyQuestion = Readonly<{
 
 const OCTOBER = '2026-10'
 
-function cents(value: number): number {
-  return Math.round(value * 100) / 100
-}
-
-function soldInOctober(): number {
-  return cents(
-    PADARIA_SOL_MATRIZ.notas
-      .filter((nota) => nota.dtneg.startsWith(OCTOBER))
-      .reduce(
-        (sum, nota) => sum + cents(nota.itens.reduce((each, item) => each + item.vlrtot, 0)),
-        0,
-      ),
-  )
-}
-
 function activeClients(): number {
   const answer = salesDatabase(PADARIA_SOL_MATRIZ)(
     "SELECT COUNT(*) AS N FROM TGFPAR WHERE ATIVO = 'S' AND CLIENTE = 'S'",
@@ -60,7 +46,7 @@ export const COPY_QUESTIONS: readonly CopyQuestion[] = [
     text: 'Quanto vendi em outubro?',
     asks: 'OWNER',
     tables: ['sankhya_vendas'],
-    truth: soldInOctober,
+    truth: () => TOTAL_OUTUBRO,
   },
   {
     n: 'c2',
@@ -88,7 +74,7 @@ export const COPY_QUESTIONS: readonly CopyQuestion[] = [
     text: 'Quanto vendi em outubro?',
     asks: 'OWNER',
     tables: ['sankhya_vendas'],
-    truth: soldInOctober,
+    truth: () => TOTAL_OUTUBRO,
     partial: true,
   },
   {

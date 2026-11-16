@@ -104,7 +104,7 @@ async function turnOf(t: TestContext, on: Place, asked: CopyQuestion) {
   return { parts: await partsOf(on, url), events }
 }
 
-/** The sales copy's last run as it ended: complete, or stopped halfway by the cap. */
+/** The sales copy's last run as it ended: the test writes the row the engine writes when the page cap stops a run, since the test Hub takes no `runPages`. */
 function ending(on: Place, last: 'COMPLETE' | 'PARTIAL') {
   return on.hub.test.asOwner(
     `update copies.copy_run set outcome = $1, reason = $2 where copy_id = (select id from copies.copy where name = 'sankhya_vendas')`,
@@ -181,6 +181,21 @@ test('o placar do dado copiado julga certo um turno que consulta e cita a origem
   follows(
     scripted([
       [tool(DATA_TOOL.describe, {})],
+      [tool(DATA_TOOL.query, { sql: SQL.c1 })],
+      [searching()],
+      [reading('Matriz', LIVE_SQL)],
+      [said(said1)],
+    ]),
+  )
+  assert.equal(
+    judgedCopy(c1, (await turnOf(t, on, c1)).parts),
+    false,
+    'the right query, then a live read',
+  )
+
+  follows(
+    scripted([
+      [tool(DATA_TOOL.describe, {})],
       [tool(DATA_TOOL.query, { sql: OTHER_TABLE })],
       [said(said1)],
     ]),
@@ -193,7 +208,7 @@ test('o placar do dado copiado julga certo um turno que consulta e cita a origem
 })
 
 test('o placar do dado copiado julga a rodada parcial, o apelido do vendedor e a pergunta do Builder', async (t) => {
-  const { on, follows } = await copiedOn(t, ['clientes'])
+  const { on, follows } = await copiedOn(t, questionOf('c6').released)
   const [c3, c5, c6] = [questionOf('c3'), questionOf('c5'), questionOf('c6')]
 
   follows(querying(SQL.c3, (row) => `${String(row[0])} vendeu mais, ${money(String(row[1]))}.`))
@@ -259,7 +274,7 @@ test('o modelo de verdade, as perguntas do dado copiado: cada pergunta numa conv
     on,
     { connectionId: on.matriz },
     ['vendas', 'vendedores', 'clientes'],
-    ['clientes'],
+    questionOf('c6').released,
   )
   mkdirSync(REAL_MODEL, { recursive: true })
   const folder = mkdtempSync(join(REAL_MODEL, 'placar-copia-'))
