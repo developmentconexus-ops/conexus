@@ -23,7 +23,7 @@ documents. Mastra 1.82 marks Knowledge only `@experimental`; "alpha, isolation n
 - `C1`: company documents only with keyword search and those attack tests while Knowledge is
   experimental. `E1`: Conexus redeclares access by folder and area, through Knowledge's own rules; no
   source's per-file permissions. Connector data never enters the Brain.
-- Search by meaning waits for the ten questions of `docs/approvals.md` to fail on keywords.
+- Search by meaning waits for the ten questions of `docs/approvals/` to fail on keywords.
 
 ## Not decided yet
 

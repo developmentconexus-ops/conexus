@@ -1,0 +1,33 @@
+# Etapa 19.1
+
+Cartão da etapa 19.1 aprovado em 2026-10-29 (commit ce249b15b7adb7f8cb7e2a6fef9984cf2b4b207a): "Aprovado 19.1"
+
+Ele aprovou a página do cartão com a recomendação `Y1` (o Desligar continua só no Hub, como na 19). O commit citado só escreve essa resposta na página; as decisões `S1`, `T1`, `U1`, `V2` e `W1` vieram antes, ao estudo. A aprovação é também a palavra da regra de dados D11 para as permissões do banco da U1.
+
+Cartão da etapa 19.1 aprovado em 2026-10-30 (commit 2359d27e61b50d36e06e8488f2743c8f89d7b05b): "Aprovado 19.1"; sobre a forma das leituras, "Fazer o básico bem feito [...] em vez de querer complicar"
+
+Essa emenda é a opção B do estudo do Sankhya de verdade, aplicada à 19.1 pelo firstmate sob essas palavras do fundador, sem decisão nova dele: cada leitura do Mercado Livre diz a rota, a entrada, a chave da lista e a paginação, e as linhas passam como vieram, com o envelope conferido; o critério 23 confere o envelope e a saída dos dados do comprador; a forma real das páginas se mede no primeiro uso dele. O que ele vê no roteiro não muda.
+
+Cartão da etapa 19.1 aprovado em 2026-10-30 (commit bf11da92fb4dcf9a4e6dfed0e2612553fa8f2c82): "Aprovado 19.1"
+
+Essa emenda vem da revisão da U1, decidida pelo firstmate, sem decisão nova do fundador nem mudança no que ele vê: a linha de autorização em andamento só aponta uma ligação da mesma empresa e do mesmo conector (uma chave composta, como a do acesso a um app), o nome dela tem o mesmo limite do nome da ligação, e a migração de permissões vai numa migração e num commit próprios dentro do pull request da U1, como nas etapas 18 e 19. A palavra D11 do fundador é a mesma, "Aprovado 19.1".
+
+Pergunta do firstmate durante a 19.1, 2026-10-30: "Ao desligar uma ligação, avisar o Mercado Livre e revogar a autorização?"; resposta do fundador, 2026-10-30: "Sim"
+
+Isso muda o Desligar da `Y1` do cartão: o conector OAuth pode declarar a chamada que tira a autorização, o Mercado Livre a declara, e o Desligar a manda com a chave viva antes de apagar; se o fornecedor recusa, está fora ou não há chave viva, a ligação sai do mesmo jeito, o log nomeia o caso e a janela avisa a pessoa. É uma decisão dele no meio da etapa, que entra no livro sem nova aprovação do cartão (L6); o cartão fica como estava. Pull request: https://github.com/developmentconexus-ops/conexus/pull/483
+
+Em 2026-10-30, sobre o Testar, depois que a conta real dele no Mercado Livre mostrou um 429 e um 404 entre 27 leituras: "eu não acho que nosso testar teria que testar todas essas ... o testar é só bater na API ... que valide que a conexão está funcionando ... Acho que é só tentar a conexão, ver se bateu e pronto. Aí o resto, as capacidades, é a gente como conexo plataforma ... que iria estar monitorando isso". À pergunta "O senhor aprova trocar o Testar por essa chamada única, dentro da 19.1?" (no Mercado Livre, renovar a chave se precisar e ler `/users/me`; no Sankhya, o login e Empresas; uma frase, "Ligado e funcionando." ou o motivo; saem a lista por leitura, o último teste guardado por item, `X2`, e os 80 s): "Aprovado". Isso desfaz, na etapa 19, a decisão "O Testar com 23 leituras" e o `X2`, e muda os critérios do cartão da 19 que os provavam; na 19.1, entra a unidade U4. A coluna `connection.last_test` e a sua permissão saem numa migração depois desta, quando nenhuma imagem no ar a ler (regra D6); essa migração muda a lista de permissões e espera a palavra dele que a regra D11 pede.
+
+Cartão da etapa 19.1 aprovado em 2026-10-30 (commit cd0452fabbfcba1ea5797b0512516a29692ac65c): "Aprovado"
+
+Essa emenda só escreve no cartão a palavra acima: a unidade U4, o critério 19 reescrito, a matriz de estados e a linha da tabela de referência do Testar de uma leitura só, e o que ele vê no roteiro, passos 3 e 6.
+
+Em 2026-10-30, sobre os merges: "1. Sim" (o fechamento da 19, https://github.com/developmentconexus-ops/conexus/pull/471, e a 19.1); "1. Pode" (https://github.com/developmentconexus-ops/conexus/pull/484, a espera do 429); "Pode mesclar" (https://github.com/developmentconexus-ops/conexus/pull/486, o Testar de uma leitura só).
+
+Em 2026-10-30, sobre o logotipo do Mercado Livre: "2. Manter". Fica o logotipo como está.
+
+Em 2026-10-30, sobre o que depende dos webhooks: "Isso depois de webhooks, tá? Não vamos fazer isso agora, não."
+
+Em 2026-10-30, sobre os textos novos da etapa 19.1 (os 28 itens da lista que o firstmate levou a ele): "Aprovado". São as frases da janela **Desligar** ("Desligar <nome da ligação>?", "O Conexus apaga as chaves que guardou.", **Desligar**, **Desligando…**, **Cancelar**, **Fechar**), os três avisos de quando o fornecedor ainda lista o Conexus como autorizado ("Desligamos aqui, mas o fornecedor não aceitou retirar a autorização do Conexus. Retire você mesmo na conta dele." e "Desligamos aqui, mas não conseguimos avisar o fornecedor. Retire a autorização do Conexus na conta dele.", esta última mantida como uma frase só para o fornecedor fora do ar e para a ausência de chave viva) e "Não confirmamos o desligamento. Veja a lista."; as frases do fornecedor que pede para esperar ("O <conector> pediu para esperar. Tente de novo em alguns minutos." e, com tempo, "O <conector> pediu para esperar 30 segundos. Tente de novo depois disso."); as da página de volta da autorização ("Voltando da autorização…", "Esse endereço não é de uma ligação.", **Voltar a Integrações**, "Você não autorizou o Conexus no <conector>.", "O <conector> recusou a autorização.", "O app do Conexus foi recusado pelo <conector>. Avise o suporte.", "O <conector> não respondeu. Tente de novo em alguns minutos."), a da janela **Ligar** ("Você vai ao <conector> entrar com a conta e autorizar o Conexus.", **Continuar no <conector>**) e as de **Conectar de novo** ("O <conector> pediu para conectar de novo.", "Pede para conectar de novo"); e as do Testar de uma chamada só ("Testando a ligação…", "Ligado e funcionando.", "O <conector> aceitou a ligação, mas não deixou ler <leitura>. Peça ao responsável pela conta no <conector> para liberar.", "O <conector> respondeu com erro. Tente de novo em alguns minutos.", "Resposta que o Conexus não entendeu" e a linha "<conector> respondeu 403, código <código>: <mensagem>").
+
+Etapa 19.1 usada em 2026-10-30 em https://hub.conexus.fun (v0.19.7), com a conta real dele de vendedor no Mercado Livre e a ligação dele com o Sankhya: ligou o Mercado Livre por OAuth, as leituras rodaram e, depois do Testar de uma chamada só, as duas ligações responderam "Ligado e funcionando". Antes dos consertos: "Meio que validado"; perguntado se as duas responderam "Ligado e funcionando" depois da v0.19.7: "Sim adeu certo".

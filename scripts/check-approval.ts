@@ -1,6 +1,7 @@
 // Defect: a step is built from a card the founder did not approve, or from one that changed after
-// he did. The ledger line must cite a commit that is an ancestor of the tip, and the card must be
-// the same file at that commit and now (delivery L6).
+// he did. The card's approval file, `docs/approvals/` with the card's file name, must hold a line
+// citing a commit that is an ancestor of the tip, and the card must be the same file at that commit
+// and now (delivery L6).
 // Refusals are proved by planting each one in check-approval.test.ts.
 // An amended card has more than one approval line; the last one holds (founder, 2026-10-22).
 // A card of three levels, e2432, is step 24.3.2 (founder, 2026-11-03: "4. Okay").
@@ -52,10 +53,14 @@ if (cards.length === 0) {
   console.log('check-approval: no card of a track this change affects, nothing to check')
   process.exit(0)
 }
-const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')
+function approvalFile(card: string): string {
+  return `docs/approvals/${card}`
+}
 
 function approvedCommit(card: string): { label: string; approved: string | undefined } {
   const cardPath = `docs/steps/${card}`
+  const ledgerPath = join(root, approvalFile(card))
+  const ledger = existsSync(ledgerPath) ? readFileSync(ledgerPath, 'utf8') : ''
   const digits = (card.match(/^e(\d+)-/) ?? [])[1]
   const file = cardPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   // A short card has no step number: its ledger line names its file.
@@ -90,7 +95,10 @@ function checkCard(card: string): void {
       )
       return
     }
-    refuse('approval-missing', `docs/approvals.md has no approval line for ${label} (${cardPath})`)
+    refuse(
+      'approval-missing',
+      `${approvalFile(card)} has no approval line for ${label} (${cardPath})`,
+    )
   }
   if (!gitSucceeds('merge-base', '--is-ancestor', approved, 'HEAD')) {
     refuse('approval-commit-not-in-tip', `${approved} is not an ancestor of HEAD (${cardPath})`)

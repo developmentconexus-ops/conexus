@@ -8,7 +8,7 @@ One line per document (`check-docs`).
 - [README.md](../README.md): repo.
 - [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
-- [approvals.md](approvals.md): approvals.
+- [approvals/](approvals/): one per card.
 - [architecture.md](architecture.md): design.
 - [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
 - [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).

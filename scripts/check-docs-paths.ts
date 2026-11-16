@@ -10,7 +10,7 @@ import { withoutFences } from './check-docs-method.ts'
 
 /** Dated records and planned code: what they name was true then, or is yet to be written. */
 const RECORDS: readonly [RegExp, string][] = [
-  [/^docs\/approvals\.md$/, 'the founder-word log names what stood on each date'],
+  [/^docs\/approvals\//, 'the founder-word log names what stood on each date'],
   [/^docs\/decisions\//, 'a decision is a dated record of its reason'],
   [/^docs\/steps\//, 'a card plans code that does not exist until its step closes'],
 ]

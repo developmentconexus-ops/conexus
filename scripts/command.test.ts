@@ -18,9 +18,10 @@ function hangingGit(): { root: string; path: string } {
   writeFileSync(join(bin, 'git'), '#!/bin/sh\nexec sleep 60\n')
   chmodSync(join(bin, 'git'), 0o755)
   mkdirSync(join(root, 'docs/steps'), { recursive: true })
+  mkdirSync(join(root, 'docs/approvals'))
   writeFileSync(join(root, 'docs/steps/e01-x.md'), '# x\n')
   writeFileSync(
-    join(root, 'docs/approvals.md'),
+    join(root, 'docs/approvals/e01-x.md'),
     'Cartão da etapa 1 aprovado em 2026-01-01 (commit abcdef1): "x"\n',
   )
   return { root, path: `${bin}${delimiter}${process.env.PATH}` }

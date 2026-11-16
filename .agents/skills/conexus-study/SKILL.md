@@ -7,8 +7,8 @@ description: "Studies a Conexus roadmap step before its card: writes the referen
 
 ## When to use
 
-At the start of every roadmap step, before `conexus-scope`. Entry
-sheets, decisions and today's code are input to test.
+Every roadmap step's start, before `conexus-scope`. Entry sheets,
+decisions and today's code are input to test.
 
 ## What it receives
 
@@ -30,11 +30,12 @@ for brought code, the entry sheets and the old code at its frozen commit.
    ([sources](references/sources.md)).
 3. **Run** the old product for anything it did, and one reference wherever the step changes what a
    person sees; a screen follows [screens](references/screens.md). A one-way door gets a
-   [proof](references/proof.md). For every stream, stored row or tool result of a library that the
-   step's code will read, run the native flow once and keep what it emits, with `npm run record`
+   [proof](references/proof.md). For every library stream, stored row or tool result the step's
+   code will read, record the native flow once with `npm run record`
    ([testing T26](../../../docs/guides/testing.md)).
-4. **Verdicts.** Each row nativo, embrulhado or remendo. A remendo row without its proof goes back
-   to research, never to the founder as theory.
+4. **Verdicts.** Each row nativo, embrulhado or remendo. A remendo row without its proof, or a row the references
+   leave open, goes back to research, never to the founder as theory; a gap names the exact platform
+   test ([delivery L28](../../../docs/guides/delivery.md)).
 5. **Then the repository.** Read [architecture](../../../docs/architecture.md), the subject's
    decision records, the guide [`docs/index.md`](../../../docs/index.md) names, and the `next-card`
    issues. Test the premise of each decision and boundaries entry the step leans on, `main`'s
@@ -70,5 +71,5 @@ a decision record "proposed" with its Criterion.
 ## When it closes
 
 When every cell of the reference table is filled at a pin and the report's coverage list holds.
-Not when sections are full. A study opened after the card's approval reopens the card before any
+A study opened after the card's approval reopens the card before any
 unit it touches builds.

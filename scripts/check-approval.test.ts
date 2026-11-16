@@ -24,6 +24,11 @@ function write(dir: string, path: string, content: string) {
   writeFileSync(join(dir, path), content)
 }
 
+function commit(dir: string, message: string) {
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qm', message)
+}
+
 function approval(sha: string): string {
   return `Cartão da etapa 1 aprovado em 2026-10-13 (commit ${sha}): "Aprovo"\n`
 }
@@ -33,7 +38,7 @@ function repository(): { dir: string; card: string } {
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   write(dir, 'docs/steps/e01-x.md', 'card\n')
-  write(dir, 'docs/approvals.md', 'ledger\n')
+  write(dir, 'docs/approvals/README.md', 'ledger\n')
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'card')
   return { dir, card: git(dir, 'rev-parse', 'HEAD') }
@@ -45,18 +50,18 @@ function run(dir: string, ...args: string[]) {
 
 test('aceita o cartão aprovado e inalterado', () => {
   const { dir, card } = repository()
-  write(dir, 'docs/approvals.md', approval(card))
-  git(dir, 'commit', '-qam', 'approval')
+  write(dir, 'docs/approvals/e01-x.md', approval(card))
+  commit(dir, 'approval')
   assert.equal(run(dir).status, 0)
 })
 
 test('lê a aprovação mais nova de um cartão emendado', () => {
   const { dir, card } = repository()
   write(dir, 'docs/steps/e01-x.md', 'card amended\n')
-  git(dir, 'commit', '-qam', 'amendment')
+  commit(dir, 'amendment')
   const amended = git(dir, 'rev-parse', 'HEAD')
-  write(dir, 'docs/approvals.md', approval(card) + approval(amended))
-  git(dir, 'commit', '-qam', 'approvals')
+  write(dir, 'docs/approvals/e01-x.md', approval(card) + approval(amended))
+  commit(dir, 'approvals')
   assert.equal(run(dir).status, 0)
 })
 
@@ -68,8 +73,8 @@ test('recusa commit fora da ponta', () => {
   git(dir, 'commit', '-q', '-m', 'other')
   const stray = git(dir, 'rev-parse', 'HEAD')
   git(dir, 'checkout', '-q', 'main')
-  write(dir, 'docs/approvals.md', approval(stray))
-  git(dir, 'commit', '-qam', 'approval')
+  write(dir, 'docs/approvals/e01-x.md', approval(stray))
+  commit(dir, 'approval')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^approval-commit-not-in-tip: /)
@@ -77,9 +82,9 @@ test('recusa commit fora da ponta', () => {
 
 test('recusa cartão mudado depois da aprovação', () => {
   const { dir, card } = repository()
-  write(dir, 'docs/approvals.md', approval(card))
+  write(dir, 'docs/approvals/e01-x.md', approval(card))
   write(dir, 'docs/steps/e01-x.md', 'card changed\n')
-  git(dir, 'commit', '-qam', 'approval and change')
+  commit(dir, 'approval and change')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^card-changed-after-approval: /)
@@ -115,83 +120,63 @@ test('reconhece o cartão e041 como etapa 4.1 sem confundir com a etapa 4', () =
   git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
   write(dir, 'docs/steps/e041-convite.md', 'card 4.1\n')
   git(dir, 'add', '.')
-  git(dir, 'commit', '-qam', 'decimal card')
+  commit(dir, 'decimal card')
   const decimalCard = git(dir, 'rev-parse', 'HEAD')
   write(
     dir,
-    'docs/approvals.md',
+    'docs/approvals/e041-convite.md',
     `Cartão da etapa 4.1 aprovado em 2026-10-16 (commit ${decimalCard}): "Aprovo"\n`,
   )
-  git(dir, 'commit', '-qam', 'decimal card approval')
+  commit(dir, 'decimal card approval')
   assert.equal(run(dir).status, 0)
 })
 
-function decimalCardRepository(name: string): { dir: string; sha: string } {
+function decimalCardRepository(name: string): { dir: string; sha: string; ledger: string } {
   const { dir } = repository()
   git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
   write(dir, `docs/steps/${name}`, 'card\n')
   git(dir, 'add', '.')
-  git(dir, 'commit', '-qam', 'card')
-  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+  commit(dir, 'card')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD'), ledger: `docs/approvals/${name}` }
 }
 
 test('reconhece o cartão e121 como etapa 12.1 sem confundir com a etapa 12', () => {
-  const { dir, sha } = decimalCardRepository('e121-conversa-no-painel.md')
-  write(
-    dir,
-    'docs/approvals.md',
-    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
-  )
-  git(dir, 'commit', '-qam', 'approval of 12')
+  const { dir, sha, ledger } = decimalCardRepository('e121-conversa-no-painel.md')
+  write(dir, ledger, `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`)
+  commit(dir, 'approval of 12')
   assert.equal(run(dir).status, 1)
-  write(
-    dir,
-    'docs/approvals.md',
-    `Cartão da etapa 12.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
-  )
-  git(dir, 'commit', '-qam', 'approval of 12.1')
+  write(dir, ledger, `Cartão da etapa 12.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`)
+  commit(dir, 'approval of 12.1')
   assert.equal(run(dir).status, 0)
 })
 
 test('reconhece o cartão e131 como etapa 13.1', () => {
-  const { dir, sha } = decimalCardRepository('e131-x.md')
-  write(
-    dir,
-    'docs/approvals.md',
-    `Cartão da etapa 13.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
-  )
-  git(dir, 'commit', '-qam', 'approval')
+  const { dir, sha, ledger } = decimalCardRepository('e131-x.md')
+  write(dir, ledger, `Cartão da etapa 13.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`)
+  commit(dir, 'approval')
   assert.equal(run(dir).status, 0)
 })
 
 test('reconhece o cartão e2432 como etapa 24.3.2, sem confundir com a 24.32 nem com a 24.3', () => {
-  const { dir, sha } = decimalCardRepository('e2432-x.md')
+  const { dir, sha, ledger } = decimalCardRepository('e2432-x.md')
   for (const wrong of ['24.32', '24.3']) {
     write(
       dir,
-      'docs/approvals.md',
+      ledger,
       `Cartão da etapa ${wrong} aprovado em 2026-11-03 (commit ${sha}): "Aprovo"\n`,
     )
-    git(dir, 'commit', '-qam', `approval of ${wrong}`)
+    commit(dir, `approval of ${wrong}`)
     assert.equal(run(dir).status, 1, wrong)
   }
-  write(
-    dir,
-    'docs/approvals.md',
-    `Cartão da etapa 24.3.2 aprovado em 2026-11-03 (commit ${sha}): "Aprovo"\n`,
-  )
-  git(dir, 'commit', '-qam', 'approval of 24.3.2')
+  write(dir, ledger, `Cartão da etapa 24.3.2 aprovado em 2026-11-03 (commit ${sha}): "Aprovo"\n`)
+  commit(dir, 'approval of 24.3.2')
   assert.equal(run(dir).status, 0)
 })
 
 test('o cartão e12 continua sendo a etapa 12', () => {
-  const { dir, sha } = decimalCardRepository('e12-x.md')
-  write(
-    dir,
-    'docs/approvals.md',
-    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
-  )
-  git(dir, 'commit', '-qam', 'approval')
+  const { dir, sha, ledger } = decimalCardRepository('e12-x.md')
+  write(dir, ledger, `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`)
+  commit(dir, 'approval')
   assert.equal(run(dir).status, 0)
 })
 
@@ -208,7 +193,7 @@ function twoCardRepository(): { dir: string; sha: string } {
   write(dir, 'docs/steps/e121-a.md', 'card 12.1\n')
   write(dir, 'docs/steps/e122-b.md', 'card 12.2\n')
   git(dir, 'add', '.')
-  git(dir, 'commit', '-qam', 'two cards')
+  commit(dir, 'two cards')
   return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
 }
 
@@ -218,15 +203,16 @@ function approvalOf(step: string, sha: string): string {
 
 test('aceita dois cartões aprovados e inalterados', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/approvals.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
-  git(dir, 'commit', '-qam', 'approvals')
+  write(dir, 'docs/approvals/e121-a.md', approvalOf('12.1', sha))
+  write(dir, 'docs/approvals/e122-b.md', approvalOf('12.2', sha))
+  commit(dir, 'approvals')
   assert.equal(run(dir).status, 0)
 })
 
 test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/approvals.md', approvalOf('12.1', sha))
-  git(dir, 'commit', '-qam', 'approval of the first')
+  write(dir, 'docs/approvals/e121-a.md', approvalOf('12.1', sha))
+  commit(dir, 'approval of the first')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^approval-missing: .*e122-b\.md/)
@@ -234,9 +220,10 @@ test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
 
 test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/approvals.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  write(dir, 'docs/approvals/e121-a.md', approvalOf('12.1', sha))
+  write(dir, 'docs/approvals/e122-b.md', approvalOf('12.2', sha))
   write(dir, 'docs/steps/e122-b.md', 'card 12.2 changed\n')
-  git(dir, 'commit', '-qam', 'approvals and change')
+  commit(dir, 'approvals and change')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^card-changed-after-approval: .*e122-b\.md/)
@@ -244,10 +231,10 @@ test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => 
 
 test('recusa o cartão do trilho de desenho sem aprovação, ao lado de um da fronteira aprovado', () => {
   const { dir, card } = repository()
-  write(dir, 'docs/approvals.md', approval(card))
+  write(dir, 'docs/approvals/e01-x.md', approval(card))
   write(dir, 'docs/steps/e133-pauta.md', '# Pauta\n\nTrilho: desenho\n')
   git(dir, 'add', '.')
-  git(dir, 'commit', '-qam', 'design card')
+  commit(dir, 'design card')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^approval-missing: .*e133-pauta\.md/)
@@ -258,7 +245,7 @@ function shortCardRepository(): { dir: string; sha: string } {
   git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
   write(dir, 'docs/steps/saude-do-ci.md', 'short card\n')
   git(dir, 'add', '.')
-  git(dir, 'commit', '-qam', 'short card')
+  commit(dir, 'short card')
   return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
 }
 
@@ -270,8 +257,8 @@ function shortApproval(sha: string, amendment = false): string {
 
 test('aceita o cartão curto aprovado e inalterado', () => {
   const { dir, sha } = shortCardRepository()
-  write(dir, 'docs/approvals.md', shortApproval(sha))
-  git(dir, 'commit', '-qam', 'approval')
+  write(dir, 'docs/approvals/saude-do-ci.md', shortApproval(sha))
+  commit(dir, 'approval')
   const result = run(dir)
   assert.equal(result.status, 0, result.stderr)
   assert.match(result.stdout, /saude-do-ci\.md approved at/)
@@ -286,9 +273,9 @@ test('recusa o cartão curto sem linha de aprovação, nomeando o arquivo', () =
 
 test('recusa o cartão curto mudado depois da aprovação', () => {
   const { dir, sha } = shortCardRepository()
-  write(dir, 'docs/approvals.md', shortApproval(sha))
+  write(dir, 'docs/approvals/saude-do-ci.md', shortApproval(sha))
   write(dir, 'docs/steps/saude-do-ci.md', 'short card changed\n')
-  git(dir, 'commit', '-qam', 'approval and change')
+  commit(dir, 'approval and change')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^card-changed-after-approval: .*saude-do-ci\.md/)
@@ -297,10 +284,10 @@ test('recusa o cartão curto mudado depois da aprovação', () => {
 test('lê a linha mais nova entre o Cartão curto e a Emenda', () => {
   const { dir, sha } = shortCardRepository()
   write(dir, 'docs/steps/saude-do-ci.md', 'short card amended\n')
-  git(dir, 'commit', '-qam', 'amendment')
+  commit(dir, 'amendment')
   const amended = git(dir, 'rev-parse', 'HEAD')
-  write(dir, 'docs/approvals.md', shortApproval(sha) + shortApproval(amended, true))
-  git(dir, 'commit', '-qam', 'approvals')
+  write(dir, 'docs/approvals/saude-do-ci.md', shortApproval(sha) + shortApproval(amended, true))
+  commit(dir, 'approvals')
   const result = run(dir)
   assert.equal(result.status, 0, result.stderr)
   assert.match(result.stdout, new RegExp(`approved at ${amended}`))
@@ -308,11 +295,27 @@ test('lê a linha mais nova entre o Cartão curto e a Emenda', () => {
 
 test('a linha de outro cartão curto não aprova este', () => {
   const { dir, sha } = shortCardRepository()
-  write(dir, 'docs/approvals.md', shortApproval(sha).replace('saude-do-ci', 'outro-cartao'))
-  git(dir, 'commit', '-qam', 'approval of another card')
+  write(
+    dir,
+    'docs/approvals/saude-do-ci.md',
+    shortApproval(sha).replace('saude-do-ci', 'outro-cartao'),
+  )
+  commit(dir, 'approval of another card')
   const result = run(dir)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)
+})
+
+test('a linha certa no arquivo de outro cartão não aprova este', () => {
+  const { dir, sha } = shortCardRepository()
+  write(dir, 'docs/approvals/outro-cartao.md', shortApproval(sha))
+  commit(dir, 'approval in the wrong file')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(
+    result.stderr,
+    /^approval-missing: docs\/approvals\/saude-do-ci\.md .*saude-do-ci\.md/,
+  )
 })
 
 test('o cartão curto exige as palavras do fundador e cada abertura o seu gênero', () => {
@@ -322,8 +325,8 @@ test('o cartão curto exige as palavras do fundador e cada abertura o seu gêner
     shortApproval('abc1234', true).replace('aprovada', 'aprovado'),
   ]) {
     const { dir, sha } = shortCardRepository()
-    write(dir, 'docs/approvals.md', line.replace('abc1234', sha))
-    git(dir, 'commit', '-qam', 'approval')
+    write(dir, 'docs/approvals/saude-do-ci.md', line.replace('abc1234', sha))
+    commit(dir, 'approval')
     const result = run(dir)
     assert.equal(result.status, 1, line)
     assert.match(result.stderr, /^approval-missing: .*saude-do-ci\.md/)

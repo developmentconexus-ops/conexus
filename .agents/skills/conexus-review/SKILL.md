@@ -8,8 +8,8 @@ description: "Reviews a Conexus roadmap step at its exact commit, as the one Opu
 ## When to use
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
-QA, at `main` once the last unit is merged and CI is green. The same skill reviews each unit
-commit by commit. Later passes are a delta check (step 9).
+QA, at `main` once the last unit is merged. It reviews each unit commit by commit from the pull
+request's opening, beside CI. Later passes are a delta check (step 9).
 
 ## What it receives
 
@@ -40,10 +40,10 @@ The pull request, its head commit and the card; nothing from the builders' conve
    report's rows. Then compare each built piece with the reference's code
    ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or does a
    library hold it?
-6. Walk the checklist across the diff; fill its sweep table (a row per rule: search, result). A
+6. Walk the checklist across the diff; fill its sweep table. A
    screen: [screen](references/screen.md).
-7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Every Fechamento about
-   code shape goes on the closing list, checked as done.
+7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Each code-shape Fechamento
+   goes on the closing list, checked as done.
 8. Write one verdict; an unfinished step is no verdict.
 9. A delta check reads one front's `git diff <reviewed>..<new>` and its earlier Bloqueia findings:
    is each closed, did the fix create one; the pull request body counts it ("conferência 1 de no
@@ -78,11 +78,10 @@ records it, or the finding)>
 approve | request changes: <one line why>
 ```
 
-Only a Bloqueia holds the merge ([delivery L12](../../../docs/guides/delivery.md)).
-
 ## Stop and ask
 
-The card contradicts a guide: report both lines, choose neither.
+The card contradicts a guide: report both lines, choose neither. A piece departs from the
+references: bring it to the founder as [delivery L28](../../../docs/guides/delivery.md) says.
 
 ## When it closes
 

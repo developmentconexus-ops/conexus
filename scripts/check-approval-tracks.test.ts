@@ -29,7 +29,7 @@ function repository(): string {
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   write(dir, 'docs/steps/e01-x.md', 'card\n')
-  write(dir, 'docs/approvals.md', 'ledger\n')
+  write(dir, 'docs/approvals/README.md', 'ledger\n')
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'card')
   return dir
