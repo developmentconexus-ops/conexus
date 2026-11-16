@@ -111,6 +111,15 @@ type Wanted = Readonly<{ login: string; tables: readonly string[] }>
 /** A `DO` block takes no parameters: the request reaches it through this setting, local to the transaction. */
 const READERS_SETTING = 'conexus.readers'
 
+const CREATE_MISSING = `DO $$ DECLARE made record; BEGIN
+  FOR made IN SELECT w.login, w.password
+    FROM jsonb_to_recordset(current_setting('${READERS_SETTING}')::jsonb -> 'logins') AS w(login text, password text)
+    WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = w.login)
+  LOOP
+    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', made.login, made.password);
+  END LOOP;
+END $$`
+
 const GRANT_EXISTING = `DO $$ DECLARE given record; BEGIN
   FOR given IN SELECT w.login, c.relname
     FROM jsonb_to_recordset(current_setting('${READERS_SETTING}')::jsonb -> 'granted') AS w(login text, name text)
@@ -125,7 +134,7 @@ END $$`
  * refuses a login that still holds a grant (`2BP01`), so the REVOKEs come first.
  */
 const DROP_LEAVING = `DO $$ DECLARE
-  kept text[] := ARRAY(SELECT jsonb_array_elements_text(current_setting('${READERS_SETTING}')::jsonb -> 'kept'));
+  kept text[] := ARRAY(SELECT w ->> 'login' FROM jsonb_array_elements(current_setting('${READERS_SETTING}')::jsonb -> 'logins') AS w);
   gone text;
 BEGIN
   FOR gone IN SELECT rolname FROM pg_roles
@@ -147,12 +156,14 @@ async function reconcileOnce(
   wanted: readonly Wanted[],
   signal: AbortSignal,
 ): Promise<SqlAnswer> {
-  const kept = wanted.map(({ login }) => login)
-  const created = await missingLogins(context, owner, kept, signal)
-  if (!Array.isArray(created)) return created
   const sync = quoted(SYNC_LOGIN)
   const request = {
-    kept,
+    logins: await Promise.all(
+      wanted.map(async ({ login }) => ({
+        login,
+        password: await appLoginPassword({ key: context.key, login }),
+      })),
+    ),
     granted: wanted.flatMap(({ login, tables }) => tables.map((name) => ({ login, name }))),
   }
   return context.transport(
@@ -160,7 +171,7 @@ async function reconcileOnce(
     [
       ROLES_LOCK,
       {
-        text: 'SELECT set_config($1, $2, true)',
+        text: 'SELECT FROM set_config($1, $2, true)',
         values: [READERS_SETTING, JSON.stringify(request)],
       },
       { text: `SET LOCAL ROLE ${sync}` },
@@ -172,7 +183,7 @@ async function reconcileOnce(
         END $$`,
       },
       { text: 'RESET ROLE' },
-      ...created,
+      { text: CREATE_MISSING },
       ...wanted.flatMap(({ login }) => readSettingsOf(login)),
       { text: `SET LOCAL ROLE ${sync}` },
       ...wanted.flatMap(({ login }) => [

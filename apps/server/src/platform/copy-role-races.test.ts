@@ -101,3 +101,19 @@ test('a mais velha cria um login que a mais nova não pede: ele não fica', asyn
     assert.deepEqual(await heldBy(owner, loginOf(novo)), [], `volta ${lap}`)
   }
 })
+
+test('a mais velha apaga um login que a mais nova pede: a mais nova termina sem 42704', async (t) => {
+  const { owner } = await companyOf(t)
+  for (let lap = 0; lap < LAPS; lap++) {
+    const [vendas, pedido] = [libraryRole(), libraryRole()]
+    const newer = [
+      { roleId: vendas, tables: ['a'] },
+      { roleId: pedido, tables: ['b'] },
+    ]
+    await applied(owner, newer)
+    await crossed(owner, [{ roleId: vendas, tables: ['a'] }], newer, lap)
+    assert.deepEqual(await heldBy(owner, loginOf(pedido)), [
+      { relname: 'b', rolname: loginOf(pedido) },
+    ])
+  }
+})
