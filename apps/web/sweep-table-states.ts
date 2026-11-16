@@ -198,6 +198,15 @@ export const TABLE_STATES: State[] = [
     settle: (p) => waitFor(p, 'A cópia tem mais linhas que estas cinco.'),
   },
   {
+    name: 'A tabela, a amostra de uma tabela fora do papel',
+    path: `${PAGE}/${VENDAS}?tab=sample`,
+    replies: {
+      ...columnedPage(),
+      [`GET ${COMPANY_API}/copies/${VENDAS}/sample`]: failure('COPY_NOT_IN_ROLE'),
+    },
+    settle: (p) => waitFor(p, 'Seu papel não lê esta tabela.'),
+  },
+  {
     name: 'A tabela, a amostra larga',
     path: `${PAGE}/${VENDAS}?tab=sample`,
     replies: {
