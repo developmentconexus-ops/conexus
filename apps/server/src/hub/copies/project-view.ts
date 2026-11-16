@@ -5,6 +5,7 @@ import type {
   CopyMode,
   CopyOrigin,
   CopyShown,
+  PersonId,
   ProjectId,
 } from '@conexus/hub-api'
 import { ConnectorId as ConnectorIdSchema } from '@conexus/hub-api'
@@ -14,11 +15,12 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { CopyName } from '../connectors/public.ts'
 import { projectCopyRows } from './list.ts'
 import { copyModeOf } from './mode.ts'
+import { copiesReadBy } from './readers.ts'
 import type { CopiesDeps } from './store.ts'
-import { companyScope, shownOf } from './store.ts'
+import { personScope, shownOf } from './store.ts'
 import { copyProposal, copySource } from './tables.ts'
 
-/** What a Projeto may read of the company's copies: the released ones with their columns, the others by name. */
+/** What a Projeto may read of the company's copies: the released ones with their columns, the others by name, only those of the role of whoever converses. */
 export type ProjectCopiesView =
   | {
       kind: 'COPIES'
@@ -83,34 +85,38 @@ async function withAccounts(tx: ReadTx, companyId: CompanyId, ids: readonly Copy
 
 /**
  * The copies of the company as the Builder's turn sees them, from the same reading that serves the
- * Projeto's list of copies. It admits nobody: the turn admitted the person, and the view holds only
- * the definitions (where each reads, its descriptions and columns) and whether its sources have an
- * account, which everyone who converses with the Builder may see. The columns are the stored
- * definition's, the owner of the table's columns, never the company's database.
+ * Projeto's list of copies. The released copies are the Projeto's, whoever converses; the others are
+ * named only when the person's role reads them (`copiesReadBy`, the one owner of that rule). The view
+ * holds only the definitions (where each reads, its descriptions and columns) and whether its sources
+ * have an account. The columns are the stored definition's, the owner of the table's columns, never
+ * the company's database.
  */
 export async function projectView(
   deps: CopiesDeps,
-  input: { companyId: CompanyId; projectId: ProjectId },
+  input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId },
 ): Promise<ProjectCopiesView> {
   const { companyId, projectId } = input
   let read: {
     rows: Awaited<ReturnType<typeof projectCopyRows>>
+    reads: Awaited<ReturnType<typeof copiesReadBy>>
     accounts: Set<string>
     proposed: Awaited<ReturnType<typeof proposalsOf>>
   }
   try {
-    read = await deps.database.read(companyScope(companyId), async (tx) => {
+    read = await deps.database.read(personScope(input), async (tx) => {
+      const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
+      const reads = await copiesReadBy(deps, tx, { companyId, role: proof.role })
       const rows = await projectCopyRows(tx, input)
       const granted = rows.filter((row) => row.granted).map((row) => row.copy.id)
       const accounts = await withAccounts(tx, companyId, granted)
-      return { rows, accounts, proposed: await proposalsOf(tx, input) }
+      return { rows, reads, accounts, proposed: await proposalsOf(tx, input) }
     })
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
     logFailure(deps.log, error, { companyId, projectId }, 'COPY_VIEW_FAILED')
     return { kind: 'FAILED' }
   }
-  const { rows, accounts, proposed } = read
+  const { rows, reads, accounts, proposed } = read
   const released = rows.filter(({ granted }) => granted)
   return {
     kind: 'COPIES',
@@ -123,7 +129,9 @@ export async function projectView(
         proposedHere: proposed.accepted.has(copy.id),
       }
     }),
-    unreleased: rows.filter(({ granted }) => !granted).map(({ copy }) => copy.name),
+    unreleased: rows
+      .filter(({ granted, copy }) => !granted && (reads === 'ALL' || reads.includes(copy.id)))
+      .map(({ copy }) => copy.name),
     proposals: proposed.open.map(({ name, label }) => ({ name: CopyName.parse(name), label })),
   }
 }

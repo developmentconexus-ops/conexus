@@ -128,15 +128,15 @@ test('as cópias não responderam: a vista diz FAILED e o bloco é a linha; sem 
   const served = await sankhyaServed(t)
   const on = await conversing(t, stepped([]), served.change)
   const released = await releasing(t, on, served, ['vendas'], [])
-  const { companyId, projectId } = released
+  const { companyId, personId, projectId } = released
   const copies = copiesWithoutHubDatabase(on.hub)
-  const view = await copies.projectView({ companyId, projectId })
+  const view = await copies.projectView({ companyId, personId, projectId })
   assert.deepEqual(view, { kind: 'FAILED' })
   assert.equal(
     dataContext(view),
     "The company's copies did not answer now; do not assume there are none. Try again before you tell the person a copy is missing.",
   )
-  const real = await on.hub.copies.projectView({ companyId, projectId })
+  const real = await on.hub.copies.projectView({ companyId, personId, projectId })
   assert.ok(real.kind === 'COPIES')
   assert.deepEqual(real.released, [])
   assert.deepEqual(real.unreleased, ['sankhya_vendas'])
@@ -147,7 +147,7 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   const on = await conversing(t, stepped([]), served.change)
   const released = await releasing(t, on, served, ['vendas', 'vendedores'], ['vendas'])
   const { companyId, projectId, personId, ids } = released
-  const first = dataContext(await on.hub.copies.projectView({ companyId, projectId }))
+  const first = dataContext(await on.hub.copies.projectView({ companyId, personId, projectId }))
   assert.ok(first.includes('"CODVEND" bigint'))
   assert.ok(first.includes('`sync.sankhya_vendedores`'), 'the unreleased one by name')
   assert.ok(!first.includes('- `sync.sankhya_vendedores`'))
@@ -155,11 +155,14 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   assert.ok(vendas)
   const again = await on.hub.copies.run({ companyId, copyId: vendas }, AbortSignal.timeout(60_000))
   assert.notEqual(again.kind, 'GONE')
-  assert.equal(dataContext(await on.hub.copies.projectView({ companyId, projectId })), first)
+  assert.equal(
+    dataContext(await on.hub.copies.projectView({ companyId, personId, projectId })),
+    first,
+  )
   const other = ids.get('vendedores')
   assert.ok(other)
   await on.hub.copies.grant({ companyId, personId, projectId, copyId: other })
-  const after = dataContext(await on.hub.copies.projectView({ companyId, projectId }))
+  const after = dataContext(await on.hub.copies.projectView({ companyId, personId, projectId }))
   assert.notEqual(after, first)
   assert.ok(after.includes('- `sync.sankhya_vendedores`'))
 })
@@ -172,7 +175,7 @@ test('a origem e as descrições', async (t) => {
   assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
   const made = await on.enable(on.ana, Object(proposed).proposalId)
   assert.equal(made.statusCode, 201, made.body)
-  const ids = { companyId: on.companyId, projectId: on.projectId }
+  const ids = { companyId: on.companyId, personId: on.anaId, projectId: on.projectId }
   const first = dataContext(await on.hub.copies.projectView(ids))
   for (const part of [
     '- `sync.mercado_livre_pedidos` [your proposal, turned on] (only what changed',
@@ -228,7 +231,7 @@ test('a proposta do Builder: aberta espera o Ligar, ligada vem marcada, e o bloc
 
 test('a proposta ligada entre dois turnos: o bloco do turno seguinte a marca, sem pedir ativação', async (t) => {
   const on = await listProposalsOn(t)
-  const ids = { companyId: on.companyId, projectId: on.projectId }
+  const ids = { companyId: on.companyId, personId: on.anaId, projectId: on.projectId }
   const proposed = await on.propose({ definition: ordersCopy(true) })
   assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
   const before = dataContext(await on.hub.copies.projectView(ids))

@@ -1,4 +1,4 @@
-import type { CompanyData, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
@@ -91,7 +91,11 @@ function builderDataOf(a: {
  * the block, never a turn that does not start, and a person not admitted gets no block.
  */
 function dataFor(
-  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>,
+  copies: (ids: {
+    companyId: CompanyId
+    personId: PersonId
+    projectId: ProjectId
+  }) => Promise<ProjectCopiesView>,
   projectOf: ReturnType<typeof projectIn>,
 ): (requestContext: RequestContext) => Promise<string> {
   return oncePerRun(async (requestContext) => {
@@ -131,7 +135,11 @@ export function createBuilder(deps: {
   data: BuilderData
   /** The company's data, bound to the Projeto and its granted connections; the Builder passes no `by` yet (decision 6 of the card). */
   companyData: (scope: SessionScope) => CompanyData
-  copies: (ids: { companyId: CompanyId; projectId: ProjectId }) => Promise<ProjectCopiesView>
+  copies: (ids: {
+    companyId: CompanyId
+    personId: PersonId
+    projectId: ProjectId
+  }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {

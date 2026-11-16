@@ -106,7 +106,16 @@ test('o que sai: nenhuma linha da cópia, e a proposta fica sem ela', async (t) 
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId },
   })
-  assert.equal((await on.copies.projectView(on)).kind, 'COPIES')
+  assert.equal(
+    (
+      await on.copies.projectView({
+        companyId: on.companyId,
+        personId: on.anaId,
+        projectId: on.projectId,
+      })
+    ).kind,
+    'COPIES',
+  )
 
   assert.equal((await apagar(on, copyId)).statusCode, 200)
   assert.deepEqual(await rowsOf(on, copyId), {
@@ -117,7 +126,11 @@ test('o que sai: nenhuma linha da cópia, e a proposta fica sem ela', async (t) 
     (await proposalRows(on)).map((row) => [row.state, row.copy_id]),
     [['ACCEPTED', null]],
   )
-  const view = await on.copies.projectView(on)
+  const view = await on.copies.projectView({
+    companyId: on.companyId,
+    personId: on.anaId,
+    projectId: on.projectId,
+  })
   assert.equal(view.kind, 'COPIES')
   if (view.kind === 'COPIES') assert.deepEqual(view.released, [])
 })
