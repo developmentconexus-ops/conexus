@@ -64,7 +64,9 @@ const route = getRouteApi('/_app/companies/$companyId_/settings/roles')
 function tablesOf(copies: readonly CopySummary[], readers: readonly CopyReaders[]): RoleTables {
   const tables: Record<string, RoleTables[string][number][]> = {}
   for (const copy of copies) {
-    const connector = copy.sources[0]?.connection.connector ?? ''
+    const source = copy.sources[0]
+    if (source === undefined) continue
+    const connector = source.connection.connector
     const roles = readers.find((one) => one.copyId === copy.id)?.roles ?? []
     tables[connector] = [
       ...(tables[connector] ?? []),

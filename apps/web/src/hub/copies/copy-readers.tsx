@@ -33,11 +33,14 @@ function readsAlways(role: Role): boolean {
   return fixed === 'owner' || fixed === 'admin'
 }
 
+/** Where **Pessoas** sits in `READER_HEADS`: its numbers align to the right. */
+const PEOPLE_COLUMN = 1
+
 function readsText(role: Role): string {
   return readsAlways(role) ? READS_ALWAYS : READS_MARKED
 }
 
-function OpenRole({ companyId, role }: { companyId: CompanyId; role: Role }) {
+function OpenInRoles({ companyId, role }: { companyId: CompanyId; role: Role }) {
   return (
     <Link
       to="/companies/$companyId/settings/roles"
@@ -59,7 +62,7 @@ function ReaderRow(props: { companyId: CompanyId; reader: Reader; mayChange: boo
       <TableCell>{readsText(reader.role)}</TableCell>
       <TableCell className="text-right">
         {mayChange && !readsAlways(reader.role) && (
-          <OpenRole companyId={companyId} role={reader.role} />
+          <OpenInRoles companyId={companyId} role={reader.role} />
         )}
       </TableCell>
     </TableRow>
@@ -76,7 +79,7 @@ function ReaderPhoneRow(props: { companyId: CompanyId; reader: Reader; mayChange
           {`${peopleText(reader.members)} · ${readsText(reader.role)}`}
         </span>
         {mayChange && !readsAlways(reader.role) && (
-          <OpenRole companyId={companyId} role={reader.role} />
+          <OpenInRoles companyId={companyId} role={reader.role} />
         )}
       </div>
     </Row>
@@ -110,8 +113,8 @@ export function ReadersTab(props: {
         <Table>
           <TableHeader>
             <TableRow>
-              {READER_HEADS.map((head) => (
-                <TableHead key={head} className={head === 'Pessoas' ? 'text-right' : undefined}>
+              {READER_HEADS.map((head, at) => (
+                <TableHead key={head} className={at === PEOPLE_COLUMN ? 'text-right' : undefined}>
                   {head}
                 </TableHead>
               ))}
