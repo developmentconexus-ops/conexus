@@ -18,12 +18,17 @@ Este cartão substitui, da spec do repositório, a parte 4, grupos 4, 6 e 7, com
 passada semanal, grupo 4. Os grupos 1 a 3 da parte 4 (as tabelas e as permissões) e o contrato sem
 `withheld` já estão no `main`. O que a spec ainda guarda para a etapa seguinte (o Registro de dados, a
 conformidade contra a implementação real, Seguir, a seção Avisos e o aviso na primeira falha) fica nela
-até o cartão 3.
+até o cartão 3. A spec ainda trata a N3b-1 como regra viva, e estes trechos são emendados no fechamento
+desta etapa (delivery L19; a L20 cobre só guias e skills):
+`docs/steps/trilhas/dados-spec/04-governanca-minima/design.md:12`, `:24`, `:81-106`;
+`04-governanca-minima/tasks.md:315`, `:380`, `:541`, `:934`; `docs/steps/trilhas/dados-spec/README.md:119`;
+`02-conector/design.md:173`; `02-conector/tasks.md:768`.
 
-A medida, conferida no `main`: cerca de 1.365 linhas alteradas em 12 unidades, abaixo das 4.000 da
+A medida, conferida no `main`: cerca de 1.270 linhas alteradas em 12 unidades, abaixo das 4.000 da
 delivery L2. A divisão estimava 3.600. O firstmate decidiu, em 2026-11-15, manter a etapa como a divisão
 aprovada, sem juntá-la à etapa 3. A emenda de 2026-11-16 (a cópia nova sem leitores além de Dono e
-Administrador, e a poda) tirou cerca de 165 linhas.
+Administrador, e a poda) e a recontagem pelas parcelas de cada unidade levaram a medida de 1.530 a
+1.270 linhas.
 
 ## A página do fundador
 
@@ -87,6 +92,8 @@ telas, que cada PR lista.
 
 - O Registro de dados, a conformidade contra a implementação real, Seguir uma cópia, a seção Avisos e
   o aviso na primeira falha. São a etapa 3.
+- A coluna `readers_set` da tabela das cópias, que só servia à semeadura, fica sem uso; sai depois, num
+  pull request próprio de concessões, com a sua palavra (data D11).
 - O agente salvo continua lendo pela liberação do Projeto dele, mesmo quando um membro conversa com ele,
   como você decidiu na P1. Ler com o papel de quem conversa é a parte 7. Até lá, quem conversa num
   Projeto lê por ele uma cópia liberada ao Projeto que o papel dele não lê fora dali.
@@ -106,8 +113,8 @@ aprovação. Uma linha por letra, com o que ela fixa:
 - **`A1`** (quadro, 2026-11-16). O endereço direto de uma tabela que o papel não lê dá "não encontrado",
   a mesma página de um endereço que não existe (security S10).
 - **`B1`** (quadro, 2026-11-16). A aba Quem lê só mostra. Para quem pode mudar papéis, cada papel leva a
-  ele em Papéis. Todo membro a vê nas tabelas que o papel dele lê, com todos os papéis e quantas pessoas cada
-  um tem, sem nomes. Mudar fica num lugar só, o papel.
+  ele em Papéis. Todo membro a vê nas tabelas que o papel dele lê, com todos os papéis que a leem, e quantas
+  pessoas cada um tem, sem nomes. Mudar fica num lugar só, o papel.
 - **`C1`** ("CDE Segue seu recomendado"). **Perguntar ao Assistente** abre o Início com "Sobre a tabela
   {nome}: " já na caixa, e a pessoa completa a pergunta.
 - **`D1`** ("CDE Segue seu recomendado"). Um agente que consulte o catálogo interno do banco vê o nome de
@@ -126,8 +133,8 @@ aprovação. Uma linha por letra, com o que ela fixa:
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | G1 O banco garante (um PR) | U1 `roleLogin`, `roleAddress`, o livro, o bilhete e `reconcileReaders` | Um login de leitura por papel editável (`conexus_role_<id>`), com `SELECT` só nas tabelas dadas; o livro `sync._readers_applied` e a sequência `sync.readers_ticket`; o bilhete e a aplicação que abandona a de bilhete mais velho (`SUPERSEDED`); `ROLES_LOCK` em `grantCopy` e `revokeCopy`; três portas no mundo de teste | `apps/server/src/platform/`, `scripts/rerun-never.json` | data (D10, D22); testing (T5, T13, T27); S41 | nada além do `main` em `b2c23dc0` (o `ROLES_LOCK` e o `ensureReader` do PR 1078) |
-| G1 | U2 A porta da identidade, `reconciled` e `readers_set` fora do esquema | A cópia nova sem linha em `copies.copy_reader` (só Dono e Administrador a leem); `reconciled` no fim de toda rodada; `companyRoleRows`; `readersSet` sai do esquema do Hub (a migração é da U3, data D6) | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `scripts/rerun-never.json` | data (D6, D16, D22); testing (T5, T10, T27); S41 | U1. Em `ended`, a U2 vai antes da U10 (decisão G4.7) |
-| G2 O catálogo e as rotas por papel (um PR) | U3 O catálogo filtrado, a leitura pelo login do papel e o conserto em `42501` | O catálogo por papel no lugar Empresa, com `NOT_IN_CATALOG` para a tabela de fora pedida pelo nome; a leitura pelo login do papel (`conexus_read` para Dono e Administrador), com o conserto em `42501` e `NO_LOGIN`; a sonda da decisão D; a migração que apaga `readers_set` | `apps/server/src/hub/copies/`, `apps/server/src/hub/data/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `scripts/rerun-never.json` | data (D6, D22); testing (T4, T5, T10, T27); S10, S41 | G1 mesclado. Não depende do G3 do cartão 1 |
+| G1 | U2 A porta da identidade e `reconciled` | A cópia nova sem linha em `copies.copy_reader` (só Dono e Administrador a leem); `reconciled` no fim de toda rodada; `companyRoleRows` | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `scripts/rerun-never.json` | data (D16, D22); testing (T5, T10, T27); S41 | U1. Em `ended`, a U2 vai antes da U10 (decisão G4.7) |
+| G2 O catálogo e as rotas por papel (um PR) | U3 O catálogo filtrado, a leitura pelo login do papel e o conserto em `42501` | O catálogo por papel no lugar Empresa, com `NOT_IN_CATALOG` para a tabela de fora pedida pelo nome; a leitura pelo login do papel (`conexus_read` para Dono e Administrador), com o conserto em `42501` e `NO_LOGIN`; a sonda da decisão D | `apps/server/src/hub/copies/`, `apps/server/src/hub/data/`, `scripts/rerun-never.json` | data (D22); testing (T4, T5, T10, T27); S10, S41 | G1 mesclado. Não depende do G3 do cartão 1 |
 | G2 | U4 As rotas `listCopyReaders` e `setRoleCopies` | `GET .../copy-readers` (decisão B) e `PUT .../roles/{role}/copies`, o Hub primeiro, com a reposição e o 503 quando tirar falha; a ação `seeData` | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/identity/`, `scripts/rerun-never.json` | data (D22); testing (T5, T6, T10, T27); S8, S10, S41; code C65 | U3 (o conserto do critério 47) |
 | G2 | U5 O membro: `seeData`, `listCopies`, `listCopyRuns` e `sampleCopy` por papel | As listas, as rodadas e a amostra por papel (`seeData`), sem propostas ao membro; 404 para a tabela de outro papel (decisão A); `COPY_NOT_IN_ROLE` ao desenvolvedor fora do papel; `readCopyRows` sai | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `packages/hub-api/src/`, `apps/web/src/platform/test-may.ts`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/data.$copyId.tsx`, `scripts/rerun-never.json` | web; testing (T5, T10, T27); S10 | U3 (`readCopyTable` com o leitor), U4 (`seeData`). O G4 parte deste PR |
 | G3 As telas de quem lê (um PR; depois dele, a QA, T25) | U6 A tela Papéis com o bloco Dados copiados (`p4-01`) | O bloco **Dados copiados** em cada sistema do papel aberto; **Salvar** grava o papel e depois as tabelas; Dono e Administrador só leem; a frase da leitura ao vivo | `apps/web/src/routes/_app/companies/$companyId_/settings/` (só `roles.tsx`), `apps/web/src/hub/identity/`, `apps/web/src/hub/copies/` (só `queries.ts` e `public.ts`), `apps/web/` (só `sweep-roles-states.ts`), `docs/reference/` (só `screens.md`) | web, design, testing | G2 mesclado (U4) |
@@ -152,22 +159,22 @@ Quatro grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um c
   pela matriz de estados.
 - **Os modelos.** U1 a U4 em Opus; as outras em Sonnet (Base e modelo de cada uma).
 
-**Orçamento de código alterado.** A estimativa de cada unidade, em linhas, sem testes nem gerados.
+**Orçamento de código alterado.** A estimativa de cada unidade, em linhas, sem testes nem gerados. Cada total é a soma das parcelas, e uma parcela conta as linhas mudadas, as tiradas também ("−25 e +15" são 40).
 
-- U1: ~190 (`copy-reader.ts` ~110, com `readSettingsOf` extraída e o `REVOKE` do livro em `ensureReader`; `copy-sql.ts` ~30; `test-app-ports.ts` 8; `test-company-postgres.ts` 8).
-- U2: ~110 (`role-rows.ts` 35, `identity/public.ts` 1, `readers.ts` ~70, `run.ts` 3, `tables.ts` −2).
-- U3: ~205 (`readers.ts` ~85; `read-table.ts` −25 e +15; `catalog-view.ts` +15; `service.ts` +8; `sample.ts` +4; `catalog.ts` ~20 trocadas; `rows.ts` +15; `query.ts` ~30 trocadas; `database-grants.sql` −3). A migração gerada não conta.
-- U4: ~198 (`hub-api/copies.ts` +32; `company-roles.ts` +1; `readers.ts` ~128; `role-rows.ts` +15, `identity/public.ts` +1, `admission.ts` +2; `service.ts` +4; `routes.ts` +12). O `openapi` gerado não conta.
-- U5: ~90 (`list.ts` +35; `sample.ts` +20; `copy-failures.ts` +8; `connection-copies.ts` +1; `admission.ts` −3; `companies.ts` −1; `roles.ts` −1; `copy-detail.tsx` e a rota −12). `test-roles.ts`, `developer.test.ts` e `test-may.ts` não contam.
-- U6: ~145 (`roles.tsx` da rota +35; `identity/roles.tsx` +4; `role-tables.tsx` novo ≈48; `role-editor.tsx` +30; `role-picker.tsx` +4; `hub/copies/queries.ts` +6; `hub/copies/public.ts` +2; `screens.md` 1 linha).
-- U7: ~195 (`copy-readers.tsx` novo ≈75; `copy-detail.tsx` +22; `copy-sample.tsx` +8; `text.ts` +14; `search.ts` +1; `data-page.tsx` +10; `raw-layer.tsx` +20; `copy-list.tsx` +6; `data-tree.tsx` +8; `public.ts` −5; `route.tsx` −4; `data.index.tsx` −2; `data.$copyId.tsx` −2; `screens.md` 2 linhas).
+- U1: ~156 (`copy-reader.ts` ~110, com `readSettingsOf` extraída e o `REVOKE` do livro em `ensureReader`; `copy-sql.ts` ~30; `test-app-ports.ts` 8; `test-company-postgres.ts` 8).
+- U2: ~89 (`role-rows.ts` 15, `identity/public.ts` 1, `readers.ts` ~70, `run.ts` 3).
+- U3: ~217 (`readers.ts` ~85; `read-table.ts` −25 e +15; `catalog-view.ts` +15; `service.ts` +8; `sample.ts` +4; `catalog.ts` ~20 trocadas; `rows.ts` +15; `query.ts` ~30 trocadas).
+- U4: ~205 (`hub-api/copies.ts` +32; `company-roles.ts` +1; `readers.ts` ~128; `role-rows.ts` +25, com `label` e `members` em `companyRoleRows`, `identity/public.ts` +1, `admission.ts` +2; `service.ts` +4; `routes.ts` +12). O `openapi` gerado não conta.
+- U5: ~81 (`list.ts` +35; `sample.ts` +20; `copy-failures.ts` +8; `connection-copies.ts` +1; `admission.ts` −3; `companies.ts` −1; `roles.ts` −1; `copy-detail.tsx` e a rota −12). `test-roles.ts`, `developer.test.ts` e `test-may.ts` não contam.
+- U6: ~130 (`roles.tsx` da rota +35; `identity/roles.tsx` +4; `role-tables.tsx` novo ≈48; `role-editor.tsx` +30; `role-picker.tsx` +4; `hub/copies/queries.ts` +6; `hub/copies/public.ts` +2; `screens.md` 1 linha).
+- U7: ~179 (`copy-readers.tsx` novo ≈75; `copy-detail.tsx` +22; `copy-sample.tsx` +8; `text.ts` +14; `search.ts` +1; `data-page.tsx` +10; `raw-layer.tsx` +20; `copy-list.tsx` +6; `data-tree.tsx` +8; `public.ts` −5; `route.tsx` −4; `data.index.tsx` −2; `data.$copyId.tsx` −2; `screens.md` 2 linhas).
 - U8: 0 linhas de produção (≈60 de teste e uma linha de `rerun-never.json`).
-- U9: ~35 (`ask-about-table.tsx` novo ≈20; `builder/assistant/public.ts` +1; o texto +2; `copy-detail.tsx` +6; `data.$copyId.tsx` +4).
-- U10: ~55 (`copy-port.ts` 25; `store.ts` 1; `source-pass.ts` 4; `run.ts` 10; `packages/hub-api/src/copies.ts` 6; `packages/connectors/src/sankhya/fake.ts` 5).
-- U11: ~30 (`copies.ts` 1, `list.ts` 8, `copy-detail.tsx` 12, `text.ts` 5, `sweep-copies-states.ts` 1; os ajudantes de teste não contam).
-- U12: ~110 (`copy-runs.ts` 65, `ports.ts` 14, `assistant.ts` 4, `conversations-of.ts` 4, `packages/hub-api/src/assistant.ts` 1, `assistant-specs.ts` 10, `scripts/rerun-never.json` 2).
+- U9: ~33 (`ask-about-table.tsx` novo ≈20; `builder/assistant/public.ts` +1; o texto +2; `copy-detail.tsx` +6; `data.$copyId.tsx` +4).
+- U10: ~51 (`copy-port.ts` 25; `store.ts` 1; `source-pass.ts` 4; `run.ts` 10; `packages/hub-api/src/copies.ts` 6; `packages/connectors/src/sankhya/fake.ts` 5).
+- U11: ~27 (`copies.ts` 1, `list.ts` 8, `copy-detail.tsx` 12, `text.ts` 5, `sweep-copies-states.ts` 1; os ajudantes de teste não contam).
+- U12: ~100 (`copy-runs.ts` 65, `ports.ts` 14, `assistant.ts` 4, `conversations-of.ts` 4, `packages/hub-api/src/assistant.ts` 1, `assistant-specs.ts` 10, `scripts/rerun-never.json` 2).
 
-**Total da etapa:** cerca de 1.365 linhas alteradas (eram 1.530 antes da emenda de 2026-11-16).
+**Total da etapa:** cerca de 1.270 linhas alteradas (eram 1.530 antes da emenda de 2026-11-16).
 
 ## Os critérios de aceite
 
@@ -282,12 +289,12 @@ O G1 não tem tela.
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `copies.copy_reader` (linha por cópia e papel; já no `main`) | só `setRoleCopies` (U4); a cópia nova não ganha linha | `wantedOf` (U2); `copiesReadBy` (U3), `readersOf` e `listCopyReaders` (U4) |
-| `copies.copy.readers_set` (já no `main`, sem leitor nem escritor) | ninguém: sai do esquema na U2 e do banco na U3 (data D6) | ninguém |
+| `copies.copy.readers_set` (já no `main`) | ninguém: fica sem uso e sai num PR próprio de concessões (data D11, decisão G1.10) | ninguém |
 | `sync._readers_applied.ticket` e `sync.readers_ticket` (banco da empresa, do login `conexus_sync`) | `readersLedger` (U1, por `ensureSync` e `takeReadersTicket`), `reconcileOnce` (U1) | o bloco `DO` de `reconcileOnce` (U1) |
 | Logins `conexus_role_<id>` e o `SELECT` deles | só `reconcileReaders` (U1) | `roleAddress` (U1); `readAs` (U3) |
 | `ReadersAnswer` (`SqlAnswer` ou `{ kind: 'SUPERSEDED' }`) | `reconcileReaders` (U1) | `appliedOnce` e `reconciled` (U2) |
 | `WantedReader` (`{ roleId, tables }`) | `wantedOf` (U2) | `reconcileReaders` (U1) |
-| `CompanyRoleRow` (`{ id, role, label, members }`) | `companyRoleRows` (U2) | `wantedOf` (U2, `id`); `copiesReadBy`, `readerOf` (U3, `id`, `role`); `listedReaders` (U4, `label`, `members`) |
+| `CompanyRoleRow` (`{ id, role }` na U2; `label` e `members` na U4) | `companyRoleRows` (U2, U4) | `wantedOf` (U2, `id`); `copiesReadBy`, `readerOf` (U3, `id`, `role`); `listedReaders` (U4, `label`, `members`) |
 | `reconciled` → `'DONE' \| 'FAILED'` | `reconciled` (U2) | `ended` (U2); `readAs` (U3); `setRoleCopies` (U4) |
 
 ### G2
@@ -514,7 +521,6 @@ A 390 px:
 | `ensureSync` com o livro (U1) | `ROLES_LOCK` (já hoje); `IF NOT EXISTS` e `ON CONFLICT DO NOTHING` | Uma transação: o esquema e o livro nascem juntos ou não nascem | Como hoje: `COPY_DATABASE_FAILED` no chamador | o de hoje | 11 |
 | `grantCopy` e `revokeCopy` com `ROLES_LOCK` (U1) | Em fila com as reconciliações; sem `XX000` | Como hoje | Como hoje | o de hoje | 12 |
 | `reconciled` no fim da rodada (U2, em `ended`, depois de `COPY_RUN_ENDED`) | Duas rodadas da empresa: pelo bilhete | O lease já foi solto em `ended` (`claimToken: null`) | O resultado da rodada não muda | `COPY_READERS_FAILED`; `COPY_READERS_SUPERSEDED` quando um bilhete maior já aplicou (U2) | 17, 22, 23, 26 |
-| A migração que apaga `readers_set` e o seu `GRANT` (U3) | o `migrate` de hoje roda uma vez, antes do Hub (data D9) | uma transação: a coluna sai ou fica | banco do Hub fora: o programa não sobe, como hoje | o de hoje | conferência: `npm run migrations -- --base origin/main` no ponto do G2 |
 | `roleLogin` com nome longo demais (U1, chamado por `reconcileReaders`) | — | Lança antes de qualquer instrução | — | `COPY_READER_NAME` no `appliedOnce` | 7, 27 |
 | `setRoleCopies` (U4): a transação do Hub, depois `reconciled` | `lockCompany` (como `apps/server/src/hub/projects/projects.ts:151`) serializa as transações do Hub; cada uma reconcilia depois do commit, e o bilhete ordena (U1). Repetir o pedido responde 200 sem mudar nada | antes do commit, nenhuma marca muda; depois, `reconciled` `FAILED`: ao tirar, a reposição e 503; ao dar, 200 pendente | Hub fora: 503 `DATABASE_UNAVAILABLE` antes de mudar; banco da empresa ou Neon fora: `reconciled` `FAILED` (U2) e as linhas acima; a reposição fora: 503 e o pendente | `COPY_READERS_SET` (info, `companyId`, `role`, `by`, `added`, `removed`); `COPY_READERS_FAILED` (error); `COPY_READERS_PENDING` (info ao dar, error quando a reposição falha, com `companyId` e `role`) | 43 a 49, 53 |
 | `listCopyReaders` (U4, só leitura) | duas leituras independentes | nada a desfazer | Hub fora: 503 `DATABASE_UNAVAILABLE` | nada novo | 52 |
@@ -550,7 +556,7 @@ F da página) ou a tela aprovada que a traz (L28).
 | Os nomes de `sync` em `pg_class` | U3 | nenhuma sonda; `query.test.ts:109` já mostra que o catálogo do sistema não conta como tabela lida | O esquema de informação filtra; o catálogo do PostgreSQL não está provado (`E1`, lacuna) | nativo (o PostgreSQL como é) | — | decisão D; a U3 registra a sonda (critério 40) | nenhum |
 | No Projeto, pela liberação do Projeto | U3 | `query.ts:63-66` (`readAddress` do Projeto) | O app de uma referência tem acesso próprio que todos usam; o agente de dados de outra cruza com a permissão de quem pergunta (P11) | nativo | — | decisão do fundador (P1, opção a); a regra por papel do agente salvo é da parte 7 | nenhum |
 | `listCopyReaders`, a lista de quem lê | U4 | nenhuma; a contagem por papel em `readRoles`, `apps/server/src/hub/identity/company-roles.ts:94-99` | A página da tabela tem a aba de permissões; uma mostra a quem não é dono só as próprias concessões (P4; documentado) | nativo (uma leitura do Hub) | — | só mostra (decisão B); a contagem é ideia nossa, na letra escolhida (`B1`) e na tela aprovada `p4-02` | `apps/server/src/hub/copies/readers-routes.test.ts` |
-| `setRoleCopies`, a permissão por tabela dada a um papel | U4 | nenhuma; `updateRole`, `packages/hub-api/src/company-roles.ts:83-100` | Permissão por tabela a pessoa ou grupo; dono e administrador passam por cima e não são marcáveis (P1 e P5; documentado) | nativo (`copy_reader` e o `GRANT`, U1 e U2) | — | só a papel, como a parte 4 (N3b) | nenhum |
+| `setRoleCopies`, a permissão por tabela dada a um papel | U4 | nenhuma; `updateRole`, `packages/hub-api/src/company-roles.ts:83-100` | Permissão por tabela a pessoa ou grupo; dono e administrador passam por cima e não são marcáveis (P1 e P5; documentado) | nativo (`copy_reader` e o `GRANT`, U1 e U2) | — | só a papel, como a parte 4 (permissão só por papel) | nenhum |
 | O Hub primeiro, a reposição e o 503 | U4 | `grantCopy` do Hub, `apps/server/src/hub/copies/grants.ts:74-101` (a linha e depois o banco) | Sem referência (`E2`) | embrulhado | os critérios da U4 | parte 4, `C2` "Uma ordem só" | nenhum |
 | A vez de quem muda os papéis | U4 | `admitted`, `company-roles.ts:173-181`, e `enterCreation`, `projects.ts:150-151` (`lockCompany` antes da admissão) | Sem referência | nativo (`pg_advisory_xact_lock` pela trava da empresa, code C65) | — | decisão G2.4 | nenhum |
 | O membro vê Dados só com as tabelas do papel e as rodadas delas | U5 | `summaries`, `listed`, `runs`, `apps/server/src/hub/copies/list.ts:129-228`, só com `readCopies` | Quem lê vê as tabelas com acesso e as rodadas; ver um pipeline pede leitura nas tabelas dele; acrescentar fontes é só de quem edita (P14; documentado) | nativo | — | — | `apps/server/src/hub/copies/member-data.test.ts` |
@@ -580,18 +586,19 @@ F da página) ou a tela aprovada que a traz (L28).
 
 ## As decisões do firstmate
 
-Numeradas pelo grupo que as tomou (G1.1 é a primeira do G1).
+Numeradas pelo grupo que as tomou (G1.1 é a primeira do G1). G1.4, G2.12 e G3.8 saíram na emenda de 2026-11-16, e os números não se reaproveitam.
 
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
 | G1.1 | Uma trava só: `ROLES_LOCK` também em `takeReadersTicket`, `reconcileOnce`, `grantCopy` e `revokeCopy`, no lugar do `READERS_LOCK` novo da spec | `ROLES_LOCK` já existe: "the acts of one company's database take turns" (`apps/server/src/platform/copy-sql.ts:113-118`), e já é a primeira instrução de `ensureSync` (`:133`) e `ensureReader` (`apps/server/src/platform/copy-reader.ts:30`). Duas chaves deixariam os dois darem `GRANT` juntos em `sync` | A segunda chave, primeira nas quatro chamadas |
 | G1.2 | O código novo da U1 mora em `copy-reader.ts`; só `readersLedger` e as constantes do livro ficam em `copy-sql.ts` | `CompanyPostgres` já herda `CopyReader` por `...copyReader(context)` (`apps/server/src/platform/company-postgres.ts:199`, `:349`): as portas novas entram sem tocar a fachada. `ensureSync` cria o livro, e `copy-reader.ts` já importa `copy-sql.ts` (`copy-reader.ts:5-12`): o livro ali faria um ciclo (`no-circular`, `.dependency-cruiser.cjs:62`) | Mover as funções para `copy-sql.ts` |
 | G1.3 | O arquivo de teste da U1 é `copy-role-readers.test.ts`, não `copy-readers.test.ts` | `apps/server/src/platform/copy-reader.test.ts` já existe | Renomear o arquivo e a linha de `scripts/rerun-never.json` |
-| G1.5 | A U2 entrega só o que a U2 chama: `reconciled` (com `wantedOf` e `appliedOnce` dentro do arquivo). `copiesReadBy`, `readerOf`, `readAs` e a porta `data.readers` de `service.ts` entram na U3, `readersOf` na U4, com o primeiro chamador | `npm run check` roda `knip` (`package.json:15`), que recusa exportação sem uso | As funções e a porta na U2, cada uma com um caso |
+| G1.5 | A U2 entrega só o que a U2 chama: `reconciled` (com `wantedOf` e `appliedOnce` dentro do arquivo) e `companyRoleRows` só com `id` e `role`, que `wantedOf` lê. `copiesReadBy`, `readerOf`, `readAs` e a porta `data.readers` de `service.ts` entram na U3, `readersOf`, `label` e `members` na U4, com o primeiro chamador | `npm run check` roda `knip` (`package.json:15`), que recusa exportação sem uso | As funções e a porta na U2, cada uma com um caso |
 | G1.6 | Os testes da U2 chegam a `reconciled` pelas portas públicas de `hub/copies` (`copies.enable` e `copies.run`, `apps/server/src/hub/copies/test-copies.ts:191-202`), sem o `reconcile` exportado da spec | T5; o fim da rodada já reconcilia, e a decisão G1.5 tira `data.readers` da U2 | Exportar `reconcile` em `service.ts` e chamá-lo nos testes |
 | G1.7 | `reconcileOnce` dá `GRANT` só às tabelas pedidas que existem em `sync` (lidas na mesma consulta de antes que lê os logins), e `42P01` entra nas corridas de uma nova tentativa | A cópia nasce no Hub antes da sua tabela no banco da empresa (`enableCopy`, `apps/server/src/hub/copies/enable.ts:151` grava a linha, `:167-173` cria a tabela); outro ato nesse meio daria `42P01` no `GRANT`; a marca posta nesse meio ganha o `GRANT` no fim da primeira rodada | Tirar o filtro; a reconciliação falha nesse meio e a seguinte conserta |
 | G1.8 | `test-app-ports.ts` ganha as três portas: `takeReadersTicket` direto, `reconcileReaders` dentro de `withRoleLock`, `roleAddress` por `addressOn(host, roleLogin(roleId))` | O mundo de teste implementa `CompanyPostgres` à mão (`apps/server/src/platform/test-app-ports.ts:40-82`); a limpeza de outro arquivo derruba logins sob a mesma trava (`:69-76`) | Nenhum: é consequência do tipo |
 | G1.9 | O id do papel ganha a marca `RoleId` em `packages/hub-api/src/company-roles.ts`, ao lado de `ConnectorId`, e `companyRoleRows` a cria por parse; os conectores usam o `ConnectorId` que já existe | `scripts/conexus-code.grit:75-89` recusa `\w*Id: string` em `apps/server/src`; não havia marca para o papel | nenhum: sem a marca o `npm run check` recusa |
+| G1.10 | `readers_set` (`apps/server/src/hub/copies/tables.ts:76-77`, `apps/server/database-grants.sql:396`) fica sem uso nesta etapa; sai depois, num PR próprio de concessões com a palavra do fundador | Apagar a coluna tira um `GRANT`, e data D11 (`docs/guides/data.md:35-36`, conferida por `apps/server/src/platform/catalog.test.ts:96`) quer concessões só em PR próprio; data D6 pede o `DROP` depois de implantada a imagem que não a lê | Apagar a coluna nesta etapa, num PR próprio dentro dela |
 | G2.1 | O lado G2 da decisão G1.5: a U3 cria as funções de leitura e a porta `data.readers`; a U4, `readersOf` | decisão G1.5 | Como em G1.5 |
 | G2.2 | A recusa da amostra ao desenvolvedor é o código novo `COPY_NOT_IN_ROLE` em `COPY_FAILURES` (`packages/hub-api/src/copy-failures.ts:4`), com a linha do contrato da U5 | `NOT_IN_ROLE` já é a recusa de ferramenta de agente, 409, com "Seu papel não pode usar a ferramenta {operation}." (`packages/hub-api/src/failures.ts:265-272`); `sentenceOfCode` junta frase e ação (`apps/web/src/platform/hub.ts:242-244`), o texto do requisito 4.10; 403 porque o desenvolvedor vê a tabela na lista, como `APP_ACCESS_REFUSED` (`packages/hub-api/src/app-failures.ts:22-28`) | Trocar o código da falha em `sampleOf` e na lista de `sampleCopy` |
 | G2.3 | O leitor do Hub se chama `ReaderLogin`, não `CopyReader` | `CopyReader` já é o tipo da plataforma (`apps/server/src/platform/copy-reader.ts:113`) | Renomear |
@@ -740,7 +747,7 @@ Linhas de `docs/reference/stack.md`: PostgreSQL (`:100`, `postgresql.org/docs/18
 - O caso de corrida falhar com um SQLSTATE fora de `RACES`: pare e reporte o código e a volta; não o acrescente à lista.
 - O ataque direto passar em algum dos quatro comandos: pare.
 
-## U2 A porta da identidade, `reconciled` e `readers_set` fora do esquema
+## U2 A porta da identidade e `reconciled`
 
 **Base e modelo.** O `main` com a U1 (mesmo PR); `ended` muda antes da U10 (decisão G4.7). Opus: corrida entre Hub e banco da empresa.
 
@@ -749,7 +756,7 @@ Linhas de `docs/reference/stack.md`: PostgreSQL (`:100`, `postgresql.org/docs/18
 - **A cópia nova sem leitor.** `insertedCopy` (`apps/server/src/hub/copies/accept.ts:61-90`) e `enableCopy` (`apps/server/src/hub/copies/enable.ts:148-193`) ficam como estão: não gravam linha em `copy_reader`. Dono e Administrador leem a tabela nova por `conexus_read`, que já tem `ALTER DEFAULT PRIVILEGES` em `sync` (`apps/server/src/platform/copy-reader.ts:41-45`).
 - **A porta da identidade.** `readRoles` (`apps/server/src/hub/identity/company-roles.ts:82-129`), `seededRoles` (`:57-68`), `ports` (`apps/server/src/hub/identity/public.ts:98-125`).
 - **A reconciliação.** `companyOwner` (`apps/server/src/hub/copies/store.ts:162-187`), `ended` (`apps/server/src/hub/copies/run.ts:105-153`; o lease solto em `:117`, `COPY_RUN_ENDED` em `:149`, o `return` em `:152`), `ensuredSync` (`run.ts:168-179`, o `createdBy` como pessoa); `copyReader` (`apps/server/src/hub/copies/tables.ts:175`), com `ON DELETE CASCADE` ao papel (`apps/server/migrations/20261115071412_copy_reader/migration.sql:14`).
-- **A coluna que sai.** `readersSet` (`tables.ts:76-77`), que ninguém escreve nem lê fora do `select()` de hoje (`apps/server/src/hub/copies/list.ts:141`, `catalog-view.ts:20`). Data D6 manda apagar só depois que nenhuma imagem em uso a lê: a U2 a tira do esquema, e a U3 (G2) gera a migração que a apaga.
+- **A coluna sem uso.** `readersSet` (`tables.ts:76-77`) fica como está: nenhum código a usa, e a U2 não mexe em `tables.ts` (decisão G1.10).
 
 ### O raio da mudança
 
@@ -759,7 +766,6 @@ Linhas de `docs/reference/stack.md`: PostgreSQL (`:100`, `postgresql.org/docs/18
 | `apps/server/src/hub/identity/public.ts` (dono de `IdentityPorts`, `:51`) | Muda: uma porta | `hub/copies` (`CopiesDeps.identity`, `store.ts:97`); `hub/data` (U3) |
 | `apps/server/src/hub/copies/readers.ts` | Cria `reconciled` | `run.ts`; U3 e U4 |
 | `apps/server/src/hub/copies/run.ts` | Muda | `service.ts` (`run`) |
-| `apps/server/src/hub/copies/tables.ts` | Muda: sai `readersSet` | todo `select()` de `copy` |
 | `apps/server/src/hub/copies/readers.test.ts` | Cria | — |
 | `scripts/rerun-never.json` | Muda: uma linha em `files` | `scripts/rerun-exempt.ts` |
 
@@ -767,8 +773,8 @@ Linhas de `docs/reference/stack.md`: PostgreSQL (`:100`, `postgresql.org/docs/18
 
 ```ts
 // apps/server/src/hub/identity/role-rows.ts
-export type CompanyRoleRow = Readonly<{ id: RoleId; role: Role; label: string; members: number }>
-/** As linhas de papel da empresa (desenvolvedor, membro e os próprios), com quantas pessoas cada uma tem. Dono e Administrador não têm linha. */
+export type CompanyRoleRow = Readonly<{ id: RoleId; role: Role }>   // a U4 acrescenta label e members (decisão G1.5)
+/** As linhas de papel da empresa: desenvolvedor, membro e os próprios. Dono e Administrador não têm linha. */
 export async function companyRoleRows(tx: ReadTx, companyId: CompanyId): Promise<CompanyRoleRow[]>
 // identity/public.ts, em ports: companyRoleRows
 
@@ -777,7 +783,7 @@ export async function companyRoleRows(tx: ReadTx, companyId: CompanyId): Promise
 export async function reconciled(deps: CopiesDeps, input: InCompany): Promise<'DONE' | 'FAILED'>
 ```
 
-O que se apaga: `readersSet` de `copy` em `tables.ts` (a coluna fica no banco até a migração da U3). Os passos de `reconciled` são os da spec da parte 4 (`C2`, "A reconciliação inteira"), sem a semeadura: `companyOwner`; até duas voltas de bilhete, leitura curta do Hub (`wantedOf`), `reconcileReaders`, releitura. `wantedOf` devolve cada linha de `companyRoleRows` com os nomes das cópias que ela lê em `copy_reader`, ordenados.
+Nada se apaga. Os passos de `reconciled` são os da spec da parte 4 (`C2`, "A reconciliação inteira"), sem a semeadura: `companyOwner`; até duas voltas de bilhete, leitura curta do Hub (`wantedOf`), `reconcileReaders`, releitura. `wantedOf` devolve cada linha de `companyRoleRows` com os nomes das cópias que ela lê em `copy_reader`, ordenados.
 
 Logs novos (S41, só escalares): `COPY_READERS_SUPERSEDED` (`companyId`), `COPY_READERS_FAILED` (`companyId`, `code` ou `reason: 'NO_OWNER'`), `COPY_READER_NAME` (`companyId`). `COPY_READERS_PENDING` nasce na U4.
 
@@ -793,13 +799,12 @@ Logs novos (S41, só escalares): `COPY_READERS_SUPERSEDED` (`companyId`), `COPY_
 
 ### A ordem do trabalho
 
-1. **A porta da identidade e a coluna fora do esquema.** Critérios: 15, 16, 28.
-   - **Arquivos:** cria `role-rows.ts`; muda `identity/public.ts`, `tables.ts`.
-   - **Referência a seguir:** `readRoles` (a leitura das linhas e a contagem por `member.role` em `:94-99`).
-   - **O que sai:** `readersSet` e o seu comentário em `tables.ts:76-77`. Não gere migração nesta unidade (data D6).
-   - **O que entra:** os contratos acima. Regras: D6, D16, code C26, C27.
+1. **A porta da identidade.** Critérios: 15, 16, 28.
+   - **Arquivos:** cria `role-rows.ts`; muda `identity/public.ts`.
+   - **Referência a seguir:** `readRoles` (a leitura das linhas).
+   - **O que entra:** os contratos acima. Regras: D16, code C26, C27.
    - **Testes:** os do passo 2, que chamam a porta; `enable.test.ts`, `accept.test.ts` e `accept-v2.test.ts` seguem passando sem mudança.
-   - **Pronto quando:** `npm run typecheck` passa e `git grep -n readersSet -- apps` não mostra nada.
+   - **Pronto quando:** `npm run typecheck` passa.
 2. **`reconciled`, o bilhete e o fim da rodada.** Critérios: 15 a 17, 21 a 23, 26 a 29.
    - **Arquivos:** cria `readers.ts`, `readers.test.ts`; muda `run.ts`, `scripts/rerun-never.json`.
    - **Referência a seguir:** `grantCopy` do Hub (`grants.ts:62-101`); `ended` (`run.ts:105-153`).
@@ -817,7 +822,6 @@ Logs novos (S41, só escalares): `COPY_READERS_SUPERSEDED` (`companyId`), `COPY_
 ### Parar se
 
 - `companyRoleRows` precisar de linha para o dono ou o administrador: não há (`company-roles.ts:104-110`); pare e reporte.
-- `npm run migrations` ou `drizzle-kit check` recusar o esquema sem `readersSet` antes da migração da U3: pare e reporte; não gere a migração aqui.
 - Um teste pedir `reconcile` exportado: pare (decisão G1.6).
 
 ## G1 O ponto de conferência
@@ -844,8 +848,6 @@ Depois de U2, antes do PR, os passos 6 e 7 do `conexus-build`, após `npm ci` e 
 | `apps/server/src/hub/copies/read-table.ts`, `catalog-view.ts`, `sample.ts` | Muda; `readAfterLogin` sai | `service.ts` |
 | `apps/server/src/hub/copies/service.ts` (dono de `CopyService['data']`) | Muda: `data.readers`, a assinatura de `data.tableRows` | `hub/data` (`deps.ts:15`) |
 | `apps/server/src/hub/data/` | Muda `catalog.ts`, `query.ts`, `rows.ts`; cria `catalog-role.test.ts`; muda `data.test.ts`, `query.test.ts`, `query-failures.test.ts` | `createCompanyData` (`public.ts:31-37`) |
-| `apps/server/migrations/` | Cria: a migração que apaga `readers_set` | o `migrate` do programa (data D9) |
-| `apps/server/database-grants.sql` | Muda: sai `GRANT UPDATE(readers_set)` e o seu comentário (`:394-396`) | o catálogo de permissões do banco do Hub |
 | `scripts/rerun-never.json` | Muda: uma linha em `files` | `scripts/rerun-exempt.ts` |
 
 ### Os contratos que a unidade cria
@@ -893,13 +895,12 @@ readers: Object.freeze({ copiesReadBy, readerOf, readAs: (input) => readAs(full,
 
 ### A ordem do trabalho
 
-1. **O leitor e a leitura por ele em `hub/copies`.** Critérios: 34, 35, 42.
+1. **O leitor e a leitura por ele em `hub/copies`.** Critérios: nenhum próprio; os do passo 3 provam este passo.
    - **Arquivos:** muda `readers.ts`, `read-table.ts`, `catalog-view.ts`, `service.ts`, `sample.ts`, `rows.ts`.
    - **Referência a seguir:** `readAfterLogin` e `tableReadOf` (`read-table.ts:21-69`); `query.ts:57-82`.
    - **O que sai:** `readAfterLogin` (`read-table.ts:21-41`) e o endereço fixo `readerAddress` de `readCopyTable` (`:78`), que passam a `readAs`.
    - **O que entra:** os contratos acima. `readCopyTable` lê por `readAs`; `NOT_IN_ROLE` vira `TableRead` `NOT_IN_ROLE`. `sampleOf` passa `{ kind: 'ALL' }` (a U5 troca), e o seu `switch` ganha `NOT_IN_ROLE` como `Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NOT_IN_ROLE' } })`, inalcançável com `ALL`. `catalogTables` com `{ copies: [] }` devolve `[]` sem consulta. `rows.ts` passa `personId` e `{ kind: 'ALL' }` à nova assinatura de `tableRows` (o passo 3 troca o leitor), para o typecheck passar. Regras: code C8, C21, C26; D22; S41.
    - **Testes:** os do passo 3; `catalog-view.test.ts` e `sample.test.ts` seguem passando.
-   - **Mutações à mão:** `readerOf` devolve `ALL` para todo papel: critério 33; tire a nova tentativa depois de `reconciled`: critério 35.
    - **Pronto quando:** `npm run typecheck` passa e `sample.test.ts` passa no comando do servidor.
 2. **O catálogo por papel.** Critérios: 30, 31, 32, 37, 38.
    - **Arquivos:** muda `catalog.ts`, `data.test.ts`.
@@ -915,25 +916,18 @@ readers: Object.freeze({ copiesReadBy, readerOf, readAs: (input) => readAs(full,
    - **O que sai:** em `queryOf`, a recusa de "outro papel" (`query.ts:136-138`) e o ramo Empresa da `readAs` local (`:66`, `:74`), que vira `projectRead` (decisão G2.10).
    - **O que entra:** `queryOf` lê `readerOf(proof.role)` na mesma leitura do Hub; Empresa → `readers.readAs({ companyId, personId, host, reader, statements, signal })`; `NOT_IN_ROLE` → `{ kind: 'NOT_IN_ROLE' }` (já logado); o resto do `switch` igual. `rowsOf`: Projeto → `{ kind: 'ALL' }`; Empresa → uma leitura do Hub com `admitMember(readCompany)` e `readerOf`; `tableRows` com `personId` e `reader`; `NOT_IN_ROLE` cai no `DATA_ROWS_FAILED` de hoje (`rows.ts:29-31`) com `reason: 'NOT_IN_ROLE'`. `catalog-role.test.ts` em `files`. Regras: S41; T4.
    - **Testes:** `catalog-role.test.ts`, os casos dos critérios 33 a 35, 40 e 42, sobre o mundo da U2 (`copiesOn`, `apps/server/src/hub/copies/test-copies.ts:139`, com as cinco cópias; Vendas e Financeiro no molde `ATENDENTE`, `apps/server/src/hub/identity/test-roles.ts:26`; Bruno e Carla trocados de papel), as marcas de `copy_reader` plantadas no Hub de teste (a rota é da U4), `roleLoginOf` e o dublê de `apps/server/src/hub/copies/grants.test.ts:81-83`, pela porta `createCompanyData` (T5). `query.test.ts:214` ("o membro no Início não lê: NOT_IN_ROLE") passa sem mudança, agora pelo login do papel sem tabela; `query-failures.test.ts:134-153` muda (G2.9).
-   - **Mutações à mão:** devolva `NOT_IN_ROLE` como `TABLE_UNAVAILABLE` em `queryOf`: critério 33; leia `rowsOf` sempre com `ALL`: critério 42 devolve linhas; troque o endereço `ROLE` por `readerAddress`: critério 34.
+   - **Mutações à mão:** `readerOf` devolve `ALL` para todo papel: critério 33; tire a nova tentativa depois de `reconciled` em `readAs`: critério 35; devolva `NOT_IN_ROLE` como `TABLE_UNAVAILABLE` em `queryOf`: critério 33; leia `rowsOf` sempre com `ALL`: critério 42 devolve linhas; troque o endereço `ROLE` por `readerAddress`: critério 34.
    - **Pronto quando:** `catalog-role.test.ts`, os testes de `apps/server/src/hub/data/` e `scripts/rerun-exempt.test.ts` passam.
-4. **`readers_set` sai do banco.** Critérios: nenhum; a conferência do G2.
-   - **Arquivos:** cria a migração em `apps/server/migrations/`; muda `apps/server/database-grants.sql`.
-   - **Referência a seguir:** `apps/server/migrations/20261023011406_e142_drop_run_event/migration.sql:1` (a linha `-- contract:`).
-   - **O que entra:** `npm run generate -w @conexus/server -- --name copy_readers_set_drop` (o `drizzle-kit generate` de `apps/server/package.json:11`), que lê o esquema sem `readersSet` (U2) e escreve o `DROP COLUMN`; na primeira linha, `-- contract: o G1 tirou readers_set do esquema, e nenhuma imagem desde então a lê nem escreve (data D6).`, que `scripts/check-migrations.ts:49-52` exige. Sai de `database-grants.sql` o `GRANT UPDATE(readers_set)` e o seu comentário (`:394-396`). Regras: D5, D6, D7, D30.
-   - **Pronto quando:** `npm run migrations -- --base origin/main` passa e a migração tem só o `DROP COLUMN`.
 
 ### Como se prova
 
 - 30 a 35, 37, 38, 40 e 42: o contrato real por `createCompanyData` sobre o banco de teste do Hub e o descartável da empresa; o 35 dá o `REVOKE` como `conexus_sync` por `asSync` (`test-copies.ts:251`). Hoje falham: o catálogo do membro vem vazio, toda leitura é `conexus_read`, e o 40 para em `NOT_IN_ROLE` (`query.ts:136-138`).
-- A migração: `npm run migrations -- --base origin/main` no ponto de conferência do G2, e o banco de teste migrado sem a coluna (`information_schema.columns` de `copies.copy`).
 
 ### Parar se
 
 - A sonda do critério 40 esconder os nomes de `sync` ao login do papel: pare e reporte com a saída (decisão D).
 - `companyRoleRows` sem a linha do desenvolvedor ou do membro numa empresa de antes de `seedRoles`: pare e reporte; não crie linha.
 - Uma reconciliação pedida por `readAs` precisar rodar dentro de uma transação do Hub para fechar uma corrida: pare; D22.
-- A migração gerada trouxer algo além do `DROP COLUMN` de `readers_set`: pare e reporte a diferença; não a edite à mão.
 
 ## U4 As rotas `listCopyReaders` e `setRoleCopies`
 
@@ -953,7 +947,7 @@ readers: Object.freeze({ copiesReadBy, readerOf, readAs: (input) => readAs(full,
 | --- | --- | --- |
 | `packages/hub-api/src/copies.ts` | Muda: `CopyReaders`, `listCopyReaders`, `ROLE_COPIES_MAX`, `setRoleCopies` | `routes.ts`; G3 (`queries.ts` da web); o `openapi` |
 | `packages/hub-api/src/company-roles.ts` | Muda: `OfRole` exportado | `copies.ts` |
-| `apps/server/src/hub/identity/` | Muda `admission.ts` (`seeData`), `role-rows.ts` e `public.ts` (`readingAll`) | `hub/copies` (`CopiesDeps.identity`) |
+| `apps/server/src/hub/identity/` | Muda `admission.ts` (`seeData`), `role-rows.ts` (`readingAll`; `label` e `members` em `companyRoleRows`) e `public.ts` (`readingAll`) | `hub/copies` (`CopiesDeps.identity`) |
 | `apps/server/src/hub/copies/readers.ts`, `service.ts`, `routes.ts` | Muda: `readersOf`, `listedReaders`, `setRoleCopies` | `registerCopyRoutes` |
 | `apps/server/src/hub/copies/readers-routes.test.ts`, `scripts/rerun-never.json` | Cria; muda | — |
 
@@ -978,6 +972,8 @@ seeData: { by: 'MEMBER', statement: undefined, locks: false },
 // apps/server/src/hub/identity/role-rows.ts (em ports)
 /** Dono e Administrador, que leem toda cópia, com o rótulo e quantas pessoas cada um tem. */
 export async function readingAll(tx: ReadTx, companyId: CompanyId): Promise<{ role: Role; label: string; members: number }[]>
+// CompanyRoleRow ganha label e members, lidos por listedReaders (decisão G1.5):
+export type CompanyRoleRow = Readonly<{ id: RoleId; role: Role; label: string; members: number }>
 
 // apps/server/src/hub/copies/readers.ts
 export async function readersOf(tx: ReadTx, companyId: CompanyId): Promise<Map<CopyId, string[]>>
@@ -1018,7 +1014,7 @@ Nenhuma transação do Hub fica aberta na chamada ao banco da empresa (D22); o l
 2. **`listCopyReaders`.** Critérios: 52.
    - **Arquivos:** muda `role-rows.ts`, `identity/public.ts`, `readers.ts`, `service.ts`, `routes.ts`.
    - **Referência a seguir:** `readRoles` (a contagem e os rótulos dos fixos); `serve(app, listCopies, ...)` (`routes.ts:35-37`).
-   - **O que entra:** `readingAll`, `readersOf`, `listedReaders`, `copies.readers` em `service.ts` e `serve(app, listCopyReaders, ...)`. Regras: code C8; S10.
+   - **O que entra:** `readingAll`, `label` e `members` em `companyRoleRows` (a contagem por `member.role`, como `readRoles`), `readersOf`, `listedReaders`, `copies.readers` em `service.ts` e `serve(app, listCopyReaders, ...)`. Regras: code C8; S10.
    - **Testes:** os casos do critério 52.
    - **Mutações à mão:** tire o filtro de `copiesReadBy` para quem não gere cópias: critério 52 (o membro).
 3. **`setRoleCopies`.** Critérios: 43 a 51, 53.
@@ -1119,7 +1115,7 @@ COPY_NOT_IN_ROLE: { category: 'USER', settles: true, status: 403,
 
 ## G2 O ponto de conferência
 
-Depois de U5, antes do PR, os passos 6 e 7 do `conexus-build`, preparados como no G1: os testes de `apps/server/src/hub/data/` (com `catalog-role.test.ts`); `apps/server/src/hub/copies/readers-routes.test.ts`, `member-data.test.ts`, `readers.test.ts`, `routes.test.ts`, `sample.test.ts`, `catalog-view.test.ts`; `apps/server/src/hub/identity/roles.test.ts`, `roles-delete.test.ts`, `developer.test.ts`; `copy-sample.test.tsx` na web; `scripts/rerun-exempt.test.ts`; `npm run typecheck`, `npm run deps`, `npm run knip`, `npm run openapi > /dev/null`, `npm run migrations -- --base origin/main` e `npm run check`. No Hub local com o dublê do Sankhya: `PUT .../roles/{role}/copies`, o banco da empresa lido como o login do papel (`information_schema.tables`) e a página Dados do membro só com as tabelas dele; uma cópia ligada depois do G2 não aparece ao membro até a marca. As duas leis do papel passam no mundo falso de `packages/hub-api/src/company-data.test.ts`, sem `skip`. pstack `deslop` e `no-comments`; as mutações (T27). O corpo do PR registra a sonda da decisão D com a saída, a mudança de `CompanyMay` e as decisões G2.1, G2.2, G2.5 e G2.9.
+Depois de U5, antes do PR, os passos 6 e 7 do `conexus-build`, preparados como no G1: os testes de `apps/server/src/hub/data/` (com `catalog-role.test.ts`); `apps/server/src/hub/copies/readers-routes.test.ts`, `member-data.test.ts`, `readers.test.ts`, `routes.test.ts`, `sample.test.ts`, `catalog-view.test.ts`; `apps/server/src/hub/identity/roles.test.ts`, `roles-delete.test.ts`, `developer.test.ts`; `copy-sample.test.tsx` na web; `scripts/rerun-exempt.test.ts`; `npm run typecheck`, `npm run deps`, `npm run knip`, `npm run openapi > /dev/null` e `npm run check`. No Hub local com o dublê do Sankhya: `PUT .../roles/{role}/copies`, o banco da empresa lido como o login do papel (`information_schema.tables`) e a página Dados do membro só com as tabelas dele; uma cópia ligada depois do G2 não aparece ao membro até a marca. As duas leis do papel passam no mundo falso de `packages/hub-api/src/company-data.test.ts`, sem `skip`. pstack `deslop` e `no-comments`; as mutações (T27). O corpo do PR registra a sonda da decisão D com a saída, a mudança de `CompanyMay` e as decisões G2.1, G2.2, G2.5 e G2.9.
 
 ## U6 A tela Papéis com o bloco Dados copiados
 
@@ -1793,12 +1789,12 @@ A descrição para o modelo, em inglês como as outras: "The latest runs of one 
    - **Testes:** os do critério 110 (o membro conversa como em `member.test.ts:13-33`; `Sent.tools` tem `copy_runs`).
    - **Mutações à mão:** monte a ferramenta só com `may.manageCopies`: critério 110 (o membro). Importe o tipo `CopyService` em `copy-runs.ts`: critério 117.
    - **Pronto quando:** os dois casos, `npm run deps` e `npm run typecheck` passam.
-2. **As rodadas e a recusa.** Critérios: 111, 112, 113, 114, 115.
+2. **As rodadas e a recusa.** Critérios: 111 a 115, 118.
    - **Arquivos:** muda `copy-runs.ts`, `copy-runs.test.ts`, `scripts/rerun-never.json`.
    - **Referência a seguir:** `overview.ts:30-41`; `refused` (`data-tools/tools.ts:40-49`).
    - **O que entra:** sem escopo, a falha `INTERNAL_UNEXPECTED` com `reason: 'COPY_RUNS_WITHOUT_CONVERSATION'`, como `overview.ts:31-36`. Com escopo, `copies().list({ companyId, personId, named: [] })`; nenhuma cópia com `name === table` lança `NOT_FOUND`; achada, `copies().runs({ ..., copyId, page: undefined })`, e um `COPY_NOT_FOUND` dela lança o mesmo `NOT_FOUND`; as outras falhas sobem como vieram. O resultado leva as cinco primeiras rodadas por `toolRunOf`. O caso do critério 114 entra em `tests` de `scripts/rerun-never.json`. Regras: S10, code C53, C79.
-   - **Testes:** `copy-runs.test.ts`, pela porta HTTP do Hub de teste, com o modelo em passos (`[[tool('copy_runs', { table })], [said('Pronto.')]]`) e o resultado ou a falha em `toolResults` da última chamada, os casos dos critérios 111 a 115: o 111 com o Sankhya falso servido a `assisting`, `releasing` de `vendas` e `clientes`, uma rodada completa e uma com `refuse.add('consultar')` por `hub.copies.run`; o 113 e o 114 com um papel criado que lê `sankhya_vendas` e não `sankhya_clientes`, marcado pela rota da U4.
-   - **Mutações à mão:** procure a tabela em todas as cópias da empresa, não na lista do papel: critério 114. `slice(0, 7)`: critério 112. Responda `COPY_NOT_FOUND` em vez de `NOT_FOUND`: critério 114 (corpos diferentes).
+   - **Testes:** `copy-runs.test.ts`, pela porta HTTP do Hub de teste, com o modelo em passos (`[[tool('copy_runs', { table })], [said('Pronto.')]]`) e o resultado ou a falha em `toolResults` da última chamada, os casos dos critérios 111 a 115 e 118: o 111 com o Sankhya falso servido a `assisting`, `releasing` de `vendas` e `clientes`, uma rodada completa e uma com `refuse.add('consultar')` por `hub.copies.run`; o 113 e o 114 com um papel criado que lê `sankhya_vendas` e não `sankhya_clientes`, marcado pela rota da U4; o 118 com o desenvolvedor de fábrica, sem marca em `sankhya_clientes`.
+   - **Mutações à mão:** procure a tabela em todas as cópias da empresa, não na lista do papel: critério 114. Procure só nas cópias que o papel lê também para quem gere cópias: critério 118 (o desenvolvedor recebe `NOT_FOUND`). `slice(0, 7)`: critério 112. Responda `COPY_NOT_FOUND` em vez de `NOT_FOUND`: critério 114 (corpos diferentes).
    - **Pronto quando:** `copy-runs.test.ts`, `assistant.test.ts` e `scripts/rerun-exempt.test.ts` passam.
 3. **A linha na conversa.** Critério: 116.
    - **Arquivos:** muda `assistant-specs.ts`, `tool-row.test.tsx`.
