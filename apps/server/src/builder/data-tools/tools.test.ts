@@ -90,6 +90,40 @@ test('describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não
   assert.deepEqual(reached.query, [])
 })
 
+const HIDDEN = 'clientes'
+/** What a role that does not read `clientes` sees: the catalog without that table. */
+const BRUNO = CatalogShape.parse({
+  ...CATALOG,
+  tables: CATALOG.tables.filter((one) => one.name !== HIDDEN),
+})
+
+test('data_describe sem tabela não nomeia a tabela que o papel não lê', async () => {
+  const { tools } = world(BRUNO)
+  const result = await runOn(tools, 'data_describe', {})
+  const label = CATALOG.tables.find((one) => one.name === HIDDEN)?.label
+  assert.equal(result.kind, 'CATALOG')
+  assert.equal(JSON.stringify(result).toLowerCase().includes(HIDDEN), false)
+  assert.equal(
+    result.tables.some((one: { label: string }) => one.label === label),
+    false,
+  )
+  assert.deepEqual(
+    result.tables.map((one: { name: string }) => one.name),
+    ['vendas', 'juntas'],
+  )
+})
+
+test('data_describe com a tabela que o papel não lê devolve NOT_IN_CATALOG e não lê linha', async () => {
+  const { tools, reached } = world(BRUNO)
+  const told = await thrown(runOn(tools, 'data_describe', { table: HIDDEN }))
+  const absent = await thrown(runOn(tools, 'data_describe', { table: 'nao_existe' }))
+  assert.equal(told.kind, 'NOT_IN_CATALOG')
+  assert.equal(told.kind, absent.kind)
+  assert.equal(told.reason, absent.reason)
+  assert.deepEqual(reached.rows, [])
+  assert.deepEqual(reached.query, [])
+})
+
 test('query devolve a origem com o nome gravado e o conector da cópia', async () => {
   const { tools } = world(CATALOG)
   const result = await runOn(tools, 'data_query', { sql: 'select count(*) from sync.juntas' })

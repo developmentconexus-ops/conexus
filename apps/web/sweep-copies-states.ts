@@ -1,11 +1,17 @@
 import type { CopyProposalSummary, CopyRun, CopySummary } from '@conexus/hub-api'
-import { listConnections, listCopies, listCopyModels, listCopyRuns } from '@conexus/hub-api'
+import {
+  listConnections,
+  listCopies,
+  listCopyModels,
+  listCopyReaders,
+  listCopyRuns,
+} from '@conexus/hub-api'
 import type { z } from 'zod'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
-import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
+import { OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
 type CopyIn = z.input<typeof CopySummary>
 export type RunIn = z.input<typeof CopyRun>
@@ -121,11 +127,32 @@ const CONNECTIONS = ok(listConnections, {
   mayManage: true,
 })
 
+/** Who reads each copy: the owner and the administrator always, and the roles the people of the page hold. */
+export function readersPage(copies: CopyIn[], marked: { role: string; label: string }[] = []) {
+  const always = [
+    { role: 'owner', label: 'Dono', members: 1 },
+    { role: 'admin', label: 'Administrador', members: 1 },
+  ]
+  return {
+    [`GET ${COMPANY_API}/copy-readers`]: ok(listCopyReaders, {
+      readers: copies.map((one) => ({
+        copyId: one.id,
+        roles: [...always, ...marked.map((one) => ({ ...one, members: 2 }))],
+      })),
+    }),
+  }
+}
+
+export function copiesList(copies: CopyIn[], proposals: ProposalIn[] = []) {
+  return { [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies, proposals }) }
+}
+
 export function copiesPage(copies: CopyIn[], proposals: ProposalIn[] = []) {
   return {
     ...OWNER,
     ...projectsPage(COMPANY.id),
-    [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies, proposals }),
+    ...readersPage(copies, [{ role: 'financeiro', label: 'Financeiro' }]),
+    ...copiesList(copies, proposals),
     [`GET ${COMPANY_API}/copy-models`]: MODELS,
     [`GET ${COMPANY_API}/connections`]: CONNECTIONS,
     // The list's links preload each copy's page.
@@ -182,12 +209,6 @@ export const COPIES_STATES: State[] = [
       [`GET ${COMPANY_API}/copies`]: failure('DATABASE_UNAVAILABLE'),
     },
     settle: (p) => waitFor(p, 'Tentar de novo'),
-  },
-  {
-    name: 'Dados, o membro não encontra a página',
-    path: PAGE,
-    replies: { ...MEMBER, ...projectsPage(COMPANY.id) },
-    settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
     name: 'Ligar uma cópia, o diálogo',

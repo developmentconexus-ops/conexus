@@ -18,16 +18,16 @@ test('Dados: o menu e quem não vê', async () => {
   expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
 })
 
-test('Dados: o menu e quem não vê, o membro não tem a entrada e o endereço dá "não encontrado" no conteúdo', async () => {
+test('Dados do Projeto: o membro não tem a entrada e o endereço dá "não encontrado" no conteúdo', async () => {
   open(`${PROJECT}/data`, { tables: () => refusal('NOT_FOUND') }, 'member')
   expect(
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
   const menu = screen.getByRole('navigation', { name: 'Navegação' })
-  expect(within(menu).queryByRole('link', { name: 'Dados' })).toBeNull()
   const hrefs = within(menu)
     .getAllByRole('link')
     .map((link) => link.getAttribute('href'))
+  expect(hrefs).not.toContain(`${PROJECT}/data`)
   expect(hrefs).toContain(`${PROJECT}/integrations`)
 })
 

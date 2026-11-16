@@ -238,6 +238,7 @@ test('as abas na ordem, com a contagem de colunas', async () => {
     'Colunas 3',
     'Amostra',
     'Rodadas',
+    'Quem lê 2',
   ])
 })
 

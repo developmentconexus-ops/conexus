@@ -55,6 +55,7 @@ const ROLES = [
     1,
   ),
   role('atendente', 'Atendente', 'CUSTOM', ['pedidos'], 1),
+  role('financeiro', 'Financeiro', 'CUSTOM', ['pedidos'], 2),
 ]
 
 /** The company's roles, which only whoever manages them reads. */

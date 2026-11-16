@@ -1,7 +1,18 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { CLIENTES, copy, copyRun, LIST, onPhone, openCopies, PRODUTOS } from './test-hub.tsx'
+import {
+  CLIENTES,
+  copy,
+  copyRun,
+  detailOf,
+  LIST,
+  onPhone,
+  openCopies,
+  PRODUTOS,
+  proposal,
+  VENDAS,
+} from './test-hub.tsx'
 import { ORDERS_SHOWN, STORES } from './test-sources.ts'
 
 // Dados: the rail, the list and the actions of a row (Capacidade 2, criteria 30, 31, 33 and 35).
@@ -19,11 +30,63 @@ test('Dados: a faixa mostra a entrada ao dono e ao desenvolvedor', async () => {
   expect(screen.getAllByRole('link', { name: 'Dados' }).length).toBeGreaterThan(0)
 })
 
-test('Dados: a faixa e quem não vê: o membro não tem a entrada e o endereço dá não encontrado', async () => {
-  const hub = openCopies(server, { copies: [copy()] }, LIST, 'member')
+const MEMBER_READS = [
+  {
+    copyId: VENDAS,
+    roles: [
+      { role: 'owner', label: 'Dono', members: 1 },
+      { role: 'member', label: 'Membro', members: 4 },
+    ],
+  },
+]
+
+test('o membro vê Dados no trilho e só as tabelas do papel, sem Ligar e sem menu (critério 70)', async () => {
+  openCopies(server, { copies: [copy()], readers: MEMBER_READS }, LIST, 'member')
+  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
+  expect(screen.getAllByRole('link', { name: 'Dados' }).length).toBeGreaterThan(0)
+  expect(await screen.findByText('Você vê as tabelas que o papel Membro lê.')).toBeTruthy()
+  const row = await rowOf('Vendas')
+  expect(row.textContent).toContain('vendas')
+  expect(screen.getAllByText(/^Sankhya/).length).toBeGreaterThan(0)
+  for (const name of [/Ligar uma cópia/, /^Ações:/, /Rodar agora/, /Pausar/, /Intervalo/]) {
+    expect(screen.queryByRole('button', { name })).toBeNull()
+  }
+})
+
+test('o membro no celular vê as linhas das tabelas do papel sem o menu da linha (critério 70)', async () => {
+  await onPhone(async () => {
+    openCopies(server, { copies: [copy()], readers: MEMBER_READS }, LIST, 'member')
+    const row = await rowOf('Vendas')
+    expect(row.tagName).toBe('LI')
+    expect(screen.queryByRole('button', { name: /^Ações:/ })).toBeNull()
+  })
+})
+
+test('o membro não vê as propostas do Builder (critério 70)', async () => {
+  openCopies(
+    server,
+    { copies: [copy()], readers: MEMBER_READS, proposals: [proposal()] },
+    LIST,
+    'member',
+  )
+  await rowOf('Vendas')
+  expect(screen.queryByText('Devoluções')).toBeNull()
+  expect(screen.queryByRole('button', { name: /Ligar/ })).toBeNull()
+})
+
+test('o membro que abre uma tabela de outro papel vê a página de não encontrado (critério 71)', async () => {
+  openCopies(server, { copies: [copy()] }, detailOf(CLIENTES), 'member')
   expect(await screen.findByText('Não encontramos o que você procurou.')).toBeTruthy()
-  expect(screen.queryByRole('link', { name: 'Dados' })).toBeNull()
-  expect(hub.sent.filter((one) => one.path.endsWith('/copies'))).toHaveLength(0)
+  expect(screen.queryByText(/clientes/)).toBeNull()
+})
+
+test('o membro sem tabela no papel (critério 74)', async () => {
+  openCopies(server, { copies: [] }, LIST, 'member')
+  const full = 'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.'
+  expect(await screen.findByText(full)).toBeTruthy()
+  expect(await screen.findByText('Seu papel ainda não lê nenhuma tabela.')).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Ligar um sistema' })).toBeNull()
+  expect(screen.queryByText('Nenhum sistema ligado ainda')).toBeNull()
 })
 
 test('Cópias: a lista mostra cada cópia com o estado em palavras e os números em português', async () => {

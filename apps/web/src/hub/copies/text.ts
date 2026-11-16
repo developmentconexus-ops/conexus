@@ -20,6 +20,9 @@ export const NO_SYSTEM_HINT =
   'Ligue um sistema da empresa, como o Sankhya, e as tabelas copiadas dele aparecem aqui.'
 export const LINK_SYSTEM = 'Ligar um sistema'
 export const NO_TABLE_COPIED = 'Nenhuma tabela copiada'
+export const NO_TABLE_OF_ROLE =
+  'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.'
+export const NO_TABLE_OF_ROLE_SHORT = 'Seu papel ainda não lê nenhuma tabela.'
 export const NO_MATCH = 'Nenhuma tabela com esse texto.'
 export const NO_CONCEPT = 'Nenhum conceito aprovado ainda'
 export const CONCEPT_HINT =
@@ -129,6 +132,23 @@ export function inactiveNotice(system: string, names: readonly string[], since: 
   return `O ${system} parou de enviar as colunas ${listed(names)} desde ${day}. Elas ficam aqui, inativas, e nada foi apagado.`
 }
 export const RUNS_TITLE = 'Rodadas'
+export const READERS_TITLE = 'Quem lê'
+export const READER_HEADS = ['Papel', 'Pessoas', 'Como lê'] as const
+export const READS_ALWAYS = 'sempre'
+export const READS_MARKED = 'marcado em Papéis'
+export const READERS_NOTE = 'Quem lê esta tabela pela conversa e pelos agentes.'
+export const READERS_CHANGE = 'Para mudar, abra o papel.'
+export const OPEN_IN_ROLES = 'Abrir em Papéis'
+
+/** "1 pessoa", "2 pessoas". */
+export function peopleText(members: number): string {
+  return `${members} ${members === 1 ? 'pessoa' : 'pessoas'}`
+}
+
+/** What a member reads under the title of Dados: whose tables these are. */
+export function roleTablesText(label: string): string {
+  return `Você vê as tabelas que o papel ${label} lê.`
+}
 export const RUN_REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
 export const NO_SCHEDULE = '—'
 export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')

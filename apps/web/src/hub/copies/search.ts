@@ -9,7 +9,7 @@ export const DataSearch = z.object({
   q: z.string().optional().catch(undefined),
 })
 
-export const TableTab = z.enum(['overview', 'columns', 'sample', 'runs'])
+export const TableTab = z.enum(['overview', 'columns', 'sample', 'runs', 'readers'])
 export type TableTab = z.infer<typeof TableTab>
 
 /** The tab of a table's page and the page of its runs, both in the address (web W18). */

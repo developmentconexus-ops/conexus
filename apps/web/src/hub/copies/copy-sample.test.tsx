@@ -51,7 +51,7 @@ test('o número da linha', async () => {
   expect(head?.querySelector('span')?.className).toContain('sr-only')
 })
 
-test('o desenvolvedor vê a aba Amostra e a frase do Hub numa tabela fora do papel', async () => {
+test('o desenvolvedor vê a recusa do papel na aba Amostra, sem Tentar de novo e sem grade (critério 81)', async () => {
   openCopies(
     server,
     { copies: [copy()], answers: { sample: () => refusal('COPY_NOT_IN_ROLE') } },
@@ -59,9 +59,14 @@ test('o desenvolvedor vê a aba Amostra e a frase do Hub numa tabela fora do pap
     'developer',
   )
   expect(await screen.findByRole('tab', { name: 'Amostra' })).toBeTruthy()
-  expect(
-    await screen.findByText('Seu papel não lê esta tabela. Peça a quem administra a empresa.'),
-  ).toBeTruthy()
+  const said = await screen.findByText(
+    'Seu papel não lê esta tabela. Peça a quem administra a empresa.',
+  )
+  expect(said.className).toContain('text-text-2')
+  expect(said.className).not.toContain('text-danger')
+  expect(screen.queryByRole('alert')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  expect(screen.queryByRole('table')).toBeNull()
 })
 
 test('a amostra vazia', async () => {

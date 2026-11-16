@@ -47,11 +47,16 @@ test('a árvore: fora de Dados, as conversas ficam', async () => {
   expect(screen.queryByRole('navigation', { name: 'Dados' })).toBeNull()
 })
 
-test('a árvore: o membro no endereço de Dados fica com as conversas', async () => {
-  openCopies(server, { copies: [copy()] }, LIST, 'member')
-  expect(await screen.findByText('Não encontramos o que você procurou.')).toBeTruthy()
-  expect(screen.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
-  expect(screen.queryByRole('navigation', { name: 'Dados' })).toBeNull()
+test('a árvore: o membro em Dados vê só as tabelas do papel (critério 73)', async () => {
+  openCopies(server, { copies: [copy()] }, `${LIST}?layer=apps`, 'member')
+  const nav = await tree()
+  expect(await nav.findByRole('link', { name: 'Negócio 0' })).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Bruto 1' })).toBeTruthy()
+  expect(nav.getByRole('button', { name: 'Sankhya 1' })).toBeTruthy()
+  expect(nav.queryByRole('link', { name: 'Apps' })).toBeNull()
+  expect(await screen.findByText(/Cópia fiel de cada sistema/)).toBeTruthy()
+  expect(screen.queryByText(/Apps da empresa/)).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
 })
 
 test('a árvore: Negócio 0, Bruto com o número de tabelas, Apps', async () => {

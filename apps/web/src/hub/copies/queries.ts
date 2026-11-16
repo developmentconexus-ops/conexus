@@ -6,11 +6,13 @@ import {
   enableCopy,
   listCopies,
   listCopyModels,
+  listCopyReaders,
   listCopyRuns,
   pauseCopy,
   resumeCopy,
   runCopy,
   sampleCopy,
+  setRoleCopies,
 } from '@conexus/hub-api'
 import { queryOptions } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -67,6 +69,11 @@ export function copyModelsQuery(companyId: CompanyId) {
   return hubQuery(listCopyModels, { params: { companyId } })
 }
 
+/** For each copy the person reads, the roles that read it and how many people hold each. */
+export function copyReadersQuery(companyId: CompanyId) {
+  return hubQuery(listCopyReaders, { params: { companyId } })
+}
+
 /** The runs of one copy, newest first, a page at a time, with the copy itself; read again while one runs or one asked for has not appeared. */
 export function copyRunsQuery(
   companyId: CompanyId,
@@ -89,6 +96,8 @@ export function copySampleQuery(companyId: CompanyId, copyId: CopyId) {
   return hubQuery(sampleCopy, { params: { companyId, copyId } })
 }
 
+/** Salvar of an open role: the whole list of copies it reads. */
+export const sendRoleCopies = hubMutation(setRoleCopies)
 export const sendCopyEnable = hubMutation(enableCopy)
 export const sendCopyPause = hubMutation(pauseCopy)
 export const sendCopyResume = hubMutation(resumeCopy)
