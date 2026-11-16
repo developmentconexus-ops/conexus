@@ -13,9 +13,8 @@ import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { CopyName } from '../connectors/public.ts'
-import { projectCopyRows } from './list.ts'
+import { projectCopyRows, seenBy } from './list.ts'
 import { copyModeOf } from './mode.ts'
-import { copiesReadBy } from './readers.ts'
 import type { CopiesDeps } from './store.ts'
 import { personScope, shownOf } from './store.ts'
 import { copyProposal, copySource } from './tables.ts'
@@ -98,14 +97,13 @@ export async function projectView(
   const { companyId, projectId } = input
   let read: {
     rows: Awaited<ReturnType<typeof projectCopyRows>>
-    reads: Awaited<ReturnType<typeof copiesReadBy>>
+    reads: Awaited<ReturnType<typeof seenBy>>
     accounts: Set<string>
     proposed: Awaited<ReturnType<typeof proposalsOf>>
   }
   try {
     read = await deps.database.read(personScope(input), async (tx) => {
-      const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
-      const reads = await copiesReadBy(deps, tx, { companyId, role: proof.role })
+      const reads = await seenBy(deps, tx, input)
       const rows = await projectCopyRows(tx, input)
       const granted = rows.filter((row) => row.granted).map((row) => row.copy.id)
       const accounts = await withAccounts(tx, companyId, granted)
