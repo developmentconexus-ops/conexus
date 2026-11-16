@@ -127,14 +127,14 @@ test('uma página de uma tabela pelo nome', async (t) => {
   assert.equal((await on.run(copyId)).kind, 'ENDED')
   const signal = AbortSignal.timeout(30_000)
   const page = await on.copies.data.tableRows({
-    ...{ companyId: on.companyId, name: 'sankhya_vendas', limit: 200 },
-    signal,
+    ...{ companyId: on.companyId, personId: on.anaId, name: 'sankhya_vendas', limit: 200 },
+    ...{ signal, reader: { kind: 'ALL' } },
   })
   assert.equal(page.kind, 'ROWS')
   assert.ok(page.kind === 'ROWS' && page.rows.length > 0 && page.rows.length <= 200)
   const missing = await on.copies.data.tableRows({
-    ...{ companyId: on.companyId, name: 'sankhya_nada', limit: 200 },
-    signal,
+    ...{ companyId: on.companyId, personId: on.anaId, name: 'sankhya_nada', limit: 200 },
+    ...{ signal, reader: { kind: 'ALL' } },
   })
   assert.deepEqual(missing, { kind: 'NO_COPY' })
 })

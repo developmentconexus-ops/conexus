@@ -21,7 +21,10 @@ export async function sampleOf(
     return storedCopy(tx, input)
   })
   if (stored === undefined) throw new Failure('COPY_NOT_FOUND')
-  const read = await readCopyTable(deps, { companyId, stored, limit: COPY_SAMPLE_ROWS, signal })
+  const read = await readCopyTable(deps, {
+    ...{ companyId, personId: input.personId, stored, limit: COPY_SAMPLE_ROWS, signal },
+    reader: { kind: 'ALL' },
+  })
   switch (read.kind) {
     case 'ROWS':
       return { columns: read.columns, rows: read.rows, complete: read.complete }
@@ -34,6 +37,8 @@ export async function sampleOf(
     case 'UNAVAILABLE':
       deps.log.error({ companyId, copyId, reason: read.reason }, 'COPY_SAMPLE_FAILED')
       throw new Failure('COPY_DATABASE_UNAVAILABLE')
+    case 'NOT_IN_ROLE':
+      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NOT_IN_ROLE' } })
     default:
       return read satisfies never
   }

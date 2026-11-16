@@ -12,16 +12,21 @@ export async function catalogOf(deps: DataDeps, scope: SessionScope): Promise<De
         ...{ tx, companyId, personId },
         action: 'readCompany',
       })
-      const { catalogTables } = deps.copies()
+      const { catalogTables, readers } = deps.copies()
       const { catalogSystems, catalogSources } = deps.connectors()
       const systems = await catalogSystems(tx, scope)
       const given = await catalogSources(tx, scope)
-      const tables =
-        place.kind === 'PROJECT'
-          ? await catalogTables(tx, { companyId, only: { projectId: place.projectId }, given })
-          : deps.identity.allows(proof.role, 'readCopyRows')
-            ? await catalogTables(tx, { companyId, only: 'ALL', given })
-            : []
+      if (place.kind === 'PROJECT') {
+        const only = { projectId: place.projectId }
+        return {
+          kind: 'CATALOG',
+          systems,
+          tables: await catalogTables(tx, { companyId, only, given }),
+        }
+      }
+      const reads = await readers.copiesReadBy(deps, tx, { companyId, role: proof.role })
+      const only = reads === 'ALL' ? 'ALL' : { copies: reads }
+      const tables = await catalogTables(tx, { companyId, only, given })
       return { kind: 'CATALOG', systems, tables }
     })
   } catch (error) {

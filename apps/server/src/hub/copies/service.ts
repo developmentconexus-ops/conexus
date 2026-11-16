@@ -26,6 +26,7 @@ import {
 import { listed, models, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
 import { propose } from './propose.ts'
+import { copiesReadBy, readAs, readerOf } from './readers.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { sampleOf } from './sample.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
@@ -56,10 +57,15 @@ export function createCopyService(
     /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
     projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
       projectView(full, input),
-    /** What the data contract reads; admits nobody, the caller did: the tables a place reads and one page of a table by its name. */
+    /** What the data contract reads; admits nobody, the caller did: the tables a place reads, one page of a table by its name, and who reads what. */
     data: Object.freeze({
       catalogTables,
       tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(full, input),
+      readers: Object.freeze({
+        copiesReadBy,
+        readerOf,
+        readAs: (input: Parameters<typeof readAs>[1]) => readAs(full, input),
+      }),
     }),
     /** The schedule's acts, admitting `manageCopies`. */
     pause: (input: Of) => pauseCopy(full, input),

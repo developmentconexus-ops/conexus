@@ -6,26 +6,41 @@ import type {
   CopyId,
   CopySource,
   KeptSource,
+  PersonId,
   ProjectId,
 } from '@conexus/hub-api'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { copySources, endedRuns, projectCopyRows } from './list.ts'
 import type { TableRead } from './read-table.ts'
 import { readCopyTable } from './read-table.ts'
+import type { ReaderLogin } from './readers.ts'
 import type { CopiesDeps } from './store.ts'
 import { companyScope, parsedCopy, shownOf } from './store.ts'
 import { copy } from './tables.ts'
 
-type Place = 'ALL' | { projectId: ProjectId }
+type Place = 'ALL' | { projectId: ProjectId } | { copies: readonly CopyId[] }
 
-/** Every copy of the company, or the ones a Projeto has released, with its stored definition. */
+/** Every copy of the company, the ones a Projeto has released, or the ones named, with its stored definition. */
 async function copiesOf(tx: ReadTx, companyId: CompanyId, only: Place) {
-  if (only !== 'ALL') {
+  if (only === 'ALL') {
+    const rows = await tx
+      .select()
+      .from(copy)
+      .where(eq(copy.companyId, companyId))
+      .orderBy(copy.name)
+    return rows.map(parsedCopy)
+  }
+  if ('projectId' in only) {
     const rows = await projectCopyRows(tx, { companyId, projectId: only.projectId })
     return rows.filter(({ granted }) => granted).map(({ copy: stored }) => stored)
   }
-  const rows = await tx.select().from(copy).where(eq(copy.companyId, companyId)).orderBy(copy.name)
+  if (only.copies.length === 0) return []
+  const rows = await tx
+    .select()
+    .from(copy)
+    .where(and(eq(copy.companyId, companyId), inArray(copy.id, [...only.copies])))
+    .orderBy(copy.name)
   return rows.map(parsedCopy)
 }
 
@@ -82,9 +97,16 @@ export async function catalogTables(
 /** One page of a copy's table by its name; admits nobody: the catalog decided the place reads it. */
 export async function tableRowsByName(
   deps: CopiesDeps,
-  input: { companyId: CompanyId; name: string; limit: number; signal: AbortSignal },
+  input: {
+    companyId: CompanyId
+    personId: PersonId
+    name: string
+    limit: number
+    signal: AbortSignal
+    reader: ReaderLogin
+  },
 ): Promise<TableRead | { kind: 'NO_COPY' }> {
-  const { companyId, name, limit, signal } = input
+  const { companyId, name } = input
   const [row] = await deps.database.read(companyScope(companyId), (tx) =>
     tx
       .select()
@@ -92,5 +114,5 @@ export async function tableRowsByName(
       .where(and(eq(copy.companyId, companyId), eq(copy.name, name))),
   )
   if (row === undefined) return { kind: 'NO_COPY' }
-  return readCopyTable(deps, { companyId, stored: parsedCopy(row), limit, signal })
+  return readCopyTable(deps, { ...input, stored: parsedCopy(row) })
 }
