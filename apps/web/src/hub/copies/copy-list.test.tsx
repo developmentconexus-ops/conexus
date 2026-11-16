@@ -10,6 +10,7 @@ import {
   onPhone,
   openCopies,
   PRODUTOS,
+  proposal,
   VENDAS,
 } from './test-hub.tsx'
 import { ORDERS_SHOWN, STORES } from './test-sources.ts'
@@ -50,6 +51,27 @@ test('o membro vê Dados no trilho e só as tabelas do papel, sem Ligar e sem me
   for (const name of [/Ligar uma cópia/, /^Ações:/, /Rodar agora/, /Pausar/, /Intervalo/]) {
     expect(screen.queryByRole('button', { name })).toBeNull()
   }
+})
+
+test('o membro no celular vê as linhas das tabelas do papel sem o menu da linha (critério 70)', async () => {
+  await onPhone(async () => {
+    openCopies(server, { copies: [copy()], readers: MEMBER_READS }, LIST, 'member')
+    const row = await rowOf('Vendas')
+    expect(row.tagName).toBe('LI')
+    expect(screen.queryByRole('button', { name: /^Ações:/ })).toBeNull()
+  })
+})
+
+test('o membro não vê as propostas do Builder (critério 70)', async () => {
+  openCopies(
+    server,
+    { copies: [copy()], readers: MEMBER_READS, proposals: [proposal()] },
+    LIST,
+    'member',
+  )
+  await rowOf('Vendas')
+  expect(screen.queryByText('Devoluções')).toBeNull()
+  expect(screen.queryByRole('button', { name: /Ligar/ })).toBeNull()
 })
 
 test('o membro que abre uma tabela de outro papel vê a página de não encontrado (critério 71)', async () => {

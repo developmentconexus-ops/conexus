@@ -3,7 +3,7 @@ import { http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { copy, detailOf, openCopies, VENDAS } from './test-hub.tsx'
+import { copy, detailOf, onPhone, openCopies, VENDAS } from './test-hub.tsx'
 
 // A tabela, aba Quem lê: os papéis que leem a tabela, as pessoas de cada um e como leem (Dados, parte 4).
 const server = hubServer()
@@ -53,6 +53,17 @@ test('sem manageRoles: nem o link nem a frase Para mudar (critério 76)', async 
   await screen.findByRole('table')
   expect(screen.queryByRole('link', { name: 'Abrir em Papéis' })).toBeNull()
   expect(screen.getByText('Quem lê esta tabela pela conversa e pelos agentes.')).toBeTruthy()
+})
+
+test('no celular, Abrir em Papéis aparece para o dono e não para o desenvolvedor (critério 76)', async () => {
+  await onPhone(async () => {
+    openCopies(server, { copies: [copy()], readers: [READ] }, READERS, 'owner')
+    expect(await screen.findByRole('link', { name: 'Abrir em Papéis' })).toBeTruthy()
+    cleanup()
+    openCopies(server, { copies: [copy()], readers: [READ] }, READERS, 'developer')
+    await screen.findByText('Financeiro')
+    expect(screen.queryByRole('link', { name: 'Abrir em Papéis' })).toBeNull()
+  })
 })
 
 test('a leitura de quem lê falhou: a frase do Hub, Tentar de novo, o gatilho sem número (critério 77)', async () => {
