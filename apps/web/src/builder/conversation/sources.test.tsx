@@ -89,7 +89,9 @@ const ReadPart = z.looseObject({
 })
 
 /** The recorded live read, with its `at` taken away or under a typed read's tool name. */
-function read(change: { noAt?: true; toolName?: string; connection?: string; operation?: string } = {}) {
+function read(
+  change: { noAt?: true; toolName?: string; connection?: string; operation?: string } = {},
+) {
   const part = recordedPart('reads', ReadPart)
   if (change.noAt) delete part.toolInvocation.result.at
   if (change.toolName !== undefined) part.toolInvocation.toolName = change.toolName
