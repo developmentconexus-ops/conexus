@@ -121,11 +121,14 @@ test('nenhuma cópia na empresa: a frase e o caminho para Dados', async () => {
   expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data`)
 })
 
-test('quem não gerencia cópias lê quem pode e não pede a lista', async () => {
-  open(copies(), 'member')
-  const section = within(await screen.findByRole('region', { name: 'Cópias' }))
-  expect(section.getByText('Dono ou administrador libera uma cópia.')).toBeTruthy()
-  expect(section.queryByRole('button')).toBeNull()
-  expect(section.queryByRole('link', { name: 'Ligar uma cópia' })).toBeNull()
-  expect(reads).toBe(0)
-})
+test.each(['member', 'developer'])(
+  'quem não gerencia cópias lê quem pode e não pede a lista, como %s',
+  async (role) => {
+    open(copies(), role)
+    const section = within(await screen.findByRole('region', { name: 'Cópias' }))
+    expect(section.getByText('Dono ou administrador libera uma cópia.')).toBeTruthy()
+    expect(section.queryByRole('button')).toBeNull()
+    expect(section.queryByRole('link', { name: 'Ligar uma cópia' })).toBeNull()
+    expect(reads).toBe(0)
+  },
+)
