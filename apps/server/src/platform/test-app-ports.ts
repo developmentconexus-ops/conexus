@@ -3,6 +3,7 @@ import { testBuilderPorts } from '../builder/runs/test-runs.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
 import type { Config } from './config.ts'
+import { roleLogin } from './copy-reader.ts'
 import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { fakeCloudflare } from './test-cloudflare.ts'
@@ -75,6 +76,9 @@ export function heldCompanyPostgres(config: Config) {
     },
     ensureReader: (owner) => withRoleLock(() => inner.ensureReader(owner)),
     readerAddress: (host) => addressOn(host, READ_LOGIN),
+    takeReadersTicket: inner.takeReadersTicket,
+    reconcileReaders: (...input) => withRoleLock(() => inner.reconcileReaders(...input)),
+    roleAddress: (host, roleId) => addressOn(host, roleLogin(roleId)),
     readCopies: (reader, statements, signal) => inner.readCopies(reader, statements, signal),
     ensureCopyTable: (sync, table) => inner.ensureCopyTable(sync, table),
     syncAddress: (host) => addressOn(host, SYNC_LOGIN),

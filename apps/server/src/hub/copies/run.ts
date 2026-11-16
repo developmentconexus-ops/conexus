@@ -5,6 +5,7 @@ import { connectionNamesOf } from '../connectors/public.ts'
 import type { Seen } from './column-state.ts'
 import { nextColumnState } from './column-state.ts'
 import { describedCopy } from './describe.ts'
+import { reconciled } from './readers.ts'
 import type { Claimed, Counts, Ids, Run, SourceStep } from './source-pass.ts'
 import { DATABASE_DOWN, lost, netDropped, sourcePass, WAIT } from './source-pass.ts'
 import type { StoredSource } from './sources.ts'
@@ -148,6 +149,7 @@ async function ended(
     },
     'COPY_RUN_ENDED',
   )
+  await reconciled(deps, { companyId, personId: claimed.copy.createdBy })
   return { kind: 'ENDED', outcome }
 }
 
