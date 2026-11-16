@@ -4,7 +4,7 @@ import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { INSTANTS_NOTE, inZone, zoneOf } from '../reader-zone.ts'
+import { INSTANTS_NOTE, inZone, zoneOf } from './reader-zone.ts'
 
 /** The data a conversation may read: bound to its place and its person, or none when the conversation has no scope. */
 export type DataOf = (requestContext: RequestContext) => Promise<CompanyData | undefined>

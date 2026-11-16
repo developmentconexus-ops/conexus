@@ -9,7 +9,7 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { INSTANTS_NOTE, inZone, zoneOf } from '../reader-zone.ts'
+import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
 
