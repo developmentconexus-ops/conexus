@@ -34,8 +34,7 @@ C (U17, a coluna `readers_set`), no PR 1142, em revisão e à espera da palavra 
 Fechar a etapa é do fundador, depois do uso.
 
 A etapa seguinte é a do Registro e da conformidade: os consumidores passam a derivar da porta, e a
-licença que toda execução exige nasce com o Registro; as letras 3(d) e 4(b) entram com ela, e a 2(a)
-com as concessões por conexão. As concessões por instância entram quando o primeiro cartão precisar
+licença que toda execução exige nasce com o Registro. As concessões por instância entram quando o primeiro cartão precisar
 de instância. A conexão MCP tem cartão próprio quando a primeira ferramenta de IA entrar.
 
 A Ontologia volta como a etapa do Negócio, com estudo e cartão próprios; o PR 1030, fechado sem
