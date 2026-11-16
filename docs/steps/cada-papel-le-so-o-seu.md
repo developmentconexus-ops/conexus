@@ -1842,7 +1842,7 @@ Nenhum. O contrato perde `COPY_NOT_IN_ROLE`. **Nenhuma permissão nova no banco*
 1. **O papel e o servidor.** Critérios: 119, 120, 121.
    - **Arquivos:** muda `roles.ts`, `admission.ts` (os comentários), `sample.ts`, `copy-failures.ts`, `connection-copies.ts`, e os testes.
    - **Referência a seguir:** o ramo do membro de `sample.ts`, `list.ts`, `readers.ts`.
-   - **O que sai:** `copy: ['manage']` de `BUILD`; `COPY_NOT_IN_ROLE` do contrato e o ramo `manages` de `sampleOf`; o `NOT_IN_ROLE` de `readCopyTable` na amostra vira `COPY_NOT_FOUND`.
+   - **O que sai:** `copy: ['manage']` de `BUILD`; `COPY_NOT_IN_ROLE` do contrato e o ramo `manages` de `sampleOf`; `mayReadSources` de `accept.ts` e `NOT_IN_ROLE` das falhas de `enableCopy` (só Dono e Administrador ligam, e leem toda operação), com o ramo de `enableFailureText` e o caso de `copy-proposal.test.tsx`; o `NOT_IN_ROLE` de `readCopyTable` na amostra vira `COPY_NOT_FOUND`.
    - **O que entra:** `copy: ['manage']` em `owner` e `admin`; os testes dos critérios 56, 119, 120 e 121.
    - **Mutações à mão:** devolver `copy` ao `BUILD`: 119, 120. Dar `'ALL'` ao desenvolvedor em `copiesReadBy`: 121.
    - **Pronto quando:** `member-data.test.ts`, `grants.test.ts`, `developer.test.ts` e `sample.test.ts` passam.
