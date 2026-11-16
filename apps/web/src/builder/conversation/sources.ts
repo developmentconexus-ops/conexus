@@ -46,7 +46,7 @@ const ToolPart = z.object({
   }),
 })
 
-const LiveResult = ReadCut.extend({ at: z.iso.datetime() })
+const LiveResult = ReadCut.required({ at: true })
 
 /** "hoje às 08:45", "ontem às 08:45" or "em 17/10/2026 às 08:45": the one way a data source says when. */
 export function whenOf(at: string, now: Date): string {
