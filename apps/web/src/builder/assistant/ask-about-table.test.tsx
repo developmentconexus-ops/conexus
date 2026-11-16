@@ -1,11 +1,12 @@
 import { fireEvent, screen } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test } from 'vitest'
 import { copiesHub, copy, detailOf, VENDAS } from '../../hub/copies/test-hub.tsx'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { assistantScreens } from './test-hub.tsx'
 
 // O link Perguntar ao Assistente da página de uma tabela: abre o Início com a tabela na caixa, sem enviar (Dados, parte 4).
 const server = hubServer()
+afterEach(() => server.events.removeAllListeners())
 const { at } = assistantScreens(server)
 const LINE = 'Sobre a tabela sankhya_vendas: '
 const DETAIL = detailOf(VENDAS)
@@ -33,14 +34,24 @@ async function toTable() {
   fireEvent.click(link ?? document.body)
 }
 
+/** Every write the page makes, whichever handler answers it: the server's own event, not a list a handler keeps. */
+function writesOf() {
+  const posts: string[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.method === 'POST') posts.push(new URL(request.url).pathname)
+  })
+  return posts
+}
+
 test('Perguntar ao Assistente abre o Início com a tabela na caixa, sem enviar (critério 88)', async () => {
-  const hub = openAsMember()
+  const posts = writesOf()
+  openAsMember()
   const link = await screen.findByRole('link', { name: 'Perguntar ao Assistente' })
   expect(screen.queryByRole('button', { name: /Rodar agora/ })).toBeNull()
   fireEvent.click(link)
   const written = await box()
   expect(written.value).toBe(LINE)
-  expect(hub.sent.filter((one) => one.method === 'POST')).toEqual([])
+  expect(posts).toEqual([])
   fireEvent.change(written, { target: { value: '' } })
 })
 
