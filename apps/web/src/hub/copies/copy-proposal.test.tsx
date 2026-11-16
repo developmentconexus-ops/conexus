@@ -4,6 +4,7 @@ import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { copy, DEVOLUCOES, LIST, onPhone, openCopies, proposal } from './test-hub.tsx'
 import { ORDERS_SHOWN, STORES } from './test-sources.ts'
+import { UNCONFIRMED_ENABLE } from './text.ts'
 
 // Cópias: the Builder's proposals, Ligar and Dispensar (Capacidade 3, criteria 27, 28 and 35).
 const server = hubServer()
@@ -84,16 +85,14 @@ test('a proposta: uma recusa que não decide fica no diálogo', async () => {
     {
       copies: [],
       proposals: [proposal()],
-      answers: { decide: () => (refuse ? refusal('NOT_IN_ROLE') : undefined) },
+      answers: { decide: () => (refuse ? refusal('COPY_DATABASE_UNAVAILABLE') : undefined) },
     },
     LIST,
   )
   const dialog = await openDialog(await rowOf('Devoluções'))
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))
   const said = (await dialog.findByRole('alert')).textContent ?? ''
-  // The sentence is for turning on a copy, not the one for publishing a tool.
-  expect(said).toMatch(/quem liga uma cópia precisa poder ler/)
-  expect(said).not.toMatch(/publicar|tire a ferramenta/)
+  expect(said).toBe(UNCONFIRMED_ENABLE)
   expect(screen.getByRole('dialog')).toBeTruthy()
   refuse = false
   fireEvent.click(dialog.getByRole('button', { name: 'Ligar' }))

@@ -14,7 +14,7 @@ const company = getRouteApi('/_app/companies/$companyId')
 
 const NO_COPIES = 'A empresa ainda não tem cópias.'
 const LINK_COPIES = 'Ligar uma cópia'
-const ASK_MANAGER = 'Dono, administrador ou desenvolvedor libera uma cópia.'
+const ASK_MANAGER = 'Dono ou administrador libera uma cópia.'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 

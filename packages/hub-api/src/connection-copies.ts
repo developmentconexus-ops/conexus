@@ -59,7 +59,6 @@ export const sampleCopy = defineOperation({
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
     'COPY_NOT_FOUND',
-    'COPY_NOT_IN_ROLE',
     'COPY_DATABASE_UNAVAILABLE',
   ] as const satisfies readonly FailureCode[],
 })

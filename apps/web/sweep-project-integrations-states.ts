@@ -214,7 +214,7 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
     name: 'Integrações do Projeto, o membro lê quem libera uma cópia',
     path: PAGE,
     replies: page(MEMBER, false, [MATRIZ], []),
-    settle: (p) => waitFor(p, 'Dono, administrador ou desenvolvedor libera uma cópia.'),
+    settle: (p) => waitFor(p, 'Dono ou administrador libera uma cópia.'),
   },
   {
     name: 'Integrações do Projeto sem nenhuma ligação',

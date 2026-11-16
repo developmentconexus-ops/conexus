@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { call, codeOf, memberOn } from '../identity/test-hub.ts'
+import { codeOf, memberOn } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 import { asSync, copiesOn } from './test-copies.ts'
 import {
@@ -13,19 +13,6 @@ import {
   proposed,
 } from './test-proposals.ts'
 import { firstEnded, runsPage } from './test-routes.ts'
-
-/** A developer whose role reads no operation of the connection's read door. */
-async function developerWithoutReads(on: CopiesOn) {
-  const who = { name: 'Davi Costa', email: 'davi@example.test' }
-  const developer = await memberOn(on.hub, on.companyId, who, 'developer')
-  const url = `/api/companies/${on.companyId}/roles/developer`
-  const changed = await call(on.hub, on.ana, 'PUT', url, {
-    connectors: { sankhya: ['pedidos'] },
-    unattended: false,
-  })
-  assert.equal(changed.statusCode, 200, changed.body)
-  return developer
-}
 
 test('ligar a proposta libera ao Projeto', async (t) => {
   const on = await copiesOn(t)
@@ -143,14 +130,15 @@ test('a mesma chave ao mesmo tempo dá a mesma cópia', async (t) => {
   assert.equal(enabled.length, 1, 'um COPY_ENABLED para uma cópia')
 })
 
-test('quem liga precisa poder ler', async (t) => {
+test('quem liga é dono ou administrador: o desenvolvedor e o membro recebem não encontrado', async (t) => {
   const on = await copiesOn(t)
   await grantMatriz(on)
   const proposalId = await proposed(on)
-  const developer = await developerWithoutReads(on)
+  const who = { name: 'Davi Costa', email: 'davi@example.test' }
+  const developer = await memberOn(on.hub, on.companyId, who, 'developer')
   const refused = await enableProposal(on, developer, proposalId)
-  assert.equal(codeOf(refused), 'NOT_IN_ROLE', refused.body)
-  assert.equal(Object(refused.json()).operation, 'Consulta')
+  assert.equal(refused.statusCode, 404, refused.body)
+  assert.equal(codeOf(refused), 'NOT_FOUND')
   const member = await enableProposal(on, on.carla, proposalId)
   assert.equal(member.statusCode, 404, member.body)
   assert.equal(codeOf(member), 'NOT_FOUND')

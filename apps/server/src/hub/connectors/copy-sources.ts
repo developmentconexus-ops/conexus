@@ -40,29 +40,6 @@ export async function connectionForCopy(
 }
 
 /**
- * The label of the first read of the connection's read door the person's role does not hold; none
- * when the role holds them all. The speaker is read in the caller's transaction; the role's answer
- * (`mayUseEach`) opens a transaction of its own. Who turns a proposal on must be able to read what
- * it copies (Capacidade 3).
- */
-export async function lackedReadOf(
-  deps: Pick<Deps, 'identity'>,
-  tx: ReadTx,
-  input: OfConnection & { connectorId: HubConnectorId; personId: PersonId },
-): Promise<string | undefined> {
-  const connector = connectorOf(input.connectorId)
-  const first = Object.values(connector?.readDoor ?? {})[0]
-  const speaker = await speakerOf(tx, input.companyId, input.personId)
-  if (connector === undefined || speaker === undefined)
-    return first === undefined ? input.connectorId : operationLabel(input.connectorId, first.id)
-  const lacked = await lackedDoorRead(deps, input.companyId, speaker, {
-    connectionId: input.connectionId,
-    connector,
-  })
-  return lacked === undefined ? undefined : operationLabel(input.connectorId, lacked.id)
-}
-
-/**
  * Whether the person's role uses the list read a version 2 copy reads, on each of its connections:
  * one `mayUseEach` entry per connection (never `ungrantedBy`, which resolves one connection per
  * connector). Proposing and turning a proposal on ask it; the refusal names the read by its label.
