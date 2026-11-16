@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, DATA_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, test, vi } from 'vitest'
@@ -121,6 +121,27 @@ function writeFailed(errorText: string): Stored {
     },
   }
 }
+
+function describeRefused(kind: string): Stored {
+  const refused = toolSaid(DATA_TOOL.describe, { table: 'sankhya_clientes' }, undefined)
+  const [part] = refused.content.parts
+  if (part?.type !== 'tool-invocation') throw new Error('not a tool part')
+  const errorText = JSON.stringify({ kind, status: null, body: null, code: null, message: null })
+  const { result: _result, ...call } = part.toolInvocation
+  part.toolInvocation = { ...call, state: 'output-error', errorText }
+  return refused
+}
+
+test('a tabela que o papel não lê mostra Essa tabela não está no catálogo. sem o nome dela (critério 86)', async () => {
+  at(OPEN, {
+    conversations: [assistantConversation({ messages: [describeRefused('NOT_IN_CATALOG')] })],
+  })
+  const sentence = await screen.findByText('Essa tabela não está no catálogo.')
+  expect(document.body.textContent).not.toContain('sankhya_clientes')
+  fireEvent.click(sentence)
+  expect(await screen.findByText('Essa tabela não está no catálogo.')).toBeTruthy()
+  expect(document.body.textContent).not.toContain('sankhya_clientes')
+})
 
 describe('a ferramenta que falhou', () => {
   test('a máquina que não ligou mostra a frase do Hub, não o código (QA F7)', async () => {

@@ -2,6 +2,7 @@ import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
   BUILDER_TOOL,
+  DATA_TOOL,
   readAssistantConversation,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
@@ -176,7 +177,49 @@ export function proposed(tool: string, content: string = BRIEFING): Said {
 const INSIDE = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/assistant/${ID}`
 const HANDOFF = `POST /api/companies/${COMPANY.id}/assistant/conversations/${ID}/handoffs`
 
+const NOT_IN_CATALOG = JSON.stringify({
+  kind: 'NOT_IN_CATALOG',
+  status: null,
+  body: null,
+  code: null,
+  message: null,
+})
+
+/** The Assistant asked for a table the person's role does not read: the row says so without naming the table. */
+const HIDDEN_TABLE: Said[] = [
+  {
+    id: 'q-hidden',
+    role: 'person',
+    parts: [{ type: 'text', text: 'Quanto vendi para cada cliente neste mês?' }],
+    createdAt: '2026-10-19T12:00:00.000Z',
+  },
+  {
+    id: 'a-hidden',
+    role: 'builder',
+    parts: [
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'output-error',
+          toolCallId: 'hidden',
+          toolName: DATA_TOOL.describe,
+          args: { table: 'sankhya_clientes' },
+          errorText: NOT_IN_CATALOG,
+        },
+      },
+      { type: 'text', text: 'Não consegui ver essa tabela. Peça a quem administra a empresa.' },
+    ],
+    createdAt: '2026-10-19T12:00:30.000Z',
+  },
+]
+
 export const ASSISTANT_STATES: State[] = [
+  {
+    name: 'Assistente, a tabela que o papel não lê',
+    path: ASSISTANT_PATH,
+    replies: cardReplies(null, HIDDEN_TABLE),
+    settle: (page) => waitFor(page, 'Essa tabela não está no catálogo.'),
+  },
   {
     name: 'Assistente, a conversa com leituras recusadas e o pedido de app',
     path: ASSISTANT_PATH,

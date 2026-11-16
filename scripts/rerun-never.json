@@ -6,6 +6,7 @@
     "apps/server/src/builder/conversation/conversation-refusal.test.ts",
     "apps/server/src/builder/conversation/permissions.test.ts",
     "apps/server/src/builder/data-tools/tools-refusals.test.ts",
+    "apps/server/src/builder/data-tools/tools.test.ts",
     "apps/server/src/builder/model-accounts/openai/sign-in-refusals.test.ts",
     "apps/server/src/hub/apps/app-access-journey.test.ts",
     "apps/server/src/hub/connectors/connections-oauth-logs.test.ts",
