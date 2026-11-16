@@ -16,7 +16,10 @@ export type MessageSource =
   | {
       kind: 'data'
       connector: string
-      system: string
+      /** The names of the connections the place gives, in the order of `systems`; a NOT_GIVEN one is not here. */
+      connections: readonly string[]
+      /** Whether one of them waits for a new authorization (NEEDS_REAUTH). */
+      reauth: boolean
       table: string
       at: string | null
       state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE'
@@ -69,10 +72,13 @@ function sourceOf(url: string, title: string | undefined): MessageSource | undef
 }
 
 function copiedFrom(origin: DataOrigin): MessageSource {
-  const system = origin.systems
-    .map((each) => (each.kind === 'NAMED' ? each.name : origin.connector))
-    .join(', ')
-  const base = { kind: 'data', connector: origin.connector, system, table: origin.table } as const
+  const base = {
+    kind: 'data',
+    connector: origin.connector,
+    connections: origin.systems.flatMap((each) => (each.kind === 'NAMED' ? [each.name] : [])),
+    reauth: origin.systems.some((each) => each.kind === 'NAMED' && each.state === 'NEEDS_REAUTH'),
+    table: origin.table,
+  } as const
   switch (origin.lastRun) {
     case 'COMPLETE':
       return { ...base, at: origin.lastRunEndedAt, state: 'FRESH' }
@@ -116,16 +122,25 @@ function liveRead(
 function liveOf(toolName: string, args: unknown, result: unknown): MessageSource[] {
   const read = LiveResult.safeParse(result)
   const named = liveRead(toolName, args)
-  const system = stringArg(args, 'connection')
-  if (!read.success || named === undefined || system === undefined) return []
+  const connection = stringArg(args, 'connection')
+  if (!read.success || named === undefined || connection === undefined) return []
   return [
-    { kind: 'data', ...named, system, table: named.operation, at: read.data.at, state: 'LIVE' },
+    {
+      kind: 'data',
+      ...named,
+      connections: [connection],
+      reauth: false,
+      table: named.operation,
+      at: read.data.at,
+      state: 'LIVE',
+    },
   ]
 }
 
 /** The one key a source is told apart by: a page's address, or a table of a system. */
 export function keyOf(source: MessageSource): string {
-  return source.kind === 'web' ? source.url : `${source.connector}:${source.system}:${source.table}`
+  if (source.kind === 'web') return source.url
+  return `${source.connector}:${source.connections.join(',')}:${source.table}`
 }
 
 /** The sources a message shows, each once: the pages the model cited and the data its tools read. */

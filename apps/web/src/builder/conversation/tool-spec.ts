@@ -4,6 +4,7 @@ import type {
   CARD_TOOLS,
   ClosedTool,
   CONSTRUTOR_TOOL,
+  ConnectorEntry,
   MACHINE_TOOL,
   SUBAGENT_TOOL,
   TASK_TOOLS,
@@ -73,6 +74,10 @@ export type ConnectorWords = {
   name: (connector: string) => string
   /** The logo of the connector a connection links, once the catalog is read. */
   logoOf: (connectionId: string) => string | undefined
+  /** The logo of a connector, once the catalog is read. */
+  logo: (connector: string) => string | undefined
+  /** How the connector links, for the words of a refused or refusing connection; `oauth2_code` for one the catalog lacks. */
+  auth: (connector: string) => ConnectorEntry['auth']
   /** What a connector's refusal says, in the words of the screen that links it (Integrações). */
   refusal: (connector: string | undefined, why: ConnectorRefusal) => string
 }
