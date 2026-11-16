@@ -1,4 +1,4 @@
-import type { DataOrigin } from '@conexus/hub-api'
+import type { DataOrigin, DataSystem } from '@conexus/hub-api'
 import { BUILDER_TOOL, DataResult, ReadCut } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
@@ -9,14 +9,15 @@ import { connectorOf, stringArg } from './tool-args.ts'
  * What a message's answer rests on: a page the model cited, from Mastra's `source` part (`linked`
  * is false for an address that is not `http:` or `https:`: the title shows as text and the address
  * is no link), or a company's data, copied (`FRESH`, `PARTIAL`, `STOPPED`, `at` null before the
- * first run) or read from the system as the answer was written (`LIVE`).
+ * first run) or read from the system as the answer was written (`LIVE`, whose one system is the
+ * connection the call named, `ACTIVE` for it answered).
  */
 export type MessageSource =
   | { kind: 'web'; url: string; title: string | undefined; domain: string; linked: boolean }
   | {
       kind: 'data'
       connector: string
-      system: string
+      systems: readonly DataSystem[]
       table: string
       at: string | null
       state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE'
@@ -69,10 +70,12 @@ function sourceOf(url: string, title: string | undefined): MessageSource | undef
 }
 
 function copiedFrom(origin: DataOrigin): MessageSource {
-  const system = origin.systems
-    .map((each) => (each.kind === 'NAMED' ? each.name : origin.connector))
-    .join(', ')
-  const base = { kind: 'data', connector: origin.connector, system, table: origin.table } as const
+  const base = {
+    kind: 'data',
+    connector: origin.connector,
+    systems: origin.systems,
+    table: origin.table,
+  } as const
   switch (origin.lastRun) {
     case 'COMPLETE':
       return { ...base, at: origin.lastRunEndedAt, state: 'FRESH' }
@@ -118,16 +121,19 @@ function liveRead(
 function liveOf(toolName: string, args: unknown, result: unknown): MessageSource[] {
   const read = LiveResult.safeParse(result)
   const named = liveRead(toolName, args)
-  const system = stringArg(args, 'connection')
-  if (!read.success || named === undefined || system === undefined) return []
+  const connection = stringArg(args, 'connection')
+  if (!read.success || named === undefined || connection === undefined) return []
+  const systems = [{ kind: 'NAMED', name: connection, state: 'ACTIVE' }] as const
   return [
-    { kind: 'data', ...named, system, table: named.operation, at: read.data.at, state: 'LIVE' },
+    { kind: 'data', ...named, systems, table: named.operation, at: read.data.at, state: 'LIVE' },
   ]
 }
 
 /** The one key a source is told apart by: a page's address, or a table of a system. */
 export function keyOf(source: MessageSource): string {
-  return source.kind === 'web' ? source.url : `${source.connector}:${source.system}:${source.table}`
+  if (source.kind === 'web') return source.url
+  const systems = source.systems.map((each) => (each.kind === 'NAMED' ? each.name : '')).join(',')
+  return `${source.connector}:${systems}:${source.table}`
 }
 
 /** The sources a message shows, each once: the pages the model cited and the data its tools read. */

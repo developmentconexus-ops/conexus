@@ -3,14 +3,17 @@ import { BUILDER_CONTROLLER } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useLocation } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { useMemo } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { Chat } from './chat.tsx'
+import { useConnectorWords } from './connector-words.ts'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
 import { ModelChoice } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendModel } from './queries.ts'
+import { BUILDER_ROOM, RoomContext } from './room.ts'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
 const route = getRouteApi(
@@ -33,25 +36,29 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 /** The Builder's conversation: the screen of `chat.tsx` on the Builder's controller, with the model's button. */
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
+  const { words } = useConnectorWords(companyId)
+  const room = useMemo(() => ({ ...BUILDER_ROOM, connectors: words }), [words])
   return (
-    <Chat
-      companyId={companyId}
-      conversationId={conversationId}
-      place={{ controller: BUILDER_CONTROLLER, projectId }}
-      conversationKey={conversationQuery(companyId, projectId, conversationId).queryKey}
-      listKeys={[allConversationsQueryKey(companyId, projectId)]}
-      empty={EMPTY_CONVERSATION}
-      picker={({ session, providers, onError }) => (
-        <ModelChoice
-          controller={BUILDER_CONTROLLER}
-          conversationId={conversationId}
-          write={{ ...sendModel, mutationFn: (body) => sendModel.mutationFn({ params, body }) }}
-          session={session}
-          providers={providers}
-          onError={onError}
-        />
-      )}
-    />
+    <RoomContext.Provider value={room}>
+      <Chat
+        companyId={companyId}
+        conversationId={conversationId}
+        place={{ controller: BUILDER_CONTROLLER, projectId }}
+        conversationKey={conversationQuery(companyId, projectId, conversationId).queryKey}
+        listKeys={[allConversationsQueryKey(companyId, projectId)]}
+        empty={EMPTY_CONVERSATION}
+        picker={({ session, providers, onError }) => (
+          <ModelChoice
+            controller={BUILDER_CONTROLLER}
+            conversationId={conversationId}
+            write={{ ...sendModel, mutationFn: (body) => sendModel.mutationFn({ params, body }) }}
+            session={session}
+            providers={providers}
+            onError={onError}
+          />
+        )}
+      />
+    </RoomContext.Provider>
   )
 }
 

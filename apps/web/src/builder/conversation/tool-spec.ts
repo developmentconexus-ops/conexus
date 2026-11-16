@@ -4,11 +4,13 @@ import type {
   CARD_TOOLS,
   ClosedTool,
   CONSTRUTOR_TOOL,
+  Connection,
   MACHINE_TOOL,
   SUBAGENT_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
+import type { stateBadge } from '../../hub/connectors/public.ts'
 import type { ToolItem } from './rows.ts'
 
 /** The tools that draw a row: the cards draw a card and the task tools the panel; the Assistant's own add three. */
@@ -73,6 +75,10 @@ export type ConnectorWords = {
   name: (connector: string) => string
   /** The logo of the connector a connection links, once the catalog is read. */
   logoOf: (connectionId: string) => string | undefined
+  /** The logo of a connector, once the catalog is read. */
+  logo: (connector: string) => string | undefined
+  /** The words and tone of a connection's state, as Integrações says them for this connector's way of linking; none for one never tested. */
+  badge: (connector: string, state: Connection['state']) => ReturnType<typeof stateBadge>
   /** What a connector's refusal says, in the words of the screen that links it (Integrações). */
   refusal: (connector: string | undefined, why: ConnectorRefusal) => string
 }

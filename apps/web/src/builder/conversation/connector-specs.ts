@@ -7,6 +7,7 @@ import {
   NotebookTextIcon,
 } from 'lucide-react'
 import { z } from 'zod'
+import { stateBadge } from '../../hub/connectors/public.ts'
 import type { WritesRead } from './approval-item.ts'
 import { writtenBy } from './approval-item.ts'
 import type { ToolItem } from './rows.ts'
@@ -134,6 +135,8 @@ const TOOL_FAILED = 'Não conseguiu ler o sistema da empresa.'
 export const PLAIN_WORDS: ConnectorWords = {
   name: (connector) => connector,
   logoOf: () => undefined,
+  logo: () => undefined,
+  badge: (_connector, state) => stateBadge({ state }, 'oauth2_code'),
   refusal: () => TOOL_FAILED,
 }
 
