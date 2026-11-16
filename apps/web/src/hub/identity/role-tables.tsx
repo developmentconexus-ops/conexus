@@ -37,7 +37,7 @@ function CopiedTable(props: {
         onCheckedChange={props.onChange}
       />
       <label htmlFor={id} className="flex min-w-0 flex-1 flex-col">
-        <span className="text-fact wrap-anywhere">{table.name}</span>
+        <span className="font-medium font-mono text-fact wrap-anywhere">{table.name}</span>
         <span className="text-text-2 wrap-anywhere">{table.about}</span>
       </label>
     </li>

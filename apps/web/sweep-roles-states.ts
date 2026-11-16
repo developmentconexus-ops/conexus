@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import type { Page } from 'playwright-core'
 import type { State } from './sweep-kit.ts'
 import { AGENT_PATH, agentReplies, COMPANY_ID, rolesReplies } from './sweep-roles.ts'
@@ -31,6 +32,10 @@ export const ROLES_STATES: State[] = [
     replies: rolesReplies(),
     settle: async (page) => {
       await page.getByRole('heading', { name: 'Dados copiados' }).waitFor()
+      const font = await page
+        .getByText('sankhya_vendas', { exact: true })
+        .evaluate((node) => getComputedStyle(node).fontFamily)
+      assert.match(font, /mono/i, `the table name is not in the mono font: ${font}`)
     },
   },
   {

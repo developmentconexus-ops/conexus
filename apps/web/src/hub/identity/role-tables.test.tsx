@@ -19,7 +19,7 @@ test('o papel Financeiro mostra Dados copiados no Sankhya com sankhya_clientes d
   open('/settings/roles?role=financeiro')
   const sankhya = within(await screen.findByRole('region', { name: 'Sankhya' }))
   expect(sankhya.getByRole('heading', { name: COPIED })).toBeTruthy()
-  expect(sankhya.getByText('sankhya_vendas')).toBeTruthy()
+  expect(sankhya.getByText('sankhya_vendas').classList.contains('font-mono')).toBe(true)
   expect(sankhya.getByText('Pedidos e notas de venda, um por linha.')).toBeTruthy()
   expect(tableBox('sankhya_vendas').getAttribute('aria-checked')).toBe('true')
   expect(tableBox('sankhya_clientes').getAttribute('aria-checked')).toBe('false')
