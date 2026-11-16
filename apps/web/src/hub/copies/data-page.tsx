@@ -5,7 +5,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { AppsLayer } from './apps-layer.tsx'
 import { NoteLine, useNote } from './copy-list.tsx'
-import { useMay, useRoleLabel } from './member.ts'
+import { useMay, useOwnRoleLabel } from './member.ts'
 import { NewCopy } from './new-copy.tsx'
 import { copiesQuery } from './queries.ts'
 import { RawLayer } from './raw-layer.tsx'
@@ -38,7 +38,7 @@ function BusinessLayer() {
 
 /** What a member reads under the title: whose tables the page lists; nothing until the role is named. */
 function RoleNote({ companyId }: { companyId: CompanyId }) {
-  const label = useRoleLabel(companyId)
+  const label = useOwnRoleLabel(companyId)
   return label === undefined ? null : (
     <p className="max-w-message text-text-2">{roleTablesText(label)}</p>
   )

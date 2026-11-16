@@ -12,7 +12,7 @@ export function useMay() {
 }
 
 /** The label of the person's own role, found among the roles that read the tables they see; none until read, or when no table names it. */
-export function useRoleLabel(companyId: CompanyId): string | undefined {
+export function useOwnRoleLabel(companyId: CompanyId): string | undefined {
   const person = useQuery(companyQuery(companyId))
   const readers = useQuery(copyReadersQuery(companyId))
   const role = person.data?.role
