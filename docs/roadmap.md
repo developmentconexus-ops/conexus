@@ -49,7 +49,8 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
 | `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-A fila do molde, de onde saem os dez de `D3`, e a ordem do Brain e da Ontologia depois de `D4` estão na
+A pergunta respondida com a origem, a primeira etapa de `D2`, fechou em 2026-11-16. O cartão de
+hoje, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
 página da [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**

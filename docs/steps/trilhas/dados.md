@@ -22,11 +22,13 @@ trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-A trilha está sem cartão em `docs/steps/` desde 2026-11-15: o cartão antigo da Ontologia da empresa
-saiu sem a etapa fechar, por palavra do fundador ("Aposentar"), e o cartão que entra é o da pergunta
-respondida com a origem, em rascunho no PR 1090. A Ontologia volta como a etapa do Negócio, com
-estudo e cartão próprios. O PR 1030 fica aberto como a fonte dela; o cartão aposentado está no
-histórico do `main`, no commit `8ced9430`.
+A pergunta respondida com a origem, a primeira etapa a caminho de `D2`, fechou em 2026-11-16: o
+fundador a usou no ar, e a linha de uso está no
+[arquivo de aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md). O cartão de hoje
+passa a ser o de Cada papel lê só o seu, a etapa 2, no PR 1106. A Ontologia volta como a etapa do
+Negócio, com estudo e cartão próprios; o PR 1030 fica aberto como a fonte dela, e o cartão antigo
+da Ontologia, aposentado em 2026-11-15 ("Aposentar"), está no histórico do `main`, no commit
+`8ced9430`.
 
 ## O que a trilha possui
 

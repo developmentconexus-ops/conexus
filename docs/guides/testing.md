@@ -94,6 +94,11 @@ choice of test tools.
   literal of such a shape in a test is refused. Failure: every 14.2 screen Bloqueia passed on
   hand-made `suspended`, `result.action` and event orders Mastra never produces. [GritQL
   `scripts/library-shapes.grit`; review]
+- **T30.** A test world **must** send each value in the format the server sends it, read from the
+  contract's schema or the server's own output, never a narrower form the screen happens to
+  accept: a timestamp carries the offset the server writes. Failure: the server sent the live
+  read's hour with the reader's offset, the screen parsed only `Z`, and the live source left the
+  Fontes block while every test, fed `Z`, passed. [review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
   in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
   bypass spelling. [review]
