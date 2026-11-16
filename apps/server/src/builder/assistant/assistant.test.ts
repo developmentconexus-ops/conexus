@@ -41,6 +41,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   // The model reads the cut of the answer and the file it was saved in, never the door's whole answer beside it.
   const answered = JSON.parse(result)
   assert.deepEqual(Object.keys(answered).sort(), [
+    'at',
     'bytes',
     'complete',
     'file',

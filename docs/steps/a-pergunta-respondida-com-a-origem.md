@@ -35,7 +35,8 @@ domingos de madrugada, que relê tudo e apaga da cópia o que foi apagado no sis
 
 1. No Hub no ar, abra o Assistente e pergunte "Quanto vendemos ontem?". Aparecem as linhas
    "Consultou o catálogo" e "Consultou sankhya_vendas, 1 linha", e a resposta termina com o bloco
-   Fontes: o sistema, a tabela e "copiado hoje às …".
+   Fontes: a logo do Sankhya, "Sankhya · Matriz", a tabela em letra de código e, à direita, um ponto
+   verde com "copiado hoje às …".
 2. Abra a linha "Consultou sankhya_vendas". Aparece a consulta que o agente rodou. Toque em
    **Copiar a consulta** e cole num lugar qualquer.
 3. Num Projeto com a cópia de vendas liberada, faça a mesma pergunta ao Builder. Ele usa as mesmas
@@ -63,9 +64,6 @@ que cada PR lista.
   negócio, Conceito e Ligações. Cada um entra com a parte que o faz funcionar. Também ficam de fora
   a contagem "18 de 22 descrições" e os botões Buscar, Filtrar e Colunas sobre a grade da Amostra,
   porque nenhuma referência conta descrições e uma amostra de 5 linhas não tem o que filtrar.
-- Na conversa do Builder, a fonte nomeia o sistema pelo nome técnico ("sankhya"), porque a conversa
-  do Projeto ainda não tem os nomes do catálogo, que o Assistente tem. O conserto é um PR pequeno
-  fora desta etapa.
 - Das pendências guardadas para o próximo cartão, a etapa toma uma: a 940, a linha com a data de
   alteração vazia que a cópia incremental nunca corrige, porque a passada inteira de domingo relê
   tudo e a corrige. As outras que tocam esta etapa esperam. A 1016 (as leituras ao vivo devolvem a
@@ -106,6 +104,46 @@ foram postas.
     Veredito: nativo; é a aba padrão do componente de abas que a página já usa.
   - **B2.** Abre na Amostra, como a `v10`.
 
+**A emenda de 2026-11-15.** Três mudanças, com as suas palavras do mesmo dia no arquivo de
+aprovação. O roteiro de uso não muda.
+
+- Uma tabela copiada de um sistema cuja conexão espera nova autorização, ou que o Projeto não
+  recebeu, continua legível pelo agente, como já é na página da tabela, na Amostra e no app.
+  O agente diz a origem pelo registro gravado da cópia, com o estado da conexão e de quando é a
+  cópia: no Início, "Sankhya · Matriz, conexão a reautorizar". Só num Projeto que não recebeu a
+  conexão ele nomeia apenas o sistema ("Sankhya"), nunca a conexão ("Matriz"), que é o que o app do
+  Projeto já vê. Antes, o agente recusava a tabela.
+- Uma consulta que o banco recusa por permissão diz na tela "Essa tabela não está no catálogo.", e
+  não mais "Seu papel não lê esta tabela.", que era falso num Projeto e revelava a tabela.
+- Um grupo novo, G2b, faz a primeira mudança e os consertos que a revisão de G2 deixou, antes de G3.
+
+**A emenda de 2026-11-16.** O texto deste cartão descreveu o bloco Fontes mais pobre que a tela que
+você aprovou, e a construção seguiu o texto. Você escolheu a tela A. Muda o passo 1 do roteiro; as
+suas palavras estão no arquivo de aprovação.
+
+- Antes, cada fonte era uma linha de texto cinza: "Sankhya · sankhya_vendas · copiado hoje às 08:45",
+  sem logo, sem o nome da conexão e com a rodada parada no mesmo cinza da cópia em dia.
+- Depois, cada fonte é uma linha com a logo do sistema, o sistema e a conexão ("Sankhya · Matriz",
+  sem repetir quando a conexão tem o nome do sistema), a tabela em letra de código numa pastilha e,
+  à direita, um ponto com as palavras de hoje: verde na cópia em dia e na leitura ao vivo, amarelo
+  na rodada parcial, vermelho na parada. A conexão que espera nova autorização ganha o selo
+  vermelho de Integrações ("Chaves recusadas"). No Projeto que não recebeu a conexão, só o sistema e
+  a logo. A leitura ao vivo diz "ao vivo · lido agora, às 00:37". A 390 px, a tabela e o ponto descem
+  para a segunda linha.
+- A conversa do Builder passa a mostrar a fonte com o mesmo nome e a mesma logo do Assistente
+  ("Sankhya", e não mais "sankhya").
+- Um grupo novo, G7, um PR só da tela, faz a mudança depois de G3.
+
+```
+1280 px
+  Fontes
+  [logo] Sankhya · Matriz  [sankhya_vendas]                  ● copiado hoje às 08:45
+390 px
+  Fontes
+  [logo] Sankhya · Matriz
+         [sankhya_vendas]  ● copiado hoje às 08:45
+```
+
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
@@ -113,9 +151,10 @@ foram postas.
 | G1 (um PR só do contrato e da conformidade, issue `contrato`) | U1 `withheld` sai do contrato e a lei da tabela escondida | O catálogo perde a segunda lista: a tabela que o papel não lê não aparece em lugar nenhum de `describe`, e pedi-la pelo nome responde `NOT_IN_CATALOG`, igual a um nome que não existe. A conformidade troca a lei da tabela retida pela lei da tabela escondida; a lei da consulta recusada pelo banco fica | `packages/hub-api/src/`, `apps/server/src/hub/data/` (uma linha e um teste), `scripts/rerun-never.json` | testing (T5, T10, T27); security S10 | nada; entra antes das ferramentas (parte 3, grupo 3) e do catálogo por papel (parte 4, grupo 6) |
 | G2 | U2 As duas ferramentas, os nomes, o fecho do Builder e o verificador | `data_describe` e `data_query` sobre o contrato, com a origem de cada tabela e a recusa lançada como erro da ferramenta; os nomes e a forma do resultado no dono único; a ordem do agente num texto só; a pasta nova fora da lista de migração; a linha mínima de cada uma na conversa | `apps/server/src/builder/data-tools/` (nova), `packages/hub-api/src/tools.ts`, `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/conversation/permissions.ts`, `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`, `apps/web/src/builder/conversation/` | testing, web | U1 (o catálogo sem `withheld`); a fonte de consulta, já no `main` (PR 1077) |
 | G2 | U3 A montagem nos três agentes, com a porta na raiz do servidor | O `data` da raiz do servidor chega ao Assistente, ao Builder e ao agente salvo; os três oferecem as duas ferramentas e trazem a ordem; o Construtor não; o bloco "## Data" do Builder manda ver linhas com `data_describe` | `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/builder/assistant/`, `apps/server/src/builder/conversation/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/app-data/context.ts` | testing | U2 |
-| G3 (um PR; depois dele, a QA, testing T25) | U4 O `at` da leitura ao vivo, os cenários `data-query` e `reads`, e as perguntas com resposta conhecida | A leitura ao vivo guarda a hora em que a resposta voltou; o fluxo nativo do Mastra gravado com as duas ferramentas de dado, de onde as telas leem o resultado; seis perguntas sobre o dado copiado no placar, com o número calculado do dublê | `apps/server/src/builder/connectors/`, `apps/server/src/builder/data-tools/` (só o ajudante de teste), `apps/server/src/builder/assistant/`, `apps/server/src/platform/` (gravações e o teste delas), `packages/hub-api/src/assistant.ts`, `scripts/`, `apps/web/src/builder/conversation/test-recorded.ts` | testing | U2, U3 |
-| G3 | U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa | Telas `p3-02`, `p3-06`, `p3-07`: a frase de cada estado, o detalhe ao lado, a consulta no corpo aberto com **Copiar a consulta**, o texto de cada recusa | `apps/web/src/builder/conversation/` | web, testing | U3, U4 (o cenário `data-query`) |
-| G3 | U6 O bloco Fontes com a origem do dado e a leitura ao vivo | Telas `p3-01`, `p3-04`, `p3-05`: a fonte de cada tabela lida (conector, tabela, hora da cópia, rodada parcial ou parada) e a da leitura ao vivo ("lido agora, às") | `apps/web/src/builder/conversation/`, `apps/web/sources.layout.test.ts` | web, testing | U3, U4 (os cenários `data-query` e `reads`) |
+| G2b (um PR só, emenda de 2026-11-15) | U2b A origem pelo registro gravado da cópia, e os fechamentos de G2 | O contrato leva em `kept` a fonte gravada de cada tabela no lugar de só o id: o nome, o conector e o estado da conexão (`NAMED`), ou, no catálogo de um Projeto que não recebeu a conexão, só o conector (`NOT_GIVEN`); quem monta o catálogo de cada lugar decide; as duas ferramentas leem toda tabela do catálogo e dizem a origem pelo que `kept` traz; sai a recusa por conexão fora de `systems` e o log `DATA_ORIGIN_UNREAD`; a frase de `NOT_IN_ROLE` manda listar o catálogo; os Fechamentos A, B e C do delta de G2 e o 6 da revisão | `packages/hub-api/src/` (`company-data.ts`, a conformidade, `assistant.ts`), `apps/server/src/hub/connectors/` (só `catalog-systems.ts`, `public.ts` e um teste), `apps/server/src/hub/data/` (`catalog.ts`, `deps.ts` e um teste), `apps/server/src/hub/copies/` (só `catalog-view.ts` e o seu teste), `apps/server/src/builder/data-tools/`, os três chamadores de `dataTools` (uma linha cada), `scripts/rerun-never.json`, `apps/web/src/builder/conversation/` (só a divisão de `tool-registry.ts`) | testing | G2 no `main` (PR 1095, merge `f1067f05`) |
+| G3 (um PR; depois dele, a QA, testing T25) | U4 O `at` da leitura ao vivo, os cenários `data-query` e `reads`, e as perguntas com resposta conhecida | A leitura ao vivo guarda a hora em que a resposta voltou; o fluxo nativo do Mastra gravado com as duas ferramentas de dado, de onde as telas leem o resultado; seis perguntas sobre o dado copiado no placar, com o número calculado do dublê | `apps/server/src/builder/connectors/`, `apps/server/src/builder/data-tools/` (só o ajudante de teste), `apps/server/src/builder/assistant/`, `apps/server/src/platform/` (gravações e o teste delas), `packages/hub-api/src/assistant.ts`, `scripts/`, `apps/web/src/builder/conversation/test-recorded.ts` | testing | U2, U3, U2b (a forma da origem) |
+| G3 | U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa | Telas `p3-02`, `p3-06`, `p3-07`: a frase de cada estado, o detalhe ao lado, a consulta no corpo aberto com **Copiar a consulta**, o texto de cada recusa | `apps/web/src/builder/conversation/` | web, testing | U3, U2b, U4 (o cenário `data-query`) |
+| G3 | U6 O bloco Fontes com a origem do dado e a leitura ao vivo | Telas `p3-01`, `p3-04`, `p3-05`: a fonte de cada tabela lida (conector, tabela, hora da cópia, rodada parcial ou parada) e a da leitura ao vivo ("lido agora, às") | `apps/web/src/builder/conversation/`, `apps/web/sources.layout.test.ts` | web, testing | U3, U2b, U4 (os cenários `data-query` e `reads`) |
 | G4 | U7 O caminho, a linha da cópia, as abas e a Visão geral | A página da tabela abre com "Dados › {sistema} › {tabela}", o logo, a linha "Copiada do {sistema} em … · N linhas" e as abas Visão geral (a de abertura), Colunas N, Amostra e Rodadas | `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/` (só `data.$copyId.tsx`), `apps/web/` (só `sweep-table-states.ts`), `docs/reference/` (só `screens.md`) | web, design, testing | PR 1085 mesclado (explorador, grupo 1) |
 | G4 | U8 O painel Detalhes | O painel ao lado das abas com Sistema, Frequência, Última rodada, Linhas e a frase do que fica no Hub; sai Ligação, Chave, Modo e Camada | `apps/web/src/hub/copies/`, `docs/reference/` (só `screens.md`) | web, design, testing | U7 |
 | G4 | U9 O ícone do tipo e o número da linha na amostra | Cada cabeçalho da Amostra com o ícone do tipo e o nome em mono; a primeira coluna com o número da linha | `apps/web/src/hub/copies/` | web, design, testing | U7 |
@@ -123,24 +162,29 @@ foram postas.
 | G6 | U11 A passada inteira no motor | Uma rodada pedida como inteira começa cada fonte do zero, fica marcada, e a fonte que fecha uma passada que leu tudo apaga o que sumiu, também numa cópia incremental | `apps/server/src/hub/copies/`, `apps/server/src/platform/` | data, testing | PR 1088 mesclado (a coluna `whole`) |
 | G6 | U12 A segunda linha do relógio | Toda cópia incremental ganha a linha semanal `schedule_<cópia>-whole` (domingo, 04:07, São Paulo), que anda com a normal; ela dispara a passada inteira ou é pulada com outra rodada aberta; ao subir, a cópia antiga ganha a linha que falta | `apps/server/src/builder/copy-clock/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/` (só um teste), `apps/server/src/main.ts` | testing | U11 |
 | G6 | U13 Passada inteira na aba Rodadas | A rota de rodadas devolve `whole`; a linha da rodada mostra "Passada inteira" depois do resultado, no computador e no celular | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/web/src/hub/copies/` | web | U11 |
+| G7 (um PR só do web, emenda de 2026-11-16; depois dele, a QA, testing T25) | U14 O bloco Fontes da tela A | Cada fonte numa linha com a logo, o sistema e a conexão sem repetir, a tabela numa pastilha de código, o estado com ponto e cor, o selo da conexão a reautorizar, a fonte `NOT_GIVEN` só com o sistema, a leitura ao vivo "ao vivo · lido agora, às"; a sala do Builder com o nome e a logo do catálogo; a 390 px, a tabela e o estado na segunda linha | `apps/web/src/builder/conversation/` (`sources.ts`, `sources.tsx`, `connector-words.ts`, `tool-spec.ts`, `connector-specs.ts`, `panel.tsx`, o hook do catálogo e os testes), `apps/web/src/builder/assistant/` (só `connector-names.ts`), `apps/web/src/ui/` (só `block.tsx`), `apps/web/sources.layout.test.ts` | web, design, testing | G3 no `main` (PR 1107, merge `d9f56971`) e o PR 1111 mesclado (`systemText` na porta de `hub/copies/`) |
 
-Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
+Oito grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
-- **A linha principal.** G1, G2 e G3, nesta ordem. G1 muda só o contrato e a conformidade, pela
+- **A linha principal.** G1, G2, G2b e G3, nesta ordem. G1 muda só o contrato e a conformidade, pela
   issue `contrato`. G2 é da trilha Agentes e Apps (delivery L1): suas pastas são as do Assistente, do
   Builder e da conversa, e a trilha Dados o lê, porque ele muda `packages/hub-api` (delivery L27).
+  G2b muda o contrato de G1 pela issue `contrato` e leva no mesmo PR quem o escreve e quem o lê
+  (decisão 29); as duas trilhas o leem.
 - **Ao lado.** G4, a página da tabela, parte do `main` com o PR 1085 mesclado e não divide pasta
   com os outros grupos. G5 e G6 partem do `main` com o PR 1088 mesclado. G6 não depende de G5,
   porque a passada inteira só usa permissões que já existem (`apps/server/database-grants.sql:406`,
   `:418-421`).
 - **Quem corre junto.** Depois de G1, os grupos G2, G4, G5 e G6 correm em paralelo, porque não
-  dividem arquivo. G3 espera G2. Dentro de G3, U5 e U6 correm em paralelo depois de U4. Dentro de
+  dividem arquivo. G2b espera G2, e G3 espera G2b. Dentro de G3, U5 e U6 correm em paralelo depois de U4. Dentro de
   G4, U8 vem antes de U9.
 - **A QA** ([testing T25](../guides/testing.md)) roda depois de G3 e de G4, que têm tela, e anda
   pelo roteiro de uso e pela matriz de estados.
+- **A emenda de 2026-11-16.** G7 parte do `main` com G3 e o PR 1111 mesclados; não divide arquivo
+  com G4, G5 nem G6. A QA de G7 compara o bloco com a tela A, elemento por elemento.
 
-**Orçamento de código alterado.** Total da etapa: cerca de 1.370 linhas, sem testes nem gerados.
-Cada unidade tem a sua estimativa abaixo.
+**Orçamento de código alterado.** Total da etapa: cerca de 1.620 linhas, sem testes nem gerados,
+mais as cerca de 120 que a U2b só move de arquivo. Cada unidade tem a sua estimativa abaixo.
 
 - U1: cerca de 30 linhas alteradas (sai mais do que entra), sem testes nem gerados.
 
@@ -148,6 +192,10 @@ G2 é um PR da trilha Agentes e Apps (delivery L1), lido pela trilha Dados por m
 
 - U2: cerca de 320 linhas (`tools.ts` 220, `order.ts` 25, `data-specs.ts` 35, o resto 40).
 - U3: cerca de 90 linhas.
+
+G2b é um PR só, do contrato, de quem o escreve e de quem o lê; não divide arquivo com G4, G5 nem G6.
+
+- U2b: cerca de 100 linhas (`tools.ts` 35, `assistant.ts` 10, `company-data.ts` e a conformidade 20, `catalog-systems.ts` 20, `catalog.ts`, `deps.ts` e `public.ts` 5, `catalog-view.ts`, os três chamadores, `app-data-specs.ts` e `tool-registry.ts` 10), mais cerca de 120 movidas de `tool-registry.ts` para `workspace-specs.ts`.
 
 U5 e U6 correm em paralelo depois de U4: dividem a pasta, mas não um arquivo (U5 muda `data-specs.ts`, `tool-spec.ts`, `tool-row.tsx`, `tool-bodies.tsx`; U6 muda `sources.ts`, `sources.tsx`).
 
@@ -167,9 +215,13 @@ U8 e U9 partem de U7 e não dividem arquivo de produção além de `copy-detail.
 - U12: cerca de 160 linhas.
 - U13: cerca de 25 linhas.
 
+G7 é um PR só do web, sem contrato, tabela, migração nem servidor.
+
+- U14: cerca de 150 linhas (`sources.tsx` 80, `sources.ts` 30, `connector-words.ts`, `tool-spec.ts` e `connector-specs.ts` 15, `panel.tsx` 20, `block.tsx` 5), e perto de 150 de teste.
+
 ## Os critérios de aceite
 
-Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69 e de 74 a 79, G5 de 70 a 73, G6 de 80 a 99), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar. A faixa de G4 encheu com a conferência no ar do explorador, e G5 só usa 70 a 73.
+Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69 e de 74 a 79, G5 de 70 a 73, G6 de 80 a 99, G2b de 100 a 109, G7 de 110 a 119), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar. A faixa de G4 encheu com a conferência no ar do explorador, e G5 só usa 70 a 73. Os critérios 15, 17 e 28 eram de U2 e passam a U2b, que os reescreve (emenda de 2026-11-15). Os critérios 42, 43, 45 e 47 eram de U6 e passam a U14: o 42 é reescrito, e o 43, o 45 e o 47 ganham o desenho da tela A (emenda de 2026-11-16).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
@@ -184,40 +236,49 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 12 | U2 | `data_describe` sem tabela devolve `CATALOG` com cada sistema (nome, conector, leituras) e cada tabela (nome, rótulo, descrição, sistemas, conector, `lastRunEndedAt`, `lastRun`), sem colunas; `lastRunEndedAt` é o `endedAt` de `kept.lastRun`, a última rodada encerrada com qualquer resultado, e é nulo com `lastRun: 'NONE'`; nenhum campo se chama `copiedAt`. A empresa sem sistema nem cópia recebe as duas listas vazias | `tools.test.ts`, "describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada" (uma tabela com a última rodada `ERROR`, outra sem rodada) e "o catálogo vazio dá CATALOG com as duas listas vazias" | must |
 | 13 | U2 | `data_describe({ table })` de uma tabela do catálogo devolve `TABLE` com as colunas, no máximo 5 linhas, `more: true` quando a página tem mais ou veio cortada, e a origem | `tools.test.ts`, "describe com tabela corta 200 linhas em 5 e diz more" | must |
 | 14 | U2 | `data_describe({ table })` de um nome fora de `tables` (inexistente, ou de uma cópia que o lugar não lê) falha com o erro da ferramenta `NOT_IN_CATALOG`, com "No such table in the catalog. Call data_describe with no table to list them." no `reason`, e não pede linha nenhuma à fonte | `tools.test.ts`, "describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha" | must |
-| 15 | U2 | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com os nomes e o conector dos sistemas tirados de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome e o conector do sistema do catálogo" | must |
+| 15 | U2b | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com o nome e o conector de cada fonte tirados do registro gravado da cópia (`kept.sources`), não de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome gravado e o conector da cópia" | must |
 | 16 | U2 | `data_query` cujo plano não nomeia tabela de `sync` devolve as linhas, `origin: []` e a frase "The origin of these rows was not identified: say so." | `tools.test.ts`, "query sem tabela no plano diz que a origem não foi identificada" | must |
-| 17 | U2 | Uma tabela com uma conexão que não está em `systems` faz `data_describe({ table })` e `data_query` falharem com `CATALOG_UNAVAILABLE`, sem linha, e o servidor registra `DATA_ORIGIN_UNREAD`; o id da conexão nunca vira nome | `tools.test.ts`, "um sistema fora do catálogo dá CATALOG_UNAVAILABLE e registra DATA_ORIGIN_UNREAD" | must |
+| 17 | U2b | Uma tabela é lida como as outras qualquer que seja o estado da sua conexão, e a origem diz o que `kept.sources` traz, sem olhar `systems`: `data_describe` sem tabela a lista, `data_describe({ table })` devolve `TABLE` com as linhas e `data_query` devolve `ROWS`. Uma fonte `NAMED` vira `{ kind: 'NAMED', name, state }`, com o nome gravado e o estado da conexão (`{ kind: 'NAMED', name: 'Loja A', state: 'NEEDS_REAUTH' }`); uma fonte `NOT_GIVEN` vira `{ kind: 'NOT_GIVEN' }`, sem nome nem id; numa cópia de duas conexões com uma `NOT_GIVEN`, `systems` é `[{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }, { kind: 'NOT_GIVEN' }]`. `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` trazem a frase de U2b sobre o estado e `NOT_GIVEN`. Recusa: nenhum `CATALOG_UNAVAILABLE` por conexão fora de `systems`, nenhum log `DATA_ORIGIN_UNREAD`, e nem o id nem o nome de uma fonte `NOT_GIVEN` aparecem no resultado | `tools.test.ts`, "a conexão à espera de nova autorização: a tabela é lida e a origem diz o nome e o estado", "a fonte não dada ao Projeto: a origem diz só NOT_GIVEN, sem nome", "uma cópia de duas conexões com uma não dada nomeia só a dada" e "as duas descrições dizem o estado da conexão e o que é NOT_GIVEN" | must |
 | 18 | U2 | Cada recusa (`QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `TABLE_UNAVAILABLE`, `NOT_IN_ROLE`, `NOT_IN_CATALOG`, `CATALOG_UNAVAILABLE`) sai pelo caminho nativo de falha da Mastra, como erro da ferramenta (code C79), com o seu `kind` e a frase ao modelo da tabela de U2 em `reason`; `QUERY_REFUSED` leva o SQLSTATE em `code` e a mensagem inteira do PostgreSQL em `message`. Recusa: nenhuma recusa volta como resultado de sucesso | `tools.test.ts`, "cada recusa sai como erro da ferramenta com a sua frase" (`test.each`, com `assert.rejects` sobre o JSON lançado) | must |
 | 19 | U2 | `data_query` com SQL vazio ou acima de 4000 caracteres é recusada pelo esquema de entrada, e a fonte `query` não é chamada | `tools.test.ts`, "o SQL vazio ou acima de 4000 caracteres é recusado pelo esquema" | must |
 | 20 | U2 | O conjunto fechado do Builder e o da tela são o mesmo e contêm `data_describe` e `data_query`; tirar os nomes de `READ` quebra a igualdade | `apps/server/src/builder/conversation/permissions.test.ts`, "a tela e o Builder nomeiam o mesmo conjunto fechado" | must |
 | 21 | U2 | Um arquivo de `builder/data-tools/` que importe `hub/connectors/public.ts` é recusado pelo verificador; a pasta não está na lista de migração | `scripts/rules-doors.test.ts`, o caso `BAD` de `agents-and-apps-reach-data-only-through-the-contract` | must |
 | 22 | U2 | Na conversa, `data_describe` e `data_query` têm frase de rodando, feito e falha | `apps/web/src/builder/conversation/tool-row.test.tsx`, "cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela (Critério 8)" | must |
-| 28 | U2 | Uma tabela copiada de duas conexões traz na origem os nomes das duas, na ordem de `kept.connections`: `data_describe({ table })` e `data_query` dizem `systems: ['Loja A', 'Loja B']`; o catálogo traz os mesmos dois nomes na tabela | `tools.test.ts`, "uma cópia de duas conexões nomeia as duas na origem" | must |
+| 28 | U2b | Uma tabela copiada de duas conexões traz na origem as duas, na ordem de `kept.sources`: `data_describe({ table })` e `data_query` dizem `systems: [{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }, { kind: 'NAMED', name: 'Loja B', state: 'ACTIVE' }]`; o catálogo traz as mesmas duas na tabela | `tools.test.ts`, "uma cópia de duas conexões nomeia as duas na origem" | must |
 | 23 | U3 | O Assistente, o Builder e o agente salvo oferecem `data_describe` e `data_query` ao modelo com a mesma descrição e o mesmo esquema | `apps/server/src/builder/data-tools/mounted.test.ts`, "o Assistente, o Builder e o agente salvo oferecem data_describe e data_query com a mesma descrição e o mesmo esquema" | must |
 | 24 | U3 | O Construtor não oferece nenhuma das duas | `mounted.test.ts`, "o Construtor não oferece data_describe nem data_query" | must |
 | 25 | U3 | As instruções dos três trazem `## Company data`, também o Builder num Projeto sem cópia liberada | `mounted.test.ts`, "a ordem do agente está nas instruções dos três, também num Projeto sem cópia" | must |
 | 26 | U3 | O bloco "## Data" do Builder, num Projeto com cópia liberada, manda ver colunas e linhas com `data_describe` e não diz mais "see a few rows with `app_data_read`" | `mounted.test.ts`, "o bloco de dados do Builder não manda ver linhas com app_data_read" | must |
 | 27 | U3 | Pela porta da raiz, o lugar decide o catálogo: o dono no Início chamando `data_describe` recebe a cópia da empresa; o Builder e o agente salvo do Projeto recebem só a cópia liberada a ele | `mounted.test.ts`, "data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada" | must |
 | 29 | U3 | O agente salvo do Projeto, usado por um membro que não é o seu autor, lê com o escopo de quem usa (`run.scope.personId`, `apps/server/src/builder/agents/agent.ts:178`): recebe a mesma cópia liberada ao Projeto que o autor recebe, e nenhuma outra cópia da empresa. Nesta etapa o papel não muda o catálogo do Projeto (a leitura por papel é a etapa 2) | `mounted.test.ts`, "o agente salvo usado por um membro lê o catálogo do Projeto, como o autor" | must |
+| 100 | U2b | Pela porta da raiz, no Início, com a conexão da cópia em `NEEDS_REAUTH`, o dono recebe de `data_describe` a tabela na lista com `systems: [{ kind: 'NAMED', name: 'Matriz', state: 'NEEDS_REAUTH' }]`, e `data_query` sobre ela devolve `ROWS` com as linhas da cópia e a mesma origem: o nome gravado e o estado, nunca só o conector | `mounted.test.ts`, "no Início, a conexão à espera de nova autorização: a tabela é lida, e a origem diz o nome e o estado" (o caso de hoje em `:160-170`, reescrito) | must |
+| 101 | U2b | Num Projeto que não recebeu a conexão (a Filial do mundo de teste) e tem a cópia dela liberada, o Builder recebe a tabela de `data_describe` com `systems: [{ kind: 'NOT_GIVEN' }]` e o conector `sankhya`; o resultado nunca contém "Filial". Recusa: o nome da conexão não sai num lugar que não a recebeu | `mounted.test.ts`, "o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz só o conector" | must |
+| 102 | U2b | O arquivo das recusas das ferramentas de dado volta a se chamar `tools-refusals.test.ts` e está em `scripts/rerun-never.json`; `scripts/rerun-exempt.test.ts` passa e falha sem a linha (testing T4) | `scripts/rerun-exempt.test.ts`, o caso de `:36-46` | must |
+| 103 | U2b | `DATA_SPECS` entra em `TOOLS` ao lado de `APP_DATA_SPECS`, que volta a ter só as duas ferramentas do dado do app; `tool-registry.ts` fica abaixo de 300 linhas sem as vazias, e as linhas da conversa não mudam | `apps/web/src/builder/conversation/tool-row.test.tsx`, o caso de `:185`; `npm run check` (Biome, `noExcessiveLinesPerFile`) | should |
+| 104 | U2b | O catálogo que o servidor monta para cada lugar (`createCompanyData`, `describe`) leva em `kept.sources` o nome, o conector e o estado de cada conexão: no Início, toda fonte é `NAMED`, também a de uma conexão em `NEEDS_REAUTH`; no catálogo de um Projeto, a fonte de uma conexão que o Projeto recebeu é `NAMED`, em qualquer estado, e a de uma que ele não recebeu é `{ kind: 'NOT_GIVEN', connector }`. Recusa: o catálogo de um Projeto nunca traz o nome de uma conexão que ele não recebeu | `apps/server/src/hub/data/data.test.ts`, caso novo "o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia a conexão que ele não recebeu" | must |
 
 | 30 | U4 | Uma leitura ao vivo que responde OK, por `connector_read` ou por uma leitura tipada, devolve ao modelo `at`, uma data ISO entre o antes e o depois da chamada, com e sem resposta inteira guardada na máquina. Recusa: uma leitura recusada (`REAUTH`, `REFUSED`, `READ_FAILED`, `NOT_GRANTED`) não ganha `at` | `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, caso novo "uma leitura OK leva a hora em que voltou", com e sem `whole`, e o caso de recusa | must |
 | 31 | U4 | `npm run record -- data-query` e `npm run record -- reads` gravam `apps/server/src/platform/recordings/mastra/data-query.jsonl` e `reads.jsonl` com o cabeçalho `@mastra/core` 1.82.0 e `source` `test-anthropic-stream.ts`, sem endereço nem credencial; `data-query` guarda `data_describe`, `data_describe({ table })`, `data_query` e a resposta, cada uma com o resultado real das ferramentas (`CATALOG`, `TABLE` e `ROWS` com `origin`). Recusa: uma gravação de `data-query` ou de `reads` com outra versão da Mastra, ou um `data-query` sem os três resultados, faz o caso falhar. As outras gravações, hoje em 1.79.0, não entram nesta conferência de versão | `apps/server/src/platform/recordings.test.ts`, caso novo "as gravações desta etapa são da Mastra instalada e guardam o resultado das ferramentas de dado" (a versão lida do `package.json` de `@mastra/core` comparada à do cabeçalho de `data-query` e de `reads`; os três `kind` lidos nas partes de `data-query`), e o caso de hoje com `data-query` em `NATIVE` e `STREAMED`; `apps/server/src/builder/assistant/numbers.test.ts` passa com `reads` regravado | must |
 | 32 | U4 | As seis perguntas do dado copiado (c1 a c6) têm cada uma a tabela da origem e o número esperado, calculados no teste pela função do dublê e pela consulta como dono no banco de teste, e os dois batem; as 27 do fundador continuam 27. Recusa: um número escrito à mão no teste | `apps/server/src/builder/assistant/assistant.scorecard.test.ts`, caso "as perguntas do dado copiado: cada uma com tabela, número e origem esperados, calculados do dublê" | must |
 | 33 | U4 | O placar julga certo um turno do Assistente que chama `data_query` e responde com o número lido e a tabela de `origin` esperada; julga errado o turno que lê o sistema ao vivo (`connector_read`) e o que cita outra tabela na origem (`sankhya_clientes` para c1). Recusa: `judgedCopy` devolve falso | `assistant.scorecard.test.ts`, caso "o placar do dado copiado julga certo um turno que consulta e cita a origem, e errado um que lê o sistema ao vivo", pelo Assistente de `assisting` com o dublê de modelo (testing T28) | must |
-| 34 | U4 | `CATALOG`, `TABLE` e `ROWS` de uma ferramenta de dado não contam como erro no placar (`errors` 0), e "Quanto pagamos de comissão?" (c4) é certa com prosa que nomeia uma tabela que existe e nenhuma chamada em erro. Recusa: um turno de c4 com um número, ou com uma recusa, é julgado errado | `assistant.scorecard.test.ts`, caso "não achei é resposta" | must |
+| 34 | U4 | `CATALOG`, `TABLE` e `ROWS` de uma ferramenta de dado não contam como erro no placar (`errors` 0), porque o placar conta a falha pela regra do `noToolErrors` e reconhece o sucesso pela forma `DataResult`, sem nome de ferramenta, e "Quanto pagamos de comissão?" (c4) é certa com prosa que nomeia uma tabela que existe e nenhuma chamada em erro. Recusa: um turno de c4 com um número, ou com uma recusa, é julgado errado | `assistant.scorecard.test.ts`, caso "não achei é resposta" | must |
 | 35 | U4 | O caso do modelo real das perguntas do dado copiado pula sem `CONEXUS_EVAL_REAL_MODEL`, com a razão começando por `opt-in:`; com a variável, grava um JSON por pergunta na pasta dela | `assistant.scorecard.test.ts`, caso "o modelo de verdade, as perguntas do dado copiado" | should |
 | 36 | U5 | `data_describe` sem tabela diz "Consultando o catálogo" enquanto roda e "Consultou o catálogo" depois, com "5 tabelas" ao lado ("1 tabela" no singular). Recusa: com a chamada em erro ou negada, diz "Não conseguiu ler o catálogo agora." | `apps/web/src/builder/conversation/data-specs.test.tsx`, caso "o catálogo: Consultou o catálogo, 5 tabelas" | must |
 | 37 | U5 | `data_describe({ table })` diz "Vendo sankhya_vendas" enquanto roda e "Viu sankhya_vendas" depois, com "5 linhas, há mais" quando a amostra tem `more`. Recusa: `NOT_IN_CATALOG` diz "Essa tabela não está no catálogo.", também para a tabela que o papel não lê (item (d): ela responde como uma que não existe) | `data-specs.test.tsx`, casos "a amostra: Viu sankhya_vendas, 5 linhas, há mais" e "cada recusa diz o seu texto" | must |
 | 38 | U5 | `data_query` diz "Consultando os dados" enquanto roda e "Consultou sankhya_vendas" depois, com "1 linha" ("n linhas", ", há mais" quando `complete` é falso); duas tabelas na origem aparecem juntas, separadas por vírgula. Recusa: um resultado fora do esquema dá "Consultou os dados", sem detalhe | `data-specs.test.tsx`, casos "rodando: Consultando os dados", "a consulta: Consultou sankhya_vendas, 1 linha", "um resultado fora do esquema dá a linha genérica" | must |
 | 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (com uma consulta de 1.200 caracteres, acima do corte de 800 de `shown`) e "a cópia recusada diz para selecionar" | must |
-| 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, caso "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) | must |
+| 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. `NOT_IN_ROLE`, a consulta que o banco recusou com `42501`, diz "Essa tabela não está no catálogo.", o texto de `NOT_IN_CATALOG`: nenhum texto nomeia papel nem confirma que a tabela existe. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, casos "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) e "a consulta recusada pelo banco diz que a tabela não está no catálogo" | must |
 | 41 | U5 | Na conversa do Builder (`BUILDER_ROOM`) as duas ferramentas têm as mesmas linhas e o mesmo corpo | `data-specs.test.tsx`, caso "na sala do Builder, as mesmas linhas" | must |
-| 42 | U6 | A resposta que leu uma tabela copiada mostra no bloco Fontes "Sankhya · sankhya_vendas · copiado hoje às 08:45": o nome do conector pelas palavras da sala, a tabela e a hora da cópia | `apps/web/src/builder/conversation/sources.test.tsx`, caso "a fonte do dado: Sankhya · sankhya_vendas · copiado hoje às 08:45" | must |
-| 43 | U6 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial", "a rodada com erro ou interrompida diz parada e nunca copiado", "sem rodada diz ainda sem cópia", "outro dia diz ontem ou a data" | must |
+| 42 | U14 | A fonte de cópia mostra numa linha a logo do conector (`ConnectorLogo small`), "Sankhya · Matriz" (o sistema e a conexão, sem repetir quando são iguais, por `systemText`), a tabela `sankhya_vendas` em `font-mono` sobre `bg-surface-3` e "copiado hoje às 08:45". Recusa: nunca "Sankhya · Sankhya", e nenhuma fonte sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
+| 43 | U14 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". O estado é um carimbo (`Stamp`, V35), como a tela A: a cópia em dia tem as palavras em `text-2` e só o ponto em `success`; "ainda sem cópia", as palavras em `text-2` e o ponto em `line-strong`; a parcial pinta palavras e ponto em `warning`, a parada em `danger`. Recusa: com `ERROR` ou `INTERRUPTED` nunca "copiado", porque a hora é de uma rodada que não copiou; nenhum estado só em cor; a cópia em dia nunca com as palavras verdes | `sources.test.tsx`, casos "a cópia em dia: as palavras em text-2 e o ponto em success", "a rodada parcial diz rodada parcial, em warning", "a rodada com erro ou interrompida diz parada, em danger, e nunca copiado", "sem rodada diz ainda sem cópia, com o ponto neutro", "outro dia diz ontem ou a data" | must |
 | 44 | U6 | A mesma tabela lida duas vezes no turno aparece uma vez; as páginas da web citadas continuam como hoje | `sources.test.tsx`, caso "a mesma tabela lida duas vezes aparece uma vez" e o caso de web de hoje com `kind: 'web'` | must |
-| 45 | U6 | A resposta que leu um sistema ao vivo mostra "Sankhya · Matriz · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "lido ontem às HH:MM" ou "lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz lido agora, às" com `reads` regravado e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
+| 45 | U14 | A leitura ao vivo mostra a logo, o sistema e a conexão sem repetir, a operação na pastilha e o carimbo "ao vivo · lido agora, às HH:MM", com as palavras em `text-2` e só o ponto em `success`, no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "ao vivo · lido ontem às HH:MM" ou "ao vivo · lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz ao vivo · lido agora, às" com `reads` regravado, "a leitura ao vivo de uma conexão com o nome do sistema não o repete" (do PR 1111) e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
 | 46 | U6 | Um resultado de ferramenta de dado fora do esquema não vira fonte, e nenhuma chamada em erro vira fonte | `sources.test.tsx`, caso "um resultado fora do esquema não vira fonte" | must |
-| 47 | U6 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela | `apps/web/sources.layout.test.ts`, caso novo "a fonte do dado" (testing T23) | should |
+| 47 | U14 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela. A 1280 px, a logo, o nome, a pastilha e o carimbo ficam numa linha só, com o carimbo na ponta direita; a 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao começo do nome; o carimbo que não cabe desce inteiro a uma terceira linha, no começo da linha da fonte. Recusa: nem o carimbo nem o selo quebram no meio | `apps/web/sources.layout.test.ts`, caso "a fonte do dado" (testing T23), que mede a posição da pastilha e do nome nas duas larguras e nos dois temas | must |
+| 110 | U14 | A fonte com a conexão em `NEEDS_REAUTH` mostra, depois do nome, o selo `danger` de `stateBadge`: "Chaves recusadas" num conector de chaves, "Pede para conectar de novo" num OAuth. Recusa: a conexão `ACTIVE` não mostra selo, nem "Funcionando" | `sources.test.tsx`, casos "a conexão à espera de nova autorização mostra o selo de Integrações" (os dois tipos de autenticação) e "a conexão ativa não mostra selo" | must |
+| 111 | U14 | A fonte `NOT_GIVEN` mostra a logo e só o sistema ("Sankhya"); numa cópia de duas conexões com uma `NOT_GIVEN`, só o nome da dada. Recusa: nem o id nem um nome no lugar da não dada | `sources.test.tsx`, casos "a fonte não dada ao Projeto mostra só o sistema e a logo" e "uma cópia de duas conexões com uma não dada nomeia só a dada" | must |
+| 112 | U14 | Na conversa do Builder, a fonte tem o nome ("Sankhya", não "sankhya") e a logo da conversa do Assistente, pelo catálogo de conectores; as recusas de conector do Builder continuam "Não conseguiu ler o sistema da empresa.". Recusa: com o catálogo não lido ou falho, o conector pelo id e sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id", e o caso de hoje da recusa de conector no Builder; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
+| 113 | U14 | Duas fontes na mesma resposta são duas linhas, cada uma com a sua logo, com uma linha fina entre elas e outra acima de "Fontes"; cada linha tem pelo menos 32 px. Recusa: duas fontes nunca na mesma linha | `sources.test.tsx`, caso "duas fontes são duas linhas, cada uma com a sua logo"; `sources.layout.test.ts`, "a fonte do dado" (as linhas finas e a altura) | must |
 | 50 | U7 | Em `/companies/<c>/data/<id>`, a navegação "Caminho" tem os links "Dados" e "{sistema}" e o nome da tabela em texto; os dois links levam a `/data` sem `layer` e com o `q` do endereço; nenhum dos dois tem `aria-current`. O link "← Dados" de hoje não existe mais | `copy-detail.test.tsx`, "o caminho" e "o caminho leva a busca" | must |
 | 51 | U7 | O topo mostra o nome da tabela como título, o estado, **Rodar agora** e o menu da cópia, como hoje; a frase "{sistema} · a cada {intervalo}" não aparece | `copy-detail.test.tsx`, "o caminho leva a Dados" (o antigo `:47-52`) e "as rodadas…" (`:15-45`, ajustado) | must |
 | 52 | U7 | Com a última rodada COMPLETE ou PARTIAL, a linha abaixo do título diz "Copiada do {sistema} em {dia e hora do fim} · {linhas} linhas" | `copy-detail.test.tsx`, "a linha da cópia: a hora do fim da rodada e as linhas" | must |
@@ -295,7 +356,10 @@ G2 não cria tela. A linha completa, o corpo e o bloco Fontes (tela `p3-02` da p
 | --- | --- | --- |
 | `DATA_TOOL.describe`, `DATA_TOOL.query` | U2, `packages/hub-api/src/tools.ts` | U3 (os três agentes), `permissions.ts`, a tela (`RowTool`, `TOOLS`) |
 | `DESCRIBE_SAMPLE_ROWS` | U2, `packages/hub-api/src/tools.ts` | `data_describe` (U2); G3 (o texto "5 linhas, há mais") |
-| `DataOrigin` (`systems`, `connector`, `table`, `lastRunEndedAt`, `lastRun`) e `DataResult` (`CATALOG`, `TABLE`, `ROWS`), esquemas Zod | U2, `packages/hub-api/src/assistant.ts`, ao lado de `ReadCut` (code C26) | `data-tools/tools.ts` (o tipo do resultado, por `z.infer`); o modelo; G3 (`presentDescribe`, `presentQuery`, `sourcesOf`) |
+| `DataOrigin` (`systems`, `connector`, `table`, `lastRunEndedAt`, `lastRun`) e `DataResult` (`CATALOG`, `TABLE`, `ROWS`), esquemas Zod | U2, `packages/hub-api/src/assistant.ts`, ao lado de `ReadCut` (code C26); U2b troca `systems` por uma lista de `DataSystem` | `data-tools/tools.ts` (o tipo do resultado, por `z.infer`); o modelo; G3 (`presentDescribe`, `presentQuery`, `sourcesOf`) |
+| `DataSystem` (`NAMED` com `name` e `state`, ou `NOT_GIVEN`) | U2b, `packages/hub-api/src/assistant.ts`, ao lado de `DataOrigin` | o modelo; `sourcesOf` (U6), na chave sem repetição |
+| `TableKept.sources` (`KeptSource[]`: `NAMED` com a conexão de `CopySource` e o estado, ou `NOT_GIVEN` com o conector; no lugar de `connections`) | U2b; escreve `catalogTables` (`apps/server/src/hub/copies/catalog-view.ts:37-53`), com o que o lugar nomeia, dado por `catalogOf` (`apps/server/src/hub/data/catalog.ts:7-30`) | `keeps` (`packages/hub-api/src/company-data.ts:234-242`), a conformidade, `data-tools/tools.ts` |
+| `catalogSources` (o estado de cada conexão que o lugar nomeia) | U2b, `apps/server/src/hub/connectors/catalog-systems.ts`, ao lado de `catalogSystemsOf` | `catalogOf`, pela porta `connectors()` de `DataDeps` |
 | O erro lançado de cada recusa (`kind`, `status`, `code`, `message`, `body`, `reason`) | U2 | o modelo; G3 (`thrownOf`) |
 | `DataOf` | U2 | U3 (cada agente o implementa) |
 | `ConversationsDeps.companyData` | U3, `main.ts` | U3, os três agentes |
@@ -306,7 +370,7 @@ G2 não cria tela. A linha completa, o corpo e o bloco Fontes (tela `p3-02` da p
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Linha de `data_describe` sem tabela (`p3-02`, `p3-07`) | Como qualquer turno: a linha aparece no primeiro uso | "Consultou o catálogo" e "0 tabelas"; o agente diz em prosa que não há tabela (`p3-03`, sem peça nova) | "Consultando o catálogo" | "Não conseguiu ler o catálogo agora." (erro ou negada) e "Não conseguiu ler a tabela agora." (`CATALOG_UNAVAILABLE`), critérios 36 e 40 | não se aplica (sem tabela pedida) | `NOT_GRANTED`: "Esta ligação não está disponível nesta conversa." | resultado fora do esquema: "Consultou o catálogo" sem detalhe |
 | Linha de `data_describe({ table })` (`p3-02`, `p3-07`) | igual | "Viu sankhya_vendas" e "Nenhuma linha." | "Vendo sankhya_vendas" | "Não conseguiu ler a tabela agora." (`TABLE_UNAVAILABLE`, `p3-06`) | "Essa tabela não está no catálogo." (também a tabela escondida, critério 37) | `NOT_GRANTED` como acima | fora do esquema: "Viu <tabela>" sem detalhe |
-| Linha de `data_query` (`p3-02`, `p3-06`, `p3-07`) | igual; aberta, a consulta e **Copiar a consulta** | "Consultou sankhya_vendas" e "Nenhuma linha." | "Consultando os dados" | "A consulta não rodou.", "A consulta trouxe dados demais.", "A consulta demorou demais.", "Não conseguiu ler a tabela agora." (critério 40); cópia recusada: "Não deu para copiar. Selecione a consulta e copie." (critério 39) | "Essa tabela não está no catálogo." | "Seu papel não lê esta tabela. Peça a quem administra a empresa." (o banco recusou com `42501`) | fora do esquema: "Consultou os dados" sem detalhe (critério 38) |
+| Linha de `data_query` (`p3-02`, `p3-06`, `p3-07`) | igual; aberta, a consulta e **Copiar a consulta** | "Consultou sankhya_vendas" e "Nenhuma linha." | "Consultando os dados" | "A consulta não rodou.", "A consulta trouxe dados demais.", "A consulta demorou demais.", "Não conseguiu ler a tabela agora." (critério 40); cópia recusada: "Não deu para copiar. Selecione a consulta e copie." (critério 39) | "Essa tabela não está no catálogo." | "Essa tabela não está no catálogo." (`NOT_IN_ROLE`: o banco recusou com `42501`; nenhum texto nomeia papel, critério 40) | fora do esquema: "Consultou os dados" sem detalhe (critério 38) |
 | Bloco Fontes, fonte de dado (`p3-01`, `p3-04`) | aparece na primeira resposta que leu uma tabela | resposta sem leitura de dado: nenhum bloco (como hoje) | enquanto a ferramenta roda, nenhuma fonte: a fonte nasce do resultado | recusa: nenhuma fonte (critério 46) | `NOT_IN_CATALOG`: nenhuma fonte | `NOT_IN_ROLE`: nenhuma fonte; a tabela escondida nunca é nomeada | "rodada parcial", "parada", "ainda sem cópia" (critério 43) |
 | Bloco Fontes, fonte ao vivo (`p3-05`) | primeira leitura ao vivo do turno | sem leitura ao vivo: nenhuma fonte | enquanto lê, nenhuma fonte | leitura recusada: nenhuma fonte | não se aplica | `REAUTH`/`REFUSED`: nenhuma fonte | sem `at` (gravação antiga): nenhuma fonte (critério 45) |
 
@@ -338,8 +402,9 @@ Desenho de caixas, a resposta com a fonte e a linha aberta (sala do Assistente; 
 |          |      +-------------------------------------------------------------------------+       |
 |          |      [Copiar a consulta]                                                               |
 |          | Em outubro de 2026 a Padaria Sol vendeu **R$ 24.560,70**, de sankhya_vendas.           |
+|          | ────────────────────────────────────────────────────────────────────────────────────── |
 |          | Fontes                                                                                 |
-|          |  Sankhya · sankhya_vendas · copiado hoje às 08:45                                      |
+|          |  [logo] Sankhya · Matriz  [sankhya_vendas]                     ● copiado hoje às 08:45  |
 +----------+----------------------------------------------------------------------------------------+
 
 390 px
@@ -356,11 +421,17 @@ Desenho de caixas, a resposta com a fonte e a linha aberta (sala do Assistente; 
 |  +------------------------------+  |
 |  [Copiar a consulta]               |
 | Em outubro ... **R$ 24.560,70**    |
+| ────────────────────────────────── |
 | Fontes                             |
-| Sankhya · sankhya_vendas ·         |
-| copiado hoje às 08:45              |
+| [logo] Sankhya · Matriz            |
+|        [sankhya_vendas]            |
+|        ● copiado hoje às 08:45     |
 +------------------------------------+
 ```
+
+O bloco Fontes deste desenho é o da emenda de 2026-11-16 (a tela A, U14); a caixa de 390 px é
+estreita demais para o desenho, e na tela a pastilha e o carimbo ficam na mesma segunda linha. O
+desenho fiel e a matriz dos seus estados estão em G7.
 
 As telas do protótipo que a unidade segue: `p3-01` (Resposta com origem), `p3-02` (Como cheguei), `p3-04` (Cópia atrasada), `p3-05` (Ao vivo), `p3-06` (O banco não respondeu) e `p3-07` (O Construtor) do escopo aprovado da camada de dados, seção 5. As frases vêm da spec (parte 3, `design.md`, `C5`), que o fundador aprovou depois do protótipo; onde o protótipo diz outra coisa, a spec vale, e a diferença está nas notas para a palavra dele.
 
@@ -478,12 +549,81 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 | Entrada `whole` de `service.run` e `runCopy` | o passo `run` (U12); `on.run` nos testes (U11) | `claim` (U11) |
 | `readAll` de `closePass` | `sourcePass` (U11) | `closePass` em `copy-sql.ts` (U11) |
 
+### G7
+
+A tela A do bloco Fontes, aprovada pelo fundador em 2026-11-16, fica fora do repositório, como
+`p3-01` (delivery L21); o desenho abaixo a descreve. As palavras são as de hoje; muda a forma.
+
+| Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bloco Fontes, fonte de cópia (U14) | logo, nome, pastilha, carimbo (42) | "ainda sem cópia" (43); sem leitura de dado, nenhum bloco | catálogo não lido: o id, sem logo (112) | catálogo falho: igual (112); recusa: nenhuma fonte (46) | nenhuma fonte | `NOT_GIVEN`: só o sistema (111); `NOT_IN_ROLE`: nenhuma fonte | parcial `warning`, parada `danger` (43); `NEEDS_REAUTH`: o selo (110) |
+| Bloco Fontes, fonte ao vivo (U14) | logo, nome, operação na pastilha, "ao vivo · lido agora, às" (45) | nenhuma fonte | nenhuma fonte | nenhuma fonte | não se aplica | `REAUTH`/`REFUSED`: nenhuma fonte | sem `at`: nenhuma; outro dia: "ao vivo · lido ontem às" (45) |
+
+Desenho dos estados a 1280 px, um estado por linha, com o tom à direita fora da tela (a coluna de
+leitura; uma linha fina sobre "Fontes"; cada fonte numa linha de 32 px; `[...]` é a pastilha de
+código em `surface-3`; `●` é o ponto de 6 px na cor do carimbo; `(…)` é o selo):
+
+```
+────────────────────────────────────────────────────────────────────────────────
+Fontes
+[logo] Sankhya · Matriz  [sankhya_vendas]                  ● copiado hoje às 08:45     success
+[logo] Sankhya  [consultar]                       ● ao vivo · lido agora, às 00:37     success
+[logo] Sankhya · Matriz  [sankhya_vendas]   ● rodada parcial, copiado hoje às 08:45    warning
+[logo] Sankhya · Matriz  [sankhya_vendas]                    ● parada hoje às 08:45    danger
+[logo] Sankhya · Matriz (● Chaves recusadas)  [sankhya_vendas]  ● copiado ontem às 22:30  selo danger
+[logo] Sankhya  [sankhya_vendas]                            ● copiado hoje às 08:45    NOT_GIVEN
+[logo] Sankhya · Matriz  [sankhya_vendas]                            ● ainda sem cópia  line-strong
+```
+
+Duas fontes na mesma resposta são duas linhas, cada uma com a sua logo:
+
+```
+Fontes
+[logo] Mercado Livre · Loja oficial  [mercado_livre_pedidos]       ● copiado hoje às 08:30
+────────────────────────────────────────────────────────────────────────────────
+[logo] Sankhya · Matriz  [sankhya_notas]                          ● parada ontem às 22:30
+```
+
+A 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao nome; o carimbo que não
+cabe desce inteiro à terceira, no começo da fonte:
+
+```
+──────────────────────────────────────────────
+Fontes
+[logo] Sankhya · Matriz
+       [sankhya_vendas] ● copiado hoje às 08:45
+──────────────────────────────────────────────
+[logo] Sankhya · Matriz (● Chaves recusadas)
+       [sankhya_vendas] ● copiado ontem às 22:30
+──────────────────────────────────────────────
+[logo] Sankhya · Matriz
+       [sankhya_vendas]
+● rodada parcial, copiado hoje às 08:45
+```
+
+| Elemento da tela A | Classe ou peça no Hub |
+| --- | --- |
+| Linha fina acima e "Fontes" em 600 | `border-t border-line pt-sm` na seção; o `h3` de hoje (`font-semibold text-text`) |
+| Linha da fonte | `li` com `flex flex-wrap items-center gap-x-sm min-h-8`; linha fina entre duas fontes (`border-t border-line` do segundo em diante) |
+| Logo | `ConnectorLogo small` (20/14 px) |
+| Sistema e conexão | `text-label font-medium text-text` |
+| Selo | `Badge` com o `tone` e o texto de `stateBadge` |
+| Tabela | `font-mono text-fact text-text`, `rounded-control bg-surface-3 px-xs`, quebra em qualquer ponto |
+| Carimbo | `Stamp` na ponta direita (`ml-auto`) a partir de `sm`; cópia em dia e ao vivo: `text-text-2` e o ponto em `success`; neutro: o ponto em `line-strong`; parcial e parada: o tom inteiro (decisão 33) |
+| 390 px | um quebrador `basis-full` abaixo de `sm` antes da pastilha; a pastilha com a margem da logo mais o espaço (`ml-7`) |
+
+| Campo de contrato | Quem escreve | Quem lê |
+| --- | --- | --- |
+| `MessageSource` `kind: 'data'` (`connector`, `connections`, `reauth`, `table`, `at`, `state`): `connections` troca a `system` juntada por vírgula | `sourcesOf` (U14), de `DataOrigin.systems` e do `args.connection` da leitura ao vivo | `Sources` (U14); `keyOf`, na chave sem repetição |
+| `ConnectorWords.logo(connector)` e `ConnectorWords.auth(connector)` | `wordsOf` (U14); `PLAIN_WORDS` responde `undefined` e `'oauth2_code'` | `Sources` (U14); `useConnectorCatalog().logo`, que passa a ser `words.logo` |
+| O `Room` do Builder com o nome e a logo do catálogo; `refusal` fica a de `PLAIN_WORDS` | `BuilderChat` em `panel.tsx` (U14), por `useConnectorCatalog` | as linhas da conversa do Projeto (`useRoom().connectors`) |
+
 ## A tabela de falhas
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Uma dependência fora | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `data_describe` (comando de leitura, sem gravação) | Independentes: não dividem estado | O `abortSignal` vai a `describe` e a `read`; nada a desfazer | O banco do Hub calado: `CATALOG_UNAVAILABLE`; o banco da empresa calado: `TABLE_UNAVAILABLE` | `DATA_ORIGIN_UNREAD` (tabela e conexão) quando o catálogo nomeia um sistema que não traz | 14, 17, 18 |
-| `data_query` (comando de leitura, uma transação só de leitura da fonte do `main`) | Duas transações só de leitura | O sinal vai a `read` e a `describe`; o prazo vira `DEADLINE` | Banco da empresa calado: `TABLE_UNAVAILABLE`, sem leitura ao vivo no lugar; Hub calado: `CATALOG_UNAVAILABLE` | `DATA_ORIGIN_UNREAD` (U2); `DATA_QUERY_FAILED`, `DATA_READ_REFUSED`, `DATA_PLAN_UNREAD` já vêm da fonte (`apps/server/src/hub/data/query.ts:88`) | 15, 16, 17, 18, 19 |
+| `data_describe` (comando de leitura, sem gravação) | Independentes: não dividem estado | O `abortSignal` vai a `describe` e a `read`; nada a desfazer | O banco do Hub calado: `CATALOG_UNAVAILABLE`; o banco da empresa calado: `TABLE_UNAVAILABLE`; a conexão da cópia fora de `systems`: a tabela é lida, com a fonte que `kept` traz, `NAMED` com o estado ou `NOT_GIVEN` (U2b) | nada novo: a ferramenta não registra a conexão fora de `systems`, que é estado normal (U2b tira o `DATA_ORIGIN_UNREAD` de U2) | 14, 17, 18, 100, 101 |
+| `data_query` (comando de leitura, uma transação só de leitura da fonte do `main`) | Duas transações só de leitura | O sinal vai a `read` e a `describe`; o prazo vira `DEADLINE` | Banco da empresa calado: `TABLE_UNAVAILABLE`, sem leitura ao vivo no lugar; Hub calado: `CATALOG_UNAVAILABLE`; a conexão da cópia fora de `systems`: as linhas voltam, com a fonte que `kept` traz (U2b) | `DATA_QUERY_FAILED`, `DATA_READ_REFUSED`, `DATA_PLAN_UNREAD` já vêm da fonte (`apps/server/src/hub/data/query.ts:88`) | 15, 16, 17, 18, 19, 100 |
 | `npm run record -- data-query` (U4) | os dois escrevem o mesmo `data-query.jsonl`; o roteiro é fixo, e o último a terminar fica, igual ao outro salvo a data | uma chamada de modelo a mais que `DATA_QUERY_CALLS` lança e nada é escrito; o arquivo antigo fica | nenhuma rede: `fetch` a outro endereço lança "The recording reaches no other address" | o erro, com código de saída diferente de zero | 31 |
 | `npm run record -- reads` (U4) | igual | igual, com `READS_CALLS` | igual | igual | 31 |
 | `saveWhole` da leitura ao vivo, agora com `at` no corte (U4, gravação de hoje) | cada leitura tem o seu caminho na máquina, como hoje | o arquivo que não se grava dá `saved: false` com `at` no corte, como hoje | a máquina fora: a resposta volta sem arquivo e com `at` | a linha de log de hoje de `saveWhole` | 30 |
@@ -498,7 +638,7 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 | `ensureWholeLines` ao subir | dois Hubs ao mesmo tempo: o `create` perdido é tratado como em `set` | uma empresa que falha não para as outras | banco do Hub fora: a empresa falha | `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`; `COPY_WHOLE_LINES` uma vez no fim, com `companies` e `count` | 92 |
 | A linha semanal disparada com a trava ocupada | — | — | — | `COPY_WHOLE_PASS_SKIPPED` com `companyId` e `copyId` | 91 |
 
-Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira um campo de resposta montado em memória), U3 (liga as ferramentas aos agentes), U6 (só lê o resultado guardado), U7, U8 e U9 (só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem; **Rodar agora** e o menu da cópia ficam como estão) e U13 (lê `whole` na rota de rodadas).
+Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira um campo de resposta montado em memória), U3 (liga as ferramentas aos agentes), U6 e U14 (só leem o resultado guardado e a lista de conexões, que já existe), U7, U8 e U9 (só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem; **Rodar agora** e o menu da cópia ficam como estão) e U13 (lê `whole` na rota de rodadas).
 
 
 ## A tabela de referência
@@ -511,22 +651,22 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | A lei da tabela escondida | U1 | `keepsWithheldTableOut`, `packages/hub-api/src/company-data-role-conformance.ts:8-21` | Molde: a lei vizinha `refusesReadOutsideCatalog` (`company-data-conformance.ts:198-207`) e `bb03b122` (#1072), ao contrário | — | nativo | — | uma lei sai e uma entra; a conta fica em 22 | nenhum |
 | As duas ferramentas | U2 | `apps/server/src/builder/app-data/tools.ts:65-86`, `apps/server/src/builder/connectors/typed-reads.ts:97-126` | O modelo oficial de agente SQL do Mastra 1.82 (`text-to-sql`, `introspect-database.ts:7-54`, `execute-sql.ts:14-44`): mesma situação. A plataforma de dados com catálogo e linhagem dá colunas, 5 linhas e depois a consulta (estudo de referência, fora do repositório, delivery L21, conferência P3.2; documentado) | Uma ferramenta inspeciona, outra executa; `createTool` com `inputSchema` Zod e `execute(input, context)` (`@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109`) | nativo | — | Igual. Diferente do modelo: quem recusa é o banco, e a ferramenta lança a recusa pelo caminho nativo de falha da Mastra (`TOOL_EXECUTION_FAILED`, `@mastra/core@1.82.0 dist/utils-BcF5eERx.js:1116-1125`), na forma que `refuse()` já lança (`apps/server/src/builder/agents/tools.ts:68-75`) e que `thrownOf` lê na tela (`apps/web/src/builder/conversation/connector-specs.ts:181-201`) (code C79) | `apps/server/src/builder/data-tools/tools.ts` |
 | Os nomes no dono único | U2 | `APP_DATA_TOOL`, `BUILDER_TOOL`, `CLOSED_TOOLS` em `packages/hub-api/src/tools.ts:40-68` | O Mastra Code fecha o conjunto num lugar (`mastracode/sdk/src/index.ts:858,1331`, citado em `permissions.ts:55-56`): mesma situação | Uma constante; o fecho e a tela a herdam | nativo | — | code C26 | — |
-| A origem de cada tabela | U2 | nenhuma (a fonte devolve `tables[].kept`, `packages/hub-api/src/company-data.ts:135`) | A plataforma de dados com catálogo e linhagem mostra as tabelas usadas no passo da consulta (estudo de referência, conferência P3.6; documentado) | As tabelas usadas saem do motor de consulta; o nome do sistema vem do catálogo | nativo (o `EXPLAIN` da fonte; o nome por `systems`) | — | Uma conexão fora de `systems` é recusa com log, nunca o id como nome | — |
-| A recusa com frase ao modelo | U2 | `NOT_GRANTED` e as frases em `apps/server/src/builder/connectors/connector-tools.ts:58`, `:171-186`; `refuse()` em `apps/server/src/builder/agents/tools.ts:68-75` | A plataforma de ingestão de referência devolve o erro com uma explicação provável (estudo de referência, conferência P3.10; documentado) | O texto do motor e uma frase do que fazer | nativo (o SQLSTATE e a mensagem do Postgres, lançados como erro da ferramenta) | — | o JSON de `refuse()` com `reason` a mais; a issue 1016 leva as leituras ao vivo ao mesmo caminho | — |
+| A origem de cada tabela | U2, U2b | `TableKept.connections` só com o id (`packages/hub-api/src/company-data.ts:34-42`); `catalogTables` lê o nome e o conector de cada fonte e os descarta (`apps/server/src/hub/copies/catalog-view.ts:24-57`); `catalogOf` monta o catálogo por lugar (`apps/server/src/hub/data/catalog.ts:7-30`); a ferramenta liga cada id a `systems` e recusa ou tira a tabela sem par (`apps/server/src/builder/data-tools/tools.ts:81-112`, `:136-141`); a página da tabela já diz a origem por `CopySource` (`packages/hub-api/src/copy-shown.ts:5-9`, `apps/web/src/hub/copies/copy-facts.tsx:75-77`) | Situação parecida, com três diferenças. Nossa situação: uma tabela já copiada cuja conexão espera nova autorização, ou que o Projeto não recebeu. A plataforma de ingestão de referência foi testada ao vivo com a fonte ativa, desativada e arquivada (visto), e a sua página de permissões (documentado); diferença 1: ela não testou uma credencial vencida, e a tabela estava vazia, então não provou que as linhas antigas ficam. A plataforma de dados com catálogo e linhagem tem os privilégios de tabela e de conexão como objetos separados (visto) e a tabela de streaming legível sem acesso à fonte (documentado); diferença 2: essa fonte é do próprio catálogo, não uma conexão com credencial vencida. Diferença 3: "quem lê não tem a conexão" foi provado só na forma (o formulário do token) e na documentação, e ninguém rodou o caso. A mesma plataforma mostra as tabelas usadas no passo da consulta (conferência P3.6; documentado). Estudos de referência do critério 17, fora do repositório (delivery L21) | A tabela é recurso próprio, com permissão própria, e a conexão governa só a ingestão: a tabela continua no catálogo e consultável com a fonte inativa, e a tela da tabela continua dizendo a origem pelo registro gravado da fonte e o estado dela; as tabelas usadas saem do motor de consulta | nativo (o `EXPLAIN` da fonte; a origem pelo `CopySource` que já tem dono) | — | A origem vem de `kept.sources`, que o catálogo de cada lugar monta: `NAMED` com o nome gravado e o estado, ou `NOT_GIVEN` só com o conector no Projeto que não recebeu a conexão (decisão 28); nenhuma recusa nem log. A referência mostra o identificador da fonte, não o nome dado pela pessoa; a conexão do Conexus não tem identificador legível (o id é um UUID, que nunca é nome, security S41), e o nome gravado é o que a pessoa vê na página da tabela; por isso dizemos o nome onde o lugar recebeu a conexão. As três diferenças não mudam o veredito: o que elas deixam sem prova (as linhas antigas ficam legíveis) o Conexus prova nos critérios 100 e 101 | — |
+| A recusa com frase ao modelo | U2 | `NOT_GRANTED` e as frases em `apps/server/src/builder/connectors/connector-tools.ts:58`, `:171-186`; `refuse()` em `apps/server/src/builder/agents/tools.ts:68-75` | A plataforma de ingestão de referência devolve o erro com uma explicação provável (estudo de referência, conferência P3.10; documentado) | O texto do motor e uma frase do que fazer | nativo (o SQLSTATE e a mensagem do Postgres, lançados como erro da ferramenta) | — | o JSON de `refuse()` com `reason` a mais; a issue 1016 leva as leituras ao vivo ao mesmo caminho. U2b troca a frase de `NOT_IN_ROLE`, que manda listar o catálogo | — |
 | A pasta fora da lista de migração | U2 | `AGENTS_AND_APPS` e `CONTRACT_MIGRATION` em `.dependency-cruiser.cjs:21-56`; `BAD` em `scripts/rules-doors.test.ts:20-33` | nenhuma: regra de engenharia nossa (conferência P3.13) | — | nativo (o `forbidden` do dependency-cruiser) | — | A pasta entra em `AGENTS_AND_APPS` e não na lista | — |
-| A linha mínima na conversa | U2 | `APP_DATA_SPECS` em `apps/web/src/builder/conversation/app-data-specs.ts:21-42`; `TOOLS` em `tool-registry.ts:47`, `:202` | O Factory do Mastra 1.82, uma linha por chamada (`mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:152`, `docs/reference/stack.md:20`): mesma situação | Uma linha por parte de ferramenta | nativo | — | Só o mínimo; G3 completa | `apps/web/src/builder/conversation/data-specs.ts` |
+| A linha mínima na conversa | U2, U2b | `APP_DATA_SPECS` em `apps/web/src/builder/conversation/app-data-specs.ts:23-45`, com `...DATA_SPECS` dentro (`:25`); `TOOLS` em `tool-registry.ts:47`, `:202` | O Factory do Mastra 1.82, uma linha por chamada (`mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:152`, `docs/reference/stack.md:20`): mesma situação | Uma linha por parte de ferramenta | nativo | — | Só o mínimo; G3 completa. U2b devolve `DATA_SPECS` a `TOOLS`, dividindo `tool-registry.ts` | `apps/web/src/builder/conversation/data-specs.ts` |
 | A ordem do agente | U2, U3 | `HOW_TO_READ` em `apps/server/src/builder/app-data/context.ts:19-25` | A plataforma de dados com catálogo e linhagem ensina buscar, ver 5 linhas, consultar com `LIMIT`, e "não achei" é resposta (estudo de referência, conferência P3.2 e P3.11; documentado) | Texto nas instruções | nativo (texto) | — | Um texto, três agentes | `apps/server/src/builder/data-tools/order.ts` |
 | A porta na raiz | U3 | `doorOf` em `apps/server/src/conversations-of.ts:34-48`, `:186`; `connectors: () => connectors` em `main.ts:162` | nenhuma de fora | A chamada tardia de `send` (`main.ts:155`) | nativo | — | Um só `createCompanyData`, o de `main.ts:205` | — |
-| A montagem nos três agentes | U3 | `tools` dinâmico em `assistant.ts:235-250`, `builder.ts:140-156`, `agent.ts:280-302` | `tools` como função da requisição (`@mastra/core@1.82.0 dist/agent/types.d.ts:516`): mesma situação | `DynamicArgument<ToolsInput>` | nativo | — | — | — |
+| A montagem nos três agentes | U3 | `tools` dinâmico em `assistant.ts:235-250`, `builder.ts:140-156`, `agent.ts:280-302` | `tools` como função da requisição (`@mastra/core@1.82.0 dist/agent/types.d.ts:673-675`): mesma situação | `DynamicArgument<ToolsInput>` | nativo | — | — | — |
 | A ferramenta dentro do modo código | U3 | `codeModeOf(ofTheAgent, …)` em `agent.ts:290` | `createCodeMode` chama `execute` com `requestContext` e `abortSignal`, sem `agent` (`@mastra/core@1.82.0 dist/tools-BVDic2bB.js:478-485`) | — | nativo | — | Aceito: o agente salvo numa máquina chama as duas do programa | — |
 | A hora da leitura ao vivo | U4 | `readOn` devolve o corte sem hora, `connector-tools.ts:218-235` | Mastra 1.82, mesma situação: o resultado da ferramenta é guardado na mensagem (`@mastra/core@1.82.0 dist/docs/references/reference-storage-overview.md:54`, a parte `tool-invocation`) | o que a tela precisa ler depois vai no resultado da chamada | nativo (o resultado da ferramenta) | | o `at` entra uma vez em `readOn`, para `connector_read` e as leituras tipadas | nenhum |
 | O cenário gravado `data-query` | U4 | `nativeRecording`, `apps/server/src/platform/test-recordings.ts:77-89`; o cenário `reads`, `scripts/record.ts:12-14`, `:89`, `:137`, `:148` | o `AgentController` real do Mastra 1.82 com a loja em memória (testing T26), mesma situação | grava os eventos e as linhas que o Mastra emite e guarda | nativo | | um cenário a mais em `Scenario`, `CALLS` e `asked` | `apps/server/src/platform/recordings/mastra/data-query.jsonl` (gerado), `apps/server/src/builder/data-tools/test-data.ts` |
-| As perguntas com resposta conhecida | U4 | `test-scorecard.ts:58-161` (27 perguntas, nenhuma de cópia), `failed` `:169-178` | a regra do próprio Mastra para ferramenta que falhou (`checks.noToolErrors`, citada em `failed`); a plataforma de dados de referência avalia o agente com perguntas de resposta conhecida (estudo de referência, fora do repositório, delivery L21, seção 3.7; documentado) | um conjunto de perguntas com a resposta certa calculada, julgado por turno | nativo (o placar de hoje, uma lista a mais) | | `COPY_QUESTIONS` separada das 27 | nenhum |
-| A linha da ferramenta e a consulta recolhida | U5 | `ToolRow`, `tool-row.tsx:370`; `Block`, `:129`; `ToolBody` no molde do Factory (`tool-spec.ts:34`) | a plataforma de dados de referência mostra a consulta gerada, recolhida, embaixo da resposta (estudo de referência, fora do repositório, delivery L21, seção 3.7; decisão E3a do escopo; documentado); o Mastra Code Factory, `ToolCard.tsx:32-67` | a chamada recolhida, o corpo aberto com a entrada | nativo (o molde do Factory, um corpo a mais) | | `ToolBody` ganha `'query'` | nenhum |
-| Os textos de recusa | U5 | `LOCAL_REFUSALS`, `connector-specs.ts:144-148`; `refusal` e `Refusal`, `tool-spec.ts:68`, `:106-107` | o molde de hoje das ferramentas dos agentes que lançam a recusa (`thrownOf` e `failureDetail`, `connector-specs.ts:181-235`), mesma situação | a recusa é o erro da ferramenta com `kind`, e a linha o lê | nativo | | sem `withheld`: a tabela escondida cai em `NOT_IN_CATALOG` (item (d)) | nenhum |
-| **Copiar a consulta** | U5 | nenhum `navigator.clipboard` em `apps/web/src` | a API de área de transferência do navegador (`navigator.clipboard.writeText`) | escreve o texto e responde por promessa | nativo | | | nenhum |
+| As perguntas com resposta conhecida | U4 | `test-scorecard.ts:58-161` (27 perguntas, nenhuma de cópia), `failed` `:169-178` | a regra do próprio Mastra para ferramenta que falhou (`checks.noToolErrors`, `@mastra/evals@1.10.11 dist/checks-DXG9awTJ.js:317-345`, citada em `failed`); a plataforma de dados de referência avalia o agente com perguntas de resposta conhecida (estudo de referência, fora do repositório, delivery L21, seção 11.6; visto, a tela com as perguntas e a coluna de acerto, sem rodada feita) | um conjunto de perguntas com a resposta certa calculada, julgado por turno | nativo (o placar de hoje, uma lista a mais) | | `COPY_QUESTIONS` separada das 27; `failed` conta a falha pela regra do `noToolErrors` e reconhece o sucesso de dado pela forma `DataResult`, sem exceção por nome de ferramenta | nenhum |
+| A linha da ferramenta e a consulta recolhida | U5 | `ToolRow`, `tool-row.tsx:370`; `Block`, `:129`; `ToolBody` no molde do Factory (`tool-spec.ts:34`) | a plataforma de dados de referência mostra a consulta gerada, recolhida, embaixo da resposta (estudo de referência, fora do repositório, delivery L21, seção 11.6; decisão E3a do escopo; visto); o Mastra Code Factory, `ToolCard.tsx:32-67` | a chamada recolhida, o corpo aberto com a entrada | nativo (o molde do Factory, um corpo a mais) | | `ToolBody` ganha `'query'` | nenhum |
+| Os textos de recusa | U5 | `LOCAL_REFUSALS`, `connector-specs.ts:144-148`; `refusal` e `Refusal`, `tool-spec.ts:68`, `:106-107` | o molde de hoje das ferramentas dos agentes que lançam a recusa (`thrownOf` e `failureDetail`, `connector-specs.ts:181-235`), mesma situação | a recusa é o erro da ferramenta com `kind`, e a linha o lê | nativo | | sem `withheld`: a tabela escondida cai em `NOT_IN_CATALOG` (item (d)); `NOT_IN_ROLE` de uma consulta diz o mesmo texto, porque o `42501` também sai num Projeto e numa escrita, onde "seu papel" é falso, e confirmaria a tabela escondida | nenhum |
+| **Copiar a consulta** | U5 | nenhum `navigator.clipboard` em `apps/web/src` | a plataforma de dados de referência abre a consulta gerada num bloco com um botão de copiar no canto (estudo de referência, fora do repositório, delivery L21, seção 11.6; visto); a API de área de transferência do navegador (`navigator.clipboard.writeText`) | escreve o texto e responde por promessa | nativo | | | nenhum |
 | A origem até a tela | U6 | `sourcesOf`, `sources.ts:8-46`; `specOf` lê o resultado, `tool-registry.ts:244` | o resultado da ferramenta, que o Mastra guarda; `writer.custom` não chega vivo sob o controlador (`apps/server/src/builder/model-accounts/processors.ts:64-68`; `@mastra/core` 1.82 `agent-controller/session-run-engine.ts:1618-1619`) | a tela lê o resultado guardado da chamada | nativo | | a origem vai em `origin` do resultado (U2), com a forma em `DataResult` de `@conexus/hub-api` | nenhum |
-| O bloco Fontes de dado | U6 | `Sources`, `sources.tsx:4-34`, só páginas da web | a plataforma de dados de referência diz a tabela de onde a resposta veio (estudo de referência, fora do repositório, delivery L21, seção 3.7; documentado); a parte `source` do Mastra para a web, mesma peça | a origem embaixo da resposta | nativo (o bloco de hoje, um caso a mais na união) | | `MessageSource` vira união com `kind` | nenhum |
+| O bloco Fontes de dado | U6 | `Sources`, `sources.tsx:4-34`, só páginas da web | a plataforma de dados de referência diz a tabela de onde a resposta veio (estudo de referência, fora do repositório, delivery L21, seção 11.6; visto); a parte `source` do Mastra para a web, mesma peça | a origem embaixo da resposta | nativo (o bloco de hoje, um caso a mais na união) | | `MessageSource` vira união com `kind` | nenhum |
 | O caminho da tabela | U7 | `copy-detail.tsx:152-159`, o link "← Dados" com `ArrowLeftIcon` | a plataforma de dados com catálogo e linhagem, na página da tabela (estudo de referência, fora do repositório, delivery L21, seção 11.3; visto nas capturas, não oficial); a `v10` aprovada | um caminho de links acima do título; aqui com `Link` do TanStack Router e `activeOptions={{ exact: true }}` (`@tanstack/react-router@1.170.44 dist/esm/link.js:35-37`, `:235-238`) | nativo | — | os dois links vão a `/data` sem `layer` (a camada de hoje é a Bruta) e levam o `q` | — |
 | A linha da cópia | U7 | `copy-detail.tsx:164-168`, "{sistema} · a cada {intervalo}" | a plataforma de ingestão de referência, no painel da tabela com linhas e datas (estudo de referência, seção 3.5; visto, não oficial); a `v10` | a hora e as linhas da última carga ao lado do nome | nativo | — | "Copiada do … em" só com COMPLETE ou PARTIAL, a hora é `endedAt` | — |
 | As abas da tabela e a de abertura | U7 | `copy-detail.tsx:197-226`; a aba padrão `columns` em `:146`; `TableTab` em `search.ts:12` (no head do PR 1085 (`689ece4a`)) | as duas plataformas abrem a tabela na visão geral (estudo de referência, seções 3.5 e 11.3; visto, não oficial) | Overview primeiro, as outras abas depois | nativo | — | `Tabs` do Base UI (`ui/tabs.tsx`), sem mudança na peça | — |
@@ -548,17 +688,25 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | Pular com outra rodada aberta | U12 | a trava de `claim` em `run.ts` devolve `RUNNING` | a plataforma de dados com catálogo e linhagem pula a execução que chega com outra em curso (estudo de referência, documentado) | pula, sem fila | nativo | — | pular e imprimir o código | — |
 | A passada ao subir | U12 | os passes de `main.ts:261-274`; o escopo de empresa sem pessoa e o log por empresa em `repairApps`, `hub/apps/repair.ts:218-236` | mesma situação: `repairApps` | por empresa, falha registrada, segue | nativo | — | `ensureWholeLines` na forma de `repairApps` | `apps/server/src/hub/copies/whole.ts` |
 | "Passada inteira" na linha da rodada | U13 | `RunRow` e `RunPhoneRow` em `copy-detail.tsx:36-60`; `outcomeText` em `text.ts:175-189` | o protótipo `b2-rodadas-inteira` | a marca em `text-2` depois do resultado | nativo | — | — | — |
+| A linha fina e "Fontes" (tela A) | U14 | `sources.tsx:31-36`, sem linha | o protótipo `p3-01` | uma linha fina sobre o título | nativo | — | — | — |
+| A logo da fonte (tela A) | U14 | sem logo no bloco; `ConnectorLogo small` nas linhas de ferramenta (`tool-bodies.tsx:147-151`); o `logo` do kit no catálogo (`packages/hub-api/src/connectors.ts:58`) | `p3-01`; a plataforma de ingestão de referência põe a logo do conector em cada fonte (capturas fora do repositório, delivery L21; visto, não oficial) | a logo numa placa antes do nome | nativo | — | `ConnectorWords.logo` | — |
+| O sistema e a conexão, sem repetir (tela A) | U14 | `copiedFrom` junta os nomes e a fonte de cópia não os mostra (`sources.ts:71-90`); `systemText` (`apps/web/src/hub/copies/text.ts:37-41`, critério 74, PR 1111) | `p3-01` ("Sankhya · Matriz") | o sistema e a conexão ao lado | nativo (`systemText`) | — | `NOT_GIVEN` fora da lista (decisão 28) | — |
+| A tabela numa pastilha de código (tela A) | U14 | a tabela no cinza da frase (`sources.tsx:34`) | `p3-01` (mono); a plataforma de dados com catálogo e linhagem põe as tabelas usadas em pastilhas (capturas fora do repositório; visto, não oficial) | a tabela em mono num fundo próprio | nativo (o mono em `surface-3` de `tool-bodies.tsx:20`) | — | — | — |
+| O estado com ponto e cor (tela A) | U14 | `copiedText` só em palavras, em `text-2` (`sources.tsx:8-19`) | `p3-04` (ponto vermelho na parada); a plataforma de ingestão de referência diz o estado da fonte em palavra e cor (capturas fora do repositório; visto, não oficial); o Stamp do `DESIGN.md:558-561` | a palavra com o ponto na cor, na ponta | nativo (`Stamp`, `block.tsx:37-48`, V35) | — | o neutro em `line-strong` (decisão 33) | — |
+| "ao vivo" (tela A) | U14 | `liveText`, `sources.tsx:21-25` | `p3-05` | "ao vivo" junto da hora | nativo | — | decisão 34 | — |
+| O selo da conexão a reautorizar (tela A) | U14 | `copiedFrom` descarta `systems[].state` (`sources.ts:72-74`) | nenhuma: nosso, `stateBadge` de Integrações (`apps/web/src/hub/connectors/text.ts:35-45`) | o selo com a palavra depois do nome | nativo (`stateBadge`, `Badge`) | — | decisão 32 | — |
+| O nome e a logo do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`room.ts:80-86`); o Assistente lê o catálogo (`connector-names.ts:14-21`) | o Assistente desta etapa | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo | — | o hook vai para `builder/conversation/`, um dono; as recusas ficam as de `PLAIN_WORDS` | o hook em `builder/conversation/` |
 
 **A medida do transplante.** Nenhuma parte vem do repositório antigo.
 
-**A dívida.** Nenhuma nova. A sala do Builder com o nome técnico do sistema fica nas decisões do
-firstmate, com o conserto.
+**A dívida.** Nenhuma nova. A sala do Builder com o nome técnico do sistema sai com U14 (emenda de
+2026-11-16).
 
 ## As decisões do firstmate
 
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
-| 1 | A divisão em etapas: esta é a primeira de oito, com a linha principal (contrato, ferramentas, origem) e, ao lado, a página da tabela e a passada inteira | A ordem do fundador, "A Essas juntas"; a qualidade e a parte 2 ficam antes do Negócio, como na tabela de ordem da proposta aprovada. O orçamento da etapa ficou em cerca de 1.370 linhas, abaixo do teto da delivery L2 | Mover unidades entre as etapas antes do cartão seguinte |
+| 1 | A divisão em etapas: esta é a primeira de oito, com a linha principal (contrato, ferramentas, origem) e, ao lado, a página da tabela e a passada inteira | A ordem do fundador, "A Essas juntas"; a qualidade e a parte 2 ficam antes do Negócio, como na tabela de ordem da proposta aprovada. O orçamento da etapa ficou em cerca de 1.470 linhas com a emenda, abaixo do teto da delivery L2 | Mover unidades entre as etapas antes do cartão seguinte |
 | 2 | O cartão entra num pull request em rascunho enquanto `a-ontologia-da-empresa.md` ocupa a vaga da trilha | Delivery L5: o próximo cartão de uma trilha espera no seu rascunho, e a verificação `processo` só fica vermelha num pull request fora do rascunho | Marcar o pull request como pronto quando a vaga abrir |
 | 3 | A spec de três arquivos (`trilhas/dados-spec/`) fica no repositório até a última etapa que a substitui | Ela ainda guarda o que as etapas 2 a 6 vão converter; o método a tira quando o próximo cartão a substituir | Apagar a pasta no fechamento da última etapa que a usa |
 | 4 | O critério 4 acrescenta uma asserção no teste do servidor sobre as chaves do `describe` cru | O tipo do retorno de `catalogOf` é inferido do callback de `deps.database.read`; um `withheld: []` esquecido provavelmente compila (inferido, não medido), e `Catalog.parse` no teste o apagaria (Zod tira chave desconhecida) | tirar a asserção; o critério 6 fica sozinho |
@@ -568,7 +716,7 @@ firstmate, com o conserto.
 | 8 | O critério 27 entra (a porta provada de ponta a ponta) | Nenhum teste da spec provava a porta ligada ao lugar certo; `Sent.toolResults` lê o resultado (`apps/server/src/platform/test-anthropic-body.ts:37-38`) | Tirar o caso |
 | 9 | Os textos que o escopo não deu (`L4` da parte 3): "Não deu para copiar. Selecione a consulta e copie.", "ainda sem cópia", "copiado ontem às", "copiado em 17/10/2026 às", "parada hoje às" (no lugar de "parada, copiado"), "lido ontem às", "lido em 17/10/2026 às", e a fonte ao vivo pelo conector e a conexão ("Sankhya · Matriz") | parte 3, `tasks.md:745`: o construtor usa as propostas e o PR as lista para a palavra do fundador | trocar a frase em `data-specs.ts` ou `sources.tsx`; o teste do critério cita a frase nova |
 | 10 | O catálogo gravado tem as cinco tabelas dos modelos de cópia do Sankhya, e a linha diz "5 tabelas", não "7 tabelas" | o kit tem cinco modelos (`packages/connectors/src/sankhya/copies.ts:85-160`: clientes, vendedores, produtos, vendas, itens de venda); o "7" da spec veio do protótipo `p3-03` | outra lista em `recordedData`; o teste lê a contagem gravada |
-| 11 | Na conversa do Builder a fonte nomeia o conector pelo id ("sankhya") | `BUILDER_ROOM` usa `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); dar à sala do Builder as palavras do catálogo muda a montagem da conversa do Projeto, fora destas pastas | um `RoomContext.Provider` com `useConnectorCatalog` na conversa do Projeto, como `apps/web/src/builder/assistant/conversation.tsx:40-44` |
+| 11 | Na conversa do Builder a fonte nomeia o conector pelo id ("sankhya"). Desfeita pela emenda de 2026-11-16: U14 dá à sala do Builder as palavras do catálogo (critério 112) | `BUILDER_ROOM` usa `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); dar à sala do Builder as palavras do catálogo muda a montagem da conversa do Projeto, fora das pastas de G3 | — |
 | 12 | Visão geral é a aba de abertura, embora a `v10` desenhe a Amostra aberta | As duas referências abrem a tabela na visão geral (estudo de referência, seções 3.5 e 11.3); a `v10` abre a Amostra para mostrar a grade | Trocar `TableTab.enum.overview` pela aba desejada como padrão em `CopyDetail` |
 | 13 | "Copiada do … em" só com a última rodada COMPLETE ou PARTIAL | `rows` é "After the last complete pass" (`copies.ts:81-82`); com ERROR ou INTERRUPTED a hora seria a de uma rodada que não copiou | Tirar a checagem de `outcome.kind` em `copiedText` |
 | 14 | A contagem "18 de 22 descrições" da `v10` fica de fora | Nenhuma referência conta descrições | Uma linha a mais no `DetailsPanel`, com o texto aprovado |
@@ -585,6 +733,13 @@ firstmate, com o conserto.
 | 25 | O `copiedAt` da spec vira `lastRunEndedAt`, e a fonte da rodada parada diz "parada hoje às", sem "copiado" | o contrato só dá a última rodada encerrada, de qualquer resultado (`ended` grava `lastRunId` em toda rodada, `apps/server/src/hub/copies/run.ts:114`); a spec define o campo como "quando a última rodada terminou" (parte 3, `design.md:255`) e pede "parada" junto da hora (`requirements.md:86`); com o nome `copiedAt`, o modelo e a tela diriam "copiado" na hora de uma rodada que não copiou, o que a decisão 13 já recusa na página da tabela | Voltar ao nome da spec e calcular, no catálogo, o fim da última rodada `COMPLETE` ou `PARTIAL` |
 | 26 | Um resultado de ferramenta de dado fora de `DataResult` não vira fonte nem linha completa, sem log | a parte guardada é da Mastra e a mesma gravação passa pelo esquema no teste (critérios 38 e 46); um log na tela se repetiria a cada desenho | um `console.error` com código no `sourcesOf` |
 | 27 | Durante a implantação em rodízio, um Hub antigo pode ler a linha semanal | `CopyInput` de hoje é `z.object` e tira a chave `whole` (`workflow.ts`): o Hub antigo roda a semanal como uma rodada normal, inofensiva, e o seu `states` pode, por um instante, mostrar o horário da semanal no lugar da normal (o `Map` por cópia fica com a última linha lida). O Hub antigo sai quando o novo sobe; a passada inteira volta no domingo seguinte | implantar o Hub novo antes de ligar qualquer cópia, ou abrir issue se o rodízio durar mais que um domingo |
+| 28 | Quem monta o catálogo de cada lugar decide o que `kept.sources` leva: no Início, toda fonte é `NAMED`, com o nome gravado e o estado da conexão, também a que espera nova autorização; no catálogo de um Projeto, a fonte de uma conexão que ele não recebeu é `NOT_GIVEN`, só com o conector. A ferramenta só diz o que `kept` traz | No Início, a opção (a) do fundador, "1. A": a origem pelo registro gravado, com o estado da conexão. No Projeto, escolha do firstmate pela palavra "2. O que voce quiser": só o nome do sistema, que é o que o app do Projeto já vê (`apps/server/src/builder/app-data/context.ts:51-56`). A ferramenta não sabe o lugar (`DataOf` devolve só `CompanyData`, `data-tools/tools.ts:10`), mas `catalogOf` sabe (`hub/data/catalog.ts:16-22`) e já monta o catálogo do Projeto à parte do da empresa; por isso a decisão fica lá, e `DataOf` não muda. `systems` não serve para decidir, porque deixa de fora tanto a conexão não dada ao Projeto quanto a que espera autorização (`hub/connectors/rows.ts:72`, `builder-port.ts:139-169`) | `catalogTables` grava toda fonte `NAMED`, e o Projeto passa a nomear a conexão que não recebeu |
+| 29 | G2b muda o contrato, quem o escreve (`catalog-view.ts`) e quem o lê (`data-tools/tools.ts`) num PR só, com a issue `contrato` | O roteiro da trilha Dados manda o contrato num PR e o consumidor em outro (`docs/steps/trilhas/dados.md:74-79`); um campo renomeado com os leitores para trás não compila, e um campo novo ao lado do velho daria dois donos ao id (code C26). G1 já levou a sua linha do servidor junto | dois PRs, com `sources` ao lado de `connections` até o segundo |
+| 30 | `REFUSED_TEXT.NOT_IN_ROLE` é "Essa tabela não está no catálogo.", também para `data_describe` | Fechamento do firstmate pela auditoria das referências, com a palavra do fundador "1. Sim pode ser essa frase"; um texto por `kind` (code C26), e `data_describe` só recebe `NOT_IN_ROLE` num catálogo que diz ler uma tabela que o login não lê | um texto próprio para `data_describe` |
+| 31 | `failed` do placar reconhece o sucesso de uma ferramenta de dado pela forma `DataResult`, não pelo nome | A recusa das ferramentas de dado é lançada (U2) e já conta como `output-error` pela regra do `noToolErrors`; só a cláusula da recusa devolvida como resultado (`test-scorecard.ts:176`) confundia `CATALOG`, `TABLE` e `ROWS` com recusa. Migrar o placar para `runEvals` (`@mastra/core@1.82.0 dist/docs/references/reference-evals-run-evals.md:85`, `:105`) é maior que esta etapa | a exceção por `DATA_TOOL` em `failed` |
+| 32 | O selo da conexão só em `NEEDS_REAUTH`, um por fonte, depois do nome, mesmo numa cópia de duas conexões | "Funcionando" em toda fonte repetiria o ponto verde; uma cópia de duas conexões é rara | um selo por conexão, com o nome dela |
+| 33 | `Stamp` (`apps/web/src/ui/block.tsx:37-48`) passa a aceitar `className`: na cópia em dia e ao vivo, as palavras em `text-2` com o ponto em `success`; em "ainda sem cópia", o ponto em `line-strong` | O tom de `Badge` pinta palavras e ponto (`badge.tsx:14`), e o neutro do `Badge` esconde o ponto, que o `Stamp` mostra na cor do texto; a tela A tem as palavras em `text-2` e só o ponto no tom, menos na parcial e na parada | tirar o `className` e pintar as palavras no tom |
+| 34 | A leitura ao vivo diz "ao vivo · " também noutro dia ("ao vivo · lido ontem às 22:46") | "ao vivo" diz o tipo da fonte, não a hora | dizer "ao vivo" só no dia do `at` |
 
 
 ## U1 `withheld` sai do contrato e a lei da tabela escondida
@@ -746,7 +901,9 @@ connector, reads: [{ operation, label, summary }] }]`, `tables: [{ name, label, 
 description, inactiveSince }], sample: { rows, more }, origin`) e `ROWS` (`columns, rows, complete,
 origin: DataOrigin[]`, mais `reason` quando `origin` é vazia). `lastRunEndedAt` é
 `kept.lastRun?.endedAt ?? null`, e `lastRun` é `kept.lastRun?.outcome.kind ?? 'NONE'` (decisão 25).
-`systems` traz o nome de cada conexão de `kept.connections`, na mesma ordem.
+`systems` traz o nome de cada conexão de `kept.connections`, na mesma ordem. A emenda de
+2026-11-15 troca essa forma: U2b lê a origem de `kept.sources`, que o catálogo de cada lugar já
+monta com o nome e o estado, ou só o conector num Projeto que não recebeu a conexão.
 
 Toda recusa, `NOT_GRANTED` e as do contrato, é lançada, nunca devolvida (code C79): a ferramenta
 lança um `Error` cuja mensagem é o JSON `{ kind, status: null, code, message, body: null, reason }`,
@@ -757,8 +914,9 @@ ferramenta. `QUERY_REFUSED` põe o SQLSTATE em `code` e a mensagem inteira do Po
 
 | `kind` | `reason` ao modelo, no erro lançado (inglês, `C3`) |
 | --- | --- |
+| `NOT_GRANTED` | "This conversation has no access to the company's data." (`data-tools/tools.ts:25`, como U2 construiu) |
 | `NOT_IN_CATALOG` | "No such table in the catalog. Call data_describe with no table to list them." |
-| `NOT_IN_ROLE` | "PostgreSQL denied this statement: the role of the person does not read one of its tables, or the statement is not a read. Say so; do not look for the data elsewhere." |
+| `NOT_IN_ROLE` | "PostgreSQL denied this statement: it reads a table outside the catalog of this place, or it is not a read. Call data_describe with no table to see the tables you may read; do not look for the data elsewhere." (a frase da emenda de 2026-11-15, construída na U2b; U2 construiu "...the role of the person does not read one of its tables... Say so; ...") |
 | `QUERY_REFUSED` | `PostgreSQL refused the query (SQLSTATE ${sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.` |
 | `QUERY_TOO_LARGE` | "The answer is too large. Aggregate or add LIMIT." |
 | `DEADLINE` | "The query took too long. Narrow it." |
@@ -797,7 +955,7 @@ web; `DatabaseIcon` já vem de `lucide-react` (`apps/web/src/builder/conversatio
        const data = requestContext === undefined ? undefined : await dataOf(requestContext)
        if (data === undefined) refused({ kind: 'NOT_GRANTED' })   // lança; nunca devolve
      ```
-     `data_describe({ table })` confere `table` em `described.tables` antes de `read`, e lança `NOT_IN_CATALOG` sem ler. `data_query` lê, depois descreve, e liga cada conexão de `answer.tables[].kept.connections`, todas, a `systems[].connection`; uma sem par faz `log.error({ table, connection }, 'DATA_ORIGIN_UNREAD')` e lança `CATALOG_UNAVAILABLE` com a frase, sem linha. `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` em inglês, no molde de `READ_DESCRIPTION` (`app-data/tools.ts:25`), mandam escrever a tabela com o esquema (`sync.sankhya_vendas`). Regras: code C21, C23, C26, C27, C79; security S41 (o log só com escalares).
+     `data_describe({ table })` confere `table` em `described.tables` antes de `read`, e lança `NOT_IN_CATALOG` sem ler. `data_query` lê, depois descreve, e liga cada conexão de `answer.tables[].kept.connections`, todas, a `systems[].connection`; uma sem par faz `log.error({ table, connection }, 'DATA_ORIGIN_UNREAD')` e lança `CATALOG_UNAVAILABLE` com a frase, sem linha (U2 construiu assim; U2b tira a recusa e o log). `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` em inglês, no molde de `READ_DESCRIPTION` (`app-data/tools.ts:25`), mandam escrever a tabela com o esquema (`sync.sankhya_vendas`). Regras: code C21, C23, C26, C27, C79; security S41 (o log só com escalares).
    - **Testes:** `tools.test.ts`, os casos dos critérios 10 a 19 e 28 (a tabela de duas conexões com `connections: [lojaA, lojaB]` no `CATALOG` falso, como `copy-list.test.tsx:202-223`; a recusa lida por `assert.rejects` e `JSON.parse` da mensagem), sobre `companyData({ sources, now })` com fontes falsas no molde de `fakeWorld` (`packages/hub-api/src/company-data.test.ts:133-199`), um `log` que guarda as linhas, e `execute` chamado como `runOn` (`apps/server/src/builder/connectors/connector-tools-scope.test.ts:56-58`), importando de `./public.ts` (testing T5, como `connector-tools-scope.test.ts:5-6`).
    - **Mutações à mão:** (a) `DESCRIBE_SAMPLE_ROWS` por `200` no `slice`: o caso do critério 13 fica vermelho. (b) tire o `refused` de `dataOf` indefinido: critério 11. (c) `originOf` usando `String(connections[0])` como nome: critério 17. (d) tire a conferência em `described.tables`: critério 14. (e) ligue só `connections[0]`: critério 28. (f) devolva a recusa em vez de lançá-la: critério 18.
    - **Pronto quando:** `tools.test.ts` passa no comando do servidor.
@@ -820,7 +978,7 @@ web; `DatabaseIcon` já vem de `lucide-react` (`apps/web/src/builder/conversatio
 
 ### Como se prova
 
-- 10 a 19 e 28: `execute` sobre o contrato real (`companyData`) com fontes falsas; o 14 e o 19 contam zero chamadas a `rows` e a `query`; o 17 lê `DATA_ORIGIN_UNREAD` no `log`. Hoje falha: a pasta não existe.
+- 10 a 19 e 28: `execute` sobre o contrato real (`companyData`) com fontes falsas; o 14 e o 19 contam zero chamadas a `rows` e a `query`; o 17 lia `DATA_ORIGIN_UNREAD` no `log` (U2b o reescreve). Hoje falha: a pasta não existe.
 - 21: `rules-doors.test.ts` planta o arquivo e roda o verificador; hoje a pasta não está em `AGENTS_AND_APPS` e o caso passaria sem recusar.
 - 20 e 22: hoje passam; passam a exigir os nomes e as linhas quando `BUILDER_TOOL` os ganha.
 
@@ -930,9 +1088,174 @@ resultado `CATALOG` de uma chamada; pstack `deslop` e `no-comments`; as mutaçõ
 feitas e desfeitas, com o resultado no PR (testing T27). O PR cita delivery L1 e L27 (a trilha
 Dados lê a mudança de `packages/hub-api/src/tools.ts`).
 
+## U2b A origem pelo registro gravado da cópia, e os fechamentos de G2
+
+**Base e modelo.** O `main` em `b2c23dc0`, com G2 mesclado (PR 1095, merge `f1067f05`); cada linha
+abaixo foi lida nesse commit, com `@mastra/core` 1.82.0. Sonnet: um campo de contrato trocado, os
+seus leitores migrados na mesma onda e uma leitura nova ao lado de uma que já existe; o `typecheck`
+aponta cada leitor.
+
+### As linhas da tabela
+
+- **A origem de cada tabela.** `TableKept` em `packages/hub-api/src/company-data.ts:34-42` (o campo em
+  `:37`) e `keeps` em `:234-242`; `CopySource` em `packages/hub-api/src/copy-shown.ts:5-9`, já a forma
+  de `CopySummary.sources` (`packages/hub-api/src/copies.ts:79`), escrita por `sourcesNamed`
+  (`apps/server/src/hub/copies/store.ts:227-243`) e lida na página da tabela
+  (`apps/web/src/hub/copies/copy-facts.tsx:75-77`); `catalogTables` com `named` em
+  `apps/server/src/hub/copies/catalog-view.ts:24-57` (o campo escrito em `:50`); o catálogo de cada
+  lugar em `catalogOf` (`apps/server/src/hub/data/catalog.ts:7-30`), que já separa o Projeto (`:18-19`)
+  do Início (`:20-22`); as conexões de um lugar em `offeredIn`
+  (`apps/server/src/hub/connectors/builder-port.ts:139-169`), só as `ACTIVE` (`usable`,
+  `hub/connectors/rows.ts:72`), e `catalogSystemsOf` (`hub/connectors/catalog-systems.ts:12-30`); o
+  estado em `Connection.state` (`packages/hub-api/src/connectors.ts:86`); na ferramenta, `originIn` e
+  `originOf` em `apps/server/src/builder/data-tools/tools.ts:81-112`, `listed` em `:128-143`, `tabled`
+  em `:145-160`, `queried` em `:162-181`, as descrições em `:114-118`; `DataOrigin` em
+  `packages/hub-api/src/assistant.ts:101-107`.
+- **A recusa com frase ao modelo.** Só a frase de `NOT_IN_ROLE`, `tools.ts:27-28`.
+- **A linha mínima na conversa.** Só o Fechamento 6 da revisão de G2: `...DATA_SPECS` dentro de
+  `APP_DATA_SPECS` (`apps/web/src/builder/conversation/app-data-specs.ts:18-25`), porque
+  `tool-registry.ts` está no teto de 300 linhas que o Biome conta (`biome.json:64-69`; uma linha a
+  mais dá "too many lines (301)"); as entradas das ferramentas da máquina em `tool-registry.ts:31-43`
+  (os nomes) e `:48-156` (as entradas).
+
+### O raio da mudança
+
+Os leitores saem do `tsc` com o campo trocado, medido em `b2c23dc0`. Na produção são sete:
+`company-data.ts:241`, `company-data-conformance.ts:49`, `:121`, `:141` e `:179`, `catalog-view.ts:50`
+(quem escreve) e `data-tools/tools.ts:89`. Nos testes, `catalog-view.test.ts:32` e `data.test.ts:100`,
+e quatro montagens que só o Zod lê: `company-data.test.ts:69-72`, `:96-99`, `:110-113` e
+`data-tools/test-world.ts:22-30`. `builder/assistant/context.ts:36` e `handoff.ts:303` leem
+`connections` de outro tipo, a escolha da conversa (`context.ts:23`), e ficam como estão. Sem o log
+`DATA_ORIGIN_UNREAD`, o `log` de `dataTools` (`tools.ts:184`) fica sem uso, e os três chamadores
+deixam de passá-lo: `builder/agents/agent.ts:273`, `builder/assistant/assistant.ts:263` e
+`builder/conversation/builder.ts:178-181` (code C74).
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `packages/hub-api/src/company-data.ts` (o contrato de G1) | Cria `KeptSource`; muda `TableKept` (`connections` vira `sources`) e `keeps` | a conformidade, `catalog-view.ts`, `data-tools/tools.ts`; a issue `contrato` (L1) e as duas trilhas (L27) |
+| `packages/hub-api/src/company-data-conformance.ts`, `company-data.test.ts` | Muda as quatro leituras e as montagens do `CATALOG` falso (`:69-72`, `:96-99`, `:110-113`, `:206`) | `runDataConformance`, `npm test -w @conexus/hub-api` |
+| `packages/hub-api/src/assistant.ts` | Cria `DataSystem`; muda `DataOrigin.systems` | `data-tools/tools.ts`; G3 (U4, U5, U6) |
+| `apps/server/src/hub/connectors/` | Cria `catalogSourcesOf` em `catalog-systems.ts`; muda `public.ts` (a porta `catalogSources`, ao lado de `catalogSystems`, `:165-166`) | `catalogOf` |
+| `apps/server/src/hub/data/` | Muda `catalog.ts` (passa o que o lugar nomeia a `catalogTables`), `deps.ts:14` (a porta) e `data.test.ts` (`:100` e o caso do critério 104) | o comando do servidor |
+| `apps/server/src/hub/copies/catalog-view.ts` e `catalog-view.test.ts` | Muda `catalogTables` (a entrada e `:50`) e a asserção de `:32` | `catalogOf` |
+| `apps/server/src/builder/data-tools/` | Muda `tools.ts`, `test-world.ts`, `tools.test.ts`, `mounted.test.ts`; renomeia `tools-failures.test.ts` para `tools-refusals.test.ts` | os três agentes (U3) |
+| `agent.ts:273`, `assistant.ts:263`, `builder.ts:178-181` | Muda (tira `log`, uma linha cada; declarado no PR, L7) | os três agentes |
+| `scripts/rerun-never.json` | Muda (uma linha) | `scripts/rerun-exempt.test.ts:36-46` |
+| `apps/web/src/builder/conversation/` | Cria `workspace-specs.ts`; muda `tool-registry.ts` e `app-data-specs.ts` | `TOOLS` |
+
+### Os contratos que a unidade cria
+
+```ts
+// packages/hub-api/src/company-data.ts, ao lado de TableKept
+/** One connection a table was copied from, as the place that reads it may name it. */
+export const KeptSource = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('NAMED'), connection: CopySource.shape.connection, state: z.enum(CONNECTION_STATES) }),
+  z.object({ kind: z.literal('NOT_GIVEN'), connector: ConnectorId }), // a Projeto's copy of a connection it was not given
+])
+// TableKept, no lugar de connections: ConnectionId[]
+sources: z.array(KeptSource).min(1),
+
+// packages/hub-api/src/assistant.ts, ao lado de DataOrigin
+export const DataSystem = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('NAMED'), name: z.string(), state: z.enum(CONNECTION_STATES) }),
+  z.object({ kind: z.literal('NOT_GIVEN') }),
+])
+// DataOrigin.systems: z.array(DataSystem).min(1); o resto de DataOrigin fica como está
+
+// apps/server/src/hub/connectors/catalog-systems.ts, ao lado de catalogSystemsOf
+/** The state of each connection the scope's place was given, in any state; admits nobody. */
+export async function catalogSourcesOf(tx: ReadTx, scope: SessionScope): Promise<ReadonlyMap<ConnectionId, ConnectionState>>
+```
+
+- **Quem decide o nome é o catálogo do lugar.** `catalogOf` (`catalog.ts:16-22`) já monta o catálogo
+  com o lugar da conversa. Ele lê `catalogSources(tx, scope)` e passa o mapa a `catalogTables`
+  (`catalogTables(tx, { companyId, only, given })`). No Início, o mapa traz toda conexão da empresa;
+  num Projeto, só as de `project_connection`, como `offeredIn`, mas sem `usable`. `catalogTables`
+  grava cada fonte como `NAMED`, com a conexão de `CopySource` e o estado, quando o id está no mapa,
+  e como `NOT_GIVEN`, com o conector, quando não está. `DataOf` não muda (`tools.ts:10`).
+- **A regra da origem na ferramenta.** Para cada fonte de `kept.sources`, na ordem: `NAMED` vira
+  `{ kind: 'NAMED', name: connection.name, state }`; `NOT_GIVEN` vira `{ kind: 'NOT_GIVEN' }`.
+  `connector` é o da primeira fonte. A ferramenta não olha `systems` para a origem: só diz o que
+  `kept` traz. Uma função pura, sem recusa e sem log.
+- **As frases.** `NOT_IN_ROLE` passa à frase da tabela de U2. `DESCRIBE_DESCRIPTION` e
+  `QUERY_DESCRIPTION` ganham: "Each system says its state: a state other than ACTIVE means the rows
+  are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this
+  place was not given: name only its connector."
+- **Estados.** `NAMED` e `NOT_GIVEN` são uniões com `kind` (C21). **Ids.** Nenhum novo pela borda;
+  o id de uma fonte `NOT_GIVEN` não sai do Hub. **Donos.** A conexão gravada é `CopySource` (C26);
+  o que um lugar nomeia, `catalogSourcesOf`; a forma do resultado continua em `assistant.ts`.
+  **Esquemas Zod.** Os de U2, sem mudança. **Arquivo modelo.** `tools.ts` de U2;
+  `catalogSystemsOf` para a leitura nova.
+
+### As skills e a leitura
+
+As de U2, mais as linhas de `zod` e `drizzle-orm` em `docs/reference/stack.md:34` e `:41`, e testing T4, T5, T27.
+
+### A ordem do trabalho
+
+1. **O contrato, quem o escreve e a conformidade.** Critérios: 17 (a parte do contrato), 104.
+   - **Arquivos:** muda `company-data.ts`, `company-data-conformance.ts`, `company-data.test.ts`, `catalog-systems.ts`, `connectors/public.ts`, `data/catalog.ts`, `data/deps.ts`, `data.test.ts`, `catalog-view.ts`, `catalog-view.test.ts`.
+   - **Referência a seguir:** "A origem de cada tabela", acima; `sourcesNamed` como a forma da conexão; `offeredIn` como a forma da leitura por lugar.
+   - **O que sai:** `connections: z.array(ConnectionId).min(1)` (`company-data.ts:37`); `named.map(({ connection }) => ConnectionId.parse(connection.id))` (`catalog-view.ts:50`).
+   - **O que entra:** `KeptSource`, `sources`, `catalogSourcesOf` e a porta; `catalogOf` passa o mapa; `catalogTables` grava `NAMED` ou `NOT_GIVEN`. Em `keeps` e na conformidade, a busca pelo id passa às fontes `NAMED` (`:49` e `:141` tomam a primeira fonte `NAMED`). Regras: code C8, C21, C26, C27.
+   - **Testes:** `npm test -w @conexus/hub-api` (as 22 leis passam); `catalog-view.test.ts:32` confere a fonte `NAMED` com o id, o nome, o conector e `ACTIVE`; o caso do critério 104 em `data.test.ts` (o Início com a conexão em `NEEDS_REAUTH` pelo `on.hub.test.asOwner`, e o Projeto com a cópia da Filial liberada).
+   - **Mutações à mão:** (a) em `catalogTables`, toda fonte `NAMED`: o 104 fica vermelho ("Filial" no Projeto). (b) `catalogSourcesOf` com `usable`: o 104 fica vermelho (a fonte em `NEEDS_REAUTH` vira `NOT_GIVEN` no Início).
+   - **Pronto quando:** os testes passam, e o `typecheck` só acusa `data-tools/tools.ts` (passo 2).
+2. **A ferramenta diz o que `kept` traz.** Critérios: 15, 17, 18 (a frase de `NOT_IN_ROLE`), 28.
+   - **Arquivos:** muda `assistant.ts`, `data-tools/tools.ts`, `test-world.ts`, `tools.test.ts`, e uma linha em `agent.ts`, `assistant/assistant.ts` e `conversation/builder.ts`.
+   - **O que sai:** `originIn` e `originOf` (`tools.ts:81-112`), o log `DATA_ORIGIN_UNREAD` (`:92`), o `flatMap` que tira a tabela sem par (`:136-141`), o `log` de `dataTools` (`:184-185`) e dos três chamadores; os casos `tools.test.ts:115-133` e `:135-147`.
+   - **O que entra:** a regra da origem acima; `listed` volta a `map`; as duas frases nas descrições. `table()` de `test-world.ts` monta `sources` com `KeptSource`; `FORA` vira uma fonte `NOT_GIVEN` de uma conexão com o nome "Loja Fora", para provar que o nome não sai; os casos do critério 17, com uma fonte `NAMED` em `NEEDS_REAUTH`, uma `NOT_GIVEN` e a cópia de `[LOJA_A, FORA]` (o Fechamento B do delta de G2); o 15 e o 28 com a forma nova. Regras: code C21, C26, C74, C79; security S41.
+   - **Mutações à mão:** (a) toda fonte vira `NAMED` com `state: 'ACTIVE'`: o 17 fica vermelho. (b) a recusa `CATALOG_UNAVAILABLE` de volta em `tabled`: 17. (c) só a primeira fonte: 28. (d) a frase antiga de `NOT_IN_ROLE`: 18. (e) tire de `QUERY_DESCRIPTION` a frase do estado: o caso "as duas descrições" fica vermelho.
+   - **Pronto quando:** `tools.test.ts` e `tools-refusals.test.ts` passam no comando do servidor.
+3. **De ponta a ponta pela porta da raiz.** Critérios: 100, 101.
+   - **Arquivos:** muda `mounted.test.ts`.
+   - **Referência a seguir:** o caso de hoje em `mounted.test.ts:160-170` (a conexão em `NEEDS_REAUTH` por `on.hub.test.asOwner`); `agentsOn` dá a Matriz ao Projeto e não a Filial (`apps/server/src/builder/agents/test-agents.ts:50-66`, `on.filial` em `apps/server/src/builder/assistant/test-assistant.ts:137`); `releasing(t, on, { connectionId: on.filial }, ['vendas'])` libera a cópia da Filial ao Projeto (`apps/server/src/hub/copies/test-released.ts:49-92`), sem conferir a conexão (`hub/copies/grants.ts:74-99`).
+   - **O que entra:** o caso de `:160-170` reescrito para o critério 100, no Início, com uma chamada `data_query` depois da lista; o caso do critério 101, pelo Builder.
+   - **Mutações à mão:** a (a) do passo 1: o 101 fica vermelho ("Filial" aparece). A (b) do passo 1: o 100 fica vermelho (a fonte perde o nome no Início).
+   - **Pronto quando:** `mounted.test.ts` passa com o Postgres de teste.
+4. **Os fechamentos de G2.** Critérios: 102, 103.
+   - **Arquivos:** renomeia `tools-failures.test.ts` para `tools-refusals.test.ts`; muda `scripts/rerun-never.json`; cria `apps/web/src/builder/conversation/workspace-specs.ts`; muda `tool-registry.ts`, `app-data-specs.ts`.
+   - **O que sai:** de `tool-registry.ts`, os nomes de `:31-43` e as entradas de `:48-156`; de `app-data-specs.ts`, `...DATA_SPECS`, o tipo `typeof DATA_SPECS &` e a frase do comentário sobre o limite (`:18-25`).
+   - **O que entra:** o Fechamento A (o nome de volta e a linha em `rerun-never.json`); o Fechamento 6 (`WORKSPACE_SPECS` em `workspace-specs.ts`, e `TOOLS` com `...WORKSPACE_SPECS` e `...DATA_SPECS`); o Fechamento C (o corpo deste PR traz a linha que faltou na tabela de commits do PR 1095, o `2a8255db`, e um comentário no PR 1095 aponta para ela).
+   - **Mutações à mão:** tire a linha de `rerun-never.json`: `rerun-exempt.test.ts` fica vermelho. Tire `...DATA_SPECS` de `TOOLS`: o `typecheck` recusa (`Record<RowTool, ToolSpec>`).
+   - **Pronto quando:** `rerun-exempt.test.ts`, `tool-row.test.tsx` e `npm run check` passam.
+
+### Como se prova
+
+- 104: `describe` pelo Hub de teste, no Início e num Projeto; hoje `kept` só traz o id.
+- 15, 17 e 28: `execute` sobre o contrato real (`companyData`) com fontes falsas; hoje o 17 falha,
+  porque a tabela de `FORA` dá `CATALOG_UNAVAILABLE` e sai da lista.
+- 100 e 101: um turno pelo Hub de teste e o resultado que o servidor devolveu ao modelo, lido pelo
+  login de leitura no banco de teste; hoje os dois dão `tables` vazia.
+- 102 e 103: o verificador da lista e o Biome; hoje o nome do arquivo foge da lista e
+  `DATA_SPECS` está fora de `TOOLS`.
+
+### Parar se
+
+- O `typecheck` acusar um leitor fora da lista acima: migre-o no mesmo commit e declare no PR (L7);
+  se ele estiver numa pasta de outra unidade em construção, pare e reporte.
+- A trilha Dados recusar o contrato e o seu leitor num PR só: pare; é a decisão 29.
+- `catalogOf` não conseguir ler `catalogSources` na mesma transação de `catalogSystems`: pare; não
+  abra uma segunda transação.
+- `releasing` não conseguir liberar ao Projeto a cópia da Filial: reporte o que falta no ajudante; não
+  grave a linha de liberação à mão.
+- A divisão de `tool-registry.ts` pedir mover mais que as entradas das ferramentas da máquina: pare.
+
+## G2b O ponto de conferência
+
+Comando de `hub-api`: `npm test -w @conexus/hub-api`. Comando do servidor, depois de `npm ci` e
+`npm run build -w @conexus/server`: `apps/server/src/hub/copies/catalog-view.test.ts`,
+`apps/server/src/hub/data/data.test.ts`, `apps/server/src/builder/data-tools/tools.test.ts`,
+`tools-refusals.test.ts` e `mounted.test.ts` (Postgres de teste), e
+`apps/server/src/builder/agents/agent-read.test.ts`. Depois `scripts/rerun-exempt.test.ts`,
+`npm run test:unit -w @conexus/web -- src/builder/conversation/tool-row.test.tsx`, `npm run typecheck`,
+`npm run deps` e `npm run check`. Passos 6 e 7 de `conexus-build`: pstack `deslop` e `no-comments`;
+as mutações dos quatro passos feitas e desfeitas, com o resultado no PR (testing T27). O PR cita a
+issue `contrato`, delivery L1 e L27, e a decisão 29.
+
 ## U4 O `at` da leitura ao vivo, os cenários `data-query` e `reads`, e as perguntas com resposta conhecida
 
-**Base e modelo.** O `main` com o PR do G1 (o contrato sem `withheld`) e o do G2 (U2 e U3: `apps/server/src/builder/data-tools/` e a linha mínima de `data-specs.ts`). O PR 1082 já está em `5d02e643`. Sonnet: um campo, um cenário no molde dos outros e uma lista de perguntas, sem desenho entre módulos.
+**Base e modelo.** O `main` com o PR do G1 (o contrato sem `withheld`), o do G2 (U2 e U3: `apps/server/src/builder/data-tools/` e a linha mínima de `data-specs.ts`) e o do G2b (U2b: a origem com `DataSystem`). O PR 1082 já está em `5d02e643`. Sonnet: um campo, um cenário no molde dos outros e uma lista de perguntas, sem desenho entre módulos.
 
 ### As linhas da tabela
 
@@ -1015,9 +1338,9 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 4. **As perguntas do dado copiado.** Critérios: 32, 33, 34, 35.
    - **Arquivos:** muda `test-scorecard.ts`, `assistant.scorecard.test.ts`.
    - **Referência a seguir:** `test-scorecard.ts:169-227`; `assistant.eval.test.ts:45-77`; `assistant.scorecard.test.ts:82-127`.
-   - **O que entra:** `COPY_QUESTIONS` com c1 a c6 como a parte 3, `tasks.md:499-504` (c1 "Quanto vendi em outubro?", `sankhya_vendas`; c2 clientes ativos, `sankhya_clientes`, contagem de `ATIVO = 'S'` e `CLIENTE = 'S'`; c3 vendedor do mês, `sankhya_vendas` e `sankhya_vendedores`; c4 comissão, nenhuma tabela; c5 c1 com a última rodada parcial e `/incomplet|parcial/i`; c6 o Builder no Projeto, `sankhya_clientes` e nenhuma outra). `failed` aceita `CATALOG`, `TABLE` e `ROWS` quando `toolName` é de `DATA_TOOL`; a recusa de uma ferramenta de dado já conta como erro, por `output-error` (`test-scorecard.ts:170-176`). `judgedCopy`: chamou `data_query` (menos c4 e c6), as tabelas de `origin` do último `data_query` são `asked.tables`, e o texto mostra o número por `shows`. Regras: T28 (o dublê compõe a resposta com o número do resultado), T5.
+   - **O que entra:** `COPY_QUESTIONS` com c1 a c6 como a parte 3, `tasks.md:499-504` (c1 "Quanto vendi em outubro?", `sankhya_vendas`; c2 clientes ativos, `sankhya_clientes`, contagem de `ATIVO = 'S'` e `CLIENTE = 'S'`; c3 vendedor do mês, `sankhya_vendas` e `sankhya_vendedores`; c4 comissão, nenhuma tabela; c5 c1 com a última rodada parcial e `/incomplet|parcial/i`; c6 o Builder no Projeto, `sankhya_clientes` e nenhuma outra). `failed` (`test-scorecard.ts:170-178`) guarda a regra do `noToolErrors` (`:172-175`, a mesma de `isErrorInvocation` em `@mastra/evals@1.10.11 dist/checks-DXG9awTJ.js:344-345`), e a cláusula da recusa devolvida como resultado (`:176`, um `kind` diferente de `OK`) passa a valer só para um resultado que `DataResult` não lê: `CATALOG`, `TABLE` e `ROWS` passam em `DataResult`, e a recusa de uma ferramenta de dado já conta, por `output-error`, porque é lançada (U2). Nenhum nome de ferramenta em `failed` (decisão 31). `judgedCopy`: chamou `data_query` (menos c4 e c6), as tabelas de `origin` do último `data_query` são `asked.tables`, e o texto mostra o número por `shows`. Regras: T28 (o dublê compõe a resposta com o número do resultado), T5.
    - **Testes:** os quatro casos da coluna de teste dos critérios 32 a 35; o turno pelo Assistente de `assisting`, com as cópias de `releasing(t, ..., ['vendas', 'vendedores', 'clientes'], [])`.
-   - **Mutações à mão:** tire a exceção de `DATA_TOOL` em `failed`: o caso que julga certo fica vermelho; não confira as tabelas em `judgedCopy`: o turno com `sankhya_clientes` para c1 passa a certo e o caso negativo fica vermelho.
+   - **Mutações à mão:** tire a conferência por `DataResult` em `failed`: o caso que julga certo fica vermelho; não confira as tabelas em `judgedCopy`: o turno com `sankhya_clientes` para c1 passa a certo e o caso negativo fica vermelho.
    - **Pronto quando:** `assistant.scorecard.test.ts` passa, e o caso do modelo real pula com `opt-in:`.
 
 ### Como se prova
@@ -1031,7 +1354,7 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 ### Parar se
 
 - O hub de `assisting` não aceita o teto de páginas (`runPages`) para a rodada parcial de c5: pare e relate; não invente um gancho de teste.
-- O resultado guardado de `data_query` no cenário não passa em `DataResult` (as cinco chaves de `DataOrigin` que U2 promete): o defeito é de U2; relate com a linha da gravação.
+- O resultado guardado de `data_query` no cenário não passa em `DataResult` (as cinco chaves de `DataOrigin` que U2 promete, com `systems` de U2b): o defeito é de U2 ou de U2b; relate com a linha da gravação.
 - `numbers.test.ts` falha com `reads` regravado: relate o número que mudou; não ajuste o teste para passar.
 
 ## U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa
@@ -1063,7 +1386,8 @@ export function judgedCopy(asked: CopyQuestion, parts: readonly MastraMessagePar
 type DataRefusal = 'NOT_IN_ROLE' | 'TABLE_UNAVAILABLE' | 'CATALOG_UNAVAILABLE' | 'QUERY_REFUSED'
   | 'QUERY_TOO_LARGE' | 'DEADLINE' | 'NOT_IN_CATALOG' | 'NOT_GRANTED'
 export const REFUSED_TEXT: { readonly [K in DataRefusal]: string }
-//  os textos de design.md, C5, e NOT_GRANTED: LOCAL_REFUSALS.NOT_GRANTED
+//  os textos de design.md, C5, e NOT_GRANTED: LOCAL_REFUSALS.NOT_GRANTED;
+//  NOT_IN_ROLE: 'Essa tabela não está no catálogo.', o texto de NOT_IN_CATALOG (decisão 30)
 export const DATA_SPECS: Record<(typeof DATA_TOOL)[keyof typeof DATA_TOOL], ToolSpec>
 
 // apps/web/src/builder/conversation/tool-spec.ts
@@ -1091,7 +1415,7 @@ type Copied = 'IDLE' | 'DONE' | 'FAILED'
    - **O que sai:** `body: 'generic'` e as frases fixas da linha mínima de U2.
    - **O que entra:** `presentDescribe(tool, status)`: com o erro lançado de um `kind` de `REFUSED_TEXT` (`thrownOf(tool)?.kind`), `said(REFUSED_TEXT[kind])`; em erro ou negada sem esse `kind`, "Não conseguiu ler o catálogo agora." sem tabela e `REFUSED_TEXT.TABLE_UNAVAILABLE` com tabela; sem tabela, "Consultando o catálogo"/"Consultou o catálogo" e "n tabelas"; com tabela, `Vendo ${table}`/`Viu ${table}` e a contagem da amostra por `rowsText`. `presentQuery`: rodando, "Consultando os dados"; feita, `Consultou ${origin.map(t => t.table).join(', ')}` e a contagem; origem vazia ou fora de `DataResult`, "Consultou os dados". Nenhum `refusal` lê o resultado: a recusa não é resultado. Regras: C21, C79.
    - **Testes:** `data-specs.test.tsx` com as partes de `recordedPart('data-query', DataPart, ...)`; um caso troca a parte por uma em erro com o JSON lançado (as duas formas que `thrownOf` lê, `errorText` ou `isError` com o texto em `result`), como `source()` em `sources.test.tsx:20-30`. Os casos dos critérios 36 a 38, 40 e 41.
-   - **Mutações à mão:** `more` sempre `false`: "a amostra" fica vermelho; tire `NOT_IN_ROLE` de `REFUSED_TEXT`: "cada recusa" fica vermelho; leia a recusa do `result` em vez de `thrownOf`: "cada recusa" fica vermelho.
+   - **Mutações à mão:** `more` sempre `false`: "a amostra" fica vermelho; tire `NOT_IN_ROLE` de `REFUSED_TEXT`: "cada recusa" fica vermelho; volte `NOT_IN_ROLE` a "Seu papel não lê esta tabela. Peça a quem administra a empresa.": "a consulta recusada pelo banco" fica vermelho; leia a recusa do `result` em vez de `thrownOf`: "cada recusa" fica vermelho.
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/data-specs.test.tsx` passa.
 2. **O corpo com a consulta.** Critérios: 39.
    - **Arquivos:** muda `tool-spec.ts`, `tool-row.tsx`, `tool-bodies.tsx`, `data-specs.ts`.
@@ -1121,6 +1445,9 @@ type Copied = 'IDLE' | 'DONE' | 'FAILED'
 ## U6 O bloco Fontes com a origem do dado e a leitura ao vivo
 
 **Base e modelo.** O commit de U4 no ramo do G3 (corre ao lado de U5). Sonnet.
+
+**Emenda de 2026-11-16.** U6 está no `main` (PR 1107). O desenho do bloco passa ao da tela A, em
+U14 (G7), e os critérios 42, 43, 45 e 47 passam a U14; esta ficha fica como foi construída.
 
 ### As linhas da tabela
 
@@ -1152,7 +1479,7 @@ export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
 ```
 
 - **Estados.** `kind` separa web e dado; `state` separa a cópia e a leitura ao vivo (C21, C22). `COMPLETE` é `FRESH`; `PARTIAL` é `PARTIAL`; `ERROR` e `INTERRUPTED` são `STOPPED`, sempre com hora; `NONE` vem com `at` nulo e diz "ainda sem cópia".
-- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26). Na fonte de cópia, `system` é `systems.join(', ')`, como a lista de Dados escreve as contas ("Loja A, Loja B", `copy-list.test.tsx:209`). O dia e a hora de toda fonte de dado saem de uma função só, `whenOf(at, now)`: "hoje às", "ontem às" ou "em 17/10/2026 às", por `dayGroupOf`, `dayOf` e `clockOf`.
+- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26). Na fonte de cópia, `system` junta por vírgula o `name` de cada `DataSystem` `NAMED` e o conector no lugar de cada `NOT_GIVEN` (U2b), como a lista de Dados escreve as contas ("Loja A, Loja B", `copy-list.test.tsx:212`); a fonte nunca nomeia uma conexão `NOT_GIVEN`. O dia e a hora de toda fonte de dado saem de uma função só, `whenOf(at, now)`: "hoje às", "ontem às" ou "em 17/10/2026 às", por `dayGroupOf`, `dayOf` e `clockOf`.
 - **Esquema de entrada externa.** O resultado guardado passa por `DataResult` (de `@conexus/hub-api`) ou `LiveResult`; fora deles, nenhuma fonte, sem log (decisão 26) (C27).
 - **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
 
@@ -1166,7 +1493,7 @@ export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
    - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
    - **Referência a seguir:** `sources.ts:35-46`; `sources.tsx:12-31`.
    - **O que sai:** o `MessageSource` de hoje vira o caso `web`; nenhum chamador lê os campos sem passar por `kind`.
-   - **O que entra:** em `sourcesOf`, cada parte `tool-invocation` com `state: 'result'` de `data_query`, ou de `data_describe` com `args.table`, passa por `DataResult`; cada origem vira `{ kind: 'data', connector, system: systems.join(', '), table, at: lastRunEndedAt, state }`. Em `Sources`, `kind: 'data'` desenha `<li>` em `text-fact` com `${words.name(connector)} · ${table} · ${quando}`: `FRESH` "copiado hoje às 08:45", `PARTIAL` "rodada parcial, copiado hoje às 08:45", `STOPPED` "parada hoje às 08:45", `at` nulo "ainda sem cópia"; o dia e a hora por `whenOf(at, new Date())`. A `key` é a chave de `sourcesOf`.
+   - **O que entra:** em `sourcesOf`, cada parte `tool-invocation` com `state: 'result'` de `data_query`, ou de `data_describe` com `args.table`, passa por `DataResult`; cada origem vira `{ kind: 'data', connector, system, table, at: lastRunEndedAt, state }`, com `system` pela regra de "Donos" acima. Em `Sources`, `kind: 'data'` desenha `<li>` em `text-fact` com `${words.name(connector)} · ${table} · ${quando}`: `FRESH` "copiado hoje às 08:45", `PARTIAL` "rodada parcial, copiado hoje às 08:45", `STOPPED` "parada hoje às 08:45", `at` nulo "ainda sem cópia"; o dia e a hora por `whenOf(at, new Date())`. A `key` é a chave de `sourcesOf`.
    - **Testes:** os casos dos critérios 42, 43, 44 e 46, com `recordedPart('data-query', DataPart)` e o relógio fixo por `vi.setSystemTime` no dia da cópia gravada; para 43, a origem trocada para `ERROR`, `INTERRUPTED` e `NONE`; o caso de web de hoje (`:44-60`) com `kind: 'web'`.
    - **Mutações à mão:** `PARTIAL` para `FRESH`: "a rodada parcial" fica vermelho; "parada, copiado" no lugar de "parada": "a rodada com erro ou interrompida" fica vermelho; tire a chave de dado do conjunto: "a mesma tabela" fica vermelho; `system` no lugar de `words.name(connector)`: "a fonte do dado" fica vermelho.
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx` passa.
@@ -1194,7 +1521,7 @@ export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
 ## G3 O ponto de conferência
 
 - Comando do servidor: `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, `apps/server/src/platform/recordings.test.ts`, `apps/server/src/builder/assistant/numbers.test.ts`, `apps/server/src/builder/assistant/assistant.scorecard.test.ts`. Web: `npm run test:unit -w @conexus/web -- src/builder/conversation/data-specs.test.tsx src/builder/conversation/sources.test.tsx src/builder/conversation/tool-row.test.tsx` e `npm run test:browser -w @conexus/web`. Depois `npm run check`.
-- Passos 6 e 7 de `conexus-build`: `npm run record -- data-query` e `npm run record -- reads` rodados de novo sem diferença além da data; o Hub local com os dublês, como dono, "Quanto vendi em outubro?", olhado num navegador real a 1366 e 390 px, nos dois temas (T23): a resposta com a fonte, a linha de `data_query` aberta com **Copiar a consulta**, uma recusa ("Não conseguiu ler a tabela agora." com o banco da empresa parado) e a fonte ao vivo de uma leitura do Sankhya. As mutações das três unidades feitas e desfeitas, com o resultado (T27).
+- Passos 6 e 7 de `conexus-build`: `npm run record -- data-query` e `npm run record -- reads` rodados de novo sem diferença além da data; o Hub local com os dublês, como dono, "Quanto vendi em outubro?", olhado num navegador real a 1366 e 390 px, nos dois temas (T23): a resposta com a fonte, a linha de `data_query` aberta com **Copiar a consulta**, uma recusa ("Não conseguiu ler a tabela agora." com o banco da empresa parado), os dois textos enganosos da linha mínima de G2 vistos no ar na v0.24.94 já com o texto de U5 (uma consulta com nome de tabela errado diz "A consulta não rodou.", critério 40, e não "Não conseguiu ler a tabela agora."; a pergunta por uma tabela que não existe diz "Essa tabela não está no catálogo.", critério 37, e não "Não conseguiu ler o catálogo agora.") e a fonte ao vivo de uma leitura do Sankhya. As mutações das três unidades feitas e desfeitas, com o resultado (T27).
 - Depois do PR, a QA (`conexus-qa`, T25) das telas `p3-01` a `p3-07`, por um agente que não construiu, com a matriz de estados acima; o relatório vai no PR antes da revisão.
 
 ## U7 O caminho, a linha da cópia, as abas e a Visão geral
@@ -1824,3 +2151,165 @@ export const WHOLE_PASS = 'Passada inteira'
 ## G6 O ponto de conferência
 
 Depois de U13, os passos 6 e 7 do `conexus-build`: os testes do servidor de `run.test.ts`, `run-v2.test.ts`, `clock.test.ts`, `delete.test.ts`, `unlink-copies.test.ts`, `routes.test.ts`; `copy-detail.test.tsx`; o contrato; o Hub local subindo com `COPY_WHOLE_LINES`, uma cópia ligada com as duas linhas no agendador, a semanal disparada à mão (`nextFireAt` no passado) e a aba Rodadas mostrando "Passada inteira" a 1366 e 390 px, nos dois temas. O PR diz o limite da coluna inativa: a passada inteira detecta a coluna que sumiu só quando cabe numa rodada (`source-pass.ts:199-200`). "Passada inteira" vai para a palavra do fundador no fim da etapa.
+
+## U14 O bloco Fontes da tela A
+
+**Base e modelo.** O `main` com G3 e o PR 1111 mesclados. Sonnet: peças que já existem. Linhas lidas
+no `main` em `d9f56971`.
+
+**A lição.** O critério escrito tinha ficado mais pobre que a tela aprovada; a conferência desta
+unidade compara com a tela A, elemento por elemento.
+
+### As linhas da tabela
+
+- `Sources`, `apps/web/src/builder/conversation/sources.tsx:28-68` (a seção `:31-36`; `copiedText` e
+  `liveText` `:8-25`); `MessageSource`, `copiedFrom`, `liveOf` e `keyOf`, `sources.ts:14-23`,
+  `:71-90`, `:118-126`, `:129-131`; `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, com o uso
+  e o export do PR 1111.
+- `ConnectorLogo small`, `apps/web/src/hub/connectors/logo.tsx:9-32`, e o molde numa linha,
+  `tool-bodies.tsx:147-151`; `BLOCK`, `tool-bodies.tsx:19-20`; `wordsOf`, `connector-words.ts:11-41`;
+  `ConnectorWords`, `tool-spec.ts:72-78`; `PLAIN_WORDS`, `connector-specs.ts:134-138`.
+- `Stamp`, `apps/web/src/ui/block.tsx:37-48`; os tons de `Badge`, `badge.tsx:8-20`; `stateBadge`,
+  `apps/web/src/hub/connectors/text.ts:35-45`, e o molde `apps/web/src/builder/assistant/day.tsx:101`; `DESIGN.md:558-561`.
+- `BUILDER_ROOM`, `room.ts:80-86`; `BuilderChat`, `panel.tsx:34-56`; `useConnectorCatalog`,
+  `apps/web/src/builder/assistant/connector-names.ts:14-21`; `connectionsQuery`,
+  `apps/web/src/hub/connectors/queries.ts:26-28` (exportada em `public.ts:6`, como `stateBadge` `:28`
+  e `ConnectorLogo` `:3`).
+- Os testes: `sources.test.tsx:38-107` e `:152-236`; `openConversation`, `panel.test.tsx:28`;
+  `apps/web/sweep-connections.ts:26`; `apps/web/sources.layout.test.ts:60-82`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/web/src/builder/conversation/sources.ts` (`MessageSource`) | Muda: `connections` e `reauth` no lugar de `system` | `rows.ts:262`, `sources.tsx`, `CitedRow` |
+| `apps/web/src/builder/conversation/sources.tsx` | Muda: a linha da fonte de dado | a linha `sources` da conversa |
+| `apps/web/src/builder/conversation/tool-spec.ts` (`ConnectorWords`) | Muda: `logo` e `auth` | `wordsOf`, `PLAIN_WORDS`, todo `Room` |
+| `apps/web/src/builder/conversation/connector-words.ts`, `connector-specs.ts` | Muda | `useConnectorCatalog`, `BUILDER_ROOM`, `ASSISTANT_ROOM`, os testes que montam palavras |
+| `apps/web/src/builder/conversation/panel.tsx` | Muda: o `Room` do Builder com o nome e a logo do catálogo | a rota da conversa do Projeto |
+| `useConnectorCatalog` (de `builder/assistant/connector-names.ts` para `builder/conversation/`) | Move; `logo` passa a `words.logo` | os oito chamadores de hoje em `builder/agents/` e `builder/assistant/`, pela reexportação, e `panel.tsx` |
+| `apps/web/src/ui/block.tsx` (`Stamp`) | Muda: aceita `className` | os de `git grep -l Stamp apps/web/src` (`builder/agents/rows.tsx` entre eles) e `sources.tsx` |
+| `sources.test.tsx`, `panel.test.tsx`, `apps/web/sources.layout.test.ts` | Muda | `npm run test:unit` e `npm run test:browser -w @conexus/web` |
+
+### Os contratos que a unidade cria
+
+```ts
+// apps/web/src/builder/conversation/sources.ts
+export type MessageSource =
+  | { kind: 'web'; url: string; title: string | undefined; domain: string; linked: boolean }
+  | { kind: 'data'; connector: string
+      /** The names of the connections the place gives, in the order of `systems`; a NOT_GIVEN one is not here. */
+      connections: readonly string[]
+      /** Whether one of them waits for a new authorization (NEEDS_REAUTH). */
+      reauth: boolean
+      table: string; at: string | null; state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE' }
+
+// apps/web/src/builder/conversation/tool-spec.ts
+export type ConnectorWords = {
+  name: (connector: string) => string
+  /** The connector's logo, once the catalog is read. */
+  logo: (connector: string) => string | undefined
+  /** How the connector links, for the words of a refused connection; 'oauth2_code' for one the catalog lacks. */
+  auth: (connector: string) => ConnectorEntry['auth']
+  logoOf: (connectionId: string) => string | undefined
+  refusal: (connector: string | undefined, why: ConnectorRefusal) => string
+}
+
+// apps/web/src/ui/block.tsx
+export function Stamp(props: { tone: …; className?: string; children: ReactNode }): ReactNode
+```
+
+- **Estados.** `state` separa cópia e leitura ao vivo (C21, C22); o tom sai de uma função só:
+  `FRESH` e `LIVE` `success`, `PARTIAL` `warning`, `STOPPED` `danger`, `at` nulo `neutral`.
+- **Donos.** `copiedText` e `liveText` (as palavras), `systemText` (o nome), `stateBadge` (o selo),
+  `wordsOf` (a logo e a autenticação) (C26). `keyOf` passa a `${connector}:${connections.join(',')}:${table}`.
+- **Esquema de entrada externa.** O resultado guardado passa por `DataResult` ou `LiveResult`, como
+  hoje (C27).
+- **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
+
+### As skills e a leitura
+
+`shadcn` para `Badge` (`stack.md:63`); `impeccable` para conferir a linha com a tela A
+(`docs/reference/impeccable.md`); web W7, W21, W34; design V3, V17, V35; testing T5, T23, T27.
+
+### A ordem do trabalho
+
+1. **A origem com a logo, as conexões e o estado.** Critérios: 42, 43, 110, 111, 113.
+   - **Arquivos:** muda `sources.ts`, `sources.tsx`, `tool-spec.ts`, `connector-words.ts`,
+     `connector-specs.ts`, `apps/web/src/ui/block.tsx`, `sources.test.tsx`.
+   - **Referência a seguir:** a tela A, elemento por elemento (a tabela "Elemento da tela A" de G7);
+     `tool-bodies.tsx:147-151` (a logo); `apps/web/src/builder/assistant/day.tsx:101` (o `Stamp`).
+   - **O que sai:** `system` de `MessageSource` e a junção por vírgula de `copiedFrom`, com o id do
+     conector no lugar de uma fonte `NOT_GIVEN` (`sources.ts:72-74`); a frase única em `text-fact
+     text-text-2` da fonte de dado (`sources.tsx:39-44`); `named.get(connector)?.auth` repetido em
+     `refusal` (`connector-words.ts:29`), que passa a ler `auth`.
+   - **O que entra:** `copiedFrom` dá `connections` (o `name` de cada `NAMED`) e `reauth` (um deles
+     em `NEEDS_REAUTH`); `wordsOf` ganha `logo` e `auth` pelo mesmo `named`, e `PLAIN_WORDS`,
+     `() => undefined` e `() => 'oauth2_code'`; `Stamp` passa `cn(…, props.className)` ao `Badge`. A
+     linha de `Sources` segue a tabela "Elemento da tela A" de G7: o nome por
+     `systemText(connectors.name(connector), connections, 0)`, o selo por
+     `stateBadge({ state: 'NEEDS_REAUTH' }, connectors.auth(connector))`, o carimbo com as palavras de
+     `copiedText`. Regras: C21, C26, W21, V35.
+   - **Testes:** os casos de 42, 43, 110 e 111, com `queried` aceitando `systems` e `WORDS` com um
+     conector OAuth e um de chaves; cada peça lida por `within(item)` e o tom pela classe do carimbo,
+     não pelo `textContent` juntado.
+   - **Mutações à mão:** `PARTIAL` em `success` (vermelho: "a rodada parcial"); sem `reauth` ("a
+     conexão à espera"); selo em `ACTIVE` ("a conexão ativa"); o id no lugar do `NOT_GIVEN` ("a fonte
+     não dada"); sem `systemText` ("a conexão com o nome do sistema").
+   - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx`
+     passa.
+2. **A leitura ao vivo da tela A.** Critérios: 45.
+   - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
+   - **Referência a seguir:** `liveOf`, `sources.ts:118-126`.
+   - **O que sai:** a frase de `sources.tsx:42`.
+   - **O que entra:** `liveOf` dá `connections: [args.connection]` e `reauth: false`; a linha da
+     cópia, com a operação na pastilha e o carimbo `ao vivo · ${liveText(at, now)}`.
+   - **Testes:** os casos do critério 45 e a leitura tipada de hoje.
+   - **Mutações à mão:** sem "ao vivo · " ("a fonte da leitura ao vivo"); só `clockOf(at)` ("vista
+     noutro dia").
+   - **Pronto quando:** os casos passam.
+3. **A sala do Builder, com um dono do catálogo.** Critérios: 112.
+   - **Arquivos:** move `useConnectorCatalog` de `builder/assistant/connector-names.ts` para
+     `builder/conversation/` (o ciclo de C6, `.dependency-cruiser.cjs:62`, impede só o caminho
+     contrário), com `connector-names.ts` reexportando; muda `panel.tsx`, `panel.test.tsx`.
+   - **O que sai:** o `logo(connector)` do hook (`connector-names.ts:23-25`), que passa a ser
+     `words.logo`; os quatro chamadores de `catalog.logo` não mudam.
+   - **O que entra:** `BuilderChat` chama `useConnectorCatalog(companyId)` e põe `<Chat>` dentro de
+     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: { ...words, refusal:
+     PLAIN_WORDS.refusal } }}>`, num `useMemo`: do catálogo só o nome e a logo; as recusas do Builder
+     ficam as de hoje. Regras: C26, L7.
+   - **Testes:** os casos do critério 112, com a lista de conexões como `sweep-connections.ts:26` e,
+     no segundo, com falha.
+   - **Mutações à mão:** tire o `Provider` ("na conversa do Builder, a fonte tem o nome e a logo");
+     tire o `refusal: PLAIN_WORDS.refusal` (a recusa de conector do Builder).
+   - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/panel.test.tsx`
+     passa.
+4. **A largura.** Critérios: 47, 112, 113.
+   - **Arquivos:** muda `apps/web/sources.layout.test.ts`.
+   - **Referência a seguir:** o caso "a fonte do dado" (`:60-82`) e `sweep-connections.ts:26`.
+   - **O que entra:** a lista de conexões nas `replies`; "Sankhya · Matriz" lido; a 1280 px a pastilha
+     na linha do nome e o carimbo na borda direita; a 390 px a pastilha abaixo do nome, alinhada a
+     ele, ou o carimbo inteiro na terceira; as linhas finas e 32 px por fonte; nada passa da largura.
+   - **Pronto quando:** `npm run test:browser -w @conexus/web` passa.
+
+### Como se prova
+
+42, 43, 45, 110, 111 e 113: a mensagem gravada (T26) por `itemsOf`; hoje, uma frase cinza. 112: a
+conversa do Projeto pela porta da tela; hoje, "sankhya". 47: o navegador mede as peças.
+
+### Parar se
+
+- O PR 1111 não está mesclado: relate; não refaça o `systemText` da leitura ao vivo nem o export.
+- O ponto neutro não pega `line-strong` pelo `className` do `Stamp`: relate; não escreva outro carimbo.
+- A linha não desce a 390 px pela quebra de `sm`: relate com as medidas; a quebra da tela ou uma
+  consulta de contêiner é escolha do firstmate.
+- Uma peça da tela A pede um token fora do `DESIGN.md`: relate.
+
+## G7 O ponto de conferência
+
+- Web: `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx src/builder/conversation/panel.test.tsx src/builder/conversation/tool-row.test.tsx` e `npm run test:browser -w @conexus/web`. Depois `npm run check`.
+- Passos 6 e 7 de `conexus-build`: o Hub local com os dublês, no Assistente e no Builder, "Quanto
+  vendi em outubro?" e uma leitura ao vivo, a 1366 e 390 px, nos dois temas (T23), ao lado da tela A,
+  elemento por elemento, também o selo e o Projeto sem a conexão. As mutações, com o resultado (T27).
+- Depois do PR, a QA (`conexus-qa`, T25) do bloco Fontes, por um agente que não construiu, com a
+  matriz de G7 e a tela A; o relatório vai no PR antes da revisão.

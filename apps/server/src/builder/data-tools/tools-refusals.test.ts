@@ -25,7 +25,7 @@ const REFUSALS = [
     kind: 'NOT_IN_ROLE',
     query: { kind: 'NOT_IN_ROLE' },
     reason:
-      'PostgreSQL denied this statement: the role of the person does not read one of its tables, or the statement is not a read. Say so; do not look for the data elsewhere.',
+      'PostgreSQL denied this statement: it reads a table outside the catalog of this place, or it is not a read. Call data_describe with no table to see the tables you may read; do not look for the data elsewhere.',
   },
 ] as const
 
@@ -76,7 +76,7 @@ test('o abortSignal vai ao describe e ao read de data_query', async () => {
   const { tools, reached } = world(CATALOG)
   const controller = new AbortController()
   await runOn(tools, 'data_query', { sql: 'select 1' }, { abortSignal: controller.signal })
-  assert.equal(reached.signals.length, 3)
+  assert.equal(reached.signals.length, 2)
   assert.ok(reached.signals.every((signal) => signal === controller.signal))
 })
 

@@ -2,12 +2,15 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { DataResult, ReadCut } from '@conexus/hub-api'
+import { z } from 'zod'
 import {
   LEAK,
   NATIVE_RECORDINGS,
   nativeRecording,
   RECORDINGS,
   Recording,
+  toolResultsOf,
 } from './test-recordings.ts'
 
 // Claude's four cases and Gemini's interruption, reasoning and automation proposal, as `record-provider.ts` names them,
@@ -53,7 +56,7 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
 })
 
 // The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
-// and `plan`, `files`, `tasks`, `reads`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream.
+// and `plan`, `files`, `tasks`, `reads`, `data-query`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream.
 const NATIVE = [
   'abort',
   'approval',
@@ -62,6 +65,7 @@ const NATIVE = [
   'approval-refused',
   'approval-stopped',
   'cited',
+  'data-query',
   'files',
   'handoff',
   'plan',
@@ -78,6 +82,7 @@ const STREAMED = new Set([
   'files',
   'tasks',
   'reads',
+  'data-query',
   'research',
   'research-failed',
   'handoff',
@@ -109,4 +114,31 @@ test('cada gravação do fluxo nativo diz a biblioteca, a versão e a gravação
     const text = readFileSync(join(NATIVE_RECORDINGS, `${scenario}.jsonl`), 'utf8')
     assert.equal(LEAK.test(text), false, `${scenario}.jsonl carries an address or a credential`)
   }
+})
+
+const Versions = z.object({ version: z.string() })
+test('as gravações desta etapa são da Mastra instalada e guardam o resultado das ferramentas de dado', () => {
+  const installed = Versions.parse(
+    JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, '../../../../node_modules/@mastra/core/package.json'),
+        'utf8',
+      ),
+    ),
+  ).version
+  for (const scenario of ['data-query', 'reads'])
+    assert.equal(nativeRecording(scenario).header.version, installed, scenario)
+
+  const data = toolResultsOf('data-query').map(({ result }) => DataResult.parse(result))
+  assert.deepEqual(
+    data.map(({ kind }) => kind),
+    ['CATALOG', 'TABLE', 'ROWS'],
+  )
+  const [, table, rows] = data
+  assert.equal(table?.kind === 'TABLE' && table.origin.table, 'sankhya_vendas')
+  assert.equal(rows?.kind === 'ROWS' && rows.origin.length > 0, true)
+
+  const [read] = toolResultsOf('reads')
+  assert.equal(read?.tool, 'connector_read')
+  assert.ok(ReadCut.parse(read.result).at, 'the recorded live read carries the time it came back')
 })

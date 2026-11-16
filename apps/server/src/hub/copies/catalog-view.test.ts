@@ -11,7 +11,10 @@ function COMPANY_SCOPE(on: CopiesOn) {
 
 function tablesOf(on: CopiesOn, only: 'ALL' | { projectId: typeof on.projectId }) {
   return on.hub.test.database.read(COMPANY_SCOPE(on), (tx) =>
-    on.copies.data.catalogTables(tx, { companyId: on.companyId, only }),
+    on.copies.data.catalogTables(tx, {
+      ...{ companyId: on.companyId, only },
+      given: new Map([[on.connectionId, 'ACTIVE']]),
+    }),
   )
 }
 
@@ -29,7 +32,13 @@ test('as tabelas da empresa com descrição, rótulo e última rodada terminada'
   const [clients, sales] = tables
   assert.equal(clients?.kept.lastRun, null)
   assert.equal(sales?.kept.lastRun?.outcome.kind, 'COMPLETE')
-  assert.deepEqual(sales?.kept.connections, [on.connectionId])
+  const [source] = sales?.kept.sources ?? []
+  assert.equal(source?.kind, 'NAMED')
+  assert.ok(source?.kind === 'NAMED')
+  assert.equal(source.connection.id, on.connectionId)
+  assert.equal(source.connection.connector, 'sankhya')
+  assert.ok(source.connection.name.length > 0)
+  assert.equal(source.state, 'ACTIVE')
 })
 
 test('as tabelas de um Projeto são as liberadas', async (t) => {

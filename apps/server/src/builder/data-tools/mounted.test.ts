@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
+import { PADARIA_SOL_MATRIZ } from '../../hub/connectors/test-sales.ts'
 import { releasing } from '../../hub/copies/test-released.ts'
 import { memberOn } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
@@ -157,14 +158,48 @@ test('o agente salvo usado por um membro lê o catálogo do Projeto, como o auto
   assert.deepEqual(author, ['sankhya_vendas'])
 })
 
-test('uma conexão à espera de nova autorização tira a sua tabela da lista e não recusa o catálogo', async (t) => {
-  const on = await agentsOn(t, LISTING)
+function resultsOf(on: On): { kind: string; tables?: unknown[]; origin?: unknown[] }[] {
+  const results = on.calls.at(-1)?.toolResults ?? []
+  assert.ok(results.length > 0, 'the model read tool results')
+  return results.map(({ text }) => JSON.parse(text))
+}
+
+test('no Início, a conexão à espera de nova autorização: a tabela é lida, e a origem diz o nome e o estado', async (t) => {
+  const on = await agentsOn(t, [
+    [DESCRIBE],
+    [tool(DATA_TOOL.query, { sql: 'select count(*) as n from sync.sankhya_vendas' })],
+    [said('Pronto.')],
+  ])
   await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
   const { assistant } = await conversationsOf(t, on)
   await on.hub.test.asOwner(
     "update connectors.connection set state = 'NEEDS_REAUTH' where id = $1",
     [on.matriz],
   )
-  assert.deepEqual(await describedBy(on, assistant), [])
-  assert.equal(resultOf(on).kind, 'CATALOG')
+  await assistant.say('Quanto vendemos?')
+  const [described, queried] = resultsOf(on)
+  const origin = { name: 'Matriz', state: 'NEEDS_REAUTH' }
+  assert.equal(described?.kind, 'CATALOG')
+  assert.deepEqual(
+    described?.tables?.map((each) => Object(each).name),
+    ['sankhya_vendas'],
+  )
+  assert.deepEqual(Object(described?.tables?.[0]).systems, [{ kind: 'NAMED', ...origin }])
+  assert.equal(queried?.kind, 'ROWS')
+  assert.deepEqual(Object(queried).rows, [[String(PADARIA_SOL_MATRIZ.notas.length)]])
+  assert.deepEqual(Object(queried?.origin?.[0]).systems, [{ kind: 'NAMED', ...origin }])
+})
+
+test('o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz só o conector', async (t) => {
+  const on = await agentsOn(t, LISTING)
+  await releasing(t, on, { connectionId: on.filial }, ['vendas'])
+  const { builder } = await conversationsOf(t, on)
+  await builder.say('Quais tabelas eu leio?')
+  const [described] = resultsOf(on)
+  assert.equal(described?.kind, 'CATALOG')
+  const [table] = described?.tables ?? []
+  assert.equal(Object(table).name, 'sankhya_vendas')
+  assert.deepEqual(Object(table).systems, [{ kind: 'NOT_GIVEN' }])
+  assert.equal(Object(table).connector, 'sankhya')
+  assert.ok(!JSON.stringify(described).includes('Filial'), 'o nome da conexão não sai')
 })

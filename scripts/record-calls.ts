@@ -1,6 +1,7 @@
+import { OCTOBER_SQL, TOTAL_OUTUBRO } from '../apps/server/src/builder/data-tools/test-data.ts'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
 
-// What the model does in the `tasks`, `reads` and `handoff` scenarios of `scripts/record.ts`: invented prompts and calls (security S40).
+// What the model does in the `tasks`, `reads`, `data-query` and `handoff` scenarios of `scripts/record.ts`: invented prompts and calls (security S40).
 export const TASKS_PROMPT = 'Monte um app de encomendas para uma padaria inventada, por tarefas.'
 const PLANNED = [
   { id: '1', content: 'Montar a tabela', activeForm: 'Montando a tabela', status: 'in_progress' },
@@ -35,6 +36,20 @@ export const READS_CALLS: Block[][] = [
     {
       type: 'text',
       text: 'Em setembro de 2026, na Matriz: JOAO vendeu R$ 8.072,70, RITA R$ 7.951,50 e MARCIA R$ 7.726,50.',
+    },
+  ],
+]
+export const DATA_QUERY_PROMPT = 'Quanto a Padaria Sol vendeu em outubro de 2026?'
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+/** What the model does in the `data-query` scenario: list the tables, look at the sales, query the October total, then answer with it. */
+export const DATA_QUERY_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'data_describe', input: {} }],
+  [{ type: 'tool_use', name: 'data_describe', input: { table: 'sankhya_vendas' } }],
+  [{ type: 'tool_use', name: 'data_query', input: { sql: OCTOBER_SQL } }],
+  [
+    {
+      type: 'text',
+      text: `Em outubro de 2026 a Padaria Sol vendeu ${BRL.format(TOTAL_OUTUBRO).replace(/\u00a0/g, ' ')}, de sankhya_vendas.`,
     },
   ],
 ]

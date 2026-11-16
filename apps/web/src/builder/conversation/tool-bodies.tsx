@@ -1,7 +1,9 @@
 import type { FailureCode, ToolSearchResult } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
+import { useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
+import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { failureDetail, thrownOf } from './connector-specs.ts'
 import { ProgramSuccess } from './machine-specs.ts'
@@ -65,6 +67,60 @@ export function Program({ tool, title }: { tool: ToolItem; title: string }) {
       {result !== undefined && <Labelled label="Resultado:" text={result} />}
       {logs !== undefined && logs !== '' && <Labelled label="Registros:" text={logs} />}
     </div>
+  )
+}
+
+function fieldOf(obj: unknown, key: string): string | undefined {
+  if (obj && typeof obj === 'object' && key in obj) {
+    const val = Reflect.get(obj, key)
+    return typeof val === 'string' ? val : undefined
+  }
+  return undefined
+}
+
+/** A skill the model loaded: its name and its instructions, from the call or from its result. */
+export function SkillBlock({ tool }: { tool: ToolItem }) {
+  const name = fieldOf(tool.args, 'name') ?? fieldOf(tool.result, 'name')
+  const instructions =
+    fieldOf(tool.args, 'instructions') ??
+    fieldOf(tool.result, 'instructions') ??
+    (typeof tool.result === 'string' ? tool.result : undefined)
+  return (
+    <>
+      {name && <div className="font-semibold text-text">{name}</div>}
+      {instructions && <pre className={BLOCK}>{shown(instructions)}</pre>}
+    </>
+  )
+}
+
+type Copied = 'IDLE' | 'DONE' | 'FAILED'
+
+/** The query a `data_query` ran, whole, and the button that copies it; `shown` would cut it at 800 characters. */
+export function QueryBlock({ sql }: { sql: string }) {
+  const [copied, setCopied] = useState<Copied>('IDLE')
+  function copy() {
+    return (navigator.clipboard?.writeText(sql) ?? Promise.reject(new Error('no clipboard'))).then(
+      () => setCopied('DONE'),
+      (cause: unknown) => {
+        console.error('QUERY_NOT_COPIED', cause)
+        setCopied('FAILED')
+      },
+    )
+  }
+  return (
+    <>
+      <pre className={BLOCK}>{sql}</pre>
+      <div className="flex min-w-0 flex-wrap items-center gap-sm">
+        <Button variant="ghost" size="sm" onClick={copy}>
+          {copied === 'DONE' ? 'Consulta copiada' : 'Copiar a consulta'}
+        </Button>
+        {copied === 'FAILED' && (
+          <p className="text-fact text-text-2">
+            Não deu para copiar. Selecione a consulta e copie.
+          </p>
+        )}
+      </div>
+    </>
   )
 }
 

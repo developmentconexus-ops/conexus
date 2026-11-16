@@ -28,7 +28,7 @@ import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
-import { editOf, shown } from './tool-args.ts'
+import { editOf, shown, stringArg } from './tool-args.ts'
 import {
   Answer,
   asksToReconnect,
@@ -36,20 +36,14 @@ import {
   Generic,
   Library,
   Program,
+  QueryBlock,
   Reason,
   Research,
+  SkillBlock,
   textOf,
 } from './tool-bodies.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
-
-function fieldOf(obj: unknown, key: string): string | undefined {
-  if (obj && typeof obj === 'object' && key in obj) {
-    const val = Reflect.get(obj, key)
-    return typeof val === 'string' ? val : undefined
-  }
-  return undefined
-}
 
 /** The clock of a call that runs, from when the screen first heard of it. */
 function Since({ at }: { at: number | undefined }) {
@@ -157,19 +151,8 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
       const result = textOf(tool.result)
       return <pre className={BLOCK}>{result !== undefined ? shown(result) : (detail ?? '')}</pre>
     }
-    case 'skill': {
-      const name = fieldOf(tool.args, 'name') ?? fieldOf(tool.result, 'name')
-      const instructions =
-        fieldOf(tool.args, 'instructions') ??
-        fieldOf(tool.result, 'instructions') ??
-        (typeof tool.result === 'string' ? tool.result : undefined)
-      return (
-        <>
-          {name && <div className="font-semibold text-text">{name}</div>}
-          {instructions && <pre className={BLOCK}>{shown(instructions)}</pre>}
-        </>
-      )
-    }
+    case 'skill':
+      return <SkillBlock tool={tool} />
     case 'library': {
       const found = ToolSearchResult.safeParse(tool.result).data
       return found === undefined ? <Generic tool={tool} title={title} /> : <Library found={found} />
@@ -186,6 +169,8 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
       return <Research tool={tool} title={title} />
     case 'program':
       return <Program tool={tool} title={title} />
+    case 'query':
+      return <QueryBlock sql={stringArg(tool.args, 'sql') ?? ''} />
     default:
       return <Generic tool={tool} title={title} said={besideOf(tool, room)} />
   }

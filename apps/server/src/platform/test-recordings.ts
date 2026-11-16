@@ -87,3 +87,29 @@ export function nativeRecording(scenario: string) {
     rows: rest.flatMap((line) => (line.kind === 'row' ? [line] : [])),
   }
 }
+
+const StoredToolParts = z.object({
+  row: z.object({
+    content: z.object({
+      parts: z.array(
+        z.looseObject({
+          toolInvocation: z.object({ toolName: z.string(), result: z.unknown() }).optional(),
+        }),
+      ),
+    }),
+  }),
+})
+
+/** The results of the tools a recorded scenario's stored messages hold, in the order Mastra stored them (testing T24). */
+export function toolResultsOf(scenario: string): { tool: string; result: unknown }[] {
+  return nativeRecording(scenario).rows.flatMap(({ row }) => {
+    const stored = StoredToolParts.safeParse({ row })
+    return stored.success
+      ? stored.data.row.content.parts.flatMap(({ toolInvocation }) =>
+          toolInvocation === undefined
+            ? []
+            : [{ tool: toolInvocation.toolName, result: toolInvocation.result }],
+        )
+      : []
+  })
+}

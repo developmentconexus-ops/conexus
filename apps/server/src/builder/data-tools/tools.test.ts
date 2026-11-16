@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Catalog as CatalogShape, DESCRIBE_SAMPLE_ROWS } from '@conexus/hub-api'
 import { dataTools } from './public.ts'
-import { CATALOG, FORA, runOn, thrown, WITH_ONE_ORPHAN, WITH_ORPHAN, world } from './test-world.ts'
+import { CATALOG, LOJA_A, MIXED, runOn, thrown, UNNAMED, WAITING, world } from './test-world.ts'
+
+const LOJA_A_ACTIVE = { kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }
+const LOJA_B_ACTIVE = { kind: 'NAMED', name: 'Loja B', state: 'ACTIVE' }
 
 test('sem requestContext, NOT_GRANTED e nenhuma fonte chamada', async () => {
   const { tools, reached } = world(CATALOG, {}, (requestContext) => requestContext.has('scope'))
@@ -17,7 +20,7 @@ test('sem requestContext, NOT_GRANTED e nenhuma fonte chamada', async () => {
 })
 
 test('dataOf undefined, NOT_GRANTED', async () => {
-  const tools = dataTools({ dataOf: async () => undefined, log: { error: () => undefined } })
+  const tools = dataTools({ dataOf: async () => undefined })
   for (const [name, input] of [
     ['data_describe', {}],
     ['data_query', { sql: 'select 1' }],
@@ -42,7 +45,7 @@ test('describe sem tabela não traz colunas e traz o conector, a hora do fim e o
     name: 'vendas',
     label: 'VENDAS',
     description: 'A tabela vendas.',
-    systems: ['Loja A'],
+    systems: [{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }],
     connector: 'erp-falso',
     lastRunEndedAt: '2026-11-14T11:05:00.000Z',
     lastRun: 'ERROR',
@@ -86,21 +89,21 @@ test('describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não
   assert.deepEqual(reached.query, [])
 })
 
-test('query devolve a origem com o nome e o conector do sistema do catálogo', async () => {
+test('query devolve a origem com o nome gravado e o conector da cópia', async () => {
   const { tools } = world(CATALOG)
   const result = await runOn(tools, 'data_query', { sql: 'select count(*) from sync.juntas' })
   assert.equal(result.kind, 'ROWS')
   assert.deepEqual(result.columns, ['n'])
   assert.equal(result.complete, true)
   assert.deepEqual(
-    result.origin.map((each: { table: string; systems: string[]; connector: string }) => [
+    result.origin.map((each: { table: string; systems: unknown[]; connector: string }) => [
       each.table,
       each.systems,
       each.connector,
     ]),
     [
-      ['vendas', ['Loja A'], 'erp-falso'],
-      ['juntas', ['Loja A', 'Loja B'], 'erp-falso'],
+      ['vendas', [LOJA_A_ACTIVE], 'erp-falso'],
+      ['juntas', [LOJA_A_ACTIVE, LOJA_B_ACTIVE], 'erp-falso'],
     ],
   )
 })
@@ -112,38 +115,53 @@ test('query sem tabela no plano diz que a origem não foi identificada', async (
   assert.equal(result.reason, 'The origin of these rows was not identified: say so.')
 })
 
-test('um sistema fora do catálogo dá CATALOG_UNAVAILABLE e registra DATA_ORIGIN_UNREAD', async () => {
-  const { tools, lines } = world(WITH_ORPHAN, {
-    async query() {
-      return { kind: 'ROWS', columns: ['n'], rows: [[1]], complete: true, used: ['orfa'] }
-    },
-  })
-  const described = await thrown(runOn(tools, 'data_describe', { table: 'orfa' }))
-  const queried = await thrown(runOn(tools, 'data_query', { sql: 'select 1 from sync.orfa' }))
-  assert.equal(described.kind, 'CATALOG_UNAVAILABLE')
-  assert.equal(queried.kind, 'CATALOG_UNAVAILABLE')
-  assert.deepEqual(
-    lines.map((line) => [line.message, line.fields]),
-    [
-      ['DATA_ORIGIN_UNREAD', { table: 'orfa', connection: FORA }],
-      ['DATA_ORIGIN_UNREAD', { table: 'orfa', connection: FORA }],
-    ],
-  )
-  assert.equal(JSON.stringify([described, queried]).includes(FORA), false)
+test('a conexão à espera de nova autorização: a tabela é lida e a origem diz o nome e o estado', async () => {
+  const { tools, reached } = world(WAITING)
+  const waiting = { kind: 'NAMED', name: 'Loja A', state: 'NEEDS_REAUTH' }
+  const listed = await runOn(tools, 'data_describe', {})
+  const described = await runOn(tools, 'data_describe', { table: 'esperando' })
+  const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.esperando' })
+  assert.deepEqual(listed.tables[0].systems, [waiting])
+  assert.equal(described.kind, 'TABLE')
+  assert.deepEqual(described.origin.systems, [waiting])
+  assert.equal(queried.kind, 'ROWS')
+  assert.deepEqual(queried.origin[0].systems, [waiting])
+  assert.deepEqual(reached.rows, ['esperando'])
 })
 
-test('a tabela de uma conexão fora do catálogo fica fora da lista e não derruba as outras', async () => {
-  const { tools, lines } = world(WITH_ONE_ORPHAN)
-  const result = await runOn(tools, 'data_describe', {})
-  assert.deepEqual(
-    result.tables.map((each: { name: string }) => each.name),
-    ['clientes'],
-  )
-  assert.deepEqual(
-    lines.map((line) => [line.message, line.fields]),
-    [['DATA_ORIGIN_UNREAD', { table: 'orfa', connection: FORA }]],
-  )
-  assert.equal(JSON.stringify(result).includes(FORA), false)
+test('a fonte não dada ao Projeto: a origem diz só NOT_GIVEN, sem nome', async () => {
+  const { tools } = world(UNNAMED)
+  const listed = await runOn(tools, 'data_describe', {})
+  const described = await runOn(tools, 'data_describe', { table: 'livre' })
+  const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.livre' })
+  for (const systems of [
+    listed.tables[0].systems,
+    described.origin.systems,
+    queried.origin[0].systems,
+  ])
+    assert.deepEqual(systems, [{ kind: 'NOT_GIVEN' }])
+  assert.equal(described.origin.connector, 'erp-falso')
+})
+
+test('uma cópia de duas conexões com uma não dada nomeia só a dada', async () => {
+  const { tools } = world(MIXED)
+  const described = await runOn(tools, 'data_describe', { table: 'mista' })
+  assert.deepEqual(described.origin.systems, [LOJA_A_ACTIVE, { kind: 'NOT_GIVEN' }])
+})
+
+test('as duas descrições dizem o estado da conexão e o que é NOT_GIVEN', () => {
+  const { tools } = world(CATALOG)
+  for (const name of ['data_describe', 'data_query'] as const) {
+    const { description } = Object(tools)[name]
+    assert.match(
+      description,
+      /Each system says its state: a state other than ACTIVE means the rows are its last copy/,
+    )
+    assert.match(
+      description,
+      /A system NOT_GIVEN is a connection this place was not given: name only its connector\./,
+    )
+  }
 })
 
 test('uma cópia de duas conexões nomeia as duas na origem', async () => {
@@ -151,10 +169,11 @@ test('uma cópia de duas conexões nomeia as duas na origem', async () => {
   const described = await runOn(tools, 'data_describe', { table: 'juntas' })
   const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.juntas' })
   const catalog = await runOn(tools, 'data_describe', {})
-  assert.deepEqual(described.origin.systems, ['Loja A', 'Loja B'])
-  assert.deepEqual(queried.origin.at(-1).systems, ['Loja A', 'Loja B'])
+  const both = [LOJA_A_ACTIVE, LOJA_B_ACTIVE]
+  assert.deepEqual(described.origin.systems, both)
+  assert.deepEqual(queried.origin.at(-1).systems, both)
   assert.deepEqual(
     catalog.tables.find((each: { name: string }) => each.name === 'juntas').systems,
-    ['Loja A', 'Loja B'],
+    both,
   )
 })

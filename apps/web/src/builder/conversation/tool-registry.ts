@@ -1,23 +1,18 @@
-import { BUILDER_TOOL, SKILL_TOOLS, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, SKILL_TOOLS } from '@conexus/hub-api'
 import {
   BookOpenIcon,
   CircleAlertIcon,
   ClipboardCheckIcon,
-  FilePenIcon,
-  FilePlusIcon,
-  FileTextIcon,
-  FolderPlusIcon,
   GlobeIcon,
   HistoryIcon,
   SearchIcon,
-  TerminalIcon,
-  TrashIcon,
   WrenchIcon,
 } from 'lucide-react'
 import { APP_DATA_SPECS } from './app-data-specs.ts'
 import { ASSISTANT_SPECS } from './assistant-specs.ts'
 import { CONNECTOR_SPECS } from './connector-specs.ts'
 import { CONSTRUTOR_SPECS, slugToolSpec, writeToolSpec } from './construtor-specs.ts'
+import { DATA_SPECS } from './data-specs.ts'
 import { MACHINE_SPECS } from './machine-specs.ts'
 import { RESEARCH_SPECS } from './research-specs.ts'
 import type { Room } from './room.ts'
@@ -25,135 +20,14 @@ import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
 import { headOf } from './tool-spec.ts'
+import { WORKSPACE_SPECS } from './workspace-specs.ts'
 
 export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const {
-  readFile,
-  writeFile,
-  editFile,
-  listFiles,
-  delete: remove,
-  fileStat,
-  mkdir,
-  grep,
-  executeCommand,
-  getProcessOutput,
-  killProcess,
-} = WORKSPACE_TOOL
 const { webSearch, webFetch, recall, check } = BUILDER_TOOL
 const [skill, skillRead, skillSearch] = SKILL_TOOLS
 
 export const TOOLS: Record<RowTool, ToolSpec> = {
-  [readFile]: {
-    icon: FileTextIcon,
-    running: 'Lendo um arquivo',
-    done: 'Leu um arquivo',
-    failed: 'Não conseguiu ler',
-    verb: 'leu',
-    detailKey: 'path',
-    body: 'file',
-    groups: true,
-  },
-  [writeFile]: {
-    icon: FilePlusIcon,
-    running: 'Escrevendo um arquivo',
-    done: 'Escreveu um arquivo',
-    failed: 'Não conseguiu escrever',
-    verb: 'escreveu',
-    detailKey: 'path',
-    body: 'write',
-    groups: true,
-  },
-  [editFile]: {
-    icon: FilePenIcon,
-    running: 'Editando um arquivo',
-    done: 'Editou um arquivo',
-    failed: 'Não conseguiu editar',
-    verb: 'editou',
-    detailKey: 'path',
-    body: 'edit',
-    groups: true,
-  },
-  [listFiles]: {
-    icon: SearchIcon,
-    running: 'Listando arquivos',
-    done: 'Listou arquivos',
-    failed: 'Não conseguiu listar arquivos',
-    verb: 'listou',
-    detailKey: 'path',
-    body: 'list',
-    groups: true,
-  },
-  [grep]: {
-    icon: SearchIcon,
-    running: 'Buscando no código',
-    done: 'Buscou no código',
-    failed: 'Não conseguiu buscar no código',
-    verb: 'procurou',
-    detailKey: 'pattern',
-    body: 'list',
-    groups: true,
-  },
-  [fileStat]: {
-    icon: FileTextIcon,
-    running: 'Consultando um arquivo',
-    done: 'Consultou um arquivo',
-    failed: 'Não conseguiu consultar',
-    verb: 'consultou',
-    detailKey: 'path',
-    body: 'generic',
-    groups: true,
-  },
-  [remove]: {
-    icon: TrashIcon,
-    running: 'Apagando um arquivo',
-    done: 'Apagou um arquivo',
-    failed: 'Não conseguiu apagar',
-    verb: 'apagou',
-    detailKey: 'path',
-    body: 'generic',
-    groups: true,
-  },
-  [mkdir]: {
-    icon: FolderPlusIcon,
-    running: 'Criando uma pasta',
-    done: 'Criou uma pasta',
-    failed: 'Não conseguiu criar a pasta',
-    verb: 'criou pasta',
-    detailKey: 'path',
-    body: 'generic',
-    groups: true,
-  },
-  [executeCommand]: {
-    icon: TerminalIcon,
-    running: 'Rodando um comando',
-    done: 'Rodou um comando',
-    failed: 'Um comando falhou',
-    verb: 'rodou',
-    detailKey: 'command',
-    phraseKey: 'description',
-    body: 'command',
-    groups: true,
-  },
-  [getProcessOutput]: {
-    icon: TerminalIcon,
-    running: 'Lendo a saída de um processo',
-    done: 'Leu a saída de um processo',
-    failed: 'Não conseguiu ler a saída',
-    verb: 'leu saída',
-    body: 'generic',
-    groups: true,
-  },
-  [killProcess]: {
-    icon: TerminalIcon,
-    running: 'Parando um processo',
-    done: 'Parou um processo',
-    failed: 'Não conseguiu parar o processo',
-    verb: 'parou processo',
-    body: 'generic',
-    groups: true,
-  },
   [webSearch]: {
     icon: GlobeIcon,
     running: 'Pesquisando na internet',
@@ -194,6 +68,8 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     body: 'generic',
     groups: true,
   },
+  ...WORKSPACE_SPECS,
+  ...DATA_SPECS,
   ...CONNECTOR_SPECS,
   ...ASSISTANT_SPECS,
   ...MACHINE_SPECS,
@@ -301,7 +177,7 @@ function phrased(spec: ToolSpec, phrase: string, status: ToolStatus, detail: str
 
 /** The row's icon and sentence by its status; the readable name for a tool outside the set. */
 export function presentTool(
-  tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
+  tool: Pick<ToolItem, 'toolName' | 'args' | 'errorText' | 'isError'> & { result?: unknown },
   status: ToolStatus,
   room: Room,
 ): Presented {

@@ -11,7 +11,7 @@ export type DataDeps = {
   database: Database
   identity: IdentityPorts
   log: FailureLog
-  connectors: () => Pick<Connectors, 'catalogSystems'>
+  connectors: () => Pick<Connectors, 'catalogSystems' | 'catalogSources'>
   copies: () => CopyService['data']
   projects: ProjectPorts
   companyPostgres: CompanyPostgres
