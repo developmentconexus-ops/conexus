@@ -338,9 +338,9 @@ test.each([
   ['+01:00', '2026-11-16T07:39:48.476+01:00'],
 ])('a fonte ao vivo com a hora em %s diz ao vivo · lido agora, às 03:39', (_offset, at) => {
   clockAt('2026-11-16T07:00:00.000Z')
-  const stamp = 'ao vivo · lido agora, às 03:39'
+  const [stamp, name] = ['ao vivo · lido agora, às 03:39', 'Sankhya · Matriz']
   expect(linesOf([read({ at })])).toMatchObject([
-    { logo: true, stamp, words: 'text-2', dot: 'success' },
+    { logo: true, name, badges: [], table: 'consultar', stamp, words: 'text-2', dot: 'success' },
   ])
 })
 
