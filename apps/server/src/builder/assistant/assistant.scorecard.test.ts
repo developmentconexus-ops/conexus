@@ -48,6 +48,7 @@ test('o placar conta o turno: uma leitura repetida e uma ferramenta que falhou d
     right: true,
     calls: 4,
     errors: 1,
+    firstQueryFailed: false,
     repeated: 1,
     firstStepTokens: card.firstStepTokens,
     helpers: 0,

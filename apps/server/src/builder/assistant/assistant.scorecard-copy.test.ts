@@ -174,6 +174,7 @@ test('o placar do dado copiado julga certo um turno que consulta e cita a origem
   const right = await turnOf(t, on, c1)
   assert.equal(judgedCopy(c1, right.parts), true)
   assert.equal(scoreOf({ question: 1, ...right, right: true }).errors, 0)
+  assert.equal(scoreOf({ question: 1, ...right, right: true }).firstQueryFailed, false)
 
   follows(scripted([[searching()], [reading('Matriz', LIVE_SQL)], [said(said1)]]))
   assert.equal(judgedCopy(c1, (await turnOf(t, on, c1)).parts), false, 'a live read')
@@ -251,6 +252,7 @@ test('não achei é resposta: c4 é certa com prosa que nomeia uma tabela que ex
   const refused = await turnOf(t, on, c4)
   assert.equal(judgedCopy(c4, refused.parts), false, 'a refusal')
   assert.equal(scoreOf({ question: 4, ...refused, right: false }).errors, 1)
+  assert.equal(scoreOf({ question: 4, ...refused, right: false }).firstQueryFailed, true)
 })
 
 test('o modelo de verdade, as perguntas do dado copiado: cada pergunta numa conversa nova, um JSON por pergunta', {
