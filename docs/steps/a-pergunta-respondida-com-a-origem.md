@@ -110,10 +110,11 @@ foram postas.
 aprovação. O roteiro de uso não muda.
 
 - Uma tabela copiada de um sistema cuja conexão espera nova autorização, ou que o Projeto não
-  recebeu, continua legível pelo agente, como já é na página da tabela, na Amostra e no app. A
-  origem vem do registro gravado da cópia, e o agente diz que a conexão não está ativa ali e de
-  quando é a cópia. Nesse caso ele nomeia só o sistema ("Sankhya"), nunca a conexão ("Matriz").
-  Antes, o agente recusava a tabela.
+  recebeu, continua legível pelo agente, como já é na página da tabela, na Amostra e no app.
+  O agente diz a origem pelo registro gravado da cópia, com o estado da conexão e de quando é a
+  cópia: no Início, "Sankhya · Matriz, conexão a reautorizar". Só num Projeto que não recebeu a
+  conexão ele nomeia apenas o sistema ("Sankhya"), nunca a conexão ("Matriz"), que é o que o app do
+  Projeto já vê. Antes, o agente recusava a tabela.
 - Uma consulta que o banco recusa por permissão diz na tela "Essa tabela não está no catálogo.", e
   não mais "Seu papel não lê esta tabela.", que era falso num Projeto e revelava a tabela.
 - Um grupo novo, G2b, faz a primeira mudança e os consertos que a revisão de G2 deixou, antes de G3.
@@ -125,7 +126,7 @@ aprovação. O roteiro de uso não muda.
 | G1 (um PR só do contrato e da conformidade, issue `contrato`) | U1 `withheld` sai do contrato e a lei da tabela escondida | O catálogo perde a segunda lista: a tabela que o papel não lê não aparece em lugar nenhum de `describe`, e pedi-la pelo nome responde `NOT_IN_CATALOG`, igual a um nome que não existe. A conformidade troca a lei da tabela retida pela lei da tabela escondida; a lei da consulta recusada pelo banco fica | `packages/hub-api/src/`, `apps/server/src/hub/data/` (uma linha e um teste), `scripts/rerun-never.json` | testing (T5, T10, T27); security S10 | nada; entra antes das ferramentas (parte 3, grupo 3) e do catálogo por papel (parte 4, grupo 6) |
 | G2 | U2 As duas ferramentas, os nomes, o fecho do Builder e o verificador | `data_describe` e `data_query` sobre o contrato, com a origem de cada tabela e a recusa lançada como erro da ferramenta; os nomes e a forma do resultado no dono único; a ordem do agente num texto só; a pasta nova fora da lista de migração; a linha mínima de cada uma na conversa | `apps/server/src/builder/data-tools/` (nova), `packages/hub-api/src/tools.ts`, `packages/hub-api/src/assistant.ts`, `apps/server/src/builder/conversation/permissions.ts`, `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`, `apps/web/src/builder/conversation/` | testing, web | U1 (o catálogo sem `withheld`); a fonte de consulta, já no `main` (PR 1077) |
 | G2 | U3 A montagem nos três agentes, com a porta na raiz do servidor | O `data` da raiz do servidor chega ao Assistente, ao Builder e ao agente salvo; os três oferecem as duas ferramentas e trazem a ordem; o Construtor não; o bloco "## Data" do Builder manda ver linhas com `data_describe` | `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/builder/assistant/`, `apps/server/src/builder/conversation/`, `apps/server/src/builder/agents/`, `apps/server/src/builder/app-data/context.ts` | testing | U2 |
-| G2b (um PR só, emenda de 2026-11-15) | U2b A origem pelo registro gravado da cópia, e os fechamentos de G2 | O contrato leva em `kept` a fonte gravada de cada tabela (`CopySource`: id, nome e conector) no lugar de só o id; as duas ferramentas leem toda tabela do catálogo e dizem a origem por ela, com a conexão fora de `systems` marcada `INACTIVE` e nomeada só pelo conector; sai a recusa por conexão fora de `systems` e o log `DATA_ORIGIN_UNREAD`; a frase de `NOT_IN_ROLE` manda listar o catálogo; os Fechamentos A, B e C do delta de G2 e o 6 da revisão | `packages/hub-api/src/` (`company-data.ts`, a conformidade, `assistant.ts`), `apps/server/src/hub/copies/` (só `catalog-view.ts` e o seu teste), `apps/server/src/hub/data/` (só um teste), `apps/server/src/builder/data-tools/`, `scripts/rerun-never.json`, `apps/web/src/builder/conversation/` (só a divisão de `tool-registry.ts`) | testing | G2 no `main` (PR 1095, merge `f1067f05`) |
+| G2b (um PR só, emenda de 2026-11-15) | U2b A origem pelo registro gravado da cópia, e os fechamentos de G2 | O contrato leva em `kept` a fonte gravada de cada tabela no lugar de só o id: o nome, o conector e o estado da conexão (`NAMED`), ou, no catálogo de um Projeto que não recebeu a conexão, só o conector (`NOT_GIVEN`); quem monta o catálogo de cada lugar decide; as duas ferramentas leem toda tabela do catálogo e dizem a origem pelo que `kept` traz; sai a recusa por conexão fora de `systems` e o log `DATA_ORIGIN_UNREAD`; a frase de `NOT_IN_ROLE` manda listar o catálogo; os Fechamentos A, B e C do delta de G2 e o 6 da revisão | `packages/hub-api/src/` (`company-data.ts`, a conformidade, `assistant.ts`), `apps/server/src/hub/connectors/` (só `catalog-systems.ts`, `public.ts` e um teste), `apps/server/src/hub/data/` (`catalog.ts`, `deps.ts` e um teste), `apps/server/src/hub/copies/` (só `catalog-view.ts` e o seu teste), `apps/server/src/builder/data-tools/`, os três chamadores de `dataTools` (uma linha cada), `scripts/rerun-never.json`, `apps/web/src/builder/conversation/` (só a divisão de `tool-registry.ts`) | testing | G2 no `main` (PR 1095, merge `f1067f05`) |
 | G3 (um PR; depois dele, a QA, testing T25) | U4 O `at` da leitura ao vivo, os cenários `data-query` e `reads`, e as perguntas com resposta conhecida | A leitura ao vivo guarda a hora em que a resposta voltou; o fluxo nativo do Mastra gravado com as duas ferramentas de dado, de onde as telas leem o resultado; seis perguntas sobre o dado copiado no placar, com o número calculado do dublê | `apps/server/src/builder/connectors/`, `apps/server/src/builder/data-tools/` (só o ajudante de teste), `apps/server/src/builder/assistant/`, `apps/server/src/platform/` (gravações e o teste delas), `packages/hub-api/src/assistant.ts`, `scripts/`, `apps/web/src/builder/conversation/test-recorded.ts` | testing | U2, U3, U2b (a forma da origem) |
 | G3 | U5 As linhas das duas ferramentas, o corpo com a consulta e os textos de recusa | Telas `p3-02`, `p3-06`, `p3-07`: a frase de cada estado, o detalhe ao lado, a consulta no corpo aberto com **Copiar a consulta**, o texto de cada recusa | `apps/web/src/builder/conversation/` | web, testing | U3, U2b, U4 (o cenário `data-query`) |
 | G3 | U6 O bloco Fontes com a origem do dado e a leitura ao vivo | Telas `p3-01`, `p3-04`, `p3-05`: a fonte de cada tabela lida (conector, tabela, hora da cópia, rodada parcial ou parada) e a da leitura ao vivo ("lido agora, às") | `apps/web/src/builder/conversation/`, `apps/web/sources.layout.test.ts` | web, testing | U3, U2b, U4 (os cenários `data-query` e `reads`) |
@@ -154,7 +155,7 @@ Sete grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
 - **A QA** ([testing T25](../guides/testing.md)) roda depois de G3 e de G4, que têm tela, e anda
   pelo roteiro de uso e pela matriz de estados.
 
-**Orçamento de código alterado.** Total da etapa: cerca de 1.440 linhas, sem testes nem gerados,
+**Orçamento de código alterado.** Total da etapa: cerca de 1.470 linhas, sem testes nem gerados,
 mais as cerca de 120 que a U2b só move de arquivo. Cada unidade tem a sua estimativa abaixo.
 
 - U1: cerca de 30 linhas alteradas (sai mais do que entra), sem testes nem gerados.
@@ -166,7 +167,7 @@ G2 é um PR da trilha Agentes e Apps (delivery L1), lido pela trilha Dados por m
 
 G2b é um PR só, do contrato, de quem o escreve e de quem o lê; não divide arquivo com G4, G5 nem G6.
 
-- U2b: cerca de 70 linhas (`tools.ts` 35, `assistant.ts` 10, `company-data.ts` e a conformidade 15, `catalog-view.ts`, `app-data-specs.ts` e `tool-registry.ts` 10), mais cerca de 120 movidas de `tool-registry.ts` para `workspace-specs.ts`.
+- U2b: cerca de 100 linhas (`tools.ts` 35, `assistant.ts` 10, `company-data.ts` e a conformidade 20, `catalog-systems.ts` 20, `catalog.ts`, `deps.ts` e `public.ts` 5, `catalog-view.ts`, os três chamadores, `app-data-specs.ts` e `tool-registry.ts` 10), mais cerca de 120 movidas de `tool-registry.ts` para `workspace-specs.ts`.
 
 U5 e U6 correm em paralelo depois de U4: dividem a pasta, mas não um arquivo (U5 muda `data-specs.ts`, `tool-spec.ts`, `tool-row.tsx`, `tool-bodies.tsx`; U6 muda `sources.ts`, `sources.tsx`).
 
@@ -205,23 +206,24 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 14 | U2 | `data_describe({ table })` de um nome fora de `tables` (inexistente, ou de uma cópia que o lugar não lê) falha com o erro da ferramenta `NOT_IN_CATALOG`, com "No such table in the catalog. Call data_describe with no table to list them." no `reason`, e não pede linha nenhuma à fonte | `tools.test.ts`, "describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha" | must |
 | 15 | U2b | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com o nome e o conector de cada fonte tirados do registro gravado da cópia (`kept.sources`), não de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome gravado e o conector da cópia" | must |
 | 16 | U2 | `data_query` cujo plano não nomeia tabela de `sync` devolve as linhas, `origin: []` e a frase "The origin of these rows was not identified: say so." | `tools.test.ts`, "query sem tabela no plano diz que a origem não foi identificada" | must |
-| 17 | U2b | Uma tabela copiada de uma conexão que não está em `systems` (à espera de nova autorização, ou não dada ao Projeto) é lida como as outras: `data_describe` sem tabela a lista, `data_describe({ table })` devolve `TABLE` com as linhas e `data_query` devolve `ROWS`. Na origem, essa fonte vem `{ kind: 'INACTIVE' }`, sem nome, e o conector vem do registro gravado; numa cópia de duas conexões com uma fora, `systems` é `[{ kind: 'ACTIVE', name: 'Loja A' }, { kind: 'INACTIVE' }]`. Recusa: nenhum `CATALOG_UNAVAILABLE` por conexão fora de `systems`, nenhum log `DATA_ORIGIN_UNREAD`, e nem o id nem o nome da conexão fora aparecem no resultado | `tools.test.ts`, "uma conexão fora de systems: a tabela é lida e a origem diz INACTIVE, sem nome" e "uma cópia de duas conexões com uma fora de systems nomeia só a ativa" | must |
+| 17 | U2b | Uma tabela é lida como as outras qualquer que seja o estado da sua conexão, e a origem diz o que `kept.sources` traz, sem olhar `systems`: `data_describe` sem tabela a lista, `data_describe({ table })` devolve `TABLE` com as linhas e `data_query` devolve `ROWS`. Uma fonte `NAMED` vira `{ kind: 'NAMED', name, state }`, com o nome gravado e o estado da conexão (`{ kind: 'NAMED', name: 'Loja A', state: 'NEEDS_REAUTH' }`); uma fonte `NOT_GIVEN` vira `{ kind: 'NOT_GIVEN' }`, sem nome nem id; numa cópia de duas conexões com uma `NOT_GIVEN`, `systems` é `[{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }, { kind: 'NOT_GIVEN' }]`. `DESCRIBE_DESCRIPTION` e `QUERY_DESCRIPTION` trazem a frase de U2b sobre o estado e `NOT_GIVEN`. Recusa: nenhum `CATALOG_UNAVAILABLE` por conexão fora de `systems`, nenhum log `DATA_ORIGIN_UNREAD`, e nem o id nem o nome de uma fonte `NOT_GIVEN` aparecem no resultado | `tools.test.ts`, "a conexão à espera de nova autorização: a tabela é lida e a origem diz o nome e o estado", "a fonte não dada ao Projeto: a origem diz só NOT_GIVEN, sem nome", "uma cópia de duas conexões com uma não dada nomeia só a dada" e "as duas descrições dizem o estado da conexão e o que é NOT_GIVEN" | must |
 | 18 | U2 | Cada recusa (`QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `TABLE_UNAVAILABLE`, `NOT_IN_ROLE`, `NOT_IN_CATALOG`, `CATALOG_UNAVAILABLE`) sai pelo caminho nativo de falha da Mastra, como erro da ferramenta (code C79), com o seu `kind` e a frase ao modelo da tabela de U2 em `reason`; `QUERY_REFUSED` leva o SQLSTATE em `code` e a mensagem inteira do PostgreSQL em `message`. Recusa: nenhuma recusa volta como resultado de sucesso | `tools.test.ts`, "cada recusa sai como erro da ferramenta com a sua frase" (`test.each`, com `assert.rejects` sobre o JSON lançado) | must |
 | 19 | U2 | `data_query` com SQL vazio ou acima de 4000 caracteres é recusada pelo esquema de entrada, e a fonte `query` não é chamada | `tools.test.ts`, "o SQL vazio ou acima de 4000 caracteres é recusado pelo esquema" | must |
 | 20 | U2 | O conjunto fechado do Builder e o da tela são o mesmo e contêm `data_describe` e `data_query`; tirar os nomes de `READ` quebra a igualdade | `apps/server/src/builder/conversation/permissions.test.ts`, "a tela e o Builder nomeiam o mesmo conjunto fechado" | must |
 | 21 | U2 | Um arquivo de `builder/data-tools/` que importe `hub/connectors/public.ts` é recusado pelo verificador; a pasta não está na lista de migração | `scripts/rules-doors.test.ts`, o caso `BAD` de `agents-and-apps-reach-data-only-through-the-contract` | must |
 | 22 | U2 | Na conversa, `data_describe` e `data_query` têm frase de rodando, feito e falha | `apps/web/src/builder/conversation/tool-row.test.tsx`, "cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela (Critério 8)" | must |
-| 28 | U2b | Uma tabela copiada de duas conexões em `systems` traz na origem as duas, na ordem de `kept.sources`: `data_describe({ table })` e `data_query` dizem `systems: [{ kind: 'ACTIVE', name: 'Loja A' }, { kind: 'ACTIVE', name: 'Loja B' }]`; o catálogo traz as mesmas duas na tabela | `tools.test.ts`, "uma cópia de duas conexões nomeia as duas na origem" | must |
+| 28 | U2b | Uma tabela copiada de duas conexões traz na origem as duas, na ordem de `kept.sources`: `data_describe({ table })` e `data_query` dizem `systems: [{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }, { kind: 'NAMED', name: 'Loja B', state: 'ACTIVE' }]`; o catálogo traz as mesmas duas na tabela | `tools.test.ts`, "uma cópia de duas conexões nomeia as duas na origem" | must |
 | 23 | U3 | O Assistente, o Builder e o agente salvo oferecem `data_describe` e `data_query` ao modelo com a mesma descrição e o mesmo esquema | `apps/server/src/builder/data-tools/mounted.test.ts`, "o Assistente, o Builder e o agente salvo oferecem data_describe e data_query com a mesma descrição e o mesmo esquema" | must |
 | 24 | U3 | O Construtor não oferece nenhuma das duas | `mounted.test.ts`, "o Construtor não oferece data_describe nem data_query" | must |
 | 25 | U3 | As instruções dos três trazem `## Company data`, também o Builder num Projeto sem cópia liberada | `mounted.test.ts`, "a ordem do agente está nas instruções dos três, também num Projeto sem cópia" | must |
 | 26 | U3 | O bloco "## Data" do Builder, num Projeto com cópia liberada, manda ver colunas e linhas com `data_describe` e não diz mais "see a few rows with `app_data_read`" | `mounted.test.ts`, "o bloco de dados do Builder não manda ver linhas com app_data_read" | must |
 | 27 | U3 | Pela porta da raiz, o lugar decide o catálogo: o dono no Início chamando `data_describe` recebe a cópia da empresa; o Builder e o agente salvo do Projeto recebem só a cópia liberada a ele | `mounted.test.ts`, "data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada" | must |
 | 29 | U3 | O agente salvo do Projeto, usado por um membro que não é o seu autor, lê com o escopo de quem usa (`run.scope.personId`, `apps/server/src/builder/agents/agent.ts:178`): recebe a mesma cópia liberada ao Projeto que o autor recebe, e nenhuma outra cópia da empresa. Nesta etapa o papel não muda o catálogo do Projeto (a leitura por papel é a etapa 2) | `mounted.test.ts`, "o agente salvo usado por um membro lê o catálogo do Projeto, como o autor" | must |
-| 100 | U2b | Pela porta da raiz, com a conexão da cópia em `NEEDS_REAUTH`, o dono no Início recebe de `data_describe` a tabela na lista com `systems: [{ kind: 'INACTIVE' }]`, e `data_query` sobre ela devolve `ROWS` com as linhas da cópia e a mesma origem | `mounted.test.ts`, "uma conexão à espera de nova autorização: a tabela fica na lista e é lida, com a origem INACTIVE" (o caso de hoje em `:160-170`, reescrito) | must |
-| 101 | U2b | Num Projeto que não recebeu a conexão (a Filial do mundo de teste) e tem a cópia dela liberada, o Builder recebe a tabela de `data_describe` com `systems: [{ kind: 'INACTIVE' }]` e o conector `sankhya`; o resultado nunca contém "Filial". Recusa: o nome da conexão não sai num lugar que não a recebeu | `mounted.test.ts`, "o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz só o conector" | must |
+| 100 | U2b | Pela porta da raiz, no Início, com a conexão da cópia em `NEEDS_REAUTH`, o dono recebe de `data_describe` a tabela na lista com `systems: [{ kind: 'NAMED', name: 'Matriz', state: 'NEEDS_REAUTH' }]`, e `data_query` sobre ela devolve `ROWS` com as linhas da cópia e a mesma origem: o nome gravado e o estado, nunca só o conector | `mounted.test.ts`, "no Início, a conexão à espera de nova autorização: a tabela é lida, e a origem diz o nome e o estado" (o caso de hoje em `:160-170`, reescrito) | must |
+| 101 | U2b | Num Projeto que não recebeu a conexão (a Filial do mundo de teste) e tem a cópia dela liberada, o Builder recebe a tabela de `data_describe` com `systems: [{ kind: 'NOT_GIVEN' }]` e o conector `sankhya`; o resultado nunca contém "Filial". Recusa: o nome da conexão não sai num lugar que não a recebeu | `mounted.test.ts`, "o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz só o conector" | must |
 | 102 | U2b | O arquivo das recusas das ferramentas de dado volta a se chamar `tools-refusals.test.ts` e está em `scripts/rerun-never.json`; `scripts/rerun-exempt.test.ts` passa e falha sem a linha (testing T4) | `scripts/rerun-exempt.test.ts`, o caso de `:36-46` | must |
 | 103 | U2b | `DATA_SPECS` entra em `TOOLS` ao lado de `APP_DATA_SPECS`, que volta a ter só as duas ferramentas do dado do app; `tool-registry.ts` fica abaixo de 300 linhas sem as vazias, e as linhas da conversa não mudam | `apps/web/src/builder/conversation/tool-row.test.tsx`, o caso de `:185`; `npm run check` (Biome, `noExcessiveLinesPerFile`) | should |
+| 104 | U2b | O catálogo que o servidor monta para cada lugar (`createCompanyData`, `describe`) leva em `kept.sources` o nome, o conector e o estado de cada conexão: no Início, toda fonte é `NAMED`, também a de uma conexão em `NEEDS_REAUTH`; no catálogo de um Projeto, a fonte de uma conexão que o Projeto recebeu é `NAMED`, em qualquer estado, e a de uma que ele não recebeu é `{ kind: 'NOT_GIVEN', connector }`. Recusa: o catálogo de um Projeto nunca traz o nome de uma conexão que ele não recebeu | `apps/server/src/hub/data/data.test.ts`, caso novo "o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia a conexão que ele não recebeu" | must |
 
 | 30 | U4 | Uma leitura ao vivo que responde OK, por `connector_read` ou por uma leitura tipada, devolve ao modelo `at`, uma data ISO entre o antes e o depois da chamada, com e sem resposta inteira guardada na máquina. Recusa: uma leitura recusada (`REAUTH`, `REFUSED`, `READ_FAILED`, `NOT_GRANTED`) não ganha `at` | `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, caso novo "uma leitura OK leva a hora em que voltou", com e sem `whole`, e o caso de recusa | must |
 | 31 | U4 | `npm run record -- data-query` e `npm run record -- reads` gravam `apps/server/src/platform/recordings/mastra/data-query.jsonl` e `reads.jsonl` com o cabeçalho `@mastra/core` 1.82.0 e `source` `test-anthropic-stream.ts`, sem endereço nem credencial; `data-query` guarda `data_describe`, `data_describe({ table })`, `data_query` e a resposta, cada uma com o resultado real das ferramentas (`CATALOG`, `TABLE` e `ROWS` com `origin`). Recusa: uma gravação de `data-query` ou de `reads` com outra versão da Mastra, ou um `data-query` sem os três resultados, faz o caso falhar. As outras gravações, hoje em 1.79.0, não entram nesta conferência de versão | `apps/server/src/platform/recordings.test.ts`, caso novo "as gravações desta etapa são da Mastra instalada e guardam o resultado das ferramentas de dado" (a versão lida do `package.json` de `@mastra/core` comparada à do cabeçalho de `data-query` e de `reads`; os três `kind` lidos nas partes de `data-query`), e o caso de hoje com `data-query` em `NATIVE` e `STREAMED`; `apps/server/src/builder/assistant/numbers.test.ts` passa com `reads` regravado | must |
@@ -319,8 +321,9 @@ G2 não cria tela. A linha completa, o corpo e o bloco Fontes (tela `p3-02` da p
 | `DATA_TOOL.describe`, `DATA_TOOL.query` | U2, `packages/hub-api/src/tools.ts` | U3 (os três agentes), `permissions.ts`, a tela (`RowTool`, `TOOLS`) |
 | `DESCRIBE_SAMPLE_ROWS` | U2, `packages/hub-api/src/tools.ts` | `data_describe` (U2); G3 (o texto "5 linhas, há mais") |
 | `DataOrigin` (`systems`, `connector`, `table`, `lastRunEndedAt`, `lastRun`) e `DataResult` (`CATALOG`, `TABLE`, `ROWS`), esquemas Zod | U2, `packages/hub-api/src/assistant.ts`, ao lado de `ReadCut` (code C26); U2b troca `systems` por uma lista de `DataSystem` | `data-tools/tools.ts` (o tipo do resultado, por `z.infer`); o modelo; G3 (`presentDescribe`, `presentQuery`, `sourcesOf`) |
-| `DataSystem` (`ACTIVE` com `name`, ou `INACTIVE`) | U2b, `packages/hub-api/src/assistant.ts`, ao lado de `DataOrigin` | o modelo; `sourcesOf` (U6), na chave sem repetição |
-| `TableKept.sources` (`CopySource[]`, no lugar de `connections`) | U2b; escreve `catalogTables`, `apps/server/src/hub/copies/catalog-view.ts:37-53` | `keeps` (`packages/hub-api/src/company-data.ts:234-242`), a conformidade, `data-tools/tools.ts` |
+| `DataSystem` (`NAMED` com `name` e `state`, ou `NOT_GIVEN`) | U2b, `packages/hub-api/src/assistant.ts`, ao lado de `DataOrigin` | o modelo; `sourcesOf` (U6), na chave sem repetição |
+| `TableKept.sources` (`KeptSource[]`: `NAMED` com a conexão de `CopySource` e o estado, ou `NOT_GIVEN` com o conector; no lugar de `connections`) | U2b; escreve `catalogTables` (`apps/server/src/hub/copies/catalog-view.ts:37-53`), com o que o lugar nomeia, dado por `catalogOf` (`apps/server/src/hub/data/catalog.ts:7-30`) | `keeps` (`packages/hub-api/src/company-data.ts:234-242`), a conformidade, `data-tools/tools.ts` |
+| `catalogSources` (o estado de cada conexão que o lugar nomeia) | U2b, `apps/server/src/hub/connectors/catalog-systems.ts`, ao lado de `catalogSystemsOf` | `catalogOf`, pela porta `connectors()` de `DataDeps` |
 | O erro lançado de cada recusa (`kind`, `status`, `code`, `message`, `body`, `reason`) | U2 | o modelo; G3 (`thrownOf`) |
 | `DataOf` | U2 | U3 (cada agente o implementa) |
 | `ConversationsDeps.companyData` | U3, `main.ts` | U3, os três agentes |
@@ -507,8 +510,8 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Uma dependência fora | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `data_describe` (comando de leitura, sem gravação) | Independentes: não dividem estado | O `abortSignal` vai a `describe` e a `read`; nada a desfazer | O banco do Hub calado: `CATALOG_UNAVAILABLE`; o banco da empresa calado: `TABLE_UNAVAILABLE`; a conexão da cópia fora de `systems`: a tabela é lida, com a fonte `INACTIVE` (U2b) | nada novo: a ferramenta não registra a conexão fora de `systems`, que é estado normal (U2b tira o `DATA_ORIGIN_UNREAD` de U2) | 14, 17, 18, 100, 101 |
-| `data_query` (comando de leitura, uma transação só de leitura da fonte do `main`) | Duas transações só de leitura | O sinal vai a `read` e a `describe`; o prazo vira `DEADLINE` | Banco da empresa calado: `TABLE_UNAVAILABLE`, sem leitura ao vivo no lugar; Hub calado: `CATALOG_UNAVAILABLE`; a conexão da cópia fora de `systems`: as linhas voltam, com a fonte `INACTIVE` (U2b) | `DATA_QUERY_FAILED`, `DATA_READ_REFUSED`, `DATA_PLAN_UNREAD` já vêm da fonte (`apps/server/src/hub/data/query.ts:88`) | 15, 16, 17, 18, 19, 100 |
+| `data_describe` (comando de leitura, sem gravação) | Independentes: não dividem estado | O `abortSignal` vai a `describe` e a `read`; nada a desfazer | O banco do Hub calado: `CATALOG_UNAVAILABLE`; o banco da empresa calado: `TABLE_UNAVAILABLE`; a conexão da cópia fora de `systems`: a tabela é lida, com a fonte que `kept` traz, `NAMED` com o estado ou `NOT_GIVEN` (U2b) | nada novo: a ferramenta não registra a conexão fora de `systems`, que é estado normal (U2b tira o `DATA_ORIGIN_UNREAD` de U2) | 14, 17, 18, 100, 101 |
+| `data_query` (comando de leitura, uma transação só de leitura da fonte do `main`) | Duas transações só de leitura | O sinal vai a `read` e a `describe`; o prazo vira `DEADLINE` | Banco da empresa calado: `TABLE_UNAVAILABLE`, sem leitura ao vivo no lugar; Hub calado: `CATALOG_UNAVAILABLE`; a conexão da cópia fora de `systems`: as linhas voltam, com a fonte que `kept` traz (U2b) | `DATA_QUERY_FAILED`, `DATA_READ_REFUSED`, `DATA_PLAN_UNREAD` já vêm da fonte (`apps/server/src/hub/data/query.ts:88`) | 15, 16, 17, 18, 19, 100 |
 | `npm run record -- data-query` (U4) | os dois escrevem o mesmo `data-query.jsonl`; o roteiro é fixo, e o último a terminar fica, igual ao outro salvo a data | uma chamada de modelo a mais que `DATA_QUERY_CALLS` lança e nada é escrito; o arquivo antigo fica | nenhuma rede: `fetch` a outro endereço lança "The recording reaches no other address" | o erro, com código de saída diferente de zero | 31 |
 | `npm run record -- reads` (U4) | igual | igual, com `READS_CALLS` | igual | igual | 31 |
 | `saveWhole` da leitura ao vivo, agora com `at` no corte (U4, gravação de hoje) | cada leitura tem o seu caminho na máquina, como hoje | o arquivo que não se grava dá `saved: false` com `at` no corte, como hoje | a máquina fora: a resposta volta sem arquivo e com `at` | a linha de log de hoje de `saveWhole` | 30 |
@@ -536,7 +539,7 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | A lei da tabela escondida | U1 | `keepsWithheldTableOut`, `packages/hub-api/src/company-data-role-conformance.ts:8-21` | Molde: a lei vizinha `refusesReadOutsideCatalog` (`company-data-conformance.ts:198-207`) e `bb03b122` (#1072), ao contrário | — | nativo | — | uma lei sai e uma entra; a conta fica em 22 | nenhum |
 | As duas ferramentas | U2 | `apps/server/src/builder/app-data/tools.ts:65-86`, `apps/server/src/builder/connectors/typed-reads.ts:97-126` | O modelo oficial de agente SQL do Mastra 1.82 (`text-to-sql`, `introspect-database.ts:7-54`, `execute-sql.ts:14-44`): mesma situação. A plataforma de dados com catálogo e linhagem dá colunas, 5 linhas e depois a consulta (estudo de referência, fora do repositório, delivery L21, conferência P3.2; documentado) | Uma ferramenta inspeciona, outra executa; `createTool` com `inputSchema` Zod e `execute(input, context)` (`@mastra/core@1.82.0 dist/docs/references/reference-tools-create-tool.md:93-109`) | nativo | — | Igual. Diferente do modelo: quem recusa é o banco, e a ferramenta lança a recusa pelo caminho nativo de falha da Mastra (`TOOL_EXECUTION_FAILED`, `@mastra/core@1.82.0 dist/utils-BcF5eERx.js:1116-1125`), na forma que `refuse()` já lança (`apps/server/src/builder/agents/tools.ts:68-75`) e que `thrownOf` lê na tela (`apps/web/src/builder/conversation/connector-specs.ts:181-201`) (code C79) | `apps/server/src/builder/data-tools/tools.ts` |
 | Os nomes no dono único | U2 | `APP_DATA_TOOL`, `BUILDER_TOOL`, `CLOSED_TOOLS` em `packages/hub-api/src/tools.ts:40-68` | O Mastra Code fecha o conjunto num lugar (`mastracode/sdk/src/index.ts:858,1331`, citado em `permissions.ts:55-56`): mesma situação | Uma constante; o fecho e a tela a herdam | nativo | — | code C26 | — |
-| A origem de cada tabela | U2, U2b | `TableKept.connections` só com o id (`packages/hub-api/src/company-data.ts:34-42`); `catalogTables` lê o nome e o conector de cada fonte e os descarta (`apps/server/src/hub/copies/catalog-view.ts:37-53`); a ferramenta liga cada id a `systems` e recusa ou tira a tabela sem par (`apps/server/src/builder/data-tools/tools.ts:81-112`, `:136-141`); a página da tabela já diz a origem por `CopySource` (`packages/hub-api/src/copy-shown.ts:5-9`, `apps/web/src/hub/copies/copy-facts.tsx:75-77`) | Mesma situação: uma tabela já copiada cuja conexão de origem caiu ou que quem lê não tem. A plataforma de ingestão de referência, testada ao vivo com a fonte ativa, desativada e arquivada (visto), e a sua página de permissões (documentado); a plataforma de dados com catálogo e linhagem, os privilégios de tabela e de conexão como objetos separados (visto) e a tabela de streaming legível sem acesso à fonte (documentado); a plataforma de dados com catálogo e linhagem mostra as tabelas usadas no passo da consulta (conferência P3.6; documentado). Estudos de referência do critério 17, fora do repositório (delivery L21) | A tabela é recurso próprio, com permissão própria, e a conexão governa só a ingestão: a tabela continua no catálogo e consultável com a fonte inativa, e a tela da tabela continua dizendo a origem pelo registro gravado da fonte e o estado dela; as tabelas usadas saem do motor de consulta | nativo (o `EXPLAIN` da fonte; a origem pelo `CopySource` que já tem dono) | — | A origem vem de `kept.sources`; uma conexão fora de `systems` é `INACTIVE` e nomeada só pelo conector (decisão 28); nenhuma recusa nem log por ela. A referência mostra o identificador da fonte, não o nome dado pela pessoa: dizer o nome onde o lugar usa a conexão é escolha nossa, com o nome já gravado | — |
+| A origem de cada tabela | U2, U2b | `TableKept.connections` só com o id (`packages/hub-api/src/company-data.ts:34-42`); `catalogTables` lê o nome e o conector de cada fonte e os descarta (`apps/server/src/hub/copies/catalog-view.ts:24-57`); `catalogOf` monta o catálogo por lugar (`apps/server/src/hub/data/catalog.ts:7-30`); a ferramenta liga cada id a `systems` e recusa ou tira a tabela sem par (`apps/server/src/builder/data-tools/tools.ts:81-112`, `:136-141`); a página da tabela já diz a origem por `CopySource` (`packages/hub-api/src/copy-shown.ts:5-9`, `apps/web/src/hub/copies/copy-facts.tsx:75-77`) | Situação parecida, com três diferenças. Nossa situação: uma tabela já copiada cuja conexão espera nova autorização, ou que o Projeto não recebeu. A plataforma de ingestão de referência foi testada ao vivo com a fonte ativa, desativada e arquivada (visto), e a sua página de permissões (documentado); diferença 1: ela não testou uma credencial vencida, e a tabela estava vazia, então não provou que as linhas antigas ficam. A plataforma de dados com catálogo e linhagem tem os privilégios de tabela e de conexão como objetos separados (visto) e a tabela de streaming legível sem acesso à fonte (documentado); diferença 2: essa fonte é do próprio catálogo, não uma conexão com credencial vencida. Diferença 3: "quem lê não tem a conexão" foi provado só na forma (o formulário do token) e na documentação, e ninguém rodou o caso. A mesma plataforma mostra as tabelas usadas no passo da consulta (conferência P3.6; documentado). Estudos de referência do critério 17, fora do repositório (delivery L21) | A tabela é recurso próprio, com permissão própria, e a conexão governa só a ingestão: a tabela continua no catálogo e consultável com a fonte inativa, e a tela da tabela continua dizendo a origem pelo registro gravado da fonte e o estado dela; as tabelas usadas saem do motor de consulta | nativo (o `EXPLAIN` da fonte; a origem pelo `CopySource` que já tem dono) | — | A origem vem de `kept.sources`, que o catálogo de cada lugar monta: `NAMED` com o nome gravado e o estado, ou `NOT_GIVEN` só com o conector no Projeto que não recebeu a conexão (decisão 28); nenhuma recusa nem log. A referência mostra o identificador da fonte, não o nome dado pela pessoa; a conexão do Conexus não tem identificador legível (o id é um UUID, que nunca é nome, security S41), e o nome gravado é o que a pessoa vê na página da tabela; por isso dizemos o nome onde o lugar recebeu a conexão. As três diferenças não mudam o veredito: o que elas deixam sem prova (as linhas antigas ficam legíveis) o Conexus prova nos critérios 100 e 101 | — |
 | A recusa com frase ao modelo | U2 | `NOT_GRANTED` e as frases em `apps/server/src/builder/connectors/connector-tools.ts:58`, `:171-186`; `refuse()` em `apps/server/src/builder/agents/tools.ts:68-75` | A plataforma de ingestão de referência devolve o erro com uma explicação provável (estudo de referência, conferência P3.10; documentado) | O texto do motor e uma frase do que fazer | nativo (o SQLSTATE e a mensagem do Postgres, lançados como erro da ferramenta) | — | o JSON de `refuse()` com `reason` a mais; a issue 1016 leva as leituras ao vivo ao mesmo caminho. U2b troca a frase de `NOT_IN_ROLE`, que manda listar o catálogo | — |
 | A pasta fora da lista de migração | U2 | `AGENTS_AND_APPS` e `CONTRACT_MIGRATION` em `.dependency-cruiser.cjs:21-56`; `BAD` em `scripts/rules-doors.test.ts:20-33` | nenhuma: regra de engenharia nossa (conferência P3.13) | — | nativo (o `forbidden` do dependency-cruiser) | — | A pasta entra em `AGENTS_AND_APPS` e não na lista | — |
 | A linha mínima na conversa | U2, U2b | `APP_DATA_SPECS` em `apps/web/src/builder/conversation/app-data-specs.ts:23-45`, com `...DATA_SPECS` dentro (`:25`); `TOOLS` em `tool-registry.ts:47`, `:202` | O Factory do Mastra 1.82, uma linha por chamada (`mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:152`, `docs/reference/stack.md:20`): mesma situação | Uma linha por parte de ferramenta | nativo | — | Só o mínimo; G3 completa. U2b devolve `DATA_SPECS` a `TOOLS`, dividindo `tool-registry.ts` | `apps/web/src/builder/conversation/data-specs.ts` |
@@ -583,7 +586,7 @@ firstmate, com o conserto.
 
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
-| 1 | A divisão em etapas: esta é a primeira de oito, com a linha principal (contrato, ferramentas, origem) e, ao lado, a página da tabela e a passada inteira | A ordem do fundador, "A Essas juntas"; a qualidade e a parte 2 ficam antes do Negócio, como na tabela de ordem da proposta aprovada. O orçamento da etapa ficou em cerca de 1.440 linhas com a emenda, abaixo do teto da delivery L2 | Mover unidades entre as etapas antes do cartão seguinte |
+| 1 | A divisão em etapas: esta é a primeira de oito, com a linha principal (contrato, ferramentas, origem) e, ao lado, a página da tabela e a passada inteira | A ordem do fundador, "A Essas juntas"; a qualidade e a parte 2 ficam antes do Negócio, como na tabela de ordem da proposta aprovada. O orçamento da etapa ficou em cerca de 1.470 linhas com a emenda, abaixo do teto da delivery L2 | Mover unidades entre as etapas antes do cartão seguinte |
 | 2 | O cartão entra num pull request em rascunho enquanto `a-ontologia-da-empresa.md` ocupa a vaga da trilha | Delivery L5: o próximo cartão de uma trilha espera no seu rascunho, e a verificação `processo` só fica vermelha num pull request fora do rascunho | Marcar o pull request como pronto quando a vaga abrir |
 | 3 | A spec de três arquivos (`trilhas/dados-spec/`) fica no repositório até a última etapa que a substitui | Ela ainda guarda o que as etapas 2 a 6 vão converter; o método a tira quando o próximo cartão a substituir | Apagar a pasta no fechamento da última etapa que a usa |
 | 4 | O critério 4 acrescenta uma asserção no teste do servidor sobre as chaves do `describe` cru | O tipo do retorno de `catalogOf` é inferido do callback de `deps.database.read`; um `withheld: []` esquecido provavelmente compila (inferido, não medido), e `Catalog.parse` no teste o apagaria (Zod tira chave desconhecida) | tirar a asserção; o critério 6 fica sozinho |
@@ -610,7 +613,7 @@ firstmate, com o conserto.
 | 25 | O `copiedAt` da spec vira `lastRunEndedAt`, e a fonte da rodada parada diz "parada hoje às", sem "copiado" | o contrato só dá a última rodada encerrada, de qualquer resultado (`ended` grava `lastRunId` em toda rodada, `apps/server/src/hub/copies/run.ts:114`); a spec define o campo como "quando a última rodada terminou" (parte 3, `design.md:255`) e pede "parada" junto da hora (`requirements.md:86`); com o nome `copiedAt`, o modelo e a tela diriam "copiado" na hora de uma rodada que não copiou, o que a decisão 13 já recusa na página da tabela | Voltar ao nome da spec e calcular, no catálogo, o fim da última rodada `COMPLETE` ou `PARTIAL` |
 | 26 | Um resultado de ferramenta de dado fora de `DataResult` não vira fonte nem linha completa, sem log | a parte guardada é da Mastra e a mesma gravação passa pelo esquema no teste (critérios 38 e 46); um log na tela se repetiria a cada desenho | um `console.error` com código no `sourcesOf` |
 | 27 | Durante a implantação em rodízio, um Hub antigo pode ler a linha semanal | `CopyInput` de hoje é `z.object` e tira a chave `whole` (`workflow.ts`): o Hub antigo roda a semanal como uma rodada normal, inofensiva, e o seu `states` pode, por um instante, mostrar o horário da semanal no lugar da normal (o `Map` por cópia fica com a última linha lida). O Hub antigo sai quando o novo sobe; a passada inteira volta no domingo seguinte | implantar o Hub novo antes de ligar qualquer cópia, ou abrir issue se o rodízio durar mais que um domingo |
-| 28 | Uma fonte fora de `systems` é `{ kind: 'INACTIVE' }`, nomeada só pelo conector, em qualquer lugar, também no Início com a conexão à espera de nova autorização | Escolha do firstmate pela palavra do fundador "2. O que voce quiser": num Projeto que não recebeu a conexão, só o nome do sistema, que é o que o app do Projeto já vê (`apps/server/src/builder/app-data/context.ts:51-56`). A ferramenta não sabe o lugar (`DataOf` devolve só `CompanyData`, `data-tools/tools.ts:10`), e `systems` não separa a conexão não dada ao Projeto da que espera autorização (as duas ficam fora, `hub/connectors/rows.ts:72`, `builder-port.ts:139-169`); a regra de uma forma só não deixa o nome escapar. No Início, o dono continua vendo o nome na página da tabela | `DataOf` passa a levar o lugar, e no Início a fonte `INACTIVE` ganha `name` |
+| 28 | Quem monta o catálogo de cada lugar decide o que `kept.sources` leva: no Início, toda fonte é `NAMED`, com o nome gravado e o estado da conexão, também a que espera nova autorização; no catálogo de um Projeto, a fonte de uma conexão que ele não recebeu é `NOT_GIVEN`, só com o conector. A ferramenta só diz o que `kept` traz | No Início, a opção (a) do fundador, "1. A": a origem pelo registro gravado, com o estado da conexão. No Projeto, escolha do firstmate pela palavra "2. O que voce quiser": só o nome do sistema, que é o que o app do Projeto já vê (`apps/server/src/builder/app-data/context.ts:51-56`). A ferramenta não sabe o lugar (`DataOf` devolve só `CompanyData`, `data-tools/tools.ts:10`), mas `catalogOf` sabe (`hub/data/catalog.ts:16-22`) e já monta o catálogo do Projeto à parte do da empresa; por isso a decisão fica lá, e `DataOf` não muda. `systems` não serve para decidir, porque deixa de fora tanto a conexão não dada ao Projeto quanto a que espera autorização (`hub/connectors/rows.ts:72`, `builder-port.ts:139-169`) | `catalogTables` grava toda fonte `NAMED`, e o Projeto passa a nomear a conexão que não recebeu |
 | 29 | G2b muda o contrato, quem o escreve (`catalog-view.ts`) e quem o lê (`data-tools/tools.ts`) num PR só, com a issue `contrato` | O roteiro da trilha Dados manda o contrato num PR e o consumidor em outro (`docs/steps/trilhas/dados.md:74-79`); um campo renomeado com os leitores para trás não compila, e um campo novo ao lado do velho daria dois donos ao id (code C26). G1 já levou a sua linha do servidor junto | dois PRs, com `sources` ao lado de `connections` até o segundo |
 | 30 | `REFUSED_TEXT.NOT_IN_ROLE` é "Essa tabela não está no catálogo.", também para `data_describe` | Fechamento do firstmate pela auditoria das referências, com a palavra do fundador "1. Sim pode ser essa frase"; um texto por `kind` (code C26), e `data_describe` só recebe `NOT_IN_ROLE` num catálogo que diz ler uma tabela que o login não lê | um texto próprio para `data_describe` |
 | 31 | `failed` do placar reconhece o sucesso de uma ferramenta de dado pela forma `DataResult`, não pelo nome | A recusa das ferramentas de dado é lançada (U2) e já conta como `output-error` pela regra do `noToolErrors`; só a cláusula da recusa devolvida como resultado (`test-scorecard.ts:176`) confundia `CATALOG`, `TABLE` e `ROWS` com recusa. Migrar o placar para `runEvals` (`@mastra/core@1.82.0 dist/docs/references/reference-evals-run-evals.md:85`, `:105`) é maior que esta etapa | a exceção por `DATA_TOOL` em `failed` |
@@ -776,8 +779,8 @@ description, inactiveSince }], sample: { rows, more }, origin`) e `ROWS` (`colum
 origin: DataOrigin[]`, mais `reason` quando `origin` é vazia). `lastRunEndedAt` é
 `kept.lastRun?.endedAt ?? null`, e `lastRun` é `kept.lastRun?.outcome.kind ?? 'NONE'` (decisão 25).
 `systems` traz o nome de cada conexão de `kept.connections`, na mesma ordem. A emenda de
-2026-11-15 troca essa forma: U2b lê a origem de `kept.sources` e marca a fonte fora de `systems`
-como `INACTIVE`.
+2026-11-15 troca essa forma: U2b lê a origem de `kept.sources`, que o catálogo de cada lugar já
+monta com o nome e o estado, ou só o conector num Projeto que não recebeu a conexão.
 
 Toda recusa, `NOT_GRANTED` e as do contrato, é lançada, nunca devolvida (code C79): a ferramenta
 lança um `Error` cuja mensagem é o JSON `{ kind, status: null, code, message, body: null, reason }`,
@@ -788,6 +791,7 @@ ferramenta. `QUERY_REFUSED` põe o SQLSTATE em `code` e a mensagem inteira do Po
 
 | `kind` | `reason` ao modelo, no erro lançado (inglês, `C3`) |
 | --- | --- |
+| `NOT_GRANTED` | "This conversation has no access to the company's data." (`data-tools/tools.ts:25`, como U2 construiu) |
 | `NOT_IN_CATALOG` | "No such table in the catalog. Call data_describe with no table to list them." |
 | `NOT_IN_ROLE` | "PostgreSQL denied this statement: it reads a table outside the catalog of this place, or it is not a read. Call data_describe with no table to see the tables you may read; do not look for the data elsewhere." (a frase da emenda de 2026-11-15, construída na U2b; U2 construiu "...the role of the person does not read one of its tables... Say so; ...") |
 | `QUERY_REFUSED` | `PostgreSQL refused the query (SQLSTATE ${sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.` |
@@ -964,9 +968,9 @@ Dados lê a mudança de `packages/hub-api/src/tools.ts`).
 ## U2b A origem pelo registro gravado da cópia, e os fechamentos de G2
 
 **Base e modelo.** O `main` em `b2c23dc0`, com G2 mesclado (PR 1095, merge `f1067f05`); cada linha
-abaixo foi lida nesse commit, com `@mastra/core` 1.82.0. Sonnet: um campo de contrato trocado e os
-seus leitores migrados na mesma onda, sem desenho novo entre módulos; o `typecheck` aponta cada
-leitor.
+abaixo foi lida nesse commit, com `@mastra/core` 1.82.0. Sonnet: um campo de contrato trocado, os
+seus leitores migrados na mesma onda e uma leitura nova ao lado de uma que já existe; o `typecheck`
+aponta cada leitor.
 
 ### As linhas da tabela
 
@@ -975,88 +979,116 @@ leitor.
   de `CopySummary.sources` (`packages/hub-api/src/copies.ts:79`), escrita por `sourcesNamed`
   (`apps/server/src/hub/copies/store.ts:227-243`) e lida na página da tabela
   (`apps/web/src/hub/copies/copy-facts.tsx:75-77`); `catalogTables` com `named` em
-  `apps/server/src/hub/copies/catalog-view.ts:37-53` (o id em `:50`); na ferramenta, `originIn` e
+  `apps/server/src/hub/copies/catalog-view.ts:24-57` (o campo escrito em `:50`); o catálogo de cada
+  lugar em `catalogOf` (`apps/server/src/hub/data/catalog.ts:7-30`), que já separa o Projeto (`:18-19`)
+  do Início (`:20-22`); as conexões de um lugar em `offeredIn`
+  (`apps/server/src/hub/connectors/builder-port.ts:139-169`), só as `ACTIVE` (`usable`,
+  `hub/connectors/rows.ts:72`), e `catalogSystemsOf` (`hub/connectors/catalog-systems.ts:12-30`); o
+  estado em `Connection.state` (`packages/hub-api/src/connectors.ts:86`); na ferramenta, `originIn` e
   `originOf` em `apps/server/src/builder/data-tools/tools.ts:81-112`, `listed` em `:128-143`, `tabled`
   em `:145-160`, `queried` em `:162-181`, as descrições em `:114-118`; `DataOrigin` em
   `packages/hub-api/src/assistant.ts:101-107`.
 - **A recusa com frase ao modelo.** Só a frase de `NOT_IN_ROLE`, `tools.ts:27-28`.
 - **A linha mínima na conversa.** Só o Fechamento 6 da revisão de G2: `...DATA_SPECS` dentro de
   `APP_DATA_SPECS` (`apps/web/src/builder/conversation/app-data-specs.ts:18-25`), porque
-  `tool-registry.ts` tem 319 linhas e o teto é 300 sem as vazias (`biome.json:64-69`); as onze linhas
-  das ferramentas da máquina em `tool-registry.ts:31-43` (os nomes) e `:48-156` (as entradas).
+  `tool-registry.ts` está no teto de 300 linhas que o Biome conta (`biome.json:64-69`; uma linha a
+  mais dá "too many lines (301)"); as entradas das ferramentas da máquina em `tool-registry.ts:31-43`
+  (os nomes) e `:48-156` (as entradas).
 
 ### O raio da mudança
 
 Os leitores saem do `tsc` com o campo trocado, medido em `b2c23dc0`. Na produção são sete:
-`company-data.ts:241`, `company-data-conformance.ts:49`, `:121`, `:141` e `:179`, `catalog-view.ts:37`
+`company-data.ts:241`, `company-data-conformance.ts:49`, `:121`, `:141` e `:179`, `catalog-view.ts:50`
 (quem escreve) e `data-tools/tools.ts:89`. Nos testes, `catalog-view.test.ts:32` e `data.test.ts:100`,
 e quatro montagens que só o Zod lê: `company-data.test.ts:69-72`, `:96-99`, `:110-113` e
 `data-tools/test-world.ts:22-30`. `builder/assistant/context.ts:36` e `handoff.ts:303` leem
-`connections` de outro tipo, a escolha da conversa (`context.ts:23`), e ficam como estão.
+`connections` de outro tipo, a escolha da conversa (`context.ts:23`), e ficam como estão. Sem o log
+`DATA_ORIGIN_UNREAD`, o `log` de `dataTools` (`tools.ts:184`) fica sem uso, e os três chamadores
+deixam de passá-lo: `builder/agents/agent.ts:273`, `builder/assistant/assistant.ts:263` e
+`builder/conversation/builder.ts:178-181` (code C74).
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/company-data.ts` (o contrato de G1) | Muda `TableKept` (`connections` vira `sources`) e `keeps` | a conformidade, `catalog-view.ts`, `data-tools/tools.ts`; a issue `contrato` (L1) e as duas trilhas (L27) |
+| `packages/hub-api/src/company-data.ts` (o contrato de G1) | Cria `KeptSource`; muda `TableKept` (`connections` vira `sources`) e `keeps` | a conformidade, `catalog-view.ts`, `data-tools/tools.ts`; a issue `contrato` (L1) e as duas trilhas (L27) |
 | `packages/hub-api/src/company-data-conformance.ts`, `company-data.test.ts` | Muda as quatro leituras e as montagens do `CATALOG` falso (`:69-72`, `:96-99`, `:110-113`, `:206`) | `runDataConformance`, `npm test -w @conexus/hub-api` |
 | `packages/hub-api/src/assistant.ts` | Cria `DataSystem`; muda `DataOrigin.systems` | `data-tools/tools.ts`; G3 (U4, U5, U6) |
-| `apps/server/src/hub/copies/catalog-view.ts` e `catalog-view.test.ts` | Muda `:50` e a asserção de `:32` | `catalogOf`, `apps/server/src/hub/data/catalog.ts:19`, `:21` |
-| `apps/server/src/hub/data/data.test.ts` | Muda a asserção de `:100` | o comando do servidor |
+| `apps/server/src/hub/connectors/` | Cria `catalogSourcesOf` em `catalog-systems.ts`; muda `public.ts` (a porta `catalogSources`, ao lado de `catalogSystems`, `:165-166`) | `catalogOf` |
+| `apps/server/src/hub/data/` | Muda `catalog.ts` (passa o que o lugar nomeia a `catalogTables`), `deps.ts:14` (a porta) e `data.test.ts` (`:100` e o caso do critério 104) | o comando do servidor |
+| `apps/server/src/hub/copies/catalog-view.ts` e `catalog-view.test.ts` | Muda `catalogTables` (a entrada e `:50`) e a asserção de `:32` | `catalogOf` |
 | `apps/server/src/builder/data-tools/` | Muda `tools.ts`, `test-world.ts`, `tools.test.ts`, `mounted.test.ts`; renomeia `tools-failures.test.ts` para `tools-refusals.test.ts` | os três agentes (U3) |
+| `agent.ts:273`, `assistant.ts:263`, `builder.ts:178-181` | Muda (tira `log`, uma linha cada; declarado no PR, L7) | os três agentes |
 | `scripts/rerun-never.json` | Muda (uma linha) | `scripts/rerun-exempt.test.ts:36-46` |
 | `apps/web/src/builder/conversation/` | Cria `workspace-specs.ts`; muda `tool-registry.ts` e `app-data-specs.ts` | `TOOLS` |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// packages/hub-api/src/company-data.ts, TableKept: no lugar de connections: ConnectionId[]
-sources: z.array(CopySource).min(1),   // a fonte gravada, a mesma forma de CopySummary.sources
+// packages/hub-api/src/company-data.ts, ao lado de TableKept
+/** One connection a table was copied from, as the place that reads it may name it. */
+export const KeptSource = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('NAMED'), connection: CopySource.shape.connection, state: z.enum(CONNECTION_STATES) }),
+  z.object({ kind: z.literal('NOT_GIVEN'), connector: ConnectorId }), // a Projeto's copy of a connection it was not given
+])
+// TableKept, no lugar de connections: ConnectionId[]
+sources: z.array(KeptSource).min(1),
 
 // packages/hub-api/src/assistant.ts, ao lado de DataOrigin
-/** One connection a table was copied from, as this place may name it. */
 export const DataSystem = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('ACTIVE'), name: z.string() }), // in systems: the place uses it now
-  z.object({ kind: z.literal('INACTIVE') }),                 // not in systems: named by its connector alone
+  z.object({ kind: z.literal('NAMED'), name: z.string(), state: z.enum(CONNECTION_STATES) }),
+  z.object({ kind: z.literal('NOT_GIVEN') }),
 ])
 // DataOrigin.systems: z.array(DataSystem).min(1); o resto de DataOrigin fica como está
+
+// apps/server/src/hub/connectors/catalog-systems.ts, ao lado de catalogSystemsOf
+/** The state of each connection the scope's place was given, in any state; admits nobody. */
+export async function catalogSourcesOf(tx: ReadTx, scope: SessionScope): Promise<ReadonlyMap<ConnectionId, ConnectionState>>
 ```
 
-- **A regra da origem.** Para cada fonte de `kept.sources`, na ordem: `ACTIVE` com
-  `connection.name` quando `connection.id` está em `catalog.systems[].connection`; `INACTIVE` quando
-  não está (decisão 28). `connector` é o da primeira fonte, do registro gravado. Nem o id nem o nome
-  da conexão `INACTIVE` entram no resultado. Uma função pura, sem recusa e sem log.
+- **Quem decide o nome é o catálogo do lugar.** `catalogOf` (`catalog.ts:16-22`) já monta o catálogo
+  com o lugar da conversa. Ele lê `catalogSources(tx, scope)` e passa o mapa a `catalogTables`
+  (`catalogTables(tx, { companyId, only, given })`). No Início, o mapa traz toda conexão da empresa;
+  num Projeto, só as de `project_connection`, como `offeredIn`, mas sem `usable`. `catalogTables`
+  grava cada fonte como `NAMED`, com a conexão de `CopySource` e o estado, quando o id está no mapa,
+  e como `NOT_GIVEN`, com o conector, quando não está. `DataOf` não muda (`tools.ts:10`).
+- **A regra da origem na ferramenta.** Para cada fonte de `kept.sources`, na ordem: `NAMED` vira
+  `{ kind: 'NAMED', name: connection.name, state }`; `NOT_GIVEN` vira `{ kind: 'NOT_GIVEN' }`.
+  `connector` é o da primeira fonte. A ferramenta não olha `systems` para a origem: só diz o que
+  `kept` traz. Uma função pura, sem recusa e sem log.
 - **As frases.** `NOT_IN_ROLE` passa à frase da tabela de U2. `DESCRIBE_DESCRIPTION` e
-  `QUERY_DESCRIPTION` ganham: "A system INACTIVE is a connection this place does not use now (it
-  awaits a new authorization, or this place was not given it): the rows are its last copy; name
-  only its connector and say when they were copied."
-- **Estados.** `ACTIVE` e `INACTIVE` são uma união com `kind` (C21). **Ids.** Nenhum novo pela borda.
-  **Donos.** A fonte gravada é `CopySource` (C26); a forma do resultado continua em `assistant.ts`.
-  **Esquemas Zod.** Os de U2, sem mudança. **Arquivo modelo.** `tools.ts` de U2.
+  `QUERY_DESCRIPTION` ganham: "Each system says its state: a state other than ACTIVE means the rows
+  are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this
+  place was not given: name only its connector."
+- **Estados.** `NAMED` e `NOT_GIVEN` são uniões com `kind` (C21). **Ids.** Nenhum novo pela borda;
+  o id de uma fonte `NOT_GIVEN` não sai do Hub. **Donos.** A conexão gravada é `CopySource` (C26);
+  o que um lugar nomeia, `catalogSourcesOf`; a forma do resultado continua em `assistant.ts`.
+  **Esquemas Zod.** Os de U2, sem mudança. **Arquivo modelo.** `tools.ts` de U2;
+  `catalogSystemsOf` para a leitura nova.
 
 ### As skills e a leitura
 
-As de U2, mais a linha de `zod` em `docs/reference/stack.md:34` e testing T4, T5, T27.
+As de U2, mais as linhas de `zod` e `drizzle-orm` em `docs/reference/stack.md:34` e `:41`, e testing T4, T5, T27.
 
 ### A ordem do trabalho
 
-1. **O contrato, quem o escreve e a conformidade.** Critérios: 17 (a parte do contrato).
-   - **Arquivos:** muda `company-data.ts`, `company-data-conformance.ts`, `company-data.test.ts`, `catalog-view.ts`, `catalog-view.test.ts`, `data.test.ts`.
-   - **Referência a seguir:** "A origem de cada tabela", acima; `sourcesNamed` como a forma.
+1. **O contrato, quem o escreve e a conformidade.** Critérios: 17 (a parte do contrato), 104.
+   - **Arquivos:** muda `company-data.ts`, `company-data-conformance.ts`, `company-data.test.ts`, `catalog-systems.ts`, `connectors/public.ts`, `data/catalog.ts`, `data/deps.ts`, `data.test.ts`, `catalog-view.ts`, `catalog-view.test.ts`.
+   - **Referência a seguir:** "A origem de cada tabela", acima; `sourcesNamed` como a forma da conexão; `offeredIn` como a forma da leitura por lugar.
    - **O que sai:** `connections: z.array(ConnectionId).min(1)` (`company-data.ts:37`); `named.map(({ connection }) => ConnectionId.parse(connection.id))` (`catalog-view.ts:50`).
-   - **O que entra:** `sources: z.array(CopySource).min(1)`; `sources: named` em `catalogTables`; em `keeps` e na conformidade, a busca pelo id em `sources[].connection.id` (`:49` e `:141` tomam `sources[0].connection.id`). Regras: code C26, C27.
-   - **Testes:** `npm test -w @conexus/hub-api` (as 22 leis passam); `catalog-view.test.ts:32` confere `sources` com o id, o nome e o conector da conexão; `data.test.ts:100`.
-   - **Mutações à mão:** em `catalogTables`, ponha o id no `name` de cada fonte: o caso de `catalog-view.test.ts` fica vermelho.
+   - **O que entra:** `KeptSource`, `sources`, `catalogSourcesOf` e a porta; `catalogOf` passa o mapa; `catalogTables` grava `NAMED` ou `NOT_GIVEN`. Em `keeps` e na conformidade, a busca pelo id passa às fontes `NAMED` (`:49` e `:141` tomam a primeira fonte `NAMED`). Regras: code C8, C21, C26, C27.
+   - **Testes:** `npm test -w @conexus/hub-api` (as 22 leis passam); `catalog-view.test.ts:32` confere a fonte `NAMED` com o id, o nome, o conector e `ACTIVE`; o caso do critério 104 em `data.test.ts` (o Início com a conexão em `NEEDS_REAUTH` pelo `on.hub.test.asOwner`, e o Projeto com a cópia da Filial liberada).
+   - **Mutações à mão:** (a) em `catalogTables`, toda fonte `NAMED`: o 104 fica vermelho ("Filial" no Projeto). (b) `catalogSourcesOf` com `usable`: o 104 fica vermelho (a fonte em `NEEDS_REAUTH` vira `NOT_GIVEN` no Início).
    - **Pronto quando:** os testes passam, e o `typecheck` só acusa `data-tools/tools.ts` (passo 2).
-2. **A ferramenta lê a origem gravada.** Critérios: 15, 17, 18 (a frase de `NOT_IN_ROLE`), 28.
-   - **Arquivos:** muda `assistant.ts`, `data-tools/tools.ts`, `test-world.ts`, `tools.test.ts`.
-   - **O que sai:** `originIn` e `originOf` (`tools.ts:81-112`), o log `DATA_ORIGIN_UNREAD` (`:92`), o `flatMap` que tira a tabela sem par (`:136-141`); os casos `tools.test.ts:115-133` e `:135-147`.
-   - **O que entra:** a regra da origem acima; `listed` volta a `map`; `tabled` e `queried` passam `catalog.systems` à regra. `table()` de `test-world.ts` monta `sources` com nome e conector, e `FORA` ganha o nome "Loja Fora", para provar que ele não sai. Os casos do critério 17, com `WITH_ORPHAN` e uma tabela nova de `[LOJA_A, FORA]` (o Fechamento B do delta de G2); o 15 e o 28 com a forma nova. Regras: code C21, C26, C79; security S41.
-   - **Mutações à mão:** (a) toda fonte `ACTIVE`: o critério 17 fica vermelho. (b) a recusa `CATALOG_UNAVAILABLE` de volta em `tabled`: 17. (c) só `sources[0]`: 28. (d) a frase antiga de `NOT_IN_ROLE`: 18.
+2. **A ferramenta diz o que `kept` traz.** Critérios: 15, 17, 18 (a frase de `NOT_IN_ROLE`), 28.
+   - **Arquivos:** muda `assistant.ts`, `data-tools/tools.ts`, `test-world.ts`, `tools.test.ts`, e uma linha em `agent.ts`, `assistant/assistant.ts` e `conversation/builder.ts`.
+   - **O que sai:** `originIn` e `originOf` (`tools.ts:81-112`), o log `DATA_ORIGIN_UNREAD` (`:92`), o `flatMap` que tira a tabela sem par (`:136-141`), o `log` de `dataTools` (`:184-185`) e dos três chamadores; os casos `tools.test.ts:115-133` e `:135-147`.
+   - **O que entra:** a regra da origem acima; `listed` volta a `map`; as duas frases nas descrições. `table()` de `test-world.ts` monta `sources` com `KeptSource`; `FORA` vira uma fonte `NOT_GIVEN` de uma conexão com o nome "Loja Fora", para provar que o nome não sai; os casos do critério 17, com uma fonte `NAMED` em `NEEDS_REAUTH`, uma `NOT_GIVEN` e a cópia de `[LOJA_A, FORA]` (o Fechamento B do delta de G2); o 15 e o 28 com a forma nova. Regras: code C21, C26, C74, C79; security S41.
+   - **Mutações à mão:** (a) toda fonte vira `NAMED` com `state: 'ACTIVE'`: o 17 fica vermelho. (b) a recusa `CATALOG_UNAVAILABLE` de volta em `tabled`: 17. (c) só a primeira fonte: 28. (d) a frase antiga de `NOT_IN_ROLE`: 18. (e) tire de `QUERY_DESCRIPTION` a frase do estado: o caso "as duas descrições" fica vermelho.
    - **Pronto quando:** `tools.test.ts` e `tools-refusals.test.ts` passam no comando do servidor.
 3. **De ponta a ponta pela porta da raiz.** Critérios: 100, 101.
    - **Arquivos:** muda `mounted.test.ts`.
    - **Referência a seguir:** o caso de hoje em `mounted.test.ts:160-170` (a conexão em `NEEDS_REAUTH` por `on.hub.test.asOwner`); `agentsOn` dá a Matriz ao Projeto e não a Filial (`apps/server/src/builder/agents/test-agents.ts:50-66`, `on.filial` em `apps/server/src/builder/assistant/test-assistant.ts:137`); `releasing(t, on, { connectionId: on.filial }, ['vendas'])` libera a cópia da Filial ao Projeto (`apps/server/src/hub/copies/test-released.ts:49-92`), sem conferir a conexão (`hub/copies/grants.ts:74-99`).
-   - **O que entra:** o caso de `:160-170` reescrito para o critério 100, com uma chamada `data_query` depois da lista; o caso do critério 101, pelo Builder.
-   - **Mutações à mão:** a (a) do passo 2: os dois casos ficam vermelhos ("Filial" aparece no 101).
+   - **O que entra:** o caso de `:160-170` reescrito para o critério 100, no Início, com uma chamada `data_query` depois da lista; o caso do critério 101, pelo Builder.
+   - **Mutações à mão:** a (a) do passo 1: o 101 fica vermelho ("Filial" aparece). A (b) do passo 1: o 100 fica vermelho (a fonte perde o nome no Início).
    - **Pronto quando:** `mounted.test.ts` passa com o Postgres de teste.
 4. **Os fechamentos de G2.** Critérios: 102, 103.
    - **Arquivos:** renomeia `tools-failures.test.ts` para `tools-refusals.test.ts`; muda `scripts/rerun-never.json`; cria `apps/web/src/builder/conversation/workspace-specs.ts`; muda `tool-registry.ts`, `app-data-specs.ts`.
@@ -1067,6 +1099,7 @@ As de U2, mais a linha de `zod` em `docs/reference/stack.md:34` e testing T4, T5
 
 ### Como se prova
 
+- 104: `describe` pelo Hub de teste, no Início e num Projeto; hoje `kept` só traz o id.
 - 15, 17 e 28: `execute` sobre o contrato real (`companyData`) com fontes falsas; hoje o 17 falha,
   porque a tabela de `FORA` dá `CATALOG_UNAVAILABLE` e sai da lista.
 - 100 e 101: um turno pelo Hub de teste e o resultado que o servidor devolveu ao modelo, lido pelo
@@ -1079,6 +1112,8 @@ As de U2, mais a linha de `zod` em `docs/reference/stack.md:34` e testing T4, T5
 - O `typecheck` acusar um leitor fora da lista acima: migre-o no mesmo commit e declare no PR (L7);
   se ele estiver numa pasta de outra unidade em construção, pare e reporte.
 - A trilha Dados recusar o contrato e o seu leitor num PR só: pare; é a decisão 29.
+- `catalogOf` não conseguir ler `catalogSources` na mesma transação de `catalogSystems`: pare; não
+  abra uma segunda transação.
 - `releasing` não conseguir liberar ao Projeto a cópia da Filial: reporte o que falta no ajudante; não
   grave a linha de liberação à mão.
 - A divisão de `tool-registry.ts` pedir mover mais que as entradas das ferramentas da máquina: pare.
@@ -1318,7 +1353,7 @@ export function sourcesOf(parts: readonly MastraMessagePart[]): MessageSource[]
 ```
 
 - **Estados.** `kind` separa web e dado; `state` separa a cópia e a leitura ao vivo (C21, C22). `COMPLETE` é `FRESH`; `PARTIAL` é `PARTIAL`; `ERROR` e `INTERRUPTED` são `STOPPED`, sempre com hora; `NONE` vem com `at` nulo e diz "ainda sem cópia".
-- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26). Na fonte de cópia, `system` junta por vírgula o `name` de cada `DataSystem` `ACTIVE` e o conector no lugar de cada `INACTIVE` (U2b), como a lista de Dados escreve as contas ("Loja A, Loja B", `copy-list.test.tsx:209`); a fonte nunca nomeia a conexão `INACTIVE`. O dia e a hora de toda fonte de dado saem de uma função só, `whenOf(at, now)`: "hoje às", "ontem às" ou "em 17/10/2026 às", por `dayGroupOf`, `dayOf` e `clockOf`.
+- **Donos.** A chave sem repetição é `${connector}:${system}:${table}` para dado e a `url` para web, escrita uma vez em `sourcesOf` (C26). Na fonte de cópia, `system` junta por vírgula o `name` de cada `DataSystem` `NAMED` e o conector no lugar de cada `NOT_GIVEN` (U2b), como a lista de Dados escreve as contas ("Loja A, Loja B", `copy-list.test.tsx:212`); a fonte nunca nomeia uma conexão `NOT_GIVEN`. O dia e a hora de toda fonte de dado saem de uma função só, `whenOf(at, now)`: "hoje às", "ontem às" ou "em 17/10/2026 às", por `dayGroupOf`, `dayOf` e `clockOf`.
 - **Esquema de entrada externa.** O resultado guardado passa por `DataResult` (de `@conexus/hub-api`) ou `LiveResult`; fora deles, nenhuma fonte, sem log (decisão 26) (C27).
 - **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
 
