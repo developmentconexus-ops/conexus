@@ -1,7 +1,8 @@
-import { ConnectorLogo } from '../../hub/connectors/public.ts'
+import { ConnectorLogo, stateBadge } from '../../hub/connectors/public.ts'
 import { systemText } from '../../hub/copies/public.ts'
 import { clockOf, dayGroupOf } from '../../platform/dates.ts'
 import { Badge } from '../../ui/badge.tsx'
+import { Stamp } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { useRoom } from './room.ts'
 import type { MessageSource } from './sources.ts'
@@ -36,24 +37,21 @@ function stampOf(
 
 /** The system and the connections the data came from, without repeating the system in a connection that bears its name. */
 function nameOf(source: DataSource, connectors: ConnectorWords): string {
-  const connections = source.systems.flatMap((each) => (each.kind === 'NAMED' ? [each.name] : []))
-  return systemText(connectors.name(source.connector), connections, 0)
+  return systemText(connectors.name(source.connector), source.connections, 0)
 }
 
-/** The connections that need the person's attention, in the words Integrações uses for them. */
-function badgesOf(source: DataSource, connectors: ConnectorWords): string[] {
-  const texts = source.systems.flatMap((each) => {
-    const badge = each.kind === 'NAMED' ? connectors.badge(source.connector, each.state) : null
-    return badge?.tone === 'danger' ? [badge.text] : []
-  })
-  return [...new Set(texts)]
-}
+/** The class that gives a state its tone: the words stay `text-2` except where the run did not go through. */
+const STAMPS = {
+  neutral: 'before:bg-line-strong',
+  success: 'text-text-2 before:bg-success',
+  warning: '',
+  danger: '',
+} as const
 
-const DOTS = {
-  neutral: 'bg-line-strong',
-  success: 'bg-success',
-  warning: 'bg-warning',
-  danger: 'bg-danger',
+function Reauth({ connector }: { connector: string }) {
+  const { connectors } = useRoom()
+  const badge = stateBadge({ state: 'NEEDS_REAUTH' }, connectors.auth(connector))
+  return badge === null ? null : <Badge tone={badge.tone}>{badge.text}</Badge>
 }
 
 function DataLine({ source, now }: { source: DataSource; now: Date }) {
@@ -61,25 +59,25 @@ function DataLine({ source, now }: { source: DataSource; now: Date }) {
   const logo = connectors.logo(source.connector)
   const stamp = stampOf(source, now)
   return (
-    <li className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xs min-h-control py-xs not-first:border-t not-first:border-line">
+    <li className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-sm gap-y-xs py-xs not-first:border-t not-first:border-line">
       {logo !== undefined && <ConnectorLogo small entry={{ logo }} />}
-      <span className="min-w-0 break-words text-label text-text">{nameOf(source, connectors)}</span>
-      {badgesOf(source, connectors).map((text) => (
-        <Badge key={text} tone="danger">
-          {text}
-        </Badge>
-      ))}
+      <span className="min-w-0 break-words text-label font-medium text-text">
+        {nameOf(source, connectors)}
+      </span>
+      {source.reauth && <Reauth connector={source.connector} />}
       <span aria-hidden="true" className="basis-full @md:hidden" />
       <span
-        className={`min-w-0 break-all rounded-control bg-surface-3 px-sm font-mono text-fact text-text ${logo === undefined ? '' : '@max-md:ms-7'}`}
+        className={cn(
+          'min-w-0 break-all rounded-control bg-surface-3 px-xs font-mono text-fact text-text',
+          logo !== undefined && '@max-md:ms-7',
+        )}
       >
         {source.table}
       </span>
       <span className="@md:ms-auto">
-        <span className="inline-flex items-center gap-xs text-eyebrow text-text-2 tabular-nums">
-          <span aria-hidden="true" className={cn('size-1.5 rounded-pill', DOTS[stamp.tone])} />
+        <Stamp tone={stamp.tone} className={STAMPS[stamp.tone]}>
           {stamp.text}
-        </span>
+        </Stamp>
       </span>
     </li>
   )
@@ -91,7 +89,7 @@ export function Sources({ sources }: { sources: readonly MessageSource[] }) {
   return (
     <section
       aria-label="Fontes"
-      className="@container mx-md flex min-w-0 flex-col gap-xs border-t border-line pt-md text-fact text-text-2"
+      className="@container mx-md flex min-w-0 flex-col gap-xs border-t border-line pt-sm text-fact text-text-2"
     >
       <h3 className="text-label font-semibold text-text">Fontes</h3>
       <ul className="m-0 flex min-w-0 list-none flex-col p-0">

@@ -8,7 +8,7 @@ import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { Chat } from './chat.tsx'
 import { PLAIN_WORDS } from './connector-specs.ts'
-import { useConnectorWords } from './connector-words.ts'
+import { useConnectorCatalog } from './connector-catalog.ts'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
@@ -37,11 +37,11 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 /** The Builder's conversation: the screen of `chat.tsx` on the Builder's controller, with the model's button. */
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
-  const { words } = useConnectorWords(companyId)
+  const { words } = useConnectorCatalog(companyId)
   const room = useMemo(
     () => ({
       ...BUILDER_ROOM,
-      connectors: { ...PLAIN_WORDS, name: words.name, logo: words.logo },
+      connectors: { ...words, refusal: PLAIN_WORDS.refusal },
     }),
     [words],
   )

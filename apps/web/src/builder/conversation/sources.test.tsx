@@ -97,6 +97,13 @@ function read(change: { noAt?: true; toolName?: string } = {}) {
   return part
 }
 
+/** The colour of a stamp's words and of its dot: the dot takes the words' colour unless a class gives it its own. */
+function toneOf(classes: string) {
+  const words = classes.match(/(?:^| )text-(success|warning|danger|text-2)(?: |$)/)?.[1]
+  const dot = classes.match(/before:bg-(success|line-strong)/)?.[1]
+  return { words, dot: dot ?? words }
+}
+
 /** What each line of the data sources shows: its logo, its words and the tone of its stamp. */
 function linesOf(parts: MastraMessagePart[], words = WORDS) {
   const [item] = sourcesIn(parts)
@@ -115,9 +122,7 @@ function linesOf(parts: MastraMessagePart[], words = WORDS) {
       badges: texts.slice(1, -2),
       table: texts.at(-2),
       stamp,
-      tone: within(line)
-        .getByText(stamp)
-        .firstElementChild?.className.match(/bg-(success|warning|danger|line-strong)/)?.[1],
+      ...toneOf(within(line).getByText(stamp).className),
     }
   })
 }
@@ -167,21 +172,20 @@ test('as fontes: sem source, nenhuma linha', () => {
 
 const COPIED = 'copiado hoje às 08:45'
 
-test('a fonte de cópia: a logo, "Sankhya · Matriz", a tabela e "copiado hoje às 08:45"', () => {
+test('a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45', () => {
   clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [MATRIZ] })])).toEqual([
+  expect(linesOf([queried({ systems: [MATRIZ] })])).toMatchObject([
     {
       logo: true,
       name: 'Sankhya · Matriz',
       badges: [],
       table: 'sankhya_vendas',
       stamp: COPIED,
-      tone: 'success',
     },
   ])
 })
 
-test('a conexão com o nome do sistema não o repete', () => {
+test('a conexão com o nome do sistema não se repete na fonte de cópia', () => {
   clockAt(COPY_DAY)
   const [line] = linesOf([queried({ systems: [{ ...MATRIZ, name: 'Sankhya' }] })])
   expect(line?.name).toBe('Sankhya')
@@ -196,19 +200,43 @@ test('a fonte vem também do data_describe de uma tabela', () => {
 function seen(change: { lastRun?: string; lastRunEndedAt?: string | null }) {
   const [line] = linesOf([queried({ systems: [MATRIZ], ...change })])
   document.body.innerHTML = ''
-  return [line?.stamp, line?.tone]
+  return line
 }
 
-test('o ponto e as palavras da cópia seguem a rodada: parcial, parada, em dia, sem cópia', () => {
+test('a cópia em dia: as palavras em text-2 e o ponto em success', () => {
   clockAt(COPY_DAY)
-  expect(seen({ lastRun: 'PARTIAL' })).toEqual(['rodada parcial, copiado hoje às 08:45', 'warning'])
-  expect(seen({ lastRun: 'ERROR' })).toEqual(['parada hoje às 08:45', 'danger'])
-  expect(seen({ lastRun: 'INTERRUPTED' })).toEqual(['parada hoje às 08:45', 'danger'])
-  expect(seen({ lastRun: 'COMPLETE' })).toEqual([COPIED, 'success'])
-  expect(seen({ lastRun: 'NONE', lastRunEndedAt: null })).toEqual([
-    'ainda sem cópia',
-    'line-strong',
-  ])
+  expect(seen({ lastRun: 'COMPLETE' })).toMatchObject({
+    stamp: COPIED,
+    words: 'text-2',
+    dot: 'success',
+  })
+})
+
+test('a rodada parcial diz rodada parcial, em warning', () => {
+  clockAt(COPY_DAY)
+  expect(seen({ lastRun: 'PARTIAL' })).toMatchObject({
+    stamp: 'rodada parcial, copiado hoje às 08:45',
+    words: 'warning',
+    dot: 'warning',
+  })
+})
+
+test('a rodada com erro ou interrompida diz parada, em danger, e nunca copiado', () => {
+  clockAt(COPY_DAY)
+  for (const lastRun of ['ERROR', 'INTERRUPTED']) {
+    const line = seen({ lastRun })
+    expect(line).toMatchObject({ stamp: 'parada hoje às 08:45', words: 'danger', dot: 'danger' })
+    expect(line?.stamp).not.toContain('copiado')
+  }
+})
+
+test('sem rodada diz ainda sem cópia, com o ponto neutro', () => {
+  clockAt(COPY_DAY)
+  expect(seen({ lastRun: 'NONE', lastRunEndedAt: null })).toMatchObject({
+    stamp: 'ainda sem cópia',
+    words: 'text-2',
+    dot: 'line-strong',
+  })
 })
 
 test('outro dia diz ontem ou a data', () => {
@@ -225,32 +253,43 @@ test('outro dia diz ontem ou a data', () => {
   ])
 })
 
-test('a conexão que pede nova autorização leva o selo de Integrações; a em dia não leva', () => {
+const REFUSED = { ...MATRIZ, state: 'NEEDS_REAUTH' }
+
+test('a conexão à espera de nova autorização mostra o selo de Integrações', () => {
   clockAt(COPY_DAY)
-  const refused = { ...MATRIZ, state: 'NEEDS_REAUTH' }
-  expect(linesOf([queried({ systems: [refused] })])[0]?.badges).toEqual(['Chaves recusadas'])
+  expect(linesOf([queried({ systems: [REFUSED] })])[0]?.badges).toEqual(['Chaves recusadas'])
   document.body.innerHTML = ''
   const oauth = wordsOf([{ ...SANKHYA, auth: 'oauth2_code' }])
-  expect(linesOf([queried({ systems: [refused] })], oauth)[0]?.badges).toEqual([
+  expect(linesOf([queried({ systems: [REFUSED] })], oauth)[0]?.badges).toEqual([
     'Pede para conectar de novo',
   ])
-  document.body.innerHTML = ''
-  const [line] = linesOf([queried({ systems: [MATRIZ] })])
-  expect(line?.badges).toEqual([])
+})
+
+test('a conexão ativa não mostra selo', () => {
+  clockAt(COPY_DAY)
+  expect(linesOf([queried({ systems: [MATRIZ] })])[0]?.badges).toEqual([])
   expect(screen.queryByText('Funcionando')).toBeNull()
 })
 
-test('a fonte sem a conexão mostra só o sistema e a logo', () => {
+test('a fonte não dada ao Projeto mostra só o sistema e a logo', () => {
   clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [{ kind: 'NOT_GIVEN' }] })])).toEqual([
-    {
-      logo: true,
-      name: 'Sankhya',
-      badges: [],
-      table: 'sankhya_vendas',
-      stamp: COPIED,
-      tone: 'success',
-    },
+  expect(linesOf([queried({ systems: [{ kind: 'NOT_GIVEN' }] })])).toMatchObject([
+    { logo: true, name: 'Sankhya', badges: [], table: 'sankhya_vendas', stamp: COPIED },
+  ])
+})
+
+test('uma cópia de duas conexões com uma não dada nomeia só a dada', () => {
+  clockAt(COPY_DAY)
+  const [line] = linesOf([queried({ systems: [MATRIZ, { kind: 'NOT_GIVEN' }] })])
+  expect(line?.name).toBe('Sankhya · Matriz')
+})
+
+test('duas fontes são duas linhas, cada uma com a sua logo', () => {
+  clockAt(COPY_DAY)
+  const lines = linesOf([queried({}), queried({ table: 'sankhya_notas' })])
+  expect(lines.map((line) => [line.logo, line.table])).toEqual([
+    [true, 'sankhya_vendas'],
+    [true, 'sankhya_notas'],
   ])
 })
 
@@ -273,16 +312,17 @@ test('um resultado fora do esquema não vira fonte', () => {
   expect(sourcesIn([broken, refused])).toEqual([])
 })
 
-test('a leitura ao vivo: a logo, o sistema, a operação e "ao vivo · lido agora, às"', () => {
+test('a fonte da leitura ao vivo diz ao vivo · lido agora, às', () => {
   clockAt('2026-11-16T02:00:00.000Z')
-  expect(linesOf([read()])).toEqual([
+  expect(linesOf([read()])).toMatchObject([
     {
       logo: true,
       name: 'Sankhya · Matriz',
       badges: [],
       table: 'consultar',
       stamp: 'ao vivo · lido agora, às 22:46',
-      tone: 'success',
+      words: 'text-2',
+      dot: 'success',
     },
   ])
 })

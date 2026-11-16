@@ -25,20 +25,19 @@ export function wordsOf(
   function name(connector: string): string {
     return named.get(connector)?.name ?? connector
   }
+  function auth(connector: string): ConnectorEntry['auth'] {
+    return named.get(connector)?.auth ?? 'oauth2_code'
+  }
   return {
     name,
     logoOf: (connectionId) => named.get(linked.get(connectionId) ?? '')?.logo,
     logo: (connector) => named.get(connector)?.logo,
-    badge: (connector, state) => stateBadge({ state }, named.get(connector)?.auth ?? 'oauth2_code'),
+    auth,
     refusal(connector, why) {
       const shown = connector === undefined ? 'sistema' : name(connector)
       switch (why.kind) {
         case 'REAUTH':
-          return reauthText(
-            shown,
-            (connector === undefined ? undefined : named.get(connector)?.auth) ?? 'oauth2_code',
-            true,
-          )
+          return reauthText(shown, connector === undefined ? 'oauth2_code' : auth(connector), true)
         case 'BUSY':
           return busyText(shown, why.waitMs)
         case 'UNREACHABLE':
@@ -48,18 +47,4 @@ export function wordsOf(
       }
     },
   }
-}
-
-/**
- * The company's connector catalog as words, read once for every room: `words` keeps its identity
- * while the catalog does not change, so a room holding it does not redraw its rows.
- */
-export function useConnectorWords(companyId: CompanyId) {
-  const read = useQuery(connectionsQuery(companyId))
-  const { connectors, connections } = read.data ?? {}
-  const words = useMemo(
-    () => wordsOf(connectors ?? [], connections ?? []),
-    [connectors, connections],
-  )
-  return { words, read }
 }

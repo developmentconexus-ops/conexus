@@ -36,12 +36,17 @@ export function BlockSentence({ children }: { children: ReactNode }) {
 /** A state in words with a dot of its colour, never the colour alone (design V35): the Badge without its frame. */
 export function Stamp(props: {
   tone: NonNullable<ComponentProps<typeof Badge>['tone']>
+  /** Where a state's words and its dot differ in colour, as a source's: the words in `text-2`, the dot in the tone. */
+  className?: string
   children: ReactNode
 }) {
   return (
     <Badge
       tone={props.tone}
-      className="h-auto border-0 bg-transparent px-0 text-eyebrow tabular-nums before:inline-block"
+      className={cn(
+        'h-auto border-0 bg-transparent px-0 text-eyebrow tabular-nums before:inline-block',
+        props.className,
+      )}
     >
       {props.children}
     </Badge>
