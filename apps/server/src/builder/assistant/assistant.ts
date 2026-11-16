@@ -55,7 +55,7 @@ import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, automationRunFor, openConversation } from './open.ts'
-import { connectionsOffered, overviewTool, projectsOf } from './overview.ts'
+import { connectionsOffered, overviewTool, projectsOf, reachedBy } from './overview.ts'
 import type { AssistantCopies, AssistantProjects } from './ports.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
@@ -210,7 +210,10 @@ function assistantAgent(
   const overview = overviewTool({
     scopeOf,
     projectsOf: (scope) => projectsOf(deps, scope),
-    connectionsOf: connectionsOffered(offeredOf),
+    connectionsOf: connectionsOffered(
+      offeredOf,
+      reachedBy({ scopeOf, companyData: deps.companyData }),
+    ),
   })
   const copyRuns = copyRunsTool({ scopeOf, copies: deps.copies })
   const showFile = showFileTool(parts.machines)
