@@ -17,18 +17,19 @@ export function wordsOf(
   function name(connector: string): string {
     return named.get(connector)?.name ?? connector
   }
+  function auth(connector: string): ConnectorEntry['auth'] {
+    return named.get(connector)?.auth ?? 'oauth2_code'
+  }
   return {
     name,
     logoOf: (connectionId) => named.get(linked.get(connectionId) ?? '')?.logo,
+    logo: (connector) => named.get(connector)?.logo,
+    auth,
     refusal(connector, why) {
       const shown = connector === undefined ? 'sistema' : name(connector)
       switch (why.kind) {
         case 'REAUTH':
-          return reauthText(
-            shown,
-            (connector === undefined ? undefined : named.get(connector)?.auth) ?? 'oauth2_code',
-            true,
-          )
+          return reauthText(shown, connector === undefined ? 'oauth2_code' : auth(connector), true)
         case 'BUSY':
           return busyText(shown, why.waitMs)
         case 'UNREACHABLE':
