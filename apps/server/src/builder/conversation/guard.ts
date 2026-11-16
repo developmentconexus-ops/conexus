@@ -1,6 +1,14 @@
 import type { ServerResponse } from 'node:http'
 import type { CompanyId, ConnectionId, FailureCode, Person } from '@conexus/hub-api'
-import { BUILDER_ROUTES, ConversationId, PersonId, ToolCallId } from '@conexus/hub-api'
+import {
+  BUILDER_ROUTES,
+  ConversationId,
+  PersonId,
+  READER_ZONE,
+  READER_ZONE_HEADER,
+  ReaderZone,
+  ToolCallId,
+} from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
@@ -151,11 +159,12 @@ export type GuardedMastra = {
  * the path names: the thread's resource names its controller, company and person (`resourceOf`),
  * and that controller admits the person now (the Builder by the Hub's index and membership, the
  * Assistant by `askAssistant`); a refusal is the same 404 (S10).
- * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
- * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
- * `include`, which would read messages of the person's other conversations. So is a file that is
- * not a `data:` URL. While the Hub settles before it stops, a new message is refused before Mastra
- * starts a turn (founder E1).
+ * The browser's time zone, when its header holds a zone the runtime knows, goes into the run's
+ * context for the tools to tell the model the hours in. A `requestContext` from the browser is
+ * refused: Mastra's server copies it into the run's context, and `mastra__messageAuthor` is not
+ * one of its reserved keys (measured, prove2 e21-bare). So is `include`, which would read messages
+ * of the person's other conversations. So is a file that is not a `data:` URL. While the Hub
+ * settles before it stops, a new message is refused before Mastra starts a turn (founder E1).
  */
 async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: FastifyRequest) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
@@ -191,6 +200,8 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
     throw new Failure('HUB_UPDATING')
   }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
+  const zone = ReaderZone.safeParse(request.headers[READER_ZONE_HEADER])
+  if (zone.success) request.requestContext.set(READER_ZONE, zone.data)
   return { person, controllerId, conversationId, companyId: owner.companyId, part }
 }
 

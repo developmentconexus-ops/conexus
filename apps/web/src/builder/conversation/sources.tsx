@@ -1,3 +1,4 @@
+import { systemText } from '../../hub/copies/public.ts'
 import { clockOf, dayGroupOf } from '../../platform/dates.ts'
 import { useRoom } from './room.ts'
 import type { MessageSource } from './sources.ts'
@@ -39,7 +40,7 @@ export function Sources({ sources }: { sources: readonly MessageSource[] }) {
           source.kind === 'data' ? (
             <li key={keyOf(source)} className="min-w-0 break-words">
               {source.state === 'LIVE' && source.at !== null
-                ? `${connectors.name(source.connector)} · ${source.system} · ${liveText(source.at, now)}`
+                ? `${systemText(connectors.name(source.connector), [source.system], 0)} · ${liveText(source.at, now)}`
                 : `${connectors.name(source.connector)} · ${source.table} · ${copiedText(source, now)}`}
             </li>
           ) : (

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ReadCut } from '@conexus/hub-api'
+import { READER_ZONE, ReadCut } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import { connectorTools } from './public.ts'
 import { accessOver, granted, runOn, SANKHYA } from './test-access.ts'
 
@@ -48,4 +49,17 @@ test('uma leitura OK leva a hora em que voltou, com e sem a resposta inteira gua
     const refused = await runOn(connectorTools(access, { noteSave: false }), 'connector_read', read)
     assert.equal('at' in refused, false, refusal.kind)
   }
+})
+
+test('a hora da leitura volta no fuso de quem lê, e as descrições das leituras dizem que vem com o deslocamento', async () => {
+  const read = { connection: 'Matriz', operation: 'sankhya.consultar', input: {} }
+  const answer = { kind: 'OK', value: { linhas: [] }, complete: true, rows: 0, bytes: 14 } as const
+  const { access } = accessOver([granted('sankhya', SANKHYA)], { read: async () => answer })
+  const set = connectorTools(access, { noteSave: false })
+  const requestContext = new RequestContext()
+  requestContext.set(READER_ZONE, 'America/Sao_Paulo')
+  const local = await runOn(set, 'connector_read', read, { requestContext })
+  assert.match(local.at, /-03:00$/)
+  assert.match((await runOn(set, 'connector_read', read)).at, /Z$/)
+  assert.match(Object(set).connector_read.description, /UTC offset/)
 })

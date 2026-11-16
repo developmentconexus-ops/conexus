@@ -6,9 +6,15 @@ export function stringArg(args: unknown, key: string): string | undefined {
   return undefined
 }
 
+/** The two halves of a read's operation: "sankhya.consultar" is `['sankhya', 'consultar']`. */
+export function operationOf(args: unknown): [string | undefined, string | undefined] {
+  const [connector, operation] = stringArg(args, 'operation')?.split('.', 2) ?? []
+  return [connector, operation]
+}
+
 /** The connector a read's operation names ("sankhya.consultar" is Sankhya's). */
 export function connectorOf(args: unknown): string | undefined {
-  return stringArg(args, 'operation')?.split('.')[0]
+  return operationOf(args)[0]
 }
 
 /** Like `stringArg`, but an empty string is kept: an edit that deletes text has `new_string: ''`. */

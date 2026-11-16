@@ -19,6 +19,7 @@ export {
   PROPOSAL_GONE,
   PROPOSAL_STATE,
   provedText,
+  systemText,
 } from './text.ts'
 
 /** The Dados routes are for whoever manages copies; for anyone else the address is not found (web W34, S10). */
