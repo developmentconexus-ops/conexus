@@ -195,7 +195,7 @@ export function OpenRole({
             await saveTables(role.role, [...marked])
             onDone()
           } catch (error) {
-            // The Hub says the database did not answer before anything changed, and the PUT repeats safely.
+            // The database did not answer; the Hub kept or restored its marks, and the PUT repeats safely.
             if (error instanceof HubFailure && error.code === 'COPY_DATABASE_UNAVAILABLE') {
               setServerError(form, error)
             } else setWriteError(form, error, UNCONFIRMED)
