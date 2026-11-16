@@ -219,6 +219,12 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C70.** Comments **should** explain a reason the code cannot show, and promises in comments,
   tools and skills stay within what mechanisms and tests prove. Failure: boundaries claims all
   output passes through the logger while a library still prints to stderr. [review]
+- **C80.** An agent tool's description and order text **must not** use a concrete table or system
+  name as an example: they show the form the discovery tool returns (`sync.<name>`) or a neutral
+  word, and the test world never names a table after that word. Failure: the data tools taught
+  `sync.sankhya_vendas`, the model copied it where the live copy is `vendas`, and its first query
+  failed, while the test world used the same name and saw nothing.
+  [`data-tools/order.test.ts`, review]
 
 ## 12. One way, and no leftovers
 
