@@ -89,10 +89,11 @@ const ReadPart = z.looseObject({
 })
 
 /** The recorded live read, with its `at` taken away or under a typed read's tool name. */
-function read(change: { noAt?: true; toolName?: string } = {}) {
+function read(change: { noAt?: true; toolName?: string; connection?: string } = {}) {
   const part = recordedPart('reads', ReadPart)
   if (change.noAt) delete part.toolInvocation.result.at
   if (change.toolName !== undefined) part.toolInvocation.toolName = change.toolName
+  if (change.connection !== undefined) part.toolInvocation.args.connection = change.connection
   return part
 }
 
@@ -212,6 +213,11 @@ test('um resultado fora do esquema não vira fonte', () => {
 test('a fonte da leitura ao vivo diz lido agora, às', () => {
   clockAt('2026-11-16T02:00:00.000Z')
   expect(textsOf([read()])).toEqual(['Sankhya · Matriz · lido agora, às 22:46'])
+})
+
+test('a leitura ao vivo de uma conexão com o nome do sistema não o repete', () => {
+  clockAt('2026-11-16T02:00:00.000Z')
+  expect(textsOf([read({ connection: 'Sankhya' })])).toEqual(['Sankhya · lido agora, às 22:46'])
 })
 
 test('a leitura ao vivo vista noutro dia diz o dia', () => {
