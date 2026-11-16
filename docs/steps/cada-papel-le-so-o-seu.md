@@ -1824,7 +1824,7 @@ Depois da U12, os passos 6 e 7 do `conexus-build`: `run.test.ts`, `run-v2.test.t
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/identity/roles.ts` | Muda: `copy: ['manage']` sai de `BUILD` e entra em `owner` e `admin` | `admission.ts`, `getCompany` |
-| `apps/server/src/hub/copies/` (`sample.ts`, `list.ts`, `readers.ts`) | Muda: sai o ramo `manages ? COPY_NOT_IN_ROLE` e o `manageCopies` que dava `'ALL'` fica só para Dono e Administrador pelo mesmo `allows` | `routes.ts` |
+| `apps/server/src/hub/copies/` (`sample.ts`, `list.ts`, `readers.ts`) | Muda: sai o ramo `manages ? COPY_NOT_IN_ROLE`, e saem de `list.ts` e `readers.ts` as duas linhas `allows(manageCopies) ? 'ALL'`: só `copiesReadBy` (que já dá `'ALL'` a quem `readsAll`) é dono da regra de quem lê tudo | `routes.ts` |
 | `packages/hub-api/src/copy-failures.ts`, `connection-copies.ts` | Muda: sai `COPY_NOT_IN_ROLE` | `sampleCopy`; a web |
 | `apps/web/src/hub/copies/copy-sample.tsx`, `text.ts`, `apps/web/src/hub/projects/project-copies.tsx` | Muda: sai o ramo da recusa; as duas frases que citam o desenvolvedor | — |
 | `apps/web/src/platform/test-may.ts`, `apps/web/sweep-table-states.ts`, os testes | Muda | — |
@@ -1844,7 +1844,7 @@ Nenhum. O contrato perde `COPY_NOT_IN_ROLE`. **Nenhuma permissão nova no banco*
    - **Referência a seguir:** o ramo do membro de `sample.ts`, `list.ts`, `readers.ts`.
    - **O que sai:** `copy: ['manage']` de `BUILD`; `COPY_NOT_IN_ROLE` do contrato e o ramo `manages` de `sampleOf`; o `NOT_IN_ROLE` de `readCopyTable` na amostra vira `COPY_NOT_FOUND`.
    - **O que entra:** `copy: ['manage']` em `owner` e `admin`; os testes dos critérios 56, 119, 120 e 121.
-   - **Mutações à mão:** devolver `copy` ao `BUILD`: 119, 120. Dar `'ALL'` ao desenvolvedor em `seenBy`: 121.
+   - **Mutações à mão:** devolver `copy` ao `BUILD`: 119, 120. Dar `'ALL'` ao desenvolvedor em `copiesReadBy`: 121.
    - **Pronto quando:** `member-data.test.ts`, `grants.test.ts`, `developer.test.ts` e `sample.test.ts` passam.
 2. **A tela.** Critérios: 122.
    - **Arquivos:** muda `copy-sample.tsx`, `text.ts`, `project-copies.tsx`, `test-may.ts`, `sweep-table-states.ts`, os testes.
