@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { CopySample, listCopies, listCopyRuns } from '@conexus/hub-api'
+import { CopySample, listCopies, listCopyReaders, listCopyRuns } from '@conexus/hub-api'
 import type { Person } from '../identity/test-hub.ts'
 import { call, codeOf, memberOn, personOn } from '../identity/test-hub.ts'
 import { grantMatriz, proposed } from './test-proposals.ts'
 import type { RolesWorld } from './test-readers.ts'
-import { copyOf, rolesWorld } from './test-readers.ts'
+import { copyOf, put, rolesWorld } from './test-readers.ts'
 import { copiesUrl } from './test-routes.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
@@ -74,13 +74,37 @@ test('quem não é da empresa recebe 404', async (t) => {
   }
 })
 
-test('o desenvolvedor vê só as tabelas do papel e as rodadas delas', async (t) => {
+test('o desenvolvedor vê só as tabelas do papel, as rodadas e os leitores delas, e nenhuma proposta', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
+  await grantMatriz(w.on)
+  await proposed(w.on)
   const developer = await memberOn(w.on.hub, w.on.companyId, DAVI, 'developer')
   assert.deepEqual((await listedBy(w, developer)).copies, [])
+  const clientes = copyOf(w.copies, 'sankhya_clientes')
+  assert.equal((await put(w, w.on.ana, 'developer', [clientes])).statusCode, 200)
+  const listed = await listedBy(w, developer)
+  assert.deepEqual(
+    listed.copies.map(({ id }) => id),
+    [clientes],
+  )
+  assert.deepEqual(listed.proposals, [])
+  const readers = await call(
+    w.on.hub,
+    developer,
+    'GET',
+    `/api/companies/${w.on.companyId}/copy-readers`,
+  )
+  assert.deepEqual(
+    listCopyReaders.success.body.parse(readers.json()).readers.map(({ copyId }) => copyId),
+    [clientes],
+  )
   const missing = await get(w, developer, `/${randomUUID()}/runs`)
-  for (const copyId of w.copies.values()) {
+  for (const [name, copyId] of w.copies) {
     const read = await get(w, developer, `/${copyId}/runs`)
+    if (name === 'sankhya_clientes') {
+      assert.equal(read.statusCode, 200, read.body)
+      continue
+    }
     assert.deepEqual([read.statusCode, codeOf(read)], [404, 'COPY_NOT_FOUND'])
     assert.deepEqual(problemOf(read), problemOf(missing))
   }
