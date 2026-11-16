@@ -10,6 +10,7 @@ import {
   ToolCallId,
 } from '@conexus/hub-api'
 import { unreachableDatabase } from '../../platform/test-database.ts'
+import { createAccess } from '../access/public.ts'
 import type { SessionScope } from '../connectors/public.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync, copiesOn } from '../copies/test-copies.ts'
@@ -181,12 +182,17 @@ test('ler uma tabela devolve 200 linhas e a marca de que há mais', async (t) =>
 
 test('o Hub calado dá CATALOG_UNAVAILABLE', async (t) => {
   const on = await copiesOn(t)
+  const database = await unreachableDatabase(t)
+  const sources = { systems: on.hub.connectors.access.systems, tables: on.hub.copies.access.tables }
   const silent = createCompanyData({
-    ...{ identity: on.hub.identity, connectors: () => on.hub.connectors },
+    ...{
+      identity: on.hub.identity,
+      access: createAccess({ database, identity: on.hub.identity, sources }),
+    },
     ...{ copies: () => on.hub.copies.data, log: logOf(on) },
     ...{ projects: on.hub.projects.ports, companyPostgres: on.hub.postgres.companyPostgres },
     neon: on.hub.neon.neon,
-    database: await unreachableDatabase(t),
+    database,
   })
   const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' })).describe()
   assert.deepEqual(described, { kind: 'CATALOG_UNAVAILABLE' })

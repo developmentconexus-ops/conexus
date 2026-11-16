@@ -4,18 +4,18 @@ import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { ConnectorApp } from '../../platform/config-connectors.ts'
-import type { Database, ReadTx } from '../../platform/database.ts'
+import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import { accessSystems } from './access-source.ts'
 import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
 import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
-import { catalogSourcesOf, catalogSystemsOf } from './catalog-systems.ts'
 import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
@@ -30,7 +30,6 @@ import {
 } from './routes.ts'
 import type { ConnectionCopies } from './rows.ts'
 import { connectorIn } from './rows.ts'
-import type { SessionScope } from './scope.ts'
 import { createToolDoor } from './tool-door.ts'
 
 export type { Connector, Native, Operation } from '@conexus/connectors'
@@ -161,10 +160,8 @@ export function createConnectors(deps: {
       may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),
       grant: (input: OfGrant) => grant(routeDeps, input),
     },
-    /** The systems a place offers, for the data contract's catalog; admits nobody, the caller did. */
-    catalogSystems: (tx: ReadTx, scope: SessionScope) => catalogSystemsOf(routeDeps, tx, scope),
-    /** The state of each connection a place was given, in any state, for the catalog's tables; admits nobody. */
-    catalogSources: catalogSourcesOf,
+    /** The connections a place offers, for the access door. */
+    access: Object.freeze({ systems: accessSystems(routeDeps) }),
     /** The copies' templates and their paged read (Capacidade 2, U2). */
     copies: createCopyPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */

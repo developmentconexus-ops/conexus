@@ -37,3 +37,102 @@ export function biomeLint(files: Record<string, string>) {
   )
   return { status: run.status, output: run.stdout + run.stderr }
 }
+
+export const PUBLIC = 'export const x = 1\n'
+export function importing(target: string): string {
+  return `import { x } from '${target}'\nexport const y = x\n`
+}
+/** One planted file per dependency-cruiser rule: the file, what it imports, and the files that import needs. */
+export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
+  'no-circular': [
+    'apps/server/src/platform/a.ts',
+    './b.ts',
+    { 'apps/server/src/platform/b.ts': importing('./a.ts') },
+  ],
+  'no-loose-file-in-hub-or-builder': [
+    'apps/server/src/hub/loose.ts',
+    '../platform/config.ts',
+    { 'apps/server/src/platform/config.ts': PUBLIC },
+  ],
+  'subject-only-through-public': [
+    'apps/server/src/hub/a/x.ts',
+    '../b/inner.ts',
+    { 'apps/server/src/hub/b/inner.ts': PUBLIC },
+  ],
+  'hub-does-not-import-builder': [
+    'apps/server/src/hub/a/h.ts',
+    '../../builder/c/public.ts',
+    { 'apps/server/src/builder/c/public.ts': PUBLIC },
+  ],
+  'platform-does-not-import-subject': [
+    'apps/server/src/platform/p.ts',
+    '../hub/a/public.ts',
+    { 'apps/server/src/hub/a/public.ts': PUBLIC },
+  ],
+  'program-imports-program-by-name': [
+    'apps/web/src/hub/a/w.ts',
+    '../../../../../packages/hub-api/src/index.ts',
+    { 'packages/hub-api/src/index.ts': PUBLIC },
+  ],
+  'test-enters-through-the-public-door': [
+    'apps/server/src/hub/a/a.test.ts',
+    './store.ts',
+    { 'apps/server/src/hub/a/store.ts': PUBLIC },
+  ],
+  'platform-test-enters-through-its-own-file': [
+    'apps/server/src/platform/access.test.ts',
+    './http.ts',
+    { 'apps/server/src/platform/http.ts': PUBLIC },
+  ],
+  'driver-only-in-the-database-modules': [
+    'apps/server/src/hub/a/store.ts',
+    'pg',
+    { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
+  ],
+  'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
+  'neon-http-driver-only-in-its-adapters': [
+    'apps/server/src/hub/a/http-driver.ts',
+    '@neondatabase/serverless',
+    {},
+  ],
+  // A bare package: the cruise's exclude drops a resolved @mastra/core from the graph, so this rule sees only what does not resolve.
+  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/memory', {}],
+  'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
+  's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
+  'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
+  'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],
+  'app-reads-kit-types-only': ['packages/app/src/run.ts', '@conexus/connectors/calls', {}],
+  'app-reads-only-the-kit-calls': [
+    'packages/app/src/kit.ts',
+    '@conexus/connectors',
+    {
+      'packages/app/src/kit.ts':
+        "import type { x } from '@conexus/connectors'\nexport type y = typeof x\n",
+    },
+  ],
+  'web-tree-shape': [
+    'apps/web/src/components/button.ts',
+    '../platform/hub.ts',
+    { 'apps/web/src/platform/hub.ts': PUBLIC },
+  ],
+  'web-support-does-not-import-subject': [
+    'apps/web/src/ui/field.ts',
+    '../hub/a/public.ts',
+    { 'apps/web/src/hub/a/public.ts': PUBLIC },
+  ],
+  'routes-reach-subject-through-public': [
+    'apps/web/src/routes/r.ts',
+    '../hub/a/inner.ts',
+    { 'apps/web/src/hub/a/inner.ts': PUBLIC },
+  ],
+  'access-reaches-no-owner': [
+    'apps/server/src/hub/access/x.ts',
+    '../copies/public.ts',
+    { 'apps/server/src/hub/copies/public.ts': PUBLIC },
+  ],
+  'describe-lists-only-through-access': [
+    'apps/server/src/hub/data/catalog.ts',
+    '../connectors/public.ts',
+    { 'apps/server/src/hub/connectors/public.ts': PUBLIC },
+  ],
+}

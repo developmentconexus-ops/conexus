@@ -19,39 +19,7 @@ const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-
 // the apps are the conversations, their tool adapters and the app packages.
 const DATA = `^(${SERVER}/(hub/(connectors|copies|ontology|data)/|builder/copy-clock/|platform/copy-sql\\.ts$)|packages/connectors/)`
 const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|data-tools|tools)/|packages/app(-contract)?/)`
-// The files that still reach the data directly, each removed by its move onto the contract; nothing joins the list.
-const CONTRACT_MIGRATION = [
-  'agents/agent',
-  'agents/choose',
-  'agents/code-tools',
-  'agents/controller',
-  'agents/conversation-routes',
-  'agents/legacy',
-  'agents/publish',
-  'agents/tools',
-  'agents/write-of',
-  'app-data/context',
-  'app-data/tools',
-  'assistant/assistant',
-  'assistant/connector-access',
-  'assistant/context',
-  'assistant/open',
-  'assistant/overview',
-  'assistant/propose',
-  'assistant/research',
-  'assistant/routes',
-  'assistant/typed-search',
-  'automations/automations',
-  'connectors/connector-tools',
-  'connectors/copy-propose',
-  'connectors/typed-reads',
-  'construtor/code-tool',
-  'construtor/construtor',
-  'controller-kit/turns',
-  'conversation/builder',
-  'conversation/public',
-  'tools/check',
-]
+const CONTRACT_MIGRATION = require('./.dependency-cruiser-migration.cjs')
   .map((file) => `${SERVER}/builder/${file}\\.ts$`)
   .concat('^packages/app/src/connectors\\.ts$')
 
@@ -107,6 +75,25 @@ module.exports = {
         pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, ...CONTRACT_MIGRATION],
       },
       to: { path: DATA },
+    },
+    {
+      name: 'access-reaches-no-owner',
+      comment:
+        'The access door reads the owners through the ports main.ts hands it (AccessSources), never by import.',
+      severity: 'error',
+      from: {
+        path: `${SERVER}/hub/access/`,
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER],
+      },
+      to: { path: `${SERVER}/hub/(connectors|copies|data)/` },
+    },
+    {
+      name: 'describe-lists-only-through-access',
+      comment:
+        'hub/data/catalog.ts imports nothing of hub/connectors or hub/copies, the path issue 1138 took; that it reads only the access door is held by catalogOf taking only access and log.',
+      severity: 'error',
+      from: { path: `${SERVER}/hub/data/catalog\\.ts$` },
+      to: { path: `${SERVER}/hub/(connectors|copies)/` },
     },
     {
       name: 'server-root-only-through-public',

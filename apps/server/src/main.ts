@@ -17,6 +17,7 @@ import type {
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
+import { createAccess } from './hub/access/public.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
@@ -68,7 +69,11 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs' | 'data'> & { status: Status; identity: Identity; webRoot?: string },
+  deps: Omit<Subjects, 'runs' | 'data' | 'access'> & {
+    status: Status
+    identity: Identity
+    webRoot?: string
+  },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -182,8 +187,7 @@ export function subjectsOf(deps: {
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
-    copies: lateCopies,
-    appDataDeadlineMs: deps.appDataDeadlineMs,
+    ...{ copies: lateCopies, appDataDeadlineMs: deps.appDataDeadlineMs },
   })
   const { noticeRequests } = notifications
   const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })
@@ -204,13 +208,14 @@ export function subjectsOf(deps: {
     clock: () => copyClock,
     updating: () => conversations.updating(),
   })
+  const sources = { systems: connectors.access.systems, tables: copies.access.tables }
+  const access = createAccess({ database, identity, sources })
   const data = createCompanyData({
-    ...{ database, identity, log },
-    ...{ connectors: () => connectors, copies: () => copies.data },
+    ...{ database, identity, log, access, copies: () => copies.data },
     ...{ projects: projects.ports, companyPostgres: deps.companyPostgres, neon },
   })
   return {
-    ...{ runs, projects, operations, apps, modelAccounts, requests },
+    ...{ runs, projects, operations, apps, modelAccounts, requests, access },
     ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CatalogSystem, CatalogTable } from '@conexus/hub-api'
+import { CatalogSystem, CatalogTable, fixedRole } from '@conexus/hub-api'
 import pg from 'pg'
 import type { CopiesOn } from './test-copies.ts'
 import { copiesOn, holdPage, plantCopy } from './test-copies.ts'
@@ -11,8 +11,9 @@ function COMPANY_SCOPE(on: CopiesOn) {
 
 function tablesOf(on: CopiesOn, only: 'ALL' | { projectId: typeof on.projectId }) {
   return on.hub.test.database.read(COMPANY_SCOPE(on), (tx) =>
-    on.copies.data.catalogTables(tx, {
-      ...{ companyId: on.companyId, only },
+    on.copies.access.tables(tx, {
+      ...{ companyId: on.companyId, role: fixedRole('owner') },
+      place: only === 'ALL' ? { kind: 'COMPANY' } : { kind: 'PROJECT', projectId: only.projectId },
       given: new Map([[on.connectionId, 'ACTIVE']]),
     }),
   )
@@ -105,12 +106,8 @@ test('uma cópia sem fonte viva fica fora do catálogo', async (t) => {
 
 test('os sistemas da empresa', async (t) => {
   const on = await copiesOn(t)
-  const systems = await on.hub.test.database.read(COMPANY_SCOPE(on), (tx) =>
-    on.hub.connectors.catalogSystems(tx, {
-      ...{ companyId: on.companyId, personId: on.anaId },
-      place: { kind: 'COMPANY' },
-      chosen: [],
-    }),
+  const { systems } = await on.hub.test.database.read(COMPANY_SCOPE(on), (tx) =>
+    on.hub.connectors.access.systems(tx, { companyId: on.companyId, place: { kind: 'COMPANY' } }),
   )
   const [matriz] = systems.map((system) => CatalogSystem.parse(system))
   assert.equal(systems.length, 1)

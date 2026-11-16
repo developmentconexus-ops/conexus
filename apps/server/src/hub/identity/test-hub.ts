@@ -122,7 +122,7 @@ async function hubServing(
       folder: ports.folder,
     },
     assistantMachines: ports.assistantMachines,
-    connectors: subjects.connectors,
+    ...{ connectors: subjects.connectors, access: subjects.access },
     apps,
     ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
     notify: subjects.notifications.notify,

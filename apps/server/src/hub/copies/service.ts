@@ -11,7 +11,8 @@ import type { SqlAnswer } from '../../platform/company-postgres.ts'
 import type { Proposal } from '../connectors/public.ts'
 import type { Accepting } from './accept.ts'
 import { dismissProposal } from './accept.ts'
-import { catalogTables, tableRowsByName } from './catalog-view.ts'
+import { accessTables } from './access-source.ts'
+import { tableRowsByName } from './catalog-view.ts'
 import type { Enabling } from './enable.ts'
 import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
@@ -59,9 +60,10 @@ export function createCopyService(
     /** What the Builder's turn sees of the company's copies for a Projeto, the unreleased only those the person's role reads. */
     projectView: (input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId }) =>
       projectView(full, input),
-    /** What the data contract reads; admits nobody, the caller did: the tables a place reads, one page of a table by its name, and who reads what. */
+    /** The copies a place reads, for the access door. */
+    access: Object.freeze({ tables: accessTables(full) }),
+    /** What the data contract reads; admits nobody, the caller did: one page of a table by its name, and who reads what. */
     data: Object.freeze({
-      catalogTables,
       tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(full, input),
       readers: Object.freeze({
         copiesReadBy,

@@ -1,6 +1,13 @@
 import { isDeepStrictEqual } from 'node:util'
-import type { CompanyId, CopyId, CopyReaders, FixedRole, Role, RoleId } from '@conexus/hub-api'
-import { CopyId as CopyIdSchema, fixedNameOf, RoleId as RoleIdSchema } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopyReaders, Role, RoleId } from '@conexus/hub-api'
+import {
+  CopyId as CopyIdSchema,
+  fixedRole,
+  READS_ALL,
+  ROLE_LABELS,
+  RoleId as RoleIdSchema,
+  readsAll,
+} from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { SqlStatement } from '../../platform/app-sql.ts'
@@ -89,17 +96,10 @@ export async function reconciled(deps: CopiesDeps, input: InCompany): Promise<'D
   }
 }
 
-const READS_ALL: ReadonlySet<FixedRole> = new Set(['owner', 'admin'])
-
 /** Which login a person reads the company's copies with: conexus_read for an owner or an administrator, the role's for the others. */
 export type ReaderLogin = Readonly<
   { kind: 'ALL' } | { kind: 'ROLE'; roleId: RoleId } | { kind: 'NONE' }
 >
-
-export function readsAll(role: Role): boolean {
-  const fixed = fixedNameOf(role)
-  return fixed !== undefined && READS_ALL.has(fixed)
-}
 
 export async function marksOf(tx: ReadTx, companyId: CompanyId, roleId: RoleId): Promise<CopyId[]> {
   const rows = await tx
@@ -134,6 +134,27 @@ export async function copiesReadBy(
       return []
     case 'ROLE':
       return marksOf(tx, input.companyId, reader.roleId)
+    default:
+      return reader satisfies never
+  }
+}
+
+/** The login a role reads one copy with, none when the role does not read it. */
+export async function readsCopy(
+  deps: Pick<CopiesDeps, 'identity'>,
+  tx: ReadTx,
+  input: { companyId: CompanyId; role: Role; copyId: CopyId },
+): Promise<Exclude<ReaderLogin, { kind: 'NONE' }> | undefined> {
+  const reader = await readerOf(deps, tx, input)
+  switch (reader.kind) {
+    case 'ALL':
+      return reader
+    case 'NONE':
+      return undefined
+    case 'ROLE': {
+      const marked = await marksOf(tx, input.companyId, reader.roleId)
+      return marked.includes(input.copyId) ? reader : undefined
+    }
     default:
       return reader satisfies never
   }
@@ -245,7 +266,12 @@ export function listedReaders(deps: CopiesDeps, input: InCompany): Promise<CopyR
       .where(eq(copy.companyId, companyId))
       .orderBy(asc(copy.name))
     const roles = await deps.identity.companyRoleRows(tx, companyId)
-    const all = await deps.identity.readingAll(tx, companyId)
+    const members = await deps.identity.roleMembers(tx, companyId)
+    const all = READS_ALL.map((name) => ({
+      role: fixedRole(name),
+      label: ROLE_LABELS[name],
+      members: members.get(name) ?? 0,
+    }))
     const readers = await readersOf(tx, companyId)
     return stored
       .map(({ id }) => CopyIdSchema.parse(id))

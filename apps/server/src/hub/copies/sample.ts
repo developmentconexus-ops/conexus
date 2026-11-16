@@ -3,7 +3,7 @@ import type { CopyId, CopySample } from '@conexus/hub-api'
 import { COPY_SAMPLE_ROWS } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import { readCopyTable } from './read-table.ts'
-import { marksOf, readerOf } from './readers.ts'
+import { readsCopy } from './readers.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { personScope, storedCopy } from './store.ts'
 
@@ -21,12 +21,9 @@ export async function sampleOf(
     const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
     const found = await storedCopy(tx, input)
     if (found === undefined) throw new Failure('COPY_NOT_FOUND')
-    const asked = await readerOf(deps, tx, { companyId, role: proof.role })
-    const marked = asked.kind === 'ROLE' && (await marksOf(tx, companyId, asked.roleId))
-    if (asked.kind === 'NONE' || (marked && !marked.includes(copyId))) {
-      throw new Failure('COPY_NOT_FOUND')
-    }
-    return { stored: found, reader: asked }
+    const reader = await readsCopy(deps, tx, { companyId, role: proof.role, copyId })
+    if (reader === undefined) throw new Failure('COPY_NOT_FOUND')
+    return { stored: found, reader }
   })
   const read = await readCopyTable(deps, {
     ...{ companyId, personId: input.personId, stored, limit: COPY_SAMPLE_ROWS, signal },

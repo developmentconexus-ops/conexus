@@ -135,3 +135,11 @@ test('a amostra do membro vem pelo login do papel', async (t) => {
   assert.deepEqual([hidden.statusCode, codeOf(hidden)], [404, 'COPY_NOT_FOUND'])
   assert.deepEqual(problemOf(hidden), problemOf(missing))
 })
+
+test('a amostra de uma tabela que o papel não lê não abre o banco da empresa', async (t) => {
+  const w = await rolesWorld(t, 'PLANTED')
+  const reads = t.mock.method(w.on.hub.postgres.companyPostgres, 'readCopies')
+  const hidden = await get(w, w.on.carla, `/${copyOf(w.copies, 'sankhya_vendas')}/sample`)
+  assert.deepEqual([hidden.statusCode, codeOf(hidden)], [404, 'COPY_NOT_FOUND'])
+  assert.equal(reads.mock.callCount(), 0)
+})

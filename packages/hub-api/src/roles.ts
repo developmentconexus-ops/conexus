@@ -4,6 +4,9 @@ import { z } from 'zod'
 export const FIXED_ROLES = ['owner', 'admin', 'developer', 'member'] as const
 export type FixedRole = (typeof FIXED_ROLES)[number]
 
+/** The fixed roles that read every copy and use every operation, in the order the screens list them. */
+export const READS_ALL = ['owner', 'admin'] as const satisfies readonly FixedRole[]
+
 /** A role's stored name, fixed or the company's own; the server checks it against the company. */
 export const Role = z.string().trim().min(1).max(40).brand<'Role'>()
 export type Role = z.infer<typeof Role>
@@ -27,6 +30,12 @@ export const ROLE_LABELS: Record<FixedRole, string> = {
 /** The fixed role a name is, or nothing for a role of the company's own. */
 export function fixedNameOf(role: string): FixedRole | undefined {
   return FIXED_ROLES.find((fixed) => fixed === role)
+}
+
+/** Whether the role reads every copy and uses every operation: the owner or the administrator, never by the label. */
+export function readsAll(role: string): boolean {
+  const fixed = fixedNameOf(role)
+  return READS_ALL.some((one) => one === fixed)
 }
 
 /** What a screen says for a role until it has the company's own labels: the fixed role's name, else the stored one. */
