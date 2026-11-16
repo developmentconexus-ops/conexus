@@ -3,7 +3,7 @@ import { BUILDER_TOOL, DataResult, ReadCut } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
 import { clockOf, dayGroupOf, dayOf } from '../../platform/dates.ts'
-import { connectorOf, stringArg } from './tool-args.ts'
+import { operationOf, stringArg } from './tool-args.ts'
 
 /**
  * What a message's answer rests on: a page the model cited, from Mastra's `source` part (`linked`
@@ -110,7 +110,7 @@ function liveRead(
 ): { connector: string; operation: string } | undefined {
   const [connector, operation] =
     toolName === BUILDER_TOOL.connectorRead
-      ? [connectorOf(args), stringArg(args, 'operation')?.split('.', 2)[1]]
+      ? operationOf(args)
       : toolName.split(/_(.*)/s)
   return connector && operation ? { connector, operation } : undefined
 }
