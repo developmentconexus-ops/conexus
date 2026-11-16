@@ -4,6 +4,7 @@ import type {
   CopyId,
   CopyProposalId,
   OfProject,
+  PersonId,
   ProjectId,
 } from '@conexus/hub-api'
 import type { SqlAnswer } from '../../platform/company-postgres.ts'
@@ -55,8 +56,8 @@ export function createCopyService(
     ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
     /** The first rows of a copy's table, read as the member's role. */
     sample: (input: Of & { signal: AbortSignal }) => sampleOf(full, input),
-    /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
-    projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
+    /** What the Builder's turn sees of the company's copies for a Projeto, the unreleased only those the person's role reads. */
+    projectView: (input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId }) =>
       projectView(full, input),
     /** What the data contract reads; admits nobody, the caller did: the tables a place reads, one page of a table by its name, and who reads what. */
     data: Object.freeze({

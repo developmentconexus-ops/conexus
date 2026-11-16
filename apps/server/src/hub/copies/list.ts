@@ -289,4 +289,4 @@ async function ofProject(deps: CopiesDeps, input: InCompany & { projectId: Proje
   })
 }
 
-export { listed, models, ofProject, projectCopyRows, runs, summaries }
+export { listed, models, ofProject, projectCopyRows, runs, seenBy, summaries }
