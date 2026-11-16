@@ -2,6 +2,7 @@ import type { CompanyId, CopyId, CopyRun, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { ChevronRightIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Fragment } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
@@ -165,6 +166,8 @@ export function CopyDetail(props: {
   tab: TableTab | undefined
   page?: string
   q?: string
+  /** What the route draws before Rodar agora, for every member: a link into another subject (web W6). */
+  ask?: (table: string) => ReactNode
 }) {
   const { companyId, copyId, page, q } = props
   const requests = useRunRequests()
@@ -201,20 +204,23 @@ export function CopyDetail(props: {
           <PageTitle className="min-w-0 break-words font-mono">{copy.name}</PageTitle>
           <StateBadge copy={copy} />
         </div>
-        {may.manageCopies && (
-          <div className="flex items-center gap-sm">
-            <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
-            <CopyMenu
-              companyId={companyId}
-              copy={copy}
-              onNote={setNote}
-              withRun={false}
-              onDeleted={() =>
-                void navigate({ to: '/companies/$companyId/data', params: { companyId } })
-              }
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-sm">
+          {props.ask?.(copy.name)}
+          {may.manageCopies && (
+            <>
+              <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
+              <CopyMenu
+                companyId={companyId}
+                copy={copy}
+                onNote={setNote}
+                withRun={false}
+                onDeleted={() =>
+                  void navigate({ to: '/companies/$companyId/data', params: { companyId } })
+                }
+              />
+            </>
+          )}
+        </div>
       </div>
       <p className="text-text-2 tabular-nums">{copiedText(system, copy)}</p>
       {note !== undefined && <NoteLine note={note} />}

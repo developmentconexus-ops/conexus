@@ -221,7 +221,7 @@ function changed(held: Held, id: unknown, fields: Partial<CopySummary>) {
  * The Hub's copies on `server`: a list that changes as the writes land, the models, the connections
  * and the runs of each copy. `sent` holds every request, with its attempt key.
  */
-function copiesHub(server: ReturnType<typeof hubServer>, held: Held) {
+export function copiesHub(server: ReturnType<typeof hubServer>, held: Held) {
   const sent: Sent[] = []
   const { answers = {} } = held
   async function note(request: Request) {

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { AskAboutTable } from '../../../../builder/assistant/public.ts'
 import { CopyDetail, copyParams, loadCopyRuns, TableSearch } from '../../../../hub/copies/public.ts'
 import { NotFound, RouteReadFailure } from '../../../../ui/states.tsx'
 
@@ -19,5 +20,14 @@ export const Route = createFileRoute('/_app/companies/$companyId/data/$copyId')(
 function TablePage() {
   const { companyId, copyId } = Route.useParams()
   const { tab, page, q } = Route.useSearch()
-  return <CopyDetail companyId={companyId} copyId={copyId} tab={tab} page={page} q={q} />
+  return (
+    <CopyDetail
+      companyId={companyId}
+      copyId={copyId}
+      tab={tab}
+      page={page}
+      q={q}
+      ask={(table) => <AskAboutTable companyId={companyId} table={table} />}
+    />
+  )
 }

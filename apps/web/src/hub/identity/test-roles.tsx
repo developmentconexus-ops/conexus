@@ -113,7 +113,7 @@ function copyOf(id: CopyId, name: string, label: string, description: string): C
 }
 
 /** The two copies of the Sankhya a company has when it copied something. */
-export const COPIES = [
+const COPIES = [
   copyOf(VENDAS, 'sankhya_vendas', 'Vendas', 'Pedidos e notas de venda, um por linha.'),
   copyOf(CLIENTES, 'sankhya_clientes', 'Clientes', 'Cadastro de clientes e parceiros.'),
 ]
