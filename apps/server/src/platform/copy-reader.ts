@@ -6,9 +6,9 @@ import { missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import {
   budget,
   DUPLICATE_OBJECT,
-  LEDGER,
   ledgerHiddenFromReader,
   READ_LOGIN,
+  READERS_LEDGER,
   ROLES_LOCK,
   SYNC_LOGIN,
   SYNC_SCHEMA,
@@ -87,7 +87,6 @@ function takeReadersTicket(context: Context, owner: DatabaseUrl): Promise<SqlAns
   return context.transport(
     owner,
     [
-      ROLES_LOCK,
       { text: `SET LOCAL ROLE ${quoted(SYNC_LOGIN)}` },
       { text: `SELECT nextval('${TICKETS}') AS ticket` },
     ],
@@ -109,7 +108,38 @@ const RACES = new Set([DUPLICATE_OBJECT, 'XX000', '23505', '42P07', '42P01'])
 
 type Wanted = Readonly<{ login: string; tables: readonly string[] }>
 
-/** Every grant of a leaving login is revoked before its `DROP ROLE`, which refuses one that still holds a grant (`2BP01`). */
+/** A `DO` block takes no parameters: the request reaches it through this setting, local to the transaction. */
+const READERS_SETTING = 'conexus.readers'
+
+const GRANT_EXISTING = `DO $$ DECLARE given record; BEGIN
+  FOR given IN SELECT w.login, c.relname
+    FROM jsonb_to_recordset(current_setting('${READERS_SETTING}')::jsonb -> 'granted') AS w(login text, name text)
+    JOIN pg_class c ON c.relname = w.name AND c.relnamespace = 'sync'::regnamespace AND c.relkind IN ('r', 'p')
+  LOOP
+    EXECUTE format('GRANT SELECT ON ${SYNC_SCHEMA}.%I TO %I', given.relname, given.login);
+  END LOOP;
+END $$`
+
+/**
+ * Logins are the whole server's: another company's holds no USAGE on this `sync`. `DROP ROLE`
+ * refuses a login that still holds a grant (`2BP01`), so the REVOKEs come first.
+ */
+const DROP_LEAVING = `DO $$ DECLARE
+  kept text[] := ARRAY(SELECT jsonb_array_elements_text(current_setting('${READERS_SETTING}')::jsonb -> 'kept'));
+  gone text;
+BEGIN
+  FOR gone IN SELECT rolname FROM pg_roles
+    WHERE rolname LIKE 'conexus\\_role\\_%' AND has_schema_privilege(oid, 'sync', 'USAGE')
+      AND rolname <> ALL (kept)
+  LOOP
+    SET LOCAL ROLE ${quoted(SYNC_LOGIN)};
+    EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA ${SYNC_SCHEMA} FROM %I', gone);
+    EXECUTE format('REVOKE USAGE ON SCHEMA ${SYNC_SCHEMA} FROM %I', gone);
+    RESET ROLE;
+    EXECUTE format('DROP ROLE %I', gone);
+  END LOOP;
+END $$`
+
 async function reconcileOnce(
   context: Context,
   owner: DatabaseUrl,
@@ -117,35 +147,26 @@ async function reconcileOnce(
   wanted: readonly Wanted[],
   signal: AbortSignal,
 ): Promise<SqlAnswer> {
-  const found = await context.transport(
-    owner,
-    [
-      // The logins are the whole server's: another company's on it holds no USAGE on this `sync`.
-      {
-        text: `SELECT rolname FROM pg_roles WHERE rolname LIKE 'conexus\\_role\\_%' AND has_schema_privilege(oid, 'sync', 'USAGE')`,
-      },
-      {
-        text: `SELECT relname FROM pg_class WHERE relnamespace = 'sync'::regnamespace AND relkind IN ('r', 'p')`,
-      },
-    ],
-    signal,
-  )
-  if (found.kind !== 'DONE') return found
-  const [held = [], tables = []] = found.value
-  const existing = new Set(tables.map((row) => String(row.relname)))
-  const kept = new Set(wanted.map(({ login }) => login))
-  const leaving = held.map((row) => String(row.rolname)).filter((login) => !kept.has(login))
-  const created = await missingLogins(context, owner, [...kept], signal)
+  const kept = wanted.map(({ login }) => login)
+  const created = await missingLogins(context, owner, kept, signal)
   if (!Array.isArray(created)) return created
   const sync = quoted(SYNC_LOGIN)
+  const request = {
+    kept,
+    granted: wanted.flatMap(({ login, tables }) => tables.map((name) => ({ login, name }))),
+  }
   return context.transport(
     owner,
     [
       ROLES_LOCK,
+      {
+        text: 'SELECT set_config($1, $2, true)',
+        values: [READERS_SETTING, JSON.stringify(request)],
+      },
       { text: `SET LOCAL ROLE ${sync}` },
       {
         text: `DO $$ BEGIN
-          IF (SELECT ticket FROM ${LEDGER}) >= ${ticket.toString()} THEN
+          IF (SELECT ticket FROM ${READERS_LEDGER}) >= ${ticket.toString()} THEN
             RAISE EXCEPTION USING ERRCODE = '${SUPERSEDED}';
           END IF;
         END $$`,
@@ -154,24 +175,14 @@ async function reconcileOnce(
       ...created,
       ...wanted.flatMap(({ login }) => readSettingsOf(login)),
       { text: `SET LOCAL ROLE ${sync}` },
-      ...wanted.flatMap(({ login, tables: given }) => {
-        const role = quoted(login)
-        const granted = given.filter((name) => existing.has(name)).map(tableOf)
-        return [
-          { text: `REVOKE ALL ON ALL TABLES IN SCHEMA ${SYNC_SCHEMA} FROM ${role}` },
-          { text: `GRANT USAGE ON SCHEMA ${SYNC_SCHEMA} TO ${role}` },
-          ...(granted.length === 0
-            ? []
-            : [{ text: `GRANT SELECT ON ${granted.join(', ')} TO ${role}` }]),
-        ]
-      }),
-      ...leaving.flatMap((login) => [
+      ...wanted.flatMap(({ login }) => [
         { text: `REVOKE ALL ON ALL TABLES IN SCHEMA ${SYNC_SCHEMA} FROM ${quoted(login)}` },
-        { text: `REVOKE USAGE ON SCHEMA ${SYNC_SCHEMA} FROM ${quoted(login)}` },
+        { text: `GRANT USAGE ON SCHEMA ${SYNC_SCHEMA} TO ${quoted(login)}` },
       ]),
-      { text: `UPDATE ${LEDGER} SET ticket = ${ticket.toString()}` },
+      { text: GRANT_EXISTING },
+      { text: `UPDATE ${READERS_LEDGER} SET ticket = ${ticket.toString()}` },
       { text: 'RESET ROLE' },
-      ...leaving.map((login) => ({ text: `DROP ROLE ${quoted(login)}` })),
+      { text: DROP_LEAVING },
     ],
     signal,
   )

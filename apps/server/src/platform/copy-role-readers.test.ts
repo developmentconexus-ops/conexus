@@ -1,126 +1,32 @@
 import assert from 'node:assert/strict'
-import { randomBytes, randomUUID } from 'node:crypto'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { ProjectId, RoleId } from '@conexus/hub-api'
-import pg from 'pg'
-import { testAppsConfig } from './test-cloudflare.ts'
+import { RoleId } from '@conexus/hub-api'
 import {
   countingTransport,
-  createCompanyDatabase,
   readLoginOf,
   roleLoginOf,
-  syncLoginOf,
   testCompanyPostgres,
 } from './test-company-postgres.ts'
-
-const KEY = testAppsConfig().appLoginKey
-const postgres = testCompanyPostgres(KEY)
-
-type DatabaseUrl = Awaited<ReturnType<typeof createCompanyDatabase>>
-type CopyTable = Parameters<typeof postgres.ensureCopyTable>[1]
-type Wanted = Parameters<typeof postgres.reconcileReaders>[2]
-
-/** A role's id as the library makes it, with a capital letter so the login keeps the case. */
-function loginOf(roleId: RoleId) {
-  return `conexus_role_${roleId}`
-}
-
-function libraryRole() {
-  return RoleId.parse(randomBytes(16).toString('hex').replace(/^./, 'R'))
-}
-
-function seededRole() {
-  return RoleId.parse(randomUUID())
-}
-
-const ONE_COLUMN = {
-  columns: [{ name: 'id', type: 'text' }],
-  key: ['id'],
-  changedSince: null,
-} as const
-
-function tableOf(name: string): CopyTable {
-  return { name, definition: ONE_COLUMN, accounts: false, instants: 'OFFSET' }
-}
-
-async function asUrl(url: DatabaseUrl, ...texts: string[]) {
-  const client = new pg.Client({ connectionString: url.reveal() })
-  await client.connect()
-  const answers: (unknown[] | { refused: string })[] = []
-  try {
-    for (const text of texts) {
-      try {
-        answers.push((await client.query(text)).rows)
-      } catch (error) {
-        if (!(error instanceof pg.DatabaseError) || error.code === undefined) throw error
-        answers.push({ refused: error.code })
-      }
-    }
-    return answers
-  } finally {
-    await client.end()
-  }
-}
-
-async function asRole(owner: DatabaseUrl, roleId: RoleId, ...texts: string[]) {
-  return asUrl(await roleLoginOf(owner, KEY, roleId), ...texts)
-}
-
-function reads(owner: DatabaseUrl, roleId: RoleId, ...names: string[]) {
-  return asRole(owner, roleId, ...names.map((name) => `select * from sync.${name}`))
-}
-
-async function asSync(owner: DatabaseUrl, text: string) {
-  const [answer] = await asUrl(await syncLoginOf(owner, KEY), text)
-  return answer
-}
-
-async function companyOf(t: TestContext, tables: readonly string[] = ['a', 'b', 'c']) {
-  const owner = await createCompanyDatabase(t)
-  assert.equal((await postgres.ensureSync(owner)).kind, 'DONE')
-  const sync = await syncLoginOf(owner, KEY)
-  for (const name of tables) {
-    assert.equal((await postgres.ensureCopyTable(sync, tableOf(name))).kind, 'DONE')
-  }
-  assert.equal((await postgres.ensureReader(owner)).kind, 'DONE')
-  return { owner, sync }
-}
-
-async function ticketOf(owner: DatabaseUrl): Promise<bigint> {
-  const taken = await postgres.takeReadersTicket(owner)
-  assert.equal(taken.kind, 'DONE', JSON.stringify(taken))
-  return taken.kind === 'DONE' ? BigInt(String(taken.value.at(-1)?.[0]?.ticket)) : 0n
-}
-
-async function applied(owner: DatabaseUrl, wanted: Wanted) {
-  const done = await postgres.reconcileReaders(owner, await ticketOf(owner), wanted)
-  assert.equal(done.kind, 'DONE', JSON.stringify(done))
-}
-
-async function grantsOf(owner: DatabaseUrl) {
-  const [tables, logins] = await asUrl(
-    owner,
-    `select c.relname, r.rolname from pg_class c, aclexplode(c.relacl) a
-       join pg_roles r on r.oid = a.grantee
-      where c.relnamespace = 'sync'::regnamespace and r.rolname like 'conexus\\_role\\_%'
-        and a.privilege_type = 'SELECT' order by 1, 2`,
-    `select rolname, rolconfig from pg_roles where rolname like 'conexus\\_role\\_%'
-        and has_schema_privilege(oid, 'sync', 'USAGE') order by 1`,
-  )
-  return { tables: Array.isArray(tables) ? tables : [], logins }
-}
-
-function ledgerOf(owner: DatabaseUrl) {
-  return asSync(owner, 'select single, ticket from sync._readers_applied')
-}
-
-async function loginExists(owner: DatabaseUrl, login: string) {
-  const [rows] = await asUrl(owner, `select 1 from pg_roles where rolname = '${login}'`)
-  return Array.isArray(rows) && rows.length === 1
-}
-
-const REFUSED = { refused: '42501' }
+import type { DatabaseUrl } from './test-role-readers.ts'
+import {
+  applied,
+  asRole,
+  asSync,
+  asUrl,
+  companyOf,
+  grantsOf,
+  KEY,
+  ledgerOf,
+  libraryRole,
+  loginExists,
+  loginOf,
+  postgres,
+  REFUSED,
+  reads,
+  seededRole,
+  tableOf,
+  ticketOf,
+} from './test-role-readers.ts'
 
 test('cada login de papel lê as suas tabelas e é recusado nas outras com 42501', async (t) => {
   const { owner } = await companyOf(t)
@@ -298,36 +204,6 @@ test('ensureSync duas vezes cria o livro uma vez', async (t) => {
     { relname: '_readers_applied_pkey', relkind: 'i' },
     { relname: 'readers_ticket', relkind: 'S' },
   ])
-})
-
-test('duas reconciliações e um grantCopy ao mesmo tempo terminam sem erro', async (t) => {
-  const { owner, sync } = await companyOf(t)
-  const projectId = ProjectId.parse(randomBytes(16).toString('hex').replace(/^./, 'P'))
-  assert.equal((await postgres.ensureApp(owner, projectId)).kind, 'DONE')
-  for (let lap = 0; lap < 20; lap++) {
-    const vendas = libraryRole()
-    const a = [{ roleId: vendas, tables: ['a'] }]
-    const b = [{ roleId: vendas, tables: ['a', 'b'] }]
-    const [t1, t2] = [await ticketOf(owner), await ticketOf(owner)]
-    // The release repeats while both applications run, so one of its GRANTs meets theirs on `a`.
-    const [first, second, granted] = await Promise.all([
-      postgres.reconcileReaders(owner, t1, a),
-      postgres.reconcileReaders(owner, t2, b),
-      Array.fromAsync({ length: 5 }, () => postgres.grantCopy(sync, { name: 'a', projectId })),
-    ])
-    assert.ok(
-      second.kind === 'DONE' &&
-        ['DONE', 'SUPERSEDED'].includes(first.kind) &&
-        granted.every((answer) => answer.kind === 'DONE'),
-      `volta ${lap}: ${JSON.stringify([first, second, granted])}`,
-    )
-    const login = loginOf(vendas)
-    const held = (await grantsOf(owner)).tables.filter((row) => JSON.stringify(row).includes(login))
-    assert.deepEqual(held, [
-      { relname: 'a', rolname: login },
-      { relname: 'b', rolname: login },
-    ])
-  }
 })
 
 test('a tabela pedida que ainda não existe fica de fora sem erro', async (t) => {

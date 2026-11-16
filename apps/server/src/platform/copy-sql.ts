@@ -117,16 +117,16 @@ export const DUPLICATE_OBJECT = '42710'
 export const ROLES_LOCK: SqlStatement = { text: 'SELECT pg_advisory_xact_lock(4207000002)' }
 
 export const TICKETS = `${SYNC_SCHEMA}.readers_ticket`
-export const LEDGER = `${SYNC_SCHEMA}._readers_applied`
+export const READERS_LEDGER = `${SYNC_SCHEMA}._readers_applied`
 
 function readersLedger(): SqlStatement[] {
   return [
     { text: `CREATE SEQUENCE IF NOT EXISTS ${TICKETS}` },
     {
-      text: `CREATE TABLE IF NOT EXISTS ${LEDGER} (single boolean PRIMARY KEY DEFAULT true CHECK (single), ticket bigint NOT NULL)`,
+      text: `CREATE TABLE IF NOT EXISTS ${READERS_LEDGER} (single boolean PRIMARY KEY DEFAULT true CHECK (single), ticket bigint NOT NULL)`,
     },
-    { text: `INSERT INTO ${LEDGER} (ticket) VALUES (0) ON CONFLICT DO NOTHING` },
-    { text: `REVOKE ALL ON TABLE ${LEDGER} FROM PUBLIC` },
+    { text: `INSERT INTO ${READERS_LEDGER} (ticket) VALUES (0) ON CONFLICT DO NOTHING` },
+    { text: `REVOKE ALL ON TABLE ${READERS_LEDGER} FROM PUBLIC` },
     { text: `REVOKE ALL ON SEQUENCE ${TICKETS} FROM PUBLIC` },
     ledgerHiddenFromReader(),
   ]
@@ -136,8 +136,8 @@ function readersLedger(): SqlStatement[] {
 export function ledgerHiddenFromReader(): SqlStatement {
   return {
     text: `DO $$ BEGIN
-      IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${READ_LOGIN}') AND to_regclass('${LEDGER}') IS NOT NULL THEN
-        REVOKE ALL ON TABLE ${LEDGER} FROM ${quoted(READ_LOGIN)};
+      IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${READ_LOGIN}') AND to_regclass('${READERS_LEDGER}') IS NOT NULL THEN
+        REVOKE ALL ON TABLE ${READERS_LEDGER} FROM ${quoted(READ_LOGIN)};
       END IF;
     END $$`,
   }

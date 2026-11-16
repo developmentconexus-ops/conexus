@@ -129,6 +129,16 @@ test('a cópia nova recusa o papel com 42501 até a marca, e depois da marca o p
   assert.deepEqual(await asRole(on, vendas.id, 'sankhya_vendas'), { rows: 183 })
 })
 
+test('a tabela marcada para um papel não vai para outro', async (t) => {
+  const on = await copiesOn(t)
+  const [vendas, atendente] = [await roleOn(on, 'Vendas'), await roleOn(on, 'Atendente')]
+  const copyId = await on.enable('vendas')
+  await mark(on, copyId, vendas.id)
+  await ended(on, copyId)
+  assert.deepEqual(await asRole(on, vendas.id, 'sankhya_vendas'), { rows: 183 })
+  assert.deepEqual(await asRole(on, atendente.id, 'sankhya_vendas'), { refused: '42501' })
+})
+
 test('apagar o papel apaga a marca e a rodada seguinte apaga o login', async (t) => {
   const on = await copiesOn(t)
   const vendas = await roleOn(on, 'Vendas')
