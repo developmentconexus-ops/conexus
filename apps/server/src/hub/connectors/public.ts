@@ -15,7 +15,7 @@ import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
 import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
-import { catalogSystemsOf } from './catalog-systems.ts'
+import { catalogSourcesOf, catalogSystemsOf } from './catalog-systems.ts'
 import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
@@ -164,6 +164,8 @@ export function createConnectors(deps: {
     },
     /** The systems a place offers, for the data contract's catalog; admits nobody, the caller did. */
     catalogSystems: (tx: ReadTx, scope: SessionScope) => catalogSystemsOf(routeDeps, tx, scope),
+    /** The state of each connection a place was given, in any state, for the catalog's tables; admits nobody. */
+    catalogSources: catalogSourcesOf,
     /** The copies' templates and their paged read (Capacidade 2, U2). */
     copies: createCopyPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */

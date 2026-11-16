@@ -1,5 +1,13 @@
-import type { CatalogTable, CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
-import { ConnectionId } from '@conexus/hub-api'
+import type {
+  CatalogTable,
+  CompanyId,
+  ConnectionId,
+  ConnectionState,
+  CopyId,
+  CopySource,
+  KeptSource,
+  ProjectId,
+} from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { copySources, endedRuns, projectCopyRows } from './list.ts'
@@ -21,12 +29,27 @@ async function copiesOf(tx: ReadTx, companyId: CompanyId, only: Place) {
   return rows.map(parsedCopy)
 }
 
+/** A connection the copy was made from, named when the place was given it, the connector alone when not. */
+function keptSource(
+  { connection }: CopySource,
+  given: ReadonlyMap<ConnectionId, ConnectionState>,
+): KeptSource {
+  const state = given.get(connection.id)
+  return state === undefined
+    ? { kind: 'NOT_GIVEN', connector: connection.connector }
+    : { kind: 'NAMED', connection, state }
+}
+
 /** The copies a place reads, as the catalog states them; admits nobody: the caller did, in its transaction (code C8). */
 export async function catalogTables(
   tx: ReadTx,
-  input: { companyId: CompanyId; only: Place },
+  input: {
+    companyId: CompanyId
+    only: Place
+    given: ReadonlyMap<ConnectionId, ConnectionState>
+  },
 ): Promise<CatalogTable[]> {
-  const { companyId, only } = input
+  const { companyId, only, given } = input
   const copies = await copiesOf(tx, companyId, only)
   const ids: CopyId[] = copies.map(({ id }) => id)
   const sources = await copySources(tx, companyId, ids)
@@ -47,7 +70,7 @@ export async function catalogTables(
         columns: shown.columns,
         kept: {
           kind: 'COPY' as const,
-          connections: named.map(({ connection }) => ConnectionId.parse(connection.id)),
+          sources: named.map((one) => keptSource(one, given)),
           source: shown.source,
           lastRun: runs.get(stored.id) ?? null,
         },

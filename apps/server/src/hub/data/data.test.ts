@@ -95,9 +95,61 @@ test('descrever num Projeto: só as liberadas', async (t) => {
     released.systems.map(({ connection }) => connection),
     [on.connectionId],
   )
-  const [table] = seen.tables
+  const [table] = released.tables
   assert.equal(table?.kept.kind, 'COPY')
-  assert.deepEqual(table?.kept.connections, [on.connectionId])
+  assert.deepEqual(
+    table?.kept.sources.map((one) => (one.kind === 'NAMED' ? one.connection.id : one.kind)),
+    [on.connectionId],
+  )
+})
+
+test('o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia a conexão que ele não recebeu', async (t) => {
+  const on = await copiesOn(t)
+  const clients = await on.enable('clientes')
+  await on.enable('vendas')
+  await on.copies.grant({
+    ...{ companyId: on.companyId, personId: on.anaId },
+    ...{ projectId: on.projectId, copyId: clients },
+  })
+  const inProject = on.hub.data(scopeOf(on, on.anaId, { kind: 'PROJECT', projectId: on.projectId }))
+  const named = Catalog.parse(await inCompany(on).describe()).systems[0]?.name
+  assert.ok(named, 'a conexão tem nome')
+
+  const before = await catalogOf(inProject)
+  assert.deepEqual(
+    before.tables.flatMap((table) => table.kept.sources),
+    [{ kind: 'NOT_GIVEN', connector: 'sankhya' }],
+    'o Projeto não recebeu a conexão: só o conector',
+  )
+  assert.ok(!JSON.stringify(before).includes(named), 'o nome da conexão não sai no Projeto')
+
+  await on.hub.connectors.grants.grant({
+    ...{ companyId: on.companyId, person: { id: on.anaId } },
+    ...{ projectId: on.projectId, connectionId: on.connectionId },
+  })
+  await on.hub.test.asOwner(
+    "update connectors.connection set state = 'NEEDS_REAUTH' where id = $1",
+    [on.connectionId],
+  )
+  const company = await catalogOf(inCompany(on))
+  assert.equal(company.tables.length, 2)
+  for (const table of company.tables)
+    assert.deepEqual(
+      table.kept.sources.map((one) =>
+        one.kind === 'NAMED' ? [one.connection.name, one.state] : null,
+      ),
+      [[named, 'NEEDS_REAUTH']],
+      'no Início toda fonte é NAMED, também a que espera nova autorização',
+    )
+
+  const after = await catalogOf(inProject)
+  assert.deepEqual(
+    after.tables.flatMap((table) =>
+      table.kept.sources.map((one) => (one.kind === 'NAMED' ? [one.kind, one.state] : [one.kind])),
+    ),
+    [['NAMED', 'NEEDS_REAUTH']],
+    'o Projeto que recebeu a conexão a nomeia, em qualquer estado',
+  )
 })
 
 test('toda tabela do catálogo traz descrição', async (t) => {
