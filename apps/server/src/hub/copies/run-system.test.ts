@@ -80,3 +80,17 @@ test('a mensagem não vai ao log', async (t) => {
   assert.equal(stopped?.fields.outcome, 'ERROR')
   assert.equal(stopped?.fields.reason, 'COPY_SOURCE_REFUSED')
 })
+
+test('uma recusa com mensagem e sem código guarda só o que veio', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('clientes')
+  on.fake.switches.refuse.add('consultar')
+  on.fake.switches.refuseStatus = 400
+  const outcome = await ended(on, copyId)
+  assert.equal(outcome?.kind, 'ERROR')
+  const [run] = await runsOf(on, copyId)
+  assert.deepEqual(
+    [run.system_status, run.system_code, run.system_message],
+    [400, null, 'Sessão expirada'],
+  )
+})

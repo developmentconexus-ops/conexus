@@ -26,6 +26,8 @@ type SankhyaSwitches = {
   refuse: Set<string>
   /** The `statusMessage` a refused door service answers; the envelope's own when null (passed on as `refuseMessage ?? undefined`, so the default of `fake-data.ts:66-70` holds). */
   refuseMessage: string | null
+  /** The HTTP status a refused door service answers with a body that has a message and no code, instead of the envelope; null keeps the envelope. */
+  refuseStatus: number | null
   /** Every call on a token answers 403 `GTW3403`, as an expired one does. */
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
@@ -133,6 +135,13 @@ function switchName(
   return door ? (DOOR_NAMES[service] ?? service) : (route?.name ?? '')
 }
 
+function doorRefusal(service: string, switches: SankhyaSwitches) {
+  const { refuseMessage, refuseStatus } = switches
+  return refuseStatus === null
+    ? envelope(service, '0', undefined, refuseMessage ?? undefined)
+    : Response.json({ message: refuseMessage ?? 'Sessão expirada' }, { status: refuseStatus })
+}
+
 async function serveCall(
   request: Request,
   url: URL,
@@ -146,7 +155,7 @@ async function serveCall(
   const adding = isAdd(request, url)
   if (switches.refuse.has(switchName(adding, door, service, route))) {
     return door
-      ? envelope(service, '0', undefined, switches.refuseMessage ?? undefined)
+      ? doorRefusal(service, switches)
       : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
@@ -220,6 +229,7 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
   const switches: SankhyaSwitches = {
     refuse: new Set(),
     refuseMessage: null,
+    refuseStatus: null,
     expireToken: false,
     malformed: false,
     notJson: false,
