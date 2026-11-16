@@ -61,8 +61,8 @@ jobs:
           # A pull request is tested on the merge of its head into the base tip (HEAD^2 and HEAD^1).
           # Each run leaves a `scope-proof` notice on this job: the base tip it tested and the head
           # whose suites ran. A synchronize skips the suites only when the previous head's CI run
-          # ended success, its proof names the same base tip, and every file changed since the
-          # head whose suites ran is a document. Any doubt falls through to the full scope.
+          # ended success, its proof names the same base tip, and every file that differs between the tree
+          # tested then (that base tip merged with the proved head) and this merge is a document. Any doubt falls through to the full scope.
           docs='^(docs/|\.agents/|(AGENTS|CLAUDE|README|PRODUCT)\.md$)'
           is_documents() { [ -n "$1" ] && ! grep -qvE "$docs" <<<"$1"; }
           proven_suites() {
@@ -78,7 +78,8 @@ jobs:
             [ "${BASH_REMATCH[1]}" = "$(git rev-parse HEAD^1)" ] || return 1
             proved="${BASH_REMATCH[2]}"
             git merge-base --is-ancestor "$proved" "$HEAD_SHA" || return 1
-            since="$(git diff --no-renames --name-only "$proved" "$HEAD_SHA")" || return 1
+            tested="$(git merge-tree --write-tree "${BASH_REMATCH[1]}" "$proved")" || return 1
+            since="$(git diff --no-renames --name-only "$tested" HEAD)" || return 1
             is_documents "$since" || return 1
             echo "$proved"
           }
