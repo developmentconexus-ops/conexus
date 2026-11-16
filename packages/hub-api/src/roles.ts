@@ -49,7 +49,6 @@ export const CompanyMay = z.object({
   manageAutomations: z.boolean(),
   manageCopies: z.boolean(),
   manageRoles: z.boolean(),
-  readCopyRows: z.boolean(),
   viewAppData: z.boolean(),
   publishUnattendedWrite: z.boolean(),
 })

@@ -157,7 +157,7 @@ const NamedProposals = z.object({
 })
 const OfRelease = InCompany.extend({ projectId: ProjectId, copyId: CopyId })
 const BASE = '/api/companies/{companyId}/copies'
-const READ_FAILURES = [
+export const READ_FAILURES = [
   'NOT_FOUND',
   'SESSION_REQUIRED',
   'DATABASE_UNAVAILABLE',

@@ -131,9 +131,8 @@ export function CopyDetail(props: {
   tab: TableTab | undefined
   page?: string
   q?: string
-  mayReadRows: boolean
 }) {
-  const { companyId, copyId, page, q, mayReadRows } = props
+  const { companyId, copyId, page, q } = props
   const requests = useRunRequests()
   const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
   const connections = useQuery(connectionsQuery(companyId))
@@ -151,8 +150,7 @@ export function CopyDetail(props: {
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   const { copy, runs, next } = read.data
-  const shown = props.tab === TableTab.enum.sample && !mayReadRows ? undefined : props.tab
-  const tab = shown ?? TableTab.enum.overview
+  const tab = props.tab ?? TableTab.enum.overview
   const connector = copy.sources[0]?.connection.connector ?? ''
   const system = connectorName(connections.data.connectors, connector)
   const entry = connections.data.connectors.find((one) => one.id === connector)
@@ -230,7 +228,7 @@ export function CopyDetail(props: {
             {COLUMNS_TITLE}{' '}
             <span className="text-text-2 tabular-nums">{copy.shown.columns.length}</span>
           </TabsTrigger>
-          {mayReadRows && <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>}
+          <TabsTrigger value={TableTab.enum.sample}>{SAMPLE_TITLE}</TabsTrigger>
           <TabsTrigger value={TableTab.enum.runs}>{RUNS_TITLE}</TabsTrigger>
         </TabsList>
         <div className="flex min-w-0 flex-col gap-lg md:flex-row">
@@ -241,11 +239,9 @@ export function CopyDetail(props: {
             <TabsContent value={TableTab.enum.columns} className="pt-md">
               <ColumnsTab copy={copy} />
             </TabsContent>
-            {mayReadRows && (
-              <TabsContent value={TableTab.enum.sample} className="pt-md">
-                <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
-              </TabsContent>
-            )}
+            <TabsContent value={TableTab.enum.sample} className="pt-md">
+              <CopySample companyId={companyId} copyId={copyId} columns={copy.shown.columns} />
+            </TabsContent>
             <TabsContent value={TableTab.enum.runs} className="pt-md">
               <Runs runs={runs} next={next} page={page} />
             </TabsContent>

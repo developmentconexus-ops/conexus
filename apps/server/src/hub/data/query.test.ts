@@ -215,7 +215,7 @@ test('o membro no Início não lê: NOT_IN_ROLE', async (t) => {
   const { on } = await withCopies(t)
   const answer = await inCompany(on, PersonId.parse(on.carla.id)).read({
     ...{ kind: 'QUERY' },
-    sql: 'select 1',
+    sql: 'select count(*) from sync.sankhya_vendas',
   })
   assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
 })

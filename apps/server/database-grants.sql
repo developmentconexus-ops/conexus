@@ -81,6 +81,7 @@ ALTER TABLE copies.copy OWNER TO test_owner;
 ALTER TABLE copies.copy_proposal OWNER TO test_owner;
 ALTER TABLE copies.copy_proposal_source OWNER TO test_owner;
 ALTER TABLE copies.copy_reader OWNER TO test_owner;
+ALTER TABLE copies.copy_reader_turn OWNER TO test_owner;
 ALTER TABLE copies.copy_run OWNER TO test_owner;
 ALTER TABLE copies.copy_source OWNER TO test_owner;
 ALTER TABLE copies.copy_table_left OWNER TO test_owner;
@@ -406,6 +407,9 @@ GRANT SELECT,INSERT ON TABLE copies.copy_proposal_source TO hub_company;
 -- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
 -- company's routes read which roles read each copy, and mark and unmark them.
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_reader TO hub_company;
+-- Every setRoleCopies counts its turn; a failed one reads the count before it puts its marks back.
+GRANT SELECT,INSERT ON TABLE copies.copy_reader_turn TO hub_company;
+GRANT UPDATE(turn) ON TABLE copies.copy_reader_turn TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
 GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;

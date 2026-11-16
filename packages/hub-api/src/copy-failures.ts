@@ -10,6 +10,14 @@ export const COPY_FAILURES = {
     action: 'Volte às cópias.',
     actionKind: 'INITIAL',
   },
+  COPY_NOT_IN_ROLE: {
+    category: 'USER',
+    settles: true,
+    status: 403,
+    phrase: 'Seu papel não lê esta tabela.',
+    action: 'Peça a quem administra a empresa.',
+    actionKind: 'NONE',
+  },
   COPY_EXISTS: {
     category: 'USER',
     settles: true,

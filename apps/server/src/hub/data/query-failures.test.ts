@@ -137,7 +137,9 @@ test('NO_LOGIN e o dono sem resposta dá TABLE_UNAVAILABLE com a causa', async (
   t.mock.method(on.hub.neon.neon, 'ownerConnection', async () => ({ kind: 'NO_ANSWER' as const }))
   assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
-  assert.equal(failed?.fields.cause, 'OWNER_NO_ANSWER')
+  assert.equal(failed?.fields.cause, 'NO_OWNER')
+  const owner = on.hub.lines.find(({ message }) => message === 'COPY_DATABASE_FAILED')
+  assert.equal(owner?.fields.reason, 'OWNER_NO_ANSWER')
 })
 
 test('NO_LOGIN e o login não feito dá TABLE_UNAVAILABLE com o código da recusa', async (t) => {
@@ -149,5 +151,5 @@ test('NO_LOGIN e o login não feito dá TABLE_UNAVAILABLE com o código da recus
   }))
   assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
-  assert.equal(failed?.fields.cause, 'READ_LOGIN_42501')
+  assert.equal(failed?.fields.cause, 'READER_42501')
 })

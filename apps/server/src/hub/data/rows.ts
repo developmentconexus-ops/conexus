@@ -2,6 +2,7 @@ import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { CatalogTable, DataSources } from '@conexus/hub-api'
 import { TABLE_PAGE_ROWS } from '@conexus/hub-api'
 import type { SessionScope } from '../connectors/public.ts'
+import type { ReaderLogin } from '../copies/public.ts'
 import type { DataDeps } from './deps.ts'
 
 type Page = Awaited<ReturnType<DataSources['rows']>>
@@ -12,9 +13,23 @@ export async function rowsOf(
   scope: SessionScope,
   a: { table: CatalogTable; signal?: AbortSignal },
 ): Promise<Page> {
-  const { companyId } = scope
-  const read = await deps.copies().tableRows({
-    ...{ companyId, name: a.table.name, limit: TABLE_PAGE_ROWS },
+  const { companyId, personId, place } = scope
+  const { tableRows, readers } = deps.copies()
+  const reader: ReaderLogin =
+    place.kind === 'PROJECT'
+      ? { kind: 'ALL' }
+      : await deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
+          const proof = await deps.identity.admitMember({
+            tx,
+            companyId,
+            personId,
+            action: 'readCompany',
+          })
+          return readers.readerOf(deps, tx, { companyId, role: proof.role })
+        })
+  const read = await tableRows({
+    ...{ companyId, personId, name: a.table.name, limit: TABLE_PAGE_ROWS },
+    reader,
     signal: a.signal ?? AbortSignal.timeout(APP_CALL_LIMITS.transactionTimeoutMs),
   })
   if (read.kind === 'ROWS') {

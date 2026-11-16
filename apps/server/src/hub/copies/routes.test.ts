@@ -57,6 +57,13 @@ async function people(on: CopiesOn) {
   }
 }
 
+function expected(member: boolean, method: string, url: string) {
+  if (!member || method !== 'GET') return [404, 'NOT_FOUND']
+  if (url.endsWith('/copies') && !url.includes('/projects/')) return [200, undefined]
+  if (url.endsWith('/runs')) return [404, 'COPY_NOT_FOUND']
+  return [404, 'NOT_FOUND']
+}
+
 test('cópias: quem vê e quem recebe não encontrado', async (t) => {
   const on = await copiesOn(t)
   const others = await people(on)
@@ -87,11 +94,12 @@ test('cópias: quem vê e quem recebe não encontrado', async (t) => {
     ['papel próprio', others.own],
     ['de outra empresa', others.outsider],
   ] as const) {
+    const member = who !== 'de outra empresa'
     for (const copyId of [copy.id, randomUUID()]) {
       for (const [method, url] of surface(on, copyId)) {
         const refused = await request(on, person, method, url)
         const answered = [refused.statusCode, codeOf(refused)]
-        assert.deepEqual(answered, [404, 'NOT_FOUND'], `${who}: ${method} ${url}`)
+        assert.deepEqual(answered, expected(member, method, url), `${who}: ${method} ${url}`)
       }
     }
   }

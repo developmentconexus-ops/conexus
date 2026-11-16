@@ -3,7 +3,7 @@ import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { copy, detailOf, openCopies, VENDAS } from './test-hub.tsx'
 
-// A tabela, aba Amostra: cinco linhas para quem lê linhas, e nada para quem não lê (Dados, parte 1, 9.4 a 9.8).
+// A tabela, aba Amostra: cinco linhas lidas pelo papel, e a frase do Hub fora dele (Dados, partes 1 e 4).
 const server = hubServer()
 const SAMPLE = `${detailOf(VENDAS)}?tab=sample`
 
@@ -51,10 +51,17 @@ test('o número da linha', async () => {
   expect(head?.querySelector('span')?.className).toContain('sr-only')
 })
 
-test('o desenvolvedor não vê a aba Amostra', async () => {
-  openCopies(server, { copies: [copy()] }, detailOf(VENDAS), 'developer')
-  await screen.findByRole('heading', { name: 'vendas' })
-  expect(screen.queryByRole('tab', { name: 'Amostra' })).toBeNull()
+test('o desenvolvedor vê a aba Amostra e a frase do Hub numa tabela fora do papel', async () => {
+  openCopies(
+    server,
+    { copies: [copy()], answers: { sample: () => refusal('COPY_NOT_IN_ROLE') } },
+    SAMPLE,
+    'developer',
+  )
+  expect(await screen.findByRole('tab', { name: 'Amostra' })).toBeTruthy()
+  expect(
+    await screen.findByText('Seu papel não lê esta tabela. Peça a quem administra a empresa.'),
+  ).toBeTruthy()
 })
 
 test('a amostra vazia', async () => {
@@ -77,13 +84,4 @@ test('a amostra que falha tem Tentar de novo', async () => {
   fail = false
   fireEvent.click(retry)
   expect(await screen.findByText('Cinco linhas da cópia.')).toBeTruthy()
-})
-
-test('o desenvolvedor que abre ?tab=sample cai na Visão geral, sem a amostra', async () => {
-  openCopies(server, { copies: [copy()] }, SAMPLE, 'developer')
-  await screen.findByRole('heading', { name: 'vendas' })
-  expect(screen.getByRole('tab', { name: 'Visão geral' }).getAttribute('aria-selected')).toBe(
-    'true',
-  )
-  expect(screen.queryByText('Cinco linhas da cópia.')).toBeNull()
 })

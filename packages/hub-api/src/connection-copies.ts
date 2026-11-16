@@ -47,7 +47,7 @@ export type CopySample = z.infer<typeof CopySample>
 
 export const sampleCopy = defineOperation({
   id: 'sampleCopy',
-  summary: 'Shows the first rows of a copy’s table, five at most, to whoever reads its rows.',
+  summary: 'Shows the first rows of a copy’s table, five at most, read as the member’s role.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/copies/{copyId}/sample',
@@ -59,6 +59,7 @@ export const sampleCopy = defineOperation({
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
     'COPY_NOT_FOUND',
+    'COPY_NOT_IN_ROLE',
     'COPY_DATABASE_UNAVAILABLE',
   ] as const satisfies readonly FailureCode[],
 })

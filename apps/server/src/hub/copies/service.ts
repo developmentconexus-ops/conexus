@@ -26,6 +26,8 @@ import {
 import { listed, models, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
 import { propose } from './propose.ts'
+import { copiesReadBy, listedReaders, readAs, readerOf } from './readers.ts'
+import { setRoleCopies } from './role-copies.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { sampleOf } from './sample.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
@@ -45,21 +47,31 @@ export function createCopyService(
     /** One run of one copy; the clock's workflow calls it. */
     run: (input: { companyId: CompanyId; copyId: CopyId; whole?: boolean }, signal: AbortSignal) =>
       runCopy(full, { ...input, whole: input.whole === true }, signal),
-    /** The reads, admitting `readCopies`: the copies, the open proposals and those named. */
+    /** The reads, admitting `seeData`: the copies the role reads, and for whoever manages them the open proposals and those named. */
     list: (input: InCompany & { named: readonly CopyProposalId[] }) => listed(full, input),
     summaryOf: (input: Of) => summaryOf(full, input),
     models: (input: InCompany) => models(full, input),
     runs: (input: Of & { page: string | undefined }) => runs(full, input),
     ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
-    /** The first rows of a copy's table, admitting `readCopyRows`. */
+    /** The first rows of a copy's table, read as the member's role. */
     sample: (input: Of & { signal: AbortSignal }) => sampleOf(full, input),
     /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
     projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>
       projectView(full, input),
-    /** What the data contract reads; admits nobody, the caller did: the tables a place reads and one page of a table by its name. */
+    /** What the data contract reads; admits nobody, the caller did: the tables a place reads, one page of a table by its name, and who reads what. */
     data: Object.freeze({
       catalogTables,
       tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(full, input),
+      readers: Object.freeze({
+        copiesReadBy,
+        readerOf,
+        readAs: (input: Parameters<typeof readAs>[1]) => readAs(full, input),
+      }),
+    }),
+    /** Who reads each copy, admitting `seeData`, and the copies a role reads, admitting `manageRoles`. */
+    readers: Object.freeze({
+      list: (input: InCompany) => listedReaders(full, input),
+      set: (input: Parameters<typeof setRoleCopies>[1]) => setRoleCopies(full, input),
     }),
     /** The schedule's acts, admitting `manageCopies`. */
     pause: (input: Of) => pauseCopy(full, input),
