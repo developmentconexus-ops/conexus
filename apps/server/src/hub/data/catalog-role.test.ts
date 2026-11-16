@@ -172,3 +172,16 @@ test('a recusa que repete depois do conserto não devolve linha', async (t) => {
     kind: 'NOT_IN_ROLE',
   })
 })
+
+test('a recusa de um papel sem marca não chama a reconciliação', async (t) => {
+  const w = await rolesWorld(t, 'NONE')
+  const postgres = w.on.hub.postgres.companyPostgres
+  const tickets = t.mock.method(postgres, 'takeReadersTicket')
+  const reconciles = t.mock.method(postgres, 'reconcileReaders')
+  const sql = 'select count(*) from sync.sankhya_vendas'
+  assert.deepEqual(await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql }), {
+    kind: 'NOT_IN_ROLE',
+  })
+  assert.deepEqual([tickets.mock.callCount(), reconciles.mock.callCount()], [0, 0])
+  assert.deepEqual(logged(w.on, 'COPY_READERS_REPAIRED'), [])
+})
