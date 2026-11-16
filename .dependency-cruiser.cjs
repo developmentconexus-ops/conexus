@@ -90,7 +90,7 @@ module.exports = {
     {
       name: 'describe-lists-only-through-access',
       comment:
-        'The catalog a consumer is told comes from the access door alone, the path issue 1138 skipped.',
+        'hub/data/catalog.ts imports nothing of hub/connectors or hub/copies, the path issue 1138 took; that it reads only the access door is held by catalogOf taking only access and log.',
       severity: 'error',
       from: { path: `${SERVER}/hub/data/catalog\\.ts$` },
       to: { path: `${SERVER}/hub/(connectors|copies)/` },

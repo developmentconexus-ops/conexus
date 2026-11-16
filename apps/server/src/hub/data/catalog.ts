@@ -4,7 +4,10 @@ import type { Principal } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
 
 /** What the place may use, as the access door lists it for the principal. */
-export async function catalogOf(deps: DataDeps, principal: Principal): Promise<Described> {
+export async function catalogOf(
+  deps: Pick<DataDeps, 'access' | 'log'>,
+  principal: Principal,
+): Promise<Described> {
   try {
     const view = await deps.access.viewOf(principal)
     return { kind: 'CATALOG', systems: [...view.list('system')], tables: [...view.list('table')] }
