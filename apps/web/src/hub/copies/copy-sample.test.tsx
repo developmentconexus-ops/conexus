@@ -59,9 +59,12 @@ test('o desenvolvedor vê a recusa do papel na aba Amostra, sem Tentar de novo e
     'developer',
   )
   expect(await screen.findByRole('tab', { name: 'Amostra' })).toBeTruthy()
-  expect(
-    await screen.findByText('Seu papel não lê esta tabela. Peça a quem administra a empresa.'),
-  ).toBeTruthy()
+  const said = await screen.findByText(
+    'Seu papel não lê esta tabela. Peça a quem administra a empresa.',
+  )
+  expect(said.className).toContain('text-text-2')
+  expect(said.className).not.toContain('text-danger')
+  expect(screen.queryByRole('alert')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   expect(screen.queryByRole('table')).toBeNull()
 })

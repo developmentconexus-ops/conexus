@@ -1,7 +1,6 @@
 import type { CompanyId, CopyId, CopySummary } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.tsx'
@@ -29,7 +28,7 @@ export function CopySample(props: {
   if (read.isPending) return <Skeleton className="h-24 w-full" />
   if (read.isError) {
     if (read.error instanceof HubFailure && read.error.code === 'COPY_NOT_IN_ROLE') {
-      return <Alert tone="danger">{sentenceOf(read.error)}</Alert>
+      return <p className="text-text-2">{sentenceOf(read.error)}</p>
     }
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   }
