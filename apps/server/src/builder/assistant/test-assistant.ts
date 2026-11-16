@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { READER_ZONE_HEADER } from '@conexus/hub-api'
 import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
-import { conversing, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
+import { conversing, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
@@ -151,11 +152,10 @@ export async function created(hub: Hub, person: Person, assistant: string, body:
 export async function talking(t: TestContext, hub: Hub, person: Person, url: string) {
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
-  async function say(content: string, files: Upload[] = []) {
-    const asked =
-      files.length === 0
-        ? await sent(hub, person, url, content)
-        : await post(hub, person, `${sessionUrl(url)}/messages`, { message: content, files })
+  async function say(content: string, files: Upload[] = [], zone?: string) {
+    const body = files.length === 0 ? { message: content } : { message: content, files }
+    const more: Record<string, string> = zone === undefined ? {} : { [READER_ZONE_HEADER]: zone }
+    const asked = await post(hub, person, `${sessionUrl(url)}/messages`, body, undefined, more)
     assert.equal(asked.statusCode, 200, asked.body)
     return stream.turn()
   }

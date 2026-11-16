@@ -134,6 +134,8 @@ const TOOL_FAILED = 'Não conseguiu ler o sistema da empresa.'
 export const PLAIN_WORDS: ConnectorWords = {
   name: (connector) => connector,
   logoOf: () => undefined,
+  logo: () => undefined,
+  auth: () => 'oauth2_code',
   refusal: () => TOOL_FAILED,
 }
 

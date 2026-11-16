@@ -1,5 +1,6 @@
+import { READER_ZONE_HEADER } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT_START, RUNNING, signalStarted, stepStarted, textDelta } from './test-events.ts'
@@ -7,7 +8,8 @@ import { choose, conversationOf, FIRST, PROJECT, say, screens, typed, view } fro
 import { builderSaid, personSaid } from './test-stream.tsx'
 import { EMPTY_CONVERSATION } from './text.ts'
 
-const { open, openConversation } = screens(hubServer())
+const server = hubServer()
+const { open, openConversation } = screens(server)
 
 test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens', async () => {
   const { shown } = await openConversation(
@@ -55,6 +57,26 @@ test('o Enter envia pelo sendMessage do Mastra; "Pensando…" e "Parar" até che
   line().emit(textDelta('O primeiro é '))
   expect(await screen.findByText(/O primeiro é/)).toBeTruthy()
   expect(screen.queryByText('Pensando…')).toBeNull()
+})
+
+test('o pedido da mensagem leva o fuso do navegador, para a hora chegar ao modelo no fuso de quem lê', async () => {
+  const zones: (string | null)[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.endsWith('/messages') && request.method === 'POST')
+      zones.push(request.headers.get(READER_ZONE_HEADER))
+  })
+  const real = Intl.DateTimeFormat.prototype.resolvedOptions
+  const browser = vi
+    .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+    .mockImplementation(function (this: Intl.DateTimeFormat) {
+      return { ...real.call(this), timeZone: 'Asia/Tokyo' }
+    })
+  const { field, sent } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Quanto vendemos?')
+  await waitFor(() => expect(sent).toHaveLength(1))
+  server.events.removeAllListeners()
+  browser.mockRestore()
+  expect(zones).toEqual(['Asia/Tokyo'])
 })
 
 test('Shift+Enter e o Enter de uma composição não enviam; o campo guarda o texto', async () => {

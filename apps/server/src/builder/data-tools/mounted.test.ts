@@ -203,3 +203,18 @@ test('o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz
   assert.equal(Object(table).connector, 'sankhya')
   assert.ok(!JSON.stringify(described).includes('Filial'), 'o nome da conexão não sai')
 })
+
+test('o fuso que o navegador manda no cabeçalho chega à ferramenta: a hora da cópia vai no deslocamento de quem lê', async (t) => {
+  const on = await agentsOn(t, [...LISTING, ...LISTING])
+  await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
+  const { assistant } = await conversationsOf(t, on)
+  async function endedAt(zone: string | undefined) {
+    await assistant.say('Quais tabelas eu leio?', [], zone)
+    const described = resultsOf(on).at(-1)
+    return Object(described?.tables?.[0]).lastRunEndedAt
+  }
+  const [utc, local] = [await endedAt(undefined), await endedAt('America/Sao_Paulo')]
+  assert.match(utc, /Z$/)
+  assert.match(local, /-03:00$/)
+  assert.equal(new Date(local).getTime(), new Date(utc).getTime())
+})
