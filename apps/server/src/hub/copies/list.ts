@@ -128,7 +128,6 @@ export async function copySources(tx: ReadTx, companyId: CompanyId, ids: readonl
 
 async function seenBy(deps: CopiesDeps, tx: ReadTx, input: InCompany): Promise<'ALL' | CopyId[]> {
   const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
-  if (deps.identity.allows(proof.role, 'manageCopies')) return 'ALL'
   return copiesReadBy(deps, tx, { companyId: input.companyId, role: proof.role })
 }
 

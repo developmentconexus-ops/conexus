@@ -95,7 +95,7 @@ test('a aba Quem lê fica no endereço (critério 78)', async () => {
   expect(screen.getByRole('tab', { name: 'Quem lê 3' }).getAttribute('aria-selected')).toBe('false')
 })
 
-test('o membro na página da tabela não vê Rodar agora nem o menu (critério 72)', async () => {
+test('o membro e o desenvolvedor na página da tabela não veem Rodar agora nem o menu (critério 72)', async () => {
   for (const role of ['member', 'developer', 'owner']) {
     openCopies(server, { copies: [copy()], runs: [] }, DETAIL, role)
     const tabs = await screen.findAllByRole('tab')
@@ -106,7 +106,7 @@ test('o membro na página da tabela não vê Rodar agora nem o menu (critério 7
       'Rodadas',
       'Quem lê 2',
     ])
-    const builds = role !== 'member'
+    const builds = role === 'owner'
     expect(screen.queryByRole('button', { name: /Rodar agora/ }) !== null).toBe(builds)
     expect(screen.queryByRole('button', { name: /^Ações:/ }) !== null).toBe(builds)
     cleanup()

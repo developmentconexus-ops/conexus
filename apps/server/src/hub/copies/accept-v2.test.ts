@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CopyProposalId } from '@conexus/hub-api'
-import { call, codeOf, memberOn } from '../identity/test-hub.ts'
+import { codeOf } from '../identity/test-hub.ts'
 import { asSync } from './test-copies.ts'
 import type { ListProposalsOn } from './test-list-proposals.ts'
 import { listProposalsOn } from './test-list-proposals.ts'
@@ -54,23 +54,6 @@ test('ligar a proposta de uma leitura de lista', async (t) => {
 test('ligar a proposta de uma leitura de lista: as recusas', async (t) => {
   const on = await listProposalsOn(t)
   const proposalId = await proposedOn(on)
-  // A developer whose role uses another read of the connector, not the copy's.
-  const who = { name: 'Davi Costa', email: 'davi@example.test' }
-  const developer = await memberOn(on.hub, on.companyId, who, 'developer')
-  const changed = await call(
-    on.hub,
-    on.ana,
-    'PUT',
-    `/api/companies/${on.companyId}/roles/developer`,
-    {
-      connectors: { 'mercado-livre': ['perguntas'] },
-      unattended: false,
-    },
-  )
-  assert.equal(changed.statusCode, 200, changed.body)
-  const refused = await on.enable(developer, proposalId)
-  assert.equal(codeOf(refused), 'NOT_IN_ROLE', refused.body)
-  assert.equal(Object(refused.json()).operation, 'Pedidos')
   // One of its connections not ACTIVE.
   await on.hub.test.asOwner(
     `update connectors.connection set state = 'NEEDS_REAUTH' where id = $1`,

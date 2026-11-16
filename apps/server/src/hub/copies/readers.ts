@@ -233,14 +233,12 @@ async function readersOf(tx: ReadTx, companyId: CompanyId): Promise<Map<CopyId, 
   return readers
 }
 
-/** Who reads each copy the person sees: every copy for whoever manages them, the role's own for the others. */
+/** Who reads each copy the person sees: every copy for an owner or an administrator, the role's own for the others. */
 export function listedReaders(deps: CopiesDeps, input: InCompany): Promise<CopyReaders[]> {
   const { companyId } = input
   return deps.database.read(personScope(input), async (tx) => {
     const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
-    const reads = deps.identity.allows(proof.role, 'manageCopies')
-      ? 'ALL'
-      : await copiesReadBy(deps, tx, { companyId, role: proof.role })
+    const reads = await copiesReadBy(deps, tx, { companyId, role: proof.role })
     const stored = await tx
       .select({ id: copy.id })
       .from(copy)

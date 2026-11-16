@@ -5,7 +5,7 @@ export function mayOf(role: string) {
   return {
     manageAgents: builds,
     manageAutomations: builds,
-    manageCopies: builds,
+    manageCopies: governs,
     manageRoles: governs,
     viewAppData: builds,
     publishUnattendedWrite: governs,

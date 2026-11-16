@@ -6,12 +6,7 @@ import type { CommandTx } from '../../platform/database.ts'
 import { violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AccountRef } from '../connectors/public.ts'
-import {
-  CopyDefinition,
-  connectionForCopy,
-  lackedReadOf,
-  lackedSourceReadOf,
-} from '../connectors/public.ts'
+import { CopyDefinition, connectionForCopy } from '../connectors/public.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { parsedCopy } from './store.ts'
 import { copy, copyProposal, copyProposalSource, copySource, projectCopy } from './tables.ts'
@@ -104,38 +99,6 @@ async function proposalConnections(tx: CommandTx, proposal: typeof copyProposal.
   return rows.map((row) => ConnectionId.parse(row.connectionId))
 }
 
-/**
- * The role of who turns the proposal on, reading what it copies: version 1, the connection's read
- * door; version 2, the list read on each connection. `NOT_IN_ROLE` names the read.
- */
-async function mayReadSources(
-  deps: Pick<CopiesDeps, 'identity'>,
-  tx: CommandTx,
-  input: Accepting & {
-    connectorId: ConnectorId
-    definition: CopyDefinition
-    connections: readonly ConnectionId[]
-  },
-) {
-  const { companyId, personId, connectorId, definition, connections } = input
-  const [first] = connections
-  if (first === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_CONNECTION' } })
-  const lacked =
-    definition.version === 1
-      ? await lackedReadOf(deps, tx, { companyId, connectionId: first, connectorId, personId })
-      : (
-          await lackedSourceReadOf(deps, tx, {
-            ...{ companyId, personId, connectorId, connections },
-            operation: definition.source.operation,
-          })
-        )?.operation
-  if (lacked !== undefined)
-    throw new Failure('NOT_IN_ROLE', {
-      details: { connectionId: first, reason: 'READ_DOOR' },
-      named: { operation: lacked },
-    })
-}
-
 /** Each connection ACTIVE, with its account, in the proposal's order. */
 async function activeSources(
   tx: CommandTx,
@@ -179,7 +142,6 @@ export async function acceptedIn(
   const connectorId = ConnectorId.parse(proposal.connectorId)
   const definition = CopyDefinition.parse(proposal.definition)
   const connections = await proposalConnections(tx, proposal)
-  await mayReadSources(deps, tx, { ...input, connectorId, definition, connections })
   const sources = await activeSources(tx, input.companyId, connections)
   const row = await insertedCopy(tx, input, {
     ...{ connectorId, sources, name: proposal.name, label: proposal.label },

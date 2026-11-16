@@ -72,7 +72,6 @@ test('cópias: quem vê e quem recebe não encontrado', async (t) => {
   for (const [who, person] of [
     ['dono', on.ana],
     ['administrador', others.admin],
-    ['desenvolvedor', others.developer],
   ] as const) {
     const read = await call(on.hub, person, 'GET', copiesUrl(on))
     assert.equal(read.statusCode, 200, who)
@@ -91,6 +90,7 @@ test('cópias: quem vê e quem recebe não encontrado', async (t) => {
   }
   for (const [who, person] of [
     ['membro', on.carla],
+    ['desenvolvedor', others.developer],
     ['papel próprio', others.own],
     ['de outra empresa', others.outsider],
   ] as const) {

@@ -24,10 +24,21 @@ async function rowOf(name: string): Promise<HTMLElement> {
   return row
 }
 
-test('Dados: a faixa mostra a entrada ao dono e ao desenvolvedor', async () => {
-  openCopies(server, { copies: [copy()] }, LIST, 'developer')
-  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
-  expect(screen.getAllByRole('link', { name: 'Dados' }).length).toBeGreaterThan(0)
+test('o desenvolvedor vê Dados como o membro: a nota do papel, sem Ligar e sem menu (critério 122)', async () => {
+  const readers = [
+    {
+      copyId: VENDAS,
+      roles: [
+        { role: 'owner', label: 'Dono', members: 1 },
+        { role: 'developer', label: 'Desenvolvedor', members: 2 },
+      ],
+    },
+  ]
+  openCopies(server, { copies: [copy()], readers }, LIST, 'developer')
+  expect(await screen.findByText('Você vê as tabelas que o papel Desenvolvedor lê.')).toBeTruthy()
+  for (const name of [/Ligar uma cópia/, /^Ações:/, /Rodar agora/, /Pausar/, /Intervalo/]) {
+    expect(screen.queryByRole('button', { name })).toBeNull()
+  }
 })
 
 const MEMBER_READS = [

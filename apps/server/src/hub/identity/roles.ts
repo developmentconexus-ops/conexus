@@ -37,14 +37,14 @@ const ASK = { request: ['create'] } as const
 // without asking (step 24.5, Papéis `D1`).
 const UNATTENDED = ['publishUnattendedWrite'] as const
 
-// What makes a person a builder: they publish apps, manage and publish agents, create automations,
-// ask the Assistant (step 24.3.4, U1) and manage the company's copies (Capacidade 2). The connections stay the administrators' (step 19, D).
+// What makes a person a builder: they publish apps, manage and publish agents, create automations
+// and ask the Assistant (step 24.3.4, U1). The connections stay the administrators', and so do the
+// company's copies (founder, 2026-11-16: out of the role, nobody sees; a developer sees data as a member).
 const BUILD = {
   app: ['publish', 'viewData'],
   agent: ['manage', 'publish'],
   automation: ['manage'],
   assistant: ['ask'],
-  copy: ['manage'],
 } as const
 
 /**
@@ -89,6 +89,7 @@ export function rolesFor(kit: RoleKit) {
       ...ownerAc.statements,
       ...MANAGE_COMPANY,
       ...BUILD,
+      copy: ['manage'],
       agent: [...BUILD.agent, ...UNATTENDED],
       ...allOperations,
       company: ['nickname'],
@@ -97,6 +98,7 @@ export function rolesFor(kit: RoleKit) {
       ...adminAc.statements,
       ...MANAGE_COMPANY,
       ...BUILD,
+      copy: ['manage'],
       agent: [...BUILD.agent, ...UNATTENDED],
       ...allOperations,
     }),
