@@ -1,5 +1,4 @@
-import type { ProjectId } from '@conexus/hub-api'
-import { appLogin, appLoginPassword } from '@conexus/hub-api'
+import { appLoginPassword } from '@conexus/hub-api'
 import type { Context, ReadResult, SqlAnswer, SqlStatement } from './app-sql.ts'
 import { missingLogins, quoted } from './app-sql.ts'
 import { DatabaseUrl } from './database.ts'
@@ -97,7 +96,7 @@ function commentsOf(table: CopyTable): SqlStatement[] {
   ]
 }
 
-function tableOf(name: string): string {
+export function tableOf(name: string): string {
   return `${SYNC_SCHEMA}.${quoted(name)}`
 }
 
@@ -117,6 +116,33 @@ export const DUPLICATE_OBJECT = '42710'
  */
 export const ROLES_LOCK: SqlStatement = { text: 'SELECT pg_advisory_xact_lock(4207000002)' }
 
+export const TICKETS = `${SYNC_SCHEMA}.readers_ticket`
+export const LEDGER = `${SYNC_SCHEMA}._readers_applied`
+
+function readersLedger(): SqlStatement[] {
+  return [
+    { text: `CREATE SEQUENCE IF NOT EXISTS ${TICKETS}` },
+    {
+      text: `CREATE TABLE IF NOT EXISTS ${LEDGER} (single boolean PRIMARY KEY DEFAULT true CHECK (single), ticket bigint NOT NULL)`,
+    },
+    { text: `INSERT INTO ${LEDGER} (ticket) VALUES (0) ON CONFLICT DO NOTHING` },
+    { text: `REVOKE ALL ON TABLE ${LEDGER} FROM PUBLIC` },
+    { text: `REVOKE ALL ON SEQUENCE ${TICKETS} FROM PUBLIC` },
+    ledgerHiddenFromReader(),
+  ]
+}
+
+/** `conexus_read`'s grant on the ledger taken back, when both exist: its default privileges give it every table of `sync`. */
+export function ledgerHiddenFromReader(): SqlStatement {
+  return {
+    text: `DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${READ_LOGIN}') AND to_regclass('${LEDGER}') IS NOT NULL THEN
+        REVOKE ALL ON TABLE ${LEDGER} FROM ${quoted(READ_LOGIN)};
+      END IF;
+    END $$`,
+  }
+}
+
 /**
  * The `sync` schema and the login that owns it, as the company's owner, who holds that login by SET
  * alone, as it holds an app's migration login (decision 0043). What a cut act left is found.
@@ -134,6 +160,8 @@ export async function ensureSync(context: Context, owner: DatabaseUrl): Promise<
         ...created,
         { text: `GRANT ${sync} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE` },
         { text: `CREATE SCHEMA IF NOT EXISTS ${SYNC_SCHEMA} AUTHORIZATION ${sync}` },
+        { text: `SET LOCAL ROLE ${sync}` },
+        ...readersLedger(),
       ],
       signal,
     )
@@ -348,52 +376,4 @@ export function dropCopyTable(
   input: { copy: string },
 ): Promise<SqlAnswer> {
   return sent(context, sync, { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` })
-}
-
-/** What the sync login gives a Projeto's run and read logins, which its owner made first. */
-export function grantCopy(
-  context: Context,
-  sync: DatabaseUrl,
-  input: { name: string; projectId: ProjectId },
-): Promise<SqlAnswer> {
-  const { runLogin, readLogin } = appLogin(input.projectId)
-  const logins = [runLogin, readLogin].map(quoted).join(', ')
-  return context.transport(
-    sync,
-    [
-      { text: `GRANT USAGE ON SCHEMA ${SYNC_SCHEMA} TO ${logins}` },
-      { text: `GRANT SELECT ON ${tableOf(input.name)} TO ${logins}` },
-    ],
-    budget(),
-  )
-}
-
-/**
- * SQLSTATEs of nothing left to revoke: no sync login (`28000`, `28P01`), no `sync` schema
- * (`3F000`), no such table (`42P01`), the app's logins already dropped (`42704`).
- */
-const NOTHING_TO_REVOKE = new Set(['28000', '28P01', '3F000', '42P01', '42704'])
-
-/**
- * The `REVOKE` of one copy; `ALL`, of every copy and of the schema, so the app's logins can be
- * dropped after (`DROP ROLE` refuses a login that still holds a grant, `2BP01`).
- */
-export async function revokeCopy(
-  context: Context,
-  sync: DatabaseUrl,
-  input: { copy: string | 'ALL'; projectId: ProjectId },
-): Promise<SqlAnswer> {
-  const { runLogin, readLogin } = appLogin(input.projectId)
-  const logins = [runLogin, readLogin].map(quoted).join(', ')
-  const statements: SqlStatement[] =
-    input.copy === 'ALL'
-      ? [
-          { text: `REVOKE ALL ON ALL TABLES IN SCHEMA ${SYNC_SCHEMA} FROM ${logins}` },
-          { text: `REVOKE USAGE ON SCHEMA ${SYNC_SCHEMA} FROM ${logins}` },
-        ]
-      : [{ text: `REVOKE SELECT ON ${tableOf(input.copy)} FROM ${logins}` }]
-  const answer = await context.transport(sync, statements, budget())
-  return answer.kind === 'REFUSED' && NOTHING_TO_REVOKE.has(answer.code)
-    ? { kind: 'DONE', value: [] }
-    : answer
 }

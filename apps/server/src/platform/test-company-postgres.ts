@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { ProjectId } from '@conexus/hub-api'
+import type { ProjectId, RoleId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
 import type {
@@ -12,6 +12,7 @@ import type {
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
+import { roleLogin } from './copy-reader.ts'
 import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
@@ -130,7 +131,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync|conexus_read)$'`,
+        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync|conexus_read|conexus_role_.*)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)
@@ -318,8 +319,8 @@ export async function forgetReadLogin(owner: DatabaseUrl, projectId: ProjectId) 
 }
 
 /** The Hub's acts on a company's database over the test server, with the test's app login key. */
-export function testCompanyPostgres(key: AppLoginKey) {
-  return createCompanyPostgres({ transport: pgTransport, appLoginKey: key })
+export function testCompanyPostgres(key: AppLoginKey, transport: SqlTransport = pgTransport) {
+  return createCompanyPostgres({ transport, appLoginKey: key })
 }
 
 async function loginOf(owner: DatabaseUrl, key: AppLoginKey, login: string): Promise<DatabaseUrl> {
@@ -344,4 +345,8 @@ export function withPassword(url: DatabaseUrl, password: string): DatabaseUrl {
 /** The read login's address on the company's database, as `syncLoginOf` gives the sync login's. */
 export function readLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
   return loginOf(owner, key, READ_LOGIN)
+}
+
+export function roleLoginOf(owner: DatabaseUrl, key: AppLoginKey, roleId: RoleId) {
+  return loginOf(owner, key, roleLogin(roleId))
 }

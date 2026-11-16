@@ -11,6 +11,16 @@ export const ConnectorId = z
   .brand('ConnectorId')
 export type ConnectorId = z.infer<typeof ConnectorId>
 
+/**
+ * The id of a role's row in `auth.organization_role`: the library's 32 letters and digits, or the
+ * uuid of the two seeded rows. Its shape alone: the length its login may take is the server's to check.
+ */
+export const RoleId = z
+  .string()
+  .regex(/^[A-Za-z0-9-]+$/)
+  .brand('RoleId')
+export type RoleId = z.infer<typeof RoleId>
+
 /** What a role uses of each connector: the ids of the operations, by connector. */
 export const RoleConnectors = z.record(ConnectorId, z.array(OperationId))
 export type RoleConnectors = z.infer<typeof RoleConnectors>

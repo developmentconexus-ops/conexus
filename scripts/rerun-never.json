@@ -12,6 +12,7 @@
     "apps/server/src/hub/connectors/hubspot-door.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
+    "apps/server/src/platform/copy-role-readers.test.ts",
     "apps/server/src/platform/isolation-apps.test.ts",
     "apps/server/src/platform/isolation-conversations.test.ts",
     "apps/server/src/platform/isolation-model-accounts.test.ts",

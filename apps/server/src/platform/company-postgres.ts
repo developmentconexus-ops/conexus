@@ -11,7 +11,7 @@ import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from '.
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
 import type { Bound, CopyReader } from './copy-reader.ts'
-import { copyReader } from './copy-reader.ts'
+import { copyReader, grantCopy, revokeCopy } from './copy-reader.ts'
 import type { CopyTable } from './copy-sql.ts'
 import {
   accountRows,
@@ -21,8 +21,6 @@ import {
   dropForeignRows,
   ensureCopyTable,
   ensureSync,
-  grantCopy,
-  revokeCopy,
   syncAddress,
   writePage,
 } from './copy-sql.ts'
