@@ -5,6 +5,8 @@ import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { KIT_SANKHYA } from '../../platform/test-kit.ts'
+import { wordsOf } from './connector-words.ts'
+import { builderRoomOf } from './room.ts'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
 import { recordedRun } from './test-recorded.ts'
 
@@ -69,4 +71,13 @@ test('na conversa do Builder, o selo de um conector de chaves diz Chaves recusad
   const sources = await askedIn([KIT_SANKHYA], 'NEEDS_REAUTH')
   expect(await within(sources).findByText('Chaves recusadas')).toBeTruthy()
   expect(within(sources).queryByText('Pede para conectar de novo')).toBeNull()
+})
+
+test('a sala do Builder toma do catálogo o nome e a logo, e a recusa de conector segue a do Builder', () => {
+  const room = builderRoomOf(wordsOf([KIT_SANKHYA]))
+  expect(room.connectors.name('sankhya')).toBe('Sankhya')
+  expect(room.connectors.logo('sankhya')).toBe(KIT_SANKHYA.logo)
+  expect(room.connectors.refusal('sankhya', { kind: 'UNREACHABLE' })).toBe(
+    'Não conseguiu ler o sistema da empresa.',
+  )
 })

@@ -90,10 +90,14 @@ const ReadPart = z.looseObject({
 })
 
 /** The recorded live read, with its `at` taken away or under a typed read's tool name. */
-function read(change: { noAt?: true; toolName?: string } = {}) {
+function read(
+  change: { noAt?: true; toolName?: string; connection?: string; operation?: string } = {},
+) {
   const part = recordedPart('reads', ReadPart)
   if (change.noAt) delete part.toolInvocation.result.at
   if (change.toolName !== undefined) part.toolInvocation.toolName = change.toolName
+  if (change.operation !== undefined) part.toolInvocation.args.operation = change.operation
+  if (change.connection !== undefined) part.toolInvocation.args.connection = change.connection
   return part
 }
 
@@ -326,6 +330,14 @@ test('a leitura ao vivo de uma conexão com o nome do sistema não o repete', ()
   const part = read()
   part.toolInvocation.args.connection = 'Sankhya'
   expect(linesOf([part])[0]?.name).toBe('Sankhya')
+})
+
+test('duas leituras ao vivo de operações diferentes da mesma conexão são duas fontes', () => {
+  const tables = sourcesIn([
+    read({ operation: 'sankhya.consultar' }),
+    read({ operation: 'sankhya.estoque' }),
+  ]).flatMap((item) => item.sources.map((one) => (one.kind === 'data' ? one.table : '')))
+  expect(tables).toEqual(['consultar', 'estoque'])
 })
 
 test('a leitura ao vivo vista noutro dia diz o dia', () => {

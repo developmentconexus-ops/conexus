@@ -10,6 +10,24 @@ export const ReadCut = z.object({
   value: z.unknown().optional(),
   complete: z.boolean().optional(),
   empty: z.boolean().optional(),
-  at: z.iso.datetime().optional(),
+  at: z.iso.datetime({ offset: true }).optional(),
 })
 export type ReadCut = z.infer<typeof ReadCut>
+
+/** The header the browser sends its time zone in, and the key the Hub's guard keeps the valid one under in the run's request context. */
+export const READER_ZONE_HEADER = 'x-reader-zone'
+export const READER_ZONE = 'readerZone'
+
+type Known = { kind: 'KNOWN' } | { kind: 'UNKNOWN'; cause: unknown }
+
+function known(zone: string): Known {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone })
+    return { kind: 'KNOWN' }
+  } catch (cause) {
+    return { kind: 'UNKNOWN', cause }
+  }
+}
+
+/** An IANA zone name the runtime knows ("America/Sao_Paulo"); anything else is no zone. */
+export const ReaderZone = z.string().refine((zone) => known(zone).kind === 'KNOWN')

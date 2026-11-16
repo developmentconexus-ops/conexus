@@ -85,6 +85,11 @@ export const BUILDER_ROOM: Room = {
   files: 'MODEL',
 }
 
+/** The Builder's room once the catalog is read: the connectors' names, logos and way of linking, and the Builder's own refusals. */
+export function builderRoomOf(words: ConnectorWords): Room {
+  return { ...BUILDER_ROOM, connectors: { ...words, refusal: PLAIN_WORDS.refusal } }
+}
+
 /** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
 export const ASSISTANT_ROOM: Room = {
   agent: 'Assistente',

@@ -8,13 +8,12 @@ import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { Chat } from './chat.tsx'
 import { useConnectorCatalog } from './connector-catalog.ts'
-import { PLAIN_WORDS } from './connector-specs.ts'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
 import { ModelChoice } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendModel } from './queries.ts'
-import { BUILDER_ROOM, RoomContext } from './room.ts'
+import { builderRoomOf, RoomContext } from './room.ts'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
 const route = getRouteApi(
@@ -38,13 +37,7 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
   const { words } = useConnectorCatalog(companyId)
-  const room = useMemo(
-    () => ({
-      ...BUILDER_ROOM,
-      connectors: { ...words, refusal: PLAIN_WORDS.refusal },
-    }),
-    [words],
-  )
+  const room = useMemo(() => builderRoomOf(words), [words])
   return (
     <RoomContext.Provider value={room}>
       <Chat
