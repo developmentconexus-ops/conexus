@@ -87,8 +87,9 @@ function builderDataOf(a: {
 }
 
 /**
- * The "## Data" block of the turn, read once for the run: a failed read of the copies is a line in
- * the block, never a turn that does not start, and a person not admitted gets no block.
+ * The "## Data" block of the turn, read once for the run: a Hub database that does not answer is a
+ * line in the block; a person who is not a member of the company makes the read fail, and the turn
+ * does not start.
  */
 function dataFor(
   copies: (ids: {
