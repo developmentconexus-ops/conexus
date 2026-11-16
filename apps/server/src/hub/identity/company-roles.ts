@@ -8,8 +8,9 @@ import {
   ROLE_LABELS,
   Role,
   RoleView,
+  readsAll,
 } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -19,6 +20,7 @@ import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
 import { replayOf } from './role-attempt.ts'
+import { roleMembers } from './role-rows.ts'
 import {
   connectorsOf,
   customStatements,
@@ -91,16 +93,11 @@ async function readRoles(set: RoleSet, tx: ReadTx, companyId: CompanyId): Promis
       .where(eq(organizationRole.organizationId, companyId))
       .orderBy(asc(organizationRole.label), asc(organizationRole.role))
   ).map((row) => Row.parse(row))
-  const used = await tx
-    .select({ role: member.role, count: sql<number>`count(*)::int` })
-    .from(member)
-    .where(eq(member.organizationId, companyId))
-    .groupBy(member.role)
-  const members = new Map(used.map((one) => [one.role, one.count]))
+  const members = await roleMembers(tx, companyId)
   const stored = new Map(rows.map((row) => [row.role, row]))
-  const fixed = (['owner', 'admin', 'developer', 'member'] as const).map((name): RoleView => {
+  const fixed = FIXED_ROLES.map((name): RoleView => {
     const held = stored.get(fixedRole(name))
-    const all = name === 'owner' || name === 'admin'
+    const all = readsAll(name)
     const permission = Statements.parse(JSON.parse(held?.permission ?? '{}'))
     const connectors = all ? connectorsOf(set, set.allOperations) : connectorsOf(set, permission)
     return {
@@ -258,7 +255,7 @@ export function updateRoleCommand(deps: Deps) {
     deps.libraryCommand(companyScope(input), async (tx) => {
       const { companyId, headers, role, body } = input
       await admitted(tx, input)
-      if (role === 'owner' || role === 'admin') throw new Failure('ROLE_FIXED')
+      if (readsAll(role)) throw new Failure('ROLE_FIXED')
       const permission = permissionOf(deps, role, body)
       const before = (await readRoles(deps.roles, tx, companyId)).find((one) => one.role === role)
       await refusedAs(

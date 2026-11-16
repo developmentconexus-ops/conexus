@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { storedAddress } from './auth.ts'
-import { roleNamesOf } from './role-names.ts'
+import { roleNamesOf } from './role-rows.ts'
 import { COMPANY_ROLES } from './roles.ts'
 import { company, member, user } from './tables.ts'
 

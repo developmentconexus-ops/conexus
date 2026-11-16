@@ -1,5 +1,5 @@
 import type { CompanyId, CopyId, CopyReaders, Role } from '@conexus/hub-api'
-import { fixedNameOf } from '@conexus/hub-api'
+import { readsAll } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ShieldIcon } from 'lucide-react'
@@ -28,17 +28,11 @@ export function readersOf(readers: Listed | undefined, copyId: CopyId): Reader[]
   return readers?.readers.find((one) => one.copyId === copyId)?.roles
 }
 
-/** Whether a role reads every table with no mark: the owner and the administrator, never by the label. */
-function readsAlways(role: Role): boolean {
-  const fixed = fixedNameOf(role)
-  return fixed === 'owner' || fixed === 'admin'
-}
-
 /** Where **Pessoas** sits in `READER_HEADS`: its numbers align to the right. */
 const PEOPLE_COLUMN = 1
 
 function readsText(role: Role): string {
-  return readsAlways(role) ? READS_ALWAYS : READS_MARKED
+  return readsAll(role) ? READS_ALWAYS : READS_MARKED
 }
 
 function OpenInRoles({ companyId, role }: { companyId: CompanyId; role: Role }) {
@@ -63,7 +57,7 @@ function ReaderRow(props: { companyId: CompanyId; reader: Reader; mayChange: boo
       <TableCell className="text-right tabular-nums">{reader.members}</TableCell>
       <TableCell>{readsText(reader.role)}</TableCell>
       <TableCell className="text-right">
-        {mayChange && !readsAlways(reader.role) && (
+        {mayChange && !readsAll(reader.role) && (
           <OpenInRoles companyId={companyId} role={reader.role} />
         )}
       </TableCell>
@@ -80,7 +74,7 @@ function ReaderPhoneRow(props: { companyId: CompanyId; reader: Reader; mayChange
         <span className="break-words text-text-2 tabular-nums">
           {`${peopleText(reader.members)} · ${readsText(reader.role)}`}
         </span>
-        {mayChange && !readsAlways(reader.role) && (
+        {mayChange && !readsAll(reader.role) && (
           <OpenInRoles companyId={companyId} role={reader.role} />
         )}
       </div>

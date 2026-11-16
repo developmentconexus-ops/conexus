@@ -20,7 +20,7 @@ import { organizationAdapter } from './auth.ts'
 import { checkRoleExists } from './company-roles.ts'
 import { cancelSentBy } from './invitation-management.ts'
 import { companyScope, LIVE, lockCompany } from './invitations.ts'
-import { roleNamesOf } from './role-names.ts'
+import { roleNamesOf } from './role-rows.ts'
 import { invitation, member, user } from './tables.ts'
 
 const Listed = Member.pick({ personId: true, name: true }).extend({
