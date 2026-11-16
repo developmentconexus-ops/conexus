@@ -269,7 +269,7 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (com uma consulta de 1.200 caracteres, acima do corte de 800 de `shown`) e "a cópia recusada diz para selecionar" | must |
 | 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. `NOT_IN_ROLE`, a consulta que o banco recusou com `42501`, diz "Essa tabela não está no catálogo.", o texto de `NOT_IN_CATALOG`: nenhum texto nomeia papel nem confirma que a tabela existe. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, casos "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) e "a consulta recusada pelo banco diz que a tabela não está no catálogo" | must |
 | 41 | U5 | Na conversa do Builder (`BUILDER_ROOM`) as duas ferramentas têm as mesmas linhas e o mesmo corpo | `data-specs.test.tsx`, caso "na sala do Builder, as mesmas linhas" | must |
-| 42 | U14 | A fonte de cópia mostra, numa linha do bloco Fontes, a logo do conector (`ConnectorLogo small`, a imagem do `logo` do catálogo), "Sankhya · Matriz" (o sistema pelas palavras da sala e o nome da conexão, sem repetir quando são iguais, pela regra de `systemText`), a tabela `sankhya_vendas` em letra de código numa pastilha, e "copiado hoje às 08:45". Recusa: uma conexão com o nome do sistema não se repete ("Sankhya", nunca "Sankhya · Sankhya"), e nenhuma fonte de dado sai sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
+| 42 | U14 | A fonte de cópia mostra numa linha a logo do conector (`ConnectorLogo small`), "Sankhya · Matriz" (o sistema e a conexão, sem repetir quando são iguais, por `systemText`), a tabela `sankhya_vendas` numa pastilha de código e "copiado hoje às 08:45". Recusa: nunca "Sankhya · Sankhya", e nenhuma fonte sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
 | 43 | U14 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". O estado é um carimbo (`Stamp`, design V35): a cópia em dia leva o ponto em `success`, a rodada parcial o ponto e as palavras em `warning`, a parada em `danger`, e "ainda sem cópia" o ponto neutro (`line-strong`). Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou, e nenhum estado é só cor, sem palavra | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial, em warning", "a rodada com erro ou interrompida diz parada, em danger, e nunca copiado", "sem rodada diz ainda sem cópia, com o ponto neutro", "outro dia diz ontem ou a data" | must |
 | 44 | U6 | A mesma tabela lida duas vezes no turno aparece uma vez; as páginas da web citadas continuam como hoje | `sources.test.tsx`, caso "a mesma tabela lida duas vezes aparece uma vez" e o caso de web de hoje com `kind: 'web'` | must |
 | 45 | U14 | A resposta que leu um sistema ao vivo mostra a logo do conector, o sistema e a conexão sem repetir ("Sankhya · Matriz"; "Sankhya" quando a conexão se chama "Sankhya"), a operação lida na pastilha de código e o carimbo em `success` "ao vivo · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "ao vivo · lido ontem às HH:MM" ou "ao vivo · lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz ao vivo · lido agora, às" com `reads` regravado, "a leitura ao vivo de uma conexão com o nome do sistema não o repete" (do PR 1111) e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
@@ -277,7 +277,7 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 47 | U14 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela. A 1280 px, a logo, o nome, a pastilha e o carimbo ficam numa linha só, com o carimbo na ponta direita; a 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao começo do nome | `apps/web/sources.layout.test.ts`, caso "a fonte do dado" (testing T23), que mede a posição da pastilha e do nome nas duas larguras e nos dois temas | must |
 | 110 | U14 | A fonte cuja conexão está em `NEEDS_REAUTH` mostra, depois do nome, o selo em `danger` com as palavras de `stateBadge`: "Chaves recusadas" para um conector de chaves, "Pede para conectar de novo" para um conector OAuth, pela autenticação do conector no catálogo. Recusa: a conexão `ACTIVE` não mostra selo, nem "Funcionando" | `sources.test.tsx`, casos "a conexão à espera de nova autorização mostra o selo de Integrações" (os dois tipos de autenticação) e "a conexão ativa não mostra selo" | must |
 | 111 | U14 | A fonte `NOT_GIVEN` (o Projeto que não recebeu a conexão) mostra só a logo e o sistema ("Sankhya"), a tabela e o carimbo; numa cópia de duas conexões com uma `NOT_GIVEN`, só o nome da dada. Recusa: nem o id do conector nem um nome de conexão aparecem no lugar da conexão não dada | `sources.test.tsx`, casos "a fonte não dada ao Projeto mostra só o sistema e a logo" e "uma cópia de duas conexões com uma não dada nomeia só a dada" | must |
-| 112 | U14 | Na conversa do Builder num Projeto, a fonte de dado tem o mesmo nome ("Sankhya", não "sankhya") e a mesma logo da conversa do Assistente, pelas palavras do catálogo de conectores da empresa. Recusa: com o catálogo ainda não lido, ou com a leitura falha, a fonte nomeia o conector pelo id e sai sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id"; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
+| 112 | U14 | Na conversa do Builder, a fonte tem o nome ("Sankhya", não "sankhya") e a logo da conversa do Assistente, pelo catálogo de conectores. Recusa: com o catálogo ainda não lido, ou com a leitura falha, a fonte nomeia o conector pelo id e sai sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id"; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
 | 50 | U7 | Em `/companies/<c>/data/<id>`, a navegação "Caminho" tem os links "Dados" e "{sistema}" e o nome da tabela em texto; os dois links levam a `/data` sem `layer` e com o `q` do endereço; nenhum dos dois tem `aria-current`. O link "← Dados" de hoje não existe mais | `copy-detail.test.tsx`, "o caminho" e "o caminho leva a busca" | must |
 | 51 | U7 | O topo mostra o nome da tabela como título, o estado, **Rodar agora** e o menu da cópia, como hoje; a frase "{sistema} · a cada {intervalo}" não aparece | `copy-detail.test.tsx`, "o caminho leva a Dados" (o antigo `:47-52`) e "as rodadas…" (`:15-45`, ajustado) | must |
 | 52 | U7 | Com a última rodada COMPLETE ou PARTIAL, a linha abaixo do título diz "Copiada do {sistema} em {dia e hora do fim} · {linhas} linhas" | `copy-detail.test.tsx`, "a linha da cópia: a hora do fim da rodada e as linhas" | must |
@@ -550,9 +550,8 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 
 ### G7
 
-A tela é a A do redesenho do bloco Fontes, aprovada pelo fundador em 2026-11-16 ("A"). Ela fica fora
-do repositório, como `p3-01` (delivery L21), e o desenho abaixo a descreve estado por estado. As
-palavras são as de hoje (critérios 43 e 45); muda a forma.
+A tela A do bloco Fontes, aprovada pelo fundador em 2026-11-16, fica fora do repositório, como
+`p3-01` (delivery L21); o desenho abaixo a descreve. As palavras são as de hoje; muda a forma.
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -689,14 +688,14 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | Pular com outra rodada aberta | U12 | a trava de `claim` em `run.ts` devolve `RUNNING` | a plataforma de dados com catálogo e linhagem pula a execução que chega com outra em curso (estudo de referência, documentado) | pula, sem fila | nativo | — | pular e imprimir o código | — |
 | A passada ao subir | U12 | os passes de `main.ts:261-274`; o escopo de empresa sem pessoa e o log por empresa em `repairApps`, `hub/apps/repair.ts:218-236` | mesma situação: `repairApps` | por empresa, falha registrada, segue | nativo | — | `ensureWholeLines` na forma de `repairApps` | `apps/server/src/hub/copies/whole.ts` |
 | "Passada inteira" na linha da rodada | U13 | `RunRow` e `RunPhoneRow` em `copy-detail.tsx:36-60`; `outcomeText` em `text.ts:175-189` | o protótipo `b2-rodadas-inteira` | a marca em `text-2` depois do resultado | nativo | — | — | — |
-| A linha fina e "Fontes" (tela A) | U14 | `Sources`, `apps/web/src/builder/conversation/sources.tsx:31-36`, sem linha acima | o protótipo `p3-01` aprovado | uma linha fina sobre o título do bloco | nativo (`border-line`) | — | — | — |
-| A logo da fonte (tela A) | U14 | nenhuma logo no bloco; `ConnectorLogo small` já desenha a placa de 20 px nas linhas de ferramenta (`tool-bodies.tsx:147-151`, `apps/web/src/hub/connectors/logo.tsx:9-32`); o `logo` do kit chega no catálogo (`packages/hub-api/src/connectors.ts:58`) | o protótipo `p3-01`; a plataforma de ingestão de referência põe a logo do conector em cada fonte, na lista de fontes e no detalhe da fonte (capturas, fora do repositório, delivery L21; visto, não oficial) | a logo do sistema numa placa antes do nome | nativo (a peça e o dado já existem) | — | `ConnectorWords.logo(connector)` ao lado de `name` | — |
-| O sistema e a conexão, sem repetir (tela A) | U14 | `copiedFrom` junta os nomes numa `system` que a fonte de cópia não mostra (`sources.ts:71-90`, `sources.tsx:43`); `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, já não repete a conexão com o nome do sistema na lista de Dados (critério 74) e na leitura ao vivo (PR 1111) | o protótipo `p3-01` ("Sankhya · Matriz") | o sistema forte e a conexão ao lado | nativo (`systemText`, um dono) | — | a fonte `NOT_GIVEN` não entra na lista de conexões (decisão 28) | — |
-| A tabela numa pastilha de código (tela A) | U14 | a tabela no mesmo cinza da frase (`sources.tsx:34`, `:43`) | o protótipo (letra de código); a plataforma de dados com catálogo e linhagem mostra as tabelas usadas pela resposta em pastilhas (capturas, fora do repositório, delivery L21; visto, não oficial) | o nome da tabela em mono, num fundo próprio | nativo (`font-mono`, `bg-surface-3`, como o bloco da consulta, `tool-bodies.tsx:20`) | — | — | — |
-| O estado com ponto e cor (tela A) | U14 | `copiedText` só em palavras, em `text-2` (`sources.tsx:8-19`) | o protótipo `p3-04` (ponto vermelho na cópia parada); a plataforma de ingestão de referência, no detalhe da fonte, diz o estado e a última execução em palavras e cor (capturas, fora do repositório, delivery L21; visto, não oficial); o `Stamp` do DESIGN.md (`:558-561`) | a palavra com um ponto de 6 px na cor do estado, na ponta | nativo (`Stamp`, `apps/web/src/ui/block.tsx:37-48`, design V35) | — | o neutro com o ponto em `line-strong`, como a tela A desenha; `Stamp` passa a aceitar `className` | — |
-| "ao vivo" na leitura ao vivo (tela A) | U14 | `liveText`, `sources.tsx:21-25`, sem a palavra | o protótipo `p3-05` ("lido agora, às 10:02 · ao vivo") | a palavra "ao vivo" junto da hora | nativo | — | "ao vivo · " antes da hora, como a tela A | — |
-| O selo da conexão a reautorizar (tela A) | U14 | o estado chega em `systems[].state` (critério 17) e `copiedFrom` o descarta (`sources.ts:72-74`) | nenhuma: é nosso, as palavras e o tom de `stateBadge` de Integrações (`apps/web/src/hub/connectors/text.ts:35-45`) | o selo vermelho com a palavra, depois do nome | nativo (`stateBadge` e `Badge`, um dono das palavras) | — | só `NEEDS_REAUTH`; `ACTIVE` sem selo (decisão 32) | — |
-| As palavras do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); a sala do Assistente lê o catálogo por `useConnectorCatalog` (`apps/web/src/builder/assistant/connector-names.ts:14-43`) | o Assistente desta etapa (critério 112 pede o mesmo nome e a mesma logo) | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo (`wordsOf` e `connectionsQuery` já existem) | — | o `Room` do Builder em `panel.tsx`, porque `builder/conversation` não importa `builder/assistant` | — |
+| A linha fina e "Fontes" (tela A) | U14 | `sources.tsx:31-36`, sem linha | o protótipo `p3-01` | uma linha fina sobre o título | nativo | — | — | — |
+| A logo da fonte (tela A) | U14 | sem logo no bloco; `ConnectorLogo small` nas linhas de ferramenta (`tool-bodies.tsx:147-151`); o `logo` do kit no catálogo (`packages/hub-api/src/connectors.ts:58`) | `p3-01`; a plataforma de ingestão de referência põe a logo do conector em cada fonte (capturas fora do repositório, delivery L21; visto, não oficial) | a logo numa placa antes do nome | nativo | — | `ConnectorWords.logo` | — |
+| O sistema e a conexão, sem repetir (tela A) | U14 | `copiedFrom` junta os nomes e a fonte de cópia não os mostra (`sources.ts:71-90`); `systemText` (`apps/web/src/hub/copies/text.ts:37-41`, critério 74, PR 1111) | `p3-01` ("Sankhya · Matriz") | o sistema e a conexão ao lado | nativo (`systemText`) | — | `NOT_GIVEN` fora da lista (decisão 28) | — |
+| A tabela numa pastilha de código (tela A) | U14 | a tabela no cinza da frase (`sources.tsx:34`) | `p3-01` (mono); a plataforma de dados com catálogo e linhagem põe as tabelas usadas em pastilhas (capturas fora do repositório; visto, não oficial) | a tabela em mono num fundo próprio | nativo (o mono em `surface-3` de `tool-bodies.tsx:20`) | — | — | — |
+| O estado com ponto e cor (tela A) | U14 | `copiedText` só em palavras, em `text-2` (`sources.tsx:8-19`) | `p3-04` (ponto vermelho na parada); a plataforma de ingestão de referência diz o estado da fonte em palavra e cor (capturas fora do repositório; visto, não oficial); o Stamp do `DESIGN.md:558-561` | a palavra com o ponto na cor, na ponta | nativo (`Stamp`, `block.tsx:37-48`, V35) | — | o neutro em `line-strong` (decisão 33) | — |
+| "ao vivo" (tela A) | U14 | `liveText`, `sources.tsx:21-25` | `p3-05` | "ao vivo" junto da hora | nativo | — | decisão 34 | — |
+| O selo da conexão a reautorizar (tela A) | U14 | `copiedFrom` descarta `systems[].state` (`sources.ts:72-74`) | nenhuma: nosso, `stateBadge` de Integrações (`apps/web/src/hub/connectors/text.ts:35-45`) | o selo com a palavra depois do nome | nativo (`stateBadge`, `Badge`) | — | decisão 32 | — |
+| As palavras do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`room.ts:80-86`); o Assistente lê o catálogo (`connector-names.ts:14-21`) | o Assistente desta etapa | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo | — | em `panel.tsx`: `builder/conversation` não importa `builder/assistant` | — |
 
 **A medida do transplante.** Nenhuma parte vem do repositório antigo.
 
@@ -2164,32 +2163,21 @@ unidade compara com a tela A, elemento por elemento.
 
 ### As linhas da tabela
 
-- A linha fina e "Fontes": `Sources`, `apps/web/src/builder/conversation/sources.tsx:28-68` (a seção
-  `:31-35`, o `h3` `:36`).
-- A logo: `ConnectorLogo`, `apps/web/src/hub/connectors/logo.tsx:9-32` (`small`, `:19` e `:27`),
-  exportada em `apps/web/src/hub/connectors/public.ts:3`; o molde da placa numa linha,
-  `apps/web/src/builder/conversation/tool-bodies.tsx:147-151`; o mapa do catálogo em `wordsOf`,
-  `apps/web/src/builder/conversation/connector-words.ts:11-41` (`named` `:15`, a autenticação `:29`);
-  `ConnectorWords`, `apps/web/src/builder/conversation/tool-spec.ts:72-78`; `PLAIN_WORDS`,
-  `apps/web/src/builder/conversation/connector-specs.ts:134-138`.
-- O sistema e a conexão: `copiedFrom`, `apps/web/src/builder/conversation/sources.ts:71-90` (a
-  `system` juntada `:72-74`); `liveOf` `:118-126`; `keyOf` `:129-131`; `MessageSource` `:14-23`;
-  `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, e o seu uso na leitura ao vivo e o export
-  em `apps/web/src/hub/copies/public.ts` (PR 1111).
-- A tabela: `BLOCK`, `tool-bodies.tsx:19-20` (o mono em `surface-3` da consulta).
-- O estado: `copiedText` e `liveText`, `sources.tsx:8-25`; `Stamp`, `apps/web/src/ui/block.tsx:37-48`;
-  os tons de `Badge`, `apps/web/src/ui/badge.tsx:8-20`; o Stamp no `DESIGN.md:558-561`.
-- O selo: `stateBadge`, `apps/web/src/hub/connectors/text.ts:35-45`, exportado em
-  `apps/web/src/hub/connectors/public.ts:28`; o molde de uso, `Stamp` com `stateBadge` em
-  `apps/web/src/builder/assistant/day.tsx:101`.
-- A sala do Builder: `BUILDER_ROOM`, `apps/web/src/builder/conversation/room.ts:80-86`;
-  `BuilderChat`, `apps/web/src/builder/conversation/panel.tsx:34-56`; o molde das palavras,
-  `useConnectorCatalog`, `apps/web/src/builder/assistant/connector-names.ts:14-21`;
-  `connectionsQuery`, `apps/web/src/hub/connectors/queries.ts:26-28`, exportada em `public.ts:6`.
-- Os testes: `WORDS`, `queried`, `read` e `textsOf`, `apps/web/src/builder/conversation/sources.test.tsx:38-107`,
-  e os casos de `:152-236`; `openConversation`, `panel.test.tsx:28`; a lista de conexões do
-  harness, `apps/web/sweep-connections.ts:26`; o caso "a fonte do dado",
-  `apps/web/sources.layout.test.ts:60-82`.
+- `Sources`, `apps/web/src/builder/conversation/sources.tsx:28-68` (a seção `:31-36`; `copiedText` e
+  `liveText` `:8-25`); `MessageSource`, `copiedFrom`, `liveOf` e `keyOf`, `sources.ts:14-23`,
+  `:71-90`, `:118-126`, `:129-131`; `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, com o uso
+  e o export do PR 1111.
+- `ConnectorLogo small`, `apps/web/src/hub/connectors/logo.tsx:9-32`, e o molde numa linha,
+  `tool-bodies.tsx:147-151`; `BLOCK`, `tool-bodies.tsx:19-20`; `wordsOf`, `connector-words.ts:11-41`;
+  `ConnectorWords`, `tool-spec.ts:72-78`; `PLAIN_WORDS`, `connector-specs.ts:134-138`.
+- `Stamp`, `apps/web/src/ui/block.tsx:37-48`; os tons de `Badge`, `badge.tsx:8-20`; `stateBadge`,
+  `apps/web/src/hub/connectors/text.ts:35-45`, e o molde `day.tsx:101`; `DESIGN.md:558-561`.
+- `BUILDER_ROOM`, `room.ts:80-86`; `BuilderChat`, `panel.tsx:34-56`; `useConnectorCatalog`,
+  `apps/web/src/builder/assistant/connector-names.ts:14-21`; `connectionsQuery`,
+  `apps/web/src/hub/connectors/queries.ts:26-28` (exportada em `public.ts:6`, como `stateBadge` `:28`
+  e `ConnectorLogo` `:3`).
+- Os testes: `sources.test.tsx:38-107` e `:152-236`; `openConversation`, `panel.test.tsx:28`;
+  `apps/web/sweep-connections.ts:26`; `apps/web/sources.layout.test.ts:60-82`.
 
 ### O raio da mudança
 
@@ -2231,12 +2219,10 @@ export type ConnectorWords = {
 export function Stamp(props: { tone: …; className?: string; children: ReactNode }): ReactNode
 ```
 
-- **Estados.** `state` separa a cópia e a leitura ao vivo (C21, C22); o tom do carimbo sai de uma
-  função só, de `state` e `at`: `FRESH` e `LIVE` em `success`, `PARTIAL` em `warning`, `STOPPED` em
-  `danger`, `at` nulo em `neutral` com o ponto em `line-strong`.
-- **Donos.** As palavras do estado continuam `copiedText` e `liveText`; o nome sem repetir é
-  `systemText`; as palavras e o tom do selo são `stateBadge`; a logo e a autenticação vêm de `wordsOf`
-  (C26). A chave sem repetição de `keyOf` passa a `${connector}:${connections.join(',')}:${table}`.
+- **Estados.** `state` separa cópia e leitura ao vivo (C21, C22); o tom sai de uma função só:
+  `FRESH` e `LIVE` `success`, `PARTIAL` `warning`, `STOPPED` `danger`, `at` nulo `neutral`.
+- **Donos.** `copiedText` e `liveText` (as palavras), `systemText` (o nome), `stateBadge` (o selo),
+  `wordsOf` (a logo e a autenticação) (C26). `keyOf` passa a `${connector}:${connections.join(',')}:${table}`.
 - **Esquema de entrada externa.** O resultado guardado passa por `DataResult` ou `LiveResult`, como
   hoje (C27).
 - **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
@@ -2257,24 +2243,19 @@ export function Stamp(props: { tone: …; className?: string; children: ReactNod
      conector no lugar de uma fonte `NOT_GIVEN` (`sources.ts:72-74`); a frase única em `text-fact
      text-text-2` da fonte de dado (`sources.tsx:39-44`); `named.get(connector)?.auth` repetido em
      `refusal` (`connector-words.ts:29`), que passa a ler `auth`.
-   - **O que entra:** `copiedFrom` dá `connections` com o `name` de cada `DataSystem` `NAMED`, e
-     `reauth` verdadeiro quando um deles está em `NEEDS_REAUTH`. `wordsOf` ganha `logo` e `auth` pelo
-     mesmo `named`; `PLAIN_WORDS`, `() => undefined` e `() => 'oauth2_code'`. `Stamp` passa
-     `cn(…, props.className)` ao `Badge`. Em `Sources`, a fonte de dado é um `li` como a tabela
-     "Elemento da tela A" de G7 diz: `ConnectorLogo small` quando `connectors.logo(connector)` existe;
-     `systemText(connectors.name(connector), connections, 0)` em `text-label font-medium text-text`;
-     com `reauth`, o `Badge` com o `tone` e o `text` de `stateBadge({ state: 'NEEDS_REAUTH' },
-     connectors.auth(connector))`; a tabela na pastilha; o `Stamp` com o tom do estado e as palavras
-     de `copiedText`. A seção ganha a linha fina acima. Regras: C21, C26, W21, V35.
-   - **Testes:** os casos dos critérios 42, 43, 110 e 111, com `queried` aceitando `systems`
-     (`NAMED` com `state`, `NOT_GIVEN`) e `WORDS` com um conector OAuth e um de chaves. O teste lê cada
-     peça pelo papel e pelo texto (`within(item)`: a imagem da logo, o nome, a pastilha, o carimbo) e
-     o tom pela classe do carimbo, não pelo `textContent` juntado, que perdeu os separadores.
-   - **Mutações à mão:** `PARTIAL` em `success`: "a rodada parcial" fica vermelho; tire `reauth`:
-     "a conexão à espera de nova autorização" fica vermelho; selo também em `ACTIVE`: "a conexão
-     ativa não mostra selo" fica vermelho; volte o id do conector no lugar do `NOT_GIVEN`: "a fonte
-     não dada ao Projeto" fica vermelho; `connections` sem `systemText`: "a conexão com o nome do
-     sistema não se repete" fica vermelho.
+   - **O que entra:** `copiedFrom` dá `connections` (o `name` de cada `NAMED`) e `reauth` (um deles
+     em `NEEDS_REAUTH`); `wordsOf` ganha `logo` e `auth` pelo mesmo `named`, e `PLAIN_WORDS`,
+     `() => undefined` e `() => 'oauth2_code'`; `Stamp` passa `cn(…, props.className)` ao `Badge`. A
+     linha de `Sources` segue a tabela "Elemento da tela A" de G7: o nome por
+     `systemText(connectors.name(connector), connections, 0)`, o selo por
+     `stateBadge({ state: 'NEEDS_REAUTH' }, connectors.auth(connector))`, o carimbo com as palavras de
+     `copiedText`. Regras: C21, C26, W21, V35.
+   - **Testes:** os casos de 42, 43, 110 e 111, com `queried` aceitando `systems` e `WORDS` com um
+     conector OAuth e um de chaves; cada peça lida por `within(item)` e o tom pela classe do carimbo,
+     não pelo `textContent` juntado.
+   - **Mutações à mão:** `PARTIAL` em `success` (vermelho: "a rodada parcial"); sem `reauth` ("a
+     conexão à espera"); selo em `ACTIVE` ("a conexão ativa"); o id no lugar do `NOT_GIVEN` ("a fonte
+     não dada"); sem `systemText` ("a conexão com o nome do sistema").
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx`
      passa.
 2. **A leitura ao vivo da tela A.** Critérios: 45.
@@ -2293,11 +2274,9 @@ export function Stamp(props: { tone: …; className?: string; children: ReactNod
    - **Arquivos:** muda `panel.tsx`, `panel.test.tsx`.
    - **Referência a seguir:** `connector-names.ts:14-21` (o `useMemo` das palavras);
      `apps/web/src/builder/assistant/conversation.tsx:84-87` (o `RoomContext.Provider`).
-   - **O que entra:** `BuilderChat` lê `connectionsQuery(companyId)`, monta `wordsOf(connectors ?? [],
-     connections ?? [])` num `useMemo` e põe `<Chat>` dentro de
-     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: words }}>`, com o objeto num
-     `useMemo` para a sala não redesenhar as linhas. `builder/conversation` não importa
-     `builder/assistant`, por isso não chama `useConnectorCatalog`. Regras: C26 (`wordsOf` é o dono).
+   - **O que entra:** `BuilderChat` lê `connectionsQuery(companyId)` e põe `<Chat>` dentro de
+     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: wordsOf(…) }}>`, as duas coisas em
+     `useMemo`, como `connector-names.ts:18-21`. Regras: C26.
    - **Testes:** os dois casos do critério 112, com a lista de conexões respondida como
      `sweep-connections.ts:26` e, no segundo, respondida com falha.
    - **Mutações à mão:** tire o `Provider`: "na conversa do Builder, a fonte tem o nome e a logo do
@@ -2307,37 +2286,30 @@ export function Stamp(props: { tone: …; className?: string; children: ReactNod
 4. **A largura.** Critérios: 47, 112.
    - **Arquivos:** muda `apps/web/sources.layout.test.ts`.
    - **Referência a seguir:** o caso "a fonte do dado" (`:60-82`) e `sweep-connections.ts:26`.
-   - **O que entra:** a resposta da lista de conexões nas `replies`; o texto lido é "Sankhya ·
-     Matriz"; a 1280 px o topo da pastilha e o do nome são o mesmo e o carimbo termina na borda
-     direita da seção; a 390 px o topo da pastilha fica abaixo do nome e a sua esquerda é a do nome;
-     nada passa da largura, nos dois temas.
+   - **O que entra:** a lista de conexões nas `replies`; "Sankhya · Matriz" lido; a 1280 px a pastilha
+     na linha do nome e o carimbo na borda direita; a 390 px a pastilha abaixo do nome, alinhada a
+     ele; nada passa da largura, nos dois temas.
    - **Pronto quando:** `npm run test:browser -w @conexus/web` passa.
 
 ### Como se prova
 
-42, 43, 45, 110 e 111: o teste monta a mensagem guardada pelo Mastra (T26), passa por `itemsOf` e
-desenha `Sources` na sala do Assistente com as palavras do catálogo; hoje a fonte é uma frase cinza,
-sem logo nem selo, e a fonte `NOT_GIVEN` diz o id do conector. 112: a conversa do Projeto aberta pela
-porta da tela; hoje ela diz "sankhya". 47: o navegador real mede a posição das peças. A conferência
-final abre a tela A ao lado do Hub local, nos sete estados, a 1366 e 390 px e nos dois temas.
+42, 43, 45, 110 e 111: a mensagem guardada pelo Mastra (T26) por `itemsOf`, desenhada na sala do
+Assistente; hoje a fonte é uma frase cinza, sem logo nem selo, e a `NOT_GIVEN` diz o id. 112: a
+conversa do Projeto pela porta da tela; hoje diz "sankhya". 47: o navegador mede as peças.
 
 ### Parar se
 
 - O PR 1111 não está mesclado: relate; não refaça o `systemText` da leitura ao vivo nem o export.
-- O ponto neutro não pega `line-strong` pelo `className` do `Stamp` (a ordem das classes do
-  `Badge`): relate com a captura; não escreva outro carimbo.
-- A linha a 390 px não desce como a tela A pela quebra de `sm` (a coluna da conversa é mais estreita
-  que a tela no computador): relate com as medidas; a escolha entre a quebra da tela e uma consulta
-  de contêiner é do firstmate.
+- O ponto neutro não pega `line-strong` pelo `className` do `Stamp`: relate; não escreva outro carimbo.
+- A linha não desce a 390 px pela quebra de `sm`: relate com as medidas; a quebra da tela ou uma
+  consulta de contêiner é escolha do firstmate.
 - Uma peça da tela A pede um token que o `DESIGN.md` não tem: relate; não invente cor nem tamanho.
 
 ## G7 O ponto de conferência
 
 - Web: `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx src/builder/conversation/panel.test.tsx src/builder/conversation/tool-row.test.tsx` e `npm run test:browser -w @conexus/web`. Depois `npm run check`.
-- Passos 6 e 7 de `conexus-build`: o Hub local com os dublês, como dono, no Assistente e no Builder de
-  um Projeto, "Quanto vendi em outubro?" e uma leitura ao vivo do Sankhya, olhados num navegador real
-  a 1366 e 390 px, nos dois temas (T23), lado a lado com a tela A, elemento por elemento: a linha fina,
-  a logo, "Sankhya · Matriz", a pastilha, o carimbo e a sua cor, a conexão a reautorizar com o selo e
-  o Projeto sem a conexão. As mutações feitas e desfeitas, com o resultado (T27).
+- Passos 6 e 7 de `conexus-build`: o Hub local com os dublês, no Assistente e no Builder, "Quanto
+  vendi em outubro?" e uma leitura ao vivo, a 1366 e 390 px, nos dois temas (T23), ao lado da tela A,
+  elemento por elemento, também o selo e o Projeto sem a conexão. As mutações, com o resultado (T27).
 - Depois do PR, a QA (`conexus-qa`, T25) do bloco Fontes, por um agente que não construiu, com a
   matriz de G7 e a tela A; o relatório vai no PR antes da revisão.
