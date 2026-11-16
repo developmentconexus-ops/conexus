@@ -8,7 +8,7 @@ import { BRUNO, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { assisting, created, said, talking } from './test-assistant.ts'
+import { assisting, created, runOverviewOnSilentHub, said, talking } from './test-assistant.ts'
 
 async function world(t: TestContext) {
   const fake = sankhyaFake()
@@ -69,4 +69,11 @@ test('o resumo lista só a conexão de onde vem a tabela que o papel lê, sem op
   const w = await world(t)
   const bruno = await roleOf(w, { label: 'Leitor', connectors: {} }, 'vendas')
   assert.deepEqual(names(await overviewFor(t, w, bruno)), ['Matriz'])
+})
+
+test('o Hub calado: o catálogo indisponível faz a ferramenta falhar, nunca listar nenhuma conexão', async () => {
+  await assert.rejects(
+    runOverviewOnSilentHub(),
+    (error) => Object(error).code === 'DATABASE_UNAVAILABLE',
+  )
 })

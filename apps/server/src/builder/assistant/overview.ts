@@ -1,4 +1,11 @@
-import type { Catalog, CatalogTable, CompanyData, ConnectionId, Overview } from '@conexus/hub-api'
+import type {
+  Catalog,
+  CatalogTable,
+  CompanyData,
+  ConnectionId,
+  KeptSource,
+  Overview,
+} from '@conexus/hub-api'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
@@ -18,7 +25,10 @@ import type { AssistantProjects } from './ports.ts'
 export function overviewTool(deps: {
   scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
   projectsOf: (scope: SessionScope) => Promise<Omit<Overview, 'connections'>>
-  connectionsOf: (requestContext: RequestContext) => Promise<Overview['connections']>
+  connectionsOf: (
+    requestContext: RequestContext,
+    scope: SessionScope,
+  ) => Promise<Overview['connections']>
 }) {
   return createTool({
     id: ASSISTANT_TOOL.overview,
@@ -35,7 +45,7 @@ export function overviewTool(deps: {
       }
       const [projects, connections] = await Promise.all([
         deps.projectsOf(scope),
-        deps.connectionsOf(requestContext),
+        deps.connectionsOf(requestContext, scope),
       ])
       return { ...projects, connections } satisfies Overview
     },
@@ -68,14 +78,12 @@ export function projectsOf(
   })
 }
 
-type Kept = Extract<CatalogTable['kept'], { kind: 'COPY' }>['sources'][number]
-
-function namedBy(source: Kept): ConnectionId[] {
+function namedBy(source: KeptSource): ConnectionId[] {
   return source.kind === 'NAMED' ? [source.connection.id] : []
 }
 
 function copiedFrom(table: CatalogTable): ConnectionId[] {
-  return table.kept.kind === 'COPY' ? table.kept.sources.flatMap(namedBy) : []
+  return table.kept.sources.flatMap(namedBy)
 }
 
 /** The connections of a catalog the asker reaches: a system with an operation to use, or the source of a table to read. */
@@ -87,14 +95,9 @@ function reachedIn(catalog: Catalog): ReadonlySet<ConnectionId> {
 }
 
 /** What the access door lists for the conversation's asker, as `data_describe` does. */
-export function reachedBy(deps: {
-  scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
-  companyData: (scope: SessionScope) => CompanyData
-}) {
-  return async (requestContext: RequestContext): Promise<ReadonlySet<ConnectionId>> => {
-    const scope = await deps.scopeOf(requestContext)
-    if (scope === undefined) return new Set()
-    const described = await deps.companyData(scope).describe()
+export function reachedBy(companyData: (scope: SessionScope) => CompanyData) {
+  return async (scope: SessionScope): Promise<ReadonlySet<ConnectionId>> => {
+    const described = await companyData(scope).describe()
     if (described.kind === 'CATALOG_UNAVAILABLE') throw new Failure('DATABASE_UNAVAILABLE')
     return reachedIn(described)
   }
@@ -108,13 +111,13 @@ export function connectionsOffered(
   offeredOf: (
     requestContext: RequestContext,
   ) => Promise<readonly Overview['connections'][number][]>,
-  reachedOf: (requestContext: RequestContext) => Promise<ReadonlySet<ConnectionId>>,
+  reachedOf: (scope: SessionScope) => Promise<ReadonlySet<ConnectionId>>,
 ) {
-  return async (requestContext: RequestContext): Promise<Overview['connections']> => {
-    const [offered, reached] = await Promise.all([
-      offeredOf(requestContext),
-      reachedOf(requestContext),
-    ])
+  return async (
+    requestContext: RequestContext,
+    scope: SessionScope,
+  ): Promise<Overview['connections']> => {
+    const [offered, reached] = await Promise.all([offeredOf(requestContext), reachedOf(scope)])
     return offered
       .filter(({ connectionId }) => reached.has(connectionId))
       .map(({ connectionId, connector, name, chosen }) => ({

@@ -210,10 +210,7 @@ function assistantAgent(
   const overview = overviewTool({
     scopeOf,
     projectsOf: (scope) => projectsOf(deps, scope),
-    connectionsOf: connectionsOffered(
-      offeredOf,
-      reachedBy({ scopeOf, companyData: deps.companyData }),
-    ),
+    connectionsOf: connectionsOffered(offeredOf, reachedBy(deps.companyData)),
   })
   const copyRuns = copyRunsTool({ scopeOf, copies: deps.copies })
   const showFile = showFileTool(parts.machines)
