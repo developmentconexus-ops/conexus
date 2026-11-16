@@ -1,13 +1,5 @@
-import type { CompanyId, Connection, ConnectorEntry } from '@conexus/hub-api'
-import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import {
-  busyText,
-  connectionsQuery,
-  reauthText,
-  stateBadge,
-  unreachableText,
-} from '../../hub/connectors/public.ts'
+import type { Connection, ConnectorEntry } from '@conexus/hub-api'
+import { busyText, reauthText, unreachableText } from '../../hub/connectors/public.ts'
 import type { ConnectorWords } from './tool-spec.ts'
 
 /**

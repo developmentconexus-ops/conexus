@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { DataResult, listConnections } from '@conexus/hub-api'
-import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
+import { DataOrigin, DataResult, listConnections } from '@conexus/hub-api'
+import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
 import { messageOf } from './src/builder/conversation/messages.ts'
 import { recordedRun } from './src/builder/conversation/test-recorded.ts'
 import { MERCADO_LIVRE, SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { ASSISTANT_PATH, cardReplies } from './sweep-assistant-states.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
 import { sessionReplies } from './sweep-session.ts'
@@ -60,13 +61,19 @@ const ASKED = recordedRun('data-query')
   .findLast((message) => message?.role === 'builder')
 
 /** The recorded answer with its origin made the worst the line has to hold: long names, a refused connection, a date. */
-function askedWith(origin: Record<string, unknown>) {
+function askedWith(origin: Record<string, unknown>, extra: Record<string, unknown>[] = []) {
   const message = structuredClone(ASKED)
   for (const part of message?.parts ?? []) {
     const result = part.type === 'tool-invocation' ? part.toolInvocation.result : undefined
     if (!DataResult.safeParse(result).success) continue
     const held = DataResult.parse(result)
-    if (held.kind === 'ROWS') held.origin = held.origin.map((each) => ({ ...each, ...origin }))
+    if (held.kind === 'ROWS') {
+      const [first] = held.origin
+      const more = first ? extra.map((one) => ({ ...first, ...one })) : []
+      held.origin = [...held.origin, ...more].map((each) =>
+        DataOrigin.parse({ ...each, ...origin }),
+      )
+    }
     if (part.type === 'tool-invocation') part.toolInvocation.result = held
   }
   return message
@@ -145,3 +152,47 @@ for (const [name, origin] of CASES) {
     }
   })
 }
+
+test('a fonte do dado a 1280px: a logo, o nome, a pastilha e o carimbo numa linha só, o carimbo na ponta direita; duas fontes, duas linhas de 32px com a linha fina entre elas', async () => {
+  const message = askedWith({}, [{ table: 'sankhya_notas' }])
+  const replies = {
+    ...cardReplies(null, message ? [message] : []),
+    [`GET /api/companies/${COMPANY.id}/connections`]: ok(listConnections, {
+      connectors: [SANKHYA],
+      connections: [],
+      mayManage: true,
+    }),
+  }
+  for (const scheme of ['light', 'dark'] as const) {
+    const page = await harness.open(ASSISTANT_PATH, { viewport: LAPTOP, replies, scheme })
+    const sources = page.getByRole('region', { name: 'Fontes' })
+    await sources.waitFor()
+    const lines = await sources.getByRole('listitem').evaluateAll((rows) =>
+      rows.map((row) => {
+        const shown = Array.from(row.querySelectorAll(':scope > span')).filter(
+          (one) => (one.textContent ?? '') !== '',
+        )
+        const stamp = shown.at(-1)?.getBoundingClientRect()
+        const table = shown.at(-2)?.getBoundingClientRect()
+        const name = shown[0]?.getBoundingClientRect()
+        return {
+          height: row.getBoundingClientRect().height,
+          border: getComputedStyle(row).borderTopWidth,
+          sameLine:
+            (table?.top ?? 0) < (name?.bottom ?? 0) && (stamp?.top ?? 0) < (name?.bottom ?? 0),
+          stampAtEnd: Math.abs((stamp?.right ?? 0) - row.getBoundingClientRect().right) < 1,
+        }
+      }),
+    )
+    assert.equal(lines.length, 2, `${scheme}: two sources, two lines`)
+    for (const line of lines) {
+      assert.ok(line.height >= 32, `${scheme}: a line of ${line.height}px`)
+      assert.ok(line.sameLine, `${scheme}: the table or the stamp fell below the name`)
+      assert.ok(line.stampAtEnd, `${scheme}: the stamp is not at the right end`)
+    }
+    assert.equal(lines[0]?.border, '0px', `${scheme}: a hairline above the first source`)
+    assert.equal(lines[1]?.border, '1px', `${scheme}: no hairline between the two sources`)
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  }
+})

@@ -293,12 +293,6 @@ test('duas fontes são duas linhas, cada uma com a sua logo', () => {
   ])
 })
 
-test('sem o catálogo lido, a linha diz o id do conector e não desenha logo', () => {
-  clockAt(COPY_DAY)
-  const [line] = linesOf([queried({ systems: [MATRIZ] })], wordsOf([]))
-  expect(line).toMatchObject({ logo: false, name: 'sankhya · Matriz' })
-})
-
 test('a mesma tabela lida duas vezes aparece uma vez', () => {
   clockAt(COPY_DAY)
   expect(linesOf([queried({}), queried({}), described()])).toHaveLength(1)

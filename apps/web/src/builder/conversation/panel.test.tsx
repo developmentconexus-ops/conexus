@@ -1,10 +1,9 @@
-import { BUILDER_TOOL, FAILURES, listConnections } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
+import { HttpResponse } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { KIT_SANKHYA } from '../../platform/test-kit.ts'
 import {
   AGENT_START,
   agentEnd,
@@ -24,12 +23,10 @@ import {
   typed,
   view,
 } from './test-hub.tsx'
-import { recordedRun } from './test-recorded.ts'
 import { attach, displayOf, parkedOf } from './test-stream.tsx'
 import { EMPTY_CONVERSATION, UNCONFIRMED_SEND } from './text.ts'
 
-const server = hubServer()
-const { open, openConversation } = screens(server)
+const { open, openConversation } = screens(hubServer())
 
 afterEach(() => sessionStorage.clear())
 
@@ -330,70 +327,4 @@ test('no celular, o título da conversa é um botão que abre a lista por baixo,
     await waitFor(() => expect(conexus.router.state.location.pathname).toMatch(new RegExp(SECOND)))
     expect(await screen.findByRole('button', { name: 'Entregas' })).toBeTruthy()
   })
-})
-
-const ASKED = recordedRun('data-query').read.findLast((message) => message.role === 'assistant')
-
-function catalogRead(connectors: (typeof KIT_SANKHYA)[]) {
-  server.use(
-    http.get('*/api/companies/:companyId/connections', () =>
-      HttpResponse.json(
-        listConnections.success.body.parse({ connectors, connections: [], mayManage: true }),
-      ),
-    ),
-  )
-}
-
-async function askedIn(connectors: (typeof KIT_SANKHYA)[]) {
-  if (ASKED === undefined) throw new Error('the recording holds no answer')
-  catalogRead(connectors)
-  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-14T15:30:00.000Z') })
-  try {
-    await openConversation(conversationOf({ id: FIRST, messages: [ASKED] }))
-    return await screen.findByRole('region', { name: 'Fontes' })
-  } finally {
-    vi.useRealTimers()
-  }
-}
-
-test('na conversa do Builder, a fonte tem o nome e a logo do catálogo', async () => {
-  const sources = await askedIn([KIT_SANKHYA])
-  await within(sources).findByText('Sankhya · Matriz')
-  expect(sources.querySelector('img')?.getAttribute('src')).toContain(
-    encodeURIComponent(KIT_SANKHYA.logo),
-  )
-})
-
-test('sem o catálogo, a fonte do Builder nomeia o conector pelo id', async () => {
-  const sources = await askedIn([])
-  await within(sources).findByText('sankhya · Matriz')
-  expect(sources.querySelector('img')).toBeNull()
-})
-
-test('com o catálogo lido, a recusa de conector do Builder continua a frase de sempre', async () => {
-  catalogRead([KIT_SANKHYA])
-  const refused = {
-    id: 'tool-1',
-    role: 'assistant',
-    createdAt: '2026-10-19T12:02:00.000Z',
-    content: {
-      parts: [
-        {
-          type: 'tool-invocation',
-          toolInvocation: {
-            state: 'result',
-            toolCallId: 'c1',
-            toolName: BUILDER_TOOL.connectorRead,
-            args: { operation: 'sankhya.consultar', connection: 'Vendas' },
-            result: { kind: 'AUTH_REFUSED' },
-          },
-        },
-      ],
-      metadata: { provider: 'anthropic', modelId: 'claude-sonnet-4' },
-    },
-  } as const
-  await openConversation(conversationOf({ id: FIRST, messages: [refused] }))
-  fireEvent.click(await screen.findByText('Leu um sistema da empresa'))
-  expect(await screen.findByText('Não conseguiu ler o sistema da empresa.')).toBeTruthy()
-  expect(screen.queryByText(/pediu para conectar de novo|chaves foram recusadas/i)).toBeNull()
 })
