@@ -42,7 +42,7 @@ function refused(refusal: Refusal): never {
       ? {
           code: refusal.sqlstate,
           message: refusal.message,
-          reason: `PostgreSQL refused the query (SQLSTATE ${refusal.sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.`,
+          reason: `PostgreSQL refused the query (SQLSTATE ${refusal.sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. A table is written sync.<name> with a name data_describe lists. Correct it and try again.`,
         }
       : { code: null, message: null, reason: REASONS[refusal.kind] }
   throw new DataRefused(JSON.stringify({ kind: refusal.kind, status: null, body: null, ...told }))
