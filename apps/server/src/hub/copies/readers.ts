@@ -219,7 +219,7 @@ export async function readAs(
 }
 
 /** The roles that read each copy of the company, by their row's id. */
-export async function readersOf(tx: ReadTx, companyId: CompanyId): Promise<Map<CopyId, RoleId[]>> {
+async function readersOf(tx: ReadTx, companyId: CompanyId): Promise<Map<CopyId, RoleId[]>> {
   const rows = await tx
     .select({ copyId: copyReader.copyId, roleId: copyReader.roleId })
     .from(copyReader)
