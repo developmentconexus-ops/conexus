@@ -2,7 +2,7 @@ import type { CopyId, Role, RoleId } from '@conexus/hub-api'
 import { CopyId as CopyIdSchema } from '@conexus/hub-api'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { copyReaderTurn } from './readers/tables.ts'
 import { marksOf, readsAll, reconciled } from './readers.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
@@ -115,12 +115,13 @@ async function undone(
   cause?: unknown,
 ): Promise<never> {
   const { companyId, role } = input
+  const about = { companyId, role }
   const restored = await restoredMarks(deps, input, change).catch((error: unknown) => {
-    deps.log.error({ companyId, role }, 'COPY_READERS_PENDING')
-    const both = cause === undefined ? error : new AggregateError([cause, error])
-    throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause: both })
+    const failed = new Failure('COPY_DATABASE_UNAVAILABLE', { cause: error })
+    logFailure(deps.log, failed, about, 'COPY_READERS_PENDING')
+    throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause: cause ?? error })
   })
-  if (restored === 'MOVED') deps.log.info({ companyId, role }, 'COPY_READERS_PENDING')
+  if (restored === 'MOVED') deps.log.error(about, 'COPY_READERS_PENDING')
   throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause })
 }
 

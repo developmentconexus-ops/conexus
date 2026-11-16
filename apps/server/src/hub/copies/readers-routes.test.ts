@@ -81,7 +81,7 @@ test('a reposição de um PUT que falhou não desfaz o PUT seguinte que deu cert
   assert.deepEqual([first.statusCode, codeOf(first)], [503, 'COPY_DATABASE_UNAVAILABLE'])
   assert.deepEqual([later?.statusCode, later?.body], [200, '{"copies":[]}'])
   assert.deepEqual(await hubNames(w, w.financeiro.id), [])
-  assert.deepEqual(logged(w.on, 'COPY_READERS_PENDING'), [
+  assert.deepEqual(erred(w, 'COPY_READERS_PENDING'), [
     { companyId: w.on.companyId, role: w.financeiro.role },
   ])
   assert.equal((await w.on.run(copyOf(w.copies, 'sankhya_clientes'))).kind, 'ENDED')
@@ -114,9 +114,14 @@ test('a reposição que falha diz COPY_READERS_PENDING como erro e a rodada segu
   })
   const taken = await put(w, w.on.ana, w.financeiro.role, [])
   assert.deepEqual([taken.statusCode, codeOf(taken)], [503, 'COPY_DATABASE_UNAVAILABLE'])
-  assert.deepEqual(erred(w, 'COPY_READERS_PENDING'), [
-    { companyId: w.on.companyId, role: w.financeiro.role },
-  ])
+  assert.deepEqual(
+    erred(w, 'COPY_READERS_PENDING').map(({ companyId, role, code }) => ({
+      companyId,
+      role,
+      code,
+    })),
+    [{ companyId: w.on.companyId, role: w.financeiro.role, code: 'INTERNAL_UNEXPECTED' }],
+  )
   assert.deepEqual(await hubNames(w, w.financeiro.id), [])
   silent.mock.restore()
   await asOwner('grant insert on copies.copy_reader to hub_company')

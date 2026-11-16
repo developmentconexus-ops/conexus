@@ -12,6 +12,7 @@
     "apps/server/src/hub/connectors/hubspot-door.test.ts",
     "apps/server/src/hub/copies/member-data.test.ts",
     "apps/server/src/hub/copies/readers-list.test.ts",
+    "apps/server/src/hub/copies/readers-restore.test.ts",
     "apps/server/src/hub/copies/readers-routes.test.ts",
     "apps/server/src/hub/copies/readers.test.ts",
     "apps/server/src/hub/data/catalog-role.test.ts",
