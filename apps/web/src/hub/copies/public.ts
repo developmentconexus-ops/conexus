@@ -9,7 +9,7 @@ export { CopyDetail } from './copy-detail.tsx'
 export { ProposalDialog } from './copy-proposal.tsx'
 export { DataPage, DataReadFailure } from './data-page.tsx'
 export { DataTree } from './data-tree.tsx'
-export { proposalsQuery } from './queries.ts'
+export { copiesQuery, copyReadersQuery, proposalsQuery, sendRoleCopies } from './queries.ts'
 export { DataLayer, DataSearch, TableSearch } from './search.ts'
 export { useSourceText, withAccounts } from './source.ts'
 export {

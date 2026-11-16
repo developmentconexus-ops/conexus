@@ -15,6 +15,8 @@ type PickerProps = {
   /** The connector's logo, drawn by the caller: Identity does not import the connectors. */
   logo: (entry: ConnectorEntry) => ReactNode
   onChange: (next: string[]) => void
+  /** Drawn after the subjects, inside the connector's section. */
+  children?: ReactNode
 }
 
 function Operation(props: {
@@ -127,6 +129,7 @@ export function ConnectorPicker(props: PickerProps) {
           />
         ))}
       </ul>
+      {props.children}
     </section>
   )
 }

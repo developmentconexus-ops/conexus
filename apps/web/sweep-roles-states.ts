@@ -26,6 +26,14 @@ export const ROLES_STATES: State[] = [
     settle: reached('Salvar'),
   },
   {
+    name: 'Papéis, o Financeiro com Dados copiados',
+    path: `${SETTINGS}/roles?role=financeiro`,
+    replies: rolesReplies(),
+    settle: async (page) => {
+      await page.getByRole('heading', { name: 'Dados copiados' }).waitFor()
+    },
+  },
+  {
     name: 'Papéis, o papel novo',
     path: `${SETTINGS}/roles?new=true`,
     replies: rolesReplies(),
