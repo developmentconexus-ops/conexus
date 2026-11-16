@@ -8,6 +8,7 @@ import {
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
+import { HistoryIcon } from 'lucide-react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -213,6 +214,20 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
   expect(
     presentTool({ toolName: 'github_create_issue', args: {} }, 'done', BUILDER_ROOM).sentence,
   ).toBe('Usou Github create issue')
+})
+
+test('copy_runs: as frases da linha e o ícone de histórico', () => {
+  const spec = specOf(ASSISTANT_TOOL.copyRuns, BUILDER_ROOM)
+  expect(spec?.icon).toBe(HistoryIcon)
+  const sentences = (['running', 'done', 'error'] as const).map(
+    (state) =>
+      presentTool({ toolName: ASSISTANT_TOOL.copyRuns, args: {} }, state, BUILDER_ROOM).sentence,
+  )
+  expect(sentences).toEqual([
+    'Lendo as rodadas da cópia',
+    'Leu as rodadas da cópia',
+    'Não conseguiu ler as rodadas',
+  ])
 })
 
 test('o relógio conta desde que a tela ouviu a chamada (Critério 8)', () => {

@@ -67,3 +67,18 @@ export function projectsOf(
     return { projects, moreProjects: live.more }
   })
 }
+
+/** The connections a conversation's place offers, as the overview states them: the model never reads more of one than these four fields. */
+export function connectionsOffered(
+  offeredOf: (
+    requestContext: RequestContext,
+  ) => Promise<readonly Overview['connections'][number][]>,
+) {
+  return async (requestContext: RequestContext): Promise<Overview['connections']> =>
+    (await offeredOf(requestContext)).map(({ connectionId, connector, name, chosen }) => ({
+      connectionId,
+      connector,
+      name,
+      chosen,
+    }))
+}

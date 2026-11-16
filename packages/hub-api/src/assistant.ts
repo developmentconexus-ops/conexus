@@ -15,6 +15,7 @@ export const ASSISTANT_CONTROLLER = 'assistant'
 /** The Assistant's own tools, by name; the units after U2 add theirs. */
 export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
+  copyRuns: 'copy_runs',
   showFile: MACHINE_TOOL.showFile,
   proposeApp: 'propose_app',
   proposeAppChange: 'propose_app_change',
