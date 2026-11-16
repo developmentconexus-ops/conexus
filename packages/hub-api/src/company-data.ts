@@ -1,9 +1,15 @@
 import { z } from 'zod'
 import { ConnectorId } from './company-roles.ts'
-import { ConnectionId, Native, OfferedRead, OperationEffect } from './connectors.ts'
+import {
+  CONNECTION_STATES,
+  ConnectionId,
+  Native,
+  OfferedRead,
+  OperationEffect,
+} from './connectors.ts'
 import { ConversationId } from './conversations.ts'
 import { CopyRun } from './copies.ts'
-import { CopyOrigin, CopyShown } from './copy-shown.ts'
+import { CopyOrigin, CopyShown, CopySource } from './copy-shown.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
 
@@ -30,11 +36,22 @@ export const CatalogSystem = z.object({
 })
 export type CatalogSystem = z.infer<typeof CatalogSystem>
 
+/** One connection a table was copied from, as the place that reads it may name it. */
+export const KeptSource = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('NAMED'),
+    connection: CopySource.shape.connection,
+    state: z.enum(CONNECTION_STATES),
+  }),
+  z.object({ kind: z.literal('NOT_GIVEN'), connector: ConnectorId }),
+])
+export type KeptSource = z.infer<typeof KeptSource>
+
 /** Who keeps a table's rows: today a copy in the company's database, `sync.<name>`, with its last run. */
 const TableKept = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('COPY'),
-    connections: z.array(ConnectionId).min(1),
+    sources: z.array(KeptSource).min(1),
     source: CopyOrigin,
     /** The last run that ended, with whether it was partial; null before the first. */
     lastRun: CopyRun.nullable(),
@@ -238,7 +255,7 @@ function keeps(table: CatalogTable, read: OperationRead): boolean {
   return (
     kept.source.kind === 'OPERATION' &&
     kept.source.operation === read.operation &&
-    kept.connections.includes(read.connection) &&
+    kept.sources.some((one) => one.kind === 'NAMED' && one.connection.id === read.connection) &&
     fixes(kept.source.input, read.input)
   )
 }

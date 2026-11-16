@@ -177,7 +177,6 @@ export function createBuilder(deps: {
           : builderAppDataTools({ data: deps.data, ids: conversant })),
         ...dataTools({
           dataOf: builderDataOf({ admitted, granted, companyData: deps.companyData }),
-          log: deps.log,
         }),
       }
     },

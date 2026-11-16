@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
-import { CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
+import { CONNECTION_STATES, CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
 import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
 import { CopyRun } from './copies.ts'
 import { CopyShown } from './copy-shown.ts'
@@ -92,14 +92,21 @@ export const ReadCut = z.object({
 })
 export type ReadCut = z.infer<typeof ReadCut>
 
+/** One system a table was copied from: by the name recorded with the copy and the state of its connection, or, where the place was not given the connection, with no name. */
+export const DataSystem = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('NAMED'), name: z.string(), state: z.enum(CONNECTION_STATES) }),
+  z.object({ kind: z.literal('NOT_GIVEN') }),
+])
+export type DataSystem = z.infer<typeof DataSystem>
+
 /**
  * Where the rows of a copied table came from, as the data tools tell the model and as the screen
- * reads it back from the stored result: the names of the systems (never a connection id), the
+ * reads it back from the stored result: the systems (never a connection id), the
  * connector, the table and how the last run that ended went. `lastRun` is derived from the owner of
  * the run (`CopyRun`), plus `NONE` before the first (code C26).
  */
 export const DataOrigin = z.object({
-  systems: z.array(z.string()).min(1),
+  systems: z.array(DataSystem).min(1),
   connector: z.string(),
   table: z.string(),
   lastRunEndedAt: z.iso.datetime().nullable(),

@@ -13,12 +13,14 @@ export async function catalogOf(deps: DataDeps, scope: SessionScope): Promise<De
         action: 'readCompany',
       })
       const { catalogTables } = deps.copies()
-      const systems = await deps.connectors().catalogSystems(tx, scope)
+      const { catalogSystems, catalogSources } = deps.connectors()
+      const systems = await catalogSystems(tx, scope)
+      const given = await catalogSources(tx, scope)
       const tables =
         place.kind === 'PROJECT'
-          ? await catalogTables(tx, { companyId, only: { projectId: place.projectId } })
+          ? await catalogTables(tx, { companyId, only: { projectId: place.projectId }, given })
           : deps.identity.allows(proof.role, 'readCopyRows')
-            ? await catalogTables(tx, { companyId, only: 'ALL' })
+            ? await catalogTables(tx, { companyId, only: 'ALL', given })
             : []
       return { kind: 'CATALOG', systems, tables }
     })

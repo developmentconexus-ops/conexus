@@ -4,10 +4,20 @@ import type { DataSources } from './company-data.ts'
 import { Catalog, companyData, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
 import { keepsLiveOnlyOutOfTables, runDataConformance } from './company-data-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
+import { ConnectorId } from './company-roles.ts'
 import { ConnectionId } from './connectors.ts'
 
 const ERP = '00000000-0000-4000-8000-0000000000e1'
 const BRANCH = '00000000-0000-4000-8000-0000000000e2'
+const matriz = {
+  kind: 'NAMED' as const,
+  connection: {
+    id: ConnectionId.parse(ERP),
+    name: 'Matriz',
+    connector: ConnectorId.parse('erp-falso'),
+  },
+  state: 'ACTIVE' as const,
+}
 const MAIL = '00000000-0000-4000-8000-0000000000e3'
 
 const CATALOG = Catalog.parse({
@@ -68,7 +78,7 @@ const CATALOG = Catalog.parse({
       ],
       kept: {
         kind: 'COPY',
-        connections: [ERP],
+        sources: [matriz],
         source: {
           kind: 'OPERATION',
           operation: 'listarPedidos',
@@ -95,7 +105,7 @@ const CATALOG = Catalog.parse({
       ],
       kept: {
         kind: 'COPY',
-        connections: [ERP],
+        sources: [matriz],
         source: { kind: 'OPERATION', operation: 'listarClientes', label: 'Clientes', input: {} },
         lastRun: null,
       },
@@ -109,7 +119,7 @@ const CATALOG = Catalog.parse({
       ],
       kept: {
         kind: 'COPY',
-        connections: [ERP],
+        sources: [matriz],
         source: { kind: 'QUERY', query: 'select produto from estoque' },
         lastRun: null,
       },
@@ -203,7 +213,13 @@ runDataConformance('o contrato sobre um ERP e um correio falsos', fakeWorld)
 test('a lei do sistema só ao vivo falha quando uma tabela o tem como origem', async () => {
   const [first, ...rest] = CATALOG.tables
   assert.ok(first && first.kept.kind === 'COPY')
-  const kept = { ...first, kept: { ...first.kept, connections: [ConnectionId.parse(MAIL)] } }
+  const kept = {
+    ...first,
+    kept: {
+      ...first.kept,
+      sources: [{ ...matriz, connection: { ...matriz.connection, id: ConnectionId.parse(MAIL) } }],
+    },
+  }
   const world = fakeWorld({ ...CATALOG, tables: [kept, ...rest] })
   await assert.rejects(
     keepsLiveOnlyOutOfTables(world, companyData({ sources: world.sources, now: () => new Date() })),

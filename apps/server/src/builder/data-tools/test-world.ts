@@ -6,7 +6,6 @@ import { dataTools } from './public.ts'
 
 export const LOJA_A = '00000000-0000-4000-8000-0000000000a1'
 export const LOJA_B = '00000000-0000-4000-8000-0000000000a2'
-export const FORA = '00000000-0000-4000-8000-0000000000ff'
 
 const RUN = {
   id: '00000000-0000-4000-8000-0000000000b1',
@@ -19,13 +18,20 @@ const RUN = {
 
 const SOURCE = { kind: 'QUERY', query: 'select 1' } as const
 
-function table(name: string, connections: string[], lastRun: unknown) {
+function named(connection: string, name: string, state = 'ACTIVE') {
+  return { kind: 'NAMED', connection: { id: connection, name, connector: 'erp-falso' }, state }
+}
+const A = named(LOJA_A, 'Loja A')
+const B = named(LOJA_B, 'Loja B')
+const NOT_GIVEN = { kind: 'NOT_GIVEN', connector: 'erp-falso' }
+
+function table(name: string, sources: unknown[], lastRun: unknown) {
   return {
     name,
     label: name.toUpperCase(),
     description: `A tabela ${name}.`,
     columns: [{ name: 'numero', type: 'bigint', description: null, inactiveSince: null }],
-    kept: { kind: 'COPY', connections, source: SOURCE, lastRun },
+    kept: { kind: 'COPY', sources, source: SOURCE, lastRun },
   }
 }
 
@@ -45,19 +51,19 @@ function catalogOf(tables: ReturnType<typeof table>[]): Catalog {
 }
 
 export const CATALOG = catalogOf([
-  table('vendas', [LOJA_A], {
+  table('vendas', [A], {
     ...RUN,
     outcome: { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' },
   }),
-  table('clientes', [LOJA_A], null),
-  table('juntas', [LOJA_A, LOJA_B], { ...RUN, outcome: { kind: 'COMPLETE' } }),
+  table('clientes', [A], null),
+  table('juntas', [A, B], { ...RUN, outcome: { kind: 'COMPLETE' } }),
 ])
 
-export const WITH_ORPHAN = catalogOf([table('orfa', [FORA], null)])
-export const WITH_ONE_ORPHAN = catalogOf([
-  table('orfa', [FORA], null),
-  table('clientes', [LOJA_A], null),
+export const WAITING = catalogOf([
+  table('esperando', [named(LOJA_A, 'Loja A', 'NEEDS_REAUTH')], null),
 ])
+export const UNNAMED = catalogOf([table('livre', [NOT_GIVEN], null)])
+export const MIXED = catalogOf([table('mista', [A, NOT_GIVEN], null)])
 
 type Reached = { catalog: number; rows: string[]; query: string[]; signals: unknown[] }
 
@@ -88,7 +94,9 @@ export function world(
     async query({ sql, signal }) {
       reached.query.push(sql)
       reached.signals.push(signal)
-      const used = /juntas/.test(sql) ? ['vendas', 'juntas'] : /vendas/.test(sql) ? ['vendas'] : []
+      const used = /juntas/.test(sql)
+        ? ['vendas', 'juntas']
+        : catalog.tables.map(({ name }) => name).filter((name) => sql.includes(name))
       return { kind: 'ROWS', columns: ['n'], rows: [[3]], complete: true, used }
     },
     async funnel() {
@@ -96,15 +104,13 @@ export function world(
     },
     ...over,
   }
-  const lines: { fields: Record<string, unknown>; message: string }[] = []
   const tools = dataTools({
     dataOf: async (requestContext) =>
       scoped(requestContext)
         ? companyData({ sources, now: () => new Date('2026-11-14T12:00:00.000Z') })
         : undefined,
-    log: { error: (fields, message) => lines.push({ fields, message }) },
   })
-  return { tools, reached, lines }
+  return { tools, reached }
 }
 
 export function runOn(set: object, name: string, input: object, context: object = {}) {

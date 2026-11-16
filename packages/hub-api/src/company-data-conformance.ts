@@ -11,6 +11,7 @@ import { ActAnswer, companyData, Described, ReadAnswer } from './company-data.ts
 import { queryLaws } from './company-data-query-conformance.ts'
 import { roleLaws } from './company-data-role-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
+import type { ConnectionId } from './connectors.ts'
 import { ConversationId } from './conversations.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
@@ -38,6 +39,10 @@ function operationOf({ kept: { source } }: CatalogTable): string | null {
   return source.kind === 'OPERATION' ? source.operation : null
 }
 
+function namedConnections({ kept }: CatalogTable): ConnectionId[] {
+  return kept.sources.flatMap((one) => (one.kind === 'NAMED' ? [one.connection.id] : []))
+}
+
 function keptInput({ kept: { source } }: CatalogTable): Readonly<Record<string, unknown>> | null {
   return source.kind === 'OPERATION' ? source.input : null
 }
@@ -46,7 +51,7 @@ async function fixturesOf(world: DataWorld) {
   const catalog = await catalogOf(world)
   const table = catalog.tables.find((one) => Object.keys(keptInput(one) ?? {}).length > 0)
   assert.ok(table && table.kept.source.kind === 'OPERATION', 'a copy of a read with a fixed input')
-  const [connection] = table.kept.connections
+  const connection = namedConnections(table)[0]
   assert.ok(connection, 'the connection the copy reads')
   const { operation, input } = table.kept.source
   const copied = { connection, operation: OperationId.parse(operation), input }
@@ -118,7 +123,7 @@ export async function keepsLiveOnlyOutOfTables(world: DataWorld, data: CompanyDa
   for (const system of live)
     for (const table of catalog.tables)
       assert.ok(
-        !table.kept.connections.includes(system.connection),
+        !namedConnections(table).includes(system.connection),
         `${table.name} kept from ${system.name}`,
       )
   assert.deepEqual(await data.describe(), catalog)
@@ -138,7 +143,7 @@ async function readsTheCopyWithoutInput(world: DataWorld, data: CompanyData): Pr
     return input !== null && Object.keys(input).length === 0
   })
   assert.ok(table && table.kept.source.kind === 'OPERATION', 'a copy of a read with no input')
-  const [connection] = table.kept.connections
+  const connection = namedConnections(table)[0]
   assert.ok(connection, 'the connection the copy reads')
   const operation = OperationId.parse(table.kept.source.operation)
   const answer = await data.read({ kind: 'OPERATION', connection, operation, input: undefined })
@@ -176,7 +181,7 @@ async function readsLiveAnotherConnection(world: DataWorld, data: CompanyData): 
   const { catalog, copied, table } = await fixturesOf(world)
   const other = catalog.systems.find(
     ({ connection, reads }) =>
-      !table.kept.connections.includes(connection) &&
+      !namedConnections(table).includes(connection) &&
       reads.some(({ operation }) => operation === copied.operation),
   )
   assert.ok(other, 'another connection with the read the copy keeps')
