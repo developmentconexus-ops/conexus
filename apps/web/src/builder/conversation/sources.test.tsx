@@ -117,7 +117,7 @@ function linesOf(parts: MastraMessagePart[], words = WORDS) {
       stamp,
       tone: within(line)
         .getByText(stamp)
-        .className.match(/text-(success|warning|danger|text-2)/)?.[1],
+        .firstElementChild?.className.match(/bg-(success|warning|danger|line-strong)/)?.[1],
     }
   })
 }
@@ -205,7 +205,10 @@ test('o ponto e as palavras da cópia seguem a rodada: parcial, parada, em dia, 
   expect(seen({ lastRun: 'ERROR' })).toEqual(['parada hoje às 08:45', 'danger'])
   expect(seen({ lastRun: 'INTERRUPTED' })).toEqual(['parada hoje às 08:45', 'danger'])
   expect(seen({ lastRun: 'COMPLETE' })).toEqual([COPIED, 'success'])
-  expect(seen({ lastRun: 'NONE', lastRunEndedAt: null })).toEqual(['ainda sem cópia', 'text-2'])
+  expect(seen({ lastRun: 'NONE', lastRunEndedAt: null })).toEqual([
+    'ainda sem cópia',
+    'line-strong',
+  ])
 })
 
 test('outro dia diz ontem ou a data', () => {

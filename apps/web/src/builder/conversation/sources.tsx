@@ -2,7 +2,7 @@ import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { systemText } from '../../hub/copies/public.ts'
 import { clockOf, dayGroupOf } from '../../platform/dates.ts'
 import { Badge } from '../../ui/badge.tsx'
-import { Stamp } from '../../ui/block.tsx'
+import { cn } from '../../ui/cn.ts'
 import { useRoom } from './room.ts'
 import type { MessageSource } from './sources.ts'
 import { keyOf, whenOf } from './sources.ts'
@@ -49,12 +49,19 @@ function badgesOf(source: DataSource, connectors: ConnectorWords): string[] {
   return [...new Set(texts)]
 }
 
+const DOTS = {
+  neutral: 'bg-line-strong',
+  success: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-danger',
+}
+
 function DataLine({ source, now }: { source: DataSource; now: Date }) {
   const { connectors } = useRoom()
   const logo = connectors.logo(source.connector)
   const stamp = stampOf(source, now)
   return (
-    <li className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xs py-xs not-first:border-t not-first:border-line">
+    <li className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xs min-h-control py-xs not-first:border-t not-first:border-line">
       {logo !== undefined && <ConnectorLogo small entry={{ logo }} />}
       <span className="min-w-0 break-words text-label text-text">{nameOf(source, connectors)}</span>
       {badgesOf(source, connectors).map((text) => (
@@ -69,7 +76,10 @@ function DataLine({ source, now }: { source: DataSource; now: Date }) {
         {source.table}
       </span>
       <span className="@md:ms-auto">
-        <Stamp tone={stamp.tone}>{stamp.text}</Stamp>
+        <span className="inline-flex items-center gap-xs text-eyebrow text-text-2 tabular-nums">
+          <span aria-hidden="true" className={cn('size-1.5 rounded-pill', DOTS[stamp.tone])} />
+          {stamp.text}
+        </span>
       </span>
     </li>
   )

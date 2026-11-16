@@ -11,10 +11,6 @@ import { useConnectorWords } from '../conversation/public.ts'
 export function useConnectorCatalog(companyId: CompanyId) {
   const { words, read } = useConnectorWords(companyId)
   const connectors = read.data?.connectors
-  /** The connector's logo, once the catalog is read. */
-  function logo(connector: string): string | undefined {
-    return connectors?.find((one) => one.id === connector)?.logo
-  }
   /** Whether the operation is a read of what the company has of its own, the free query's kind. */
   function isDoor(connector: string, operation: string): boolean {
     return (
@@ -28,7 +24,7 @@ export function useConnectorCatalog(companyId: CompanyId) {
   return {
     words,
     name: words.name,
-    logo,
+    logo: words.logo,
     isDoor,
     failure: read.isError ? sentenceOf(read.error) : undefined,
   }

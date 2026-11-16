@@ -7,6 +7,7 @@ import { useMemo } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { Chat } from './chat.tsx'
+import { PLAIN_WORDS } from './connector-specs.ts'
 import { useConnectorWords } from './connector-words.ts'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
@@ -37,7 +38,13 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
   const { words } = useConnectorWords(companyId)
-  const room = useMemo(() => ({ ...BUILDER_ROOM, connectors: words }), [words])
+  const room = useMemo(
+    () => ({
+      ...BUILDER_ROOM,
+      connectors: { ...PLAIN_WORDS, name: words.name, logo: words.logo },
+    }),
+    [words],
+  )
   return (
     <RoomContext.Provider value={room}>
       <Chat
