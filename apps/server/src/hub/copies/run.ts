@@ -102,6 +102,16 @@ function columnStateOf(claimed: Claimed, outcome: CopyOutcome, finish: Finish) {
   return { columnState: nextColumnState({ previous: columnState, columns, ...finish }) }
 }
 
+/** What the source system said, in the run's three columns; only an `ERROR` that came from it has any. */
+function systemColumnsOf(outcome: CopyOutcome) {
+  const system = outcome.kind === 'ERROR' ? outcome.system : null
+  return {
+    systemStatus: system?.status ?? null,
+    systemCode: system?.code ?? null,
+    systemMessage: system?.message ?? null,
+  }
+}
+
 /** The end: the lease let go, the run's row closed and pointed at, the runs past the newest 100 gone. */
 async function ended(
   deps: CopiesDeps,
@@ -127,6 +137,7 @@ async function ended(
         endedAt: sql`statement_timestamp()`,
         outcome: outcome.kind,
         reason: reasonOf(outcome),
+        ...systemColumnsOf(outcome),
       })
       .where(eq(copyRun.id, claimed.holder.runId))
     const kept = tx

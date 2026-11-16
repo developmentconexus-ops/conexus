@@ -40,9 +40,6 @@ export const CopyRunFailureCode = z.enum([
 ] as const satisfies readonly FailureCode[])
 export type CopyRunFailureCode = z.infer<typeof CopyRunFailureCode>
 
-/** The most of a source system's refusal message a run keeps. */
-export const SYSTEM_MESSAGE_MAX = 1000
-
 export const CopyRun = z.object({
   id: CopyRunId,
   startedAt: z.iso.datetime(),

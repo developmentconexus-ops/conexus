@@ -7,10 +7,12 @@ import type { CopiesOn } from './test-copies.ts'
 import {
   copiesOn,
   copyRowOf,
+  errorOf,
   holdPage,
   plantCopy,
   plantSource,
   runsOf,
+  SANKHYA_REFUSED,
   syncRows,
   TEST_TUNING,
 } from './test-copies.ts'
@@ -160,7 +162,7 @@ test('a janela apaga o que sumiu', async (t) => {
   on.gate.gone.add(String(notaOf(GONE_OUTSIDE)))
   await plantSource(on, copyId, 'pass_started_at = $2', ['2026-11-01T12:00:00Z'])
   on.fake.switches.refuse.add('consultar')
-  assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED' })
+  assert.deepEqual(await ended(on, copyId), errorOf('COPY_SOURCE_REFUSED', SANKHYA_REFUSED))
   assert.deepEqual(await syncRows(on.owner, 'sankhya_vendas', key), before, 'com erro nada sai')
   on.fake.switches.refuse.delete('consultar')
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })
@@ -201,18 +203,18 @@ test('o erro não vira vazio', async (t) => {
   const on = await copiesOn(t)
   const copyId = await on.enable('clientes')
   on.fake.switches.refuse.add('consultar')
-  assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED' })
+  assert.deepEqual(await ended(on, copyId), errorOf('COPY_SOURCE_REFUSED', SANKHYA_REFUSED))
   on.fake.switches.refuse.delete('consultar')
   on.fake.switches.malformed = true
-  assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_UNREADABLE' })
+  assert.deepEqual(await ended(on, copyId), errorOf('COPY_SOURCE_UNREADABLE'))
   on.fake.switches.malformed = false
   on.fake.switches.silent = true
-  assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' })
+  assert.deepEqual(await ended(on, copyId), errorOf('COPY_SOURCE_UNREACHABLE'))
   on.fake.switches.silent = false
   const write = t.mock.method(on.hub.postgres.companyPostgres, 'writePage', async () => ({
     kind: 'NO_ANSWER' as const,
   }))
-  assert.deepEqual(await ended(on, copyId), { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' })
+  assert.deepEqual(await ended(on, copyId), errorOf('COPY_DATABASE_UNAVAILABLE'))
   write.mock.restore()
   const row = await copyRowOf(on, copyId)
   assert.equal(row.watermark, null, 'a marca não avança')
@@ -277,7 +279,7 @@ test('o registro não leva dado', async (t) => {
 test('a garantia dos logins que falha termina a rodada sem chamar o fornecedor', async (t) => {
   const on = await copiesOn(t)
   const copyId = await on.enable('vendas')
-  const down = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' }
+  const down = errorOf('COPY_DATABASE_UNAVAILABLE')
   const postgres = on.hub.postgres.companyPostgres
   const refused = t.mock.method(postgres, 'ensureReader', async () => ({
     kind: 'REFUSED' as const,

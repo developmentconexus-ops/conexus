@@ -619,6 +619,10 @@
       "name": "ligar: repetir com a mesma chave não pede outra rodada"
     },
     {
+      "file": "apps/server/src/hub/copies/run-system.test.ts",
+      "name": "a mensagem não vai ao log"
+    },
+    {
       "file": "apps/server/src/hub/identity/companies.test.ts",
       "name": "fora: o membro"
     },

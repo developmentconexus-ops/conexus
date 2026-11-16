@@ -24,6 +24,8 @@ import { PADARIA_SOL_MATRIZ, salesDatabase } from './fake-sales.ts'
 type SankhyaSwitches = {
   /** Services that refuse: a ready operation (`empresas`, `pedidos`, `vendedores`...) answers 403, a door service (`consultar`, `carregar`) `status: "0"`. */
   refuse: Set<string>
+  /** The `statusMessage` a refused door service answers; the envelope's own when null (passed on as `refuseMessage ?? undefined`, so the default of `fake-data.ts:66-70` holds). */
+  refuseMessage: string | null
   /** Every call on a token answers 403 `GTW3403`, as an expired one does. */
   expireToken: boolean
   /** Answers 200 with a body no schema reads. */
@@ -143,7 +145,9 @@ async function serveCall(
   const route = door ? null : routeOf(url.pathname)
   const adding = isAdd(request, url)
   if (switches.refuse.has(switchName(adding, door, service, route))) {
-    return door ? envelope(service, '0') : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
+    return door
+      ? envelope(service, '0', undefined, switches.refuseMessage ?? undefined)
+      : forbidden(url.pathname, 'NO_ACCESS', 'Sem permissão')
   }
   if (switches.oversize) return json(OVERSIZE)
   if (switches.malformed) return json({ unexpected: true })
@@ -215,6 +219,7 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
   const orders = orderBook()
   const switches: SankhyaSwitches = {
     refuse: new Set(),
+    refuseMessage: null,
     expireToken: false,
     malformed: false,
     notJson: false,

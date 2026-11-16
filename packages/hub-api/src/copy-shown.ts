@@ -40,3 +40,14 @@ export const CopyShown = z.object({
   ),
 })
 export type CopyShown = z.infer<typeof CopyShown>
+
+/** The most of a source system's refusal message a run keeps. */
+export const SYSTEM_MESSAGE_MAX = 1000
+
+/** What the source system said when it refused a read. */
+export const CopySystemMessage = z.object({
+  status: z.int(),
+  code: z.string().nullable(),
+  message: z.string().max(SYSTEM_MESSAGE_MAX).nullable(),
+})
+export type CopySystemMessage = z.infer<typeof CopySystemMessage>

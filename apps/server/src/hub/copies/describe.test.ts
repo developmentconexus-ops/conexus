@@ -116,7 +116,7 @@ test('o banco da empresa cai ao preencher', async (t) => {
   }))
   assert.deepEqual(await on.run(copyId), {
     kind: 'ENDED',
-    outcome: { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' },
+    outcome: { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE', system: null },
   })
   assert.equal((await storedDefinition(on, copyId)).description, undefined)
   assert.ok(on.hub.lines.some((line) => line.message === 'COPY_DATABASE_FAILED'))
