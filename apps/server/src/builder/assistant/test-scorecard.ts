@@ -9,7 +9,8 @@ import { expectedOf, meets } from './test-truths.ts'
  * refusal of a read too, and most refusals of the Sankhya questions come from the double, not from
  * the Assistant: its SQLite does not run the Oracle SQL (`TO_CHAR`, `EXTRACT`, `FROM DUAL`) that the
  * real Sankhya accepts. `firstQueryFailed` says whether the first `data_query` of the turn failed,
- * the miss a model that learned the table's name wrongly makes before it recovers. `helpers` counts the helpers that ended, as the turn's log line does.
+ * the miss a model that learned the table's name wrongly makes before it recovers. `helpers` counts
+ * the helpers that ended, as the turn's log line does.
  */
 export type Scorecard = {
   question: number

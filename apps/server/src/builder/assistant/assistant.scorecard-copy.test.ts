@@ -253,6 +253,31 @@ test('não achei é resposta: c4 é certa com prosa que nomeia uma tabela que ex
   assert.equal(judgedCopy(c4, refused.parts), false, 'a refusal')
   assert.equal(scoreOf({ question: 4, ...refused, right: false }).errors, 1)
   assert.equal(scoreOf({ question: 4, ...refused, right: false }).firstQueryFailed, true)
+
+  const c1 = questionOf('c1')
+  follows(
+    scripted([
+      [tool(DATA_TOOL.describe, {})],
+      [tool(DATA_TOOL.query, { sql: MISSING_TABLE })],
+      [tool(DATA_TOOL.query, { sql: SQL.c1 })],
+      [said('Pronto.')],
+    ]),
+  )
+  const recovered = scoreOf({ question: 1, ...(await turnOf(t, on, c1)), right: false })
+  assert.equal(recovered.firstQueryFailed, true, 'the first failed and the second read')
+  assert.equal(recovered.errors, 1)
+
+  follows(
+    scripted([
+      [tool(DATA_TOOL.describe, {})],
+      [tool(DATA_TOOL.query, { sql: SQL.c1 })],
+      [tool(DATA_TOOL.query, { sql: MISSING_TABLE })],
+      [said('Pronto.')],
+    ]),
+  )
+  const spoiled = scoreOf({ question: 1, ...(await turnOf(t, on, c1)), right: false })
+  assert.equal(spoiled.firstQueryFailed, false, 'the first read and a later one failed')
+  assert.equal(spoiled.errors, 1)
 })
 
 test('o modelo de verdade, as perguntas do dado copiado: cada pergunta numa conversa nova, um JSON por pergunta', {
