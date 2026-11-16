@@ -109,9 +109,7 @@ function liveRead(
   args: unknown,
 ): { connector: string; operation: string } | undefined {
   const [connector, operation] =
-    toolName === BUILDER_TOOL.connectorRead
-      ? operationOf(args)
-      : toolName.split(/_(.*)/s)
+    toolName === BUILDER_TOOL.connectorRead ? operationOf(args) : toolName.split(/_(.*)/s)
   return connector && operation ? { connector, operation } : undefined
 }
 
