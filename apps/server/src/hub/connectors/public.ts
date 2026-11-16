@@ -54,7 +54,6 @@ export { subjectsOf } from './catalog-subjects.ts'
 export {
   connectionForCopy,
   connectionNamesOf,
-  lackedReadOf,
   lackedSourceReadOf,
 } from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */

@@ -157,18 +157,12 @@ export const PROPOSAL_WORD = 'Proposta'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
 export const PROPOSAL_STATE = { ACCEPTED: 'Ligada', DISMISSED: 'Dispensada' } as const
 /**
- * What the dialog of Ligar a proposal says of a refusal: the table's words, except the two that
- * were written for other screens: `NOT_IN_ROLE` is about publishing a tool there, and `NOT_FOUND`
- * tells to check an address.
+ * What the dialog of Ligar a proposal says of a refusal: the table's words, except `NOT_FOUND`,
+ * written for another screen, which tells to check an address.
  */
 export function enableFailureText(error: unknown): string {
-  if (error instanceof HubFailure && !error.outcomeUnknown) {
-    if (error.code === 'NOT_IN_ROLE') {
-      const reading = error.operation?.replace(/\.+$/, '')
-      const named = reading === undefined ? 'a leitura da conexão' : `a leitura ${reading}`
-      return `Seu papel não pode usar ${named}, e quem liga uma cópia precisa poder ler o que ela copia. Peça a quem tem esse acesso para ligar.`
-    }
-    if (error.code === 'NOT_FOUND') return PROPOSAL_GONE
+  if (error instanceof HubFailure && !error.outcomeUnknown && error.code === 'NOT_FOUND') {
+    return PROPOSAL_GONE
   }
   return writeFailureText(error, UNCONFIRMED_ENABLE)
 }
