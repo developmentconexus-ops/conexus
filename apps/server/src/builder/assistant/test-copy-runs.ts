@@ -27,3 +27,21 @@ export async function copyGoneBetween(
   }
   throw new Error('copy_runs answered')
 }
+
+/** What the tool throws when it is called outside a conversation, where no scope is found. */
+export async function copyRunsWithoutConversation(): Promise<Failure> {
+  const tool = copyRunsTool({
+    scopeOf: async () => undefined,
+    copies: () => {
+      throw new Error('the copies are not reached without a scope')
+    },
+  })
+  if (tool.execute === undefined) throw new Error('copy_runs has no execute')
+  try {
+    await tool.execute({ table: 'sankhya_vendas' }, { requestContext: new RequestContext() })
+  } catch (thrown) {
+    if (thrown instanceof Failure) return thrown
+    throw thrown
+  }
+  throw new Error('copy_runs answered')
+}

@@ -10,7 +10,7 @@ import { BRUNO, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
 import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
-import { copyGoneBetween } from './test-copy-runs.ts'
+import { copyGoneBetween, copyRunsWithoutConversation } from './test-copy-runs.ts'
 
 function ask(table: string) {
   return [[tool(ASSISTANT_TOOL.copyRuns, { table })], [said('Pronto.')]]
@@ -177,4 +177,12 @@ test('a cópia que some entre a lista e as rodadas responde como a que não exis
   const { copies } = await w.on.hub.copies.list({ companyId, personId, named: [] })
   const thrown = await copyGoneBetween({ companyId, personId, copies }, 'sankhya_vendas')
   assert.equal(JSON.parse(thrown.message).kind, 'NOT_FOUND')
+})
+
+test('fora de uma conversa a ferramenta falha como defeito nosso', async () => {
+  const failure = await copyRunsWithoutConversation()
+  assert.deepEqual(
+    [failure.code, failure.details.reason],
+    ['INTERNAL_UNEXPECTED', 'COPY_RUNS_WITHOUT_CONVERSATION'],
+  )
 })
