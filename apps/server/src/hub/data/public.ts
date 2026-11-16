@@ -1,5 +1,7 @@
 import type { AgentId, CompanyData, ConversationId, DataSources, PersonId } from '@conexus/hub-api'
 import { companyData } from '@conexus/hub-api'
+import type { ConsumerContext } from '../access/public.ts'
+import { principalFor } from '../access/public.ts'
 import type { SessionScope, TurnKey } from '../connectors/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { catalogOf } from './catalog.ts'
@@ -35,9 +37,25 @@ export function createCompanyData(
     companyData({ sources: sourcesFor(deps, scope, context), now: () => new Date() })
 }
 
+/** The consumer a conversation's scope speaks as. */
+export function contextOf(scope: SessionScope): ConsumerContext {
+  const { companyId, personId, place, agentVersion } = scope
+  if (agentVersion !== undefined) {
+    return { consumer: 'agent', companyId, personId, place, declared: agentVersion.declared }
+  }
+  switch (place.kind) {
+    case 'PROJECT':
+      return { consumer: 'builder', companyId, personId, projectId: place.projectId }
+    case 'COMPANY':
+      return { consumer: 'assistant', companyId, personId }
+    default:
+      return place satisfies never
+  }
+}
+
 function sourcesFor(deps: DataDeps, scope: SessionScope, _context?: DataContext): DataSources {
   return {
-    catalog: () => catalogOf(deps, scope),
+    catalog: () => catalogOf(deps, principalFor(contextOf(scope))),
     rows: ({ table, signal }) => rowsOf(deps, scope, { table, signal }),
     live: async () => ({ kind: 'NOT_GRANTED' }),
     query: (a) => queryOf(deps, scope, a),

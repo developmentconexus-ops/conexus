@@ -110,6 +110,7 @@ export {
   linkConnection,
   listConnections,
   Native,
+  OperationEffect,
   Revocation,
   reconnectConnection,
   SignInCompleted,
