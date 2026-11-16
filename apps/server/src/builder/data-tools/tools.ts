@@ -43,7 +43,7 @@ function refused(refusal: Refusal): never {
       ? {
           code: refusal.sqlstate,
           message: refusal.message,
-          reason: `PostgreSQL refused the query (SQLSTATE ${refusal.sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.`,
+          reason: `PostgreSQL refused the query (SQLSTATE ${refusal.sqlstate}); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. A table is written sync.<name> with a name data_describe lists. Correct it and try again.`,
         }
       : { code: null, message: null, reason: REASONS[refusal.kind] }
   throw new DataRefused(JSON.stringify({ kind: refusal.kind, status: null, body: null, ...told }))
@@ -99,9 +99,9 @@ function systemOf(source: Kept['sources'][number]): DataSystem {
     : { kind: 'NOT_GIVEN' }
 }
 
-const DESCRIBE_DESCRIPTION = `Lists the company's copied tables this person may read, or, given a table, shows its columns and its first five rows. Call it with no table first: each table comes with what it holds, the system it was copied from and how its last run ended. Then call it with the table to read its columns and rows before you write a query. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. Write a table with its schema (sync.sankhya_vendas). A copy has no row count here. ${INSTANTS_NOTE}`
+const DESCRIBE_DESCRIPTION = `Lists the company's copied tables this person may read, or, given a table, shows its columns and its first five rows. Call it with no table first: each table comes with what it holds, the system it was copied from and how its last run ended. Then call it with the table to read its columns and rows before you write a query. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. In data_query, write a table as \`sync.\` followed by the name this tool lists, exactly: a table listed as \`pedidos\` is \`sync.pedidos\`, never with the system's name in front. A copy has no row count here. ${INSTANTS_NOTE}`
 
-const QUERY_DESCRIPTION = `Reads the company's copied data with one PostgreSQL SELECT, on the tables data_describe lists, each written with its schema (sync.sankhya_vendas), with every column in double quotes in the case the table lists. One statement only, and it cannot write. Aggregate in SQL and add LIMIT: the answer is cut to the first rows. The answer says where the rows came from in origin. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. A refusal carries PostgreSQL's SQLSTATE; fix the query and try again. ${INSTANTS_NOTE}`
+const QUERY_DESCRIPTION = `Reads the company's copied data with one PostgreSQL SELECT, on the tables data_describe lists, each written as \`sync.<name>\` with the name exactly as data_describe lists it, with every column in double quotes in the case the table lists. One statement only, and it cannot write. Aggregate in SQL and add LIMIT: the answer is cut to the first rows. The answer says where the rows came from in origin. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. A refusal carries PostgreSQL's SQLSTATE; fix the query and try again. ${INSTANTS_NOTE}`
 
 type Signal = AbortSignal | undefined
 

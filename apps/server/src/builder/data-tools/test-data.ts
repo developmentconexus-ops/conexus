@@ -19,7 +19,7 @@ export const TOTAL_OUTUBRO =
   ) / 100
 
 export const OCTOBER_SQL =
-  'select sum("VLRNOTA") as total from sync.sankhya_vendas where "DTNEG" >= \'2026-10-01\' and "DTNEG" < \'2026-11-01\''
+  'select sum("VLRNOTA") as total from sync.vendas where "DTNEG" >= \'2026-10-01\' and "DTNEG" < \'2026-11-01\''
 
 const RUN = {
   id: '00000000-0000-4000-8000-0000000000d1',
@@ -44,7 +44,7 @@ const CATALOG = Catalog.parse({
     },
   ],
   tables: sankhyaCopyModels().map((model) => ({
-    name: `sankhya_${model.id}`,
+    name: model.id,
     label: model.label,
     description: model.definition.description,
     columns: model.definition.columns.map(({ name, type, description }) => ({
@@ -95,7 +95,7 @@ const SOURCES: DataSources = {
       columns: ['total'],
       rows: [[TOTAL_OUTUBRO]],
       complete: true,
-      used: ['sankhya_vendas'],
+      used: ['vendas'],
     }
   },
   async funnel() {

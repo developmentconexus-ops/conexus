@@ -7,7 +7,7 @@ const REFUSALS = [
     kind: 'QUERY_REFUSED',
     query: { kind: 'QUERY_REFUSED', sqlstate: '42703', message: 'column "x" does not exist' },
     reason:
-      'PostgreSQL refused the query (SQLSTATE 42703); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. Correct it and try again.',
+      'PostgreSQL refused the query (SQLSTATE 42703); its message is in message. 42601 is a syntax error, 42703 a column that does not exist, 42P01 a table that does not exist, 25006 a write. A table is written sync.<name> with a name data_describe lists. Correct it and try again.',
   },
   {
     kind: 'QUERY_TOO_LARGE',
