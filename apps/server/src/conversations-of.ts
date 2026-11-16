@@ -159,7 +159,7 @@ type ConversationsDeps = {
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
   /** The copies are made after the conversations; a run comes long after both. */
-  copies: () => Pick<CopyService, 'run' | 'projectView'>
+  copies: () => Pick<CopyService, 'run' | 'projectView' | 'list' | 'runs'>
   /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
   companyData: (scope: SessionScope, context?: DataContext) => CompanyData
   notify: Notify
@@ -178,7 +178,7 @@ type ConversationsDeps = {
  * the automations, on the same schedules, and runs the copies made after it.
  */
 export function conversationsOf(deps: ConversationsDeps) {
-  const { database, identity, log } = deps
+  const { database, identity, log, copies } = deps
   const storage = createMastraStorage(deps.mastraPool)
   const queue = {
     database,
@@ -189,7 +189,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   }
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
-    ...{ storage, database, identity, queue, log, companyData: deps.companyData },
+    ...{ storage, database, identity, queue, log, copies, companyData: deps.companyData },
     ...machineOf(deps),
     connectors: door,
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },

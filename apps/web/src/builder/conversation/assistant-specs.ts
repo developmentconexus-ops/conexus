@@ -1,6 +1,6 @@
 import type { MACHINE_TOOL } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused } from '@conexus/hub-api'
-import { BookmarkIcon, BuildingIcon, RocketIcon, TimerIcon } from 'lucide-react'
+import { BookmarkIcon, BuildingIcon, HistoryIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
 
@@ -26,6 +26,15 @@ export const ASSISTANT_SPECS: Record<
     done: 'Olhou os Projetos e as ligações da empresa',
     failed: 'Não conseguiu olhar a empresa',
     verb: 'olhou a empresa',
+    body: 'generic',
+    groups: true,
+  },
+  [ASSISTANT_TOOL.copyRuns]: {
+    icon: HistoryIcon,
+    running: 'Lendo as rodadas da cópia',
+    done: 'Leu as rodadas da cópia',
+    failed: 'Não conseguiu ler as rodadas',
+    verb: 'leu as rodadas',
     body: 'generic',
     groups: true,
   },

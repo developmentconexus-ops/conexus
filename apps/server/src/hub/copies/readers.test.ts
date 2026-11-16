@@ -9,7 +9,7 @@ import { readLoginOf, roleLoginOf } from '../../platform/test-company-postgres.t
 import { call, post } from '../identity/test-hub.ts'
 import { SANKHYA_READS } from '../identity/test-kit.ts'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn } from './test-copies.ts'
+import { copiesOn, errorOf } from './test-copies.ts'
 import { enableProposal, grantMatriz, proposed } from './test-proposals.ts'
 
 const KEY = testAppsConfig().appLoginKey
@@ -218,7 +218,7 @@ test('a falha da reconciliação no fim da rodada só loga', async (t) => {
   silent.mock.restore()
   t.mock.method(on.hub.neon.neon, 'ownerConnection', async () => ({ kind: 'NO_ANSWER' as const }))
   const down = await ended(on, copyId)
-  assert.deepEqual(down.outcome, { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' })
+  assert.deepEqual(down.outcome, errorOf('COPY_DATABASE_UNAVAILABLE'))
   assert.deepEqual(logged(on, 'COPY_READERS_FAILED').at(-1), {
     companyId: on.companyId,
     reason: 'NO_OWNER',

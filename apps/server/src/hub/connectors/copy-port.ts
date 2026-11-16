@@ -11,10 +11,11 @@ import type {
   PageInput,
 } from '@conexus/connectors'
 import { CopyPageSchema, listInputOf, listPageOf, Rows } from '@conexus/connectors'
-import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, CopySystemMessage, PersonId } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
+import { systemOf } from './copy-system.ts'
 import type { OpenedConnection } from './executor.ts'
 import { listIssuesOf, listReadOf, sourceIssuesOf } from './list-read.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -55,7 +56,11 @@ export type CopyRead =
   | Readonly<{ kind: 'WAIT'; waitMs: number | null }>
   /** The cursor is older than the read's declared validity: nothing was called, the pass starts again. */
   | Readonly<{ kind: 'STALE' }>
-  | Readonly<{ kind: 'FAILED'; code: CopySourceFailure | 'COPY_SOURCE_CEILING' }>
+  | Readonly<{
+      kind: 'FAILED'
+      code: CopySourceFailure | 'COPY_SOURCE_CEILING'
+      system: CopySystemMessage | null
+    }>
   | Readonly<{ kind: 'NO_CONNECTION' }>
 
 type OfConnection = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
@@ -176,9 +181,9 @@ function sourceFailureOf(answer: Exclude<CopyRefusal, { kind: 'BUSY' }>): CopySo
 
 /** A refusal as the run keeps it: 429 is a wait, every other its code. */
 function refusedRead(refusal: CopyRefusal): CopyRead {
-  return refusal.kind === 'BUSY'
-    ? { kind: 'WAIT', waitMs: refusal.waitMs }
-    : { kind: 'FAILED', code: sourceFailureOf(refusal) }
+  if (refusal.kind === 'BUSY') return { kind: 'WAIT', waitMs: refusal.waitMs }
+  const system = systemOf('native' in refusal ? refusal.native : null)
+  return { kind: 'FAILED', code: sourceFailureOf(refusal), system }
 }
 
 export type SourcePage = OfConnection & {
@@ -279,7 +284,7 @@ async function pageV2(
     case 'REFUSED':
       return refusedRead(read.refusal)
     case 'NOT_ROWS':
-      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
+      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE', system: null }
     case 'ROWS':
       break
     default:
@@ -293,9 +298,9 @@ async function pageV2(
     }
     case 'MISFIT':
     case 'UNREADABLE':
-      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE' }
+      return { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE', system: null }
     case 'CEILING':
-      return { kind: 'FAILED', code: 'COPY_SOURCE_CEILING' }
+      return { kind: 'FAILED', code: 'COPY_SOURCE_CEILING', system: null }
     default:
       return page satisfies never
   }

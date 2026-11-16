@@ -38,6 +38,7 @@ import {
   RUNS_TITLE,
   SAMPLE_TITLE,
   SEE_RUN,
+  systemSaid,
   WHOLE_PASS,
 } from './text.ts'
 
@@ -51,6 +52,9 @@ function RunRow({ run }: { run: CopyRun }) {
       <TableCell className="whitespace-normal">
         {outcomeText(run)}
         {run.whole && <span className="text-text-2"> · {WHOLE_PASS}</span>}
+        {run.outcome.kind === 'ERROR' && run.outcome.system !== null && (
+          <span className="block text-text-2">{systemSaid(run.outcome.system)}</span>
+        )}
       </TableCell>
     </TableRow>
   )
@@ -65,6 +69,9 @@ function RunPhoneRow({ run }: { run: CopyRun }) {
         <span className="break-words text-text-2">
           {`${countText(run.read)} lidas · ${countText(run.written)} gravadas · ${outcomeText(run)}${run.whole ? ` · ${WHOLE_PASS}` : ''}`}
         </span>
+        {run.outcome.kind === 'ERROR' && run.outcome.system !== null && (
+          <span className="break-words text-text-2">{systemSaid(run.outcome.system)}</span>
+        )}
       </div>
     </Row>
   )
