@@ -113,7 +113,7 @@ function cardOf(name: string): HTMLElement {
 test('o cartão da proposta: ligar pela conversa', async () => {
   const held = proposal()
   const hub = copiesHub(held)
-  await conversationWithProposal('developer')
+  await conversationWithProposal('admin')
   expect(screen.getByText('Propôs uma cópia')).toBeTruthy()
   const card = cardOf('devolucoes')
   // The mode of the tool's result, as written by the Hub.
@@ -163,9 +163,7 @@ test('o cartão de quem não gerencia cópias', async () => {
   const card = cardOf('devolucoes')
   expect(within(card).getByText('devolucoes · Matriz · só o alterado')).toBeTruthy()
   expect(
-    within(card).getByText(
-      'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Dados.',
-    ),
+    within(card).getByText('Um dono ou administrador da empresa liga esta cópia na página Dados.'),
   ).toBeTruthy()
   expect(within(card).queryByRole('button')).toBeNull()
   // The list of copies never opens to them (the boundary of Capacidade 2).

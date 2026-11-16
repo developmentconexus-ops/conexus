@@ -4,7 +4,7 @@ import { appLogin, appLoginPassword, PersonId, ProjectId } from '@conexus/hub-ap
 import { sql } from 'drizzle-orm'
 import pg from 'pg'
 import { folder, readyForVersions, send } from '../apps/test-versions.ts'
-import { call, post } from '../identity/test-hub.ts'
+import { call, memberOn, post } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
 
 type DatabaseUrl = CopiesOn['owner']
@@ -59,6 +59,20 @@ function release(on: CopiesOn, copyId: Parameters<CopiesOn['run']>[0]) {
 async function refusedWith(code: string, act: () => Promise<unknown>) {
   await assert.rejects(act, (error: unknown) => Object(error).code === code)
 }
+
+test('o desenvolvedor não libera nem tira cópia de um Projeto, e a fora do papel não chega ao Projeto', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('vendas')
+  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const who = { name: 'Davi Costa', email: 'davi@example.test' }
+  const developer = await memberOn(on.hub, on.companyId, who, 'developer')
+  const byDeveloper = { ...release(on, copyId), personId: PersonId.parse(developer.id) }
+  await refusedWith('NOT_FOUND', () => on.copies.grant(byDeveloper))
+  assert.equal(await releasesOf(on), 0)
+  await on.copies.grant(release(on, copyId))
+  await refusedWith('NOT_FOUND', () => on.copies.revoke(byDeveloper))
+  assert.equal(await releasesOf(on), 1)
+})
 
 test('liberar e tirar', async (t) => {
   const on = await copiesOn(t)

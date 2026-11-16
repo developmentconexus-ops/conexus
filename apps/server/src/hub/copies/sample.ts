@@ -24,8 +24,7 @@ export async function sampleOf(
     const asked = await readerOf(deps, tx, { companyId, role: proof.role })
     const marked = asked.kind === 'ROLE' && (await marksOf(tx, companyId, asked.roleId))
     if (asked.kind === 'NONE' || (marked && !marked.includes(copyId))) {
-      const manages = deps.identity.allows(proof.role, 'manageCopies')
-      throw new Failure(manages ? 'COPY_NOT_IN_ROLE' : 'COPY_NOT_FOUND')
+      throw new Failure('COPY_NOT_FOUND')
     }
     return { stored: found, reader: asked }
   })
@@ -46,7 +45,7 @@ export async function sampleOf(
       deps.log.error({ companyId, copyId, reason: read.reason }, 'COPY_SAMPLE_FAILED')
       throw new Failure('COPY_DATABASE_UNAVAILABLE')
     case 'NOT_IN_ROLE':
-      throw new Failure('COPY_NOT_IN_ROLE')
+      throw new Failure('COPY_NOT_FOUND')
     default:
       return read satisfies never
   }

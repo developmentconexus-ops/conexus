@@ -74,22 +74,25 @@ test('quem não é da empresa recebe 404', async (t) => {
   }
 })
 
-test('o desenvolvedor vê todas as tabelas e as rodadas', async (t) => {
+test('o desenvolvedor vê só as tabelas do papel e as rodadas delas', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const developer = await memberOn(w.on.hub, w.on.companyId, DAVI, 'developer')
-  const listed = await listedBy(w, developer)
-  assert.equal(listed.copies.length, 5)
+  assert.deepEqual((await listedBy(w, developer)).copies, [])
+  const missing = await get(w, developer, `/${randomUUID()}/runs`)
   for (const copyId of w.copies.values()) {
     const read = await get(w, developer, `/${copyId}/runs`)
-    assert.equal(read.statusCode, 200, read.body)
+    assert.deepEqual([read.statusCode, codeOf(read)], [404, 'COPY_NOT_FOUND'])
+    assert.deepEqual(problemOf(read), problemOf(missing))
   }
 })
 
-test('o desenvolvedor pede a amostra de uma tabela que o papel não lê e recebe COPY_NOT_IN_ROLE', async (t) => {
+test('o desenvolvedor pede a amostra de uma tabela que o papel não lê e recebe COPY_NOT_FOUND', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const developer = await memberOn(w.on.hub, w.on.companyId, DAVI, 'developer')
   const read = await get(w, developer, `/${copyOf(w.copies, 'sankhya_vendas')}/sample`)
-  assert.deepEqual([read.statusCode, codeOf(read)], [403, 'COPY_NOT_IN_ROLE'])
+  const missing = await get(w, developer, `/${randomUUID()}/sample`)
+  assert.deepEqual([read.statusCode, codeOf(read)], [404, 'COPY_NOT_FOUND'])
+  assert.deepEqual(problemOf(read), problemOf(missing))
 })
 
 test('a amostra do membro vem pelo login do papel', async (t) => {

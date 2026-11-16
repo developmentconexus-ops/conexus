@@ -173,7 +173,7 @@ export function enableFailureText(error: unknown): string {
   return writeFailureText(error, UNCONFIRMED_ENABLE)
 }
 export const MANAGERS_ENABLE =
-  'Um dono, administrador ou desenvolvedor da empresa liga esta cópia na página Dados.'
+  'Um dono ou administrador da empresa liga esta cópia na página Dados.'
 
 /** The six intervals, each in its words once (the column, the detail and the dialog read these). */
 export const INTERVAL_LABEL = {

@@ -95,8 +95,8 @@ const ACTIONS = {
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
-  // The company's copies are an owner's, an administrator's or a developer's (Capacidade 2,
-  // 2026-11-09: "Dono e o admnistrador e desenvolvedor"): reading holds no row, a change the role.
+  // The company's copies are an owner's or an administrator's (founder, 2026-11-16: "1."): reading
+  // holds no row, a change the role.
   readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
   manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
   // Every member sees the copies their role reads, their runs and who reads each (data, part 4);

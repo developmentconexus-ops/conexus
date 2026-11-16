@@ -86,11 +86,11 @@ function copies(): Release[] {
   ]
 }
 
-test.each(['owner', 'developer'])('liberar e tirar, como %s', async (role) => {
+test.each(['owner', 'admin'])('liberar e tirar, como %s', async (role) => {
   open(copies(), role)
   const section = within(await screen.findByRole('region', { name: 'Cópias' }))
   expect((await row('Clientes')).getByText('Liberada')).toBeTruthy()
-  expect(section.queryByText('Dono, administrador ou desenvolvedor libera uma cópia.')).toBeNull()
+  expect(section.queryByText('Dono ou administrador libera uma cópia.')).toBeNull()
   fireEvent.click((await row('Vendas')).getByRole('button', { name: 'Liberar: Vendas' }))
   expect(await (await row('Vendas')).findByRole('button', { name: 'Tirar: Vendas' })).toBeTruthy()
   expect(sent).toEqual([{ method: 'PUT', copy: VENDAS }])
@@ -124,7 +124,7 @@ test('nenhuma cópia na empresa: a frase e o caminho para Dados', async () => {
 test('quem não gerencia cópias lê quem pode e não pede a lista', async () => {
   open(copies(), 'member')
   const section = within(await screen.findByRole('region', { name: 'Cópias' }))
-  expect(section.getByText('Dono, administrador ou desenvolvedor libera uma cópia.')).toBeTruthy()
+  expect(section.getByText('Dono ou administrador libera uma cópia.')).toBeTruthy()
   expect(section.queryByRole('button')).toBeNull()
   expect(section.queryByRole('link', { name: 'Ligar uma cópia' })).toBeNull()
   expect(reads).toBe(0)
