@@ -162,7 +162,7 @@ test('o teto da leitura', async (t) => {
   assert.equal((await tableOf(on, 'pedidos')).length, 50, 'nada sai')
   const listed = await call(on.hub, on.ana, 'GET', `/api/companies/${on.companyId}/copies`)
   const [copy] = Object(listed.json()).copies
-  assert.deepEqual(copy?.run?.outcome, { kind: 'ERROR', code: 'COPY_SOURCE_CEILING' })
+  assert.deepEqual(copy?.run?.outcome, { kind: 'ERROR', code: 'COPY_SOURCE_CEILING', system: null })
   assert.equal(
     phraseOf('COPY_SOURCE_CEILING'),
     'A leitura chegou ao máximo de linhas que o sistema entrega.',

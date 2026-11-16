@@ -16,6 +16,7 @@ import {
   ConnectorId as ConnectorIdSchema,
   CopyRunFailureCode,
   CopyRunId,
+  CopySystemMessage,
   ProjectId as ProjectIdSchema,
 } from '@conexus/hub-api'
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
@@ -33,6 +34,16 @@ import { copy, copyRun, copySource, projectCopy } from './tables.ts'
 const RUNS_PAGE = 20
 
 const Reason = z.enum(['CAP', 'STOPPED', 'WAIT'])
+
+/** What the source system said in a run's row; null when it said nothing. */
+function systemOf(row: typeof copyRun.$inferSelect) {
+  if (row.systemStatus === null) return null
+  return CopySystemMessage.parse({
+    status: row.systemStatus,
+    code: row.systemCode,
+    message: row.systemMessage,
+  })
+}
 
 /** A run's row as the contract states it; the reason of each outcome parsed again (code C27). */
 function runOf(row: typeof copyRun.$inferSelect): CopyRun {
@@ -53,7 +64,14 @@ function runOf(row: typeof copyRun.$inferSelect): CopyRun {
     case 'PARTIAL':
       return { ...base, outcome: { kind: 'PARTIAL', reason: Reason.parse(row.reason) } }
     case 'ERROR':
-      return { ...base, outcome: { kind: 'ERROR', code: CopyRunFailureCode.parse(row.reason) } }
+      return {
+        ...base,
+        outcome: {
+          kind: 'ERROR',
+          code: CopyRunFailureCode.parse(row.reason),
+          system: systemOf(row),
+        },
+      }
     default:
       return row.outcome satisfies never
   }

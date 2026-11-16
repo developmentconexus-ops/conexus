@@ -52,7 +52,7 @@ test('a última rodada de um painel com a rodada aberta não diz hora', async ()
 })
 
 test('a última rodada com erro diz a frase do código e a hora do fim', async () => {
-  const run = copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } })
+  const run = copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null } })
   openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
   const panel = within(await screen.findByRole('complementary', { name: 'Detalhes' }))
   expect(panel.getByText(/^O sistema não respondeu\. · .+/)).toBeTruthy()

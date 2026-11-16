@@ -124,7 +124,11 @@ test('Cópias: um erro mostra "Com erro" e a frase do código; pausada e sem rel
     server,
     {
       copies: [
-        copy({ run: copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } }) }),
+        copy({
+          run: copyRun({
+            outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null },
+          }),
+        }),
         copy({ id: CLIENTES, label: 'Clientes', schedule: { kind: 'PAUSED' } }),
         copy({
           id: PRODUTOS,

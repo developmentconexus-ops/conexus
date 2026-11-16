@@ -4,6 +4,7 @@ import type {
   CopyProposalSummary,
   CopyRun,
   CopySummary,
+  CopySystemMessage,
 } from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
 import { dayAndHour, dayAndMonth } from '../../platform/dates.ts'
@@ -209,6 +210,11 @@ function partialText(reason: PartialReason): string {
     case 'STOPPED':
       return 'O Conexus reiniciou no meio; a próxima continua de onde parou'
   }
+}
+
+/** What the source system said, as the run line shows it: "{status} · {message}", or its code without a message. */
+export function systemSaid(system: CopySystemMessage): string {
+  return [system.status, system.message ?? system.code].filter((part) => part !== null).join(' · ')
 }
 
 /** How a run ended, in a sentence: a failure by its code's phrase (code C48), never "0 linhas". */

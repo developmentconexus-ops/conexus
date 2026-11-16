@@ -21,6 +21,7 @@ import {
   RUNNING,
   readersPage,
   SOURCE_DOWN,
+  SOURCE_REFUSED,
   VENDAS,
 } from './sweep-copies-states.ts'
 import type { State } from './sweep-kit.ts'
@@ -163,6 +164,28 @@ export const TABLE_STATES: State[] = [
     path: `${PAGE}/${VENDAS}?tab=runs`,
     replies: detailPage([RUNNING, SOURCE_DOWN, DONE]),
     settle: (p) => waitFor(p, 'O sistema não respondeu.'),
+  },
+  {
+    name: 'A tabela, a rodada que o sistema recusou',
+    path: `${PAGE}/${VENDAS}?tab=runs`,
+    replies: detailPage([
+      SOURCE_REFUSED,
+      {
+        ...SOURCE_REFUSED,
+        outcome: {
+          kind: 'ERROR',
+          code: 'COPY_SOURCE_REFUSED',
+          system: {
+            status: 403,
+            code: 'GTW3403',
+            message:
+              `${'O token da conexão não tem permissão para consultar esta visão. '.repeat(6)}`.trim(),
+          },
+        },
+      },
+      DONE,
+    ]),
+    settle: (p) => waitFor(p, '200 · Serviço recusado'),
   },
   {
     name: 'A tabela, sem rodada ainda',
