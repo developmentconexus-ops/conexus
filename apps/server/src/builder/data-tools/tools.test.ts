@@ -201,6 +201,15 @@ test('sem fuso, ou com um fuso que não existe, a hora vai em UTC com o Z', asyn
   }
 })
 
+test('a hora da última rodada de uma consulta vai ao modelo no fuso de quem lê', async () => {
+  const { tools } = world(CATALOG)
+  const sql = { sql: 'select count(*) from sync.vendas' }
+  const local = await runOn(tools, 'data_query', sql, zoned('America/Sao_Paulo'))
+  assert.equal(local.origin[0].lastRunEndedAt, '2026-11-14T08:05:00.000-03:00')
+  const utc = await runOn(tools, 'data_query', sql)
+  assert.equal(utc.origin[0].lastRunEndedAt, '2026-11-14T11:05:00.000Z')
+})
+
 test('as ferramentas dizem ao modelo que a hora vem com o deslocamento', () => {
   const { tools } = world(CATALOG)
   for (const name of ['data_describe', 'data_query']) {

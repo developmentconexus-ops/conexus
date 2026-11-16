@@ -160,11 +160,11 @@ export type GuardedMastra = {
  * and that controller admits the person now (the Builder by the Hub's index and membership, the
  * Assistant by `askAssistant`); a refusal is the same 404 (S10).
  * The browser's time zone, when its header holds a zone the runtime knows, goes into the run's
- * context for the tools to tell the model the hours in. A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
- * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
- * `include`, which would read messages of the person's other conversations. So is a file that is
- * not a `data:` URL. While the Hub settles before it stops, a new message is refused before Mastra
- * starts a turn (founder E1).
+ * context for the tools to tell the model the hours in. A `requestContext` from the browser is
+ * refused: Mastra's server copies it into the run's context, and `mastra__messageAuthor` is not
+ * one of its reserved keys (measured, prove2 e21-bare). So is `include`, which would read messages
+ * of the person's other conversations. So is a file that is not a `data:` URL. While the Hub
+ * settles before it stops, a new message is refused before Mastra starts a turn (founder E1).
  */
 async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: FastifyRequest) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
@@ -201,7 +201,7 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
   }
   request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
   const zone = ReaderZone.safeParse(request.headers[READER_ZONE_HEADER])
-  if (zone.success) request.requestContext.setRaw(READER_ZONE, zone.data)
+  if (zone.success) request.requestContext.set(READER_ZONE, zone.data)
   return { person, controllerId, conversationId, companyId: owner.companyId, part }
 }
 
