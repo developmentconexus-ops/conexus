@@ -18,8 +18,7 @@ parte de plano em conjunto com estratégia de construção, depois a gente foca 
 código, depois como é revisado, depois como é testado".
 
 A 24.6 congela: "congelar 24.6", "a gente não vai construir agentes agora". Você julga o Builder: "eu
-prefiro eu ser a régua". Os seus dois apps de teste estão na página da [trilha
-Agentes e Apps](steps/trilhas/agentes-e-apps.md).
+prefiro eu ser a régua".
 
 Em 2026-11-14, ao parecer do conselheiro de produto: "1A. Duas trilhas", "2A. Catálogo primeiro,
 Ontologia por cima", "3B. Identidade da empresa mais direção por app", "4A. Build semanal fixo"; à
@@ -49,8 +48,8 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
 | `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-A pergunta respondida com a origem, a primeira etapa de `D2`, fechou em 2026-11-16. O cartão de
-hoje, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
+O cartão de hoje é Cada papel lê só o seu, com a porta única; depois vem a etapa do Registro e da
+conformidade. O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
 página da [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -64,6 +63,10 @@ página da [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
+O cartão de hoje, os seus dois apps de teste, as suas respostas de 2026-11-09 às capacidades e aos
+pareceres do Builder e o estudo da criação de apps estão na página da
+[trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
+
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
 plano em `A3`, código e teste em `A1`, revisão em `A4`.
 
@@ -73,9 +76,8 @@ bonitos e quebrados.
 
 **O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
 a Nango fica fora do código. A Fábrica gera declarações do kit, escritas pela IA a partir
-da documentação e conferidas com uma leitura de teste. Mais de um estudo aberto
-por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
-agente. Transformações e histórico de mudanças antes de `D3`.
+da documentação e conferidas com uma leitura de teste. O auto-router. Subagentes forçados, pesquisa
+em três frentes e auditor do plano como agente. Transformações e histórico de mudanças antes de `D3`.
 
 ### O que você fornece, e quando
 
@@ -94,9 +96,6 @@ Login social. Arquivos enviados por pessoas para dentro de um app. Segundo idiom
 2. **A 16 vai para depois da 21.1, antes da 22.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim".
 3. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". O teto de 1.600 palavras não sobe.
 4. **Sua empresa primeiro, as outras depois.** Em 2026-10-30: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
-
-As suas respostas às capacidades e aos pareceres do Builder, de 2026-11-09, estão na página da
-[trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 ## 2. As etapas depois das trilhas
 
