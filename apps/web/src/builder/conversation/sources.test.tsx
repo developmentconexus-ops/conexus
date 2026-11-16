@@ -178,27 +178,18 @@ const COPIED = 'copiado hoje às 08:45'
 
 test('a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45', () => {
   clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [MATRIZ] })])).toMatchObject([
-    {
-      logo: true,
-      name: 'Sankhya · Matriz',
-      badges: [],
-      table: 'sankhya_vendas',
-      stamp: COPIED,
-    },
-  ])
+  const line = { logo: true, name: 'Sankhya · Matriz', badges: [], table: 'sankhya_vendas' }
+  expect(linesOf([queried({ systems: [MATRIZ] })])).toMatchObject([{ ...line, stamp: COPIED }])
 })
 
 test('a conexão com o nome do sistema não se repete na fonte de cópia', () => {
   clockAt(COPY_DAY)
-  const [line] = linesOf([queried({ systems: [{ ...MATRIZ, name: 'Sankhya' }] })])
-  expect(line?.name).toBe('Sankhya')
+  expect(linesOf([queried({ systems: [{ ...MATRIZ, name: 'Sankhya' }] })])[0]?.name).toBe('Sankhya')
 })
 
 test('a fonte vem também do data_describe de uma tabela', () => {
   clockAt(COPY_DAY)
-  const [line] = linesOf([described()])
-  expect(line).toMatchObject({ table: 'sankhya_vendas', stamp: COPIED })
+  expect(linesOf([described()])[0]).toMatchObject({ table: 'sankhya_vendas', stamp: COPIED })
 })
 
 function seen(change: { lastRun?: string; lastRunEndedAt?: string | null }) {
@@ -284,8 +275,8 @@ test('a fonte não dada ao Projeto mostra só o sistema e a logo', () => {
 
 test('uma cópia de duas conexões com uma não dada nomeia só a dada', () => {
   clockAt(COPY_DAY)
-  const [line] = linesOf([queried({ systems: [MATRIZ, { kind: 'NOT_GIVEN' }] })])
-  expect(line?.name).toBe('Sankhya · Matriz')
+  const lines = linesOf([queried({ systems: [MATRIZ, { kind: 'NOT_GIVEN' }] })])
+  expect(lines[0]?.name).toBe('Sankhya · Matriz')
 })
 
 test('duas fontes são duas linhas, cada uma com a sua logo', () => {
@@ -327,9 +318,7 @@ test('a fonte da leitura ao vivo diz ao vivo · lido agora, às', () => {
 
 test('a leitura ao vivo de uma conexão com o nome do sistema não o repete', () => {
   clockAt('2026-11-16T02:00:00.000Z')
-  const part = read()
-  part.toolInvocation.args.connection = 'Sankhya'
-  expect(linesOf([part])[0]?.name).toBe('Sankhya')
+  expect(linesOf([read({ connection: 'Sankhya' })])[0]?.name).toBe('Sankhya')
 })
 
 test('duas leituras ao vivo de operações diferentes da mesma conexão são duas fontes', () => {
