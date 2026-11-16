@@ -9,6 +9,7 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
 
@@ -192,9 +193,9 @@ const OPERATION_FORMAT = /^[a-z0-9-]+\.[A-Za-z0-9_]+$/
 const WHOLE_FILE =
   'When `complete` is false and `file` is set, the whole answer is in that file: open it with Python on the machine. Do not read again to see the rest; read again only to filter what the file does not hold. When `saved` is false there is no file: filter with WHERE and COUNT.'
 
-/** What every read tool says of its answer: the cut, the file and the limit (`connector_read` and the Assistant's typed reads). */
+/** What every read tool says of its answer: the cut, the file, the limit and the hour (`connector_read` and the Assistant's typed reads). */
 export function answerWords(limit: string): string {
-  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}.`
+  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}. ${INSTANTS_NOTE}`
 }
 
 /**
@@ -228,7 +229,7 @@ export async function readOn(
   const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
   if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
   if (answered.kind !== 'OK') return answered
-  const at = new Date().toISOString()
+  const at = inZone(new Date(), zoneOf(requestContext))
   if (!('whole' in answered)) return { ...answered, at }
   const { whole, ...rest } = answered
   const cut = { ...rest, at }

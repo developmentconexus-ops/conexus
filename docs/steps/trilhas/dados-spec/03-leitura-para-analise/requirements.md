@@ -1,5 +1,7 @@
 # Documento de requisitos: parte 3, a leitura para análise
 
+> Os grupos 3 e 4 desta parte foram construídos pelo cartão A pergunta respondida com a origem, fechado em 2026-11-16, e o que ele decidiu vale sobre este texto. Uma tabela cuja conexão não está em `systems` é lida, e a origem vem do registro gravado da cópia, com o estado da conexão (`NAMED` ou `NOT_GIVEN`): onde esta parte manda responder `CATALOG_UNAVAILABLE` e registrar `DATA_ORIGIN_UNREAD` nesse caso, o texto está superado (a emenda de 2026-11-15, "1. A"). O registro do cartão está em [aprovações](../../../../approvals/a-pergunta-respondida-com-a-origem.md).
+
 ## Introdução
 
 No fim desta parte a pessoa pergunta ao Assistente "Quanto vendi em outubro?" e recebe o número em negrito. Embaixo da resposta, o bloco Fontes diz o sistema, a tabela e a hora da cópia: Sankhya, `sankhya_vendas`, copiado hoje às 08:45. Quem abre as linhas de ferramenta vê o catálogo consultado, as 5 linhas que o agente olhou e a consulta, com **Copiar a consulta**. O Builder e um agente salvo usam as mesmas duas ferramentas. É o marco `D2` do roteiro (`docs/roadmap.md:46`). As decisões vêm do escopo aprovado, seção 5 (telas `p3-01` a `p3-07`): `T5` (a origem no bloco Fontes), `T7` (a amostra de 5 linhas) e E3a (a consulta visível a quem lê a tabela, recolhida). O como está no `design.md` desta pasta, que parte da parte 1 construída.

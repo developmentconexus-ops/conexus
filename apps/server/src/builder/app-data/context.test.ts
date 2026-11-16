@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CopyMode } from '@conexus/hub-api'
-import { ConnectorId, CopyId } from '@conexus/hub-api'
+import { AGENT_TOOL, CompanyId, ConnectorId, CopyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { CopyName } from '../../hub/connectors/public.ts'
 import { listProposalsOn } from '../../hub/copies/test-list-proposals.ts'
 import {
@@ -13,7 +13,8 @@ import { firstEnded } from '../../hub/copies/test-routes.ts'
 import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
-import { dataContext, SOURCE_RULE } from './public.ts'
+import type { AppDataPort } from './public.ts'
+import { appDataTools, dataContext, SOURCE_RULE } from './public.ts'
 
 type View = Extract<Parameters<typeof dataContext>[0], { kind: 'COPIES' }>
 
@@ -242,4 +243,32 @@ test('a proposta ligada entre dois turnos: o bloco do turno seguinte a marca, se
   const after = dataContext(await on.hub.copies.projectView(ids))
   assert.ok(after.includes('- `sync.mercado_livre_pedidos` [your proposal, turned on] ('), after)
   assert.ok(!after.includes('is open'), after)
+})
+
+const ID = {
+  company: CompanyId.parse('c'.repeat(32)),
+  person: PersonId.parse('a'.repeat(32)),
+  project: ProjectId.parse('d'.repeat(32)),
+}
+
+const UNUSED_PORT: AppDataPort = {
+  hasApp: () => Promise.reject(new Error('the description is read, nothing is called')),
+  tables: () => Promise.reject(new Error('the description is read, nothing is called')),
+  read: () => Promise.reject(new Error('the description is read, nothing is called')),
+}
+
+test('o que o modelo lê de como se lê uma cópia não dá a uma tabela um nome concreto', () => {
+  const block = dataContext(viewOf([copy('vendas', [['CODVEND', 'bigint']])]))
+  const instructions = block.split('\n').filter((line) => !line.startsWith('- `sync.'))
+  const described = Object(
+    appDataTools({
+      appData: UNUSED_PORT,
+      scope: { companyId: ID.company, personId: ID.person },
+      projectId: ID.project,
+    }),
+  )[AGENT_TOOL.appDataRead].description
+  for (const text of [instructions.join('\n'), described]) {
+    assert.deepEqual(text.match(/sync\.(?!<name>)[A-Za-z_][A-Za-z0-9_]*/g) ?? [], [])
+    assert.ok(text.includes('sync.<name>'))
+  }
 })

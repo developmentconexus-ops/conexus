@@ -96,7 +96,7 @@ export const DataOrigin = z.object({
   systems: z.array(DataSystem).min(1),
   connector: z.string(),
   table: z.string(),
-  lastRunEndedAt: z.iso.datetime().nullable(),
+  lastRunEndedAt: z.iso.datetime({ offset: true }).nullable(),
   lastRun: z.enum([...CopyRun.shape.outcome.options.map((each) => each.shape.kind.value), 'NONE']),
 })
 export type DataOrigin = z.infer<typeof DataOrigin>

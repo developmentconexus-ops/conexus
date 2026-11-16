@@ -18,7 +18,7 @@ export const SOURCE_RULE =
 
 const HOW_TO_READ = [
   '## Data',
-  'The company\'s copies released to this Project are tables of the `sync` schema, read only: write `sync.<name>` and put every column in double quotes exactly as it is listed below, in its own case (`select "CODVEND" from sync.vendas`).',
+  "The company's copies released to this Project are tables of the `sync` schema, read only: write `sync.<name>` and put every column in double quotes exactly as it is listed below, in its own case.",
   'Count a read on the real data with `app_data_check`, and see the columns and a few rows of a copy with `data_describe`, in the order of `## Company data`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`.',
   `${SOURCE_RULE} Reading the system live (\`connector_read\`) is for you to investigate. A refusal with \`42501\` on a listed copy means its release is still pending: say so, and do not work around it.`,
   'A copy listed here is on and released to this Project: nothing is left to activate. One marked as your proposal is the proposal you made, which the person turned on; it is read here, on the next turn after they turn it on. Never write in the plan or the code that the data waits for someone to activate a copy without looking at this block.',

@@ -1,4 +1,4 @@
-import { DataResult } from '@conexus/hub-api'
+import { DATA_TOOL, DataResult } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
 import { textOf } from './test-real-model.ts'
@@ -8,13 +8,16 @@ import { expectedOf, meets } from './test-truths.ts'
  * What one question cost the Assistant, counted from its turn (card U11). `errors` counts every
  * refusal of a read too, and most refusals of the Sankhya questions come from the double, not from
  * the Assistant: its SQLite does not run the Oracle SQL (`TO_CHAR`, `EXTRACT`, `FROM DUAL`) that the
- * real Sankhya accepts. `helpers` counts the helpers that ended, as the turn's log line does.
+ * real Sankhya accepts. `firstQueryFailed` says whether the first `data_query` of the turn failed,
+ * the miss a model that learned the table's name wrongly makes before it recovers. `helpers` counts
+ * the helpers that ended, as the turn's log line does.
  */
 export type Scorecard = {
   question: number
   right: boolean
   calls: number
   errors: number
+  firstQueryFailed: boolean
   repeated: number
   firstStepTokens: number | undefined
   helpers: number
@@ -198,6 +201,7 @@ export function scoreOf(turn: {
     const key = `${call.toolName} ${JSON.stringify(call.args)}`
     seen.set(key, (seen.get(key) ?? 0) + 1)
   }
+  const firstQuery = calls.find((call) => call.toolName === DATA_TOOL.query)
   const helperCalls = turn.events.filter((event) => event.type === 'subagent_tool_start').length
   const first = turn.events.find((event) => event.type === 'usage_update')
   return {
@@ -205,6 +209,7 @@ export function scoreOf(turn: {
     right: turn.right,
     calls: calls.length + helperCalls,
     errors: calls.filter(failed).length,
+    firstQueryFailed: firstQuery !== undefined && failed(firstQuery),
     repeated: [...seen.values()].filter((times) => times > 1).length,
     firstStepTokens: first?.type === 'usage_update' ? first.usage.promptTokens : undefined,
     helpers: turn.events.filter((event) => event.type === 'subagent_end').length,

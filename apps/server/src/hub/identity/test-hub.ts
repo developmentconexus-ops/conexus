@@ -256,11 +256,13 @@ export function post(
   url: string,
   body: unknown,
   key: string = randomUUID(),
+  more: Record<string, string> = {},
 ) {
   return hub.app.inject({
     method: 'POST',
     url,
     headers: {
+      ...more,
       origin: TEST_ORIGIN,
       'content-type': 'application/json',
       [ATTEMPT_KEY_HEADER]: key,
