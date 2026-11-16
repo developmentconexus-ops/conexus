@@ -11,12 +11,6 @@ async function people(on: CopiesOn) {
   const { hub, companyId } = on
   return {
     admin: await memberOn(hub, companyId, { name: 'Bia Reis', email: 'bia@example.test' }, 'admin'),
-    developer: await memberOn(
-      hub,
-      companyId,
-      { name: 'Davi Costa', email: 'davi@example.test' },
-      'developer',
-    ),
     outsider: await personOn(hub, { name: 'Edu Lima', email: 'edu@example.test' }),
   }
 }
@@ -42,15 +36,15 @@ test('a amostra: dono e administrador veem 5 linhas e a marca de que há mais', 
   }
 })
 
-test('a amostra: desenvolvedor, membro e quem é de fora recebem não encontrado', async (t) => {
+test('a amostra: o membro sem a marca e quem não é da empresa recebem não encontrado', async (t) => {
   const on = await copiesOn(t)
   const others = await people(on)
   const copy = await enabled(on, 'vendas')
   await firstEnded(on, copy.id)
-  for (const person of [others.developer, on.carla, others.outsider]) {
-    const read = await sample(on, person, copy.id)
-    assert.deepEqual([read.statusCode, codeOf(read)], [404, 'NOT_FOUND'])
-  }
+  const member = await sample(on, on.carla, copy.id)
+  assert.deepEqual([member.statusCode, codeOf(member)], [404, 'COPY_NOT_FOUND'])
+  const outsider = await sample(on, others.outsider, copy.id)
+  assert.deepEqual([outsider.statusCode, codeOf(outsider)], [404, 'NOT_FOUND'])
 })
 
 test('a amostra antes da primeira rodada', async (t) => {

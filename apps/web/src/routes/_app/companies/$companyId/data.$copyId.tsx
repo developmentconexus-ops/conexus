@@ -26,15 +26,5 @@ export const Route = createFileRoute('/_app/companies/$companyId/data/$copyId')(
 function TablePage() {
   const { companyId, copyId } = Route.useParams()
   const { tab, page, q } = Route.useSearch()
-  const { may } = Route.useRouteContext()
-  return (
-    <CopyDetail
-      companyId={companyId}
-      copyId={copyId}
-      tab={tab}
-      page={page}
-      q={q}
-      mayReadRows={may.readCopyRows}
-    />
-  )
+  return <CopyDetail companyId={companyId} copyId={copyId} tab={tab} page={page} q={q} />
 }

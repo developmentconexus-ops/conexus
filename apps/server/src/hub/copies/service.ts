@@ -47,13 +47,13 @@ export function createCopyService(
     /** One run of one copy; the clock's workflow calls it. */
     run: (input: { companyId: CompanyId; copyId: CopyId; whole?: boolean }, signal: AbortSignal) =>
       runCopy(full, { ...input, whole: input.whole === true }, signal),
-    /** The reads, admitting `readCopies`: the copies, the open proposals and those named. */
+    /** The reads, admitting `seeData`: the copies the role reads, and for whoever manages them the open proposals and those named. */
     list: (input: InCompany & { named: readonly CopyProposalId[] }) => listed(full, input),
     summaryOf: (input: Of) => summaryOf(full, input),
     models: (input: InCompany) => models(full, input),
     runs: (input: Of & { page: string | undefined }) => runs(full, input),
     ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
-    /** The first rows of a copy's table, admitting `readCopyRows`. */
+    /** The first rows of a copy's table, read as the member's role. */
     sample: (input: Of & { signal: AbortSignal }) => sampleOf(full, input),
     /** What the Builder's turn sees of the company's copies for a Projeto; admits nobody, the turn did. */
     projectView: (input: { companyId: CompanyId; projectId: ProjectId }) =>

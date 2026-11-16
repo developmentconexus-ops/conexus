@@ -102,9 +102,6 @@ const ACTIONS = {
   // Every member sees the copies their role reads, their runs and who reads each (data, part 4);
   // the company's database decides the rows, and a read holds no row.
   seeData: { by: 'MEMBER', statement: undefined, locks: false },
-  // The rows of a copy's table, which the Dados page's sample shows: an owner's and an
-  // administrator's for now (data, part 1), until the role decides which tables it reads (part 4).
-  readCopyRows: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },
   // Creating, changing and deleting the company's roles is the owner's and the administrator's
   // (step Papéis da empresa, U1); the library's own routes then check the same statements.
   manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },

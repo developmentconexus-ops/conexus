@@ -24,6 +24,7 @@ import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { pageKey, pageOf } from '../../platform/pages.ts'
 import { copyModeOf } from './mode.ts'
+import { copiesReadBy } from './readers.ts'
 import type { CopiesDeps, CopyState, InCompany, StoredCopy } from './store.ts'
 import { parsedCopy, personScope, proposalsOf, shownOf, sourcesNamed, storedCopy } from './store.ts'
 import { copy, copyRun, copySource, projectCopy } from './tables.ts'
@@ -125,6 +126,12 @@ export async function copySources(tx: ReadTx, companyId: CompanyId, ids: readonl
   return sourcesNamed(tx, companyId, parsed)
 }
 
+async function seenBy(deps: CopiesDeps, tx: ReadTx, input: InCompany): Promise<'ALL' | CopyId[]> {
+  const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
+  if (deps.identity.allows(proof.role, 'manageCopies')) return 'ALL'
+  return copiesReadBy(deps, tx, { companyId: input.companyId, role: proof.role })
+}
+
 /** The company's copies (or the one) as the contract states them; the clock is asked outside the read. */
 async function summaries(
   deps: CopiesDeps,
@@ -133,12 +140,14 @@ async function summaries(
 ): Promise<CopySummary[]> {
   const { companyId } = input
   const read = await deps.database.read(personScope(input), async (tx) => {
-    await deps.identity.admitMember({ tx, ...input, action: 'readCopies' })
+    const reads = await seenBy(deps, tx, input)
     const where = and(
       eq(copy.companyId, companyId),
       only === undefined ? undefined : eq(copy.id, only),
     )
-    const stored = (await tx.select().from(copy).where(where).orderBy(copy.name)).map(parsedCopy)
+    const stored = (await tx.select().from(copy).where(where).orderBy(copy.name))
+      .map(parsedCopy)
+      .filter(({ id }) => reads === 'ALL' || reads.includes(id))
     const ids = stored.map((row) => row.id)
     return {
       stored,
@@ -177,8 +186,8 @@ async function listed(
 ): Promise<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }> {
   const copies = await summaries(deps, input)
   const proposals = await deps.database.read(personScope(input), async (tx) => {
-    await deps.identity.admitMember({ tx, ...input, action: 'readCopies' })
-    return proposalsOf(deps, tx, input)
+    const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
+    return deps.identity.allows(proof.role, 'manageCopies') ? proposalsOf(deps, tx, input) : []
   })
   return { copies, proposals }
 }
@@ -201,8 +210,9 @@ async function runs(
 ) {
   const { companyId, copyId } = input
   const page = await deps.database.read(personScope(input), async (tx) => {
-    await deps.identity.admitMember({ tx, ...input, action: 'readCopies' })
-    if ((await storedCopy(tx, input)) === undefined) throw new Failure('COPY_NOT_FOUND')
+    const reads = await seenBy(deps, tx, input)
+    const outside = reads !== 'ALL' && !reads.includes(copyId)
+    if (outside || (await storedCopy(tx, input)) === undefined) throw new Failure('COPY_NOT_FOUND')
     const key = pageKey(input.page, CopyRunId)
     const anchor =
       key === undefined
