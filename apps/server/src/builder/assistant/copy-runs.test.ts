@@ -153,6 +153,24 @@ test('a tabela que não existe', async (t) => {
   assert.equal(JSON.parse(missing.text.slice(missing.text.indexOf('{'))).kind, 'NOT_FOUND')
 })
 
+test('o desenvolvedor recebe a tabela de fora do papel como a que não existe', async (t) => {
+  const steps = [...ask('sankhya_clientes').slice(0, 1), ...ask('nao_existe')]
+  const w = await copyWorld(t, steps)
+  const davi = await memberOn(
+    w.on.hub,
+    w.on.companyId,
+    { name: 'Davi Costa', email: 'davi@example.test' },
+    'developer',
+  )
+  const asking = await conversation(t, w, davi)
+  await asking()
+  await asking()
+  const [hidden, missing] = resultsOf(w)
+  assert.ok(hidden?.error && missing?.error)
+  assert.equal(hidden.text, missing.text)
+  assert.equal(JSON.parse(hidden.text.slice(hidden.text.indexOf('{'))).kind, 'NOT_FOUND')
+})
+
 test('a cópia que some entre a lista e as rodadas responde como a que não existe', async (t) => {
   const w = await copyWorld(t, ask('sankhya_vendas'))
   const { companyId, personId } = w

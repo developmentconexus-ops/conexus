@@ -343,6 +343,10 @@
       "name": "a tabela que o papel não lê responde como a que não existe"
     },
     {
+      "file": "apps/server/src/builder/assistant/copy-runs.test.ts",
+      "name": "o desenvolvedor recebe a tabela de fora do papel como a que não existe"
+    },
+    {
       "file": "apps/server/src/builder/connectors/connector-tools.test.ts",
       "name": "a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada \\(F-A\\)"
     },
