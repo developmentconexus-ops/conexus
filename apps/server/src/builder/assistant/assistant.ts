@@ -46,6 +46,7 @@ import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-me
 import { assistantConnectorTools, readsFiles } from './connector-access.ts'
 import type { ScopeOf } from './context.ts'
 import { machineMarks, sessionScopes } from './context.ts'
+import { copyRunsTool } from './copy-runs.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
@@ -54,8 +55,8 @@ import { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, automationRunFor, openConversation } from './open.ts'
-import { overviewTool, projectsOf } from './overview.ts'
-import type { AssistantProjects } from './ports.ts'
+import { connectionsOffered, overviewTool, projectsOf } from './overview.ts'
+import type { AssistantCopies, AssistantProjects } from './ports.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { proposeCompanyMemoryTool } from './propose-company-memory.ts'
@@ -124,6 +125,8 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  /** The copies are made after the conversations; a turn comes long after both. */
+  copies: () => AssistantCopies
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
@@ -207,14 +210,9 @@ function assistantAgent(
   const overview = overviewTool({
     scopeOf,
     projectsOf: (scope) => projectsOf(deps, scope),
-    connectionsOf: async (requestContext) =>
-      (await offeredOf(requestContext)).map(({ connectionId, connector, name, chosen }) => ({
-        connectionId,
-        connector,
-        name,
-        chosen,
-      })),
+    connectionsOf: connectionsOffered(offeredOf),
   })
+  const copyRuns = copyRunsTool({ scopeOf, copies: deps.copies })
   const showFile = showFileTool(parts.machines)
   const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(parts.machines)
@@ -253,6 +251,7 @@ function assistantAgent(
       return {
         ...toolsOf(sessionModel(requestContext)),
         [ASSISTANT_TOOL.overview]: overview,
+        [ASSISTANT_TOOL.copyRuns]: copyRuns,
         [ASSISTANT_TOOL.showFile]: showFile,
         [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
         ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),

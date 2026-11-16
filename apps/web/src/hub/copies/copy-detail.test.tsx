@@ -10,6 +10,7 @@ import { CATALOG, ORDERS_SHOWN } from './test-sources.ts'
 const server = hubServer()
 const DETAIL = detailOf(VENDAS)
 const RUNS = `${DETAIL}?tab=runs`
+const UNREACHABLE = { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null } as const
 const OTHER = '99999999-9999-4999-8999-999999999999'
 
 test('as rodadas: cada uma em palavras, na aba Rodadas', async () => {
@@ -20,7 +21,7 @@ test('as rodadas: cada uma em palavras, na aba Rodadas', async () => {
       runs: [
         copyRun({ outcome: { kind: 'RUNNING' }, endedAt: null, read: 500, written: 500 }),
         copyRun({
-          outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' },
+          outcome: UNREACHABLE,
           read: 500,
           written: 500,
         }),
@@ -135,7 +136,7 @@ test('a linha da cópia: uma rodada parcial também copiou', async () => {
 
 test.each([
   ['a rodada aberta', copyRun({ outcome: { kind: 'RUNNING' }, endedAt: null })],
-  ['o erro', copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } })],
+  ['o erro', copyRun({ outcome: UNREACHABLE })],
   ['a rodada interrompida', copyRun({ outcome: { kind: 'INTERRUPTED' } })],
 ])('a linha da cópia sem hora quando a rodada não copiou: %s', async (_name, run) => {
   openCopies(server, { copies: [copy({ run })], runs: [] }, DETAIL)
@@ -150,7 +151,7 @@ test('a linha da cópia sem rodada e sem linhas', async () => {
 
 test.each([
   ['a rodada completa', copyRun()],
-  ['o erro', copyRun({ outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' } })],
+  ['o erro', copyRun({ outcome: UNREACHABLE })],
 ])('a linha da cópia sem linhas: só o sistema, com %s', async (_name, run) => {
   openCopies(server, { copies: [copy({ run, rows: null })], runs: [] }, DETAIL)
   const line = await screen.findByText('Sankhya', { selector: 'p' })

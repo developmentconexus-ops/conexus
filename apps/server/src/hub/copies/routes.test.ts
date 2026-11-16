@@ -6,7 +6,7 @@ import type { Person } from '../identity/test-hub.ts'
 import { call, codeOf, memberOn, personOn, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn } from './test-copies.ts'
+import { copiesOn, SANKHYA_REFUSED } from './test-copies.ts'
 import { copiesUrl, enabled, firstEnded, listed, runsPage } from './test-routes.ts'
 
 /** Every route of the copies, for a copy id, as method and address. */
@@ -192,6 +192,25 @@ test('a lista e as rodadas', async (t) => {
     `${copiesUrl(on)}/${made.id}/runs?page=not-a-page`,
   )
   assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'])
+})
+
+test('as rodadas dizem o que o sistema disse', async (t) => {
+  const on = await copiesOn(t)
+  on.fake.switches.refuse.add('consultar')
+  const made = await enabled(on, 'clientes')
+  await firstEnded(on, made.id)
+  on.fake.switches.refuse.delete('consultar')
+  on.fake.switches.silent = true
+  await on.run(made.id)
+  on.fake.switches.silent = false
+  const { runs } = await runsPage(on, on.ana, made.id)
+  assert.deepEqual(
+    runs.map((run) => run.outcome),
+    [
+      { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null },
+      { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED', system: SANKHYA_REFUSED },
+    ],
+  )
 })
 
 /** The schedule and interval a response of the copy states. */

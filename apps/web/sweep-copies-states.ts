@@ -42,7 +42,18 @@ export const RUNNING: RunIn = {
 } as const
 export const SOURCE_DOWN: RunIn = {
   ...DONE,
-  outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' },
+  outcome: { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null },
+  read: 500,
+  written: 500,
+} as const
+
+export const SOURCE_REFUSED: RunIn = {
+  ...DONE,
+  outcome: {
+    kind: 'ERROR',
+    code: 'COPY_SOURCE_REFUSED',
+    system: { status: 200, code: '0', message: 'Serviço recusado' },
+  },
   read: 500,
   written: 500,
 } as const

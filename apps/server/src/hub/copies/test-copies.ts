@@ -2,7 +2,14 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
-import type { CompanyId, CopyId, CopyInterval, ProjectId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  CopyId,
+  CopyInterval,
+  CopyRunFailureCode,
+  CopySystemMessage,
+  ProjectId,
+} from '@conexus/hub-api'
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId,
@@ -293,11 +300,18 @@ export async function runsOf(on: CopiesOn, copyId: CopyId) {
     { kind: 'COMPANY', companyId: on.companyId, personId: null },
     (tx) =>
       tx.execute(
-        sql`select outcome, reason, pages, read, written, ended_at from copies.copy_run where copy_id = ${copyId} order by started_at desc`,
+        sql`select outcome, reason, pages, read, written, ended_at, system_status, system_code, system_message from copies.copy_run where copy_id = ${copyId} order by started_at desc`,
       ),
   )
   return result.rows.map((row) => Object(row))
 }
+
+/** The `ERROR` outcome a run ends with; `system` is what the source system said, null when it said nothing. */
+export function errorOf(code: CopyRunFailureCode, system: CopySystemMessage | null = null) {
+  return { kind: 'ERROR', code, system } as const
+}
+
+export const SANKHYA_REFUSED = { status: 200, code: '0', message: 'Serviço recusado' } as const
 
 export { TEST_APP_LOGIN_KEY } from '../../platform/test-cloudflare.ts'
 export type { CompanyId, Person, ProjectId }

@@ -10,6 +10,7 @@ import type {
   CopySchedule,
   CopyShown,
   CopySource,
+  CopySystemMessage,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
@@ -79,7 +80,7 @@ export type CopyOutcome =
   | { kind: 'COMPLETE' }
   /** WAIT: the provider answered 429, or the connector's lane passed its deadline; each source keeps its position. */
   | { kind: 'PARTIAL'; reason: 'CAP' | 'STOPPED' | 'WAIT' }
-  | { kind: 'ERROR'; code: CopyRunFailureCode }
+  | { kind: 'ERROR'; code: CopyRunFailureCode; system: CopySystemMessage | null }
   | { kind: 'INTERRUPTED' }
 
 export type CopyRunEnd =

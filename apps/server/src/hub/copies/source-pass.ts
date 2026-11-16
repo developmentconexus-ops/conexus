@@ -46,7 +46,11 @@ function datesOf(definition: StoredCopy['definition'], source: StoredSource) {
   return { since, windowFrom }
 }
 
-export const DATABASE_DOWN = { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' } as const
+export const DATABASE_DOWN = {
+  kind: 'ERROR',
+  code: 'COPY_DATABASE_UNAVAILABLE',
+  system: null,
+} as const
 export const WAIT = { kind: 'PARTIAL', reason: 'WAIT' } as const
 
 export type Run = {
@@ -166,9 +170,9 @@ async function pageStep(
 function stepOf(run: Run, source: StoredSource, read: CopyRead, ends: PassEnds): Promise<PageStep> {
   switch (read.kind) {
     case 'NO_CONNECTION':
-      return failed(run, { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE' })
+      return failed(run, { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', system: null })
     case 'FAILED':
-      return failed(run, { kind: 'ERROR', code: read.code })
+      return failed(run, { kind: 'ERROR', code: read.code, system: read.system })
     case 'WAIT':
       return waitStep(run, source, read.waitMs)
     case 'STALE':

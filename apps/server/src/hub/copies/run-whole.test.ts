@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CopyId } from '@conexus/hub-api'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn, copyRowOf, plantSource, syncRows, TEST_TUNING } from './test-copies.ts'
+import {
+  copiesOn,
+  copyRowOf,
+  errorOf,
+  plantSource,
+  SANKHYA_REFUSED,
+  syncRows,
+  TEST_TUNING,
+} from './test-copies.ts'
 
 async function ended(on: CopiesOn, copyId: CopyId, whole = false) {
   const end = await on.run(copyId, undefined, whole)
@@ -70,7 +78,7 @@ test('a passada inteira que falha não apaga', async (t) => {
   const before = await syncRows(on.owner, 'sankhya_clientes', CLIENTES)
   on.gate.gone.add(String(before[0]?.[0]))
   on.fake.switches.refuse.add('consultar')
-  assert.deepEqual(await ended(on, copyId, true), { kind: 'ERROR', code: 'COPY_SOURCE_REFUSED' })
+  assert.deepEqual(await ended(on, copyId, true), errorOf('COPY_SOURCE_REFUSED', SANKHYA_REFUSED))
   assert.deepEqual(await syncRows(on.owner, 'sankhya_clientes', CLIENTES), before)
   on.fake.switches.refuse.delete('consultar')
   assert.deepEqual(await ended(on, copyId), { kind: 'COMPLETE' })

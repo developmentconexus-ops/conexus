@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { phraseOf } from '@conexus/hub-api'
 import { call } from '../identity/test-hub.ts'
-import { asSync } from './test-copies.ts'
+import { asSync, errorOf } from './test-copies.ts'
 import {
   BY_ACCOUNT,
   CEILED,
@@ -60,7 +60,7 @@ test('a passada de uma leitura de lista: a célula que não cabe no tipo termina
     column.name === 'status' ? { ...column, type: 'bigint' } : column,
   )
   const copyId = await on.planted('pedidos', misfit, [STORE_A.ref])
-  assert.deepEqual(await on.ended(copyId), { kind: 'ERROR', code: 'COPY_SOURCE_UNREADABLE' })
+  assert.deepEqual(await on.ended(copyId), errorOf('COPY_SOURCE_UNREADABLE'))
   const [source] = await on.sourcesOf(copyId)
   assert.deepEqual([source?.position, source?.watermark, source?.pass], [null, null, 0])
   assert.deepEqual(await tableOf(on, 'pedidos'), [])
@@ -155,14 +155,14 @@ test('o cursor vencido recomeça', async (t) => {
 test('o teto da leitura', async (t) => {
   const on = await storesOn(t, { stores: [STORE_A], catalog: CEILED })
   const copyId = await on.planted('pedidos', ordersCopy(false), [STORE_A.ref])
-  assert.deepEqual(await on.ended(copyId), { kind: 'ERROR', code: 'COPY_SOURCE_CEILING' })
+  assert.deepEqual(await on.ended(copyId), errorOf('COPY_SOURCE_CEILING'))
   const [source] = await on.sourcesOf(copyId)
   assert.deepEqual(source?.position, { kind: 'OFFSET', offset: 50 }, 'a posição guardada')
   assert.equal(source?.watermark, null)
   assert.equal((await tableOf(on, 'pedidos')).length, 50, 'nada sai')
   const listed = await call(on.hub, on.ana, 'GET', `/api/companies/${on.companyId}/copies`)
   const [copy] = Object(listed.json()).copies
-  assert.deepEqual(copy?.run?.outcome, { kind: 'ERROR', code: 'COPY_SOURCE_CEILING' })
+  assert.deepEqual(copy?.run?.outcome, { kind: 'ERROR', code: 'COPY_SOURCE_CEILING', system: null })
   assert.equal(
     phraseOf('COPY_SOURCE_CEILING'),
     'A leitura chegou ao máximo de linhas que o sistema entrega.',

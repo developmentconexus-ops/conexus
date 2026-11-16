@@ -53,7 +53,7 @@ function catalogOf(tables: ReturnType<typeof table>[]): Catalog {
 export const CATALOG = catalogOf([
   table('vendas', [A], {
     ...RUN,
-    outcome: { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE' },
+    outcome: { kind: 'ERROR', code: 'COPY_DATABASE_UNAVAILABLE', system: null },
   }),
   table('clientes', [A], null),
   table('juntas', [A, B], { ...RUN, outcome: { kind: 'COMPLETE' } }),

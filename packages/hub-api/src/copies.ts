@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import { ConnectorId } from './company-roles.ts'
 import { ConnectionId } from './connectors.ts'
-import { CopyShown, CopySource } from './copy-shown.ts'
+import { CopyShown, CopySource, CopySystemMessage } from './copy-shown.ts'
 import type { FailureCode } from './failures.ts'
 import { PersonId } from './identity.ts'
 import { ProjectId } from './library-ids.ts'
@@ -40,9 +40,6 @@ export const CopyRunFailureCode = z.enum([
 ] as const satisfies readonly FailureCode[])
 export type CopyRunFailureCode = z.infer<typeof CopyRunFailureCode>
 
-/** The most of a source system's refusal message a run keeps. */
-export const SYSTEM_MESSAGE_MAX = 1000
-
 export const CopyRun = z.object({
   id: CopyRunId,
   startedAt: z.iso.datetime(),
@@ -52,7 +49,11 @@ export const CopyRun = z.object({
     z.object({ kind: z.literal('COMPLETE') }),
     // WAIT: the provider asked to wait; the next run goes on from where the source stopped.
     z.object({ kind: z.literal('PARTIAL'), reason: z.enum(['CAP', 'STOPPED', 'WAIT']) }),
-    z.object({ kind: z.literal('ERROR'), code: CopyRunFailureCode }),
+    z.object({
+      kind: z.literal('ERROR'),
+      code: CopyRunFailureCode,
+      system: CopySystemMessage.nullable(),
+    }),
     z.object({ kind: z.literal('INTERRUPTED') }),
   ]),
   read: z.int().min(0),
