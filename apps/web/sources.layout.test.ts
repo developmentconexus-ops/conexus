@@ -52,3 +52,31 @@ test('as fontes', async () => {
     }
   }
 })
+
+const ASKED = recordedRun('data-query')
+  .read.map(messageOf)
+  .findLast((message) => message?.role === 'builder')
+
+test('a fonte do dado', async () => {
+  const replies = {
+    ...WITH_CONVERSATIONS,
+    ...sessionReplies(FIRST, { messages: ASKED ? [ASKED] : [] }),
+  }
+  for (const viewport of [DESKTOP, PHONE]) {
+    for (const scheme of ['light', 'dark'] as const) {
+      const path = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${FIRST}`
+      const page = await harness.open(path, { viewport, replies, scheme })
+      if (viewport === PHONE)
+        await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+      const sources = page.getByRole('region', { name: 'Fontes' })
+      await sources.waitFor()
+      assert.match((await sources.innerText()).replace(/\s+/g, ' '), /sankhya_vendas · copiado /i)
+      const past = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      assert.ok(past <= 0, `${viewport.width}px, ${scheme}: ${past}px past the screen`)
+      assert.deepEqual(page.problems, [])
+      await page.close()
+    }
+  }
+})
