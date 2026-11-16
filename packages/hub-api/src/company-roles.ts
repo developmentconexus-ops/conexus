@@ -55,7 +55,7 @@ export const RoleChange = z.object({
 export type RoleChange = z.infer<typeof RoleChange>
 
 const InCompany = z.object({ companyId: CompanyId })
-const OfRole = InCompany.extend({ role: Role })
+export const OfRole = InCompany.extend({ role: Role })
 
 export const listRoles = defineOperation({
   id: 'listRoles',
