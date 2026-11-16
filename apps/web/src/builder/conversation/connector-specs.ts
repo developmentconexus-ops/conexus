@@ -11,7 +11,7 @@ import type { WritesRead } from './approval-item.ts'
 import { writtenBy } from './approval-item.ts'
 import type { ToolItem } from './rows.ts'
 import { readRefusedText, refusedLabelText } from './text.ts'
-import { stringArg } from './tool-args.ts'
+import { connectorOf, stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
 const { connectorRead, connectorNotes, connectorNoteSave, copyPropose } = BUILDER_TOOL
@@ -120,7 +120,7 @@ function presentProposal(result: unknown, status: ToolStatus): Presented {
 type Refused = 'BUSY' | 'UNREACHABLE' | 'DEADLINE' | 'CALLS_SPENT' | 'NOT_GRANTED' | 'OTHER'
 
 /** What a read answered, as the Assistant's row says it: the rows it brought, or why it brought none. */
-type ReadOutcome =
+export type ReadOutcome =
   | { kind: 'ROWS'; rows: number; complete: boolean }
   /** Read, with no count to say: the value is no list, or the cut left no row of one. */
   | { kind: 'READ' }
@@ -242,12 +242,7 @@ export function readRefusal(result: unknown): Refusal | undefined {
   return kind === 'REFUSED' ? 'SAID' : undefined
 }
 
-/** The connector a read's operation names ("sankhya.consultar" is Sankhya's). */
-function connectorOf(args: unknown): string | undefined {
-  return stringArg(args, 'operation')?.split('.')[0]
-}
-
-function rowsText(outcome: ReadOutcome | undefined): string | undefined {
+export function rowsText(outcome: ReadOutcome | undefined): string | undefined {
   if (outcome?.kind === 'ROWS') {
     const count = `${outcome.rows} ${outcome.rows === 1 ? 'linha' : 'linhas'}`
     return outcome.complete ? count : `${count}, há mais`
@@ -273,7 +268,7 @@ function refusedSentence(
   }
 }
 
-function said(sentence: string): Presented {
+export function said(sentence: string): Presented {
   return { icon: CircleAlertIcon, sentence, detail: undefined, beside: false }
 }
 

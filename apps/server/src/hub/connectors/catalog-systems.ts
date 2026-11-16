@@ -1,14 +1,14 @@
 import type { CatalogSystem, ConnectionState } from '@conexus/hub-api'
 import { ConnectionId } from '@conexus/hub-api'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
-import { offeredIn } from './builder-port.ts'
+import { givenTo, offeredIn } from './builder-port.ts'
 import { systemOf } from './catalog-subjects.ts'
 import type { Deps } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import type { SessionScope } from './scope.ts'
 import { idsOf } from './scope.ts'
-import { connection, projectConnection } from './tables.ts'
+import { connection } from './tables.ts'
 
 /** The connections the scope's place offers, as the data contract states them; admits nobody: the caller did, in its transaction. */
 export async function catalogSystemsOf(
@@ -42,15 +42,7 @@ export async function catalogSourcesOf(
     .where(
       and(
         eq(connection.companyId, companyId),
-        place.kind === 'PROJECT'
-          ? inArray(
-              connection.id,
-              tx
-                .select({ id: projectConnection.connectionId })
-                .from(projectConnection)
-                .where(eq(projectConnection.projectId, place.projectId)),
-            )
-          : undefined,
+        place.kind === 'PROJECT' ? givenTo(tx, place.projectId) : undefined,
       ),
     )
   return new Map(rows.map((row) => [ConnectionId.parse(row.id), row.state]))

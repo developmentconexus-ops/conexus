@@ -1,3 +1,4 @@
+import { DataResult } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { StreamEvent } from '../conversation/test-conversation.ts'
 import { textOf } from './test-real-model.ts'
@@ -160,20 +161,27 @@ export const QUESTIONS: readonly Question[] = [
   }),
 ]
 
-type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
+export type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
 
-function invocationsOf(parts: readonly MastraMessagePart[]): Invocation[] {
+export function invocationsOf(parts: readonly MastraMessagePart[]): Invocation[] {
   return parts.flatMap((part) => (part.type === 'tool-invocation' ? [part.toolInvocation] : []))
 }
 
-/** Mastra's own rule for a tool that failed (`checks.noToolErrors`), and a refusal: a result whose `kind` is not `OK`. */
-function failed(call: Invocation): boolean {
+/**
+ * Mastra's own rule for a tool that failed (`checks.noToolErrors`, `isErrorInvocation` in
+ * `@mastra/evals@1.10.11 dist/checks-DXG9awTJ.js:344-345`), and a refusal returned as a result: a
+ * `kind` that is not `OK` and that `DataResult` does not read. A data tool's refusal is thrown, so
+ * it counts by `output-error`; its catalog, table and rows are results, not refusals.
+ */
+export function failed(call: Invocation): boolean {
   return (
     call.state === 'call' ||
     call.state === 'output-error' ||
     call.isError === true ||
     Boolean(Object(call.result).error) ||
-    (Object(call.result).kind !== undefined && Object(call.result).kind !== 'OK')
+    (Object(call.result).kind !== undefined &&
+      Object(call.result).kind !== 'OK' &&
+      !DataResult.safeParse(call.result).success)
   )
 }
 

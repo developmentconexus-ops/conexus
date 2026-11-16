@@ -214,7 +214,7 @@ function failedRead(answered: { native: Native }) {
   } as const
 }
 
-/** One read through the access's door: the model gets the cut, and the whole answer goes to the machine's file when there is one. */
+/** One read through the access's door: the model gets the cut with the time the answer came back, and the whole answer goes to the machine's file when there is one. */
 export async function readOn(
   access: ConnectorAccess,
   call: { connectionId: ConnectionId; operation: string; input: unknown },
@@ -227,8 +227,11 @@ export async function readOn(
   const { requestContext, workspace, abortSignal } = context
   const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
   if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
-  if (answered.kind !== 'OK' || !('whole' in answered)) return answered
-  const { whole, ...cut } = answered
+  if (answered.kind !== 'OK') return answered
+  const at = new Date().toISOString()
+  if (!('whole' in answered)) return { ...answered, at }
+  const { whole, ...rest } = answered
+  const cut = { ...rest, at }
   if (workspace?.filesystem === undefined || access.savedAt === undefined) return cut
   const save = { path: access.savedAt(requestContext), log: access.log }
   return saveWhole(workspace.filesystem, save, whole, cut)

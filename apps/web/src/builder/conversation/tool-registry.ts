@@ -177,7 +177,7 @@ function phrased(spec: ToolSpec, phrase: string, status: ToolStatus, detail: str
 
 /** The row's icon and sentence by its status; the readable name for a tool outside the set. */
 export function presentTool(
-  tool: Pick<ToolItem, 'toolName' | 'args'> & { result?: unknown },
+  tool: Pick<ToolItem, 'toolName' | 'args' | 'errorText' | 'isError'> & { result?: unknown },
   status: ToolStatus,
   room: Room,
 ): Presented {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { DATA_TOOL } from '@conexus/hub-api'
 import type { KnownAgentControllerEvent } from '@mastra/client-js'
 import { z } from 'zod'
 import type { Stored } from './messages.ts'
@@ -157,6 +158,18 @@ export const SubagentPart = z.looseObject({
     toolName: z.literal('subagent'),
     args: z.looseObject({ agentType: z.string(), task: z.string() }),
     result: z.looseObject({ content: z.string(), isError: z.boolean() }),
+  }),
+})
+
+/** A company-data tool's call as Mastra stored it once the tool answered: the result is the tool's own, for `DataResult` to read. */
+export const DataPart = z.looseObject({
+  type: z.literal('tool-invocation'),
+  toolInvocation: z.looseObject({
+    state: z.literal('result'),
+    toolCallId: z.string(),
+    toolName: z.enum([DATA_TOOL.describe, DATA_TOOL.query]),
+    args: z.looseObject({}),
+    result: z.unknown(),
   }),
 })
 

@@ -1,6 +1,11 @@
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
-import { PADARIA_SOL_FILIAL, PADARIA_SOL_MATRIZ, sankhyaFake } from '@conexus/connectors'
+import {
+  connectorOf,
+  PADARIA_SOL_FILIAL,
+  PADARIA_SOL_MATRIZ,
+  sankhyaFake,
+} from '@conexus/connectors'
 import { z } from 'zod'
 
 /** The Filial's own X-Token, so the router in front of the two doubles knows whose login it is. */
@@ -92,3 +97,10 @@ export {
   sankhyaFake,
   soldBy,
 } from '@conexus/connectors'
+
+/** The copy models the Sankhya connector offers, as a company turns them on. */
+export function sankhyaCopyModels() {
+  const models = connectorOf('sankhya')?.copy?.models
+  if (models === undefined) throw new Error('The Sankhya connector has no copy models.')
+  return models
+}

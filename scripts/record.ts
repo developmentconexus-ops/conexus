@@ -1,5 +1,5 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, data-query, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -11,7 +11,7 @@
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
 // is called and no credential is read; every prompt is invented (security S40). `reads` is the
 // Assistant's turn: a `connector_read` that runs its SQL on the Sankhya double's Padaria Sol (Matriz),
-// then an answer with its numbers (step 24.1, criterion 11a). `research` and `research-failed` are the
+// then an answer with its numbers (step 24.1, criterion 11a). `data-query` is the Assistant's turn on the copied data: `data_describe` twice, `data_query`, then the answer. `research` and `research-failed` are the
 // Assistant's helper (U12): Mastra's `subagent` tool of type `pesquisar` runs its own model call, which
 // answers in `research` and is refused by the provider in `research-failed`. `tool-error` is no scenario: its recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -19,16 +19,8 @@ import { join } from 'node:path'
 import { Agent } from '@mastra/core/agent'
 import { AgentController } from '@mastra/core/agent-controller'
 import { InMemoryStore } from '@mastra/core/storage'
-import {
-  createTool,
-  taskCompleteTool,
-  taskWriteTool,
-  webFetchTool,
-  webSearchTool,
-} from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import { z } from 'zod'
-import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
 import { events as streamed } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import type { NativeHeader } from '../apps/server/src/platform/test-recordings.ts'
 import {
@@ -38,12 +30,12 @@ import {
   Recording,
   replayed,
 } from '../apps/server/src/platform/test-recordings.ts'
-import { orderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
 import * as approval from './record-approval.ts'
 import {
   APPROVAL_CALLS,
   APPROVAL_PROMPT,
-  APPROVAL_TOOL,
+  DATA_QUERY_CALLS,
+  DATA_QUERY_PROMPT,
   FILES,
   FILES_CALLS,
   FILES_PROMPT,
@@ -64,6 +56,7 @@ import {
   TASKS_PROMPT,
 } from './record-calls.ts'
 import * as title from './record-title.ts'
+import { RECORDED_TOOLS } from './record-tools.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
@@ -87,15 +80,13 @@ const Scenario = z.enum([
   'files',
   'tasks',
   'reads',
+  'data-query',
   'handoff',
   'research',
   'research-failed',
   ...title.TITLES,
   ...approval.APPROVALS,
 ])
-
-const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
-const orders = orderBook()
 
 const Package = z.object({ version: z.string() })
 function versionOf(name: string): string {
@@ -128,13 +119,13 @@ function replaying(answers: Answer[]): () => void {
 
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
-const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
 const Scripted = Scenario.exclude(['cited', 'thinking', 'abort'])
 const CALLS = {
   plan: PLAN_CALLS,
   files: FILES_CALLS,
   tasks: TASKS_CALLS,
   reads: READS_CALLS,
+  'data-query': DATA_QUERY_CALLS,
   handoff: HANDOFF_CALLS,
   research: RESEARCH_CALLS,
   'research-failed': RESEARCH_FAILED_CALLS,
@@ -146,6 +137,7 @@ const CALLS = {
 const asked = new Map<string, string>([
   ['tasks', TASKS_PROMPT],
   ['reads', READS_PROMPT],
+  ['data-query', DATA_QUERY_PROMPT],
   ['research', RESEARCH_PROMPT],
   ['research-failed', RESEARCH_PROMPT],
   ...title.PROMPTS,
@@ -232,37 +224,6 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     restore()
   }
   return events
-}
-
-/** The tools the recorded agent has: the Builder's task and web tools, and two invented ones. */
-const RECORDED_TOOLS = {
-  ...TASK_TOOLS,
-  web_fetch: webFetchTool,
-  web_search: webSearchTool,
-  connector_read: createTool({
-    id: 'connector_read',
-    description: 'Reads a connection the conversation chose.',
-    inputSchema: z.object({
-      connection: z.string(),
-      operation: z.string(),
-      input: z.object({ sql: z.string() }),
-    }),
-    execute: async ({ input }) => {
-      const answered = matriz(input.sql)
-      if (answered === undefined) return { kind: 'REFUSED' }
-      const linhas = answered.rows.map((row) =>
-        Object.fromEntries(answered.fields.map((name, at) => [name, row[at] ?? null])),
-      )
-      return { kind: 'OK', value: { linhas, completo: true }, complete: true }
-    },
-  }),
-  [APPROVAL_TOOL]: approval.approvalTool(orders, process.argv.includes('approval-refused')),
-  anotar: createTool({
-    id: 'anotar',
-    description: 'Anota uma nota.',
-    inputSchema: z.object({ nota: z.string() }),
-    execute: async () => 'Anotado.',
-  }),
 }
 
 /** The Assistant's helper type (`builder/assistant/research.ts`), with no tools of its own here. */

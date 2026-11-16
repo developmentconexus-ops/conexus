@@ -79,19 +79,6 @@ export function assistantFilePath(ids: {
   return `${url}?${new URLSearchParams({ path: ids.path })}`
 }
 
-/**
- * What a connection read answers the screen, as Mastra stored it: the cut the model read, never the
- * whole answer. `value` is a list in `linhas` or something else; `complete` is false when the cut
- * took rows or text away; `empty` is the provider's own word that nothing matched.
- */
-export const ReadCut = z.object({
-  kind: z.literal('OK'),
-  value: z.unknown().optional(),
-  complete: z.boolean().optional(),
-  empty: z.boolean().optional(),
-})
-export type ReadCut = z.infer<typeof ReadCut>
-
 /** One system a table was copied from: by the name recorded with the copy and the state of its connection, or, where the place was not given the connection, with no name. */
 export const DataSystem = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('NAMED'), name: z.string(), state: z.enum(CONNECTION_STATES) }),

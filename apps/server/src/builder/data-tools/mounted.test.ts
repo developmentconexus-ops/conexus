@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
+import { PADARIA_SOL_MATRIZ } from '../../hub/connectors/test-sales.ts'
 import { releasing } from '../../hub/copies/test-released.ts'
 import { memberOn } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
@@ -185,6 +186,7 @@ test('no Início, a conexão à espera de nova autorização: a tabela é lida, 
   )
   assert.deepEqual(Object(described?.tables?.[0]).systems, [{ kind: 'NAMED', ...origin }])
   assert.equal(queried?.kind, 'ROWS')
+  assert.deepEqual(Object(queried).rows, [[String(PADARIA_SOL_MATRIZ.notas.length)]])
   assert.deepEqual(Object(queried?.origin?.[0]).systems, [{ kind: 'NAMED', ...origin }])
 })
 

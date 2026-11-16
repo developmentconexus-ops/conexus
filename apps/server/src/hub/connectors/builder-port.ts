@@ -132,6 +132,17 @@ export function createSpending(): (key: string) => boolean {
   }
 }
 
+/** The connections released to a Projeto, in any state: the one place that says which a Projeto received (C26). */
+export function givenTo(tx: ReadTx, projectId: ProjectId) {
+  return inArray(
+    connection.id,
+    tx
+      .select({ id: projectConnection.connectionId })
+      .from(projectConnection)
+      .where(eq(projectConnection.projectId, projectId)),
+  )
+}
+
 /**
  * The company's usable connections in the order the model is told of them. Where the reader works in a
  * Projeto only those released to it are offered: the place decides the join, the row is one shape (C26).
@@ -153,15 +164,7 @@ export function offeredIn(
       and(
         eq(connection.companyId, ids.companyId),
         usable,
-        ids.projectId === undefined
-          ? undefined
-          : inArray(
-              connection.id,
-              tx
-                .select({ id: projectConnection.connectionId })
-                .from(projectConnection)
-                .where(eq(projectConnection.projectId, ids.projectId)),
-            ),
+        ids.projectId === undefined ? undefined : givenTo(tx, ids.projectId),
         connectionId === undefined ? undefined : eq(connection.id, connectionId),
       ),
     )

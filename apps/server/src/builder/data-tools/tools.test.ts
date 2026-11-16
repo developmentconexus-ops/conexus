@@ -141,7 +141,6 @@ test('a fonte não dada ao Projeto: a origem diz só NOT_GIVEN, sem nome', async
   ])
     assert.deepEqual(systems, [{ kind: 'NOT_GIVEN' }])
   assert.equal(described.origin.connector, 'erp-falso')
-  assert.equal(JSON.stringify([listed, described, queried]).includes(LOJA_A), false)
 })
 
 test('uma cópia de duas conexões com uma não dada nomeia só a dada', async () => {

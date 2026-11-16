@@ -48,6 +48,7 @@ export type ToolBody =
   | 'answer'
   | 'research'
   | 'program'
+  | 'query'
   | 'generic'
 
 export type ToolStatus = 'running' | 'done' | 'error' | 'denied'
@@ -109,7 +110,7 @@ export type ToolSpec = {
   reconnects?: readonly string[]
   /** The row's own icon and words, instead of the table's by status. */
   present?: (
-    tool: Pick<ToolItem, 'args' | 'result'>,
+    tool: Pick<ToolItem, 'args' | 'result' | 'errorText' | 'isError'>,
     status: ToolStatus,
     words: ConnectorWords,
   ) => Presented
