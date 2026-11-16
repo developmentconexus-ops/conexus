@@ -233,7 +233,7 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 6 | U1 | Nenhum `withheld` sobra: `git grep -n -i withheld -- packages/hub-api apps/server/src/hub/data scripts/rerun-never.json` não mostra nada, e `scripts/rerun-never.json` traz o nome da lei nova no lugar da antiga | `scripts/rerun-exempt.test.ts` (cruza a lista com os nomes dos testes) e o comando `git grep` no ponto de conferência | should |
 | 10 | U2 | `data_describe` e `data_query` chamadas sem `requestContext` falham com o erro da ferramenta de `kind` `NOT_GRANTED`, e nenhuma fonte do contrato é chamada | `apps/server/src/builder/data-tools/tools.test.ts`, "sem requestContext, NOT_GRANTED e nenhuma fonte chamada" | must |
 | 11 | U2 | Com `dataOf` devolvendo `undefined` (conversa sem escopo), as duas falham com `NOT_GRANTED` | `tools.test.ts`, "dataOf undefined, NOT_GRANTED" | must |
-| 12 | U2 | `data_describe` sem tabela devolve `CATALOG` com cada sistema (nome, conector, leituras) e cada tabela (nome, rótulo, descrição, sistemas, conector, `lastRunEndedAt`, `lastRun`), sem colunas; `lastRunEndedAt` é o `endedAt` de `kept.lastRun`, a última rodada encerrada com qualquer resultado, dito no fuso de quem lê com o deslocamento (UTC com `Z` sem fuso), e é nulo com `lastRun: 'NONE'`; nenhum campo se chama `copiedAt`. A empresa sem sistema nem cópia recebe as duas listas vazias | `tools.test.ts`, "describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada" (uma tabela com a última rodada `ERROR`, outra sem rodada) e "o catálogo vazio dá CATALOG com as duas listas vazias" | must |
+| 12 | U2 | `data_describe` sem tabela devolve `CATALOG` com cada sistema (nome, conector, leituras) e cada tabela (nome, rótulo, descrição, sistemas, conector, `lastRunEndedAt`, `lastRun`), sem colunas; `lastRunEndedAt` é o `endedAt` de `kept.lastRun`, a última rodada encerrada com qualquer resultado, e é nulo com `lastRun: 'NONE'`; nenhum campo se chama `copiedAt`. A empresa sem sistema nem cópia recebe as duas listas vazias | `tools.test.ts`, "describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada" (uma tabela com a última rodada `ERROR`, outra sem rodada) e "o catálogo vazio dá CATALOG com as duas listas vazias" | must |
 | 13 | U2 | `data_describe({ table })` de uma tabela do catálogo devolve `TABLE` com as colunas, no máximo 5 linhas, `more: true` quando a página tem mais ou veio cortada, e a origem | `tools.test.ts`, "describe com tabela corta 200 linhas em 5 e diz more" | must |
 | 14 | U2 | `data_describe({ table })` de um nome fora de `tables` (inexistente, ou de uma cópia que o lugar não lê) falha com o erro da ferramenta `NOT_IN_CATALOG`, com "No such table in the catalog. Call data_describe with no table to list them." no `reason`, e não pede linha nenhuma à fonte | `tools.test.ts`, "describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha" | must |
 | 15 | U2b | `data_query` devolve `ROWS` com colunas, linhas, `complete` e uma origem por tabela lida, com o nome e o conector de cada fonte tirados do registro gravado da cópia (`kept.sources`), não de `systems`; numa junção, as duas | `tools.test.ts`, "query devolve a origem com o nome gravado e o conector da cópia" | must |
@@ -878,7 +878,7 @@ export const DESCRIBE_SAMPLE_ROWS = 5            // decisão T7 do escopo
 
 // packages/hub-api/src/assistant.ts, ao lado de ReadCut (o dono da forma do resultado, code C26)
 export const DataOrigin = z.object({ systems: z.array(z.string()).min(1), connector: z.string(),
-  table: z.string(), lastRunEndedAt: z.iso.datetime({ offset: true }).nullable(),
+  table: z.string(), lastRunEndedAt: z.iso.datetime().nullable(),
   lastRun: z.enum([...<os kind de CopyRun.shape.outcome>, 'NONE']) })   // decisão 7
 export const DataResult = z.discriminatedUnion('kind', [ /* CATALOG, TABLE, ROWS, abaixo */ ])
 export type DataOrigin = z.infer<typeof DataOrigin>
@@ -900,7 +900,7 @@ connector, reads: [{ operation, label, summary }] }]`, `tables: [{ name, label, 
 ...DataOrigin sem table }]`), `TABLE` (`name, label, description, columns: [{ name, type,
 description, inactiveSince }], sample: { rows, more }, origin`) e `ROWS` (`columns, rows, complete,
 origin: DataOrigin[]`, mais `reason` quando `origin` é vazia). `lastRunEndedAt` é
-`kept.lastRun?.endedAt ?? null`, dito no fuso de quem lê, com o deslocamento (UTC com `Z` sem fuso; PR 1111), e `lastRun` é `kept.lastRun?.outcome.kind ?? 'NONE'` (decisão 25).
+`kept.lastRun?.endedAt ?? null`, e `lastRun` é `kept.lastRun?.outcome.kind ?? 'NONE'` (decisão 25).
 `systems` traz o nome de cada conexão de `kept.connections`, na mesma ordem. A emenda de
 2026-11-15 troca essa forma: U2b lê a origem de `kept.sources`, que o catálogo de cada lugar já
 monta com o nome e o estado, ou só o conector num Projeto que não recebeu a conexão.
