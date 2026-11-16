@@ -24,11 +24,22 @@ trilha segue o método leve da fila do molde (delivery L27).
 
 A pergunta respondida com a origem, a primeira etapa a caminho de `D2`, fechou em 2026-11-16: o
 fundador a usou no ar, e a linha de uso está no
-[arquivo de aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md). O cartão de hoje
-passa a ser o de Cada papel lê só o seu, a etapa 2, no PR 1106. A Ontologia volta como a etapa do
-Negócio, com estudo e cartão próprios; o PR 1030 fica aberto como a fonte dela, e o cartão antigo
-da Ontologia, aposentado em 2026-11-15 ("Aposentar"), está no histórico do `main`, no commit
-`8ced9430`.
+[arquivo de aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md).
+
+O cartão de hoje é [Cada papel lê só o seu](../cada-papel-le-so-o-seu.md), a etapa 2, com a emenda
+da porta única (PR 1141), que segue a letra 1(a) do estudo da arquitetura de permissões. No `main`
+estão os grupos 1 a 4 (PRs 1117, 1120, 1130 e 1134), o grupo A com a sua emenda (PRs 1132 e 1133) e o
+Construtor que lista só as cópias do papel (PR 1137); falta o grupo B (U14 a U16, a porta), em construção, e o grupo
+C (U17, a coluna `readers_set`), no PR 1142, em revisão e à espera da palavra de merge do fundador.
+Fechar a etapa é do fundador, depois do uso.
+
+A etapa seguinte é a do Registro e da conformidade: os consumidores passam a derivar da porta, e a
+licença que toda execução exige nasce com o Registro. As concessões por instância entram quando o primeiro cartão precisar
+de instância. A conexão MCP tem cartão próprio quando a primeira ferramenta de IA entrar.
+
+A Ontologia volta como a etapa do Negócio, com estudo e cartão próprios; o PR 1030, fechado sem
+mesclar em 2026-11-16 com o ramo guardado, é a fonte dela, e o cartão antigo da Ontologia,
+aposentado em 2026-11-15 ("Aposentar"), está no histórico do `main`, no commit `8ced9430`.
 
 ## O que a trilha possui
 

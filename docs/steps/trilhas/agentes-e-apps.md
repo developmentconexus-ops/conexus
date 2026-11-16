@@ -40,8 +40,18 @@ As respostas do fundador:
 ## O cartão de hoje
 
 O cartão desta trilha em `docs/steps/` é `o-arquivo-do-turno-anterior.md`, a máquina da conversa que
-não pausa a cada mensagem, com a marca antiga `Trilho: assistente`. O cartão
-`pattern-o-rastreio-do-mastra.md` mexe em `builder/mastra/` e é da Plataforma.
+não pausa a cada mensagem, com a marca antiga `Trilho: assistente`. Ele está construído: o PR 1028,
+com o cartão e as quatro emendas, entrou no `main` em 2026-11-14. O
+[arquivo de aprovação](../../approvals/o-arquivo-do-turno-anterior.md) ainda não tem a linha de uso,
+e a etapa fica aberta até o fundador usá-la. O cartão `pattern-o-rastreio-do-mastra.md` mexe em
+`builder/mastra/` e é da Plataforma.
+
+O estudo de referência sobre como uma plataforma de referência cria apps terminou em 2026-11-16, fora
+do repositório. O fundador respondeu duas coisas nele. Sobre a IA dentro do app: "Agora não; quando
+um app pedir, forma A", com a nota "Isso já estpa dentro do escopo no futuro na nossa SDK é para
+poder ter agentes dentro do app sim". Sobre a opção "não sei, me ajude a decidir" em cada pergunta do
+Builder: "Sim, em todo cartão". As outras propostas do estudo são candidatas: cada uma entra pelo
+cartão do marco da trilha que a pedir, com a aprovação dele.
 
 ## O que a trilha possui
 
