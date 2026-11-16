@@ -94,3 +94,14 @@ test('uma recusa com mensagem e sem código guarda só o que veio', async (t) =>
     [400, null, 'Sessão expirada'],
   )
 })
+
+test('um texto que fica vazio depois da limpeza não é guardado', async (t) => {
+  const on = await copiesOn(t)
+  const copyId = await on.enable('clientes')
+  on.fake.switches.refuse.add('consultar')
+  on.fake.switches.refuseStatus = 400
+  on.fake.switches.refuseMessage = '\0'
+  await ended(on, copyId)
+  const [run] = await runsOf(on, copyId)
+  assert.deepEqual([run.system_status, run.system_code, run.system_message], [null, null, null])
+})
