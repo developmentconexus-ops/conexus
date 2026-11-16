@@ -273,7 +273,7 @@ function refusedSentence(
   }
 }
 
-function said(sentence: string): Presented {
+export function said(sentence: string): Presented {
   return { icon: CircleAlertIcon, sentence, detail: undefined, beside: false }
 }
 
