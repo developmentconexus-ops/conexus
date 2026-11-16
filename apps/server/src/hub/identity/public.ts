@@ -28,6 +28,7 @@ import type { PersonConversationRelease } from './memberships.ts'
 import { companyMembersOf, holdMember, membersAllowed, peopleNamed } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
+import { companyRoleRows } from './role-rows.ts'
 import type { RoleKit } from './roles.ts'
 import { rolesFor } from './roles.ts'
 import { registerIdentityRoutes } from './routes.ts'
@@ -100,6 +101,7 @@ export function createIdentity(deps: {
       lockCompany,
       admitMember: admit,
       allows,
+      companyRoleRows,
       ...createMayUse(auth, deps.database, roles),
       // Who a request to publish tells, the members who decide it, and its asker held while it
       // is decided (step 24.3.4).
