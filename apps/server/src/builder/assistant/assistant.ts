@@ -260,7 +260,7 @@ function assistantAgent(
         ...(scope === undefined
           ? {}
           : assistantConnectorTools(deps, { scope, chosen, mayNote: note })),
-        ...dataTools({ dataOf: dataOfScope(scopeOf, deps.companyData), log: deps.log }),
+        ...dataTools({ dataOf: dataOfScope(scopeOf, deps.companyData) }),
       }
     },
     skills: async ({ requestContext }) => [

@@ -270,7 +270,7 @@ function runToolsOf(
           ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
           : {}),
         ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
-        ...dataTools({ dataOf: async () => deps.companyData(scope), log: deps.log }),
+        ...dataTools({ dataOf: async () => deps.companyData(scope) }),
       }),
       ...preset.reads,
     }
