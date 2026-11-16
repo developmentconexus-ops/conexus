@@ -204,7 +204,7 @@ export function CopyDetail(props: {
           <PageTitle className="min-w-0 break-words font-mono">{copy.name}</PageTitle>
           <StateBadge copy={copy} />
         </div>
-        <div className="flex items-center gap-sm">
+        <div className="flex min-w-0 flex-wrap items-center gap-sm">
           {props.ask?.(copy.name)}
           {may.manageCopies && (
             <>
