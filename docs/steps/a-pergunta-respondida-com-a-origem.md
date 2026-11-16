@@ -162,7 +162,7 @@ suas palavras estão no arquivo de aprovação.
 | G6 | U11 A passada inteira no motor | Uma rodada pedida como inteira começa cada fonte do zero, fica marcada, e a fonte que fecha uma passada que leu tudo apaga o que sumiu, também numa cópia incremental | `apps/server/src/hub/copies/`, `apps/server/src/platform/` | data, testing | PR 1088 mesclado (a coluna `whole`) |
 | G6 | U12 A segunda linha do relógio | Toda cópia incremental ganha a linha semanal `schedule_<cópia>-whole` (domingo, 04:07, São Paulo), que anda com a normal; ela dispara a passada inteira ou é pulada com outra rodada aberta; ao subir, a cópia antiga ganha a linha que falta | `apps/server/src/builder/copy-clock/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/` (só um teste), `apps/server/src/main.ts` | testing | U11 |
 | G6 | U13 Passada inteira na aba Rodadas | A rota de rodadas devolve `whole`; a linha da rodada mostra "Passada inteira" depois do resultado, no computador e no celular | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/web/src/hub/copies/` | web | U11 |
-| G7 (um PR só do web, emenda de 2026-11-16; depois dele, a QA, testing T25) | U14 O bloco Fontes da tela A | Cada fonte numa linha com a logo, o sistema e a conexão sem repetir, a tabela numa pastilha de código, o estado com ponto e cor, o selo da conexão a reautorizar, a fonte `NOT_GIVEN` só com o sistema, a leitura ao vivo "ao vivo · lido agora, às"; a sala do Builder com o nome e a logo do catálogo; a 390 px, a tabela e o estado na segunda linha | `apps/web/src/builder/conversation/` (`sources.ts`, `sources.tsx`, `connector-words.ts`, `tool-spec.ts`, `connector-specs.ts`, `panel.tsx` e os testes), `apps/web/src/ui/` (só `block.tsx`), `apps/web/sources.layout.test.ts` | web, design, testing | G3 no `main` (PR 1107, merge `d9f56971`) e o PR 1111 mesclado (`systemText` na porta de `hub/copies/`) |
+| G7 (um PR só do web, emenda de 2026-11-16; depois dele, a QA, testing T25) | U14 O bloco Fontes da tela A | Cada fonte numa linha com a logo, o sistema e a conexão sem repetir, a tabela numa pastilha de código, o estado com ponto e cor, o selo da conexão a reautorizar, a fonte `NOT_GIVEN` só com o sistema, a leitura ao vivo "ao vivo · lido agora, às"; a sala do Builder com o nome e a logo do catálogo; a 390 px, a tabela e o estado na segunda linha | `apps/web/src/builder/conversation/` (`sources.ts`, `sources.tsx`, `connector-words.ts`, `tool-spec.ts`, `connector-specs.ts`, `panel.tsx`, o hook do catálogo e os testes), `apps/web/src/builder/assistant/` (só `connector-names.ts`), `apps/web/src/ui/` (só `block.tsx`), `apps/web/sources.layout.test.ts` | web, design, testing | G3 no `main` (PR 1107, merge `d9f56971`) e o PR 1111 mesclado (`systemText` na porta de `hub/copies/`) |
 
 Oito grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
@@ -269,15 +269,16 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (com uma consulta de 1.200 caracteres, acima do corte de 800 de `shown`) e "a cópia recusada diz para selecionar" | must |
 | 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. `NOT_IN_ROLE`, a consulta que o banco recusou com `42501`, diz "Essa tabela não está no catálogo.", o texto de `NOT_IN_CATALOG`: nenhum texto nomeia papel nem confirma que a tabela existe. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, casos "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) e "a consulta recusada pelo banco diz que a tabela não está no catálogo" | must |
 | 41 | U5 | Na conversa do Builder (`BUILDER_ROOM`) as duas ferramentas têm as mesmas linhas e o mesmo corpo | `data-specs.test.tsx`, caso "na sala do Builder, as mesmas linhas" | must |
-| 42 | U14 | A fonte de cópia mostra numa linha a logo do conector (`ConnectorLogo small`), "Sankhya · Matriz" (o sistema e a conexão, sem repetir quando são iguais, por `systemText`), a tabela `sankhya_vendas` numa pastilha de código e "copiado hoje às 08:45". Recusa: nunca "Sankhya · Sankhya", e nenhuma fonte sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
-| 43 | U14 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". O estado é um carimbo (`Stamp`, design V35): a cópia em dia leva o ponto em `success`, a rodada parcial o ponto e as palavras em `warning`, a parada em `danger`, e "ainda sem cópia" o ponto neutro (`line-strong`). Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou, e nenhum estado é só cor, sem palavra | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial, em warning", "a rodada com erro ou interrompida diz parada, em danger, e nunca copiado", "sem rodada diz ainda sem cópia, com o ponto neutro", "outro dia diz ontem ou a data" | must |
+| 42 | U14 | A fonte de cópia mostra numa linha a logo do conector (`ConnectorLogo small`), "Sankhya · Matriz" (o sistema e a conexão, sem repetir quando são iguais, por `systemText`), a tabela `sankhya_vendas` em `font-mono` sobre `bg-surface-3` e "copiado hoje às 08:45". Recusa: nunca "Sankhya · Sankhya", e nenhuma fonte sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
+| 43 | U14 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". O estado é um carimbo (`Stamp`, V35), como a tela A: a cópia em dia tem as palavras em `text-2` e só o ponto em `success`; "ainda sem cópia", as palavras em `text-2` e o ponto em `line-strong`; a parcial pinta palavras e ponto em `warning`, a parada em `danger`. Recusa: com `ERROR` ou `INTERRUPTED` nunca "copiado", porque a hora é de uma rodada que não copiou; nenhum estado só em cor; a cópia em dia nunca com as palavras verdes | `sources.test.tsx`, casos "a cópia em dia: as palavras em text-2 e o ponto em success", "a rodada parcial diz rodada parcial, em warning", "a rodada com erro ou interrompida diz parada, em danger, e nunca copiado", "sem rodada diz ainda sem cópia, com o ponto neutro", "outro dia diz ontem ou a data" | must |
 | 44 | U6 | A mesma tabela lida duas vezes no turno aparece uma vez; as páginas da web citadas continuam como hoje | `sources.test.tsx`, caso "a mesma tabela lida duas vezes aparece uma vez" e o caso de web de hoje com `kind: 'web'` | must |
-| 45 | U14 | A resposta que leu um sistema ao vivo mostra a logo do conector, o sistema e a conexão sem repetir ("Sankhya · Matriz"; "Sankhya" quando a conexão se chama "Sankhya"), a operação lida na pastilha de código e o carimbo em `success` "ao vivo · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "ao vivo · lido ontem às HH:MM" ou "ao vivo · lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz ao vivo · lido agora, às" com `reads` regravado, "a leitura ao vivo de uma conexão com o nome do sistema não o repete" (do PR 1111) e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
+| 45 | U14 | A leitura ao vivo mostra a logo, o sistema e a conexão sem repetir, a operação na pastilha e o carimbo "ao vivo · lido agora, às HH:MM", com as palavras em `text-2` e só o ponto em `success`, no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "ao vivo · lido ontem às HH:MM" ou "ao vivo · lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz ao vivo · lido agora, às" com `reads` regravado, "a leitura ao vivo de uma conexão com o nome do sistema não o repete" (do PR 1111) e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
 | 46 | U6 | Um resultado de ferramenta de dado fora do esquema não vira fonte, e nenhuma chamada em erro vira fonte | `sources.test.tsx`, caso "um resultado fora do esquema não vira fonte" | must |
-| 47 | U14 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela. A 1280 px, a logo, o nome, a pastilha e o carimbo ficam numa linha só, com o carimbo na ponta direita; a 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao começo do nome | `apps/web/sources.layout.test.ts`, caso "a fonte do dado" (testing T23), que mede a posição da pastilha e do nome nas duas larguras e nos dois temas | must |
-| 110 | U14 | A fonte cuja conexão está em `NEEDS_REAUTH` mostra, depois do nome, o selo em `danger` com as palavras de `stateBadge`: "Chaves recusadas" para um conector de chaves, "Pede para conectar de novo" para um conector OAuth, pela autenticação do conector no catálogo. Recusa: a conexão `ACTIVE` não mostra selo, nem "Funcionando" | `sources.test.tsx`, casos "a conexão à espera de nova autorização mostra o selo de Integrações" (os dois tipos de autenticação) e "a conexão ativa não mostra selo" | must |
-| 111 | U14 | A fonte `NOT_GIVEN` (o Projeto que não recebeu a conexão) mostra só a logo e o sistema ("Sankhya"), a tabela e o carimbo; numa cópia de duas conexões com uma `NOT_GIVEN`, só o nome da dada. Recusa: nem o id do conector nem um nome de conexão aparecem no lugar da conexão não dada | `sources.test.tsx`, casos "a fonte não dada ao Projeto mostra só o sistema e a logo" e "uma cópia de duas conexões com uma não dada nomeia só a dada" | must |
-| 112 | U14 | Na conversa do Builder, a fonte tem o nome ("Sankhya", não "sankhya") e a logo da conversa do Assistente, pelo catálogo de conectores. Recusa: com o catálogo ainda não lido, ou com a leitura falha, a fonte nomeia o conector pelo id e sai sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id"; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
+| 47 | U14 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela. A 1280 px, a logo, o nome, a pastilha e o carimbo ficam numa linha só, com o carimbo na ponta direita; a 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao começo do nome; o carimbo que não cabe desce inteiro a uma terceira linha, no começo da linha da fonte. Recusa: nem o carimbo nem o selo quebram no meio | `apps/web/sources.layout.test.ts`, caso "a fonte do dado" (testing T23), que mede a posição da pastilha e do nome nas duas larguras e nos dois temas | must |
+| 110 | U14 | A fonte com a conexão em `NEEDS_REAUTH` mostra, depois do nome, o selo `danger` de `stateBadge`: "Chaves recusadas" num conector de chaves, "Pede para conectar de novo" num OAuth. Recusa: a conexão `ACTIVE` não mostra selo, nem "Funcionando" | `sources.test.tsx`, casos "a conexão à espera de nova autorização mostra o selo de Integrações" (os dois tipos de autenticação) e "a conexão ativa não mostra selo" | must |
+| 111 | U14 | A fonte `NOT_GIVEN` mostra a logo e só o sistema ("Sankhya"); numa cópia de duas conexões com uma `NOT_GIVEN`, só o nome da dada. Recusa: nem o id nem um nome no lugar da não dada | `sources.test.tsx`, casos "a fonte não dada ao Projeto mostra só o sistema e a logo" e "uma cópia de duas conexões com uma não dada nomeia só a dada" | must |
+| 112 | U14 | Na conversa do Builder, a fonte tem o nome ("Sankhya", não "sankhya") e a logo da conversa do Assistente, pelo catálogo de conectores; as recusas de conector do Builder continuam "Não conseguiu ler o sistema da empresa.". Recusa: com o catálogo não lido ou falho, o conector pelo id e sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id", e o caso de hoje da recusa de conector no Builder; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
+| 113 | U14 | Duas fontes na mesma resposta são duas linhas, cada uma com a sua logo, com uma linha fina entre elas e outra acima de "Fontes"; cada linha tem pelo menos 32 px. Recusa: duas fontes nunca na mesma linha | `sources.test.tsx`, caso "duas fontes são duas linhas, cada uma com a sua logo"; `sources.layout.test.ts`, "a fonte do dado" (as linhas finas e a altura) | must |
 | 50 | U7 | Em `/companies/<c>/data/<id>`, a navegação "Caminho" tem os links "Dados" e "{sistema}" e o nome da tabela em texto; os dois links levam a `/data` sem `layer` e com o `q` do endereço; nenhum dos dois tem `aria-current`. O link "← Dados" de hoje não existe mais | `copy-detail.test.tsx`, "o caminho" e "o caminho leva a busca" | must |
 | 51 | U7 | O topo mostra o nome da tabela como título, o estado, **Rodar agora** e o menu da cópia, como hoje; a frase "{sistema} · a cada {intervalo}" não aparece | `copy-detail.test.tsx`, "o caminho leva a Dados" (o antigo `:47-52`) e "as rodadas…" (`:15-45`, ajustado) | must |
 | 52 | U7 | Com a última rodada COMPLETE ou PARTIAL, a linha abaixo do título diz "Copiada do {sistema} em {dia e hora do fim} · {linhas} linhas" | `copy-detail.test.tsx`, "a linha da cópia: a hora do fim da rodada e as linhas" | must |
@@ -555,8 +556,8 @@ A tela A do bloco Fontes, aprovada pelo fundador em 2026-11-16, fica fora do rep
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Bloco Fontes, fonte de cópia (U14) | a linha com a logo, "Sankhya · Matriz", a pastilha `sankhya_vendas` e o carimbo em `success` "copiado hoje às 08:45" (42) | sem rodada: "ainda sem cópia", ponto `line-strong` (43); resposta sem leitura de dado: nenhum bloco, como hoje | o catálogo de conectores ainda não lido: o conector pelo id, sem logo (112) | a leitura do catálogo falhou: igual ao carregando, sem erro na tela (112); recusa da ferramenta: nenhuma fonte (46) | `NOT_IN_CATALOG`: nenhuma fonte | `NOT_GIVEN`: só a logo e "Sankhya", sem nome de conexão (111); `NOT_IN_ROLE`: nenhuma fonte | rodada parcial em `warning`, parada em `danger` (43); conexão em `NEEDS_REAUTH`: o selo `danger` de `stateBadge` depois do nome (110) |
-| Bloco Fontes, fonte ao vivo (U14) | a logo, "Sankhya · Matriz" (ou "Sankhya" quando a conexão tem o nome do sistema), a operação na pastilha e o carimbo em `success` "ao vivo · lido agora, às 00:37" (45) | sem leitura ao vivo: nenhuma fonte | enquanto lê, nenhuma fonte | leitura recusada: nenhuma fonte | não se aplica | `REAUTH`/`REFUSED`: nenhuma fonte | sem `at`: nenhuma fonte; outro dia: "ao vivo · lido ontem às" (45) |
+| Bloco Fontes, fonte de cópia (U14) | logo, nome, pastilha, carimbo (42) | "ainda sem cópia" (43); sem leitura de dado, nenhum bloco | catálogo não lido: o id, sem logo (112) | catálogo falho: igual (112); recusa: nenhuma fonte (46) | nenhuma fonte | `NOT_GIVEN`: só o sistema (111); `NOT_IN_ROLE`: nenhuma fonte | parcial `warning`, parada `danger` (43); `NEEDS_REAUTH`: o selo (110) |
+| Bloco Fontes, fonte ao vivo (U14) | logo, nome, operação na pastilha, "ao vivo · lido agora, às" (45) | nenhuma fonte | nenhuma fonte | nenhuma fonte | não se aplica | `REAUTH`/`REFUSED`: nenhuma fonte | sem `at`: nenhuma; outro dia: "ao vivo · lido ontem às" (45) |
 
 Desenho dos estados a 1280 px, um estado por linha, com o tom à direita fora da tela (a coluna de
 leitura; uma linha fina sobre "Fontes"; cada fonte numa linha de 32 px; `[...]` é a pastilha de
@@ -583,40 +584,39 @@ Fontes
 [logo] Sankhya · Matriz  [sankhya_notas]                          ● parada ontem às 22:30
 ```
 
-A 390 px, o nome fica na primeira linha e a pastilha e o carimbo descem para a segunda, alinhados ao
-começo do nome (a largura da logo mais o espaço):
+A 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao nome; o carimbo que não
+cabe desce inteiro à terceira, no começo da fonte:
 
 ```
-+------------------------------------------+
-| ──────────────────────────────────────── |
-| Fontes                                   |
-| [logo] Sankhya · Matriz                  |
-|        [sankhya_vendas] ● copiado hoje   |
-|        às 08:45                          |
-| ──────────────────────────────────────── |
-| [logo] Sankhya · Matriz (● Chaves        |
-|        recusadas)                        |
-|        [sankhya_vendas] ● copiado ontem  |
-|        às 22:30                          |
-+------------------------------------------+
+──────────────────────────────────────────────
+Fontes
+[logo] Sankhya · Matriz
+       [sankhya_vendas] ● copiado hoje às 08:45
+──────────────────────────────────────────────
+[logo] Sankhya · Matriz (● Chaves recusadas)
+       [sankhya_vendas] ● copiado ontem às 22:30
+──────────────────────────────────────────────
+[logo] Sankhya · Matriz
+       [sankhya_vendas]
+● rodada parcial, copiado hoje às 08:45
 ```
 
 | Elemento da tela A | Classe ou peça no Hub |
 | --- | --- |
 | Linha fina acima e "Fontes" em 600 | `border-t border-line pt-sm` na seção; o `h3` de hoje (`font-semibold text-text`) |
 | Linha da fonte | `li` com `flex flex-wrap items-center gap-x-sm min-h-8`; linha fina entre duas fontes (`border-t border-line` do segundo em diante) |
-| Logo | `ConnectorLogo small` (placa de 20 px, imagem de 14 px, `logo-plate` nos dois temas) |
+| Logo | `ConnectorLogo small` (20/14 px) |
 | Sistema e conexão | `text-label font-medium text-text` |
 | Selo | `Badge` com o `tone` e o texto de `stateBadge` |
-| Tabela | `font-mono text-fact text-text` numa pastilha `rounded-control bg-surface-3 px-xs`, com quebra em qualquer ponto |
-| Carimbo | `Stamp` com o tom do estado, na ponta direita (`ml-auto`) a partir de `sm`; o neutro com o ponto em `line-strong` |
+| Tabela | `font-mono text-fact text-text`, `rounded-control bg-surface-3 px-xs`, quebra em qualquer ponto |
+| Carimbo | `Stamp` na ponta direita (`ml-auto`) a partir de `sm`; cópia em dia e ao vivo: `text-text-2` e o ponto em `success`; neutro: o ponto em `line-strong`; parcial e parada: o tom inteiro (decisão 33) |
 | 390 px | um quebrador `basis-full` abaixo de `sm` antes da pastilha; a pastilha com a margem da logo mais o espaço (`ml-7`) |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `MessageSource` `kind: 'data'` (`connector`, `connections`, `reauth`, `table`, `at`, `state`): `connections` troca a `system` juntada por vírgula | `sourcesOf` (U14), de `DataOrigin.systems` e do `args.connection` da leitura ao vivo | `Sources` (U14); `keyOf`, na chave sem repetição |
-| `ConnectorWords.logo(connector)` e `ConnectorWords.auth(connector)` | `wordsOf` (U14), do catálogo; `PLAIN_WORDS` responde `undefined` e `'oauth2_code'` | `Sources` (U14), para `ConnectorLogo` e `stateBadge` |
-| O `Room` da conversa do Builder com as palavras do catálogo | `BuilderChat` em `panel.tsx` (U14), por `connectionsQuery` | toda linha da conversa do Projeto que lê `useRoom().connectors` |
+| `ConnectorWords.logo(connector)` e `ConnectorWords.auth(connector)` | `wordsOf` (U14); `PLAIN_WORDS` responde `undefined` e `'oauth2_code'` | `Sources` (U14); `useConnectorCatalog().logo`, que passa a ser `words.logo` |
+| O `Room` do Builder com o nome e a logo do catálogo; `refusal` fica a de `PLAIN_WORDS` | `BuilderChat` em `panel.tsx` (U14), por `useConnectorCatalog` | as linhas da conversa do Projeto (`useRoom().connectors`) |
 
 ## A tabela de falhas
 
@@ -695,7 +695,7 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | O estado com ponto e cor (tela A) | U14 | `copiedText` só em palavras, em `text-2` (`sources.tsx:8-19`) | `p3-04` (ponto vermelho na parada); a plataforma de ingestão de referência diz o estado da fonte em palavra e cor (capturas fora do repositório; visto, não oficial); o Stamp do `DESIGN.md:558-561` | a palavra com o ponto na cor, na ponta | nativo (`Stamp`, `block.tsx:37-48`, V35) | — | o neutro em `line-strong` (decisão 33) | — |
 | "ao vivo" (tela A) | U14 | `liveText`, `sources.tsx:21-25` | `p3-05` | "ao vivo" junto da hora | nativo | — | decisão 34 | — |
 | O selo da conexão a reautorizar (tela A) | U14 | `copiedFrom` descarta `systems[].state` (`sources.ts:72-74`) | nenhuma: nosso, `stateBadge` de Integrações (`apps/web/src/hub/connectors/text.ts:35-45`) | o selo com a palavra depois do nome | nativo (`stateBadge`, `Badge`) | — | decisão 32 | — |
-| As palavras do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`room.ts:80-86`); o Assistente lê o catálogo (`connector-names.ts:14-21`) | o Assistente desta etapa | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo | — | em `panel.tsx`: `builder/conversation` não importa `builder/assistant` | — |
+| O nome e a logo do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`room.ts:80-86`); o Assistente lê o catálogo (`connector-names.ts:14-21`) | o Assistente desta etapa | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo | — | o hook vai para `builder/conversation/`, um dono; as recusas ficam as de `PLAIN_WORDS` | o hook em `builder/conversation/` |
 
 **A medida do transplante.** Nenhuma parte vem do repositório antigo.
 
@@ -737,9 +737,9 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | 29 | G2b muda o contrato, quem o escreve (`catalog-view.ts`) e quem o lê (`data-tools/tools.ts`) num PR só, com a issue `contrato` | O roteiro da trilha Dados manda o contrato num PR e o consumidor em outro (`docs/steps/trilhas/dados.md:74-79`); um campo renomeado com os leitores para trás não compila, e um campo novo ao lado do velho daria dois donos ao id (code C26). G1 já levou a sua linha do servidor junto | dois PRs, com `sources` ao lado de `connections` até o segundo |
 | 30 | `REFUSED_TEXT.NOT_IN_ROLE` é "Essa tabela não está no catálogo.", também para `data_describe` | Fechamento do firstmate pela auditoria das referências, com a palavra do fundador "1. Sim pode ser essa frase"; um texto por `kind` (code C26), e `data_describe` só recebe `NOT_IN_ROLE` num catálogo que diz ler uma tabela que o login não lê | um texto próprio para `data_describe` |
 | 31 | `failed` do placar reconhece o sucesso de uma ferramenta de dado pela forma `DataResult`, não pelo nome | A recusa das ferramentas de dado é lançada (U2) e já conta como `output-error` pela regra do `noToolErrors`; só a cláusula da recusa devolvida como resultado (`test-scorecard.ts:176`) confundia `CATALOG`, `TABLE` e `ROWS` com recusa. Migrar o placar para `runEvals` (`@mastra/core@1.82.0 dist/docs/references/reference-evals-run-evals.md:85`, `:105`) é maior que esta etapa | a exceção por `DATA_TOOL` em `failed` |
-| 32 | O selo da conexão só em `NEEDS_REAUTH`, um por fonte, depois do nome, mesmo numa cópia de duas conexões | O critério 17 já leva o estado; "Funcionando" em toda fonte em dia repetiria o ponto verde do carimbo; uma cópia de duas conexões é rara e o selo único diz que uma delas pede atenção, como a linha de Integrações | um selo por conexão, com o nome dela |
-| 33 | `Stamp` (`apps/web/src/ui/block.tsx:37-48`) passa a aceitar `className`, para o ponto neutro de "ainda sem cópia" em `line-strong`, como a tela A desenha | O tom `neutral` do `Badge` pinta o ponto na cor do texto (`text-2`); a tela A aprovada pede `line-strong`, e a conferência desta unidade é com ela | tirar o `className` e aceitar o ponto em `text-2` |
-| 34 | A leitura ao vivo diz "ao vivo · " também noutro dia ("ao vivo · lido ontem às 22:46") | "ao vivo" diz o tipo da fonte, lida do sistema e não da cópia, não a hora; a tela A o põe no carimbo | dizer "ao vivo" só no dia do `at` |
+| 32 | O selo da conexão só em `NEEDS_REAUTH`, um por fonte, depois do nome, mesmo numa cópia de duas conexões | "Funcionando" em toda fonte repetiria o ponto verde; uma cópia de duas conexões é rara | um selo por conexão, com o nome dela |
+| 33 | `Stamp` (`apps/web/src/ui/block.tsx:37-48`) passa a aceitar `className`: na cópia em dia e ao vivo, as palavras em `text-2` com o ponto em `success`; em "ainda sem cópia", o ponto em `line-strong` | O tom de `Badge` pinta palavras e ponto (`badge.tsx:14`), e o neutro do `Badge` esconde o ponto, que o `Stamp` mostra na cor do texto; a tela A tem as palavras em `text-2` e só o ponto no tom, menos na parcial e na parada | tirar o `className` e pintar as palavras no tom |
+| 34 | A leitura ao vivo diz "ao vivo · " também noutro dia ("ao vivo · lido ontem às 22:46") | "ao vivo" diz o tipo da fonte, não a hora | dizer "ao vivo" só no dia do `at` |
 
 
 ## U1 `withheld` sai do contrato e a lei da tabela escondida
@@ -2154,9 +2154,8 @@ Depois de U13, os passos 6 e 7 do `conexus-build`: os testes do servidor de `run
 
 ## U14 O bloco Fontes da tela A
 
-**Base e modelo.** O `main` com G3 (PR 1107, merge `d9f56971`) e o PR 1111 mesclados. Sonnet: uma
-linha de tela com peças que já existem, sem contrato novo entre módulos. Cada linha citada abaixo foi
-lida no `main` em `d9f56971`; o que vem do PR 1111 diz o PR.
+**Base e modelo.** O `main` com G3 e o PR 1111 mesclados. Sonnet: peças que já existem. Linhas lidas
+no `main` em `d9f56971`.
 
 **A lição.** O critério escrito tinha ficado mais pobre que a tela aprovada; a conferência desta
 unidade compara com a tela A, elemento por elemento.
@@ -2171,7 +2170,7 @@ unidade compara com a tela A, elemento por elemento.
   `tool-bodies.tsx:147-151`; `BLOCK`, `tool-bodies.tsx:19-20`; `wordsOf`, `connector-words.ts:11-41`;
   `ConnectorWords`, `tool-spec.ts:72-78`; `PLAIN_WORDS`, `connector-specs.ts:134-138`.
 - `Stamp`, `apps/web/src/ui/block.tsx:37-48`; os tons de `Badge`, `badge.tsx:8-20`; `stateBadge`,
-  `apps/web/src/hub/connectors/text.ts:35-45`, e o molde `day.tsx:101`; `DESIGN.md:558-561`.
+  `apps/web/src/hub/connectors/text.ts:35-45`, e o molde `apps/web/src/builder/assistant/day.tsx:101`; `DESIGN.md:558-561`.
 - `BUILDER_ROOM`, `room.ts:80-86`; `BuilderChat`, `panel.tsx:34-56`; `useConnectorCatalog`,
   `apps/web/src/builder/assistant/connector-names.ts:14-21`; `connectionsQuery`,
   `apps/web/src/hub/connectors/queries.ts:26-28` (exportada em `public.ts:6`, como `stateBadge` `:28`
@@ -2187,8 +2186,9 @@ unidade compara com a tela A, elemento por elemento.
 | `apps/web/src/builder/conversation/sources.tsx` | Muda: a linha da fonte de dado | a linha `sources` da conversa |
 | `apps/web/src/builder/conversation/tool-spec.ts` (`ConnectorWords`) | Muda: `logo` e `auth` | `wordsOf`, `PLAIN_WORDS`, todo `Room` |
 | `apps/web/src/builder/conversation/connector-words.ts`, `connector-specs.ts` | Muda | `useConnectorCatalog`, `BUILDER_ROOM`, `ASSISTANT_ROOM`, os testes que montam palavras |
-| `apps/web/src/builder/conversation/panel.tsx` | Muda: o `Room` do Builder com as palavras do catálogo | a rota da conversa do Projeto |
-| `apps/web/src/ui/block.tsx` (`Stamp`) | Muda: aceita `className` | `day.tsx`, `versions.tsx`, `sources.tsx` |
+| `apps/web/src/builder/conversation/panel.tsx` | Muda: o `Room` do Builder com o nome e a logo do catálogo | a rota da conversa do Projeto |
+| `useConnectorCatalog` (de `builder/assistant/connector-names.ts` para `builder/conversation/`) | Move; `logo` passa a `words.logo` | os oito chamadores de hoje em `builder/agents/` e `builder/assistant/`, pela reexportação, e `panel.tsx` |
+| `apps/web/src/ui/block.tsx` (`Stamp`) | Muda: aceita `className` | os de `git grep -l Stamp apps/web/src` (`builder/agents/rows.tsx` entre eles) e `sources.tsx` |
 | `sources.test.tsx`, `panel.test.tsx`, `apps/web/sources.layout.test.ts` | Muda | `npm run test:unit` e `npm run test:browser -w @conexus/web` |
 
 ### Os contratos que a unidade cria
@@ -2234,11 +2234,11 @@ export function Stamp(props: { tone: …; className?: string; children: ReactNod
 
 ### A ordem do trabalho
 
-1. **A origem com a logo, as conexões e o estado.** Critérios: 42, 43, 110, 111.
+1. **A origem com a logo, as conexões e o estado.** Critérios: 42, 43, 110, 111, 113.
    - **Arquivos:** muda `sources.ts`, `sources.tsx`, `tool-spec.ts`, `connector-words.ts`,
      `connector-specs.ts`, `apps/web/src/ui/block.tsx`, `sources.test.tsx`.
    - **Referência a seguir:** a tela A, elemento por elemento (a tabela "Elemento da tela A" de G7);
-     `tool-bodies.tsx:147-151` (a logo numa linha); `day.tsx:101` (o `Stamp`).
+     `tool-bodies.tsx:147-151` (a logo); `apps/web/src/builder/assistant/day.tsx:101` (o `Stamp`).
    - **O que sai:** `system` de `MessageSource` e a junção por vírgula de `copiedFrom`, com o id do
      conector no lugar de uma fonte `NOT_GIVEN` (`sources.ts:72-74`); a frase única em `text-fact
      text-text-2` da fonte de dado (`sources.tsx:39-44`); `named.get(connector)?.auth` repetido em
@@ -2260,42 +2260,42 @@ export function Stamp(props: { tone: …; className?: string; children: ReactNod
      passa.
 2. **A leitura ao vivo da tela A.** Critérios: 45.
    - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
-   - **Referência a seguir:** `liveOf`, `sources.ts:118-126`; o caso do PR 1111 "a leitura ao vivo
-     de uma conexão com o nome do sistema não o repete".
-   - **O que sai:** a frase `${name} · ${system} · ${liveText}` de `sources.tsx:42` (com o
-     `systemText` do PR 1111).
-   - **O que entra:** `liveOf` dá `connections: [args.connection]` e `reauth: false`; a linha é a
-     mesma da cópia, com a operação na pastilha e o carimbo `success` `ao vivo · ${liveText(at, now)}`.
-   - **Testes:** os três casos do critério 45, com `reads` gravado, e a leitura tipada de hoje.
-   - **Mutações à mão:** tire "ao vivo · ": "a fonte da leitura ao vivo" fica vermelho; use só
-     `clockOf(at)`: "a leitura ao vivo vista noutro dia" fica vermelho.
+   - **Referência a seguir:** `liveOf`, `sources.ts:118-126`.
+   - **O que sai:** a frase de `sources.tsx:42`.
+   - **O que entra:** `liveOf` dá `connections: [args.connection]` e `reauth: false`; a linha da
+     cópia, com a operação na pastilha e o carimbo `ao vivo · ${liveText(at, now)}`.
+   - **Testes:** os casos do critério 45 e a leitura tipada de hoje.
+   - **Mutações à mão:** sem "ao vivo · " ("a fonte da leitura ao vivo"); só `clockOf(at)` ("vista
+     noutro dia").
    - **Pronto quando:** os casos passam.
-3. **A sala do Builder.** Critérios: 112.
-   - **Arquivos:** muda `panel.tsx`, `panel.test.tsx`.
-   - **Referência a seguir:** `connector-names.ts:14-21` (o `useMemo` das palavras);
-     `apps/web/src/builder/assistant/conversation.tsx:84-87` (o `RoomContext.Provider`).
-   - **O que entra:** `BuilderChat` lê `connectionsQuery(companyId)` e põe `<Chat>` dentro de
-     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: wordsOf(…) }}>`, as duas coisas em
-     `useMemo`, como `connector-names.ts:18-21`. Regras: C26.
-   - **Testes:** os dois casos do critério 112, com a lista de conexões respondida como
-     `sweep-connections.ts:26` e, no segundo, respondida com falha.
-   - **Mutações à mão:** tire o `Provider`: "na conversa do Builder, a fonte tem o nome e a logo do
-     catálogo" fica vermelho.
+3. **A sala do Builder, com um dono do catálogo.** Critérios: 112.
+   - **Arquivos:** move `useConnectorCatalog` de `builder/assistant/connector-names.ts` para
+     `builder/conversation/` (o ciclo de C6, `.dependency-cruiser.cjs:62`, impede só o caminho
+     contrário), com `connector-names.ts` reexportando; muda `panel.tsx`, `panel.test.tsx`.
+   - **O que sai:** o `logo(connector)` do hook (`connector-names.ts:23-25`), que passa a ser
+     `words.logo`; os quatro chamadores de `catalog.logo` não mudam.
+   - **O que entra:** `BuilderChat` chama `useConnectorCatalog(companyId)` e põe `<Chat>` dentro de
+     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: { ...words, refusal:
+     PLAIN_WORDS.refusal } }}>`, num `useMemo`: do catálogo só o nome e a logo; as recusas do Builder
+     ficam as de hoje. Regras: C26, L7.
+   - **Testes:** os casos do critério 112, com a lista de conexões como `sweep-connections.ts:26` e,
+     no segundo, com falha.
+   - **Mutações à mão:** tire o `Provider` ("na conversa do Builder, a fonte tem o nome e a logo");
+     tire o `refusal: PLAIN_WORDS.refusal` (a recusa de conector do Builder).
    - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/panel.test.tsx`
      passa.
-4. **A largura.** Critérios: 47, 112.
+4. **A largura.** Critérios: 47, 112, 113.
    - **Arquivos:** muda `apps/web/sources.layout.test.ts`.
    - **Referência a seguir:** o caso "a fonte do dado" (`:60-82`) e `sweep-connections.ts:26`.
    - **O que entra:** a lista de conexões nas `replies`; "Sankhya · Matriz" lido; a 1280 px a pastilha
      na linha do nome e o carimbo na borda direita; a 390 px a pastilha abaixo do nome, alinhada a
-     ele; nada passa da largura, nos dois temas.
+     ele, ou o carimbo inteiro na terceira; as linhas finas e 32 px por fonte; nada passa da largura.
    - **Pronto quando:** `npm run test:browser -w @conexus/web` passa.
 
 ### Como se prova
 
-42, 43, 45, 110 e 111: a mensagem guardada pelo Mastra (T26) por `itemsOf`, desenhada na sala do
-Assistente; hoje a fonte é uma frase cinza, sem logo nem selo, e a `NOT_GIVEN` diz o id. 112: a
-conversa do Projeto pela porta da tela; hoje diz "sankhya". 47: o navegador mede as peças.
+42, 43, 45, 110, 111 e 113: a mensagem gravada (T26) por `itemsOf`; hoje, uma frase cinza. 112: a
+conversa do Projeto pela porta da tela; hoje, "sankhya". 47: o navegador mede as peças.
 
 ### Parar se
 
@@ -2303,7 +2303,7 @@ conversa do Projeto pela porta da tela; hoje diz "sankhya". 47: o navegador mede
 - O ponto neutro não pega `line-strong` pelo `className` do `Stamp`: relate; não escreva outro carimbo.
 - A linha não desce a 390 px pela quebra de `sm`: relate com as medidas; a quebra da tela ou uma
   consulta de contêiner é escolha do firstmate.
-- Uma peça da tela A pede um token que o `DESIGN.md` não tem: relate; não invente cor nem tamanho.
+- Uma peça da tela A pede um token fora do `DESIGN.md`: relate.
 
 ## G7 O ponto de conferência
 
