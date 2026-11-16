@@ -210,6 +210,7 @@ test('a tabela pedida que ainda não existe fica de fora sem erro', async (t) =>
   const { owner, sync } = await companyOf(t)
   const vendas = libraryRole()
   const wanted = [{ roleId: vendas, tables: ['a', 'ainda'] }]
+  assert.deepEqual(await asUrl(owner, 'create table public.ainda (id text)'), [[]])
   await applied(owner, wanted)
   assert.deepEqual(await reads(owner, vendas, 'a'), [[]])
   assert.equal((await postgres.ensureCopyTable(sync, tableOf('ainda'))).kind, 'DONE')
