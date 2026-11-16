@@ -35,7 +35,8 @@ domingos de madrugada, que relê tudo e apaga da cópia o que foi apagado no sis
 
 1. No Hub no ar, abra o Assistente e pergunte "Quanto vendemos ontem?". Aparecem as linhas
    "Consultou o catálogo" e "Consultou sankhya_vendas, 1 linha", e a resposta termina com o bloco
-   Fontes: o sistema, a tabela e "copiado hoje às …".
+   Fontes: a logo do Sankhya, "Sankhya · Matriz", a tabela em letra de código e, à direita, um ponto
+   verde com "copiado hoje às …".
 2. Abra a linha "Consultou sankhya_vendas". Aparece a consulta que o agente rodou. Toque em
    **Copiar a consulta** e cole num lugar qualquer.
 3. Num Projeto com a cópia de vendas liberada, faça a mesma pergunta ao Builder. Ele usa as mesmas
@@ -63,9 +64,6 @@ que cada PR lista.
   negócio, Conceito e Ligações. Cada um entra com a parte que o faz funcionar. Também ficam de fora
   a contagem "18 de 22 descrições" e os botões Buscar, Filtrar e Colunas sobre a grade da Amostra,
   porque nenhuma referência conta descrições e uma amostra de 5 linhas não tem o que filtrar.
-- Na conversa do Builder, a fonte nomeia o sistema pelo nome técnico ("sankhya"), porque a conversa
-  do Projeto ainda não tem os nomes do catálogo, que o Assistente tem. O conserto é um PR pequeno
-  fora desta etapa.
 - Das pendências guardadas para o próximo cartão, a etapa toma uma: a 940, a linha com a data de
   alteração vazia que a cópia incremental nunca corrige, porque a passada inteira de domingo relê
   tudo e a corrige. As outras que tocam esta etapa esperam. A 1016 (as leituras ao vivo devolvem a
@@ -119,6 +117,33 @@ aprovação. O roteiro de uso não muda.
   não mais "Seu papel não lê esta tabela.", que era falso num Projeto e revelava a tabela.
 - Um grupo novo, G2b, faz a primeira mudança e os consertos que a revisão de G2 deixou, antes de G3.
 
+**A emenda de 2026-11-16.** O texto deste cartão descreveu o bloco Fontes mais pobre que a tela que
+você aprovou, e a construção seguiu o texto. Você escolheu a tela A. Muda o passo 1 do roteiro; as
+suas palavras estão no arquivo de aprovação.
+
+- Antes, cada fonte era uma linha de texto cinza: "Sankhya · sankhya_vendas · copiado hoje às 08:45",
+  sem logo, sem o nome da conexão e com a rodada parada no mesmo cinza da cópia em dia.
+- Depois, cada fonte é uma linha com a logo do sistema, o sistema e a conexão ("Sankhya · Matriz",
+  sem repetir quando a conexão tem o nome do sistema), a tabela em letra de código numa pastilha e,
+  à direita, um ponto com as palavras de hoje: verde na cópia em dia e na leitura ao vivo, amarelo
+  na rodada parcial, vermelho na parada. A conexão que espera nova autorização ganha o selo
+  vermelho de Integrações ("Chaves recusadas"). No Projeto que não recebeu a conexão, só o sistema e
+  a logo. A leitura ao vivo diz "ao vivo · lido agora, às 00:37". A 390 px, a tabela e o ponto descem
+  para a segunda linha.
+- A conversa do Builder passa a mostrar a fonte com o mesmo nome e a mesma logo do Assistente
+  ("Sankhya", e não mais "sankhya").
+- Um grupo novo, G7, um PR só da tela, faz a mudança depois de G3.
+
+```
+1280 px
+  Fontes
+  [logo] Sankhya · Matriz  [sankhya_vendas]                  ● copiado hoje às 08:45
+390 px
+  Fontes
+  [logo] Sankhya · Matriz
+         [sankhya_vendas]  ● copiado hoje às 08:45
+```
+
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
@@ -137,8 +162,9 @@ aprovação. O roteiro de uso não muda.
 | G6 | U11 A passada inteira no motor | Uma rodada pedida como inteira começa cada fonte do zero, fica marcada, e a fonte que fecha uma passada que leu tudo apaga o que sumiu, também numa cópia incremental | `apps/server/src/hub/copies/`, `apps/server/src/platform/` | data, testing | PR 1088 mesclado (a coluna `whole`) |
 | G6 | U12 A segunda linha do relógio | Toda cópia incremental ganha a linha semanal `schedule_<cópia>-whole` (domingo, 04:07, São Paulo), que anda com a normal; ela dispara a passada inteira ou é pulada com outra rodada aberta; ao subir, a cópia antiga ganha a linha que falta | `apps/server/src/builder/copy-clock/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/connectors/` (só um teste), `apps/server/src/main.ts` | testing | U11 |
 | G6 | U13 Passada inteira na aba Rodadas | A rota de rodadas devolve `whole`; a linha da rodada mostra "Passada inteira" depois do resultado, no computador e no celular | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/web/src/hub/copies/` | web | U11 |
+| G7 (um PR só do web, emenda de 2026-11-16; depois dele, a QA, testing T25) | U14 O bloco Fontes da tela A | Cada fonte numa linha com a logo, o sistema e a conexão sem repetir, a tabela numa pastilha de código, o estado com ponto e cor, o selo da conexão a reautorizar, a fonte `NOT_GIVEN` só com o sistema, a leitura ao vivo "ao vivo · lido agora, às"; a sala do Builder com o nome e a logo do catálogo; a 390 px, a tabela e o estado na segunda linha | `apps/web/src/builder/conversation/` (`sources.ts`, `sources.tsx`, `connector-words.ts`, `tool-spec.ts`, `connector-specs.ts`, `panel.tsx` e os testes), `apps/web/src/ui/` (só `block.tsx`), `apps/web/sources.layout.test.ts` | web, design, testing | G3 no `main` (PR 1107, merge `d9f56971`) e o PR 1111 mesclado (`systemText` na porta de `hub/copies/`) |
 
-Sete grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
+Oito grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
 - **A linha principal.** G1, G2, G2b e G3, nesta ordem. G1 muda só o contrato e a conformidade, pela
   issue `contrato`. G2 é da trilha Agentes e Apps (delivery L1): suas pastas são as do Assistente, do
@@ -154,8 +180,10 @@ Sete grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
   G4, U8 vem antes de U9.
 - **A QA** ([testing T25](../guides/testing.md)) roda depois de G3 e de G4, que têm tela, e anda
   pelo roteiro de uso e pela matriz de estados.
+- **A emenda de 2026-11-16.** G7 parte do `main` com G3 e o PR 1111 mesclados; não divide arquivo
+  com G4, G5 nem G6. A QA de G7 compara o bloco com a tela A, elemento por elemento.
 
-**Orçamento de código alterado.** Total da etapa: cerca de 1.470 linhas, sem testes nem gerados,
+**Orçamento de código alterado.** Total da etapa: cerca de 1.620 linhas, sem testes nem gerados,
 mais as cerca de 120 que a U2b só move de arquivo. Cada unidade tem a sua estimativa abaixo.
 
 - U1: cerca de 30 linhas alteradas (sai mais do que entra), sem testes nem gerados.
@@ -187,9 +215,13 @@ U8 e U9 partem de U7 e não dividem arquivo de produção além de `copy-detail.
 - U12: cerca de 160 linhas.
 - U13: cerca de 25 linhas.
 
+G7 é um PR só do web, sem contrato, tabela, migração nem servidor.
+
+- U14: cerca de 150 linhas (`sources.tsx` 80, `sources.ts` 30, `connector-words.ts`, `tool-spec.ts` e `connector-specs.ts` 15, `panel.tsx` 20, `block.tsx` 5), e perto de 150 de teste.
+
 ## Os critérios de aceite
 
-Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69 e de 74 a 79, G5 de 70 a 73, G6 de 80 a 99, G2b de 100 a 109), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar. A faixa de G4 encheu com a conferência no ar do explorador, e G5 só usa 70 a 73. Os critérios 15, 17 e 28 eram de U2 e passam a U2b, que os reescreve (emenda de 2026-11-15).
+Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 49, G4 de 50 a 69 e de 74 a 79, G5 de 70 a 73, G6 de 80 a 99, G2b de 100 a 109, G7 de 110 a 119), e os números que sobram ficam livres para um critério que a leitura do cartão acrescentar. A faixa de G4 encheu com a conferência no ar do explorador, e G5 só usa 70 a 73. Os critérios 15, 17 e 28 eram de U2 e passam a U2b, que os reescreve (emenda de 2026-11-15). Os critérios 42, 43, 45 e 47 eram de U6 e passam a U14: o 42 é reescrito, e o 43, o 45 e o 47 ganham o desenho da tela A (emenda de 2026-11-16).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
@@ -237,12 +269,15 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 9, G2 de 10 a 29, G3 de 30 a 4
 | 39 | U5 | A linha nasce recolhida; aberta, a de `data_query` mostra a consulta inteira e o botão **Copiar a consulta**; tocá-lo põe o texto inteiro na área de transferência e o botão passa a "Consulta copiada". Recusa: sem área de transferência, ou com a escrita recusada, a linha mostra "Não deu para copiar. Selecione a consulta e copie." e o console registra `QUERY_NOT_COPIED` | `data-specs.test.tsx`, casos "aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência" (com uma consulta de 1.200 caracteres, acima do corte de 800 de `shown`) e "a cópia recusada diz para selecionar" | must |
 | 40 | U5 | Cada recusa de ferramenta de dado, lançada como erro da ferramenta e lida por `thrownOf`, diz o seu texto (`NOT_IN_ROLE`, `TABLE_UNAVAILABLE`, `CATALOG_UNAVAILABLE`, `QUERY_REFUSED`, `QUERY_TOO_LARGE`, `DEADLINE`, `NOT_IN_CATALOG`, `NOT_GRANTED`), e a linha fica em estado de erro. `NOT_IN_ROLE`, a consulta que o banco recusou com `42501`, diz "Essa tabela não está no catálogo.", o texto de `NOT_IN_CATALOG`: nenhum texto nomeia papel nem confirma que a tabela existe. Recusa: um `kind` fora da lista, ou um erro que não é o JSON lançado pelas ferramentas, cai na linha genérica, nunca num texto de outra recusa | `data-specs.test.tsx`, casos "cada recusa diz o seu texto" (`test.each` sobre `REFUSED_TEXT`, com a parte em erro) e "a consulta recusada pelo banco diz que a tabela não está no catálogo" | must |
 | 41 | U5 | Na conversa do Builder (`BUILDER_ROOM`) as duas ferramentas têm as mesmas linhas e o mesmo corpo | `data-specs.test.tsx`, caso "na sala do Builder, as mesmas linhas" | must |
-| 42 | U6 | A resposta que leu uma tabela copiada mostra no bloco Fontes "Sankhya · sankhya_vendas · copiado hoje às 08:45": o nome do conector pelas palavras da sala, a tabela e a hora da cópia | `apps/web/src/builder/conversation/sources.test.tsx`, caso "a fonte do dado: Sankhya · sankhya_vendas · copiado hoje às 08:45" | must |
-| 43 | U6 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial", "a rodada com erro ou interrompida diz parada e nunca copiado", "sem rodada diz ainda sem cópia", "outro dia diz ontem ou a data" | must |
+| 42 | U14 | A fonte de cópia mostra, numa linha do bloco Fontes, a logo do conector (`ConnectorLogo small`, a imagem do `logo` do catálogo), "Sankhya · Matriz" (o sistema pelas palavras da sala e o nome da conexão, sem repetir quando são iguais, pela regra de `systemText`), a tabela `sankhya_vendas` em letra de código numa pastilha, e "copiado hoje às 08:45". Recusa: uma conexão com o nome do sistema não se repete ("Sankhya", nunca "Sankhya · Sankhya"), e nenhuma fonte de dado sai sem a logo quando o catálogo tem o conector | `apps/web/src/builder/conversation/sources.test.tsx`, casos "a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45" e "a conexão com o nome do sistema não se repete na fonte de cópia" | must |
+| 43 | U14 | A rodada parcial diz "rodada parcial, copiado hoje às 08:45"; a rodada com erro ou interrompida diz "parada hoje às 08:45", com a hora do fim dessa rodada; sem rodada (`lastRun: 'NONE'`), "ainda sem cópia"; outro dia, "copiado ontem às", "copiado em 17/10/2026 às" ou "parada ontem às". O estado é um carimbo (`Stamp`, design V35): a cópia em dia leva o ponto em `success`, a rodada parcial o ponto e as palavras em `warning`, a parada em `danger`, e "ainda sem cópia" o ponto neutro (`line-strong`). Recusa: com `ERROR` ou `INTERRUPTED` a fonte nunca diz "copiado", porque a hora é de uma rodada que não copiou, e nenhum estado é só cor, sem palavra | `sources.test.tsx`, casos "a rodada parcial diz rodada parcial, em warning", "a rodada com erro ou interrompida diz parada, em danger, e nunca copiado", "sem rodada diz ainda sem cópia, com o ponto neutro", "outro dia diz ontem ou a data" | must |
 | 44 | U6 | A mesma tabela lida duas vezes no turno aparece uma vez; as páginas da web citadas continuam como hoje | `sources.test.tsx`, caso "a mesma tabela lida duas vezes aparece uma vez" e o caso de web de hoje com `kind: 'web'` | must |
-| 45 | U6 | A resposta que leu um sistema ao vivo mostra "Sankhya · Matriz · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "lido ontem às HH:MM" ou "lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz lido agora, às" com `reads` regravado e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
+| 45 | U14 | A resposta que leu um sistema ao vivo mostra a logo do conector, o sistema e a conexão sem repetir ("Sankhya · Matriz"; "Sankhya" quando a conexão se chama "Sankhya"), a operação lida na pastilha de código e o carimbo em `success` "ao vivo · lido agora, às HH:MM" no dia do `at` gravado; aberta noutro dia, a mesma fonte diz "ao vivo · lido ontem às HH:MM" ou "ao vivo · lido em 17/10/2026 às HH:MM", pelo mesmo dia da fonte de cópia. Recusa: uma leitura ao vivo sem `at` (gravação de antes da U4) não vira fonte, e "agora" nunca aparece noutro dia | `sources.test.tsx`, casos "a fonte da leitura ao vivo diz ao vivo · lido agora, às" com `reads` regravado, "a leitura ao vivo de uma conexão com o nome do sistema não o repete" (do PR 1111) e "a leitura ao vivo vista noutro dia diz o dia" (o relógio no dia seguinte ao `at`) | must |
 | 46 | U6 | Um resultado de ferramenta de dado fora do esquema não vira fonte, e nenhuma chamada em erro vira fonte | `sources.test.tsx`, caso "um resultado fora do esquema não vira fonte" | must |
-| 47 | U6 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela | `apps/web/sources.layout.test.ts`, caso novo "a fonte do dado" (testing T23) | should |
+| 47 | U14 | A fonte de dado cabe a 390 px e a 1280 px, nos dois temas, sem passar da largura da tela. A 1280 px, a logo, o nome, a pastilha e o carimbo ficam numa linha só, com o carimbo na ponta direita; a 390 px, a pastilha e o carimbo descem para a segunda linha, alinhados ao começo do nome | `apps/web/sources.layout.test.ts`, caso "a fonte do dado" (testing T23), que mede a posição da pastilha e do nome nas duas larguras e nos dois temas | must |
+| 110 | U14 | A fonte cuja conexão está em `NEEDS_REAUTH` mostra, depois do nome, o selo em `danger` com as palavras de `stateBadge`: "Chaves recusadas" para um conector de chaves, "Pede para conectar de novo" para um conector OAuth, pela autenticação do conector no catálogo. Recusa: a conexão `ACTIVE` não mostra selo, nem "Funcionando" | `sources.test.tsx`, casos "a conexão à espera de nova autorização mostra o selo de Integrações" (os dois tipos de autenticação) e "a conexão ativa não mostra selo" | must |
+| 111 | U14 | A fonte `NOT_GIVEN` (o Projeto que não recebeu a conexão) mostra só a logo e o sistema ("Sankhya"), a tabela e o carimbo; numa cópia de duas conexões com uma `NOT_GIVEN`, só o nome da dada. Recusa: nem o id do conector nem um nome de conexão aparecem no lugar da conexão não dada | `sources.test.tsx`, casos "a fonte não dada ao Projeto mostra só o sistema e a logo" e "uma cópia de duas conexões com uma não dada nomeia só a dada" | must |
+| 112 | U14 | Na conversa do Builder num Projeto, a fonte de dado tem o mesmo nome ("Sankhya", não "sankhya") e a mesma logo da conversa do Assistente, pelas palavras do catálogo de conectores da empresa. Recusa: com o catálogo ainda não lido, ou com a leitura falha, a fonte nomeia o conector pelo id e sai sem logo, sem erro na tela | `apps/web/src/builder/conversation/panel.test.tsx`, casos novos "na conversa do Builder, a fonte tem o nome e a logo do catálogo" (a conversa do Projeto aberta pela porta da tela, com a mensagem de `data-query` e a lista de conexões respondida) e "sem o catálogo, a fonte do Builder nomeia o conector pelo id"; `apps/web/sources.layout.test.ts`, caso "a fonte do dado", que abre a conversa do Projeto e lê "Sankhya · Matriz" | must |
 | 50 | U7 | Em `/companies/<c>/data/<id>`, a navegação "Caminho" tem os links "Dados" e "{sistema}" e o nome da tabela em texto; os dois links levam a `/data` sem `layer` e com o `q` do endereço; nenhum dos dois tem `aria-current`. O link "← Dados" de hoje não existe mais | `copy-detail.test.tsx`, "o caminho" e "o caminho leva a busca" | must |
 | 51 | U7 | O topo mostra o nome da tabela como título, o estado, **Rodar agora** e o menu da cópia, como hoje; a frase "{sistema} · a cada {intervalo}" não aparece | `copy-detail.test.tsx`, "o caminho leva a Dados" (o antigo `:47-52`) e "as rodadas…" (`:15-45`, ajustado) | must |
 | 52 | U7 | Com a última rodada COMPLETE ou PARTIAL, a linha abaixo do título diz "Copiada do {sistema} em {dia e hora do fim} · {linhas} linhas" | `copy-detail.test.tsx`, "a linha da cópia: a hora do fim da rodada e as linhas" | must |
@@ -366,8 +401,9 @@ Desenho de caixas, a resposta com a fonte e a linha aberta (sala do Assistente; 
 |          |      +-------------------------------------------------------------------------+       |
 |          |      [Copiar a consulta]                                                               |
 |          | Em outubro de 2026 a Padaria Sol vendeu **R$ 24.560,70**, de sankhya_vendas.           |
+|          | ────────────────────────────────────────────────────────────────────────────────────── |
 |          | Fontes                                                                                 |
-|          |  Sankhya · sankhya_vendas · copiado hoje às 08:45                                      |
+|          |  [logo] Sankhya · Matriz  [sankhya_vendas]                     ● copiado hoje às 08:45  |
 +----------+----------------------------------------------------------------------------------------+
 
 390 px
@@ -384,11 +420,17 @@ Desenho de caixas, a resposta com a fonte e a linha aberta (sala do Assistente; 
 |  +------------------------------+  |
 |  [Copiar a consulta]               |
 | Em outubro ... **R$ 24.560,70**    |
+| ────────────────────────────────── |
 | Fontes                             |
-| Sankhya · sankhya_vendas ·         |
-| copiado hoje às 08:45              |
+| [logo] Sankhya · Matriz            |
+|        [sankhya_vendas]            |
+|        ● copiado hoje às 08:45     |
 +------------------------------------+
 ```
+
+O bloco Fontes deste desenho é o da emenda de 2026-11-16 (a tela A, U14); a caixa de 390 px é
+estreita demais para o desenho, e na tela a pastilha e o carimbo ficam na mesma segunda linha. O
+desenho fiel e a matriz dos seus estados estão em G7.
 
 As telas do protótipo que a unidade segue: `p3-01` (Resposta com origem), `p3-02` (Como cheguei), `p3-04` (Cópia atrasada), `p3-05` (Ao vivo), `p3-06` (O banco não respondeu) e `p3-07` (O Construtor) do escopo aprovado da camada de dados, seção 5. As frases vêm da spec (parte 3, `design.md`, `C5`), que o fundador aprovou depois do protótipo; onde o protótipo diz outra coisa, a spec vale, e a diferença está nas notas para a palavra dele.
 
@@ -506,6 +548,77 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 | Entrada `whole` de `service.run` e `runCopy` | o passo `run` (U12); `on.run` nos testes (U11) | `claim` (U11) |
 | `readAll` de `closePass` | `sourcePass` (U11) | `closePass` em `copy-sql.ts` (U11) |
 
+### G7
+
+A tela é a A do redesenho do bloco Fontes, aprovada pelo fundador em 2026-11-16 ("A"). Ela fica fora
+do repositório, como `p3-01` (delivery L21), e o desenho abaixo a descreve estado por estado. As
+palavras são as de hoje (critérios 43 e 45); muda a forma.
+
+| Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Bloco Fontes, fonte de cópia (U14) | a linha com a logo, "Sankhya · Matriz", a pastilha `sankhya_vendas` e o carimbo em `success` "copiado hoje às 08:45" (42) | sem rodada: "ainda sem cópia", ponto `line-strong` (43); resposta sem leitura de dado: nenhum bloco, como hoje | o catálogo de conectores ainda não lido: o conector pelo id, sem logo (112) | a leitura do catálogo falhou: igual ao carregando, sem erro na tela (112); recusa da ferramenta: nenhuma fonte (46) | `NOT_IN_CATALOG`: nenhuma fonte | `NOT_GIVEN`: só a logo e "Sankhya", sem nome de conexão (111); `NOT_IN_ROLE`: nenhuma fonte | rodada parcial em `warning`, parada em `danger` (43); conexão em `NEEDS_REAUTH`: o selo `danger` de `stateBadge` depois do nome (110) |
+| Bloco Fontes, fonte ao vivo (U14) | a logo, "Sankhya · Matriz" (ou "Sankhya" quando a conexão tem o nome do sistema), a operação na pastilha e o carimbo em `success` "ao vivo · lido agora, às 00:37" (45) | sem leitura ao vivo: nenhuma fonte | enquanto lê, nenhuma fonte | leitura recusada: nenhuma fonte | não se aplica | `REAUTH`/`REFUSED`: nenhuma fonte | sem `at`: nenhuma fonte; outro dia: "ao vivo · lido ontem às" (45) |
+
+Desenho dos estados a 1280 px, um estado por linha, com o tom à direita fora da tela (a coluna de
+leitura; uma linha fina sobre "Fontes"; cada fonte numa linha de 32 px; `[...]` é a pastilha de
+código em `surface-3`; `●` é o ponto de 6 px na cor do carimbo; `(…)` é o selo):
+
+```
+────────────────────────────────────────────────────────────────────────────────
+Fontes
+[logo] Sankhya · Matriz  [sankhya_vendas]                  ● copiado hoje às 08:45     success
+[logo] Sankhya  [consultar]                       ● ao vivo · lido agora, às 00:37     success
+[logo] Sankhya · Matriz  [sankhya_vendas]   ● rodada parcial, copiado hoje às 08:45    warning
+[logo] Sankhya · Matriz  [sankhya_vendas]                    ● parada hoje às 08:45    danger
+[logo] Sankhya · Matriz (● Chaves recusadas)  [sankhya_vendas]  ● copiado ontem às 22:30  selo danger
+[logo] Sankhya  [sankhya_vendas]                            ● copiado hoje às 08:45    NOT_GIVEN
+[logo] Sankhya · Matriz  [sankhya_vendas]                            ● ainda sem cópia  line-strong
+```
+
+Duas fontes na mesma resposta são duas linhas, cada uma com a sua logo:
+
+```
+Fontes
+[logo] Mercado Livre · Loja oficial  [mercado_livre_pedidos]       ● copiado hoje às 08:30
+────────────────────────────────────────────────────────────────────────────────
+[logo] Sankhya · Matriz  [sankhya_notas]                          ● parada ontem às 22:30
+```
+
+A 390 px, o nome fica na primeira linha e a pastilha e o carimbo descem para a segunda, alinhados ao
+começo do nome (a largura da logo mais o espaço):
+
+```
++------------------------------------------+
+| ──────────────────────────────────────── |
+| Fontes                                   |
+| [logo] Sankhya · Matriz                  |
+|        [sankhya_vendas] ● copiado hoje   |
+|        às 08:45                          |
+| ──────────────────────────────────────── |
+| [logo] Sankhya · Matriz (● Chaves        |
+|        recusadas)                        |
+|        [sankhya_vendas] ● copiado ontem  |
+|        às 22:30                          |
++------------------------------------------+
+```
+
+| Elemento da tela A | Classe ou peça no Hub |
+| --- | --- |
+| Linha fina acima e "Fontes" em 600 | `border-t border-line pt-sm` na seção; o `h3` de hoje (`font-semibold text-text`) |
+| Linha da fonte | `li` com `flex flex-wrap items-center gap-x-sm min-h-8`; linha fina entre duas fontes (`border-t border-line` do segundo em diante) |
+| Logo | `ConnectorLogo small` (placa de 20 px, imagem de 14 px, `logo-plate` nos dois temas) |
+| Sistema e conexão | `text-label font-medium text-text` |
+| Selo | `Badge` com o `tone` e o texto de `stateBadge` |
+| Tabela | `font-mono text-fact text-text` numa pastilha `rounded-control bg-surface-3 px-xs`, com quebra em qualquer ponto |
+| Carimbo | `Stamp` com o tom do estado, na ponta direita (`ml-auto`) a partir de `sm`; o neutro com o ponto em `line-strong` |
+| 390 px | um quebrador `basis-full` abaixo de `sm` antes da pastilha; a pastilha com a margem da logo mais o espaço (`ml-7`) |
+
+| Campo de contrato | Quem escreve | Quem lê |
+| --- | --- | --- |
+| `MessageSource` `kind: 'data'` (`connector`, `connections`, `reauth`, `table`, `at`, `state`): `connections` troca a `system` juntada por vírgula | `sourcesOf` (U14), de `DataOrigin.systems` e do `args.connection` da leitura ao vivo | `Sources` (U14); `keyOf`, na chave sem repetição |
+| `ConnectorWords.logo(connector)` e `ConnectorWords.auth(connector)` | `wordsOf` (U14), do catálogo; `PLAIN_WORDS` responde `undefined` e `'oauth2_code'` | `Sources` (U14), para `ConnectorLogo` e `stateBadge` |
+| O `Room` da conversa do Builder com as palavras do catálogo | `BuilderChat` em `panel.tsx` (U14), por `connectionsQuery` | toda linha da conversa do Projeto que lê `useRoom().connectors` |
+
 ## A tabela de falhas
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Uma dependência fora | O que o processo imprime | Critérios |
@@ -526,7 +639,7 @@ Protótipo: tela `b2-rodadas-inteira` do kit do item (b) da spec 3.
 | `ensureWholeLines` ao subir | dois Hubs ao mesmo tempo: o `create` perdido é tratado como em `set` | uma empresa que falha não para as outras | banco do Hub fora: a empresa falha | `COPY_WHOLE_LINES_FAILED` com `companyId` e `code`; `COPY_WHOLE_LINES` uma vez no fim, com `companies` e `count` | 92 |
 | A linha semanal disparada com a trava ocupada | — | — | — | `COPY_WHOLE_PASS_SKIPPED` com `companyId` e `copyId` | 91 |
 
-Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira um campo de resposta montado em memória), U3 (liga as ferramentas aos agentes), U6 (só lê o resultado guardado), U7, U8 e U9 (só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem; **Rodar agora** e o menu da cópia ficam como estão) e U13 (lê `whole` na rota de rodadas).
+Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira um campo de resposta montado em memória), U3 (liga as ferramentas aos agentes), U6 e U14 (só leem o resultado guardado e a lista de conexões, que já existe), U7, U8 e U9 (só leem `listCopyRuns`, `listConnections` e `sampleCopy`, que já existem; **Rodar agora** e o menu da cópia ficam como estão) e U13 (lê `whole` na rota de rodadas).
 
 
 ## A tabela de referência
@@ -576,11 +689,19 @@ Sem linha nesta tabela, porque não acrescentam gravação nem comando: U1 (tira
 | Pular com outra rodada aberta | U12 | a trava de `claim` em `run.ts` devolve `RUNNING` | a plataforma de dados com catálogo e linhagem pula a execução que chega com outra em curso (estudo de referência, documentado) | pula, sem fila | nativo | — | pular e imprimir o código | — |
 | A passada ao subir | U12 | os passes de `main.ts:261-274`; o escopo de empresa sem pessoa e o log por empresa em `repairApps`, `hub/apps/repair.ts:218-236` | mesma situação: `repairApps` | por empresa, falha registrada, segue | nativo | — | `ensureWholeLines` na forma de `repairApps` | `apps/server/src/hub/copies/whole.ts` |
 | "Passada inteira" na linha da rodada | U13 | `RunRow` e `RunPhoneRow` em `copy-detail.tsx:36-60`; `outcomeText` em `text.ts:175-189` | o protótipo `b2-rodadas-inteira` | a marca em `text-2` depois do resultado | nativo | — | — | — |
+| A linha fina e "Fontes" (tela A) | U14 | `Sources`, `apps/web/src/builder/conversation/sources.tsx:31-36`, sem linha acima | o protótipo `p3-01` aprovado | uma linha fina sobre o título do bloco | nativo (`border-line`) | — | — | — |
+| A logo da fonte (tela A) | U14 | nenhuma logo no bloco; `ConnectorLogo small` já desenha a placa de 20 px nas linhas de ferramenta (`tool-bodies.tsx:147-151`, `apps/web/src/hub/connectors/logo.tsx:9-32`); o `logo` do kit chega no catálogo (`packages/hub-api/src/connectors.ts:58`) | o protótipo `p3-01`; a plataforma de ingestão de referência põe a logo do conector em cada fonte, na lista de fontes e no detalhe da fonte (capturas, fora do repositório, delivery L21; visto, não oficial) | a logo do sistema numa placa antes do nome | nativo (a peça e o dado já existem) | — | `ConnectorWords.logo(connector)` ao lado de `name` | — |
+| O sistema e a conexão, sem repetir (tela A) | U14 | `copiedFrom` junta os nomes numa `system` que a fonte de cópia não mostra (`sources.ts:71-90`, `sources.tsx:43`); `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, já não repete a conexão com o nome do sistema na lista de Dados (critério 74) e na leitura ao vivo (PR 1111) | o protótipo `p3-01` ("Sankhya · Matriz") | o sistema forte e a conexão ao lado | nativo (`systemText`, um dono) | — | a fonte `NOT_GIVEN` não entra na lista de conexões (decisão 28) | — |
+| A tabela numa pastilha de código (tela A) | U14 | a tabela no mesmo cinza da frase (`sources.tsx:34`, `:43`) | o protótipo (letra de código); a plataforma de dados com catálogo e linhagem mostra as tabelas usadas pela resposta em pastilhas (capturas, fora do repositório, delivery L21; visto, não oficial) | o nome da tabela em mono, num fundo próprio | nativo (`font-mono`, `bg-surface-3`, como o bloco da consulta, `tool-bodies.tsx:20`) | — | — | — |
+| O estado com ponto e cor (tela A) | U14 | `copiedText` só em palavras, em `text-2` (`sources.tsx:8-19`) | o protótipo `p3-04` (ponto vermelho na cópia parada); a plataforma de ingestão de referência, no detalhe da fonte, diz o estado e a última execução em palavras e cor (capturas, fora do repositório, delivery L21; visto, não oficial); o `Stamp` do DESIGN.md (`:558-561`) | a palavra com um ponto de 6 px na cor do estado, na ponta | nativo (`Stamp`, `apps/web/src/ui/block.tsx:37-48`, design V35) | — | o neutro com o ponto em `line-strong`, como a tela A desenha; `Stamp` passa a aceitar `className` | — |
+| "ao vivo" na leitura ao vivo (tela A) | U14 | `liveText`, `sources.tsx:21-25`, sem a palavra | o protótipo `p3-05` ("lido agora, às 10:02 · ao vivo") | a palavra "ao vivo" junto da hora | nativo | — | "ao vivo · " antes da hora, como a tela A | — |
+| O selo da conexão a reautorizar (tela A) | U14 | o estado chega em `systems[].state` (critério 17) e `copiedFrom` o descarta (`sources.ts:72-74`) | nenhuma: é nosso, as palavras e o tom de `stateBadge` de Integrações (`apps/web/src/hub/connectors/text.ts:35-45`) | o selo vermelho com a palavra, depois do nome | nativo (`stateBadge` e `Badge`, um dono das palavras) | — | só `NEEDS_REAUTH`; `ACTIVE` sem selo (decisão 32) | — |
+| As palavras do catálogo na sala do Builder | U14 | `BUILDER_ROOM` com `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); a sala do Assistente lê o catálogo por `useConnectorCatalog` (`apps/web/src/builder/assistant/connector-names.ts:14-43`) | o Assistente desta etapa (critério 112 pede o mesmo nome e a mesma logo) | `wordsOf` sobre `connectionsQuery`, que todo membro lê (`apps/server/src/hub/connectors/connections.ts:57-58`) | nativo (`wordsOf` e `connectionsQuery` já existem) | — | o `Room` do Builder em `panel.tsx`, porque `builder/conversation` não importa `builder/assistant` | — |
 
 **A medida do transplante.** Nenhuma parte vem do repositório antigo.
 
-**A dívida.** Nenhuma nova. A sala do Builder com o nome técnico do sistema fica nas decisões do
-firstmate, com o conserto.
+**A dívida.** Nenhuma nova. A sala do Builder com o nome técnico do sistema sai com U14 (emenda de
+2026-11-16).
 
 ## As decisões do firstmate
 
@@ -596,7 +717,7 @@ firstmate, com o conserto.
 | 8 | O critério 27 entra (a porta provada de ponta a ponta) | Nenhum teste da spec provava a porta ligada ao lugar certo; `Sent.toolResults` lê o resultado (`apps/server/src/platform/test-anthropic-body.ts:37-38`) | Tirar o caso |
 | 9 | Os textos que o escopo não deu (`L4` da parte 3): "Não deu para copiar. Selecione a consulta e copie.", "ainda sem cópia", "copiado ontem às", "copiado em 17/10/2026 às", "parada hoje às" (no lugar de "parada, copiado"), "lido ontem às", "lido em 17/10/2026 às", e a fonte ao vivo pelo conector e a conexão ("Sankhya · Matriz") | parte 3, `tasks.md:745`: o construtor usa as propostas e o PR as lista para a palavra do fundador | trocar a frase em `data-specs.ts` ou `sources.tsx`; o teste do critério cita a frase nova |
 | 10 | O catálogo gravado tem as cinco tabelas dos modelos de cópia do Sankhya, e a linha diz "5 tabelas", não "7 tabelas" | o kit tem cinco modelos (`packages/connectors/src/sankhya/copies.ts:85-160`: clientes, vendedores, produtos, vendas, itens de venda); o "7" da spec veio do protótipo `p3-03` | outra lista em `recordedData`; o teste lê a contagem gravada |
-| 11 | Na conversa do Builder a fonte nomeia o conector pelo id ("sankhya") | `BUILDER_ROOM` usa `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); dar à sala do Builder as palavras do catálogo muda a montagem da conversa do Projeto, fora destas pastas | um `RoomContext.Provider` com `useConnectorCatalog` na conversa do Projeto, como `apps/web/src/builder/assistant/conversation.tsx:40-44` |
+| 11 | Na conversa do Builder a fonte nomeia o conector pelo id ("sankhya"). Desfeita pela emenda de 2026-11-16: U14 dá à sala do Builder as palavras do catálogo (critério 112) | `BUILDER_ROOM` usa `PLAIN_WORDS` (`apps/web/src/builder/conversation/room.ts:80-86`, `connector-specs.ts:134-138`); dar à sala do Builder as palavras do catálogo muda a montagem da conversa do Projeto, fora das pastas de G3 | — |
 | 12 | Visão geral é a aba de abertura, embora a `v10` desenhe a Amostra aberta | As duas referências abrem a tabela na visão geral (estudo de referência, seções 3.5 e 11.3); a `v10` abre a Amostra para mostrar a grade | Trocar `TableTab.enum.overview` pela aba desejada como padrão em `CopyDetail` |
 | 13 | "Copiada do … em" só com a última rodada COMPLETE ou PARTIAL | `rows` é "After the last complete pass" (`copies.ts:81-82`); com ERROR ou INTERRUPTED a hora seria a de uma rodada que não copiou | Tirar a checagem de `outcome.kind` em `copiedText` |
 | 14 | A contagem "18 de 22 descrições" da `v10` fica de fora | Nenhuma referência conta descrições | Uma linha a mais no `DetailsPanel`, com o texto aprovado |
@@ -617,6 +738,9 @@ firstmate, com o conserto.
 | 29 | G2b muda o contrato, quem o escreve (`catalog-view.ts`) e quem o lê (`data-tools/tools.ts`) num PR só, com a issue `contrato` | O roteiro da trilha Dados manda o contrato num PR e o consumidor em outro (`docs/steps/trilhas/dados.md:74-79`); um campo renomeado com os leitores para trás não compila, e um campo novo ao lado do velho daria dois donos ao id (code C26). G1 já levou a sua linha do servidor junto | dois PRs, com `sources` ao lado de `connections` até o segundo |
 | 30 | `REFUSED_TEXT.NOT_IN_ROLE` é "Essa tabela não está no catálogo.", também para `data_describe` | Fechamento do firstmate pela auditoria das referências, com a palavra do fundador "1. Sim pode ser essa frase"; um texto por `kind` (code C26), e `data_describe` só recebe `NOT_IN_ROLE` num catálogo que diz ler uma tabela que o login não lê | um texto próprio para `data_describe` |
 | 31 | `failed` do placar reconhece o sucesso de uma ferramenta de dado pela forma `DataResult`, não pelo nome | A recusa das ferramentas de dado é lançada (U2) e já conta como `output-error` pela regra do `noToolErrors`; só a cláusula da recusa devolvida como resultado (`test-scorecard.ts:176`) confundia `CATALOG`, `TABLE` e `ROWS` com recusa. Migrar o placar para `runEvals` (`@mastra/core@1.82.0 dist/docs/references/reference-evals-run-evals.md:85`, `:105`) é maior que esta etapa | a exceção por `DATA_TOOL` em `failed` |
+| 32 | O selo da conexão só em `NEEDS_REAUTH`, um por fonte, depois do nome, mesmo numa cópia de duas conexões | O critério 17 já leva o estado; "Funcionando" em toda fonte em dia repetiria o ponto verde do carimbo; uma cópia de duas conexões é rara e o selo único diz que uma delas pede atenção, como a linha de Integrações | um selo por conexão, com o nome dela |
+| 33 | `Stamp` (`apps/web/src/ui/block.tsx:37-48`) passa a aceitar `className`, para o ponto neutro de "ainda sem cópia" em `line-strong`, como a tela A desenha | O tom `neutral` do `Badge` pinta o ponto na cor do texto (`text-2`); a tela A aprovada pede `line-strong`, e a conferência desta unidade é com ela | tirar o `className` e aceitar o ponto em `text-2` |
+| 34 | A leitura ao vivo diz "ao vivo · " também noutro dia ("ao vivo · lido ontem às 22:46") | "ao vivo" diz o tipo da fonte, lida do sistema e não da cópia, não a hora; a tela A o põe no carimbo | dizer "ao vivo" só no dia do `at` |
 
 
 ## U1 `withheld` sai do contrato e a lei da tabela escondida
@@ -1323,6 +1447,9 @@ type Copied = 'IDLE' | 'DONE' | 'FAILED'
 
 **Base e modelo.** O commit de U4 no ramo do G3 (corre ao lado de U5). Sonnet.
 
+**Emenda de 2026-11-16.** U6 está no `main` (PR 1107). O desenho do bloco passa ao da tela A, em
+U14 (G7), e os critérios 42, 43, 45 e 47 passam a U14; esta ficha fica como foi construída.
+
 ### As linhas da tabela
 
 - `MessageSource` `apps/web/src/builder/conversation/sources.ts:8-13`; `SourcePart` `:17-24`; `sourceOf` e `sourcesOf` `:26-46`; `fromParts` chama `sourcesOf(message.parts)` em `rows.ts:262`, sem mudança.
@@ -2025,3 +2152,192 @@ export const WHOLE_PASS = 'Passada inteira'
 ## G6 O ponto de conferência
 
 Depois de U13, os passos 6 e 7 do `conexus-build`: os testes do servidor de `run.test.ts`, `run-v2.test.ts`, `clock.test.ts`, `delete.test.ts`, `unlink-copies.test.ts`, `routes.test.ts`; `copy-detail.test.tsx`; o contrato; o Hub local subindo com `COPY_WHOLE_LINES`, uma cópia ligada com as duas linhas no agendador, a semanal disparada à mão (`nextFireAt` no passado) e a aba Rodadas mostrando "Passada inteira" a 1366 e 390 px, nos dois temas. O PR diz o limite da coluna inativa: a passada inteira detecta a coluna que sumiu só quando cabe numa rodada (`source-pass.ts:199-200`). "Passada inteira" vai para a palavra do fundador no fim da etapa.
+
+## U14 O bloco Fontes da tela A
+
+**Base e modelo.** O `main` com G3 (PR 1107, merge `d9f56971`) e o PR 1111 mesclados. Sonnet: uma
+linha de tela com peças que já existem, sem contrato novo entre módulos. Cada linha citada abaixo foi
+lida no `main` em `d9f56971`; o que vem do PR 1111 diz o PR.
+
+**A lição.** O critério escrito tinha ficado mais pobre que a tela aprovada; a conferência desta
+unidade compara com a tela A, elemento por elemento.
+
+### As linhas da tabela
+
+- A linha fina e "Fontes": `Sources`, `apps/web/src/builder/conversation/sources.tsx:28-68` (a seção
+  `:31-35`, o `h3` `:36`).
+- A logo: `ConnectorLogo`, `apps/web/src/hub/connectors/logo.tsx:9-32` (`small`, `:19` e `:27`),
+  exportada em `apps/web/src/hub/connectors/public.ts:3`; o molde da placa numa linha,
+  `apps/web/src/builder/conversation/tool-bodies.tsx:147-151`; o mapa do catálogo em `wordsOf`,
+  `apps/web/src/builder/conversation/connector-words.ts:11-41` (`named` `:15`, a autenticação `:29`);
+  `ConnectorWords`, `apps/web/src/builder/conversation/tool-spec.ts:72-78`; `PLAIN_WORDS`,
+  `apps/web/src/builder/conversation/connector-specs.ts:134-138`.
+- O sistema e a conexão: `copiedFrom`, `apps/web/src/builder/conversation/sources.ts:71-90` (a
+  `system` juntada `:72-74`); `liveOf` `:118-126`; `keyOf` `:129-131`; `MessageSource` `:14-23`;
+  `systemText`, `apps/web/src/hub/copies/text.ts:37-41`, e o seu uso na leitura ao vivo e o export
+  em `apps/web/src/hub/copies/public.ts` (PR 1111).
+- A tabela: `BLOCK`, `tool-bodies.tsx:19-20` (o mono em `surface-3` da consulta).
+- O estado: `copiedText` e `liveText`, `sources.tsx:8-25`; `Stamp`, `apps/web/src/ui/block.tsx:37-48`;
+  os tons de `Badge`, `apps/web/src/ui/badge.tsx:8-20`; o Stamp no `DESIGN.md:558-561`.
+- O selo: `stateBadge`, `apps/web/src/hub/connectors/text.ts:35-45`, exportado em
+  `apps/web/src/hub/connectors/public.ts:28`; o molde de uso, `Stamp` com `stateBadge` em
+  `apps/web/src/builder/assistant/day.tsx:101`.
+- A sala do Builder: `BUILDER_ROOM`, `apps/web/src/builder/conversation/room.ts:80-86`;
+  `BuilderChat`, `apps/web/src/builder/conversation/panel.tsx:34-56`; o molde das palavras,
+  `useConnectorCatalog`, `apps/web/src/builder/assistant/connector-names.ts:14-21`;
+  `connectionsQuery`, `apps/web/src/hub/connectors/queries.ts:26-28`, exportada em `public.ts:6`.
+- Os testes: `WORDS`, `queried`, `read` e `textsOf`, `apps/web/src/builder/conversation/sources.test.tsx:38-107`,
+  e os casos de `:152-236`; `openConversation`, `panel.test.tsx:28`; a lista de conexões do
+  harness, `apps/web/sweep-connections.ts:26`; o caso "a fonte do dado",
+  `apps/web/sources.layout.test.ts:60-82`.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/web/src/builder/conversation/sources.ts` (`MessageSource`) | Muda: `connections` e `reauth` no lugar de `system` | `rows.ts:262`, `sources.tsx`, `CitedRow` |
+| `apps/web/src/builder/conversation/sources.tsx` | Muda: a linha da fonte de dado | a linha `sources` da conversa |
+| `apps/web/src/builder/conversation/tool-spec.ts` (`ConnectorWords`) | Muda: `logo` e `auth` | `wordsOf`, `PLAIN_WORDS`, todo `Room` |
+| `apps/web/src/builder/conversation/connector-words.ts`, `connector-specs.ts` | Muda | `useConnectorCatalog`, `BUILDER_ROOM`, `ASSISTANT_ROOM`, os testes que montam palavras |
+| `apps/web/src/builder/conversation/panel.tsx` | Muda: o `Room` do Builder com as palavras do catálogo | a rota da conversa do Projeto |
+| `apps/web/src/ui/block.tsx` (`Stamp`) | Muda: aceita `className` | `day.tsx`, `versions.tsx`, `sources.tsx` |
+| `sources.test.tsx`, `panel.test.tsx`, `apps/web/sources.layout.test.ts` | Muda | `npm run test:unit` e `npm run test:browser -w @conexus/web` |
+
+### Os contratos que a unidade cria
+
+```ts
+// apps/web/src/builder/conversation/sources.ts
+export type MessageSource =
+  | { kind: 'web'; url: string; title: string | undefined; domain: string; linked: boolean }
+  | { kind: 'data'; connector: string
+      /** The names of the connections the place gives, in the order of `systems`; a NOT_GIVEN one is not here. */
+      connections: readonly string[]
+      /** Whether one of them waits for a new authorization (NEEDS_REAUTH). */
+      reauth: boolean
+      table: string; at: string | null; state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE' }
+
+// apps/web/src/builder/conversation/tool-spec.ts
+export type ConnectorWords = {
+  name: (connector: string) => string
+  /** The connector's logo, once the catalog is read. */
+  logo: (connector: string) => string | undefined
+  /** How the connector links, for the words of a refused connection; 'oauth2_code' for one the catalog lacks. */
+  auth: (connector: string) => ConnectorEntry['auth']
+  logoOf: (connectionId: string) => string | undefined
+  refusal: (connector: string | undefined, why: ConnectorRefusal) => string
+}
+
+// apps/web/src/ui/block.tsx
+export function Stamp(props: { tone: …; className?: string; children: ReactNode }): ReactNode
+```
+
+- **Estados.** `state` separa a cópia e a leitura ao vivo (C21, C22); o tom do carimbo sai de uma
+  função só, de `state` e `at`: `FRESH` e `LIVE` em `success`, `PARTIAL` em `warning`, `STOPPED` em
+  `danger`, `at` nulo em `neutral` com o ponto em `line-strong`.
+- **Donos.** As palavras do estado continuam `copiedText` e `liveText`; o nome sem repetir é
+  `systemText`; as palavras e o tom do selo são `stateBadge`; a logo e a autenticação vêm de `wordsOf`
+  (C26). A chave sem repetição de `keyOf` passa a `${connector}:${connections.join(',')}:${table}`.
+- **Esquema de entrada externa.** O resultado guardado passa por `DataResult` ou `LiveResult`, como
+  hoje (C27).
+- **Arquivo modelo.** `sources.ts`: cumpre C21 e C26.
+
+### As skills e a leitura
+
+`shadcn` para `Badge` (`stack.md:63`); `impeccable` para conferir a linha com a tela A
+(`docs/reference/impeccable.md`); web W7, W21, W34; design V3, V17, V35; testing T5, T23, T27.
+
+### A ordem do trabalho
+
+1. **A origem com a logo, as conexões e o estado.** Critérios: 42, 43, 110, 111.
+   - **Arquivos:** muda `sources.ts`, `sources.tsx`, `tool-spec.ts`, `connector-words.ts`,
+     `connector-specs.ts`, `apps/web/src/ui/block.tsx`, `sources.test.tsx`.
+   - **Referência a seguir:** a tela A, elemento por elemento (a tabela "Elemento da tela A" de G7);
+     `tool-bodies.tsx:147-151` (a logo numa linha); `day.tsx:101` (o `Stamp`).
+   - **O que sai:** `system` de `MessageSource` e a junção por vírgula de `copiedFrom`, com o id do
+     conector no lugar de uma fonte `NOT_GIVEN` (`sources.ts:72-74`); a frase única em `text-fact
+     text-text-2` da fonte de dado (`sources.tsx:39-44`); `named.get(connector)?.auth` repetido em
+     `refusal` (`connector-words.ts:29`), que passa a ler `auth`.
+   - **O que entra:** `copiedFrom` dá `connections` com o `name` de cada `DataSystem` `NAMED`, e
+     `reauth` verdadeiro quando um deles está em `NEEDS_REAUTH`. `wordsOf` ganha `logo` e `auth` pelo
+     mesmo `named`; `PLAIN_WORDS`, `() => undefined` e `() => 'oauth2_code'`. `Stamp` passa
+     `cn(…, props.className)` ao `Badge`. Em `Sources`, a fonte de dado é um `li` como a tabela
+     "Elemento da tela A" de G7 diz: `ConnectorLogo small` quando `connectors.logo(connector)` existe;
+     `systemText(connectors.name(connector), connections, 0)` em `text-label font-medium text-text`;
+     com `reauth`, o `Badge` com o `tone` e o `text` de `stateBadge({ state: 'NEEDS_REAUTH' },
+     connectors.auth(connector))`; a tabela na pastilha; o `Stamp` com o tom do estado e as palavras
+     de `copiedText`. A seção ganha a linha fina acima. Regras: C21, C26, W21, V35.
+   - **Testes:** os casos dos critérios 42, 43, 110 e 111, com `queried` aceitando `systems`
+     (`NAMED` com `state`, `NOT_GIVEN`) e `WORDS` com um conector OAuth e um de chaves. O teste lê cada
+     peça pelo papel e pelo texto (`within(item)`: a imagem da logo, o nome, a pastilha, o carimbo) e
+     o tom pela classe do carimbo, não pelo `textContent` juntado, que perdeu os separadores.
+   - **Mutações à mão:** `PARTIAL` em `success`: "a rodada parcial" fica vermelho; tire `reauth`:
+     "a conexão à espera de nova autorização" fica vermelho; selo também em `ACTIVE`: "a conexão
+     ativa não mostra selo" fica vermelho; volte o id do conector no lugar do `NOT_GIVEN`: "a fonte
+     não dada ao Projeto" fica vermelho; `connections` sem `systemText`: "a conexão com o nome do
+     sistema não se repete" fica vermelho.
+   - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx`
+     passa.
+2. **A leitura ao vivo da tela A.** Critérios: 45.
+   - **Arquivos:** muda `sources.ts`, `sources.tsx`, `sources.test.tsx`.
+   - **Referência a seguir:** `liveOf`, `sources.ts:118-126`; o caso do PR 1111 "a leitura ao vivo
+     de uma conexão com o nome do sistema não o repete".
+   - **O que sai:** a frase `${name} · ${system} · ${liveText}` de `sources.tsx:42` (com o
+     `systemText` do PR 1111).
+   - **O que entra:** `liveOf` dá `connections: [args.connection]` e `reauth: false`; a linha é a
+     mesma da cópia, com a operação na pastilha e o carimbo `success` `ao vivo · ${liveText(at, now)}`.
+   - **Testes:** os três casos do critério 45, com `reads` gravado, e a leitura tipada de hoje.
+   - **Mutações à mão:** tire "ao vivo · ": "a fonte da leitura ao vivo" fica vermelho; use só
+     `clockOf(at)`: "a leitura ao vivo vista noutro dia" fica vermelho.
+   - **Pronto quando:** os casos passam.
+3. **A sala do Builder.** Critérios: 112.
+   - **Arquivos:** muda `panel.tsx`, `panel.test.tsx`.
+   - **Referência a seguir:** `connector-names.ts:14-21` (o `useMemo` das palavras);
+     `apps/web/src/builder/assistant/conversation.tsx:84-87` (o `RoomContext.Provider`).
+   - **O que entra:** `BuilderChat` lê `connectionsQuery(companyId)`, monta `wordsOf(connectors ?? [],
+     connections ?? [])` num `useMemo` e põe `<Chat>` dentro de
+     `<RoomContext.Provider value={{ ...BUILDER_ROOM, connectors: words }}>`, com o objeto num
+     `useMemo` para a sala não redesenhar as linhas. `builder/conversation` não importa
+     `builder/assistant`, por isso não chama `useConnectorCatalog`. Regras: C26 (`wordsOf` é o dono).
+   - **Testes:** os dois casos do critério 112, com a lista de conexões respondida como
+     `sweep-connections.ts:26` e, no segundo, respondida com falha.
+   - **Mutações à mão:** tire o `Provider`: "na conversa do Builder, a fonte tem o nome e a logo do
+     catálogo" fica vermelho.
+   - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/builder/conversation/panel.test.tsx`
+     passa.
+4. **A largura.** Critérios: 47, 112.
+   - **Arquivos:** muda `apps/web/sources.layout.test.ts`.
+   - **Referência a seguir:** o caso "a fonte do dado" (`:60-82`) e `sweep-connections.ts:26`.
+   - **O que entra:** a resposta da lista de conexões nas `replies`; o texto lido é "Sankhya ·
+     Matriz"; a 1280 px o topo da pastilha e o do nome são o mesmo e o carimbo termina na borda
+     direita da seção; a 390 px o topo da pastilha fica abaixo do nome e a sua esquerda é a do nome;
+     nada passa da largura, nos dois temas.
+   - **Pronto quando:** `npm run test:browser -w @conexus/web` passa.
+
+### Como se prova
+
+42, 43, 45, 110 e 111: o teste monta a mensagem guardada pelo Mastra (T26), passa por `itemsOf` e
+desenha `Sources` na sala do Assistente com as palavras do catálogo; hoje a fonte é uma frase cinza,
+sem logo nem selo, e a fonte `NOT_GIVEN` diz o id do conector. 112: a conversa do Projeto aberta pela
+porta da tela; hoje ela diz "sankhya". 47: o navegador real mede a posição das peças. A conferência
+final abre a tela A ao lado do Hub local, nos sete estados, a 1366 e 390 px e nos dois temas.
+
+### Parar se
+
+- O PR 1111 não está mesclado: relate; não refaça o `systemText` da leitura ao vivo nem o export.
+- O ponto neutro não pega `line-strong` pelo `className` do `Stamp` (a ordem das classes do
+  `Badge`): relate com a captura; não escreva outro carimbo.
+- A linha a 390 px não desce como a tela A pela quebra de `sm` (a coluna da conversa é mais estreita
+  que a tela no computador): relate com as medidas; a escolha entre a quebra da tela e uma consulta
+  de contêiner é do firstmate.
+- Uma peça da tela A pede um token que o `DESIGN.md` não tem: relate; não invente cor nem tamanho.
+
+## G7 O ponto de conferência
+
+- Web: `npm run test:unit -w @conexus/web -- src/builder/conversation/sources.test.tsx src/builder/conversation/panel.test.tsx src/builder/conversation/tool-row.test.tsx` e `npm run test:browser -w @conexus/web`. Depois `npm run check`.
+- Passos 6 e 7 de `conexus-build`: o Hub local com os dublês, como dono, no Assistente e no Builder de
+  um Projeto, "Quanto vendi em outubro?" e uma leitura ao vivo do Sankhya, olhados num navegador real
+  a 1366 e 390 px, nos dois temas (T23), lado a lado com a tela A, elemento por elemento: a linha fina,
+  a logo, "Sankhya · Matriz", a pastilha, o carimbo e a sua cor, a conexão a reautorizar com o selo e
+  o Projeto sem a conexão. As mutações feitas e desfeitas, com o resultado (T27).
+- Depois do PR, a QA (`conexus-qa`, T25) do bloco Fontes, por um agente que não construiu, com a
+  matriz de G7 e a tela A; o relatório vai no PR antes da revisão.
