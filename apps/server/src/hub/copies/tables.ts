@@ -73,8 +73,6 @@ export const copy = copies.table(
     lastRunId: uuid('last_run_id'),
     // Each source column's state: when it last came in a row, and since when it has not.
     columnState: jsonb('column_state').notNull().default({}),
-    // True once the copy's readers were written, by the copy's turning on, by the seeding or by a person.
-    readersSet: boolean('readers_set').notNull().default(false),
   },
   (table) => [
     unique('copy_company_id_name_key').on(table.companyId, table.name),

@@ -392,9 +392,6 @@ GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
 GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
 -- The other half of the grant above, in the order of the table's columns, which the snapshot keeps.
 GRANT UPDATE(column_state) ON TABLE copies.copy TO hub_company;
--- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
--- company's routes mark a copy whose readers were written once.
-GRANT UPDATE(readers_set) ON TABLE copies.copy TO hub_company;
 -- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
 -- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
 -- dismiss it; the Hub never deletes one.
