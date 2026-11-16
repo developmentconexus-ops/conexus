@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { ATTEMPT_KEY_HEADER, READER_ZONE_HEADER } from '@conexus/hub-api'
 import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { conversing, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
 
@@ -148,14 +150,31 @@ export async function created(hub: Hub, person: Person, assistant: string, body:
 }
 
 /** The conversation's stream, open until the test ends, and a question that returns its turn's events. */
+/** A message sent with the browser's time zone in its header. */
+function zoneSent(hub: Hub, person: Person, url: string, content: string, zone: string) {
+  return hub.app.inject({
+    method: 'POST',
+    url: `${sessionUrl(url)}/messages`,
+    headers: {
+      origin: TEST_ORIGIN,
+      'content-type': 'application/json',
+      [ATTEMPT_KEY_HEADER]: randomUUID(),
+      [READER_ZONE_HEADER]: zone,
+      cookie: person.cookie,
+    },
+    payload: JSON.stringify({ message: content }),
+  })
+}
+
 export async function talking(t: TestContext, hub: Hub, person: Person, url: string) {
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
-  async function say(content: string, files: Upload[] = []) {
-    const asked =
-      files.length === 0
-        ? await sent(hub, person, url, content)
-        : await post(hub, person, `${sessionUrl(url)}/messages`, { message: content, files })
+  async function say(content: string, files: Upload[] = [], zone?: string) {
+    const asked = await (files.length > 0
+      ? post(hub, person, `${sessionUrl(url)}/messages`, { message: content, files })
+      : zone === undefined
+        ? sent(hub, person, url, content)
+        : zoneSent(hub, person, url, content, zone))
     assert.equal(asked.statusCode, 200, asked.body)
     return stream.turn()
   }

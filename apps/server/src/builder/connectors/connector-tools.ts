@@ -9,6 +9,7 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { INSTANTS_NOTE, inZone, zoneOf } from '../reader-zone.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
 
@@ -228,7 +229,7 @@ export async function readOn(
   const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
   if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
   if (answered.kind !== 'OK') return answered
-  const at = new Date().toISOString()
+  const at = inZone(new Date(), zoneOf(requestContext))
   if (!('whole' in answered)) return { ...answered, at }
   const { whole, ...rest } = answered
   const cut = { ...rest, at }
@@ -246,6 +247,7 @@ function readTool(access: ConnectorAccess): ToolsInput {
       description: [
         `Reads from a company system ${access.wording.whose}, by the connection's name. ${answerWords(access.wording.limit)}`,
         describeReads(connections),
+        INSTANTS_NOTE,
       ].join('\n'),
       inputSchema: z.object({
         connection: connectionField(connections),

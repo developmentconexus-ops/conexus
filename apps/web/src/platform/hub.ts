@@ -5,7 +5,13 @@ import type {
   ProblemField,
   ProblemReason,
 } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, FAILURES, Problem, phraseOf } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  FAILURES,
+  Problem,
+  phraseOf,
+  READER_ZONE_HEADER,
+} from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
@@ -110,7 +116,9 @@ async function hubFetch(
  * Builder's session: same origin, with cookies, and no deadline, since its stream stays open.
  */
 export function hubClientFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  return fetch(input, { ...init, credentials: 'same-origin' })
+  const headers = new Headers(init?.headers)
+  headers.set(READER_ZONE_HEADER, Intl.DateTimeFormat().resolvedOptions().timeZone)
+  return fetch(input, { ...init, headers, credentials: 'same-origin' })
 }
 
 type Part = 'params' | 'query' | 'body'

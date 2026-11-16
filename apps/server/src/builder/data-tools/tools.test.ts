@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Catalog as CatalogShape, DESCRIBE_SAMPLE_ROWS } from '@conexus/hub-api'
+import { Catalog as CatalogShape, DESCRIBE_SAMPLE_ROWS, READER_ZONE } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import { dataTools } from './public.ts'
 import { CATALOG, LOJA_A, MIXED, runOn, thrown, UNNAMED, WAITING, world } from './test-world.ts'
 
@@ -176,4 +177,33 @@ test('uma cópia de duas conexões nomeia as duas na origem', async () => {
     catalog.tables.find((each: { name: string }) => each.name === 'juntas').systems,
     both,
   )
+})
+
+function zoned(zone: unknown) {
+  const requestContext = new RequestContext()
+  requestContext.setRaw(READER_ZONE, zone)
+  return { requestContext }
+}
+
+test('a hora da última rodada vai ao modelo no fuso de quem lê, com o deslocamento', async () => {
+  const { tools } = world(CATALOG)
+  const listed = await runOn(tools, 'data_describe', {}, zoned('America/Sao_Paulo'))
+  assert.equal(listed.tables[0].lastRunEndedAt, '2026-11-14T08:05:00.000-03:00')
+  const tabled = await runOn(tools, 'data_describe', { table: 'vendas' }, zoned('Asia/Tokyo'))
+  assert.equal(tabled.origin.lastRunEndedAt, '2026-11-14T20:05:00.000+09:00')
+})
+
+test('sem fuso, ou com um fuso que não existe, a hora vai em UTC com o Z', async () => {
+  const { tools } = world(CATALOG)
+  for (const context of [{}, zoned('Marte/Olympus'), zoned(3)]) {
+    const listed = await runOn(tools, 'data_describe', {}, context)
+    assert.equal(listed.tables[0].lastRunEndedAt, '2026-11-14T11:05:00.000Z')
+  }
+})
+
+test('as ferramentas dizem ao modelo que a hora vem com o deslocamento', () => {
+  const { tools } = world(CATALOG)
+  for (const name of ['data_describe', 'data_query']) {
+    assert.match(Object(tools)[name].description, /UTC offset/)
+  }
 })
