@@ -36,14 +36,22 @@ Administrador, e a poda) e a recontagem pelas parcelas de cada unidade levaram a
 copiadas que o papel dela lê, e o banco da empresa é quem garante isso. Em Configurações, Papéis, você
 marca em cada papel quais tabelas ele lê, sistema por sistema. Uma cópia nova nasce lida só por Dono e
 Administrador; os outros papéis leem depois que você os marca. Na página de cada tabela aparece quem a
-lê. Um membro passa a ver a página Dados, só com as tabelas do papel dele. O Desenvolvedor, que
-administra as cópias, continua vendo todas na lista, com as rodadas, mas só lê as linhas das que o
-papel dele lê. Uma tabela que o papel não lê fica escondida: não aparece na lista, o endereço dela dá
-"não encontrado", e o Assistente diz que não achou. Na página da tabela entra o botão **Perguntar ao
+lê. Um membro e um Desenvolvedor passam a ver a página Dados, só com as tabelas do papel deles. Só
+Dono e Administrador administram as cópias (ligar, rodar, pausar, liberar a um Projeto) e leem todas.
+Uma tabela que o papel não lê fica escondida de todo mundo fora de Dono e Administrador: não aparece na
+lista, o endereço dela dá "não encontrado", e o Assistente diz que não achou. Na página da tabela entra o botão **Perguntar ao
 Assistente**. E quando uma cópia falha porque o sistema recusou, a aba Rodadas mostra o que o sistema
 disse, e o Assistente sabe explicar a causa.
 
 **O que mudou desde a versão anterior desta página.**
+
+- Fora do papel, ninguém vê (a sua palavra de 2026-11-16, "1."). A regra "o Desenvolvedor, que administra
+  as cópias, continua vendo todas" nasceu na nossa spec e nunca foi perguntada a você; as referências não
+  têm "administra e não lê". Agora o Desenvolvedor vê Dados como o Membro, e deixa de ligar, rodar,
+  pausar, apagar e liberar cópias a um Projeto; isso fica com Dono e Administrador, que leem todas. Isso
+  tira do papel de sistema Desenvolvedor a permissão que você deu na Capacidade 2 ("Dono e o admnistrador e
+  desenvolvedor"); não cria permissão nenhuma. Ele continua construindo com as tabelas que o papel lê e
+  com as que o Projeto recebe.
 
 - Quem lê uma cópia nova. Antes, a cópia nascia marcada para os papéis que leem o sistema dela (a sua
   N3b-1), e por isso o Desenvolvedor e o Membro liam toda cópia nova. Agora ela nasce lida só por Dono
@@ -136,16 +144,17 @@ aprovação. Uma linha por letra, com o que ela fixa:
 | G1 | U2 A porta da identidade e `reconciled` | A cópia nova sem linha em `copies.copy_reader` (só Dono e Administrador a leem); `reconciled` no fim de toda rodada; `companyRoleRows` | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `scripts/rerun-never.json` | data (D16, D22); testing (T5, T10, T27); S41 | U1. Em `ended`, a U2 vai antes da U10 (decisão G4.7) |
 | G2 O catálogo e as rotas por papel (um PR) | U3 O catálogo filtrado, a leitura pelo login do papel e o conserto em `42501` | O catálogo por papel no lugar Empresa, com `NOT_IN_CATALOG` para a tabela de fora pedida pelo nome; a leitura pelo login do papel (`conexus_read` para Dono e Administrador), com o conserto em `42501` e `NO_LOGIN`; a sonda da decisão D | `apps/server/src/hub/copies/`, `apps/server/src/hub/data/`, `scripts/rerun-never.json` | data (D22); testing (T4, T5, T10, T27); S10, S41 | G1 mesclado. Não depende do G3 do cartão 1 |
 | G2 | U4 As rotas `listCopyReaders` e `setRoleCopies` | `GET .../copy-readers` (decisão B) e `PUT .../roles/{role}/copies`, o Hub primeiro, com a reposição e o 503 quando tirar falha; a ação `seeData` | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/identity/`, `scripts/rerun-never.json` | data (D22); testing (T5, T6, T10, T27); S8, S10, S41; code C65 | U3 (o conserto do critério 47) |
-| G2 | U5 O membro: `seeData`, `listCopies`, `listCopyRuns` e `sampleCopy` por papel | As listas, as rodadas e a amostra por papel (`seeData`), sem propostas ao membro; 404 para a tabela de outro papel (decisão A); `COPY_NOT_IN_ROLE` ao desenvolvedor fora do papel; `readCopyRows` sai | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `packages/hub-api/src/`, `apps/web/src/platform/test-may.ts`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/data.$copyId.tsx`, `scripts/rerun-never.json` | web; testing (T5, T10, T27); S10 | U3 (`readCopyTable` com o leitor), U4 (`seeData`). O G4 parte deste PR |
+| G2 | U5 O membro: `seeData`, `listCopies`, `listCopyRuns` e `sampleCopy` por papel | As listas, as rodadas e a amostra por papel (`seeData`), sem propostas ao membro; 404 para a tabela de outro papel (decisão A; o desenvolvedor, desde a emenda de 2026-11-16, como o membro); `readCopyRows` sai | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `packages/hub-api/src/`, `apps/web/src/platform/test-may.ts`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/data.$copyId.tsx`, `scripts/rerun-never.json` | web; testing (T5, T10, T27); S10 | U3 (`readCopyTable` com o leitor), U4 (`seeData`). O G4 parte deste PR |
 | G3 As telas de quem lê (um PR; depois dele, a QA, T25) | U6 A tela Papéis com o bloco Dados copiados (`p4-01`) | O bloco **Dados copiados** em cada sistema do papel aberto; **Salvar** grava o papel e depois as tabelas; Dono e Administrador só leem; a frase da leitura ao vivo | `apps/web/src/routes/_app/companies/$companyId_/settings/` (só `roles.tsx`), `apps/web/src/hub/identity/`, `apps/web/src/hub/copies/` (só `queries.ts` e `public.ts`), `apps/web/` (só `sweep-roles-states.ts`), `docs/reference/` (só `screens.md`) | web, design, testing | G2 mesclado (U4) |
-| G3 | U7 A aba Quem lê e a página Dados do membro (`p4-02`, `p1-11`, `v10`) | Dados, a árvore e a página da tabela para o membro, só com as tabelas do papel; a aba **Quem lê {n}**; a recusa na Amostra do desenvolvedor | `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/` (`route.tsx`, `data.index.tsx`, `data.$copyId.tsx`), `apps/web/` (só `sweep-table-states.ts`), `docs/reference/` (só `screens.md`), `scripts/rerun-never.json` | web, design, testing; S10 | U6 (`copyReadersQuery`); G2 mesclado (U4, U5) |
+| G3 | U7 A aba Quem lê e a página Dados do membro (`p4-02`, `p1-11`, `v10`) | Dados, a árvore e a página da tabela para o membro, só com as tabelas do papel; a aba **Quem lê {n}** | `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/` (`route.tsx`, `data.index.tsx`, `data.$copyId.tsx`), `apps/web/` (só `sweep-table-states.ts`), `docs/reference/` (só `screens.md`), `scripts/rerun-never.json` | web, design, testing; S10 | U6 (`copyReadersQuery`); G2 mesclado (U4, U5) |
 | G3 | U8 A tabela escondida na conversa (`p4-03`), só testes | Dois casos do servidor e um da tela provam que `data_describe` e a linha da conversa não nomeiam a tabela que o papel não lê (critérios 84 a 86) | `apps/server/src/builder/data-tools/` (só o teste), `apps/web/src/builder/assistant/` (só o teste), `scripts/rerun-never.json` | testing (T5, T27) | o servidor: só o `main`; a tela: o G3 do cartão 1 (U5: `REFUSED_TEXT`, critério 37 dele) |
 | G3 | U9 Perguntar ao Assistente (`v10`) | O link **Perguntar ao Assistente** no topo da tabela, para todo membro: abre o Início com "Sobre a tabela {nome}: " na caixa, sem enviar | `apps/web/src/builder/assistant/`, `apps/web/src/hub/copies/` (só `copy-detail.tsx`), `apps/web/src/routes/_app/companies/$companyId/` (só `data.$copyId.tsx`) | web, design, testing | U7 (o topo da página) |
 | G4 A causa da falha (um PR) | U10 A mensagem do sistema, do conector até a rodada | A recusa do sistema de origem guarda o que ele disse (status, código, mensagem sem NUL e cortada em 1.000, nunca o corpo) nas colunas `system_*` de `copies.copy_run`; todo outro `ERROR` leva `system: null` | `apps/server/src/hub/connectors/` (`copy-port.ts`), `apps/server/src/hub/copies/`, `packages/hub-api/src/` (`CopySystemMessage`), `packages/connectors/src/sankhya/` (o interruptor do falso) | security (S40, S41); testing (T4, T5, T26, T27) | nada de outro grupo para o código: as colunas e as permissões já estão no `main` (PR 1088 e PR 1098, `apps/server/src/hub/copies/tables.ts:116-119`, `apps/server/database-grants.sql:419-421`); `ended` (`apps/server/src/hub/copies/run.ts:105-153`) como a U2 o deixou (decisão G4.7) |
 | G4 | U11 A mensagem do sistema na aba Rodadas | `system` no `ERROR` da rota de rodadas; "{status} · {mensagem}" (ou o código) embaixo da frase da falha, no computador e no celular | `packages/hub-api/src/`, `apps/server/src/hub/copies/`, `apps/server/src/builder/data-tools/` (só o mundo de teste), `apps/web/src/hub/copies/`, `apps/web/sweep-copies-states.ts` | web; testing (T5) | U10; G3 mesclado (`copy-detail.tsx` e `text.ts`) |
 | G4 | U12 A ferramenta `copy_runs` e a sua linha na conversa | `copy_runs` para todo papel: pelo nome da tabela, a cópia e as cinco últimas rodadas; para a tabela fora do papel, o `NOT_FOUND` de um nome que não existe; a linha na conversa | `packages/hub-api/src/` (`ASSISTANT_TOOL`), `apps/server/src/builder/assistant/`, `apps/server/src/conversations-of.ts`, `apps/web/src/builder/conversation/`, `scripts/rerun-never.json` | security (S10); testing (T4, T5, T10) | U11 (o `system` de `runOf`); U5 (`seeData` e o filtro por papel, decisão G4.1); U4 (a rota que marca as tabelas, usada no teste) |
+| A Fora do papel, ninguém vê (um PR; emenda de 2026-11-16) | U13 O desenvolvedor sem `copy:manage` | O papel de sistema Desenvolvedor perde `copy:manage`: vê Dados como o membro, e Dono e Administrador administram e leem todas; sai `COPY_NOT_IN_ROLE`, com o ramo dele no servidor e na tela | `apps/server/src/hub/identity/`, `apps/server/src/hub/copies/`, `packages/hub-api/src/`, `apps/web/src/hub/copies/`, `apps/web/src/hub/projects/`, `apps/web/src/platform/`, `apps/web/sweep-table-states.ts`, `scripts/rerun-never.json` | web, testing (T5, T27); S10 | G3 mesclado; antes da U12 (critério 118) |
 
-Quatro grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
+Quatro grupos e o grupo A da emenda de 2026-11-16, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
 **Os PRs que criam permissão no banco da empresa.** G1 e G2 criam permissão no banco da empresa: G1 os logins `conexus_role_<id>`, o `GRANT`, o `REVOKE` e o `DROP ROLE`, no fim de toda rodada; G2 a rota que marca as tabelas de um papel (`PUT .../roles/{role}/copies`) e a leitura pelo login do papel. Cada um é um PR próprio e só mescla com a palavra de merge do fundador para ele (L6, como exceção à palavra única da etapa de L13). O corpo de cada um diz isso. G3 e G4 não criam permissão. Na ordem do trabalho, o passo sem **O que sai** não tira nada; o sem **Mutações à mão** não tem mutação; o sem **Referência a seguir** segue as linhas citadas na unidade; o sem **Pronto quando** termina com os seus casos passando.
 
@@ -174,13 +183,14 @@ Quatro grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um c
 - U9: ~33 (`ask-about-table.tsx` novo ≈20; `builder/assistant/public.ts` +1; o texto +2; `copy-detail.tsx` +6; `data.$copyId.tsx` +4).
 - U10: ~51 (`copy-port.ts` 25; `store.ts` 1; `source-pass.ts` 4; `run.ts` 10; `packages/hub-api/src/copies.ts` 6; `packages/connectors/src/sankhya/fake.ts` 5).
 - U11: ~27 (`copies.ts` 1, `list.ts` 8, `copy-detail.tsx` 12, `text.ts` 5, `sweep-copies-states.ts` 1; os ajudantes de teste não contam).
+- U13: ~−60 (sai: `sample.ts` −6, `copy-failures.ts` −8, `connection-copies.ts` −1, `copy-sample.tsx` −4, `roles.ts` +2 e −1; cai a leitura por `manageCopies` do desenvolvedor sem linha nova; só testes e textos mudam o resto).
 - U12: ~100 (`copy-runs.ts` 65, `ports.ts` 14, `assistant.ts` 4, `conversations-of.ts` 4, `packages/hub-api/src/assistant.ts` 1, `assistant-specs.ts` 10, `scripts/rerun-never.json` 2).
 
 **Total da etapa:** cerca de 1.270 linhas alteradas (eram 1.530 antes da emenda de 2026-11-16).
 
 ## Os critérios de aceite
 
-Cada grupo tem a sua faixa de números (G1 de 1 a 29, G2 de 30 a 59, G3 de 60 a 89, G4 de 90 a 119); os números que sobram ficam livres para um critério que a leitura do cartão acrescentar.
+Cada grupo tem a sua faixa de números (G1 de 1 a 29, G2 de 30 a 59, G3 de 60 a 89, G4 de 90 a 119, o grupo A de 119 a 122, que o G4 deixou livres); os números que sobram ficam livres para um critério que a leitura do cartão acrescentar.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
@@ -231,9 +241,9 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 29, G2 de 30 a 59, G3 de 60 a 
 | 53 | U4 | Dois `PUT` juntos para o mesmo papel dão 200 e o estado de um deles, sem `23505`; repetido, o `PUT` responde 200 sem mudar nada; um id repetido no corpo conta uma vez | `readers-routes.test.ts`, "dois PUT ao mesmo tempo terminam com o estado de um deles, e repetir não muda nada" | should |
 | 54 | U5 | `GET /api/companies/{companyId}/copies` de Carla (Financeiro) responde 200 só com `sankhya_clientes` e `proposals: []`, mesmo com uma proposta aberta; `GET .../copy-models` de Carla continua 404 `NOT_FOUND` (`readCopies`) | `apps/server/src/hub/copies/member-data.test.ts`, "o membro lista só as tabelas do papel dele e nenhuma proposta" | must |
 | 55 | U5 | Carla abre `GET .../copies/{clientes}/runs` (200, com a cópia e as rodadas); a de `sankhya_vendas` responde 404 com o mesmo corpo de uma cópia que não existe (decisão A, S10); quem não é da empresa recebe 404 `NOT_FOUND` | `member-data.test.ts`, "o membro abre as rodadas de uma tabela que o papel lê", "o membro abre uma tabela que o papel não lê e recebe 404" e "quem não é da empresa recebe 404" | must |
-| 56 | U5 | O desenvolvedor lista as cinco tabelas e abre as rodadas de todas; a amostra de uma tabela fora do papel dele responde 403 `COPY_NOT_IN_ROLE`, e `sentenceOfCode('COPY_NOT_IN_ROLE')` dá "Seu papel não lê esta tabela. Peça a quem administra a empresa." | `member-data.test.ts`, "o desenvolvedor vê todas as tabelas e as rodadas" e "o desenvolvedor pede a amostra de uma tabela que o papel não lê e recebe COPY_NOT_IN_ROLE" | must |
+| 56 | U5 | O desenvolvedor lista só as tabelas que o papel dele lê e abre as rodadas só dessas; a amostra de uma tabela fora do papel dele responde 404 `COPY_NOT_FOUND`, como a de uma que não existe (emenda de 2026-11-16, "1.") | `member-data.test.ts`, "o desenvolvedor vê só as tabelas do papel e as rodadas delas" e "o desenvolvedor pede a amostra de uma tabela que o papel não lê e recebe COPY_NOT_FOUND" | must |
 | 57 | U5 | A amostra de Carla de `sankhya_clientes` tem 5 linhas, pelo login do Financeiro; a de `sankhya_vendas` dá 404 `COPY_NOT_FOUND`, como uma que não existe | `member-data.test.ts`, "a amostra do membro vem pelo login do papel" | must |
-| 59 | U5 | `getCompany` dá `may` sem a chave `readCopyRows` para os quatro papéis; na tela, a aba Amostra aparece para o desenvolvedor e, com a recusa `COPY_NOT_IN_ROLE`, mostra a frase do critério 56; `git grep -n readCopyRows -- apps packages` não mostra nada (conferência, sem teste) | `apps/server/src/hub/identity/developer.test.ts` (o caso de `:100-118`); `apps/web/src/hub/copies/copy-sample.test.tsx`, "o desenvolvedor vê a aba Amostra e a frase do Hub numa tabela fora do papel" (no lugar de "o desenvolvedor não vê a aba Amostra", `:54`); o `git grep` no ponto de conferência | must |
+| 59 | U5 | `getCompany` dá `may` sem a chave `readCopyRows` para os quatro papéis; na tela, a aba Amostra aparece para todo papel; `git grep -n readCopyRows -- apps packages` não mostra nada (conferência, sem teste) | `apps/server/src/hub/identity/developer.test.ts` (o caso de `:100-118`); `apps/web/src/hub/copies/copy-sample.test.tsx`, "a aba Amostra aparece para o membro"; o `git grep` no ponto de conferência | must |
 | 60 | U6 | O Financeiro aberto mostra, na seção Sankhya, "Dados copiados" e uma linha por tabela copiada do Sankhya, com o nome em mono e, abaixo, o que ela guarda; `sankhya_clientes` (fora do Financeiro) desmarcada e `sankhya_vendas` marcada. Recusa: nenhuma tabela de outro sistema aparece na seção Sankhya | `apps/web/src/hub/identity/roles.test.tsx`, caso "o papel Financeiro mostra Dados copiados no Sankhya com sankhya_clientes desmarcada" | must |
 | 61 | U6 | Marcar `sankhya_clientes` e tocar **Salvar** manda, nesta ordem, `PATCH .../roles/financeiro` (`updateRole`) e `PUT .../roles/financeiro/copies` com o corpo exato `{ "copies": [<vendas>, <clientes>] }`, e volta à lista. Recusa: inverter os dois envios | `roles.test.tsx`, "marcar e salvar manda updateRole e depois setRoleCopies com a tabela" | must |
 | 62 | U6 | Com `setRoleCopies` em 503 `COPY_DATABASE_UNAVAILABLE`, a tela fica no papel com a frase do Hub (`sentenceOf`) e a marca de `sankhya_clientes`; **Salvar** de novo manda os dois envios. Uma resposta perdida mostra "Não confirmamos a gravação. Veja a lista de papéis." | `roles.test.tsx`, "o banco calado ao salvar mostra a frase do Hub e mantém a marca" | must |
@@ -245,14 +255,14 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 29, G2 de 30 a 59, G3 de 60 a 
 | 69 | U6 | `apps/web/src/hub/identity/` não importa nada de `hub/copies/`: as tabelas chegam por propriedade da rota, como o kit (`settings/roles.tsx:58-62`) | conferência, sem teste: o ponto de conferência: `git grep -n "copies/" -- apps/web/src/hub/identity` sem resultado | should |
 | 70 | U7 | O membro (Vendas) vê **Dados** no trilho; a página lista só as tabelas que o Hub devolve, agrupadas pelos sistemas delas, com a linha "Você vê as tabelas que o papel Vendas lê."; sem **Ligar uma cópia**, propostas nem o menu da linha. Recusa: nenhum botão **Rodar agora**, **Pausar** ou **Intervalo** na página | `apps/web/src/hub/copies/copy-list.test.tsx`, "o membro vê Dados no trilho e só as tabelas do papel, sem Ligar e sem menu" (no lugar de `:22-27`) | must |
 | 71 | U7 | O membro no endereço de uma tabela fora do papel vê a página de não encontrado de um id que não existe (o Hub responde 404 `COPY_NOT_FOUND`; S10), sem o nome da tabela | `copy-list.test.tsx`, "o membro que abre uma tabela de outro papel vê a página de não encontrado" | must |
-| 72 | U7 | Na página de uma tabela do papel, o membro vê as abas Visão geral, Colunas, Amostra, Rodadas e Quem lê, e não vê **Rodar agora** nem o menu **⋯** (decisão F); o desenvolvedor e o dono veem os dois | `apps/web/src/hub/copies/copy-detail.test.tsx`, "o membro na página da tabela não vê Rodar agora nem o menu" | must |
+| 72 | U7 | Na página de uma tabela do papel, o membro vê as abas Visão geral, Colunas, Amostra, Rodadas e Quem lê, e não vê **Rodar agora** nem o menu **⋯** (decisão F); o dono e o administrador veem os dois, e o desenvolvedor não (emenda de 2026-11-16) | `apps/web/src/hub/copies/copy-detail.test.tsx`, "o membro e o desenvolvedor na página da tabela não veem Rodar agora nem o menu" | must |
 | 73 | U7 | Em Dados, o membro tem a árvore no lugar das conversas, com Bruto e só as tabelas do papel, sem o grupo nem a camada Apps (decisão F); com `?layer=apps` no endereço, a página mostra a camada Bruto | `apps/web/src/hub/copies/data-tree.test.tsx`, "a árvore: o membro em Dados vê só as tabelas do papel" (no lugar de `:50-55`) | must |
 | 74 | U7 | O membro sem tabela no papel vê, na página e na árvore, "Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.", sem o link **Ligar um sistema** e sem "Nenhum sistema ligado ainda" | `copy-list.test.tsx`, "o membro sem tabela no papel" | must |
 | 75 | U7 | A aba **Quem lê 3**, depois de Rodadas, mostra na ordem do Hub uma linha por papel com o nome, as pessoas e como lê: "Dono · 1 · sempre", "Administrador · 1 · sempre", "Financeiro · 2 · marcado em Papéis"; abaixo, "Quem lê esta tabela pela conversa e pelos agentes." | `apps/web/src/hub/copies/copy-readers.test.tsx` (novo), "a aba Quem lê lista Dono, Administrador e Financeiro com as pessoas" | must |
 | 76 | U7 | Com `manageRoles` (dono, administrador), cada papel editável tem **Abrir em Papéis** para `/companies/<e>/settings/roles?role=<papel>`, e a frase ganha "Para mudar, abra o papel."; o desenvolvedor e o membro não veem link nem frase | `copy-readers.test.tsx`, "Abrir em Papéis aparece para o dono e não para o desenvolvedor" | must |
 | 77 | U7 | Se `listCopyReaders` falha, a aba Quem lê mostra a frase do Hub com **Tentar de novo**, e o gatilho fica "Quem lê" sem número; as outras abas funcionam | `copy-readers.test.tsx`, "a leitura de quem lê falhou" | must |
 | 78 | U7 | `?tab=readers` abre Quem lê, e trocar de aba põe o valor no endereço (W18) | `copy-readers.test.tsx`, "a aba Quem lê fica no endereço" | must |
-| 81 | U7 | O desenvolvedor na Amostra de uma tabela fora do papel dele vê "Seu papel não lê esta tabela. Peça a quem administra a empresa.", sem **Tentar de novo** e sem grade | `apps/web/src/hub/copies/copy-sample.test.tsx`, "o desenvolvedor vê a recusa do papel na aba Amostra" | must |
+| 81 | U7 | Retirado em 2026-11-16 ("1."): o desenvolvedor não tem recusa própria na Amostra; fora do papel ele vê "não encontrado", como o membro (critério 71) | — | — |
 | 82 | U7 | A aba Quem lê e a página Dados do membro, a 1366, 390 e 320 px e nos dois temas, não rolam de lado, e cada parada do Tab tem o contorno | `apps/web/sweep.test.ts`, estados novos "A tabela, quem lê" e "Dados, o membro" de `sweep-table-states.ts` | must |
 | 83 | U7 | `copy-readers.test.tsx` está em `scripts/rerun-never.json` e a lista confere com os arquivos | `scripts/rerun-exempt.test.ts` | should |
 | 84 | U8 | `data_describe` sem tabela, sobre o catálogo de um papel que não lê `clientes`, devolve um resultado sem `clientes` no texto e sem o rótulo da tabela em `tables` | `apps/server/src/builder/data-tools/tools.test.ts`, "data_describe sem tabela não nomeia a tabela que o papel não lê" | must |
@@ -275,7 +285,11 @@ Cada grupo tem a sua faixa de números (G1 de 1 a 29, G2 de 30 a 59, G3 de 60 a 
 | 112 | U12 | Com sete rodadas, o resultado tem cinco, a mais nova primeiro | `copy-runs.test.ts`, `'cinco rodadas no máximo'` | must |
 | 113 | U12 | Um papel que lê `sankhya_vendas` recebe as rodadas dela pela ferramenta | `copy-runs.test.ts`, `'quem lê a tabela pelo papel lê as rodadas'` | must |
 | 114 | U12 | A pessoa de um papel sem `manageCopies` pede `sankhya_clientes` (fora do papel) e `nao_existe`: as duas dão o mesmo erro da ferramenta, `{ kind: 'NOT_FOUND', status: null, code: null, message: null, body: null, reason }`, byte a byte, sem nomear a tabela (S10). Recusa: a ferramenta `copy_runs` | `copy-runs.test.ts`, `'a tabela que o papel não lê responde como a que não existe'` (em `tests` de `scripts/rerun-never.json`) | must |
-| 118 | U12 | O desenvolvedor, num papel que não lê `sankhya_clientes`, recebe pela ferramenta as rodadas dela (`kind: 'RUNS'`), como na aba Rodadas que ele administra; as linhas dela continuam recusadas (critério 56) | `copy-runs.test.ts`, `'o desenvolvedor lê as rodadas de toda cópia, como a lista'` | must |
+| 118 | U12 | O desenvolvedor, num papel que não lê `sankhya_clientes`, recebe pela ferramenta o mesmo `NOT_FOUND` do membro (critério 114), byte a byte | `copy-runs.test.ts`, `'o desenvolvedor recebe a tabela de fora do papel como a que não existe'` | must |
+| 119 | U13 | `getCompany` dá `may.manageCopies: false` ao desenvolvedor e `true` a Dono e Administrador; o desenvolvedor recebe 403 ao ligar uma proposta, rodar, pausar, apagar, dispensar uma proposta, liberar e tirar a um Projeto; Dono e Administrador fazem as mesmas ações. Recusa: o desenvolvedor com a ação feita | `apps/server/src/hub/identity/developer.test.ts` (o caso de `:100-118`); `apps/server/src/hub/copies/grants.test.ts`, "o desenvolvedor não libera nem tira cópia de um Projeto" | must |
+| 120 | U13 | O desenvolvedor não libera a um Projeto uma cópia que o papel dele não lê (o furo de `grants.ts:74-76`): `grantCopy` dá 403, e o catálogo do Projeto não a traz | `grants.test.ts`, "o desenvolvedor não libera a um Projeto uma cópia fora do papel" | must |
+| 121 | U13 | O desenvolvedor abre `/copies/<id>` e `/copies/<id>/sample` de uma tabela fora do papel e recebe 404 `COPY_NOT_FOUND`, igual ao de um id que não existe; a lista e as rodadas dele são as do papel; `git grep -n COPY_NOT_IN_ROLE -- apps packages` não mostra nada (conferência, sem teste) | `member-data.test.ts` (critério 56); o `git grep` no ponto de conferência | must |
+| 122 | U13 | Na tela, o desenvolvedor vê Dados como o membro: a nota do papel, nenhum **Ligar uma cópia**, **Rodar agora** nem menu; no Projeto, "Dono ou administrador libera uma cópia." | `data-page.test.tsx` (ou `copy-list.test.tsx`), "Dados: o desenvolvedor vê como o membro"; `project-copies.test.tsx`, "liberar e tirar, como owner" e "o desenvolvedor lê a frase de quem pede" | must |
 | 115 | U12 | A dona pede `nao_existe` e recebe a mesma falha `NOT_FOUND` do critério 114 | `copy-runs.test.ts`, `'a tabela que não existe'` | must |
 | 116 | U12 | Na conversa, a linha de `copy_runs` diz "Lendo as rodadas da cópia" enquanto roda, "Leu as rodadas da cópia" ao terminar e "Não conseguiu ler as rodadas" na falha, com o ícone `HistoryIcon` | `apps/web/src/builder/conversation/tool-row.test.tsx`, o caso de hoje `'cada ferramenta do conjunto fechado e do Assistente tem frase e abre no corpo da tabela'` (`:185`) e o caso novo `'copy_runs: as frases da linha e o ícone de histórico'` | must |
 | 117 | U12 | A ferramenta não importa nada de `hub/copies`: `npm run deps` passa na regra `agents-and-apps-reach-data-only-through-the-contract` (`.dependency-cruiser.cjs:101-110`) sem pôr `assistant/copy-runs` a `CONTRACT_MIGRATION` (`:22-54`, "nothing joins the list") | `npm run deps`; `scripts/rules-doors.test.ts` passa sem mudança | must |
@@ -305,43 +319,17 @@ G2 não cria tela. Muda um estado da aba Amostra (`v10`), que passa a aparecer a
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Aba Amostra da tabela (desenvolvedor, depois da U5) | como hoje | "A cópia ainda não tem linhas." (de hoje) | `Skeleton` (de hoje) | `ReadFailure` com a frase do Hub e **Tentar de novo** (de hoje) | a de hoje | tabela fora do papel: `ReadFailure` com "Seu papel não lê esta tabela. Peça a quem administra a empresa."; o **Tentar de novo** fica até a U7 | sessão vencida: o de hoje da plataforma |
-
-1280 px:
-
-```
-+-- Dados > Sankhya > sankhya_clientes ---------------+-- Detalhes ------+
-| [Visão geral] [Colunas 9] [Amostra] [Rodadas]       | Sistema  Sankhya |
-| +-------------------------------------------------+ | ...              |
-| | Seu papel não lê esta tabela. Peça a quem       | |                  |
-| | administra a empresa.        [Tentar de novo]   | |                  |
-| +-------------------------------------------------+ |                  |
-+-----------------------------------------------------+------------------+
-```
-
-390 px:
-
-```
-+-- sankhya_clientes ------------+
-| [Visão] [Colunas] [Amostra] .. |
-| Seu papel não lê esta tabela.  |
-| Peça a quem administra a       |
-| empresa.                       |
-| [Tentar de novo]               |
-| Detalhes ...                   |
-+--------------------------------+
-```
+| Aba Amostra da tabela (depois da U5) | como hoje | "A cópia ainda não tem linhas." (de hoje) | `Skeleton` (de hoje) | `ReadFailure` com a frase do Hub e **Tentar de novo** (de hoje) | a de hoje | tabela fora do papel: "não encontrado", para todo papel fora de Dono e Administrador (emenda de 2026-11-16) | sessão vencida: o de hoje da plataforma |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `ReaderLogin` (`ALL`, `ROLE` com `roleId`, `NONE`), em `hub/copies/readers.ts` | `readerOf` (U3) | `readAs` (U3); `rowsOf`, `queryOf` (U3); `sampleOf` (U5) |
 | `CopiesData.readers` (`copiesReadBy`, `readerOf`, `readAs`), em `service.ts` | U3 | `catalogOf`, `rowsOf`, `queryOf` (`hub/data`, U3) |
 | `catalogTables` com `only: { copies }` | U3, `catalog-view.ts` | `catalogOf` (U3) |
-| `TableRead` com `NOT_IN_ROLE` | `readCopyTable` (U3) | `rowsOf` (U3, vira `TABLE_UNAVAILABLE`); `sampleOf` (U5, vira `COPY_NOT_IN_ROLE`) |
+| `TableRead` com `NOT_IN_ROLE` | `readCopyTable` (U3) | `rowsOf` (U3, vira `TABLE_UNAVAILABLE`); `sampleOf` (U5, vira `COPY_NOT_FOUND`) |
 | `CopyReaders` e `listCopyReaders` | U4, `packages/hub-api/src/copies.ts` | G3 (a aba Quem lê, U7; a tela Papéis, U6) |
 | `setRoleCopies`, `ROLE_COPIES_MAX` | U4 | G3 (U6, **Salvar** da tela Papéis) |
 | A ação `seeData` | U4, `admission.ts` | `listedReaders` (U4); `summaries`, `listed`, `runs`, `sampleOf` (U5); `copy_runs` (G4, U12) |
-| `COPY_NOT_IN_ROLE` (`FailureRow`) | U5, `copy-failures.ts` | `sampleCopy` (U5); a aba Amostra por `sentenceOf` (U5; o estado final na U7) |
 | `CompanyMay.readCopyRows` | sai (U5) | ninguém depois da U5 (`git grep`, critério 59) |
 
 ### G3
@@ -349,11 +337,11 @@ G2 não cria tela. Muda um estado da aba Amostra (`v10`), que passa a aparecer a
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Papéis, papel aberto (U6, `p4-01`) | a empresa sem cópia: cada seção diz "Dados copiados" e "Nenhuma tabela copiada" (64) | um sistema sem cópia: "Nenhuma tabela copiada" (64) | o carregador da rota (papéis, conexões, cópias e leitores), como hoje | as cópias ou os leitores não carregam: "Não deu para carregar os papéis." e **Tentar de novo** (67); `setRoleCopies` recusado: a frase do Hub, a marca fica (62) | `?role=` de um papel apagado: "Este papel não existe mais.", como hoje | desenvolvedor e membro: sem o item, e o endereço é não encontrado, como hoje (`settings/roles.tsx:33`); Dono e Administrador: tudo marcado, só leitura (63) | resposta perdida ao salvar: "Não confirmamos a gravação. Veja a lista de papéis." (62) |
-| Dados, o membro (U7, `p1-11`) | o papel sem tabela: "Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa." (74) | idem; a busca sem resposta: `NO_MATCH`, como hoje | o `Loading` do carregador, como hoje | o `DataReadFailure` com **Tentar de novo**, como hoje | — | o membro vê só as tabelas do papel, sem **Ligar uma cópia**, propostas nem menu (70); o desenvolvedor, como o dono | — |
+| Dados, o membro (U7, `p1-11`) | o papel sem tabela: "Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa." (74) | idem; a busca sem resposta: `NO_MATCH`, como hoje | o `Loading` do carregador, como hoje | o `DataReadFailure` com **Tentar de novo**, como hoje | — | o membro vê só as tabelas do papel, sem **Ligar uma cópia**, propostas nem menu (70); o desenvolvedor, como o membro (emenda de 2026-11-16) | — |
 | A árvore de Dados (U7) | o membro sem tabela: a frase curta "Seu papel ainda não lê nenhuma tabela." (74) | idem | três esqueletos, como hoje | `CATALOG_FAILED` com **Tentar de novo**, como hoje | — | o membro tem a árvore, com só as tabelas do papel (73) | — |
 | Página da tabela, topo (U7, U9, `v10`) | sem rodada: a linha de hoje | — | o `Skeleton` de hoje | `ReadFailure`, como hoje | outra tabela do membro, ou um id inválido: `NotFound` com "Voltar ao início" (71) | o membro sem **Rodar agora** e sem menu, com **Perguntar ao Assistente** (72, 88) | rodada aberta, erro, pausada: como hoje |
 | Aba Quem lê (U7, `p4-02`) | a cópia nova nasce com Dono e Administrador; os outros papéis entram quando marcados em Papéis (75) | não acontece: Dono e Administrador sempre leem | `Skeleton` na aba; o gatilho sem número (77) | a frase do Hub com **Tentar de novo** (77) | — | sem `manageRoles`: sem **Abrir em Papéis** e sem "Para mudar, abra o papel." (76) | — |
-| Aba Amostra (U7) | — | "A cópia ainda não tem linhas.", como hoje | `Skeleton`, como hoje | `ReadFailure` com **Tentar de novo**, como hoje | — | o desenvolvedor fora do papel: "Seu papel não lê esta tabela. Peça a quem administra a empresa." sem **Tentar de novo** (81); o membro tem a aba (U5) | — |
+| Aba Amostra (U7) | — | "A cópia ainda não tem linhas.", como hoje | `Skeleton`, como hoje | `ReadFailure` com **Tentar de novo**, como hoje | — | o desenvolvedor fora do papel: "não encontrado", como o membro (71; o 81 foi retirado em 2026-11-16) | — |
 | Linha de `data_describe` na conversa (U8, `p4-03` emendada) | — | — | "Vendo …", do cartão 1 | "Não conseguiu ler a tabela agora.", do cartão 1 | a tabela que o papel não lê: "Essa tabela não está no catálogo.", sem o nome dela (86) | idem | fora do esquema: a linha genérica, do cartão 1 |
 | Início com o rascunho (U9) | a caixa vazia recebe "Sobre a tabela {nome}: " (88) | — | a caixa de hoje | a caixa de hoje | — | sem conta de modelo: o Início de hoje (`StartWithoutAccount`), com o rascunho guardado na aba | o envio recusado devolve o rascunho, como hoje (`draft.ts:70-73`) |
 
@@ -362,7 +350,6 @@ G2 não cria tela. Muda um estado da aba Amostra (`v10`), que passa a aparecer a
 | `listCopyReaders`, `readers[].copyId` e `readers[].roles[]` (`role`, `label`, `members`) | o Hub (U4) | `tablesOf` da rota Papéis (U6: as marcas); a aba Quem lê, o gatilho e "Você vê as tabelas que o papel {papel} lê." (U7) |
 | `setRoleCopies`, corpo `copies` (a lista inteira das cópias que o papel lê) | o **Salvar** do papel aberto (U6) | o Hub (U4) |
 | `setRoleCopies`, resposta `copies` | o Hub (U4) | a tela Papéis (U6): as caixas voltam ao conjunto gravado que a resposta traz; a invalidação de `copyReadersQuery` relê o resto (W12) |
-| `COPY_NOT_IN_ROLE`, a falha da amostra fora do papel (decisão G2.2) | `sampleCopy` (U5) | `CopySample` (U7) |
 | O `tab` do endereço, agora com `readers` | o `onValueChange` das abas (`copy-detail.tsx:217-225`) | `TableSearch` (`search.ts:16-20`), `CopyDetail` |
 | O rascunho `start:<empresa>` (`draft.ts:11`) | o link **Perguntar ao Assistente** (U9), por `append` | a caixa do Início (`home.tsx:129-131`) |
 
@@ -563,7 +550,7 @@ F da página) ou a tela aprovada que a traz (L28).
 | A vez de quem muda os papéis | U4 | `admitted`, `company-roles.ts:173-181`, e `enterCreation`, `projects.ts:150-151` (`lockCompany` antes da admissão) | Sem referência | nativo (`pg_advisory_xact_lock` pela trava da empresa, code C65) | — | decisão G2.4 | nenhum |
 | O membro vê Dados só com as tabelas do papel e as rodadas delas | U5 | `summaries`, `listed`, `runs`, `apps/server/src/hub/copies/list.ts:129-228`, só com `readCopies` | Quem lê vê as tabelas com acesso e as rodadas; ver um pipeline pede leitura nas tabelas dele; acrescentar fontes é só de quem edita (P14; documentado) | nativo | — | — | `apps/server/src/hub/copies/member-data.test.ts` |
 | O endereço direto de uma tabela que o papel não lê | U5 | `runs` responde `COPY_NOT_FOUND` só à cópia que não existe (`list.ts:205`) | Na API, um recurso fora do alcance responde como não encontrado; outras oferecem pedir acesso no link direto (P3 (ii)) | nativo (S10) | — | "não encontrado" (decisão A) | nenhum |
-| A amostra do desenvolvedor numa tabela fora do papel | U5 | `sampleOf`, `apps/server/src/hub/copies/sample.ts:10-40` (`readCopyRows`) | Uma recomenda deixar todos verem o objeto e pedirem acesso, sem ler as linhas (P2; documentado) | nativo (o `42501` vira a recusa com frase) | — | código novo `COPY_NOT_IN_ROLE` (decisão G2.2); o texto é o do escopo (requisito 4.10) | nenhum |
+| A amostra do desenvolvedor numa tabela fora do papel | U5 | `sampleOf`, `apps/server/src/hub/copies/sample.ts:10-40` (`readCopyRows`) | Uma recomenda deixar todos verem o objeto e pedirem acesso, sem ler as linhas (P2; documentado); a outra esconde de quem não tem acesso (P2). Desde 2026-11-16 o conjunto nosso segue a segunda, para todo papel | nativo | — | `COPY_NOT_FOUND`, como o membro (emenda de 2026-11-16; a decisão G2.2 e o código `COPY_NOT_IN_ROLE` saem) | nenhum |
 | `CompanyMay` sem `readCopyRows` | U5 | `packages/hub-api/src/roles.ts:52`, `apps/server/src/hub/identity/companies.ts:103` | Sem referência | nativo (code C26: a tela lê o que a rota admite) | — | a mudança do contrato das telas vai no corpo do PR (parte 1, decisão `L6`) | nenhum |
 | As tabelas marcáveis dentro do papel | U6 | `OpenRole`, `apps/web/src/hub/identity/role-editor.tsx:117-161`; `ConnectorPicker`, `role-picker.tsx:104-131`; o kit chega por propriedade, `settings/roles.tsx:58-62` | A plataforma de ingestão marca as tabelas numa página por pessoa e por grupo, em árvore por camada e pasta, sem dono e administrador (leem tudo); a de catálogo não tem a tela (P5) | nativo (as peças de `apps/web/src/ui/`: `Checkbox`, `ui/checkbox.tsx:8`) | — | dentro do papel, por sistema, sem nível; Dono e Administrador só leem (tela `p4-01`) | `apps/web/src/hub/identity/role-tables.tsx` |
 | Desmarcar não tira a leitura ao vivo | U6 | `sourceOf`, `packages/hub-api/src/company-data.ts:264-265`: a leitura que nenhuma tabela do catálogo guarda cai na leitura ao vivo | As duas separam a permissão da tabela da permissão da conexão ao vivo; nenhuma escreve a frase na tela (P12) | nativo | — | a frase é nossa, pedida pelo requisito 4.13 da spec aprovada, uma vez abaixo dos sistemas (decisão G3.7) | — |
@@ -571,7 +558,7 @@ F da página) ou a tela aprovada que a traz (L28).
 | O membro vê Dados com as tabelas do papel | U7 | o item do trilho sob `may.manageCopies`, `route.tsx:88-95`; `manageCopiesOrNotFound`, `hub/copies/public.ts:24-27`, usado em `data.index.tsx:16` e `data.$copyId.tsx:15` | Como na linha da U5 (P14) | nativo | — | sem **Ligar**, propostas, **Rodar agora** e menu (tela `p1-11`; spec parte 4, 7.2) | — |
 | A árvore de Dados para o membro | U7 | `inData && may.manageCopies`, `route.tsx:141` | sem referência; a árvore troca as conversas em Dados (W30, fundador, 2026-11-15) | nativo (`DataTree` de hoje) | — | todo membro em Dados tem a árvore, com a lista filtrada pelo Hub | — |
 | O endereço de uma tabela que o papel não lê | U7 | o carregador já transforma 404 em não encontrado (`readOrNotFound`, `apps/web/src/platform/hub.ts:273-280`) | Como na linha do endereço direto da U5 (P3) | nativo | — | "não encontrado" (decisão A; S10) | — |
-| A recusa da amostra ao desenvolvedor | U7 | `CopySample`, `copy-sample.tsx:29-31` (`ReadFailure` com **Tentar de novo**) | O motor recusa e a ferramenta devolve o erro (P3, item (iv)) | nativo (uma linha de `COPY_FAILURES`, code C26) | — | a frase do código da U5, sem **Tentar de novo** (decisão G3.4) | — |
+| A recusa da amostra ao desenvolvedor | U7 | Retirada em 2026-11-16: o desenvolvedor recebe "não encontrado", como o membro | — | — | — | o ramo `COPY_NOT_IN_ROLE` de `CopySample` sai (U13) | — |
 | A tabela escondida na conversa | U8 | `tabled`, `apps/server/src/builder/data-tools/tools.ts:145-150`; o contrato, `company-data.ts:251-254` | Como nas linhas do catálogo e do nome pedido da U3 (P3 (iii), E5) | nativo | — | nenhum código muda (emenda (d)) | — |
 | Perguntar ao Assistente | U9 | o rascunho do Início, `useDraft('start:<empresa>')`, `apps/web/src/builder/assistant/home.tsx:129-131`, `builder/conversation/draft.ts:38-75`; nenhum botão na página da tabela | Uma abre o assistente ao lado da tabela, com a tabela como etiqueta e o campo vazio; a outra leva ao editor de consultas, onde um assistente ajuda; `@mastra/core@1.82.0` não tem parâmetro de mensagem pronta (P10) | nativo (o rascunho de hoje e um `Link`) | — | um link que abre o Início com "Sobre a tabela {nome}: " na caixa, sem enviar (decisão C); o botão chega à página pela rota (decisão G3.1) | `apps/web/src/builder/assistant/ask-about-table.tsx` |
 | Guardar o que o sistema disse na rodada | U10 | perdido: `refusedRead` devolve só o código (`apps/server/src/hub/connectors/copy-port.ts:178-182`); o `native` da recusa (`packages/connectors/src/kernel/operation.ts:39-56`; no leitor, `apps/server/src/hub/connectors/read.ts:41-45`) é descartado; as colunas e as permissões já existem (`tables.ts:116-119`, `database-grants.sql:419-421`) | a plataforma de ingestão guarda uma mensagem de erro por fluxo de cada execução e a mostra no detalhe dela (P8, E3); na de catálogo falta a prova (P8, achado) | embrulhado (o `native` que o kit já entrega, limpo e cortado) | os critérios da U10 | o que se guarda é a decisão do fundador da passada (requisito 3); sem código nem mensagem não se guarda nada (decisão G4.4) | — |
@@ -602,7 +589,7 @@ Numeradas pelo grupo que as tomou (G1.1 é a primeira do G1). G1.4, G2.12 e G3.8
 | G1.9 | O id do papel ganha a marca `RoleId` em `packages/hub-api/src/company-roles.ts`, ao lado de `ConnectorId`, e `companyRoleRows` a cria por parse; os conectores usam o `ConnectorId` que já existe | `scripts/conexus-code.grit:75-89` recusa `\w*Id: string` em `apps/server/src`; não havia marca para o papel | nenhum: sem a marca o `npm run check` recusa |
 | G1.10 | `readers_set` (`apps/server/src/hub/copies/tables.ts:76-77`, `apps/server/database-grants.sql:396`) fica sem uso nesta etapa; sai depois, num PR próprio de concessões com a palavra do fundador | Apagar a coluna tira um `GRANT`, e data D11 (`docs/guides/data.md:35-36`, conferida por `apps/server/src/platform/catalog.test.ts:96`) quer concessões só em PR próprio; data D6 pede o `DROP` depois de implantada a imagem que não a lê | Apagar a coluna nesta etapa, num PR próprio dentro dela |
 | G2.1 | O lado G2 da decisão G1.5: a U3 cria as funções de leitura e a porta `data.readers`; a U4, `readersOf` | decisão G1.5 | Como em G1.5 |
-| G2.2 | A recusa da amostra ao desenvolvedor é o código novo `COPY_NOT_IN_ROLE` em `COPY_FAILURES` (`packages/hub-api/src/copy-failures.ts:4`), com a linha do contrato da U5 | `NOT_IN_ROLE` já é a recusa de ferramenta de agente, 409, com "Seu papel não pode usar a ferramenta {operation}." (`packages/hub-api/src/failures.ts:265-272`); `sentenceOfCode` junta frase e ação (`apps/web/src/platform/hub.ts:242-244`), o texto do requisito 4.10; 403 porque o desenvolvedor vê a tabela na lista, como `APP_ACCESS_REFUSED` (`packages/hub-api/src/app-failures.ts:22-28`) | Trocar o código da falha em `sampleOf` e na lista de `sampleCopy` |
+| G2.2 | Substituída em 2026-11-16 ("1."; ver A.1): a recusa da amostra ao desenvolvedor era o código novo `COPY_NOT_IN_ROLE` em `COPY_FAILURES` (`packages/hub-api/src/copy-failures.ts:4`), com a linha do contrato da U5 | `NOT_IN_ROLE` já é a recusa de ferramenta de agente, 409, com "Seu papel não pode usar a ferramenta {operation}." (`packages/hub-api/src/failures.ts:265-272`); `sentenceOfCode` junta frase e ação (`apps/web/src/platform/hub.ts:242-244`), o texto do requisito 4.10; 403 porque o desenvolvedor vê a tabela na lista, como `APP_ACCESS_REFUSED` (`packages/hub-api/src/app-failures.ts:22-28`) | Trocar o código da falha em `sampleOf` e na lista de `sampleCopy` |
 | G2.3 | O leitor do Hub se chama `ReaderLogin`, não `CopyReader` | `CopyReader` já é o tipo da plataforma (`apps/server/src/platform/copy-reader.ts:113`) | Renomear |
 | G2.4 | `setRoleCopies` e a sua reposição tomam `lockCompany` antes da admissão | `apps/server/src/hub/identity/company-roles.ts:172-181`; sem ela, dois `PUT` do mesmo papel dariam `23505` no `insert` (code C65); apagar um papel toma a mesma trava | Tirar a trava e tratar `23505` com `.onConflictDoNothing()` |
 | G2.5 | A ação `seeData` nasce na U4, com o seu primeiro chamador (`listedReaders`); a U5 passa as listas e a amostra a ela e tira `readCopyRows` | A spec usa `seeData` em `listedReaders` (6.2) e a cria na 6.3: a U4 não compilaria | Juntar U4 e U5 num commit |
@@ -616,7 +603,7 @@ Numeradas pelo grupo que as tomou (G1.1 é a primeira do G1). G1.4, G2.12 e G3.8
 | G2.14 | A U5 muda também `apps/web/src/routes/_app/companies/$companyId/data.$copyId.tsx` | A prop `mayReadRows` vem de `may.readCopyRows` ali (`:37`) | — |
 | G3.1 | **Perguntar ao Assistente** vive em `apps/web/src/builder/assistant/` e chega à página da tabela pela rota, num espaço `ask` de `CopyDetail`; `hub/copies` não importa o rascunho | W4 e a regra `hub-does-not-import-builder` do `.dependency-cruiser.cjs` (de `^apps/(server|web)/src/hub/` para `^apps/$1/src/builder/`): `useDraft` em `hub/copies` (decisão C) quebra `npm run deps`; a rota liga os dois pela porta (W6), como Papéis passa o kit (`settings/roles.tsx:58-62`) | o botão volta a `hub/copies` quando a regra mudar |
 | G3.2 | O link usa `append`, não `change` | `change` apaga o rascunho do Início (`draft.ts:53`); `append` acrescenta uma linha e não a repete (`draft.ts:55-59`) | trocar por `change`; o critério 89 cai |
-| G3.3 | A recusa da amostra ao desenvolvedor usa o código `COPY_NOT_IN_ROLE` que a U5 cria (decisão G2.2) | code C26 | Seguir a desfeita da decisão G2.2 |
+| G3.3 | Substituída em 2026-11-16 ("1."): a recusa da amostra ao desenvolvedor usava o código `COPY_NOT_IN_ROLE` da decisão G2.2 | code C26 | Seguir a desfeita da decisão G2.2 |
 | G3.4 | A recusa da amostra aparece num `Alert`, sem **Tentar de novo** | a linha da falha é `settles: true` (como `COPY_NOT_FOUND`, `copy-failures.ts:5-12`); V29 | voltar ao `ReadFailure` |
 | G3.5 | A aba Quem lê segue as colunas de `p4-02` (Papel, Pessoas, Como lê) e o link por papel da spec (7.2), no lugar do botão único de `p4-02`; "Para mudar, abra o papel." só para quem tem `manageRoles` | a spec pede o link para `?role=<papel>` (`settings/roles.tsx:10-13`); a decisão B dá o caminho a quem pode mudar papéis | um botão só para `/settings/roles`, como `p4-02` |
 | G3.6 | A linha da tabela no bloco Dados copiados mostra o nome em mono e, abaixo, o que ela guarda (`describedAs`: a descrição, senão o rótulo) | a tela `p4-01` aprovada; a spec dizia "o rótulo e, abaixo, o nome". O mesmo par está na lista de Dados (`copy-list.tsx:214-216`) | trocar a ordem |
@@ -631,6 +618,7 @@ Numeradas pelo grupo que as tomou (G1.1 é a primeira do G1). G1.4, G2.12 e G3.8
 | G4.4 | `systemOf` devolve `null` quando a recusa não traz código nem mensagem | Requisito 3 da passada ("o que o sistema disse"); um 200 sem texto (o corpo que nenhum esquema lê, `packages/connectors/src/sankhya/answers.ts:148-153`) mostraria só "200" embaixo de "O sistema mandou uma resposta que o Conexus não entende" | Guardar o status sozinho e mostrar só o número |
 | G4.5 | A função de texto da linha se chama `systemSaid`, não `systemText` | `systemText(system, accounts, tables)` já existe em `apps/web/src/hub/copies/text.ts:37` (code C26) | Renomear a de hoje |
 | G4.6 | O resultado diz da cópia `name`, os nomes das conexões, `schedule` e `interval` | O requisito 7 pede "nome, sistema, estado, intervalo"; `CopySummary` dá `sources[].connection.name` e `schedule` (`packages/hub-api/src/copies.ts:72-91`, `copy-shown.ts:6-8`), e o modelo nunca recebe um id de conexão (como `DataOrigin`, `packages/hub-api/src/assistant.ts:95-107`) | Trocar os campos em `copyRunsTool` |
+| A.1 | Emenda de 2026-11-16 (a palavra do fundador, "1."): fora do papel ninguém vê, nem o Desenvolvedor; ele perde `copy:manage` (`roles.ts:42-48`), Dono e Administrador administram e leem todas | O estudo `Quem está fora do papel` (opção (i)): nenhuma referência tem "administra e não lê"; o furo de `grants.ts:74-76` fecha sem regra nova; sai um código de falha, um ramo no servidor, um na tela e dois critérios (56 e 81 mudam, o 118 muda) | Devolver `copy: ['manage']` ao `BUILD` do desenvolvedor e o ramo `COPY_NOT_IN_ROLE` |
 | G4.7 | O G4 mescla depois do G2, e a U10 parte de `ended` como a U2 o deixou | A U12 depende da U5; a U2 muda `ended` depois do log (`run.ts:149`), a U10 no `.set` de `:125-129`, trechos que não se cruzam | A U12 num PR próprio, logo depois do G2 |
 
 ## U1 `roleLogin`, `roleAddress`, o livro, o bilhete e `reconcileReaders`
@@ -1821,3 +1809,54 @@ A descrição para o modelo, em inglês como as outras: "The latest runs of one 
 ## G4 O ponto de conferência
 
 Depois da U12, os passos 6 e 7 do `conexus-build`: `run.test.ts`, `run-v2.test.ts`, `run-whole.test.ts`, `describe.test.ts`, `routes.test.ts`, `copy-runs.test.ts`, `assistant.test.ts`, `mounted.test.ts` (o `kept.lastRun` com o campo novo); `copy-detail.test.tsx`, `copy-details.test.tsx`, `copy-list.test.tsx`, `tool-row.test.tsx`; `npm test -w @conexus/hub-api`; `scripts/rerun-exempt.test.ts`; `npm run deps` e `npm run check`. No Hub local, com o Sankhya falso recusando `consultar`, a aba Rodadas mostra "200 · Serviço recusado" a 1366 e 390 px, nos dois temas, ao lado da captura `b1-rodadas-sistema`; o Assistente, perguntado "por que a cópia de vendas parou?", chama `copy_runs` e a linha diz "Leu as rodadas da cópia". pstack `deslop` e `no-comments`; as mutações, com o resultado no PR (T27). O PR cita L27 (`CopyRun` e `ASSISTANT_TOOL`). As três frases da linha e "{status} · {mensagem}" vão à palavra do fundador no fim da etapa.
+
+## U13 O desenvolvedor sem `copy:manage`
+
+**Base e modelo.** O `main` com o G3 mesclado. Sonnet: é quase só remoção, sem desenho novo.
+
+### As linhas da tabela
+
+- **O desenvolvedor lê como o membro.** `BUILD` com `copy: ['manage']` (`apps/server/src/hub/identity/roles.ts:42-48`; o `copy` do `ac` em `:82` fica); `readCopies` e `manageCopies` (`admission.ts:98-101`) dependem dele; `seeBy`/`seenBy` (`list.ts:129-132`), `readers.ts:240-241` e `sample.ts:21-29` dão tudo a quem tem `manageCopies`. Veredito: nativo (o ramo do membro já existe).
+- **O furo do Projeto.** `grantCopy` admite por `manageCopies` (`grants.ts:74-76`). Veredito: nativo (fecha sozinho; o teste prova).
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/hub/identity/roles.ts` | Muda: `copy: ['manage']` sai de `BUILD` e entra em `owner` e `admin` | `admission.ts`, `getCompany` |
+| `apps/server/src/hub/copies/` (`sample.ts`, `list.ts`, `readers.ts`) | Muda: sai o ramo `manages ? COPY_NOT_IN_ROLE` e o `manageCopies` que dava `'ALL'` fica só para Dono e Administrador pelo mesmo `allows` | `routes.ts` |
+| `packages/hub-api/src/copy-failures.ts`, `connection-copies.ts` | Muda: sai `COPY_NOT_IN_ROLE` | `sampleCopy`; a web |
+| `apps/web/src/hub/copies/copy-sample.tsx`, `text.ts`, `apps/web/src/hub/projects/project-copies.tsx` | Muda: sai o ramo da recusa; as duas frases que citam o desenvolvedor | — |
+| `apps/web/src/platform/test-may.ts`, `apps/web/sweep-table-states.ts`, os testes | Muda | — |
+
+### Os contratos que a unidade cria
+
+Nenhum. O contrato perde `COPY_NOT_IN_ROLE`. **Nenhuma permissão nova no banco**: o papel de sistema Desenvolvedor perde `copy:manage`; o que ele deixa de poder é ligar uma cópia (aceitar proposta), rodar agora, pausar e retomar, mudar a agenda, apagar a cópia, dispensar proposta e liberar ou tirar uma cópia de um Projeto, além de ler a lista dos Projetos com cópia. Os textos novos: "Dono ou administrador liga esta cópia na página Dados." e "Dono ou administrador libera uma cópia."
+
+### As skills e a leitura
+
+`node:test` no servidor; `vitest` e `msw` na tela. Ler antes: T5, T10, T27; S10.
+
+### A ordem do trabalho
+
+1. **O papel e o servidor.** Critérios: 119, 120, 121.
+   - **Arquivos:** muda `roles.ts`, `admission.ts` (os comentários), `sample.ts`, `copy-failures.ts`, `connection-copies.ts`, e os testes.
+   - **Referência a seguir:** o ramo do membro de `sample.ts`, `list.ts`, `readers.ts`.
+   - **O que sai:** `copy: ['manage']` de `BUILD`; `COPY_NOT_IN_ROLE` do contrato e o ramo `manages` de `sampleOf`; o `NOT_IN_ROLE` de `readCopyTable` na amostra vira `COPY_NOT_FOUND`.
+   - **O que entra:** `copy: ['manage']` em `owner` e `admin`; os testes dos critérios 56, 119, 120 e 121.
+   - **Mutações à mão:** devolver `copy` ao `BUILD`: 119, 120. Dar `'ALL'` ao desenvolvedor em `seenBy`: 121.
+   - **Pronto quando:** `member-data.test.ts`, `grants.test.ts`, `developer.test.ts` e `sample.test.ts` passam.
+2. **A tela.** Critérios: 122.
+   - **Arquivos:** muda `copy-sample.tsx`, `text.ts`, `project-copies.tsx`, `test-may.ts`, `sweep-table-states.ts`, os testes.
+   - **O que sai:** o ramo `COPY_NOT_IN_ROLE` de `copy-sample.tsx:30-32`, o caso do critério 81, o estado da recusa na varredura.
+   - **O que entra:** as duas frases novas; o desenvolvedor de `test-may.ts` com `manageCopies: false`.
+   - **Pronto quando:** `npm run test:unit -w @conexus/web -- src/hub/copies src/hub/projects` e `scripts/rerun-exempt.test.ts` passam.
+
+### Como se prova
+
+119 a 121: a porta HTTP do Hub, com o desenvolvedor de fábrica e provas de recusa (T5). 122: a tela com msw; captura da página Dados do desenvolvedor a 1366 e 390, claro e escuro.
+
+### Parar se
+
+- Um teste de `apps/server/src/hub/copies/` precisar do desenvolvedor para ligar, rodar ou liberar: troque o ator por Dono ou Administrador e reporte quais.
+- Um papel da empresa (não de sistema) tiver `copy:manage` no `main`: pare e reporte.
