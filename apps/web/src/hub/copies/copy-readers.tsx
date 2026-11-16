@@ -2,6 +2,7 @@ import type { CompanyId, CopyId, CopyReaders, Role } from '@conexus/hub-api'
 import { fixedNameOf } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { ShieldIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, Row } from '../../ui/list.tsx'
@@ -48,6 +49,7 @@ function OpenInRoles({ companyId, role }: { companyId: CompanyId; role: Role }) 
       search={{ role }}
       className={buttonVariants({ size: 'sm' })}
     >
+      <ShieldIcon aria-hidden="true" />
       {OPEN_IN_ROLES}
     </Link>
   )
