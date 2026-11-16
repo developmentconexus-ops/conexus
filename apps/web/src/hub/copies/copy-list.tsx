@@ -230,6 +230,7 @@ function CopyLink({ companyId, copy }: { companyId: CompanyId; copy: CopySummary
 export function CopyTableRow(props: {
   companyId: CompanyId
   copy: CopySummary
+  menu: boolean
   onNote: Props['onNote']
 }) {
   const { companyId, copy } = props
@@ -255,7 +256,7 @@ export function CopyTableRow(props: {
       <TableCell className={CELL}>{intervalText(copy)}</TableCell>
       <TableCell className={`${CELL} max-w-40 whitespace-normal`}>{projectsText(copy)}</TableCell>
       <TableCell className={CELL}>
-        <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />
+        {props.menu && <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />}
       </TableCell>
     </TableRow>
   )
@@ -344,6 +345,7 @@ export function Proposals(props: Pick<Props, 'companyId' | 'proposals' | 'onNote
 export function CopyPhoneRow(props: {
   companyId: CompanyId
   copy: CopySummary
+  menu: boolean
   onNote: Props['onNote']
 }) {
   const { companyId, copy } = props
@@ -354,7 +356,7 @@ export function CopyPhoneRow(props: {
           <span className="min-w-0 truncate">
             <CopyLink companyId={companyId} copy={copy} />
           </span>
-          <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />
+          {props.menu && <CopyMenu companyId={companyId} copy={copy} onNote={props.onNote} />}
         </div>
         <p className="break-words text-text-2">{describedAs(copy)}</p>
         <div className="flex flex-wrap items-center gap-x-md gap-y-xs text-text-2">

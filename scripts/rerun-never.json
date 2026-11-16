@@ -31,6 +31,7 @@
     "apps/server/src/platform/secret.test.ts",
     "apps/web/src/builder/assistant/refusals.test.tsx",
     "apps/web/src/hub/apps/app-refused.test.tsx",
+    "apps/web/src/hub/copies/copy-readers.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
     "apps/web/src/hub/projects/project-integrations-refusal.test.tsx",
     "tests/e2e/refusals.test.ts"
@@ -1111,6 +1112,10 @@
     {
       "file": "apps/web/src/hub/connectors/sign-in-return.test.tsx",
       "name": "NOT_FOUND \\(outra empresa\\): \"Esse endereço não é de uma ligação\\.\""
+    },
+    {
+      "file": "apps/web/src/hub/copies/copy-list.test.tsx",
+      "name": "o membro que abre uma tabela de outro papel vê a página de não encontrado"
     },
     {
       "file": "apps/web/src/hub/identity/company-switcher.test.tsx",

@@ -19,7 +19,6 @@ import {
   listCopies,
   listCopyRuns,
   PersonId,
-  sampleCopy,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
@@ -29,7 +28,9 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
-import { CATALOG, SAMPLE } from './test-sources.ts'
+import type { Readers } from './test-reads.tsx'
+import { readersHandler, sampleHandler } from './test-reads.tsx'
+import { CATALOG } from './test-sources.ts'
 
 export const VENDAS = CopyId.parse('11111111-1111-4111-8111-111111111111')
 export const CLIENTES = CopyId.parse('22222222-2222-4222-8222-222222222222')
@@ -151,6 +152,7 @@ type Held = {
   /** The five rows of a copy's sample. */
   sample?: CopySample
   proposals?: CopyProposalSummary[]
+  readers?: Readers
   answers?: Answers
 }
 
@@ -213,16 +215,6 @@ function changed(held: Held, id: unknown, fields: Partial<CopySummary>) {
   if (found === undefined) return refusal('COPY_NOT_FOUND')
   Object.assign(found, fields)
   return HttpResponse.json({ copy: found })
-}
-
-/** The sample of a copy: its five rows, or what `answers.sample` refuses with. */
-function sampleOf(held: Held) {
-  return http.get(
-    `${BASE}/copies/:id/sample`,
-    () =>
-      held.answers?.sample?.() ??
-      HttpResponse.json(sampleCopy.success.body.parse({ sample: held.sample ?? SAMPLE })),
-  )
 }
 
 /**
@@ -293,7 +285,8 @@ function copiesHub(server: ReturnType<typeof hubServer>, held: Held) {
       await note(request)
       return answers.write?.() ?? removed(held.copies, params.id)
     }),
-    sampleOf(held),
+    sampleHandler(held),
+    readersHandler(held.copies, held.readers),
     http.get(`${BASE}/copies/:id/runs`, ({ params, request }) => runsOf(held, params.id, request)),
   )
   return {

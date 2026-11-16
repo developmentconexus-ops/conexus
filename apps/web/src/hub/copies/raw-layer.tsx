@@ -20,6 +20,7 @@ import {
   NO_SYSTEM,
   NO_SYSTEM_HINT,
   NO_TABLE_COPIED,
+  NO_TABLE_OF_ROLE,
   RAW_INTRO,
   systemText,
 } from './text.ts'
@@ -39,12 +40,16 @@ function SystemTitle(props: { system: System; connectors: readonly ConnectorEntr
   )
 }
 
-function SystemTable(props: {
+type Listing = {
   companyId: CompanyId
   systems: System[]
   connectors: readonly ConnectorEntry[]
+  /** Whether each row draws its menu: for whoever manages copies. */
+  menu: boolean
   onNote: Props['onNote']
-}) {
+}
+
+function SystemTable(props: Listing) {
   const { companyId, systems, connectors, onNote } = props
   return (
     <Table>
@@ -64,7 +69,13 @@ function SystemTable(props: {
             </TableRow>
           )}
           {system.copies.map((copy) => (
-            <CopyTableRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
+            <CopyTableRow
+              key={copy.id}
+              companyId={companyId}
+              copy={copy}
+              menu={props.menu}
+              onNote={onNote}
+            />
           ))}
         </TableBody>
       ))}
@@ -72,12 +83,7 @@ function SystemTable(props: {
   )
 }
 
-function SystemPhoneList(props: {
-  companyId: CompanyId
-  systems: System[]
-  connectors: readonly ConnectorEntry[]
-  onNote: Props['onNote']
-}) {
+function SystemPhoneList(props: Listing) {
   const { companyId, systems, connectors, onNote } = props
   return (
     <div className="flex flex-col gap-lg">
@@ -89,7 +95,13 @@ function SystemPhoneList(props: {
           ) : (
             <List>
               {system.copies.map((copy) => (
-                <CopyPhoneRow key={copy.id} companyId={companyId} copy={copy} onNote={onNote} />
+                <CopyPhoneRow
+                  key={copy.id}
+                  companyId={companyId}
+                  copy={copy}
+                  menu={props.menu}
+                  onNote={onNote}
+                />
               ))}
             </List>
           )}
@@ -122,14 +134,17 @@ function NoSystem({ companyId }: { companyId: CompanyId }) {
  * The **Bruto** layer of Dados: the Builder's open proposals on top, then every system with its
  * copies as tables: the name in mono, what it holds, its state, its last run, its rows, interval and
  * Projetos. A system linked and not yet copied says so. The search keeps the tables that answer.
+ * Whoever does not manage copies reads only the systems of the tables their role reads, with no
+ * proposals and no row menu.
  */
 export function RawLayer(props: {
   companyId: CompanyId
   read: Read
   q: string | undefined
+  manage: boolean
   onNote: Props['onNote']
 }) {
-  const { companyId, read, q, onNote } = props
+  const { companyId, read, q, onNote, manage } = props
   const connections = useQuery(connectionsQuery(companyId))
   const phone = useIsMobile()
   if (read.isPending) return <Skeleton className="h-24 w-full" />
@@ -142,30 +157,18 @@ export function RawLayer(props: {
   if (connections.isPending) return <Skeleton className="h-24 w-full" />
   const { copies, proposals } = read.data
   const { connectors } = connections.data
-  const all = systemsOf(copies, connections.data.connections)
+  const all = systemsOf(copies, manage ? connections.data.connections : [])
   const systems = narrowed(all, q)
+  if (!manage && all.length === 0) return <p className="font-medium">{NO_TABLE_OF_ROLE}</p>
   if (all.length === 0 && proposals.length === 0) return <NoSystem companyId={companyId} />
+  const listing = { companyId, systems, connectors, menu: manage, onNote }
   return (
     <div className="flex flex-col gap-lg">
-      <Proposals companyId={companyId} proposals={proposals} onNote={onNote} />
+      {manage && <Proposals companyId={companyId} proposals={proposals} onNote={onNote} />}
       <p className="text-text-2">{RAW_INTRO}</p>
       {systems.length === 0 && <Empty>{NO_MATCH}</Empty>}
       {systems.length > 0 &&
-        (phone ? (
-          <SystemPhoneList
-            companyId={companyId}
-            systems={systems}
-            connectors={connectors}
-            onNote={onNote}
-          />
-        ) : (
-          <SystemTable
-            companyId={companyId}
-            systems={systems}
-            connectors={connectors}
-            onNote={onNote}
-          />
-        ))}
+        (phone ? <SystemPhoneList {...listing} /> : <SystemTable {...listing} />)}
     </div>
   )
 }

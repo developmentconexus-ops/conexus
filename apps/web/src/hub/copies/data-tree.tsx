@@ -17,6 +17,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import type { System } from './data-systems.ts'
 import { narrowed, systemsOf } from './data-systems.ts'
+import { useMay } from './member.ts'
 import { copiesQuery } from './queries.ts'
 import type { DataLayer } from './search.ts'
 import {
@@ -27,6 +28,7 @@ import {
   NO_MATCH,
   NO_SYSTEM,
   NO_TABLE_COPIED,
+  NO_TABLE_OF_ROLE_SHORT,
   PAUSED_LABEL,
   SEARCH_TABLES,
   TREE_LABEL,
@@ -198,6 +200,7 @@ function RawBody(props: {
   q: string | undefined
 }) {
   const { companyId, copies, connections, current, q } = props
+  const manage = useMay().manageCopies
   if (copies.isPending || connections.isPending) {
     return (
       <div role="status">
@@ -221,8 +224,8 @@ function RawBody(props: {
       </div>
     )
   }
-  const all = systemsOf(copies.data.copies, connections.data.connections)
-  if (all.length === 0) return <p className={NOTE}>{NO_SYSTEM}</p>
+  const all = systemsOf(copies.data.copies, manage ? connections.data.connections : [])
+  if (all.length === 0) return <p className={NOTE}>{manage ? NO_SYSTEM : NO_TABLE_OF_ROLE_SHORT}</p>
   const withCopies = all.filter((system) => system.copies.length > 0)
   if (withCopies.length === 0) return <p className={NOTE}>{NO_TABLE_COPIED}</p>
   const searching = (q?.trim() ?? '') !== ''
@@ -252,6 +255,7 @@ export function DataTree({ companyId, q }: { companyId: CompanyId; q: string | u
   const copies = useQuery(copiesQuery(companyId))
   const connections = useQuery(connectionsQuery(companyId))
   const current = useParams({ strict: false, select: (params) => params.copyId })
+  const may = useMay()
   return (
     <nav aria-label={TREE_LABEL} className="flex min-w-0 flex-col">
       <SidebarGroup>
@@ -265,7 +269,7 @@ export function DataTree({ companyId, q }: { companyId: CompanyId; q: string | u
         current={current}
         q={q}
       />
-      <LayerGroup companyId={companyId} layer="apps" q={q} />
+      {may.viewAppData && <LayerGroup companyId={companyId} layer="apps" q={q} />}
     </nav>
   )
 }

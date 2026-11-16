@@ -1,7 +1,6 @@
-import type { CompanyId, CompanyMay } from '@conexus/hub-api'
+import type { CompanyId } from '@conexus/hub-api'
 import { CopyId } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
-import { notFound } from '@tanstack/react-router'
 import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
@@ -21,11 +20,6 @@ export {
   provedText,
   systemText,
 } from './text.ts'
-
-/** The Dados routes are for whoever manages copies; for anyone else the address is not found (web W34, S10). */
-export function manageCopiesOrNotFound({ context }: { context: { may: CompanyMay } }) {
-  if (!context.may.manageCopies) throw notFound()
-}
 
 /** The `$copyId` of the detail route: an id the contract would never issue is the not-found page. */
 export const copyParams = {

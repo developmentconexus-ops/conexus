@@ -12,18 +12,20 @@ import type { RunIn } from './sweep-copies-states.ts'
 import {
   CLIENTES,
   COMPANY_API,
+  copiesList,
   copiesPage,
   copyOf,
   DONE,
   LISTED,
   PAGE,
   RUNNING,
+  readersPage,
   SOURCE_DOWN,
   VENDAS,
 } from './sweep-copies-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
-import { PROJECT_ID } from './sweep-replies.ts'
+import { MEMBER, PROJECT_ID } from './sweep-replies.ts'
 
 const COLUMNED = copyOf(VENDAS, 'vendas', 'Vendas', {
   shown: {
@@ -141,6 +143,17 @@ export const LAYER_STATES: State[] = [
     replies: copiesPage(LISTED),
     settle: (p) => waitFor(p, 'Nenhuma tabela com esse texto.'),
   },
+  {
+    name: 'Dados, o membro',
+    path: PAGE,
+    replies: {
+      ...copiesPage(LISTED),
+      ...MEMBER,
+      ...copiesList(LISTED),
+      ...readersPage(LISTED, [{ role: 'member', label: 'Membro' }]),
+    },
+    settle: (p) => waitFor(p, 'Você vê as tabelas que o papel Membro lê.'),
+  },
 ]
 
 /** The page of one table of Dados: its tabs, the notice of a column that stopped, and the failures. */
@@ -198,6 +211,12 @@ export const TABLE_STATES: State[] = [
       }),
     },
     settle: (p) => waitFor(p, 'Cinco linhas da cópia.'),
+  },
+  {
+    name: 'A tabela, quem lê',
+    path: `${PAGE}/${VENDAS}?tab=readers`,
+    replies: columnedPage(),
+    settle: (p) => waitFor(p, 'Quem lê esta tabela pela conversa e pelos agentes.'),
   },
   {
     name: 'Uma cópia que não existe',

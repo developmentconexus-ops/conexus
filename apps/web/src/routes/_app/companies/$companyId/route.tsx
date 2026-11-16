@@ -85,14 +85,12 @@ function RailPlaces(props: { companyId: CompanyId; may: CompanyMay }) {
           label="Agentes"
         />
       )}
-      {may.manageCopies && (
-        <SidebarRailButton
-          to="/companies/$companyId/data"
-          params={params}
-          icon={DatabaseIcon}
-          label="Dados"
-        />
-      )}
+      <SidebarRailButton
+        to="/companies/$companyId/data"
+        params={params}
+        icon={DatabaseIcon}
+        label="Dados"
+      />
     </>
   )
 }
@@ -138,7 +136,7 @@ function HouseFrame() {
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
-        ) : inData && may.manageCopies ? (
+        ) : inData ? (
           <DataTree companyId={companyId} q={q} />
         ) : (
           <SidebarGroup>
