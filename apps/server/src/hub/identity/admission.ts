@@ -32,27 +32,7 @@ const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
-  statement?:
-    | typeof INVITE
-    | typeof REMOVE
-    | typeof CHANGE_ROLE
-    | typeof CREATE_PROJECT
-    | typeof DELETE_PROJECT
-    | typeof CHOOSE_NICKNAME
-    | typeof MANAGE_MODEL_ACCOUNTS
-    | typeof MANAGE_APP_ACCESS
-    | typeof MANAGE_CONNECTIONS
-    | typeof PUBLISH_APP
-    | typeof VIEW_APP_DATA
-    | typeof MANAGE_AGENTS
-    | typeof PUBLISH_AGENT
-    | typeof MANAGE_AUTOMATIONS
-    | typeof MANAGE_COPIES
-    | typeof ASK_ASSISTANT
-    | typeof MANAGE_COMPANY_MEMORY
-    | typeof REQUEST_PUBLISH
-    | typeof DECIDE_REQUEST
-    | typeof MANAGE_ROLES
+  statement?: Parameters<(typeof COMPANY_ROLES)['member']['authorize']>[0]
 }
 
 /**
@@ -119,6 +99,9 @@ const ACTIONS = {
   // 2026-11-09: "Dono e o admnistrador e desenvolvedor"): reading holds no row, a change the role.
   readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
   manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
+  // Every member sees the copies their role reads, their runs and who reads each (data, part 4);
+  // the company's database decides the rows, and a read holds no row.
+  seeData: { by: 'MEMBER', statement: undefined, locks: false },
   // The rows of a copy's table, which the Dados page's sample shows: an owner's and an
   // administrator's for now (data, part 1), until the role decides which tables it reads (part 4).
   readCopyRows: { by: 'MEMBER', statement: MANAGE_CONNECTIONS, locks: false },

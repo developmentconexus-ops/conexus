@@ -148,11 +148,15 @@ export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
  */
 export async function hubWithLog(t: TestContext, change?: Change, tuning?: HubTuning) {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
+  const errors: typeof lines = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
-    error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
+    error: (fields: Record<string, unknown>, message: string) => {
+      lines.push({ fields, message })
+      errors.push({ fields, message })
+    },
   }
-  return { ...(await hubServing(t, undefined, log, change, tuning)), lines }
+  return { ...(await hubServing(t, undefined, log, change, tuning)), lines, errors }
 }
 
 /** A Hub whose mail goes to a fake of the provider. */

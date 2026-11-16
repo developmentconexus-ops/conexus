@@ -7,6 +7,7 @@ import {
   grantProjectCopy,
   listCopies,
   listCopyModels,
+  listCopyReaders,
   listCopyRuns,
   listProjectCopies,
   pauseCopy,
@@ -14,6 +15,7 @@ import {
   revokeProjectCopy,
   runCopy,
   sampleCopy,
+  setRoleCopies,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
@@ -30,11 +32,23 @@ function sourceOf(body: EnableCopy) {
     : ({ kind: 'PROPOSAL', proposalId: body.proposalId } as const)
 }
 
-/** The company's copies; the service admits the person on each (`readCopies` or `manageCopies`, S10). */
+/** Who reads each copy, and the copies a role reads. */
+function registerReaderRoutes(app: FastifyInstance, copies: CopyService): void {
+  serve(app, listCopyReaders, async (input) =>
+    answer({ readers: await copies.readers.list(inCompany(input)) }),
+  )
+  serve(app, setRoleCopies, async (input) => {
+    const copied = { role: input.params.role, copies: input.body.copies }
+    return answer({ copies: await copies.readers.set({ ...inCompany(input), ...copied }) })
+  })
+}
+
+/** The company's copies; the service admits the person on each (`readCopies`, `manageCopies`, `seeData` or `manageRoles`, S10). */
 export function registerCopyRoutes(app: FastifyInstance, copies: CopyService): void {
   serve(app, listCopies, async (input) => {
     return answer(await copies.list({ ...inCompany(input), named: input.query.proposalId ?? [] }))
   })
+  registerReaderRoutes(app, copies)
   serve(app, listCopyModels, async (input) =>
     answer({ models: await copies.models(inCompany(input)) }),
   )

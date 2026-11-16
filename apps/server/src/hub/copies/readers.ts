@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
-import type { CompanyId, CopyId, FixedRole, Role, RoleId } from '@conexus/hub-api'
-import { CopyId as CopyIdSchema, fixedNameOf } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopyReaders, FixedRole, Role, RoleId } from '@conexus/hub-api'
+import { CopyId as CopyIdSchema, fixedNameOf, RoleId as RoleIdSchema } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { SqlStatement } from '../../platform/app-sql.ts'
@@ -8,7 +8,7 @@ import type { SyncRead, WantedReader } from '../../platform/copy-reader.ts'
 import type { DatabaseUrl, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
-import { companyOwner, companyScope } from './store.ts'
+import { companyOwner, companyScope, personScope } from './store.ts'
 import { copy, copyReader } from './tables.ts'
 
 const Ticket = z.object({ ticket: z.coerce.bigint() })
@@ -96,12 +96,12 @@ export type ReaderLogin = Readonly<
   { kind: 'ALL' } | { kind: 'ROLE'; roleId: RoleId } | { kind: 'NONE' }
 >
 
-function readsAll(role: Role): boolean {
+export function readsAll(role: Role): boolean {
   const fixed = fixedNameOf(role)
   return fixed !== undefined && READS_ALL.has(fixed)
 }
 
-async function marksOf(tx: ReadTx, companyId: CompanyId, roleId: RoleId): Promise<CopyId[]> {
+export async function marksOf(tx: ReadTx, companyId: CompanyId, roleId: RoleId): Promise<CopyId[]> {
   const rows = await tx
     .select({ copyId: copyReader.copyId })
     .from(copyReader)
@@ -216,4 +216,49 @@ export async function readAs(
     default:
       return reader satisfies never
   }
+}
+
+/** The roles that read each copy of the company, by their row's id. */
+export async function readersOf(tx: ReadTx, companyId: CompanyId): Promise<Map<CopyId, RoleId[]>> {
+  const rows = await tx
+    .select({ copyId: copyReader.copyId, roleId: copyReader.roleId })
+    .from(copyReader)
+    .where(eq(copyReader.companyId, companyId))
+    .orderBy(asc(copyReader.roleId))
+  const readers = new Map<CopyId, RoleId[]>()
+  for (const row of rows) {
+    const copyId = CopyIdSchema.parse(row.copyId)
+    readers.set(copyId, [...(readers.get(copyId) ?? []), RoleIdSchema.parse(row.roleId)])
+  }
+  return readers
+}
+
+/** Who reads each copy the person sees: every copy for whoever manages them, the role's own for the others. */
+export function listedReaders(deps: CopiesDeps, input: InCompany): Promise<CopyReaders[]> {
+  const { companyId } = input
+  return deps.database.read(personScope(input), async (tx) => {
+    const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
+    const reads = deps.identity.allows(proof.role, 'manageCopies')
+      ? 'ALL'
+      : await copiesReadBy(deps, tx, { companyId, role: proof.role })
+    const stored = await tx
+      .select({ id: copy.id })
+      .from(copy)
+      .where(eq(copy.companyId, companyId))
+      .orderBy(asc(copy.name))
+    const roles = await deps.identity.companyRoleRows(tx, companyId)
+    const all = await deps.identity.readingAll(tx, companyId)
+    const readers = await readersOf(tx, companyId)
+    return stored
+      .map(({ id }) => CopyIdSchema.parse(id))
+      .filter((copyId) => reads === 'ALL' || reads.includes(copyId))
+      .map((copyId) => {
+        const marked = readers.get(copyId) ?? []
+        const own = roles
+          .filter(({ id }) => marked.includes(id))
+          .map(({ role, label, members }) => ({ role, label, members }))
+          .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'))
+        return { copyId, roles: [...all, ...own] }
+      })
+  })
 }

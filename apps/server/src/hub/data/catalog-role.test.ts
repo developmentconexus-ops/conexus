@@ -1,80 +1,17 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { CopyId, ReadAnswer } from '@conexus/hub-api'
-import { Catalog, PersonId, RoleId } from '@conexus/hub-api'
-import pg from 'pg'
-import type { DatabaseUrl } from '../../platform/database.ts'
-import { testAppsConfig } from '../../platform/test-cloudflare.ts'
-import { roleLoginOf } from '../../platform/test-company-postgres.ts'
+import type { ReadAnswer } from '@conexus/hub-api'
+import { Catalog, PersonId } from '@conexus/hub-api'
 import type { SessionScope } from '../connectors/public.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
-import { asSync, copiesOn } from '../copies/test-copies.ts'
-import { BRUNO, call, memberOn, post } from '../identity/test-hub.ts'
-import { ATENDENTE } from '../identity/test-roles.ts'
+import { asSync } from '../copies/test-copies.ts'
+import { copyOf, logged, rolesWorld, roleTables, VENDAS } from '../copies/test-readers.ts'
+import { memberOn } from '../identity/test-hub.ts'
 
-const KEY = testAppsConfig().appLoginKey
 const BIA = { name: 'Bia Reis', email: 'bia@example.test' }
-const VENDAS = ['sankhya_itens_venda', 'sankhya_produtos', 'sankhya_vendas', 'sankhya_vendedores']
 const JOIN = `select count(*) from sync.sankhya_vendas v
   join sync.sankhya_clientes c on c."CODPARC" = v."CODPARC"`
-
-async function roleOn(on: CopiesOn, label: string) {
-  const made = await post(on.hub, on.ana, `/api/companies/${on.companyId}/roles`, {
-    ...ATENDENTE,
-    label,
-  })
-  assert.equal(made.statusCode, 201, made.body)
-  const role = String(Object(made.json()).role.role)
-  const [row] = await on.hub.test.asOwner(
-    'select id from auth.organization_role where company_id = $1 and role = $2',
-    [on.companyId, role],
-  )
-  return { role, id: RoleId.parse(row?.id) }
-}
-
-async function mark(on: CopiesOn, copyId: CopyId, roleId: RoleId) {
-  await on.hub.test.asOwner(
-    `insert into copies.copy_reader (company_id, copy_id, role_id, granted_by, granted_at)
-      values ($1, $2, $3, $4, now())`,
-    [on.companyId, copyId, roleId, on.ana.id],
-  )
-}
-
-async function rolesWorld(t: TestContext) {
-  const on = await copiesOn(t)
-  const copies = new Map<string, CopyId>()
-  for (const model of ['clientes', 'vendedores', 'produtos', 'vendas', 'itens_venda']) {
-    copies.set(`sankhya_${model}`, await on.enable(model))
-  }
-  const vendas = await roleOn(on, 'Vendas')
-  const financeiro = await roleOn(on, 'Financeiro')
-  for (const name of VENDAS) await mark(on, copyOf(copies, name), vendas.id)
-  await mark(on, copyOf(copies, 'sankhya_clientes'), financeiro.id)
-  const bruno = await memberOn(on.hub, on.companyId, BRUNO, vendas.role)
-  const moved = await call(
-    on.hub,
-    on.ana,
-    'PUT',
-    `/api/companies/${on.companyId}/members/${on.carla.id}`,
-    {
-      ...{ role: financeiro.role, from: 'member' },
-    },
-  )
-  assert.equal(moved.statusCode, 200, moved.body)
-  for (const copyId of copies.values()) assert.equal((await on.run(copyId)).kind, 'ENDED')
-  return {
-    ...{ on, copies, vendas, financeiro },
-    brunoId: PersonId.parse(bruno.id),
-    carlaId: PersonId.parse(on.carla.id),
-  }
-}
-
-function copyOf(copies: ReadonlyMap<string, CopyId>, name: string): CopyId {
-  const copyId = copies.get(name)
-  assert.ok(copyId, name)
-  return copyId
-}
 
 function scopeOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']): SessionScope {
   return { companyId: on.companyId, personId, place, chosen: [] }
@@ -87,23 +24,6 @@ function inCompany(on: CopiesOn, personId: PersonId) {
 async function tablesOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']) {
   const described = await on.hub.data(scopeOf(on, personId, place)).describe()
   return Catalog.parse(described).tables.map(({ name }) => name)
-}
-
-async function seenBy(login: DatabaseUrl) {
-  const client = new pg.Client({ connectionString: login.reveal() })
-  await client.connect()
-  try {
-    const found = await client.query(
-      `select table_name from information_schema.tables where table_schema = 'sync' order by 1`,
-    )
-    return found.rows.map((row) => String(row.table_name))
-  } finally {
-    await client.end()
-  }
-}
-
-function logged(on: CopiesOn, message: string) {
-  return on.hub.lines.filter((line) => line.message === message).map((line) => line.fields)
 }
 
 function loginsAsked(t: TestContext, on: CopiesOn) {
@@ -119,17 +39,17 @@ function rowsOf(answer: ReadAnswer) {
 }
 
 test('o catálogo de um papel lista exatamente as tabelas que o login do papel lê', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const bruno = await tablesOf(w.on, w.brunoId, { kind: 'COMPANY' })
   assert.deepEqual(bruno, VENDAS)
-  assert.deepEqual(bruno, await seenBy(await roleLoginOf(w.on.owner, KEY, w.vendas.id)))
+  assert.deepEqual(bruno, await roleTables(w.on, w.vendas.id))
   const carla = await tablesOf(w.on, w.carlaId, { kind: 'COMPANY' })
   assert.deepEqual(carla, ['sankhya_clientes'])
-  assert.deepEqual(carla, await seenBy(await roleLoginOf(w.on.owner, KEY, w.financeiro.id)))
+  assert.deepEqual(carla, await roleTables(w.on, w.financeiro.id))
 })
 
 test('a tabela que o papel não lê não aparece no catálogo', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const described = await inCompany(w.on, w.brunoId).describe()
   const tables = Catalog.parse(described).tables
   assert.ok(!JSON.stringify(tables).includes('sankhya_clientes'))
@@ -137,7 +57,7 @@ test('a tabela que o papel não lê não aparece no catálogo', async (t) => {
 })
 
 test('Bruno pede sankhya_clientes pelo nome e recebe NOT_IN_CATALOG, sem linha, a mesma resposta de sankhya_nao_existe', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const asked = loginsAsked(t, w.on)
   const data = inCompany(w.on, w.brunoId)
   const hidden = await data.read({ kind: 'TABLE', table: 'sankhya_clientes' })
@@ -147,13 +67,13 @@ test('Bruno pede sankhya_clientes pelo nome e recebe NOT_IN_CATALOG, sem linha, 
 })
 
 test('uma consulta de Bruno que junta vendas e clientes é recusada pelo banco e não devolve linha', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const answer = await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql: JOIN })
   assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
 })
 
 test('DATA_READ_REFUSED leva a pessoa e não leva a consulta', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql: JOIN })
   assert.deepEqual(logged(w.on, 'DATA_READ_REFUSED'), [
     { companyId: w.on.companyId, personId: w.brunoId },
@@ -162,7 +82,7 @@ test('DATA_READ_REFUSED leva a pessoa e não leva a consulta', async (t) => {
 })
 
 test('o papel lê com o seu login e o dono com conexus_read', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const asked = loginsAsked(t, w.on)
   const bruno = inCompany(w.on, w.brunoId)
   const page = await bruno.read({ kind: 'TABLE', table: 'sankhya_vendas' })
@@ -176,7 +96,7 @@ test('o papel lê com o seu login e o dono com conexus_read', async (t) => {
 })
 
 test('o banco que perdeu o GRANT é consertado na primeira leitura', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   await asSync(w.on.owner, (client) =>
     client.query(`revoke select on sync.sankhya_vendas from "conexus_role_${w.vendas.id}"`),
   )
@@ -188,7 +108,7 @@ test('o banco que perdeu o GRANT é consertado na primeira leitura', async (t) =
 })
 
 test('o dono lê tudo com conexus_read', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const admin = await memberOn(w.on.hub, w.on.companyId, BIA, 'admin')
   for (const person of [w.on.anaId, PersonId.parse(admin.id)]) {
     assert.deepEqual(await tablesOf(w.on, person, { kind: 'COMPANY' }), [
@@ -200,7 +120,7 @@ test('o dono lê tudo com conexus_read', async (t) => {
 })
 
 test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projeto', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   for (const name of ['sankhya_vendas', 'sankhya_clientes']) {
     await w.on.copies.grant({
       ...{ companyId: w.on.companyId, personId: w.on.anaId },
@@ -218,7 +138,7 @@ test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projet
 })
 
 test('decisão D: o login do papel lê os nomes de sync em pg_class e não as linhas', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   const bruno = inCompany(w.on, w.brunoId)
   const names = await bruno.read({
     kind: 'QUERY',
@@ -232,7 +152,7 @@ test('decisão D: o login do papel lê os nomes de sync em pg_class e não as li
 })
 
 test('a recusa que repete depois do conserto não devolve linha', async (t) => {
-  const w = await rolesWorld(t)
+  const w = await rolesWorld(t, 'PLANTED')
   await asSync(w.on.owner, (client) =>
     client.query(`revoke select on sync.sankhya_vendas from "conexus_role_${w.vendas.id}"`),
   )

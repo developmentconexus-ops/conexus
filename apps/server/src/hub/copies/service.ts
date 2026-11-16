@@ -26,7 +26,8 @@ import {
 import { listed, models, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
 import { propose } from './propose.ts'
-import { copiesReadBy, readAs, readerOf } from './readers.ts'
+import { copiesReadBy, listedReaders, readAs, readerOf } from './readers.ts'
+import { setRoleCopies } from './role-copies.ts'
 import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { sampleOf } from './sample.ts'
 import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
@@ -66,6 +67,11 @@ export function createCopyService(
         readerOf,
         readAs: (input: Parameters<typeof readAs>[1]) => readAs(full, input),
       }),
+    }),
+    /** Who reads each copy, admitting `seeData`, and the copies a role reads, admitting `manageRoles`. */
+    readers: Object.freeze({
+      list: (input: InCompany) => listedReaders(full, input),
+      set: (input: Parameters<typeof setRoleCopies>[1]) => setRoleCopies(full, input),
     }),
     /** The schedule's acts, admitting `manageCopies`. */
     pause: (input: Of) => pauseCopy(full, input),
