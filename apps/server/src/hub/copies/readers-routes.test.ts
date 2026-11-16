@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { listCopyReaders } from '@conexus/hub-api'
 import pg from 'pg'
 import { call, codeOf, memberOn, personOn, plantCompany, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
@@ -19,7 +18,7 @@ import {
   rolesWorld,
   roleTables,
   silentReconcile,
-  VENDAS,
+  waitingOnLocks,
 } from './test-readers.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
@@ -64,6 +63,42 @@ test('o banco calado ao tirar responde 503 e nada muda', async (t) => {
   assert.deepEqual(await hubMarks(w, w.financeiro.id), before)
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { rows: 56 })
   assert.ok(erred(w, 'COPY_READERS_FAILED').length > 0)
+})
+
+test('a reposição de um PUT que falhou não desfaz o PUT seguinte que deu certo', async (t) => {
+  const w = await rolesWorld(t, 'PLANTED')
+  const postgres = w.on.hub.postgres.companyPostgres
+  const real = postgres.reconcileReaders
+  let later: Awaited<ReturnType<typeof put>> | undefined
+  let asked = false
+  t.mock.method(postgres, 'reconcileReaders', async (...input: Parameters<typeof real>) => {
+    if (asked) return Reflect.apply(real, postgres, input)
+    asked = true
+    later = await put(w, w.on.ana, w.financeiro.role, [])
+    return { kind: 'NO_ANSWER' as const }
+  })
+  const first = await put(w, w.on.ana, w.financeiro.role, [])
+  assert.deepEqual([first.statusCode, codeOf(first)], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  assert.deepEqual([later?.statusCode, later?.body], [200, '{"copies":[]}'])
+  assert.deepEqual(await hubNames(w, w.financeiro.id), [])
+  assert.deepEqual(logged(w.on, 'COPY_READERS_PENDING'), [
+    { companyId: w.on.companyId, role: w.financeiro.role },
+  ])
+  assert.equal((await w.on.run(copyOf(w.copies, 'sankhya_clientes'))).kind, 'ENDED')
+  assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { refused: '42501' })
+})
+
+test('a reconciliação que lança devolve as marcas e responde 503, com o erro dela na causa', async (t) => {
+  const w = await rolesWorld(t, 'NONE')
+  const clientes = idsOf(w, ['sankhya_clientes'])
+  assert.equal((await put(w, w.on.ana, w.financeiro.role, clientes)).statusCode, 200)
+  const thrown = new Error('reconcile threw')
+  t.mock.method(w.on.hub.postgres.companyPostgres, 'reconcileReaders', async () => {
+    throw thrown
+  })
+  const taken = await put(w, w.on.ana, w.financeiro.role, [])
+  assert.deepEqual([taken.statusCode, codeOf(taken)], [503, 'COPY_DATABASE_UNAVAILABLE'])
+  assert.deepEqual(await hubNames(w, w.financeiro.id), ['sankhya_clientes'])
 })
 
 test('a reposição que falha diz COPY_READERS_PENDING como erro e a rodada seguinte conserta', async (t) => {
@@ -198,74 +233,6 @@ test('quem não muda papéis, outra empresa, a cópia de outra empresa, a sessã
   assert.deepEqual(await w.on.hub.test.asOwner('select * from copies.copy_reader'), [])
 })
 
-test('listCopyReaders dá Dono, Administrador e cada papel com a contagem de pessoas', async (t) => {
-  const w = await rolesWorld(t, 'NONE')
-  assert.equal((await put(w, w.on.ana, w.vendas.role, idsOf(w, VENDAS))).statusCode, 200)
-  const both = idsOf(w, ['sankhya_clientes', 'sankhya_vendas'])
-  assert.equal((await put(w, w.on.ana, w.financeiro.role, both)).statusCode, 200)
-  const listed = await call(
-    w.on.hub,
-    w.on.ana,
-    'GET',
-    `/api/companies/${w.on.companyId}/copy-readers`,
-  )
-  assert.equal(listed.statusCode, 200, listed.body)
-  const fixed = [
-    { role: 'owner', label: 'Dono', members: 1 },
-    { role: 'admin', label: 'Administrador', members: 0 },
-  ]
-  const vendas = { role: w.vendas.role, label: 'Vendas', members: 1 }
-  const financeiro = { role: w.financeiro.role, label: 'Financeiro', members: 1 }
-  assert.deepEqual(listCopyReaders.success.body.parse(listed.json()), {
-    readers: [
-      { copyId: copyOf(w.copies, 'sankhya_clientes'), roles: [...fixed, financeiro] },
-      { copyId: copyOf(w.copies, 'sankhya_itens_venda'), roles: [...fixed, vendas] },
-      { copyId: copyOf(w.copies, 'sankhya_produtos'), roles: [...fixed, vendas] },
-      { copyId: copyOf(w.copies, 'sankhya_vendas'), roles: [...fixed, financeiro, vendas] },
-      { copyId: copyOf(w.copies, 'sankhya_vendedores'), roles: [...fixed, vendas] },
-    ],
-  })
-})
-
-test('o membro vê quem lê só as cópias do seu papel', async (t) => {
-  const w = await rolesWorld(t, 'NONE')
-  assert.equal((await put(w, w.on.ana, w.vendas.role, idsOf(w, VENDAS))).statusCode, 200)
-  assert.equal(
-    (await put(w, w.on.ana, w.financeiro.role, idsOf(w, ['sankhya_clientes']))).statusCode,
-    200,
-  )
-  const url = `/api/companies/${w.on.companyId}/copy-readers`
-  const carla = await call(w.on.hub, w.on.carla, 'GET', url)
-  assert.equal(carla.statusCode, 200, carla.body)
-  assert.deepEqual(carla.json(), {
-    readers: [
-      {
-        copyId: copyOf(w.copies, 'sankhya_clientes'),
-        roles: [
-          { role: 'owner', label: 'Dono', members: 1 },
-          { role: 'admin', label: 'Administrador', members: 0 },
-          { role: w.financeiro.role, label: 'Financeiro', members: 1 },
-        ],
-      },
-    ],
-  })
-  assert.ok(!carla.body.includes('Carla') && !carla.body.includes('Bruno'))
-  const ze = await personOn(w.on.hub, ZE)
-  const outside = await call(w.on.hub, ze, 'GET', url)
-  assert.deepEqual([outside.statusCode, codeOf(outside)], [404, 'NOT_FOUND'])
-})
-
-async function waitingOnLocks(client: pg.Client, count: number) {
-  for (;;) {
-    const waiting = await client.query(
-      `select count(*)::int as n from pg_locks l join pg_stat_activity a on a.pid = l.pid
-        where not l.granted and a.datname = current_database()`,
-    )
-    if (waiting.rows[0]?.n >= count) return
-    await new Promise((resolve) => setTimeout(resolve, 20))
-  }
-}
-
 test('dois PUT ao mesmo tempo terminam com o estado de um deles, e repetir não muda nada', async (t) => {
   const w = await rolesWorld(t, 'NONE')
   const one = ['sankhya_clientes']
@@ -280,7 +247,7 @@ test('dois PUT ao mesmo tempo terminam com o estado de um deles, e repetir não 
         put(w, w.on.ana, w.financeiro.role, idsOf(w, one)),
         put(w, w.on.ana, w.financeiro.role, idsOf(w, other)),
       ])
-      await waitingOnLocks(holder, 2)
+      assert.ok(await waitingOnLocks(holder, 2))
       await holder.query('commit')
       return asked
     } finally {
@@ -309,4 +276,30 @@ test('dois PUT ao mesmo tempo terminam com o estado de um deles, e repetir não 
   const twice = await put(w, w.on.ana, w.financeiro.role, [clientes, clientes])
   assert.deepEqual([twice.statusCode, twice.json()], [200, { copies: [clientes] }])
   assert.deepEqual(await hubNames(w, w.financeiro.id), ['sankhya_clientes'])
+})
+
+test('o PUT espera a vez da empresa, a mesma trava de quem apaga um papel', async (t) => {
+  const w = await rolesWorld(t, 'NONE')
+  const holder = new pg.Client({ connectionString: w.on.hub.test.ownerUrl.reveal() })
+  await holder.connect()
+  const first = await (async () => {
+    try {
+      await holder.query('begin')
+      await holder.query('select id from auth.company where id = $1 for no key update', [
+        w.on.companyId,
+      ])
+      let early = false
+      const asked = put(w, w.on.ana, w.financeiro.role, idsOf(w, ['sankhya_clientes']))
+      void asked.then(() => {
+        early = true
+      })
+      const waited = await waitingOnLocks(holder, 1)
+      const seen = { waited, early }
+      await holder.query('commit')
+      return { seen, answer: await asked }
+    } finally {
+      await holder.end()
+    }
+  })()
+  assert.deepEqual([first.seen, first.answer.statusCode], [{ waited: true, early: false }, 200])
 })

@@ -173,3 +173,17 @@ export function holdNextReconcile(t: TestContext, w: RolesWorld) {
   })
   return { arrived: arrived.promise, release: () => released.resolve(), answers }
 }
+
+/** Whether `count` sessions of this database wait on a lock within ten seconds. */
+export async function waitingOnLocks(client: pg.Client, count: number): Promise<boolean> {
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    const waiting = await client.query(
+      `select count(*)::int as n from pg_locks l join pg_stat_activity a on a.pid = l.pid
+        where not l.granted and a.datname = current_database()`,
+    )
+    if (waiting.rows[0]?.n >= count) return true
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+  return false
+}

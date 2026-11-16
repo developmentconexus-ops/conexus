@@ -3,13 +3,14 @@ import { CopyId as CopyIdSchema } from '@conexus/hub-api'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { copyReaderTurn } from './readers/tables.ts'
 import { marksOf, readsAll, reconciled } from './readers.ts'
 import type { CopiesDeps, InCompany } from './store.ts'
 import { personScope } from './store.ts'
 import { copy, copyReader } from './tables.ts'
 
 type Mark = Pick<typeof copyReader.$inferSelect, 'grantedBy' | 'grantedAt'> & { copyId: CopyId }
-type Change = { roleId: RoleId; wanted: CopyId[]; removed: Mark[]; added: CopyId[] }
+type Change = { roleId: RoleId; turn: number; wanted: CopyId[]; removed: Mark[]; added: CopyId[] }
 
 async function changedMarks(
   deps: CopiesDeps,
@@ -30,6 +31,16 @@ async function changedMarks(
           .from(copy)
           .where(and(eq(copy.companyId, companyId), inArray(copy.id, wanted)))
   if (found.length !== wanted.length) throw new Failure('COPY_NOT_FOUND')
+  const [counted] = await tx
+    .insert(copyReaderTurn)
+    .values({ roleId: row.id, companyId, turn: 1 })
+    .onConflictDoUpdate({
+      target: copyReaderTurn.roleId,
+      set: { turn: sql`${copyReaderTurn.turn} + 1` },
+    })
+    .returning({ turn: copyReaderTurn.turn })
+  if (counted === undefined)
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NO_TURN' } })
   const current = await marksOf(tx, companyId, row.id)
   const taken = current.filter((copyId) => !wanted.includes(copyId))
   const added = wanted.filter((copyId) => !current.includes(copyId))
@@ -59,14 +70,23 @@ async function changedMarks(
       })),
     )
   }
-  return { roleId: row.id, wanted, removed, added }
+  return { roleId: row.id, turn: counted.turn, wanted, removed, added }
 }
 
-function restoredMarks(deps: CopiesDeps, input: InCompany, change: Change): Promise<void> {
+function restoredMarks(
+  deps: CopiesDeps,
+  input: InCompany,
+  change: Change,
+): Promise<'RESTORED' | 'MOVED'> {
   const { companyId } = input
   const { roleId, removed, added } = change
   return deps.database.command(personScope(input), async (tx) => {
     await deps.identity.lockCompany(tx, companyId)
+    const [now] = await tx
+      .select({ turn: copyReaderTurn.turn })
+      .from(copyReaderTurn)
+      .where(and(eq(copyReaderTurn.companyId, companyId), eq(copyReaderTurn.roleId, roleId)))
+    if (now?.turn !== change.turn) return 'MOVED'
     if (removed.length > 0) {
       await tx
         .insert(copyReader)
@@ -84,6 +104,7 @@ function restoredMarks(deps: CopiesDeps, input: InCompany, change: Change): Prom
           ),
         )
     }
+    return 'RESTORED'
   })
 }
 
@@ -91,23 +112,27 @@ async function undone(
   deps: CopiesDeps,
   input: InCompany & { role: Role },
   change: Change,
+  cause?: unknown,
 ): Promise<never> {
   const { companyId, role } = input
-  try {
-    await restoredMarks(deps, input, change)
-  } catch (error) {
+  const restored = await restoredMarks(deps, input, change).catch((error: unknown) => {
     deps.log.error({ companyId, role }, 'COPY_READERS_PENDING')
-    throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause: error })
-  }
-  throw new Failure('COPY_DATABASE_UNAVAILABLE')
+    const both = cause === undefined ? error : new AggregateError([cause, error])
+    throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause: both })
+  })
+  if (restored === 'MOVED') deps.log.info({ companyId, role }, 'COPY_READERS_PENDING')
+  throw new Failure('COPY_DATABASE_UNAVAILABLE', { cause })
 }
 
-async function reconciledOrRestored(deps: CopiesDeps, input: InCompany, change: Change) {
+async function reconciledOrRestored(
+  deps: CopiesDeps,
+  input: InCompany & { role: Role },
+  change: Change,
+) {
   try {
     return await reconciled(deps, input)
   } catch (error) {
-    await restoredMarks(deps, input, change)
-    throw error
+    return undone(deps, input, change, error)
   }
 }
 
@@ -115,7 +140,8 @@ async function reconciledOrRestored(deps: CopiesDeps, input: InCompany, change: 
  * The copies a role reads: the Hub's marks first, under the company's lock, then, with no
  * transaction open (data D22), the company's database made to match. A silent database that was
  * to take a read away answers 503 with the Hub's marks restored, so the login never reads more
- * than the Hub says; one that was only to give answers 200, and the next read or run gives it.
+ * than the Hub says, unless a later set took the role's turn, whose marks then stay; one that was
+ * only to give answers 200, and the next read or run gives it.
  */
 export async function setRoleCopies(
   deps: CopiesDeps,
