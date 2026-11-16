@@ -1,5 +1,7 @@
 # Documento de desenho: parte 3, a leitura para análise
 
+> Os grupos 3 e 4 desta parte foram construídos pelo cartão A pergunta respondida com a origem, fechado em 2026-11-16, e o que ele decidiu vale sobre este texto. Uma tabela cuja conexão não está em `systems` é lida, e a origem vem do registro gravado da cópia, com o estado da conexão (`NAMED` ou `NOT_GIVEN`): onde esta parte manda responder `CATALOG_UNAVAILABLE` e registrar `DATA_ORIGIN_UNREAD` nesse caso, o texto está superado (a emenda de 2026-11-15, "1. A"). O registro do cartão está em [aprovações](../../../../approvals/a-pergunta-respondida-com-a-origem.md).
+
 Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repositório. Depende da parte 1: o catálogo, o login `conexus_read` e `readCopies`. Os rótulos de prova são os do escopo.
 
 ## Visão geral
