@@ -46,4 +46,10 @@ test('a cópia já liberada ao Projeto aparece com as colunas, mesmo fora do pap
     ['sankhya_clientes'],
   )
   assert.deepEqual([...view.unreleased].sort(), VENDAS)
+  const owner = await on.hub.copies.projectView({
+    ...{ companyId: on.companyId, projectId: on.projectId },
+    personId: on.anaId,
+  })
+  assert.equal(owner.kind, 'COPIES')
+  if (owner.kind === 'COPIES') assert.deepEqual([...owner.unreleased].sort(), VENDAS)
 })
