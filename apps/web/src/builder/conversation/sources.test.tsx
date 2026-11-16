@@ -78,6 +78,8 @@ function described() {
   )
 }
 
+const AS_THE_SERVER_SENDS = '2026-11-15T22:46:12.345-03:00'
+
 const ReadPart = z.looseObject({
   type: z.literal('tool-invocation'),
   toolInvocation: z.looseObject({
@@ -89,12 +91,12 @@ const ReadPart = z.looseObject({
   }),
 })
 
-/** The recorded live read, with its `at` taken away or under a typed read's tool name. */
+/** The recorded live read, its `at` as the server sends it (the reader's zone, with an offset), or changed. */
 function read(
-  change: { noAt?: true; toolName?: string; connection?: string; operation?: string } = {},
+  change: Partial<Record<'at' | 'toolName' | 'connection' | 'operation', string>> = {},
 ) {
   const part = recordedPart('reads', ReadPart)
-  if (change.noAt) delete part.toolInvocation.result.at
+  part.toolInvocation.result.at = change.at ?? AS_THE_SERVER_SENDS
   if (change.toolName !== undefined) part.toolInvocation.toolName = change.toolName
   if (change.operation !== undefined) part.toolInvocation.args.operation = change.operation
   if (change.connection !== undefined) part.toolInvocation.args.connection = change.connection
@@ -301,21 +303,6 @@ test('um resultado fora do esquema não vira fonte', () => {
   expect(sourcesIn([broken, refused])).toEqual([])
 })
 
-test('a fonte da leitura ao vivo diz ao vivo · lido agora, às', () => {
-  clockAt('2026-11-16T02:00:00.000Z')
-  expect(linesOf([read()])).toMatchObject([
-    {
-      logo: true,
-      name: 'Sankhya · Matriz',
-      badges: [],
-      table: 'consultar',
-      stamp: 'ao vivo · lido agora, às 22:46',
-      words: 'text-2',
-      dot: 'success',
-    },
-  ])
-})
-
 test('a leitura ao vivo de uma conexão com o nome do sistema não o repete', () => {
   clockAt('2026-11-16T02:00:00.000Z')
   expect(linesOf([read({ connection: 'Sankhya' })])[0]?.name).toBe('Sankhya')
@@ -345,6 +332,20 @@ test('a leitura tipada <conector>_<operação> também vira fonte', () => {
   })
 })
 
+test.each([
+  ['-03:00', '2026-11-16T03:39:48.476-03:00'],
+  ['Z', '2026-11-16T06:39:48.476Z'],
+  ['+01:00', '2026-11-16T07:39:48.476+01:00'],
+])('a fonte ao vivo com a hora em %s diz ao vivo · lido agora, às 03:39', (_offset, at) => {
+  clockAt('2026-11-16T07:00:00.000Z')
+  const stamp = 'ao vivo · lido agora, às 03:39'
+  expect(linesOf([read({ at })])).toMatchObject([
+    { logo: true, stamp, words: 'text-2', dot: 'success' },
+  ])
+})
+
 test('a leitura ao vivo sem at não vira fonte', () => {
-  expect(sourcesIn([read({ noAt: true })])).toEqual([])
+  const part = read()
+  delete part.toolInvocation.result.at
+  expect(sourcesIn([part])).toEqual([])
 })
