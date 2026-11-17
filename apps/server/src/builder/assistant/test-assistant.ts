@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import { READER_ZONE_HEADER } from '@conexus/hub-api'
+import { CompanyId, companyData, PersonId, READER_ZONE_HEADER } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
@@ -10,6 +11,7 @@ import type { Config } from '../../platform/config.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
+import { connectionsOffered, overviewTool, reachedBy } from './overview.ts'
 
 type Block = ReturnType<typeof tool>
 
@@ -182,4 +184,37 @@ export async function publishedApp(
     versionId,
     owned.projectId,
   ])
+}
+
+/** The overview tool, run for a conversation whose Hub cannot say what the person reaches (the catalog is unavailable). */
+export async function runOverviewOnSilentHub() {
+  const silent = companyData({
+    now: () => new Date(),
+    sources: {
+      catalog: async () => ({ kind: 'CATALOG_UNAVAILABLE' }),
+      rows: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
+      live: refused,
+      query: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
+      funnel: refused,
+    },
+  })
+  const scope: SessionScope = {
+    companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
+    personId: PersonId.parse(randomUUID()),
+    place: { kind: 'COMPANY' },
+    chosen: [],
+  }
+  const overview = overviewTool({
+    scopeOf: async () => scope,
+    projectsOf: async () => ({ projects: [], moreProjects: false }),
+    connectionsOf: connectionsOffered(
+      async () => [],
+      reachedBy(() => silent),
+    ),
+  })
+  return overview.execute?.({}, { requestContext: new RequestContext() })
+}
+
+async function refused() {
+  return { kind: 'NOT_GRANTED' } as const
 }
