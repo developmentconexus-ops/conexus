@@ -81,6 +81,28 @@ test('os nomes de hoje: o Assistente no Início', async (t) => {
   )
 })
 
+test('a ordem de hoje: o Assistente pede as suas ferramentas e as da empresa na ordem do main', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
+  const order = [
+    'conexus_overview',
+    'copy_runs',
+    'show_file',
+    'propose_company_memory',
+    'propose_automation',
+    'propose_app',
+    'connector_notes',
+    'connector_note_save',
+    'data_describe',
+    'data_query',
+  ]
+  assert.deepEqual(
+    on.calls.at(-1)?.tools.filter((name) => order.includes(name)),
+    order,
+  )
+})
+
 test('os nomes de hoje: o Assistente num Projeto', async (t) => {
   assert.deepEqual(
     await assistantAt(t, true),

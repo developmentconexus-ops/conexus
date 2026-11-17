@@ -17,13 +17,13 @@ export type CompanyToolSeat = ControllerKind | 'research'
 /** The company's tools each seat gets, in the order its request lists them: the one table of subsets (C26). */
 export const TOOLS_OF = {
   assistant: [
-    DATA_TOOL.describe,
-    DATA_TOOL.query,
+    ASSISTANT_TOOL.overview,
+    ASSISTANT_TOOL.copyRuns,
     TYPED_READS,
     BUILDER_TOOL.connectorNotes,
     BUILDER_TOOL.connectorNoteSave,
-    ASSISTANT_TOOL.copyRuns,
-    ASSISTANT_TOOL.overview,
+    DATA_TOOL.describe,
+    DATA_TOOL.query,
   ],
   research: [BUILDER_TOOL.connectorRead],
   builder: [

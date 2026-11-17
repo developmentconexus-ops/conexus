@@ -248,7 +248,7 @@ function construtorAgent(
         call: Parameters<ConnectorAccess['read']>[0],
         context: Parameters<ConnectorAccess['read']>[1],
       ) {
-        return tools.connector.read(run, call, context)
+        return deps.connectors.read(principalOf(run), { ...call, turn: turnKey.of(context) })
       }
       const project = projectReader(deps, () => companyConnections(toolScope))
       return {

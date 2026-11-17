@@ -5,6 +5,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Principal } from '../../hub/access/public.ts'
 import { chosenIn } from '../../hub/access/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import { appDataTools, builderAppDataTools } from '../app-data/public.ts'
 import type { ConnectorAccess, NoteSave, ProposeCall } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
@@ -35,6 +36,8 @@ export type CompanyToolDeps<C extends CompanyConnection = CompanyConnection> = R
   connector: Readonly<{
     read: OfRun<ConnectorAccess['read']>
     notes: OfRun<ConnectorAccess['notes']>
+    /** The connections whose notebook the run's speaker may use; a saved agent's tools name no other. */
+    notebooks?: (run: RunScope) => Promise<readonly ConnectionId[]>
     saveNote?: OfRun<NoteSave>
     /** The Builder's `copy_propose`, on the listed connections whose connector copies. */
     propose?: Readonly<{ call: OfRun<ProposeCall>; copying: (listed: Listed<C>) => Copying }>
@@ -52,6 +55,7 @@ export type PrincipalDoor<T> = Readonly<{
     call: Parameters<ConnectorAccess['read']>[0] & { turn: T },
   ) => ReturnType<ConnectorAccess['read']>
   notes: (principal: Principal, connectionId: ConnectionId) => ReturnType<ConnectorAccess['notes']>
+  notebooks: (principal: Principal) => Promise<readonly ConnectionId[]>
   saveNote?: (
     principal: Principal,
     call: Parameters<NoteSave>[0] & { turn: T },
@@ -68,6 +72,7 @@ export function byPrincipal<T>(
     read: (run, call, requestContext) =>
       door.read(principalOf(run), { ...call, turn: turnOf(requestContext) }),
     notes: (run, connectionId) => door.notes(principalOf(run), connectionId),
+    notebooks: (run) => door.notebooks(principalOf(run)),
     ...(saveNote === undefined
       ? {}
       : {
@@ -88,15 +93,22 @@ const WHOSE: Readonly<Record<CompanyToolSeat, string>> = {
 
 /**
  * The connections a seat's connector tools name: the run's view; for a saved agent, the ones its
- * version selected (decision E4), whose notebook the door alone answers for.
+ * version selected (decision E4) whose notebook the role of who runs it may use, since the notebook
+ * is no declared operation the view would list.
  */
 async function namedBy<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
   seat: CompanyToolSeat,
+  connector: CompanyToolDeps<C>['connector'],
 ): Promise<readonly C[]> {
   if (seat !== 'agents') return scope.connections()
-  const received = await scope.received()
-  return received.filter((each) => chosenIn(scope.run.choice, each.connectionId))
+  if (connector.notebooks === undefined) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_WITHOUT_NOTEBOOKS' } })
+  }
+  const [received, usable] = await Promise.all([scope.received(), connector.notebooks(scope.run)])
+  return received.filter(
+    (each) => chosenIn(scope.run.choice, each.connectionId) && usable.includes(each.connectionId),
+  )
 }
 
 /** The run's door to its listed connections, each call counted by the run; the tools never decide what may be read. */
@@ -107,7 +119,7 @@ export async function connectorAccess<C extends CompanyConnection>(
 ): Promise<ConnectorAccess> {
   const { run } = scope
   return {
-    connections: await namedBy(scope, seat),
+    connections: await namedBy(scope, seat, deps.connector),
     savedAt: deps.savedAt,
     log: deps.log,
     read: (call, requestContext) => deps.connector.read(run, call, requestContext),

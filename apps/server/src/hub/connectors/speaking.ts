@@ -2,7 +2,7 @@ import type { Connector } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
-import type { Speaker } from '../identity/public.ts'
+import type { PersonSpeaker, Speaker } from '../identity/public.ts'
 import { personOf, speakerOf } from '../identity/public.ts'
 import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
@@ -94,34 +94,55 @@ export async function mayUseNotebook(
   speaker: Speaker,
   on: Readonly<{ connectionId: ConnectionId; connector: string }>,
 ): Promise<NotInRole | undefined> {
+  const asker = notebookAsker(speaker)
+  if (asker === undefined || !guardsNotebook(on)) return undefined
+  const [allowed] = await deps.identity.mayUseEach(companyId, asker, [notebookTarget(on)])
+  return allowed === true
+    ? undefined
+    : { kind: 'NOT_IN_ROLE', role: asker.role, operation: NOTEBOOK_OPERATION }
+}
+
+/** The connections whose notebook the speaker may read and write, by the same rule, in one read of the roles. */
+export async function notebooksOf(
+  deps: Deps,
+  companyId: CompanyId,
+  speaker: Speaker,
+  connections: readonly Readonly<{ connectionId: ConnectionId; connector: string }>[],
+): Promise<ConnectionId[]> {
+  const asker = notebookAsker(speaker)
+  const guarded = asker === undefined ? [] : connections.filter(guardsNotebook)
+  const answers =
+    asker === undefined
+      ? []
+      : await deps.identity.mayUseEach(companyId, asker, guarded.map(notebookTarget))
+  const refused = new Set(guarded.filter((_, at) => answers[at] !== true))
+  return connections.filter((each) => !refused.has(each)).map((each) => each.connectionId)
+}
+
+/** Who the notebook asks: a person by their role, an agent by the role of who runs it, since the notebook is no declared operation; a version passes. */
+function notebookAsker(speaker: Speaker): PersonSpeaker | undefined {
   switch (speaker.kind) {
     case 'VERSION':
       return undefined
     case 'PERSON':
-      return notebookInRole(deps, companyId, speaker, on)
+      return speaker
     case 'AGENT':
-      return notebookInRole(deps, companyId, personOf(speaker.personId, speaker.role), on)
+      return personOf(speaker.personId, speaker.role)
     default:
       return speaker satisfies never
   }
 }
 
-async function notebookInRole(
-  deps: Deps,
-  companyId: CompanyId,
-  speaker: Extract<Speaker, { kind: 'PERSON' }>,
-  on: Readonly<{ connectionId: ConnectionId; connector: string }>,
-): Promise<NotInRole | undefined> {
-  const connector = connectorOf(on.connector)
-  if (connector?.readDoor?.[NOTEBOOK_OPERATION] === undefined) return undefined
-  const allowed = await deps.identity.mayUse(companyId, speaker, {
+function guardsNotebook(on: Readonly<{ connector: string }>): boolean {
+  return connectorOf(on.connector)?.readDoor?.[NOTEBOOK_OPERATION] !== undefined
+}
+
+function notebookTarget(on: Readonly<{ connectionId: ConnectionId; connector: string }>) {
+  return {
     connectionId: on.connectionId,
     connectorId: ConnectorId.parse(on.connector),
     operationId: OperationId.parse(NOTEBOOK_OPERATION),
-  })
-  return allowed
-    ? undefined
-    : { kind: 'NOT_IN_ROLE', role: speaker.role, operation: NOTEBOOK_OPERATION }
+  }
 }
 
 /**

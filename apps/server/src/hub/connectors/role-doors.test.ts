@@ -216,6 +216,7 @@ test('o caderno do agente segue o papel de quem roda: sem consultar, NOT_IN_ROLE
   ])
   const refused = await on.hub.connectors.assistant.notes(version, on.matriz)
   assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'atendente', operation: 'consultar' })
+  assert.deepEqual(await on.hub.connectors.assistant.notebooks(version), [])
   const widened = await call(on.hub, on.ana, 'PUT', `${on.base}/roles/atendente`, {
     connectors: { sankhya: ['pedidos', 'consultar'] },
     unattended: false,
@@ -223,6 +224,7 @@ test('o caderno do agente segue o papel de quem roda: sem consultar, NOT_IN_ROLE
   assert.equal(widened.statusCode, 200, widened.body)
   const notes = await on.hub.connectors.assistant.notes(version, on.matriz)
   assert.notEqual(Object(notes).kind, 'NOT_IN_ROLE')
+  assert.deepEqual(await on.hub.connectors.assistant.notebooks(version), [on.matriz])
 })
 
 test('o papel muda no meio: tirada pedidos de quem roda a versão que a declara, a chamada seguinte é recusada e nada chega ao dublê', async (t) => {

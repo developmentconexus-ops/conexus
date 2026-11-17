@@ -174,12 +174,13 @@ test('a linha de conexões e as ferramentas do Assistente seguem a vista: a esco
   }
 })
 
-test('o caderno do agente salvo segue a seleção da versão; a linha de conexões, a vista', async () => {
-  const run = runOf('agents', { kind: 'CHOSEN', connections: [LOJA] })
-  const { tools, scope, called } = await seatOf('agents', run)
+test('o caderno do agente salvo nomeia a seleção da versão em que o papel de quem roda tem consultar; a linha de conexões, a vista', async () => {
+  const run = runOf('agents', { kind: 'CHOSEN', connections: [SANKHYA, LOJA] })
+  const { tools, scope, called } = await seatOf('agents', run, [LOJA])
   assert.match(textOf(tools, 'connector_notes'), /Filial/)
   assert.doesNotMatch(textOf(tools, 'connector_notes'), /Matriz/)
   assert.deepEqual(await runOn(tools, 'connector_notes', { connection: 'Filial' }), {})
+  assert.ok(refusedBy(await runOn(tools, 'connector_notes', { connection: 'Matriz' })))
   assert.deepEqual(called.notes, [LOJA])
   assert.deepEqual(
     (await companyConnections(scope)).map((each) => each.name),

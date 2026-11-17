@@ -20,7 +20,12 @@ import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { CompanyCopies, CompanyProjects, CompanyToolDeps } from '../company-tools/public.ts'
+import type {
+  CompanyCopies,
+  CompanyProjects,
+  CompanyToolDeps,
+  CompanyToolScope,
+} from '../company-tools/public.ts'
 import {
   byPrincipal,
   companyConnections,
@@ -148,6 +153,22 @@ function companyDeps(deps: Deps): CompanyToolDeps<AssistantConnection> {
   }
 }
 
+const FIRST: readonly string[] = [ASSISTANT_TOOL.overview, ASSISTANT_TOOL.copyRuns]
+
+/** The company's tools split as the request lists them: the overview and the copies' runs before the Assistant's own, the connectors' and the data's after. */
+async function inRequestOrder(
+  scope: CompanyToolScope<AssistantConnection> | undefined,
+  tools: CompanyToolDeps<AssistantConnection>,
+) {
+  const company = Object.entries(
+    scope === undefined ? {} : await companyTools(scope, 'assistant', tools),
+  )
+  return {
+    first: Object.fromEntries(company.filter(([name]) => FIRST.includes(name))),
+    rest: Object.fromEntries(company.filter(([name]) => !FIRST.includes(name))),
+  }
+}
+
 /**
  * The agent (`template-agent-harness`, `agents/agent.ts:33-76`): its instructions, tools and skills
  * from the run's scope, the Builder's model of the session and the Builder's processors by name.
@@ -207,8 +228,10 @@ function assistantAgent(
       const scope = await scopeOf(requestContext)
       const toolScope = await toolScopeOf(requestContext)
       const { byAutomation, automate } = await maysFor(requestContext)
+      const { first, rest } = await inRequestOrder(toolScope, parts.tools)
       return {
         ...toolsOf(sessionModel(requestContext)),
+        ...first,
         [ASSISTANT_TOOL.showFile]: showFile,
         [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
         ...(automate
@@ -219,7 +242,7 @@ function assistantAgent(
             }
           : {}),
         ...handOffOf(scope, proposals, byAutomation),
-        ...(toolScope === undefined ? {} : await companyTools(toolScope, 'assistant', parts.tools)),
+        ...rest,
       }
     },
     skills: async ({ requestContext }) => [

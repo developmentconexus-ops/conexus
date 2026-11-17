@@ -64,8 +64,11 @@ export function runOf(
   }
 }
 
-/** Every call the tools make through the door, by connection; the out-of-view one never gets one. */
-export function recorded() {
+/**
+ * Every call the tools make through the door, by connection; the out-of-view one never gets one.
+ * `notebooks` are the connections whose notebook the role of who runs a saved agent may use.
+ */
+export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
   const runs: RunScope[] = []
   const reads: ConnectionId[] = []
   const notes: ConnectionId[] = []
@@ -85,6 +88,7 @@ export function recorded() {
         notes.push(connectionId)
         return {}
       },
+      notebooks: async () => notebooks,
       saveNote: async (_run, note) => {
         saved.push(note.connectionId)
         throw new Error('a note is never saved in this test')
@@ -111,13 +115,17 @@ export function recorded() {
   return { called, deps }
 }
 
-/** A saved agent's run reads the connection its version selected; every other seat, its place's. */
+/** A saved agent's run reads the connections its version selected, the Filial among them; every other seat, its place's. */
 export function chosenBy(seat: CompanyToolSeat): RunScope['choice'] {
-  return seat === 'agents' ? { kind: 'CHOSEN', connections: [SANKHYA] } : { kind: 'ANY' }
+  return seat === 'agents' ? { kind: 'CHOSEN', connections: [SANKHYA, LOJA] } : { kind: 'ANY' }
 }
 
-export async function seatOf(seat: CompanyToolSeat, run = runOf(seat, chosenBy(seat))) {
-  const { called, deps } = recorded()
+export async function seatOf(
+  seat: CompanyToolSeat,
+  run = runOf(seat, chosenBy(seat)),
+  notebooks?: readonly ConnectionId[],
+) {
+  const { called, deps } = recorded(notebooks)
   const scope = await companyToolScope(
     run,
     { access: { viewOf: async () => VIEW }, connections: async () => [MATRIZ, FILIAL] },
