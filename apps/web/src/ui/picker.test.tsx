@@ -113,6 +113,7 @@ test('a busca que chega com a lista aberta só vale na abertura seguinte', async
   fireEvent.click(trigger())
   await screen.findByRole('listbox')
   rerender(<Folders />)
+  expect(screen.getByRole('listbox', { name: 'Projeto da conversa' })).toBeTruthy()
   expect(screen.queryByRole('combobox', { name: 'Buscar Projeto' })).toBeNull()
   fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
   await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
