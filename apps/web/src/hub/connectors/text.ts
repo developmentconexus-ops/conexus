@@ -219,6 +219,11 @@ export function grantText(name: string): string {
   return `O app, o Builder e os agentes poderão usar o ${name} da empresa. O que cada um faz nele depende do papel de quem publica. Quem usa o app vê o que o app mostrar.`
 }
 
+/** The confirmation of "Tirar": what the Projeto loses with the connection, for app, Builder and agents. */
+export function revokeText(name: string): string {
+  return `O app, o Builder e os agentes deste Projeto deixam de usar o ${name} da empresa. O que dependia dele para de funcionar até alguém liberar de novo.`
+}
+
 /** A connector that serves one connection per Projeto, and another of it already read: which to take away first. */
 export function oneAtATimeText(connector: string, taken: string): string {
   return `O ${connector} lê uma ligação por Projeto. Tire a ${taken} antes.`

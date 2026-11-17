@@ -36,7 +36,7 @@
     "apps/web/src/hub/apps/app-refused.test.tsx",
     "apps/web/src/hub/copies/copy-readers.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
-    "apps/web/src/hub/projects/project-integrations-refusal.test.tsx",
+    "apps/web/src/hub/projects/project-integrations-revoke.test.tsx",
     "tests/e2e/refusals.test.ts"
   ],
   "tests": [

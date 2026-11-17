@@ -28,3 +28,10 @@ export function testText(test: { rows: number }): string {
 export function deleteWarning(slug: string): string {
   return `Apagar ${slug} tira a ferramenta e todas as versões dela da biblioteca. Não dá para desfazer.`
 }
+
+/** The agents a tool's deletion would cut, named in its confirmation: the Hub refuses it while one uses the tool. */
+export function inUseWarning(agents: readonly string[]): string {
+  const names =
+    agents.length === 1 ? agents[0] : `${agents.slice(0, -1).join(', ')} e ${agents.at(-1)}`
+  return `Usada por ${names}. Enquanto um agente a usar, ela não é apagada.`
+}
