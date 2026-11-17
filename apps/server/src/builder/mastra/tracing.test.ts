@@ -20,19 +20,21 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 
-type Row = Record<string, unknown>
-
-/** Spans of `threadId` in `mastra_span_events`, ordered by start time. */
-async function spansOf(pool: Hub['test']['mastraPool'], threadId: string): Promise<Row[]> {
-  const result = await pool.query<Row>(
-    `SELECT "spanType", "name", "threadId", "resourceId", "error", "input", "attributes", "metadataRaw" AS "metadata"
-     FROM mastra.mastra_span_events
-     WHERE "traceId" IN (SELECT "traceId" FROM mastra.mastra_span_events WHERE "threadId" = $1)
-       AND "endedAt" IS NOT NULL
-     ORDER BY "startedAt"`,
-    [threadId],
-  )
-  return result.rows
+/**
+ * The ended spans of `threadId`'s traces, as Mastra reads them back (`listTraces`, `getTrace`): the
+ * span table keeps a pending row from the span's start beside the ended one, and Mastra collapses
+ * them to one span, the ended row winning.
+ */
+async function spansOf(pool: Hub['test']['mastraPool'], threadId: string) {
+  const observability = await createMastraStorage(pool).getStore('observability')
+  assert.ok(observability, 'the observability store')
+  const { spans: roots } = await observability.listTraces({ filters: { threadId } })
+  const ids = new Set(roots.map((root) => root.traceId))
+  const traces = await Promise.all([...ids].map((traceId) => observability.getTrace({ traceId })))
+  return traces
+    .flatMap((trace) => trace?.spans ?? [])
+    .filter((span) => span.endedAt != null)
+    .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime())
 }
 
 /** Conversation id from the Hub URL's last segment. */
@@ -205,7 +207,8 @@ test('a recusa do provedor fica no rastro com o corpo', async (t) => {
 
   const spans = await spansOf(hub.test.mastraPool, idOf(url))
   const failing = spans.filter(
-    (s) => (s.spanType === 'model_step' || s.spanType === 'model_inference') && s.error !== null,
+    (s) =>
+      (s.spanType === 'model_step' || s.spanType === 'model_inference') && s.error !== undefined,
   )
 
   assert.ok(failing.length > 0, 'should have a failing model span')
@@ -227,7 +230,7 @@ test('a recusa do provedor fica no rastro com o corpo', async (t) => {
   }
 
   const sentPrompt = spans.find(
-    (s) => s.name === 'llm request processor: provider-history-compat' && s.input !== null,
+    (s) => s.name === 'llm request processor: provider-history-compat' && s.input !== undefined,
   )
   assert.ok(
     Array.isArray(Object(sentPrompt?.input).prompt),
