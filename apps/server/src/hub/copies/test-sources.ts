@@ -102,7 +102,12 @@ export function doorOf(t: TestContext) {
             return
           }
           const body = incoming.method === 'GET' ? undefined : Buffer.concat(chunks)
-          const answered = await forward(origin, incoming, body)
+          // A double closed under a call still in flight cuts it, as the network would.
+          const answered = await forward(origin, incoming, body).catch(() => undefined)
+          if (answered === undefined) {
+            outgoing.destroy()
+            return
+          }
           const headers = { ...answered.headers }
           delete headers['content-length']
           delete headers['content-encoding']

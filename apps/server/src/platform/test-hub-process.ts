@@ -6,7 +6,7 @@ import type { Readable } from 'node:stream'
 import type { LogLine } from '../../../../scripts/log-line.ts'
 import { parseLogLine } from '../../../../scripts/log-line.ts'
 import type { Lifetime } from './test-database.ts'
-import { freePort } from './test-database.ts'
+import { hubPorts } from './test-port.ts'
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
 const PASSWORD_PRELOAD = join(import.meta.dirname, 'test-password-preload.ts')
@@ -64,8 +64,9 @@ export function startHub(
   read(child.stdout)
   read(child.stderr)
   const closed = once(child, 'close').then(([code]: unknown[]) => {
+    const last = JSON.stringify(lines.at(-1) ?? raw.at(-1))
     for (const [message, waiter] of waiting) {
-      waiter.reject(new Error(`the Hub ended without ${message}`))
+      waiter.reject(new Error(`the Hub ended without ${message}; its last line: ${last}`))
     }
     return typeof code === 'number' ? code : null
   })
@@ -84,8 +85,7 @@ export function startHub(
 
 /** A Hub serving on a free port, listening; `stop` ends it as Compose does and expects exit 0. */
 export async function spawnHub(t: Lifetime, env: Record<string, string>) {
-  const port = await freePort()
-  const edgePort = await freePort()
+  const { port, edgePort } = await hubPorts()
   const hub = startHub(t, { ...env, HUB_PORT: String(port), HUB_EDGE_PORT: String(edgePort) })
   await hub.until('LISTENING')
   return {

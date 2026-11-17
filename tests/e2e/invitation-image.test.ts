@@ -11,11 +11,11 @@ import { hashPassword } from 'better-auth/crypto'
 import { request } from 'playwright-core'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
   TEST_ORIGIN,
 } from '../../apps/server/src/platform/test-database.ts'
 import { mailServer } from '../../apps/server/src/platform/test-mail.ts'
+import { hubPorts } from '../../apps/server/src/platform/test-port.ts'
 
 const IMAGE = 'conexus-hub:ci'
 const PASSWORD = 'senha-certa-1'
@@ -33,8 +33,8 @@ async function imageHub(t: TestContext) {
   })
   const database = await createTestDatabase(t)
   const mail = await mailServer(t)
-  const port = await freePort()
-  const ports = { port, edgePort: await freePort() }
+  const ports = await hubPorts()
+  const { port } = ports
   const env = { ...serveEnvironment(t, database.runtimeUrl, ports), HUB_MAIL_API_URL: mail.url }
   const summaryDir = mkdtempSync(join(tmpdir(), 'conexus-image-summary-'))
   t.after(() => rmSync(summaryDir, { recursive: true, force: true }))

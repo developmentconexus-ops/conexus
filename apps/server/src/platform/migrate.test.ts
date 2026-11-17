@@ -8,7 +8,6 @@ import { MIGRATE_RETRY_EXIT, migrate, migrateExitCode } from './migrate.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
-  freePort,
   runtimeUrlWithPassword,
   serveEnvironment,
   unreachableDatabaseUrl,
@@ -26,6 +25,7 @@ import {
   storedVerifier,
   withOptionsInUrl,
 } from './test-migrate.ts'
+import { hubPorts } from './test-port.ts'
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)
@@ -182,10 +182,7 @@ test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela'
 
 test('migrate com o banco recusando a conexão: sai 1 com DATABASE_UNAVAILABLE, não erro inesperado', async (t) => {
   const env = {
-    ...serveEnvironment(t, await unreachableDatabaseUrl('hub_runtime'), {
-      port: await freePort(),
-      edgePort: await freePort(),
-    }),
+    ...serveEnvironment(t, await unreachableDatabaseUrl('hub_runtime'), await hubPorts()),
     HUB_MIGRATION_DATABASE_URL_FILE: urlFile(t, await unreachableDatabaseUrl()),
   }
   const { lines, exited } = startHub(t, env, ['migrate'])

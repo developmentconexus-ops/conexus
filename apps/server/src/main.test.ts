@@ -14,13 +14,13 @@ import { testAppPorts } from './platform/test-app-ports.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
   silent,
   testConfig,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
 import { testMail } from './platform/test-mail.ts'
+import { hubPorts } from './platform/test-port.ts'
 
 const apps: FastifyInstance[] = []
 const dirs: string[] = []
@@ -225,8 +225,8 @@ test('desligamento', async (t) => {
 })
 
 test('segundo sinal', async (t) => {
-  const port = await freePort()
-  const ports = { port, edgePort: await freePort() }
+  const ports = await hubPorts()
+  const { port } = ports
   const { kill, exited, until, lines } = startHub(t, serveEnvironment(t, shared.runtimeUrl, ports))
   await until('LISTENING')
   const stuck = connect(port, '127.0.0.1')
