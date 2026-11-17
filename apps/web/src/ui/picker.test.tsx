@@ -91,6 +91,34 @@ test('o escolhido fora dos grupos segue na lista com o sinal de escolhido', asyn
   )
 })
 
+test('com o escolhido e um texto sem resultado, a lista diz noMatch e não mostra o escolhido', async () => {
+  render(<Folders value="ARQUIVO" chosen={ARQUIVO} groups={[{ label: undefined, items: [] }]} />)
+  const field = await open()
+  expect(options()).toEqual(['Arquivo'])
+  type(field, 'Vendas')
+  expect(await screen.findByText('Nenhum Projeto com esse nome.')).toBeTruthy()
+  expect(options()).toEqual([])
+})
+
+test('com o escolhido e um texto que acha outros, o escolhido não entra na janela', async () => {
+  render(<Folders value="ARQUIVO" chosen={ARQUIVO} />)
+  const field = await open()
+  expect(options()).toEqual(['Sem Projeto', 'Comercial', 'Financeiro', 'Arquivo'])
+  type(field, 'Com')
+  expect(options()).toEqual(['Sem Projeto', 'Comercial', 'Financeiro'])
+})
+
+test('a busca que chega com a lista aberta só vale na abertura seguinte', async () => {
+  const { rerender } = render(<Folders searching={false} />)
+  fireEvent.click(trigger())
+  await screen.findByRole('listbox')
+  rerender(<Folders />)
+  expect(screen.queryByRole('combobox', { name: 'Buscar Projeto' })).toBeNull()
+  fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+  expect(await open()).toBeTruthy()
+})
+
 test('sem item e com texto, a lista diz noMatch; sem texto, o vazio do lugar', async () => {
   render(<Folders groups={[{ label: undefined, items: [] }]} />)
   const field = await open()

@@ -131,18 +131,22 @@ function Under(props: { read: PickerRead; more: PickerMore }) {
  */
 export function Picker<V extends string>(props: PickerProps<V>): ReactElement {
   const [heldSelect, setHeldSelect] = useState(false)
-  const { groups, chosen } = props
-  // The chosen item stays in the list while the Hub's window changes (`combobox.md`, "Async search").
-  const filled = groups.filter((group) => group.items.length > 0)
-  const inside = filled.some((group) => group.items.some((item) => item.value === chosen?.value))
-  const shown =
-    chosen === undefined || inside ? filled : [...filled, { label: undefined, items: [chosen] }]
+  const filled = props.groups.filter((group) => group.items.length > 0)
   const search = heldSelect ? undefined : props.search
   return search === undefined ? (
-    <SelectPicker {...props} groups={shown} onOpen={setHeldSelect} />
+    <SelectPicker {...props} groups={withChosen(filled, props.chosen)} onOpen={setHeldSelect} />
   ) : (
-    <SearchPicker {...props} groups={shown} search={search} />
+    <SearchPicker {...props} groups={filled} search={search} />
   )
+}
+
+/** The groups with the chosen item added when none holds it, so its label outlives the Hub's window. */
+function withChosen<V extends string>(
+  groups: readonly PickerGroup<V>[],
+  chosen: PickerItem<V> | undefined,
+): readonly PickerGroup<V>[] {
+  const inside = groups.some((group) => group.items.some((item) => item.value === chosen?.value))
+  return chosen === undefined || inside ? groups : [...groups, { label: undefined, items: [chosen] }]
 }
 
 function SelectPicker<V extends string>(
@@ -190,17 +194,22 @@ function SelectPicker<V extends string>(
 
 function SearchPicker<V extends string>(props: PickerProps<V> & { search: PickerSearch }) {
   const { groups, search } = props
+  const known = useMemo(() => withChosen(groups, props.chosen), [groups, props.chosen])
   const items = useMemo(
     () =>
-      ComboboxPrimitive.createItems<PickerItem<V>, V>(groups, {
+      ComboboxPrimitive.createItems<PickerItem<V>, V>(known, {
         getValue: (item) => item.value,
         getLabel: (item) => item.label,
       }),
-    [groups],
+    [known],
   )
+  // `items` are the records known, the chosen one included; `filteredItems` is the Hub's window,
+  // so a search with no answer leaves the list empty and `ComboboxEmpty` shows `noMatch`.
+  const shown = search.text.trim() === '' ? known : groups
   return (
     <Combobox<V, false, PickerItem<V>>
       items={items}
+      filteredItems={shown}
       filter={null}
       value={props.value ?? null}
       onValueChange={(next) => {
