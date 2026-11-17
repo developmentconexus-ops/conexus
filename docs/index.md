@@ -15,8 +15,8 @@ One line per document (`check-docs`).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
-- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): Neon key.
+- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).
 - [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
@@ -56,12 +56,12 @@ One line per document (`check-docs`).
 - [0017](decisions/0017-invitation-email-cloudflare.md) invitation e-mail.
 - [0018](decisions/0018-apps-on-workers-for-platforms.md) Workers for Platforms.
 - [0019](decisions/0019-handler-contract.md) handler contract.
-- [0020](decisions/0020-one-statement-one-transaction.md) one statement, one transaction.
-- [0021](decisions/0021-one-neon-project-per-company.md) project per company.
+- [0020](decisions/0020-one-statement-one-transaction.md) one statement.
+- [0021](decisions/0021-one-neon-project-per-company.md) per company.
 - [0022](decisions/0022-app-logins-as-dispatcher-secrets.md) app logins.
 - [0023](decisions/0023-second-domain-for-apps.md) second domain.
 - [0024](decisions/0024-app-address-one-host-per-app.md) host per app.
-- [0025](decisions/0025-published-apps-stop-with-server.md) apps stop with server.
+- [0025](decisions/0025-published-apps-stop-with-server.md) apps stop.
 - [0026](decisions/0026-release-and-publish-one-act.md) release and publish.
 - [0027](decisions/0027-mastra-builder-engine.md) Mastra engine.
 - [0028](decisions/0028-e2b-build-machine.md) E2B.
@@ -103,4 +103,5 @@ One line per document (`check-docs`).
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
+- [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): agent evals.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
