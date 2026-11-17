@@ -32,10 +32,11 @@ function repository(): string {
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   for (let round = 0; round < 6; round++) {
-    commit(dir, ['agents/a.ts', 'tools/t.ts', 'agents/a.test.ts'], round)
+    commit(dir, ['agents/a.ts', 'tools/t.ts', 'agents/a.test.ts', 'agents/test-a.ts'], round)
   }
   for (let round = 6; round < 12; round++) commit(dir, ['agents/a.ts'], round)
-  for (let round = 12; round < 18; round++) commit(dir, ['other/o.ts'], round)
+  for (let round = 12; round < 18; round++) commit(dir, ['other/o.ts', 'misc/m.ts'], round)
+  for (let round = 18; round < 24; round++) commit(dir, ['same/x.ts', 'same/y.ts'], round)
   return dir
 }
 
@@ -53,6 +54,8 @@ test('lista a pasta e o arquivo que mudam juntos e ignora o teste', () => {
   assert.match(out, /100%\s+6 commits\s+agents\s+\+\s+tools/)
   assert.match(out, /100%\s+6 commits\s+agents\/a\.ts\s+\+\s+tools\/t\.ts/)
   assert.doesNotMatch(out, /a\.test\.ts/)
+  assert.doesNotMatch(out, /test-a\.ts/)
+  assert.doesNotMatch(out, /same\/x\.ts\s+\+\s+same\/y\.ts/)
   assert.doesNotMatch(out, /\+\s+other|other\s+\+/)
 })
 
@@ -81,7 +84,19 @@ test('o diff mostra só os pares que tocam um arquivo mudado', () => {
   const { status, out } = run(dir, '--base', 'main')
   assert.equal(status, 0)
   assert.match(out, /agents\s+\+\s+tools/)
-  assert.doesNotMatch(out, /other/)
+  assert.doesNotMatch(out, /other|misc|same/)
+})
+
+test('a pasta e a sua subpasta contam como uma área só', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-cochange-'))
+  dirs.push(dir)
+  git(dir, 'init', '-q', '-b', 'main')
+  for (let round = 0; round < 6; round++) {
+    commit(dir, ['pkg/one/a.ts', 'pkg/one/deep/b.ts', 'pkg/two/c.ts'], round)
+  }
+  const { out } = run(dir, '--folders', 'pkg')
+  assert.match(out, /100%\s+6 commits\s+pkg\/one\s+\+\s+pkg\/two/)
+  assert.doesNotMatch(out, /pkg\/one\s+\+\s+pkg\/one\/deep/)
 })
 
 test('sem pastas nem base, recusa', () => {

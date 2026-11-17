@@ -7,7 +7,9 @@ import { runCommand } from './command.ts'
 const MIN_COMMITS = 5
 const MIN_PERCENT = 50
 const MAX_FILES = 25
-const TEST_FILE = /(?:\.test\.|\.spec\.|(?:^|\/)(?:tests?|__tests__)\/)/
+const TEST_FILE =
+  /(?:\.test\.|\.spec\.|(?:^|\/)(?:tests?|__tests__)\/|(?:^|\/)test-[^/]*\.tsx?$)/
+const PACKAGE_ROOT = /^(?:apps|packages)\/[^/]+(?:\/src)?(?=\/)/
 
 type Counts = { each: Map<string, number>; pairs: Map<string, number> }
 
@@ -24,6 +26,7 @@ function integerOption(name: string, fallback: number): number {
 
 const root = resolve(option('--root') ?? '.')
 const folders = option('--folders')?.split(',').filter(Boolean)
+const scope = folders ?? []
 const base = option('--base')
 const head = option('--head') ?? 'HEAD'
 const since = option('--since')
@@ -47,11 +50,19 @@ function folderOf(file: string): string {
   return slash === -1 ? '.' : file.slice(0, slash)
 }
 
+function areaOf(file: string): string {
+  const root =
+    scope.map((folder) => folder.replace(/\/$/, '')).find((folder) => file.startsWith(`${folder}/`)) ??
+    file.match(PACKAGE_ROOT)?.[0]
+  if (root === undefined) return folderOf(file)
+  const rest = file.slice(root.length + 1).split('/')
+  return rest.length > 1 ? `${root}/${rest[0]}` : root
+}
+
 const changed =
   base === undefined
     ? undefined
     : new Set(git('diff', '--name-only', `${base}...${head}`).split('\n').filter(Boolean))
-const scope = folders ?? []
 const history = base ?? head
 
 function commitsOf(): string[][] {
@@ -115,10 +126,10 @@ const commits = commitsOf()
 function touches(file: string): boolean {
   return changed === undefined || changed.has(file)
 }
-const byFolder = rowsOf(count(commits, folderOf, Number.POSITIVE_INFINITY), (first, second) =>
+const byFolder = rowsOf(count(commits, areaOf, Number.POSITIVE_INFINITY), (first, second) =>
   changed === undefined
     ? true
-    : [...changed].some((f) => folderOf(f) === first || folderOf(f) === second),
+    : [...changed].some((f) => areaOf(f) === first || areaOf(f) === second),
 )
 const byFile = rowsOf(
   count(commits, (file) => file, maxFiles),
@@ -131,7 +142,7 @@ const byFile = rowsOf(
 console.log(
   `cochange: ${commits.length} commits without tests in ${scope.length === 0 ? `the history up to ${history}` : scope.join(', ')}; a pair needs ${minCommits} commits together and ${minPercent}% of the commits of the one that changes less`,
 )
-print('Folders that change together', byFolder)
+print('Areas that change together (the first folder below each given folder)', byFolder)
 print(
   `Files of different folders that change together (commits of up to ${maxFiles} files)`,
   byFile,
