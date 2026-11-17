@@ -11,12 +11,12 @@ e as capturas das plataformas de referência ficam fora do repositório (deliver
 referência diz a situação e o que elas fazem sem nomeá-las.
 
 Cada linha citada foi lida no `main` em `f27128fa` (depois dos PRs 1162, 1173 e 1176), com `@mastra/core` 1.83.0, `better-auth` 1.7.8 e
-`@neondatabase/serverless` 1.2.0. A medida: cerca de 2.400 linhas alteradas em 13 unidades, abaixo das
+`@neondatabase/serverless` 1.2.0. A medida: cerca de 2.360 linhas alteradas em 12 unidades, abaixo das
 4.000 da delivery L2; o realinhamento estimava 2.900 com a H2a.
 
 Este cartão substitui, da spec do repositório, a parte 4 (requisitos 6 e 7, `C6` e o grupo 9 de
 `04-governanca-minima/tasks.md`) e a parte 3, grupos 5 e 6 (`03-leitura-para-analise/tasks.md:631-720`);
-e, de fora dela, o item (b) da spec 3, requisitos 4 a 6 (Seguir, Avisos e o aviso na primeira falha),
+e, de fora dela, o item (b) da spec 3, requisitos 4 a 6 (Seguir, Avisos e o aviso de falha),
 cujo texto as unidades U11 a U13 trazem inteiro. O requisito 7.2 da parte 4 ("não encontrado" a quem
 não é Dono nem Administrador) já não vale: cada pessoa vê as próprias leituras (2026-11-15, "3. Sim").
 O fechamento emenda esses trechos (delivery L19).
@@ -37,8 +37,8 @@ Entram também quatro coisas que você já escolheu:
   quem conversa lê. A tabela liberada ao Projeto que o seu papel não lê não aparece para você ali.
 - **4(b).** O Hub recusa a consulta de um agente ao catálogo interno do banco. "Que tabelas existem?"
   pelo SQL deixa de mostrar o nome de uma tabela que o papel não lê, e a recusa deixa uma linha.
-- **Seguir uma cópia, a seção Avisos e o aviso na primeira falha**, que a etapa da origem deixou para
-  esta.
+- **Seguir uma cópia, a seção Avisos e o aviso de falha**, que a etapa da origem deixou para esta.
+  Toda falha da cópia avisa quem a segue (a emenda de 2026-11-17, abaixo).
 
 E uma prova roda na CI de cada pull request da trilha. Ela mostra que o Assistente, o Builder e o
 agente salvo leem e escrevem pelo mesmo contrato, contra o banco de verdade, na Empresa e num Projeto,
@@ -73,21 +73,19 @@ clientes, um Projeto que recebeu as duas, e uma segunda pessoa no papel Membro q
 3. Ainda como ele, converse com o Assistente dentro do Projeto e pergunte pelos clientes. Ele diz que
    não achou: o Projeto recebeu a tabela, mas o papel dele não a lê.
 4. Como dono, abra o Registro. Aparecem as leituras de todos. Filtre por essa pessoa, abra uma linha e
-   veja a consulta, sem nenhuma linha do resultado. Toque em **Abrir a conversa**, volte e toque em
+   veja a consulta, sem nenhuma linha do resultado. Toque em **Abrir a conversa**, volte, escolha um período de até 31 dias e toque em
    **Exportar**.
 5. Abra um app publicado do Projeto que lê a tabela de vendas. No Registro aparece uma linha `APP`,
    com o seu nome e o Projeto.
 6. Na página de `sankhya_vendas`, toque em **Seguir**. Em Configurações, **Avisos**, ponha um e-mail
-   na lista. O firstmate faz a cópia falhar: chega o sino e o e-mail. Na segunda falha seguida, não
-   chega nada.
+   na lista. O firstmate faz a cópia falhar: chega o sino e o e-mail. Se ela falhar de novo, chega
+   de novo.
 7. Diga o que viu e aprove os textos das telas.
 
 **O que você faz, e quando.** Antes: nada; o firstmate convida a segunda pessoa e prepara o Projeto e
 a falha da cópia. No começo: aprova esta página (as decisões abaixo já têm a sua resposta). Antes da U9 e da U13:
 julga o protótipo da tela do Registro e o da seção Avisos (estão pendentes: a U9 e a U13 não começam
-sem eles). No meio: a palavra de merge do pull request do G2, que muda uma permissão de funções no
-banco da empresa, e a autorização de uma chamada a um ramo de teste do banco da empresa para provar
-essa mudança (sem ela, o G2 sai e fica a recusa do Hub, U3). No fim: faz o roteiro, diz o que viu e
+sem eles). No fim: faz o roteiro, diz o que viu e
 aprova os textos das telas, que cada pull request lista.
 
 **Fica de fora.**
@@ -114,6 +112,18 @@ aprova os textos das telas, que cada pull request lista.
   passa a gravar são só um limite de cima dela); a **1123** (o gatilho é a próxima etapa que criar ou
   mudar logins, e esta só lê pelo login do papel, que já existe). A **1147** e a **1148** são de Agentes
   e Apps.
+
+**A emenda de 2026-11-17 ("Tudo A").** Depois da reanálise crítica da etapa, você respondeu "Tudo A"
+às quatro perguntas dela. O que mudou nesta página:
+- **A U4 e o G2 saíram.** Revogar o `EXECUTE` de `query_to_xml` e das irmãs não tem referência em
+  nenhuma plataforma que olhamos, e o dono do banco da empresa não consegue revogá-lo (medido). Saíram
+  também a palavra de merge do G2 e a autorização do ramo de teste.
+- **A guarda do plano (U3, já no `main`) fica como está e não cresce.** É defesa em profundidade, da
+  mesma forma que a ferramenta interna aberta de consulta (lista de funções e de tabelas de sistema proibidas). Ela protege só o
+  nome das tabelas; o conteúdo, quem barra é o login do papel.
+- **Toda falha da cópia avisa quem a segue**, como a plataforma de ingestão e a de operações, no lugar de "só a primeira falha
+  seguida" (U12). Uma cópia diária que falha todo dia manda um aviso por dia.
+- **O Exportar do Registro leva no máximo 31 dias por vez**, como a plataforma de ingestão (U9).
 
 **As decisões suas nesta etapa.** Três, respondidas por você no quadro em 2026-11-17, as três com a
 recomendação: "F1. O Construtor num Projeto lê com o papel de quem conversa: a", "F2. Quem segue uma
@@ -184,15 +194,14 @@ uma empresa passar de um milhão de linhas". Corpo:
 | G1 O Registro grava (um PR) | U1 O gravador e o contrato | `recordReadOf`, o único que grava em `data.data_read`; o contrato grava cada leitura de tabela e consulta e cada recusa; sem linha, sem leitura; o agente da linha pelo consumidor do `Principal`, com `CONSTRUTOR` novo; `DataContext` com a conversa de `RunScope.conversation`; os três `data` da fábrica passam o contexto | `apps/server/src/hub/data/`, `apps/server/src/main.ts`, `apps/server/migrations/`, `apps/server/src/builder/controller-kit/` (só `run.ts`), `apps/server/src/builder/assistant/` (só `assistant.ts`), `apps/server/src/builder/conversation/` (só `builder.ts`), `apps/server/src/builder/agents/` (`company.ts`, `agent.ts`), `.dependency-cruiser.cjs`, `scripts/rerun-never.json` | data (D15, D18, D22); testing (T5, T27); security S40 | o `main` em `f27128fa` |
 | G1 | U2 A leitura ao vivo e o esquema do app | `readThrough` grava `LIVE` pela porta atrasada `recordRead`, pulando a cópia; a leitura do esquema do app pelo Builder e pelo agente grava `QUERY` | `apps/server/src/hub/connectors/` (`read.ts`, `rows.ts`, `public.ts`), `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`), `apps/server/src/builder/app-data/` (só `tools.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D22); testing (T5, T27) | U1 |
 | G1 | U3 O plano lê só `sync` | A consulta do agente que lê fora de `sync` (catálogo do sistema, `information_schema`) ou chama uma função da lista recusada volta `NOT_IN_CATALOG` sem linha, e deixa linha no Registro (a sua 4(b)) | `apps/server/src/hub/data/` (`query.ts`, `plan.ts` novo), `scripts/rerun-never.json` | data (D20); testing (T5, T13, T27); security S10 | U1 |
-| G2 A permissão de funções (um PR próprio; palavra de merge) | U4 `EXECUTE` das funções que leem por texto | `ensureSync` tira de `PUBLIC` o `EXECUTE` de `query_to_xml` e das irmãs no banco da empresa; a prova num ramo de teste autorizado | `apps/server/src/platform/` (`copy-sql.ts`), `scripts/rerun-never.json` | data (D10, D13); testing (T13); security S41 | U3 mesclado; a autorização do fundador para o ramo de teste |
 | G3 O lugar e o contrato inteiro (um PR) | U5 A conversa num Projeto com o papel | No lugar Projeto, o catálogo é o que o Projeto recebeu cruzado com o que o papel lê; a consulta e a página de tabela leem pelo login do papel (a sua C(b), com a F1 (a)) | `apps/server/src/hub/copies/` (`access-source.ts`), `apps/server/src/hub/data/` (`query.ts`, `rows.ts`), `scripts/rerun-never.json` | data (D22); testing (T5, T27); security S10 | G1 mesclado |
 | G3 | U6 `live` e `funnel` ligados (a H2a) | `liveOf` e `funnelOf` sobre a porta do Assistente de `hub/connectors`; `TurnBinding` com quem aprovou e o falante `AGENT` (fecha a 1174); `NOT_GRANTED` só sem turno | `apps/server/src/hub/data/` (`live.ts`, `funnel.ts` novos, `public.ts`, `deps.ts`), `apps/server/src/hub/connectors/` (`assistant-port.ts`, `public.ts`), `apps/server/src/main.ts` | data (D22); testing (T5, T26, T27) | U5 |
 | G3 | U7 A prova contra o banco de verdade | `runDataConformance` com `make(t)` assíncrono e o contrato vinculado; as 22 leis e duas novas contra o mundo real na Empresa e num Projeto; as leis (c), (d) e (f) da porta; a lista de migração que não cresce | `packages/hub-api/src/` (`company-data-conformance.ts`, `company-data-world.ts`, `company-data.test.ts`), `apps/server/src/hub/data/` (`conformance.test.ts` novo, `test-world.ts` novo), `apps/server/src/hub/access/` (só `conformance.test.ts`), `scripts/rules-doors.test.ts`, `scripts/rerun-never.json` | testing (T4, T5, T27); code C3 a C8; L27 (muda `packages/hub-api`) | U6 |
 | G4 O Registro na tela (um PR) | U8 As rotas do Registro | `listDataReads` e `exportDataReads`, recortadas por pessoa (Dono e Administrador tudo); a página por chave (hora, id), da mais nova; os índices | `packages/hub-api/src/` (`data-reads.ts` novo, `index.ts`, `failures.ts` se preciso), `apps/server/src/hub/data/` (`reads.ts`, `routes.ts` novos, `public.ts`, `tables.ts`), `apps/server/migrations/`, `apps/server/src/main.ts`, `apps/web/sweep-replies.ts` | data (D15, D19); testing (T5, T6, T10); security S8, S10; L27 | G1 mesclado |
-| G4 | U9 A página Registro de dados (`p4-04` a `p4-06`) | Configurações, **Registro de dados**: 50 por página, filtros no endereço, a linha aberta, **Abrir a conversa**, **Copiar a consulta**, **Exportar** em CSV; a versão do membro | `apps/web/src/routes/_app/companies/$companyId_/settings/` (`data-reads.tsx` novo), `apps/web/src/hub/data/` (novo), `apps/web/sweep-data-reads-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U8; o protótipo julgado |
+| G4 | U9 A página Registro de dados (`p4-04` a `p4-06`) | Configurações, **Registro de dados**: 50 por página, filtros no endereço, a linha aberta, **Abrir a conversa**, **Copiar a consulta**, **Exportar** em CSV de até 31 dias por vez; a versão do membro | `apps/web/src/routes/_app/companies/$companyId_/settings/` (`data-reads.tsx` novo), `apps/web/src/hub/data/` (novo), `apps/web/sweep-data-reads-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U8; o protótipo julgado |
 | G5 O app no Registro (um PR) | U10 A borda avisa o Hub | Depois de cada `db.query` de um app, a borda manda ao Hub a consulta, a contagem e o tempo, com um id dela; o Hub grava `APP` sem repetir; a consulta recusada também | `apps/edge/src/` (`db.ts`, `dispatcher.ts`, `dispatch.ts`, `hub.ts`), `packages/hub-api/src/` (`apps.ts`), `apps/server/src/hub/apps/` (`routes.ts`, `read-notice.ts` novo, `public.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | security (S8, S40); testing (T5, T13, T27); L27 | G1 mesclado |
 | G6 Seguir e Avisos (um PR) | U11 Seguir e a lista da empresa | O contrato `copy-alerts.ts` (seguir, deixar de seguir, a lista, pôr e tirar e-mail); a ação `manageCopyAlerts`; `CopySummary.following`; quem segue pela porta (F2 (a)) | `packages/hub-api/src/` (`copy-alerts.ts` novo, `copies.ts`, `roles.ts`, `failures.ts`, `index.ts`), `apps/server/src/hub/notifications/` (`copy-alerts.ts` novo, `routes.ts`, `public.ts`), `apps/server/src/hub/identity/` (`admission.ts`, `companies.ts`), `apps/server/src/hub/copies/` (`list.ts`), `apps/web/src/platform/test-may.ts`, `apps/web/sweep-replies.ts` | security (S8, S10); testing (T5, T10); L27 | o `main` |
-| G6 | U12 O aviso na primeira falha | Em `ended`, a primeira falha seguida avisa no sino e por e-mail quem segue e ainda lê a tabela, e cada e-mail da lista; a segunda não; o corte e a regra de `system_code` (1135) | `apps/server/src/hub/copies/` (`run.ts`, `store.ts`, `tables.ts`), `apps/server/src/hub/notifications/` (`notifications.ts`, `copy-email.tsx` novo, `mail.ts`, `notification-render.mjs` gerado), `packages/hub-api/src/` (`notifications.ts`), `apps/server/migrations/`, `apps/server/package.json` (o script `build`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D6, D15, D22); security S40; testing (T5, T10, T27) | U11 |
+| G6 | U12 O aviso de falha | Em `ended`, toda falha avisa no sino e por e-mail quem segue e ainda lê a tabela, e cada e-mail da lista; o corte e a regra de `system_code` (1135) | `apps/server/src/hub/copies/` (`run.ts`, `store.ts`, `tables.ts`), `apps/server/src/hub/notifications/` (`notifications.ts`, `copy-email.tsx` novo, `mail.ts`, `notification-render.mjs` gerado), `packages/hub-api/src/` (`notifications.ts`), `apps/server/migrations/`, `apps/server/package.json` (o script `build`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D6, D15, D22); security S40; testing (T5, T10, T27) | U11 |
 | G6 | U13 As telas de Seguir e Avisos (`v06`, `b3` a `b5`) | **Seguir** na página da tabela; a seção **Avisos**; o aviso `COPY_FAILED` no sino | `apps/web/src/hub/copies/` (`copy-detail.tsx`, `text.ts`, `queries.ts`), `apps/web/src/hub/notifications/` (`bell.tsx`, `copy-alerts.tsx` novo), `apps/web/src/routes/_app/companies/$companyId_/settings/` (`alerts.tsx` novo), `apps/web/sweep-alerts-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U11, U12; o protótipo julgado |
 
 Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
@@ -201,8 +210,7 @@ Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
   `rows.ts`, `public.ts` e `deps.ts`; G4 cria `reads.ts` e `routes.ts` e muda `public.ts` só na linha da
   porta das rotas, por isso G4 rebaseia sobre G3 se G3 mesclar antes). G5 parte de G1 mesclado.
 - **Ao lado, desde o começo.** G6 não toca `hub/data` nem a borda e corre do `main`.
-- **O G2** só mescla com a sua palavra de merge (L6; data D11 por analogia: muda uma permissão no banco
-  da empresa) e só depois da prova no ramo de teste que você autorizar. O G1, o G3 e o G5 não criam nem
+- **Nenhum grupo cria nem tira permissão no banco da empresa** (o G2 saiu na emenda de 2026-11-17). O G1, o G3 e o G5 não criam nem
   tiram permissão: o login do Hub já segura `SELECT` e `INSERT` em `data.data_read`
   (`apps/server/database-grants.sql:437`), e o C(b) lê pelo login do papel que já existe.
 - **O que toca a outra trilha.** A U1 muda uma linha em cada um dos três `data` que os consumidores dão
@@ -224,34 +232,34 @@ Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
 - U2: ~90 (`read.ts` ≈30; `rows.ts` 3; `connectors/public.ts` 4; `builder-data.ts` ≈15; `apps/public.ts`
   ≈15; `app-data/tools.ts` ≈8; `main.ts` 4).
 - U3: ~90 (`plan.ts` novo ≈60; `query.ts` ≈30).
-- U4: ~30 (`copy-sql.ts` ≈30, o bloco `DO`).
 - U5: ~110 (`access-source.ts` ≈15; `query.ts` −45 e +20, sai `projectRead`; `rows.ts` ≈15; `deps.ts` 2;
   ajustes de tipo ≈10).
 - U6: ~220 (`live.ts` novo ≈60; `funnel.ts` novo ≈70; `public.ts` ≈30; `deps.ts` 4;
   `assistant-port.ts` ≈30, a conversa na leitura; `connectors/public.ts` 4; `main.ts` 4; `read.ts` ≈10).
 - U7: ~110 (`company-data-conformance.ts` ≈60, o `make` assíncrono, o contrato vinculado e as duas leis;
   `company-data-world.ts` ≈20; `.dependency-cruiser.cjs` 0; o resto é teste, ≈400 linhas que não contam).
-- U8: ~240 (`data-reads.ts` novo ≈70; `reads.ts` novo ≈110; `routes.ts` novo ≈30; `tables.ts` ≈4; a
+- U8: ~250 (`data-reads.ts` novo ≈75; `reads.ts` novo ≈115; `routes.ts` novo ≈30; `tables.ts` ≈4; a
   migração ≈6; `public.ts` 4; `main.ts` 4; `index.ts` 2; `sweep-replies.ts` ≈10).
-- U9: ~330 (`data-reads.tsx` da rota ≈40; `hub/data/data-reads.tsx` ≈150; `read-detail.tsx` ≈70;
-  `queries.ts` ≈20; `csv.ts` ≈30; `text.ts` ≈20).
+- U9: ~345 (`data-reads.tsx` da rota ≈40; `hub/data/data-reads.tsx` ≈150; `read-detail.tsx` ≈70;
+  `queries.ts` ≈20; `csv.ts` ≈30; `text.ts` ≈20; o período do Exportar ≈15).
 - U10: ~200 (`db.ts` ≈45; `dispatcher.ts` ≈15; `dispatch.ts` ≈10; `hub.ts` ≈20; `hub-api/apps.ts` ≈25;
   `read-notice.ts` novo ≈60; `routes.ts` ≈10; `public.ts` 5; `main.ts` 4; `wrangler` nenhuma).
 - U11: ~280 (`copy-alerts.ts` do contrato ≈70; `copy-alerts.ts` do servidor ≈130; `routes.ts` ≈15;
   `admission.ts` 2; `companies.ts` 2; `roles.ts` 2; `failures.ts` ≈12; `copies.ts` 2; `list.ts` ≈15;
   `test-may.ts` 1; `sweep-replies.ts` ≈20).
-- U12: ~260 (`run.ts` ≈40; `store.ts` 3; `notifications.ts` ≈110; `copy-email.tsx` novo ≈50; `mail.ts`
+- U12: ~235 (`run.ts` ≈15; `store.ts` 3; `notifications.ts` ≈110; `copy-email.tsx` novo ≈50; `mail.ts`
   ≈20; `hub-api/notifications.ts` ≈10; `tables.ts` de copies ≈4 e a migração do check ≈4; o script
   `build` 2; `main.ts` 3; `source-pass.ts` ou `run.ts`, o corte de `system_code`, ≈5).
 - U13: ~260 (`copy-detail.tsx` ≈20; `text.ts` ≈20; `queries.ts` ≈25; `bell.tsx` ≈15; `copy-alerts.tsx`
   novo ≈140; `alerts.tsx` da rota ≈30; `screens.md` 2 linhas).
 
-**Total da etapa:** cerca de 2.390 linhas alteradas.
+**Total da etapa:** cerca de 2.360 linhas alteradas.
 
 ## Os critérios de aceite
 
-Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70 a 99, G5 de 100 a
-109, G6 de 110 a 149. Os números que sobram ficam livres para a leitura do cartão.
+Cada grupo tem a sua faixa: G1 de 1 a 29, G3 de 40 a 69, G4 de 70 a 99, G5 de 100 a
+109, G6 de 110 a 149. A faixa de 30 a 39, que era do G2, ficou vazia na emenda de 2026-11-17; os
+números que sobram ficam livres para a leitura do cartão.
 
 ### G1
 
@@ -276,14 +284,6 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 17 | U3 | `select query_to_xml('select * from sync.sankhya_clientes', true, false, '')`, `select to_regclass('sync.sankhya_clientes')` e `select 'sync.sankhya_clientes'::regclass` voltam `NOT_IN_CATALOG`, sem linha | `plan.test.ts`, "a função e o tipo que leem por nome são recusados" | must |
 | 18 | U3 | As consultas de hoje continuam: `select date_trunc('day', ...), sum(...) ... group by 1` e `select count(*) from sync.sankhya_vendas` passam | `plan.test.ts`, "a consulta comum passa" | must |
 | 19 | U3 | Uma `view` que alguém crie fora de `sync` não abre caminho: o plano que lê qualquer esquema fora de `sync` é recusado | `plan.test.ts`, "o plano fora de sync é recusado" | must |
-
-### G2
-
-| # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
-| --- | --- | --- | --- | --- |
-| 30 | U4 | Depois de `ensureSync`, o login de um papel recebe `42501` em `select query_to_xml('select 1', true, false, '')`, `cursor_to_xml`, `table_to_xml`, `schema_to_xml` e `database_to_xml`; `conexus_sync` continua com tudo o que precisa | `apps/server/src/platform/copy-functions.test.ts`, "o login de papel não executa as funções que leem por texto" | must |
-| 31 | U4 | `ensureSync` duas vezes deixa `pg_proc.proacl` dessas funções como na primeira | `copy-functions.test.ts`, "tirar duas vezes deixa igual" | must |
-| 32 | U4 | No ramo de teste autorizado do banco da empresa, a mesma instrução passa sem `42501` do dono das funções; o resultado vai no corpo do pull request, com o comando | a prova da plataforma (L28), sem teste no repositório | must |
 
 ### G3
 
@@ -316,14 +316,15 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 71 | U8 | Como Bruno, a mesma rota devolve só as linhas dele; `person=<outra pessoa>` devolve a página vazia. Recusa: nenhuma linha de outra pessoa sai, nem na exportação | `reads.test.ts`, "cada pessoa lê só as suas" | must |
 | 72 | U8 | Os filtros `person`, `agent`, `table` e `outcome` (`OK`, `REFUSED`) recortam; `table` acha a linha `QUERY` que leu a tabela entre outras | `reads.test.ts`, "os filtros recortam" | must |
 | 73 | U8 | Cada linha leva o nome da pessoa e o do Projeto, lidos num lote por página (no máximo uma leitura de nomes por página) | `reads.test.ts`, "os nomes vêm num lote" | should |
-| 74 | U8 | `GET .../data-reads/export` devolve até 5.000 linhas do filtro, com `complete` falso quando há mais | `reads.test.ts`, "a exportação para em 5.000" | must |
+| 74 | U8 | `GET .../data-reads/export` devolve até 5.000 linhas do filtro no período pedido, com `complete` falso quando há mais | `reads.test.ts`, "a exportação para em 5.000" | must |
 | 75 | U8 | Quem não é membro da empresa recebe 404 `NOT_FOUND` nas duas rotas (security S10); uma página com `page` malformado recebe 400 | `reads.test.ts`, "fora da empresa, não encontrado" | must |
 | 76 | U8 | Nenhuma linha da resposta tem um campo de valor lido: o esquema `DataReadEntry` não tem campo de linhas, e a resposta passa nele | `reads.test.ts`, "a resposta passa no esquema sem linhas" | must |
 | 77 | U9 | O índice de Configurações mostra **Registro de dados** para todo membro; o Dono vê o filtro de pessoa e o Membro não | `apps/web/src/hub/data/data-reads.test.tsx`, "o item e o filtro de pessoa" | must |
 | 78 | U9 | A lista mostra quando, quem, qual agente, o que foi lido, o resultado e quantas linhas; o filtro escolhido fica no endereço e volta ao recarregar | `data-reads.test.tsx`, "a lista e o filtro no endereço" | must |
 | 79 | U9 | A linha aberta mostra quem, o agente, a conversa, as tabelas ou a operação, a consulta, o resultado, as linhas e o tempo, com **Abrir a conversa** quando a conversa é conhecida e **Copiar a consulta** quando há consulta; nada mais | `data-reads.test.tsx`, "a linha aberta" | must |
-| 80 | U9 | **Exportar** baixa um CSV com as linhas do filtro; uma consulta que começa com `=`, `+`, `-` ou `@` sai com um apóstrofo na frente | `apps/web/src/hub/data/csv.test.ts`, "o CSV desarma fórmula" | must |
+| 80 | U9 | **Exportar** pede o período (até 31 dias; a tela não deixa escolher mais) e baixa um CSV com as linhas do filtro nele; uma consulta que começa com `=`, `+`, `-` ou `@` sai com um apóstrofo na frente | `apps/web/src/hub/data/csv.test.ts`, "o CSV desarma fórmula" | must |
 | 81 | U9 | Vazio: "Nenhuma leitura ainda." e o que vai aparecer ali; carregando: esqueletos; erro: "Não deu para ler o registro agora." com **Tentar de novo** | `data-reads.test.tsx`, os três estados, e `apps/web/sweep-data-reads-states.ts` | must |
+| 82 | U8 | A exportação pede `from` e `to` e leva no máximo 31 dias: de 31 dias, passa; de 32 dias, `to` antes de `from` ou sem um dos dois, volta 400 `REQUEST_MALFORMED` sem nenhuma linha (a plataforma de ingestão limita a 31 dias) | `reads.test.ts`, "a exportação leva no máximo 31 dias" | must |
 
 ### G5
 
@@ -346,8 +347,8 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 113 | U11 | Pôr na lista: o e-mail repetido (qualquer caixa) dá 409 `ALERT_RECIPIENT_TAKEN`; o 21º dá 409 `ALERT_RECIPIENTS_FULL`; tirar um que não existe dá 404. Recusa: o Membro recebe 404 em pôr e tirar | `copy-alerts.test.ts`, "a lista da empresa" | must |
 | 114 | U11 | `listCopies` traz `following` por cópia | `apps/server/src/hub/copies/list.test.ts`, "a cópia diz se a pessoa a segue" | must |
 | 115 | U11 | Quem sai da empresa ou a cópia apagada leva o seguir junto | `copy-alerts.test.ts`, "o seguir sai com a pessoa e com a cópia" | must |
-| 116 | U12 | A rodada que termina em `ERROR` depois de uma que não terminou em `ERROR` cria uma notificação `COPY_FAILED` para cada pessoa que segue e ainda lê a tabela, e manda um e-mail a cada uma e a cada endereço da lista, um por endereço | `apps/server/src/hub/copies/copy-failed.test.ts`, "a primeira falha avisa no sino e por e-mail" | must |
-| 117 | U12 | A segunda falha seguida não avisa; `ERROR`, `COMPLETE`, `ERROR` avisa de novo; `INTERRUPTED` e a parada pedida não contam como rodada anterior | `copy-failed.test.ts`, "a segunda falha não avisa" e "depois de voltar, avisa de novo" | must |
+| 116 | U12 | A rodada que termina em `ERROR` cria uma notificação `COPY_FAILED` para cada pessoa que segue e ainda lê a tabela, e manda um e-mail a cada uma e a cada endereço da lista, um por endereço | `apps/server/src/hub/copies/copy-failed.test.ts`, "toda falha avisa no sino e por e-mail" | must |
+| 117 | U12 | Duas falhas seguidas avisam duas vezes, uma notificação por pessoa e rodada; `ERROR`, `COMPLETE`, `ERROR` também; `INTERRUPTED` e a parada pedida não avisam | `copy-failed.test.ts`, "a segunda falha também avisa" e "a rodada interrompida não avisa" | must |
 | 118 | U12 | O texto é "A cópia {nome} parou. {frase} {o que fazer}", com o link da aba Rodadas; o e-mail não leva a mensagem do sistema nem número da empresa | `copy-failed.test.ts`, "o texto do aviso" | must |
 | 119 | U12 | E-mail recusado pelo provedor: a notificação e a rodada ficam, e o log tem `COPY_MAIL_FAILED` sem o endereço; notificação que não grava: a rodada termina como terminou e o log registra | `copy-failed.test.ts`, "o e-mail que falha não muda a rodada" | must |
 | 120 | U12 | Quem segue e perdeu a leitura da tabela não é avisado | `copy-failed.test.ts`, "quem não lê mais a tabela não é avisado" | must |
@@ -358,7 +359,7 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 
 ## A matriz de estados
 
-### G1, G2, G3 e G5
+### G1, G3 e G5
 
 Não criam tela. A recusa do catálogo do sistema chega à conversa pela linha que a ferramenta já mostra
 para `NOT_IN_CATALOG` (de hoje).
@@ -440,14 +441,13 @@ terceira linha acima (R.15).
 | O pior caso de ordem: a linha gravou e a resposta se perdeu | — | uma linha a mais, nunca uma a menos | — | nada novo | 5 |
 | `readThrough` com a gravação (U2) | como hoje, pela fila da conexão | o sistema respondeu e a linha não gravou: `UNREACHABLE`, o valor não volta | o sistema calado: a linha grava o resultado `UNREACHABLE` | `CONNECTOR_CALLED` de hoje; `DATA_READ_UNRECORDED` | 11, 13, 14 |
 | A consulta recusada pelo plano (U3) | independentes | nada roda depois do `EXPLAIN` além da consulta que já rodou no mesmo pedido; as linhas não saem | o banco da empresa calado: `TABLE_UNAVAILABLE`, como hoje | `DATA_READ_REFUSED` (info, `companyId`, `personId`, sem a consulta) | 16, 17, 19 |
-| `ensureSync` com o `REVOKE` (U4) | `ROLES_LOCK`, como hoje | uma transação: o esquema e o `REVOKE` entram juntos ou não entram | o dono das funções recusa (`42501`): a U4 para (Parar se) | o de hoje | 30, 31, 32 |
 | `funnelOf` → `writeThrough` (U6; o registro de escrita é o de hoje) | `register` com a trava da conversa e a chave (`thread`, `toolCall`): a segunda volta a primeira resposta | `SENDING` gravado e o sistema calado: `WRITE_UNCERTAIN` com a marca | o sistema recusa: `REFUSED` com o nativo | `CONNECTOR_WRITE_*` de hoje | 47, 48, 49 |
 | `listDataReads`, `exportDataReads` (U8, só leitura) | independentes | nada a desfazer | Hub calado: 503 `DATABASE_UNAVAILABLE` | nada novo | 70 a 75 |
 | **Exportar** (U9), o CSV montado na tela | dois toques: o botão pendente | — | Hub calado: a frase do Hub | nada | 80 |
 | `recordAppRead` da borda ao Hub (U10) | o mesmo id duas vezes: `insert ... on conflict do nothing`, uma linha | a borda mandou e a resposta se perdeu: a segunda tentativa não duplica | Hub calado duas vezes: a linha falta; a borda imprime `EDGE_READ_UNRECORDED`. A garantia aqui é "pelo menos uma vez, com uma nova tentativa", dita na página | `EDGE_READ_UNRECORDED` (borda); `APP_READ_RECORDED` não existe: a linha é o registro | 101, 103 |
 | `followCopy`, `unfollowCopy` (U11) | o segundo `PUT` responde igual (`on conflict do nothing`); o segundo `DELETE` também | uma instrução só | Hub calado: 503 | nada | 110, 111 |
 | `addAlertRecipient`, `removeAlertRecipient` (U11) | dois `POST` do mesmo e-mail: o índice único (`alert_recipient_key`) dá `23505` ao segundo, que vira 409 `ALERT_RECIPIENT_TAKEN`; o limite de 20 conta numa transação com `lockCompany` | uma transação | Hub calado: 503 | `ALERT_RECIPIENT_ADDED` e `_REMOVED` (info, `companyId`, nunca o endereço) | 113 |
-| `ended` com a leitura da rodada anterior (U12) | só quem segura a concessão grava (`held`), como hoje | a transação da rodada é a de hoje; o aviso vai depois do commit | — | `COPY_RUN_ENDED` de hoje | 116, 117 |
+| `ended` com o aviso de falha (U12) | só quem segura a concessão grava (`held`), como hoje | a transação da rodada é a de hoje; o aviso vai depois do commit | — | `COPY_RUN_ENDED` de hoje | 116, 117 |
 | `copyFailed`: os `insert` em `copy_notice` e os e-mails (U12) | a chave única (`run_id`, `person_id`) e `on conflict do nothing`: uma notificação por pessoa e rodada | uma notificação gravada e outra não: cada uma na sua transação; a rodada não muda | provedor de e-mail calado ou recusando: a notificação fica | `COPY_NOTICE_CREATED` (info); `COPY_NOTICE_FAILED` (error); `COPY_MAIL_FAILED` (error, sem o endereço) | 116, 119 |
 | A migração da regra de `system_code` (U12) | a segunda implantação recebe `LOCK_BUSY` e tenta de novo (`apps/server/src/platform/migrate.ts`) | uma transação | Hub calado: a implantação para antes de servir | o de hoje | 121 |
 | A migração dos índices de `data.data_read` (U1, U8) | como acima | como acima | como acima | o de hoje | 70 |
@@ -467,19 +467,18 @@ ou a tela aprovada que a traz (L28).
 | A recusa deixa uma linha | U1, U2, U3 | só log: `DATA_READ_REFUSED` (`apps/server/src/hub/data/query.ts:52`) e `CONNECTOR_READ_REFUSED` (`apps/server/src/hub/connectors/read.ts:153`) | A de ingestão grava a consulta fora do escopo como linha de erro (visto); o banco de grafos registra a decisão negada só no log (lido) | embrulhado | — | spec parte 4, requisito 6 | — |
 | A leitura ao vivo deixa uma linha (`LIVE`) | U2 | `readThrough` em `apps/server/src/hub/connectors/read.ts:139`, só o log `CONNECTOR_CALLED` (`:203`); chamadores `app-calls.ts:108`, `assistant-port.ts:306`, `builder-port.ts:276`, `copy-port.ts:121` (fica fora), `notes.ts:127` | A de ingestão: o pedido de uma ferramenta ao vivo é uma linha (visto) | embrulhado: a porta atrasada `recordRead`, como `copies: () => ConnectionCopies` (`apps/server/src/hub/connectors/rows.ts:56`), porque `hub/connectors` não importa `hub/data` | — | spec parte 4, requisito 6.3 e 6.7 | — |
 | A leitura do esquema do app pelo Builder e pelo agente | U2 | `readAppData` (`apps/server/src/hub/apps/app-database.ts:228`), log `APP_DATA_READ` sem SQL (`:242-260`); chamada por `builder-data.ts:49` e `apps/public.ts:100`; e por `app-tables.ts:73` e `:157`, que ficam fora | A de ingestão: todo `execute_sql` vira linha (visto) | embrulhado: a mesma gravação, verbo `QUERY` | — | requisito 6 | — |
-| O plano lê só `sync`; a função e o tipo que leem por nome são recusados | U3 | `syncRelations` filtra só `sync` e não recusa o resto (`apps/server/src/hub/data/query.ts:26-37`); o `EXPLAIN (VERBOSE, FORMAT JSON)` já roda junto (`:140`) | A de ingestão esconde as tabelas de fora do escopo e dá SQL; a de catálogo mostra o nome sem o dado (documentado). A recusa de função não tem referência; o analisador de SQL que o Hub já usa é o de um servidor MCP de banco aberto (`libpg-query`, `docs/reference/stack.md`, data D6) | embrulhado: o plano do PostgreSQL e o `libpg-query` | os critérios 16 a 19 | a sua 4(b) (quadro, 2026-11-16, "Sim") | `apps/server/src/hub/data/plan.ts` |
-| O `EXECUTE` das funções que leem por texto | U4 | nenhum `REVOKE` de função em `apps/server/src/platform/copy-sql.ts` | Sem referência; o PostgreSQL dá `EXECUTE` a `PUBLIC` por padrão | nativo (`REVOKE EXECUTE ... FROM PUBLIC`) | a prova no ramo de teste (critério 32); se o dono das funções no serviço não for o login dono, não cabe | U4 do estudo único; L28 | `apps/server/src/platform/copy-functions.test.ts` |
+| O plano lê só `sync`; a função e o tipo que leem por nome são recusados | U3 | `syncRelations` filtra só `sync` e não recusa o resto (`apps/server/src/hub/data/query.ts:26-37`); o `EXPLAIN (VERBOSE, FORMAT JSON)` já roda junto (`:140`) | A de ingestão esconde as tabelas de fora do escopo e dá SQL; a de catálogo mostra o nome sem o dado (documentado). Uma ferramenta interna aberta de consulta recusa por lista as funções e as tabelas de sistema que leem por fora (lido no commit `f7a06022`: no arquivo de configuração, `:2550` e `:2598-2600`, a lista de funções proibidas, com `query_to_xml`, e `:2721-2757`, a de tabelas de sistema; no do gerenciador de segurança, `:5650-5662`, a consulta que o analisador não entende) | embrulhado: o plano do PostgreSQL e o `libpg-query` (`docs/reference/stack.md`, data D6), na mesma forma da lista da ferramenta interna aberta. É defesa em profundidade e protege só o nome das tabelas; o conteúdo, quem barra é o login do papel (critério 5 de Cada papel). A recusa do tipo `reg*` e das funções `to_reg*` e `has_*_privilege` é nossa, sem referência; a lista não cresce, e um contorno novo é uma issue | os critérios 16 a 19 | a sua 4(b) (quadro, 2026-11-16, "Sim"); "Tudo A", 2026-11-17 | `apps/server/src/hub/data/plan.ts` |
 | A conversa num Projeto lê com o papel | U5 | no Projeto, as tabelas são só as liberadas (`apps/server/src/hub/copies/access-source.ts:10-11`); a consulta lê como o Projeto (`apps/server/src/hub/data/query.ts:57-76`, `:143-145`); a página lê com `{ kind: 'ALL' }` (`apps/server/src/hub/data/rows.ts:18-20`) | A de catálogo: a conversa avalia o dado com o usuário final (documentado); os apps dela no modo do usuário (documentado) | nativo: o login do papel (`apps/server/src/platform/copy-reader.ts:26`) e o cruzamento com `copiesReadBy` | — | a sua C(b); F1 desta página | `apps/server/src/hub/data/place-role.test.ts` |
 | `live` e `funnel` ligados no contrato | U6 | `NOT_GRANTED` fixo (`apps/server/src/hub/data/public.ts:43`, `:45`); a porta do Assistente lê e escreve (`apps/server/src/hub/connectors/assistant-port.ts:295-324`) | O banco de grafos faz cada ferramenta chamar o mesmo handler da rota e testa a igualdade (lido) | nativo: a porta que já existe, desenhada na spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`) | — | R3 "A" | `live.ts`, `funnel.ts` |
 | As leis contra a implementação real | U7 | `runDataConformance` (`packages/hub-api/src/company-data-conformance.ts:316`), `make` síncrono, só contra o mundo falso (`company-data.test.ts:211`); a porta já tem as leis (a), (b) e (e) contra o banco de teste (`apps/server/src/hub/access/conformance.test.ts`) | O banco de grafos tem o teste de paridade entre as duas portas (lido); as plataformas não têm (procurado) | embrulhado: `node:test` e as nossas leis | — | spec parte 3, grupos 5 e 6 | `apps/server/src/hub/data/conformance.test.ts` |
-| Nenhum caminho novo fora do contrato | U7 | 30 nomes em `.dependency-cruiser-migration.cjs` e `packages/app/src/connectors.ts`; a regra em `.dependency-cruiser.cjs:69` | nenhuma faz | nativo: `dependency-cruiser` e um teste que impede a lista de crescer | — | spec parte 3, 6.1 | — |
+| Nenhum caminho novo fora do contrato | U7 | 30 nomes em `.dependency-cruiser-migration.cjs` e `packages/app/src/connectors.ts`; a regra em `.dependency-cruiser.cjs:69` | nenhuma faz | embrulhado: `dependency-cruiser`, que o repositório já usa, e um teste que impede a lista de crescer; a regra de a lista não crescer é nossa, sem referência | — | spec parte 3, 6.1 | — |
 | Quem vê o Registro: cada pessoa as suas, Dono e Administrador todas | U8 | nenhuma rota; `readsAll` (`packages/hub-api/src/roles.ts:36`); `seeData` aberto a todo membro (`apps/server/src/hub/identity/admission.ts:104`) | A de ingestão: dono e admin veem tudo, o membro vê as linhas dos tokens que criou (documentado) | nativo: a admissão de hoje e o recorte na consulta | — | E4a emendada ("3. Sim", 2026-11-15) | `apps/server/src/hub/data/reads.ts` |
 | A página por chave, da mais nova | U8 | `pageOf`, `pageKey` e `after` (`apps/server/src/platform/pages.ts:12`, `:30`, `:47`), só crescente; o cursor composto de `apps/server/src/builder/automations/runs.ts:37-49` | — | nativo: a chave (hora, id) do PostgreSQL, com o índice | — | — | — |
-| A página: lista de 50, filtros, linha aberta, exportar | U9 | nenhuma; `FramedTable` (`apps/web/src/ui/table.tsx:70`), `Pager` (`ui/pager.tsx:9`), `Empty` (`ui/states.tsx:125`); a seção por `staticData.section` (`settings/route.tsx:30-45`) | A de ingestão: filtros por token, status e data, detalhe com o SQL, exportar (visto) | nativo: as peças de `apps/web/src/ui/` | — | telas `p4-04` a `p4-06`; o protótipo do Membro, pendente | `apps/web/src/hub/data/data-reads.tsx` |
+| A página: lista de 50, filtros, linha aberta, exportar | U9 | nenhuma; `FramedTable` (`apps/web/src/ui/table.tsx:70`), `Pager` (`ui/pager.tsx:9`), `Empty` (`ui/states.tsx:125`); a seção por `staticData.section` (`settings/route.tsx:30-45`) | A de ingestão: filtros por token, status e data, detalhe com o SQL, exportar até 31 dias por vez (visto, documentado) | nativo: as peças de `apps/web/src/ui/`; o teto de 31 dias é o da referência | o critério 82 | telas `p4-04` a `p4-06`; o protótipo do Membro, pendente; "Tudo A", 2026-11-17 | `apps/web/src/hub/data/data-reads.tsx` |
 | O CSV | U9 | nenhum; o único download é por `Blob` (`apps/web/src/builder/conversation/shown-file.tsx:39-48`) | A de ingestão exporta arquivo (documentado) | nativo: `Blob` e `<a download>` | o critério 80 (fórmula desarmada) | — | `apps/web/src/hub/data/csv.ts` |
-| A consulta do app publicado | U10 | `db.query` numa transação só de leitura (`apps/edge/src/db.ts:49-61`); `DbProps` sem pessoa (`:10`); a pessoa e o Projeto estão em `call.caller` (`apps/edge/src/dispatch.ts:145-160`) | As duas plataformas registram a leitura de um app no próprio portão, que está no caminho (documentado); aqui o Hub não está no caminho | embrulhado: uma operação nova da borda ao Hub, pela porta que já existe (`apps/edge/src/hub.ts`, `access: 'edge'`), com o id da borda | os critérios 100 a 104 | a sua A(b); 3(d); a decisão D do estudo (uma linha por consulta, sem a lista de tabelas) | `apps/server/src/hub/apps/read-notice.ts` |
-| Seguir uma cópia e a lista da empresa | U11 | tabelas e permissões no `main` (`apps/server/migrations/20261115191116_copy_alerts`, `20261115223016_copy_alerts_grants`; `apps/server/database-grants.sql:444-447`); nenhuma rota | A de ingestão: cada pessoa liga o aviso das fontes que segue; dono e admin têm a lista da empresa (documentado) | nativo: o módulo de notificações (`apps/server/src/hub/notifications/`) | — | spec 3, item (b), requisitos 5 e 6; F2 | `apps/server/src/hub/notifications/copy-alerts.ts` |
-| O aviso na primeira falha | U12 | `ended` (`apps/server/src/hub/copies/run.ts:116-165`) não lê a rodada anterior; o aviso da automação (`apps/server/src/hub/notifications/notifications.ts:306`) | A de ingestão avisa toda falha e não avisa a volta (documentado); a de catálogo cala até a última tentativa (relay) | embrulhado: um tipo novo no sino e no e-mail | — | spec 3, item (b), requisito 4; `v06` | `apps/server/src/hub/notifications/copy-email.tsx` |
+| A consulta do app publicado | U10 | `db.query` numa transação só de leitura (`apps/edge/src/db.ts:49-61`); `DbProps` sem pessoa (`:10`); a pessoa e o Projeto estão em `call.caller` (`apps/edge/src/dispatch.ts:145-160`) | As duas plataformas registram a leitura de um app no próprio portão, que está no caminho (documentado); aqui o Hub não está no caminho | embrulhado: uma operação nova da borda ao Hub, pela porta que já existe (`apps/edge/src/hub.ts`, `access: 'edge'`), com o id da borda; o aviso é nosso, sem referência | os critérios 100 a 104 | a sua A(b); 3(d); a decisão D do estudo (uma linha por consulta, sem a lista de tabelas) | `apps/server/src/hub/apps/read-notice.ts` |
+| Seguir uma cópia e a lista da empresa | U11 | tabelas e permissões no `main` (`apps/server/migrations/20261115191116_copy_alerts`, `20261115223016_copy_alerts_grants`; `apps/server/database-grants.sql:444-447`); nenhuma rota | A de ingestão: cada pessoa liga o aviso das fontes que segue; dono e admin têm a lista da empresa (documentado). O teto de 20 e-mails na lista é nosso, sem referência | nativo: o módulo de notificações (`apps/server/src/hub/notifications/`); o teto de 20 é nosso | — | spec 3, item (b), requisitos 5 e 6; F2 | `apps/server/src/hub/notifications/copy-alerts.ts` |
+| O aviso de falha | U12 | `ended` (`apps/server/src/hub/copies/run.ts:116-165`) não avisa; o aviso da automação (`apps/server/src/hub/notifications/notifications.ts:306`) | A de ingestão avisa toda falha, só falha, e não avisa a volta (documentado, `mcp-server__tools.md:507`, `:512`). A de operações avisa toda falha e escala por contagem (documentado, a tabela de eventos da página de notificações); a nossa não escala. A de catálogo cala até a última tentativa (relay) | embrulhado: um tipo novo no sino e no e-mail, avisando toda falha | — | spec 3, item (b), requisito 4, emendado por "Tudo A" (2026-11-17); `v06` | `apps/server/src/hub/notifications/copy-email.tsx` |
 | As telas de Seguir e Avisos | U13 | nenhuma seção Avisos; `RunNowButton` em `apps/web/src/hub/copies/copy-list.tsx:111`; o sino em `apps/web/src/hub/notifications/bell.tsx:66`, `:82` | — | nativo: as peças de `ui/` | — | `v06`, `b3` a `b5`; o protótipo do Membro (F2 (a)), pendente | `apps/web/src/hub/notifications/copy-alerts.tsx` |
 | A Amostra de uma pessoa na página Dados | fica de fora | `sampleCopy` não passa pelo contrato | As referências divergem | nativo: fica como hoje, fora do Registro | — | a sua B(a) | — |
 | A aba Leituras de uma tabela | fica de fora | nenhuma | nenhuma faz por tabela | nativo: o filtro por tabela do Registro (U9) responde | — | corte do estudo | — |
@@ -497,7 +496,7 @@ para a seção 11 da arquitetura no fechamento.
 | --- | --- | --- | --- |
 | R.1 | Uma linha por leitura, gravada depois de ler e antes de devolver, no lugar do par `ISSUED` e `SETTLED` do estudo único (seção 4.4 dele) | O banco da empresa responde por um pedido HTTP por transação (`neonTransport`, `apps/server/src/platform/company-postgres.ts:106`, decisão 0043): o `EXPLAIN` e a consulta vão juntos, e não há como gravar a intenção entre os dois. As referências gravam uma linha por pedido. A garantia aprovada ("nunca uma leitura sem linha") fica | Uma coluna `state` e uma segunda linha antes da leitura |
 | R.2 | Sem tipo `Permit` no leitor e no executor nesta etapa: a gravação tem um dono só (regra do `dependency-cruiser`, critério 9) e a lei "toda leitura deixa uma linha" (critério 52) | O `Permit` comprava a intenção antes do efeito (R.1); para a escrita, o funil já grava antes de mandar (`register`, `write-record.ts:219`) e confere o papel de novo | O tipo `Permit` com a marca privada, como `Principal` |
-| R.3 | A recusa do plano (U3) é uma lista de recusa (`query_to_*`, `cursor_to_*`, `table_to_*`, `schema_to_*`, `database_to_*`, `pg_*`, `to_reg*`, `has_*_privilege`, `current_setting`, `set_config`, e o tipo `reg*`) mais "o plano lê só `sync`", não uma lista de funções permitidas | Uma lista de permitidas recusaria o SQL comum que o modelo escreve (`date_trunc`, `sum`, `coalesce`) sem referência que a sustente; a barreira do motor é o login do papel (critério 5 de Cada papel) e a U4 | Trocar por uma lista de permitidas em `plan.ts` |
+| R.3 | A recusa do plano (U3) é uma lista de recusa (`query_to_*`, `cursor_to_*`, `table_to_*`, `schema_to_*`, `database_to_*`, `pg_*`, `to_reg*`, `has_*_privilege`, `current_setting`, `set_config`, e o tipo `reg*`) mais "o plano lê só `sync`", não uma lista de funções permitidas | Uma lista de permitidas recusaria o SQL comum que o modelo escreve (`date_trunc`, `sum`, `coalesce`) sem referência que a sustente; a barreira do motor é o login do papel (critério 5 de Cada papel). A forma é a da lista de proibidas da ferramenta interna aberta (linha da tabela de referência); o `REVOKE EXECUTE` que a U4 propunha saiu ("Tudo A", 2026-11-17) | Trocar por uma lista de permitidas em `plan.ts` |
 | R.4 | A linha da consulta do app não leva a lista de tabelas | A borda não sabe que tabelas a consulta leu, e um `EXPLAIN` por consulta dobraria o custo do app (estudo, decisão D) | Um `EXPLAIN` antes no Hub |
 | R.5 | A hora da linha é a do Hub (`statement_timestamp()`), também no aviso da borda | `connector_write` faz igual (`write-record.ts:156-177`); uma linha da borda chega no máximo alguns segundos depois | Mandar a hora da borda no corpo |
 | R.6 | O agente da linha sai do consumidor do `Principal` (`principal.consumer`, `apps/server/src/hub/access/principal.ts:21`) por uma tabela `Record<Consumer \| 'app', DataReadAgent>` em `record.ts`, e `ReadBy` (`apps/server/src/hub/data/public.ts:13-17`) sai; o contexto passa só a conversa, lida de `RunScope.conversation` (`apps/server/src/builder/controller-kit/run.ts:26`) por `dataContextOf`, e, no agente salvo, o id dele | Um dono só do consumidor e um da conversa (C26): a porta já resolve o consumidor (`principalOf`, `run.ts:209-232`), e a conversa já tem dono na execução; ler `MASTRA_THREAD_ID_KEY` de novo seria um segundo dono do mesmo fato | Um campo `agent` no contexto |
@@ -774,51 +773,6 @@ Depois da U3: os testes tocados de `hub/data`, `hub/connectors`, `hub/apps`, `bu
 `builder/app-data` e `scripts/rules-doors.test.ts`; `npm run typecheck`, `npm run deps`, `npm run check`;
 o Hub local com os dublês: uma pergunta ao Assistente e a linha em `data.data_read` lida com `psql`.
 
-## U4 `EXECUTE` das funções que leem por texto
-
-**Base e modelo.** A U3 mesclada. Sonnet.
-
-### As linhas da tabela
-
-- `ensureSync` e `ROLES_LOCK` (`apps/server/src/platform/copy-sql.ts:117`, `:150`); o teste do ataque
-  direto de hoje (`apps/server/src/platform/copy-role-readers.test.ts`, o caso de `query_to_xml`).
-
-### O raio da mudança
-
-| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
-| --- | --- | --- |
-| `apps/server/src/platform/copy-sql.ts`, `copy-functions.test.ts` novo | Muda: o bloco `DO` do `REVOKE` em `ensureSync` | toda rodada e todo `ensureReader` |
-
-### Os contratos que a unidade cria
-
-Nenhum tipo novo. O bloco `DO` percorre `pg_proc` por nome e assinatura exatos (data D13) e roda
-`REVOKE EXECUTE ON FUNCTION ... FROM PUBLIC` para as cinco famílias `*_to_xml`, `*_to_xmlschema` e
-`*_to_xml_and_xmlschema`.
-
-### As skills e a leitura
-
-`neon:neon-postgres` (a linha `@neondatabase/serverless`). O guia de dados (D10, D13).
-
-### A ordem do trabalho
-
-1. **O `REVOKE`.** Critérios: 30, 31.
-   - **Mutações à mão:** tire uma das famílias (critério 30 vermelho).
-2. **A prova no ramo de teste.** Critério: 32. Só com a autorização do fundador, escrita no pull request.
-
-### Como se prova
-
-O PostgreSQL de teste local (o mesmo da CI) e o ramo de teste autorizado.
-
-### Parar se
-
-- O ramo de teste responder `42501` ao `REVOKE` (o dono das funções é do serviço): a U4 sai, o pull
-  request fecha sem mesclar e a página o diz no fechamento.
-
-## G2 O ponto de conferência
-
-`copy-functions.test.ts`, `copy-role-readers.test.ts` e os testes de `hub/data`; `npm run check`; o
-resultado do ramo de teste no corpo do pull request. Mescla só com a palavra do fundador.
-
 ## U5 A conversa num Projeto com o papel
 
 **Base e modelo.** O G1 mesclado. Sonnet.
@@ -1033,8 +987,9 @@ export const listDataReads = defineOperation({ id: 'listDataReads', method: 'GET
   success: { status: 200, body: z.object({ reads: z.array(DataReadEntry), next: PageToken.nullable() }) },
   failures: ['NOT_FOUND', 'REQUEST_MALFORMED', 'DATABASE_UNAVAILABLE'] })
 export const exportDataReads = defineOperation({ id: 'exportDataReads', method: 'GET',
-  path: '/api/companies/{companyId}/data-reads/export', input: { params: InCompany, query: Filters },
-  success: { status: 200, body: z.object({ reads: z.array(DataReadEntry).max(5000), complete: z.boolean() }) } })
+  path: '/api/companies/{companyId}/data-reads/export', input: { params: InCompany, query: Filters.extend({ from: z.iso.date(), to: z.iso.date() }) }, // to - from <= 31 dias (critério 82)
+  success: { status: 200, body: z.object({ reads: z.array(DataReadEntry).max(5000), complete: z.boolean() }) },
+  failures: ['NOT_FOUND', 'REQUEST_MALFORMED', 'DATABASE_UNAVAILABLE'] })
 ```
 
 O recorte: `readsAll(role)` lê tudo; os outros, `person_id = quem pede`, sempre, antes de qualquer
@@ -1047,8 +1002,8 @@ filtro. Os nomes: um lote de pessoas e um de Projetos por página.
 ### A ordem do trabalho
 
 1. **O contrato e a migração.** Critérios: 76.
-2. **`reads.ts` e o recorte.** Critérios: 70 a 75. **Mutações à mão:** tire o recorte por pessoa (71
-   vermelho); ordene só por hora (70 vermelho com duas linhas na mesma hora).
+2. **`reads.ts` e o recorte.** Critérios: 70 a 75 e 82. **Mutações à mão:** tire o recorte por pessoa (71
+   vermelho); ordene só por hora (70 vermelho com duas linhas na mesma hora); aceite 32 dias (82 vermelho).
 
 ### Como se prova
 
@@ -1090,7 +1045,7 @@ A linha `apps/web/src` de `docs/reference/stack.md`: `shadcn`, TanStack Router e
 
 1. **A lista e os filtros.** Critérios: 77, 78, 81.
 2. **A linha aberta.** Critério: 79.
-3. **Exportar.** Critério: 80.
+3. **Exportar.** Critérios: 80 e 82. O seletor de período não passa de 31 dias e manda `from` e `to`.
    - **Mutações à mão:** tire o apóstrofo do CSV (80 vermelho).
    - **Pronto quando:** a tela olhada a 1366 e 390 px nos dois temas bate com o protótipo julgado.
 
@@ -1214,7 +1169,7 @@ e-mails. Tire um para pôr outro."), 409.
 
 - O fundador mudar a F2 para (b): `followCopy` passa a pedir `manageCopyAlerts`, e a R.13 cai.
 
-## U12 O aviso na primeira falha
+## U12 O aviso de falha
 
 **Base e modelo.** A U11. Sonnet.
 
@@ -1224,11 +1179,11 @@ e-mails. Tire um para pôr outro."), 409.
   (`store.ts:96-109`).
 - `Notify` e `automationRan` (`apps/server/src/hub/notifications/notifications.ts:42`, `:306`),
   `recorded` (`:104`), `mailed` (`:151`); `NotificationRow` (`packages/hub-api/src/notifications.ts:38-64`).
-- A spec 3, item (b), requisito 4, cujo texto é este: na primeira falha (a rodada `ERROR` cuja última
-  rodada terminada antes não terminou `ERROR`; `INTERRUPTED` e a parada pedida não contam), uma
-  notificação `COPY_FAILED` a cada pessoa que segue e ainda lê, e um e-mail a cada uma e a cada endereço
-  da lista, um por endereço; "A cópia {nome} parou. {frase} {o que fazer}", com o link; o e-mail sem a
-  mensagem do sistema; a segunda falha não avisa; e-mail que falha: `COPY_MAIL_FAILED` sem o endereço.
+- A spec 3, item (b), requisito 4, emendado por "Tudo A" (2026-11-17): a cada rodada `ERROR` (`INTERRUPTED`
+  e a parada pedida não são falha), uma notificação `COPY_FAILED` a cada pessoa que segue e ainda lê, e
+  um e-mail a cada uma e a cada endereço da lista, um por endereço; "A cópia {nome} parou. {frase} {o que
+  fazer}", com o link; o e-mail sem a mensagem do sistema; e-mail que falha: `COPY_MAIL_FAILED` sem o
+  endereço. A "primeira falha seguida" do texto original saiu: a rodada anterior não é lida.
 
 ### O raio da mudança
 
@@ -1255,11 +1210,11 @@ z.object({ kind: z.literal('COPY_FAILED'), ...OfNotification, copy: z.object({ i
 
 ### A ordem do trabalho
 
-1. **A primeira falha em `ended`.** Critérios: 116, 117. A rodada anterior lida na mesma transação, antes
-   do `UPDATE`; o aviso depois do commit e do log.
+1. **A falha em `ended`.** Critérios: 116, 117. A rodada que termina em `ERROR` chama o aviso depois do
+   commit e do log; nada lê a rodada anterior.
 2. **`copyFailed`, o sino e o e-mail.** Critérios: 116, 118 a 120.
 3. **A 1135.** Critério: 121.
-   - **Mutações à mão:** compare com a rodada anterior qualquer (117 vermelho); avise sem conferir a
+   - **Mutações à mão:** avise também a rodada `INTERRUPTED` (117 vermelho); avise sem conferir a
      leitura (120 vermelho).
 
 ### Como se prova
@@ -1268,7 +1223,7 @@ O servidor falso do provedor de e-mail (`mailServer`) e o conector falso que rec
 
 ### Parar se
 
-- Ler a rodada anterior dentro de `ended` mudar o resultado de `COPY_CLAIM_LOST`: para e reporta.
+- Chamar o aviso depois do commit de `ended` mudar o resultado de `COPY_CLAIM_LOST`: para e reporta.
 
 ## U13 As telas de Seguir e Avisos (`v06`, `b3` a `b5`)
 
@@ -1280,7 +1235,7 @@ O servidor falso do provedor de e-mail (`mailServer`) e o conector falso que rec
   `RunNowButton` (`copy-list.tsx:111`); `bell.tsx` (`textOf` `:66`, `pathOf` `:82`); a seção por
   `staticData.section`.
 - A spec 3, item (b), requisito 6: a seção abre com "Quando uma cópia falha, o Conexus avisa no sino e
-  por e-mail, na primeira falha seguida." e termina com o exemplo do aviso; "Cópias que você segue" com o
+  por e-mail, a cada falha." e termina com o exemplo do aviso; "Cópias que você segue" com o
   nome em mono e "{sistema} · {conta}" embaixo.
 
 ### O raio da mudança
@@ -1324,4 +1279,4 @@ app de exemplo que consulta: a linha `APP` lida com `psql`.
 ## G6 O ponto de conferência
 
 Os testes de `hub/notifications`, `hub/copies` e das telas; `npm run check`; o Hub local com o provedor
-de e-mail falso: uma falha, um aviso, a segunda falha sem aviso.
+de e-mail falso: duas falhas seguidas, dois avisos.
