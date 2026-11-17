@@ -7,8 +7,14 @@ import { Conexus, createConexus } from '../main.tsx'
 import { ANA, COMPANY } from '../platform/fixtures.ts'
 import { hubServer, PEDIDOS, projectsRead, refusal, sessionRead } from '../platform/test-hub.tsx'
 import { Notice } from './notice.tsx'
+import { Spinner } from './spinner.tsx'
 
 const server = hubServer()
+
+test('Spinner is a status with the name it was given', () => {
+  render(<Spinner label="Carregando mensagens anteriores" />)
+  expect(screen.getByRole('status', { name: 'Carregando mensagens anteriores' })).toBeTruthy()
+})
 
 test('Notice is the common polite status without an urgent alert', () => {
   render(<Notice>Senha criada. Você já entrou.</Notice>)

@@ -91,6 +91,38 @@ test('o endereço que nomeia um Projeto fora das páginas lidas mostra o nome de
   await waitFor(() => expect(filter.textContent).toBe('Estoque'))
 })
 
+test('aberto, o filtro mostra o Projeto do endereço fora das páginas lidas como o escolhido (critério 14)', async () => {
+  at(
+    `${HOME_AGENTS}?projectId=${ESTOQUE.id}`,
+    { agents: [THERE] },
+    { projects: [PEDIDOS, ESTOQUE] },
+  )
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json({ projects: [PEDIDOS], next: { kind: 'END' }, databaseReady: true }),
+    ),
+  )
+  const filter = await screen.findByRole('combobox', { name: 'Projeto' })
+  await waitFor(() => expect(filter.textContent).toBe('Estoque'))
+  fireEvent.click(filter)
+  const list = await screen.findByRole('listbox', { name: 'Projeto' })
+  const chosen = await within(list).findByRole('option', { name: 'Estoque' })
+  expect(chosen.getAttribute('aria-selected')).toBe('true')
+  expect(within(list).getByRole('option', { name: 'Pedidos' })).toBeTruthy()
+})
+
+test('Novo agente numa empresa sem Projeto diz que os agentes nascem num Projeto e leva aos Projetos (critério 15, issue 708)', async () => {
+  const { conexus } = at(HOME_AGENTS, { agents: [] }, { projects: [] })
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Novo agente' }))
+  expect(
+    await screen.findByText('Crie um Projeto primeiro: os agentes nascem num Projeto.'),
+  ).toBeTruthy()
+  fireEvent.click(screen.getByRole('link', { name: 'Criar um Projeto' }))
+  await waitFor(() =>
+    expect(conexus.router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`),
+  )
+})
+
 test('sem agentes, a frase de que eles nascem num Projeto', async () => {
   at(HOME_AGENTS, { agents: [] })
   expect(
@@ -100,9 +132,11 @@ test('sem agentes, a frase de que eles nascem num Projeto', async () => {
 
 test('Novo agente pergunta o Projeto e abre a área Agentes dele', async () => {
   const { conexus } = at(HOME_AGENTS, { agents: [] }, { projects: [PEDIDOS, ESTOQUE] })
-  fireEvent.click(await screen.findByRole('button', { name: 'Novo agente' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Novo agente' }))
   expect(await screen.findByText('Em qual Projeto?')).toBeTruthy()
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Estoque' }))
+  const option = await screen.findByRole('option', { name: 'Estoque' })
+  for (const event of ['pointerDown', 'mouseDown', 'pointerUp', 'mouseUp', 'click'] as const)
+    fireEvent[event](option)
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toBe(
       `/companies/${COMPANY.id}/projects/${ESTOQUE.id}/agents`,

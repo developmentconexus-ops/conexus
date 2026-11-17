@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { AgentListed, listAgents } from '@conexus/hub-api'
-import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, failure, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { sentenceOfCode } from './src/platform/hub.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
 
 // A página Agentes do Início (step 24.3.1, U9), in a real browser at 1366, 390 and 195 px: no
@@ -66,9 +67,7 @@ for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE])
           `a row leaves the screen at ${viewport.width}`,
         )
       for (const name of ['Novo agente', 'Projeto']) {
-        const box = await page
-          .getByRole(name === 'Projeto' ? 'combobox' : 'button', { name })
-          .boundingBox()
+        const box = await page.getByRole('combobox', { name }).boundingBox()
         assert.ok(
           box && box.x >= 0 && box.x + box.width <= viewport.width,
           `${name} leaves the screen`,
@@ -106,5 +105,40 @@ for (const viewport of [PHONE, ZOOMED_PHONE])
 test('sem agentes, a frase de que eles nascem num Projeto', async () => {
   const page = await harness.open(PATH, { viewport: PHONE, replies: replies([]) })
   await page.getByText('Nenhum agente ainda. Os agentes nascem num Projeto.').waitFor()
+  await page.close()
+})
+
+test('a leitura dos agentes em falha fica no lugar da lista, embaixo do título, do filtro e de Novo agente, com Tentar de novo (critério 18, issue 705)', async () => {
+  const page = await harness.open(PATH, {
+    viewport: DESKTOP,
+    replies: {
+      ...replies([]),
+      [`GET /api/companies/${COMPANY_ID}/agents`]: failure('DATABASE_UNAVAILABLE'),
+    },
+  })
+  const sentence = page.getByText(sentenceOfCode('DATABASE_UNAVAILABLE'))
+  await sentence.waitFor()
+  const retry = page.getByRole('button', { name: 'Tentar de novo' })
+  const below = (await sentence.boundingBox())?.y ?? 0
+  for (const above of [
+    page.getByRole('heading', { name: 'Agentes' }),
+    page.getByRole('combobox', { name: 'Projeto' }),
+    page.getByRole('combobox', { name: 'Novo agente' }),
+  ]) {
+    const box = await above.boundingBox()
+    assert.ok(box && box.y + box.height <= below, 'the failure is not under the page head')
+  }
+  assert.equal(await retry.isVisible(), true)
+  await page.close()
+})
+
+test('um NOT_FOUND dos agentes continua a página inteira de não encontrado (critério 18, security S10)', async () => {
+  const page = await harness.open(PATH, {
+    viewport: DESKTOP,
+    replies: { ...replies([]), [`GET /api/companies/${COMPANY_ID}/agents`]: failure('NOT_FOUND') },
+  })
+  await page.getByText(/Não encontramos o que você procurou\./).waitFor()
+  assert.equal(await page.getByRole('combobox', { name: 'Novo agente' }).count(), 0)
+  assert.equal(await page.getByRole('heading', { name: 'Agentes' }).count(), 0)
   await page.close()
 })

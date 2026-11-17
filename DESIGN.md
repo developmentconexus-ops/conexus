@@ -542,8 +542,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
   ferramentas" stays whole and the model truncates instead (V60). **(target)**
 - **Projeto folder.** A `spacing.control` folder pill, with the name (128 at most) once chosen; in
   a conversation the fixed chip with the name, or the folder dimmed with no Projeto, so the tools
-  never move. The menu is 288px, search from 7, "Sem Projeto", the chosen one with a check in
-  `accent-text` (V57). **(target)**
+  never move. The menu is the `Picker`: 288px, search from 7, "Sem Projeto", the chosen one with a
+  check in `accent-text` (V57). **(target)**
 - **Model button, memory.** The model button is a soft pill with the provider's mark and a short
   label; below 768px it drops "Claude " and the effort. The memory ring with "Memória N%" exists only
   where a conversation does. **(target for the memory's word)**
@@ -568,10 +568,17 @@ which shadcn file it was copied from; the front matter holds their values. Their
   highlighted raised. A menu item that goes to an address, Base UI's `Menu.LinkItem`, is the same
   `menu-item` and closes the menu as an item does; Base UI leaves it open by default
   (`closeOnClick`). The select is
-  shadcn's base-nova item with departures: no `SelectGroup`, `SelectLabel` or `SelectSeparator`,
-  since a role list has no groups; its trigger is `select-trigger` and its item keeps 2rem on the
+  shadcn's base-nova item with departures: no `SelectSeparator`, and `SelectGroup` and
+  `SelectLabel` only for the `Picker`'s groups; its trigger is `select-trigger` and its item keeps 2rem on the
   right for the check. The menu and the select have a hairline; only the "+" and Projeto menus
   carry `float`. **(target for the item height and the shadow)**
+- **Picker.** Beside the combobox, the one way to choose an item of a list that may be long, such
+  as a Projeto: the place's own trigger and a 288px popup. Under 7 rows, fixed items included, and
+  with no further page it is the Base UI Select; otherwise the Base UI Combobox with its search in
+  the popup, the text searched by the Hub. `list-row` rows (32, 44 on touch) up to 256px, then it
+  scrolls; the chosen one with a check in `accent-text` (V57); "Mais Projetos" under them, disabled
+  while the page comes. Loading is three skeleton rows; a failure is the Hub's sentence in an alert,
+  the fixed items still selectable.
 - **Popover, drawer, sheet.** Popover `rounded.object`, hairline, 288px by default. The bottom
   drawer is at most 85dvh with a 40 × 4 handle and a `title` heading. The left drawer holds the
   rail and the list together (V56); the right panel (`drawer-right`) holds a form beside the page.
@@ -593,6 +600,14 @@ which shadcn file it was copied from; the front matter holds their values. Their
   skeletons with a pulse (none under reduced motion) and `role="status"`; an error is danger text
   with `role="alert"` and an action.
 - **Notice.** A `role="status"` line in the body colour.
+- **Separator.** A 1px `line` rule between two blocks of a column; a region's own edge stays a
+  border of that region.
+- **Spinner.** The turning `Loader2` icon, 16px, a `status` with a name; it stops under reduced
+  motion.
+- **Search field.** An input group with a magnifier and a `search` input, `spacing.control` tall;
+  the browser's clear button is not shown.
+- **Page header.** The page title with its actions at the end; the actions wrap under it when the
+  box is narrow, and an intro under the title lines them up with the top.
 - **Project card.** Card radius, hairline, sheet; the Início shows the Projetos as block rows
   instead. **Settings section:** title and a sentence on the left from `md`, controls on the right,
   parts apart by a hairline (V19).

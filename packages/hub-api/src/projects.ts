@@ -16,6 +16,9 @@ export const ProjectName = z
   .brand('ProjectName')
 export type ProjectName = z.infer<typeof ProjectName>
 
+/** The text a person searches in Project names: trimmed, in normal form C, no longer than a name. */
+const ProjectSearch = z.string().trim().normalize('NFC').min(1).max(PROJECT_NAME_MAX_LENGTH)
+
 export const ProjectSummary = z.object({
   id: ProjectId,
   name: z.string().min(1),
@@ -47,12 +50,12 @@ const Named = z.object({ name: ProjectName })
 export const listProjects = defineOperation({
   id: 'listProjects',
   summary:
-    'Lists the Projects of a company the person belongs to, and whether its database exists.',
+    'Lists the Projects of a company the person belongs to, all of them or those whose name holds a text, without case, and whether its database exists.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/projects',
   bodyLimit: 1024,
-  input: { params: InCompany, query: Page },
+  input: { params: InCompany, query: Page.extend({ q: ProjectSearch.optional() }) },
   success: {
     status: 200,
     body: z.object({

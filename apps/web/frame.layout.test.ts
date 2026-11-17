@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import { getProject, listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
 import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
-import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
-import { COMPANY } from './src/platform/fixtures.ts'
+import { createHarness, DESKTOP, failure, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
-import { OWNER, projectsPage, startsOn } from './sweep-replies.ts'
+import { OWNER, PROJECT_ID, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The company's frame in a real browser: the rail and the list, the axis of Início, the drawer
 // (step 13.3, criteria 5, 7 and 10).
@@ -247,3 +248,54 @@ for (const [name, path, viewport] of [
     await page.close()
   })
 }
+
+const OUTSIDE = { id: 'o'.repeat(32), name: 'Projeto fora da primeira página' }
+const GONE = 'g'.repeat(32)
+
+test('a barra do Projeto abre a lista com os recentes primeiro: um fora das páginas com o nome lido à parte, um apagado não aparece', async () => {
+  const page = await open(`/companies/${COMPANY.id}/projects/${PROJECT_ID}`, DESKTOP, {
+    ...WITH_CONVERSATIONS,
+    [`GET /api/companies/${COMPANY.id}/projects/${OUTSIDE.id}`]: ok(getProject, {
+      project: {
+        ...OUTSIDE,
+        createdAt: NOW,
+        appVersion: null,
+        publishedVersion: null,
+        mayDelete: true,
+        mayPublish: true,
+        publishRequest: null,
+        address: null,
+      },
+    }),
+    [`GET /api/companies/${COMPANY.id}/projects/${GONE}`]: failure('NOT_FOUND'),
+  })
+  await page.evaluate(({ key, ids }) => localStorage.setItem(key, ids), {
+    key: `conexus-remembered:${ANA.id}:projects.${COMPANY.id}`,
+    ids: `${GONE} ${OUTSIDE.id}`,
+  })
+  await page.reload()
+  const list = page.getByRole('navigation', { name: 'Navegação' }).locator('[data-sidebar=sidebar]')
+  await list.locator('[aria-haspopup]').first().click()
+  const row = '[role=option], [role=menuitem]'
+  const recent = page.getByRole('group', { name: 'Projetos recentes' })
+  await recent.locator(row, { hasText: OUTSIDE.name }).waitFor()
+  const names = await recent.locator(row).allTextContents()
+  assert.ok(names.length <= 5, `more than five recent: ${names.length}`)
+  assert.ok(
+    page.seen.some((one) => one.path === `/api/companies/${COMPANY.id}/projects/${GONE}`),
+    'the deleted Projeto was never asked for',
+  )
+  assert.ok(!names.includes('Projeto'), 'the deleted Projeto shows among the recent')
+  const rows = await page.locator(row).allTextContents()
+  assert.equal(
+    rows.filter((name) => name === OUTSIDE.name).length,
+    1,
+    'a recent repeats among the Projetos',
+  )
+  // The browser reports the Hub's 404 for the deleted Projeto as a failed resource; nothing else.
+  assert.deepEqual(
+    page.problems.filter((problem) => !problem.includes('status of 404')),
+    [],
+  )
+  await page.close()
+})

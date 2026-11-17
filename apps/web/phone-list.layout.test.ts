@@ -124,7 +124,7 @@ test('no toque, a gaveta com a lista cheia não rola de lado: nenhum alvo de toq
   // The magnifier sits 4 px from the filter, so the filter owns the edge between them: the magnifier's width is not asserted.
   for (const [control, wide] of [
     [drawer.getByRole('button', { name: 'Buscar conversa' }), false],
-    [drawer.getByRole('button', { name: 'Filtrar conversas' }), true],
+    [drawer.getByRole('combobox', { name: 'Filtrar conversas' }), true],
   ] as const) {
     const reach = await reachOf(control)
     const drawn = await control.boundingBox()
@@ -165,7 +165,7 @@ test('a lista na gaveta a 200% de ampliação: a busca, o filtro e a aba Projeto
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
   for (const control of [
     drawer.getByRole('button', { name: 'Buscar conversa' }),
-    drawer.getByRole('button', { name: 'Filtrar conversas' }),
+    drawer.getByRole('combobox', { name: 'Filtrar conversas' }),
     drawer.getByRole('tab', { name: 'Projetos' }),
   ])
     await control.click({ trial: true, timeout: 3000 })

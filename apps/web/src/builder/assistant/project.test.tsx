@@ -27,7 +27,7 @@ test('o dono vê a caixa, a pasta do Projeto e só as conversas deste Projeto', 
   })
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
   await screen.findByRole('button', { name: '2 ferramentas' })
-  expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
+  expect(screen.queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
   expect(asked).toEqual([`?projectId=${PEDIDOS_ID}`])
   const link = await screen.findByRole('link', { name: /Pedidos do mês/ })
   expect(screen.queryByText('Conversa da empresa')).toBeNull()
@@ -50,7 +50,7 @@ test('a pasta mostra o nome do Projeto, sem controle para trocá-lo, e a contage
   const tools = await screen.findByRole('button', { name: '2 ferramentas' })
   const name = await within(tools.parentElement ?? document.body).findByText(PEDIDOS.name)
   expect(name.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
+  expect(screen.queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
 })
 

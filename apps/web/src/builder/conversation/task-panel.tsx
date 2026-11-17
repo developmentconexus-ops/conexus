@@ -1,9 +1,10 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { CheckIcon, ChevronRightIcon, CircleIcon, Loader2Icon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react'
 import { useState } from 'react'
 import type { z } from 'zod'
 import { cn } from '../../ui/cn.ts'
 import { Collapsible, CollapsibleTrigger } from '../../ui/collapsible.tsx'
+import { Spinner } from '../../ui/spinner.tsx'
 
 type Task = z.infer<typeof HubTask>
 
@@ -76,11 +77,9 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             )}
             {task.status === 'in_progress' && (
               <>
-                <Loader2Icon
-                  className="size-3.5 shrink-0 text-accent motion-safe:animate-spin"
-                  role="img"
-                  aria-label="Em andamento"
-                />
+                <span className="flex shrink-0 text-accent">
+                  <Spinner label="Em andamento" className="size-3.5" />
+                </span>
                 <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
                 </span>

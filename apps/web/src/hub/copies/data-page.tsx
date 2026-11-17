@@ -1,7 +1,7 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { PageTitle } from '../../ui/list.tsx'
+import { PageHeader } from '../../ui/page-header.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { AppsLayer } from './apps-layer.tsx'
 import { NoteLine, useNote } from './copy-list.tsx'
@@ -58,14 +58,16 @@ export function DataPage(props: { companyId: CompanyId; layer: DataLayer; q: str
   const [note, setNote] = useNote(read.data?.copies ?? [])
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
-      <div className="flex flex-wrap items-start justify-between gap-md">
-        <div className="flex min-w-0 flex-col gap-xs">
-          <PageTitle>{DATA_TITLE}</PageTitle>
-          <p className="max-w-message text-text-2">{DATA_INTRO}</p>
-          {!may.manageCopies && <RoleNote companyId={companyId} />}
-        </div>
-        {may.manageCopies && <NewCopy companyId={companyId} />}
-      </div>
+      <PageHeader
+        title={DATA_TITLE}
+        intro={
+          <>
+            <p className="max-w-message text-text-2">{DATA_INTRO}</p>
+            {!may.manageCopies && <RoleNote companyId={companyId} />}
+          </>
+        }
+        actions={may.manageCopies && <NewCopy companyId={companyId} />}
+      />
       {note !== undefined && <NoteLine note={note} />}
       {layer === DataLayer.enum.raw && (
         <RawLayer

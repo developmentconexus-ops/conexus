@@ -88,10 +88,17 @@ export async function loadConstrutorConversation(
   if (!listed.conversations.some((one) => one.id === conversationId)) throw notFound()
 }
 
-/** What the Início's Agentes page reads before it opens: the company's agents, or one Projeto's; a member's read is not found (S10). */
-export function loadAgents(
+/**
+ * What the Início's Agentes page reads before it opens: the company's agents, or one Projeto's. A
+ * member's read is not found (S10); any other failure stays on the read, and the page opens with it
+ * where the list goes, under the title, the filter and Novo agente (issue 705).
+ */
+export async function loadAgents(
   queryClient: QueryClient,
   place: { companyId: CompanyId; projectId?: ProjectId },
 ) {
-  return readOrGone(queryClient.query(agentsQuery(place.companyId, place.projectId)))
+  const agents = agentsQuery(place.companyId, place.projectId)
+  await queryClient.prefetchQuery(agents)
+  const { error } = queryClient.getQueryState(agents.queryKey) ?? {}
+  if (error instanceof HubFailure && error.code === 'NOT_FOUND') throw notFound()
 }

@@ -2,10 +2,10 @@ import type { CompanyId, Connection, ConnectorEntry, CopyId, CopySummary } from 
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { ChevronDownIcon, CirclePauseIcon, SearchIcon, Table2Icon } from 'lucide-react'
+import { ChevronDownIcon, CirclePauseIcon, Table2Icon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '../../ui/input-group.tsx'
+import { SearchField } from '../../ui/search-field.tsx'
 import {
   SidebarGroup,
   SidebarMenu,
@@ -81,28 +81,20 @@ function TreeSearch({ q }: { q: string | undefined }) {
     setTyped(q ?? '')
   }, [q])
   return (
-    <InputGroup className="h-control">
-      <InputGroupAddon>
-        <SearchIcon aria-hidden="true" />
-      </InputGroupAddon>
-      <InputGroupInput
-        type="search"
-        aria-label={SEARCH_TABLES}
-        placeholder={SEARCH_TABLES}
-        className="[&::-webkit-search-cancel-button]:appearance-none"
-        value={typed}
-        onChange={(event) => {
-          setTyped(event.target.value)
-          sent.current.add(event.target.value)
-          void navigate({
-            to: '.',
-            search: (old) => ({ ...old, q: event.target.value || undefined }),
-            replace: true,
-            state: { keepDrawer: true },
-          })
-        }}
-      />
-    </InputGroup>
+    <SearchField
+      label={SEARCH_TABLES}
+      value={typed}
+      onChange={(query) => {
+        setTyped(query)
+        sent.current.add(query)
+        void navigate({
+          to: '.',
+          search: (old) => ({ ...old, q: query || undefined }),
+          replace: true,
+          state: { keepDrawer: true },
+        })
+      }}
+    />
   )
 }
 

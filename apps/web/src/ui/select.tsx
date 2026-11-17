@@ -1,6 +1,6 @@
 import { Select as SelectPrimitive } from '@base-ui/react/select'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `select` (registry/base-nova/ui/select.tsx, read with `shadcn view`
@@ -46,12 +46,20 @@ export function SelectContent({
   align = 'center',
   alignOffset = 0,
   alignItemWithTrigger = true,
+  before,
+  after,
+  'aria-label': label,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
     SelectPrimitive.Positioner.Props,
     'align' | 'alignOffset' | 'side' | 'sideOffset' | 'alignItemWithTrigger'
-  >) {
+  > & {
+    /** What the popup shows above the list, outside the listbox: the question it answers. */
+    before?: ReactNode
+    /** What the popup shows under the list, outside the listbox: a status, an alert, a row that is no option. */
+    after?: ReactNode
+  }) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -71,7 +79,11 @@ export function SelectContent({
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List className="p-sm">{children}</SelectPrimitive.List>
+          {before}
+          <SelectPrimitive.List className="p-sm" aria-label={label}>
+            {children}
+          </SelectPrimitive.List>
+          {after}
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
@@ -105,6 +117,20 @@ export function ChoiceSelect(props: {
         ))}
       </SelectContent>
     </Select>
+  )
+}
+
+export function SelectGroup(props: SelectPrimitive.Group.Props) {
+  return <SelectPrimitive.Group data-slot="select-group" {...props} />
+}
+
+export function SelectLabel({ className, ...props }: SelectPrimitive.GroupLabel.Props) {
+  return (
+    <SelectPrimitive.GroupLabel
+      data-slot="select-label"
+      className={cn('px-sm pt-sm pb-xs text-eyebrow text-text-2', className)}
+      {...props}
+    />
   )
 }
 

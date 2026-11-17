@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react'
 import { dayOf } from '../../platform/dates.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
+import { List, Row, rowBody } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
+import { PageHeader } from '../../ui/page-header.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { maskedCnpj } from './cnpj.ts'
@@ -80,12 +81,14 @@ export function Clients() {
   const { data } = useSuspenseQuery(clientsQuery(page))
   return (
     <div className="flex flex-col gap-xl">
-      <div className="flex flex-wrap items-center justify-between gap-md">
-        <PageTitle>Clientes</PageTitle>
-        <Link to="/operations/clients/new" className={buttonVariants({ variant: 'primary' })}>
-          Cadastrar cliente
-        </Link>
-      </div>
+      <PageHeader
+        title="Clientes"
+        actions={
+          <Link to="/operations/clients/new" className={buttonVariants({ variant: 'primary' })}>
+            Cadastrar cliente
+          </Link>
+        }
+      />
       {notice && <Notice>{NOTICES[notice]}</Notice>}
       {data.clients.length === 0 ? (
         <Empty>Nenhum cliente cadastrado.</Empty>

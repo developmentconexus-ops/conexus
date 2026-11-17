@@ -32,13 +32,10 @@ export const NO_TOOLS_COMPANY = 'Nenhuma ferramenta ligada à empresa'
 export const LINK_ANOTHER_TOOL = 'Conectar outra ferramenta'
 export const RELEASE_ANOTHER_TOOL = 'Liberar outra ferramenta ao Projeto'
 export const NO_PROJECT_OPTION = 'Sem Projeto'
-export const NO_PROJECT_MATCH = 'Nenhum Projeto com esse nome.'
-export const MORE_PROJECTS = 'Mais Projetos'
 
 export const CONTINUE_BLOCK = 'Continuar'
 export const CONNECTIONS_BLOCK = 'Ligações'
 export const INTEGRATIONS_LINK = 'Integrações →'
-export const SEARCH_PROJECT = 'Buscar Projeto'
 export const READING_TOOLS = 'Lendo as ferramentas…'
 export const PROJECT_MENU_TITLE = 'Em qual Projeto?'
 

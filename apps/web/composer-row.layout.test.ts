@@ -135,9 +135,9 @@ test('a 390, o menu da pasta do Início com um Projeto de nome comprido cabe na 
     viewport: PHONE,
     replies: { ...OWNER, ...startsOn(COMPANY.id) },
   })
-  await page.getByRole('button', { name: 'Projeto da conversa' }).click()
-  const folder = page.getByRole('dialog', { name: 'Projeto da conversa' })
-  const option = folder.getByRole('button').nth(1)
+  await page.getByRole('combobox', { name: 'Projeto da conversa' }).click()
+  const folder = page.getByRole('listbox', { name: 'Projeto da conversa' })
+  const option = folder.getByRole('option').nth(1)
   await option.waitFor()
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   const menu = await folder.boundingBox()

@@ -52,7 +52,7 @@ export function registerProjectRoutes(
 ): void {
   registerAccessRoutes(app, access)
   serve(app, listProjects, async ({ person, params, query }) =>
-    answer(await projects.list({ person, ...params, page: query.page })),
+    answer(await projects.list({ person, ...params, page: query.page, q: query.q })),
   )
 
   serve(app, getProject, async ({ person, params }) =>

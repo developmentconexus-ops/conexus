@@ -2,6 +2,7 @@ import { CONVERSATION_SEARCH_MAX, ConversationId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
+import { choose } from '../conversation/test-hub.tsx'
 import {
   assistantConversation,
   assistantScreens,
@@ -65,11 +66,10 @@ test('o lugar: o filtro mostra só as daquele lugar com um rótulo e ×, e o × 
     ],
   })
   const nav = await list()
-  fireEvent.click(await nav.findByRole('button', { name: 'Filtrar conversas' }))
-  fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Início' }))
+  await choose(await nav.findByRole('combobox', { name: 'Filtrar conversas' }), 'Início')
   await waitFor(() => expect(nav.queryByRole('link', { name: /Do Projeto/ })).toBeNull())
   expect(await nav.findByRole('link', { name: /Da casa/ })).toBeTruthy()
-  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
   expect(conexus.router.state.location.search).toMatchObject({ place: 'HOME' })
   fireEvent.click(nav.getByRole('button', { name: 'Tirar o filtro: Início' }))
   expect(await nav.findByRole('link', { name: /Do Projeto/ })).toBeTruthy()
@@ -192,8 +192,7 @@ test('trocar de lugar com a resposta a caminho mostra os esqueletos, nunca a lis
   const nav = await list()
   await nav.findByRole('link', { name: /De hoje/ })
   held = answer.promise
-  fireEvent.click(await nav.findByRole('button', { name: 'Filtrar conversas' }))
-  fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Início' }))
+  await choose(await nav.findByRole('combobox', { name: 'Filtrar conversas' }), 'Início')
   await waitFor(() =>
     expect(
       document.querySelectorAll('[data-sidebar="sidebar"] [data-slot="sidebar-menu-skeleton"]'),
@@ -226,7 +225,7 @@ test('na aba Projetos a busca vale dentro de cada grupo, e o chip de lugar sai; 
   expect(nav.queryByRole('link', { name: /Estoque/ })).toBeNull()
   expect(await nav.findByText('Nenhuma conversa com esse nome.')).toBeTruthy()
   expect(nav.queryByText('Nenhuma conversa neste Projeto ainda.')).toBeNull()
-  expect(nav.queryByRole('button', { name: 'Filtrar conversas' })).toBeNull()
+  expect(nav.queryByRole('combobox', { name: 'Filtrar conversas' })).toBeNull()
   expect(nav.queryByRole('button', { name: /Tirar o filtro/ })).toBeNull()
   expect(nav.getByRole('searchbox', { name: 'Buscar pelo título' })).toBeTruthy()
   fireEvent.click(nav.getByRole('tab', { name: 'Recentes' }))

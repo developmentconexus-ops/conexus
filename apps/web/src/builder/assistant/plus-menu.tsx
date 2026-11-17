@@ -12,11 +12,13 @@ import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.tsx'
+import { matches, SEARCH_FROM } from '../../ui/picker.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
+import { SearchField } from '../../ui/search-field.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { COMPOSER_SOFT } from '../conversation/public.ts'
-import { LIST, matches, ROW, SEARCH_FROM, Search } from './choice-list.tsx'
+import { LIST, ROW } from './choice-list.tsx'
 import { useConnectorCatalog } from './connector-names.ts'
 import type { DraftChoice } from './draft-choice.ts'
 import {
@@ -83,7 +85,7 @@ function ToolSwitches(props: { place: ComposerPlace; choice: Choice }) {
   return (
     <>
       {offered.length >= SEARCH_FROM && (
-        <Search label={TOOLS_SEARCH} value={query} onChange={setQuery} />
+        <SearchField label={TOOLS_SEARCH} value={query} onChange={setQuery} />
       )}
       <ul className={LIST}>
         {shown.map((one) => (

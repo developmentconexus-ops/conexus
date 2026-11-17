@@ -1,185 +1,96 @@
 import '../brand/tokens.css'
 import { CSPProvider } from '@base-ui/react/csp-provider'
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 import { ConexusMark } from '../brand/mark.tsx'
-import { Bubble, BubbleContent } from './bubble.tsx'
-import { Button } from './button.tsx'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible.tsx'
-import {
-  Combobox,
-  ComboboxCollection,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxGroup,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxLabel,
-  ComboboxList,
-  ComboboxValue,
-} from './combobox.tsx'
-import { Input } from './input.tsx'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from './input-group.tsx'
-import { Marker, MarkerContent, MarkerIcon } from './marker.tsx'
-import { Message, MessageContent, MessageFooter, MessageHeader } from './message.tsx'
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerItem,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
-} from './message-scroller.tsx'
-import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './resizable.tsx'
-import { Slider } from './slider.tsx'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.tsx'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip.tsx'
-import {
-  Trace,
-  TraceCollapsible,
-  TraceCollapsibleContent,
-  TraceCollapsibleTrigger,
-  TraceDescription,
-  TraceIcon,
-  TraceLine,
-  TraceTitle,
-} from './trace.tsx'
+import type { ShowcaseEntry, ShowcaseGroup } from './showcase/types.ts'
+import { SHOWCASE } from './showcase.ts'
+import { TooltipProvider } from './tooltip.tsx'
 
-// Every chat piece on one page, served only to the layout tests, which watch it under the Hub's
-// CSP (web W22, testing T23).
-const MODELS = [
-  { provider: 'Anthropic', items: ['Claude Sonnet 4.5', 'Claude Opus 4.5'] },
-  { provider: 'OpenAI', items: ['GPT-5'] },
-]
+// Every piece of ui/ on one page, in each state and in both themes, served only to the layout tests,
+// which watch it under the Hub's CSP (web W22, testing T23) and never built into the product.
+const GROUPS = [...new Set(SHOWCASE.map((entry) => entry.group))]
+
+function Body({ entry }: { entry: ShowcaseEntry }) {
+  return (
+    <div className="flex flex-col gap-lg p-lg">
+      {entry.typical()}
+      <div className="flex flex-col gap-lg md:flex-row md:flex-wrap md:items-start">
+        {entry.states.map(([state, render]) => (
+          <figure key={state} className="flex min-w-0 flex-col gap-xs">
+            <figcaption className="font-mono text-eyebrow text-text-2">{state}</figcaption>
+            {render()}
+          </figure>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Block({ entry }: { entry: ShowcaseEntry }) {
+  return (
+    <article data-file={entry.file} className="flex flex-col gap-sm border-b border-line pb-xl">
+      <h3 className="font-display text-title">{entry.name}</h3>
+      <p className="text-text-2">{entry.when}</p>
+      <div data-band="light" className="scheme-light bg-canvas">
+        <Body entry={entry} />
+      </div>
+      <div data-band="dark" data-theme="dark" className="scheme-dark bg-canvas text-text">
+        <Body entry={entry} />
+      </div>
+    </article>
+  )
+}
+
+function Group({ group }: { group: ShowcaseGroup }) {
+  return (
+    <section id={group} className="flex flex-col gap-xl">
+      <h2 className="font-display text-title">{group}</h2>
+      {SHOWCASE.filter((entry) => entry.group === group).map((entry) => (
+        <Block key={entry.file} entry={entry} />
+      ))}
+    </section>
+  )
+}
 
 function Pieces() {
   return (
     <TooltipProvider>
-      <ResizablePanelGroup id="pieces" className="h-dvh">
-        <ResizablePanel id="area" defaultSize="60%" minSize="30%">
-          <Tabs defaultValue="preview">
-            <TabsList>
-              <TabsTrigger value="preview">Prévia</TabsTrigger>
-              <TabsTrigger value="project">Projeto</TabsTrigger>
-            </TabsList>
-            <TabsContent value="preview">Prévia</TabsContent>
-            <TabsContent value="project">Projeto</TabsContent>
-          </Tabs>
+      <main className="mx-auto flex w-full max-w-page flex-col gap-3xl p-lg">
+        <header className="flex flex-col gap-md">
           <ConexusMark working size={48} />
-          <div className="flex flex-wrap items-center gap-lg p-lg">
-            <Button>Padrão</Button>
-            <Button size="sm">Pequeno</Button>
-            <Button size="icon" aria-label="Ícone" />
-            <Button size="icon-sm" aria-label="Ícone pequeno" />
-            <Input aria-label="Campo" />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle aria-label="Redimensionar" />
-        <ResizablePanel id="chat" defaultSize="40%" minSize="20%">
-          <MessageScrollerProvider>
-            <MessageScroller>
-              <MessageScrollerViewport>
-                <MessageScrollerContent>
-                  <MessageScrollerItem>
-                    <Message align="end">
-                      <MessageContent>
-                        <Bubble align="end">
-                          <BubbleContent>Compare dois apps de encomenda</BubbleContent>
-                        </Bubble>
-                        <MessageFooter>10:42</MessageFooter>
-                      </MessageContent>
-                    </Message>
-                  </MessageScrollerItem>
-                  <MessageScrollerItem scrollAnchor>
-                    <Message>
-                      <MessageContent>
-                        <MessageHeader>Conexus</MessageHeader>
-                        <Trace>
-                          <TraceLine status="running">
-                            <TraceTitle>Pensando…</TraceTitle>
-                          </TraceLine>
-                          <TraceCollapsible>
-                            <TraceCollapsibleTrigger>
-                              <TraceLine>
-                                <TraceIcon />
-                                <TraceTitle>Leu 3 páginas</TraceTitle>
-                                <TraceDescription>9 s</TraceDescription>
-                              </TraceLine>
-                            </TraceCollapsibleTrigger>
-                            <TraceCollapsibleContent>página 1</TraceCollapsibleContent>
-                          </TraceCollapsible>
-                        </Trace>
-                        <Bubble variant="ghost">
-                          <BubbleContent>Resposta</BubbleContent>
-                        </Bubble>
-                        <Marker>
-                          <MarkerIcon />
-                          <MarkerContent>As contas do modelo estão indisponíveis.</MarkerContent>
-                        </Marker>
-                      </MessageContent>
-                    </Message>
-                  </MessageScrollerItem>
-                </MessageScrollerContent>
-              </MessageScrollerViewport>
-              <MessageScrollerButton />
-            </MessageScroller>
-          </MessageScrollerProvider>
-          <InputGroup>
-            <InputGroupTextarea aria-label="Mensagem" />
-            <InputGroupAddon align="block-end">
-              <Combobox items={MODELS}>
-                <ComboboxValue />
-                <ComboboxInput aria-label="Modelo" />
-                <ComboboxContent>
-                  <ComboboxEmpty>Nenhum modelo</ComboboxEmpty>
-                  <ComboboxList>
-                    {(group: (typeof MODELS)[number]) => (
-                      <ComboboxGroup key={group.provider} items={group.items}>
-                        <ComboboxLabel>{group.provider}</ComboboxLabel>
-                        <ComboboxCollection>
-                          {(model: string) => (
-                            <ComboboxItem key={model} value={model}>
-                              {model}
-                            </ComboboxItem>
-                          )}
-                        </ComboboxCollection>
-                      </ComboboxGroup>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-              <Popover>
-                <PopoverTrigger render={<InputGroupButton aria-label="Raciocínio" />} />
-                <PopoverContent>
-                  <Slider label="Raciocínio" min={0} max={4} step={1} defaultValue={3} />
-                </PopoverContent>
-              </Popover>
-              <Tooltip>
-                <TooltipTrigger render={<InputGroupButton aria-label="Enviar" />} />
-                <TooltipContent>Enviar</TooltipContent>
-              </Tooltip>
-            </InputGroupAddon>
-          </InputGroup>
-          <Collapsible>
-            <CollapsibleTrigger>Detalhes</CollapsibleTrigger>
-            <CollapsibleContent>Aberto</CollapsibleContent>
-          </Collapsible>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+          <h1 className="font-display text-title">Peças</h1>
+          <nav aria-label="Grupos" className="flex flex-wrap gap-md">
+            {GROUPS.map((group) => (
+              <a key={group} href={`#${group}`} className="text-label underline">
+                {group}
+              </a>
+            ))}
+          </nav>
+        </header>
+        {GROUPS.map((group) => (
+          <Group key={group} group={group} />
+        ))}
+      </main>
     </TooltipProvider>
   )
 }
+
+const router = createRouter({
+  routeTree: createRootRoute({ component: Pieces }),
+  history: createMemoryHistory({ initialEntries: ['/'] }),
+})
 
 const root = document.getElementById('root')
 if (root !== null) {
   createRoot(root).render(
     <CSPProvider disableStyleElements>
-      <Pieces />
+      <RouterProvider router={router} />
     </CSPProvider>,
   )
 }

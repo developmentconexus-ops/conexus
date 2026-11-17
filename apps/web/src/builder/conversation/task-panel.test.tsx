@@ -183,6 +183,6 @@ test('cada atualização de tarefas que o Mastra envia avança a contagem do pai
 test('cada situação de tarefa tem o nome no ícone, para o leitor de tela (Critério 10)', () => {
   render(<TaskPanel tasks={TASKS} streaming={true} />)
   expect(screen.getByRole('img', { name: 'Concluída' })).toBeTruthy()
-  expect(screen.getByRole('img', { name: 'Em andamento' })).toBeTruthy()
+  expect(screen.getByRole('status', { name: 'Em andamento' })).toBeTruthy()
   expect(screen.getByRole('img', { name: 'Pendente' })).toBeTruthy()
 })

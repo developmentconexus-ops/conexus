@@ -209,7 +209,7 @@ async function offsets(page: Page, names: string[]) {
   assert.ok(box, 'the box is not laid out')
   return Promise.all(
     names.map(async (name) => {
-      const one = await page.getByRole('button', { name }).boundingBox()
+      const one = await page.getByLabel(name, { exact: true }).boundingBox()
       assert.ok(one, `${name} is not laid out`)
       return Math.round(one.x - box.x)
     }),
@@ -259,7 +259,7 @@ test('na conversa de Projeto, o nome do Projeto fica na pasta e as ferramentas v
   const [named, counted] = await Promise.all([name.boundingBox(), tools.boundingBox()])
   assert.ok(named && counted, 'the row is not laid out')
   assert.ok(named.x + named.width <= counted.x, 'the tools come after the Projeto name')
-  assert.equal(await page.getByRole('button', { name: 'Projeto da conversa' }).count(), 0)
+  assert.equal(await page.getByRole('combobox', { name: 'Projeto da conversa' }).count(), 0)
   await page.close()
 })
 

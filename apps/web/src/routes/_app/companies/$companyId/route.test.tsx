@@ -116,30 +116,27 @@ test('o trilho da dona tem Automações, Agentes e Dados logo depois de Integra�
   expect(member.rail.getByRole('link', { name: 'Dados' })).toBeTruthy()
 })
 
-/** The Projetos the Projeto's own header offers to switch to, in order, without "Todos os projetos". */
-async function recents() {
-  fireEvent.click(await screen.findByRole('button', { name: /Trocar de Projeto/ }))
-  const menu = within(await screen.findByRole('menu'))
-  return menu
-    .getAllByRole('menuitem')
-    .map((item) => item.textContent)
-    .slice(0, -1)
+/** The remembered Projetos the Projeto's own header lists first, in order, nothing else (criterion 16). */
+async function recents(count: number) {
+  fireEvent.click(await screen.findByRole('combobox', { name: /Trocar de Projeto/ }))
+  const group = within(await screen.findByRole('group', { name: 'Projetos recentes' }))
+  await waitFor(() => expect(group.getAllByRole('option')).toHaveLength(count))
+  return group.getAllByRole('option').map((item) => item.textContent)
 }
 
-test('os Projetos recentes do cabeçalho do Projeto: os abertos por último que seguem na lista, completados pelos primeiros, até cinco (critério 3)', async () => {
+test('os Projetos recentes do cabeçalho do Projeto: só os lembrados que seguem na lista, na ordem em que foram abertos, sem completar com os primeiros (critério 16)', async () => {
   remembered(7, 3, 6)
   open(`${HOME}/projects/${PROJECTS[0]?.id}`)
-  expect(await recents()).toEqual(['Projeto 1', 'Projeto 7', 'Projeto 3', 'Projeto 6', 'Projeto 2'])
+  expect(await recents(4)).toEqual(['Projeto 1', 'Projeto 7', 'Projeto 3', 'Projeto 6'])
 })
 
-test('um Projeto lembrado que o Hub já não lista fica de fora (critério 3)', async () => {
+test('um Projeto lembrado que o Hub já não acha fica de fora, e o que existe fora da primeira página aparece com o nome lido à parte (critério 16)', async () => {
   globalThis.localStorage.setItem(
     `conexus-remembered:${ANA.id}:projects.${COMPANY.id}`,
     `${'9'.repeat(32)} ${'4'.repeat(32)}`,
   )
   open(`${HOME}/projects/${PROJECTS[0]?.id}`)
-  const shown = await recents()
-  expect(shown).toHaveLength(5)
+  const shown = await recents(2)
   expect(shown).toContain('Projeto 4')
   expect(shown).not.toContain('Projeto 9')
 })
