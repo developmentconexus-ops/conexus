@@ -8,19 +8,23 @@ web
 
 ## Users
 
-People in Brazilian companies, writing in Portuguese, who are not developers: company owners and
-administrators who set the company up, and members who ask for and use apps. One founder operates the
-installation through the Central. Owner: docs/architecture.md §1 "Who has a stake".
+People in companies and industries with many data sources, connectors and disconnected systems, whether
+or not they program: owners and administrators who set the company up, members who know the operation,
+developers who build, and people who only use an app. One founder operates the installation through
+the Central. Owner: docs/architecture.md §1 "Who has a stake". Concept: docs/explanation/conceito.md.
 
 ## Product Purpose
 
-A person asks the Builder, in Portuguese, for a business app; Conexus builds, previews, publishes and
-runs it for that company, on that company's data. Owner: docs/architecture.md §1.
+Conexus gathers a company's data, systems and knowledge of how it operates into a context and ontology
+layer that learns with use. On it the company analyses, automates, puts AI to work and asks the Builder
+for the apps its processes need; Conexus builds, previews, publishes and runs them on that company's
+data. Owner: docs/architecture.md §1.
 
 ## Positioning
 
-Creation by conversation, real code, official data stays in the company's systems. Not an ERP, a
-database console or a drag-and-drop tool. Owner: docs/architecture.md §1 "What the product never does".
+A context and ontology layer first; apps are one of four things built on it. Creation by conversation,
+real code, official data stays in the company's systems. Not an ERP, a database console or a
+drag-and-drop tool. Owner: docs/architecture.md §1 "What the product never does".
 
 ## Capabilities and Constraints
 
