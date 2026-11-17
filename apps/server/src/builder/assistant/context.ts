@@ -5,13 +5,13 @@ import type { Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { CompanyProjects } from '../company-tools/public.ts'
 import { conversationRun } from '../controller-context/public.ts'
 import type { Owner, RunScope, Speakers } from '../controller-kit/public.ts'
 import { admitAsker, oncePerRun, ownerOfResource, runResolver } from '../controller-kit/public.ts'
 import { MARK } from '../machine/public.ts'
 import type { Kept } from './chosen.ts'
 import { placeOf } from './open.ts'
-import type { AssistantProjects } from './ports.ts'
 
 /** The place and choice of a conversation of the owner's (`chosen.ts`). */
 export type ChosenOf = (owner: Owner, conversationId: ConversationId) => Promise<Kept>
@@ -71,7 +71,7 @@ export function speakersOf(
   deps: {
     database: Database
     identity: IdentityPorts
-    projects: Pick<AssistantProjects, 'liveProjectOf'>
+    projects: Pick<CompanyProjects, 'liveProjectOf'>
   },
   scope: Readonly<{ owner: Owner; place: Place }>,
 ): Promise<Speakers> {

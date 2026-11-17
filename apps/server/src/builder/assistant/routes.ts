@@ -30,6 +30,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
+import type { CompanyProjects } from '../company-tools/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import {
   attemptIdOf,
@@ -55,7 +56,6 @@ import {
   openConversation,
   placeOf,
 } from './open.ts'
-import type { AssistantProjects } from './ports.ts'
 import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import { listedPage } from './search.ts'
 
@@ -69,7 +69,7 @@ type Deps = {
   database: Database
   identity: IdentityPorts
   access: Pick<Access, 'viewOf'>
-  projects: Pick<AssistantProjects, 'liveProjectOf'>
+  projects: Pick<CompanyProjects, 'liveProjectOf'>
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>

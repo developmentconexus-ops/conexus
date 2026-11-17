@@ -271,12 +271,15 @@ test('no Projeto, o sistema liberado vem com as leituras do papel', async (t) =>
   assert.deepEqual(readsOf(await systemsOf(w.on, scope)), [`${w.on.connectionId}:pedidos`])
 })
 
-test('a versão do agente lista o que declara, como hoje', async (t) => {
+test('declara dentro do papel: o catálogo do agente é o declarado ∩ o papel de quem roda; vazio sem leitura', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   await grantSankhya(w.on)
   const outside = await outsideTheSystem(w.on)
   const declared = [{ connectionId: w.on.connectionId, operation: OperationId.parse('pedidos') }]
-  for (const person of [w.brunoId, outside.personId]) {
+  for (const [person, reads] of [
+    [w.brunoId, [`${w.on.connectionId}:pedidos`]],
+    [outside.personId, []],
+  ] as const) {
     const scope = versionAt(
       {
         companyId: w.on.companyId,
@@ -286,6 +289,6 @@ test('a versão do agente lista o que declara, como hoje', async (t) => {
       declared,
       [w.on.connectionId],
     )
-    assert.deepEqual(readsOf(await systemsOf(w.on, scope)), [`${w.on.connectionId}:pedidos`])
+    assert.deepEqual(readsOf(await systemsOf(w.on, scope)), reads, person)
   }
 })

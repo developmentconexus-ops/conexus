@@ -7,8 +7,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
-import type { Place } from '../../hub/access/public.ts'
-import { principalFor } from '../../hub/access/public.ts'
+import type { Access, Place } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { liveProjectOf } from '../../hub/projects/public.ts'
@@ -16,8 +15,14 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AgentsAlive } from '../agents/public.ts'
+import type { CompanyToolDeps } from '../company-tools/public.ts'
+import {
+  byPrincipal,
+  companyConnections,
+  companyToolScope,
+  companyTools,
+} from '../company-tools/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
 import type { Owner, ReleaseScope, RunMark, RunScope, Speakers } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
@@ -71,12 +76,16 @@ const AVAILABLE_TOOLS: readonly string[] = [
   ...TASK_TOOLS,
 ]
 
+type ConstrutorConnection = Awaited<ReturnType<Connectors['assistant']['connections']>>[number]
+
 type Deps = {
   storage: MastraCompositeStore
   database: Database
   identity: IdentityPorts
   queue: QueueDeps
   connectors: Connectors['assistant']
+  /** The access door: what the Projeto offers the person, which every company tool names. */
+  access: Pick<Access, 'viewOf'>
   speakersOf: (scope: Readonly<{ owner: Owner; place: Place }>) => Promise<Speakers>
   liveProjectOf: typeof liveProjectOf
   agents: Pick<AgentsAlive, 'service' | 'tools' | 'draftAgent'>
@@ -154,8 +163,8 @@ function machineMarks(runOf: RunOf) {
   }
 }
 
-/** What the Construtor's tools read of the Projeto: its name, what it received and its app's tables. */
-function projectReader(deps: Deps) {
+/** What the Construtor's tools read of the Projeto: its name, what it received in the run's view and its app's tables. */
+function projectReader(deps: Deps, offered: () => Promise<readonly ConstrutorConnection[]>) {
   return async (scope: InProject) => {
     const live = await deps.database.read(databaseScopeOf(scope), (tx) =>
       deps.liveProjectOf(tx, { companyId: scope.companyId, projectId: scope.projectId }),
@@ -164,9 +173,7 @@ function projectReader(deps: Deps) {
     const tables = await deps.appTables(scope)
     return {
       project: { id: scope.projectId, name: live.name },
-      offered: await deps.connectors.connections(
-        principalFor({ consumer: 'construtor', ...scope }),
-      ),
+      offered: await offered(),
       app: tables === null ? null : { tables },
     }
   }
@@ -186,10 +193,10 @@ function construtorAgent(
   },
 ) {
   const { scopeOf } = parts
-  const offeredOf = oncePerRun(async (requestContext) => {
-    const run = await scopeOf(requestContext)
-    return run === undefined ? [] : deps.connectors.connections(principalOf(run))
-  })
+  const tools: CompanyToolDeps<ConstrutorConnection> = {
+    log: deps.log,
+    connector: byPrincipal(deps.connectors, turnKey.of),
+  }
   const construtor = {
     machines: parts.machines,
     agents: deps.agents.service,
@@ -200,48 +207,54 @@ function construtorAgent(
       deps
         .automations()
         .list({ companyId: scope.companyId, personId: scope.personId }, scope.projectId),
-    project: projectReader(deps),
   }
+  const toolScopeOf = oncePerRun(async (requestContext: RequestContext) => {
+    const run = await scopeOf(requestContext)
+    if (run === undefined) return undefined
+    return companyToolScope(
+      run,
+      {
+        access: deps.access,
+        connections: (each) => deps.connectors.connections(principalOf(each)),
+      },
+      { noteSave: false, appData: { kind: 'NONE' } },
+    )
+  })
   async function runScope(requestContext: RequestContext) {
     const run = await scopeOf(requestContext)
     const scope = run === undefined ? undefined : inProjectOf(run)
-    if (run === undefined || scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-    return { run, scope }
+    const toolScope = await toolScopeOf(requestContext)
+    if (run === undefined || scope === undefined || toolScope === undefined) {
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    }
+    return { run, scope, toolScope }
   }
   return new Agent({
     id: CONSTRUTOR_CONTROLLER,
     name: 'Construtor',
     instructions: async ({ requestContext }) => {
-      const { run } = await runScope(requestContext)
+      const { run, toolScope } = await runScope(requestContext)
       const speakers = await deps.speakersOf(run)
       return [
         fixedSystem(CONEXUS_PROMPT),
-        { role: 'system', content: blockOf(speakers, await offeredOf(requestContext)) },
+        { role: 'system', content: blockOf(speakers, await companyConnections(toolScope)) },
         { role: 'system', content: MANUAL },
       ] satisfies AgentInstructions
     },
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
-      const { run, scope } = await runScope(requestContext)
-      const offered = await offeredOf(requestContext)
-      const door = principalOf(run)
+      const { run, scope, toolScope } = await runScope(requestContext)
       function read(
         call: Parameters<ConnectorAccess['read']>[0],
         context: Parameters<ConnectorAccess['read']>[1],
       ) {
-        return deps.connectors.read(door, { ...call, turn: turnKey.of(context) })
+        return deps.connectors.read(principalOf(run), { ...call, turn: turnKey.of(context) })
       }
-      const access: ConnectorAccess = {
-        connections: offered,
-        log: deps.log,
-        read,
-        notes: (connectionId) => deps.connectors.notes(door, connectionId),
-        wording: { whose: 'this Project received' },
-      }
+      const project = projectReader(deps, () => companyConnections(toolScope))
       return {
         ...toolsOf(sessionModel(requestContext)),
-        ...connectorTools(access, { noteSave: false }),
-        ...construtorTools({ ...construtor, read }, scope),
+        ...(await companyTools(toolScope, 'construtor', tools)),
+        ...construtorTools({ ...construtor, project, read }, scope),
       }
     },
     ...agentDefaults(deps.queue, parts.turns),

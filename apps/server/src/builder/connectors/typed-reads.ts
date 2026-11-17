@@ -48,22 +48,16 @@ function openInputOf(operation: Read): z.ZodObject {
 }
 
 /** The conversation's access for a run: its chosen connections and its door; none outside a conversation. */
-export type AccessOf = (requestContext: RequestContext) => Promise<ConnectorAccess | undefined>
+type AccessOf = (requestContext: RequestContext) => Promise<ConnectorAccess | undefined>
 
-type Chosen = readonly Pick<ConnectorAccess['connections'][number], 'connector' | 'reads'>[]
-
-/**
- * Whether the run may see the typed read: one of its chosen connections is of the read's connector
- * and lists the read, as the role allows it (`visibleTo`, the Hub's `mayUseEach`).
- */
-export function offersRead(name: string, chosen: Chosen): boolean {
+/** The connector and the operation a typed read's name stands for; none for a name of no read. */
+export function readTarget(
+  name: string,
+): Readonly<{ connector: string; operation: string }> | undefined {
   const read = CATALOG.get(name)
-  if (read === undefined) return false
-  return chosen.some(
-    (each) =>
-      each.connector === read.connector.id &&
-      each.reads.some((listed) => listed.operation === read.operation.id),
-  )
+  return read === undefined
+    ? undefined
+    : { connector: read.connector.id, operation: read.operation.id }
 }
 
 /** A name that is none of the conversation's connections of this connector: refused with the names there are. */
@@ -127,7 +121,7 @@ function typedTool(name: string, read: TypedRead, accessOf: AccessOf) {
 
 /**
  * The typed reads (step U6): one tool per read of each connector, with the operation's own input,
- * the same for every request; who may see one decides per request (`offersRead`), and each read
+ * the same for every request; who may see one decides per request (the search's `filter`), and each read
  * goes through the conversation's door, with its cut, its file and its count.
  */
 export function typedReads(accessOf: AccessOf): ToolSearchProcessorOptions['tools'] {

@@ -12,8 +12,7 @@ import { operationLeaf, principalFor, tableLeaf } from './public.ts'
 type Scenario = Readonly<{
   /** The context Bruno converses in, for the consumer, as the conversation tells the door. */
   context: (w: RolesWorld) => Promise<ConsumerContext>
-  /** What takes `pedidos` out of his reach: the role's route, or a version that does not declare it. */
-  revokedBy: 'ROLE' | 'DECLARATION'
+  revokedBy: readonly ('ROLE' | 'DECLARATION')[]
   /** Whether the role's marks decide his tables here (Empresa) or the Projeto's release does (P1). */
   tablesBy: 'ROLE' | 'RELEASE'
 }>
@@ -45,7 +44,7 @@ const SCENARIOS = {
       place: { kind: 'COMPANY' },
       choice: { kind: 'CHOSEN', connections: [w.on.connectionId] },
     }),
-    revokedBy: 'ROLE',
+    revokedBy: ['ROLE'],
     tablesBy: 'ROLE',
   },
   builder: {
@@ -53,7 +52,7 @@ const SCENARIOS = {
       ...{ consumer: 'builder', companyId: w.on.companyId, personId: w.brunoId },
       projectId: await released(w),
     }),
-    revokedBy: 'ROLE',
+    revokedBy: ['ROLE'],
     tablesBy: 'RELEASE',
   },
   construtor: {
@@ -61,7 +60,7 @@ const SCENARIOS = {
       ...{ consumer: 'construtor', companyId: w.on.companyId, personId: w.brunoId },
       projectId: await released(w),
     }),
-    revokedBy: 'ROLE',
+    revokedBy: ['ROLE'],
     tablesBy: 'RELEASE',
   },
   agent: {
@@ -71,7 +70,7 @@ const SCENARIOS = {
       declared: pedidos(w),
       choice: { kind: 'CHOSEN', connections: [w.on.connectionId] },
     }),
-    revokedBy: 'DECLARATION',
+    revokedBy: ['ROLE', 'DECLARATION'],
     tablesBy: 'RELEASE',
   },
 } satisfies Record<Consumer, Scenario>
@@ -99,10 +98,10 @@ function operationsOf(systems: readonly CatalogSystem[]) {
 /** Takes `pedidos` out of Bruno's reach as the scenario does, and the context to ask next. */
 async function revoke(
   w: RolesWorld,
-  scenario: Scenario,
+  path: Scenario['revokedBy'][number],
   context: ConsumerContext,
 ): Promise<ConsumerContext> {
-  switch (scenario.revokedBy) {
+  switch (path) {
     case 'ROLE': {
       const url = `/api/companies/${w.on.companyId}/roles/${w.vendas.role}`
       const changed = await call(w.on.hub, w.on.ana, 'PUT', url, { connectors: {} })
@@ -114,7 +113,7 @@ async function revoke(
       return { ...context, declared: [] }
     }
     default:
-      return scenario.revokedBy satisfies never
+      return path satisfies never
   }
 }
 
@@ -170,29 +169,31 @@ for (const [consumer, scenario] of Object.entries(SCENARIOS)) {
     assert.deepEqual(view.may(operationLeaf(w.on.connectionId, 'clientes'), 'READ'), outside)
   })
 
-  test(`lei (e): mudar o papel muda a vista seguinte, em ${consumer}`, async (t) => {
-    const w = await rolesWorld(t, 'PLANTED')
-    const context = await scenario.context(w)
-    const before = await viewFor(w, context)
-    assert.ok(names(before.list('system')).includes('pedidos'))
-    assert.ok(before.list('table').some(({ name }) => name === 'sankhya_vendas'))
-    const after = await revoke(w, scenario, context)
-    if (scenario.tablesBy === 'ROLE') {
-      const kept = VENDAS.filter((name) => name !== 'sankhya_vendas').map((name) =>
-        copyOf(w.copies, name),
-      )
-      const marked = await put(w, w.on.ana, w.vendas.role, kept)
-      assert.equal(marked.statusCode, 200, marked.body)
-    }
-    const next = await viewFor(w, after)
-    assert.ok(!names(next.list('system')).includes('pedidos'))
-    assert.deepEqual(next.may(operationLeaf(w.on.connectionId, 'pedidos'), 'READ'), {
-      kind: 'REFUSED',
-      reason: 'OUT_OF_REACH',
+  for (const path of scenario.revokedBy) {
+    test(`lei (e) em ${consumer} (${path}): tirar pedidos muda a vista seguinte`, async (t) => {
+      const w = await rolesWorld(t, 'PLANTED')
+      const context = await scenario.context(w)
+      const before = await viewFor(w, context)
+      assert.ok(names(before.list('system')).includes('pedidos'))
+      assert.ok(before.list('table').some(({ name }) => name === 'sankhya_vendas'))
+      const after = await revoke(w, path, context)
+      if (scenario.tablesBy === 'ROLE') {
+        const kept = VENDAS.filter((name) => name !== 'sankhya_vendas').map((name) =>
+          copyOf(w.copies, name),
+        )
+        const marked = await put(w, w.on.ana, w.vendas.role, kept)
+        assert.equal(marked.statusCode, 200, marked.body)
+      }
+      const next = await viewFor(w, after)
+      assert.ok(!names(next.list('system')).includes('pedidos'))
+      assert.deepEqual(next.may(operationLeaf(w.on.connectionId, 'pedidos'), 'READ'), {
+        kind: 'REFUSED',
+        reason: 'OUT_OF_REACH',
+      })
+      const listed = next.list('table').some(({ name }) => name === 'sankhya_vendas')
+      assert.equal(listed, scenario.tablesBy === 'RELEASE')
     })
-    const listed = next.list('table').some(({ name }) => name === 'sankhya_vendas')
-    assert.equal(listed, scenario.tablesBy === 'RELEASE')
-  })
+  }
 }
 
 test('a escolha estreita os sistemas, não as tabelas: CHOSEN lista as escolhidas que a pessoa alcança, ANY todas as alcançadas', async (t) => {

@@ -4,7 +4,7 @@ import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import { chosenIn } from '../access/public.ts'
-import { roleOfSpeaker, speakerOf } from '../identity/public.ts'
+import { roleOfSpeaker, speakerOf, withinVersion } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
 import type { Login, OpenedConnection } from './executor.ts'
 import { issuesOf } from './read.ts'
@@ -99,7 +99,8 @@ async function admitted(deps: Deps, a: WriteRequest): Promise<Admitted> {
   const operation = connectorOf(found.connector)?.writes?.find((each) => each.id === a.operation)
   // The tool is built from the version's declared writes: an id that is no write is the caller's mistake.
   if (operation === undefined) throw new Failure('REQUEST_MALFORMED')
-  const speaker = a.speaker.kind === 'PERSON' ? found.person : a.speaker
+  const speaker =
+    a.speaker.kind === 'PERSON' ? found.person : withinVersion(found.person, a.speaker.declared)
   const allowed = await deps.identity.mayUse(scope.companyId, speaker, {
     connectionId: a.connectionId,
     connectorId: ConnectorId.parse(found.connector),

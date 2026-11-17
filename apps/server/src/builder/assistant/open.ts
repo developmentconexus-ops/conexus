@@ -14,12 +14,12 @@ import { principalFor } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { CompanyProjects } from '../company-tools/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import { marksOf, openSession, RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { assistantMemory } from './memory.ts'
-import type { AssistantProjects } from './ports.ts'
 
 /** The place a request names: the Início, or one Projeto. */
 export function placeOf(projectId: ProjectId | undefined | null): Place {
@@ -42,7 +42,7 @@ export async function admitted(
   deps: {
     database: Database
     identity: IdentityPorts
-    projects: Pick<AssistantProjects, 'liveProjectOf'>
+    projects: Pick<CompanyProjects, 'liveProjectOf'>
   },
   owner: Owner,
   place: Place,

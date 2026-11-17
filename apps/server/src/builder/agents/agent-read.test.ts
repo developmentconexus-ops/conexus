@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ConnectionId } from '@conexus/hub-api'
 import type { Principal } from '../../hub/access/public.ts'
-import { post } from '../../hub/identity/test-hub.ts'
-import { talking } from '../assistant/test-assistant.ts'
+import { call, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { said, talking } from '../assistant/test-assistant.ts'
 import { endOf } from '../conversation/test-conversation.ts'
+import { tool } from '../conversation/test-questions.ts'
 import {
   agentOf,
   agentsOn,
@@ -114,4 +116,47 @@ test('o caderno fora da versão: a versão que não seleciona a Matriz que o Pro
   assert.equal(await door.notes(run, ConnectionId.parse(on.matriz)), null)
   const line = on.lines.findLast((each) => each.message === 'ASSISTANT_READ_REFUSED')
   assert.equal(line?.fields.reason, 'NOT_CHOSEN')
+})
+
+const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
+
+async function ordersRunBy(t: TestContext, who: 'DORA' | 'ANA', body: object = {}) {
+  const on = await agentsOn(t, [[tool('tool_pedidos_matriz', { page: 1 })], [said('Pronto.')]])
+  const orders = await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda sobre os pedidos.',
+    connections: [on.matriz],
+    tools: [orders.latest.id],
+  })
+  const dora = await memberOn(on.hub, on.companyId, DORA, 'developer')
+  const narrowed = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
+    connectors: { sankhya: ['empresas'] },
+    unattended: false,
+  })
+  assert.equal(narrowed.statusCode, 200, narrowed.body)
+  const person = who === 'DORA' ? dora : on.ana
+  const url = await talkedTo(on.hub, person, on.agents, agent.id, body)
+  const before = on.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
+  assert.equal(endOf(await (await talking(t, on.hub, person, url)).say('Os pedidos?')), 'complete')
+  const answered = on.calls[1]?.texts.join('\n') ?? ''
+  const called = on.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length - before
+  return { answered, called }
+}
+
+test('o teto: o agente salvo rodado por um Desenvolvedor sem a leitura é recusado, nada ao dublê; pelo Dono, lê', async (t) => {
+  const refused = await ordersRunBy(t, 'DORA')
+  assert.match(refused.answered, /NOT_IN_ROLE/)
+  assert.equal(refused.called, 0)
+  const read = await ordersRunBy(t, 'ANA')
+  assert.doesNotMatch(read.answered, /NOT_IN_ROLE/)
+  assert.equal(read.called, 1)
+})
+
+test('o teto do rascunho: a conversa de teste segue o mesmo teto', async (t) => {
+  const refused = await ordersRunBy(t, 'DORA', { draft: true })
+  assert.match(refused.answered, /NOT_IN_ROLE/)
+  assert.equal(refused.called, 0)
+  const read = await ordersRunBy(t, 'ANA', { draft: true })
+  assert.doesNotMatch(read.answered, /NOT_IN_ROLE/)
+  assert.equal(read.called, 1)
 })

@@ -1,17 +1,19 @@
 import { connectorOf } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
-import { CALL_DEADLINE_MS, ConnectionId as ConnectionIdSchema, OperationId } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Principal } from '../access/public.ts'
 import { chosenIn } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
-import { personOf } from '../identity/public.ts'
+import { personOf, withinVersion } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
+import type { KitRead } from './kit-reads.ts'
+import { kitReadsOf } from './kit-reads.ts'
 import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole } from './read.ts'
@@ -21,7 +23,7 @@ import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import type { TurnKey } from './scope.ts'
 import { idsOf } from './scope.ts'
-import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
+import { markedFor, mayUseNotebook, notebooksOf, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
 import { writeThrough } from './write.ts'
 import type { WrittenRecord } from './write-list.ts'
@@ -52,6 +54,8 @@ export type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[]
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
   connections(scope: Principal): Promise<readonly AssistantConnection[]>
+  /** The offered connections whose notebook the speaker may read and write: a saved agent's, by the role of who runs it. */
+  notebooks(scope: Principal): Promise<readonly ConnectionId[]>
   /** The same connections with every read, each marked `allowed` by the person's role, for a screen that shows what the role cannot use. */
   listing(scope: Principal): Promise<readonly AssistantConnection[]>
   /** One read of a chosen, offered connection, read class only. */
@@ -109,13 +113,6 @@ export type AssistantConnectors = {
   kitReads(scope: Principal): Promise<readonly KitRead[]>
 }
 
-export type KitRead = Readonly<{
-  connectionId: ConnectionId
-  operation: OperationId
-  summary: string
-  open: readonly string[]
-}>
-
 /**
  * Whether the person may ask now: admission reads their role on every call (S10), the same way as
  * the Assistant's routes. A refusal is `false` for the caller and its reason in the log only.
@@ -128,9 +125,8 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: Principal): Promise<Speaker
       companyId: scope.companyId,
       action: 'askAssistant',
     })
-    return scope.declared === undefined
-      ? personOf(scope.personId, admitted.role)
-      : { kind: 'VERSION', declared: scope.declared }
+    const person = personOf(scope.personId, admitted.role)
+    return scope.declared === undefined ? person : withinVersion(person, scope.declared)
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const reason = String(error.details.reason ?? 'NOT_FOUND')
@@ -237,24 +233,6 @@ async function noted(
   return provedAndSaved(deps, { ...call, read })
 }
 
-/** The kit's typed reads of each row's connector, the read door's left out. */
-function kitReadsOf(rows: readonly { id: string; connector: string }[]): KitRead[] {
-  return rows.flatMap((row) =>
-    (connectorOf(row.connector)?.operations ?? []).flatMap((operation) =>
-      operation.class === 'read' && operation.input instanceof z.ZodObject
-        ? [
-            {
-              connectionId: ConnectionIdSchema.parse(row.id),
-              operation: OperationId.parse(operation.id),
-              summary: operation.summary,
-              open: Object.keys(operation.input.shape),
-            },
-          ]
-        : [],
-    ),
-  )
-}
-
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 /** A connection as the place lists it: the fields the screen and the model read, and whether the conversation chose it. */
 function chosenAmong(scope: Principal) {
@@ -290,22 +268,29 @@ async function writeShapeOf(
     : undefined
 }
 
+/** What `use` makes of the offered connections, as who speaks for the conversation; none for a person who may not ask. */
+async function offeredWith<T>(
+  deps: Deps,
+  scope: Principal,
+  use: (
+    deps: Deps,
+    companyId: Principal['companyId'],
+    speaker: Speaker,
+    connections: GrantedConnection[],
+  ) => Promise<T[]>,
+): Promise<T[]> {
+  const found = await offeredTo(deps, scope)
+  return found === undefined ? [] : use(deps, scope.companyId, found.speaker, described(found.rows))
+}
+
 export function createAssistantConnectors(deps: Deps): AssistantConnectors {
   const spend = createSpending()
   return {
-    async connections(scope) {
-      const found = await offeredTo(deps, scope)
-      if (found === undefined) return []
-      const shown = await visibleTo(deps, scope.companyId, found.speaker, described(found.rows))
-      return shown.map(chosenAmong(scope))
-    },
-
-    async listing(scope) {
-      const found = await offeredTo(deps, scope)
-      if (found === undefined) return []
-      const marked = await markedFor(deps, scope.companyId, found.speaker, described(found.rows))
-      return marked.map(chosenAmong(scope))
-    },
+    connections: (scope) =>
+      offeredWith(deps, scope, visibleTo).then((shown) => shown.map(chosenAmong(scope))),
+    notebooks: (scope) => offeredWith(deps, scope, notebooksOf),
+    listing: (scope) =>
+      offeredWith(deps, scope, markedFor).then((marked) => marked.map(chosenAmong(scope))),
 
     async read(scope, call) {
       const { connectionId } = call

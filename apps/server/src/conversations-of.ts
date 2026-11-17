@@ -42,6 +42,7 @@ function doorOf(connectors: () => Connectors): Connectors['assistant'] {
     read: (scope, call) => connectors().assistant.read(scope, call),
     write: (request) => connectors().assistant.write(request),
     notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
+    notebooks: (scope) => connectors().assistant.notebooks(scope),
     saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),
     operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
     writeOf: (scope, target) => connectors().assistant.writeOf(scope, target),
@@ -205,14 +206,14 @@ export function conversationsOf(deps: ConversationsDeps) {
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
     ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ appData, companyData: deps.companyData },
+    ...{ appData, companyData: deps.companyData, access: deps.access },
     mastra: () => hub.mastra,
   })
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
+    ...{ access: deps.access, appTables: tablesWithColumnNamesOf(appData) },
     speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
-    ...{ automations: () => automations, appTables: tablesWithColumnNamesOf(appData) },
-    ...machineOf(deps),
+    ...{ automations: () => automations, ...machineOf(deps) },
   })
   const clock = deps.automationClock
   const run = automationRun({
@@ -222,7 +223,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   })
   const builder = createBuilderConversations({
     ...{ database, identity, projects: { liveProjectOf }, log },
-    ...{ storage, queue, runs: deps.runs, companyData: deps.companyData },
+    ...{ storage, queue, runs: deps.runs, companyData: deps.companyData, access: deps.access },
     ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the

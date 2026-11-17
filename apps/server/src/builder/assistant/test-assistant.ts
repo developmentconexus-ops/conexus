@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import {
+  ASSISTANT_TOOL,
   CompanyId,
   ConnectionId,
   ConversationId,
-  companyData,
   PersonId,
   ProjectId,
   READER_ZONE_HEADER,
@@ -18,11 +18,13 @@ import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-co
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
+import { silent as silentLog } from '../../platform/test-database.ts'
+import { companyToolScope, companyTools } from '../company-tools/public.ts'
 import type { RunScope } from '../controller-kit/public.ts'
 import { conversing, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
-import { connectionsOffered, overviewTool, reachedBy } from './overview.ts'
 
 type Block = ReturnType<typeof tool>
 
@@ -212,19 +214,9 @@ export async function publishedApp(
   ])
 }
 
-/** The overview tool, run for a conversation whose Hub cannot say what the person reaches (the catalog is unavailable). */
+/** The Assistant's company tools, made for a conversation whose Hub cannot say what the person reaches (its database does not answer). */
 export async function runOverviewOnSilentHub() {
-  const silent = companyData({
-    now: () => new Date(),
-    sources: {
-      catalog: async () => ({ kind: 'CATALOG_UNAVAILABLE' }),
-      rows: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
-      live: refused,
-      query: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
-      funnel: refused,
-    },
-  })
-  const scope: RunScope = {
+  const run: RunScope = {
     kind: 'assistant',
     owner: {
       companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
@@ -236,15 +228,28 @@ export async function runOverviewOnSilentHub() {
     ceiling: { kind: 'PERSON' },
     attended: true,
   }
-  const overview = overviewTool({
-    scopeOf: async () => scope,
-    projectsOf: async () => ({ projects: [], moreProjects: false }),
-    connectionsOf: connectionsOffered(
-      async () => [],
-      reachedBy(() => silent),
-    ),
+  const silent = {
+    viewOf: async () => {
+      throw new Failure('DATABASE_UNAVAILABLE')
+    },
+  }
+  const scope = await companyToolScope(
+    run,
+    { access: silent, connections: async () => [] },
+    { noteSave: false, appData: { kind: 'NONE' } },
+  )
+  const tools = await companyTools(scope, 'assistant', {
+    log: silentLog,
+    data: () => {
+      throw new Error('the data is not read without a scope')
+    },
+    connector: { read: refused, notes: async () => null },
+    projects: async () => ({ projects: [], moreProjects: false }),
   })
-  return overview.execute?.({}, { requestContext: new RequestContext() })
+  return Object(tools[ASSISTANT_TOOL.overview]).execute(
+    {},
+    { requestContext: new RequestContext() },
+  )
 }
 
 async function refused() {

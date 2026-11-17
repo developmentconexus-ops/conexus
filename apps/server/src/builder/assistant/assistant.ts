@@ -20,8 +20,21 @@ import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import type {
+  CompanyCopies,
+  CompanyProjects,
+  CompanyToolDeps,
+  CompanyToolScope,
+} from '../company-tools/public.ts'
+import {
+  byPrincipal,
+  companyConnections,
+  companyReadSearch,
+  companyTools,
+  projectsOf,
+} from '../company-tools/public.ts'
 import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   admitAsker,
@@ -29,14 +42,11 @@ import {
   controllerOf,
   createAskUserTool,
   MODEL_TIMEOUT,
-  oncePerRun,
   principalOf,
   sessionModel,
   toolsOf,
 } from '../controller-kit/public.ts'
 import { skillOf } from '../conversation/public.ts'
-import type { DataOf } from '../data-tools/public.ts'
-import { dataTools } from '../data-tools/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -44,28 +54,26 @@ import { subagentModel } from '../model-accounts/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { chosenConnections } from './chosen.ts'
 import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
-import { assistantConnectorTools, readsFiles } from './connector-access.ts'
+import { readsFiles } from './connector-access.ts'
 import type { RunOf } from './context.ts'
-import { assistantRuns, machineMarks, speakersOf } from './context.ts'
-import { copyRunsTool } from './copy-runs.ts'
+import { assistantRuns, machineMarks } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import { assistantInstructions } from './instructions.ts'
-import { maysOf } from './mays.ts'
+import type { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
 import { admitted, asked, openConversation } from './open.ts'
-import { connectionsOffered, overviewTool, projectsOf, reachedBy } from './overview.ts'
-import type { AssistantCopies, AssistantProjects } from './ports.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { proposeCompanyMemoryTool } from './propose-company-memory.ts'
 import { releaseConversations } from './release.ts'
-import { RESEARCH, researchOnly, researchReads } from './research.ts'
+import { RESEARCH, researchOnly } from './research.ts'
 import { registerAssistantRoutes } from './routes.ts'
-import { assistantTurns, turnEnd } from './turn.ts'
-import { typedSearch } from './typed-search.ts'
+import type { ScopeOf } from './run-reads.ts'
+import { runReads } from './run-reads.ts'
+import { assistantTurns, turnEnd, turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
@@ -120,7 +128,7 @@ type Deps = {
   access: Pick<Access, 'viewOf'>
   /** The company's data, bound to the conversation's scope; the Assistant passes no `by` yet (decision 6 of the card). */
   companyData: (principal: Principal) => CompanyData
-  projects: AssistantProjects
+  projects: CompanyProjects
   queue: QueueDeps
   /**
    * The conversations' machines at the provider (step 24.1, U3): the Builder's kit and API, its
@@ -129,41 +137,35 @@ type Deps = {
   machine: ConversationMachine
   machineTuning?: MachineTuning
   /** The copies are made after the conversations; a turn comes long after both. */
-  copies: () => AssistantCopies
+  copies: () => CompanyCopies
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
 }
 
-type Offered = (requestContext: RequestContext) => Promise<readonly AssistantConnection[]>
-type ChosenOf = (requestContext: RequestContext) => Promise<AssistantConnection[]>
-
-/**
- * What the run's place offers, each with whether the conversation chose it, read once per run (as
- * `scopeOf`).
- */
-function offeredFor(deps: Deps, principalAt: PrincipalAt): Offered {
-  return oncePerRun(async (requestContext) => {
-    const principal = await principalAt(requestContext)
-    return principal === undefined ? [] : deps.connectors.connections(principal)
-  })
-}
-
-/** The data the conversation reads, bound to its scope; none when it has no scope. */
-function dataOfScope(principalAt: PrincipalAt, companyData: Deps['companyData']): DataOf {
-  return async (requestContext) => {
-    const principal = await principalAt(requestContext)
-    return principal === undefined ? undefined : companyData(principal)
+/** The company's tools of the Assistant's runs and its helper's, every call through the door as the run's principal. */
+function companyDeps(deps: Deps): CompanyToolDeps<AssistantConnection> {
+  return {
+    ...{ log: deps.log, copies: deps.copies, savedAt: readsFiles() },
+    data: (run) => deps.companyData(principalOf(run)),
+    connector: byPrincipal(deps.connectors, turnKey.of),
+    projects: (run) => projectsOf(deps, run),
   }
 }
 
-type PrincipalAt = (requestContext: RequestContext) => Promise<Principal | undefined>
+const FIRST: readonly string[] = [ASSISTANT_TOOL.overview, ASSISTANT_TOOL.copyRuns]
 
-/** Who the access door answers for in the run, from its scope. */
-function principalsOf(scopeOf: RunOf): PrincipalAt {
-  return async (requestContext) => {
-    const run = await scopeOf(requestContext)
-    return run === undefined ? undefined : principalOf(run)
+/** The company's tools split as the request lists them: the overview and the copies' runs before the Assistant's own, the connectors' and the data's after. */
+async function inRequestOrder(
+  scope: CompanyToolScope<AssistantConnection> | undefined,
+  tools: CompanyToolDeps<AssistantConnection>,
+) {
+  const company = Object.entries(
+    scope === undefined ? {} : await companyTools(scope, 'assistant', tools),
+  )
+  return {
+    first: Object.fromEntries(company.filter(([name]) => FIRST.includes(name))),
+    rest: Object.fromEntries(company.filter(([name]) => !FIRST.includes(name))),
   }
 }
 
@@ -179,32 +181,24 @@ function assistantAgent(
     turns: ReturnType<typeof assistantTurns>
     machines: ConversationMachines
     scopeOf: RunOf
-    offeredOf: Offered
-    chosenOf: ChosenOf
-    savedAt: ReturnType<typeof readsFiles>
+    toolScopeOf: ScopeOf<AssistantConnection>
+    tools: CompanyToolDeps<AssistantConnection>
+    maysFor: ReturnType<typeof maysOf>
+    speakersFor: (requestContext: RequestContext) => Promise<Speakers | undefined>
   },
 ) {
   const { queue } = deps
-  const { scopeOf, offeredOf, chosenOf, savedAt } = parts
-  const principalAt = principalsOf(scopeOf)
-  const overview = overviewTool({
-    scopeOf,
-    projectsOf: (scope) => projectsOf(deps, scope),
-    connectionsOf: connectionsOffered(offeredOf, reachedBy(deps.companyData)),
-  })
-  const copyRuns = copyRunsTool({ scopeOf: principalAt, copies: deps.copies })
+  const { scopeOf, toolScopeOf, maysFor } = parts
   const showFile = showFileTool(parts.machines)
   const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(parts.machines)
   async function automationRun(requestContext: RequestContext) {
     return (await scopeOf(requestContext))?.attended === false
   }
-  // The prompt's block and the tools read the speaker's role together, once per run.
-  const speakersFor = oncePerRun(async (requestContext) => {
-    const scope = await scopeOf(requestContext)
-    return scope === undefined ? undefined : speakersOf(deps, scope)
-  })
-  const maysFor = maysOf(deps.identity, speakersFor, automationRun)
+  async function chosenOf(requestContext: RequestContext) {
+    const scope = await toolScopeOf(requestContext)
+    return scope === undefined ? [] : companyConnections(scope)
+  }
   const defaults = agentDefaults(queue, parts.turns)
   const assistantDefaults = {
     ...defaults,
@@ -213,7 +207,7 @@ function assistantAgent(
     // once the pick has chosen the model.
     inputProcessors: [
       parts.turns.processor,
-      typedSearch(deps, { scopeOf: principalAt, chosenOf, savedAt }),
+      companyReadSearch(toolScopeOf, parts.tools),
       // Before the account's pick, which flattens the step's tools, so it flattens the closed one.
       researchOnly,
       profileReadOnlyInRuns(automationRun),
@@ -224,25 +218,31 @@ function assistantAgent(
   return new Agent({
     id: ASSISTANT_CONTROLLER,
     name: 'Assistant',
-    instructions: assistantInstructions({ offeredOf, speakersOf: speakersFor, maysOf: maysFor }),
+    instructions: assistantInstructions({
+      chosenOf,
+      speakersOf: parts.speakersFor,
+      maysOf: maysFor,
+    }),
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
       const scope = await scopeOf(requestContext)
-      const principal = scope === undefined ? undefined : principalOf(scope)
-      const chosen = await chosenOf(requestContext)
-      const { byAutomation, automate, note } = await maysFor(requestContext)
+      const toolScope = await toolScopeOf(requestContext)
+      const { byAutomation, automate } = await maysFor(requestContext)
+      const { first, rest } = await inRequestOrder(toolScope, parts.tools)
       return {
         ...toolsOf(sessionModel(requestContext)),
-        [ASSISTANT_TOOL.overview]: overview,
-        [ASSISTANT_TOOL.copyRuns]: copyRuns,
+        ...first,
         [ASSISTANT_TOOL.showFile]: showFile,
         [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
-        ...(automate ? { [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(chosen) } : {}),
+        ...(automate
+          ? {
+              [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(
+                await chosenOf(requestContext),
+              ),
+            }
+          : {}),
         ...handOffOf(scope, proposals, byAutomation),
-        ...(principal === undefined
-          ? {}
-          : assistantConnectorTools(deps, { scope: principal, chosen, mayNote: note })),
-        ...dataTools({ dataOf: dataOfScope(principalAt, deps.companyData) }),
+        ...rest,
       }
     },
     skills: async ({ requestContext }) => [
@@ -283,14 +283,11 @@ export function createAssistant(deps: Deps) {
     deps.machineTuning,
   )
   const turns = assistantTurns({ queue, scopeOf })
-  const offeredOf = offeredFor(deps, principalsOf(scopeOf))
-  async function chosenOf(requestContext: RequestContext) {
-    return (await offeredOf(requestContext)).filter((each) => each.chosen)
-  }
-  const savedAt = readsFiles()
+  const tools = companyDeps(deps)
+  const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const agent = assistantAgent(deps, {
     ...{ memory, company, turns, scopeOf, machines },
-    ...{ offeredOf, chosenOf, savedAt },
+    ...{ toolScopeOf, tools, maysFor, speakersFor },
   })
   const controller = controllerOf({
     ...{ kind: 'assistant', storage, memory, agent },
@@ -299,7 +296,10 @@ export function createAssistant(deps: Deps) {
     // helper's own context cannot find the conversation (`research.ts`).
     tools: {
       fixed: { [ASK_USER_TOOL]: createAskUserTool() },
-      perRun: researchReads(deps, { scopeOf: principalsOf(scopeOf), chosenOf, savedAt }),
+      perRun: async ({ requestContext }) => {
+        const scope = await toolScopeOf(requestContext)
+        return scope === undefined ? {} : companyTools(scope, 'research', tools)
+      },
     },
     subagents: { types: [RESEARCH], model: subagentModel(queue, MODEL_TIMEOUT.stepMs) },
     // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
