@@ -165,7 +165,8 @@ program starts ([data D9](guides/data.md)).
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
 the migrated database ([data D6](guides/data.md)). Exceptions: none before v0.5.0 runs, as step 4.2 deleted old test
 companies [0039]; none before step 14.2 runs, as it drops `run_event` (D30), `builder.run`,
-`companies_with_runs()` and `hub_runs`. The edge goes back first. Past v0.24.53, rerun
+`companies_with_runs()` and `hub_runs`; none before v0.24.101 runs, as it
+dropped `copies.copy.readers_set`, which an older image reads. The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the

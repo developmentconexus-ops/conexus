@@ -48,8 +48,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
 | `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-O cartão de hoje é Cada papel lê só o seu, com a porta única; depois, a etapa do Registro. O
-estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
+Cada papel lê só o seu fechou em 2026-11-17; segue a do Registro e conformidade. O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
 [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**

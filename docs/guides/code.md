@@ -225,6 +225,12 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   `sync.sankhya_vendas`, the model copied it where the live copy is `vendas`, and its first query
   failed, while the test world used the same name and saw nothing.
   [`data-tools/order.test.ts`, review]
+- **C81.** Every list of data or of connections that the Assistant, the Builder or an agent reads **must**
+  come from the access door, `hub/access` (`principalFor`, then `AccessView.list`), and a new
+  consumer is a new scenario of its conformance test, never a filter of its own beside the door.
+  Failure: the describe tool listed a system the role does not reach because its catalog read
+  the connectors directly (issue 1138); the company summary did it again (issue 1145).
+  [`hub/access/conformance.test.ts`, dependency-cruiser `describe-lists-only-through-access`, review]
 
 ## 12. One way, and no leftovers
 
