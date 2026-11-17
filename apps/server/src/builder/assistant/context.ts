@@ -5,8 +5,9 @@ import type { Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { conversationRun } from '../controller-context/public.ts'
 import type { Owner, RunScope, Speakers } from '../controller-kit/public.ts'
-import { admitAsker, runResolver } from '../controller-kit/public.ts'
+import { admitAsker, oncePerRun, ownerOfResource, runResolver } from '../controller-kit/public.ts'
 import { MARK } from '../machine/public.ts'
 import type { Kept } from './chosen.ts'
 import { placeOf } from './open.ts'
@@ -39,16 +40,23 @@ export function assistantRuns(deps: {
   })
 }
 
-/** The marks of the conversation's machine: its company and, in a Projeto, the Projeto (S36). */
-export function machineMarks(runOf: RunOf) {
-  return async (requestContext: RequestContext) => {
-    const run = await runOf(requestContext)
-    if (run === undefined) return undefined
+/**
+ * The marks of the conversation's machine: its company and, in a Projeto, the Projeto (S36), from
+ * the resource and the Hub's row. The machine opens with the conversation, before its thread is
+ * there to read its marks; the guard refuses a thread marked for someone else before any turn.
+ */
+export function machineMarks(chosenOf: ChosenOf) {
+  return oncePerRun(async (requestContext) => {
+    const run = conversationRun(requestContext)
+    const resource = run === undefined ? undefined : ownerOfResource(run.resourceId)
+    if (run === undefined || resource?.kind !== 'assistant') return undefined
+    const owner = { companyId: resource.companyId, personId: resource.personId }
+    const { projectId } = await chosenOf(owner, run.sessionId)
     return {
-      [MARK.company]: run.owner.companyId,
-      ...(run.place.kind === 'PROJECT' ? { [MARK.project]: run.place.projectId } : {}),
+      [MARK.company]: owner.companyId,
+      ...(projectId === null ? {} : { [MARK.project]: projectId }),
     }
-  }
+  })
 }
 
 function readerScope(owner: Owner) {

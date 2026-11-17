@@ -277,7 +277,7 @@ export function createAssistant(deps: Deps) {
       log: deps.log,
       hosts: PACKAGE_HOSTS,
       otherTemplate: 'resume',
-      marksOf: machineMarks(scopeOf),
+      marksOf: machineMarks(chosen.of),
       readMedia: READ_MEDIA,
     },
     deps.machineTuning,
