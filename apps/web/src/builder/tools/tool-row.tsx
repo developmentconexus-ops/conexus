@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
+import { AND_LIST } from '../../platform/lists.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { TableCell, TableRow } from '../../ui/table.tsx'
@@ -25,13 +26,18 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 function Refused(props: { scope: Scope; failure: unknown }) {
   const { failure } = props
   if (failure instanceof HubFailure && failure.code === 'TOOL_IN_USE' && failure.agents) {
+    const agents = failure.agents
+    let next = 0
     return (
       <p role="alert" className="text-danger">
         Usada por{' '}
-        {failure.agents.map((agent, index) => (
-          <span key={agent.id}>
-            {index > 0 && ', '}
+        {AND_LIST.formatToParts(agents.map((agent) => agent.name)).map((part, index) => {
+          if (part.type === 'literal') return part.value
+          const agent = agents[next++]
+          return (
             <Link
+              // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one fixed list
+              key={index}
               to="/companies/$companyId/projects/$projectId/agents/$agentId"
               params={{
                 companyId: props.scope.companyId,
@@ -40,10 +46,10 @@ function Refused(props: { scope: Scope; failure: unknown }) {
               }}
               className="underline"
             >
-              {agent.name}
+              {part.value}
             </Link>
-          </span>
-        ))}
+          )
+        })}
         .
       </p>
     )

@@ -32,7 +32,7 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
   fireEvent.click(within(row).getByRole('button', { name: 'Apagar vendas_de_ontem' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
   const said = await screen.findByRole('alert')
-  expect(said.textContent).toBe('Usada por Conferente de metas, Resumo de estoque.')
+  expect(said.textContent).toBe('Usada por Conferente de metas e Resumo de estoque.')
   expect(within(said).getByRole('link', { name: 'Conferente de metas' }).getAttribute('href')).toBe(
     `${AREA}/${AGENT}`,
   )
