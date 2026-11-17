@@ -284,9 +284,11 @@ async function testAndSave(
       { connectionId, operation, input: samples[operation] ?? {} },
       requestContext,
     )
-    if (answered.kind !== 'OK' || !('whole' in answered)) {
-      const said = answered.kind === 'OK' ? answered : unansweredRead(answered)
-      return refusal('TOOL_TEST_FAILED', { output: JSON.stringify(said) })
+    if (answered.kind !== 'OK') {
+      return refusal('TOOL_TEST_FAILED', { output: JSON.stringify(unansweredRead(answered)) })
+    }
+    if (!('whole' in answered)) {
+      return refusal('TOOL_TEST_FAILED', { output: JSON.stringify(answered) })
     }
     fixtures[operation] = answered.whole
   }
