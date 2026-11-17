@@ -41,6 +41,7 @@ function Folders(props: {
           ? undefined
           : {
               text,
+              maxLength: 100,
               onText: (next) => {
                 props.onText?.(next)
                 setText(next)
@@ -118,6 +119,11 @@ test('a busca que chega com a lista aberta só vale na abertura seguinte', async
   fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
   await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
   expect(await open()).toBeTruthy()
+})
+
+test('o campo de busca leva o limite do texto que o servidor aceita', async () => {
+  render(<Folders />)
+  expect((await open()).getAttribute('maxlength')).toBe('100')
 })
 
 test('sem item e com texto, a lista diz noMatch; sem texto, o vazio do lugar', async () => {

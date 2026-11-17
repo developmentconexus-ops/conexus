@@ -1,5 +1,5 @@
 import type { CompanyId, PersonId, ProjectSummary } from '@conexus/hub-api'
-import { ProjectId } from '@conexus/hub-api'
+import { PROJECT_NAME_MAX_LENGTH, ProjectId } from '@conexus/hub-api'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 import { useState } from 'react'
@@ -128,7 +128,9 @@ function Choosing<Fixed extends string>(props: Props<Fixed> & { recent: Recent }
       onPick={props.onPick}
       more={more}
       read={state}
-      search={searchable ? { text, onText: setText } : undefined}
+      search={
+        searchable ? { text, onText: setText, maxLength: PROJECT_NAME_MAX_LENGTH } : undefined
+      }
       searchLabel={SEARCH_PROJECT}
       noMatch={NO_PROJECT_MATCH}
       empty={props.empty ?? <span>{NO_PROJECTS}</span>}

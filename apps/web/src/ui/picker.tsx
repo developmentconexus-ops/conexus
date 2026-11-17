@@ -47,7 +47,7 @@ export type PickerRead =
  * The search of whoever uses the piece: the text goes back through `onText`, and the piece shows
  * the groups as they come, unfiltered. On closing, the Combobox itself sends `onText('')`.
  */
-type PickerSearch = { text: string; onText: (text: string) => void }
+type PickerSearch = { text: string; onText: (text: string) => void; maxLength?: number }
 
 type PickerProps<V extends string> = {
   /** The name of the list and of its trigger for a screen reader. */
@@ -146,7 +146,9 @@ function withChosen<V extends string>(
   chosen: PickerItem<V> | undefined,
 ): readonly PickerGroup<V>[] {
   const inside = groups.some((group) => group.items.some((item) => item.value === chosen?.value))
-  return chosen === undefined || inside ? groups : [...groups, { label: undefined, items: [chosen] }]
+  return chosen === undefined || inside
+    ? groups
+    : [...groups, { label: undefined, items: [chosen] }]
 }
 
 function SelectPicker<V extends string>(
@@ -230,6 +232,7 @@ function SearchPicker<V extends string>(props: PickerProps<V> & { search: Picker
         <div className="p-xs">
           <ComboboxInput
             showTrigger={false}
+            maxLength={search.maxLength}
             aria-label={props.searchLabel}
             placeholder={props.searchLabel}
           >
