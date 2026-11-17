@@ -20,7 +20,7 @@ for brought code, the entry sheets and the old code at its frozen commit.
 1. Write each question as what a person sees, one sentence, with its premise.
 2. **The reference table** ([report](references/report.md), section 3; verdicts by
    [code C75](../../../docs/guides/code.md)). One row per piece the use script touches. Fill
-   "Hoje no main" first: every file of `main` the use script runs through, inherited ones included.
+   "Hoje no main": every file of `main` the use script runs through, inherited ones included.
    Then "Referência": three to six closest analogs (for the AI build flow, AI app builders first),
    the library's own products, the native feature and the old product, read at the installed
    version, each with its situation and match label ([sources](references/sources.md)), the options
@@ -41,6 +41,7 @@ for brought code, the entry sheets and the old code at its frozen commit.
    issues. Test the premise of each decision and boundaries entry the step leans on, `main`'s
    included, against its row at the installed version; a failed one goes to its decider (delivery L6), quoting
    the decision.
+   Then [lens](references/lens.md).
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how
    ([report](references/report.md), section 4); without it, it is not brought.

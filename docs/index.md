@@ -98,7 +98,7 @@ One line per document.
 
 ## Skills
 
-- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md): the study; report; proof; screens; libraries.
+- [conexus-study](../.agents/skills/conexus-study/SKILL.md), [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md), [lens](../.agents/skills/conexus-study/references/lens.md): study; report; proof; screens; libraries; lens.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
