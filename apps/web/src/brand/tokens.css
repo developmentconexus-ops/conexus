@@ -11,6 +11,20 @@
   }
 }
 
+/* The showcase pins a state with data-preview ("hover", "focus", "active"); no screen sets it. */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+  &[data-preview~="hover"] {
+    @slot;
+  }
+}
+@custom-variant focus-visible (&:focus-visible, &[data-preview~="focus"]);
+@custom-variant active (&:active, &[data-preview~="active"]);
+
 @font-face {
   font-family: "Hanken Grotesk";
   font-style: normal;
@@ -289,7 +303,8 @@
   }
 
   /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
-  :focus-visible {
+  :focus-visible,
+  [data-preview~="focus"] {
     @apply outline-2 outline-offset-2 outline-solid outline-accent;
   }
 

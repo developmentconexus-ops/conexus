@@ -4,7 +4,7 @@ import type { Locator, Page } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE, reachOf, touching } from './layout-harness.ts'
 import { STATES } from './sweep-states.ts'
 
-// The chat pieces on their fixture page (pieces.html), under the Hub's policy in a real browser.
+// Every piece of ui/ on its showcase page (pieces.html), under the Hub's policy in a real browser.
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(async () => {
@@ -16,16 +16,23 @@ function open(path: string) {
   return harness.open(path, { viewport: DESKTOP, replies: {} })
 }
 
+/** One piece's block on the page, in its light band. */
+function piece(page: Page, file: string): Locator {
+  return page.locator(`[data-file="${file}"] [data-band=light]`)
+}
+
 async function widthOf(locator: Locator): Promise<number> {
   const box = await locator.boundingBox()
   assert.ok(box, 'the element is not laid out')
   return box.width
 }
 
-test('as peças de chat sob a política do Hub: nenhum erro nem violação, arrastar o divisor incluído', async () => {
+test('as peças sob a política do Hub: nenhum erro nem violação, arrastar o divisor incluído', async () => {
   const page = await open('/pieces')
-  const handle = page.getByRole('separator', { name: 'Redimensionar' })
-  const chat = page.locator('[data-slot=resizable-panel]').last()
+  const resizable = piece(page, 'resizable.tsx')
+  const handle = resizable.getByRole('separator', { name: 'Redimensionar' })
+  const chat = resizable.locator('[data-slot=resizable-panel]').last()
+  await handle.scrollIntoViewIfNeeded()
   const before = await widthOf(chat)
   const box = await handle.boundingBox()
   assert.ok(box, 'the handle is not laid out')
@@ -34,12 +41,13 @@ test('as peças de chat sob a política do Hub: nenhum erro nem violação, arra
   await page.mouse.move(box.x - 200, box.y + box.height / 2, { steps: 5 })
   await page.mouse.up()
   assert.ok((await widthOf(chat)) > before + 150, 'dragging the handle did not widen the chat')
-  await page.getByRole('tab', { name: 'Projeto' }).click()
-  await page.getByRole('button', { name: 'Detalhes' }).click()
-  await page.getByRole('button', { name: 'Raciocínio' }).click()
-  const level = page.getByRole('slider', { name: 'Raciocínio' })
+  await piece(page, 'tabs.tsx').getByRole('tab', { name: 'Projeto' }).click()
+  await piece(page, 'collapsible.tsx').getByRole('button', { name: 'Detalhes' }).click()
+  await piece(page, 'popover.tsx').getByRole('button', { name: 'Raciocínio' }).click()
+  const popup = page.locator('[data-slot=popover-content]')
+  const level = popup.getByRole('slider', { name: 'Raciocínio' })
   assert.equal(await level.getAttribute('aria-valuenow'), '3')
-  const track = await page.locator('[data-slot=slider-track]').boundingBox()
+  const track = await popup.locator('[data-slot=slider-track]').boundingBox()
   assert.ok(track, 'the slider is not laid out')
   await page.mouse.move(track.x + track.width * 0.75, track.y + track.height / 2)
   await page.mouse.down()
@@ -49,11 +57,13 @@ test('as peças de chat sob a política do Hub: nenhum erro nem violação, arra
   await page.keyboard.press('End')
   assert.equal(await level.getAttribute('aria-valuenow'), '4')
   await page.keyboard.press('Escape')
-  await page.getByRole('combobox', { name: 'Modelo' }).click()
+  await piece(page, 'combobox.tsx').getByRole('combobox', { name: 'Modelo' }).first().click()
   await page.getByRole('option', { name: 'Claude Opus 4.5' }).waitFor()
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: /Leu 3 páginas/ }).click()
-  await page.getByRole('button', { name: 'Enviar' }).hover()
+  await piece(page, 'trace.tsx')
+    .getByRole('button', { name: /Leu 3 páginas/ })
+    .click()
+  await piece(page, 'tooltip.tsx').getByRole('button', { name: 'Enviar' }).hover()
   await page.locator('[data-slot=tooltip-content]').waitFor()
   assert.deepEqual(page.problems, [])
   await page.close()
@@ -66,7 +76,7 @@ for (const [reducedMotion, moves] of [
   test(`a marca trabalhando ${moves ? 'se mexe' : 'fica parada com prefers-reduced-motion'}`, async () => {
     const page = await open('/pieces')
     await page.emulateMedia({ reducedMotion })
-    const mark = page.locator('svg[width="48"]')
+    const mark = page.locator('svg[width="48"]').first()
     const offsets = new Set<string>()
     for (let frame = 0; frame < 6; frame++) {
       offsets.add(
@@ -100,10 +110,12 @@ test('a escala dos botões, no computador e no celular', async () => {
     const page = await harness.open('/pieces', { viewport, replies: {} })
     const sizes = await Promise.all(
       [
-        page.getByRole('button', { name: 'Padrão', exact: true }),
-        page.getByRole('button', { name: 'Pequeno', exact: true }),
-        page.getByRole('button', { name: 'Ícone', exact: true }),
-        page.getByRole('button', { name: 'Ícone pequeno', exact: true }),
+        piece(page, 'button.tsx').getByRole('button', { name: 'Salvar', exact: true }).first(),
+        piece(page, 'button.tsx').getByRole('button', { name: 'Pequeno', exact: true }).first(),
+        piece(page, 'button.tsx').getByRole('button', { name: 'Ícone', exact: true }).first(),
+        piece(page, 'button.tsx')
+          .getByRole('button', { name: 'Ícone pequeno', exact: true })
+          .first(),
       ].map((each) =>
         each.evaluate((button) => {
           const box = button.getBoundingClientRect()
@@ -116,8 +128,9 @@ test('a escala dos botões, no computador e no celular', async () => {
     assert.deepEqual(pequeno, [28, '13px'], `sm at ${viewport.width}px`)
     const icons = await Promise.all(
       ['Ícone', 'Ícone pequeno'].map((name) =>
-        page
+        piece(page, 'button.tsx')
           .getByRole('button', { name, exact: true })
+          .first()
           .evaluate((button) => [
             button.getBoundingClientRect().width,
             button.getBoundingClientRect().height,
@@ -142,7 +155,10 @@ test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 136
   assert.ok(home, 'the sweep lacks the member in a Projeto')
   for (const viewport of [DESKTOP, PHONE]) {
     const page = await harness.open('/pieces', { viewport, replies: {} })
-    const field = await page.getByRole('textbox', { name: 'Campo' }).boundingBox()
+    const field = await piece(page, 'input.tsx')
+      .getByRole('textbox', { name: 'Campo' })
+      .first()
+      .boundingBox()
     assert.equal(field?.height, 36, `a field at ${viewport.width}px`)
     await page.close()
   }
@@ -163,8 +179,8 @@ test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 136
 test('o toque alcança 44 × 44 sem desenhar o botão maior', async () => {
   const page = await harness.open('/pieces', { viewport: PHONE, replies: {} })
   await touching(page)
-  for (const name of ['Padrão', 'Pequeno', 'Ícone', 'Ícone pequeno']) {
-    const button = page.getByRole('button', { name, exact: true })
+  for (const name of ['Salvar', 'Pequeno', 'Ícone', 'Ícone pequeno']) {
+    const button = piece(page, 'button.tsx').getByRole('button', { name, exact: true }).first()
     const box = await button.boundingBox()
     const reach = await reachOf(button)
     assert.ok(box, `${name} is not laid out`)

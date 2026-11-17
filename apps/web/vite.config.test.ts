@@ -30,6 +30,21 @@ test('o build emite o favicon sem hash e o resto com hash', async (t) => {
   )
 })
 
+test('o build não leva a vitrine', async (t) => {
+  const outDir = mkdtempSync(join(tmpdir(), 'conexus-web-pieces-'))
+  t.after(() => rmSync(outDir, { recursive: true, force: true }))
+  await build({ root: import.meta.dirname, logLevel: 'silent', build: { outDir } })
+  assert.ok(!existsSync(join(outDir, 'pieces.html')), 'the build has the showcase page')
+  const code = readdirSync(join(outDir, 'assets'))
+    .filter((name) => name.endsWith('.js'))
+    .map((name) => readFileSync(join(outDir, 'assets', name), 'utf8'))
+  assert.deepEqual(
+    code.filter((chunk) => chunk.includes('Isto abre por cima da página.')),
+    [],
+    'a chunk of the build holds the showcase',
+  )
+})
+
 test('o interruptor jitless vai no mesmo pedaço que o Zod, que roda antes do corpo da entrada', async (t) => {
   const outDir = mkdtempSync(join(tmpdir(), 'conexus-web-zod-'))
   t.after(() => rmSync(outDir, { recursive: true, force: true }))
