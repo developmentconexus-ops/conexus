@@ -2,7 +2,9 @@
   "files": [
     "apps/server/src/builder/agents/approval-refused.test.ts",
     "apps/server/src/builder/app-data/access.test.ts",
+    "apps/server/src/builder/assistant/run-scope.test.ts",
     "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+    "apps/server/src/builder/construtor/run-scope.test.ts",
     "apps/server/src/builder/conversation/conversation-refusal.test.ts",
     "apps/server/src/builder/conversation/permissions.test.ts",
     "apps/server/src/builder/data-tools/tools-refusals.test.ts",
