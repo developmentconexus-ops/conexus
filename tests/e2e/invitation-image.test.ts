@@ -11,11 +11,11 @@ import { hashPassword } from 'better-auth/crypto'
 import { request } from 'playwright-core'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
   TEST_ORIGIN,
 } from '../../apps/server/src/platform/test-database.ts'
 import { mailServer } from '../../apps/server/src/platform/test-mail.ts'
+import { freePort } from '../../apps/server/src/platform/test-port.ts'
 
 const IMAGE = 'conexus-hub:ci'
 const PASSWORD = 'senha-certa-1'
