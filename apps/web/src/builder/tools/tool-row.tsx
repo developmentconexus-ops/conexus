@@ -26,18 +26,16 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 function Refused(props: { scope: Scope; failure: unknown }) {
   const { failure } = props
   if (failure instanceof HubFailure && failure.code === 'TOOL_IN_USE' && failure.agents) {
-    const agents = failure.agents
-    let next = 0
+    const separators = AND_LIST.formatToParts(failure.agents.map((agent) => agent.name))
+      .filter((part) => part.type === 'literal')
+      .map((part) => part.value)
     return (
       <p role="alert" className="text-danger">
         Usada por{' '}
-        {AND_LIST.formatToParts(agents.map((agent) => agent.name)).map((part, index) => {
-          if (part.type === 'literal') return part.value
-          const agent = agents[next++]
-          return (
+        {failure.agents.map((agent, index) => (
+          <span key={agent.id}>
+            {index > 0 && separators[index - 1]}
             <Link
-              // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one fixed list
-              key={index}
               to="/companies/$companyId/projects/$projectId/agents/$agentId"
               params={{
                 companyId: props.scope.companyId,
@@ -46,10 +44,10 @@ function Refused(props: { scope: Scope; failure: unknown }) {
               }}
               className="underline"
             >
-              {part.value}
+              {agent.name}
             </Link>
-          )
-        })}
+          </span>
+        ))}
         .
       </p>
     )
