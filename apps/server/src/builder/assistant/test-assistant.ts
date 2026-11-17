@@ -1,17 +1,30 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import { CompanyId, companyData, PersonId, READER_ZONE_HEADER } from '@conexus/hub-api'
+import {
+  ASSISTANT_TOOL,
+  CompanyId,
+  ConnectionId,
+  ConversationId,
+  PersonId,
+  ProjectId,
+  READER_ZONE_HEADER,
+} from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import type { SessionScope, TurnKey } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import { chooserAt } from '../../hub/access/test-principal.ts'
+import type { TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
+import { silent as silentLog } from '../../platform/test-database.ts'
+import { companyToolScope, companyTools } from '../company-tools/public.ts'
+import type { RunScope } from '../controller-kit/public.ts'
 import { conversing, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import { stepped, tool } from '../conversation/test-questions.ts'
-import { connectionsOffered, overviewTool, reachedBy } from './overview.ts'
 
 type Block = ReturnType<typeof tool>
 
@@ -61,8 +74,23 @@ export function said(text: string): Block {
   return { type: 'text', text }
 }
 
+/** Ana's Assistant conversation in the Início (`null`) or the Projeto, which chose `chosen`, as the door reads it. */
+export function anasChoice(
+  on: { companyId: string; ana: { id: string } },
+  projectId: string | null,
+  chosen: readonly string[],
+): Principal {
+  const companyId = CompanyId.parse(on.companyId)
+  const place =
+    projectId === null
+      ? ({ kind: 'COMPANY' } as const)
+      : ({ kind: 'PROJECT', projectId: ProjectId.parse(projectId) } as const)
+  const connections = chosen.map((each) => ConnectionId.parse(each))
+  return chooserAt({ companyId, personId: PersonId.parse(on.ana.id), place }, connections)
+}
+
 /** One read the company's door received from the Assistant: the scope and the turn it came under. */
-export type DoorRead = { scope: SessionScope; turn: TurnKey; connectionId: string }
+export type DoorRead = { scope: Principal; turn: TurnKey; connectionId: string }
 
 /** Where the Sankhya connections are served, and the credential each is linked with. */
 type Sankhyas = { origin: string; matriz: Record<string, string>; filial: Record<string, string> }
@@ -186,33 +214,42 @@ export async function publishedApp(
   ])
 }
 
-/** The overview tool, run for a conversation whose Hub cannot say what the person reaches (the catalog is unavailable). */
+/** The Assistant's company tools, made for a conversation whose Hub cannot say what the person reaches (its database does not answer). */
 export async function runOverviewOnSilentHub() {
-  const silent = companyData({
-    now: () => new Date(),
-    sources: {
-      catalog: async () => ({ kind: 'CATALOG_UNAVAILABLE' }),
-      rows: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
-      live: refused,
-      query: async () => ({ kind: 'TABLE_UNAVAILABLE' }),
-      funnel: refused,
+  const run: RunScope = {
+    kind: 'assistant',
+    owner: {
+      companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
+      personId: PersonId.parse(randomUUID()),
     },
-  })
-  const scope: SessionScope = {
-    companyId: CompanyId.parse(randomUUID().replaceAll('-', '')),
-    personId: PersonId.parse(randomUUID()),
     place: { kind: 'COMPANY' },
-    chosen: [],
+    conversation: { kind: 'THREAD', id: ConversationId.parse(randomUUID()) },
+    choice: { kind: 'CHOSEN', connections: [] },
+    ceiling: { kind: 'PERSON' },
+    attended: true,
   }
-  const overview = overviewTool({
-    scopeOf: async () => scope,
-    projectsOf: async () => ({ projects: [], moreProjects: false }),
-    connectionsOf: connectionsOffered(
-      async () => [],
-      reachedBy(() => silent),
-    ),
+  const silent = {
+    viewOf: async () => {
+      throw new Failure('DATABASE_UNAVAILABLE')
+    },
+  }
+  const scope = await companyToolScope(
+    run,
+    { access: silent, connections: async () => [] },
+    { noteSave: false, appData: { kind: 'NONE' } },
+  )
+  const tools = await companyTools(scope, 'assistant', {
+    log: silentLog,
+    data: () => {
+      throw new Error('the data is not read without a scope')
+    },
+    connector: { read: refused, notes: async () => null },
+    projects: async () => ({ projects: [], moreProjects: false }),
   })
-  return overview.execute?.({}, { requestContext: new RequestContext() })
+  return Object(tools[ASSISTANT_TOOL.overview]).execute(
+    {},
+    { requestContext: new RequestContext() },
+  )
 }
 
 async function refused() {

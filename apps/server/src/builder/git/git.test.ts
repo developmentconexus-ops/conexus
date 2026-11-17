@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import { FOREGROUND, foregroundMaintenanceIn } from '../machine/test-git.ts'
 import { CANDIDATE_REF, openRepository, restoreGuarded, Sha } from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -27,7 +28,7 @@ const IDENTITY = {
 }
 
 function sh(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, {
+  return execFileSync('git', [...FOREGROUND, ...args], {
     cwd,
     env: { PATH: '/usr/bin:/bin', ...IDENTITY },
     encoding: 'utf8',
@@ -54,7 +55,9 @@ async function opened(t: TestContext, options: { timeoutMs?: number; gcEvery?: n
     log,
     ...options,
   })
-  return { root, errors, repository, base: await repository.ensure() }
+  const base = await repository.ensure()
+  foregroundMaintenanceIn(join(root, COMPANY, `${PROJECT}.git`))
+  return { root, errors, repository, base }
 }
 
 type Machine = { dir: string; head: () => string }

@@ -26,8 +26,9 @@ test('máquina: o turno cortado enquanto outra conversa moveu o main: religada, 
   assert.equal(await after.filesystem?.readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
   assert.doesNotMatch(await after.getInstructionsAsync(), /conflict/)
   const main = await repository.ensure()
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base: main })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object', 'collected on the new main, the cut work is what changed')
+  assert.equal(bundle.base, main, 'the start took the new main as its base')
   assert.equal(bundle.changedFiles, 1)
 })
 
@@ -51,13 +52,14 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   pausedByE2b(control)
   let run = 10
   async function save() {
-    const base = await repository.ensure()
-    const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+    const bundle = await machines.collect({ conversationId: CONVERSATION })
     assert.ok(typeof bundle === 'object', `the turn is saved, not ${String(bundle)}`)
+    const { base } = bundle
     const runId = RunId.parse(`00000000-0000-4000-8000-0000000000${run++}`)
     const received = await repository.receive({ runId, bundle: bundle.bundle, base })
     assert.ok(received.ok)
     assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
+    await machines.saved({ conversationId: CONVERSATION, version: received.value })
     await machines.release(CONVERSATION)
   }
   // The turn that got the notice saves the markers as they are.
@@ -223,13 +225,10 @@ test('máquina: o lock do índice próprio da junção, que um git morto deixou,
 })
 
 test('máquina: o lock do índice de um guardar que o prazo cortou não impede o guardar seguinte', async (t) => {
-  const { open, machines, repository, folder } = await world(t)
+  const { open, machines, folder } = await world(t)
   await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'conexus-index.lock'), '')
-  const bundle = await machines.collect({
-    conversationId: CONVERSATION,
-    base: await repository.ensure(),
-  })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object', `the turn is collected, not ${String(bundle)}`)
   assert.equal(bundle.changedFiles, 1)
 })

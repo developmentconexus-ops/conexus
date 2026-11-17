@@ -1,0 +1,17 @@
+# Um escopo e a fábrica de ferramentas
+
+Em 2026-11-17, às decisões do realinhamento, sobre o primeiro bloco da harness (H0, H1, H3 e H6) como etapa própria da trilha Agentes e Apps, antes do `A1`: "R2 a".
+
+Cartão curto de Um escopo e a fábrica de ferramentas (`docs/steps/um-escopo-e-a-fabrica-de-ferramentas.md`) aprovado em 2026-11-17 (commit ca4168ac52e9e62c5c26fdf577d5f39741843bc4), à pergunta do plano da noite "aprova o cartão do primeiro bloco se ele seguir o redesenho sem nenhuma decisão nova sua (se trouxer decisão nova, para e espera)": "Aceito sim". Lido pelo firstmate como a aprovação da página deste cartão, que segue o redesenho sem decisão nova do fundador.
+
+Etapa Um escopo e a fábrica de ferramentas fechada neste pull request (L19), pela palavra do fundador com a etapa no ar. O cartão foi apagado; está no histórico do `main`, no commit `ca4168ac`, o último que o mudou. O cartão está em https://github.com/developmentconexus-ops/conexus/pull/1158, a U1 e a U2 em https://github.com/developmentconexus-ops/conexus/pull/1162 e a U3 e a U4 em https://github.com/developmentconexus-ops/conexus/pull/1173, no `main` desde a v0.24.105. A tabela de referência não tem linha remendo (a do alcance do agente salvo é embrulhado), então nada entra em `docs/reference/boundaries.md`.
+
+O que ficou valendo, além da página aprovada: um escopo só por execução, em `builder/controller-kit/run.ts`, lido da linha guardada da conversa; uma fábrica só de ferramentas da empresa, em `builder/company-tools/`, de onde saem as do Assistente, do ajudante de pesquisa, da automação, do Builder, do Construtor e do agente salvo; o agente salvo, rascunho ou publicado, fala como `AGENT`, pelo papel de quem o roda agora, só no que a versão declara. As decisões técnicas da construção estão nos corpos do 1162 e do 1173, cada uma com o jeito de desfazer.
+
+Os testes de aceite. Os critérios do cartão em `ca4168ac` foram conferidos contra `main`, arquivo e título: todos existem, nos arquivos que o cartão nomeia, com duas mudanças. O critério 33 não tem o caso "a busca só acha as da vista" em `builder/company-tools/conformance.test.ts`; ele fica provado por `builder/assistant/typed-reads.test.ts`, "a leitura fora do papel não existe", e pela mutação do filtro do `search_tools`, que esse teste derruba (corpo do 1173, T27). O critério 44 não tem um caso com o nome do assento `research`: o ajudante de pesquisa está em `SEATS` (`builder/company-tools/test-company-tools.ts`), e os casos "lei (a)" de `conformance.test.ts` rodam nele.
+
+Nenhum Fechamento ficou para este pull request: o 1162 e o 1173 não têm comentário nem revisão pendente no forge. A Issue futura da construção segue aberta: https://github.com/developmentconexus-ops/conexus/issues/1174 (o `TurnBinding` de `hub/data/public.ts` ainda nomeia `VERSION`, e ninguém o lê). A dívida do cartão (`keptRun` e `InProject`, as chaves das marcas sob `RUN_MARKS`, `kitReads` e `legacyTools`, as leituras tipadas pelo pedido e a tabela do Projeto pela liberação) fica como o cartão a escreveu; a leitura com o login do papel é do Registro e conformidade. As issues `next-card` que o cartão deixou de fora seguem abertas.
+
+Revisão de saúde do CI (L19, `docs/how-to/ci-health.md`): é a da semana, por quem não construiu a etapa, e não faz parte deste pull request.
+
+Linha de uso de Um escopo e a fábrica de ferramentas, em 2026-11-17, com a etapa no ar na v0.24.105, à pergunta se fechava as duas etapas no ar: "Fecha 1.83 e fgabrica"

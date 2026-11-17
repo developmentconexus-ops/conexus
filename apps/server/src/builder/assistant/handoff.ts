@@ -25,7 +25,6 @@ import type { SentFile } from './files.ts'
 import { kindOf, sentFilesOf } from './files.ts'
 import type { assistantMemory } from './memory.ts'
 import { admitted, placeOf } from './open.ts'
-import type { AssistantProjects } from './ports.ts'
 
 /** The Builder's session a hand-off sends on: Mastra's, as `openSession` gives it. */
 type BuilderSession = Pick<Session, 'sendSignal'>
@@ -67,7 +66,7 @@ export type HandOffDoors = {
 export type HandOffDeps = {
   database: Database
   identity: IdentityPorts
-  projects: Pick<AssistantProjects, 'liveProjectOf'>
+  projects: Parameters<typeof admitted>[0]['projects']
   memory: ReturnType<typeof assistantMemory>
   chosen: ChosenConnections
   doors: () => HandOffDoors

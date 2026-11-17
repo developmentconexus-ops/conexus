@@ -14,19 +14,29 @@ import { libraryCommandOn } from './auth.ts'
 import { organizationWith } from './organization.ts'
 import type { RoleSet } from './roles.ts'
 
+/** What a published version declares it reads and writes, each on one connection. */
+export type Declared = readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
+
 /**
- * Who asks for a read. A person is held to their role in the company; a published version (an
- * agent's, an app's) to what it declares, which publishing checked against the publisher's role
- * (decision C1): each entry is a connection of the Projeto and one of its operations.
+ * Who asks for a read. A person is held to their role in the company; a saved agent, draft or
+ * published, to the role of the person who runs it now within what its version declares; a
+ * published app and a copy's run to what the version declares, which publishing checked against
+ * the publisher's role (decision C1): each entry is a connection of the Projeto and one of its
+ * operations.
  */
 export type Speaker =
   | Readonly<{ kind: 'PERSON'; personId: PersonId; role: Role }>
-  | Readonly<{
-      kind: 'VERSION'
-      declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
-    }>
+  | Readonly<{ kind: 'AGENT'; personId: PersonId; role: Role; declared: Declared }>
+  | Readonly<{ kind: 'VERSION'; declared: Declared }>
 
 export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>
+
+export type AgentSpeaker = Extract<Speaker, { kind: 'AGENT' }>
+
+/** The person who runs a saved agent, held within what its version declares. */
+export function withinVersion(person: PersonSpeaker, declared: Declared): AgentSpeaker {
+  return { kind: 'AGENT', personId: person.personId, role: person.role, declared }
+}
 
 /** The person as the role they hold now, read in the caller's transaction; none for someone who is no member. */
 export async function speakerOf(
@@ -52,7 +62,13 @@ export type Target = Readonly<{
 
 /** The name the model and the logs read for the speaker's role; a version has none. */
 export function roleOfSpeaker(speaker: Speaker): string | null {
-  return speaker.kind === 'PERSON' ? speaker.role : null
+  return speaker.kind === 'VERSION' ? null : speaker.role
+}
+
+function declares(declared: Declared, target: Target): boolean {
+  return declared.some(
+    (each) => each.connectionId === target.connectionId && each.operation === target.operationId,
+  )
 }
 
 /**
@@ -78,19 +94,11 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
     )
   }
 
-  function declares(speaker: Extract<Speaker, { kind: 'VERSION' }>, target: Target): boolean {
-    return speaker.declared.some(
-      (each) => each.connectionId === target.connectionId && each.operation === target.operationId,
-    )
-  }
-
-  /** Each target answered in one short transaction of the library's, with one read of the roles for the whole list. */
-  async function mayUseEach(
+  async function permittedEach(
     companyId: CompanyId,
-    speaker: Speaker,
+    role: Role,
     targets: readonly Target[],
   ): Promise<boolean[]> {
-    if (speaker.kind === 'VERSION') return targets.map((target) => declares(speaker, target))
     if (targets.length === 0) return []
     const context = await auth.$context
     return command({ kind: 'COMPANY', companyId, personId: null }, async () => {
@@ -99,7 +107,7 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
         answers.push(
           await permitted(context, {
             organizationId: companyId,
-            role: speaker.role,
+            role,
             // The first target reads the roles and the library keeps them for the company; the rest of
             // this call take that read, so a long list is one read, and the next call reads again.
             useMemoryCache: index > 0,
@@ -109,6 +117,29 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
       }
       return answers
     })
+  }
+
+  async function mayUseEach(
+    companyId: CompanyId,
+    speaker: Speaker,
+    targets: readonly Target[],
+  ): Promise<boolean[]> {
+    switch (speaker.kind) {
+      case 'PERSON':
+        return permittedEach(companyId, speaker.role, targets)
+      case 'VERSION':
+        return targets.map((target) => declares(speaker.declared, target))
+      case 'AGENT': {
+        const declared = targets.filter((target) => declares(speaker.declared, target))
+        const answers = await permittedEach(companyId, speaker.role, declared)
+        return targets.map((target) => {
+          const at = declared.indexOf(target)
+          return at >= 0 && answers[at] === true
+        })
+      }
+      default:
+        return speaker satisfies never
+    }
   }
 
   async function mayUse(companyId: CompanyId, speaker: Speaker, target: Target): Promise<boolean> {

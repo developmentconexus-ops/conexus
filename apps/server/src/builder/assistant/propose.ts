@@ -9,7 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { SessionScope } from '../../hub/connectors/public.ts'
+import type { RunScope } from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { withFile } from '../machine/public.ts'
 
@@ -99,7 +99,7 @@ export function proposeTools(machines: Machines) {
  * conversation inside a Projeto talks about that Projeto's app.
  */
 export function handOffOf(
-  scope: SessionScope | undefined,
+  scope: RunScope | undefined,
   proposals: ReturnType<typeof proposeTools>,
   byAutomation: boolean,
 ): Record<string, ReturnType<typeof proposeTools>['app']> {

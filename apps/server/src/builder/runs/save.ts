@@ -5,21 +5,18 @@ import type { Driven, Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 
 /**
- * The turn's tree as a bundle. The machine says why there is none when it is gone: one that never
- * came up for the turn (`MACHINE_UNAVAILABLE`) keeps the conversation, one that died on the way
- * (`MACHINE_LOST`) lost what it held. Any other failure of a machine that is up (a script that
- * failed, a command past its budget) leaves the work on it, so the save is refused and the next
- * turn merges that work.
+ * The turn's tree as a bundle, on the base the machine holds. The machine says why there is none
+ * when it is gone: one that never came up for the turn (`MACHINE_UNAVAILABLE`) keeps the
+ * conversation, one that died on the way (`MACHINE_LOST`) lost what it held. Any other failure of a
+ * machine that is up (a script that failed, a command past its budget) leaves the work on it, so the
+ * save is refused and the next turn merges that work.
  */
 async function collectOf(
   context: RunsContext,
-  input: { conversationId: ConversationId; base: Sha; fields: Record<string, string> },
+  input: { conversationId: ConversationId; fields: Record<string, string> },
 ) {
   try {
-    return await context.machines.collect({
-      conversationId: input.conversationId,
-      base: input.base,
-    })
+    return await context.machines.collect({ conversationId: input.conversationId })
   } catch (error) {
     if (
       error instanceof Failure &&
@@ -36,7 +33,7 @@ async function collectOf(
 /**
  * Tells the machine that `main` holds its bundle's commit, so the next start measures its unsaved
  * work from it. The version is saved either way: a machine that cannot hear it is told in the log,
- * and a new machine seeds from `main`.
+ * and brings `main` in at its next use, as a start does.
  */
 async function machineSaved(
   context: RunsContext,
@@ -53,26 +50,27 @@ async function machineSaved(
 }
 
 /**
- * Saves what the turn wrote (card, the machine's flow): one commit on the base the turn started
- * from, checked into a candidate ref, then `main` moved from exactly that base (compare-and-swap).
- * Whatever fails before `main` moves leaves `main` as it was. A turn that never needed the machine
- * saves nothing. A run a removal stopped on the way is `gone` before `main` moves.
+ * Saves what the turn wrote (card, the machine's flow): one commit on the base the machine holds,
+ * checked into a candidate ref, then `main` moved from exactly that base (compare-and-swap). The
+ * base is the machine's, not `main`: another conversation may have saved since this machine took
+ * `main`, and then the save is `stale` and the work stays for the machine's next start to merge.
+ * Whatever fails before `main` moves leaves `main` as it was. A turn that never needed the machine,
+ * or changed nothing, saves nothing. A run a removal stopped on the way is `gone` before `main` moves.
  */
 export async function saveRun(context: RunsContext, mine: Driven): Promise<Outcome | 'gone'> {
   const { companyId, projectId, conversationId, runId } = mine
   const fields = { companyId, projectId, runId }
   if (!context.machines.touched(conversationId)) return { kind: 'unchanged' }
-  // The base is `main` as the machine's seed took it: no other run moves it meanwhile (data D15).
   const repository = context.repository({ companyId, projectId })
-  const base = await repository.ensure().catch((error: unknown) => {
+  const restored = await repository.ensure().catch((error: unknown) => {
     if (error instanceof Failure && error.code === 'GIT_RESTORE_NEEDED') return error
     throw error
   })
-  if (base instanceof Failure) {
+  if (restored instanceof Failure) {
     context.log.error(fields, 'GIT_RESTORE_NEEDED')
     return { kind: 'failed', code: 'GIT_RESTORE_NEEDED' }
   }
-  const bundle = await collectOf(context, { conversationId, base, fields })
+  const bundle = await collectOf(context, { conversationId, fields })
   if (typeof bundle === 'object' && 'failed' in bundle)
     return { kind: 'failed', code: bundle.failed }
   if (bundle === 'unchanged') return { kind: 'unchanged' }
@@ -80,6 +78,7 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     context.log.error({ ...fields, reason: bundle }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
+  const { base } = bundle
   const received = await repository.receive({ runId, bundle: bundle.bundle, base })
   if (!received.ok) {
     context.log.error({ ...fields, reason: received.error }, 'SAVE_REFUSED')

@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import { principalFor } from '../../hub/access/public.ts'
 import type { ApprovalDeps, Connectors } from '../../hub/connectors/public.ts'
 import { mayApprove } from '../../hub/connectors/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
@@ -55,10 +56,12 @@ export function mayApproveAgents(
     const found = await writeIn(keptRun, reads, input)
     if (found === undefined) return { held: false }
     const { companyId, personId, projectId } = found.run.scope
-    const offered = await deps.connectors.connections({
-      ...{ companyId, personId, place: { kind: 'PROJECT', projectId } },
-      chosen: [],
-    })
+    const offered = await deps.connectors.connections(
+      principalFor({
+        ...{ consumer: 'assistant', companyId, personId, place: { kind: 'PROJECT', projectId } },
+        choice: { kind: 'CHOSEN', connections: [] },
+      }),
+    )
     const target = targetOf(offered, found.tool)
     if (target === undefined) return { held: false }
     const held = await mayApprove(deps, { ...input, target })

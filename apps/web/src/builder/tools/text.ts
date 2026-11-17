@@ -1,4 +1,5 @@
 import type { ToolEffect } from '@conexus/hub-api'
+import { AND_LIST } from '../../platform/lists.ts'
 
 export const NO_TOOLS_YET =
   'Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente.'
@@ -27,4 +28,9 @@ export function testText(test: { rows: number }): string {
 
 export function deleteWarning(slug: string): string {
   return `Apagar ${slug} tira a ferramenta e todas as versões dela da biblioteca. Não dá para desfazer.`
+}
+
+/** The agents a tool's deletion would cut, named in its confirmation: the Hub refuses it while one uses the tool. */
+export function inUseWarning(agents: readonly string[]): string {
+  return `Usada por ${AND_LIST.format(agents)}. Enquanto um agente a usar, ela não é apagada.`
 }

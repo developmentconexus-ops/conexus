@@ -13,24 +13,26 @@ import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Speaker } from '../identity/public.ts'
+import type { Principal } from '../access/public.ts'
+import type { Declared } from '../identity/public.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
-import type { SessionScope, TurnKey } from './scope.ts'
+import type { TurnKey } from './scope.ts'
 import { connectorWrite } from './tables.ts'
 import type { Returned } from './wrote.ts'
 
 /** A person talking to a draft; the funnel reads their role on every call, so the request carries none. */
 type Person = Readonly<{ kind: 'PERSON'; personId: PersonId }>
-type Version = Extract<Speaker, { kind: 'VERSION' }>
+type Agent = Readonly<{ kind: 'AGENT'; personId: PersonId; declared: Declared }>
 
 /**
- * One write an agent asks for, once per conversation and tool call. A published version speaks by what
- * it declares and is named by `agentId` and `number` (a version has no id of its own); a person talking to a draft, which has no version, speaks
- * by their role. The role is read again on every call.
+ * One write an agent asks for, once per conversation and tool call. A published version speaks by the
+ * role of who runs it within what it declares, and is named by `agentId` and `number` (a version has
+ * no id of its own); a person talking to a draft, which has no version, speaks by their role. The
+ * role is read again on every call.
  */
 export type WriteRequest = Readonly<{
-  scope: SessionScope
+  scope: Principal
   connectionId: ConnectionId
   operation: OperationId
   input: unknown
@@ -42,7 +44,7 @@ export type WriteRequest = Readonly<{
   turn: TurnKey
   signal?: AbortSignal
 }> &
-  (Readonly<{ speaker: Person }> | Readonly<{ speaker: Version; agentId: AgentId; number: number }>)
+  (Readonly<{ speaker: Person }> | Readonly<{ speaker: Agent; agentId: AgentId; number: number }>)
 
 /**
  * What the model and the screen are told of a write. `WRITE_UNCERTAIN` means the request may have
@@ -248,7 +250,7 @@ const OpenState = z.enum(['SENDING', 'UNCERTAIN'])
 
 /** Which open writes: the conversation's, of one connection and operation when named, without the call `except` names. */
 export type OpenWritesKey = Readonly<{
-  scope: SessionScope
+  scope: Principal
   threadId: ConversationId
   connectionId?: ConnectionId
   operation?: OperationId

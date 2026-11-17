@@ -13,11 +13,17 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, changeModel, listOwned, ownThread } from '../controller-kit/public.ts'
+import {
+  attemptIdOf,
+  changeModel,
+  listOwned,
+  ownThread,
+  RUN_MARKS,
+} from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
-import { CONSTRUTOR_MARK, construtorMarks, openConstrutor } from './open.ts'
+import { construtorMarks, openConstrutor } from './open.ts'
 
 type Deps = Pick<ToolsDeps, 'identity' | 'liveProjectOf'> & {
   database: Database
@@ -71,7 +77,7 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     await admittedTo(deps, scope)
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const threads = await listOwned(memory, 'construtor', owner, {
-      [CONSTRUTOR_MARK.project]: scope.projectId,
+      [RUN_MARKS.construtor.project]: scope.projectId,
     })
     return answer({ conversations: threads.map(summaryOf) })
   })
@@ -82,7 +88,7 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const { conversationId } = input.params
     const thread = await ownThread(memory, 'construtor', owner, conversationId)
-    if (thread.metadata?.[CONSTRUTOR_MARK.project] !== scope.projectId)
+    if (thread.metadata?.[RUN_MARKS.construtor.project] !== scope.projectId)
       throw new Failure('CONVERSATION_NOT_FOUND')
     const kept = await changeModel(
       { controller, queue: deps.queue },

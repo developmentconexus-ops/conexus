@@ -21,6 +21,8 @@ export type Session = {
   lost: boolean
   /** What the start found of work not yet saved meeting a newer version, told to the model for the turn. */
   conflicts: Conflicts
+  /** The Hub saved a version the machine was not told of: its next use brings `main` in, as a start would. */
+  unsynced: boolean
   ready: Promise<Kit> | undefined
 }
 

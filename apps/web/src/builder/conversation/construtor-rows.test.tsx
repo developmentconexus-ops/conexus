@@ -301,17 +301,21 @@ test('tool_code_save diz Escrevendo e testando enquanto roda, e o que o teste le
   expect(screen.getByText('Testei com 251 linhas')).toBeTruthy()
 })
 
-test('tool_code_save com o teste que não passou diz O teste não passou e o erro; uma recusa diz a frase de falha', () => {
+test('tool_code_save com o teste que não passou diz só O teste não passou, sem a saída técnica; uma recusa diz a frase de falha', () => {
   const failed = render(
     <ToolRow
       tool={{
         ...draftRow(CONSTRUTOR_TOOL.toolCodeSave),
-        result: { kind: 'REFUSED', code: 'TOOL_TEST_FAILED', output: 'expected 5, got 6' },
+        result: {
+          kind: 'REFUSED',
+          code: 'TOOL_TEST_FAILED',
+          output: 'the read produtos answered REFUSED\nnode:internal/modules/esm/resolve:272',
+        },
       }}
     />,
   )
   expect(screen.getByText('O teste não passou')).toBeTruthy()
-  expect(screen.getByText('expected 5, got 6')).toBeTruthy()
+  expect(screen.queryByText(/REFUSED|node:internal|produtos/)).toBeNull()
   failed.unmount()
   render(
     <ToolRow

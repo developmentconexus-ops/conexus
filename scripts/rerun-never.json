@@ -2,7 +2,10 @@
   "files": [
     "apps/server/src/builder/agents/approval-refused.test.ts",
     "apps/server/src/builder/app-data/access.test.ts",
+    "apps/server/src/builder/assistant/run-scope.test.ts",
+    "apps/server/src/builder/company-tools/conformance.test.ts",
     "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+    "apps/server/src/builder/construtor/run-scope.test.ts",
     "apps/server/src/builder/conversation/conversation-refusal.test.ts",
     "apps/server/src/builder/conversation/permissions.test.ts",
     "apps/server/src/builder/data-tools/tools-refusals.test.ts",
@@ -36,7 +39,7 @@
     "apps/web/src/hub/apps/app-refused.test.tsx",
     "apps/web/src/hub/copies/copy-readers.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
-    "apps/web/src/hub/projects/project-integrations-refusal.test.tsx",
+    "apps/web/src/hub/projects/project-integrations-revoke.test.tsx",
     "tests/e2e/refusals.test.ts"
   ],
   "tests": [

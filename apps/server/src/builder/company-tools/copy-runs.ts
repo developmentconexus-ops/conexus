@@ -1,18 +1,16 @@
 import type {
-  CompanyId,
   CopyInterval,
   CopyRun,
   CopyRunFailureCode,
   CopySchedule,
   CopySystemMessage,
-  PersonId,
 } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, FAILURES } from '@conexus/hub-api'
-import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import type { AssistantCopies } from './ports.ts'
+import type { RunScope } from '../controller-kit/public.ts'
+import type { CompanyCopies } from './ports.ts'
 
 /** The most runs the model reads of one copy, the newest first. */
 const RUNS_SHOWN = 5
@@ -78,33 +76,31 @@ function toolRunOf(run: CopyRun): ToolRun {
 
 /**
  * `copy_runs`: the latest runs of one of the company's copies, by its table name, for "why did this
- * copy stop?". Reads through the copies' own admission, so a table the asker's role does not read
- * is the `NOT_FOUND` of a name that does not exist.
+ * copy stop?". Only a table the run's view lists is found (C81), so a table outside it, or one not
+ * released to the conversation's Projeto, is the `NOT_FOUND` of a name that does not exist; the
+ * copies' own admission reads it again.
  */
-export function copyRunsTool(deps: {
-  scopeOf: (
-    requestContext: RequestContext,
-  ) => Promise<{ companyId: CompanyId; personId: PersonId } | undefined>
-  copies: () => AssistantCopies
-}) {
+export function copyRunsTool(
+  scope: Readonly<{ run: RunScope; tables: readonly string[] }>,
+  copies: () => Pick<CompanyCopies, 'list' | 'runs'>,
+) {
   return createTool({
     id: ASSISTANT_TOOL.copyRuns,
     description:
       "The latest runs of one of the company's copies, by its table name in sync: when each ran, how it ended, the Conexus sentence and what to do, whether it reread everything, and what the source system said when it refused. Use it when someone asks why a copy failed or stopped.",
     inputSchema: z.object({ table: z.string().min(1).max(63) }),
-    execute: async ({ table }, { requestContext }) => {
-      const scope = requestContext === undefined ? undefined : await deps.scopeOf(requestContext)
-      if (scope === undefined) {
+    execute: async ({ table }) => {
+      if (scope.run.conversation.kind !== 'THREAD') {
         throw new Failure('INTERNAL_UNEXPECTED', {
           details: { reason: 'COPY_RUNS_WITHOUT_CONVERSATION' },
         })
       }
-      const { companyId, personId } = scope
-      const { copies } = await deps.copies().list({ companyId, personId, named: [] })
-      const found = copies.find((each) => each.name === table)
+      if (!scope.tables.includes(table)) return notFound()
+      const { companyId, personId } = scope.run.owner
+      const { copies: listed } = await copies().list({ companyId, personId, named: [] })
+      const found = listed.find((each) => each.name === table)
       if (found === undefined) return notFound()
-      const read = await deps
-        .copies()
+      const read = await copies()
         .runs({ companyId, personId, copyId: found.id, page: undefined })
         .catch((cause: unknown) => {
           if (cause instanceof Failure && cause.code === 'COPY_NOT_FOUND') return notFound()

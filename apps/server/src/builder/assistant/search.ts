@@ -1,8 +1,7 @@
 import type { ProjectId } from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { Owner } from '../controller-kit/public.ts'
-import { resourceOf } from '../controller-kit/public.ts'
-import { SESSION_MARK } from './context.ts'
+import { RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
 import type { assistantMemory } from './memory.ts'
 import { automationOf } from './open.ts'
 
@@ -18,7 +17,7 @@ function comparable(text: string): string {
 }
 
 function inPlace(thread: StorageThreadType, place: ListFilter['place']): boolean {
-  if (place === 'HOME') return thread.metadata?.[SESSION_MARK.project] === undefined
+  if (place === 'HOME') return thread.metadata?.[RUN_MARKS.assistant.project] === undefined
   if (place === 'AUTOMATIONS') return automationOf(thread.metadata) !== null
   return true
 }
@@ -45,7 +44,7 @@ export async function listedPage(
   const { page, q, place, owner, projectId } = asked
   const base = {
     resourceId: resourceOf('assistant', owner),
-    ...(projectId === undefined ? {} : { metadata: { [SESSION_MARK.project]: projectId } }),
+    ...(projectId === undefined ? {} : { metadata: { [RUN_MARKS.assistant.project]: projectId } }),
   }
   const orderBy = { field: 'updatedAt', direction: 'DESC' } as const
   if (q === undefined && place === undefined) {

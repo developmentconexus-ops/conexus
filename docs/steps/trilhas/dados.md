@@ -29,8 +29,9 @@ fundador a usou no ar, e a linha de uso está no
 Cada papel lê só o seu, a etapa 2, com a emenda da porta única, fechou em 2026-11-17: o fundador
 mandou fechar, e a linha de fechamento está no
 [arquivo de aprovação](../../approvals/cada-papel-le-so-o-seu.md). Todo o código está no `main` e no
-ar na v0.24.102. A trilha está sem cartão em `docs/steps/` até a etapa do Registro e da conformidade
-ter estudo e cartão.
+ar na v0.24.102. A subida do Mastra para a 1.83, fora da ordem do roteiro, fechou no mesmo dia
+([arquivo de aprovação](../../approvals/mastra-1-83.md)). A trilha está sem cartão em `docs/steps/`
+até o cartão do Registro e da conformidade entrar.
 
 A etapa seguinte, sem mudar a ordem, é a do Registro e conformidade: os consumidores passam a derivar da porta, e a
 licença que toda execução exige nasce com o Registro. As concessões por instância entram quando o primeiro cartão precisar

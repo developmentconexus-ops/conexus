@@ -1,4 +1,5 @@
 export type { Assistant } from './assistant.ts'
-export { createAssistant, speakersOf } from './assistant.ts'
+export { createAssistant } from './assistant.ts'
+export { speakersOf } from './context.ts'
 export type { HandOffDoors } from './handoff.ts'
-export { offeredOnly, placeOf } from './open.ts'
+export { offeredAmong, offeredWith, placeOf } from './open.ts'

@@ -5,7 +5,7 @@ import { call, codeOf } from '../identity/test-hub.ts'
 import { copiesOn } from './test-copies.ts'
 import { listProposalsOn } from './test-list-proposals.ts'
 import { definitionOf, dismiss, grantMatriz, listedBy, proposed } from './test-proposals.ts'
-import { copiesUrl } from './test-routes.ts'
+import { copiesUrl, firstEnded } from './test-routes.ts'
 import { ordersCopy, STORE_A, STORE_B } from './test-sources.ts'
 
 test('a lista com as propostas', async (t) => {
@@ -93,4 +93,6 @@ test('a lista com a origem', async (t) => {
   assert.equal(made.statusCode, 201, made.body)
   const [copy] = (await on.listed(on.ana)).copies
   assert.deepEqual([copy?.sources, copy?.shown], [sources, shown])
+  assert.ok(copy)
+  await firstEnded(on, copy.id)
 })

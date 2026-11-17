@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ToolDataAnswer, ToolVersionId } from '@conexus/hub-api'
-import type { LiveToolCall, SessionScope } from './public.ts'
+import { chooserAt } from '../access/test-principal.ts'
+import type { LiveToolCall } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
 
@@ -11,12 +12,14 @@ const VERSION = ToolVersionId.parse(randomUUID())
 async function doorOn(t: Parameters<typeof appCalls>[0]) {
   const on = await appCalls(t)
   const matriz = ConnectionId.parse(await on.connect('Matriz', false))
-  const scope: SessionScope = {
-    companyId: CompanyId.parse(on.companyId),
-    personId: PersonId.parse(on.ana.id),
-    place: { kind: 'COMPANY' },
-    chosen: [matriz],
-  }
+  const scope = chooserAt(
+    {
+      companyId: CompanyId.parse(on.companyId),
+      personId: PersonId.parse(on.ana.id),
+      place: { kind: 'COMPANY' },
+    },
+    [matriz],
+  )
   const turn = TurnKey.parse(randomUUID())
   const live: LiveToolCall = {
     scope,

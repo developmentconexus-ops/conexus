@@ -22,7 +22,7 @@ export const RECORDED_TOOLS = {
   ...TASK_TOOLS,
   web_fetch: webFetchTool,
   web_search: webSearchTool,
-  ...dataTools({ dataOf: async () => recordedData() }),
+  ...dataTools({ data: recordedData() }),
   connector_read: createTool({
     id: 'connector_read',
     description: 'Reads a connection the conversation chose.',

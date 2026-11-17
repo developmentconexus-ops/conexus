@@ -39,14 +39,14 @@ As respostas do fundador:
 
 ## O cartão de hoje
 
-A máquina da conversa que não pausa a cada mensagem fechou em 2026-11-17: o fundador aprovou o
-roteiro de uso, e a linha de fechamento está no
-[arquivo de aprovação](../../approvals/o-arquivo-do-turno-anterior.md). O rastreio do Mastra, da
-Plataforma, fechou no mesmo dia ([arquivo de aprovação](../../approvals/pattern-o-rastreio-do-mastra.md)).
-A trilha está sem cartão em `docs/steps/` até a etapa seguinte ter estudo e cartão.
+Um escopo e a fábrica de ferramentas (H0, H1, H3, H6) fechou em 2026-11-17: o fundador mandou
+fechar, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md). Todo o código está
+no `main` e no ar na v0.24.105. A trilha está sem cartão em `docs/steps/` até o cartão da etapa
+seguinte entrar.
 
-A etapa seguinte, antes de `A1`, é Um escopo e a fábrica de ferramentas (H0, H1, H3, H6), pela decisão
-do fundador de 2026-11-17: "R2 a". A ordem dos marcos não muda.
+A etapa seguinte, antes de `A1`, é a fundação do front-end, pela resposta do fundador de 2026-11-17
+à ordem na trilha: "A. A ordem na trilha: a". A ordem dos marcos não muda.
 
 O estudo de referência sobre como uma plataforma de referência cria apps terminou em 2026-11-16, fora
 do repositório. O fundador respondeu duas coisas nele. Sobre a IA dentro do app: "Agora não; quando

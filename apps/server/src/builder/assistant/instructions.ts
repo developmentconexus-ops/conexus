@@ -3,7 +3,13 @@ import type { AgentInstructions } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure } from '../../platform/failure.ts'
 import type { Mays, Speakers } from '../controller-kit/public.ts'
-import { blockOf, fixedSystem, sessionModel, TITLE } from '../controller-kit/public.ts'
+import {
+  blockOf,
+  CONEXUS_PROMPT,
+  fixedSystem,
+  sessionModel,
+  TITLE,
+} from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 
 /**
@@ -17,11 +23,9 @@ export const ASSISTANT_OBSERVER = `${TITLE.ask.observer} Observe as a business a
  * Conexus is, shared with the units after this one (`conexus.md`), then the Assistant (`assistant.md`).
  */
 const FIXED = [
-  readFileSync(new URL('../conversation/prompt/conexus.md', import.meta.url), 'utf8'),
-  readFileSync(new URL('./prompt/assistant.md', import.meta.url), 'utf8'),
-]
-  .map((text) => text.trim())
-  .join('\n\n')
+  CONEXUS_PROMPT,
+  readFileSync(new URL('./prompt/assistant.md', import.meta.url), 'utf8').trim(),
+].join('\n\n')
 
 /**
  * The block of one model, by the turn's model id with its provider, after the fixed message: Mastra
@@ -43,16 +47,17 @@ const MODEL_BLOCKS: Readonly<Record<string, string>> = {
  * on each call of the agent.
  */
 export function assistantInstructions(deps: {
-  offeredOf: (
+  /** The connections of the run's view: the chosen ones it reaches (issue 1147). */
+  chosenOf: (
     requestContext: RequestContext,
-  ) => Promise<readonly { name: string; connector: string; chosen: boolean }[]>
+  ) => Promise<readonly { name: string; connector: string }[]>
   speakersOf: (requestContext: RequestContext) => Promise<Speakers | undefined>
   maysOf: (requestContext: RequestContext) => Promise<Mays>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const [speakers, offered, may] = await Promise.all([
+    const [speakers, chosen, may] = await Promise.all([
       deps.speakersOf(requestContext),
-      deps.offeredOf(requestContext),
+      deps.chosenOf(requestContext),
       deps.maysOf(requestContext),
     ])
     if (speakers === undefined) {
@@ -60,7 +65,6 @@ export function assistantInstructions(deps: {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const chosen = offered.filter((each) => each.chosen)
     const model = MODEL_BLOCKS[sessionModel(requestContext)]
     return [
       fixedSystem(FIXED),

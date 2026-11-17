@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConnectionId, ProjectId } from '@conexus/hub-api'
+import { principalFor } from '../access/public.ts'
 import { call, plantCompany, post } from '../identity/test-hub.ts'
 import { linkSankhya } from './test-connections.ts'
 import { writing } from './test-write.ts'
@@ -33,8 +34,12 @@ test('uma ligação de outro Projeto ou de outra empresa dá NOT_GRANTED, sem pe
     name: 'Outro',
   })
   const elsewhere = ProjectId.parse(Object(made.json()).project.id)
+  const ana = on.scopeOf(on.ana.id)
   const inOther = on.byAna({
-    scope: { ...on.scopeOf(on.ana.id), place: { kind: 'PROJECT', projectId: elsewhere } },
+    scope: principalFor({
+      ...{ consumer: 'assistant', companyId: ana.companyId, personId: ana.personId },
+      ...{ place: { kind: 'PROJECT', projectId: elsewhere }, choice: ana.choice },
+    }),
   })
   assert.deepEqual(await on.ask(inOther), { kind: 'NOT_GRANTED' })
   const company = await plantCompany(on.hub.test, on.ana.id, 'Empresa B', 'empresa-b')

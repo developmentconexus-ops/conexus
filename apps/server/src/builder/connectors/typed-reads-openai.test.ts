@@ -72,7 +72,7 @@ async function offeredAfterSearch(provider: string, loaded: string): Promise<Off
     model,
     inputProcessors: [
       new ToolSearchProcessor({
-        tools: typedReads(async () => undefined, '50 connector calls per run'),
+        tools: typedReads(async () => undefined),
         storage: 'context',
         search: { topK: 1, autoLoad: true },
       }),

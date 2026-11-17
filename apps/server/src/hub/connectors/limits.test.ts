@@ -7,6 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { chooserAt } from '../access/test-principal.ts'
 import { TurnKey } from './public.ts'
 import { appCalls, sankhyaDoor } from './test-app-calls.ts'
 import {
@@ -218,7 +219,7 @@ test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma 
   const release = door.hold()
   const both = Promise.all([
     on.hub.connectors.assistant.read(
-      { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
+      chooserAt({ companyId, personId, place: { kind: 'COMPANY' } }, [connectionId]),
       {
         connectionId,
         turn: TurnKey.parse(randomUUID()),
@@ -263,7 +264,7 @@ test('o turno parado corta a espera: a leitura na fila sai na hora, sem chamar o
   const personId = PersonId.parse(on.ana.id)
   const release = door.hold()
   const first = on.hub.connectors.assistant.read(
-    { companyId, personId, place: { kind: 'COMPANY' }, chosen: [connectionId] },
+    chooserAt({ companyId, personId, place: { kind: 'COMPANY' } }, [connectionId]),
     {
       connectionId,
       turn: TurnKey.parse(randomUUID()),
