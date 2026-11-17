@@ -80,7 +80,7 @@ export const CodeSaveResult = z.discriminatedUnion('kind', [
     code: Problem.shape.code,
     field: ProblemField.optional(),
     reason: ProblemReason.optional(),
-    /** On `TOOL_TEST_FAILED`: what the test printed, the end of it. */
+    /** For the model, never the screen: on `TOOL_TEST_FAILED` what the test printed, the end of it; on another refusal the cause in words. */
     output: z.string().optional(),
   }),
 ])

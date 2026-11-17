@@ -160,6 +160,30 @@ test('o teste não passa: o Construtor recebe TOOL_TEST_FAILED com o erro, nada 
   assert.deepEqual(leftOnMachine(on), [], 'the fixtures left the machine with the folder')
 })
 
+test('sem connectionId o Construtor recebe a causa em palavras: precisa de connectionId e de leituras em reads, e onde liberar uma ligação', async (t) => {
+  const answers: Record<string, unknown>[] = []
+  const { connectionId: _omitted, ...withoutConnection } = saving('')
+  const on = await building(t, [
+    () => [tool('tool_code_save', withoutConnection)],
+    keeping(answers),
+  ])
+  assert.equal(
+    endOf(await on.conversation.say('Crie uma ferramenta que formata datas')),
+    'complete',
+  )
+
+  const refused = answerOf(answers)
+  assert.equal(refused.kind, 'REFUSED')
+  if (refused.kind !== 'REFUSED') return
+  assert.equal(refused.code, 'REQUEST_MALFORMED')
+  assert.equal(refused.field, 'connectionId')
+  assert.match(String(refused.output), /connectionId/)
+  assert.match(String(refused.output), /reads/)
+  assert.match(String(refused.output), /Integrações do Projeto.*Liberar para ler/)
+  const listed = await call(on.hub, on.ana, 'GET', on.tools)
+  assert.deepEqual(Object(listed.json()).tools, [])
+})
+
 test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem máquina e sem linha', async (t) => {
   const answers: Record<string, unknown>[] = []
   const on = await building(t, [
@@ -173,6 +197,7 @@ test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem 
     [refused.kind, Object(refused).code, Object(refused).field, Object(refused).reason],
     ['REFUSED', 'TOOL_REFUSED', 'connectionId', 'NOT_OFFERED'],
   )
+  assert.match(String(Object(refused).output), /Integrações do Projeto.*Liberar para ler/)
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   assert.deepEqual(Object(listed.json()).tools, [])
 })

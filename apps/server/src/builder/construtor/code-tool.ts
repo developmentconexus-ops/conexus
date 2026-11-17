@@ -20,6 +20,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import type { InProject, Tools } from '../tools/public.ts'
+import { hintOf, missingOf, refusal } from './code-refusal.ts'
 
 /** The rule that keeps module state out of a tool's code, run by the template's Biome. */
 const MODULE_RULE = readFileSync(new URL('./module-state.grit', import.meta.url), 'utf8')
@@ -108,18 +109,16 @@ export type CodeToolDeps = {
   log: FailureLog
 }
 
-function refusal(code: Refusal['code'], rest: Omit<Refusal, 'kind' | 'code'> = {}): Refusal {
-  return { kind: 'REFUSED', code, ...rest }
-}
-
 /** The refusal a service gave, as the result the model reads; a failure of ours stays an exception. */
 function refusedBy(deps: CodeToolDeps, error: unknown): Refusal {
   if (!(error instanceof Failure) || error.code === 'INTERNAL_UNEXPECTED') throw error
   logFailure(deps.log, error)
   const { field, reason } = error.named
+  const hint = hintOf(field, reason)
   return refusal(error.code, {
     ...(field === undefined ? {} : { field }),
     ...(reason === undefined ? {} : { reason }),
+    ...(hint === undefined ? {} : { output: hint }),
   })
 }
 
@@ -228,7 +227,12 @@ export function codeToolSave(deps: CodeToolDeps, scope: InProject) {
         })
       }
       const which = Which.safeParse(input)
-      if (!which.success) return refusal('REQUEST_MALFORMED', { field: 'toolId' })
+      if (!which.success) {
+        return refusal('REQUEST_MALFORMED', {
+          field: input.toolId === undefined ? 'connectionId' : 'toolId',
+          output: missingOf(input),
+        })
+      }
       try {
         return await testAndSave(deps, scope, { input, which: which.data }, key, requestContext)
       } catch (error) {
@@ -281,7 +285,7 @@ async function testAndSave(
     )
     if (answered.kind !== 'OK' || !('whole' in answered)) {
       return refusal('TOOL_TEST_FAILED', {
-        output: `the read ${operation} answered ${answered.kind}`,
+        output: `A leitura ${operation} não deu certo (${answered.kind}). Confira se a operação existe na ligação e se samples traz a entrada certa dela; troque a operação ou a entrada e tente de novo.`,
       })
     }
     fixtures[operation] = answered.whole
