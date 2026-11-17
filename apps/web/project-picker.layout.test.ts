@@ -16,6 +16,7 @@ import {
   sixty,
   triggerOf,
 } from './picker-places.ts'
+import { NO_PROJECT_MATCH } from './src/hub/projects/text.ts'
 import { sentenceOfCode } from './src/platform/hub.ts'
 
 const harness = createHarness(import.meta.dirname)
@@ -90,7 +91,7 @@ for (const place of PLACES) {
     assert.equal(await projectRows(list).count(), 50, 'the list before the text left at the letter')
     release()
     await list.getByRole('option', { name: 'Projeto 58' }).waitFor()
-    await page.waitForFunction(() => document.querySelectorAll('[role=option]').length <= 2)
+    await page.waitForFunction(() => document.querySelectorAll('[role=option]').length === 1)
     assert.deepEqual(await projectRows(list).allTextContents(), ['Projeto 58'])
     const searched = page.seen.filter((one) => one.path === PROJECTS).map((one) => one.search)
     assert.ok(
@@ -101,6 +102,19 @@ for (const place of PLACES) {
       !searched.includes(`?${new URLSearchParams({ page: SECOND })}`),
       'Mais Projetos was asked for',
     )
+    await page.close()
+  })
+
+  test(`${place.name}: buscar um nome que não existe mostra a frase de nenhum resultado e nenhuma linha`, async () => {
+    const { page, list } = await openList(place, DESKTOP, {
+      ...sixty(),
+      [asked({ q: 'zzz' })]: projectsReply([], 'END'),
+    })
+    await projectRows(list).nth(49).waitFor()
+    await page.getByRole('combobox', { name: 'Buscar Projeto' }).fill('zzz')
+    await popupOf(page).getByText(NO_PROJECT_MATCH, { exact: true }).waitFor()
+    assert.equal(await list.getByRole('option').count(), 0)
+    assert.deepEqual(page.problems, [])
     await page.close()
   })
 
