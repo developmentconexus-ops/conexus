@@ -132,12 +132,12 @@ function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
 }
 
 /** The line a live read leaves before its answer returns; a copy's run leaves none, and without the line the value does not return. */
-async function recorded<T extends ReadAnswer | NotInRole>(
+async function recorded(
   deps: Deps,
   a: ReadRequest,
-  answer: T,
+  answer: ReadAnswer | NotInRole,
   ms: number,
-): Promise<T | Extract<ReadAnswer, { kind: 'UNREACHABLE' }>> {
+): Promise<ReadAnswer | NotInRole> {
   if (a.by === 'copy') return answer
   const written = await deps.recordRead({
     ...{ companyId: a.ids.companyId, personId: a.viewer.person.id, by: a.by },
