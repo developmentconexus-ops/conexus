@@ -17,10 +17,6 @@ const refusedProject = http.get(`*/api/companies/${COMPANY.id}/projects/:project
   refusal('NOT_FOUND'),
 )
 
-function later(ms: number) {
-  return new Promise((done) => setTimeout(done, ms))
-}
-
 test('a lista mostra as da pessoa com o estado e a próxima, e Pausar e Retomar mudam a linha', async () => {
   const hub = automationsHub(server, {
     automations: [
@@ -182,13 +178,11 @@ test('uma execução que ainda roda mostra Rodando, e quando o Hub a dá por pro
     }
     automationsHub(server, held)
     at(`${LIST}/${RESUMO}`)
-    await later(300)
-    expect(screen.getByText('Rodando')).toBeTruthy()
+    expect(await screen.findByText('Rodando')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Abrir a conversa' })).toBeTruthy()
     held.runs = [run({ state: { kind: 'DONE', conversationId: RAN } })]
     await vi.advanceTimersByTimeAsync(5_000)
-    await later(300)
-    expect(screen.getByText('Pronta')).toBeTruthy()
+    expect(await screen.findByText('Pronta')).toBeTruthy()
     expect(screen.queryByText('Rodando')).toBeNull()
   } finally {
     vi.useRealTimers()
@@ -199,12 +193,13 @@ test('uma execução que já terminou não é lida de novo sozinha', async () =>
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   try {
     const hub = automationsHub(server, { automations: [automation()], runs: [run()] })
-    at(`${LIST}/${RESUMO}`)
-    await later(300)
+    const { conexus } = at(`${LIST}/${RESUMO}`)
+    await screen.findByText('Pronta')
+    await vi.waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
     const before = hub.runReads()
     expect(before).toBeGreaterThan(0)
     await vi.advanceTimersByTimeAsync(30_000)
-    await later(300)
+    expect(conexus.queryClient.isFetching()).toBe(0)
     expect(hub.runReads()).toBe(before)
   } finally {
     vi.useRealTimers()

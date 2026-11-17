@@ -10,6 +10,7 @@ import {
   MACHINE_TOOL,
 } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { holdsColumn } from './chat-column.ts'
 import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -159,19 +160,15 @@ function widthOf(page: Page, selector: string) {
   return page.locator(selector).evaluate((element) => element.getBoundingClientRect().width)
 }
 
-// The panel resizes after the file shows: wait, up to a deadline, for the width to arrive.
+// The panel resizes after the file shows: read its width once the picture stopped moving.
 async function until(
   page: Page,
   selector: string,
   ok: (width: number) => boolean,
   message: string,
 ) {
-  const deadline = Date.now() + 5000
-  let width = await widthOf(page, selector)
-  while (!ok(width) && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    width = await widthOf(page, selector)
-  }
+  await atRest(page)
+  const width = await widthOf(page, selector)
   assert.ok(ok(width), `${message} (${width} px)`)
 }
 
