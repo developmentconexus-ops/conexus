@@ -947,7 +947,7 @@ changes, reread the line it names.
   `input: invocation.args`. `@ai-sdk/anthropic` writes `input: part.input`, `JSON.stringify` drops
   the undefined field, and Anthropic answers 400 `tool_use.input: Field required` to every later
   request of the conversation. Since `@mastra/core` 1.80.0 (PR #28332) the rule is Mastra's own:
-  `tool-call-empty-input`, in `DEFAULT_COMPAT_RULES` (`dist/stream-GSsXnWy3.js:1195-1207`), sends a
+  `tool-call-empty-input`, in `DEFAULT_COMPAT_RULES` (`dist/stream-Coth7KQ4.js:3189-3200`), sends a
   `tool-call` whose input is missing or `null` as `{}` in the outbound prompt only; the stored
   message is not touched, so a conversation already broken recovers on its next message. Mastra's
   in-process engine also scores an errored iteration through `isTaskComplete` (the durable engine
@@ -975,7 +975,7 @@ changes, reread the line it names.
   Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
   Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
 - **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
-  leaves (`@mastra/server` `dist/server/handlers/agent-controller.js:570-650` at 1.83.0, `abortSignal` at `:642`), so the guard keeps each open stream's
+  leaves (`@mastra/server` `dist/server/handlers/agent-controller.js:577-666` at 1.83.0, `abortSignal` at `:651-655`), so the guard keeps each open stream's
   response and the close destroys them once the runs have said their end, which `@mastra/fastify`
   reads as the request leaving; a session Mastra deletes
   with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
@@ -1007,11 +1007,11 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
-- **Library line.** `@mastra/core` 1.83.0 (`6e8dfcb8`): the session's native "never ask" is the `allow`
+- **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
   policy, which suspends the call and approves it at once
-  (`packages/core/src/agent-controller/session.ts:4768-4789` and `:6459-6504`). With `@mastra/pg`
+  (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
-  at `packages/core/src/agent/agent.ts:8522`).
+  at `packages/core/src/agent/agent.ts:8757`).
 - **Hand-made piece.** `requireApproval: NEVER_ASKS` in `apps/server/src/builder/agents/tools.ts` (the
   reads) and in `agents/agent.ts` (`neverAsking`, the shared tools, on a copy), and
   `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
@@ -1026,7 +1026,7 @@ changes, reread the line it names.
 ## Mastra 1.83.0: a step's answer without the body of its request
 
 - **Library line.** `@mastra/core` 1.83.0 keeps every step's output, `request.body` included, until
-  the session's next run (`MastraModelOutput` `#bufferedSteps[].request`, `dist/stream-GSsXnWy3.js:5037`;
+  the session's next run (`MastraModelOutput` `#bufferedSteps[].request`, `dist/stream-Coth7KQ4.js:6999`;
   it joins equal requests only when it serializes, `:4730-4760`), so a conversation's last
   turn holds every prompt it sent. Nothing of ours or Mastra's reads the body back. The AI SDK's
   own `experimental_include.requestBody: false` (`ai@6.0.309` `generateText` and `streamText`) is
@@ -1042,7 +1042,7 @@ changes, reread the line it names.
 ## Mastra 1.83.0: the store's domains log, and a model's output is read from its name
 
 - **Library line.** `Mastra` gives its logger to the store, but `MastraCompositeStore` does not pass
-  it on to the store's domains (the class at `dist/filesystem-versioned-CNYJdPJl.js:207-463` has no
+  it on to the store's domains (the class at `dist/filesystem-versioned-CeCxYq38.js:250` has no
   `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
   `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
   nothing of what the model outputs.
@@ -1269,9 +1269,9 @@ reference tool checks a read against its documentation.
 - **Library line.** `Knowledge` is experimental in `@mastra/core` 1.83.0: the API can change without
   notice, its storage has no migration (`KNOWLEDGE_STORAGE_SCHEMA_VERSION` 4,
   `dist/knowledge/`), a new Mastra that changes the format asks to drop its tables, and
-  `knowledgeMemoryScopes` (`dist/agent-BP9OWM6D.js:62599-62624`) makes every run an editor of its
+  `knowledgeMemoryScopes` (`dist/evented-execution-4C5qBV8d.js:20944`) makes every run an editor of its
   tenant. The library's pinned text still names the write tool
-  (`PinnedStateProcessor`, `dist/agent-BP9OWM6D.js:73833-73840`); its `instructions` option changes
+  (`PinnedStateProcessor`, `dist/evented-execution-4C5qBV8d.js:32477`); its `instructions` option changes
   only the usage block.
 - **Hand-made piece.** `apps/server/src/builder/assistant/company-memory.ts` is the only file that
   talks to `Knowledge`. Its scopes make a run a viewer of its thread, its resource and its company
@@ -1294,7 +1294,7 @@ reference tool checks a read against its documentation.
 - **Library line.** `AgentController` runs a subagent as a new `Agent` with no processors; its model
   comes only from the synchronous `resolveSubagentModel`, its context is a new object with an empty
   `resourceId`, and the controller's tools are copied from the main agent's
-  (`@mastra/core@1.83.0` `dist/agent-controller-BDds1y5w.js:6830-6866`, `:6719-6994`). Mastra's own
+  (`@mastra/core@1.83.0` `dist/agent-controller-BhkzVgCi.js:9120`, `resolveSubagentModel`). Mastra's own
   `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
   itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
 - **Hand-made piece.** `apps/server/src/builder/assistant/research.ts`: the one type `pesquisar`
@@ -1337,7 +1337,7 @@ moves the watermark or takes a row out.
 
 - **Library line.** `@mastra/core` 1.83.0 keeps a workflow's state inside one run
   (`dist/docs/references/docs-workflows-workflow-state.md`); the schedule only knows when to fire
-  (`dist/scheduler-Me4rCjO2.js:340-372`). Nothing in `@neondatabase/serverless` 1.2.0 or in
+  (`dist/scheduler-DOueSa7x.js:376-380`). Nothing in `@neondatabase/serverless` 1.2.0 or in
   PostgreSQL 18 knows what a source's last read reached.
 - **Hand-made piece.** `position` (where the read stopped: a key, an offset or the provider's cursor,
   `CopyPosition` in `packages/connectors/src/kernel/copy.ts`) and `watermark` (when the last complete
@@ -1355,7 +1355,7 @@ moves the watermark or takes a row out.
 ### One run at a time
 
 - **Library line.** `@mastra/core` 1.83.0 does not look at the previous run when a schedule fires
-  (`dist/scheduler-Me4rCjO2.js:340-372`); four runs of one schedule overlapped in the study.
+  (`dist/scheduler-DOueSa7x.js:376-380`); four runs of one schedule overlapped in the study.
   [Data D25](../guides/data.md) forbids a session lock.
 - **Hand-made piece.** `claim` in `run.ts`: `claim_token` and `claimed_until` on the copy's row, taken
   by one `UPDATE` that fires only on a free or expired lease (code C65). The position, the watermark
