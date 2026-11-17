@@ -31,10 +31,10 @@ walk ([code C75](../guides/code.md)), not a question here.
 13. Does the diff bump a Mastra pin? Then the reference shelf and [stack](stack.md) moved with it.
     `neverAsking`'s copy of each tool by its prototype (`builder/agents/agent.ts`) depends on the
     shape of the `Tool` instance: prove it again on every version with the criterion 5 test.
-14. For each file of the diff: does this change copy a logic that lives elsewhere, add a parameter
-    for one caller, or add an `if` for one value? When the diff touches the core of an area, list
-    `npm run cochange -- --base origin/main` under Ran; a new pair above its threshold is an
-    Issue futura, never a Bloqueia.
+14. For each file of the diff: does this change copy a logic that lives elsewhere (C26), add a
+    parameter for one caller, or add an `if` for one value (C73)? When the diff touches `apps/` or
+    `packages/`, list `npm run cochange -- --base origin/main` under Ran; a pair whose other side
+    the diff leaves untouched is an Issue futura, never a Bloqueia.
 
 ## The sweep table
 
