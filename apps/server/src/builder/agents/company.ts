@@ -15,7 +15,12 @@ import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 export async function agentToolScope<C extends CompanyConnection>(
   deps: Readonly<{ access: Pick<Access, 'viewOf'>; appData: AppDataPort }>,
   run: RunScope,
-  version: Readonly<{ offered: readonly C[]; projectId: ProjectId; readsApp: boolean }>,
+  version: Readonly<{
+    offered: readonly C[]
+    projectId: ProjectId
+    readsApp: boolean
+    agentId: AgentId
+  }>,
 ): Promise<CompanyToolScope<C>> {
   const app = { scope: run.owner, projectId: version.projectId }
   const reads = version.readsApp && (await deps.appData.hasApp(app))
@@ -24,7 +29,9 @@ export async function agentToolScope<C extends CompanyConnection>(
     { access: deps.access, connections: async () => version.offered },
     {
       noteSave: false,
-      appData: reads ? { kind: 'READ', appData: deps.appData, ...app } : { kind: 'NONE' },
+      appData: reads
+        ? { kind: 'READ', appData: deps.appData, ...app, agentId: version.agentId }
+        : { kind: 'NONE' },
     },
   )
 }

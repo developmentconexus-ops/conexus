@@ -226,7 +226,7 @@ function planner(deps: AgentDeps, frozen: Frozen, versionOf: ReturnType<typeof v
     const offered = await deps.connectors.connections(scope)
     const { projectId } = version.run.scope
     const toolScope = await agentToolScope(deps, runScope, {
-      ...{ offered, projectId, readsApp: frozen.appData },
+      ...{ offered, projectId, readsApp: frozen.appData, agentId: frozen.agentId },
     })
     const machine = frozen.machine
     return { ...{ ...version, start, runScope, scope, machine }, offered, toolScope }

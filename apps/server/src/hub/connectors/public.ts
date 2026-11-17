@@ -28,7 +28,7 @@ import {
   registerConnectionRoutes,
   registerToolCallRoutes,
 } from './routes.ts'
-import type { ConnectionCopies } from './rows.ts'
+import type { ConnectionCopies, Deps } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
@@ -95,6 +95,8 @@ export function createConnectors(deps: {
   propose: () => Propose
   /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
   copies: () => ConnectionCopies
+  /** The Registro's one writer, which every live read leaves its line through. */
+  recordRead: Deps['recordRead']
   tuning?: ConnectorTuning
 }) {
   const catalog = deps.tuning?.catalog ?? CONNECTORS

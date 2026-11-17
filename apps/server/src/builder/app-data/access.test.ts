@@ -62,7 +62,7 @@ test('quem usa o Builder lê e conta: a porta do Hub admite o membro e responde 
   const signal = AbortSignal.timeout(10_000)
   for (const person of [on.ana, admin, developer, on.bruno]) {
     const ids = on.ids(person)
-    const read = await data.read(ids, { text: 'select id from longo order by id' }, signal)
+    const read = await data.read(ids, { text: 'select id from longo order by id' }, signal, null)
     assert.ok(read.kind === 'ROWS', `${person.id} reads`)
     assert.deepEqual(read.rows, [[1], [2], [3]])
     const checked = await data.check(ids, { text: 'select id from longo' }, signal)
@@ -75,7 +75,7 @@ test('quem usa o Builder lê e conta: a porta do Hub admite o membro e responde 
   const refused = { kind: 'REFUSED', code: 'NOT_FOUND' }
   for (const ids of [{ ...on.ids(edu), companyId: on.ids(on.ana).companyId }, absent]) {
     assert.deepEqual(await data.access(ids), { kind: 'NOT_FOUND' })
-    assert.deepEqual(await data.read(ids, { text: 'select 1' }, signal), refused)
+    assert.deepEqual(await data.read(ids, { text: 'select 1' }, signal, null), refused)
     assert.deepEqual(await data.check(ids, { text: 'select 1' }, signal), refused)
   }
 })
@@ -96,7 +96,7 @@ test('quem usa o Builder lê e conta: a página Dados segue de dono, administrad
 
 test('o Builder lê com o corte das leituras de conector', async (t) => {
   const on = await builderDataOn(t, SEED)
-  const tools = builderAppDataTools({ data: on.data, ids: on.ids(on.bruno) })
+  const tools = builderAppDataTools({ data: on.data, ids: on.ids(on.bruno), thread: null })
   const read = tools[APP_DATA_TOOL.read]
   assert.ok(read?.execute)
   const many = Object(await read.execute({ sql: 'select id, texto from recado order by id' }, {}))
@@ -117,7 +117,10 @@ test('Projeto sem banco: as duas ferramentas devolvem APP_DATA_NO_APP', async (t
   const bare = await post(on.hub, on.ana, on.projects, { name: 'Sem app' })
   assert.equal(bare.statusCode, 201, bare.body)
   const projectId = ProjectId.parse(String(Object(bare.json()).project.id))
-  const tools = builderAppDataTools({ data: on.data, ids: { ...on.ids(on.ana), projectId } })
+  const tools = builderAppDataTools({
+    ...{ data: on.data, ids: { ...on.ids(on.ana), projectId } },
+    thread: null,
+  })
   const noApp = { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
   const read = tools[APP_DATA_TOOL.read]
   const check = tools[APP_DATA_TOOL.check]
@@ -153,7 +156,7 @@ test('Projeto sem app com cópia liberada: conta e lê sem nenhuma versão envia
   const signal = AbortSignal.timeout(20_000)
   const noApp = { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
   assert.deepEqual(await builderData.check(bare, { text: 'select 1' }, signal), noApp)
-  assert.deepEqual(await builderData.read(bare, { text: 'select 1' }, signal), noApp)
+  assert.deepEqual(await builderData.read(bare, { text: 'select 1' }, signal, null), noApp)
   await releasing(t, on, served, ['vendas'])
   const checked = await builderData.check(
     bare,
@@ -166,6 +169,7 @@ test('Projeto sem app com cópia liberada: conta e lê sem nenhuma versão envia
     bare,
     { text: 'select "CODVEND" from sync.sankhya_vendas' },
     signal,
+    null,
   )
   assert.ok(read.kind === 'ROWS', JSON.stringify(read))
   assert.deepEqual(read.columns, ['CODVEND'])
@@ -185,6 +189,7 @@ test('as cópias se leem em PostgreSQL comum: contar, ler e a cópia não libera
     on.ids,
     { text: 'select * from sync.sankhya_vendedores' },
     signal,
+    null,
   )
   assert.deepEqual(refused, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42501' })
 })
@@ -199,7 +204,7 @@ test('a coluna interna não chega ao Builder: nem de select *, nem de junção, 
     'select v.*, v."CODVEND" as c from sync.sankhya_vendas as v limit 2',
   ]
   for (const text of reads) {
-    const read = await builderData.read(on.ids, { text }, signal)
+    const read = await builderData.read(on.ids, { text }, signal, null)
     assert.ok(read.kind === 'ROWS', text)
     assert.ok(!read.columns.includes('_pass'), text)
     assert.ok(
@@ -210,7 +215,7 @@ test('a coluna interna não chega ao Builder: nem de select *, nem de junção, 
     assert.ok(checked.kind === 'COUNTED', text)
     assert.ok(!checked.columns.some(({ name }) => name === '_pass'), text)
   }
-  const whole = await builderData.read(on.ids, { text: reads[0] ?? '' }, signal)
+  const whole = await builderData.read(on.ids, { text: reads[0] ?? '' }, signal, null)
   assert.ok(whole.kind === 'ROWS')
   assert.deepEqual(whole.columns.slice(0, 3), ['NUNOTA', 'NUMNOTA', 'CODEMP'])
   assert.equal(whole.columns.length, 11)

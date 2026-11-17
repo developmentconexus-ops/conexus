@@ -1,4 +1,4 @@
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { AgentId, CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { AppRead, AppTablesRead, SqlStatement } from '../../hub/apps/public.ts'
 
 /** What an agent asks of its Projeto's app (step 24.3, U3): the apps' door, which reads and never writes. */
@@ -18,5 +18,8 @@ export type AppDataPort = {
     projectId: ProjectId
     statement: SqlStatement
     signal: AbortSignal
+    /** The conversation and the saved agent that read, which the Registro keeps. */
+    thread: ConversationId | null
+    agentId?: AgentId
   }): Promise<AppRead>
 }

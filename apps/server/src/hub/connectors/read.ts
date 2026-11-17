@@ -1,9 +1,10 @@
 import type { Answered, Native, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { z } from 'zod'
+import type { Consumer } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { roleOfSpeaker } from '../identity/public.ts'
 import type { Login, OpenedConnection } from './executor.ts'
@@ -13,11 +14,9 @@ import { connection } from './tables.ts'
 import type { AppRefused } from './tokens.ts'
 import { accessFor } from './tokens.ts'
 
-/** Who asked for the read: the app of a click, the Builder's tool, the Assistant's, or a copy's run. */
-type ReadBy = 'app' | 'builder' | 'assistant' | 'copy'
-
 export type ReadRequest = Readonly<{
-  by: ReadBy
+  /** The consumer that asked, the app of a click, or a copy's run, which the Registro does not record. */
+  by: Consumer | 'app' | 'copy'
   /** The Projeto only where the reader works in one: the Assistant at the Início has none. */
   ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>
   viewer: Viewer
@@ -29,6 +28,8 @@ export type ReadRequest = Readonly<{
   deadlineMs: number
   /** The reader's turn stopped: a read still in the connection's line leaves it, and one not begun is not made. */
   signal?: AbortSignal
+  /** The conversation that asked, when the caller has it. */
+  thread?: ConversationId
 }>
 
 /** The speaker's role (or version) does not hold the operation: the model hears the role's name and never the input (S40). */
@@ -130,6 +131,24 @@ function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
   return { kind: 'DEADLINE' }
 }
 
+/** The line a live read leaves before its answer returns; a copy's run leaves none, and without the line the value does not return. */
+async function recorded<T extends ReadAnswer | NotInRole>(
+  deps: Deps,
+  a: ReadRequest,
+  answer: T,
+  ms: number,
+): Promise<T | Extract<ReadAnswer, { kind: 'UNREACHABLE' }>> {
+  if (a.by === 'copy') return answer
+  const written = await deps.recordRead({
+    ...{ companyId: a.ids.companyId, personId: a.viewer.person.id, by: a.by },
+    ...{ projectId: a.ids.projectId ?? null, agentId: null, threadId: a.thread ?? null },
+    ...{ verb: 'LIVE', tables: [], query: null, rows: null },
+    ...{ connectionId: a.opened.id, operation: OperationId.parse(a.operation.id) },
+    ...{ outcome: answer.kind, ms: Math.round(ms) },
+  })
+  return written === 'RECORDED' ? answer : { kind: 'UNREACHABLE' }
+}
+
 /**
  * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
  * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call leaves one
@@ -138,6 +157,7 @@ function stopped(deps: Deps, a: ReadRequest): ReadAnswer {
  */
 export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswer | NotInRole> {
   if (isStopped(a)) return stopped(deps, a)
+  const entered = performance.now()
   const allowed = await deps.identity.mayUse(a.ids.companyId, a.speaker, {
     connectionId: a.opened.id,
     connectorId: ConnectorId.parse(a.opened.connector.id),
@@ -152,7 +172,12 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswe
       },
       'CONNECTOR_READ_REFUSED',
     )
-    return { kind: 'NOT_IN_ROLE', role, operation: a.operation.id }
+    return recorded(
+      deps,
+      a,
+      { kind: 'NOT_IN_ROLE', role, operation: a.operation.id },
+      performance.now() - entered,
+    )
   }
   const started = performance.now()
   const parsed = a.operation.input.safeParse(a.input)
@@ -202,5 +227,5 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswe
     },
     'CONNECTOR_CALLED',
   )
-  return result
+  return recorded(deps, a, result, performance.now() - entered)
 }

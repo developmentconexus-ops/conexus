@@ -100,7 +100,8 @@ function appDataOf(
 function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   return {
     access: (ids) => apps().builderData.access(ids),
-    read: (ids, statement, signal) => apps().builderData.read(ids, statement, signal),
+    read: (ids, statement, signal, thread) =>
+      apps().builderData.read(ids, statement, signal, thread),
     check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
   }
 }

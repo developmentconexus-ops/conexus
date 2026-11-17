@@ -277,6 +277,7 @@ test('o que o modelo lê de como se lê uma cópia não dá a uma tabela um nome
       appData: UNUSED_PORT,
       scope: { companyId: ID.company, personId: ID.person },
       projectId: ID.project,
+      thread: null,
     }),
   )[AGENT_TOOL.appDataRead].description
   for (const text of [instructions.join('\n'), described]) {
@@ -291,6 +292,7 @@ test('o mesmo app_data_read: o Builder e o agente oferecem a mesma descrição e
       appData: UNUSED_PORT,
       scope: { companyId: ID.company, personId: ID.person },
       projectId: ID.project,
+      thread: null,
     }),
   )[AGENT_TOOL.appDataRead]
   const builder = Object(
@@ -301,6 +303,7 @@ test('o mesmo app_data_read: o Builder e o agente oferecem a mesma descrição e
         check: () => Promise.reject(new Error('nothing is called')),
       },
       ids: { companyId: ID.company, personId: ID.person, projectId: ID.project },
+      thread: null,
     }),
   )[APP_DATA_TOOL.read]
   assert.equal(builder.id, agent.id)

@@ -223,7 +223,7 @@ async function noted(
   if (chosen === undefined) return { kind: 'NOT_GRANTED' }
   if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
   const read = {
-    by: 'assistant',
+    by: scope.consumer,
     ids: idsOf(scope),
     viewer: viewerOf(scope),
     speaker: chosen.speaker,
@@ -304,7 +304,7 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
       }
       if (!spend(call.turn)) return { kind: 'CALLS_SPENT' }
       const answered = await readThrough(deps, {
-        by: 'assistant',
+        by: scope.consumer,
         ids: idsOf(scope),
         viewer: viewerOf(scope),
         speaker,

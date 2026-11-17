@@ -9,8 +9,8 @@ import { Failure } from '../../platform/failure.ts'
 import { appDataTools, builderAppDataTools } from '../app-data/public.ts'
 import type { ConnectorAccess, NoteSave, ProposeCall } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import type { RunScope } from '../controller-kit/public.ts'
-import { principalOf } from '../controller-kit/public.ts'
+import type { DataBinding, RunScope } from '../controller-kit/public.ts'
+import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 import { dataTools } from '../data-tools/public.ts'
 import { copyRunsTool } from './copy-runs.ts'
 import type { Listed } from './listed.ts'
@@ -161,14 +161,14 @@ async function connectorsOf<C extends CompanyConnection>(
   })
 }
 
-function appDataOf(grant: AppDataGrant): ToolsInput {
+function appDataOf(grant: AppDataGrant, thread: DataBinding['thread']): ToolsInput {
   switch (grant.kind) {
     case 'NONE':
       return {}
     case 'READ':
-      return appDataTools(grant)
+      return appDataTools({ ...grant, thread })
     case 'READ_AND_CHECK':
-      return builderAppDataTools(grant)
+      return builderAppDataTools({ ...grant, thread })
     default:
       return grant satisfies never
   }
@@ -200,7 +200,7 @@ export async function companyTools<C extends CompanyConnection>(
   const tables = scope.view.list('table').map((each) => each.name)
   const pieces = merged([
     await connectorsOf(scope, seat, deps, names),
-    appDataOf(scope.grants.appData),
+    appDataOf(scope.grants.appData, dataContextOf(scope.run).thread),
     deps.data === undefined ? {} : dataTools({ data: deps.data(scope.run) }),
     deps.copies === undefined
       ? {}

@@ -19,6 +19,7 @@ import { recordReadOf } from './record.ts'
 import { rowsOf } from './rows.ts'
 
 export type { DataDeps } from './deps.ts'
+export { recordReadOf as recordRead } from './record.ts'
 
 type TurnBinding = Readonly<{ turn: TurnKey }> &
   (
