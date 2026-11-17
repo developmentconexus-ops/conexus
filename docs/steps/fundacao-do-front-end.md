@@ -16,7 +16,9 @@ repositório (delivery L21). Ele mediu em `e24ad499`, e cada linha de `main` cit
 em `f4ccc150`. As referências foram clonadas num laboratório descartável, nos commits de cada
 linha: `mastra@6e8dfcb` (a tag `@mastra/core@1.82.0`, com o `playground-ui`), `dify@44b073d`,
 `supabase@a0a17e1`, `shadcn-ui@e62c943`, `craft-agents@4932ebb`. O pacote `@shadcn/lint@0.2.5` foi
-lido pelo `npm pack`.
+lido pelo `npm pack`. A emenda de 2026-11-17, depois das respostas A e B, relê em `main` `ebfd4aa1`
+cada linha que a U3 cita, com `drizzle-orm` 1.0.0-rc.4 e `@tanstack/query-core` 5.104.0; nenhum
+arquivo da U3 mudou entre `f4ccc150` e `ebfd4aa1`.
 
 ## A página do fundador
 
@@ -29,8 +31,8 @@ próximas etapas com tela, nas duas trilhas, seguem a regra "peça antes de tela
 **O roteiro de uso.**
 
 1. No Início, abra **Agentes** e clique no filtro **Todos os Projetos**. Abre uma lista com busca.
-   Digite parte do nome de um Projeto: só os que batem ficam. Escolha um: a lista de agentes passa
-   a ser a dele.
+   Digite parte do nome de um Projeto: só os que batem ficam, também os que ainda não tinham
+   aparecido, porque a busca pergunta ao Hub. Escolha um: a lista de agentes passa a ser a dele.
 2. Ainda em Agentes, clique em **Novo agente**. Abre a mesma lista, com a pergunta "em qual
    Projeto?". Escolha um: você vai para os agentes daquele Projeto. Numa empresa sem Projeto, a
    lista diz isso e oferece **Criar um Projeto**.
@@ -71,27 +73,35 @@ Projeto**, **Nenhum Projeto com esse nome.**
   outros são de Dados, do Assistente ou de telas que esta etapa não muda, e esperam o cartão que
   tocar os arquivos deles.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** As duas estão respondidas, no quadro, em 2026-11-17. As suas
+palavras vão para o arquivo de aprovação deste cartão quando você aprovar a página.
 
 - **A. A ordem na trilha.** A sua palavra "R2 a" pôs a etapa Um escopo e a fábrica de ferramentas
-  antes de `A1`. Esta fundação precisa de um lugar nessa fila. A trilha constrói uma etapa por vez
-  (delivery L1).
-  - (a) A fundação primeiro, e a fábrica logo depois. Exemplo: a fábrica abre com as peças e a
-    regra já no lugar, e as telas dela nascem na regra.
-  - (b) A fábrica primeiro, e a fundação depois dela, antes de `A1`.
+  antes de `A1`. Esta fundação precisava de um lugar nessa fila. A trilha constrói uma etapa por
+  vez (delivery L1). As opções eram (a) a fundação primeiro, e a fábrica logo depois, e (b) a
+  fábrica primeiro, e a fundação depois dela, antes de `A1`.
 
-  **Recomendo (a).** Este cartão está pronto e a fábrica ainda não tem cartão. Toda tela que a
-  fábrica fizer antes da fundação seria refeita nela. Veredito: não se aplica (é ordem, não peça).
-- **B. A busca com mais de 50 Projetos.** O Hub devolve os Projetos 50 por vez. A busca da lista
-  procura nos que já vieram, e **Mais Projetos** traz os próximos 50.
-  - (a) Assim, como a pasta do Projeto já faz hoje. Exemplo: numa empresa com 80 Projetos, quem
-    procura o 70º aperta **Mais Projetos** uma vez antes.
-  - (b) A busca pergunta ao Hub. A lista de Projetos do Hub ganha um parâmetro de busca, o servidor
-    e o contrato mudam, e a etapa cresce cerca de 200 linhas.
+  **A sua resposta:** "A. A ordem na trilha: a". O que mudou desde a pergunta: a fábrica já tem
+  cartão no `main` (pull request 1158) e foi construída (pull requests 1162 e 1173). Com a (a), a
+  fundação é a próxima etapa da trilha.
+- **B. A busca com mais de 50 Projetos.** O Hub devolve os Projetos 50 por vez. As opções eram (a)
+  a busca procura nos que já vieram, como a pasta do Projeto faz hoje, e (b) a busca pergunta ao
+  Hub.
 
-  **Recomendo (a)** agora, com uma issue cujo gatilho é a primeira empresa com mais de 50
-  Projetos. Veredito: nativo nas duas. O Base UI 1.9 filtra no cliente por padrão, e para a (b)
-  aceita `filteredItems` vindos do servidor (`docs/react/components/combobox.md:1174-1178`).
+  **A sua resposta:** "B. A busca com mais de 50 Projetos: b. Observação: Pra mim por boas prátivas
+  busca, paginação, filtra é server side, verifique isso, e nã ocomo remendo usando /poteto-mode
+  par aimplementar corretamente e ver código de refencias".
+
+  **A verificação, no código.** As referências buscam no servidor. O Supabase manda o texto ao
+  servidor junto da página (`apps/studio/data/projects/org-projects-infinite-query.ts:47-53`) e
+  desliga o filtro local da lista
+  (`apps/studio/components/ui/OrganizationProjectSelector.tsx:225`, `shouldFilter={false}`).
+  O Dify escapa `%` e `_` e filtra no banco, no mesmo pedido da página
+  (`api/services/knowledge/dataset_service.py:236-238`, `:264`). O Base UI 1.9 tem o modo para isso:
+  `filter={null}` e a lista que vem do servidor (`combobox.md:1176`, `:3457`). O Hub já pagina os
+  Projetos por nome no banco (`apps/server/src/hub/projects/projects.ts:290-320`). A busca entra
+  nessa mesma consulta. A U3 diz como, e a construção dela usa `/poteto-mode`. A busca continua
+  sem ignorar acento, como hoje: "acao" não acha "Ação". A etapa cresce cerca de 110 linhas de código, fora os testes.
 
 ## As unidades
 
@@ -99,7 +109,7 @@ Projeto**, **Nenhum Projeto com esse nome.**
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 | O lint de design: `@shadcn/lint` no Oxlint, só no `apps/web`, com a catraca de avisos; a CLI do shadcn ligada (`components.json`); as 5 classes que não existem, tiradas | `apps/web/`, `package.json`, `package-lock.json`, `docs/reference/stack.md` | design | — |
 | G2 | U2 | A vitrine: a página de peças de chat vira a página de todas as peças de `ui/`, em cada estado, nos dois temas, sob a política real | `apps/web/src/ui/`, `apps/web/` (a página e o teste) | design | U1 |
-| G2 | U3 | Escolher da lista: a peça `Picker` sobre o Combobox, a `ProjectPicker` com a leitura paginada de Projetos, e os 5 seletores de Projeto trocados por ela | `apps/web/src/ui/`, `apps/web/src/hub/projects/`, `apps/web/src/builder/assistant/`, `apps/web/src/builder/agents/`, `apps/web/` (testes de layout), `DESIGN.md` | web | U2 |
+| G2 | U3 | Escolher da lista: a busca de Projetos no Hub (o parâmetro `q` de `listProjects`), a peça `Picker` sobre o Combobox no modo de busca no servidor, a `ProjectPicker` com a leitura paginada e buscada de Projetos, e os 5 seletores de Projeto trocados por ela | `packages/hub-api/src/projects.ts`, `apps/server/src/hub/projects/`, `apps/web/src/ui/`, `apps/web/src/hub/projects/`, `apps/web/src/builder/assistant/`, `apps/web/src/builder/agents/`, `apps/web/` (testes de layout), `DESIGN.md` | web | U2 |
 | G2 | U4 | As peças compostas: `Separator`, `Spinner`, `PageHeader`, `SearchField`; as cópias à mão trocadas por elas | `apps/web/src/ui/`, os assuntos de `apps/web/src/` onde estão as cópias, `DESIGN.md` | design | U3 |
 | G3 | U5 | As peças de IA: linha de ferramenta, grupo, raciocínio, trabalhando, plano, tarefas, aprovação, pergunta e fontes como peças de apresentação em `ui/ai/`; a conversa só liga os dados | `apps/web/src/ui/ai/`, `apps/web/src/builder/conversation/`, `DESIGN.md` | web | U4 |
 | G4 | U6 | A regra "peça antes de tela" no método: a regra nova do guia de design, um passo em `conexus-build`, `conexus-review`, `conexus-scope` (com os modelos de cartão das duas trilhas), `conexus-qa`; as marcas de V3, V16 e V22; o cartão apagado e a linha de uso | `docs/guides/design.md`, `.agents/skills/`, `docs/steps/`, `docs/approvals/` | delivery | U5 e o uso |
@@ -111,10 +121,11 @@ porque mexe na conversa, a área com mais testes. G4 é o pull request de fecham
 do uso (delivery L17, L19): uma regra do método só muda no fechamento (delivery L20), e a etapa em
 construção segue a regra com que começou. Nenhuma unidade corre em paralelo: U2 a U5 dividem `apps/web/src/ui/`.
 
-**Orçamento de código alterado.** U1: 150. U2: 550. U3: 430 somadas e 520 apagadas (com a 705). U4: 420
-somadas e 320 apagadas. U5: 800, a maior parte movida. U6: só documento. Total da etapa: cerca de
-2.350 linhas somadas, dentro das 4.000 de delivery L2. São estimativas do estudo, relidas em
-`f4ccc150`.
+**Orçamento de código alterado.** U1: 150. U2: 550. U3: 540 somadas e 520 apagadas (com a 705 e a
+busca no Hub: cerca de 40 no contrato e no servidor e 70 no front e no harness; os testes não
+contam). U4: 420 somadas e 320 apagadas. U5: 800, a maior parte movida. U6: só documento. Total
+da etapa: cerca de 2.460 linhas somadas, dentro das 4.000 de delivery L2. São estimativas do
+estudo, relidas em `f4ccc150`; as da U3, em `ebfd4aa1`.
 
 ## Os critérios de aceite
 
@@ -129,7 +140,7 @@ somadas e 320 apagadas. U5: 800, a maior parte movida. U6: só documento. Total 
 | 7 | U2 | A vitrine abre sob a política real do Hub sem erro no console e sem violação da política, a 1366, 390 e 320 px, nos dois temas, sem rolagem lateral | `pieces.layout.test.ts`, caso "a vitrine sob a política do Hub"; `layout.test.ts` passa a cobrir `/pieces` | must |
 | 8 | U2 | `npm run build` não leva a vitrine: `dist/` não tem `pieces.html` | `vite.config.test.ts`, caso novo | must |
 | 9 | U3 | Numa empresa com 60 Projetos, cada um dos 5 lugares mostra 50, e **Mais Projetos** traz os outros 10. Enquanto a página vem, **Mais Projetos** fica desligado e um segundo clique não pede outra. Se a segunda página falha, as 50 ficam, a frase do Hub aparece e **Mais Projetos** volta a ligar | `apps/web/project-picker.layout.test.ts`, um caso por lugar com as duas páginas no harness, e um caso com a segunda página em falha | must |
-| 10 | U3 | A busca aparece quando a lista tem 7 linhas ou mais, itens fixos incluídos, e filtra pelo nome sem diferenciar maiúscula (o `matches` de hoje, que não ignora acento). Sem resultado: "Nenhum Projeto com esse nome." A busca reaberta começa vazia | `apps/web/src/ui/picker.test.tsx` (Vitest, a peça pela sua porta) e um caso de `project-picker.layout.test.ts` | must |
+| 10 | U3 | A busca aparece quando a lista sem texto tem 7 linhas ou mais, itens fixos incluídos, ou quando o Hub diz que há mais página. O texto vai ao Hub, e a lista mostra só os Projetos cujo nome o contém, sem diferenciar maiúscula e sem ignorar acento (como o `matches` de hoje), 50 por vez, com **Mais Projetos** dentro da mesma busca. Numa empresa com 60 Projetos, buscar o 58º o acha sem apertar **Mais Projetos**. Os itens fixos do lugar (Todas, Início, Sem Projeto) filtram com `matches`, no navegador. Enquanto a resposta vem, a lista anterior fica, sem esqueleto a cada letra. Sem resultado: "Nenhum Projeto com esse nome." A busca reaberta começa vazia | `apps/web/src/ui/picker.test.tsx` (Vitest, a peça pela sua porta: o texto sai por `onText` e a peça não filtra); `project-picker.layout.test.ts`, caso com 60 Projetos e a resposta de `?q=` com o 58º, que confere o `q` pedido | must |
 | 11 | U3 | Pelo teclado: abrir com Enter ou seta, andar com as setas, escolher com Enter, fechar com Esc. O foco volta ao gatilho. O leitor de tela ouve o nome da lista e o item escolhido | `apps/web/keyboard.test.ts`, caso novo por lugar | must |
 | 12 | U3 | As linhas da lista têm 32 px com ponteiro e 44 px ao toque (design V58). A 390 px a lista cabe na largura, sem rolagem lateral | `project-picker.layout.test.ts` a 1366 e 390 | must |
 | 13 | U3 | Se a primeira leitura falha, a lista mostra a frase do Hub (`sentenceOf`) e os itens fixos (Todas, Início, Sem Projeto) continuam escolhíveis | `project-picker.layout.test.ts`, resposta de falha | must |
@@ -145,13 +156,14 @@ somadas e 320 apagadas. U5: 800, a maior parte movida. U6: só documento. Total 
 | 23 | U5 | Cada peça de IA tem entrada na vitrine com os estados da sua união (por exemplo executando, feito, falhou; pendente, aprovada, recusada; aberta, respondida, fechada) | o caso do critério 6, que lê `ui/ai/` | must |
 | 24 | U6 | O guia de design tem a regra nova "peça antes de tela". `conexus-build`, `conexus-review`, `conexus-scope` (com o modelo do cartão e o cartão padrão da trilha Dados) e `conexus-qa` têm o passo dela, e cada arquivo fica no seu teto de palavras | `npm run docs` | must |
 | 25 | U6 | V3, V16 e V22 passam a nomear o que o lint cobre delas, em aviso sob a catraca, sem tirar o "review" | `npm run docs`; leitura do diff | should |
+| 26 | U3 | `GET /api/companies/{companyId}/projects?q=` devolve só os Projetos da empresa cujo nome contém o texto, sem diferenciar maiúscula (`ÇÃO` acha `Ação`), na ordem por nome, 50 por vez; o `next` dessa resposta, mandado com o mesmo `q`, traz a página seguinte da mesma busca. `%` e `_` valem como letra: `50%` não acha `500`. O texto chega sem os espaços das pontas e na forma NFC; um `q` vazio depois disso, ou com mais de 100 caracteres, é 400 `REQUEST_MALFORMED`. Quem não é membro continua com 404 `NOT_FOUND`, com ou sem `q` | `apps/server/src/hub/projects/projects.test.ts`, caso novo no Postgres real, com 60 Projetos; `apps/server/src/openapi-contract.test.ts` passa com o parâmetro novo | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A lista de Projetos (5 lugares) | igual a Vazio | os itens fixos do lugar; sem itens fixos, "Nenhum projeto ainda." (o texto de `hub/projects/project-state.ts:20`); em **Novo agente**, a frase de 708 e **Criar um Projeto** | a lista abre com 3 linhas de esqueleto; **Mais Projetos** desligado enquanto vem | a frase do Hub numa linha de alerta; itens fixos escolhíveis | o Projeto do endereço que não está nas páginas: o nome lido à parte; se a leitura dele falha, "Projeto" (como hoje) | o lugar não aparece para quem não pode (o que já vale hoje: Agentes só com `manageAgents`) | não se aplica: nenhuma escrita |
-| A busca da lista | não aparece abaixo de 7 linhas | "Nenhum Projeto com esse nome." | não se aplica | não se aplica | não se aplica | não se aplica | não se aplica |
+| A busca da lista | não aparece abaixo de 7 linhas sem mais página | "Nenhum Projeto com esse nome." | a lista da letra anterior fica até a resposta (o `placeholderData` de `builder/assistant/queries.ts:51-57`); a primeira busca, sem lista anterior, mostra as 3 linhas de esqueleto | a frase do Hub numa linha de alerta; os itens fixos que batem continuam escolhíveis | não se aplica | não se aplica | não se aplica: nenhuma escrita |
 | A vitrine (`/pieces`, só nos testes e no computador de quem constrói) | não se aplica | não se aplica | cada peça mostra o seu carregando, se tem | cada peça mostra o seu erro, se tem | não se aplica | não se aplica: não está no build | não se aplica |
 | As telas com peça composta trocada (U4) | sem mudança | sem mudança | o `Spinner` no lugar do giro à mão | sem mudança | sem mudança | sem mudança | sem mudança |
 | As peças de IA na conversa (U5) | sem mudança: os estados de hoje, que a varredura `sweep-conversation-states.ts` já cobre | sem mudança | sem mudança | sem mudança | sem mudança | sem mudança | sem mudança |
@@ -159,7 +171,9 @@ somadas e 320 apagadas. U5: 800, a maior parte movida. U6: só documento. Total 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `PickerGroup.items` | `ProjectPicker` (U3), com os Projetos lidos e os itens fixos do lugar | `Picker` |
-| `PickerMore` | `ProjectPicker`, do `useInfiniteQuery` | `Picker` (a linha **Mais Projetos**) |
+| `PickerMore` | `ProjectPicker`, do `useInfiniteQuery` da busca atual | `Picker` (a linha **Mais Projetos**) |
+| `PickerSearch` (`text`, `onText`) | `ProjectPicker`, que guarda o texto e o põe na chave da leitura | `Picker` (o campo de busca do Combobox) |
+| `listProjects` `query.q` | `projectsPagedQuery(companyId, q)` (U3) | o servidor, `list` em `hub/projects/projects.ts`, no mesmo `where` da paginação |
 | `PickerRead` | `ProjectPicker`, do estado da leitura | `Picker` (esqueleto, alerta) |
 | `ProjectPicker.value` | cada um dos 5 lugares, do endereço ou do estado local | `ProjectPicker` (o sinal no escolhido; o nome lido à parte) |
 | `ProjectPicker.onPick` | cada lugar (navegar, filtrar, escolher a pasta) | `Picker` chama |
@@ -202,12 +216,14 @@ repositório.
 
 ## A tabela de falhas
 
-A etapa não acrescenta escrita no banco nem rota no Hub. As linhas são os comandos da biblioteca que
-as unidades chamam.
+A etapa não acrescenta escrita no banco nem rota nova no Hub: a lista de Projetos ganha só o
+parâmetro de leitura `q`. As linhas são essa leitura e os comandos da biblioteca que as unidades
+chamam.
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio (depois de uma instrução ou chamada) | Uma dependência fora (banco ou terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | `fetchNextPage` do TanStack Query (**Mais Projetos**) | a linha fica desligada enquanto `isFetchingNextPage`; um segundo clique não pede outra página | a página que falhou não entra; as já lidas ficam; a frase do Hub aparece | o Hub fora: a frase de falha de rede de `sentenceOf`, e **Mais Projetos** volta a ligar | nada no console; o Hub registra a leitura como hoje | 9, 13 |
+| `listProjects` com `q`, a cada letra | uma leitura por texto; a da letra anterior, sem observador, é cancelada pelo TanStack Query, porque o `hubQuery` usa o `signal` (`platform/hub.ts:226`; `@tanstack/query-core` `src/query.ts:523-537`) | uma leitura cancelada não entra na lista; a lista mostra a resposta do último texto | o Hub ou o banco fora: a frase de `sentenceOf`, a lista anterior sai, os itens fixos que batem ficam | o Hub registra cada leitura como hoje, pela rota e não pelo endereço: o texto buscado não vai ao registro (`platform/http.ts:137`, `:171`) | 10, 13, 26 |
 | `navigate` do TanStack Router ao escolher | não se aplica: escolher fecha a lista, então não há segundo escolher na mesma abertura | não se aplica | não se aplica | nada | 9, 14 |
 | `oxlint` no `npm run lint` | não se aplica (lê arquivos) | um aviso acima do número para o comando com saída diferente de zero | o pacote não instalado: o `npm ci` do CI já falha antes | a contagem e cada aviso com arquivo e linha | 1, 2, 3, 20 |
 | `shadcn add` e `--diff` (só no computador de quem constrói) | não se aplica | um `add` sem `--dry-run` sobrescreveria a peça; o cartão só usa `--dry-run`, `--diff` e `add` de peça nova | sem rede, o comando falha e nada muda | o diff ou o erro | 4 |
@@ -220,8 +236,9 @@ as unidades chamam.
 | A catraca de avisos | a C76 conta as supressões em arquivo (`scripts/check-suppressions.ts`) | `oxlint --max-warnings <n>`; Supabase `ratchet-rules.json:1`, aplicada pelo script `ratchet-eslint-rules.ts` | o Oxlint falha acima do número; o Supabase usa script | nativo (a opção do Oxlint, sem script) | — | U1 | o script `lint:design` em `apps/web/package.json` |
 | CLI do shadcn | ausente: `shadcn info -c apps/web` devolve `"config": null` | shadcn `components.json`; os aliases pelo campo `imports` do `package.json` (provado: `info`, `add --dry-run` e `add --diff` funcionam) | `add`, `--diff`, registros | nativo | — | U1 | `apps/web/components.json` |
 | Vitrine | `apps/web/pieces.html` e `ui/pieces-fixture.tsx:53-54`, 15 peças de chat, só nos testes (`layout-served.ts:13-17`) | skill `shadcn` `design-system-page.md` (esqueleto e anatomia do bloco); Craft Agents `renderer/playground/registry/` (40 arquivos, `craft-agents@4932ebb`); Mastra stories (`mastra@6e8dfcb`) | cada peça num registro, em cada estado | embrulhado: a página que já existe, crescida, e o registro é nosso | critérios 6 a 8 | U2 | `apps/web/src/ui/showcase.ts` |
-| Escolher um item de uma lista longa | 5 seletores, 4 peças diferentes (a seção de U3) e `builder/assistant/choice-list.tsx` | `@base-ui/react@1.9.0` Combobox, "Input inside popup" (`docs/react/components/combobox.md:1873-1875`) e "Grouped" (`:2777-2779`); Dify `web/features/tag-management/components/tag-selector.tsx:1-12` (`dify@44b073d`) | Combobox com a busca dentro do popup, grupos, vazio; o Dify importa as peças e lê os dados do contrato | nativo; **Mais Projetos** é embrulhado (a linha no fim chama `fetchNextPage`) | critério 9 (Mais Projetos) | U3 | `apps/web/src/ui/picker.tsx` |
-| Uma leitura de Projetos para escolher | `projectsPagedQuery` em 4 lugares, `projectsQuery` (só a primeira página) em `place-filter.tsx:46,84` e `recent-projects.tsx:27` | TanStack Query `infiniteQueryOptions` (já em `hub/projects/queries.ts:25-36`); Supabase `apps/studio/data/__templates/` | uma função por recurso, as telas só chamam | nativo | — | U3 | `apps/web/src/hub/projects/project-picker.tsx` |
+| Escolher um item de uma lista longa | 5 seletores, 4 peças diferentes (a seção de U3) e `builder/assistant/choice-list.tsx` | `@base-ui/react@1.9.0` Combobox, "Input inside popup" (`docs/react/components/combobox.md:1873-1875`) e "Grouped" (`:2777-2779`); Dify `web/features/tag-management/components/tag-selector.tsx:1-12` (`dify@44b073d`) | Combobox com a busca dentro do popup, grupos, vazio; o Dify importa as peças e lê os dados do contrato | nativo, no modo de busca no servidor: `filter={null}` e a lista que vem do Hub (`combobox.md:1176`, `:3457`); **Mais Projetos** é embrulhado (a linha no fim chama `fetchNextPage`) | critério 9 (Mais Projetos) | U3 | `apps/web/src/ui/picker.tsx` |
+| Uma leitura de Projetos para escolher | `projectsPagedQuery` em 4 lugares, `projectsQuery` (só a primeira página) em `place-filter.tsx:46,84` e `recent-projects.tsx:27`; a busca filtra só as páginas lidas (`project-choice.tsx:61`) | TanStack Query `infiniteQueryOptions` (já em `hub/projects/queries.ts:25-36`); Supabase `apps/studio/data/projects/org-projects-infinite-query.ts:79-82` (o texto na chave e no pedido, `supabase@a0a17e1`); Dify `web/app/components/api-key/dataset-scope-dialog.tsx:177-186` (`keyword` no pedido de cada página, `dify@44b073d`); a lista anterior na tela enquanto o texto novo responde, `builder/assistant/queries.ts:51-57` | uma função por recurso, o texto na chave, as telas só chamam | nativo | — | U3 | `apps/web/src/hub/projects/project-picker.tsx` |
+| A busca de Projetos no Hub | nenhuma: `listProjects` recebe só `page` (`packages/hub-api/src/projects.ts:55`); a única busca do Hub é a dos títulos de conversa, que lê as conversas do Mastra e filtra na memória do servidor (`apps/server/src/builder/assistant/search.ts:36-58`), porque o Mastra não busca por título | Dify `api/services/knowledge/dataset_service.py:236-238` (`escape_like_pattern` e `ilike` com `escape`) e `:264` (a página na mesma consulta, `dify@44b073d`); Supabase `org-projects-infinite-query.ts:47-53` (`limit`, `offset`, `sort`, `search` num pedido só); `drizzle-orm` `ilike` (`sql/expressions/conditions.d.ts:366`, sem argumento de escape: vale o `\` padrão do Postgres); o contrato com busca que o Hub já tem, `packages/hub-api/src/assistant.ts:216-220` (`Page.extend` com `q`) | o texto no `where` da mesma consulta paginada, com `%`, `_` e `\` escapados | nativo | — | U3 | nenhum: muda `apps/server/src/hub/projects/projects.ts` e `packages/hub-api/src/projects.ts` |
 | Separador, carregando | 32 linhas `border-t`/`border-b` soltas fora de `ui/`; 3 `animate-spin` à mão | shadcn base-nova `separator`, `spinner` (`npx shadcn@latest add separator spinner --dry-run` com o `components.json` de U1) | peça copiada e pintada com os tokens | nativo | — | U4 | `ui/separator.tsx`, `ui/spinner.tsx` |
 | Busca | 7 campos com lupa, de 4 jeitos; o `Search` de `choice-list.tsx` | `ui/input-group.tsx` (já existe); skill `shadcn` `rules/forms.md` ("Buttons inside inputs use InputGroup") | uma peça só sobre o `InputGroup` | nativo | — | U4 | `ui/search-field.tsx` |
 | Cabeçalho de página | `flex flex-wrap items-… justify-between gap-md` em `agent-list.tsx`, `projects.tsx`, `roles.tsx`, `clients.tsx`, `data-page.tsx`, `connection-page.tsx`, `my-accounts.tsx`, `company-accounts.tsx` | Supabase `packages/ui-patterns` `PageHeader` (`supabase@a0a17e1`) | composto de título e ações | embrulhado (só composição) | critério 19 | U4 | `ui/page-header.tsx` |
@@ -239,6 +256,7 @@ de novo a partir da receita do shadcn (a regra do estudo, `conexus-study`).
 - A aba Projetos da lista de conversas (`builder/assistant/projects-tab.tsx:82`) mostra só os 50
   primeiros Projetos, como grupos. É lista, não escolha, e fica para a etapa de telas das conversas.
 - Os 60 avisos de restilo no `TableCell` ficam para a etapa da tabela de dados.
+- A busca de Projetos não ignora acento, e a de conversas ignora (a decisão 10 do firstmate).
 - Os 33 avisos de `require-static-classes` ficam em aviso; cada um some quando a peça ganhar a
   variante, na etapa da tela dela.
 
@@ -255,6 +273,8 @@ de novo a partir da receita do shadcn (a regra do estudo, `conexus-study`).
 | 7 | U6 entra no pull request de fechamento, depois do uso, que apaga este cartão | uma skill ou um guia só muda no fechamento (delivery L20); com o cartão ainda em `docs/steps/`, o `method-freeze` recusa um diff só de documentos (`scripts/tracks.ts:24-26`) | a regra entra no pull request de métodos da semana, com a palavra do fundador |
 | 8 | As 5 classes que não existem saem, em vez de virar um token próximo | uma classe inexistente não pinta nada: tirá-la mantém o que a pessoa vê hoje, e trocar por `gap-xs` seria inventar um valor | trocar pelo token que o desenho pedir, na etapa da tela |
 | 9 | A vitrine fica só no computador de quem constrói e nos testes; o fundador a vê nas capturas do QA no pull request | as referências convergem: o Mastra e o Dify a servem pelo Storybook, o Supabase num site à parte, todas fora do produto; `layout-served.ts:13-17` já serve `/pieces` só aos testes | servir a página numa rota da Central, só para quem opera |
+| 10 | A busca de Projetos no Hub não ignora acento: `ILIKE` no nome, como o `matches` de hoje no navegador | ignorar acento no banco pede a extensão `unaccent` no Postgres do Hub, que ele não tem, numa migração nova (raio maior que esta etapa); a busca de títulos de conversa ignora acento porque filtra na memória do servidor (`builder/assistant/search.ts:15-18`), um caminho que não pagina no banco; os nomes de Projeto já são gravados em NFC (`packages/hub-api/src/projects.ts:9-16`) e o texto chega em NFC pelo contrato | uma migração com `unaccent` e a coluna buscada, numa etapa própria |
+| 11 | Sem espera entre letras: cada texto é uma leitura, a anterior cancelada pelo `signal`, e a lista anterior fica na tela até a resposta | é o que a busca de conversas do Hub já faz (`sidebar-conversations.tsx:68-86`, `builder/assistant/queries.ts:51-57`), e o TanStack Query cancela a leitura sem observador que usou o `signal` (`query-core` `src/query.ts:523-537`); o Supabase espera 500 ms (`OrganizationProjectSelector.tsx:90-91`) e o Base UI cancela à mão com `AbortController` (`combobox.md:3481-3492`): os dois resolvem o que a biblioteca de leitura já faz aqui | esperar 300 ms depois da última letra antes de pôr o texto na chave, como o Supabase |
 
 ## U1 O lint de design e a CLI do shadcn
 
@@ -463,8 +483,10 @@ arquivos de `ui/`. Hoje a página mostra 15 peças e nenhum teste confere as out
 
 ## U3 Escolher da lista
 
-**Base e modelo.** A cabeça de U2. Opus: uma peça genérica de `ui/`, um dono em `hub/projects/`,
-cinco chamadores em três assuntos, e a página de Agentes com o seu carregador.
+**Base e modelo.** A cabeça de U2. Opus: um parâmetro novo num contrato do Hub e a consulta dele,
+uma peça genérica de `ui/`, um dono em `hub/projects/`, cinco chamadores em três assuntos, e a
+página de Agentes com o seu carregador. A construção usa `/poteto-mode` (a palavra do fundador na
+decisão B): o desenho dos tipos antes do código, e a prova no Postgres real e no navegador.
 
 ### As linhas da tabela
 
@@ -483,7 +505,28 @@ cinco chamadores em três assuntos, e a página de Agentes com o seu carregador.
   `:2777-2779` (grupos), `:1174-1178` (itens com ids estáveis); Dify `tag-selector.tsx:1-12`.
 - **Uma leitura de Projetos para escolher.** `hub/projects/queries.ts:25-36`
   (`projectsPagedQuery`, `getNextPageParam` pelo `next.kind`); `packages/hub-api/src/companies.ts:81`
-  (`PAGE_SIZE = 50`).
+  (`PAGE_SIZE = 50`); a busca de hoje, só nas páginas lidas: `project-choice.tsx:57-61`. Na
+  referência: Supabase `apps/studio/data/projects/org-projects-infinite-query.ts:79-82` (o texto na
+  chave e no pedido); Dify `web/app/components/api-key/dataset-scope-dialog.tsx:177-186`; o dono que
+  o Hub já tem para "a lista anterior fica enquanto o texto novo responde",
+  `builder/assistant/queries.ts:28-30` (`withoutText`) e `:51-57` (`placeholderData`).
+- **A busca de Projetos no Hub.** Na base, lidos em `ebfd4aa1`: o contrato
+  `packages/hub-api/src/projects.ts:47-65` (`listProjects`, `query: Page`); a rota
+  `apps/server/src/hub/projects/routes.ts:54-56`; a consulta `apps/server/src/hub/projects/projects.ts:289-320`
+  (`list`: `where` com `companyId`, `deletingSince` e `after` por `(name, id)`, `limit(PAGE_SIZE + 1)`);
+  `apps/server/src/platform/pages.ts:12-53` (`pageOf`, `pageKey`, `after`). O modelo de contrato
+  com busca: `packages/hub-api/src/assistant.ts:216-220` (`Page.extend` com `q`, `trim`, `min(1)`,
+  `max`), e o modelo de teste: `apps/server/src/builder/assistant/list-search.test.ts:45-51`. Na
+  referência: Dify `api/services/knowledge/dataset_service.py:236-238` (o padrão escapado e o
+  `ilike` com `escape`) e `:264` (a página na mesma consulta); `drizzle-orm` 1.0.0-rc.4
+  `sql/expressions/conditions.d.ts:366` (`ilike(column, value)`, sem escape próprio: vale o `\`
+  padrão do Postgres no `LIKE`).
+- **O Combobox no modo de busca no servidor.** Base UI 1.9 `combobox.md:1176` (`items` são os
+  conhecidos, `filteredItems` a janela que o servidor mandou), `:3377` (o escolhido fica em
+  `items` enquanto chegam resultados), `:3406-3412`, `:3457` (`filter={null}`), `:3458-3462`
+  (`onOpenChangeComplete`), `:3468-3479` (`onInputValueChange`, que ignora o `reason`
+  `item-press`). O Supabase faz o mesmo com o cmdk: `OrganizationProjectSelector.tsx:225`
+  (`shouldFilter={false}`) e `:111-112` (`search` na leitura, `keepPreviousData`).
 - **A página de Agentes (705).** `builder/agents/loader.ts:27-33` e `:94-96` (`readOrGone`
   vira a recusa de `listAgents` em página inteira); `agent-list.tsx:123-125`.
 
@@ -491,10 +534,14 @@ cinco chamadores em três assuntos, e a página de Agentes com o seu carregador.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
+| `packages/hub-api/src/projects.ts` (`listProjects`) | Muda: `query: Page` passa a `Page.extend({ q })`; a frase de `summary` diz a busca | `apps/server/src/hub/projects/routes.ts`, `apps/web/src/hub/projects/queries.ts`, `scripts/emit-openapi.ts` e `apps/server/src/openapi-contract.test.ts` (sem mudança de código) |
+| `apps/server/src/hub/projects/routes.ts`, `apps/server/src/hub/projects/projects.ts` | Muda: a rota passa `query.q`; `list` recebe `q` e põe o nome no mesmo `where` | `ProjectStore` (`projects.ts:347`, o tipo vem de `createProjectStore`; nenhum outro chamador de `list`) |
+| `apps/server/src/hub/projects/projects.test.ts` | Muda: um caso novo (critério 26) | `npm run test:server` |
+| `apps/web/layout-harness.ts` | Muda: uma resposta pode ter a chave com a busca (`GET /caminho?q=…`), que vale antes da chave sem ela; nenhum teste de hoje muda | todos os `*.layout.test.ts` |
 | `apps/web/src/ui/picker.tsx`, `apps/web/src/ui/picker.test.tsx` | Cria | `apps/web/src/hub/projects/project-picker.tsx`, `apps/web/src/builder/assistant/plus-menu.tsx` (só `SEARCH_FROM` e `matches`) |
 | `apps/web/src/ui/showcase.ts` | Muda: a entrada do `Picker` | a vitrine |
 | `apps/web/src/hub/projects/project-picker.tsx`, `apps/web/src/hub/projects/text.ts` | Cria | os 5 lugares, por `apps/web/src/hub/projects/public.ts` |
-| `apps/web/src/hub/projects/public.ts`, `apps/web/src/hub/projects/recent-projects.tsx`, `apps/web/src/hub/projects/project-rail.tsx` | Muda | o quadro do Projeto |
+| `apps/web/src/hub/projects/queries.ts`, `apps/web/src/hub/projects/public.ts`, `apps/web/src/hub/projects/recent-projects.tsx`, `apps/web/src/hub/projects/project-rail.tsx` | Muda: `projectsPagedQuery` recebe o texto | o quadro do Projeto; os 4 chamadores de hoje de `projectsPagedQuery`, que passam a chamar `ProjectPicker` |
 | `apps/web/src/builder/assistant/place-filter.tsx`, `apps/web/src/builder/assistant/project-choice.tsx`, `apps/web/src/builder/assistant/text.ts` | Muda; sai `MORE_PROJECTS`, `SEARCH_PROJECT` e `NO_PROJECT_MATCH` de `text.ts` | a lista de conversas; a caixa da conversa |
 | `apps/web/src/builder/assistant/choice-list.tsx`, `apps/web/src/builder/assistant/plus-menu.tsx` | Muda: saem `SEARCH_FROM` e `matches`, que `plus-menu.tsx` passa a importar de `ui/picker.tsx`; ficam `ROW`, `LIST`, `Search`, `CHIP`, `WORDS` | `composer-tools.tsx`, `builder/assistant/public.ts` (sem mudança) |
 | `apps/web/src/builder/agents/agent-list.tsx`, `apps/web/src/builder/agents/new-agent.tsx`, `apps/web/src/builder/agents/loader.ts`, `apps/web/src/builder/agents/text.ts` | Muda; sai `MORE_PROJECTS` de `text.ts` | a rota de Agentes do Início |
@@ -507,6 +554,48 @@ Fica como está: `hub/copies/apps-layer.tsx`, com o seu **Mais Projetos** (`hub/
 É uma lista, não uma escolha.
 
 ### Os contratos que a unidade cria
+
+Em `packages/hub-api/src/projects.ts`, no modelo de `assistant.ts:216-220`:
+
+```ts
+/** O texto que a pessoa busca nos nomes dos Projetos: não maior que um nome. */
+export const ProjectSearch = z.string().trim().normalize('NFC').min(1).max(PROJECT_NAME_MAX_LENGTH)
+
+export const listProjects = defineOperation({
+  // id, access, method, path, bodyLimit, success e failures como hoje
+  summary:
+    'Lists the Projects of a company the person belongs to, all of them or those whose name holds a text, without case, and whether its database exists.',
+  input: { params: InCompany, query: Page.extend({ q: ProjectSearch.optional() }) },
+})
+```
+
+Em `apps/server/src/hub/projects/projects.ts`, a consulta de hoje com uma condição a mais no mesmo
+`and(...)`, antes do `after(...)`:
+
+```ts
+function list(
+  deps: Deps,
+  input: { person: Person; companyId: CompanyId; page: string | undefined; q: string | undefined },
+)
+
+/** O texto como letras de um `LIKE`: `\`, `%` e `_` valem como eles mesmos (o escape padrão do Postgres). */
+function likeText(text: string): string
+
+// no where: input.q === undefined ? undefined : ilike(project.name, `%${likeText(input.q)}%`)
+```
+
+A ficha da página continua o id da última linha (`pageOf`); a linha seguinte é a seguinte que bate,
+porque o `after` e a busca estão no mesmo `where`. Uma ficha de outra busca não abre outra empresa:
+o `after` já filtra por `companyId` (`projects.ts:310-314`), e o C44 não pede mais.
+
+Em `apps/web/src/hub/projects/queries.ts`:
+
+```ts
+/** Os Projetos da empresa uma página por vez, todos ou os que batem com o texto (code C44). */
+export function projectsPagedQuery(companyId: CompanyId, q: string | undefined)
+// queryKey: [...hubQueryPrefix(listProjects, { companyId }), 'paged', { q }]
+// placeholderData: a página da letra anterior da mesma empresa, como `builder/assistant/queries.ts:51-57`
+```
 
 Em `apps/web/src/ui/picker.tsx`, sem import de assunto:
 
@@ -527,6 +616,9 @@ export type PickerRead =
   | { kind: 'READY' }
   | { kind: 'FAILED'; sentence: string }
 
+/** A busca de quem usa a peça: o texto volta por `onText`, e a peça mostra os grupos como vêm, sem filtrar. */
+export type PickerSearch = { text: string; onText: (text: string) => void }
+
 export function Picker<V extends string>(props: {
   /** O nome da lista e do gatilho para o leitor de tela. */
   label: string
@@ -537,6 +629,8 @@ export function Picker<V extends string>(props: {
   onPick: (value: V) => void
   more: PickerMore
   read: PickerRead
+  /** Sem busca, nenhum campo; com, o `Combobox.Input` no popup e `filter={null}` no `Combobox.Root`. */
+  search: PickerSearch | undefined
   searchLabel: string
   noMatch: string
   /** O vazio do lugar, quando nenhum grupo tem item: uma frase e, se houver, uma ação. */
@@ -563,6 +657,13 @@ export function ProjectPicker<Fixed extends string>(props: {
 }): ReactElement
 ```
 
+`ProjectPicker` guarda o texto da busca (`useState`, vazio a cada abertura) e lê
+`useInfiniteQuery(projectsPagedQuery(companyId, texto || undefined))`. O texto vai inteiro ao Hub,
+que tira os espaços das pontas; um texto só de espaços não vai (o `trim` do contrato o recusaria).
+Os itens fixos e os recentes filtram com `matches`, no navegador, porque não vêm do Hub. O campo de
+busca aparece quando a leitura sem texto, mais os itens fixos, tem `SEARCH_FROM` linhas ou mais,
+ou quando ela tem mais página; ele não some enquanto a pessoa busca.
+
 E em `apps/web/src/hub/projects/recent-projects.tsx`, no lugar do `useRecentProjects` de hoje:
 
 ```ts
@@ -581,44 +682,75 @@ export function useRecentProjects(companyId: CompanyId, personId: PersonId, load
   de hoje (saem as cópias de `builder/assistant/text.ts:35,36,41` e `builder/agents/text.ts:27`);
   o nome do Projeto do endereço fora das páginas, lido por `projectQuery` dentro de `ProjectPicker`
   (sai o `NamedFilter`); o nome de um recente fora das páginas, lido em `useRecentProjects`.
-- **Esquema Zod**: nenhuma entrada externa nova; as leituras usam `listProjects` e `getProject`.
+- **Esquema Zod**: a única entrada nova é `ProjectSearch`, no contrato, que o Hub confere na borda
+  (`trim`, `normalize('NFC')`, de 1 a 100 caracteres); o servidor confia no tipo dali para dentro
+  (C27). As leituras do front usam `listProjects` e `getProject`.
 - **O arquivo modelo**: `hub/projects/queries.ts`, para a leitura (cumpre C26: uma função por
-  leitura; C21 e C23 não se aplicam). Para a peça, nenhum.
+  leitura; C21 e C23 não se aplicam); `builder/assistant/queries.ts:28-57`, para o texto na chave e
+  a lista anterior na tela; `packages/hub-api/src/assistant.ts:216-220`, para o parâmetro de busca.
+  Para a peça, nenhum.
 
 ### As skills e a leitura
 
-`shadcn` (`rules/composition.md`, `rules/base-vs-radix.md`: o `render` do Base UI);
-`node_modules/@base-ui/react/docs/react/components/combobox.md`; `router-core` (em
+pstack `poteto-mode` primeiro, com `architect` para os tipos desta seção antes do código (a
+palavra do fundador na decisão B); `pstack:typescript-best-practices`; `shadcn`
+(`rules/composition.md`, `rules/base-vs-radix.md`: o `render` do Base UI);
+`node_modules/@base-ui/react/docs/react/components/combobox.md`, seções "Async search (single)"
+e "Displaying a window of async results"; `router-core` (em
 `node_modules/@tanstack/router-core/skills/`), para o `navigate`, o `Link` e o carregador;
-`tanstack.com/query/latest/llms.txt`, seções de consultas infinitas e `useQueries`.
+`tanstack.com/query/latest/llms.txt`, seções de consultas infinitas, `placeholderData` e
+cancelamento; `fastify-best-practices`, para a rota; `orm.drizzle.team/llms.txt`, seção de
+operadores (`ilike`); `zod.dev/llms.txt`. O guia além do de código é o `web`; a parte do servidor
+segue o guia `data` só na consulta (o `where` e a ordem).
 
 ### A ordem do trabalho
 
-1. **O `Picker`, sozinho, com a entrada na vitrine.** Critérios: 10, 11, 12, 17.
+1. **A busca no Hub.** Critério: 26.
+   - **Arquivos:** muda `packages/hub-api/src/projects.ts`, `apps/server/src/hub/projects/routes.ts`,
+     `apps/server/src/hub/projects/projects.ts`, `apps/server/src/hub/projects/projects.test.ts`.
+   - **Referência a seguir:** Dify `dataset_service.py:236-238` (o texto escapado antes do `ilike`)
+     e `:264` (a página na mesma consulta); `assistant.ts:216-220` (o parâmetro);
+     `list-search.test.ts:45-51` (o teste da busca e do texto longo).
+   - **O que entra:** `ProjectSearch` e o `q` do contrato; a rota passa `query.q`; `likeText` e o
+     `ilike` no `and(...)` de `list`, sem índice novo (a consulta já lê só a empresa, por nome).
+     Regras: C44 (o filtro é declarado no contrato), C27.
+   - **Testes:** o caso do critério 26, com 60 Projetos: `q` de uma letra em maiúscula, a segunda
+     página da mesma busca pelo `next`, `50%` contra `500` e `5_0` contra `500`, o texto com
+     espaços nas pontas, 101 caracteres, outra empresa.
+   - **Mutações à mão:** tirar `likeText` → o caso de `50%` falha; trocar `ilike` por `like` → o
+     caso da maiúscula falha; tirar o `q` do `where` → o caso dos 60 falha.
+2. **O `Picker`, sozinho, com a entrada na vitrine.** Critérios: 10, 11, 12, 17.
    - **Arquivos:** cria `ui/picker.tsx`, `ui/picker.test.tsx`; muda `ui/showcase.ts`,
      `choice-list.tsx`, `plus-menu.tsx` (o import de `SEARCH_FROM` e `matches`).
    - **Referência a seguir:** `combobox.md:1873` (o `Combobox.Input` dentro do `Combobox.Popup`, o
-     gatilho como controle); `:2777` (`Combobox.Group`, `Combobox.GroupLabel`).
+     gatilho como controle); `:2777` (`Combobox.Group`, `Combobox.GroupLabel`); `:3457`
+     (`filter={null}`), `:3458-3462` e `:3468-3479` (o texto pelo `onInputValueChange`, sem o
+     `reason` `item-press`; a busca vazia ao fechar).
    - **O que entra:** o popup de 288 px (`DESIGN.md`, Projeto folder), a busca a partir de
      `SEARCH_FROM` linhas, as linhas `list-row` de 32 e 44 px (V58), a linha **Mais Projetos**
      desligada enquanto `loading`. Regras: V28 (foco), V57 (o escolhido em `accent-text`), W22.
-   - **Testes:** `ui/picker.test.tsx`: busca a partir de 7 linhas, maiúscula e minúscula, vazio,
-     reaberta vazia, teclado. O filtro é o `matches` passado ao `filter` do Combobox, para que a
-     lista de ligações de `plus-menu.tsx` filtre igual.
-   - **Mutações à mão:** `SEARCH_FROM` para 8 → o caso de 7 falha; tirar o `disabled` de
-     **Mais Projetos** → o segundo clique pede outra página e o caso falha.
+   - **Testes:** `ui/picker.test.tsx`: com `search`, o campo aparece; o que se digita sai por
+     `onText` e a peça mostra os grupos como vieram, sem filtrar; vazio com texto dá `noMatch`;
+     reaberta vazia; teclado. `matches` continua de `ui/picker.tsx`, para os itens fixos da
+     `ProjectPicker` e a lista de ligações de `plus-menu.tsx`, que filtra igual a hoje.
+   - **Mutações à mão:** tirar o `filter={null}` → o caso "mostra os grupos como vieram" falha;
+     tirar o `disabled` de **Mais Projetos** → o segundo clique pede outra página e o caso falha.
    - **Pronto quando:** a peça aparece na vitrine com vazio, carregando, erro e cheia.
-2. **A `ProjectPicker` e as leituras.** Critérios: 9, 13, 14, 16.
+3. **A `ProjectPicker` e as leituras.** Critérios: 9, 10, 13, 14, 16.
    - **Arquivos:** cria `hub/projects/project-picker.tsx`, `hub/projects/text.ts`; muda
-     `recent-projects.tsx`, `public.ts`.
-   - **O que entra:** `useInfiniteQuery(projectsPagedQuery(companyId))`; os recentes com
-     `useQueries` de `projectQuery` para os ids fora das páginas, no máximo 5; o nome do valor fora
-     delas por `projectQuery`. Regras: W10, W11, C44.
-   - **Testes:** `project-picker.layout.test.ts` com duas páginas no harness (50 e 10), e com a
-     segunda em falha; o caso novo de `frame.layout.test.ts`.
+     `queries.ts`, `recent-projects.tsx`, `public.ts`, `apps/web/layout-harness.ts` (a chave com a
+     busca).
+   - **O que entra:** `projectsPagedQuery(companyId, q)` com o texto na chave e o `placeholderData`
+     da mesma empresa; o texto, `SEARCH_FROM` e `matches` dos itens fixos, como a seção dos contratos
+     diz; os recentes com `useQueries` de `projectQuery` para os ids fora das páginas, no máximo 5; o
+     nome do valor fora delas por `projectQuery`. Regras: W10, W11, C44.
+   - **Testes:** `project-picker.layout.test.ts` com duas páginas no harness (50 e 10), com a
+     segunda em falha, e com a resposta de `?q=` que traz o 58º; o caso confere o `q` que o
+     navegador pediu (o `search` que o harness guarda); o caso novo de `frame.layout.test.ts`.
    - **Mutações à mão:** `getNextPageParam` devolvendo `undefined` → o caso dos 60 falha; tirar o
-     filtro de `NOT_FOUND` dos recentes → o caso do Projeto apagado falha.
-3. **Os cinco lugares.** Critérios: 9, 13, 14, 15, 17; o roteiro de uso 1 a 5.
+     texto da chave → o caso do 58º falha; tirar o filtro de `NOT_FOUND` dos recentes → o caso do
+     Projeto apagado falha.
+4. **Os cinco lugares.** Critérios: 9, 13, 14, 15, 17; o roteiro de uso 1 a 5.
    - **O que sai:** de `place-filter.tsx`, o `DropdownMenuRadioGroup` e o `projectsQuery` (o
      `PlaceLabel` continua, e lê o nome do Projeto por `projectQuery`); de `project-choice.tsx`, o
      `Popover`, o `ProjectRow` e a busca à mão; de `agent-list.tsx`, o `FilterBox`, o `NamedFilter`,
@@ -632,7 +764,7 @@ export function useRecentProjects(companyId: CompanyId, personId: PersonId, load
      só os papéis que procuram (o raio diz quais).
    - **Mutações à mão:** trocar o `onPick` do filtro de Agentes por um que não navega → o caso do
      filtro falha.
-4. **A página de Agentes com erro.** Critério: 18 (issue 705).
+5. **A página de Agentes com erro.** Critério: 18 (issue 705).
    - **Arquivos:** `builder/agents/loader.ts`, `agent-list.tsx`.
    - **O que entra:** uma falha de `listAgents` que não é `NOT_FOUND` fica na área da lista,
      embaixo do título, do filtro e de **Novo agente**. O `NOT_FOUND` continua "não encontrado" de
@@ -640,16 +772,17 @@ export function useRecentProjects(companyId: CompanyId, personId: PersonId, load
    - **Testes:** os dois casos novos de `agents.layout.test.ts`.
    - **Mutações à mão:** devolver o `readOrGone` de página inteira → o caso de 705 falha.
    - **Pronto quando:** o roteiro de uso 1 a 6 roda no Hub local com 60 Projetos de teste.
-5. **A linha do `DESIGN.md`.** O `Picker` em Components, ao lado do Combobox; a linha "Projeto
+6. **A linha do `DESIGN.md`.** O `Picker` em Components, ao lado do Combobox; a linha "Projeto
    folder" passa a dizer que o menu é o `Picker`.
 
 ### Como se prova
 
-Os casos de layout usam o harness com as respostas de `listProjects` em duas páginas e as de
-`getProject` e `listAgents`; nenhum toca o servidor. Hoje, com 60 Projetos, o filtro de conversas e
+A busca no Hub se prova no Postgres real, pela porta da rota (`projects.test.ts`, critério 26). Os
+casos de layout usam o harness com as respostas de `listProjects` em duas páginas e com `?q=`, e as
+de `getProject` e `listAgents`; nenhum toca o servidor. Hoje, com 60 Projetos, o filtro de conversas e
 os recentes da barra mostram só os 50 primeiros (lido em `place-filter.tsx:46` e
-`recent-projects.tsx:27`), e qualquer falha de `listAgents` apaga a página inteira
-(`loader.ts:94-96`).
+`recent-projects.tsx:27`), a busca da pasta procura só nas páginas lidas (`project-choice.tsx:61`),
+e qualquer falha de `listAgents` apaga a página inteira (`loader.ts:94-96`).
 
 ### Parar se
 
@@ -657,6 +790,9 @@ os recentes da barra mostram só os 50 primeiros (lido em `place-filter.tsx:46` 
   da barra, o botão primário de **Novo agente**): anote qual e pergunte, sem escrever um popup à mão.
 - Um caso de teste fora dos que o raio nomeia precisa mudar uma asserção para passar.
 - Um lugar pede um comportamento que o contrato não tem (por exemplo, escolher vários).
+- O `ILIKE` do Postgres do Hub não iguala maiúscula e minúscula acentuadas (`ÇÃO` e `ção`) no caso
+  do critério 26: anote a ordenação do banco e pergunte, sem trocar por `lower()` à mão.
+- A ficha de página de uma busca traz, no Postgres real, uma linha que não bate ou pula uma que bate.
 
 ## U4 As peças compostas
 
