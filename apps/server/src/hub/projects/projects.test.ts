@@ -259,7 +259,7 @@ test('o pedido aberto: o Projeto lido e o criado de novo trazem mayPublish e o p
   assert.deepEqual([decided.statusCode, codeOf(decided)], [404, 'NOT_FOUND'])
 })
 
-test('a busca: q acha pelo nome sem diferenciar caixa, % e _ valem como letra, a ficha traz a página seguinte da mesma busca, e q vazio ou longo é 400 (26)', async (t) => {
+test('a busca: q acha pelo nome sem diferenciar caixa, \\, % e _ valem como letra, a ficha traz a página seguinte da mesma busca, e q vazio ou longo é 400 (26)', async (t) => {
   const { hub, ana, bruno, projects } = await companyWithMember(t)
   const names = [
     ...Array.from({ length: 56 }, (_, index) => `Filler ${String(index).padStart(2, '0')}`),
@@ -267,6 +267,7 @@ test('a busca: q acha pelo nome sem diferenciar caixa, % e _ valem como letra, a
     '500',
     'Meta 50% vendas',
     'Lote 5_0 norte',
+    'C:\\dados',
   ]
   for (const name of names) {
     const made = await post(hub, ana, projects, { name })
@@ -291,6 +292,7 @@ test('a busca: q acha pelo nome sem diferenciar caixa, % e _ valem como letra, a
   assert.deepEqual(namesOf(await search(bruno, at('ação'))), ['Ação'])
   assert.deepEqual(namesOf(await search(ana, at('50%'))), ['Meta 50% vendas'])
   assert.deepEqual(namesOf(await search(ana, at('5_0'))), ['Lote 5_0 norte'])
+  assert.deepEqual(namesOf(await search(ana, at('\\d'))), ['C:\\dados'])
   assert.deepEqual(namesOf(await search(ana, at('  norte  '))), ['Lote 5_0 norte'])
   assert.deepEqual(namesOf(await search(ana, at('inexistente'))), [])
   const first = await search(ana, at('filler'))
