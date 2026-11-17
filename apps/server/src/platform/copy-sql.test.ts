@@ -2,8 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import pg from 'pg'
 import type { CopyTable } from './copy-sql.ts'
+import { ROLES_LOCK } from './copy-sql.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
 import { createCompanyDatabase, syncLoginOf, testCompanyPostgres } from './test-company-postgres.ts'
+import { until } from './test-until.ts'
 
 type DatabaseUrl = Awaited<ReturnType<typeof createCompanyDatabase>>
 
@@ -203,4 +205,38 @@ test('a versão 1 guarda a hora local, sem as colunas da conta', async (t) => {
       ['_pass', 'integer'],
     ],
   )
+})
+
+test('o DROP da tabela da cópia espera a vez dos atos do banco', async (t) => {
+  const owner = await createCompanyDatabase(t)
+  await postgres.ensureSync(owner)
+  const sync = await syncOf(owner)
+  await postgres.ensureCopyTable(sync, PEDIDOS)
+  const holder = new pg.Client({ connectionString: owner.reveal() })
+  await holder.connect()
+  try {
+    await holder.query('begin')
+    await holder.query(ROLES_LOCK.text)
+    const dropping = postgres.dropCopyTable(sync, { copy: 'pedidos' })
+    await until(
+      async () =>
+        ((
+          await holder.query(
+            `select 1 from pg_locks where locktype = 'advisory' and objid = 4207000002 and not granted`,
+          )
+        ).rowCount ?? 0) > 0,
+      'the DROP waits for the turn',
+    )
+    const kept = await holder.query(
+      `select tablename from pg_tables where schemaname = 'sync' and tablename = 'pedidos'`,
+    )
+    assert.equal(kept.rowCount, 1, 'the table stays while the turn is held')
+    await holder.query('commit')
+    assert.equal((await dropping).kind, 'DONE')
+  } finally {
+    await holder.end()
+  }
+  assert.deepEqual(await asSync(sync, `select to_regclass('sync.pedidos') as left`), [
+    { left: null },
+  ])
 })
