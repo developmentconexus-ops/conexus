@@ -6,7 +6,7 @@ import type { Readable } from 'node:stream'
 import type { LogLine } from '../../../../scripts/log-line.ts'
 import { parseLogLine } from '../../../../scripts/log-line.ts'
 import type { Lifetime } from './test-database.ts'
-import { freePort } from './test-database.ts'
+import { freePort } from './test-port.ts'
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
 const PASSWORD_PRELOAD = join(import.meta.dirname, 'test-password-preload.ts')
@@ -64,8 +64,9 @@ export function startHub(
   read(child.stdout)
   read(child.stderr)
   const closed = once(child, 'close').then(([code]: unknown[]) => {
+    const last = JSON.stringify(lines.at(-1) ?? raw.at(-1))
     for (const [message, waiter] of waiting) {
-      waiter.reject(new Error(`the Hub ended without ${message}`))
+      waiter.reject(new Error(`the Hub ended without ${message}; its last line: ${last}`))
     }
     return typeof code === 'number' ? code : null
   })

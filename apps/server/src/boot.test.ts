@@ -8,12 +8,12 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
   unreachableDatabaseUrl,
   urlFile,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
+import { freePort } from './platform/test-port.ts'
 
 type Line = Record<string, unknown>
 

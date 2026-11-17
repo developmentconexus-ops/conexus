@@ -8,7 +8,6 @@ import { MIGRATE_RETRY_EXIT, migrate, migrateExitCode } from './migrate.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
-  freePort,
   runtimeUrlWithPassword,
   serveEnvironment,
   unreachableDatabaseUrl,
@@ -26,6 +25,7 @@ import {
   storedVerifier,
   withOptionsInUrl,
 } from './test-migrate.ts'
+import { freePort } from './test-port.ts'
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)

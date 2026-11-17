@@ -14,13 +14,13 @@ import { testAppPorts } from './platform/test-app-ports.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
   silent,
   testConfig,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
 import { testMail } from './platform/test-mail.ts'
+import { freePort } from './platform/test-port.ts'
 
 const apps: FastifyInstance[] = []
 const dirs: string[] = []

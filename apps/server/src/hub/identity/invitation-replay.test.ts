@@ -2,15 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import {
-  createTestDatabase,
-  freePort,
-  serveEnvironment,
-  TEST_ORIGIN,
-} from '../../platform/test-database.ts'
+import { createTestDatabase, serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { HubProcess } from '../../platform/test-hub-process.ts'
 import { startHub } from '../../platform/test-hub-process.ts'
 import { mailServer } from '../../platform/test-mail.ts'
+import { freePort } from '../../platform/test-port.ts'
 import { ANA_OWNER, INVITEE, id, PASSWORD, plantCompany } from './test-hub.ts'
 
 const WRITE = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
