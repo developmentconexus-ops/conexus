@@ -32,7 +32,7 @@ mandou fechar, e a linha de fechamento está no
 ar na v0.24.102. A trilha está sem cartão em `docs/steps/` até a etapa do Registro e da conformidade
 ter estudo e cartão.
 
-A etapa seguinte, sem mudar a ordem, é a do Registro e da conformidade: os consumidores passam a derivar da porta, e a
+A etapa seguinte, sem mudar a ordem, é a do Registro e conformidade: os consumidores passam a derivar da porta, e a
 licença que toda execução exige nasce com o Registro. As concessões por instância entram quando o primeiro cartão precisar
 de instância. A conexão MCP tem cartão próprio quando a primeira ferramenta de IA entrar.
 
