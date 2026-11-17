@@ -1,0 +1,20 @@
+#!/bin/sh
+# Defect: 13 of 46 red CI runs were static or the T4 list, found ten minutes after the push
+# (docs/how-to/ci-health.md). The gate of conexus-build step 7 runs here, before the push leaves.
+# scripts/install-hooks.ts points core.hooksPath at this folder on every `npm install`.
+# A deliberate `git push --no-verify` skips it; conexus-build says never to use it.
+# Revalidate by 2027-05-17, or when `npm run check` changes its needs.
+all_deletes=true
+while read -r _ local_sha _ _; do
+  case "$local_sha" in
+    0000000000000000000000000000000000000000) ;;
+    *) all_deletes=false ;;
+  esac
+done
+if [ "$all_deletes" = true ]; then
+  exit 0
+fi
+echo "pre-push: npm run check"
+npm run check || exit 1
+echo "pre-push: npm run test:scripts"
+npm run test:scripts || exit 1

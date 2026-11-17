@@ -82,3 +82,11 @@ Em 2026-11-15, sobre as referências: "tudo que a gente está fazendo, na parte 
 Em 2026-11-15, sobre mudança de método: "se ela tá aí, ela tinha que estar nas skills, ela tinha que estar na nossa metodologia, em algum lugar registrado e tirar tudo que é legacy relacionado." Por isso as skills mudam com o guia, e o arquivo único do registro sai sem nada de compatibilidade.
 
 Com três cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`. Em 2026-11-15, perguntado pelo firstmate se autorizava o rótulo de emergência neste pull request, o fundador respondeu: "2. Sim". O firstmate aplicou o rótulo.
+
+## Mudança de método: o portão antes de subir e a medida dos testes instáveis
+
+Em 2026-11-17, como mudança de método (L20), às duas perguntas do estudo do CI saudável (seção 6 e 9), o fundador respondeu: "A. O portão antes de subir: a" e "B. Os testes instáveis: a". Antes, sobre o CI: "Aceito sim e do CI temos sempre problemas com CI, testes mal feito e está sendo um gargalo faz muito tempo."
+
+A resposta A faz o `npm run check` e o `npm run test:scripts` rodarem num hook `pre-push` (`.githooks/`, ligado pelo `core.hooksPath` que o `npm install` grava), e a skill `conexus-build` cita o hook no passo 7 e proíbe o `--no-verify`. A resposta B mantém a segunda rodada (T4) e a cobra: a medida "runs salvos pela segunda rodada" entra em `docs/how-to/ci-health.md` com a meta abaixo de 2% (hoje 12%), o protocolo do instável entra em `references/bug.md`, e a T20 passa a ter uma regra GritQL (`scripts/test-waits.grit`) que recusa a espera fixa nova em teste. O firstmate decidiu ao construir, sem palavra do fundador: o teste da lista T4 também roda no `npm run check`; as esperas de hoje ficam numa lista do `biome.json` que só diminui; a segunda rodada do `test:unit` do web é de uma tentativa só na CI, e os arquivos da lista T4 ficam sem ela.
+
+Com cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`. Em 2026-11-17, perguntado pelo firstmate se autorizava o rótulo de emergência neste pull request, o fundador respondeu: "1. Aplica". O firstmate aplicou o rótulo.
