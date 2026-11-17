@@ -40,7 +40,7 @@ numbers of steps 9 and 11 are in the Statistics section.
    report its true-positive and true-negative rates on the held-out part, not its raw agreement. A
    judge below the bar the question names does not score the round.
 9. **Size the large round.** From the small round's discordant pairs, compute how many questions
-   detect the difference of step 1 with 80% power (the the Statistics section).
+   detect the difference of step 1 with 80% power (the Statistics section below).
    Questions generated from templates are clustered: count templates, not questions, as the
    independent unit, or report clustered standard errors. Repeat each question 3 times when
    reliability matters (`attempt: 0, 1, 2`); more questions beat more repeats. Write the cost
@@ -78,8 +78,8 @@ through the Hub's routes. Nothing else is built beside Mastra.
 
 ## Statistics of a round
 
-Sources: Miller, "Adding Error Bars to Evals", arXiv 2411.00640 (clustered standard errors, paired
-differences, resampling, power analysis); Yao et al., tau-bench, arXiv 2406.12045 (pass^k).
+Sources: Miller, "Adding Error Bars to Evals", [arXiv 2411.00640](https://arxiv.org/abs/2411.00640) (clustered standard errors, paired
+differences, resampling, power analysis); Yao et al., tau-bench, [arXiv 2406.12045](https://arxiv.org/abs/2406.12045) (pass^k).
 
 ### Accuracy of one arm
 

@@ -10,7 +10,8 @@ description: "Measures whether a change makes a Conexus agent (the Assistant, th
 A question of the form "does X make the agent answer better (or cheaper) than Y?", where X and Y
 are two states of one agent: a prompt, a tool, a model, an Ontology shape, a Knowledge layout.
 Also the regression check of a change to the Assistant's or the Builder's harness, which the
-Alinhamento do Assistente requires against the U11 scorecard baseline.
+Alinhamento do Assistente requires against the U11 scorecard baseline, same judge on both
+sides.
 
 Not for: one behavior with one right answer (a test, testing T14), a screen (`conexus-qa`), or a
 library's shape (`npm run record`, testing T26).
@@ -29,7 +30,7 @@ The Conexus commit the arms run at. The lab folder the instructions name, outsid
 ## Steps
 
 1. **Question and hypothesis.** Write the question, the hypothesis, the metric that decides it and
-   the smallest difference worth acting on (for example, 8 points of answer accuracy). Write what
+   the smallest difference worth acting on (say, 8 points of accuracy). Write what
    result would refute it. A question without a decision attached stops here.
 2. **Arms.** Each arm differs from the baseline in one named thing. Everything else is the same
    object: the Conexus commit, the system prompt bytes, the tool set, the model and effort, the
@@ -45,7 +46,7 @@ The Conexus commit the arms run at. The lab folder the instructions name, outsid
    then measures the idea, not the agent.
 4. **Dataset to report.** Steps 4 to 11 (dataset, scorers, rounds, error analysis, judge
    calibration, sizing, report), what invalidates a round and the statistics are in
-   [rounds](references/rounds.md). Read it first.
+   [rounds](references/rounds.md).
 
 ## Never
 
