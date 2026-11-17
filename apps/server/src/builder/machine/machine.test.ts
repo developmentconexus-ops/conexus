@@ -55,7 +55,7 @@ test('máquina: o fim do turno do Builder não para a máquina; depois que o E2B
 })
 
 test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
-  const { open, phases, control, machines, base, restartHub } = await world(t)
+  const { open, phases, control, machines, restartHub } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [], 'building the workspace touches no machine')
   await first.filesystem?.writeFile('a.ts', 'um\n')
@@ -80,7 +80,7 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   const fresh = await next.open()
   assert.equal(await fresh.filesystem?.exists('a.ts'), false)
   assert.deepEqual(phases, ['starting', 'copying'], 'no phase says a machine was there before')
-  assert.equal(await next.machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
+  assert.equal(await next.machines.collect({ conversationId: CONVERSATION }), 'unchanged')
 })
 
 test('máquina: religada no turno seguinte, a mesma pasta segue no main que o turno salvou, e um commit em outro ramo não apaga a versão anterior', async (t) => {
@@ -93,7 +93,7 @@ test('máquina: religada no turno seguinte, a mesma pasta segue no main que o tu
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um`,
   ])
   assert.equal(committed.exitCode, 0, committed.stderr)
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object')
   assert.equal(bundle.changedFiles, 1)
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
@@ -113,36 +113,36 @@ test('máquina: religada no turno seguinte, a mesma pasta segue no main que o tu
     `cd ${join(folder, 'app')} && git symbolic-ref HEAD`,
   ])
   assert.equal(head.stdout.trim(), 'refs/heads/main')
-  const second = await machines.collect({ conversationId: CONVERSATION, base: received.value })
+  const second = await machines.collect({ conversationId: CONVERSATION })
   assert.equal(second, 'unchanged')
 })
 
 test('máquina: a máquina que cai no meio do turno é refeita, e o turno não guarda o que se perdeu', async (t) => {
-  const { open, machines, base, control } = await world(t)
+  const { open, machines, control } = await world(t)
   const workspace = await open()
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.outcome = 'created'
   await control.restart()
-  await assert.rejects(machines.collect({ conversationId: CONVERSATION, base }), {
+  await assert.rejects(machines.collect({ conversationId: CONVERSATION }), {
     code: 'MACHINE_LOST',
   })
 })
 
 test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa no meio dele, guarda o que o turno escreveu', async (t) => {
-  const { open, machines, base, control } = await world(t)
+  const { open, machines, control } = await world(t)
   const workspace = await open()
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.outcome = 'connected'
   await control.restart()
   assert.equal(await workspace.filesystem?.exists('a.ts'), true, 'a reconnect is not a new turn')
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
   assert.equal(bundle.changedFiles, 1)
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
 })
 
 test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos na máquina; religada, a mesma pasta os guarda e o turno seguinte os salva; o turno que terminou sem salvar também os deixa', async (t) => {
-  const { open, machines, control, base } = await world(t)
+  const { open, machines, control } = await world(t)
   const ended = await open()
   await ended.filesystem?.writeFile('stray.ts', 'sobra\n')
   await machines.release(CONVERSATION)
@@ -158,7 +158,7 @@ test('máquina: o turno que não terminou (o processo morreu) deixa os arquivos 
   const after = await open()
   assert.equal(await after.filesystem?.exists('a.ts'), true, 'the cut turn is kept')
   assert.equal(await machines.changed({ conversationId: CONVERSATION }), true)
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object', `the cut turn is saved, not ${String(bundle)}`)
   assert.equal(bundle.changedFiles, 2, 'the ended turn left its file beside the cut one')
 })
@@ -209,7 +209,7 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um && echo dois > b.ts && git add -A && ${git} commit -qm dois`,
   ])
   assert.equal(committed.exitCode, 0, committed.stderr)
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object')
   const received = await repository.receive({
     runId: RunId.parse('00000000-0000-4000-8000-000000000001'),
@@ -270,24 +270,24 @@ test('máquina: o Git a restaurar passa pelo início da máquina sem virar MACHI
 })
 
 test('máquina: um turno que só mexeu nos planos não guarda versão; com o app, os planos vão e não contam', async (t) => {
-  const { open, machines, base } = await world(t)
+  const { open, machines } = await world(t)
   const workspace = await open()
   await workspace.filesystem?.writeFile('.conexus/plans/um.md', '# Um\n')
   assert.equal(await machines.changed({ conversationId: CONVERSATION }), false)
-  assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
+  assert.equal(await machines.collect({ conversationId: CONVERSATION }), 'unchanged')
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   assert.equal(await machines.changed({ conversationId: CONVERSATION }), true)
-  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object')
   assert.equal(bundle.changedFiles, 1)
 })
 
 test('máquina: um pacote do turno maior que 64 MiB não entra no Hub', async (t) => {
-  const { open, machines, base, control } = await world(t)
+  const { open, machines, control } = await world(t)
   const workspace = await open()
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.beforeRead = (path) => truncateSync(path, 65 * 1024 * 1024)
-  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  const collected = await machines.collect({ conversationId: CONVERSATION })
   assert.equal(typeof collected === 'object' ? 'a bundle' : collected, 'too-large')
 })
 

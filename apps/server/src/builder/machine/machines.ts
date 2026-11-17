@@ -1,7 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
-import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import type { Kit } from './kit.ts'
@@ -69,6 +68,7 @@ class BuilderMachines implements Machines {
    * Wakes or creates the machine, once per session; the seed ran in `onStart` before this returns.
    * The first use of a turn on a machine already up reads again which files hold conflict markers:
    * the warning the model reads is of the tree as the turn finds it, not of the start that told it.
+   * One that missed a save brings `main` in instead, which reads the markers too.
    */
   private async ensure(session: Session): Promise<Kit> {
     session.used = true
@@ -97,6 +97,7 @@ class BuilderMachines implements Machines {
   /** A start that ran meanwhile (a resume) told the conflicts itself, and its word is the later one. */
   private async refresh(session: Session, ready: Promise<Kit>) {
     const kit = await ready
+    if (session.unsynced) return this.sync(kit, session)
     const result = await this.run(kit, markersScript(this.workdir))
     if (result.exitCode !== 0) throw new Error(`markers not read: ${result.stderr.slice(-500)}`)
     if (session.starts === 0) session.conflicts = conflictsOf(result.stdout)
@@ -144,6 +145,7 @@ class BuilderMachines implements Machines {
   private async seedSent(kit: Kit, session: Session) {
     const seeded = await this.run(kit, seedScript(this.workdir, this.tmp))
     if (seeded.exitCode !== 0) throw new Error(`seed failed: ${seeded.stderr.slice(-500)}`)
+    session.unsynced = false
     this.conflicted(session, seeded.stdout)
   }
 
@@ -177,6 +179,7 @@ class BuilderMachines implements Machines {
       throw new Error(`sync failed: ${cause}`)
     }
     if (synced.stdout.split('\n').includes('UNSEEDED')) return this.seedSent(kit, session)
+    session.unsynced = false
     this.conflicted(session, synced.stdout)
   }
 
@@ -225,6 +228,7 @@ class BuilderMachines implements Machines {
         refreshing: undefined,
         lost: false,
         conflicts: NO_CONFLICTS,
+        unsynced: false,
         ready: undefined,
       },
     }
@@ -263,19 +267,19 @@ class BuilderMachines implements Machines {
     })
   }
 
-  async collect({ conversationId, base }: { conversationId: ConversationId; base: Sha }) {
+  async collect({ conversationId }: { conversationId: ConversationId }) {
     const session = this.sessions.get(conversationId)
     if (session?.used !== true) return 'unchanged'
     const kit = await this.ensure(session)
     if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
-    const result = await this.run(kit, collectScript(this.workdir, this.tmp, base))
+    const result = await this.run(kit, collectScript(this.workdir, this.tmp))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
     const bundle = await readCapped(kit.transport, outFile(this.tmp))
     if (bundle === 'too-large') return bundle
-    return { bundle, files: found.files, changedFiles: found.changedFiles }
+    return { bundle, base: found.base, files: found.files, changedFiles: found.changedFiles }
   }
 
   async check({ conversationId }: Parameters<Machines['check']>[0]) {
@@ -291,8 +295,11 @@ class BuilderMachines implements Machines {
     const session = this.sessions.get(conversationId)
     if (session === undefined) throw new Error('no turn holds the machine that saved')
     const kit = await this.ensure(session)
+    // Until the machine hears it, its base is the one before the saved turn, which it would take for unsaved work.
+    session.unsynced = true
     const moved = await this.run(kit, savedScript(this.workdir, version))
     if (moved.exitCode !== 0) throw new Error(`base not moved: ${moved.stderr.slice(-500)}`)
+    session.unsynced = false
   }
 
   /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */
