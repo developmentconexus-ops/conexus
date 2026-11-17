@@ -105,7 +105,7 @@ flowchart TB
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema per Project, Prévia and published app alike; run, migration and read logins [0021] | The company's app data |
-| E2B machine | Compiles and tests the app; runs Assistant and agent code [0028] [0059] | Nothing after the run or the conversation |
+| E2B machine | Compiles and tests the app; runs Assistant and agent code [0028] [0059] | Nothing after the conversation |
 
 **The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
@@ -165,7 +165,8 @@ program starts ([data D9](guides/data.md)).
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
 the migrated database ([data D6](guides/data.md)). Exceptions: none before v0.5.0 runs, as step 4.2 deleted old test
 companies [0039]; none before step 14.2 runs, as it drops `run_event` (D30), `builder.run`,
-`companies_with_runs()` and `hub_runs`. The edge goes back first. Past v0.24.53, rerun
+`companies_with_runs()` and `hub_runs`; none before v0.24.101 runs, as it
+dropped `copies.copy.readers_set`, which an older image reads. The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the

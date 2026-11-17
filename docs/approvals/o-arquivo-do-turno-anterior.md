@@ -9,3 +9,17 @@ Emenda do cartão curto de A máquina da conversa que não pausa a cada mensagem
 Emenda do cartão curto de A máquina da conversa que não pausa a cada mensagem (`docs/steps/o-arquivo-do-turno-anterior.md`) aprovada em 2026-11-13 (commit a925d827ff2d217e743f26fda93515417243967f), à pergunta se o Builder guarda a sessão da máquina entre turnos como a Factory, com o main do Hub entrando na máquina na partida e na volta da pausa e não a cada mensagem: "quero testar a A identifo a factory e a documenhtação do /mastra"
 
 Emenda do cartão curto de A máquina da conversa que não pausa a cada mensagem (`docs/steps/o-arquivo-do-turno-anterior.md`) aprovada em 2026-11-14 (commit 79c2d340), ao parágrafo "Nos turnos com a máquina já ligada…" (na primeira vez que o turno usa a máquina já ligada o Hub relê da árvore quais arquivos têm marcas de conflito; os avisos de arquivo apagado ou trocado e de tamanho valem só no turno em que o main entra): "Aprovo"
+
+Etapa A máquina da conversa que não pausa a cada mensagem fechada neste pull request (L19), depois do uso. O cartão foi apagado; está no histórico do `main`, no commit `79c2d340`, o último que o mudou. O cartão está em https://github.com/developmentconexus-ops/conexus/pull/1027 e a U1, com as quatro emendas, em https://github.com/developmentconexus-ops/conexus/pull/1028, no `main` desde a v0.24.88. A tabela de referência não tem linha remendo, então nada entra em `docs/reference/boundaries.md`.
+
+O que ficou valendo, além da página aprovada: nenhum fim de turno para a máquina, no Assistente, no Builder, no Construtor e nos agentes da empresa; o kit do E2B (`builder/machine/e2b.ts`) pede, num lugar só, `timeout` de 5 minutos e `lifecycle: { onTimeout: 'pause' }`, e o E2B conta desde que a máquina liga ou volta; o Builder guarda a sessão da máquina de cada conversa enquanto o Hub vive, e o main entra pelo `onStart` na partida e na volta da pausa; o arquivo só do histórico com a máquina fora vira a nota `[File not uploaded]` do Mastra. Isso substitui o critério 21 da etapa 24.1 (a máquina pausa no fim do turno), e a tabela de contêineres de `docs/architecture.md` deixa de dizer que a máquina não guarda nada depois do turno.
+
+Os testes de aceite. Os critérios do cartão em `79c2d340` foram conferidos contra `main`, arquivo e título: todos existem, nos arquivos que o cartão nomeia. O relógio do E2B não foi provado, porque nenhuma chamada a ele estava autorizada; os testes provam o que o Hub pede e que ele não pausa.
+
+Nenhum Fechamento ficou para este pull request: o 1028 não tem comentário nem revisão pendente no forge. As Issues futuras do cartão seguem abertas: https://github.com/developmentconexus-ops/conexus/issues/1031 (a sessão de cada conversa guardada no Hub e o `stopAll` no fim do Hub, com muitas conversas) e, ao Mastra, https://github.com/mastra-ai/mastra/issues/30366 (uma opção pública para o arquivo do histórico não ligar a máquina).
+
+A regra aprendida que muda a próxima ação, no guia neste pull request (L20): a linha de `@mastra/e2b` em `docs/reference/stack.md` diz que o prazo do E2B conta desde a partida ou o último `connect`, que nenhum turno o renova e que nenhum fim de turno chama `stop()`.
+
+Revisão de saúde do CI (L19, `docs/how-to/ci-health.md`): é a da semana, por quem não construiu a etapa, e não faz parte deste pull request.
+
+Linha de uso de A máquina da conversa que não pausa a cada mensagem, em 2026-11-17, ao roteiro de uso do cartão (os oito passos): "Parte 1 Aprovado"
