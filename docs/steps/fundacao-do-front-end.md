@@ -82,8 +82,8 @@ palavras vão para o arquivo de aprovação deste cartão quando você aprovar a
   fábrica primeiro, e a fundação depois dela, antes de `A1`.
 
   **A sua resposta:** "A. A ordem na trilha: a". O que mudou desde a pergunta: a fábrica já tem
-  cartão no `main` (pull request 1158) e foi construída (pull requests 1162 e 1173). Com a (a), a
-  fundação é a próxima etapa da trilha.
+  cartão no `main` (pull request 1158) e foi construída (pull requests 1162 e 1173), e fechou em 2026-11-17 (pull request
+  1176). Com a (a), a fundação é a próxima etapa da trilha.
 - **B. A busca com mais de 50 Projetos.** O Hub devolve os Projetos 50 por vez. As opções eram (a)
   a busca procura nos que já vieram, como a pasta do Projeto faz hoje, e (b) a busca pergunta ao
   Hub.
