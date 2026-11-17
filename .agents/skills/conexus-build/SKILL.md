@@ -45,8 +45,7 @@ unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mod
    `npm run quality`, hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
 7. One commit for the unit, kept on merge; `npm run check`, the tests and proofs its section names are green
-   locally before it ([delivery L9](../../../docs/guides/delivery.md)). The
-   `.githooks/pre-push` hook runs both before the push; never use `--no-verify`.
+   locally before it ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
