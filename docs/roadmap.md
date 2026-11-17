@@ -62,9 +62,9 @@ Cada papel lê só o seu fechou em 2026-11-17; segue a do Registro e conformidad
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-O cartão de hoje, os seus dois apps de teste, as suas respostas de 2026-11-09 às capacidades e aos
-pareceres do Builder e o estudo da criação de apps estão na
-[trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
+A máquina que não pausa e o rastreio do Mastra, da Plataforma, fecharam em 2026-11-17.
+Antes de `A1` vem Um escopo e a fábrica de ferramentas (H0, H1, H3, H6), pela sua palavra: "R2 a".
+Mais na [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
 plano em `A3`, código e teste em `A1`, revisão em `A4`.

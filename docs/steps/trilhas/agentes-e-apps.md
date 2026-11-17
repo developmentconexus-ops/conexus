@@ -39,12 +39,14 @@ As respostas do fundador:
 
 ## O cartão de hoje
 
-O cartão desta trilha em `docs/steps/` é `o-arquivo-do-turno-anterior.md`, a máquina da conversa que
-não pausa a cada mensagem, com a marca antiga `Trilho: assistente`. Ele está construído: o PR 1028,
-com o cartão e as quatro emendas, entrou no `main` em 2026-11-14. O
-[arquivo de aprovação](../../approvals/o-arquivo-do-turno-anterior.md) ainda não tem a linha de uso,
-e a etapa fica aberta até o fundador usá-la. O cartão `pattern-o-rastreio-do-mastra.md` mexe em
-`builder/mastra/` e é da Plataforma.
+A máquina da conversa que não pausa a cada mensagem fechou em 2026-11-17: o fundador aprovou o
+roteiro de uso, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/o-arquivo-do-turno-anterior.md). O rastreio do Mastra, da
+Plataforma, fechou no mesmo dia ([arquivo de aprovação](../../approvals/pattern-o-rastreio-do-mastra.md)).
+A trilha está sem cartão em `docs/steps/` até a etapa seguinte ter estudo e cartão.
+
+A etapa seguinte, antes de `A1`, é Um escopo e a fábrica de ferramentas (H0, H1, H3, H6), pela decisão
+do fundador de 2026-11-17: "R2 a". A ordem dos marcos não muda.
 
 O estudo de referência sobre como uma plataforma de referência cria apps terminou em 2026-11-16, fora
 do repositório. O fundador respondeu duas coisas nele. Sobre a IA dentro do app: "Agora não; quando
