@@ -77,7 +77,9 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             )}
             {task.status === 'in_progress' && (
               <>
-                <Spinner label="Em andamento" className="size-3.5 shrink-0 text-accent" />
+                <span className="flex shrink-0 text-accent">
+                  <Spinner label="Em andamento" className="size-3.5" />
+                </span>
                 <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
                 </span>
