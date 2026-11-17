@@ -28,8 +28,12 @@ import {
 async function spansOf(pool: Hub['test']['mastraPool'], threadId: string) {
   const observability = await createMastraStorage(pool).getStore('observability')
   assert.ok(observability, 'the observability store')
-  const { spans: roots } = await observability.listTraces({ filters: { threadId } })
-  const ids = new Set(roots.map((root) => root.traceId))
+  const ids = new Set<string>()
+  for (let page = 0, more = true; more; page += 1) {
+    const listed = await observability.listTraces({ filters: { threadId }, pagination: { page } })
+    for (const root of listed.spans) ids.add(root.traceId)
+    more = listed.pagination?.hasMore ?? false
+  }
   const traces = await Promise.all([...ids].map((traceId) => observability.getTrace({ traceId })))
   return traces
     .flatMap((trace) => trace?.spans ?? [])
