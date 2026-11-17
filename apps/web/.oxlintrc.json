@@ -1,0 +1,12 @@
+{
+  "jsPlugins": ["@shadcn/lint"],
+  "categories": { "correctness": "off" },
+  "rules": {
+    "shadcn/no-restyle": ["warn", { "allow": ["layout"] }],
+    "shadcn/no-raw-colors": "warn",
+    "shadcn/no-arbitrary-values": "warn",
+    "shadcn/no-unknown-classes": "error",
+    "shadcn/require-static-classes": "warn"
+  },
+  "overrides": [{ "files": ["src/ui/**"], "rules": { "shadcn/no-restyle": "off" } }]
+}

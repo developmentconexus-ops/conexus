@@ -116,7 +116,7 @@ function Filled({ scope, agent, inSheet }: { scope: Scope; agent: AgentDetail; i
           </ul>
         </Part>
         <Part icon={PlugIcon} title="Ligações">
-          <ul className="m-0 flex list-none flex-col gap-xxs p-0 text-text-2">
+          <ul className="m-0 flex list-none flex-col p-0 text-text-2">
             {draft.connections.map((id) => {
               const one = connectionOf(agent.offered, id)
               return (
