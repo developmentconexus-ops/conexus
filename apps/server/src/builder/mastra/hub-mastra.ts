@@ -3,7 +3,7 @@ import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { ControllerKind, ReleaseScope } from '../controller-kit/public.ts'
+import type { ControllerKind, ReleaseScope, RunMark } from '../controller-kit/public.ts'
 import { CONTROLLER_KINDS } from '../controller-kit/public.ts'
 import type { MayApprove, Watched, WriteOf } from '../conversation/public.ts'
 import { watchRuns } from '../conversation/public.ts'
@@ -16,13 +16,14 @@ type Part = {
   controller: AgentController
   memory: Watched['memory']
   /**
-   * The door of the six routes, at each request: the owner is already checked by the thread;
-   * `NOT_FOUND` becomes `CONVERSATION_NOT_FOUND`.
+   * The door of the six routes, at each request: the owner is already checked by the thread, and
+   * its marks against it (`markIn`); `NOT_FOUND` becomes `CONVERSATION_NOT_FOUND`.
    */
   admit(input: {
     person: Person
     companyId: CompanyId
     conversationId: ConversationId
+    mark: RunMark
   }): Promise<void>
   /** The connection and operation of the write a tool of the conversation is (step 24.5), for the log of an answer. */
   writeOf?: WriteOf
