@@ -1,6 +1,7 @@
 import { Alert } from '../alert.tsx'
 import { Notice } from '../notice.tsx'
 import { Skeleton } from '../skeleton.tsx'
+import { Spinner } from '../spinner.tsx'
 import { Empty, Loading, ReadFailure } from '../states.tsx'
 
 import { Boxed, entry, noop } from './kit.tsx'
@@ -12,6 +13,9 @@ export const FEEDBACK: readonly ShowcaseEntry[] = [
   )),
   entry('notice.tsx', 'Retorno', 'Um aviso calmo, lido sem urgência.', () => (
     <Notice>Senha criada. Você já entrou.</Notice>
+  )),
+  entry('spinner.tsx', 'Retorno', 'Algo está em andamento e não tem forma própria.', () => (
+    <Spinner label="Carregando" />
   )),
   entry('skeleton.tsx', 'Retorno', 'A forma do que está chegando.', () => (
     <Skeleton className="h-6 w-48" />

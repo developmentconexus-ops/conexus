@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { PageTitle } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
+import { PageHeader } from '../../ui/page-header.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { NewProjectDialog } from './new-project-dialog.tsx'
 import { ProjectCards } from './project-cards.tsx'
@@ -27,13 +27,11 @@ export function Projects() {
   const { next } = useSuspenseQuery(projectsQuery(companyId, page)).data
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
-      <header className="flex flex-wrap items-start justify-between gap-md">
-        <div className="flex flex-col gap-xs">
-          <PageTitle>Todos os projetos</PageTitle>
-          <p className="text-text-2">{PROJECTS_SENTENCE}</p>
-        </div>
-        <NewProjectDialog companyId={companyId} labelled />
-      </header>
+      <PageHeader
+        title="Todos os projetos"
+        intro={<p className="text-text-2">{PROJECTS_SENTENCE}</p>}
+        actions={<NewProjectDialog companyId={companyId} labelled />}
+      />
       {notice && <Notice>Projeto apagado.</Notice>}
       <ProjectCards companyId={companyId} page={page} />
       <Pager next={next} param="page" page={page} list="Projetos" />

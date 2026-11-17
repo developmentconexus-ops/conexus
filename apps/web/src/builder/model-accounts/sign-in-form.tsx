@@ -6,7 +6,6 @@ import {
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import { Loader2Icon } from 'lucide-react'
 import { useEffect, useEffectEvent, useId, useState } from 'react'
 import { Controller, useWatch } from 'react-hook-form'
 import { dayAndHour } from '../../platform/dates.ts'
@@ -21,6 +20,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { Spinner } from '../../ui/spinner.tsx'
 import { Choice } from './choice.tsx'
 import { sendSignInCompletion, sendSignInPoll, sendSignInStart } from './queries.ts'
 import { KIND_NAMES } from './text.ts'
@@ -263,8 +263,8 @@ function DeviceView(props: {
       )}
       <p className="text-label text-text-2">{`O código vale até ${dayAndHour(started.expiresAt)}.`}</p>
       <FieldError>{unavailable}</FieldError>
-      <p role="status" className="flex items-center gap-sm text-label text-text-2">
-        <Loader2Icon aria-hidden="true" className="size-4 motion-safe:animate-spin" />
+      <p className="flex items-center gap-sm text-label text-text-2">
+        <Spinner label="Esperando você digitar o código" />
         Esperando você digitar o código…
       </p>
     </div>

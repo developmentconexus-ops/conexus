@@ -6,7 +6,9 @@ import { DropdownMenuItem } from '../dropdown-menu.tsx'
 import { Frame, FrameLink } from '../frame.tsx'
 import { Input } from '../input.tsx'
 import { PageTitle } from '../list.tsx'
+import { PageHeader } from '../page-header.tsx'
 import { Pager } from '../pager.tsx'
+import { Separator } from '../separator.tsx'
 import { SettingsIndex } from '../settings-index.tsx'
 import { SettingsSection } from '../settings-section.tsx'
 import {
@@ -179,4 +181,33 @@ export const NAVIGATION: readonly ShowcaseEntry[] = [
       </SettingsSection>
     ),
   ),
+  entry(
+    'page-header.tsx',
+    'Navegação',
+    'O título de uma página com as ações dela no fim.',
+    () => (
+      <PageHeader title="Clientes" actions={<Button variant="primary">Cadastrar cliente</Button>} />
+    ),
+    [
+      [
+        'default',
+        () => (
+          <PageHeader
+            title="Todos os projetos"
+            intro={
+              <p className="text-text-2">Os projetos da empresa, do mais novo ao mais antigo.</p>
+            }
+            actions={<Button variant="primary">Novo projeto</Button>}
+          />
+        ),
+      ],
+    ],
+  ),
+  entry('separator.tsx', 'Navegação', 'Uma linha fina entre dois blocos de uma coluna.', () => (
+    <div className="flex w-64 flex-col gap-sm">
+      <span>Acima</span>
+      <Separator />
+      <span>Abaixo</span>
+    </div>
+  )),
 ]

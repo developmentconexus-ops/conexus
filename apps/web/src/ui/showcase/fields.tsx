@@ -24,6 +24,7 @@ import {
 import { Label } from '../label.tsx'
 import type { PickerMore, PickerRead } from '../picker.tsx'
 import { matches, Picker, SEARCH_FROM } from '../picker.tsx'
+import { SearchField } from '../search-field.tsx'
 import { ChoiceSelect } from '../select.tsx'
 import { Slider } from '../slider.tsx'
 import { Switch } from '../switch.tsx'
@@ -43,6 +44,11 @@ function NameForm({ invalid }: { invalid?: true }) {
       <FormAlert />
     </Form>
   )
+}
+
+function Searching() {
+  const [query, setQuery] = useState('')
+  return <SearchField label="Buscar tabela" value={query} onChange={setQuery} />
 }
 
 function Models({ empty }: { empty?: true }) {
@@ -248,4 +254,7 @@ export const FIELDS: readonly ShowcaseEntry[] = [
   entry('combobox.tsx', 'Campos', 'Escolher numa lista que se busca digitando.', () => <Models />, [
     ['empty', () => <Models empty />],
   ]),
+  entry('search-field.tsx', 'Campos', 'Filtrar uma lista que já está na tela.', () => (
+    <Searching />
+  )),
 ]

@@ -600,6 +600,14 @@ which shadcn file it was copied from; the front matter holds their values. Their
   skeletons with a pulse (none under reduced motion) and `role="status"`; an error is danger text
   with `role="alert"` and an action.
 - **Notice.** A `role="status"` line in the body colour.
+- **Separator.** A 1px `line` rule between two blocks of a column; a region's own edge stays a
+  border of that region.
+- **Spinner.** The turning `Loader2` icon, 16px, a `status` with a name; it stops under reduced
+  motion.
+- **Search field.** An input group with a magnifier and a `search` input, `spacing.control` tall;
+  the browser's clear button is not shown.
+- **Page header.** The page title with its actions at the end; the actions wrap under it when the
+  box is narrow, and an intro under the title lines them up with the top.
 - **Project card.** Card radius, hairline, sheet; the Início shows the Projetos as block rows
   instead. **Settings section:** title and a sentence on the left from `md`, controls on the right,
   parts apart by a hairline (V19).

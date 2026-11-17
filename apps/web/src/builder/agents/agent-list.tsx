@@ -8,7 +8,7 @@ import { sentenceOf } from '../../platform/hub.ts'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { PageTitle } from '../../ui/list.tsx'
+import { PageHeader } from '../../ui/page-header.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -178,10 +178,7 @@ export function AgentsPage(props: Place) {
   const { companyId, projectId } = props
   return (
     <Page projectId={undefined} gap="xl">
-      <div className="flex flex-wrap items-center justify-between gap-md">
-        <PageTitle>{AREA_TITLE}</PageTitle>
-        <NewAgent companyId={companyId} />
-      </div>
+      <PageHeader title={AREA_TITLE} actions={<NewAgent companyId={companyId} />} />
       <ProjectFilter companyId={companyId} projectId={projectId} />
       <AgentList companyId={companyId} projectId={projectId} inicio />
     </Page>
