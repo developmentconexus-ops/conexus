@@ -48,7 +48,7 @@ export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
-export { TURNS_KEPT } from './builder-port.ts'
+export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
 export {
   connectionForCopy,
@@ -58,7 +58,6 @@ export {
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
-export type { SessionScope } from './scope.ts'
 export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'

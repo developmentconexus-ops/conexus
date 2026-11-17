@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CopyMode } from '@conexus/hub-api'
-import { AGENT_TOOL, CompanyId, ConnectorId, CopyId, PersonId, ProjectId } from '@conexus/hub-api'
+import {
+  AGENT_TOOL,
+  APP_DATA_TOOL,
+  CompanyId,
+  ConnectorId,
+  CopyId,
+  PersonId,
+  ProjectId,
+} from '@conexus/hub-api'
+import { z } from 'zod'
 import { CopyName } from '../../hub/connectors/public.ts'
 import { listProposalsOn } from '../../hub/copies/test-list-proposals.ts'
 import {
@@ -14,7 +23,7 @@ import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
 import type { AppDataPort } from './public.ts'
-import { appDataTools, dataContext, SOURCE_RULE } from './public.ts'
+import { appDataTools, builderAppDataTools, dataContext, SOURCE_RULE } from './public.ts'
 
 type View = Extract<Parameters<typeof dataContext>[0], { kind: 'COPIES' }>
 
@@ -274,4 +283,27 @@ test('o que o modelo lê de como se lê uma cópia não dá a uma tabela um nome
     assert.deepEqual(text.match(/sync\.(?!<name>)[A-Za-z_][A-Za-z0-9_]*/g) ?? [], [])
     assert.ok(text.includes('sync.<name>'))
   }
+})
+
+test('o mesmo app_data_read: o Builder e o agente oferecem a mesma descrição e o mesmo esquema', () => {
+  const agent = Object(
+    appDataTools({
+      appData: UNUSED_PORT,
+      scope: { companyId: ID.company, personId: ID.person },
+      projectId: ID.project,
+    }),
+  )[AGENT_TOOL.appDataRead]
+  const builder = Object(
+    builderAppDataTools({
+      data: {
+        access: () => Promise.reject(new Error('nothing is called')),
+        read: () => Promise.reject(new Error('nothing is called')),
+        check: () => Promise.reject(new Error('nothing is called')),
+      },
+      ids: { companyId: ID.company, personId: ID.person, projectId: ID.project },
+    }),
+  )[APP_DATA_TOOL.read]
+  assert.equal(builder.id, agent.id)
+  assert.equal(builder.description, agent.description)
+  assert.deepEqual(z.toJSONSchema(builder.inputSchema), z.toJSONSchema(agent.inputSchema))
 })

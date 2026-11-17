@@ -6,7 +6,7 @@ import { createTool } from '@mastra/core/tools'
 import type { WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Connectors, Native } from '../../hub/connectors/public.ts'
-import { deniesAccess } from '../../hub/connectors/public.ts'
+import { CONNECTOR_CALLS_PER_TURN, deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
@@ -45,7 +45,7 @@ export type ConnectorAccess = {
   /** Where a refused call and a failed save are logged. */
   log: FailureLog
   notes(connectionId: ConnectionId): Promise<Notes>
-  wording: { whose: string; limit: string }
+  wording: { whose: string }
 }
 
 /** The notebook's write: the Builder's, and the Assistant's for who manages the connections. */
@@ -83,7 +83,7 @@ export function builderAccess(
         runId: runIn(who, requestContext),
       }),
     notes: (connectionId) => port.notes(who, connectionId),
-    wording: { whose: "this Project's owner released", limit: '50 connector calls per run' },
+    wording: { whose: "this Project's owner released" },
   }
   const save: NoteSave = (call, requestContext) =>
     port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
@@ -194,8 +194,8 @@ const WHOLE_FILE =
   'When `complete` is false and `file` is set, the whole answer is in that file: open it with Python on the machine. Do not read again to see the rest; read again only to filter what the file does not hold. When `saved` is false there is no file: filter with WHERE and COUNT.'
 
 /** What every read tool says of its answer: the cut, the file, the limit and the hour (`connector_read` and the Assistant's typed reads). */
-export function answerWords(limit: string): string {
-  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${limit}. ${INSTANTS_NOTE}`
+export function answerWords(): string {
+  return `The answer is cut to 20 rows and 16 KB (\`complete: false\` says rows were left out; long strings are shortened), and \`rows\` and \`bytes\` size it. ${WHOLE_FILE} At most ${CONNECTOR_CALLS_PER_TURN} connector calls per answer. ${INSTANTS_NOTE}`
 }
 
 /**
@@ -251,7 +251,7 @@ function readTool(access: ConnectorAccess): ToolsInput {
     [BUILDER_TOOL.connectorRead]: createTool({
       id: BUILDER_TOOL.connectorRead,
       description: [
-        `Reads from a company system ${access.wording.whose}, by the connection's name. ${answerWords(access.wording.limit)}`,
+        `Reads from a company system ${access.wording.whose}, by the connection's name. ${answerWords()}`,
         describeReads(connections),
       ].join('\n'),
       inputSchema: z.object({

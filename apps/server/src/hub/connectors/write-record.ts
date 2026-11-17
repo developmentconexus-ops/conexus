@@ -13,10 +13,11 @@ import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { Principal } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
-import type { SessionScope, TurnKey } from './scope.ts'
+import type { TurnKey } from './scope.ts'
 import { connectorWrite } from './tables.ts'
 import type { Returned } from './wrote.ts'
 
@@ -30,7 +31,7 @@ type Version = Extract<Speaker, { kind: 'VERSION' }>
  * by their role. The role is read again on every call.
  */
 export type WriteRequest = Readonly<{
-  scope: SessionScope
+  scope: Principal
   connectionId: ConnectionId
   operation: OperationId
   input: unknown
@@ -248,7 +249,7 @@ const OpenState = z.enum(['SENDING', 'UNCERTAIN'])
 
 /** Which open writes: the conversation's, of one connection and operation when named, without the call `except` names. */
 export type OpenWritesKey = Readonly<{
-  scope: SessionScope
+  scope: Principal
   threadId: ConversationId
   connectionId?: ConnectionId
   operation?: OperationId

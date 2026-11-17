@@ -17,9 +17,10 @@ import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
+import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
-import type { Connectors, SessionScope } from './hub/connectors/public.ts'
+import type { Connectors } from './hub/connectors/public.ts'
 import type { CopyService } from './hub/copies/public.ts'
 import type { DataContext } from './hub/data/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
@@ -161,7 +162,9 @@ type ConversationsDeps = {
   /** The copies are made after the conversations; a run comes long after both. */
   copies: () => Pick<CopyService, 'run' | 'projectView' | 'list' | 'runs'>
   /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
-  companyData: (scope: SessionScope, context?: DataContext) => CompanyData
+  companyData: (principal: Principal, context?: DataContext) => CompanyData
+  /** The access door is made after the conversations; a list of what a place offers comes long after. */
+  access: Pick<Access, 'viewOf'>
   notify: Notify
   automationClock: Config['automationClock']
   log: FailureLog
@@ -191,7 +194,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   const assistant = createAssistant({
     ...{ storage, database, identity, queue, log, copies, companyData: deps.companyData },
     ...machineOf(deps),
-    connectors: door,
+    ...{ connectors: door, access: deps.access },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
     handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
   })
@@ -250,7 +253,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   })
   const automations = automationsOf({
     ...{ mastra: hub.mastra, assistant, log, bootedAt: Date.now() },
-    connectors: { connections: (scope) => deps.connectors().assistant.connections(scope) },
+    access: deps.access,
     updating: hub.updating,
   })
   const copyClock = copyClockOf({ mastra: hub.mastra, log })

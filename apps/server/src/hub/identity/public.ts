@@ -38,7 +38,7 @@ export type { ProjectApps } from './app-invitations.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
-export type { Speaker } from './may-use.ts'
+export type { Declared, Speaker } from './may-use.ts'
 export { personOf, roleOfSpeaker, speakerOf } from './may-use.ts'
 export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'

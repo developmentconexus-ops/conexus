@@ -18,8 +18,8 @@ import { z } from 'zod'
 import { sessionOf } from '../../platform/access.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { ControllerKind } from '../controller-kit/public.ts'
-import { CONTROLLER_KINDS, ownerOfResource } from '../controller-kit/public.ts'
+import type { ControllerKind, RunMark } from '../controller-kit/public.ts'
+import { CONTROLLER_KINDS, markIn, ownerOfResource } from '../controller-kit/public.ts'
 import type { Builder } from './builder.ts'
 import { BuilderServer } from './stream.ts'
 
@@ -122,11 +122,15 @@ function builderRoutes() {
   return found
 }
 
-/** What the guard asks of the controller a thread is of: whether the person may hold it now. */
+/**
+ * What the guard asks of the controller a thread is of: whether the person may hold it now, the
+ * thread's marks already the company's and the person's.
+ */
 type Admission = (input: {
   person: Person
   companyId: CompanyId
   conversationId: ConversationId
+  mark: RunMark
 }) => Promise<void>
 
 /** The connection and operation of the write a conversation's tool names, as the agent that holds it keeps them (step 24.5). */
@@ -157,8 +161,9 @@ export type GuardedMastra = {
 /**
  * The conversation a request to Mastra's routes names, if it is the person's and of the controller
  * the path names: the thread's resource names its controller, company and person (`resourceOf`),
- * and that controller admits the person now (the Builder by the Hub's index and membership, the
- * Assistant by `askAssistant`); a refusal is the same 404 (S10).
+ * its marks name the same company and person (`markIn`), and that controller admits the person now
+ * (the Builder by the Hub's index and membership, the Assistant by `askAssistant`); a refusal is
+ * the same 404 (S10).
  * The browser's time zone, when its header holds a zone the runtime knows, goes into the run's
  * context for the tools to tell the model the hours in. A `requestContext` from the browser is
  * refused: Mastra's server copies it into the run's context, and `mastra__messageAuthor` is not
@@ -180,18 +185,7 @@ async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: Fa
   for (const named of [threadId, queried]) {
     if (named !== undefined && named !== conversationId) throw new Failure('CONVERSATION_NOT_FOUND')
   }
-  const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
-  const owner = ownerOfResource(thread?.resourceId)
-  const part = owner === undefined ? undefined : deps.hub.part(owner.kind)
-  if (
-    owner === undefined ||
-    part === undefined ||
-    owner.personId !== person.id ||
-    CONTROLLER_KINDS[owner.kind].id !== controllerId
-  ) {
-    throw new Failure('CONVERSATION_NOT_FOUND')
-  }
-  await admittedBy(part.admit, { person, companyId: owner.companyId, conversationId })
+  const { owner, part } = await held(deps, { person, controllerId, conversationId })
   if (
     deps.hub.updating() &&
     request.method === 'POST' &&
@@ -264,6 +258,33 @@ async function refuseApprover(
     details: { toolCallId, reason: 'APPROVER' },
     ...(operation === undefined ? {} : { named: { operation } }),
   })
+}
+
+/** The person's thread of the controller the path names, marked for them and admitted now; else the 404. */
+async function held(
+  deps: { builder: Builder; hub: GuardedMastra },
+  asked: {
+    person: Person
+    controllerId: z.infer<typeof Params>['controllerId']
+    conversationId: ConversationId
+  },
+) {
+  const { person, controllerId, conversationId } = asked
+  const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
+  const owner = ownerOfResource(thread?.resourceId)
+  const part = owner === undefined ? undefined : deps.hub.part(owner.kind)
+  if (
+    owner === undefined ||
+    part === undefined ||
+    owner.personId !== person.id ||
+    CONTROLLER_KINDS[owner.kind].id !== controllerId
+  ) {
+    throw new Failure('CONVERSATION_NOT_FOUND')
+  }
+  const mark = markIn(owner.kind, thread?.metadata, owner)
+  if (mark === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+  await admittedBy(part.admit, { person, companyId: owner.companyId, conversationId, mark })
+  return { owner, part }
 }
 
 /** A member, or someone no longer in the company, finds no conversation (criterion 10). */

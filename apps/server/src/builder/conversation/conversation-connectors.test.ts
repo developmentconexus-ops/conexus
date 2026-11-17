@@ -197,6 +197,15 @@ test('a 51ª chamada de conector numa execução é recusada', async (t) => {
   assert.equal(results.filter((kind) => kind === 'OK').length, 50)
 })
 
+test('o Builder diz o teto como os outros: a descrição do connector_read conta 50 chamadas por resposta', async (t) => {
+  const on = await connecting(t, [])
+  await on.release(await on.link())
+  assert.equal(endOf(await on.say()), 'complete')
+  const described = on.calls.at(0)?.descriptions[READ] ?? ''
+  assert.ok(described.includes('At most 50 connector calls per answer.'), described)
+  assert.doesNotMatch(described, /per run/)
+})
+
 test('connector_notes devolve as anotações da ligação com a consulta de cada uma', async (t) => {
   const on = await connecting(t, [
     [

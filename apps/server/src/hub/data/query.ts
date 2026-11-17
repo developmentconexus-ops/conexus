@@ -7,7 +7,7 @@ import type { SyncRead } from '../../platform/copy-reader.ts'
 import { withoutPassColumn } from '../../platform/copy-sql.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { NeonProjectId } from '../../platform/neon.ts'
-import type { SessionScope } from '../connectors/public.ts'
+import type { Principal } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
 
 const INSUFFICIENT_PRIVILEGE = '42501'
@@ -41,14 +41,14 @@ function withDeadline(signal: AbortSignal | undefined): AbortSignal {
 }
 
 type Ready = { host: string; neonProjectId: NeonProjectId }
-type Asked = { deps: DataDeps; scope: SessionScope; ready: Ready }
+type Asked = { deps: DataDeps; scope: Principal; ready: Ready }
 
-function unavailable(deps: DataDeps, scope: SessionScope, cause: string): QueryPage {
+function unavailable(deps: DataDeps, scope: Principal, cause: string): QueryPage {
   deps.log.error({ companyId: scope.companyId, cause }, 'DATA_QUERY_FAILED')
   return { kind: 'TABLE_UNAVAILABLE' }
 }
 
-function refused(deps: DataDeps, scope: SessionScope): QueryPage {
+function refused(deps: DataDeps, scope: Principal): QueryPage {
   deps.log.info({ companyId: scope.companyId, personId: scope.personId }, 'DATA_READ_REFUSED')
   return { kind: 'NOT_IN_ROLE' }
 }
@@ -115,7 +115,7 @@ function pageOf(asked: Asked, read: Exclude<SyncRead, { kind: 'NO_LOGIN' }>): Qu
 
 export async function queryOf(
   deps: DataDeps,
-  scope: SessionScope,
+  scope: Principal,
   a: { sql: string; signal?: AbortSignal },
 ): Promise<QueryPage> {
   const { companyId, personId, place } = scope

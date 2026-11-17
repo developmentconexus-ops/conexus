@@ -14,15 +14,17 @@ import {
   ToolCallId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { Principal } from '../access/public.ts'
+import { principalFor } from '../access/public.ts'
 import { post } from '../identity/test-hub.ts'
-import type { SessionScope, WriteRequest } from './public.ts'
+import type { WriteRequest } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 import { forward } from './test-connections.ts'
 
 /** What a test changes in the request of `byAna`, `byVersion` and `byCarla`. */
 type Over = Partial<{
-  scope: SessionScope
+  scope: Principal
   connectionId: ConnectionId
   operation: OperationId
   input: unknown
@@ -78,13 +80,14 @@ function counting(t: TestContext, mode: Mode) {
 function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: ConnectionId) {
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
-  function scopeOf(personId: string, chosen = [matriz]): SessionScope {
-    return {
+  function scopeOf(personId: string, chosen = [matriz]): Principal {
+    return principalFor({
+      consumer: 'assistant',
       companyId,
       personId: PersonId.parse(personId),
       place: { kind: 'PROJECT', projectId },
-      chosen,
-    }
+      choice: { kind: 'CHOSEN', connections: chosen },
+    })
   }
   const thread = ConversationId.parse(randomUUID())
   const agentId = AgentId.parse(randomUUID())

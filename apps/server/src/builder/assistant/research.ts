@@ -5,7 +5,8 @@ import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { connectorTools } from '../connectors/public.ts'
 import { TURN_ACCOUNT } from '../model-accounts/public.ts'
@@ -44,7 +45,7 @@ export const RESEARCH: AgentControllerSubagent = {
 export function researchReads(
   deps: { connectors: Connectors['assistant']; log: FailureLog },
   a: {
-    scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
+    scopeOf: (requestContext: RequestContext) => Promise<Principal | undefined>
     chosenOf: (
       requestContext: RequestContext,
     ) => Promise<Parameters<typeof assistantAccess>[1]['chosen']>

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, OperationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { chooserAt, versionAt } from '../access/test-principal.ts'
 import { call, post } from '../identity/test-hub.ts'
 import { SANKHYA_READS } from '../identity/test-kit.ts'
-import type { SessionScope } from './public.ts'
 import { operationLabel, TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 
@@ -23,13 +23,16 @@ async function atendenteOn(t: Parameters<typeof appCalls>[0]) {
   )
   const companyId = CompanyId.parse(on.companyId)
   const projectId = ProjectId.parse(on.projectId)
-  function scope(): SessionScope {
-    return {
-      companyId,
-      personId: PersonId.parse(on.carla.id),
-      place: { kind: 'PROJECT', projectId },
-      chosen: [matriz],
-    }
+  const carla = {
+    companyId,
+    personId: PersonId.parse(on.carla.id),
+    place: { kind: 'PROJECT', projectId },
+  } as const
+  function scope() {
+    return chooserAt(carla, [matriz])
+  }
+  function versionOf(declared: Parameters<typeof versionAt>[1]) {
+    return versionAt(carla, declared, [matriz])
   }
   function ask(operation: string, input: unknown = { page: 0 }, at = scope()) {
     return on.hub.connectors.assistant.read(at, {
@@ -43,7 +46,7 @@ async function atendenteOn(t: Parameters<typeof appCalls>[0]) {
     return on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length
   }
   const ids = { companyId, projectId, personId: PersonId.parse(on.carla.id) }
-  return { ...on, matriz, base, scope, ask, called, ids }
+  return { ...on, matriz, base, scope, versionOf, ask, called, ids }
 }
 
 test('o papel na leitura: o Assistente de um Atendente recebe só pedidos, e outra operação é recusada com o nome do papel, sem pedido ao dublê', async (t) => {
@@ -117,7 +120,7 @@ test('a prova do caderno pelo papel: sem consultar, gravar e ler o caderno dá N
 test('o funil: uma versão publicada lê só o que declara, e a que não declarou a consulta livre recebe NOT_IN_ROLE sem pedido ao dublê', async (t) => {
   const on = await atendenteOn(t)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('pedidos') }]
-  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const version = on.versionOf(declared)
   const before = on.called()
   const free = await on.ask('consultar', { sql: QUERY }, version)
   assert.deepEqual(free, { kind: 'NOT_IN_ROLE', role: null, operation: 'consultar' })
@@ -169,12 +172,14 @@ test('mudar o Membro: sem o Financeiro, o Assistente do Membro não traz contasA
     unattended: false,
   })
   assert.equal(changed.statusCode, 200, changed.body)
-  const scope: SessionScope = {
-    companyId: CompanyId.parse(on.companyId),
-    personId: PersonId.parse(on.carla.id),
-    place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
-    chosen: [matriz],
-  }
+  const scope = chooserAt(
+    {
+      companyId: CompanyId.parse(on.companyId),
+      personId: PersonId.parse(on.carla.id),
+      place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
+    },
+    [matriz],
+  )
   const [connection] = await on.hub.connectors.assistant.connections(scope)
   const offered = connection?.reads.map((read) => read.operation) ?? []
   assert.ok(offered.includes('pedidos'))
@@ -194,7 +199,7 @@ test('a versão publicada roda para quem conversa sem a operação: a que declar
   const on = await atendenteOn(t)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('empresas') }]
   assert.equal((await on.ask('empresas')).kind, 'NOT_IN_ROLE')
-  const version = { ...on.scope(), agentVersion: { kind: 'VERSION', declared } } as const
+  const version = on.versionOf(declared)
   const answered = await on.ask('empresas', { page: 0 }, version)
   assert.equal(answered.kind, 'OK')
   assert.equal(on.called(), 1)

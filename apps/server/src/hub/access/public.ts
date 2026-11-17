@@ -4,12 +4,14 @@ import type { Database } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { personOf } from '../identity/public.ts'
 import type { AccessSources } from './model.ts'
+import { chosenIn } from './model.ts'
 import type { Principal } from './principal.ts'
 import { operationLeaf } from './reach.ts'
 import type { AccessView } from './view.ts'
 import { viewOf } from './view.ts'
 
-export type { AccessSources, Consumer, ConsumerContext } from './model.ts'
+export type { AccessSources, Choice, Consumer, ConsumerContext, Place } from './model.ts'
+export { chosenIn } from './model.ts'
 export { Principal, principalFor } from './principal.ts'
 export { operationLeaf, tableLeaf } from './reach.ts'
 export type { AccessView } from './view.ts'
@@ -41,7 +43,8 @@ export function createAccess(deps: AccessDeps) {
       })
       const { systems, given } = await deps.sources.systems(tx, { companyId, place })
       const tables = await deps.sources.tables(tx, { companyId, place, role: proof.role, given })
-      return { role: proof.role, systems, tables }
+      const chosen = systems.filter((system) => chosenIn(principal.choice, system.connection))
+      return { role: proof.role, systems: chosen, tables }
     })
     const speaker =
       principal.declared === undefined

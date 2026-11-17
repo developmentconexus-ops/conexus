@@ -1,10 +1,11 @@
 import { ToolSearchProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { AccessOf } from '../connectors/public.ts'
 import { offersRead, typedReads } from '../connectors/public.ts'
-import { ASSISTANT_LIMIT, assistantAccess } from './connector-access.ts'
+import { assistantAccess } from './connector-access.ts'
 
 type Chosen = Parameters<typeof offersRead>[1]
 type Chosens = Parameters<typeof assistantAccess>[1]['chosen']
@@ -17,7 +18,7 @@ type Chosens = Parameters<typeof assistantAccess>[1]['chosen']
 export function typedSearch(
   deps: { connectors: Connectors['assistant']; log: FailureLog },
   a: {
-    scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
+    scopeOf: (requestContext: RequestContext) => Promise<Principal | undefined>
     chosenOf: (requestContext: RequestContext) => Promise<Chosen & Chosens>
     savedAt: (requestContext: RequestContext) => string
   },
@@ -32,7 +33,7 @@ export function typedSearch(
     })
   }
   return new ToolSearchProcessor({
-    tools: typedReads(accessOf, ASSISTANT_LIMIT),
+    tools: typedReads(accessOf),
     storage: 'context',
     search: { topK: 3, autoLoad: true },
     filter: async ({ toolName, requestContext }) =>

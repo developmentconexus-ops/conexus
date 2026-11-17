@@ -10,24 +10,26 @@ import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { admitAsker } from '../controller-kit/public.ts'
+import type { RunScope } from '../controller-kit/public.ts'
+import { admitAsker, principalOf } from '../controller-kit/public.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /**
- * `conexus_overview` (Factory `factory_overview`, `supervisor/read-tools.ts:187`): the company's
- * Projetos with their app, and the connections the conversation's place offers, with whether it
- * chose each; read again on every call, never a key and never another company.
+ * `conexus_overview` (Factory `factory_list_work_items`, `mastracode/factory/src/tools/read-tools.ts:245`,
+ * `createFactoryReadTools`, Mastra 1.83): the company's Projetos with their app, and the connections
+ * the conversation's place offers, with whether it chose each; read again on every call, never a key
+ * and never another company.
  */
 export function overviewTool(deps: {
-  scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>
-  projectsOf: (scope: SessionScope) => Promise<Omit<Overview, 'connections'>>
+  scopeOf: (requestContext: RequestContext) => Promise<RunScope | undefined>
+  projectsOf: (scope: RunScope) => Promise<Omit<Overview, 'connections'>>
   connectionsOf: (
     requestContext: RequestContext,
-    scope: SessionScope,
+    scope: RunScope,
   ) => Promise<Overview['connections']>
 }) {
   return createTool({
@@ -58,12 +60,12 @@ export function overviewTool(deps: {
  */
 export function projectsOf(
   deps: { database: Database; identity: IdentityPorts; projects: AssistantProjects },
-  scope: SessionScope,
+  scope: RunScope,
 ): Promise<Omit<Overview, 'connections'>> {
-  const { companyId, personId } = scope
+  const { companyId, personId } = scope.owner
   return deps.database.read({ kind: 'COMPANY', companyId, personId }, async (tx) => {
-    await admitAsker(deps.identity, tx, scope)
-    const live = await deps.projects.liveProjectsOf(tx, scope.companyId)
+    await admitAsker(deps.identity, tx, scope.owner)
+    const live = await deps.projects.liveProjectsOf(tx, companyId)
     const ids = live.projects.map((each) => each.projectId)
     const published = await deps.projects.publishedVersionsOf(tx, ids)
     const projects = live.projects.map((each) => {
@@ -94,10 +96,12 @@ function reachedIn(catalog: Catalog): ReadonlySet<ConnectionId> {
   ])
 }
 
-/** What the access door lists for the conversation's asker, as `data_describe` does. */
-export function reachedBy(companyData: (scope: SessionScope) => CompanyData) {
-  return async (scope: SessionScope): Promise<ReadonlySet<ConnectionId>> => {
-    const described = await companyData(scope).describe()
+/** What the access door lists for the conversation's asker in its place, whatever it chose. */
+export function reachedBy(companyData: (principal: Principal) => CompanyData) {
+  return async (scope: RunScope): Promise<ReadonlySet<ConnectionId>> => {
+    const described = await companyData(
+      principalOf({ ...scope, choice: { kind: 'ANY' } }),
+    ).describe()
     if (described.kind === 'CATALOG_UNAVAILABLE') throw new Failure('DATABASE_UNAVAILABLE')
     return reachedIn(described)
   }
@@ -111,11 +115,11 @@ export function connectionsOffered(
   offeredOf: (
     requestContext: RequestContext,
   ) => Promise<readonly Overview['connections'][number][]>,
-  reachedOf: (scope: SessionScope) => Promise<ReadonlySet<ConnectionId>>,
+  reachedOf: (scope: RunScope) => Promise<ReadonlySet<ConnectionId>>,
 ) {
   return async (
     requestContext: RequestContext,
-    scope: SessionScope,
+    scope: RunScope,
   ): Promise<Overview['connections']> => {
     const [offered, reached] = await Promise.all([offeredOf(requestContext), reachedOf(scope)])
     return offered

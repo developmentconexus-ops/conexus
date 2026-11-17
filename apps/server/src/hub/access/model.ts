@@ -11,22 +11,37 @@ import type {
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
-import type { Speaker } from '../identity/public.ts'
+import type { Declared } from '../identity/public.ts'
 
 export type Place = Readonly<{ kind: 'COMPANY' } | { kind: 'PROJECT'; projectId: ProjectId }>
 
-export type Declared = Extract<Speaker, { kind: 'VERSION' }>['declared']
+/** Which connections a conversation reads: every one its place offers, or the ones it chose. */
+export type Choice = Readonly<
+  { kind: 'ANY' } | { kind: 'CHOSEN'; connections: readonly ConnectionId[] }
+>
+
+export function chosenIn(choice: Choice, connection: ConnectionId): boolean {
+  return choice.kind === 'ANY' || choice.connections.includes(connection)
+}
 
 /** Who asks, where, through which consumer: what the door is told before it reads anything. */
 export type ConsumerContext = Readonly<
-  | { consumer: 'assistant'; companyId: CompanyId; personId: PersonId }
+  | {
+      consumer: 'assistant'
+      companyId: CompanyId
+      personId: PersonId
+      place: Place
+      choice: Choice
+    }
   | { consumer: 'builder'; companyId: CompanyId; personId: PersonId; projectId: ProjectId }
+  | { consumer: 'construtor'; companyId: CompanyId; personId: PersonId; projectId: ProjectId }
   | {
       consumer: 'agent'
       companyId: CompanyId
       personId: PersonId
       place: Place
       declared: Declared
+      choice: Choice
     }
 >
 

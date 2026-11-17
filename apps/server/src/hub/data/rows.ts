@@ -1,7 +1,7 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { CatalogTable, DataSources } from '@conexus/hub-api'
 import { TABLE_PAGE_ROWS } from '@conexus/hub-api'
-import type { SessionScope } from '../connectors/public.ts'
+import type { Principal } from '../access/public.ts'
 import type { ReaderLogin } from '../copies/public.ts'
 import type { DataDeps } from './deps.ts'
 
@@ -10,7 +10,7 @@ type Page = Awaited<ReturnType<DataSources['rows']>>
 /** One page of a catalog table from the company's database; when it cannot be read there it is not read live in its place. */
 export async function rowsOf(
   deps: DataDeps,
-  scope: SessionScope,
+  scope: Principal,
   a: { table: CatalogTable; signal?: AbortSignal },
 ): Promise<Page> {
   const { companyId, personId, place } = scope

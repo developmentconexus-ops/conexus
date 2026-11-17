@@ -8,10 +8,10 @@ import type {
 } from '@conexus/hub-api'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { Principal } from '../access/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { speakerOf } from '../identity/public.ts'
 import { operationLabel } from './role-kit.ts'
-import type { SessionScope } from './scope.ts'
 import type { OpenWrite, OpenWritesKey } from './write-record.ts'
 
 /** The operation the rule checks: the connection, the kit's connector and the operation (identity's Target). */
@@ -104,7 +104,7 @@ export async function mustAsk(
     companyId: CompanyId
     choice: 'ASK' | 'AUTO'
     author: WriteAuthorOf
-    scope: SessionScope
+    scope: Principal
     threadId: ConversationId
     target: WriteTarget
   }>,

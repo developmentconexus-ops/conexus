@@ -14,6 +14,9 @@ import { libraryCommandOn } from './auth.ts'
 import { organizationWith } from './organization.ts'
 import type { RoleSet } from './roles.ts'
 
+/** What a published version declares it reads and writes, each on one connection. */
+export type Declared = readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
+
 /**
  * Who asks for a read. A person is held to their role in the company; a published version (an
  * agent's, an app's) to what it declares, which publishing checked against the publisher's role
@@ -21,10 +24,7 @@ import type { RoleSet } from './roles.ts'
  */
 export type Speaker =
   | Readonly<{ kind: 'PERSON'; personId: PersonId; role: Role }>
-  | Readonly<{
-      kind: 'VERSION'
-      declared: readonly Readonly<{ connectionId: ConnectionId; operation: OperationId }>[]
-    }>
+  | Readonly<{ kind: 'VERSION'; declared: Declared }>
 
 export type PersonSpeaker = Extract<Speaker, { kind: 'PERSON' }>
 

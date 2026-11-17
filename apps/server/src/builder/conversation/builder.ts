@@ -5,8 +5,8 @@ import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
+import type { Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
-import type { SessionScope } from '../../hub/connectors/public.ts'
 import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { builderAppDataTools, dataContext } from '../app-data/public.ts'
@@ -19,6 +19,7 @@ import {
   conversationMemory,
   createAskUserTool,
   oncePerRun,
+  principalOf,
   sessionModel,
   TITLE,
   toolsOf,
@@ -31,8 +32,8 @@ import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
-import type { ConversationIndex } from './turn-of.ts'
-import { projectIn, turnOf } from './turn-of.ts'
+import type { ConversationIndex, ProjectOf } from './turn-of.ts'
+import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
 const CONVERSATION_MODE = 'conversa'
 
@@ -43,7 +44,7 @@ const CONVERSATION_MODE = 'conversa'
  */
 function grantedFor(
   port: BuilderConnectors,
-  projectOf: ReturnType<typeof projectIn>,
+  projectOf: ProjectOf,
 ): (requestContext: RequestContext) => Promise<readonly GrantedConnection[]> {
   return oncePerRun(async (requestContext) => {
     const ids = await projectOf(requestContext)
@@ -57,7 +58,7 @@ function grantedFor(
  */
 function admittedFor(
   data: BuilderData,
-  projectOf: ReturnType<typeof projectIn>,
+  projectOf: ProjectOf,
 ): (
   requestContext: RequestContext,
 ) => Promise<Parameters<typeof builderAppDataTools>[0]['ids'] | undefined> {
@@ -71,18 +72,13 @@ function admittedFor(
 /** The company's data as the Builder reads it: the Projeto's, with its granted connections, where the person converses in it. */
 function builderDataOf(a: {
   admitted: ReturnType<typeof admittedFor>
-  granted: ReturnType<typeof grantedFor>
-  companyData: (scope: SessionScope) => CompanyData
+  runOf: ReturnType<typeof builderRuns>
+  companyData: (principal: Principal) => CompanyData
 }): DataOf {
   return async (requestContext) => {
-    const ids = await a.admitted(requestContext)
-    if (ids === undefined) return undefined
-    const chosen = (await a.granted(requestContext)).map((each) => each.connectionId)
-    return a.companyData({
-      ...{ companyId: ids.companyId, personId: ids.personId },
-      place: { kind: 'PROJECT', projectId: ids.projectId },
-      chosen,
-    })
+    if ((await a.admitted(requestContext)) === undefined) return undefined
+    const run = await a.runOf(requestContext)
+    return run === undefined ? undefined : a.companyData(principalOf(run))
   }
 }
 
@@ -97,7 +93,7 @@ function dataFor(
     personId: PersonId
     projectId: ProjectId
   }) => Promise<ProjectCopiesView>,
-  projectOf: ReturnType<typeof projectIn>,
+  projectOf: ProjectOf,
 ): (requestContext: RequestContext) => Promise<string> {
   return oncePerRun(async (requestContext) => {
     const ids = await projectOf(requestContext)
@@ -135,7 +131,7 @@ export function createBuilder(deps: {
   connectors: BuilderConnectors
   data: BuilderData
   /** The company's data, bound to the Projeto and its granted connections; the Builder passes no `by` yet (decision 6 of the card). */
-  companyData: (scope: SessionScope) => CompanyData
+  companyData: (principal: Principal) => CompanyData
   copies: (ids: {
     companyId: CompanyId
     personId: PersonId
@@ -146,12 +142,13 @@ export function createBuilder(deps: {
 }) {
   const { storage } = deps
   const check = checkTool(deps.runs)
-  const projectOf = projectIn(deps.index)
+  const { queue } = deps
+  const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
+  const runOf = builderRuns({ index: deps.index, memory })
+  const projectOf = projectOfRun(runOf)
   const granted = grantedFor(deps.connectors, projectOf)
   const admitted = admittedFor(deps.data, projectOf)
-  const { queue } = deps
   const defaults = agentDefaults(queue, { processor: turnOf(deps) })
-  const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const agent = createCodingAgent({
     id: BUILDER_CONTROLLER,
     name: 'Builder',
@@ -185,7 +182,7 @@ export function createBuilder(deps: {
           ? {}
           : builderAppDataTools({ data: deps.data, ids: conversant })),
         ...dataTools({
-          dataOf: builderDataOf({ admitted, granted, companyData: deps.companyData }),
+          dataOf: builderDataOf({ admitted, runOf, companyData: deps.companyData }),
         }),
       }
     },

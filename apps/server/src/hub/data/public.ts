@@ -1,8 +1,7 @@
 import type { AgentId, CompanyData, ConversationId, DataSources, PersonId } from '@conexus/hub-api'
 import { companyData } from '@conexus/hub-api'
-import type { ConsumerContext } from '../access/public.ts'
-import { principalFor } from '../access/public.ts'
-import type { SessionScope, TurnKey } from '../connectors/public.ts'
+import type { Principal } from '../access/public.ts'
+import type { TurnKey } from '../connectors/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { catalogOf } from './catalog.ts'
 import type { DataDeps } from './deps.ts'
@@ -29,36 +28,20 @@ type TurnBinding = Readonly<{ turn: TurnKey }> &
 
 export type DataContext = Readonly<{ by?: ReadBy; turn?: TurnBinding }>
 
-/** The access contract bound to who asks and where (`SessionScope` of hub/connectors/public.ts). */
+/** The access contract bound to who asks and where, as the access door's principal. */
 export function createCompanyData(
   deps: DataDeps,
-): (scope: SessionScope, context?: DataContext) => CompanyData {
-  return (scope, context) =>
-    companyData({ sources: sourcesFor(deps, scope, context), now: () => new Date() })
+): (principal: Principal, context?: DataContext) => CompanyData {
+  return (principal, context) =>
+    companyData({ sources: sourcesFor(deps, principal, context), now: () => new Date() })
 }
 
-/** The consumer a conversation's scope speaks as. */
-export function contextOf(scope: SessionScope): ConsumerContext {
-  const { companyId, personId, place, agentVersion } = scope
-  if (agentVersion !== undefined) {
-    return { consumer: 'agent', companyId, personId, place, declared: agentVersion.declared }
-  }
-  switch (place.kind) {
-    case 'PROJECT':
-      return { consumer: 'builder', companyId, personId, projectId: place.projectId }
-    case 'COMPANY':
-      return { consumer: 'assistant', companyId, personId }
-    default:
-      return place satisfies never
-  }
-}
-
-function sourcesFor(deps: DataDeps, scope: SessionScope, _context?: DataContext): DataSources {
+function sourcesFor(deps: DataDeps, principal: Principal, _context?: DataContext): DataSources {
   return {
-    catalog: () => catalogOf(deps, principalFor(contextOf(scope))),
-    rows: ({ table, signal }) => rowsOf(deps, scope, { table, signal }),
+    catalog: () => catalogOf(deps, principal),
+    rows: ({ table, signal }) => rowsOf(deps, principal, { table, signal }),
     live: async () => ({ kind: 'NOT_GRANTED' }),
-    query: (a) => queryOf(deps, scope, a),
+    query: (a) => queryOf(deps, principal, a),
     funnel: async () => ({ kind: 'NOT_GRANTED' }),
   }
 }

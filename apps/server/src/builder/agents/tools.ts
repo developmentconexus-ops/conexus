@@ -5,11 +5,11 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import type { Principal } from '../../hub/access/public.ts'
 import type {
   ApprovalDeps,
   Connectors,
   Returned,
-  SessionScope,
   TurnKey,
   WriteAuthorOf,
   WriteRequest,
@@ -86,7 +86,7 @@ export type WriteAuthor =
 
 type Deps = {
   connectors: Pick<Connectors['assistant'], 'operationOf' | 'writeOf' | 'read' | 'write'>
-  scope: SessionScope
+  scope: Principal
   tools: readonly FrozenTool[]
   turnOf: (requestContext: RequestContext) => TurnKey
   author: WriteAuthor
@@ -179,7 +179,7 @@ function requestOf(deps: Deps, asked: Asked): WriteRequest {
   if (deps.author.kind === 'DRAFT') {
     return { ...asked, speaker: { kind: 'PERSON', personId: deps.scope.personId } }
   }
-  const declared = deps.scope.agentVersion?.declared ?? []
+  const declared = deps.scope.declared ?? []
   const { agentId, number } = deps.author
   return { ...asked, speaker: { kind: 'VERSION', declared }, agentId, number }
 }

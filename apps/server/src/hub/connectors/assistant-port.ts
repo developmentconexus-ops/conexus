@@ -4,6 +4,8 @@ import { CALL_DEADLINE_MS, ConnectionId as ConnectionIdSchema, OperationId } fro
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { Principal } from '../access/public.ts'
+import { chosenIn } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { personOf } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
@@ -17,7 +19,7 @@ import { readThrough } from './read.ts'
 import { fixedFieldsOf } from './role-kit.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
-import type { SessionScope, TurnKey } from './scope.ts'
+import type { TurnKey } from './scope.ts'
 import { idsOf } from './scope.ts'
 import { markedFor, mayUseNotebook, visibleTo } from './speaking.ts'
 import { openedIn } from './testing.ts'
@@ -49,12 +51,12 @@ export type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[]
 
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */
-  connections(scope: SessionScope): Promise<readonly AssistantConnection[]>
+  connections(scope: Principal): Promise<readonly AssistantConnection[]>
   /** The same connections with every read, each marked `allowed` by the person's role, for a screen that shows what the role cannot use. */
-  listing(scope: SessionScope): Promise<readonly AssistantConnection[]>
+  listing(scope: Principal): Promise<readonly AssistantConnection[]>
   /** One read of a chosen, offered connection, read class only. */
   read(
-    scope: SessionScope,
+    scope: Principal,
     call: {
       connectionId: ConnectionId
       turn: TurnKey
@@ -71,10 +73,10 @@ export type AssistantConnectors = {
   /** Every write of the conversation as the record keeps it, oldest first (step 24.5, U5); the card reads it, `openWrites` stays for the tool's own check. */
   writes(key: OpenWritesKey): Promise<readonly WrittenRecord[]>
   /** The connection's caderno, under the same check as read. */
-  notes(scope: SessionScope, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
+  notes(scope: Principal, connectionId: ConnectionId): Promise<Notes | NotInRole | null>
   /** One concept in the caderno, proved once by the read door; only for `manageConnections`. */
   saveNote(
-    scope: SessionScope,
+    scope: Principal,
     call: {
       connectionId: ConnectionId
       turn: TurnKey
@@ -89,7 +91,7 @@ export type AssistantConnectors = {
    * that is not a read, or one whose input is not an object.
    */
   operationOf(
-    scope: SessionScope,
+    scope: Principal,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<z.ZodObject | undefined>
   /**
@@ -97,14 +99,14 @@ export type AssistantConnectors = {
    * read's, with the fields only whoever configures the tool fixes (`fixed`, decision 0062); none otherwise.
    */
   writeOf(
-    scope: SessionScope,
+    scope: Principal,
     target: { connectionId: ConnectionId; operation: string },
   ): Promise<WriteShape | undefined>
   /**
    * The kit's typed reads of every connection the place offers, the read door's left out: what a
    * version written before decision E4 reads as its connections' tools.
    */
-  kitReads(scope: SessionScope): Promise<readonly KitRead[]>
+  kitReads(scope: Principal): Promise<readonly KitRead[]>
 }
 
 export type KitRead = Readonly<{
@@ -118,7 +120,7 @@ export type KitRead = Readonly<{
  * Whether the person may ask now: admission reads their role on every call (S10), the same way as
  * the Assistant's routes. A refusal is `false` for the caller and its reason in the log only.
  */
-async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope): Promise<Speaker | undefined> {
+async function mayAsk(deps: Deps, tx: ReadTx, scope: Principal): Promise<Speaker | undefined> {
   try {
     const admitted = await deps.identity.admitMember({
       tx,
@@ -126,7 +128,9 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope): Promise<Spea
       companyId: scope.companyId,
       action: 'askAssistant',
     })
-    return scope.agentVersion ?? personOf(scope.personId, admitted.role)
+    return scope.declared === undefined
+      ? personOf(scope.personId, admitted.role)
+      : { kind: 'VERSION', declared: scope.declared }
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const reason = String(error.details.reason ?? 'NOT_FOUND')
@@ -137,14 +141,14 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: SessionScope): Promise<Spea
 }
 
 /** What the conversation's place offers to a person who may ask now, whether chosen or not, in one short transaction. */
-function offered(deps: Deps, scope: SessionScope) {
+function offered(deps: Deps, scope: Principal) {
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) =>
     (await mayAsk(deps, tx, scope)) ? offeredIn(tx, idsOf(scope)) : [],
   )
 }
 
 /** The same rows, with who speaks for the conversation: none for a person who may not ask. */
-function offeredTo(deps: Deps, scope: SessionScope) {
+function offeredTo(deps: Deps, scope: Principal) {
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
     const speaker = await mayAsk(deps, tx, scope)
     return speaker === undefined ? undefined : { speaker, rows: await offeredIn(tx, idsOf(scope)) }
@@ -162,11 +166,11 @@ type Refusal = 'NOT_CHOSEN' | 'NOT_ADMITTED' | 'NOT_OFFERED' | 'NOT_A_READ'
  */
 async function readable<T>(
   deps: Deps,
-  scope: SessionScope,
+  scope: Principal,
   connectionId: ConnectionId,
   use: (tx: ReadTx, row: { notes: unknown; connector: string }, speaker: Speaker) => Promise<T>,
 ): Promise<{ kind: 'OK'; value: T } | { kind: Refusal }> {
-  if (!scope.chosen.includes(connectionId)) return { kind: 'NOT_CHOSEN' }
+  if (!chosenIn(scope.choice, connectionId)) return { kind: 'NOT_CHOSEN' }
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
     const speaker = await mayAsk(deps, tx, scope)
     if (speaker === undefined) return { kind: 'NOT_ADMITTED' }
@@ -180,7 +184,7 @@ async function readable<T>(
 /** A refusal of the Assistant's read, notebook or note, its reason in the log (S10: the model hears NOT_GRANTED). */
 function refused(
   deps: Deps,
-  scope: SessionScope,
+  scope: Principal,
   about: { connectionId: ConnectionId; operation?: string; reason: Refusal },
   event: 'ASSISTANT_READ_REFUSED' | 'CONNECTION_NOTE_REFUSED' = 'ASSISTANT_READ_REFUSED',
 ) {
@@ -189,14 +193,14 @@ function refused(
   return { kind: 'NOT_GRANTED' } as const
 }
 
-function viewerOf(scope: SessionScope) {
+function viewerOf(scope: Principal) {
   return { person: { id: scope.personId }, companyId: scope.companyId }
 }
 
 /** The chosen connection its place offers, opened; none once the refusal is logged as `event`. */
 async function chosenOpened(
   deps: Deps,
-  scope: SessionScope,
+  scope: Principal,
   connectionId: ConnectionId,
   event?: Parameters<typeof refused>[3],
 ) {
@@ -216,7 +220,7 @@ async function chosenOpened(
 async function noted(
   deps: Deps,
   spend: ReturnType<typeof createSpending>,
-  scope: SessionScope,
+  scope: Principal,
   call: Parameters<AssistantConnectors['saveNote']>[1],
 ): Promise<NoteSaved | Spent> {
   const chosen = await chosenOpened(deps, scope, call.connectionId, 'CONNECTION_NOTE_REFUSED')
@@ -253,8 +257,7 @@ function kitReadsOf(rows: readonly { id: string; connector: string }[]): KitRead
 
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
 /** A connection as the place lists it: the fields the screen and the model read, and whether the conversation chose it. */
-function chosenAmong(scope: SessionScope) {
-  const chosen = new Set(scope.chosen)
+function chosenAmong(scope: Principal) {
   return ({
     connectionId,
     connector,
@@ -269,14 +272,14 @@ function chosenAmong(scope: SessionScope) {
     reads,
     writes,
     skill,
-    chosen: chosen.has(connectionId),
+    chosen: chosenIn(scope.choice, connectionId),
   })
 }
 
 /** One write of a connection the place offers, by the kit's declaration: its input and its fixed fields. */
 async function writeShapeOf(
   deps: Deps,
-  scope: SessionScope,
+  scope: Principal,
   target: { connectionId: ConnectionId; operation: string },
 ): Promise<WriteShape | undefined> {
   const [row] = (await offered(deps, scope)).filter((each) => each.id === target.connectionId)

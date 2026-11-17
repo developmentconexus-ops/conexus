@@ -3,7 +3,8 @@ import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { Connectors, SessionScope, TurnKey } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import type { Connectors, TurnKey } from '../../hub/connectors/public.ts'
 import { shaped } from '../../hub/connectors/public.ts'
 import type { EdgeTools } from '../../platform/edge-tools.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -75,7 +76,7 @@ async function called(
  */
 export function codeTools(
   deps: CodeToolsDeps & {
-    scope: SessionScope
+    scope: Principal
     tools: readonly FrozenTool[]
     turnOf: (requestContext: RequestContext) => TurnKey
   },

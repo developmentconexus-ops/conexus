@@ -7,7 +7,8 @@ import { ConversationId, PersonId } from '@conexus/hub-api'
 import pg from 'pg'
 import { testAppsConfig } from '../../platform/test-cloudflare.ts'
 import { readLoginOf } from '../../platform/test-company-postgres.ts'
-import type { SessionScope } from '../connectors/public.ts'
+import type { Place } from '../access/public.ts'
+import { readerAt } from '../access/test-principal.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync, copiesOn, syncRows } from '../copies/test-copies.ts'
 import { personOn } from '../identity/test-hub.ts'
@@ -15,8 +16,8 @@ import { personOn } from '../identity/test-hub.ts'
 const JOIN = `select v."APELIDO", sum(c."VLRNOTA") from sync.sankhya_vendas c
   join sync.sankhya_vendedores v using ("CODVEND") group by 1`
 
-function scopeOf(on: CopiesOn, place: SessionScope['place'], personId = on.anaId): SessionScope {
-  return { companyId: on.companyId, personId, place, chosen: [] }
+function scopeOf(on: CopiesOn, place: Place, personId = on.anaId) {
+  return readerAt({ companyId: on.companyId, personId, place })
 }
 
 function inCompany(on: CopiesOn, personId = on.anaId) {

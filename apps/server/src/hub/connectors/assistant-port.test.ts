@@ -4,8 +4,8 @@ import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { chooserAt } from '../access/test-principal.ts'
 import { call, plantCompany } from '../identity/test-hub.ts'
-import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls, CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './test-app-calls.ts'
 import { linkSankhya, testOf } from './test-connections.ts'
@@ -24,13 +24,15 @@ async function assistantOn(
   function scope(
     who: { id: string },
     a: { project?: boolean; chosen?: readonly ConnectionId[] } = {},
-  ): SessionScope {
-    return {
-      companyId,
-      personId: PersonId.parse(who.id),
-      place: a.project === true ? { kind: 'PROJECT', projectId } : { kind: 'COMPANY' },
-      chosen: a.chosen ?? [matriz],
-    }
+  ) {
+    return chooserAt(
+      {
+        companyId,
+        personId: PersonId.parse(who.id),
+        place: a.project === true ? { kind: 'PROJECT', projectId } : { kind: 'COMPANY' },
+      },
+      a.chosen ?? [matriz],
+    )
   }
   function ask(
     who: { id: string },

@@ -3,9 +3,9 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { chooserAt } from '../access/test-principal.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { call, post } from '../identity/test-hub.ts'
-import type { SessionScope } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 import { linkMercadoLivre, mercadoLivreOn, testOf } from './test-connections.ts'
@@ -44,12 +44,9 @@ async function withRole(
         { companyId, projectId },
         { connectionId, personId, runId: RunId.parse(randomUUID()), operation, input },
       )
-    const scope: SessionScope = {
-      companyId,
-      personId,
-      place: { kind: 'PROJECT', projectId },
-      chosen: [connectionId],
-    }
+    const scope = chooserAt({ companyId, personId, place: { kind: 'PROJECT', projectId } }, [
+      connectionId,
+    ])
     const turn = TurnKey.parse(randomUUID())
     return on.hub.connectors.assistant.read(scope, { connectionId, turn, operation, input })
   }
@@ -71,12 +68,10 @@ async function sankhyaOn(t: TestContext) {
   })
   assert.equal(role.statusCode, 200, role.body)
   function ask(person: Person, operation: string, input: unknown) {
-    const scope: SessionScope = {
-      companyId,
-      personId: PersonId.parse(person.id),
-      place: { kind: 'PROJECT', projectId },
-      chosen: [connectionId],
-    }
+    const scope = chooserAt(
+      { companyId, personId: PersonId.parse(person.id), place: { kind: 'PROJECT', projectId } },
+      [connectionId],
+    )
     const turn = TurnKey.parse(randomUUID())
     return on.hub.connectors.assistant.read(scope, { connectionId, turn, operation, input })
   }

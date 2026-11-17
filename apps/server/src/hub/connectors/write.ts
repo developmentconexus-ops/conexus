@@ -3,6 +3,7 @@ import { connectorOf } from '@conexus/connectors'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import { chosenIn } from '../access/public.ts'
 import { roleOfSpeaker, speakerOf } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
 import type { Login, OpenedConnection } from './executor.ts'
@@ -78,7 +79,7 @@ async function admitted(deps: Deps, a: WriteRequest): Promise<Admitted> {
     )
     return { kind }
   }
-  if (!scope.chosen.includes(a.connectionId)) return refused('NOT_GRANTED', 'NOT_CHOSEN')
+  if (!chosenIn(scope.choice, a.connectionId)) return refused('NOT_GRANTED', 'NOT_CHOSEN')
   const viewer = { person: { id: scope.personId }, companyId: scope.companyId }
   const found = await deps.database.read(scopeOf(viewer), async (tx) => {
     const person = await speakerOf(tx, scope.companyId, scope.personId)

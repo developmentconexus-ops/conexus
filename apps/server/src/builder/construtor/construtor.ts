@@ -1,19 +1,15 @@
 import { readFileSync } from 'node:fs'
-import type { AutomationId } from '@conexus/hub-api'
-import {
-  BUILDER_TOOL,
-  CONSTRUTOR_CONTROLLER,
-  CONSTRUTOR_TOOL,
-  ProjectId,
-  TASK_TOOLS,
-} from '@conexus/hub-api'
+import type { AutomationId, ProjectId } from '@conexus/hub-api'
+import { BUILDER_TOOL, CONSTRUTOR_CONTROLLER, CONSTRUTOR_TOOL, TASK_TOOLS } from '@conexus/hub-api'
 import type { AgentInstructions } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Place } from '../../hub/access/public.ts'
+import { principalFor } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { liveProjectOf } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -22,20 +18,22 @@ import { Failure } from '../../platform/failure.ts'
 import type { AgentsAlive } from '../agents/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import { conversationRun } from '../controller-context/public.ts'
-import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
+import type { Owner, ReleaseScope, RunMark, RunScope, Speakers } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   agentDefaults,
   agentManagerAdmission,
   blockOf,
+  CONEXUS_PROMPT,
   controllerOf,
   conversationMemory,
   createAskUserTool,
   fixedSystem,
   oncePerRun,
-  ownerOfResource,
+  principalOf,
+  RUN_MARKS,
   releaseThreads,
+  runResolver,
   sessionModel,
   sessionTurns,
   TITLE,
@@ -48,18 +46,13 @@ import type { ConversationMachine, ConversationMachines, MachineTuning } from '.
 import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
-import { databaseScopeOf, sessionScopeOf } from '../tools/public.ts'
+import { databaseScopeOf } from '../tools/public.ts'
 import { testDraft } from './draft-trial.ts'
-import { CONSTRUTOR_MARK } from './open.ts'
 import { registerConstrutorRoutes } from './routes.ts'
 import { construtorTools } from './tools.ts'
 
 const MODE = 'conversa'
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
-const FIXED = readFileSync(
-  new URL('../conversation/prompt/conexus.md', import.meta.url),
-  'utf8',
-).trim()
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 
 /**
@@ -84,7 +77,7 @@ type Deps = {
   identity: IdentityPorts
   queue: QueueDeps
   connectors: Connectors['assistant']
-  speakersOf: (scope: SessionScope) => Promise<Speakers>
+  speakersOf: (scope: Readonly<{ owner: Owner; place: Place }>) => Promise<Speakers>
   liveProjectOf: typeof liveProjectOf
   agents: Pick<AgentsAlive, 'service' | 'tools' | 'draftAgent'>
   /** The Projeto's automations (step 24.2): made after the one `Mastra`, so reached when called. */
@@ -102,29 +95,60 @@ type Deps = {
   log: FailureLog
 }
 
-type Threads = Pick<Memory, 'getThreadById'>
+type RunOf = (requestContext: RequestContext) => Promise<RunScope | undefined>
 
-/** The person and the Projeto a run is of: the owner from the thread's resource, the Projeto from its marks. */
-function scopes(memory: Threads) {
-  return oncePerRun(async (requestContext): Promise<InProject | undefined> => {
-    const run = conversationRun(requestContext)
-    if (run === undefined) return undefined
-    const owner = ownerOfResource(run.resourceId)
-    if (owner?.kind !== 'construtor') return undefined
-    const thread = await memory.getThreadById({
-      threadId: run.sessionId,
-      resourceId: run.resourceId,
-    })
-    const projectId = ProjectId.safeParse(thread?.metadata?.[CONSTRUTOR_MARK.project])
-    if (!projectId.success) return undefined
-    return { companyId: owner.companyId, personId: owner.personId, projectId: projectId.data }
+/** Whether the Projeto a thread is marked with is a live one of the owner's company. */
+async function liveIn(deps: Deps, owner: Owner, projectId: ProjectId): Promise<boolean> {
+  const live = await deps.database.read({ kind: 'COMPANY', ...owner }, (tx) =>
+    deps.liveProjectOf(tx, { companyId: owner.companyId, projectId }),
+  )
+  return live !== undefined
+}
+
+/** The guard's admission: the person builds agents now, in a Projeto of the company (criterion 21). */
+function construtorAdmission(deps: Deps) {
+  const manager = agentManagerAdmission({ database: deps.database, identity: deps.identity })
+  return async (input: Parameters<typeof manager>[0] & { mark: RunMark }): Promise<void> => {
+    await manager(input)
+    const owner = { companyId: input.companyId, personId: input.person.id }
+    const { projectId } = input.mark
+    if (projectId === undefined || !(await liveIn(deps, owner, projectId))) {
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    }
+  }
+}
+
+/**
+ * The Construtor's run: the Hub keeps no row of it, so its Projeto is its thread's mark, checked
+ * against the company's live Projetos (Factory `tools/scope.ts:107`); every connection it received.
+ */
+function construtorRuns(deps: Deps, memory: Pick<Memory, 'getThreadById'>): RunOf {
+  return runResolver('construtor', {
+    memory,
+    stored: async ({ owner, mark }) => {
+      const { projectId } = mark
+      if (projectId === undefined || !(await liveIn(deps, owner, projectId))) return undefined
+      return {
+        place: { kind: 'PROJECT', projectId },
+        choice: { kind: 'ANY' },
+        ceiling: { kind: 'PERSON' },
+        attended: true,
+      }
+    },
   })
 }
 
+/** The person and the Projeto of the run, as the Construtor's tools act on them. */
+function inProjectOf(run: RunScope): InProject | undefined {
+  if (run.place.kind !== 'PROJECT') return undefined
+  return { ...run.owner, projectId: run.place.projectId }
+}
+
 /** The marks of the conversation's machine: its company and its Projeto (security S36). */
-function machineMarks(scopeOf: ReturnType<typeof scopes>) {
+function machineMarks(runOf: RunOf) {
   return async (requestContext: RequestContext) => {
-    const scope = await scopeOf(requestContext)
+    const run = await runOf(requestContext)
+    const scope = run === undefined ? undefined : inProjectOf(run)
     if (scope === undefined) return undefined
     return { [MARK.company]: scope.companyId, [MARK.project]: scope.projectId }
   }
@@ -140,7 +164,9 @@ function projectReader(deps: Deps) {
     const tables = await deps.appTables(scope)
     return {
       project: { id: scope.projectId, name: live.name },
-      offered: await deps.connectors.connections(sessionScopeOf(scope)),
+      offered: await deps.connectors.connections(
+        principalFor({ consumer: 'construtor', ...scope }),
+      ),
       app: tables === null ? null : { tables },
     }
   }
@@ -155,14 +181,14 @@ function construtorAgent(
   parts: {
     memory: Memory
     turns: ReturnType<typeof sessionTurns>
-    scopeOf: ReturnType<typeof scopes>
+    scopeOf: RunOf
     machines: ConversationMachines
   },
 ) {
   const { scopeOf } = parts
   const offeredOf = oncePerRun(async (requestContext) => {
-    const scope = await scopeOf(requestContext)
-    return scope === undefined ? [] : deps.connectors.connections(sessionScopeOf(scope))
+    const run = await scopeOf(requestContext)
+    return run === undefined ? [] : deps.connectors.connections(principalOf(run))
   })
   const construtor = {
     machines: parts.machines,
@@ -176,31 +202,29 @@ function construtorAgent(
         .list({ companyId: scope.companyId, personId: scope.personId }, scope.projectId),
     project: projectReader(deps),
   }
-  async function runScope(requestContext: RequestContext): Promise<InProject> {
-    const scope = await scopeOf(requestContext)
-    if (scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-    return scope
+  async function runScope(requestContext: RequestContext) {
+    const run = await scopeOf(requestContext)
+    const scope = run === undefined ? undefined : inProjectOf(run)
+    if (run === undefined || scope === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+    return { run, scope }
   }
   return new Agent({
     id: CONSTRUTOR_CONTROLLER,
     name: 'Construtor',
     instructions: async ({ requestContext }) => {
-      const scope = await runScope(requestContext)
-      const speakers = await deps.speakersOf(sessionScopeOf(scope))
+      const { run } = await runScope(requestContext)
+      const speakers = await deps.speakersOf(run)
       return [
-        fixedSystem(FIXED),
+        fixedSystem(CONEXUS_PROMPT),
         { role: 'system', content: blockOf(speakers, await offeredOf(requestContext)) },
         { role: 'system', content: MANUAL },
       ] satisfies AgentInstructions
     },
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
-      const scope = await runScope(requestContext)
+      const { run, scope } = await runScope(requestContext)
       const offered = await offeredOf(requestContext)
-      const door: SessionScope = {
-        ...sessionScopeOf(scope),
-        chosen: offered.map((each) => each.connectionId),
-      }
+      const door = principalOf(run)
       function read(
         call: Parameters<ConnectorAccess['read']>[0],
         context: Parameters<ConnectorAccess['read']>[1],
@@ -212,7 +236,7 @@ function construtorAgent(
         log: deps.log,
         read,
         notes: (connectionId) => deps.connectors.notes(door, connectionId),
-        wording: { whose: 'this Project received', limit: '50 connector calls per answer' },
+        wording: { whose: 'this Project received' },
       }
       return {
         ...toolsOf(sessionModel(requestContext)),
@@ -233,12 +257,12 @@ function construtorAgent(
  * the Hub's own, for the tool in code it writes and tests: the model gets none of the machine's tools.
  */
 export function createConstrutor(deps: Deps) {
-  const { storage, database, queue, log } = deps
+  const { storage, queue, log } = deps
   const memory = conversationMemory({
     ...{ storage, queue, recall: false },
     ...TITLE.agent,
   })
-  const scopeOf = scopes(memory)
+  const scopeOf = construtorRuns(deps, memory)
   const machines = createConversationMachines(
     {
       ...deps.machine,
@@ -251,7 +275,10 @@ export function createConstrutor(deps: Deps) {
   )
   const turns = sessionTurns({
     id: 'conexus-construtor-turn',
-    take: takeOfScope({ queue, scopeOf, turnKey }),
+    take: takeOfScope({
+      ...{ queue, turnKey },
+      scopeOf: async (requestContext) => (await scopeOf(requestContext))?.owner,
+    }),
   })
   const agent = construtorAgent(deps, { memory, turns, scopeOf, machines })
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
@@ -276,12 +303,16 @@ export function createConstrutor(deps: Deps) {
       /** The machines, after the runs `drain` stopped, before Mastra stops. */
       close: () => machines.stopAll(),
       /** Whether the person may build agents in the company now (`manageAgents`). */
-      admit: agentManagerAdmission({ database, identity: deps.identity }),
+      admit: construtorAdmission(deps),
       async release(scope: ReleaseScope): Promise<void> {
         const ids = await threadsByMarks(memory, {
-          [CONSTRUTOR_MARK.company]: scope.companyId,
-          ...(scope.personId === undefined ? {} : { [CONSTRUTOR_MARK.person]: scope.personId }),
-          ...(scope.projectId === undefined ? {} : { [CONSTRUTOR_MARK.project]: scope.projectId }),
+          [RUN_MARKS.construtor.company]: scope.companyId,
+          ...(scope.personId === undefined
+            ? {}
+            : { [RUN_MARKS.construtor.person]: scope.personId }),
+          ...(scope.projectId === undefined
+            ? {}
+            : { [RUN_MARKS.construtor.project]: scope.projectId }),
         })
         const count = await releaseThreads({ controller, memory }, ids, (id) => machines.kill(id))
         log.info({ companyId: scope.companyId, count }, 'CONSTRUTOR_CONVERSATIONS_RELEASED')

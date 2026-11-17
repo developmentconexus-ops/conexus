@@ -1,5 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import { TURNS_KEPT } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
@@ -9,10 +10,7 @@ import { turnKey } from './turn.ts'
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
-/** The Assistant's limit, as its read tools say it. */
-export const ASSISTANT_LIMIT = '50 connector calls per answer'
-
-type Conversation = { scope: SessionScope; chosen: readonly AssistantConnection[] }
+type Conversation = { scope: Principal; chosen: readonly AssistantConnection[] }
 
 /**
  * The conversation's door (U1): the chosen connections its place offers, each call counted by the
@@ -30,7 +28,7 @@ export function assistantAccess(
     read: (call, requestContext) =>
       deps.connectors.read(scope, { ...call, turn: turnKey.of(requestContext) }),
     notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-    wording: { whose: 'this conversation chose', limit: ASSISTANT_LIMIT },
+    wording: { whose: 'this conversation chose' },
   }
 }
 

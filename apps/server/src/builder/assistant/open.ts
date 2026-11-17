@@ -9,20 +9,17 @@ import type {
 import { AutomationId as AutomationIdSchema } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import { z } from 'zod'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Access, Place } from '../../hub/access/public.ts'
+import { principalFor } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { conversationRun } from '../controller-context/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
-import { oncePerRun, openSession, resourceOf } from '../controller-kit/public.ts'
+import { marksOf, openSession, RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
-import { SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 import type { AssistantProjects } from './ports.ts'
-
-type Place = SessionScope['place']
 
 /** The place a request names: the Início, or one Projeto. */
 export function placeOf(projectId: ProjectId | undefined | null): Place {
@@ -30,7 +27,7 @@ export function placeOf(projectId: ProjectId | undefined | null): Place {
 }
 
 export type OpenDeps = {
-  connectors: Pick<Connectors['assistant'], 'connections'>
+  access: Pick<Access, 'viewOf'>
   queue: QueueDeps
   controller: AgentController
   memory: ReturnType<typeof assistantMemory>
@@ -67,48 +64,64 @@ export type ConversationAutomation = { automationId: AutomationId; name: string 
 
 const AutomationMarks = z
   .object({
-    [SESSION_MARK.automation]: AutomationIdSchema,
-    [SESSION_MARK.automationName]: z.string(),
+    [RUN_MARKS.assistant.automation]: AutomationIdSchema,
+    [RUN_MARKS.assistant.automationName]: z.string(),
   })
   .transform((marks) => ({
-    automationId: marks[SESSION_MARK.automation],
-    name: marks[SESSION_MARK.automationName],
+    automationId: marks[RUN_MARKS.assistant.automation],
+    name: marks[RUN_MARKS.assistant.automationName],
   }))
 
 /** The automation a thread's marks name, or `null` for a conversation a person opened. */
 export function automationOf(metadata: Record<string, unknown> | undefined) {
-  if (metadata?.[SESSION_MARK.automation] === undefined) return null
+  if (metadata?.[RUN_MARKS.assistant.automation] === undefined) return null
   return AutomationMarks.parse(metadata)
 }
 
-/** Of the connections asked, only those the place offers now, in the place's order. */
-export async function offeredOnly(
-  deps: Pick<OpenDeps, 'connectors'>,
-  scope: SessionScope,
+/**
+ * The connections the place offers the owner now, by the access door's view (issue 1147): a
+ * connection the role uses nothing of is not offered.
+ */
+export async function offeredBy(access: Pick<Access, 'viewOf'>, owner: Owner, place: Place) {
+  const view = await access.viewOf(
+    principalFor({ consumer: 'assistant', ...owner, place, choice: { kind: 'ANY' } }),
+  )
+  return view.list('system')
+}
+
+/** Each connection the place offers the owner now, with whether `chosen` holds it. */
+export async function offeredWith(
+  access: Pick<Access, 'viewOf'>,
+  owner: Owner,
+  place: Place,
+  chosen: readonly ConnectionId[],
+) {
+  const held = new Set(chosen)
+  const offered = await offeredBy(access, owner, place)
+  return offered.map(({ connection, connector, name }) => ({
+    ...{ connectionId: connection, connector, name },
+    chosen: held.has(connection),
+  }))
+}
+
+/** Of the connections asked, only those the place offers the owner now, in the place's order. */
+export async function offeredAmong(
+  access: Pick<Access, 'viewOf'>,
+  owner: Owner,
+  place: Place,
   asked: readonly ConnectionId[],
 ): Promise<ConnectionId[]> {
   const wanted = new Set(asked)
-  const offered = await deps.connectors.connections({ ...scope, chosen: [] })
-  return offered.flatMap((each) => (wanted.has(each.connectionId) ? [each.connectionId] : []))
+  const offered = await offeredBy(access, owner, place)
+  return offered.flatMap(({ connection }) => (wanted.has(connection) ? [connection] : []))
 }
 
 /** The marks a conversation's thread is stamped with (`createSession({ tags })`), one rule for opening and for resuming. */
-export function marksOf(
+export function assistantMarks(
   owner: Owner,
   opened: { projectId?: ProjectId | undefined; automation?: ConversationAutomation | undefined },
 ): Record<string, string> {
-  const { projectId, automation } = opened
-  return {
-    [SESSION_MARK.company]: owner.companyId,
-    [SESSION_MARK.person]: owner.personId,
-    ...(projectId === undefined ? {} : { [SESSION_MARK.project]: projectId }),
-    ...(automation === undefined
-      ? {}
-      : {
-          [SESSION_MARK.automation]: automation.automationId,
-          [SESSION_MARK.automationName]: automation.name,
-        }),
-  }
+  return marksOf('assistant', { ...owner, ...opened })
 }
 
 /**
@@ -130,11 +143,11 @@ export async function openConversation(
 ) {
   const { owner, place, id, automation } = input
   const projectId = place.kind === 'PROJECT' ? place.projectId : undefined
-  const tags = marksOf(owner, { projectId, automation })
+  const tags = assistantMarks(owner, { projectId, automation })
   return openSession(deps, {
     ...{ kind: 'assistant', owner, id, tags, model: input.model, effort: input.effort },
     keep: async () => {
-      const chosen = await offeredOnly(deps, { ...owner, place, chosen: [] }, input.connections)
+      const chosen = await offeredAmong(deps.access, owner, place, input.connections)
       return deps.chosen.keep(owner, { conversationId: id, projectId, connections: chosen })
     },
   })
@@ -156,20 +169,4 @@ export async function asked(
     perPage: 1,
   })
   return messages.length > 0
-}
-
-/**
- * Whether an automation's run opened the run's conversation, from its thread's marks, read once per
- * run: nobody sees a button there, so no hand-off to the Builder is offered.
- */
-export function automationRunFor(memory: ReturnType<typeof assistantMemory>) {
-  return oncePerRun(async (requestContext) => {
-    const run = conversationRun(requestContext)
-    if (run === undefined) return false
-    const thread = await memory.getThreadById({
-      threadId: run.sessionId,
-      resourceId: run.resourceId,
-    })
-    return automationOf(thread?.metadata) !== null
-  })
 }

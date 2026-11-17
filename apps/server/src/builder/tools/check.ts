@@ -8,7 +8,9 @@ import type {
 } from '@conexus/hub-api'
 import { ToolId, ToolSlug } from '@conexus/hub-api'
 import type { z } from 'zod'
-import type { KitRead, SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import { principalFor } from '../../hub/access/public.ts'
+import type { KitRead } from '../../hub/connectors/public.ts'
 import type { Named } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { derivedUuid } from './derived.ts'
@@ -24,9 +26,9 @@ export function databaseScopeOf(scope: InProject) {
   return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
 }
 
-export function sessionScopeOf(scope: InProject): SessionScope {
-  const { companyId, personId, projectId } = scope
-  return { companyId, personId, place: { kind: 'PROJECT', projectId }, chosen: [] }
+/** Who the access door answers for when the person acts in the Projeto from the Builder. */
+export function sessionScopeOf(scope: InProject): Principal {
+  return principalFor({ consumer: 'builder', ...scope })
 }
 
 /** A connection the Projeto received, with its reads and writes, as the connectors' door describes it. */
@@ -39,15 +41,15 @@ export type OfferedConnection = Readonly<
 
 /** What the tools read of the connectors' door: what the Projeto offers, and one read's input. */
 export type ToolConnectors = {
-  connections(scope: SessionScope): Promise<readonly OfferedConnection[]>
+  connections(scope: Principal): Promise<readonly OfferedConnection[]>
   /** The same connections with every read, each marked `allowed` by the role of whoever edits. */
-  listing(scope: SessionScope): Promise<readonly OfferedConnection[]>
-  operationOf(scope: SessionScope, target: ToolTarget): Promise<z.ZodObject | undefined>
+  listing(scope: Principal): Promise<readonly OfferedConnection[]>
+  operationOf(scope: Principal, target: ToolTarget): Promise<z.ZodObject | undefined>
   writeOf(
-    scope: SessionScope,
+    scope: Principal,
     target: ToolTarget,
   ): Promise<Readonly<{ input: z.ZodObject; fixed: readonly string[] }> | undefined>
-  kitReads(scope: SessionScope): Promise<readonly KitRead[]>
+  kitReads(scope: Principal): Promise<readonly KitRead[]>
 }
 
 /** A tool's read as the Projeto may use it now: its input, or why not (`TOOL_REFUSED`). */
@@ -61,7 +63,7 @@ export type Target =
  */
 export async function targetOf(
   connectors: ToolConnectors,
-  scope: SessionScope,
+  scope: Principal,
   target: ToolTarget,
   known?: readonly OfferedConnection[],
 ): Promise<Target> {

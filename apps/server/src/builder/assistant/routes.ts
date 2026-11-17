@@ -24,23 +24,37 @@ import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Access, Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Owner } from '../controller-kit/public.ts'
-import { attemptIdOf, changeModel, ownThread, releaseThreads } from '../controller-kit/public.ts'
+import {
+  attemptIdOf,
+  changeModel,
+  ownThread,
+  RUN_MARKS,
+  releaseThreads,
+} from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { CompanyMemory } from './company-memory.ts'
 import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'
-import { SESSION_MARK, scopeOn } from './context.ts'
 import type { assistantMemory } from './memory.ts'
-import { admitted, automationOf, marksOf, offeredOnly, openConversation, placeOf } from './open.ts'
+import {
+  admitted,
+  assistantMarks,
+  automationOf,
+  offeredAmong,
+  offeredBy,
+  offeredWith,
+  openConversation,
+  placeOf,
+} from './open.ts'
 import type { AssistantProjects } from './ports.ts'
 import { registerProfileMemoryRoutes } from './profile-memory.ts'
 import { listedPage } from './search.ts'
@@ -54,7 +68,7 @@ const PageNumber = z.coerce.number().int().min(1).max(100_000)
 type Deps = {
   database: Database
   identity: IdentityPorts
-  connectors: Connectors['assistant']
+  access: Pick<Access, 'viewOf'>
   projects: Pick<AssistantProjects, 'liveProjectOf'>
   queue: QueueDeps
   controller: AgentController
@@ -76,33 +90,28 @@ async function ownScoped(deps: Deps, owner: Owner, conversationId: ConversationI
   return { thread, scope: await scopeOfThread(deps, owner, thread) }
 }
 
-/**
- * The thread's scope, read with no session (a `GET` starts nothing): its place and choice as the
- * Hub keeps them.
- */
-async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType) {
-  return scopeOn(owner, await deps.chosen.of(owner, ConversationId.parse(thread.id)))
+/** A conversation's place and choice as the Hub keeps them. */
+type Kept = Readonly<{ place: Place; chosen: readonly ConnectionId[] }>
+
+/** The thread's place and choice, read with no session (a `GET` starts nothing). */
+async function scopeOfThread(deps: Deps, owner: Owner, thread: StorageThreadType): Promise<Kept> {
+  const kept = await deps.chosen.of(owner, ConversationId.parse(thread.id))
+  return { place: placeOf(kept.projectId), chosen: kept.connections }
 }
 
 /**
- * What the conversation answers: its summary and each connection its place offers, with whether it
- * chose it.
+ * What the conversation answers: its summary and each connection its place offers the owner, by
+ * the access door's view, with whether the row chose it.
  */
-async function conversationOf(deps: Deps, thread: StorageThreadType, scope: SessionScope) {
-  const connections = await deps.connectors.connections(scope)
+async function conversationOf(deps: Deps, owner: Owner, thread: StorageThreadType, kept: Kept) {
   return {
     id: ConversationId.parse(thread.id),
     title: thread.title || null,
     createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
-    projectId: scope.place.kind === 'PROJECT' ? scope.place.projectId : null,
+    projectId: kept.place.kind === 'PROJECT' ? kept.place.projectId : null,
     automation: automationOf(thread.metadata),
-    connections: connections.map(({ connectionId, connector, name, chosen }) => ({
-      connectionId,
-      connector,
-      name,
-      chosen,
-    })),
+    connections: await offeredWith(deps.access, owner, kept.place, kept.chosen),
   }
 }
 
@@ -178,7 +187,7 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
     const page = pageOf(token)
     const listed = await listedPage(deps.memory, { owner, projectId, page, q, place })
     const marks = listed.threads.map((thread) =>
-      ProjectIdSchema.nullable().parse(thread.metadata?.[SESSION_MARK.project] ?? null),
+      ProjectIdSchema.nullable().parse(thread.metadata?.[RUN_MARKS.assistant.project] ?? null),
     )
     const names = await projectNames(deps, owner, marks)
     const conversations = listed.threads.map((thread, at) => ({
@@ -193,17 +202,18 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   })
 
   serve(app, readAssistantConversation, async (input) => {
-    const { thread, scope } = await ownScoped(deps, ownerOf(input), input.params.conversationId)
-    return answer({ conversation: await conversationOf(deps, thread, scope) })
+    const owner = ownerOf(input)
+    const { thread, scope } = await ownScoped(deps, owner, input.params.conversationId)
+    return answer({ conversation: await conversationOf(deps, owner, thread, scope) })
   })
 
   serve(app, listAssistantConnections, async (input) => {
     const owner = ownerOf(input)
     const place = placeOf(input.query.projectId)
     await admitted(deps, owner, place, 'askAssistant')
-    const offered = await deps.connectors.connections({ ...owner, place, chosen: [] })
-    const connections = offered.map(({ connectionId, connector, name }) => ({
-      connectionId,
+    const offered = await offeredBy(deps.access, owner, place)
+    const connections = offered.map(({ connection, connector, name }) => ({
+      connectionId: connection,
       connector,
       name,
       chosen: true,
@@ -264,7 +274,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
         'ASSISTANT_CONVERSATION_CREATED',
       )
     }
-    const conversation = await conversationOf(deps, made.thread, scope)
+    const conversation = await conversationOf(deps, owner, made.thread, scope)
     return answer({ conversation: { ...conversation, model: made.model } })
   })
 
@@ -272,13 +282,13 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const owner = ownerOf(input)
     const { conversationId } = input.params
     const { thread, scope } = await ownScoped(deps, owner, conversationId)
-    const chosen = await offeredOnly(deps, scope, input.body.connections)
+    const chosen = await offeredAmong(deps.access, owner, scope.place, input.body.connections)
     await deps.chosen.change(owner, conversationId, chosen)
     deps.log.info(
       { companyId: owner.companyId, traceId: input.traceId, conversationId, count: chosen.length },
       'ASSISTANT_CONNECTIONS_CHANGED',
     )
-    const conversation = await conversationOf(deps, thread, { ...scope, chosen })
+    const conversation = await conversationOf(deps, owner, thread, { ...scope, chosen })
     return answer({ conversation })
   })
 
@@ -289,7 +299,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       thread,
       scope: { place },
     } = await ownScoped(deps, owner, conversationId)
-    const tags = marksOf(owner, {
+    const tags = assistantMarks(owner, {
       projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
       automation: automationOf(thread.metadata) ?? undefined,
     })

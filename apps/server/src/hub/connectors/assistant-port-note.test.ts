@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { chooserAt } from '../access/test-principal.ts'
 import { memberOn } from '../identity/test-hub.ts'
 import { TurnKey } from './public.ts'
 import { appCalls, CONNECTOR_CALLS_PER_TURN } from './test-app-calls.ts'
@@ -22,7 +23,7 @@ async function notingOn(t: Parameters<typeof appCalls>[0]) {
       ? ({ kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) } as const)
       : ({ kind: 'COMPANY' } as const)
     const companyId = CompanyId.parse(on.companyId)
-    return { companyId, personId: PersonId.parse(who.id), place, chosen: a.chosen ?? [matriz] }
+    return chooserAt({ companyId, personId: PersonId.parse(who.id), place }, a.chosen ?? [matriz])
   }
   function note(who: { id: string }, a: Parameters<typeof scope>[1] & { sql?: string } = {}) {
     return port.saveNote(scope(who, a), {
