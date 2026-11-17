@@ -262,10 +262,11 @@ test('a lista longa do Sheet rola até o fim, e o botão de fechar diz "Fechar a
 
 test('o toque pega 44 px sem desenhar 44', async () => {
   function buttons(page: Page) {
+    const shown = page.locator('[data-file="button.tsx"] [data-band=light]')
     return [
-      [page.getByRole('button', { name: 'Padrão', exact: true }), 6],
-      [page.getByRole('button', { name: 'Ícone', exact: true }), 6],
-      [page.getByRole('button', { name: 'Ícone pequeno', exact: true }), 8],
+      [shown.getByRole('button', { name: 'Salvar', exact: true }).first(), 6],
+      [shown.getByRole('button', { name: 'Ícone', exact: true }).first(), 6],
+      [shown.getByRole('button', { name: 'Ícone pequeno', exact: true }).first(), 8],
     ] as const
   }
   const page = await harness.open('/pieces', { viewport: PHONE, replies: {} })
