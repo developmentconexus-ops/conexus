@@ -359,6 +359,9 @@ jobs:
       - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api
         env:
           CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl
+      - run: npm run test:unit -w @conexus/web
+        env:
+          CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
@@ -366,7 +369,6 @@ jobs:
           path: ${{ runner.temp }}/flaky.jsonl
           if-no-files-found: ignore
           retention-days: 1
-      - run: npm run test:unit -w @conexus/web
 
   # The ready Sankhya reads against Sankhya's public documentation, downloaded here and kept nowhere
   # (it is Sankhya's, "Licença Sankhya"). Its own job, so a page that did not download reads as
