@@ -7,8 +7,7 @@ import { runCommand } from './command.ts'
 const MIN_COMMITS = 5
 const MIN_PERCENT = 50
 const MAX_FILES = 25
-const TEST_FILE =
-  /(?:\.test\.|\.spec\.|(?:^|\/)(?:tests?|__tests__)\/|(?:^|\/)test-[^/]*\.tsx?$)/
+const TEST_FILE = /(?:\.test\.|\.spec\.|(?:^|\/)(?:tests?|__tests__)\/|(?:^|\/)test-[^/]*\.tsx?$)/
 const PACKAGE_ROOT = /^(?:apps|packages)\/[^/]+(?:\/src)?(?=\/)/
 
 type Counts = { each: Map<string, number>; pairs: Map<string, number> }
@@ -52,8 +51,9 @@ function folderOf(file: string): string {
 
 function areaOf(file: string): string {
   const root =
-    scope.map((folder) => folder.replace(/\/$/, '')).find((folder) => file.startsWith(`${folder}/`)) ??
-    file.match(PACKAGE_ROOT)?.[0]
+    scope
+      .map((folder) => folder.replace(/\/$/, ''))
+      .find((folder) => file.startsWith(`${folder}/`)) ?? file.match(PACKAGE_ROOT)?.[0]
   if (root === undefined) return folderOf(file)
   const rest = file.slice(root.length + 1).split('/')
   return rest.length > 1 ? `${root}/${rest[0]}` : root

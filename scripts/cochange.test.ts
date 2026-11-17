@@ -49,7 +49,7 @@ function run(dir: string, ...args: string[]) {
 }
 
 test('lista a pasta e o arquivo que mudam juntos e ignora o teste', () => {
-  const { status, out } = run(repository(), '--folders', 'agents,tools,other')
+  const { status, out } = run(repository(), '--folders', 'agents,tools,other,same')
   assert.equal(status, 0)
   assert.match(out, /100%\s+6 commits\s+agents\s+\+\s+tools/)
   assert.match(out, /100%\s+6 commits\s+agents\/a\.ts\s+\+\s+tools\/t\.ts/)
