@@ -4,7 +4,7 @@ import { AGENT_TOOL, APP_DATA_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { AppCheck, AppRead, BuilderData } from '../../hub/apps/public.ts'
+import type { AppCheck, AppRead, BuilderData, SqlStatement } from '../../hub/apps/public.ts'
 import { shaped } from '../../hub/connectors/public.ts'
 import type { AppDataPort } from './port.ts'
 
@@ -58,30 +58,34 @@ function withDeadline(abortSignal: AbortSignal | undefined): AbortSignal {
   return abortSignal === undefined ? deadline : AbortSignal.any([abortSignal, deadline])
 }
 
+type AppReadOf = (
+  statement: SqlStatement,
+  signal: AbortSignal,
+) => Promise<AppRead | { kind: 'REFUSED'; code: 'NOT_FOUND' }>
+
 /**
  * `app_data_read`: one `SELECT` on the Projeto's app, as its read login. Its schema is the login's
  * own, so the model names tables without a schema; a refusal is the database's, never a filter of ours.
  */
+function appDataReadTool(read: AppReadOf) {
+  return createTool({
+    id: APP_DATA_TOOL.read,
+    description: READ_DESCRIPTION,
+    inputSchema: AppDataInput,
+    execute: async ({ sql }, { abortSignal }) =>
+      answered(await read({ text: sql }, withDeadline(abortSignal))),
+  })
+}
+
 export function appDataTools(deps: {
   appData: AppDataPort
   scope: { companyId: CompanyId; personId: PersonId }
   projectId: ProjectId
 }): ToolsInput {
-  const id = AGENT_TOOL.appDataRead
   return {
-    [id]: createTool({
-      id,
-      description: READ_DESCRIPTION,
-      inputSchema: AppDataInput,
-      execute: async ({ sql }, { abortSignal }) =>
-        answered(
-          await deps.appData.read({
-            ...deps,
-            statement: { text: sql },
-            signal: withDeadline(abortSignal),
-          }),
-        ),
-    }),
+    [AGENT_TOOL.appDataRead]: appDataReadTool((statement, signal) =>
+      deps.appData.read({ scope: deps.scope, projectId: deps.projectId, statement, signal }),
+    ),
   }
 }
 
@@ -108,13 +112,7 @@ type AppDataCheckOutput =
 export function builderAppDataTools(deps: { data: BuilderData; ids: Ids }) {
   const { data, ids } = deps
   return {
-    [APP_DATA_TOOL.read]: createTool({
-      id: APP_DATA_TOOL.read,
-      description: READ_DESCRIPTION,
-      inputSchema: AppDataInput,
-      execute: async ({ sql }, { abortSignal }) =>
-        answered(await data.read(ids, { text: sql }, withDeadline(abortSignal))),
-    }),
+    [APP_DATA_TOOL.read]: appDataReadTool((statement, signal) => data.read(ids, statement, signal)),
     [APP_DATA_TOOL.check]: createTool({
       id: APP_DATA_TOOL.check,
       description: CHECK_DESCRIPTION,

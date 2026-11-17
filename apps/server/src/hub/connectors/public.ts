@@ -48,7 +48,7 @@ export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { KitRead, WriteShape } from './assistant-port.ts'
 export type { Proposal, ProposeAnswer } from './builder-port.ts'
-export { TURNS_KEPT } from './builder-port.ts'
+export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
 export {
   connectionForCopy,

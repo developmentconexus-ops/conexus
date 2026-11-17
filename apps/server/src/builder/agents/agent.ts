@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import type {
   AgentId as AgentIdType,
   CompanyData,
@@ -27,6 +26,7 @@ import type { Speakers } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   blockOf,
+  CONEXUS_PROMPT,
   fixedSystem,
   oncePerRun,
   routedModel,
@@ -47,10 +47,6 @@ import { legacyTools } from './legacy.ts'
 import type { WriteAuthor } from './tools.ts'
 import { NEVER_ASKS, presetTools } from './tools.ts'
 
-const FIXED = readFileSync(
-  new URL('../conversation/prompt/conexus.md', import.meta.url),
-  'utf8',
-).trim()
 const READ_ONLY =
   'You only read: no tool of yours writes in a system. When the person asks you to change, save or send something, say that you cannot and what they can do instead.'
 const WRITES =
@@ -253,7 +249,7 @@ function runToolsOf(
       log: deps.log,
       read: (call, context) => deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
       notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-      wording: { whose: 'this agent reads', limit: '50 connector calls per answer' },
+      wording: { whose: 'this agent reads' },
     }
     const { companyId, personId, projectId } = run.scope
     const mayReadApp =
@@ -330,7 +326,7 @@ export function agentOf(
       const { program, writes } = await toolsOfRun(requestContext)
       const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
-        fixedSystem(FIXED),
+        fixedSystem(CONEXUS_PROMPT),
         { role: 'system', content: dataOrder() },
         { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
         { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },

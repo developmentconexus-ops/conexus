@@ -29,6 +29,7 @@ import {
   agentDefaults,
   agentManagerAdmission,
   blockOf,
+  CONEXUS_PROMPT,
   controllerOf,
   conversationMemory,
   createAskUserTool,
@@ -56,10 +57,6 @@ import { construtorTools } from './tools.ts'
 
 const MODE = 'conversa'
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
-const FIXED = readFileSync(
-  new URL('../conversation/prompt/conexus.md', import.meta.url),
-  'utf8',
-).trim()
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 
 /**
@@ -188,7 +185,7 @@ function construtorAgent(
       const scope = await runScope(requestContext)
       const speakers = await deps.speakersOf(sessionScopeOf(scope))
       return [
-        fixedSystem(FIXED),
+        fixedSystem(CONEXUS_PROMPT),
         { role: 'system', content: blockOf(speakers, await offeredOf(requestContext)) },
         { role: 'system', content: MANUAL },
       ] satisfies AgentInstructions
@@ -212,7 +209,7 @@ function construtorAgent(
         log: deps.log,
         read,
         notes: (connectionId) => deps.connectors.notes(door, connectionId),
-        wording: { whose: 'this Project received', limit: '50 connector calls per answer' },
+        wording: { whose: 'this Project received' },
       }
       return {
         ...toolsOf(sessionModel(requestContext)),

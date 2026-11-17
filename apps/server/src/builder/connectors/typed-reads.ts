@@ -94,7 +94,7 @@ function notChosen(access: ConnectorAccess, read: TypedRead) {
  * as Claude does. Mastra defect, still in 1.83.0 and 1.84.0-alpha.0: `llm-execution-step.ts`
  * (1.82, lines 1899-1920) calls `makeProcessorCoreTool` without `model`.
  */
-function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: string) {
+function typedTool(name: string, read: TypedRead, accessOf: AccessOf) {
   const { connector, operation } = read
   const open = openInputOf(operation)
   if ('connection' in open.shape) {
@@ -102,7 +102,7 @@ function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: str
   }
   return createTool({
     id: name,
-    description: `${operation.summary} (${connector.name}, by the connection's name.) ${answerWords(limit)}`,
+    description: `${operation.summary} (${connector.name}, by the connection's name.) ${answerWords()}`,
     strict: false,
     inputSchema: z.strictObject({
       connection: z.string().describe("The connection's name, exactly as listed"),
@@ -130,8 +130,8 @@ function typedTool(name: string, read: TypedRead, accessOf: AccessOf, limit: str
  * the same for every request; who may see one decides per request (`offersRead`), and each read
  * goes through the conversation's door, with its cut, its file and its count.
  */
-export function typedReads(accessOf: AccessOf, limit: string): ToolSearchProcessorOptions['tools'] {
+export function typedReads(accessOf: AccessOf): ToolSearchProcessorOptions['tools'] {
   return Object.fromEntries(
-    [...CATALOG].map(([name, read]) => [name, typedTool(name, read, accessOf, limit)]),
+    [...CATALOG].map(([name, read]) => [name, typedTool(name, read, accessOf)]),
   )
 }

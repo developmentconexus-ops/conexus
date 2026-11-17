@@ -120,7 +120,7 @@ function savingTo(files: { writeFile(path: string, content: string): Promise<voi
       error: (fields, message) => logged.push({ fields, message }),
     },
     notes: async () => null,
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
   }
   const set = connectorTools(access, { noteSave: false })
   const stop = new AbortController()
@@ -176,7 +176,7 @@ test('a ligação de um sistema com a leitura de outro: a ferramenta recusa dize
       error: (fields, message) => logged.push({ fields, message }),
     },
     notes: async () => null,
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
   }
   const set = connectorTools(access, { noteSave: false })
   const refused = await Object(set).connector_read.execute(
@@ -213,7 +213,7 @@ test('uma operação que o papel não tem chega à porta e o modelo recebe NOT_I
     },
     log: { info: () => undefined, error: () => undefined },
     notes: async () => null,
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
   }
   const read = Object(connectorTools(access, { noteSave: false })).connector_read
   const refused = await read.execute(
@@ -242,7 +242,7 @@ test('uma operação que não tem a forma conector.operação é erro de esquema
       error: (fields, message) => logged.push(JSON.stringify({ fields, message })),
     },
     notes: async () => null,
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
   }
   const read = Object(connectorTools(access, { noteSave: false })).connector_read
   const planted = `sankhya.${'x'.repeat(5000)}`
@@ -286,7 +286,7 @@ test('uma leitura que o fornecedor recusou por erro do pedido chega ao modelo co
     read: async () => answers[next++] ?? { kind: 'NOT_GRANTED' },
     log: { info: () => undefined, error: () => undefined },
     notes: async () => null,
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
   }
   const read = Object(connectorTools(access, { noteSave: false })).connector_read
   function ask() {

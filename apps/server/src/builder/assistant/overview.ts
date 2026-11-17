@@ -18,9 +18,10 @@ import { admitAsker } from '../controller-kit/public.ts'
 import type { AssistantProjects } from './ports.ts'
 
 /**
- * `conexus_overview` (Factory `factory_overview`, `supervisor/read-tools.ts:187`): the company's
- * Projetos with their app, and the connections the conversation's place offers, with whether it
- * chose each; read again on every call, never a key and never another company.
+ * `conexus_overview` (Factory `factory_list_work_items`, `mastracode/factory/src/tools/read-tools.ts:245`,
+ * `createFactoryReadTools`, Mastra 1.83): the company's Projetos with their app, and the connections
+ * the conversation's place offers, with whether it chose each; read again on every call, never a key
+ * and never another company.
  */
 export function overviewTool(deps: {
   scopeOf: (requestContext: RequestContext) => Promise<SessionScope | undefined>

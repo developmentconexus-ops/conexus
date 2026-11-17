@@ -43,7 +43,7 @@ export function accessOver(
       notes.push(connectionId)
       return {}
     },
-    wording: { whose: 'x', limit: 'y' },
+    wording: { whose: 'x' },
     ...over,
   }
   return { access, reads, notes }

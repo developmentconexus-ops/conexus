@@ -1,7 +1,7 @@
 export { admitAsker, agentManagerAdmission } from './admission.ts'
 export { ASK_USER_TOOL, createAskUserTool } from './ask-user.ts'
 export { agentDefaults, controllerOf, MODEL_TIMEOUT } from './factories.ts'
-export { fixedSystem, TITLE } from './instructions.ts'
+export { CONEXUS_PROMPT, fixedSystem, TITLE } from './instructions.ts'
 export type { ControllerKind, Owner } from './kinds.ts'
 export { CONTROLLER_KINDS, ownerOfResource, resourceOf } from './kinds.ts'
 export { conversationMemory, ownerIn, turnOfOwner } from './memory.ts'
