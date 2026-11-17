@@ -10,7 +10,7 @@ letras dele para esta etapa já estão dadas: A(b), B(a) e C(b) (quadro do estud
 e as capturas das plataformas de referência ficam fora do repositório (delivery L21); a tabela de
 referência diz a situação e o que elas fazem sem nomeá-las.
 
-Cada linha citada foi lida no `main` em `f4ccc150`, com `@mastra/core` 1.83.0, `better-auth` 1.7.8 e
+Cada linha citada foi lida no `main` em `f27128fa` (depois dos PRs 1162, 1173 e 1176), com `@mastra/core` 1.83.0, `better-auth` 1.7.8 e
 `@neondatabase/serverless` 1.2.0. A medida: cerca de 2.400 linhas alteradas em 13 unidades, abaixo das
 4.000 da delivery L2; o realinhamento estimava 2.900 com a H2a.
 
@@ -40,7 +40,7 @@ Entram também quatro coisas que você já escolheu:
 - **Seguir uma cópia, a seção Avisos e o aviso na primeira falha**, que a etapa da origem deixou para
   esta.
 
-E uma prova roda na CI de cada pull request da trilha. Ela mostra que o Assistente, o Construtor e o
+E uma prova roda na CI de cada pull request da trilha. Ela mostra que o Assistente, o Builder e o
 agente salvo leem e escrevem pelo mesmo contrato, contra o banco de verdade, na Empresa e num Projeto,
 e que nenhum caminho novo escapa dele. Ler um sistema ao vivo e agir passam a existir no contrato (a
 H2a). Os agentes passam a usá-los numa etapa da trilha Agentes e Apps (a H2b); até lá, nada muda na
@@ -92,9 +92,10 @@ aprova os textos das telas, que cada pull request lista.
 
 **Fica de fora.**
 
-- **O agente salvo e a automação como teto** (a versão deixa de substituir a pessoa) e as ferramentas,
-  as skills e o prompt saindo da porta. É o U3 do estudo único, que você mandou para a trilha Agentes e
-  Apps (R2, "a"). Até lá, o agente salvo segue lendo pelo que a versão declara.
+- **O resto do U3 do estudo único**, que você mandou para a trilha Agentes e Apps (R2, "a"). A parte do
+  agente salvo já entrou no `main` (U4 de "Um escopo e a fábrica de ferramentas", PR 1173): ele lê com o
+  papel de quem o roda e só o que a versão declara (o falante `AGENT`,
+  `apps/server/src/hub/identity/may-use.ts:29`). Esta etapa grava essas leituras com o agente `AGENT`.
 - **Os consumidores passando a chamar `live` e `act` do contrato** (a H2b). É de Agentes e Apps: ela
   migra os 30 arquivos de `builder/` e esvazia a lista de migração. Esta etapa liga os dois verbos e os
   prova; a lista não cresce.
@@ -118,7 +119,11 @@ aprova os textos das telas, que cada pull request lista.
 recomendação: "F1. O Construtor num Projeto lê com o papel de quem conversa: a", "F2. Quem segue uma
 cópia e vê Avisos: a", "F3. A guarda do Registro: a". As opções ficam abaixo como foram postas.
 
-- **F1. O Construtor num Projeto lê com o papel de quem conversa?** Respondida: (a). A sua C(b), no quadro do Registro,
+- **F1. O Construtor num Projeto lê com o papel de quem conversa?** Respondida: (a). Nesta pergunta,
+  "Construtor" é o Builder, que constrói o app (o consumidor `builder`). O Construtor que edita um agente
+  (o consumidor `construtor`) segue a mesma regra no Projeto, porque a U5 cruza o que o Projeto recebeu
+  com o papel para todo consumidor. No resto do cartão, Builder é quem constrói o app e Construtor é
+  quem edita o agente, como nas telas. A sua C(b), no quadro do Registro,
   dizia "o Builder segue lendo pela liberação do Projeto". Depois, na decisão 1 do estudo único, que
   você confirmou com "Sim", a consequência escrita era outra: "vale para todo consumidor de conversa, o
   Construtor incluído". Os dois textos divergem, e só você decide.
@@ -176,12 +181,12 @@ uma empresa passar de um milhão de linhas". Corpo:
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 O Registro grava (um PR) | U1 O gravador e o contrato | `recordReadOf`, o único que grava em `data.data_read`; o contrato grava cada leitura de tabela e consulta e cada recusa; sem linha, sem leitura; `DataContext` com a conversa; os três `dataOf` de `builder/` passam a conversa | `apps/server/src/hub/data/`, `apps/server/src/main.ts`, `apps/server/migrations/`, `apps/server/src/builder/data-tools/`, `apps/server/src/builder/assistant/` (só `assistant.ts`), `apps/server/src/builder/conversation/` (só `builder.ts`), `apps/server/src/builder/agents/` (só `agent.ts`), `.dependency-cruiser.cjs`, `scripts/rerun-never.json` | data (D15, D18, D22); testing (T5, T27); security S40 | o `main` em `f4ccc150` |
-| G1 | U2 A leitura ao vivo e o esquema do app | `readThrough` grava `LIVE` pela porta atrasada `recordRead`, pulando a cópia; a leitura do esquema do app pelo Construtor e pelo agente grava `QUERY` | `apps/server/src/hub/connectors/` (`read.ts`, `rows.ts`, `public.ts`), `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`), `apps/server/src/builder/app-data/` (só `tools.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D22); testing (T5, T27) | U1 |
+| G1 O Registro grava (um PR) | U1 O gravador e o contrato | `recordReadOf`, o único que grava em `data.data_read`; o contrato grava cada leitura de tabela e consulta e cada recusa; sem linha, sem leitura; o agente da linha pelo consumidor do `Principal`, com `CONSTRUTOR` novo; `DataContext` com a conversa de `RunScope.conversation`; os três `data` da fábrica passam o contexto | `apps/server/src/hub/data/`, `apps/server/src/main.ts`, `apps/server/migrations/`, `apps/server/src/builder/controller-kit/` (só `run.ts`), `apps/server/src/builder/assistant/` (só `assistant.ts`), `apps/server/src/builder/conversation/` (só `builder.ts`), `apps/server/src/builder/agents/` (`company.ts`, `agent.ts`), `.dependency-cruiser.cjs`, `scripts/rerun-never.json` | data (D15, D18, D22); testing (T5, T27); security S40 | o `main` em `f27128fa` |
+| G1 | U2 A leitura ao vivo e o esquema do app | `readThrough` grava `LIVE` pela porta atrasada `recordRead`, pulando a cópia; a leitura do esquema do app pelo Builder e pelo agente grava `QUERY` | `apps/server/src/hub/connectors/` (`read.ts`, `rows.ts`, `public.ts`), `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`), `apps/server/src/builder/app-data/` (só `tools.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D22); testing (T5, T27) | U1 |
 | G1 | U3 O plano lê só `sync` | A consulta do agente que lê fora de `sync` (catálogo do sistema, `information_schema`) ou chama uma função da lista recusada volta `NOT_IN_CATALOG` sem linha, e deixa linha no Registro (a sua 4(b)) | `apps/server/src/hub/data/` (`query.ts`, `plan.ts` novo), `scripts/rerun-never.json` | data (D20); testing (T5, T13, T27); security S10 | U1 |
 | G2 A permissão de funções (um PR próprio; palavra de merge) | U4 `EXECUTE` das funções que leem por texto | `ensureSync` tira de `PUBLIC` o `EXECUTE` de `query_to_xml` e das irmãs no banco da empresa; a prova num ramo de teste autorizado | `apps/server/src/platform/` (`copy-sql.ts`), `scripts/rerun-never.json` | data (D10, D13); testing (T13); security S41 | U3 mesclado; a autorização do fundador para o ramo de teste |
 | G3 O lugar e o contrato inteiro (um PR) | U5 A conversa num Projeto com o papel | No lugar Projeto, o catálogo é o que o Projeto recebeu cruzado com o que o papel lê; a consulta e a página de tabela leem pelo login do papel (a sua C(b), com a F1 (a)) | `apps/server/src/hub/copies/` (`access-source.ts`), `apps/server/src/hub/data/` (`query.ts`, `rows.ts`), `scripts/rerun-never.json` | data (D22); testing (T5, T27); security S10 | G1 mesclado |
-| G3 | U6 `live` e `funnel` ligados (a H2a) | `liveOf` e `funnelOf` sobre a porta do Assistente de `hub/connectors`; `TurnBinding` com quem aprovou; `NOT_GRANTED` só sem turno | `apps/server/src/hub/data/` (`live.ts`, `funnel.ts` novos, `public.ts`, `deps.ts`), `apps/server/src/hub/connectors/` (`assistant-port.ts`, `public.ts`), `apps/server/src/main.ts` | data (D22); testing (T5, T26, T27) | U5 |
+| G3 | U6 `live` e `funnel` ligados (a H2a) | `liveOf` e `funnelOf` sobre a porta do Assistente de `hub/connectors`; `TurnBinding` com quem aprovou e o falante `AGENT` (fecha a 1174); `NOT_GRANTED` só sem turno | `apps/server/src/hub/data/` (`live.ts`, `funnel.ts` novos, `public.ts`, `deps.ts`), `apps/server/src/hub/connectors/` (`assistant-port.ts`, `public.ts`), `apps/server/src/main.ts` | data (D22); testing (T5, T26, T27) | U5 |
 | G3 | U7 A prova contra o banco de verdade | `runDataConformance` com `make(t)` assíncrono e o contrato vinculado; as 22 leis e duas novas contra o mundo real na Empresa e num Projeto; as leis (c), (d) e (f) da porta; a lista de migração que não cresce | `packages/hub-api/src/` (`company-data-conformance.ts`, `company-data-world.ts`, `company-data.test.ts`), `apps/server/src/hub/data/` (`conformance.test.ts` novo, `test-world.ts` novo), `apps/server/src/hub/access/` (só `conformance.test.ts`), `scripts/rules-doors.test.ts`, `scripts/rerun-never.json` | testing (T4, T5, T27); code C3 a C8; L27 (muda `packages/hub-api`) | U6 |
 | G4 O Registro na tela (um PR) | U8 As rotas do Registro | `listDataReads` e `exportDataReads`, recortadas por pessoa (Dono e Administrador tudo); a página por chave (hora, id), da mais nova; os índices | `packages/hub-api/src/` (`data-reads.ts` novo, `index.ts`, `failures.ts` se preciso), `apps/server/src/hub/data/` (`reads.ts`, `routes.ts` novos, `public.ts`, `tables.ts`), `apps/server/migrations/`, `apps/server/src/main.ts`, `apps/web/sweep-replies.ts` | data (D15, D19); testing (T5, T6, T10); security S8, S10; L27 | G1 mesclado |
 | G4 | U9 A página Registro de dados (`p4-04` a `p4-06`) | Configurações, **Registro de dados**: 50 por página, filtros no endereço, a linha aberta, **Abrir a conversa**, **Copiar a consulta**, **Exportar** em CSV; a versão do membro | `apps/web/src/routes/_app/companies/$companyId_/settings/` (`data-reads.tsx` novo), `apps/web/src/hub/data/` (novo), `apps/web/sweep-data-reads-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U8; o protótipo julgado |
@@ -200,8 +205,10 @@ Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
   da empresa) e só depois da prova no ramo de teste que você autorizar. O G1, o G3 e o G5 não criam nem
   tiram permissão: o login do Hub já segura `SELECT` e `INSERT` em `data.data_read`
   (`apps/server/database-grants.sql:437`), e o C(b) lê pelo login do papel que já existe.
-- **O que toca a outra trilha.** A U1 muda uma linha em cada um dos três `dataOf` de `builder/` e a U2
-  uma em `builder/app-data/tools.ts`, para passar a conversa; a U7 e a U8 mudam `packages/hub-api`. A
+- **O que toca a outra trilha.** A U1 muda uma linha em cada um dos três `data` que os consumidores dão
+  à fábrica (`builder/company-tools/factory.ts:35`) e cria `dataContextOf` ao lado de `principalOf`, em
+  `builder/controller-kit/run.ts`; a U2 muda `appDataOf` da fábrica (`factory.ts:164-175`), para passar a
+  conversa; a U7 e a U8 mudam `packages/hub-api`. A
   trilha Agentes e Apps não tem etapa em construção nesses arquivos hoje (L1); o pull request avisa a
   trilha (L27). A H1 dela toca `hub/connectors/scope.ts`, que esta etapa não muda.
 - **A QA** ([testing T25](../guides/testing.md)) roda depois de G4 e de G6, pelo roteiro de uso e pela
@@ -211,9 +218,9 @@ Seis grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um com
 
 **Orçamento de código alterado.** Linhas mudadas, as tiradas também, sem testes nem gerados.
 
-- U1: ~170 (`record.ts` novo ≈70; `public.ts` ≈45, o embrulho e o contexto; `tables.ts` 2; a migração do
-  índice ≈4; `deps.ts` 2; `main.ts` 4; `data-tools/tools.ts` ≈12, `threadOf`; os três `dataOf` 3 cada;
-  `.dependency-cruiser.cjs` ≈8).
+- U1: ~175 (`record.ts` novo ≈75, com a tabela do agente; `public.ts` ≈45, o embrulho e o contexto;
+  `tables.ts` 2; a migração da regra `data_read_agent` ≈6; `deps.ts` 2; `main.ts` 4; `run.ts` ≈10,
+  `dataContextOf`; os três `data` 2 cada e `agent.ts` 1; `.dependency-cruiser.cjs` ≈8).
 - U2: ~90 (`read.ts` ≈30; `rows.ts` 3; `connectors/public.ts` 4; `builder-data.ts` ≈15; `apps/public.ts`
   ≈15; `app-data/tools.ts` ≈8; `main.ts` 4).
 - U3: ~90 (`plan.ts` novo ≈60; `query.ts` ≈30).
@@ -257,14 +264,14 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 5 | U1 | Com a gravação derrubada (o mundo de teste faz o `insert` falhar), a leitura de tabela e a consulta respondem `TABLE_UNAVAILABLE`, sem linha de dado, e o log tem `DATA_READ_UNRECORDED` com `companyId` e `verb`, sem a consulta | `record.test.ts`, "sem linha no Registro, nenhuma linha de dado" | must |
 | 6 | U1 | `describe` e a lista do catálogo não gravam linha | `record.test.ts`, "descrever não grava" | must |
 | 7 | U1 | Uma leitura `OPERATION` que o catálogo serve por uma tabela grava `SAMPLE`; a recusada antes de chamar o sistema (`NOT_IN_CATALOG`) grava `LIVE` com a conexão e a operação; nenhuma leitura grava duas linhas | `record.test.ts`, "a leitura de operação deixa exatamente uma linha" | must |
-| 8 | U1 | O agente da linha sai do lugar e da versão: na Empresa `ASSISTANT`, no Projeto sem versão `BUILDER`, com versão `AGENT` com `agent_id`; `project_id` só no Projeto | `record.test.ts`, "o agente e o Projeto da linha vêm do escopo" | must |
+| 8 | U1 | O agente da linha sai do consumidor do `Principal`: o Assistente `ASSISTANT`, o Builder `BUILDER`, o agente salvo `AGENT` com `agent_id`, o Construtor `CONSTRUTOR`; `project_id` só no Projeto; um consumidor novo em `Consumer` sem valor na tabela não compila. Recusa: o banco recusa um `agent` fora da lista (a regra `data_read_agent`) | `record.test.ts`, "o agente e o Projeto da linha vêm do principal" | must |
 | 9 | U1 | Só `apps/server/src/hub/data/record.ts` importa a tabela `dataRead`: um arquivo plantado que a importe faz `npm run deps` falhar com a regra `data-read-only-through-the-recorder` | `scripts/rules-doors.test.ts`, "só o gravador escreve no Registro" | must |
 | 10 | U1 | Uma consulta de 4.000 caracteres grava a linha inteira; o contrato já recusa uma maior (`QUERY_SQL_MAX`, `packages/hub-api/src/company-data.ts:93`) | `record.test.ts`, "a consulta no limite cabe na linha" | should |
-| 11 | U2 | A leitura ao vivo de um sistema pelo Assistente grava uma linha `LIVE` com `connection_id`, `operation`, `outcome` `OK` e `rows` nulo; a do app grava `APP` | `apps/server/src/hub/connectors/read-record.test.ts`, "a leitura ao vivo deixa uma linha LIVE" | must |
+| 11 | U2 | A leitura ao vivo de um sistema pelo Assistente grava uma linha `LIVE` com `connection_id`, `operation`, `outcome` `OK` e `rows` nulo; a do app grava `APP`; a do Construtor, pela mesma porta do Assistente, grava `CONSTRUTOR`, e a do agente salvo `AGENT` | `apps/server/src/hub/connectors/read-record.test.ts`, "a leitura ao vivo deixa uma linha LIVE" | must |
 | 12 | U2 | A rodada de uma cópia (`by: 'copy'`) não grava | `read-record.test.ts`, "a cópia não entra no Registro" | must |
 | 13 | U2 | A leitura ao vivo recusada pelo papel (`NOT_IN_ROLE`) grava uma linha com esse resultado, sem chamar o sistema | `read-record.test.ts`, "a leitura ao vivo recusada deixa linha" | must |
 | 14 | U2 | Com a gravação derrubada, a leitura ao vivo responde `UNREACHABLE` e o valor lido não volta; `DATA_READ_UNRECORDED` no log | `read-record.test.ts`, "sem linha, a leitura ao vivo não devolve o valor" | must |
-| 15 | U2 | `app_data_read` do Construtor e do agente grava uma linha `QUERY` com o texto, `tables` vazio, o resultado e a contagem; a lista de tabelas e a contagem de linhas da página Dados (`apps/server/src/hub/apps/app-tables.ts:73`, `:157`) não gravam | `apps/server/src/hub/apps/app-data-record.test.ts`, "a leitura do esquema do app pelo agente deixa linha" e "a página Dados não entra no Registro" | must |
+| 15 | U2 | `app_data_read` do Builder e do agente grava uma linha `QUERY` com o texto, `tables` vazio, o resultado e a contagem; a lista de tabelas e a contagem de linhas da página Dados (`apps/server/src/hub/apps/app-tables.ts:73`, `:157`) não gravam | `apps/server/src/hub/apps/app-data-record.test.ts`, "a leitura do esquema do app pelo agente deixa linha" e "a página Dados não entra no Registro" | must |
 | 16 | U3 | Como Bruno, `select relname from pg_class`, `select table_name from information_schema.tables` e `select * from pg_catalog.pg_roles` voltam `NOT_IN_CATALOG`, sem linha, e cada uma grava uma linha `QUERY` com esse resultado | `apps/server/src/hub/data/plan.test.ts`, "o catálogo do sistema é recusado e deixa linha" | must |
 | 17 | U3 | `select query_to_xml('select * from sync.sankhya_clientes', true, false, '')`, `select to_regclass('sync.sankhya_clientes')` e `select 'sync.sankhya_clientes'::regclass` voltam `NOT_IN_CATALOG`, sem linha | `plan.test.ts`, "a função e o tipo que leem por nome são recusados" | must |
 | 18 | U3 | As consultas de hoje continuam: `select date_trunc('day', ...), sum(...) ... group by 1` e `select count(*) from sync.sankhya_vendas` passam | `plan.test.ts`, "a consulta comum passa" | must |
@@ -285,19 +292,19 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 40 | U5 | Num Projeto que recebeu `sankhya_vendas` e `sankhya_clientes`, o catálogo do Assistente e do agente salvo de Bruno lista só `sankhya_vendas`; o de Dono e Administrador lista as duas | `apps/server/src/hub/data/place-role.test.ts`, "no Projeto, o catálogo é o que o Projeto recebeu e o papel lê" | must |
 | 41 | U5 | No mesmo Projeto, `read({kind:'TABLE', table:'sankhya_clientes'})` de Bruno volta `NOT_IN_CATALOG`; a consulta `select * from sync.sankhya_clientes` volta `NOT_IN_ROLE` ou `NOT_IN_CATALOG`, sem linha | `place-role.test.ts`, "no Projeto, a tabela fora do papel é recusada" | must |
 | 42 | U5 | No Projeto, uma consulta de Bruno roda como `conexus_role_<id do papel>` (`current_user`), e uma tabela que o papel lê mas o Projeto não recebeu volta `NOT_IN_CATALOG` | `place-role.test.ts`, "no Projeto, o banco segura o papel e o Hub o lugar" | must |
-| 43 | U5 | O Construtor de Carla, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes` (F1 (a)) | `place-role.test.ts`, "o Construtor no Projeto segue a F1" | must |
+| 43 | U5 | O Builder de Carla, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes` (F1 (a)) | `place-role.test.ts`, "o Builder no Projeto segue a F1" | must |
 | 44 | U5 | O app publicado do Projeto continua lendo as duas tabelas pelo login do Projeto (a sua 3(d)) | `apps/server/src/hub/apps/app-read-place.test.ts`, "o app lê pela liberação do Projeto" | must |
 | 45 | U6 | Com um turno vinculado, `read({kind:'OPERATION'})` de uma leitura que nenhuma tabela guarda chama o sistema uma vez e volta `LIVE` com o valor; sem turno, `NOT_GRANTED` | `apps/server/src/hub/data/live.test.ts`, "a leitura ao vivo pelo contrato chama o sistema com o turno" | must |
 | 46 | U6 | A leitura ao vivo pelo contrato gasta o mesmo limite de chamadas do turno que a ferramenta de hoje: na chamada além do limite volta `CALLS_SPENT` | `live.test.ts`, "o contrato gasta o limite do turno" | must |
 | 47 | U6 | `act` de uma ação declarada, com o turno e quem aprovou, grava em `connector_write` e volta `OK`; repetir a mesma chamada (`thread`, `toolCall`) volta a mesma resposta sem mandar de novo; a mesma chamada com outra entrada volta `IDEMPOTENCY_CONFLICT` | `apps/server/src/hub/data/funnel.test.ts`, "agir pelo contrato passa pelo funil e não repete" | must |
 | 48 | U6 | `act` de uma operação que o papel não usa volta `NOT_IN_ROLE` e não grava em `connector_write` | `funnel.test.ts`, "agir fora do papel é recusado sem registro de escrita" | must |
 | 49 | U6 | `WRITE_OPEN` volta com `since` em ISO; nenhum campo `Date` escapa do contrato (o esquema `ActAnswer` aceita a resposta) | `funnel.test.ts`, "a resposta do funil passa no esquema do contrato" | must |
-| 50 | U6 | O caso de hoje que fixa `NOT_GRANTED` em `live` e `act` (`apps/server/src/hub/data/data.test.ts:227-248`) passa a afirmá-lo só sem turno | `data.test.ts`, o caso reescrito | must |
+| 50 | U6 | O caso de hoje que fixa `NOT_GRANTED` em `live` e `act` (`apps/server/src/hub/data/data.test.ts:228-249`) passa a afirmá-lo só sem turno | `data.test.ts`, o caso reescrito | must |
 | 51 | U7 | `runDataConformance` aceita `make(t)` assíncrono e um contrato vinculado; o mundo falso de hoje passa as 22 leis como antes | `packages/hub-api/src/company-data.test.ts`, "a conformidade espera o mundo assíncrono e passa o TestContext" | must |
 | 52 | U7 | Lei nova "toda leitura deixa exatamente uma linha, sem nenhuma célula": para cada leitura das leis, o mundo devolve uma linha, e nenhuma linha contém um valor plantado | `company-data.test.ts` (mundo falso) e `apps/server/src/hub/data/conformance.test.ts` (mundo real) | must |
 | 53 | U7 | Lei nova "a gravação derrubada não devolve linha": com `world.failRecord()`, nenhuma leitura devolve dado | os mesmos dois arquivos | must |
 | 54 | U7 | As 24 leis passam contra o mundo real em dois lugares: a Empresa (papel Vendas) e um Projeto (o que recebeu cruzado com o papel) | `apps/server/src/hub/data/conformance.test.ts`, "empresa" e "projeto" | must |
-| 55 | U7 | As leis (c) e (d) da porta, por consumidor (Assistente, Construtor, agente): toda leitura aceita deixa uma linha; o login usado tem `SELECT` só nas tabelas do papel | `apps/server/src/hub/access/conformance.test.ts`, os cenários estendidos | must |
+| 55 | U7 | As leis (c) e (d) da porta, por consumidor (Assistente, Builder, agente): toda leitura aceita deixa uma linha; o login usado tem `SELECT` só nas tabelas do papel | `apps/server/src/hub/access/conformance.test.ts`, os cenários estendidos | must |
 | 56 | U7 | A lei (f) da porta: `query_to_xml` e uma consulta ao catálogo do sistema recusam e deixam linha, por consumidor | `apps/server/src/hub/access/conformance.test.ts`, "a consulta que lê por fora recusa" | must |
 | 57 | U7 | Um nome a mais na lista de migração (`.dependency-cruiser-migration.cjs`) faz o teste falhar; um a menos passa | `scripts/rules-doors.test.ts`, "a lista de migração do contrato não cresce" e "um nome novo na lista falha" | must |
 
@@ -359,8 +366,8 @@ para `NOT_IN_CATALOG` (de hoje).
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | `data.data_read` (todas as colunas; já no `main`) | só `recordReadOf` (U1), chamado pelo embrulho do contrato (U1), por `readThrough` e pela leitura do esquema do app (U2), e pelo aviso da borda (U10) | `listDataReads` e `exportDataReads` (U8); as leis (U7) |
-| `DataContext.thread` e `agentId` | os três `dataOf` de `builder/` (U1), `builder/app-data/tools.ts` (U2) | o embrulho (U1) e a linha |
-| `TurnBinding` (`turn`, `speaker`, `agentId`, `number`, `approvedBy`) | ninguém de produção nesta etapa (a H2b); o mundo real da U7 | `liveOf` e `funnelOf` (U6) |
+| `DataContext.thread` e `agentId` | `dataContextOf(run)` (U1), de `RunScope.conversation`, nos três `data` da fábrica (U1) e em `appDataOf` (U2); `agentId` só o do agente salvo | o embrulho (U1) e a linha |
+| `TurnBinding` (`turn`, `speaker` `PERSON` ou `AGENT`, `agentId`, `number`, `approvedBy`) | ninguém de produção nesta etapa (a H2b); o mundo real da U7 | `liveOf` e `funnelOf` (U6) |
 | `ReadEntry` | o embrulho, `readThrough`, `app-data`, `read-notice` | `recordReadOf` |
 | `RecordRead` → `'RECORDED' \| 'UNRECORDED'` | `recordReadOf` (U1) | o embrulho, `readThrough`, `app-data` (U2), `read-notice` (U10) |
 | `recordAppRead` (o corpo: `id`, `query`, `outcome`, `rows`, `ms`) | a borda (U10) | `read-notice.ts` (U10) |
@@ -414,11 +421,16 @@ protótipo pendente `registro-e-avisos-do-membro`, que o fundador julga antes da
 │  Registro …   │ Quando        Quem    Agente      O que         Resultado L. │
 │  Avisos       │ hoje 10:02    Bruno   Assistente  sankhya_vendas  Leu      1 │
 │               │ hoje 10:01    Bruno   Assistente  clientes        Recusada – │
+│               │ hoje 09:58    Carla   Construtor  HubSpot·deals   Leu     20 │
 │               │                                     ‹ 1 2 › (Pager)           │
 └───────────────┴──────────────────────────────────────────────────────────────┘
 390 px: os filtros num menu "Filtros (2)"; cada linha vira um cartão de duas linhas
 (quando · quem · agente / o que · resultado · linhas); a linha aberta ocupa a tela.
 ```
+
+O filtro Agente e a coluna dão um nome a cada valor de `agent`: Assistente, Builder, Construtor, o nome
+do agente salvo e App. O protótipo pendente mostra a linha do Construtor, uma leitura ao vivo, como a
+terceira linha acima (R.15).
 
 ## A tabela de falhas
 
@@ -450,15 +462,15 @@ ou a tela aprovada que a traz (L28).
 
 | Peça | Unidade | Hoje no main | Como as referências fazem | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A leitura de tabela e a consulta deixam uma linha (`SAMPLE`, `QUERY`) | U1 | `createCompanyData` em `apps/server/src/hub/data/public.ts:33-38`; `sourcesFor(deps, scope, _context)` ignora o contexto (`:56`); nenhum `insert` em `data.data_read` | A de ingestão grava uma linha por pedido de token, com o SQL e sem a resposta (visto); a de catálogo guarda o texto, quem rodou, em nome de quem e quantas linhas, nunca as linhas (documentado); uma ferramenta interna aberta grava uma linha por execução, num ponto só (lido) | embrulhado: a tabela nossa, gravada num embrulho do `read` do contrato; nenhuma biblioteca do stack registra acesso a dado | o rastro do Mastra guarda a saída das ferramentas e expira em 14 dias (`apps/server/src/builder/conversation/storage.ts:5`; a saída no span, lida na 1.82 pelo estudo, relay); o banco da empresa não registra o texto das consultas e não tem extensão de auditoria (documentado) | E4a; spec parte 4, requisito 6 | `apps/server/src/hub/data/record.ts` |
-| Uma linha por leitura, gravada depois de ler e antes de devolver | U1 | — | As referências gravam uma linha por pedido; a ferramenta interna aberta grava depois de rodar (lido); um cofre aberto grava por fila, com `on conflict do nothing` (lido) | nativo (`insert` do Drizzle por `database.command`, como `connector_write`, `apps/server/src/hub/connectors/write-record.ts:156-177`) | — | decisão do firstmate R.1 | — |
+| A leitura de tabela e a consulta deixam uma linha (`SAMPLE`, `QUERY`) | U1 | `createCompanyData` em `apps/server/src/hub/data/public.ts:32-37`; `sourcesFor(deps, principal, _context)` ignora o contexto (`:39`); nenhum `insert` em `data.data_read` | A de ingestão grava uma linha por pedido de token, com o SQL e sem a resposta (visto); a de catálogo guarda o texto, quem rodou, em nome de quem e quantas linhas, nunca as linhas (documentado); uma ferramenta interna aberta grava uma linha por execução, num ponto só (lido) | embrulhado: a tabela nossa, gravada num embrulho do `read` do contrato; nenhuma biblioteca do stack registra acesso a dado | o rastro do Mastra guarda a saída das ferramentas e expira em 14 dias (`apps/server/src/builder/conversation/storage.ts:5`; a saída no span, lida na 1.82 pelo estudo, relay); o banco da empresa não registra o texto das consultas e não tem extensão de auditoria (documentado) | E4a; spec parte 4, requisito 6 | `apps/server/src/hub/data/record.ts` |
+| Uma linha por leitura, gravada depois de ler e antes de devolver | U1 | — | As referências gravam uma linha por pedido; a ferramenta interna aberta grava depois de rodar (lido); um cofre aberto grava por fila, com `on conflict do nothing` (lido) | nativo (`insert` do Drizzle por `database.command`, como `connector_write`, `apps/server/src/hub/connectors/write-record.ts:158-180`) | — | decisão do firstmate R.1 | — |
 | A recusa deixa uma linha | U1, U2, U3 | só log: `DATA_READ_REFUSED` (`apps/server/src/hub/data/query.ts:52`) e `CONNECTOR_READ_REFUSED` (`apps/server/src/hub/connectors/read.ts:153`) | A de ingestão grava a consulta fora do escopo como linha de erro (visto); o banco de grafos registra a decisão negada só no log (lido) | embrulhado | — | spec parte 4, requisito 6 | — |
-| A leitura ao vivo deixa uma linha (`LIVE`) | U2 | `readThrough` em `apps/server/src/hub/connectors/read.ts:139`, só o log `CONNECTOR_CALLED` (`:203`); chamadores `app-calls.ts:108`, `assistant-port.ts:318`, `builder-port.ts:276`, `copy-port.ts:121` (fica fora), `notes.ts:127` | A de ingestão: o pedido de uma ferramenta ao vivo é uma linha (visto) | embrulhado: a porta atrasada `recordRead`, como `copies: () => ConnectionCopies` (`apps/server/src/hub/connectors/rows.ts:56`), porque `hub/connectors` não importa `hub/data` | — | spec parte 4, requisito 6.3 e 6.7 | — |
-| A leitura do esquema do app pelo Construtor e pelo agente | U2 | `readAppData` (`apps/server/src/hub/apps/app-database.ts:228`), log `APP_DATA_READ` sem SQL (`:242-260`); chamada por `builder-data.ts:49` e `apps/public.ts:100`; e por `app-tables.ts:73` e `:157`, que ficam fora | A de ingestão: todo `execute_sql` vira linha (visto) | embrulhado: a mesma gravação, verbo `QUERY` | — | requisito 6 | — |
+| A leitura ao vivo deixa uma linha (`LIVE`) | U2 | `readThrough` em `apps/server/src/hub/connectors/read.ts:139`, só o log `CONNECTOR_CALLED` (`:203`); chamadores `app-calls.ts:108`, `assistant-port.ts:306`, `builder-port.ts:276`, `copy-port.ts:121` (fica fora), `notes.ts:127` | A de ingestão: o pedido de uma ferramenta ao vivo é uma linha (visto) | embrulhado: a porta atrasada `recordRead`, como `copies: () => ConnectionCopies` (`apps/server/src/hub/connectors/rows.ts:56`), porque `hub/connectors` não importa `hub/data` | — | spec parte 4, requisito 6.3 e 6.7 | — |
+| A leitura do esquema do app pelo Builder e pelo agente | U2 | `readAppData` (`apps/server/src/hub/apps/app-database.ts:228`), log `APP_DATA_READ` sem SQL (`:242-260`); chamada por `builder-data.ts:49` e `apps/public.ts:100`; e por `app-tables.ts:73` e `:157`, que ficam fora | A de ingestão: todo `execute_sql` vira linha (visto) | embrulhado: a mesma gravação, verbo `QUERY` | — | requisito 6 | — |
 | O plano lê só `sync`; a função e o tipo que leem por nome são recusados | U3 | `syncRelations` filtra só `sync` e não recusa o resto (`apps/server/src/hub/data/query.ts:26-37`); o `EXPLAIN (VERBOSE, FORMAT JSON)` já roda junto (`:140`) | A de ingestão esconde as tabelas de fora do escopo e dá SQL; a de catálogo mostra o nome sem o dado (documentado). A recusa de função não tem referência; o analisador de SQL que o Hub já usa é o de um servidor MCP de banco aberto (`libpg-query`, `docs/reference/stack.md`, data D6) | embrulhado: o plano do PostgreSQL e o `libpg-query` | os critérios 16 a 19 | a sua 4(b) (quadro, 2026-11-16, "Sim") | `apps/server/src/hub/data/plan.ts` |
 | O `EXECUTE` das funções que leem por texto | U4 | nenhum `REVOKE` de função em `apps/server/src/platform/copy-sql.ts` | Sem referência; o PostgreSQL dá `EXECUTE` a `PUBLIC` por padrão | nativo (`REVOKE EXECUTE ... FROM PUBLIC`) | a prova no ramo de teste (critério 32); se o dono das funções no serviço não for o login dono, não cabe | U4 do estudo único; L28 | `apps/server/src/platform/copy-functions.test.ts` |
 | A conversa num Projeto lê com o papel | U5 | no Projeto, as tabelas são só as liberadas (`apps/server/src/hub/copies/access-source.ts:10-11`); a consulta lê como o Projeto (`apps/server/src/hub/data/query.ts:57-76`, `:143-145`); a página lê com `{ kind: 'ALL' }` (`apps/server/src/hub/data/rows.ts:18-20`) | A de catálogo: a conversa avalia o dado com o usuário final (documentado); os apps dela no modo do usuário (documentado) | nativo: o login do papel (`apps/server/src/platform/copy-reader.ts:26`) e o cruzamento com `copiesReadBy` | — | a sua C(b); F1 desta página | `apps/server/src/hub/data/place-role.test.ts` |
-| `live` e `funnel` ligados no contrato | U6 | `NOT_GRANTED` fixo (`apps/server/src/hub/data/public.ts:60`, `:62`); a porta do Assistente lê e escreve (`apps/server/src/hub/connectors/assistant-port.ts:307-336`) | O banco de grafos faz cada ferramenta chamar o mesmo handler da rota e testa a igualdade (lido) | nativo: a porta que já existe, desenhada na spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`) | — | R3 "A" | `live.ts`, `funnel.ts` |
+| `live` e `funnel` ligados no contrato | U6 | `NOT_GRANTED` fixo (`apps/server/src/hub/data/public.ts:43`, `:45`); a porta do Assistente lê e escreve (`apps/server/src/hub/connectors/assistant-port.ts:295-324`) | O banco de grafos faz cada ferramenta chamar o mesmo handler da rota e testa a igualdade (lido) | nativo: a porta que já existe, desenhada na spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`) | — | R3 "A" | `live.ts`, `funnel.ts` |
 | As leis contra a implementação real | U7 | `runDataConformance` (`packages/hub-api/src/company-data-conformance.ts:316`), `make` síncrono, só contra o mundo falso (`company-data.test.ts:211`); a porta já tem as leis (a), (b) e (e) contra o banco de teste (`apps/server/src/hub/access/conformance.test.ts`) | O banco de grafos tem o teste de paridade entre as duas portas (lido); as plataformas não têm (procurado) | embrulhado: `node:test` e as nossas leis | — | spec parte 3, grupos 5 e 6 | `apps/server/src/hub/data/conformance.test.ts` |
 | Nenhum caminho novo fora do contrato | U7 | 30 nomes em `.dependency-cruiser-migration.cjs` e `packages/app/src/connectors.ts`; a regra em `.dependency-cruiser.cjs:69` | nenhuma faz | nativo: `dependency-cruiser` e um teste que impede a lista de crescer | — | spec parte 3, 6.1 | — |
 | Quem vê o Registro: cada pessoa as suas, Dono e Administrador todas | U8 | nenhuma rota; `readsAll` (`packages/hub-api/src/roles.ts:36`); `seeData` aberto a todo membro (`apps/server/src/hub/identity/admission.ts:104`) | A de ingestão: dono e admin veem tudo, o membro vê as linhas dos tokens que criou (documentado) | nativo: a admissão de hoje e o recorte na consulta | — | E4a emendada ("3. Sim", 2026-11-15) | `apps/server/src/hub/data/reads.ts` |
@@ -488,19 +500,20 @@ para a seção 11 da arquitetura no fechamento.
 | R.3 | A recusa do plano (U3) é uma lista de recusa (`query_to_*`, `cursor_to_*`, `table_to_*`, `schema_to_*`, `database_to_*`, `pg_*`, `to_reg*`, `has_*_privilege`, `current_setting`, `set_config`, e o tipo `reg*`) mais "o plano lê só `sync`", não uma lista de funções permitidas | Uma lista de permitidas recusaria o SQL comum que o modelo escreve (`date_trunc`, `sum`, `coalesce`) sem referência que a sustente; a barreira do motor é o login do papel (critério 5 de Cada papel) e a U4 | Trocar por uma lista de permitidas em `plan.ts` |
 | R.4 | A linha da consulta do app não leva a lista de tabelas | A borda não sabe que tabelas a consulta leu, e um `EXPLAIN` por consulta dobraria o custo do app (estudo, decisão D) | Um `EXPLAIN` antes no Hub |
 | R.5 | A hora da linha é a do Hub (`statement_timestamp()`), também no aviso da borda | `connector_write` faz igual (`write-record.ts:156-177`); uma linha da borda chega no máximo alguns segundos depois | Mandar a hora da borda no corpo |
-| R.6 | O agente da linha sai do lugar e da versão (`contextOf`, `apps/server/src/hub/data/public.ts:41-54`), e `ReadBy` (`:14-18`) sai; o contexto passa só a conversa e, no agente salvo, o id dele | Um dono só do consumidor (C26): a porta já resolve assistente, construtor e agente do escopo | Um campo `agent` no contexto |
-| R.7 | `DataContext` deixa de ser opcional em `createCompanyData`: o compilador acha os três chamadores | A spec o deixava opcional (`design.md` da parte 4, `C6`); sem a conversa, "Abrir a conversa" não existe | Voltar ao opcional, com a linha sem conversa |
+| R.6 | O agente da linha sai do consumidor do `Principal` (`principal.consumer`, `apps/server/src/hub/access/principal.ts:21`) por uma tabela `Record<Consumer \| 'app', DataReadAgent>` em `record.ts`, e `ReadBy` (`apps/server/src/hub/data/public.ts:13-17`) sai; o contexto passa só a conversa, lida de `RunScope.conversation` (`apps/server/src/builder/controller-kit/run.ts:26`) por `dataContextOf`, e, no agente salvo, o id dele | Um dono só do consumidor e um da conversa (C26): a porta já resolve o consumidor (`principalOf`, `run.ts:209-232`), e a conversa já tem dono na execução; ler `MASTRA_THREAD_ID_KEY` de novo seria um segundo dono do mesmo fato | Um campo `agent` no contexto |
+| R.7 | `DataContext` deixa de ser opcional em `createCompanyData`: o compilador acha os três `data` da fábrica | A spec o deixava opcional (`design.md` da parte 4, `C6`); sem a conversa, "Abrir a conversa" não existe | Voltar ao opcional, com a linha sem conversa |
 | R.8 | O Membro que pede `person=<outra pessoa>` recebe a página vazia, não um 404 | A página vazia não diz se a pessoa existe nem se leu algo; um 404 por filtro diria | Responder 404 `NOT_FOUND` |
 | R.9 | `next` é só o id da última linha, e a consulta busca a hora dela | `PageToken` tem no máximo 64 caracteres (`apps/server/src/platform/pages.ts`); hora e id juntos passariam | Um token de hora e id |
 | R.10 | O CSV é montado na tela, a partir do JSON de `exportDataReads` | O contrato só serve JSON (`packages/hub-api/src/operation.ts:15-34`) | Uma rota de arquivo |
 | R.11 | Os índices novos de `data.data_read`: (empresa, hora desc, id desc) e (empresa, pessoa, hora desc, id desc), numa migração da U8; o de hoje, (empresa, hora), sai na mesma migração | A página e o recorte por pessoa leem por eles; o de hoje fica coberto pelo primeiro | Manter o de hoje |
 | R.12 | A U12 toma a 1135: `systemOf` corta `system_code` em 100 caracteres e a regra `copy_run_system_code` entra | O aviso lê as colunas da rodada; a 1135 tem o rótulo `next-card` e pede exatamente isso | Tirar a regra numa migração |
 | R.13 | Quem segue e quem é avisado saem da porta `hub/access` (a lista de tabelas da pessoa), não de `readCopies` | code C81: toda lista de dado sai da porta; `readCopies` hoje é o mesmo `statement` de `manageCopies` (`admission.ts:100-101`), que só Dono e Administrador têm | Voltar a `readCopies`, se o fundador mudar a F2 para (b) |
+| R.15 | O Construtor, que edita um agente (o consumidor `construtor`, `apps/server/src/hub/access/model.ts:37`), aparece no Registro com um valor próprio, `CONSTRUTOR`, e a U1 traz a migração que troca a regra `data_read_agent` (`apps/server/src/hub/data/tables.ts:63`); a tabela está vazia no `main`. Ele grava só leituras ao vivo, porque o seu assento não tem as ferramentas de dados (`apps/server/src/builder/company-tools/names.ts:39`) | Um dono só: `Consumer` já separa `builder` e `construtor`, e a tabela `Record<Consumer \| 'app', DataReadAgent>` (R.6) deixa o compilador recusar o consumidor sem valor. As referências gravam qual agente rodou, e o filtro Agente e **Abrir a conversa** precisam disso: a conversa do Construtor mora em outro endereço (`apps/web/src/routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx`) que a do Builder. Com `BUILDER`, o filtro misturaria quem constrói o app e quem edita um agente, e o link abriria a tela errada | Gravar `BUILDER` e tirar a migração |
 | R.14 | O aviso da borda vai por `ctx.waitUntil` do `Db` (`apps/edge/src/dispatcher.ts:26`), com uma nova tentativa | O app não espera o Registro (critério 103); o Worker continua até o aviso terminar | Esperar o aviso antes de responder |
 
 ## U1 O gravador e o contrato
 
-**Base e modelo.** O `main` em `f4ccc150`. Opus: muda o contrato de `hub/data` que três agentes de
+**Base e modelo.** O `main` em `f27128fa`. Opus: muda o contrato de `hub/data` que três agentes de
 outra trilha chamam, e fixa a ordem entre o banco da empresa e o do Hub.
 
 ### As linhas da tabela
@@ -508,7 +521,7 @@ outra trilha chamam, e fixa a ordem entre o banco da empresa e o do Hub.
 - **O contrato de hoje.** `createCompanyData(deps)` devolve `(principal, context?) => CompanyData`, e
   `sourcesFor` ignora o contexto (`apps/server/src/hub/data/public.ts:32-37`, `:39-47`); `ReadBy`,
   `TurnBinding` e `DataContext` (`:13-29`). O `Principal` e o seu `consumer`
-  (`apps/server/src/hub/access/principal.ts:20-29`); `Consumer` (`apps/server/src/hub/access/model.ts:28-39`). O contrato
+  (`apps/server/src/hub/access/principal.ts:20-29`); `ConsumerContext` e `Consumer` (`apps/server/src/hub/access/model.ts:28-48`). O contrato
   `companyData`, `read` e `act` (`packages/hub-api/src/company-data.ts:312-349`); `ReadAnswer`
   (`:124-160`); `QueryPage.used` (`:209-219`); `queried` (`:290-310`).
 - **A tabela.** `dataRead` e as regras (`apps/server/src/hub/data/tables.ts:35-79`): `data_read_agent`
@@ -516,11 +529,11 @@ outra trilha chamam, e fixa a ordem entre o banco da empresa e o do Hub.
   `data_read_query` (consulta só em `QUERY`, até 4.000), `data_read_counts`; a política por empresa
   (`:77`); `SELECT, INSERT` para `hub_company` (`apps/server/database-grants.sql:437`).
 - **O molde.** O `insert` de `connector_write` por `database.command`, com `statement_timestamp()`
-  (`apps/server/src/hub/connectors/write-record.ts:156-177`) e o seu teste de tabela
+  (`apps/server/src/hub/connectors/write-record.ts:158-180`) e o seu teste de tabela
   (`apps/server/src/hub/connectors/connector-write-table.test.ts`).
 - **A conversa.** O dono é a execução: `RunScope.conversation`, `THREAD` com o id ou `TRIAL` no teste de
   um rascunho (`apps/server/src/builder/controller-kit/run.ts:18-31`), montado em `:193` e, no agente
-  salvo, em `apps/server/src/builder/agents/agent.ts:220-224`. `principalOf(run)` (`run.ts:209-234`) é o
+  salvo, em `apps/server/src/builder/agents/agent.ts:220-224`. `principalOf(run)` (`run.ts:209-232`) é o
   molde de `dataContextOf`.
 - **A fábrica.** `CompanyToolDeps.data: (run: RunScope) => CompanyData`
   (`apps/server/src/builder/company-tools/factory.ts:35`), chamada uma vez por execução (`:204`). Os três
@@ -550,7 +563,7 @@ type Who = Readonly<{
   id: DataReadId
   companyId: CompanyId
   personId: PersonId
-  by: Consumer | 'app'                                           // dono: hub/access/model.ts:39
+  by: Consumer | 'app'                                           // dono: hub/access/model.ts:48
   projectId: ProjectId | null
   agentId: AgentId | null
   threadId: ConversationId | null
@@ -619,7 +632,7 @@ export function dataContextOf(run: RunScope): Pick<DataContext, 'thread'>
    - **Mutações à mão:** devolva antes de gravar (critério 5); grave também a OPERATION que chegou ao sistema (critério 7, duas linhas).
 3. **A conversa nos três agentes.** Critérios: 1, 8.
    - **Arquivos:** muda `controller-kit/run.ts`, `assistant.ts`, `builder.ts`, `agents/company.ts`, `agents/agent.ts`.
-   - **Referência a seguir:** `principalOf` (`run.ts:209-234`), um `switch` exaustivo sobre o `RunScope`.
+   - **Referência a seguir:** `principalOf` (`run.ts:209-232`), um `switch` exaustivo sobre o `RunScope`.
    - **O que entra:** `dataContextOf(run)` dá `{ thread: run.conversation.kind === 'THREAD' ? run.conversation.id : null }`; cada `data` passa `deps.companyData(principalOf(run), dataContextOf(run))`; `agentTools` recebe o `agentId` de `frozen` (`agent.ts:281`) e o junta ao contexto. Nenhum leitor de `MASTRA_THREAD_ID_KEY` nasce em `hub/data` nem na fábrica.
    - **Mutações à mão:** passe `thread: null` em `dataContextOf` (critério 1 vermelho, `thread_id` nulo).
    - **Pronto quando:** `npm run typecheck` acha os três `data` e mais nenhum.
@@ -691,7 +704,7 @@ As da U1. O guia de dados (D22).
 
 1. **`LIVE` em `readThrough`.** Critérios: 11 a 14.
    - **O que entra:** depois da resposta do executor (e na recusa do papel, antes de chamar), `recordRead()(entry)`; `UNRECORDED` troca a resposta por `{ kind: 'UNREACHABLE' }`. Nenhuma conexão do banco aberta durante a chamada (D22).
-   - **Mutações à mão:** grave também `by: 'copy'` (critério 12); devolva o valor com `UNRECORDED` (critério 14); deixe `by: 'assistant'` fixo na porta (o caso do Construtor do critério 8 grava `ASSISTANT` e fica vermelho).
+   - **Mutações à mão:** grave também `by: 'copy'` (critério 12); devolva o valor com `UNRECORDED` (critério 14); deixe `by: 'assistant'` fixo na porta (o caso do Construtor do critério 11 grava `ASSISTANT` e fica vermelho).
 2. **`QUERY` do esquema do app.** Critério: 15.
    - **O que entra:** o embrulho fica nas duas portas que um agente usa (`builder-data.ts:49`, `apps/public.ts:100`), nunca em `readAppData`, que `app-tables.ts` também chama.
    - **Mutações à mão:** grave dentro de `readAppData` (o caso "a página Dados não entra" fica vermelho).
@@ -814,7 +827,7 @@ resultado do ramo de teste no corpo do pull request. Mescla só com a palavra do
 
 - `accessTables` (`apps/server/src/hub/copies/access-source.ts:7-21`); `copiesReadBy` (`readers.ts`).
 - `queryOf` e `projectRead` (`apps/server/src/hub/data/query.ts:57-76`, `:116-150`); `rowsOf`
-  (`apps/server/src/hub/data/rows.ts:11-36`); `readers.readAs` e `readerOf`.
+  (`apps/server/src/hub/data/rows.ts:11-47`); `readers.readAs` e `readerOf`.
 - A leitura do app pelo login do Projeto (`apps/server/src/hub/apps/handoff.ts:281`), que fica.
 
 ### O raio da mudança
@@ -858,13 +871,13 @@ O mundo de papéis com um Projeto que recebeu as duas cópias (`plantedBy`, `app
 ### As linhas da tabela
 
 - O desenho da spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`).
-- `AssistantConnectors.read` e `write` (`apps/server/src/hub/connectors/assistant-port.ts:307-336`);
+- `AssistantConnectors.read` e `write` (`apps/server/src/hub/connectors/assistant-port.ts:295-324`);
   `WriteRequest` e `Written` (`write-record.ts:34-64`; o par do falante, `PERSON` ou `AGENT` com `agentId`
   e `number`, em `:47`); `register` (`:221`), `finish` (`:326`); `writeThrough` (`write.ts:160`); `mustAsk`
   (`approval.ts:101`).
 - `TurnKey` (`apps/server/src/hub/connectors/scope.ts:5-6`); `TurnBinding` (`apps/server/src/hub/data/public.ts:19-27`),
   que ainda nomeia `VERSION` e que ninguém monta: a issue 1174. O falante `AGENT`
-  (`apps/server/src/hub/identity/may-use.ts:29`, `AgentSpeaker` em `:33`).
+  (`apps/server/src/hub/identity/may-use.ts:29`, `AgentSpeaker` em `:34`).
 - `DataSources.live` e `funnel` (`packages/hub-api/src/company-data.ts:228`, `:232`); `ActAnswer` (`:175-183`).
 
 ### O raio da mudança
@@ -1005,7 +1018,7 @@ clientes e não acha.
 // packages/hub-api/src/data-reads.ts
 export const DataReadEntry = z.object({
   id: z.uuid(), at: z.iso.datetime(), person: z.object({ id: PersonId, name: z.string() }),
-  agent: z.enum(['ASSISTANT', 'BUILDER', 'AGENT', 'APP']),
+  agent: z.enum(['ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP']),
   project: z.object({ id: ProjectId, name: z.string() }).nullable(),
   agentId: z.string().nullable(), threadId: ConversationId.nullable(),
   verb: z.enum(['SAMPLE', 'QUERY', 'LIVE']), tables: z.array(z.string()),
