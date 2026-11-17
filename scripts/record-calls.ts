@@ -44,12 +44,12 @@ const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 /** What the model does in the `data-query` scenario: list the tables, look at the sales, query the October total, then answer with it. */
 export const DATA_QUERY_CALLS: Block[][] = [
   [{ type: 'tool_use', name: 'data_describe', input: {} }],
-  [{ type: 'tool_use', name: 'data_describe', input: { table: 'sankhya_vendas' } }],
+  [{ type: 'tool_use', name: 'data_describe', input: { table: 'vendas' } }],
   [{ type: 'tool_use', name: 'data_query', input: { sql: OCTOBER_SQL } }],
   [
     {
       type: 'text',
-      text: `Em outubro de 2026 a Padaria Sol vendeu ${BRL.format(TOTAL_OUTUBRO).replace(/\u00a0/g, ' ')}, de sankhya_vendas.`,
+      text: `Em outubro de 2026 a Padaria Sol vendeu ${BRL.format(TOTAL_OUTUBRO).replace(/\u00a0/g, ' ')}, de vendas.`,
     },
   ],
 ]
