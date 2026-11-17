@@ -17,3 +17,18 @@ these steps win.
    rows, and the other places found.
 
 A failed fix follows the review loop of [delivery](../../../../docs/guides/delivery.md).
+
+## A test that fails now and then
+
+1. Show the race first, deterministically: delay or reorder the step the test races against (an
+   injected clock, a held promise, a slowed write) until the test fails every time. A fix with no
+   such failure is a guess.
+2. Fix the cause: the test waits for the observable event ([testing T20](../../../../docs/guides/testing.md)),
+   never a longer wait and never a retry. The second round hides a flake from the CI colour, not
+   from its issue.
+3. Size the repeats by the rate: 95% confidence takes about 3/p runs (p is failures per run). One
+   failure in 300 runs takes about 900, so 25 green runs prove nothing; the deterministic failure
+   of step 1 is the proof, and a repeat run only checks the neighbours.
+4. Close the `flaky` issue with the run that proved it, and take the file off the list in
+   `biome.json` when the wait was its last.
+
