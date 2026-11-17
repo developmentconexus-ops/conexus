@@ -109,7 +109,14 @@ export function plantJourney(t: TestContext, pageUrl: string) {
       return { kind: 'hold', until: state.holding, text, before }
     return { kind: 'hold', until: state.holding, text: ANSWER_HEAD, rest: ANSWER_TAIL, before }
   }
+  let nextCall = Promise.withResolvers<void>()
+  /** Settles when the next streamed call asks Claude with the first account's key. */
+  function claudeCall(): Promise<void> {
+    nextCall = Promise.withResolvers<void>()
+    return nextCall.promise
+  }
   const anthropic = plantAnthropic(t, (sent) => {
+    if (sent.key === KEYS.first && sent.stream) nextCall.resolve()
     if (sent.key === KEYS.refused) return { kind: 'refuse', status: 401 }
     if (!sent.stream) return { kind: 'text', text: 'Apps de encomenda de padaria' }
     const read = sent.texts.some((text) => text.includes(MARKER))
@@ -125,7 +132,7 @@ export function plantJourney(t: TestContext, pageUrl: string) {
       held.resolve()
     }
   }
-  return { anthropic, state, hold }
+  return { anthropic, state, hold, claudeCall }
 }
 
 /** The owner's Padrões da empresa: the model the company starts conversations with. */
