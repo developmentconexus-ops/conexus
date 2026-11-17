@@ -293,3 +293,21 @@ export function idOrNotFound<S extends z.ZodType>(schema: S, raw: string): z.out
   if (!id.success) throw notFound()
   return id.data
 }
+
+/** The key of a list read with its text taken out: same company, place and page, whatever is typed. */
+function withoutText(key: QueryKey) {
+  return JSON.stringify(key, (name, value: unknown) => (name === 'q' ? undefined : value))
+}
+
+/**
+ * The `placeholderData` of a list read by text: a new text keeps the list on screen until its
+ * answer comes, not a skeleton per letter; a new company, place or page never shows the last
+ * one's list under the new name.
+ */
+export function keepWhileTextChanges(queryKey: QueryKey) {
+  const here = withoutText(queryKey)
+  return <T>(previous: T | undefined, previousQuery: { queryKey: QueryKey } | undefined) =>
+    previousQuery !== undefined && withoutText(previousQuery.queryKey) === here
+      ? previous
+      : undefined
+}
