@@ -20,7 +20,7 @@ for brought code, the entry sheets and the old code at its frozen commit.
 1. Write each question as what a person sees, one sentence, with its premise.
 2. **The reference table** ([report](references/report.md), section 3; verdicts by
    [code C75](../../../docs/guides/code.md)). One row per piece the use script touches. Fill
-   "Hoje no main" first: every file of `main` the use script runs through, inherited ones included.
+   "Hoje no main" first: every file of `main` the use script runs through.
    Then "Referência": three to six closest analogs (for the AI build flow, AI app builders first),
    the library's own products, the native feature and the old product, read at the installed
    version, each with its situation and match label ([sources](references/sources.md)), the options
@@ -34,23 +34,25 @@ for brought code, the entry sheets and the old code at its frozen commit.
    code will read, record the native flow once with `npm run record`
    ([testing T26](../../../docs/guides/testing.md)).
 4. **Verdicts.** Each row nativo, embrulhado or remendo. A remendo row without its proof, or a row the references
-   leave open, goes back to research, never to the founder as theory; a gap names the exact platform
+   leave open, goes back to research, never to the founder; a gap names the platform
    test ([delivery L28](../../../docs/guides/delivery.md)).
 5. **Then the repository.** Read [architecture](../../../docs/architecture.md), the subject's
    decision records, the guide [`docs/index.md`](../../../docs/index.md) names, and the `next-card`
    issues. Test the premise of each decision and boundaries entry the step leans on, `main`'s
    included, against its row at the installed version; a failed one goes to its decider (delivery L6), quoting
    the decision.
+   Run `npm run cochange -- --folders <folders>`, then the five special cases
+   ([lens](references/lens.md)).
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how
    ([report](references/report.md), section 4); without it, it is not brought.
 7. **Reopen.** Every reader line, or label it relay; every cell reaching the founder's page or an
    option table, by the author.
 8. **The verification pass** ([sources](references/sources.md)), by a reader that wrote none of
-   the report, before it is final.
+   the report.
 
 **The study rule**: a decision whose only basis is "implemented so",
-"only tested so" or "decided before" is dropped, or defended in writing with a reason of its own. A
+"only tested so" or "decided before" is dropped, or defended with a reason of its own. A
 part is brought only if it would be written that way from nothing. Its measure: lines brought and
 changed until the criteria pass, old tests passing unchanged through the public door, session hours.
 Past a third of its brought lines changed, it is written new.
