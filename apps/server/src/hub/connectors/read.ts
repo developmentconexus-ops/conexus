@@ -149,6 +149,19 @@ async function recorded<T extends ReadAnswer | NotInRole>(
   return written === 'RECORDED' ? answer : { kind: 'UNREACHABLE' }
 }
 
+/** The kit's schema refused the input: nothing reaches the provider, and the refusal leaves its line like the role's does. */
+function invalidInput(deps: Deps, a: ReadRequest, error: z.ZodError, entered: number) {
+  deps.log.info(
+    { connectionId: a.opened.id, operation: a.operation.id, by: a.by, reason: 'INPUT_INVALID' },
+    'CONNECTOR_INPUT_REFUSED',
+  )
+  const refusal: ReadAnswer = {
+    kind: 'REFUSED',
+    native: { status: 400, code: 'INPUT_INVALID', message: issuesOf(error), body: null },
+  }
+  return recorded(deps, a, refusal, performance.now() - entered)
+}
+
 /**
  * One read of a provider for the app, the Builder or the Assistant (at a Projeto or at the Início): the connection's turn, the token, the call, one
  * repeat on a token the provider ended. No database connection is held meanwhile (D22). Each call leaves one
@@ -183,14 +196,7 @@ export async function readThrough(deps: Deps, a: ReadRequest): Promise<ReadAnswe
   const parsed = a.operation.input.safeParse(a.input)
   // The kit's own schema judges what the caller wrote: nothing reaches the provider when it refuses,
   // and the caller is told each field the schema refused, by path and the schema's words.
-  if (!parsed.success) {
-    deps.log.info(
-      { connectionId: a.opened.id, operation: a.operation.id, by: a.by, reason: 'INPUT_INVALID' },
-      'CONNECTOR_INPUT_REFUSED',
-    )
-    const message = issuesOf(parsed.error)
-    return { kind: 'REFUSED', native: { status: 400, code: 'INPUT_INVALID', message, body: null } }
-  }
+  if (!parsed.success) return invalidInput(deps, a, parsed.error, entered)
   let queuedMs = a.deadlineMs
   const turn = await deps.limits.inTurn(
     a.opened.id,

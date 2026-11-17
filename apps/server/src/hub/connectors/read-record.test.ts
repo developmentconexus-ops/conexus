@@ -34,9 +34,15 @@ async function shopOn(t: TestContext, reads: string[]) {
   function through(
     scope: Parameters<typeof on.hub.connectors.assistant.read>[0],
     name = operation,
+    given: object = input,
   ) {
     const turn = TurnKey.parse(randomUUID())
-    return on.hub.connectors.assistant.read(scope, { connectionId, turn, operation: name, input })
+    return on.hub.connectors.assistant.read(scope, {
+      connectionId,
+      turn,
+      operation: name,
+      input: given,
+    })
   }
   const declared = [{ connectionId, operation: OperationId.parse(operation) }]
   const scopes = {
@@ -101,6 +107,15 @@ test('a leitura ao vivo recusada deixa linha', async (t) => {
   assert.equal(record?.outcome, 'NOT_IN_ROLE')
   assert.equal(record?.verb, 'LIVE')
   assert.equal(record?.rows, null)
+})
+
+test('a leitura recusada pelo esquema do kit deixa linha', async (t) => {
+  const on = await shopOn(t, ['pedidos'])
+  const refused = await on.through(on.scopes.assistant, 'pedidos', { limit: 'muitos' })
+  assert.equal(refused.kind, 'REFUSED')
+  const [record, ...rest] = await on.records()
+  assert.deepEqual(rest, [])
+  assert.deepEqual([record?.verb, record?.outcome], ['LIVE', 'REFUSED'])
 })
 
 test('sem linha, a leitura ao vivo não devolve o valor', async (t) => {

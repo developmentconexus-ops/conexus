@@ -17,7 +17,6 @@ import type { DATA_READ_AGENTS } from './tables.ts'
 import { dataRead } from './tables.ts'
 
 const DataReadId = z.uuid().brand('DataReadId')
-type DataReadId = z.infer<typeof DataReadId>
 
 export type Who = Readonly<{
   companyId: CompanyId

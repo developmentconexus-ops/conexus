@@ -233,7 +233,7 @@ async function noted(
   return provedAndSaved(deps, { ...call, read })
 }
 
-/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers, `by: 'assistant'`; the caderno's write only for `manageConnections` (step 24.3.5). */
+/** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers; the caderno's write only for `manageConnections` (step 24.3.5). */
 /** A connection as the place lists it: the fields the screen and the model read, and whether the conversation chose it. */
 function chosenAmong(scope: Principal) {
   return ({

@@ -54,3 +54,20 @@ test('a página Dados não entra no Registro', async (t) => {
   }
   assert.equal((await recordsOf(on)).length, 0)
 })
+
+test('sem linha, a leitura do esquema do app não devolve linhas', async (t) => {
+  const on = await builderDataOn(t, SEED)
+  await on.hub.test.asOwner(`create function data.refuse_read() returns trigger language plpgsql as $$
+    begin raise exception 'down' using errcode = '57P01'; end $$`)
+  await on.hub.test.asOwner(
+    'create trigger refuse before insert on data.data_read for each row execute function data.refuse_read()',
+  )
+  const answer = await on.data.read(
+    on.ids(on.ana),
+    { text: SQL },
+    AbortSignal.timeout(20_000),
+    ConversationId.parse(randomUUID()),
+  )
+  assert.deepEqual(answer, { kind: 'FAILED', code: 'APP_DATA_UNAVAILABLE' })
+  assert.deepEqual(await recordsOf(on), [])
+})

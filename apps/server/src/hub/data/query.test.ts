@@ -203,8 +203,8 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
 
 test('o prazo dá DEADLINE e registra TIMEOUT', async (t) => {
   const { on } = await withCopies(t)
-  const seconds = Math.ceil(APP_CALL_LIMITS.callDeadlineMs / 1000) + 2
-  assert.deepEqual(await queried(on, `select pg_sleep(${seconds})`), { kind: 'DEADLINE' })
+  const slow = 'select count(*) from generate_series(1, 100000) a, generate_series(1, 100000) b'
+  assert.deepEqual(await queried(on, slow), { kind: 'DEADLINE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
   assert.equal(failed?.fields.cause, 'TIMEOUT')
 })

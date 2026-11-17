@@ -49,14 +49,11 @@ test('a função e o tipo que leem por nome são recusados', async (t) => {
     "select query_to_xml('select * from sync.sankhya_vendas', true, false, '')",
     "select to_regclass('sync.sankhya_clientes')",
     "select pg_relation_size('sync.sankhya_vendas')",
+    "select ts_stat('select to_tsvector(''simple'', relname::text) from pg_class')",
+    "select (select string_agg(relname, ',') from pg_class where relname like 'sankhya%')::int",
+    "select query_to_xml('select relname from pg_class', true, false, '')::text::int",
     "select 'sync.sankhya_clientes'::regclass",
   ])
-})
-
-test('a função que lê uma tabela fora do papel esbarra no banco, antes do plano', async (t) => {
-  const w = await rolesWorld(t, 'PLANTED')
-  const sql = "select query_to_xml('select * from sync.sankhya_clientes', true, false, '')"
-  assert.deepEqual(await asBruno(w).read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_ROLE' })
 })
 
 test('a consulta comum passa', async (t) => {
@@ -73,6 +70,15 @@ test('a consulta comum passa', async (t) => {
     sql: 'select count(*) from sync.sankhya_vendas',
   })
   assert.equal(counted.kind, 'QUERY', JSON.stringify(counted))
+  const series = await data.read({
+    kind: 'QUERY',
+    sql: `select d::date as dia, coalesce(sum("VLRNOTA"), 0) as total
+      from generate_series('2026-11-01'::date, '2026-11-03'::date, '1 day') d
+      left join sync.sankhya_vendas v on v."DTNEG"::date = d::date group by 1`,
+  })
+  assert.equal(series.kind, 'QUERY', JSON.stringify(series))
+  const unnested = await data.read({ kind: 'QUERY', sql: 'select x from unnest(array[1, 2]) x' })
+  assert.equal(unnested.kind, 'QUERY', JSON.stringify(unnested))
 })
 
 test('o plano fora de sync é recusado', async (t) => {
@@ -90,7 +96,7 @@ test('o plano fora de sync é recusado', async (t) => {
     personId: w.on.anaId,
     place: { kind: 'COMPANY' },
   })
-  const sql = 'select * from public.visao'
+  const sql = 'select * from sync.visao'
   const answer = await w.on.hub.data(scope, { thread: null }).read({ kind: 'QUERY', sql })
   assert.deepEqual(answer, { kind: 'NOT_IN_CATALOG' })
   const [record, ...rest] = await recordsOf(w)

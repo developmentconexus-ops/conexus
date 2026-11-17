@@ -8,7 +8,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { NeonProjectId } from '../../platform/neon.ts'
 import type { Principal } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
-import { planVerdict } from './plan.ts'
+import { planVerdict, statementVerdict } from './plan.ts'
 
 const INSUFFICIENT_PRIVILEGE = '42501'
 
@@ -18,7 +18,7 @@ function withDeadline(signal: AbortSignal | undefined): AbortSignal {
 }
 
 type Ready = { host: string; neonProjectId: NeonProjectId }
-type Asked = { deps: DataDeps; scope: Principal; ready: Ready; sql: string }
+type Asked = { deps: DataDeps; scope: Principal; ready: Ready }
 
 function unavailable(deps: DataDeps, scope: Principal, cause: string): QueryPage {
   deps.log.error({ companyId: scope.companyId, cause }, 'DATA_QUERY_FAILED')
@@ -28,6 +28,14 @@ function unavailable(deps: DataDeps, scope: Principal, cause: string): QueryPage
 function refused(deps: DataDeps, scope: Principal): QueryPage {
   deps.log.info({ companyId: scope.companyId, personId: scope.personId }, 'DATA_READ_REFUSED')
   return { kind: 'NOT_IN_ROLE' }
+}
+
+function outside(deps: DataDeps, scope: Principal, reason: string): QueryPage {
+  deps.log.info(
+    { companyId: scope.companyId, personId: scope.personId, reason },
+    'DATA_READ_REFUSED',
+  )
+  return { kind: 'NOT_IN_CATALOG' }
 }
 
 /** The statements as the Projeto's read login; a login not made yet is made as the owner and asked once more. */
@@ -55,18 +63,12 @@ async function projectRead(
 function rowsOfRead(asked: Asked, results: readonly ReadResult[]): QueryPage {
   const { deps, scope } = asked
   const [plan, result] = results
-  const verdict = plan === undefined ? undefined : planVerdict(asked.sql, plan)
+  const verdict = plan === undefined ? undefined : planVerdict(plan)
   if (verdict === undefined || verdict.kind === 'UNREADABLE' || result === undefined) {
     deps.log.error({ companyId: scope.companyId, personId: scope.personId }, 'DATA_PLAN_UNREAD')
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'DATA_PLAN_UNREAD' } })
   }
-  if (verdict.kind === 'OUTSIDE') {
-    deps.log.info(
-      { companyId: scope.companyId, personId: scope.personId, reason: verdict.reason },
-      'DATA_QUERY_OUTSIDE_SYNC',
-    )
-    return { kind: 'NOT_IN_CATALOG' }
-  }
+  if (verdict.kind === 'OUTSIDE') return outside(deps, scope, verdict.reason)
   const kept = withoutPassColumn(result)
   return {
     kind: 'ROWS',
@@ -120,9 +122,11 @@ export async function queryOf(
       }
     },
   )
+  const named = statementVerdict(a.sql)
+  if (named.kind === 'OUTSIDE') return outside(deps, scope, named.reason)
   if (ready?.host == null) return unavailable(deps, scope, 'NO_DATABASE')
   const asked = {
-    ...{ deps, scope, sql: a.sql },
+    ...{ deps, scope },
     ready: { host: ready.host, neonProjectId: ready.neonProjectId },
   }
   const statements = [{ text: `EXPLAIN (VERBOSE, FORMAT JSON) ${a.sql}` }, { text: a.sql }]
