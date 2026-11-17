@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
@@ -13,6 +13,10 @@ type Tool = { name: string; input: Record<string, string> }
 
 function writing(path: string, content: string): Tool {
   return { name: 'mastra_workspace_write_file', input: { path, content } }
+}
+
+function command(description: string, line: string): Tool {
+  return { name: 'mastra_workspace_execute_command', input: { description, command: line } }
 }
 
 function repositoryOf({ hub, companyId, projectId }: Awaited<ReturnType<typeof conversing>>) {
@@ -219,4 +223,45 @@ test('outra conversa salvou com a máquina desta ligada: o turno que só leu fec
   assert.deepEqual(await turn('De novo'), [])
   const paths = ((await repository.tree(await repository.main())) ?? []).map((file) => file.path)
   assert.ok(paths.includes('src/a.ts') && paths.includes('src/b.ts'), 'saved on the other version')
+})
+
+test('a máquina ligada não ouviu que o turno foi salvo: o turno seguinte que só leu fecha sem versão e sem falha', async (t) => {
+  // A lock on the base ref makes the machine's `saved` fail, as a git it cannot run would.
+  const lock = command(
+    'Travando',
+    'mkdir -p .git/refs/conexus && touch .git/refs/conexus/base.lock',
+  )
+  const script: (Tool | 'end')[] = [
+    writing('src/a.ts', 'a\n'),
+    lock,
+    'end',
+    command('Lendo', 'echo oi'),
+    'end',
+  ]
+  const world = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    const next = script.shift()
+    if (next === undefined || next === 'end') return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...next }] }
+  })
+  const { hub, ana, conversations } = world
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  async function turn(content: string) {
+    assert.equal((await sent(hub, ana, url, content)).statusCode, 200)
+    return failuresOf(await stream.turn())
+  }
+  assert.deepEqual(await turn('Crie a'), [])
+  assert.ok(hub.lines.some((line) => line.message === 'MACHINE_BASE_NOT_MOVED'))
+  const repository = repositoryOf(world)
+  assert.equal(await repository.version(), 1)
+  rmSync(join(hub.builder.folder, 'app', '.git/refs/conexus/base.lock'))
+  assert.deepEqual(await turn('Só leia'), [], 'the saved turn is not taken for unsaved work')
+  assert.equal(await repository.version(), 1, 'and nothing is saved again')
+  assert.equal(
+    hub.lines.filter((line) => line.message === 'VERSION_SAVED').length,
+    1,
+    'not even the same commit, collected again within the same second',
+  )
 })

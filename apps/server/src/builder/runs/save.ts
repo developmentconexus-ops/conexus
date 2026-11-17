@@ -33,7 +33,7 @@ async function collectOf(
 /**
  * Tells the machine that `main` holds its bundle's commit, so the next start measures its unsaved
  * work from it. The version is saved either way: a machine that cannot hear it is told in the log,
- * and a new machine seeds from `main`.
+ * and brings `main` in at its next use, as a start does.
  */
 async function machineSaved(
   context: RunsContext,
