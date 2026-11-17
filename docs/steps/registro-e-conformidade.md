@@ -505,32 +505,38 @@ outra trilha chamam, e fixa a ordem entre o banco da empresa e o do Hub.
 
 ### As linhas da tabela
 
-- **O contrato de hoje.** `createCompanyData` e `sourcesFor` (`apps/server/src/hub/data/public.ts:33-38`,
-  `:56-64`); `ReadBy`, `TurnBinding` e `DataContext` (`:14-30`); `contextOf` (`:41-54`). O contrato
+- **O contrato de hoje.** `createCompanyData(deps)` devolve `(principal, context?) => CompanyData`, e
+  `sourcesFor` ignora o contexto (`apps/server/src/hub/data/public.ts:32-37`, `:39-47`); `ReadBy`,
+  `TurnBinding` e `DataContext` (`:13-29`). O `Principal` e o seu `consumer`
+  (`apps/server/src/hub/access/principal.ts:20-29`); `Consumer` (`apps/server/src/hub/access/model.ts:28-39`). O contrato
   `companyData`, `read` e `act` (`packages/hub-api/src/company-data.ts:312-349`); `ReadAnswer`
   (`:124-160`); `QueryPage.used` (`:209-219`); `queried` (`:290-310`).
-- **A tabela.** `dataRead` e as regras (`apps/server/src/hub/data/tables.ts:35-79`): `data_read_live`,
+- **A tabela.** `dataRead` e as regras (`apps/server/src/hub/data/tables.ts:35-79`): `data_read_agent`
+  (`:63`, a lista `DATA_READ_AGENTS` de `:19`), `data_read_live`,
   `data_read_query` (consulta só em `QUERY`, até 4.000), `data_read_counts`; a política por empresa
   (`:77`); `SELECT, INSERT` para `hub_company` (`apps/server/database-grants.sql:437`).
 - **O molde.** O `insert` de `connector_write` por `database.command`, com `statement_timestamp()`
   (`apps/server/src/hub/connectors/write-record.ts:156-177`) e o seu teste de tabela
   (`apps/server/src/hub/connectors/connector-write-table.test.ts`).
-- **A conversa.** `MASTRA_THREAD_ID_KEY` (`@mastra/core@1.83.0`, `dist/request-context/index.d.ts:1`,
-  `"mastra__threadId"` em `dist/request-context-COnZHt2-.js:27`), já lida em
-  `apps/server/src/builder/agents/tools.ts:204`. Os três `dataOf`: `builderDataOf`
-  (`apps/server/src/builder/conversation/builder.ts:72-87`), `dataOfScope`
-  (`apps/server/src/builder/assistant/assistant.ts:184-188`) e o do agente
-  (`apps/server/src/builder/agents/agent.ts:273`). `DataOf` (`apps/server/src/builder/data-tools/tools.ts:10`).
-  `reachedBy` (`apps/server/src/builder/assistant/overview.ts:98-100`) só descreve.
+- **A conversa.** O dono é a execução: `RunScope.conversation`, `THREAD` com o id ou `TRIAL` no teste de
+  um rascunho (`apps/server/src/builder/controller-kit/run.ts:18-31`), montado em `:193` e, no agente
+  salvo, em `apps/server/src/builder/agents/agent.ts:220-224`. `principalOf(run)` (`run.ts:209-234`) é o
+  molde de `dataContextOf`.
+- **A fábrica.** `CompanyToolDeps.data: (run: RunScope) => CompanyData`
+  (`apps/server/src/builder/company-tools/factory.ts:35`), chamada uma vez por execução (`:204`). Os três
+  `data`: `apps/server/src/builder/conversation/builder.ts:66`, `apps/server/src/builder/assistant/assistant.ts:150`
+  e `apps/server/src/builder/agents/company.ts:43`; o agente salvo conhece o seu id em
+  `apps/server/src/builder/agents/agent.ts:281` (`frozen.agentId`, `:173`). O assento do Construtor não tem
+  ferramenta de dados (`apps/server/src/builder/company-tools/names.ts:39`).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/data/` (`record.ts` novo, `record.test.ts` novo, `public.ts`, `deps.ts`, `tables.ts`, `data.test.ts`) | Cria o gravador; muda o contrato vinculado | `main.ts`; `builder/` pelos três `dataOf` |
-| `apps/server/migrations/` | Cria nenhuma nesta unidade (os índices são da U8) | — |
-| `apps/server/src/builder/data-tools/` (`tools.ts`, `public.ts`) | Muda: exporta `threadOf(requestContext)` | os três `dataOf` |
-| `apps/server/src/builder/assistant/assistant.ts`, `conversation/builder.ts`, `agents/agent.ts` | Muda uma linha cada: passam o contexto | — |
+| `apps/server/src/hub/data/` (`record.ts` novo, `record.test.ts` novo, `public.ts`, `deps.ts`, `tables.ts`, `data.test.ts`) | Cria o gravador; muda o contrato vinculado; `CONSTRUTOR` entra em `DATA_READ_AGENTS` | `main.ts`; `builder/` pelos três `data` da fábrica |
+| `apps/server/migrations/` | Cria uma: a regra `data_read_agent` com `CONSTRUTOR` (R.15); os índices são da U8 | — |
+| `apps/server/src/builder/controller-kit/run.ts` | Muda: cria `dataContextOf(run)`, ao lado de `principalOf` | os três `data` e `appDataOf` (U2) |
+| `apps/server/src/builder/assistant/assistant.ts`, `conversation/builder.ts`, `agents/company.ts`, `agents/agent.ts` | Muda uma linha cada: passam o contexto; o agente, o seu id | — |
 | `.dependency-cruiser.cjs` | Cria a regra `data-read-only-through-the-recorder` | `npm run deps` |
 | `scripts/rules-doors.test.ts`, `scripts/rerun-never.json` | Muda: o caso da regra; `record.test.ts` em `files` | `scripts/rerun-exempt.test.ts` |
 
@@ -544,7 +550,7 @@ type Who = Readonly<{
   id: DataReadId
   companyId: CompanyId
   personId: PersonId
-  agent: (typeof DATA_READ_AGENTS)[number]                       // dono: tables.ts:83
+  by: Consumer | 'app'                                           // dono: hub/access/model.ts:39
   projectId: ProjectId | null
   agentId: AgentId | null
   threadId: ConversationId | null
@@ -559,28 +565,34 @@ export type ReadEntry = Who &
   Readonly<{ outcome: string; rows: number | null; ms: number }>   // outcome: o `kind` da resposta
 export type Recorded = 'RECORDED' | 'UNRECORDED'
 export type RecordRead = (entry: ReadEntry) => Promise<Recorded>
+type DataReadAgent = (typeof DATA_READ_AGENTS)[number]           // dono: tables.ts:19, com CONSTRUTOR
+const AGENT_OF = {
+  assistant: 'ASSISTANT', builder: 'BUILDER', construtor: 'CONSTRUTOR', agent: 'AGENT', app: 'APP',
+} as const satisfies Record<Consumer | 'app', DataReadAgent>
 /** The one writer of data.data_read: one insert in the Hub's database, never in the caller's transaction. */
 export function recordReadOf(deps: Pick<DataDeps, 'database' | 'log'>): RecordRead
 
 // apps/server/src/hub/data/public.ts
 export type DataContext = Readonly<{
-  thread: ConversationId | null                                  // de requestContext[MASTRA_THREAD_ID_KEY]
+  thread: ConversationId | null                                  // de RunScope.conversation; TRIAL → null
   agentId?: AgentId                                              // só o agente salvo
   turn?: TurnBinding                                             // a U6 lê
 }>
-export function createCompanyData(deps: DataDeps): (scope: SessionScope, context: DataContext) => CompanyData
+export function createCompanyData(deps: DataDeps): (principal: Principal, context: DataContext) => CompanyData
 export const recordRead: (deps: DataDeps) => RecordRead          // a porta que main.ts entrega a hub/connectors e hub/apps (U2)
-// sai: ReadBy
+// sai: ReadBy (public.ts:13-17) e o `?` de context
 
-// apps/server/src/builder/data-tools/tools.ts
-export function threadOf(requestContext: RequestContext | undefined): ConversationId | null
+// apps/server/src/builder/controller-kit/run.ts
+export function dataContextOf(run: RunScope): Pick<DataContext, 'thread'>
 ```
 
 - **Cada estado.** `ReadEntry` separa por `verb`, a mesma divisão das regras do banco (C21, C22).
 - **Cada id.** `DataReadId` nasce em `recordReadOf` (`randomUUID`) e é conferido pelo esquema na U10.
 - **O dono de cada fato.** Os agentes e os verbos: `DATA_READ_AGENTS` e `DATA_READ_VERBS`
-  (`tables.ts:83-84`); o limite da consulta: `DATA_READ_QUERY_MAX` (`tables.ts:85`), igual a
-  `QUERY_SQL_MAX`; o mapeamento consumidor → agente: uma tabela `Record<Consumer, Agent>` em `record.ts`.
+  (`tables.ts:19-20`); o limite da consulta: `DATA_READ_QUERY_MAX` (`tables.ts:21`), igual a
+  `QUERY_SQL_MAX`; o consumidor: `principal.consumer`, nunca um campo do contexto; o mapeamento
+  consumidor → agente: `AGENT_OF` em `record.ts` (R.6, R.15); a conversa: `RunScope.conversation`, lida
+  só por `dataContextOf`.
 - **O arquivo modelo.** `write-record.ts` para o `insert` (cumpre C21 e C26); não é modelo para a falha
   engolida (`:333-343`), que aqui fecha a leitura.
 
@@ -599,15 +611,18 @@ export function threadOf(requestContext: RequestContext | undefined): Conversati
    - **Testes:** `record.test.ts`, por `createTestHub` e o contrato vinculado (T5).
    - **Mutações à mão:** tire o `insert` (o critério 1 fica vermelho); grave `rows` como o número pedido e não o devolvido (critério 1).
 2. **O embrulho do contrato.** Critérios: 1 a 3, 5, 7, 8.
-   - **Arquivos:** muda `public.ts`, `data.test.ts`.
+   - **Arquivos:** muda `public.ts`, `tables.ts`, `data.test.ts`; cria a migração da regra `data_read_agent`
+     por `npm run db:generate` (data D15).
    - **O que sai:** `ReadBy` e o `_context` ignorado; o `?` de `context`.
    - **O que entra:** `createCompanyData` devolve `recorded(companyData(...), entryOf)`: `read` mede o tempo, chama o contrato, monta a linha pelo `kind` (TABLE → `SAMPLE`; QUERY → `QUERY` com `tables` da resposta ou `[]`; OPERATION servida por tabela → `SAMPLE`; OPERATION recusada pelo catálogo → `LIVE`; a OPERATION que chega ao sistema é gravada por `readThrough`, U2), grava e só então devolve; `UNRECORDED` troca a resposta por `TABLE_UNAVAILABLE`. `describe` e `act` passam sem gravar.
    - **Testes:** `record.test.ts`, critérios 1 a 8.
    - **Mutações à mão:** devolva antes de gravar (critério 5); grave também a OPERATION que chegou ao sistema (critério 7, duas linhas).
 3. **A conversa nos três agentes.** Critérios: 1, 8.
-   - **Arquivos:** muda `data-tools/tools.ts`, `data-tools/public.ts`, `assistant.ts`, `builder.ts`, `agent.ts`.
-   - **O que entra:** `threadOf` lê `MASTRA_THREAD_ID_KEY` por `ConversationId.safeParse`; cada `dataOf` passa `{ thread: threadOf(requestContext) }`, e o do agente também `agentId`. `reachedBy` passa `{ thread: null }` (só descreve).
-   - **Pronto quando:** `npm run typecheck` acha os três e mais nenhum.
+   - **Arquivos:** muda `controller-kit/run.ts`, `assistant.ts`, `builder.ts`, `agents/company.ts`, `agents/agent.ts`.
+   - **Referência a seguir:** `principalOf` (`run.ts:209-234`), um `switch` exaustivo sobre o `RunScope`.
+   - **O que entra:** `dataContextOf(run)` dá `{ thread: run.conversation.kind === 'THREAD' ? run.conversation.id : null }`; cada `data` passa `deps.companyData(principalOf(run), dataContextOf(run))`; `agentTools` recebe o `agentId` de `frozen` (`agent.ts:281`) e o junta ao contexto. Nenhum leitor de `MASTRA_THREAD_ID_KEY` nasce em `hub/data` nem na fábrica.
+   - **Mutações à mão:** passe `thread: null` em `dataContextOf` (critério 1 vermelho, `thread_id` nulo).
+   - **Pronto quando:** `npm run typecheck` acha os três `data` e mais nenhum.
 4. **A regra do gravador.** Critério: 9.
    - **Arquivos:** muda `.dependency-cruiser.cjs`, `scripts/rules-doors.test.ts`.
    - **Referência a seguir:** a regra `describe-lists-only-through-access` (`.dependency-cruiser.cjs:91`) e o diretório plantado de `scripts/rules-doors.test.ts`.
@@ -623,6 +638,8 @@ leitura: os critérios 1 a 3 falham no `main`.
 
 - O `insert` precisar de uma permissão além de `SELECT, INSERT`: para e reporta (data D11).
 - Um quarto chamador de `createCompanyData` aparecer no `typecheck`: para e reporta, com o arquivo.
+- O `main` ganhar um consumidor novo em `Consumer` sem valor em `AGENT_OF`: para e reporta, sem
+  escolher o valor.
 
 ## U2 A leitura ao vivo e o esquema do app
 
@@ -630,19 +647,23 @@ leitura: os critérios 1 a 3 falham no `main`.
 
 ### As linhas da tabela
 
-- `readThrough` (`apps/server/src/hub/connectors/read.ts:139`), `ReadRequest` (`:19-32`, `by` sem `AGENT`),
+- `readThrough` (`apps/server/src/hub/connectors/read.ts:139`), `ReadRequest` (`:19-32`; `ReadBy` em `:17`),
   a recusa do papel (`:148-155`), o comentário D22 (`:132-136`) e `CONNECTOR_CALLED` (`:187-203`); a porta
   atrasada `copies` (`rows.ts:56`) e a sua ligação em `apps/server/src/main.ts`.
 - `readAppData` (`apps/server/src/hub/apps/app-database.ts:228-260`); `builder-data.ts:46-50`;
-  `apps/server/src/hub/apps/public.ts:100`; a ferramenta `app_data_read` (`apps/server/src/builder/app-data/tools.ts:65-86`, `:108-117`).
+  `apps/server/src/hub/apps/public.ts:100`; a ferramenta `app_data_read` (`apps/server/src/builder/app-data/tools.ts:70-90`,
+  `:112-115`), dada pela fábrica em `appDataOf` (`apps/server/src/builder/company-tools/factory.ts:164-175`).
+- A porta do Assistente lê como o `Principal` da execução (`apps/server/src/hub/connectors/assistant-port.ts:295-324`)
+  e é também a do agente salvo e a do Construtor (`apps/server/src/builder/construtor/construtor.ts:86`, `:247-251`).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/connectors/` (`read.ts`, `rows.ts`, `public.ts`, `read-record.test.ts` novo) | Muda: `Deps.recordRead` atrasado; a linha `LIVE` | os cinco chamadores de `readThrough` |
-| `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`, `app-data-record.test.ts` novo) | Muda: a leitura do esquema grava | `conversations-of.ts:93`, a ferramenta |
-| `apps/server/src/builder/app-data/tools.ts` | Muda: passa a conversa | — |
+| `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`, `app-data-record.test.ts` novo) | Muda: a leitura do esquema grava | `conversations-of.ts:95`, a ferramenta |
+| `apps/server/src/hub/connectors/assistant-port.ts` | Muda: `by: scope.consumer` no lugar de `'assistant'` (`:226`, `:307`) | — |
+| `apps/server/src/builder/app-data/tools.ts`, `builder/company-tools/factory.ts` | Muda: `appDataOf` passa `dataContextOf(scope.run)` | — |
 | `apps/server/src/main.ts` | Muda: entrega `recordRead(deps)` às duas portas | — |
 
 ### Os contratos que a unidade cria
@@ -651,13 +672,16 @@ leitura: os critérios 1 a 3 falham no `main`.
 // apps/server/src/hub/connectors/rows.ts (Deps)
 recordRead: () => RecordRead                       // tarde, como copies
 // apps/server/src/hub/connectors/read.ts (ReadRequest)
+by: Consumer | 'app' | 'copy'                      // sai ReadBy; a porta do Assistente passa scope.consumer
 thread?: ConversationId                            // a U6 passa; os outros chamadores não têm
 // apps/server/src/hub/apps/public.ts e builder-data.ts
 readAppData(input & { thread: ConversationId | null; agentId?: AgentId })
 ```
 
-O agente da linha `LIVE`: `by: 'app'` → `APP`; `'builder'` → `BUILDER`; `'assistant'` com `speaker.kind`
-`VERSION` → `AGENT`, senão `ASSISTANT`; `'copy'` não grava. Uma tabela `Record<ReadBy, ...>` em `read.ts`.
+O agente da linha `LIVE` sai do mesmo `AGENT_OF` da U1, por `by`: a porta do Assistente passa o
+consumidor do seu `Principal` (`assistant`, `agent` ou `construtor`), a do Builder `builder`, a do app
+`app`; `'copy'` não grava. Nenhum mapeamento pelo falante: o Construtor e o agente salvo falam como
+`PERSON` e `AGENT`, mas o que a linha nomeia é o consumidor.
 
 ### As skills e a leitura
 
@@ -667,7 +691,7 @@ As da U1. O guia de dados (D22).
 
 1. **`LIVE` em `readThrough`.** Critérios: 11 a 14.
    - **O que entra:** depois da resposta do executor (e na recusa do papel, antes de chamar), `recordRead()(entry)`; `UNRECORDED` troca a resposta por `{ kind: 'UNREACHABLE' }`. Nenhuma conexão do banco aberta durante a chamada (D22).
-   - **Mutações à mão:** grave também `by: 'copy'` (critério 12); devolva o valor com `UNRECORDED` (critério 14).
+   - **Mutações à mão:** grave também `by: 'copy'` (critério 12); devolva o valor com `UNRECORDED` (critério 14); deixe `by: 'assistant'` fixo na porta (o caso do Construtor do critério 8 grava `ASSISTANT` e fica vermelho).
 2. **`QUERY` do esquema do app.** Critério: 15.
    - **O que entra:** o embrulho fica nas duas portas que um agente usa (`builder-data.ts:49`, `apps/public.ts:100`), nunca em `readAppData`, que `app-tables.ts` também chama.
    - **Mutações à mão:** grave dentro de `readAppData` (o caso "a página Dados não entra" fica vermelho).
@@ -803,7 +827,7 @@ resultado do ramo de teste no corpo do pull request. Mescla só com a palavra do
 
 ### Os contratos que a unidade cria
 
-Nenhum. `AccessSources.tables` (`apps/server/src/hub/access/model.ts:45`) não muda: com a F1 (a), o
+Nenhum. `AccessSources.tables` (`apps/server/src/hub/access/model.ts:70`) não muda: com a F1 (a), o
 consumidor não entra no cruzamento.
 
 ### As skills e a leitura
@@ -820,7 +844,7 @@ As da U1. O guia de dados (D22).
 
 ### Como se prova
 
-O mundo de papéis com um Projeto que recebeu as duas cópias (`plantedBy`, `apps/server/src/hub/copies/test-sources.ts:215`).
+O mundo de papéis com um Projeto que recebeu as duas cópias (`plantedBy`, `apps/server/src/hub/copies/test-sources.ts:220`).
 
 ### Parar se
 
@@ -835,9 +859,12 @@ O mundo de papéis com um Projeto que recebeu as duas cópias (`plantedBy`, `app
 
 - O desenho da spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`).
 - `AssistantConnectors.read` e `write` (`apps/server/src/hub/connectors/assistant-port.ts:307-336`);
-  `WriteRequest` e `Written` (`write-record.ts:32-62`); `register` (`:219`), `finish` (`:311`); `writeThrough`
-  (`write.ts:158`); `mustAsk` (`approval.ts:101`).
-- `TurnKey` (`apps/server/src/hub/connectors/scope.ts:23`); `TurnBinding` (`apps/server/src/hub/data/public.ts:20-28`).
+  `WriteRequest` e `Written` (`write-record.ts:34-64`; o par do falante, `PERSON` ou `AGENT` com `agentId`
+  e `number`, em `:47`); `register` (`:221`), `finish` (`:326`); `writeThrough` (`write.ts:160`); `mustAsk`
+  (`approval.ts:101`).
+- `TurnKey` (`apps/server/src/hub/connectors/scope.ts:5-6`); `TurnBinding` (`apps/server/src/hub/data/public.ts:19-27`),
+  que ainda nomeia `VERSION` e que ninguém monta: a issue 1174. O falante `AGENT`
+  (`apps/server/src/hub/identity/may-use.ts:29`, `AgentSpeaker` em `:33`).
 - `DataSources.live` e `funnel` (`packages/hub-api/src/company-data.ts:228`, `:232`); `ActAnswer` (`:175-183`).
 
 ### O raio da mudança
@@ -852,14 +879,16 @@ O mundo de papéis com um Projeto que recebeu as duas cópias (`plantedBy`, `app
 
 ```ts
 // apps/server/src/hub/data/public.ts
-type TurnBinding = Readonly<{ turn: TurnKey; approvedBy?: PersonId }> & (PersonTurn | VersionTurn)  // + approvedBy
+type TurnBinding = Readonly<{ turn: TurnKey; approvedBy?: PersonId }> &
+  (Readonly<{ speaker: PersonSpeaker }> | Readonly<{ speaker: AgentSpeaker; agentId: AgentId; number: number }>)
+  // o mesmo par de WriteRequest (write-record.ts:47); sai VERSION (fecha a 1174)
 // apps/server/src/hub/data/deps.ts
 connectors: () => Pick<Connectors, 'assistant'>
 // apps/server/src/hub/data/live.ts
-export function liveOf(deps: DataDeps, scope: SessionScope, bound: Readonly<{ turn: TurnBinding; thread: ConversationId | null }>,
+export function liveOf(deps: DataDeps, principal: Principal, bound: Readonly<{ turn: TurnBinding; thread: ConversationId | null }>,
   a: Signal & OperationRead): Promise<LiveAnswer>
 // apps/server/src/hub/data/funnel.ts
-export function funnelOf(deps: DataDeps, scope: SessionScope, turn: TurnBinding,
+export function funnelOf(deps: DataDeps, principal: Principal, turn: TurnBinding,
   a: Signal & ActRequest): Promise<Exclude<ActAnswer, { kind: 'NOT_IN_CATALOG' | 'CATALOG_UNAVAILABLE' }>>
 ```
 
@@ -874,6 +903,8 @@ As da U1. O guia de testes (T26: a leitura ao vivo e a escrita pelo conector fal
 
 1. **`liveOf`.** Critérios: 45, 46, 50. **Mutações à mão:** devolva `NOT_GRANTED` com turno (45 vermelho).
 2. **`funnelOf`.** Critérios: 47 a 49. **Mutações à mão:** troque `call.toolCall` por um id novo (47 vermelho).
+3. **A 1174.** O `TurnBinding` passa a nomear `AGENT`, e o pull request diz "Closes #1174". **Pronto
+   quando:** `rg "'VERSION'" apps/server/src/hub/data` não acha nada.
 
 ### Como se prova
 
