@@ -7,9 +7,10 @@ founder's words and what reopens it. The rules that follow from this design live
 
 ## 1. Introduction and goals
 
-A person in a company asks Conexus, in Portuguese, for a business app. An agent, the Builder,
-writes it. The app runs for the people of that company, on its data. One founder
-operates the installation, for a handful of invited companies at launch.
+Conexus gathers company data, systems and know-how in a context and ontology layer that learns.
+On it the company analyses, automates, uses AI and asks for apps; the Builder agent writes them, for
+its people, on its data. One founder operates it, for a handful of invited companies
+at launch.
 
 **Quality goals, in order.**
 

@@ -136,7 +136,8 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 The brand piece retains Encaixe, the mark's pieces separating and fitting while work runs.
 
 - **V26.** Motion **should** respect `prefers-reduced-motion`, including copied library pieces,
-  with a comprehensible final state. Failure: the drawer still animates under reduced-motion
+  with a comprehensible final state. Motion follows the sheet in `DESIGN.md` ("Motion",
+  [movimento](../reference/movimento.md)). Failure: the drawer still animates under reduced-motion
   preference. Finding a `motion-reduce` class cannot prove transitive library behavior. [review]
 
 ## Interaction and accessibility
