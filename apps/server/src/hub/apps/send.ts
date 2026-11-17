@@ -16,6 +16,7 @@ import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import type { RecordAppRead } from './app-data-record.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
 import type { PruneDeps } from './prune.ts'
@@ -25,7 +26,12 @@ import type { ReceivedVersion, VersionFolder } from './versions.ts'
 import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } from './versions.ts'
 
 export type SendDeps = AppDatabaseDeps &
-  Pick<PruneDeps, 'pruneBudgetMs'> & { identity: IdentityPorts; cloudflare: CloudflareApps }
+  Pick<PruneDeps, 'pruneBudgetMs'> & {
+    identity: IdentityPorts
+    cloudflare: CloudflareApps
+    /** The Registro's one writer, which the agents' reads of the app's schema leave a line through. */
+    recordRead: RecordAppRead
+  }
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: ReceivedVersion }

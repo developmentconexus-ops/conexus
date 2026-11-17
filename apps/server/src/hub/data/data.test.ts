@@ -26,7 +26,7 @@ function scopeOf(on: CopiesOn, personId: PersonId, place: Place) {
 }
 
 function inCompany(on: CopiesOn, personId: PersonId = on.anaId) {
-  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }))
+  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }), { thread: null })
 }
 
 async function catalogOf(data: ReturnType<typeof inCompany>) {
@@ -81,7 +81,10 @@ test('descrever num Projeto: só as liberadas', async (t) => {
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId: clients },
   })
-  const inProject = on.hub.data(scopeOf(on, on.anaId, { kind: 'PROJECT', projectId: on.projectId }))
+  const inProject = on.hub.data(
+    scopeOf(on, on.anaId, { kind: 'PROJECT', projectId: on.projectId }),
+    { thread: null },
+  )
   const seen = await catalogOf(inProject)
   assert.deepEqual(
     seen.tables.map(({ name }) => name),
@@ -113,7 +116,10 @@ test('o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia 
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId: clients },
   })
-  const inProject = on.hub.data(scopeOf(on, on.anaId, { kind: 'PROJECT', projectId: on.projectId }))
+  const inProject = on.hub.data(
+    scopeOf(on, on.anaId, { kind: 'PROJECT', projectId: on.projectId }),
+    { thread: null },
+  )
   const named = Catalog.parse(await inCompany(on).describe()).systems[0]?.name
   assert.ok(named, 'a conexão tem nome')
 
@@ -195,7 +201,9 @@ test('o Hub calado dá CATALOG_UNAVAILABLE', async (t) => {
     neon: on.hub.neon.neon,
     database,
   })
-  const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' })).describe()
+  const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' }), {
+    thread: null,
+  }).describe()
   assert.deepEqual(described, { kind: 'CATALOG_UNAVAILABLE' })
   assert.ok(on.hub.lines.some(({ message }) => message === 'DATA_CATALOG_FAILED'))
 })

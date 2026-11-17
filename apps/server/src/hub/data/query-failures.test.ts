@@ -11,7 +11,7 @@ function scopeOf(on: CopiesOn, place: Place) {
 }
 
 function inCompany(on: CopiesOn) {
-  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }))
+  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }), { thread: null })
 }
 
 async function withCopies(t: Parameters<typeof copiesOn>[0]) {
@@ -124,7 +124,9 @@ test('NO_LOGIN num Projeto: o login do Projeto é feito e a consulta lida de nov
     ...{ copyId: sellers, projectId: on.projectId },
   })
   const spies = readingAfterNoLogin(t, on)
-  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }))
+  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }), {
+    thread: null,
+  })
   const sql = 'select * from sync.sankhya_vendedores limit 1'
   queryOf(await project.read({ kind: 'QUERY', sql }))
   assert.equal(spies.asked(), 2)

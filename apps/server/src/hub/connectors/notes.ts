@@ -143,7 +143,7 @@ export async function provedAndSaved(
   })
   if (!note.success) return { kind: 'NOTE_INVALID' }
   const target = { ...viewer, connectionId: opened.id, concept: a.concept, note: note.data }
-  const saved = await save(deps, target, by === 'assistant')
+  const saved = await save(deps, target, by !== 'builder')
   if (saved === 'GONE' || saved === 'NOT_GRANTED') return { kind: 'NOT_GRANTED' }
   if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
   deps.log.info({ connectionId: opened.id, rows: provedRows, by }, 'CONNECTION_NOTE_SAVED')

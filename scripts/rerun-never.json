@@ -22,6 +22,7 @@
     "apps/server/src/hub/copies/readers-routes.test.ts",
     "apps/server/src/hub/copies/readers.test.ts",
     "apps/server/src/hub/data/catalog-role.test.ts",
+    "apps/server/src/hub/data/record.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
     "apps/server/src/platform/copy-role-races.test.ts",

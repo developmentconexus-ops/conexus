@@ -31,7 +31,9 @@ const TYPES = [
 /** What `app_data_check` returns to the model, as the tool of a turn admitted to the Projeto. */
 async function checking(t: Parameters<typeof builderDataOn>[0]) {
   const on = await builderDataOn(t, SEED)
-  const tool = builderAppDataTools({ data: on.data, ids: on.ids(on.ana) })[APP_DATA_TOOL.check]
+  const tool = builderAppDataTools({ data: on.data, ids: on.ids(on.ana), thread: null })[
+    APP_DATA_TOOL.check
+  ]
   assert.ok(tool.execute)
   const { execute } = tool
   async function check(

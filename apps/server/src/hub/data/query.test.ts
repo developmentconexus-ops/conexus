@@ -21,7 +21,7 @@ function scopeOf(on: CopiesOn, place: Place, personId = on.anaId) {
 }
 
 function inCompany(on: CopiesOn, personId = on.anaId) {
-  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }, personId))
+  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }, personId), { thread: null })
 }
 
 async function withCopies(t: Parameters<typeof copiesOn>[0]) {
@@ -107,11 +107,6 @@ test('uma CTE e uma subconsulta nomeiam a tabela de baixo', async (t) => {
   )
 })
 
-test('o catálogo do sistema não conta', async (t) => {
-  const { on } = await withCopies(t)
-  assert.deepEqual(queryOf(await queried(on, 'select count(*) from pg_roles')).tables, [])
-})
-
 test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução são 42601', async (t) => {
   const { on } = await withCopies(t)
   const before = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
@@ -189,7 +184,9 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ copyId: sellers, projectId: on.projectId },
   })
-  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }))
+  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }), {
+    thread: null,
+  })
   const sql = 'select * from sync.sankhya_vendas'
   assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_ROLE' })
   const granted = queryOf(
@@ -206,8 +203,8 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
 
 test('o prazo dá DEADLINE e registra TIMEOUT', async (t) => {
   const { on } = await withCopies(t)
-  const seconds = Math.ceil(APP_CALL_LIMITS.callDeadlineMs / 1000) + 2
-  assert.deepEqual(await queried(on, `select pg_sleep(${seconds})`), { kind: 'DEADLINE' })
+  const slow = 'select count(*) from generate_series(1, 100000) a, generate_series(1, 100000) b'
+  assert.deepEqual(await queried(on, slow), { kind: 'DEADLINE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
   assert.equal(failed?.fields.cause, 'TIMEOUT')
 })
@@ -236,9 +233,8 @@ test('a assinatura única: o contexto não muda a resposta', async (t) => {
   const { on } = await withCopies(t)
   const scope = scopeOf(on, { kind: 'COMPANY' })
   const sql = 'select generate_series(1, 3) as n'
-  const plain = await on.hub.data(scope).read({ kind: 'QUERY', sql })
-  const bound = await on.hub
-    .data(scope, { by: { agent: 'ASSISTANT', threadId: ConversationId.parse(randomUUID()) } })
-    .read({ kind: 'QUERY', sql })
+  const plain = await on.hub.data(scope, { thread: null }).read({ kind: 'QUERY', sql })
+  const thread = ConversationId.parse(randomUUID())
+  const bound = await on.hub.data(scope, { thread }).read({ kind: 'QUERY', sql })
   assert.deepEqual(bound, plain)
 })

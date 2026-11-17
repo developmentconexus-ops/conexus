@@ -23,7 +23,7 @@ import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './h
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
-import { createCompanyData } from './hub/data/public.ts'
+import { createCompanyData, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
@@ -186,8 +186,8 @@ export function subjectsOf(deps: {
     connectors.ungranted(tx, ids, declared, by)
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
-    ...{ ...deps, identity, projects: projects.ports, appsDomain, ungranted, closeRequests },
-    ...{ copies: lateCopies, appDataDeadlineMs: deps.appDataDeadlineMs },
+    ...{ ...deps, identity, appsDomain, ungranted, closeRequests, recordRead: recordRead(deps) },
+    ...{ copies: lateCopies, appDataDeadlineMs: deps.appDataDeadlineMs, projects: projects.ports },
   })
   const { noticeRequests } = notifications
   const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })
@@ -197,7 +197,7 @@ export function subjectsOf(deps: {
   })
   // The copies come next: the Builder's proposing is theirs, and a proposal comes long after.
   const connectors = createConnectors({
-    ...{ ...deps, identity, door: apps.connectorCall },
+    ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
     propose: () => copies.propose,
     copies: () => copies.ofConnections,
   })

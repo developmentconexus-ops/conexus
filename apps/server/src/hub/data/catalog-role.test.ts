@@ -20,11 +20,11 @@ function scopeOf(on: CopiesOn, personId: PersonId, place: Place) {
 }
 
 function inCompany(on: CopiesOn, personId: PersonId) {
-  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }))
+  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }), { thread: null })
 }
 
 async function tablesOf(on: CopiesOn, personId: PersonId, place: Place) {
-  const described = await on.hub.data(scopeOf(on, personId, place)).describe()
+  const described = await on.hub.data(scopeOf(on, personId, place), { thread: null }).describe()
   return Catalog.parse(described).tables.map(({ name }) => name)
 }
 
@@ -35,7 +35,7 @@ function loginsAsked(t: TestContext, on: CopiesOn) {
 }
 
 async function systemsOf(on: CopiesOn, scope: Principal) {
-  return Catalog.parse(await on.hub.data(scope).describe()).systems
+  return Catalog.parse(await on.hub.data(scope, { thread: null }).describe()).systems
 }
 
 function readsOf(
@@ -162,21 +162,21 @@ test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projet
   const place = { kind: 'PROJECT', projectId: w.on.projectId } as const
   assert.deepEqual(await tablesOf(w.on, w.brunoId, place), ['sankhya_clientes', 'sankhya_vendas'])
   const asked = loginsAsked(t, w.on)
-  const project = w.on.hub.data(scopeOf(w.on, w.brunoId, place))
+  const project = w.on.hub.data(scopeOf(w.on, w.brunoId, place), { thread: null })
   rowsOf(await project.read({ kind: 'QUERY', sql: JOIN }))
   const host = new URL(w.on.owner.reveal()).hostname
   const login = await w.on.hub.postgres.companyPostgres.readAddress(host, w.on.projectId)
   assert.deepEqual(asked(), [new URL(login.reveal()).username])
 })
 
-test('decisão D: o login do papel lê os nomes de sync em pg_class e não as linhas', async (t) => {
+test('decisão D: o nome de sync em pg_class fica atrás do plano, e as linhas atrás do papel', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const bruno = inCompany(w.on, w.brunoId)
   const names = await bruno.read({
     kind: 'QUERY',
     sql: "select relname from pg_class where relnamespace = 'sync'::regnamespace",
   })
-  assert.ok(rowsOf(names).some(([relname]) => relname === 'sankhya_clientes'))
+  assert.deepEqual(names, { kind: 'NOT_IN_CATALOG' })
   assert.deepEqual(
     await bruno.read({ kind: 'QUERY', sql: 'select count(*) from sync.sankhya_clientes' }),
     { kind: 'NOT_IN_ROLE' },
