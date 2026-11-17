@@ -215,6 +215,13 @@ function failedRead(answered: { native: Native }) {
   } as const
 }
 
+/** What the model reads of a read that did not answer OK: the provider's whole answer, with the failed-read words when it was not a refusal of access. */
+export function unansweredRead(answered: Exclude<Answer, { kind: 'OK' }>) {
+  return answered.kind === 'REFUSED' && !deniesAccess(answered.native)
+    ? failedRead(answered)
+    : answered
+}
+
 /** One read through the access's door: the model gets the cut with the time the answer came back, and the whole answer goes to the machine's file when there is one. */
 export async function readOn(
   access: ConnectorAccess,
@@ -227,8 +234,7 @@ export async function readOn(
 ) {
   const { requestContext, workspace, abortSignal } = context
   const answered = await access.read({ ...call, signal: abortSignal }, requestContext)
-  if (answered.kind === 'REFUSED' && !deniesAccess(answered.native)) return failedRead(answered)
-  if (answered.kind !== 'OK') return answered
+  if (answered.kind !== 'OK') return unansweredRead(answered)
   const at = inZone(new Date(), zoneOf(requestContext))
   if (!('whole' in answered)) return { ...answered, at }
   const { whole, ...rest } = answered
