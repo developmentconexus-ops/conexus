@@ -46,7 +46,7 @@ export function createMastra(deps: {
           serviceName: 'conexus-hub',
           exporters: [new MastraStorageExporter()],
           // One row per streamed chunk says nothing a step does not; Mastra's own platform exporter
-          // drops them too (`@mastra/observability` 1.23.1, `MastraPlatformExporter`).
+          // drops them too (`@mastra/observability` 1.24.0, `MastraPlatformExporter`).
           excludeSpanTypes: [SpanType.MODEL_CHUNK],
           // Mastra keeps the first 50 items of a list (`dist/index.js:455-460`): a long conversation's
           // step would lose its newest messages, the ones a provider refusal is about.
@@ -55,7 +55,7 @@ export function createMastra(deps: {
       },
     }),
   })
-  // Mastra 1.82.0 gives its logger to the store but not to the store's domains, which log their own
+  // Mastra 1.83.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(deps.storage.stores ?? {}))
     domain?.__setLogger(mastra.getLogger())

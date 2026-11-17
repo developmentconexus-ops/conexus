@@ -107,7 +107,7 @@ test('o cartão respondido duas vezes: a segunda o Mastra recusa, e o Builder se
   const first = await answered(hub, ana, url, card.toolCallId, answer)
   assert.deepEqual([first.statusCode, first.json()], [200, { ok: true }])
   const again = await answered(hub, ana, url, card.toolCallId, answer)
-  assert.deepEqual(again.json(), { ok: false, reason: 'no_pending_suspension' })
+  assert.deepEqual(again.json(), { ok: false, reason: 'not_pending' })
   await stream.turn()
   assert.equal(calls.length, 2, 'the question, then one answer')
   const unknown = await answered(hub, ana, url, randomUUID(), answer)
