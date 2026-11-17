@@ -169,14 +169,14 @@ test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projet
   assert.deepEqual(asked(), [new URL(login.reveal()).username])
 })
 
-test('decisão D: o login do papel lê os nomes de sync em pg_class e não as linhas', async (t) => {
+test('decisão D: o nome de sync em pg_class fica atrás do plano, e as linhas atrás do papel', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const bruno = inCompany(w.on, w.brunoId)
   const names = await bruno.read({
     kind: 'QUERY',
     sql: "select relname from pg_class where relnamespace = 'sync'::regnamespace",
   })
-  assert.ok(rowsOf(names).some(([relname]) => relname === 'sankhya_clientes'))
+  assert.deepEqual(names, { kind: 'NOT_IN_CATALOG' })
   assert.deepEqual(
     await bruno.read({ kind: 'QUERY', sql: 'select count(*) from sync.sankhya_clientes' }),
     { kind: 'NOT_IN_ROLE' },

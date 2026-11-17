@@ -107,11 +107,6 @@ test('uma CTE e uma subconsulta nomeiam a tabela de baixo', async (t) => {
   )
 })
 
-test('o catálogo do sistema não conta', async (t) => {
-  const { on } = await withCopies(t)
-  assert.deepEqual(queryOf(await queried(on, 'select count(*) from pg_roles')).tables, [])
-})
-
 test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução são 42601', async (t) => {
   const { on } = await withCopies(t)
   const before = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
