@@ -117,7 +117,13 @@ before(() => {
   delete config.vcs
   writeFileSync(join(dir, 'biome.json'), JSON.stringify(config))
   mkdirSync(join(dir, 'scripts'))
-  for (const grit of ['w25.grit', 'conexus-code.grit', 'neon-names.grit', 'library-shapes.grit']) {
+  for (const grit of [
+    'w25.grit',
+    'conexus-code.grit',
+    'neon-names.grit',
+    'library-shapes.grit',
+    'test-waits.grit',
+  ]) {
     cpSync(join(ROOT, 'scripts', grit), join(dir, 'scripts', grit))
   }
   const files = { ...Object.fromEntries(Object.values(BAD)), ...GOOD }

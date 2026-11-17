@@ -286,6 +286,14 @@ test('cada job de teste com segunda rodada sobe os registros dos instáveis, mes
   }
 })
 
+test('o test:unit do web roda antes do envio dos registros, com o arquivo dos instáveis', () => {
+  const steps = ci.jobs.packages?.steps ?? []
+  const unit = steps.findIndex((step) => step.run === 'npm run test:unit -w @conexus/web')
+  const upload = steps.findIndex((step) => step.uses?.startsWith('actions/upload-artifact@'))
+  assert.ok(unit >= 0 && unit < upload)
+  assert.ok(steps[unit]?.env?.CONEXUS_FLAKY_FILE)
+})
+
 test('a ação de instalação pula os scripts de ciclo de vida só quando o job pede, e instala com eles nos outros', () => {
   const action = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
   const step = action.runs.steps.find((step: Step) => step.run?.includes('npm ci'))

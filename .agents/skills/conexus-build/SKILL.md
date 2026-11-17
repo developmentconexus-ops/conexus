@@ -12,8 +12,7 @@ the session that wrote the card.
 
 ## What it receives
 
-The card (in `docs/steps/` or its pull request) and the unit. Nothing else is pasted in: a ruling
-not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit. A ruling not in the card is not built.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
@@ -46,15 +45,15 @@ unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mod
    `npm run quality`, hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
 7. One commit for the unit, kept on merge; `npm run check`, the tests and proofs its section names are green
-   locally before it ([delivery L9](../../../docs/guides/delivery.md)).
+   locally before it ([delivery L9](../../../docs/guides/delivery.md)). The
+   `.githooks/pre-push` hook runs both before the push; never use `--no-verify`.
 
 ## What it produces
 
 The commit and a report: what I ran, saw and did not prove; each table row with its file; the line
 counts of each brought part; every criterion with its test, none red; each declared file outside
 the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots seen, by state,
-width and theme, or "no screen touched". A failing criterion is never handed to the review:
-fix it, or stop.
+width and theme, or "no screen touched". A failing criterion is never handed to the review; fix it.
 
 ## Stop and ask
 
@@ -68,10 +67,10 @@ fix it, or stop.
 - A test needs a library shape no recording holds: stop; record it with `npm run record`, load it with
   `nativeRecording` (T26), never type it.
 
-Stop means no more code: report evidence and question.
+Stop means no more code: report evidence.
 
 ## When it closes
 
-Step 7 holds. In the fix round you build one front ([delivery
+Step 7 holds. In the fix round build one front ([delivery
 L9](../../../docs/guides/delivery.md)): each finding's cause and its class (L11), one commit to the
 same branch, the PR body's counts remeasured there.

@@ -9,6 +9,14 @@ Rule: [delivery](../guides/delivery.md) L19. The reviewer is an agent that built
 3. Take the median of each over the 10 runs. Put them beside the medians of the last review; the first review compares with the numbers the "Saúde do CI" line of `docs/approvals/saude-do-ci.md` records.
 4. A median above 70% of a job's limit already shows as `::warning::` in every run (the job `ci`), and above 85% in the three latest runs opens the issue "CI acima do orçamento" (`.github/workflows/ci-budget.yml`).
 
+5. Measure the runs the second round saved: the runs of that window whose suites ended green only on the second round, over all the runs that ran suites. Each flaky record is an open issue with the label `flaky` (`scripts/flaky-issues.ts`), one link to a run in its body or comments; count the distinct runs, not the issues. The goal is below 2%. On 2026-11-14 to 16 it was 26 of 218 runs, 12%, with 15 `flaky` issues open and none closed; five tests were 19 of the 28 occurrences. Set the figure beside the last review's.
+
+## Fix the flaky tests
+
+1. Take the three tests with the most occurrences in the week and fix each at the root ([testing](../guides/testing.md) T20): the test waits for the event it needs, or injects the clock the code lets it inject. The second round (T4) hides a flake from the colour of the CI, never from the issue; an issue closes when its test is fixed, with the run that proved it, and the fixes are checked in the next review's figure.
+2. [Fixing a defect](../../.agents/skills/conexus-build/references/bug.md) holds the protocol: show the race deterministically before the fix, and size the repeat count by the failure rate.
+3. `scripts/test-waits.grit` refuses a new fixed wait in a test file; the old ones sit in a list in `biome.json` that only shrinks, so a fix that removes the last wait of a file takes the file off the list.
+
 ## Find the why
 
 1. Open the "Test files" table of the slowest shard in the latest run and in a run of the last review. A file that is new, or that grew by more than a few seconds, is the first suspect. `scripts/server-test-seconds.json` holds the seconds that balance the shards: record it again with `node scripts/server-shards.ts --record <log>...` on the logs of one run of all the shards when it drifted.
