@@ -13,7 +13,7 @@ import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
-import type { Place, Principal } from '../../hub/access/public.ts'
+import type { Access, Place, Principal } from '../../hub/access/public.ts'
 import { principalFor } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -21,9 +21,8 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
-import { appDataTools } from '../app-data/public.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
-import { connectorTools } from '../connectors/public.ts'
+import type { CompanyToolScope } from '../company-tools/public.ts'
+import { companyConnections } from '../company-tools/public.ts'
 import { conversationRun } from '../controller-context/public.ts'
 import type { Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
 import {
@@ -37,7 +36,7 @@ import {
   toolsOf,
   turnKeyOn,
 } from '../controller-kit/public.ts'
-import { dataOrder, dataTools } from '../data-tools/public.ts'
+import { dataOrder } from '../data-tools/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -45,6 +44,7 @@ import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-acco
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
+import { agentToolScope, agentTools } from './company.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { declaredOf } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
@@ -113,6 +113,8 @@ export type AgentDeps = {
   appData: AppDataPort
   /** The company's data, bound to the run's scope; an agent passes no `by` yet (decision 6 of the card). */
   companyData: (principal: Principal) => CompanyData
+  /** The access door: what the run reaches, which every company tool names. */
+  access: Pick<Access, 'viewOf'>
   speakersOf: (scope: Readonly<{ owner: Owner; place: Place }>) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
@@ -143,6 +145,8 @@ export type Plan = VersionRead & {
   runScope: RunScope
   scope: Principal
   offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
+  /** The run's company tools' scope: its view of what the version declares. */
+  toolScope: CompanyToolScope<Plan['offered'][number]>
   /** Whether the version has its Computador: the conversation's machine and `show_file`. */
   machine: boolean
 }
@@ -219,10 +223,13 @@ function planner(deps: AgentDeps, frozen: Frozen, versionOf: ReturnType<typeof v
         thread === undefined ? { kind: 'TRIAL' } : { kind: 'THREAD', id: thread.sessionId },
     }
     const scope = principalOf(runScope)
-    return {
-      ...{ ...version, start, runScope, scope, machine: frozen.machine },
-      offered: await deps.connectors.connections(scope),
-    }
+    const offered = await deps.connectors.connections(scope)
+    const { projectId } = version.run.scope
+    const toolScope = await agentToolScope(deps, runScope, {
+      ...{ offered, projectId, readsApp: frozen.appData },
+    })
+    const machine = frozen.machine
+    return { ...{ ...version, start, runScope, scope, machine }, offered, toolScope }
   })
 }
 
@@ -271,18 +278,9 @@ function runToolsOf(
 ) {
   const machines = frozen.machine ? deps.machines : undefined
   const showFile = machines === undefined ? undefined : showFileTool(machines)
+  const companyOf = agentTools(deps, turnKey.of)
   return oncePerRun(async (requestContext) => {
-    const { run, scope, offered, start, tools, selected } = await plan(requestContext)
-    const access: ConnectorAccess = {
-      connections: offered.filter((each) => selected.has(each.connectionId)),
-      log: deps.log,
-      read: (call, context) => deps.connectors.read(scope, { ...call, turn: turnKey.of(context) }),
-      notes: (connectionId) => deps.connectors.notes(scope, connectionId),
-      wording: { whose: 'this agent reads' },
-    }
-    const { companyId, personId, projectId } = run.scope
-    const mayReadApp =
-      frozen.appData && (await deps.appData.hasApp({ scope: { companyId, personId }, projectId }))
+    const { scope, offered, start, tools, toolScope } = await plan(requestContext)
     const preset = await presetTools({
       ...{ ...deps, scope, tools, turnOf: turnKey.of },
       ...{ author: authorOf(frozen), offered },
@@ -290,12 +288,8 @@ function runToolsOf(
     })
     const ofTheAgent: ToolsInput = {
       ...neverAsking({
-        ...connectorTools(access, { noteSave: false, reads: false }),
-        ...(mayReadApp
-          ? appDataTools({ appData: deps.appData, scope: { companyId, personId }, projectId })
-          : {}),
+        ...(await companyOf(toolScope)),
         ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
-        ...dataTools({ dataOf: async () => deps.companyData(scope) }),
       }),
       ...preset.reads,
     }
@@ -349,9 +343,9 @@ export function agentOf(deps: AgentDeps, frozen: Frozen): Agent {
     name: frozen.name,
     description: frozen.description,
     instructions: async ({ requestContext }) => {
-      const { runScope, offered, selected } = await plan(requestContext)
+      const { runScope, toolScope } = await plan(requestContext)
       const { program, writes } = await toolsOfRun(requestContext)
-      const shown = offered.filter((each) => selected.has(each.connectionId))
+      const shown = await companyConnections(toolScope)
       return [
         fixedSystem(CONEXUS_PROMPT),
         { role: 'system', content: dataOrder() },

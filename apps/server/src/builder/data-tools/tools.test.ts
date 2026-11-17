@@ -2,35 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Catalog as CatalogShape, DESCRIBE_SAMPLE_ROWS, READER_ZONE } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import { dataTools } from './public.ts'
-import { CATALOG, LOJA_A, MIXED, runOn, thrown, UNNAMED, WAITING, world } from './test-world.ts'
+import { CATALOG, MIXED, runOn, thrown, UNNAMED, WAITING, world } from './test-world.ts'
 
 const LOJA_A_ACTIVE = { kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }
 const LOJA_B_ACTIVE = { kind: 'NAMED', name: 'Loja B', state: 'ACTIVE' }
-
-test('sem requestContext, NOT_GRANTED e nenhuma fonte chamada', async () => {
-  const { tools, reached } = world(CATALOG, {}, (requestContext) => requestContext.has('scope'))
-  for (const [name, input] of [
-    ['data_describe', {}],
-    ['data_query', { sql: 'select 1' }],
-  ] as const) {
-    const told = await thrown(Object(tools)[name].execute(input, {}))
-    assert.equal(told.kind, 'NOT_GRANTED')
-  }
-  assert.deepEqual(reached, { catalog: 0, rows: [], query: [], signals: [] })
-})
-
-test('dataOf undefined, NOT_GRANTED', async () => {
-  const tools = dataTools({ dataOf: async () => undefined })
-  for (const [name, input] of [
-    ['data_describe', {}],
-    ['data_query', { sql: 'select 1' }],
-  ] as const) {
-    const told = await thrown(runOn(tools, name, input))
-    assert.equal(told.kind, 'NOT_GRANTED')
-    assert.equal(told.reason, "This conversation has no access to the company's data.")
-  }
-})
 
 test('describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada', async () => {
   const { tools } = world(CATALOG)

@@ -1,16 +1,9 @@
 import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
-import type { ToolsInput } from '@mastra/core/agent'
 import type { AgentControllerSubagent } from '@mastra/core/agent-controller'
 import type { InputProcessor } from '@mastra/core/processors'
-import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import type { Principal } from '../../hub/access/public.ts'
-import type { Connectors } from '../../hub/connectors/public.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { connectorTools } from '../connectors/public.ts'
 import { TURN_ACCOUNT } from '../model-accounts/public.ts'
-import { assistantAccess } from './connector-access.ts'
 
 /** The helper's type: it reads the systems the conversation chose and the machine's files, and writes nothing. */
 const RESEARCH_TYPE = 'pesquisar'
@@ -34,35 +27,6 @@ export const RESEARCH: AgentControllerSubagent = {
     WORKSPACE_TOOL.grep,
   ],
   defaultModelId: TURN_ACCOUNT,
-}
-
-/**
- * The helper's `connector_read` for a run (U12): the same tool the Builder has, bound to the scope
- * and the connections the conversation chose when the run began. It is a tool of the controller,
- * built for each run, because the helper's context cannot find the conversation; the mode's closed
- * set keeps it out of the main agent's request.
- */
-export function researchReads(
-  deps: { connectors: Connectors['assistant']; log: FailureLog },
-  a: {
-    scopeOf: (requestContext: RequestContext) => Promise<Principal | undefined>
-    chosenOf: (
-      requestContext: RequestContext,
-    ) => Promise<Parameters<typeof assistantAccess>[1]['chosen']>
-    savedAt: (requestContext: RequestContext) => string
-  },
-): (input: { requestContext: RequestContext }) => Promise<ToolsInput> {
-  return async ({ requestContext }): Promise<ToolsInput> => {
-    const scope = await a.scopeOf(requestContext)
-    if (scope === undefined) return {}
-    const access = assistantAccess(deps, {
-      scope,
-      chosen: await a.chosenOf(requestContext),
-      savedAt: a.savedAt,
-    })
-    const { [BUILDER_TOOL.connectorRead]: read } = connectorTools(access, { noteSave: false })
-    return read === undefined ? {} : { [BUILDER_TOOL.connectorRead]: read }
-  }
 }
 
 const NativeSubagent = z.object({

@@ -9,8 +9,8 @@ import type {
 } from '@conexus/hub-api'
 import type { ReadTx } from '../../platform/database.ts'
 
-/** What the Assistant reads of the company's Projetos, through the Projects' and the apps' ports (code C4). */
-export type AssistantProjects = {
+/** What the company's tools read of its Projetos, through the Projects' and the apps' ports (code C4). */
+export type CompanyProjects = {
   liveProjectOf(
     tx: ReadTx,
     ids: { companyId: CompanyId; projectId: ProjectId },
@@ -25,8 +25,8 @@ export type AssistantProjects = {
   ): Promise<ReadonlyMap<ProjectId, number>>
 }
 
-/** What the Assistant reads of the company's copies, through the copies' service wired at the root (code C4). */
-export type AssistantCopies = {
+/** What the company's tools read of its copies, through the copies' service wired at the root (code C4). */
+export type CompanyCopies = {
   list(input: {
     companyId: CompanyId
     personId: PersonId

@@ -1,17 +1,20 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
-import type { ToolsInput } from '@mastra/core/agent'
 import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
-import type { Principal } from '../../hub/access/public.ts'
+import type { Access, Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
 import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { builderAppDataTools, dataContext } from '../app-data/public.ts'
+import { Failure } from '../../platform/failure.ts'
+import { dataContext } from '../app-data/public.ts'
+import type { CompanyToolDeps } from '../company-tools/public.ts'
+import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
-import { builderAccess, connectorTools } from '../connectors/public.ts'
+import { builderAccess } from '../connectors/public.ts'
+import type { RunScope } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   agentDefaults,
@@ -24,8 +27,6 @@ import {
   TITLE,
   toolsOf,
 } from '../controller-kit/public.ts'
-import type { DataOf } from '../data-tools/public.ts'
-import { dataTools } from '../data-tools/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
@@ -37,49 +38,67 @@ import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
 const CONVERSATION_MODE = 'conversa'
 
-/**
- * The Projeto's granted connections for a Mastra run, read once for its tools, its skills and its
- * instructions: Mastra resolves each of them with the run's `RequestContext`, and a resumed run
- * brings a new one, so a grant taken between two turns is gone in the next.
- */
-function grantedFor(
-  port: BuilderConnectors,
-  projectOf: ProjectOf,
-): (requestContext: RequestContext) => Promise<readonly GrantedConnection[]> {
-  return oncePerRun(async (requestContext) => {
-    const ids = await projectOf(requestContext)
-    return ids === undefined ? [] : port.granted(ids)
-  })
-}
+type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
 
-/**
- * Whether the person converses with the Builder in the Projeto, read once for the run (as the
- * connections are) so the data tools are offered or not for the whole turn; each call is admitted again.
- */
-function admittedFor(
-  data: BuilderData,
-  projectOf: ProjectOf,
-): (
-  requestContext: RequestContext,
-) => Promise<Parameters<typeof builderAppDataTools>[0]['ids'] | undefined> {
-  return oncePerRun(async (requestContext) => {
-    const ids = await projectOf(requestContext)
-    if (ids === undefined) return undefined
-    return (await data.access(ids)).kind === 'ADMITTED' ? ids : undefined
-  })
-}
-
-/** The company's data as the Builder reads it: the Projeto's, with its granted connections, where the person converses in it. */
-function builderDataOf(a: {
-  admitted: ReturnType<typeof admittedFor>
-  runOf: ReturnType<typeof builderRuns>
-  companyData: (principal: Principal) => CompanyData
-}): DataOf {
-  return async (requestContext) => {
-    if ((await a.admitted(requestContext)) === undefined) return undefined
-    const run = await a.runOf(requestContext)
-    return run === undefined ? undefined : a.companyData(principalOf(run))
+function idsOf(run: RunScope): Ids {
+  if (run.place.kind !== 'PROJECT') {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'RUN_WITHOUT_PROJECT' } })
   }
+  return { ...run.owner, projectId: run.place.projectId }
+}
+
+/**
+ * The Builder's company tools: its Projeto's granted connections through its door, each call
+ * counted by the run Mastra runs, its notebook's write and `copy_propose` where a connector copies.
+ */
+function companyDeps(deps: {
+  connectors: BuilderConnectors
+  runs: Runs
+  companyData: (principal: Principal) => CompanyData
+  log: FailureLog
+}): CompanyToolDeps<GrantedConnection> {
+  function doorOf(run: RunScope) {
+    const who = { ...idsOf(run), runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
+    return builderAccess(deps.connectors, [], who, deps.log)
+  }
+  return {
+    log: deps.log,
+    data: (run) => deps.companyData(principalOf(run)),
+    connector: {
+      read: (run, call, requestContext) => doorOf(run).access.read(call, requestContext),
+      notes: (run, connectionId) => doorOf(run).access.notes(connectionId),
+      saveNote: (run, call, requestContext) => doorOf(run).save(call, requestContext),
+      propose: {
+        call: (run, call, requestContext) => doorOf(run).propose(call, requestContext),
+        copying: (listed) => listed.filter((each) => each.copies),
+      },
+    },
+  }
+}
+
+/**
+ * The run's company tools' scope, read once for its tools, its skills and its instructions. The
+ * app's data is offered when the person converses with the Builder in the Projeto; each call is
+ * admitted again.
+ */
+function toolScopes(
+  deps: { access: Pick<Access, 'viewOf'>; connectors: BuilderConnectors; data: BuilderData },
+  runOf: ReturnType<typeof builderRuns>,
+) {
+  return oncePerRun(async (requestContext: RequestContext) => {
+    const run = await runOf(requestContext)
+    if (run === undefined) return undefined
+    const ids = idsOf(run)
+    const admitted = (await deps.data.access(ids)).kind === 'ADMITTED'
+    return companyToolScope(
+      run,
+      { access: deps.access, connections: (each) => deps.connectors.granted(idsOf(each)) },
+      {
+        noteSave: true,
+        appData: admitted ? { kind: 'READ_AND_CHECK', data: deps.data, ids } : { kind: 'NONE' },
+      },
+    )
+  })
 }
 
 /**
@@ -101,18 +120,6 @@ function dataFor(
   })
 }
 
-/** The Builder's connector tools, its notebook's write included, and `copy_propose` where a connector copies. */
-function builderConnectorTools(
-  deps: { connectors: BuilderConnectors; runs: Runs; log: FailureLog },
-  granted: readonly GrantedConnection[],
-  ids: Omit<Parameters<typeof builderAccess>[2], 'runIdOf'>,
-): ToolsInput {
-  const who = { ...ids, runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
-  const { access, save, propose } = builderAccess(deps.connectors, granted, who, deps.log)
-  const copying = granted.filter((each) => each.copies)
-  return connectorTools(access, { noteSave: true, save, propose: { copying, call: propose } })
-}
-
 /** The Builder's memory words, and its recall of what the observation folded. */
 const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
 
@@ -130,6 +137,8 @@ export function createBuilder(deps: {
   index: ConversationIndex
   connectors: BuilderConnectors
   data: BuilderData
+  /** The access door: what the Projeto offers the person, which every company tool names. */
+  access: Pick<Access, 'viewOf'>
   /** The company's data, bound to the Projeto and its granted connections; the Builder passes no `by` yet (decision 6 of the card). */
   companyData: (principal: Principal) => CompanyData
   copies: (ids: {
@@ -146,8 +155,12 @@ export function createBuilder(deps: {
   const memory = conversationMemory({ storage, queue, ...BUILDER_MEMORY })
   const runOf = builderRuns({ index: deps.index, memory })
   const projectOf = projectOfRun(runOf)
-  const granted = grantedFor(deps.connectors, projectOf)
-  const admitted = admittedFor(deps.data, projectOf)
+  const scopeOf = toolScopes(deps, runOf)
+  const tools = companyDeps(deps)
+  async function granted(requestContext: RequestContext) {
+    const scope = await scopeOf(requestContext)
+    return scope === undefined ? [] : companyConnections(scope)
+  }
   const defaults = agentDefaults(queue, { processor: turnOf(deps) })
   const agent = createCodingAgent({
     id: BUILDER_CONTROLLER,
@@ -167,23 +180,13 @@ export function createBuilder(deps: {
     ],
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: async ({ requestContext }) => {
-      const ids = await projectOf(requestContext)
-      const web = toolsOf(sessionModel(requestContext))
-      const conversant = await admitted(requestContext)
+      const scope = await scopeOf(requestContext)
       // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
       return {
         web_fetch: webFetchTool,
         [BUILDER_TOOL.check]: check,
-        ...web,
-        ...(ids === undefined
-          ? {}
-          : builderConnectorTools(deps, await granted(requestContext), ids)),
-        ...(conversant === undefined
-          ? {}
-          : builderAppDataTools({ data: deps.data, ids: conversant })),
-        ...dataTools({
-          dataOf: builderDataOf({ admitted, runOf, companyData: deps.companyData }),
-        }),
+        ...toolsOf(sessionModel(requestContext)),
+        ...(scope === undefined ? {} : await companyTools(scope, 'builder', tools)),
       }
     },
     ...defaults,

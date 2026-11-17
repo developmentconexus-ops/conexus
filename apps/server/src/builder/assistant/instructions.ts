@@ -47,16 +47,17 @@ const MODEL_BLOCKS: Readonly<Record<string, string>> = {
  * on each call of the agent.
  */
 export function assistantInstructions(deps: {
-  offeredOf: (
+  /** The connections of the run's view: the chosen ones it reaches (issue 1147). */
+  chosenOf: (
     requestContext: RequestContext,
-  ) => Promise<readonly { name: string; connector: string; chosen: boolean }[]>
+  ) => Promise<readonly { name: string; connector: string }[]>
   speakersOf: (requestContext: RequestContext) => Promise<Speakers | undefined>
   maysOf: (requestContext: RequestContext) => Promise<Mays>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const [speakers, offered, may] = await Promise.all([
+    const [speakers, chosen, may] = await Promise.all([
       deps.speakersOf(requestContext),
-      deps.offeredOf(requestContext),
+      deps.chosenOf(requestContext),
       deps.maysOf(requestContext),
     ])
     if (speakers === undefined) {
@@ -64,7 +65,6 @@ export function assistantInstructions(deps: {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const chosen = offered.filter((each) => each.chosen)
     const model = MODEL_BLOCKS[sessionModel(requestContext)]
     return [
       fixedSystem(FIXED),

@@ -49,7 +49,7 @@ export type ConnectorAccess = {
 }
 
 /** The notebook's write: the Builder's, and the Assistant's for who manages the connections. */
-type NoteSave = (
+export type NoteSave = (
   call: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string },
   requestContext: RequestContext,
 ) => Promise<Saved>
