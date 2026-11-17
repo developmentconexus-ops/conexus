@@ -1,0 +1,19 @@
+// Defect: a fixed wait in a test is the first cause of the flaky tests that only the second round
+// turns green (docs/how-to/ci-health.md); testing T20 asks a comment for it and nothing charged it.
+// A test file refuses `waitForTimeout(` and a `setTimeout` whose delay is a literal of 1000 ms or
+// more; the comment T20 asks is `// biome-ignore lint/plugin: <why>`, whose cause
+// scripts/check-suppressions.ts already requires. biome.json wires it to every test file but the
+// ones in its list of today's waits; scripts/test-waits.test.ts keeps that list only shrinking.
+// Known blind spots: a delay held in a variable or a sum, a wait through another timer API, and a
+// wait in a helper named test-*.ts.
+// Revalidate by 2027-05-17, or when Biome changes how a plugin reads a numeric literal.
+or {
+  JsCallExpression() as $call where {
+    $call <: r"(?s)^(?:[A-Za-z0-9_$.?]*\.)?waitForTimeout\(.*",
+    register_diagnostic(span=$call, message="T20: wait for an observable event; a fixed wait says why in a `biome-ignore lint/plugin: <why>` comment.")
+  },
+  JsCallExpression() as $call where {
+    $call <: r"(?s)setTimeout\(.*,\s*(?:[1-9][0-9_]{3,}|[1-9][0-9]*e[0-9]+)\s*\)",
+    register_diagnostic(span=$call, message="T20: a wait of one second or more says why in a `biome-ignore lint/plugin: <why>` comment, or waits for an observable event.")
+  }
+}
