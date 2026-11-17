@@ -30,6 +30,7 @@ const BAD: Record<string, [string, string]> = {
     `${SRC}/builder/data-tools/x.ts`,
     '../../hub/connectors/public.ts',
   ],
+  'data-read-only-through-the-recorder': [`${SRC}/hub/data/other.ts`, './tables.ts'],
 }
 const GOOD: Record<string, string> = {
   [`${SRC}/main.ts`]: './hub/b/public.ts',
@@ -39,6 +40,7 @@ const GOOD: Record<string, string> = {
   [`${SRC}/builder/agents/ok.test.ts`]: '../assistant/test-thing.ts',
   [`${SRC}/builder/assistant/routes.ts`]: '../../hub/connectors/public.ts',
   [`${SRC}/builder/assistant/data.test.ts`]: '../../hub/connectors/test-connections.ts',
+  [`${SRC}/hub/data/record.ts`]: './tables.ts',
 }
 
 let violations: Violation[] = []
@@ -54,6 +56,7 @@ before(() => {
     [`${SRC}/builder/assistant/test-thing.ts`]: PUBLIC,
     [`${SRC}/hub/connectors/public.ts`]: PUBLIC,
     [`${SRC}/hub/connectors/test-connections.ts`]: PUBLIC,
+    [`${SRC}/hub/data/tables.ts`]: PUBLIC,
   }
   for (const [file, target] of [...Object.values(BAD), ...Object.entries(GOOD)]) {
     files[file] = importing(target)

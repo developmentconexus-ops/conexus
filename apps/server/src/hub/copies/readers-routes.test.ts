@@ -148,6 +148,7 @@ test('o banco calado ao dar responde 200, diz COPY_READERS_PENDING e o conserto 
       ...{ consumer: 'assistant', companyId: w.on.companyId, personId: w.carlaId },
       ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
     }),
+    { thread: null },
   )
   const read = await carla.read({
     kind: 'QUERY',

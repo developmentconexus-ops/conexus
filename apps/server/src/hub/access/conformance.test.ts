@@ -76,7 +76,7 @@ const SCENARIOS = {
 } satisfies Record<Consumer, Scenario>
 
 async function describedIn(w: RolesWorld, context: ConsumerContext) {
-  return Catalog.parse(await w.on.hub.data(principalFor(context)).describe())
+  return Catalog.parse(await w.on.hub.data(principalFor(context), { thread: null }).describe())
 }
 
 function viewFor(w: RolesWorld, context: ConsumerContext) {
@@ -159,7 +159,7 @@ for (const [consumer, scenario] of Object.entries(SCENARIOS)) {
       for (const { operation } of reads)
         assert.ok(offered.has(`${connection}:${operation}`), operation)
     }
-    const data = w.on.hub.data(principalFor(context))
+    const data = w.on.hub.data(principalFor(context), { thread: null })
     for (const { name } of tables) {
       const read = await data.read({ kind: 'TABLE', table: name })
       assert.notEqual(read.kind, 'NOT_IN_CATALOG', name)

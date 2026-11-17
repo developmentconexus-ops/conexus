@@ -1,12 +1,12 @@
-import type { CompanyData, ProjectId } from '@conexus/hub-api'
+import type { AgentId, CompanyData, ProjectId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
 import type { CompanyConnection, CompanyToolScope, PrincipalDoor } from '../company-tools/public.ts'
 import { byPrincipal, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { RunScope } from '../controller-kit/public.ts'
-import { principalOf } from '../controller-kit/public.ts'
+import type { DataBinding, RunScope } from '../controller-kit/public.ts'
+import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 
 /**
  * The run's company tools' scope: what the Projeto still offers, in the run's view, and the app's
@@ -34,13 +34,14 @@ export function agentTools<T>(
   deps: Readonly<{
     log: FailureLog
     connectors: PrincipalDoor<T>
-    companyData: (principal: Principal) => CompanyData
+    companyData: (principal: Principal, context: DataBinding) => CompanyData
   }>,
   turnOf: (requestContext: RequestContext) => T,
+  agentId: AgentId,
 ) {
   const company = {
     ...{ log: deps.log, connector: byPrincipal(deps.connectors, turnOf) },
-    data: (run: RunScope) => deps.companyData(principalOf(run)),
+    data: (run: RunScope) => deps.companyData(principalOf(run), { ...dataContextOf(run), agentId }),
   }
   return <C extends CompanyConnection>(scope: CompanyToolScope<C>) =>
     companyTools(scope, 'agents', company)

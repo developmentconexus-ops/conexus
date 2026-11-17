@@ -20,11 +20,11 @@ function scopeOf(on: CopiesOn, personId: PersonId, place: Place) {
 }
 
 function inCompany(on: CopiesOn, personId: PersonId) {
-  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }))
+  return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }), { thread: null })
 }
 
 async function tablesOf(on: CopiesOn, personId: PersonId, place: Place) {
-  const described = await on.hub.data(scopeOf(on, personId, place)).describe()
+  const described = await on.hub.data(scopeOf(on, personId, place), { thread: null }).describe()
   return Catalog.parse(described).tables.map(({ name }) => name)
 }
 
@@ -35,7 +35,7 @@ function loginsAsked(t: TestContext, on: CopiesOn) {
 }
 
 async function systemsOf(on: CopiesOn, scope: Principal) {
-  return Catalog.parse(await on.hub.data(scope).describe()).systems
+  return Catalog.parse(await on.hub.data(scope, { thread: null }).describe()).systems
 }
 
 function readsOf(
@@ -162,7 +162,7 @@ test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projet
   const place = { kind: 'PROJECT', projectId: w.on.projectId } as const
   assert.deepEqual(await tablesOf(w.on, w.brunoId, place), ['sankhya_clientes', 'sankhya_vendas'])
   const asked = loginsAsked(t, w.on)
-  const project = w.on.hub.data(scopeOf(w.on, w.brunoId, place))
+  const project = w.on.hub.data(scopeOf(w.on, w.brunoId, place), { thread: null })
   rowsOf(await project.read({ kind: 'QUERY', sql: JOIN }))
   const host = new URL(w.on.owner.reveal()).hostname
   const login = await w.on.hub.postgres.companyPostgres.readAddress(host, w.on.projectId)

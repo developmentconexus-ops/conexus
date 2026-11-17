@@ -21,7 +21,7 @@ function scopeOf(on: CopiesOn, place: Place, personId = on.anaId) {
 }
 
 function inCompany(on: CopiesOn, personId = on.anaId) {
-  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }, personId))
+  return on.hub.data(scopeOf(on, { kind: 'COMPANY' }, personId), { thread: null })
 }
 
 async function withCopies(t: Parameters<typeof copiesOn>[0]) {
@@ -189,7 +189,9 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ copyId: sellers, projectId: on.projectId },
   })
-  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }))
+  const project = on.hub.data(scopeOf(on, { kind: 'PROJECT', projectId: on.projectId }), {
+    thread: null,
+  })
   const sql = 'select * from sync.sankhya_vendas'
   assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_ROLE' })
   const granted = queryOf(
@@ -236,9 +238,8 @@ test('a assinatura única: o contexto não muda a resposta', async (t) => {
   const { on } = await withCopies(t)
   const scope = scopeOf(on, { kind: 'COMPANY' })
   const sql = 'select generate_series(1, 3) as n'
-  const plain = await on.hub.data(scope).read({ kind: 'QUERY', sql })
-  const bound = await on.hub
-    .data(scope, { by: { agent: 'ASSISTANT', threadId: ConversationId.parse(randomUUID()) } })
-    .read({ kind: 'QUERY', sql })
+  const plain = await on.hub.data(scope, { thread: null }).read({ kind: 'QUERY', sql })
+  const thread = ConversationId.parse(randomUUID())
+  const bound = await on.hub.data(scope, { thread }).read({ kind: 'QUERY', sql })
   assert.deepEqual(bound, plain)
 })

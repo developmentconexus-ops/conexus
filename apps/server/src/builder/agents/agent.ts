@@ -24,7 +24,7 @@ import type { AppDataPort } from '../app-data/public.ts'
 import type { CompanyToolScope } from '../company-tools/public.ts'
 import { companyConnections } from '../company-tools/public.ts'
 import { conversationRun } from '../controller-context/public.ts'
-import type { Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
+import type { DataBinding, Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   blockOf,
@@ -111,8 +111,8 @@ export type AgentDeps = {
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
-  /** The company's data, bound to the run's scope; an agent passes no `by` yet (decision 6 of the card). */
-  companyData: (principal: Principal) => CompanyData
+  /** The company's data, bound to the run's scope, and to the conversation and the agent that read. */
+  companyData: (principal: Principal, context: DataBinding) => CompanyData
   /** The access door: what the run reaches, which every company tool names. */
   access: Pick<Access, 'viewOf'>
   speakersOf: (scope: Readonly<{ owner: Owner; place: Place }>) => Promise<Speakers>
@@ -278,7 +278,7 @@ function runToolsOf(
 ) {
   const machines = frozen.machine ? deps.machines : undefined
   const showFile = machines === undefined ? undefined : showFileTool(machines)
-  const companyOf = agentTools(deps, turnKey.of)
+  const companyOf = agentTools(deps, turnKey.of, frozen.agentId)
   return oncePerRun(async (requestContext) => {
     const { scope, offered, start, tools, toolScope } = await plan(requestContext)
     const preset = await presetTools({
