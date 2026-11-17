@@ -496,8 +496,12 @@ Flat by default (V19). Two shadows, both for what floats over the sheet: `float`
 menus, `composer` for the composer card only. Overlays (sheet, dialog, drawer backdrop) dim with
 chrome at 80%, not black.
 
-**Motion.** Hover and state colour changes are instant or 150ms; sheets, drawers and the sidebar
-width 200ms; collapsible panels 200ms of height. Ambient: a busy composer's ring turns in 2.8s,
+**Motion.** One sheet, no new values ([movimento](docs/reference/movimento.md)). Names:
+`duration-feedback` 150ms (colour, opacity, switch, dialog veil), `duration-move` 200ms (what enters
+or leaves: drawer, side panel), `ease-enter` (`--ease-arrive`), `ease-exit` (`ease-in`, leaving in
+150ms), `ease-fit`. Instant: hover, press, focus, menus, popovers, selects, tooltips, the sidebar
+width, collapsible panels, new messages, list rows, page and tab changes. Never animated: errors,
+validation, numbers, width, height, margin or position. Ambient: a busy composer's ring turns in 2.8s,
 working text shimmers in 1.8s, the mark's pieces part and fit back in 1.2s (`--ease-fit`), arrival
 0.9s (`--ease-arrive`). Under `prefers-reduced-motion` every transition is none (V26).
 

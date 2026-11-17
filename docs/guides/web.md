@@ -129,36 +129,32 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
-- **W30.** The frame **should** be an icon rail (Início, Projetos, Integrações, then Automações,
-  Agentes (founder, 2026-11-02, `V1`) and Dados (Capacidade 2, 2026-11-09) for an owner, an administrator or a developer (step 24.3.4, founder, 2026-11-04: "2.
-  Aprovo"), and Configurações, the bell and the account at the foot) with
-  the place's list beside it. In the company the list is Nova conversa and Conversas by day, for
-  every role, since the member talks with the Assistant too. In Dados the data tree replaces it (founder, 2026-11-15). Inside a Projeto
-  the rail stays and the list is the Projeto's: its name with the switcher, Construir, Conversas (with the Assistant, step
-  24.1), Sobre, Quem usa o app and Integrações (founder, 2026-10-30, R2). The account menu holds the
+- **W30.** The frame **should** be an icon rail: Início, then groups by area: Dados e contexto
+  (Integrações, Dados, Conhecimento), Agentes (Agentes, Automações; founder, 2026-11-02, `V1`) and Apps
+  (Projetos), Agentes and Dados for an owner, administrator or developer (step 24.3.4, founder, 2026-11-04: "2.
+  Aprovo"); Configurações, the bell and the account at the foot. The
+  place's list sits beside it only where the place owns a list or tree. Início: Nova conversa and Conversas by day, for
+  every role, since the member talks with the Assistant too; Dados and Conhecimento show their tree (founder, 2026-11-15). The list has a visible collapse button, kept per person. Inside a Projeto
+  the rail stays and the list is the Projeto's (W31). The account menu holds the
   name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
   together into a drawer opened from the top button (design V56). A person with two companies
-  opens the last one used; "Suas empresas" is the switcher's menu. Founder, 2026-11-01: "Ficou boa a
-  versão do layout"; and 2026-11-02, on where Automações and the bell go: "Opção 1". [review]
+  opens the last one used; "Suas empresas" is the switcher's menu. Founder, 2026-11-02, on where Automações and the bell go: "Opção 1". [review]
 - **W31.** A Projeto **should** open on its Prévia with the latest conversation on the right; a new
   one focuses the composer. The top line holds the tabs Prévia, Código and Alterações, and Versão ▾,
-  Abrir app and Publicar on the right; the Projeto's name heads its sidebar (W30). A control appears
+  Abrir app and Publicar on the right; the Projeto's name with the switcher heads its sidebar (W30), in groups: Construir; Conversas, Agentes, Automações; Integrações, Dados; Quem usa o app, Sobre (founder, 2026-10-30, R2). A control appears
   only when its step exists, never as "em breve". Sobre lists its parts, each added by its step:
-  Sobre, Versões, Publicação (founder, 2026-10-30, A1). Each other part of a Projeto is an entry of
-  its sidebar, added by its step (Quem usa o app, Integrações, then Dados and Capacidades). [review]
+  Sobre, Versões, Publicação (founder, 2026-10-30, A1). [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  two groups: Você (Minha conta, Contas de modelo, Meus padrões) and the company's,
-  headed by its name (Geral, Pessoas e convites, Padrões da empresa, Avisos, Memória observacional); founder,
+  groups by owner, the company's by task: Você (Minha conta, Suas contas de modelo, Meus padrões) and, under the company's name, Geral, Pessoas e acesso, Modelos (Contas da empresa, Padrões da empresa, a collapsed Avançado with Memória observacional) and Avisos; founder,
   2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
-  there: it is a company sidebar entry (founder, 2026-10-28, on
-  the connectors study: "O1"). Owner and administrator change the company's group; a developer or a member
+  there (founder, 2026-10-28: "O1"). Owner and administrator change the company's group; a developer or a member
   reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: each person's own readings (founder, 2026-11-15: "3. Sim").
   Atividade and Uso are reserved there and appear only when a card asks. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
   two and three are skippable; what was skipped becomes the card "Termine de preparar a empresa" on
   Início, for owner and administrator, until done. An invited member sets a password and lands on
-  Início with no steps. [review]
+  Início with no steps. Target: add Ligue seus sistemas and a conversation, with Brain item 6. [review]
 - **W34.** Every card's state matrix **must** carry the columns 'primeira vez' and 'sem
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
   content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao

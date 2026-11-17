@@ -10,6 +10,10 @@ o foco e ambiente empresarial conseguir desenvolver aplicativos para a empresa q
 informações, interpretações, uso de inteligência artificial, e que dê liberdade criativa o que
 muitos ERPs e serviços utilizados travam."
 
+Em 2026-11-17, ao refazer o [conceito](explanation/conceito.md): "é para empresas, industria, que tem
+vários dados, conectores, sistemas desconexos e trazer isso tudo para uma camada de ontologia e
+conhecimento".
+
 A ordem, no mesmo dia: "primeiro mapeando e rastreando todas capabilidades que
 faltam para a gente, primeiro construir elas muito bem, estudando vendo repositórios referência e
 código e ir copiando o que der porém adaptado para o conexus e depois mapear todo o fluxo de
@@ -48,7 +52,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
 | `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-Cada papel lê só o seu e a subida do Mastra para a 1.83 fecharam em 2026-11-17; segue a do Registro e conformidade. O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
+O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
 [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -62,7 +66,7 @@ Cada papel lê só o seu e a subida do Mastra para a 1.83 fecharam em 2026-11-17
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-Um escopo e a fábrica de ferramentas fechou em 2026-11-17. Antes de `A1` vem a fundação do
+Antes de `A1` vem a fundação do
 front-end, pela sua resposta "A. A ordem na trilha: a". Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
