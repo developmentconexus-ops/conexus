@@ -1,8 +1,9 @@
 import type { ConnectionId, ToolDataAnswer, ToolVersionId } from '@conexus/hub-api'
 import { ToolCallKey } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
+import type { Principal } from '../access/public.ts'
 import type { AssistantConnectors } from './assistant-port.ts'
-import type { SessionScope, TurnKey } from './scope.ts'
+import type { TurnKey } from './scope.ts'
 
 /**
  * One saved tool's call while the Hub waits for the edge, as the agent's turn holds it: the
@@ -10,7 +11,7 @@ import type { SessionScope, TurnKey } from './scope.ts'
  * and the turn whose 50 reads it shares.
  */
 export type LiveToolCall = Readonly<{
-  scope: SessionScope
+  scope: Principal
   toolVersionId: ToolVersionId
   connectionId: ConnectionId
   reads: readonly string[]

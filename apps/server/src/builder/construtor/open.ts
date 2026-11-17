@@ -2,27 +2,17 @@ import type { ConversationId, Effort, ModelId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { Memory } from '@mastra/memory'
 import type { Kept } from '../controller-kit/public.ts'
-import { openSession, resourceOf } from '../controller-kit/public.ts'
+import { marksOf, openSession, RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
 
 /**
- * The marks of a Construtor thread, stamped by `createSession({ tags })`: its own keys, so no other
- * controller's sweep takes it and the Projeto's removal finds it. The Hub keeps no row.
+ * The marks a Construtor conversation's thread is born with, which a session recovered later must
+ * carry too: its own keys, so no other controller's sweep takes it and the Projeto's removal finds
+ * it. The Hub keeps no row.
  */
-export const CONSTRUTOR_MARK = {
-  company: 'conexusConstrutorCompany',
-  person: 'conexusConstrutorPerson',
-  project: 'conexusConstrutorProject',
-} as const
-
-/** The marks a Construtor conversation's thread is born with, which a session recovered later must carry too. */
 export function construtorMarks(scope: InProject): Record<string, string> {
-  return {
-    [CONSTRUTOR_MARK.company]: scope.companyId,
-    [CONSTRUTOR_MARK.person]: scope.personId,
-    [CONSTRUTOR_MARK.project]: scope.projectId,
-  }
+  return marksOf('construtor', scope)
 }
 
 /**
@@ -48,7 +38,11 @@ export function openConstrutor(
       resourceId: resourceOf('construtor', owner),
     })
     if (thread === null) return { made: true }
-    return { made: false, same: thread.metadata?.[CONSTRUTOR_MARK.project] === scope.projectId, id }
+    return {
+      made: false,
+      same: thread.metadata?.[RUN_MARKS.construtor.project] === scope.projectId,
+      id,
+    }
   }
   return openSession(deps, {
     ...{ kind: 'construtor', owner, id, tags, keep },

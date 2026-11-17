@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { SessionScope } from '../connectors/public.ts'
+import type { Place } from '../access/public.ts'
+import { readerAt } from '../access/test-principal.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { copiesOn } from '../copies/test-copies.ts'
 
-function scopeOf(on: CopiesOn, place: SessionScope['place']): SessionScope {
-  return { companyId: on.companyId, personId: on.anaId, place, chosen: [] }
+function scopeOf(on: CopiesOn, place: Place) {
+  return readerAt({ companyId: on.companyId, personId: on.anaId, place })
 }
 
 function inCompany(on: CopiesOn) {

@@ -1,5 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Principal } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import { TURNS_KEPT } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
@@ -9,7 +10,7 @@ import { turnKey } from './turn.ts'
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
-type Conversation = { scope: SessionScope; chosen: readonly AssistantConnection[] }
+type Conversation = { scope: Principal; chosen: readonly AssistantConnection[] }
 
 /**
  * The conversation's door (U1): the chosen connections its place offers, each call counted by the

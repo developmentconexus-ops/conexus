@@ -13,13 +13,13 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { attemptIdOf, listOwned, ownThread } from '../controller-kit/public.ts'
+import { attemptIdOf, listOwned, ownThread, RUN_MARKS } from '../controller-kit/public.ts'
 import { registerFile } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf, sessionScopeOf } from '../tools/public.ts'
 import type { AgentConversations } from './controller.ts'
-import { AGENT_MARK, keptRun } from './controller.ts'
+import { keptRun } from './controller.ts'
 import { openAgentConversation } from './open.ts'
 import type { AgentReads } from './registry.ts'
 
@@ -48,7 +48,7 @@ function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversati
   return {
     id: ConversationId.parse(thread.id),
     agentId,
-    draft: thread.metadata?.[AGENT_MARK.draft] === 'true',
+    draft: thread.metadata?.[RUN_MARKS.agents.draft] === 'true',
     title: thread.title || null,
     createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
@@ -122,7 +122,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     const { agentId } = input.params
     await admittedTo(deps, scope, agentId)
     const owner = { companyId: scope.companyId, personId: scope.personId }
-    const threads = await listOwned(memory, 'agents', owner, { [AGENT_MARK.agent]: agentId })
+    const threads = await listOwned(memory, 'agents', owner, { [RUN_MARKS.agents.agent]: agentId })
     return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
   })
   serveWrites(app, deps)

@@ -20,7 +20,7 @@ import {
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Failure } from '../../platform/failure.ts'
-import type { ScopeOf } from './context.ts'
+import type { RunOf } from './context.ts'
 
 /**
  * Its tools, by the ids Mastra gives them: reading only (B1, decision 0064). `tools: { write: false }`
@@ -342,12 +342,12 @@ export type CompanyMemory = ReturnType<typeof companyMemory>
  * conversation, no company: the run reads only what is its own (fail closed, as Mastra Code's
  * `knowledge-scope.ts:35`).
  */
-export function companyScopes(deps: { memory: CompanyMemory; scopeOf: ScopeOf }) {
+export function companyScopes(deps: { memory: CompanyMemory; scopeOf: RunOf }) {
   async function scopes(input: { scopes: string[]; requestContext: RequestContext }) {
     const scope = await deps.scopeOf(input.requestContext)
     if (scope === undefined) return input.scopes
-    await deps.memory.ensure(scope.companyId)
-    return [...input.scopes, org(scope.companyId)]
+    await deps.memory.ensure(scope.owner.companyId)
+    return [...input.scopes, org(scope.owner.companyId)]
   }
   return { knowledge: deps.memory.knowledge, scopes }
 }

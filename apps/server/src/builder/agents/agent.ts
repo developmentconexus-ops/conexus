@@ -13,7 +13,9 @@ import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Place, Principal } from '../../hub/access/public.ts'
+import { principalFor } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -22,13 +24,15 @@ import type { AppDataPort } from '../app-data/public.ts'
 import { appDataTools } from '../app-data/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
-import type { Speakers } from '../controller-kit/public.ts'
+import { conversationRun } from '../controller-context/public.ts'
+import type { Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   blockOf,
   CONEXUS_PROMPT,
   fixedSystem,
   oncePerRun,
+  principalOf,
   routedModel,
   toolsOf,
   turnKeyOn,
@@ -68,7 +72,7 @@ export function agentKey(id: AgentIdType): `agent-${string}` {
 }
 
 /** The run a request context carries, or none. */
-function agentRunIn(requestContext: RequestContext): AgentRun | undefined {
+export function agentRunIn(requestContext: RequestContext): AgentRun | undefined {
   return AgentRunSchema.safeParse(requestContext.get(RUN)).data
 }
 
@@ -108,8 +112,8 @@ export type AgentDeps = {
   connectors: Connectors['assistant']
   appData: AppDataPort
   /** The company's data, bound to the run's scope; an agent passes no `by` yet (decision 6 of the card). */
-  companyData: (scope: SessionScope) => CompanyData
-  speakersOf: (scope: SessionScope) => Promise<Speakers>
+  companyData: (principal: Principal) => CompanyData
+  speakersOf: (scope: Readonly<{ owner: Owner; place: Place }>) => Promise<Speakers>
   /** The 24.1 memory with the observational one, and one without it, each made once. */
   memories: { observational: MastraMemory; plain: MastraMemory }
   /**
@@ -122,33 +126,54 @@ export type AgentDeps = {
   log: FailureLog
 }
 
-/** What a run of the agent reads once: its person's start of the model, the scope and what it still offers. */
-export type Plan = {
+/** What a run reads of its version once, and what the run keeps of it: its connections and what it declares. */
+type VersionRead = Readonly<{
   run: AgentRun
-  start: { model: ModelId; effort: Effort }
-  scope: SessionScope
-  offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
-  /** Whether the version has its Computador: the conversation's machine and `show_file`. */
-  machine: boolean
+  owner: Owner
   /** The version's tools: the chosen ones, or for a version written before E4 the kit's reads of its connections. */
   tools: readonly FrozenTool[]
   /** The connections the version selected: the notebook of each, and the home of every tool. */
   selected: ReadonlySet<ConnectionId>
+  stored: Stored
+}>
+
+/** What a run of the agent reads once: its person's start of the model, the scope and what it still offers. */
+export type Plan = VersionRead & {
+  start: { model: ModelId; effort: Effort }
+  runScope: RunScope
+  scope: Principal
+  offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
+  /** Whether the version has its Computador: the conversation's machine and `show_file`. */
+  machine: boolean
 }
 
-const plans = new WeakMap<Agent, (requestContext: RequestContext) => Promise<Plan>>()
+type Read<T> = (requestContext: RequestContext) => Promise<T>
+const made = new WeakMap<Agent, Readonly<{ plan: Read<Plan>; version: Read<VersionRead> }>>()
+
+function madeOf(agent: Agent) {
+  const found = made.get(agent)
+  if (found !== undefined) return found
+  throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_WITHOUT_PLAN' } })
+}
+
+/** What the run of an agent `agentOf` made keeps: the version's connections and what it declares. */
+export async function storedOf(agent: Agent, requestContext: RequestContext): Promise<Stored> {
+  return (await madeOf(agent).version(requestContext)).stored
+}
 
 /** The plan of a run of an agent `agentOf` made, which the agents' controller takes its turn by. */
 export function planOf(agent: Agent, requestContext: RequestContext): Promise<Plan> {
-  const plan = plans.get(agent)
-  if (plan === undefined) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_WITHOUT_PLAN' } })
-  }
-  return plan(requestContext)
+  return madeOf(agent).plan(requestContext)
 }
 
-function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId: AgentIdType }) {
-  return oncePerRun(async (requestContext): Promise<Plan> => {
+type Frozen = FrozenVersion & OfProject & { agentId: AgentIdType }
+
+/**
+ * The version's read for the run the context carries, of this agent's version: one written before
+ * E4 reads as the kit's reads of its connections, found without the declaration they are part of.
+ */
+function versionReader(deps: AgentDeps, frozen: Frozen) {
+  return oncePerRun(async (requestContext): Promise<VersionRead> => {
     const run = agentRunIn(requestContext)
     const ofFrozen =
       run?.agentId === frozen.agentId &&
@@ -158,40 +183,44 @@ function planner(deps: AgentDeps, frozen: FrozenVersion & OfProject & { agentId:
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'AGENT_RUN_MISSING' } })
     }
     const { companyId, personId, projectId } = run.scope
-    const start = await conversationStart(
-      deps.queue,
-      { companyId, personId },
-      frozen.model ?? undefined,
-    )
     const place = { kind: 'PROJECT', projectId } as const
-    // A version written before E4 reads as the kit's reads of its connections; the connections
-    // are found without the version's declaration, which those reads are part of.
+    const legacy = principalFor({
+      ...{ consumer: 'assistant', companyId, personId, place },
+      choice: { kind: 'CHOSEN', connections: frozen.connections },
+    })
     const tools: readonly FrozenTool[] = frozen.byTool
       ? frozen.tools
       : [
           ...frozen.tools,
-          ...legacyTools(
-            await deps.connectors.kitReads({
-              ...{ companyId, personId, place },
-              chosen: frozen.connections,
-            }),
-            frozen.connections,
-          ),
+          ...legacyTools(await deps.connectors.kitReads(legacy), frozen.connections),
         ]
     const selected = new Set<ConnectionId>([
       ...frozen.connections,
       ...tools.map((each) => each.connectionId),
     ])
-    const scope: SessionScope = {
-      ...{ companyId, personId, place },
-      chosen: [...selected],
-      agentVersion: {
-        kind: 'VERSION',
-        declared: declaredOf(tools),
-      },
+    const stored: Stored = {
+      place,
+      choice: { kind: 'CHOSEN', connections: [...selected] },
+      ceiling: { kind: 'DECLARED', declared: declaredOf(tools) },
+      attended: true,
     }
+    return { run, owner: { companyId, personId }, tools, selected, stored }
+  })
+}
+
+function planner(deps: AgentDeps, frozen: Frozen, versionOf: ReturnType<typeof versionReader>) {
+  return oncePerRun(async (requestContext): Promise<Plan> => {
+    const version = await versionOf(requestContext)
+    const start = await conversationStart(deps.queue, version.owner, frozen.model ?? undefined)
+    const thread = conversationRun(requestContext)
+    const runScope: RunScope = {
+      ...{ kind: 'agents', owner: version.owner, ...version.stored },
+      conversation:
+        thread === undefined ? { kind: 'TRIAL' } : { kind: 'THREAD', id: thread.sessionId },
+    }
+    const scope = principalOf(runScope)
     return {
-      ...{ run, start, scope, machine: frozen.machine, tools, selected },
+      ...{ ...version, start, runScope, scope, machine: frozen.machine },
       offered: await deps.connectors.connections(scope),
     }
   })
@@ -237,7 +266,7 @@ function authorOf(frozen: FrozenVersion & { agentId: AgentIdType }): WriteAuthor
  */
 function runToolsOf(
   deps: AgentDeps,
-  frozen: FrozenVersion & OfProject & { agentId: AgentIdType },
+  frozen: Frozen,
   plan: (requestContext: RequestContext) => Promise<Plan>,
 ) {
   const machines = frozen.machine ? deps.machines : undefined
@@ -295,11 +324,9 @@ function runToolsOf(
  * what the Projeto still offers. The same agent serves every person of the company: the person is
  * the run's.
  */
-export function agentOf(
-  deps: AgentDeps,
-  frozen: FrozenVersion & OfProject & { agentId: AgentIdType },
-): Agent {
-  const plan = planner(deps, frozen)
+export function agentOf(deps: AgentDeps, frozen: Frozen): Agent {
+  const versionOf = versionReader(deps, frozen)
+  const plan = planner(deps, frozen, versionOf)
   const turn: InputProcessor = {
     id: 'conexus-agent-turn',
     async processInput({ requestContext, messages, abort }) {
@@ -322,13 +349,13 @@ export function agentOf(
     name: frozen.name,
     description: frozen.description,
     instructions: async ({ requestContext }) => {
-      const { scope, offered, selected } = await plan(requestContext)
+      const { runScope, offered, selected } = await plan(requestContext)
       const { program, writes } = await toolsOfRun(requestContext)
       const shown = offered.filter((each) => selected.has(each.connectionId))
       return [
         fixedSystem(CONEXUS_PROMPT),
         { role: 'system', content: dataOrder() },
-        { role: 'system', content: blockOf(await deps.speakersOf(scope), shown) },
+        { role: 'system', content: blockOf(await deps.speakersOf(runScope), shown) },
         { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },
         ...(program === undefined
           ? []
@@ -340,6 +367,6 @@ export function agentOf(
     memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,
     ...agentDefaults(deps.queue, { processor: turn }),
   })
-  plans.set(agent, plan)
+  made.set(agent, { plan, version: versionOf })
   return agent
 }

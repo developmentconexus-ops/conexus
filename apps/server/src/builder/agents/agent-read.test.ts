@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { ConnectionId } from '@conexus/hub-api'
+import type { Principal } from '../../hub/access/public.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { endOf } from '../conversation/test-conversation.ts'
@@ -91,4 +93,25 @@ test('a versão antiga sem a consulta livre: connections [X] sem ferramenta de X
   const operations = saved.tools.map((each) => each.operation)
   assert.ok(operations.includes('pedidos'))
   assert.ok(!operations.includes('consultar'))
+})
+
+test('o caderno fora da versão: a versão que não seleciona a Matriz que o Projeto recebeu lê o caderno dela como NOT_GRANTED', async (t) => {
+  const on = await agentsOn(t)
+  const door = on.hub.connectors.assistant
+  const asked: Principal[] = []
+  const listed = door.connections.bind(door)
+  door.connections = (scope) => {
+    asked.push(scope)
+    return listed(scope)
+  }
+  const none = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda sem os sistemas.',
+    connections: [],
+  })
+  assert.ok(!(await offeredTo(t, on, none.id))?.includes('connector_notes'))
+  const run = asked.findLast((scope) => scope.consumer === 'agent')
+  assert.ok(run, "the agent's run asked the door as its version")
+  assert.equal(await door.notes(run, ConnectionId.parse(on.matriz)), null)
+  const line = on.lines.findLast((each) => each.message === 'ASSISTANT_READ_REFUSED')
+  assert.equal(line?.fields.reason, 'NOT_CHOSEN')
 })

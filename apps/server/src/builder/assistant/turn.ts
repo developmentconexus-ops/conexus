@@ -3,7 +3,7 @@ import type { AgentController, Session as ControllerSession } from '@mastra/core
 import { sessionTurns, takeOfScope, turnKeyOn } from '../controller-kit/public.ts'
 import { failureOf, modelFailure, TurnTally } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import type { ScopeOf } from './context.ts'
+import type { RunOf } from './context.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
 
@@ -17,10 +17,13 @@ export const turnKey = turnKeyOn('conexus-assistant-turn-key')
  * automation's run ends then (`endOf`). The turn's end leaves the conversation's machine running:
  * E2B pauses it on its own timeout, and a later question before then reuses it.
  */
-export function assistantTurns(deps: { queue: QueueDeps; scopeOf: ScopeOf }) {
+export function assistantTurns(deps: { queue: QueueDeps; scopeOf: RunOf }) {
   return sessionTurns({
     id: TURN_PROCESSOR,
-    take: takeOfScope({ queue: deps.queue, scopeOf: deps.scopeOf, turnKey }),
+    take: takeOfScope({
+      ...{ queue: deps.queue, turnKey },
+      scopeOf: async (requestContext) => (await deps.scopeOf(requestContext))?.owner,
+    }),
   })
 }
 

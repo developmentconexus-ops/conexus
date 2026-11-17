@@ -1,8 +1,9 @@
 import type { ConversationId, ProjectId } from '@conexus/hub-api'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Owner } from '../controller-kit/public.ts'
-import { ownerIn, turnOfOwner } from '../controller-kit/public.ts'
+import type { Memory } from '@mastra/memory'
+import type { Owner, RunScope } from '../controller-kit/public.ts'
+import { ownerIn, runResolver, turnOfOwner } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { setTurn, turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -71,18 +72,37 @@ export function turnOf(deps: {
   }
 }
 
-/** The conversation a Mastra run is, with its company and Projeto, whoever holds the Projeto. */
-export function projectIn(index: ConversationIndex) {
-  return async (requestContext: RequestContext) => {
-    const found = await conversationOf(index, requestContext)
-    return found === undefined
-      ? undefined
-      : {
-          companyId: found.companyId,
-          projectId: found.projectId,
-          conversationId: found.conversationId,
-          personId: found.personId,
-        }
+/** The Builder's run: its Projeto from the Hub's index, every connection the Projeto received. */
+export function builderRuns(deps: {
+  index: ConversationIndex
+  memory: Pick<Memory, 'getThreadById'>
+}): (requestContext: RequestContext) => Promise<RunScope | undefined> {
+  return runResolver('builder', {
+    memory: deps.memory,
+    stored: async ({ owner, conversationId }) => {
+      const projectId = await deps.index.projectOf({ ...owner, conversationId })
+      if (projectId === undefined) return undefined
+      return {
+        place: { kind: 'PROJECT', projectId },
+        choice: { kind: 'ANY' },
+        ceiling: { kind: 'PERSON' },
+        attended: true,
+      }
+    },
+  })
+}
+
+export type ProjectOf = (requestContext: RequestContext) => Promise<Conversation | undefined>
+
+/** The conversation a Builder's run is, with its company and Projeto, whoever holds the Projeto. */
+export function projectOfRun(
+  runOf: (requestContext: RequestContext) => Promise<RunScope | undefined>,
+): ProjectOf {
+  return async (requestContext) => {
+    const run = await runOf(requestContext)
+    if (run?.place.kind !== 'PROJECT' || run.conversation.kind !== 'THREAD') return undefined
+    const { projectId } = run.place
+    return { ...run.owner, projectId, conversationId: run.conversation.id }
   }
 }
 

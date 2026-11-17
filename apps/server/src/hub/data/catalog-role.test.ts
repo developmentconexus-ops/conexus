@@ -3,7 +3,8 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ReadAnswer } from '@conexus/hub-api'
 import { Catalog, OperationId, PersonId } from '@conexus/hub-api'
-import type { SessionScope } from '../connectors/public.ts'
+import type { Place, Principal } from '../access/public.ts'
+import { readerAt, versionAt } from '../access/test-principal.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync } from '../copies/test-copies.ts'
 import { copyOf, logged, rolesWorld, roleTables, VENDAS } from '../copies/test-readers.ts'
@@ -14,15 +15,15 @@ const DORA = { name: 'Dora Lima', email: 'dora@example.test' }
 const JOIN = `select count(*) from sync.sankhya_vendas v
   join sync.sankhya_clientes c on c."CODPARC" = v."CODPARC"`
 
-function scopeOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']): SessionScope {
-  return { companyId: on.companyId, personId, place, chosen: [] }
+function scopeOf(on: CopiesOn, personId: PersonId, place: Place) {
+  return readerAt({ companyId: on.companyId, personId, place })
 }
 
 function inCompany(on: CopiesOn, personId: PersonId) {
   return on.hub.data(scopeOf(on, personId, { kind: 'COMPANY' }))
 }
 
-async function tablesOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']) {
+async function tablesOf(on: CopiesOn, personId: PersonId, place: Place) {
   const described = await on.hub.data(scopeOf(on, personId, place)).describe()
   return Catalog.parse(described).tables.map(({ name }) => name)
 }
@@ -33,7 +34,7 @@ function loginsAsked(t: TestContext, on: CopiesOn) {
     reads.mock.calls.map(({ arguments: [address] }) => new URL(address.reveal()).username)
 }
 
-async function systemsOf(on: CopiesOn, scope: SessionScope) {
+async function systemsOf(on: CopiesOn, scope: Principal) {
   return Catalog.parse(await on.hub.data(scope).describe()).systems
 }
 
@@ -276,10 +277,15 @@ test('a versão do agente lista o que declara, como hoje', async (t) => {
   const outside = await outsideTheSystem(w.on)
   const declared = [{ connectionId: w.on.connectionId, operation: OperationId.parse('pedidos') }]
   for (const person of [w.brunoId, outside.personId]) {
-    const scope = {
-      ...scopeOf(w.on, person, { kind: 'PROJECT', projectId: w.on.projectId }),
-      agentVersion: { kind: 'VERSION', declared },
-    } as const
+    const scope = versionAt(
+      {
+        companyId: w.on.companyId,
+        personId: person,
+        place: { kind: 'PROJECT', projectId: w.on.projectId },
+      },
+      declared,
+      [w.on.connectionId],
+    )
     assert.deepEqual(readsOf(await systemsOf(w.on, scope)), [`${w.on.connectionId}:pedidos`])
   }
 })

@@ -1,26 +1,50 @@
+import type { ConversationId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { Memory } from '@mastra/memory'
 import { Failure } from '../../platform/failure.ts'
-import { oncePerRun } from '../controller-kit/public.ts'
+import type { Owner } from '../controller-kit/public.ts'
+import { runResolver } from '../controller-kit/public.ts'
 import { activationIn, activationScope } from './activation.ts'
 import type { AgentRun } from './agent.ts'
-import { setAgentRun } from './agent.ts'
+import { agentRunIn, setAgentRun, storedOf } from './agent.ts'
 import type { Registry } from './registry.ts'
 
 type RunOf = (requestContext: RequestContext) => Promise<AgentRun | undefined>
-type Resolved = (requestContext: RequestContext) => Promise<Agent>
 
 /**
- * The agent a run's context names. A turn that began on an activation, which the scopes of a resumed
- * run keep, runs that version; a new turn runs the registered one.
+ * The runs of the agents' conversations: the agent and the draft by the Hub's row (`keptRun`), the
+ * version the run resolves to (a turn that began on an activation, which the scopes of a resumed
+ * run keep, runs that version; a new turn runs the registered one) and the scope that version
+ * keeps, each read once per run.
  */
-export function resolverOf(runOf: RunOf, registry: Registry): Resolved {
-  return oncePerRun(async (requestContext) => {
-    const run = await runOf(requestContext)
-    if (run === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
-    setAgentRun(requestContext, run)
-    return (await registry.resolve(run, activationIn(requestContext))).agent
+export function agentRuns(deps: {
+  memory: Pick<Memory, 'getThreadById'>
+  registry: Registry
+  keptRun: (owner: Owner, conversationId: ConversationId) => Promise<AgentRun | undefined>
+}) {
+  const resolved = new WeakMap<RequestContext, Agent>()
+  const scopeOf = runResolver('agents', {
+    memory: deps.memory,
+    stored: async ({ owner, conversationId }, requestContext) => {
+      const run = await deps.keptRun(owner, conversationId)
+      if (run === undefined) return undefined
+      setAgentRun(requestContext, run)
+      const { agent } = await deps.registry.resolve(run, activationIn(requestContext))
+      resolved.set(requestContext, agent)
+      return storedOf(agent, requestContext)
+    },
   })
+  async function runOf(requestContext: RequestContext): Promise<AgentRun | undefined> {
+    return (await scopeOf(requestContext)) === undefined ? undefined : agentRunIn(requestContext)
+  }
+  async function resolvedOf(requestContext: RequestContext): Promise<Agent> {
+    const run = await scopeOf(requestContext)
+    const agent = resolved.get(requestContext)
+    if (run === undefined || agent === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+    return agent
+  }
+  return { scopeOf, runOf, resolvedOf }
 }
 
 /**

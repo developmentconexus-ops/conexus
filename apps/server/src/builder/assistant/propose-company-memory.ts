@@ -4,7 +4,7 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyMemory } from './company-memory.ts'
-import type { ScopeOf } from './context.ts'
+import type { RunOf } from './context.ts'
 
 /** A note is one fact, as Mastra bounds it (about 250 tokens). */
 const NOTE_MAX = 1000
@@ -18,7 +18,7 @@ const DESCRIPTION =
  * call and the screen draws with **Salvar**. A note's page is read in the conversation's company,
  * so the card names it; another company's page is not found.
  */
-export function proposeCompanyMemoryTool(deps: { memory: CompanyMemory; scopeOf: ScopeOf }) {
+export function proposeCompanyMemoryTool(deps: { memory: CompanyMemory; scopeOf: RunOf }) {
   return createTool({
     id: ASSISTANT_TOOL.proposeCompanyMemory,
     description: DESCRIPTION,
@@ -44,7 +44,7 @@ export function proposeCompanyMemoryTool(deps: { memory: CompanyMemory; scopeOf:
       }
       const { page, name, text } = input
       if (page !== undefined) {
-        const read = await deps.memory.page(scope.companyId, page)
+        const read = await deps.memory.page(scope.owner.companyId, page)
         return { kind: 'NOTE', pageId: page, pageName: read.name, body: text }
       }
       // The schema's refinement asks a page without `page` for its name.

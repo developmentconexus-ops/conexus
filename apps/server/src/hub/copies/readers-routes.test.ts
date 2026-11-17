@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import pg from 'pg'
+import { principalFor } from '../access/public.ts'
 import { call, codeOf, memberOn, personOn, plantCompany, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
 import {
@@ -142,10 +143,12 @@ test('o banco calado ao dar responde 200, diz COPY_READERS_PENDING e o conserto 
   assert.deepEqual(erred(w, 'COPY_READERS_PENDING'), [], 'dar com o banco calado é info')
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { refused: '42501' })
   silent.mock.restore()
-  const carla = w.on.hub.data({
-    ...{ companyId: w.on.companyId, personId: w.carlaId },
-    ...{ place: { kind: 'COMPANY' }, chosen: [] },
-  })
+  const carla = w.on.hub.data(
+    principalFor({
+      ...{ consumer: 'assistant', companyId: w.on.companyId, personId: w.carlaId },
+      ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
+    }),
+  )
   const read = await carla.read({
     kind: 'QUERY',
     sql: 'select count(*) from sync.sankhya_clientes',
