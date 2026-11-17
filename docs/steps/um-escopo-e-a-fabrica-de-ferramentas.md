@@ -38,7 +38,9 @@ de onde é cada conversa, e **uma fábrica só** de ferramentas, de onde os quat
   quem pergunta"), a tabela de consumidores do desenho da porta única que você aprovou ("1. A forma: a",
   confirmado com "Sim") e a H6 do redesenho, que a "R2 a" pôs nesta etapa. A aprovação das escritas não
   muda: quem toca Aprovar continua precisando da escrita no próprio papel (a sua `D3-a`). O app publicado
-  também não muda: ele lê como o Projeto, pela sua decisão 3 (d).
+  também não muda: ele lê como o Projeto, pela sua decisão 3 (d). Nesta etapa a regra vale para as
+  leituras ao vivo, o caderno e as escritas. As tabelas copiadas que o agente lê num Projeto continuam
+  pela liberação do Projeto até a parte 7 da trilha Dados, como a página da P1 já diz.
 - **Primeiro se apaga.** Antes de construir, sai o que está repetido: o texto fixo do Conexus lido três
   vezes, duas fábricas iguais da ferramenta que lê os dados do app, a frase do limite de 50 chamadas
   escrita à mão em quatro lugares e uma citação velha.
@@ -706,8 +708,9 @@ Os casos novos, salvo o passo 1, vão em `company-tools/conformance.test.ts`, no
      `oncePerRun` (`controller-kit/once.ts:7`).
    - **O que entra:** os contratos desses arquivos; a `reach` só quando `run.choice.kind === 'CHOSEN'`.
      Regras: C26, C81.
-   - **Testes:** o 46 conta as chamadas por `t.mock.method(w.on.hub.access, 'viewOf')`, o `access` que
-     `main.ts:212-218` passa às conversas, que `companyToolScope` chama na hora.
+   - **Testes:** o 46 conta as chamadas com um `Access` que conta, posto no lugar do que
+     `main.ts:212-218` passa às conversas (`createAccess` devolve um objeto congelado, `hub/access/public.ts:59`,
+     e não aceita `t.mock.method`); `companyToolScope` o chama na hora.
      **Mutações à mão:** sem `oncePerRun`, vermelho o 46. **Pronto quando:** `npm run typecheck` passa.
 4. **A fábrica.** Critérios: 31, 32, 36, 39.
    - **Arquivos:** cria `factory.ts` e `public.ts`; em `data-tools/tools.ts`, `dataTools({ data })` recebe
