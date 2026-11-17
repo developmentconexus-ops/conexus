@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import type { TestUserConfig } from 'vitest/config'
 import { defineConfig } from 'vitest/config'
 import { NEVER_RERUN } from '../../scripts/rerun-exempt.ts'
 import { CI_RETRY, FlakyReporter } from '../../scripts/vitest-flaky-reporter.ts'
@@ -10,7 +11,7 @@ const noRetry = [
   .filter((file) => file.startsWith('apps/web/src/'))
   .map((file) => file.slice('apps/web/'.length))
 
-const shared = {
+const shared: TestUserConfig = {
   environment: 'jsdom',
   setupFiles: ['./vitest.setup.ts'],
   testTimeout: 10_000,
@@ -18,7 +19,7 @@ const shared = {
   fsModuleCache: true,
   // A screen formats a date in the browser's own zone; one zone here lets a test expect a literal.
   env: { TZ: 'America/Sao_Paulo' },
-} as const
+}
 
 export default defineConfig({
   plugins: [react()],
