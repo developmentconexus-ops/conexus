@@ -117,13 +117,18 @@ test('a prova do caderno pelo papel: sem consultar, gravar e ler o caderno dá N
   assert.equal(Object(notes).kind, 'NOT_IN_ROLE')
 })
 
-test('o funil: uma versão publicada lê só o que declara, e a que não declarou a consulta livre recebe NOT_IN_ROLE sem pedido ao dublê', async (t) => {
+test('o funil: a versão lê só o que declara: com consultar no papel do Atendente, a que não a declarou recebe NOT_IN_ROLE com o papel, sem pedido ao dublê', async (t) => {
   const on = await atendenteOn(t)
+  const widened = await call(on.hub, on.ana, 'PUT', `${on.base}/roles/atendente`, {
+    connectors: { sankhya: ['pedidos', 'consultar'] },
+    unattended: false,
+  })
+  assert.equal(widened.statusCode, 200, widened.body)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('pedidos') }]
   const version = on.versionOf(declared)
   const before = on.called()
   const free = await on.ask('consultar', { sql: QUERY }, version)
-  assert.deepEqual(free, { kind: 'NOT_IN_ROLE', role: null, operation: 'consultar' })
+  assert.deepEqual(free, { kind: 'NOT_IN_ROLE', role: 'atendente', operation: 'consultar' })
   assert.equal(on.called(), before)
   assert.notEqual((await on.ask('pedidos', { pagina: 1 }, version)).kind, 'NOT_IN_ROLE')
   const [connection] = await on.hub.connectors.assistant.connections(version)
@@ -195,12 +200,44 @@ test('mudar o Membro: sem o Financeiro, o Assistente do Membro não traz contasA
   assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, before)
 })
 
-test('a versão publicada roda para quem conversa sem a operação: a que declara empresas lê para um Atendente que só tem pedidos, e sem a versão ele é recusado', async (t) => {
+test('a versão não alarga o papel: a que declara empresas, rodada por um Atendente que só tem pedidos, dá NOT_IN_ROLE com o papel e nada ao dublê', async (t) => {
   const on = await atendenteOn(t)
   const declared = [{ connectionId: on.matriz, operation: OperationId.parse('empresas') }]
-  assert.equal((await on.ask('empresas')).kind, 'NOT_IN_ROLE')
-  const version = on.versionOf(declared)
-  const answered = await on.ask('empresas', { page: 0 }, version)
-  assert.equal(answered.kind, 'OK')
-  assert.equal(on.called(), 1)
+  const before = on.called()
+  const refused = await on.ask('empresas', { page: 0 }, on.versionOf(declared))
+  assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'atendente', operation: 'empresas' })
+  assert.equal(on.called(), before)
+})
+
+test('o caderno do agente segue o papel de quem roda: sem consultar, NOT_IN_ROLE; com ele, lê', async (t) => {
+  const on = await atendenteOn(t)
+  const version = on.versionOf([
+    { connectionId: on.matriz, operation: OperationId.parse('pedidos') },
+  ])
+  const refused = await on.hub.connectors.assistant.notes(version, on.matriz)
+  assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'atendente', operation: 'consultar' })
+  const widened = await call(on.hub, on.ana, 'PUT', `${on.base}/roles/atendente`, {
+    connectors: { sankhya: ['pedidos', 'consultar'] },
+    unattended: false,
+  })
+  assert.equal(widened.statusCode, 200, widened.body)
+  const notes = await on.hub.connectors.assistant.notes(version, on.matriz)
+  assert.notEqual(Object(notes).kind, 'NOT_IN_ROLE')
+})
+
+test('o papel muda no meio: tirada pedidos de quem roda a versão que a declara, a chamada seguinte é recusada e nada chega ao dublê', async (t) => {
+  const on = await atendenteOn(t)
+  const version = on.versionOf([
+    { connectionId: on.matriz, operation: OperationId.parse('pedidos') },
+  ])
+  assert.notEqual((await on.ask('pedidos', { pagina: 1 }, version)).kind, 'NOT_IN_ROLE')
+  const before = on.called()
+  const narrowed = await call(on.hub, on.ana, 'PUT', `${on.base}/roles/atendente`, {
+    connectors: {},
+    unattended: false,
+  })
+  assert.equal(narrowed.statusCode, 200, narrowed.body)
+  const refused = await on.ask('pedidos', { pagina: 1 }, version)
+  assert.deepEqual(refused, { kind: 'NOT_IN_ROLE', role: 'atendente', operation: 'pedidos' })
+  assert.equal(on.called(), before)
 })

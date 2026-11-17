@@ -2,7 +2,7 @@ import type { CatalogSystem } from '@conexus/hub-api'
 import { OperationId } from '@conexus/hub-api'
 import type { Database } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
-import { personOf } from '../identity/public.ts'
+import { personOf, withinVersion } from '../identity/public.ts'
 import type { AccessSources } from './model.ts'
 import { chosenIn } from './model.ts'
 import type { Principal } from './principal.ts'
@@ -46,10 +46,9 @@ export function createAccess(deps: AccessDeps) {
       const chosen = systems.filter((system) => chosenIn(principal.choice, system.connection))
       return { role: proof.role, systems: chosen, tables }
     })
+    const person = personOf(personId, read.role)
     const speaker =
-      principal.declared === undefined
-        ? personOf(personId, read.role)
-        : ({ kind: 'VERSION', declared: principal.declared } as const)
+      principal.declared === undefined ? person : withinVersion(person, principal.declared)
     const targets = targetsOf(read.systems)
     const answers = await deps.identity.mayUseEach(companyId, speaker, targets)
     const allowed = new Set(

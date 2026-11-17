@@ -7,7 +7,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { Principal } from '../access/public.ts'
 import { chosenIn } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
-import { personOf } from '../identity/public.ts'
+import { personOf, withinVersion } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
 import { createSpending, described, offeredIn } from './builder-port.ts'
 import { shaped } from './cut.ts'
@@ -128,9 +128,8 @@ async function mayAsk(deps: Deps, tx: ReadTx, scope: Principal): Promise<Speaker
       companyId: scope.companyId,
       action: 'askAssistant',
     })
-    return scope.declared === undefined
-      ? personOf(scope.personId, admitted.role)
-      : { kind: 'VERSION', declared: scope.declared }
+    const person = personOf(scope.personId, admitted.role)
+    return scope.declared === undefined ? person : withinVersion(person, scope.declared)
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'NOT_FOUND') throw error
     const reason = String(error.details.reason ?? 'NOT_FOUND')

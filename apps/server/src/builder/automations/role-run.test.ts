@@ -24,3 +24,21 @@ test('a automação roda pelo papel do dono: o modelo recebe só o que o papel d
   assert.ok(!answered.includes('sankhya_empresas'))
   assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, 0)
 })
+
+test('papel do dono estreitado depois da criação: a execução seguinte não recebe a operação, e nada chega ao dublê', async (t) => {
+  const on = await automating(t, [[searching('pedidos')], [reading('Matriz')]])
+  const diego = await memberOn(on.hub, on.companyId, DIEGO, 'developer')
+  const body = salesSummary([on.matriz], { projectId: on.projectId })
+  const automation = await created(on.hub, diego, on.automations, body)
+  const narrowed = await call(on.hub, on.ana, 'PUT', `${on.company}/roles/developer`, {
+    connectors: { sankhya: ['empresas'] },
+    unattended: false,
+  })
+  assert.equal(narrowed.statusCode, 200, narrowed.body)
+  const url = `${on.automations}/${automation.id}`
+  const run = await ended(on.hub, diego, url, await ranNow(on.hub, diego, url))
+  assert.equal(run.state.kind, 'DONE')
+  const loaded = on.calls[1]?.tools ?? []
+  assert.ok(!loaded.includes('sankhya_pedidos'), 'the narrowed role no longer offers pedidos')
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, 0)
+})

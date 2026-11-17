@@ -104,3 +104,26 @@ test('o app recebe só status, código e mensagem da recusa do sistema, nunca o 
   assert.deepEqual(Object.keys(answer.native).sort(), ['code', 'message', 'status'])
   assert.deepEqual(answer.native, { status: 403, code: 'NO_ACCESS', message: 'Sem permissão' })
 })
+
+test('o app lê como o Projeto: a dona da sessão sem empresas no papel ainda recebe OK', async (t) => {
+  const on = await appCalls(t, { declared: [{ connector: 'sankhya', operations: ['empresas'] }] })
+  await on.connect('Matriz')
+  const narrowed = await call(
+    on.hub,
+    on.ana,
+    'PUT',
+    `/api/companies/${on.companyId}/roles/member`,
+    {
+      connectors: { sankhya: ['pedidos'] },
+      unattended: false,
+    },
+  )
+  assert.equal(narrowed.statusCode, 200, narrowed.body)
+  await on.hub.test.asOwner(
+    "update auth.member set role = 'member' where company_id = $1 and user_id = $2",
+    [on.companyId, on.ana.id],
+  )
+  const read = await on.read()
+  assert.equal(read.statusCode, 200, read.body)
+  assert.equal(Object(read.json()).kind, 'OK')
+})

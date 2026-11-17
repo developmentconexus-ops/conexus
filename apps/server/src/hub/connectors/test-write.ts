@@ -113,7 +113,8 @@ function requesters(on: Awaited<ReturnType<typeof appCalls>>, matriz: Connection
   }
   function byVersion(over: Over = {}): WriteRequest {
     const declared = [{ connectionId: matriz, operation: LANCAR }]
-    return { ...base(over), speaker: { kind: 'VERSION', declared }, agentId, number: 1 }
+    const speaker = { kind: 'AGENT', personId: PersonId.parse(on.ana.id), declared } as const
+    return { ...base(over), speaker, agentId, number: 1 }
   }
   function byCarla(over: Over = {}): WriteRequest {
     const speaker = {

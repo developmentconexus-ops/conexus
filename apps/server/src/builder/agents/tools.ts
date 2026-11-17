@@ -174,14 +174,11 @@ function authorOf(author: WriteAuthor): WriteAuthorOf {
 
 type Asked = Omit<WriteRequest, 'speaker' | 'agentId' | 'number'>
 
-/** The request as its author speaks: a version by what it declares (decision C1), a person by the role the funnel reads. */
 function requestOf(deps: Deps, asked: Asked): WriteRequest {
-  if (deps.author.kind === 'DRAFT') {
-    return { ...asked, speaker: { kind: 'PERSON', personId: deps.scope.personId } }
-  }
-  const declared = deps.scope.declared ?? []
+  const { personId, declared = [] } = deps.scope
+  if (deps.author.kind === 'DRAFT') return { ...asked, speaker: { kind: 'PERSON', personId } }
   const { agentId, number } = deps.author
-  return { ...asked, speaker: { kind: 'VERSION', declared }, agentId, number }
+  return { ...asked, speaker: { kind: 'AGENT', personId, declared }, agentId, number }
 }
 
 /**

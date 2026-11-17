@@ -3,7 +3,7 @@ import { connectorOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
 import type { Speaker } from '../identity/public.ts'
-import { speakerOf } from '../identity/public.ts'
+import { personOf, speakerOf } from '../identity/public.ts'
 import type { NotInRole } from './read.ts'
 import type { Deps } from './rows.ts'
 
@@ -94,7 +94,24 @@ export async function mayUseNotebook(
   speaker: Speaker,
   on: Readonly<{ connectionId: ConnectionId; connector: string }>,
 ): Promise<NotInRole | undefined> {
-  if (speaker.kind === 'VERSION') return undefined
+  switch (speaker.kind) {
+    case 'VERSION':
+      return undefined
+    case 'PERSON':
+      return notebookInRole(deps, companyId, speaker, on)
+    case 'AGENT':
+      return notebookInRole(deps, companyId, personOf(speaker.personId, speaker.role), on)
+    default:
+      return speaker satisfies never
+  }
+}
+
+async function notebookInRole(
+  deps: Deps,
+  companyId: CompanyId,
+  speaker: Extract<Speaker, { kind: 'PERSON' }>,
+  on: Readonly<{ connectionId: ConnectionId; connector: string }>,
+): Promise<NotInRole | undefined> {
   const connector = connectorOf(on.connector)
   if (connector?.readDoor?.[NOTEBOOK_OPERATION] === undefined) return undefined
   const allowed = await deps.identity.mayUse(companyId, speaker, {
