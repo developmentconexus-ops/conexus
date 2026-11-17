@@ -13,7 +13,7 @@ import {
   urlFile,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
-import { freePort } from './platform/test-port.ts'
+import { hubPorts } from './platform/test-port.ts'
 
 type Line = Record<string, unknown>
 
@@ -29,7 +29,7 @@ function messages(lines: Line[], message: string): Line[] {
 }
 
 async function configEnv(t: TestContext) {
-  const ports = { port: await freePort(), edgePort: await freePort() }
+  const ports = await hubPorts()
   return serveEnvironment(t, await unreachableDatabaseUrl(), ports)
 }
 
@@ -52,7 +52,7 @@ test('configuração: recusa subir com um valor fora do formato', async (t) => {
 
 async function serverEnv(t: TestContext, extra: Record<string, string> = {}) {
   const database = await createTestDatabase(t)
-  const ports = { port: await freePort(), edgePort: await freePort() }
+  const ports = await hubPorts()
   const env = serveEnvironment(t, database.runtimeUrl, ports)
   return { database, env: { ...env, ...extra } }
 }

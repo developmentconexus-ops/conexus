@@ -32,3 +32,11 @@ export async function freePort(): Promise<number> {
   }
   throw new Error(`no free port below ${low}`)
 }
+
+/** The Hub's two ports, never the same: the config refuses an edge port equal to the Hub's. */
+export async function hubPorts(): Promise<{ port: number; edgePort: number }> {
+  const port = await freePort()
+  let edgePort = await freePort()
+  while (edgePort === port) edgePort = await freePort()
+  return { port, edgePort }
+}
