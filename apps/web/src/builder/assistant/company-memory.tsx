@@ -68,7 +68,7 @@ function PageRow(props: { companyId: CompanyId; page: Memory['pages'][number]; m
   return (
     <li className="flex flex-col gap-md py-md">
       <div className="flex flex-wrap items-center justify-between gap-sm">
-        <div className="flex min-w-0 flex-col gap-2xs">
+        <div className="flex min-w-0 flex-col">
           <p className="font-medium break-words">{page.name}</p>
           <p className="text-label text-text-2">{bylineOf(page)}</p>
         </div>
