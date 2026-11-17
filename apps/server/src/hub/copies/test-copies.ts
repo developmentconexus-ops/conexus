@@ -19,6 +19,7 @@ import {
 import { sql } from 'drizzle-orm'
 import pg from 'pg'
 import { z } from 'zod'
+import { ROLES_LOCK } from '../../platform/copy-sql.ts'
 import type { DatabaseUrl } from '../../platform/database.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
 import { CopyName } from '../connectors/public.ts'
@@ -254,12 +255,17 @@ export function plantSource(on: CopiesOn, copyId: CopyId, set: string, values: u
   return plantRow(on, 'copy_source', 'copy_id', set, [copyId, ...values])
 }
 
-/** As the sync login, which the owner holds by SET alone: the copies' tables are its own. */
+/**
+ * As the sync login, which the owner holds by SET alone: the copies' tables are its own. It takes the
+ * turn of the Hub's acts on the database (`ROLES_LOCK`), so a GRANT, REVOKE or DROP planted here is
+ * never refused (`XX000`) by one of theirs still running from an earlier step.
+ */
 export async function asSync<T>(owner: DatabaseUrl, act: (client: pg.Client) => Promise<T>) {
   const client = new pg.Client({ connectionString: owner.reveal() })
   await client.connect()
   try {
     await client.query('begin')
+    await client.query(ROLES_LOCK.text)
     await client.query('set local role conexus_sync')
     const done = await act(client)
     await client.query('commit')
