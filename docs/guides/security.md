@@ -147,9 +147,9 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   wrappers prevent accidental serialization without a mandatory private-field spelling. Incoming
   external `traceparent`, `tracestate` and `baggage` are ignored rather than trusted as diagnostic
   context. Failure: a library's stderr prints a password hash. JSON format and the outbound
-  allowlist alone do not prove safe contents or inbound context selection. Mastra's spans in
-  Mastra's own database are the one exception: they keep input, output and error, for 14 days
-  [0068]. [review]
+  allowlist alone do not prove safe contents or inbound context selection. Mastra's trace in
+  Mastra's own database, its spans and the logs attached to them, is the one exception: it keeps
+  input, output, error and log text, for 14 days [0068]. [review]
 - **S42.** Telemetry **must** leave only through an allowlist of attribute names; anything else is
   dropped and counted. A new field **must** come with a test that plants a string and proves it is
   removed. [test]

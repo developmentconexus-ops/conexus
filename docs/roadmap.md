@@ -62,7 +62,7 @@ Cada papel lê só o seu fechou em 2026-11-17; segue a do Registro e conformidad
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A máquina que não pausa e o rastreio do Mastra, da Plataforma, fecharam em 2026-11-17.
+A máquina que não pausa fechou em 2026-11-17; o rastreio do Mastra (Plataforma) também.
 Antes de `A1` vem Um escopo e a fábrica de ferramentas (H0, H1, H3, H6), pela sua palavra: "R2 a".
 Mais na [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
