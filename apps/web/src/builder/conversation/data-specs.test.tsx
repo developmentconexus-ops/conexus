@@ -8,8 +8,7 @@ import { invocationToItem } from './rows.ts'
 import { DataPart, recordedPart } from './test-recorded.ts'
 import { ToolRow } from './tool-row.tsx'
 
-const SQL =
-  'select sum("VLRNOTA") as total from sync.vendas where "DTNEG" >= \'2026-10-01\''
+const SQL = 'select sum("VLRNOTA") as total from sync.vendas where "DTNEG" >= \'2026-10-01\''
 
 afterEach(() => {
   Reflect.deleteProperty(navigator, 'clipboard')
