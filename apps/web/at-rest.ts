@@ -24,7 +24,7 @@ export function atRest(page: Page): Promise<void> {
       const running = document
         .getAnimations()
         .filter((one) => one.effect?.getComputedTiming().endTime !== Number.POSITIVE_INFINITY)
-        .filter((one) => one.playState === 'running' || one.playState === 'pending')
+        .filter((one) => one.playState === 'running' || one.pending)
       if (running.length > 0) {
         await Promise.allSettled(running.map((one) => one.finished))
         still = 0
