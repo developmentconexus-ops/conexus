@@ -90,3 +90,9 @@ Em 2026-11-17, como mudança de método (L20), às duas perguntas do estudo do C
 A resposta A faz o `npm run check` e o `npm run test:scripts` rodarem num hook `pre-push` (`.githooks/`, ligado pelo `core.hooksPath` que o `npm install` grava), e a skill `conexus-build` cita o hook no passo 7 e proíbe o `--no-verify`. A resposta B mantém a segunda rodada (T4) e a cobra: a medida "runs salvos pela segunda rodada" entra em `docs/how-to/ci-health.md` com a meta abaixo de 2% (hoje 12%), o protocolo do instável entra em `references/bug.md`, e a T20 passa a ter uma regra GritQL (`scripts/test-waits.grit`) que recusa a espera fixa nova em teste. O firstmate decidiu ao construir, sem palavra do fundador: o teste da lista T4 também roda no `npm run check`; as esperas de hoje ficam numa lista do `biome.json` que só diminui; a segunda rodada do `test:unit` do web é de uma tentativa só na CI, e os arquivos da lista T4 ficam sem ela.
 
 Com cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`. Em 2026-11-17, perguntado pelo firstmate se autorizava o rótulo de emergência neste pull request, o fundador respondeu: "1. Aplica". O firstmate aplicou o rótulo.
+
+## Mudança de método: o portão antes de subir sai do hook
+
+O hook `pre-push` da seção anterior sai por inteiro (`.githooks/`, o instalador, o script `prepare` e a frase do passo 7 da skill `conexus-build`): ele rodava o `npm run test:scripts` herdando o `GIT_DIR` de quem empurra, e os testes escreveram no repositório de verdade. O que o hook rodava a CI já roda (`.github/workflows/ci.yml`), e o `test-run` passa a rodar os testes sem as variáveis `GIT_*` que nomeiam um repositório.
+
+Com cartões em construção, o pull request entra pela exceção da L20, com o rótulo `emergência`. Em 2026-11-17, perguntado pelo firstmate se liberava o rótulo de emergência para o pull request que remove o hook, o fundador respondeu: "1. Sim". O firstmate aplicou o rótulo.

@@ -8,8 +8,9 @@
 // with no test failing (a reporter rule, a timeout, a crash). Options come first and use the
 // `--name=value` form, so what follows them is the list of files the second run narrows to.
 // The refusals and the rerun are proved in test-run.test.ts.
+// It also runs the tests without the GIT_* variables that name a repository.
 // Revalidate by 2027-05-14, or when Node changes `--test-rerun-failures`.
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
@@ -21,10 +22,20 @@ import { flakyTests } from './rerun-state.ts'
 const ROOT = resolve(import.meta.dirname, '..')
 const Failure = z.object({ file: z.string(), name: z.string(), names: z.array(z.string()) })
 
+// A caller such as a git hook exports GIT_DIR and its kin; a test that runs `git init` or
+// `git branch` in a scratch folder would then write to the caller's repository.
+// `git rev-parse --local-env-vars` is git's own list of the variables that point at a repository.
+function withoutRepositoryEnv(): NodeJS.ProcessEnv {
+  const names = execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+    .split('\n')
+    .filter(Boolean)
+  return Object.fromEntries(Object.entries(process.env).filter(([name]) => !names.includes(name)))
+}
+
 function runNodeTest(args: string[], env: Record<string, string>): number {
   const run = spawnSync(process.execPath, ['--test', ...args], {
     stdio: 'inherit',
-    env: { ...process.env, ...env },
+    env: { ...withoutRepositoryEnv(), ...env },
   })
   return run.status ?? 1
 }
