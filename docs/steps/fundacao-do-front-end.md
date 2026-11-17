@@ -28,6 +28,10 @@ conhece não mudam de cara. O que muda é por baixo. As peças que toda tela rep
 num lugar só, com uma página que mostra cada uma. Uma ferramenta recusa a peça refeita. E as
 próximas etapas com tela, nas duas trilhas, seguem a regra "peça antes de tela".
 
+**A emenda de 2026-11-17.** Os contratos das peças de IA (U5) foram reescritos a partir do código de
+hoje, antes da construção, porque os da primeira versão não cabiam nele. Nada muda para você: a
+conversa continua igual, e o roteiro de uso é o mesmo.
+
 **O roteiro de uso.**
 
 1. No Início, abra **Agentes** e clique no filtro **Todos os Projetos**. Abre uma lista com busca.
@@ -151,9 +155,9 @@ estudo, relidas em `f4ccc150`; as da U3, em `ebfd4aa1`.
 | 18 | U3 | Agentes no Início com `listAgents` em falha que não é `NOT_FOUND` (por exemplo `DATABASE_UNAVAILABLE`) mostra o título, o filtro e **Novo agente**, e a frase com **Tentar de novo** no lugar da lista (issue 705). Um `NOT_FOUND` continua "não encontrado" de página inteira (security S10) | `apps/web/agents.layout.test.ts`, dois casos novos: `DATABASE_UNAVAILABLE` e `NOT_FOUND` | must |
 | 19 | U4 | As cópias à mão contadas no estudo dão lugar à peça: as linhas `border-t`/`border-b` de separação viram `Separator`, os 3 giros viram `Spinner`, os 8 cabeçalhos de página viram `PageHeader`, os campos de busca com lupa viram `SearchField`. As telas ficam iguais à captura de antes, a 1366 e 390 | os testes de layout e as varreduras de estados existentes passam sem mudar; capturas antes e depois no relatório | must |
 | 20 | U4 | O número de avisos da catraca cai, e o número novo fica escrito no script | `npm run lint`; o diff do `package.json` | must |
-| 21 | U5 | As peças de `ui/ai/` não importam `builder/`, `hub/` nem `@mastra/*`: recebem só dados prontos | `npm run deps` (regras `web-support-does-not-import-subject`, W5, e `mastra-only-in-builder`, W7); plantar um import de `builder/` numa peça | must |
+| 21 | U5 | As peças de `ui/ai/` não importam `builder/`, `hub/`, `@conexus/hub-api` nem `@mastra/*`: recebem só dados prontos, e cada frase por prop | `npm run deps` (regras `web-support-does-not-import-subject`, W5, `ui-ai-takes-ready-data`, W5, e `mastra-only-in-builder`, W7); plantar um import de `builder/` e um de `@conexus/hub-api` numa peça | must |
 | 22 | U5 | A conversa se comporta como antes: os testes da conversa e as varreduras passam sem mudar nenhuma asserção | `conversation.layout.test.ts`, `tool-row.layout.test.ts`, `tools.layout.test.ts`, `proposal-card.layout.test.ts`, `sources.layout.test.ts`, `sweep-conversation-states.ts`, os testes Vitest de `builder/conversation/` | must |
-| 23 | U5 | Cada peça de IA tem entrada na vitrine com os estados da sua união (por exemplo executando, feito, falhou; pendente, aprovada, recusada; aberta, respondida, fechada) | o caso do critério 6, que lê `ui/ai/` | must |
+| 23 | U5 | Cada peça de IA tem entrada na vitrine com cada estado da sua união: a linha de ferramenta executando, feita e com falha, com e sem corpo; o grupo trabalhando, feito e feito com falha; o raciocínio pensando e pensado; a linha de trabalho trabalhando e esperando; o aviso de espera; o plano aberto, aprovado, substituído e fechado; as tarefas; a aprovação aberta, aprovada, recusada, interrompida e parada; a pergunta aberta, respondida e fechada; as fontes de página e de tabela | o caso do critério 6, que lê `ui/ai/` | must |
 | 24 | U6 | O guia de design tem a regra nova "peça antes de tela". `conexus-build`, `conexus-review`, `conexus-scope` (com o modelo do cartão e o cartão padrão da trilha Dados) e `conexus-qa` têm o passo dela, e cada arquivo fica no seu teto de palavras | `npm run docs` | must |
 | 25 | U6 | V3, V16 e V22 passam a nomear o que o lint cobre delas, em aviso sob a catraca, sem tirar o "review" | `npm run docs`; leitura do diff | should |
 | 26 | U3 | `GET /api/companies/{companyId}/projects?q=` devolve só os Projetos da empresa cujo nome contém o texto, sem diferenciar maiúscula (`ÇÃO` acha `Ação`), na ordem por nome, 50 por vez; o `next` dessa resposta, mandado com o mesmo `q`, traz a página seguinte da mesma busca. `%` e `_` valem como letra: `50%` não acha `500`. O texto chega sem os espaços das pontas e na forma NFC; um `q` vazio depois disso, ou com mais de 100 caracteres, é 400 `REQUEST_MALFORMED`. Quem não é membro continua com 404 `NOT_FOUND`, com ou sem `q` | `apps/server/src/hub/projects/projects.test.ts`, caso novo no Postgres real, com 60 Projetos; `apps/server/src/openapi-contract.test.ts` passa com o parâmetro novo | must |
@@ -276,6 +280,7 @@ de novo a partir da receita do shadcn (a regra do estudo, `conexus-study`).
 | 10 | A busca de Projetos no Hub não ignora acento: `ILIKE` no nome, como o `matches` de hoje no navegador | ignorar acento no banco pede a extensão `unaccent` no Postgres do Hub, que ele não tem, numa migração nova (raio maior que esta etapa); a busca de títulos de conversa ignora acento porque filtra na memória do servidor (`builder/assistant/search.ts:14-17`), um caminho que não pagina no banco; os nomes de Projeto já são gravados em NFC (`packages/hub-api/src/projects.ts:9-16`) e o texto chega em NFC pelo contrato | uma migração com `unaccent` e a coluna buscada, numa etapa própria |
 | 11 | Sem espera entre letras: cada texto é uma leitura, a anterior cancelada pelo `signal`, e a lista anterior fica na tela até a resposta | é o que a busca de conversas do Hub já faz (`sidebar-conversations.tsx:68-86`, `builder/assistant/queries.ts:51-57`), e o TanStack Query cancela a leitura sem observador que usou o `signal` (`query-core` `src/query.ts:523-537`); o Supabase espera 500 ms (`OrganizationProjectSelector.tsx:90-91`) e o Base UI cancela à mão com `AbortController` (`combobox.md:3481-3492`): os dois resolvem o que a biblioteca de leitura já faz aqui | esperar 300 ms depois da última letra antes de pôr o texto na chave, como o Supabase |
 | 12 | O `Picker` é o `Select` do Base UI abaixo de `SEARCH_FROM` e o `Combobox` com campo a partir dele, atrás de um contrato só | o Base UI manda usar o `Select` quando não há campo, pelo que o leitor de tela ouve (`combobox.md:533`); o fundador decidiu a busca só a partir de 7 linhas; a pessoa vê a mesma lista nos dois modos | o `Combobox` com o campo sempre, se o fundador quiser a busca em toda lista |
+| 13 | Os nove contratos da U5 reescritos a partir dos arquivos de `main` `da21543c` (emenda de 2026-11-17), com cada estado e cada frase por prop, o Markdown e o corpo da ferramenta como `ReactNode` já desenhado pela ligação, as duas formas de fonte, a peça `WaitingCaption` e a regra `ui-ai-takes-ready-data`; e não estreitar a U5 às peças de linha | o construtor parou antes de mover código: nenhum dos nove contratos cabia no que o arquivo desenha (a lista, peça por peça, está no pull request da emenda); a escolha é técnica e não muda o que a pessoa vê nem o escopo, e estreitar a unidade cortaria escopo, que só o fundador corta; o Mastra 1.83 dá à peça dados prontos e um `ReactNode` onde o desenho é do assunto (`playground-ui` `ds/components/ai/tool-approval/tool-approval.tsx:77-82`, `tool-call/tool-call-group.tsx:31-36`) | voltar aos contratos da primeira versão e ampliar só o que um teste pedir |
 
 ## U1 O lint de design e a CLI do shadcn
 
@@ -918,73 +923,182 @@ mudar o que a conversa faz.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/ui/ai/` | Cria: `tool-line.tsx`, `tool-group.tsx`, `reasoning-line.tsx`, `working-line.tsx`, `plan.tsx`, `task-list.tsx`, `approval.tsx`, `question.tsx`, `sources.tsx` | `builder/conversation/` |
+| `apps/web/src/ui/ai/` | Cria: `tool-line.tsx`, `tool-group.tsx`, `reasoning-line.tsx`, `working-line.tsx`, `waiting-caption.tsx`, `plan.tsx`, `task-list.tsx`, `approval.tsx`, `question.tsx`, `sources.tsx` | `builder/conversation/`; `plan.tsx`, `approval.tsx` e `question.tsx` usam `waiting-caption.tsx` |
 | `apps/web/src/builder/conversation/` | Muda: os nove arquivos ficam só com a ligação (do evento à forma da peça) e as ações | o resto da conversa |
 | `apps/web/src/ui/showcase.ts` | Muda: o grupo IA | a vitrine |
-| `.dependency-cruiser.cjs` | Muda só se `web-support-does-not-import-subject` (W5) não cobrir a subpasta `ui/ai/` | `npm run deps` |
+| `.dependency-cruiser.cjs` | Muda: a regra nova `ui-ai-takes-ready-data` (W5), que recusa `@conexus/hub-api` em `ui/ai/`; `web-support-does-not-import-subject` (W5) já cobre `builder/` e `hub/` na subpasta, porque casa `ui/` e o que está abaixo (`.dependency-cruiser.cjs:281-286`), e `mastra-only-in-builder` (W7) já recusa `@mastra/*` fora de `builder/` (`:209-215`) | `npm run deps` |
 | `DESIGN.md` | Muda: as linhas das peças de IA | — |
 
 ### Os contratos que a unidade cria
 
-Cada peça recebe uma forma de apresentação, sem tipo do Mastra nem do Hub, e os textos como props.
-As formas vêm do que cada arquivo mostra hoje:
+Emenda de 2026-11-17 (a decisão 13 do firstmate): o construtor leu os nove arquivos antes de mover
+código, e nenhum dos nove contratos da primeira versão cabia no que o arquivo desenha (o ícone e o
+relógio da linha de ferramenta, a falha do grupo, o Markdown do raciocínio, a espera da linha de
+trabalho, o erro e os estados a mais dos três cartões, os dois tipos de fonte, e as frases fixas
+de cada arquivo). Os contratos abaixo foram reescritos a partir de `main` `da21543c`, linha a linha
+dos nove arquivos, na forma das peças do Mastra 1.83 (`mastra@d60ba71`, a tag `@mastra/core@1.83.0`,
+`packages/playground-ui/src/ds/components/ai/`): a peça recebe dados prontos e, onde o desenho é
+do assunto, um `ReactNode` já desenhado, como o `children` de `ToolApproval`
+(`tool-approval/tool-approval.tsx:77-82`), o `leading` de `ToolCallGroup`
+(`tool-call/tool-call-group.tsx:31-36`) e o `footer` de `AskUser` (`ask-user/ask-user-card.tsx:16-23`).
+
+Cada peça recebe uma forma de apresentação, sem tipo do Mastra nem do Hub. Cada frase que a peça
+mostra chega por prop: um `text` com as frases fixas e, no estado, as frases que a ligação compõe
+(com o nome do agente, uma contagem, um tempo).
 
 ```ts
-// ui/ai/tool-line.tsx, de tool-row.tsx
-export type ToolLineState =
-  | { kind: 'RUNNING' }
-  | { kind: 'DONE'; summary: string | undefined }
-  | { kind: 'FAILED'; sentence: string }
-export function ToolLine(props: { title: string; state: ToolLineState; detail: ReactNode }): ReactElement
+// ui/ai/tool-line.tsx, de tool-row.tsx (Since 49-57, ToolLine 316-349, ToolRow 355-376)
+export type ToolLineState = { kind: 'RUNNING' } | { kind: 'DONE' } | { kind: 'FAILED' }
+/** Ao lado da frase: o detalhe da chamada, cortado, ou, enquanto roda sem detalhe, o relógio que a ligação desenha. */
+export type ToolLineBeside =
+  | { kind: 'DETAIL'; text: string }
+  | { kind: 'CLOCK'; clock: ReactNode }
+  | { kind: 'NONE' }
+export function ToolLine(props: {
+  icon: LucideIcon
+  sentence: string
+  state: ToolLineState
+  beside: ToolLineBeside
+  /** O corpo que abre a linha, já desenhado pela ligação; `undefined` é a linha que não abre. */
+  body: ReactNode | undefined
+}): ReactElement
 
-// ui/ai/tool-group.tsx, de tool-group.tsx (hoje `tools: ToolItem[]; working: boolean`)
-export type ToolGroupState = { kind: 'WORKING' } | { kind: 'DONE' }
-export function ToolGroup(props: { title: string; state: ToolGroupState; children: ReactNode }): ReactElement
+// ui/ai/tool-group.tsx, de tool-group.tsx (24-93)
+export type ToolGroupState =
+  | { kind: 'WORKING'; icon: LucideIcon; sentence: string; progress: string }
+  | { kind: 'DONE'; failed: boolean; short: string; full: string; icons: readonly LucideIcon[]; tally: string }
+export function ToolGroup(props: { state: ToolGroupState; children: ReactNode }): ReactElement
 
-// ui/ai/reasoning-line.tsx, de thinking-line.tsx (hoje `part: ReasoningItem`)
-export type ReasoningState = { kind: 'THINKING' } | { kind: 'DONE'; seconds: number | undefined }
-export function ReasoningLine(props: { label: string; state: ReasoningState; text: string }): ReactElement
+// ui/ai/reasoning-line.tsx, de thinking-line.tsx (27-61)
+export type ReasoningState =
+  | { kind: 'THINKING' }
+  /** `body` é o raciocínio já desenhado em Markdown pela ligação; `undefined` quando veio vazio, e a linha não abre. */
+  | { kind: 'DONE'; body: ReactNode | undefined }
+export function ReasoningLine(props: { label: string; state: ReasoningState }): ReactElement
 
-// ui/ai/working-line.tsx, de working-line.tsx (o texto de espera sai para a ligação)
-export function WorkingLine(props: { label: string; startedAt: number }): ReactElement
+// ui/ai/working-line.tsx, de working-line.tsx (26-62; o relógio, o minuto quieto e as frases ficam na ligação)
+export type WorkingState =
+  /** `since` é o tempo já escrito, com o separador (" · há 12 s", ou " há 1 min" no minuto quieto); `undefined` sem contagem. */
+  | { kind: 'WORKING'; sentence: string; since: string | undefined }
+  | { kind: 'WAITING'; sentence: string }
+export function WorkingLine(props: { state: WorkingState }): ReactElement
 
-// ui/ai/plan.tsx, de plan-card.tsx (hoje `part: PlanCardItem`, e `useDecision` fica na ligação)
+// ui/ai/waiting-caption.tsx, de question-card.tsx (WaitingCaption 50-59): o aviso no telefone de que o agente espera a pessoa
+export function WaitingCaption(props: { text: string }): ReactElement | null
+
+// ui/ai/plan.tsx, de plan-card.tsx (108-146; `useDecision` e `useAnswer` ficam na ligação)
 export type PlanState =
-  | { kind: 'PENDING'; busy: boolean; onApprove: () => void; onReject: (reason: string) => void }
+  /** A peça guarda o campo da razão e qual botão foi apertado; a ligação diz se envia e o erro. */
+  | { kind: 'OPEN'; waiting: string; busy: boolean; error: string | undefined; onApprove: () => void; onReject: (reason: string) => void }
   | { kind: 'APPROVED' }
-  | { kind: 'REJECTED'; reason: string | undefined }
-export function Plan(props: { title: string; body: ReactNode; state: PlanState }): ReactElement
+  | { kind: 'REJECTED' }
+  | { kind: 'CLOSED' }
+export type PlanText = {
+  readAll: string; reasonLabel: string; approve: string; reject: string; sending: string
+  approved: string; rejected: string; closed: string
+}
+export function Plan(props: { title: string; body: ReactNode; state: PlanState; text: PlanText }): ReactElement
 
-// ui/ai/task-list.tsx, de task-panel.tsx (hoje `tasks: Task[]`, com Task do contrato do Hub)
-export type TaskView = { id: string; title: string; status: 'PENDING' | 'IN_PROGRESS' | 'DONE' }
-export function TaskList(props: { label: string; tasks: readonly TaskView[]; streaming: boolean }): ReactElement
+// ui/ai/task-list.tsx, de task-panel.tsx (OpenTasks 35-103; quando o painel some fica na ligação, `TaskPanel` 24-29)
+/** `text` é o `activeForm` da tarefa em andamento, quando ela tem, e o conteúdo nas outras. */
+export type TaskView = { id: string; text: string; status: 'PENDING' | 'IN_PROGRESS' | 'DONE' }
+export type TaskListText = { region: string; heading: string; done: string; running: string; pending: string }
+export function TaskList(props: { tasks: readonly TaskView[]; text: TaskListText }): ReactElement
 
-// ui/ai/approval.tsx, de approval-card.tsx
+// ui/ai/approval.tsx, de approval-card.tsx (189-247; `useReply`, a releitura das escritas e `failureText` ficam na ligação)
+export type ApprovalField = { label: string; lines: readonly string[] }
+/** O que a escrita fez, como a peça mostra: uma nota, ou a recusa com o seu aviso. */
+export type ApprovalOutcome =
+  | { kind: 'NOTE'; text: string }
+  | { kind: 'REFUSAL'; alert: string; text: string | undefined }
 export type ApprovalState =
-  | { kind: 'PENDING'; busy: boolean; onApprove: () => void; onDecline: () => void }
-  | { kind: 'APPROVED' }
-  | { kind: 'DECLINED' }
-export function Approval(props: { title: string; detail: ReactNode; state: ApprovalState }): ReactElement
+  | {
+      kind: 'OPEN'
+      waiting: string
+      /** Os botões respondem só enquanto a sessão segura a chamada e a leitura das escritas abertas respondeu. */
+      lit: boolean
+      sending: 'APPROVE' | 'DECLINE' | undefined
+      error: string | undefined
+      /** A leitura das escritas abertas falhou: a frase e o **Tentar de novo**. */
+      readFailure: { text: string; onRetry: () => void } | undefined
+      /** Outra escrita igual ainda aberta: a frase do aviso. */
+      openWrite: string | undefined
+      onApprove: () => void
+      onDecline: () => void
+    }
+  /** `byYou`: o registro guarda o **Aprovar** da pessoa, e o cartão diz "Aprovado por você". */
+  | { kind: 'APPROVED'; byYou: boolean; outcome: ApprovalOutcome | undefined }
+  | { kind: 'DECLINED'; outcome: ApprovalOutcome | undefined }
+  | { kind: 'INTERRUPTED'; outcome: ApprovalOutcome | undefined }
+  | { kind: 'STOPPED'; outcome: ApprovalOutcome | undefined }
+export type ApprovalText = {
+  approve: string; decline: string; approving: string; declining: string
+  approved: string; declined: string; interrupted: string; stopped: string; steer: string
+}
+export function Approval(props: {
+  title: string
+  /** A conexão, depois do título; `undefined` quando a escrita não é conhecida. */
+  connection: string | undefined
+  /** O logo da conexão, desenhado pela ligação (`ConnectorLogo` é de `hub/`). */
+  logo: ReactNode | undefined
+  fields: readonly ApprovalField[]
+  state: ApprovalState
+  text: ApprovalText
+}): ReactElement
 
-// ui/ai/question.tsx, de question-card.tsx (`useAnswer` e `answersOf` ficam na ligação)
-export type QuestionView = { id: string; text: string; choices: readonly { value: string; label: string; hint: string | undefined }[] }
+// ui/ai/question.tsx, de question-card.tsx (Ask 109-146, QuestionCard 162-222; `useAnswer` e `answersOf` ficam na ligação)
+export type QuestionView = {
+  id: string
+  text: string
+  multiple: boolean
+  choices: readonly { value: string; label: string; hint: string | undefined }[]
+}
 export type QuestionState =
-  | { kind: 'OPEN'; busy: boolean; onSubmit: (form: FormData) => void }
-  | { kind: 'ANSWERED'; answers: readonly string[] }
-  | { kind: 'CLOSED'; text: string }
-export function Question(props: { title: string; questions: readonly QuestionView[]; state: QuestionState }): ReactElement
+  | { kind: 'OPEN'; waiting: string; busy: boolean; onSubmit: (form: FormData) => void }
+  /** `row` é a linha recolhida ("Respondeu 2 perguntas"); `answers`, uma por pergunta, quando a conversa as guarda. */
+  | { kind: 'ANSWERED'; row: string; answers: readonly string[] | undefined }
+  /** Fechada ou parada: `said` é a frase de por quê, quando há. */
+  | { kind: 'CLOSED'; row: string; said: string | undefined }
+export type QuestionText = {
+  previous: string; next: string; submit: string; sending: string
+  other: string; otherLabel: string; answerLabel: string; answerPlaceholder: string; required: string
+}
+export function Question(props: {
+  questions: readonly QuestionView[]
+  state: QuestionState
+  /** O erro do envio, que aparece em qualquer estado, como hoje. */
+  error: string | undefined
+  text: QuestionText
+}): ReactElement
 
-// ui/ai/sources.tsx, de sources.tsx (`stampOf` e `nameOf` ficam na ligação)
-export type SourceView = { key: string; name: string; stamp: string; action: ReactNode | undefined }
+// ui/ai/sources.tsx, de sources.tsx (DataLine 57-84, Sources 87-122; `stampOf`, `nameOf` e o crachá ficam na ligação)
+export type SourceView =
+  /** `href` só quando a página tem link. */
+  | { kind: 'PAGE'; key: string; title: string; href: string | undefined; domain: string }
+  | {
+      kind: 'TABLE'
+      key: string
+      name: string
+      /** O logo e o crachá de autorizar de novo, desenhados pela ligação (`ConnectorLogo` e `stateBadge` são de `hub/`). */
+      logo: ReactNode | undefined
+      badge: ReactNode | undefined
+      table: string
+      stamp: { tone: 'neutral' | 'success' | 'warning' | 'danger'; text: string }
+    }
 export function Sources(props: { label: string; sources: readonly SourceView[] }): ReactElement
 ```
 
 - **Cada estado** como união por `kind` (C21, C22). O `TaskView.status` traduz o estado do contrato
-  do Hub na ligação; a peça não conhece o contrato.
+  do Hub na ligação; o `ApprovalState` traduz o `Decision` e o `Outcome` de `approval-item.ts`; a
+  peça não conhece nenhum dos dois.
 - **Cada id**: nenhum id de marca entra em `ui/ai/`; `id` e `key` são só chaves de lista (C23 fica
   na ligação, que recebe `ToolCallId` e os outros).
-- **O dono de cada fato**: a frase de cada estado continua em `builder/conversation/text.ts`; a peça
-  não tem texto próprio (C26, delivery L23).
+- **O dono de cada fato**: a frase de cada estado continua onde está hoje, em
+  `builder/conversation/` (`text.ts`, `approval-text.ts`, `CARD_TEXT` e as frases de cada
+  arquivo); a peça não tem texto próprio (C26, delivery L23). O que fica desenhado na
+  ligação, e não na peça: o corpo de cada ferramenta (`tool-bodies.tsx`, `Block`, `Change`,
+  `Reconnect`), as linhas especiais (`ShownLine`, `AgentLine`, os cartões de proposta), o
+  Markdown (`markdown.tsx`), o logo e o crachá da conexão, e o relógio (`elapsed.ts`).
 - **O arquivo modelo**: `ui/trace.tsx` para a forma da peça de chat copiada do shadcn; cumpre C26
   (o cabeçalho diz a origem); C21 e C23 não se aplicam, porque não tem estado nem id.
 
@@ -1015,6 +1129,8 @@ peça de IA só se vê numa conversa com stream.
 ### Parar se
 
 - Um teste da conversa só passa com uma asserção mudada.
+- Uma peça precisa de um estado, de uma frase ou de um `ReactNode` que o contrato emendado não
+  tem: pare de novo e mostre a linha do arquivo; o contrato não se amplia no build.
 - Uma peça precisa do evento cru do Mastra para desenhar: a fronteira está no lugar errado;
   pergunte.
 - Um arquivo movido muda mais de um terço das suas linhas: escreva a peça de novo pela receita do
