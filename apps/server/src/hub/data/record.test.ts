@@ -23,13 +23,13 @@ function bruno(w: RolesWorld, thread: ConversationId | null, place: Place = { ki
   return w.on.hub.data(scope, { thread })
 }
 
-async function recordsOf(on: CopiesOn) {
+async function recordsOf(on: Pick<CopiesOn, 'hub' | 'companyId'>) {
   return on.hub.test.asOwner('select * from data.data_read where company_id = $1 order by at, id', [
     on.companyId,
   ])
 }
 
-async function onlyRecord(on: CopiesOn) {
+async function onlyRecord(on: Pick<CopiesOn, 'hub' | 'companyId'>) {
   const records = await recordsOf(on)
   assert.equal(records.length, 1, JSON.stringify(records))
   const [record] = records
