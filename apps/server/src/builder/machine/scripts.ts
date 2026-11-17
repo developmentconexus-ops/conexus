@@ -1,5 +1,4 @@
-import type { Sha } from '../git/public.ts'
-import { MAX_BYTES, MAX_FILES } from '../git/public.ts'
+import { MAX_BYTES, MAX_FILES, Sha } from '../git/public.ts'
 import type { Conflicts } from './kit.ts'
 
 /** Where the Hub puts the bundle of `main` and where the machine leaves the bundle of its turn. */
@@ -159,34 +158,35 @@ function treeOf(workdir: string, base: string, index: string): string[] {
 
 /** Whether the app folder differs from the `main` the machine was seeded with: prints UNCHANGED or CHANGED. */
 export function changedScript(workdir: string): string {
-  return [...treeOf(workdir, 'refs/conexus/base', 'conexus-changed-index'), 'echo CHANGED'].join(
-    '\n',
-  )
+  return [...treeOf(workdir, BASE_REF, 'conexus-changed-index'), 'echo CHANGED'].join('\n')
 }
 
 /**
- * One commit of the whole tree on `base`, bundled in the machine. Prints UNCHANGED when the tree is
- * `base`'s, else the bundle's size. `node_modules` never leaves the machine.
+ * One commit of the whole tree on the machine's own base, the `main` it was seeded or synced with or
+ * last saved, bundled in the machine and printed as `base=`: another conversation may have moved
+ * the Hub's `main` past it, to a commit this machine never received. Prints UNCHANGED when the tree
+ * is the base's, else the bundle's size. `node_modules` never leaves the machine.
  */
-export function collectScript(workdir: string, tmp: string, base: Sha): string {
+export function collectScript(workdir: string, tmp: string): string {
   const out = outFile(tmp)
   return [
-    ...treeOf(workdir, base, 'conexus-index'),
+    ...treeOf(workdir, BASE_REF, 'conexus-index'),
+    `echo "base=$(git rev-parse ${BASE_REF})"`,
     `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
-    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
-    `commit=$(git ${IDENTITY} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
+    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${BASE_REF} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
+    `commit=$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,
-    `git bundle create --quiet ${quoted(out)} ${CANDIDATE_REF} ^${base}`,
+    `git bundle create --quiet ${quoted(out)} ${CANDIDATE_REF} ^${BASE_REF}`,
     `echo "size=$(stat -c %s ${quoted(out)})"`,
   ].join('\n')
 }
 
-/** What the collect script printed: nothing changed, a bundle past the cap, or a bundle and its file counts. */
+/** What the collect script printed: nothing changed, a bundle past the cap, or a bundle, its base and its file counts. */
 export type Collected =
   | { kind: 'unchanged' }
   | { kind: 'too-large' }
-  | { kind: 'bundle'; files: number; changedFiles: number }
+  | { kind: 'bundle'; base: Sha; files: number; changedFiles: number }
 
 function counted(stdout: string, name: string): number {
   const value = Number(new RegExp(`^${name}=(\\d+)$`, 'm').exec(stdout)?.[1])
@@ -199,6 +199,7 @@ export function collected(stdout: string): Collected {
   if (counted(stdout, 'size') > MAX_BYTES) return { kind: 'too-large' }
   return {
     kind: 'bundle',
+    base: Sha.parse(/^base=(\S+)$/m.exec(stdout)?.[1]),
     files: counted(stdout, 'files'),
     changedFiles: counted(stdout, 'changed'),
   }

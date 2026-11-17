@@ -1,7 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
-import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import type { Kit } from './kit.ts'
@@ -263,19 +262,19 @@ class BuilderMachines implements Machines {
     })
   }
 
-  async collect({ conversationId, base }: { conversationId: ConversationId; base: Sha }) {
+  async collect({ conversationId }: { conversationId: ConversationId }) {
     const session = this.sessions.get(conversationId)
     if (session?.used !== true) return 'unchanged'
     const kit = await this.ensure(session)
     if (session.lost) throw new Failure('MACHINE_LOST')
     session.onPhase('saving')
-    const result = await this.run(kit, collectScript(this.workdir, this.tmp, base))
+    const result = await this.run(kit, collectScript(this.workdir, this.tmp))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
     const bundle = await readCapped(kit.transport, outFile(this.tmp))
     if (bundle === 'too-large') return bundle
-    return { bundle, files: found.files, changedFiles: found.changedFiles }
+    return { bundle, base: found.base, files: found.files, changedFiles: found.changedFiles }
   }
 
   async check({ conversationId }: Parameters<Machines['check']>[0]) {

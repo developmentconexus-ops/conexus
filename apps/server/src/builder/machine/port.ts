@@ -27,14 +27,11 @@ export type Machines = {
     onPhase: (phase: Phase) => void
   }): Promise<Workspace>
   /**
-   * One bundle of the whole tree on `base` with its file counts, or why there is none. A turn that
-   * never needed the machine is `unchanged` without waking it; one whose machine died on the way
-   * throws, for what it wrote is gone.
+   * One bundle of the whole tree on the `main` the machine holds, returned as `base`, with its file
+   * counts, or why there is none. A turn that never needed the machine is `unchanged` without waking
+   * it; one whose machine died on the way throws, for what it wrote is gone.
    */
-  collect(input: {
-    conversationId: ConversationId
-    base: Sha
-  }): Promise<Bundled | 'unchanged' | 'too-large'>
+  collect(input: { conversationId: ConversationId }): Promise<Bundled | 'unchanged' | 'too-large'>
   /**
    * The check of the app folder (decision 0055). A machine that could not check is
    * `CHECK_PLATFORM_FAILED`.
@@ -60,7 +57,7 @@ export type Machines = {
 }
 
 /** A turn's tree as one bundle, with how many files the version holds and how many the turn changed. */
-type Bundled = { bundle: Buffer; files: number; changedFiles: number }
+type Bundled = { bundle: Buffer; base: Sha; files: number; changedFiles: number }
 
 export type MachinesDeps = {
   kit: KitFactory
