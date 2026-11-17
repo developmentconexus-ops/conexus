@@ -34,13 +34,14 @@ import {
   projectsOf,
 } from '../company-tools/public.ts'
 import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
+import type { DataBinding, Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   admitAsker,
   agentDefaults,
   controllerOf,
   createAskUserTool,
+  dataContextOf,
   MODEL_TIMEOUT,
   principalOf,
   sessionModel,
@@ -126,8 +127,8 @@ type Deps = {
   connectors: AssistantConnectors
   /** The access door: what a place offers the owner (issue 1147). */
   access: Pick<Access, 'viewOf'>
-  /** The company's data, bound to the conversation's scope; the Assistant passes no `by` yet (decision 6 of the card). */
-  companyData: (principal: Principal) => CompanyData
+  /** The company's data, bound to the conversation's scope; and to the conversation that reads. */
+  companyData: (principal: Principal, context: DataBinding) => CompanyData
   projects: CompanyProjects
   queue: QueueDeps
   /**
@@ -147,7 +148,7 @@ type Deps = {
 function companyDeps(deps: Deps): CompanyToolDeps<AssistantConnection> {
   return {
     ...{ log: deps.log, copies: deps.copies, savedAt: readsFiles() },
-    data: (run) => deps.companyData(principalOf(run)),
+    data: (run) => deps.companyData(principalOf(run), dataContextOf(run)),
     connector: byPrincipal(deps.connectors, turnKey.of),
     projects: (run) => projectsOf(deps, run),
   }

@@ -100,7 +100,8 @@ function appDataOf(
 function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   return {
     access: (ids) => apps().builderData.access(ids),
-    read: (ids, statement, signal) => apps().builderData.read(ids, statement, signal),
+    read: (ids, statement, signal, thread) =>
+      apps().builderData.read(ids, statement, signal, thread),
     check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
   }
 }
@@ -163,7 +164,7 @@ type ConversationsDeps = {
   /** The copies are made after the conversations; a run comes long after both. */
   copies: () => Pick<CopyService, 'run' | 'projectView' | 'list' | 'runs'>
   /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
-  companyData: (principal: Principal, context?: DataContext) => CompanyData
+  companyData: (principal: Principal, context: DataContext) => CompanyData
   /** The access door is made after the conversations; a list of what a place offers comes long after. */
   access: Pick<Access, 'viewOf'>
   notify: Notify

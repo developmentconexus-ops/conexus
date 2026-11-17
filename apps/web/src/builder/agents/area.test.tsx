@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { onPhone, say } from '../conversation/test-hub.tsx'
 import { AREA, agent, BUILDER_CHAT, OTHER_AGENT, THIRD_AGENT } from './test-agents.ts'
@@ -197,7 +197,7 @@ test('a conversa com o Construtor sumir do Hub faz a lista ser lida de novo', as
       return HttpResponse.json({ conversations: [row] })
     }),
     http.get('*/stream', async () => {
-      await new Promise((settled) => setTimeout(settled, 300))
+      await vi.waitFor(() => expect(reads).toBeGreaterThan(0))
       atGone = reads
       return refusal('CONVERSATION_NOT_FOUND')
     }),

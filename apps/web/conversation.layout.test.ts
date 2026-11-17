@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { holdsColumn } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, LAPTOP, PHONE } from './layout-harness.ts'
@@ -77,16 +78,16 @@ test('a rolagem da conversa segue o fim enquanto ela cresce; quem subiu não é 
     { polling: 50 },
   )
   await grow(page, 10)
-  await page.waitForTimeout(300)
+  await atRest(page)
   assert.ok((await distance()) <= 2, 'the end did not stay in view while the answer grew')
   const box = await scroller.boundingBox()
   assert.ok(box, 'the conversation is not laid out')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.wheel(0, -400)
-  await page.waitForTimeout(300)
+  await atRest(page)
   const top = await scroller.evaluate((el) => el.scrollTop)
   await grow(page, 10)
-  await page.waitForTimeout(300)
+  await atRest(page)
   assert.deepEqual(
     {
       pulled: Math.abs((await scroller.evaluate((el) => el.scrollTop)) - top) > 1,
@@ -117,18 +118,18 @@ test('quem gira a roda ou aperta uma tecla para baixo já no fim continua seguin
   await grow(page, 40)
   await atEnd(page)
   // The scroller's own follow settles before the gesture, as it has when a person reads the end.
-  await page.waitForTimeout(300)
+  await atRest(page)
   const box = await scroller.boundingBox()
   assert.ok(box, 'the conversation is not laid out')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.wheel(0, 300)
-  await page.waitForTimeout(300)
+  await atRest(page)
   await grow(page, 10)
   await atEnd(page)
-  await page.waitForTimeout(300)
+  await atRest(page)
   await scroller.focus()
   await page.keyboard.press('End')
-  await page.waitForTimeout(300)
+  await atRest(page)
   await grow(page, 10)
   await atEnd(page)
   assert.deepEqual(page.problems, [])
@@ -143,7 +144,7 @@ test('quem gira a roda para baixo enquanto a resposta cresce, a poucos pixels do
   await scroller.waitFor()
   await grow(page, 40)
   await atEnd(page)
-  await page.waitForTimeout(300)
+  await atRest(page)
   await page.evaluate(() => {
     const items = document.querySelectorAll('[data-slot=message-scroller-item]')
     const gap = document.createElement('div')
@@ -153,7 +154,7 @@ test('quem gira a roda para baixo enquanto a resposta cresce, a poucos pixels do
       .querySelector('[data-slot=message-scroller-viewport]')
       ?.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, bubbles: true }))
   })
-  await page.waitForTimeout(300)
+  await atRest(page)
   await grow(page, 10)
   await atEnd(page)
   assert.deepEqual(page.problems, [])
@@ -175,12 +176,12 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
   await scroller.waitFor()
   await grow(page, 40)
   await atEnd(page)
-  await page.waitForTimeout(300)
+  await atRest(page)
   const box = await scroller.boundingBox()
   assert.ok(box, 'the conversation is not laid out')
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.wheel(0, -400)
-  await page.waitForTimeout(300)
+  await atRest(page)
   // Mastra takes the message and the stream says it, the run going: the screen opens it again.
   const sent: Said = {
     id: 'm3',

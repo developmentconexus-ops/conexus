@@ -1,5 +1,14 @@
 import type { Connector, ConnectorId } from '@conexus/connectors'
-import type { CompanyId, Connection, CopyId, CopyOfConnection, Person } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  Connection,
+  ConversationId,
+  CopyId,
+  CopyOfConnection,
+  OperationId,
+  Person,
+  ProjectId,
+} from '@conexus/hub-api'
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -7,12 +16,31 @@ import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
+import type { Consumer } from '../access/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import type { ConnectorApps } from './apps.ts'
 import type { Executor } from './executor.ts'
 import type { Limits } from './limits.ts'
 import { connection } from './tables.ts'
+
+/** What a live read hands the Registro's writer: names and the outcome, never the value read. */
+type LiveReadLine = Readonly<{
+  companyId: CompanyId
+  personId: PersonId
+  by: Consumer | 'app'
+  projectId: ProjectId | null
+  agentId: null
+  threadId: ConversationId | null
+  verb: 'LIVE'
+  tables: readonly []
+  query: null
+  connectionId: ConnectionId
+  operation: OperationId
+  outcome: string
+  rows: null
+  ms: number
+}>
 
 type CopiesOf = Readonly<{ companyId: CompanyId; personId: PersonId; connectionId: ConnectionId }>
 
@@ -54,6 +82,8 @@ export type Deps = {
   /** The machine's clock; a test injects its own (T20). */
   now: () => Date
   copies: () => ConnectionCopies
+  /** The one writer of the Registro (`hub/data`), handed in by `main.ts`. */
+  recordRead: (line: LiveReadLine) => Promise<'RECORDED' | 'UNRECORDED'>
 }
 
 /** The catalog's connector of an id; none when the catalog has no such connector. */

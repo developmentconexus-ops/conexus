@@ -193,25 +193,18 @@ async function onPhone(run: () => Promise<void>) {
   }
 }
 
-function later(ms: number) {
-  return new Promise((done) => setTimeout(done, ms))
-}
-
 test('o número é lido de novo a cada 60 segundos com a janela visível, e abrir o painel lê outra vez', async () => {
   // Testing Library's `waitFor` polls with `setInterval`, so this test waits with `setTimeout` instead.
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   try {
     const { reads } = bell([notification(1)])
-    await later(300)
+    expect(await screen.findByRole('button', { name: 'Notificações: 1 não lida' })).toBeTruthy()
     const before = reads()
-    expect(screen.getByRole('button', { name: 'Notificações: 1 não lida' })).toBeTruthy()
     await vi.advanceTimersByTimeAsync(60_000)
-    await later(300)
-    expect(reads()).toBeGreaterThan(before)
+    await vi.waitFor(() => expect(reads()).toBeGreaterThan(before))
     const afterTick = reads()
     fireEvent.click(screen.getByRole('button', { name: 'Notificações: 1 não lida' }))
-    await later(300)
-    expect(reads()).toBeGreaterThan(afterTick)
+    await vi.waitFor(() => expect(reads()).toBeGreaterThan(afterTick))
   } finally {
     vi.useRealTimers()
   }
@@ -278,11 +271,12 @@ test('com a janela escondida o número não é lido de novo', async () => {
   try {
     visibility.mockReturnValue('hidden')
     document.dispatchEvent(new Event('visibilitychange'))
-    const { reads } = bell([notification(1)])
-    await later(300)
+    const { reads, conexus } = bell([notification(1)])
+    await vi.waitFor(() => expect(reads()).toBeGreaterThan(0))
+    await vi.waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
     const before = reads()
     await vi.advanceTimersByTimeAsync(120_000)
-    await later(300)
+    expect(conexus.queryClient.isFetching()).toBe(0)
     expect(reads()).toBe(before)
   } finally {
     visibility.mockRestore()

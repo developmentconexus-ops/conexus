@@ -116,7 +116,10 @@ choice of test tools.
   role without its password. A blind ban on timers would not prove reliable waiting. A test **must not**
   wait on a production clock or deadline that the code lets it inject (a schedule's next run, a
   lease, a pool's idle time, a read deadline); a fixed wait of one second or more says why in a
-  comment. Founder, 2026-11-04: "D A". Failure: a test waits the production 15 s that a 1 s value proves as well. [review]
+  comment. Founder, 2026-11-04: "D A". Failure: a test waits the production 15 s that a 1 s value proves as well. [GritQL
+  `scripts/test-waits.grit`, which refuses `waitForTimeout(` and a `setTimeout` of a literal 1000 ms or more; the comment
+  is `// biome-ignore lint/plugin: <why>`; the waits of today sit in the `!` list of its override in `biome.json`, which
+  only shrinks; review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
 - **T23.** Screen changes and their transitions **should** be looked at in a real browser, including
   narrow widths, both themes and a keyboard pass through focus stops. Captures are taken at 1366 and

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getProject, listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, failure, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
@@ -83,7 +84,7 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   const list = nav.locator('[data-sidebar=sidebar]')
   await list.getByRole('link', { name: /Vendas da semana/ }).waitFor()
-  await page.waitForTimeout(250)
+  await atRest(page)
   const rail = await nav.locator('[data-slot=sidebar-rail-column]').boundingBox()
   const column = await list.boundingBox()
   assert.deepEqual([rail?.width, column?.width], [56, 272])

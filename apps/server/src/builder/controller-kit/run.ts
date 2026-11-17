@@ -230,3 +230,11 @@ export function principalOf(run: RunScope): Principal {
       return run.kind satisfies never
   }
 }
+
+/** What a run tells the data door beyond its principal: the conversation, and the saved agent when it is one. */
+export type DataBinding = Readonly<{ thread: ConversationId | null; agentId?: AgentId }>
+
+/** The conversation a run reads in, as the data door records it; the Construtor's test of a draft has none. */
+export function dataContextOf(run: RunScope): DataBinding {
+  return { thread: run.conversation.kind === 'THREAD' ? run.conversation.id : null }
+}

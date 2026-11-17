@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, ok, PHONE, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -149,7 +150,7 @@ test('o dourado: o enviar, ao passar o mouse, fica no cinza de destaque (surface
   const [grey, gold] = [await colourOf(page, 'bg-surface-3'), await colourOf(page, 'bg-accent')]
   assert.notEqual(grey, gold)
   await send.hover()
-  await page.waitForTimeout(300)
+  await atRest(page)
   assert.equal(await send.evaluate((one) => getComputedStyle(one).backgroundColor), grey)
   await page.close()
 })

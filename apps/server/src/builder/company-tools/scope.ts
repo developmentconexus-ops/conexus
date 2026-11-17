@@ -13,8 +13,8 @@ export type CompanyConnection = ConnectorAccess['connections'][number] &
 /** How far a seat reads the Projeto's app (C21): not at all, a few rows, or rows and counts; each with its door and the run's ids. */
 export type AppDataGrant = Readonly<
   | { kind: 'NONE' }
-  | ({ kind: 'READ' } & Parameters<typeof appDataTools>[0])
-  | ({ kind: 'READ_AND_CHECK' } & Parameters<typeof builderAppDataTools>[0])
+  | ({ kind: 'READ' } & Omit<Parameters<typeof appDataTools>[0], 'thread'>)
+  | ({ kind: 'READ_AND_CHECK' } & Omit<Parameters<typeof builderAppDataTools>[0], 'thread'>)
 >
 
 /** What the company's tools of one run answer by: the run, its view and what the consumer grants. */

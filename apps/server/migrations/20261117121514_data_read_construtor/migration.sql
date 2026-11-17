@@ -1,0 +1,2 @@
+-- contract: the check is replaced by one that also lists CONSTRUTOR, which the empty data_read table never held (R.15)
+ALTER TABLE "data"."data_read" DROP CONSTRAINT "data_read_agent", ADD CONSTRAINT "data_read_agent" CHECK ("agent" in ('ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP'));

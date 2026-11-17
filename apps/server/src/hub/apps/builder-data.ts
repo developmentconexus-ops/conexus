@@ -1,8 +1,9 @@
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AppCheck } from './app-check.ts'
 import { checkAppRead } from './app-check.ts'
+import { recordedAppRead } from './app-data-record.ts'
 import { readAppData } from './app-database.ts'
 import type { SendDeps } from './send.ts'
 import { admitConversant } from './send.ts'
@@ -17,7 +18,12 @@ type NotFound = { kind: 'REFUSED'; code: 'NOT_FOUND' }
 /** What the Builder asks of a Projeto's app data, each call admitted again before the app's database is touched. */
 export type BuilderData = {
   access(ids: Ids): Promise<BuilderDataAccess>
-  read(ids: Ids, statement: SqlStatement, signal: AbortSignal): Promise<AppRead | NotFound>
+  read(
+    ids: Ids,
+    statement: SqlStatement,
+    signal: AbortSignal,
+    thread: ConversationId | null,
+  ): Promise<AppRead | NotFound>
   check(ids: Ids, statement: SqlStatement, signal: AbortSignal): Promise<AppCheck | NotFound>
 }
 
@@ -43,10 +49,13 @@ export function createBuilderData(deps: SendDeps): BuilderData {
   const notFound: NotFound = { kind: 'REFUSED', code: 'NOT_FOUND' }
   return Object.freeze({
     access,
-    async read(ids, statement, signal) {
+    async read(ids, statement, signal, thread) {
       if ((await access(ids)).kind === 'NOT_FOUND') return notFound
       const { companyId, personId, projectId } = ids
-      return readAppData(deps, { scope: { companyId, personId }, projectId, statement, signal })
+      const who = { by: 'builder', companyId, personId, projectId, thread } as const
+      return recordedAppRead(deps.recordRead, who, statement, () =>
+        readAppData(deps, { scope: { companyId, personId }, projectId, statement, signal }),
+      )
     },
     async check(ids, statement, signal) {
       if ((await access(ids)).kind === 'NOT_FOUND') return notFound

@@ -14,13 +14,14 @@ import type { CompanyToolDeps } from '../company-tools/public.ts'
 import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
 import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
 import { builderAccess } from '../connectors/public.ts'
-import type { RunScope } from '../controller-kit/public.ts'
+import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   agentDefaults,
   controllerOf,
   conversationMemory,
   createAskUserTool,
+  dataContextOf,
   oncePerRun,
   principalOf,
   sessionModel,
@@ -54,7 +55,7 @@ function idsOf(run: RunScope): Ids {
 function companyDeps(deps: {
   connectors: BuilderConnectors
   runs: Runs
-  companyData: (principal: Principal) => CompanyData
+  companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
 }): CompanyToolDeps<GrantedConnection> {
   function doorOf(run: RunScope) {
@@ -63,7 +64,7 @@ function companyDeps(deps: {
   }
   return {
     log: deps.log,
-    data: (run) => deps.companyData(principalOf(run)),
+    data: (run) => deps.companyData(principalOf(run), dataContextOf(run)),
     connector: {
       read: (run, call, requestContext) => doorOf(run).access.read(call, requestContext),
       notes: (run, connectionId) => doorOf(run).access.notes(connectionId),
@@ -139,8 +140,8 @@ export function createBuilder(deps: {
   data: BuilderData
   /** The access door: what the Projeto offers the person, which every company tool names. */
   access: Pick<Access, 'viewOf'>
-  /** The company's data, bound to the Projeto and its granted connections; the Builder passes no `by` yet (decision 6 of the card). */
-  companyData: (principal: Principal) => CompanyData
+  /** The company's data, bound to the Projeto and its granted connections, and to the conversation that reads. */
+  companyData: (principal: Principal, context: DataBinding) => CompanyData
   copies: (ids: {
     companyId: CompanyId
     personId: PersonId

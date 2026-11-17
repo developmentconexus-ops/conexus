@@ -7,6 +7,7 @@ import {
   setConversationModel,
 } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
 import { PLACES, triggerOf } from './picker-places.ts'
@@ -214,7 +215,7 @@ test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou n
     await page.keyboard.press('Enter')
     await written
     await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(300)
+    await atRest(page)
     assert.equal(await focused(), expected, `after ${label}`)
   }
   await pressed('Descer Claude Sonnet 4', 'Subir Claude Sonnet 4')

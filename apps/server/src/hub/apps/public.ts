@@ -1,7 +1,9 @@
+import type { AgentId, ConversationId } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { AppDataDeps } from './app-data.ts'
 import { createAppData } from './app-data.ts'
+import { recordedAppRead } from './app-data-record.ts'
 import { appDatabaseOf, projectDatabase, readAppData } from './app-database.ts'
 import { appTablesOf } from './app-tables.ts'
 import { createAppVersions } from './app-versions.ts'
@@ -24,6 +26,7 @@ import {
   registerHandoffRoute,
   registerVersionRoutes,
 } from './routes.ts'
+import type { SendDeps } from './send.ts'
 import { publishedRolesOf } from './versions.ts'
 
 /** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
@@ -78,7 +81,11 @@ export function createAppRemoval(deps: RemovalDeps) {
  * through the ports `main.ts` hands it (C56).
  */
 export function createApps(
-  deps: AppDeps & RepairDeps & Omit<PublishDeps, 'log'> & Pick<AppDataDeps, 'appDataDeadlineMs'>,
+  deps: AppDeps &
+    RepairDeps &
+    Omit<PublishDeps, 'log'> &
+    Pick<AppDataDeps, 'appDataDeadlineMs'> &
+    Pick<SendDeps, 'recordRead'>,
 ) {
   const door = createAppDoor(deps)
   const versions = createAppVersions(deps)
@@ -97,7 +104,16 @@ export function createApps(
     /** Where a Builder turn's version goes to the Projeto's app (step 14.1). */
     sendFromBuilder: versions.sendFromBuilder,
     /** What a Projeto's agents read of its app's data, and whether it has an app to read (step 24.3, U3). */
-    readAppData: (input: Parameters<typeof readAppData>[1]) => readAppData(deps, input),
+    readAppData: (
+      input: Parameters<typeof readAppData>[1] & {
+        thread: ConversationId | null
+        agentId?: AgentId
+      },
+    ) => {
+      const { scope, projectId, statement, thread, agentId } = input
+      const who = { by: 'agent', ...scope, projectId, thread, agentId } as const
+      return recordedAppRead(deps.recordRead, who, statement, () => readAppData(deps, input))
+    },
     /** What the Builder reads and checks of a Projeto's app data, admitted by `useConversations` on each call (Capacidade 3). */
     builderData: createBuilderData(deps),
     /** The app's tables with their columns, one list for the Dados page and the Construtor. */

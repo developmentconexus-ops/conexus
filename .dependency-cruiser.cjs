@@ -96,6 +96,14 @@ module.exports = {
       to: { path: `${SERVER}/hub/(connectors|copies)/` },
     },
     {
+      name: 'data-read-only-through-the-recorder',
+      comment:
+        'The one writer of data.data_read is hub/data/record.ts: no other file imports the table, so no read leaves a row any other way.',
+      severity: 'error',
+      from: { pathNot: [`${SERVER}/hub/data/record\\.ts$`, `${SERVER}/hub/data/tables\\.ts$`] },
+      to: { path: `${SERVER}/hub/data/tables\\.ts$` },
+    },
+    {
       name: 'server-root-only-through-public',
       comment:
         'C4: main.ts, conversations-of.ts and first-person-arguments.ts, at the root of the server, reach a subject only through its public.ts.',

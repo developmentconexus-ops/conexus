@@ -214,7 +214,10 @@ export type QueryPage =
       complete: boolean
       used: readonly string[]
     }>
-  | Extract<ReadAnswer, { kind: 'QUERY_REFUSED' | 'QUERY_TOO_LARGE' | 'TABLE_UNAVAILABLE' }>
+  | Extract<
+      ReadAnswer,
+      { kind: 'QUERY_REFUSED' | 'QUERY_TOO_LARGE' | 'TABLE_UNAVAILABLE' | 'NOT_IN_CATALOG' }
+    >
   | Readonly<{ kind: 'NOT_IN_ROLE' }>
   | Readonly<{ kind: 'DEADLINE' }>
 

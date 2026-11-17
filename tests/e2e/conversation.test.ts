@@ -123,17 +123,17 @@ async function switched(
   owner: Page,
   chat: Page,
   hold: () => () => void,
-  claudeCalls: () => number,
+  claudeCall: () => Promise<void>,
 ) {
   await turnOnSwitch(owner)
   const notice = `Troquei para ${SECOND_MODEL} pela troca automática da empresa.`
   await noticed(chat, hold, 'E o quarto?', notice)
   await transcriptShowed(chat, SECOND_ANSWER)
   await saving(owner, () => changeState(owner, 'Time 1', 'Retomar'))
-  const before = claudeCalls()
+  const called = claudeCall()
   await answered(chat, hold, 'E o quinto?', ANSWER)
   // ANSWER was shown by an earlier turn: the screen says it before this turn's call is made.
-  while (claudeCalls() === before) await chat.waitForTimeout(100)
+  await called
 }
 
 /** Ana's box of conversations holds the one, by its title. */
@@ -154,14 +154,11 @@ async function otherPerson(diego: Page, ids: { companyA: string; companyB: strin
 }
 
 test('o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa', async (t) => {
-  const { anthropic, state, hold } = plantJourney(t, await publicPage(t))
+  const { state, hold, claudeCall } = plantJourney(t, await publicPage(t))
   const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
   const ids = await plantTwoCompanies(database)
   const problems: string[] = []
   const closers: (() => Promise<void>)[] = []
-  function claudeCalls() {
-    return anthropic.sent.filter((each) => each.key === KEYS.first && each.stream).length
-  }
   try {
     const owner = await hubWindow(closers, port, '198.51.100.10', problems)
     const diego = await hubWindow(closers, port, '203.0.113.10', problems)
@@ -171,7 +168,7 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
     await firstQuestion(chat, hold)
     state.reads = false
     await refusedThenPaused(owner, chat, hold, ids.companyA)
-    await switched(owner, chat, hold, claudeCalls)
+    await switched(owner, chat, hold, claudeCall)
     const conversation = chat.url()
     await listed(chat)
     await otherPerson(diego, ids, conversation)

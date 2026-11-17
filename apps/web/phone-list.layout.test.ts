@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import { atRest } from './at-rest.ts'
 import { createHarness, ok, PHONE, reachOf, touching, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { OWNER, projectsPage, startsOn } from './sweep-replies.ts'
@@ -70,7 +71,7 @@ test('a lista na gaveta do celular: o rótulo do lugar é pílula com × de 44 d
   await page.waitForURL((url) => url.searchParams.get('q') === 'rel')
   await drawer.getByRole('tab', { name: 'Projetos' }).click()
   await page.waitForURL((url) => url.searchParams.get('tab') === 'projects')
-  await page.waitForTimeout(400)
+  await atRest(page)
   assert.ok(await drawer.isVisible(), 'searching or switching the tab closed the drawer')
   assert.equal(await clear.count(), 0, 'the place label stays on the Projetos tab')
   await drawer.getByRole('tab', { name: 'Recentes' }).click()

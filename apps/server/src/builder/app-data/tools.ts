@@ -1,5 +1,5 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { AgentId, CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import { AGENT_TOOL, APP_DATA_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { createTool } from '@mastra/core/tools'
@@ -81,10 +81,16 @@ export function appDataTools(deps: {
   appData: AppDataPort
   scope: { companyId: CompanyId; personId: PersonId }
   projectId: ProjectId
+  /** The conversation and the saved agent that read, which the Registro keeps. */
+  thread: ConversationId | null
+  agentId?: AgentId
 }): ToolsInput {
   return {
     [AGENT_TOOL.appDataRead]: appDataReadTool((statement, signal) =>
-      deps.appData.read({ scope: deps.scope, projectId: deps.projectId, statement, signal }),
+      deps.appData.read({
+        ...{ scope: deps.scope, projectId: deps.projectId, statement, signal },
+        ...{ thread: deps.thread, agentId: deps.agentId },
+      }),
     ),
   }
 }
@@ -109,10 +115,16 @@ type AppDataCheckOutput =
  * keeps rows out of the conversation and out of what Mastra stores; a count of `where` clauses still
  * tells the model about the data, which the rule does not claim to hide.
  */
-export function builderAppDataTools(deps: { data: BuilderData; ids: Ids }) {
-  const { data, ids } = deps
+export function builderAppDataTools(deps: {
+  data: BuilderData
+  ids: Ids
+  thread: ConversationId | null
+}) {
+  const { data, ids, thread } = deps
   return {
-    [APP_DATA_TOOL.read]: appDataReadTool((statement, signal) => data.read(ids, statement, signal)),
+    [APP_DATA_TOOL.read]: appDataReadTool((statement, signal) =>
+      data.read(ids, statement, signal, thread),
+    ),
     [APP_DATA_TOOL.check]: createTool({
       id: APP_DATA_TOOL.check,
       description: CHECK_DESCRIPTION,

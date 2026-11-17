@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import {
   createHarness,
@@ -96,16 +97,16 @@ test('abaixo de 1024px a barra lateral abre nos ícones, de 56px, e a pessoa a e
   const page = await open('/', { width: 800, height: 900 }, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   await nav.getByRole('link', { name: 'Início' }).waitFor()
-  await page.waitForTimeout(250)
+  await atRest(page)
   const closed = await widthOf(nav)
   await page.keyboard.press('Control+b')
-  await page.waitForTimeout(250)
+  await atRest(page)
   assert.deepEqual([closed, await widthOf(nav)], [56, 328])
   await page.close()
   const wide = await open('/', { width: 1024, height: 900 }, HOUSE)
   const wideNav = wide.getByRole('navigation', { name: 'Navegação' })
   await wideNav.getByRole('link', { name: 'Início' }).waitFor()
-  await wide.waitForTimeout(250)
+  await atRest(wide)
   assert.equal(await widthOf(wideNav), 328)
   await wide.close()
 })
@@ -114,10 +115,10 @@ test('no Projeto o trilho fica e a lista é a do Projeto, com 328px; Ctrl+B reco
   const page = await open(PROJECT, DESKTOP, HOUSE)
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   await nav.getByRole('link', { name: 'Construir' }).waitFor()
-  await page.waitForTimeout(250)
+  await atRest(page)
   const opened = await widthOf(nav)
   await page.keyboard.press('Control+b')
-  await page.waitForTimeout(250)
+  await atRest(page)
   const collapsed = await widthOf(nav)
   const projetos = nav.getByRole('link', { name: 'Projetos' })
   assert.equal(await projetos.getAttribute('aria-current'), 'page')
@@ -125,11 +126,11 @@ test('no Projeto o trilho fica e a lista é a do Projeto, com 328px; Ctrl+B reco
   // Base UI's tooltip popup carries no role; the trigger names the place by its own label.
   const tip = await page.locator('[data-slot=tooltip-content]').textContent()
   await page.keyboard.press('Control+b')
-  await page.waitForTimeout(250)
+  await atRest(page)
   await nav.getByRole('link', { name: 'Início' }).click()
   await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
   await nav.getByRole('link', { name: 'Nova conversa' }).waitFor()
-  await page.waitForTimeout(250)
+  await atRest(page)
   assert.deepEqual(
     { opened, collapsed, tip, after: await widthOf(nav) },
     { opened: 328, collapsed: 56, tip: 'Projetos', after: 328 },

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { createHarness, DESKTOP, PHONE, SMALL_PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { CONVERSATION_STATES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -33,7 +34,7 @@ test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a 
   await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).waitFor()
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   const list = nav.locator('[data-sidebar=sidebar]')
-  await page.waitForTimeout(250)
+  await atRest(page)
   const [rail, column] = [
     await widthOf(nav.locator('[data-slot=sidebar-rail-column]')),
     await widthOf(list),
@@ -52,7 +53,7 @@ test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a 
   await nav.getByRole('link', { name: 'Início' }).click()
   await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
   await list.getByRole('link', { name: 'Nova conversa' }).waitFor()
-  await page.waitForTimeout(250)
+  await atRest(page)
   assert.equal(await widthOf(list), 272)
   assert.equal(await list.getByRole('link', { name: 'Construir' }).count(), 0)
   assert.deepEqual(page.problems, [])

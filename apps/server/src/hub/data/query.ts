@@ -1,7 +1,6 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId, QueryPage } from '@conexus/hub-api'
 import { QUERY_ROWS } from '@conexus/hub-api'
-import { z } from 'zod'
 import type { ReadResult, SqlStatement } from '../../platform/app-sql.ts'
 import type { SyncRead } from '../../platform/copy-reader.ts'
 import { withoutPassColumn } from '../../platform/copy-sql.ts'
@@ -9,31 +8,9 @@ import { Failure } from '../../platform/failure.ts'
 import type { NeonProjectId } from '../../platform/neon.ts'
 import type { Principal } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
+import { planVerdict, statementVerdict } from './plan.ts'
 
 const INSUFFICIENT_PRIVILEGE = '42501'
-
-type PlanNode = { 'Relation Name'?: string; Schema?: string; Plans?: PlanNode[] }
-
-const PlanNode: z.ZodType<PlanNode> = z.lazy(() =>
-  z.looseObject({
-    'Relation Name': z.string().optional(),
-    Schema: z.string().optional(),
-    Plans: z.array(PlanNode).optional(),
-  }),
-)
-const Explained = z.tuple([z.looseObject({ Plan: PlanNode })])
-
-function syncRelations(node: PlanNode): string[] {
-  const own =
-    node.Schema === 'sync' && node['Relation Name'] !== undefined ? [node['Relation Name']] : []
-  return [...own, ...(node.Plans ?? []).flatMap(syncRelations)]
-}
-
-function relationsOf(explained: ReadResult): string[] | undefined {
-  const parsed = Explained.safeParse(explained.rows[0]?.[0])
-  if (!parsed.success) return undefined
-  return [...new Set(syncRelations(parsed.data[0].Plan))]
-}
 
 function withDeadline(signal: AbortSignal | undefined): AbortSignal {
   const deadline = AbortSignal.timeout(APP_CALL_LIMITS.callDeadlineMs)
@@ -51,6 +28,14 @@ function unavailable(deps: DataDeps, scope: Principal, cause: string): QueryPage
 function refused(deps: DataDeps, scope: Principal): QueryPage {
   deps.log.info({ companyId: scope.companyId, personId: scope.personId }, 'DATA_READ_REFUSED')
   return { kind: 'NOT_IN_ROLE' }
+}
+
+function outside(deps: DataDeps, scope: Principal, reason: string): QueryPage {
+  deps.log.info(
+    { companyId: scope.companyId, personId: scope.personId, reason },
+    'DATA_READ_REFUSED',
+  )
+  return { kind: 'NOT_IN_CATALOG' }
 }
 
 /** The statements as the Projeto's read login; a login not made yet is made as the owner and asked once more. */
@@ -75,20 +60,22 @@ async function projectRead(
   return deps.companyPostgres.readCopies(address, statements, signal)
 }
 
-function rowsOfRead({ deps, scope }: Asked, results: readonly ReadResult[]): QueryPage {
+function rowsOfRead(asked: Asked, results: readonly ReadResult[]): QueryPage {
+  const { deps, scope } = asked
   const [plan, result] = results
-  const used = plan === undefined ? undefined : relationsOf(plan)
-  if (used === undefined || result === undefined) {
+  const verdict = plan === undefined ? undefined : planVerdict(plan)
+  if (verdict === undefined || verdict.kind === 'UNREADABLE' || result === undefined) {
     deps.log.error({ companyId: scope.companyId, personId: scope.personId }, 'DATA_PLAN_UNREAD')
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'DATA_PLAN_UNREAD' } })
   }
+  if (verdict.kind === 'OUTSIDE') return outside(deps, scope, verdict.reason)
   const kept = withoutPassColumn(result)
   return {
     kind: 'ROWS',
     columns: kept.columns.map(({ name }) => name),
     rows: kept.rows.slice(0, QUERY_ROWS),
     complete: kept.rows.length <= QUERY_ROWS,
-    used,
+    used: verdict.tables,
   }
 }
 
@@ -135,8 +122,13 @@ export async function queryOf(
       }
     },
   )
+  const named = statementVerdict(a.sql)
+  if (named.kind === 'OUTSIDE') return outside(deps, scope, named.reason)
   if (ready?.host == null) return unavailable(deps, scope, 'NO_DATABASE')
-  const asked = { deps, scope, ready: { host: ready.host, neonProjectId: ready.neonProjectId } }
+  const asked = {
+    ...{ deps, scope },
+    ready: { host: ready.host, neonProjectId: ready.neonProjectId },
+  }
   const statements = [{ text: `EXPLAIN (VERBOSE, FORMAT JSON) ${a.sql}` }, { text: a.sql }]
   const signal = withDeadline(a.signal)
   const read =
