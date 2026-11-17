@@ -2,13 +2,10 @@ import { phraseOf, ToolCallId } from '@conexus/hub-api'
 import { useEffect, useRef, useState } from 'react'
 import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { writeFailureText } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
-import { Button } from '../../ui/button.tsx'
-import { Card } from '../../ui/card.tsx'
-import { Notice } from '../../ui/notice.tsx'
-import { ReadFailure } from '../../ui/states.tsx'
+import type { ApprovalOutcome, ApprovalState } from '../../ui/ai/approval.tsx'
+import { Approval } from '../../ui/ai/approval.tsx'
 import { fieldsOf } from './approval-fields.ts'
-import type { ApprovalCardItem, Decision, Outcome } from './approval-item.ts'
+import type { ApprovalCardItem, Decision, Outcome, WritesRead } from './approval-item.ts'
 import { decided, writtenBy } from './approval-item.ts'
 import {
   APPROVAL_TEXT,
@@ -18,10 +15,11 @@ import {
   wantsText,
 } from './approval-text.ts'
 import { DEADLINE_TEXT, LOCAL_REFUSALS } from './connector-specs.ts'
-import { WaitingCaption } from './question-card.tsx'
+import type { WriteTool } from './room.ts'
 import { useApprove, useRoom } from './room.ts'
 import { refusedLabelText } from './text.ts'
 import type { ConnectorWords } from './tool-spec.ts'
+import { useWaitingLine } from './working-line.tsx'
 
 type Reply = 'approve' | 'decline'
 
@@ -53,32 +51,30 @@ function useReply(toolCallId: ToolCallId) {
 }
 
 /** What a write that ran says under the answer: the order it made, the mark to look for, or why it did not. */
-function Result(props: { outcome: Outcome; connector: string; action: string }) {
-  const { outcome, connector, action } = props
-  const { connectors } = useRoom()
+function outcomeView(
+  outcome: Outcome,
+  of: { connector: string; action: string },
+  connectors: ConnectorWords,
+): ApprovalOutcome | undefined {
   switch (outcome.kind) {
     case 'LAUNCHED':
-      return outcome.code === undefined ? null : (
-        <p className="text-text-2">{launchedText(outcome.code)}</p>
-      )
+      return outcome.code === undefined
+        ? undefined
+        : { kind: 'NOTE', text: launchedText(outcome.code) }
     case 'UNCERTAIN':
-      return <p className="text-text-2">{uncertainText(outcome.mark)}</p>
+      return { kind: 'NOTE', text: uncertainText(outcome.mark) }
     case 'REFUSED':
-      return (
-        <>
-          <Alert tone="danger">{refusedLabelText(connectors.name(connector))}</Alert>
-          {outcome.message !== null && (
-            <p className="wrap-anywhere text-text-2">{outcome.message}</p>
-          )}
-        </>
-      )
+      return {
+        kind: 'REFUSAL',
+        alert: refusedLabelText(connectors.name(of.connector)),
+        text: outcome.message ?? undefined,
+      }
     case 'FAILED':
-      return (
-        <>
-          <Alert tone="danger">{APPROVAL_TEXT.failed}</Alert>
-          <p className="text-text-2">{failureText(outcome, { connector, action }, connectors)}</p>
-        </>
-      )
+      return {
+        kind: 'REFUSAL',
+        alert: APPROVAL_TEXT.failed,
+        text: failureText(outcome, of, connectors),
+      }
     default:
       return outcome satisfies never
   }
@@ -111,73 +107,45 @@ function failureText(
   }
 }
 
-function ConnectionLogo({ connectionId }: { connectionId: string | undefined }) {
-  const { connectors } = useRoom()
-  const logo = connectionId === undefined ? undefined : connectors.logoOf(connectionId)
-  return logo === undefined ? null : <ConnectorLogo small entry={{ logo }} />
+const SENDING = { approve: 'APPROVE', decline: 'DECLINE' } as const
+
+/** The warning of a same write to the same connection that went out and has not come back. */
+function openWriteOf(
+  read: WritesRead | undefined,
+  toolCallId: string,
+  write: WriteTool | undefined,
+): string | undefined {
+  if (read?.kind !== 'READ') return undefined
+  const same = read.writes.find(
+    (one) =>
+      one.toolCallId !== toolCallId &&
+      (one.state === 'SENDING' || one.state === 'UNCERTAIN') &&
+      one.connectionId === write?.connectionId &&
+      one.operation === write?.operation,
+  )
+  return same === undefined ? undefined : openWriteText(same.sentAt, same.mark)
 }
 
-const ANSWERED = {
-  approved: APPROVAL_TEXT.approved,
-  declined: APPROVAL_TEXT.declined,
-  interrupted: APPROVAL_TEXT.interrupted,
-  stopped: APPROVAL_TEXT.stopped,
-} as const
+type Ended = Exclude<Decision['state'], 'open'>
 
-type Fields = ReturnType<typeof fieldsOf>
-
-function Fields({ fields }: { fields: Fields }) {
-  return (
-    <dl className="grid grid-cols-[6rem_1fr] gap-x-md gap-y-xs max-md:grid-cols-1">
-      {fields.map((field) => (
-        <div key={field.label} className="contents max-md:flex max-md:flex-col">
-          <dt className="text-text-2">{field.label}</dt>
-          <dd className="min-w-0 wrap-anywhere">
-            {field.lines.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-/** How the card ended: who decided, and what the write did. */
-function Decided(props: { decision: Decision; connector: string; action: string }) {
-  const { decision, connector, action } = props
-  const { state, approved, outcome } = decision
-  return (
-    <>
-      {state !== 'open' && (state !== 'approved' || approved) && (
-        <p className="font-semibold">{ANSWERED[state]}</p>
-      )}
-      {outcome !== undefined && <Result outcome={outcome} connector={connector} action={action} />}
-    </>
-  )
-}
-
-type Replying = ReturnType<typeof useReply>
-
-/** Recusar and Aprovar, lit only while the session's state holds the call. */
-function Answer(props: { lit: boolean } & Pick<Replying, 'sending' | 'error' | 'reply'>) {
-  const { lit, sending, error, reply } = props
-  const off = sending !== undefined || !lit
-  return (
-    <div className="flex flex-col gap-sm">
-      <div className="flex flex-wrap justify-end gap-sm">
-        <Button disabled={off} onClick={() => void reply('decline')}>
-          {sending === 'decline' ? APPROVAL_TEXT.declining : APPROVAL_TEXT.decline}
-        </Button>
-        <Button variant="primary" disabled={off} onClick={() => void reply('approve')}>
-          {sending === 'approve' ? APPROVAL_TEXT.approving : APPROVAL_TEXT.approve}
-        </Button>
-      </div>
-      {error !== undefined && <Alert tone="danger">{error}</Alert>}
-    </div>
-  )
+/** How the card ended, as the piece shows it: who decided, and what the write did. */
+function endedState(
+  state: Ended,
+  byYou: boolean,
+  outcome: ApprovalOutcome | undefined,
+): Exclude<ApprovalState, { kind: 'OPEN' }> {
+  switch (state) {
+    case 'approved':
+      return { kind: 'APPROVED', byYou, outcome }
+    case 'declined':
+      return { kind: 'DECLINED', outcome }
+    case 'interrupted':
+      return { kind: 'INTERRUPTED', outcome }
+    case 'stopped':
+      return { kind: 'STOPPED', outcome }
+    default:
+      return state satisfies never
+  }
 }
 
 /**
@@ -203,45 +171,36 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const title = wantsText(room.agent, action, system)
   const read = room.writes
   const decision = decided(part, writtenBy(read, part.toolCallId), read?.kind === 'READING')
-  const same =
-    read?.kind === 'READ'
-      ? read.writes.find(
-          (one) =>
-            one.toolCallId !== part.toolCallId &&
-            (one.state === 'SENDING' || one.state === 'UNCERTAIN') &&
-            one.connectionId === write?.connectionId &&
-            one.operation === write?.operation,
-        )
-      : undefined
   // Where the room reads the open sends, a person approves only after the read answered.
   const checked = read === undefined || read.kind === 'READ'
+  const waiting = useWaitingLine()
+  const of = { connector: write?.connector ?? '', action }
+  const outcome =
+    decision.outcome === undefined ? undefined : outcomeView(decision.outcome, of, room.connectors)
+  const logo = write === undefined ? undefined : room.connectors.logoOf(write.connectionId)
+  const state: ApprovalState =
+    decision.state === 'open'
+      ? {
+          kind: 'OPEN',
+          waiting,
+          lit: part.lit && checked,
+          sending: sending === undefined ? undefined : SENDING[sending],
+          error,
+          readFailure:
+            read?.kind === 'FAILED' ? { text: read.text, onRetry: () => refresh?.() } : undefined,
+          openWrite: openWriteOf(read, part.toolCallId, write),
+          onApprove: () => void reply('approve'),
+          onDecline: () => void reply('decline'),
+        }
+      : endedState(decision.state, decision.approved, outcome)
   return (
-    <div className="flex min-w-0 flex-col gap-xs">
-      <Card role="region" aria-label={title} className="items-stretch gap-md">
-        {open && <WaitingCaption />}
-        <div className="flex items-center gap-sm">
-          <ConnectionLogo connectionId={write?.connectionId} />
-          <h3 className="min-w-0 font-semibold text-text">
-            {title}
-            {write !== undefined && <span className="text-text-2"> · {write.connection}</span>}
-          </h3>
-        </div>
-        <Fields fields={fieldsOf(write?.operation, part.args, write?.bound)} />
-        {open && read?.kind === 'FAILED' && (
-          <ReadFailure text={read.text} onRetry={() => refresh?.()} />
-        )}
-        {open && same !== undefined && (
-          <div className="border-l-2 border-warning pl-sm">
-            <Notice>{openWriteText(same.sentAt, same.mark)}</Notice>
-          </div>
-        )}
-        {open ? (
-          <Answer lit={part.lit && checked} sending={sending} error={error} reply={reply} />
-        ) : (
-          <Decided decision={decision} connector={write?.connector ?? ''} action={action} />
-        )}
-      </Card>
-      {open && <p className="px-xs text-label text-text-2">{APPROVAL_TEXT.steer}</p>}
-    </div>
+    <Approval
+      title={title}
+      connection={write === undefined ? undefined : ` · ${write.connection}`}
+      logo={logo === undefined ? undefined : <ConnectorLogo small entry={{ logo }} />}
+      fields={fieldsOf(write?.operation, part.args, write?.bound)}
+      state={state}
+      text={APPROVAL_TEXT}
+    />
   )
 }

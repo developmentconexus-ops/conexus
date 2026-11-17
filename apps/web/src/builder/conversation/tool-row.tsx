@@ -10,17 +10,11 @@ import {
 import { Link, useParams } from '@tanstack/react-router'
 import { BotIcon, FileTextIcon } from 'lucide-react'
 import { useEffect, useEffectEvent, useState } from 'react'
+import type { ToolLineBeside, ToolLineState } from '../../ui/ai/tool-line.tsx'
+import { ToolLine } from '../../ui/ai/tool-line.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import {
-  TraceCollapsible,
-  TraceCollapsibleContent,
-  TraceCollapsibleTrigger,
-  TraceDescription,
-  TraceIcon,
-  TraceLine,
-  TraceTitle,
-} from '../../ui/trace.tsx'
+import { TraceDescription, TraceIcon, TraceLine, TraceTitle } from '../../ui/trace.tsx'
 import { failureDetail } from './connector-specs.ts'
 import { useSecondsSince } from './elapsed.ts'
 import type { Room } from './room.ts'
@@ -308,44 +302,20 @@ function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
       })
 }
 
-/**
- * The line itself: the tool's icon, its sentence and, beside, its detail or the time it has run.
- * One line, as Mastra Studio's: the sentence never cut (step 12.1), the detail cut beside it
- * (founder, 2026-11-02); the open row says the detail whole.
- */
-function ToolLine({
-  presented,
-  status,
-  startedAt,
-}: {
-  presented: ReturnType<typeof presentTool>
-  status: ToolStatus
-  startedAt: ToolItem['startedAt']
-}) {
-  const failed = status === 'error' || status === 'denied'
-  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
-  const side = presented.beside ? (
-    <TraceDescription className="min-w-0 flex-1 shrink truncate text-right">
-      {presented.detail}
-    </TraceDescription>
-  ) : status === 'running' ? (
-    <Since at={startedAt} />
-  ) : null
-  return (
-    <TraceLine status={lineStatus} className={cn(failed && !presented.beside && 'items-start')}>
-      <TraceIcon className={failed && !presented.beside ? 'mt-1' : undefined}>
-        <presented.icon />
-      </TraceIcon>
-      <TraceTitle
-        className={
-          presented.beside ? 'shrink-0 whitespace-nowrap' : cn(failed && 'whitespace-normal')
-        }
-      >
-        {presented.sentence}
-      </TraceTitle>
-      {side}
-    </TraceLine>
-  )
+/** What the line says beside its sentence: the detail the tool names, or the clock of a call that runs. */
+function besideLine(
+  presented: ReturnType<typeof presentTool>,
+  status: ToolStatus,
+  startedAt: ToolItem['startedAt'],
+): ToolLineBeside {
+  if (presented.beside) return { kind: 'DETAIL', text: presented.detail ?? '' }
+  if (status === 'running') return { kind: 'CLOCK', clock: <Since at={startedAt} /> }
+  return { kind: 'NONE' }
+}
+
+function lineState(status: ToolStatus): ToolLineState {
+  if (status === 'error' || status === 'denied') return { kind: 'FAILED' }
+  return status === 'running' ? { kind: 'RUNNING' } : { kind: 'DONE' }
 }
 
 /**
@@ -355,22 +325,16 @@ function ToolLine({
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
-  // Closed until the person opens it, running or not: the line already names the tool in progress.
-  const [open, setOpen] = useState(false)
-  const presented = presentTool(tool, status, room)
-  const line = <ToolLine presented={presented} status={status} startedAt={tool.startedAt} />
-
   const special = specialRow(tool, status, room)
   if (special !== undefined) return special
-
-  if (!opens(tool, status, room)) return line
-
+  const presented = presentTool(tool, status, room)
   return (
-    <TraceCollapsible open={open} onOpenChange={setOpen}>
-      <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
-      <TraceCollapsibleContent>
-        <Body tool={tool} status={status} />
-      </TraceCollapsibleContent>
-    </TraceCollapsible>
+    <ToolLine
+      icon={presented.icon}
+      sentence={presented.sentence}
+      state={lineState(status)}
+      beside={besideLine(presented, status, tool.startedAt)}
+      body={opens(tool, status, room) ? <Body tool={tool} status={status} /> : undefined}
+    />
   )
 }

@@ -600,6 +600,10 @@ which shadcn file it was copied from; the front matter holds their values. Their
   "Assistente" and the model badge, on the axis.
 - **Tool row.** A collapsed row with icon, sentence, duration in tabular figures and a chevron;
   it opens on what the tool received and returned (V39).
+- **AI pieces.** `apps/web/src/ui/ai/` holds what the agent did and asks, on `Trace` and shadcn's
+  AI recipes: the tool line and group, the reasoning line, the working line (also the waiting line
+  at the top of an open card on a phone), the plan, the tasks, the approval, the questions and the
+  sources. Each takes ready data and its words as props; the conversation turns events into them.
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is
   skeletons with a pulse (none under reduced motion) and `role="status"`; an error is danger text
   with `role="alert"` and an action.

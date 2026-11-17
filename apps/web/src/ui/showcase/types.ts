@@ -21,6 +21,9 @@ type PreviewState =
   | 'empty'
   | 'error'
 
+type MemberLabel = `${string}.${Uppercase<string>}` | `${string}.${Uppercase<string>} ${string}`
+type StateLabel = PreviewState | MemberLabel
+
 export type ShowcaseEntry = {
   /** O arquivo de `ui/` que a entrada mostra, como `button.tsx`; o teste confere que existe. */
   file: `${string}.tsx`
@@ -29,5 +32,5 @@ export type ShowcaseEntry = {
   /** Uma linha de quando usar, tirada do `DESIGN.md` quando ele tem. */
   when: string
   typical: () => ReactElement
-  states: readonly [PreviewState, () => ReactElement][]
+  states: readonly [StateLabel, () => ReactElement][]
 }

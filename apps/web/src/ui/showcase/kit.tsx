@@ -25,7 +25,7 @@ export function entry(
   typical: ShowcaseEntry['typical'],
   states: ShowcaseEntry['states'] = [],
 ): ShowcaseEntry {
-  const name = file
+  const name = (file.split('/').at(-1) ?? file)
     .replace('.tsx', '')
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { ConexusMark } from '../../brand/mark.tsx'
+import { WorkingLine as Line } from '../../ui/ai/working-line.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useEverySecond } from './elapsed.ts'
 import { useRoom } from './room.ts'
 import { durationOf, STILL_WORKING, workingText } from './text.ts'
@@ -19,9 +21,8 @@ function secondsSince(instant: number): number {
 /**
  * "Builder trabalhando · há 12 s", counted from the instant the screen heard the run start (a screen
  * that opens mid-run shows no count, as Mastra's display state has no start); after a minute in which the
- * answer's parts did not change, "Ainda trabalhando… há 1 min 20 s". The count is for the eye: the
- * reader hears the line once, not every second. While a question, a plan or an approval waits on the person,
- * the line says so, with no clock: the time is hers.
+ * answer's parts did not change, "Ainda trabalhando… há 1 min 20 s". While a question, a plan or an
+ * approval waits on the person, the line says so, with no clock: the time is hers.
  */
 export function WorkingLine({
   startedAt,
@@ -38,25 +39,32 @@ export function WorkingLine({
   if (last.heard !== heard) setLast({ heard, at: Date.now() })
   const quiet = Date.now() - last.at >= QUIET_MS
   const seconds = startedAt === null ? null : secondsSince(startedAt)
-  if (waiting) {
-    return (
-      <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">
-        <ConexusMark size={16} />
-        <p>{waitingText(agent)}</p>
-      </div>
-    )
-  }
   return (
-    <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">
-      <ConexusMark working size={16} />
-      <p>
-        {quiet ? STILL_WORKING : workingText(agent)}
-        {seconds !== null && (
-          <span aria-hidden="true">
-            {quiet ? ' ' : ' · '}há {durationOf(seconds)}
-          </span>
-        )}
-      </p>
+    <div className="px-md py-sm">
+      <Line
+        state={
+          waiting
+            ? { kind: 'WAITING', sentence: waitingText(agent) }
+            : {
+                kind: 'WORKING',
+                sentence: quiet ? STILL_WORKING : workingText(agent),
+                since:
+                  seconds === null ? undefined : `${quiet ? ' ' : ' · '}há ${durationOf(seconds)}`,
+              }
+        }
+      />
     </div>
   )
+}
+
+/**
+ * On a phone the open card says the conversation's agent waits on the person, in place of the
+ * working line, which the chat hides then (founder, 2026-10-22, "Aprovo"; one line for both screens,
+ * founder, 2026-11-17, "Aprovo").
+ */
+export function useWaitingLine(): ReactNode | undefined {
+  const { agent } = useRoom()
+  const phone = useIsMobile()
+  if (!phone) return undefined
+  return <Line state={{ kind: 'WAITING', sentence: `${agent} esperando sua resposta` }} />
 }

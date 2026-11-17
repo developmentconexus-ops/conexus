@@ -1,37 +1,13 @@
 import type { Answer, Question } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
-import { MessageCircleQuestionIcon } from 'lucide-react'
-import type { SubmitEvent } from 'react'
 import { useRef, useState } from 'react'
-import { ConexusMark } from '../../brand/mark.tsx'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
-import {
-  Questionnaire,
-  QuestionnaireActions,
-  QuestionnaireChoice,
-  QuestionnaireChoices,
-  QuestionnaireError,
-  QuestionnaireInput,
-  QuestionnaireItem,
-  QuestionnaireNext,
-  QuestionnairePrevious,
-  QuestionnaireSubmit,
-  QuestionnaireTitle,
-} from '../../ui/questionnaire.tsx'
-import { Textarea } from '../../ui/textarea.tsx'
-import {
-  TraceCollapsible,
-  TraceCollapsibleContent,
-  TraceCollapsibleTrigger,
-  TraceIcon,
-  TraceLine,
-  TraceTitle,
-} from '../../ui/trace.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
+import type { QuestionState, QuestionText, QuestionView } from '../../ui/ai/question.tsx'
+import { Question as Questions } from '../../ui/ai/question.tsx'
 import { useAnswerTo, useRoom } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
+import { useWaitingLine } from './working-line.tsx'
 
 /** The card's words, from the state matrix of step 14's card. */
 export const CARD_TEXT = {
@@ -40,22 +16,22 @@ export const CARD_TEXT = {
   other: 'outra resposta…',
 }
 
+const QUESTION_TEXT: QuestionText = {
+  previous: 'Anterior',
+  next: 'Próxima',
+  submit: 'Enviar',
+  sending: CARD_TEXT.sending,
+  other: CARD_TEXT.other,
+  otherLabel: 'Outra resposta',
+  answerLabel: 'Resposta',
+  answerPlaceholder: 'Escreva sua resposta…',
+  required: 'Escolha ou escreva uma resposta para continuar.',
+}
+
 /** The collapsed row of a card no longer open, as the skill and tool rows are. */
 function rowTitle(state: QuestionCardItem['state'], count: number): string {
   const questions = count === 1 ? '1 pergunta' : `${count} perguntas`
   return state === 'answered' ? `Respondeu ${questions}` : `${questions} sem resposta`
-}
-
-/** On a phone the card says the conversation's agent waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
-export function WaitingCaption() {
-  const { agent } = useRoom()
-  if (!useIsMobile()) return null
-  return (
-    <p role="status" className="flex items-center gap-sm text-label text-accent">
-      <ConexusMark size={16} />
-      {agent} esperando sua resposta
-    </p>
-  )
 }
 
 /**
@@ -86,63 +62,18 @@ export function useAnswer(toolCallId: ToolCallId) {
   return { answer, sending, error }
 }
 
-/** The answers a question offers: its options. */
-function choicesOf(question: Question): { value: string; label: string; hint?: string }[] {
-  return question.options.map((option) => ({
-    value: option.label,
-    label: option.label,
-    hint: option.description,
-  }))
-}
-
-/** One answer per question, as the form holds it: the choices of a multiple one, or the one given. */
-function answersOf(form: FormData, questions: readonly Question[]): Answer[] {
-  return questions.map((question, at) => {
-    const given = form
-      .getAll(`q${at}`)
-      .map(String)
-      .filter((value) => value.trim() !== '')
-    return question.multiSelect ? given : (given.at(-1) ?? '')
-  })
-}
-
-function Ask({ question, at }: { question: Question; at: number }) {
-  const choices = choicesOf(question)
-  const single = !question.multiSelect
-  const hasChoices = choices.length > 0
-  return (
-    <QuestionnaireItem name={`q${at}`} multiple={!single} required>
-      <QuestionnaireTitle>{question.question}</QuestionnaireTitle>
-      {hasChoices ? (
-        <QuestionnaireChoices>
-          {choices.map((choice, index) => (
-            <QuestionnaireChoice
-              key={choice.value}
-              value={choice.value}
-              defaultChecked={single && index === 0}
-            >
-              <span>{choice.label}</span>
-              {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
-            </QuestionnaireChoice>
-          ))}
-          <QuestionnaireInput
-            className="h-auto"
-            aria-label="Outra resposta"
-            placeholder={CARD_TEXT.other}
-            render={<Textarea className="max-md:min-h-16" rows={1} />}
-          />
-        </QuestionnaireChoices>
-      ) : (
-        <QuestionnaireInput
-          className="h-auto"
-          aria-label="Resposta"
-          placeholder="Escreva sua resposta…"
-          render={<Textarea className="max-md:min-h-16" rows={1} />}
-        />
-      )}
-      <QuestionnaireError>Escolha ou escreva uma resposta para continuar.</QuestionnaireError>
-    </QuestionnaireItem>
-  )
+/** A question as the card shows it: its options, the recommended first. */
+function viewOf(question: Question): QuestionView {
+  return {
+    id: question.question,
+    text: question.question,
+    multiple: question.multiSelect,
+    choices: question.options.map((option) => ({
+      value: option.label,
+      label: option.label,
+      hint: option.description,
+    })),
+  }
 }
 
 function answerText(answer: Answer | undefined): string {
@@ -160,63 +91,32 @@ function closedText(state: QuestionCardItem['state'], agent: string): string | u
  * Once closed it keeps only its questions; once answered, each answer under its question.
  */
 export function QuestionCard({ part }: { part: QuestionCardItem }) {
-  const toolCallId = ToolCallId.parse(part.toolCallId)
-  const { answer, sending, error } = useAnswer(toolCallId)
-  function submit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault()
-    void answer(answersOf(new FormData(event.currentTarget), part.questions))
-  }
+  const { answer, sending, error } = useAnswer(ToolCallId.parse(part.toolCallId))
   const { agent } = useRoom()
-  const said = closedText(part.state, agent)
-  const open = part.state === 'open'
+  const waiting = useWaitingLine()
+  const count = part.questions.length
+  const state: QuestionState =
+    part.state === 'open'
+      ? {
+          kind: 'OPEN',
+          waiting,
+          busy: sending,
+          onSubmit: (answers) =>
+            void answer(answers.map((one) => (typeof one === 'string' ? one : [...one]))),
+        }
+      : part.state === 'answered'
+        ? {
+            kind: 'ANSWERED',
+            row: rowTitle(part.state, count),
+            answers: part.answers?.map(answerText),
+          }
+        : { kind: 'CLOSED', row: rowTitle(part.state, count), said: closedText(part.state, agent) }
   return (
-    <div
-      className={
-        open
-          ? 'flex min-w-0 flex-col gap-sm rounded-card border border-line bg-surface p-md md:p-sm'
-          : 'flex min-w-0 flex-col gap-sm'
-      }
-    >
-      {open && <WaitingCaption />}
-      {open ? (
-        <Questionnaire onSubmit={submit}>
-          {part.questions.map((question, at) => (
-            <Ask key={question.question} question={question} at={at} />
-          ))}
-          <QuestionnaireActions>
-            <QuestionnairePrevious>Anterior</QuestionnairePrevious>
-            <QuestionnaireNext>Próxima</QuestionnaireNext>
-            <QuestionnaireSubmit disabled={sending}>
-              {sending ? CARD_TEXT.sending : 'Enviar'}
-            </QuestionnaireSubmit>
-          </QuestionnaireActions>
-        </Questionnaire>
-      ) : (
-        <TraceCollapsible>
-          <TraceCollapsibleTrigger>
-            <TraceLine>
-              <TraceIcon>
-                <MessageCircleQuestionIcon />
-              </TraceIcon>
-              <TraceTitle>{rowTitle(part.state, part.questions.length)}</TraceTitle>
-            </TraceLine>
-          </TraceCollapsibleTrigger>
-          <TraceCollapsibleContent className="pt-xs">
-            <ul className="flex flex-col gap-xs rounded-control bg-surface-3 p-sm text-fact text-text-2">
-              {part.questions.map((question, at) => (
-                <li key={question.question} className="flex flex-col">
-                  {question.question}
-                  {part.state === 'answered' && part.answers && (
-                    <span className="text-text">{answerText(part.answers[at])}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {said !== undefined && <p className="pt-xs text-fact text-text-2">{said}</p>}
-          </TraceCollapsibleContent>
-        </TraceCollapsible>
-      )}
-      {error !== undefined && <Alert tone="danger">{error}</Alert>}
-    </div>
+    <Questions
+      questions={part.questions.map(viewOf)}
+      state={state}
+      error={error}
+      text={QUESTION_TEXT}
+    />
   )
 }

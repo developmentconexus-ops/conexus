@@ -285,6 +285,14 @@ module.exports = {
       to: { path: `${WEB}/(hub|builder|routes)/` },
     },
     {
+      name: 'ui-ai-takes-ready-data',
+      comment:
+        "Criterion 21 of the front-end foundation card: a piece of ui/ai/ takes ready data, never the Hub's contract.",
+      severity: 'error',
+      from: { path: `${WEB}/ui/ai/` },
+      to: { path: '(^|node_modules/|/)@conexus/hub-api(/|$)|^packages/hub-api/' },
+    },
+    {
       name: 'routes-reach-subject-through-public',
       comment: 'W6: routes/ reaches a subject only through its public.ts.',
       severity: 'error',

@@ -1,13 +1,4 @@
-import { BrainIcon } from 'lucide-react'
-import { useState } from 'react'
-import {
-  TraceCollapsible,
-  TraceCollapsibleContent,
-  TraceCollapsibleTrigger,
-  TraceIcon,
-  TraceLine,
-  TraceTitle,
-} from '../../ui/trace.tsx'
+import { ReasoningLine } from '../../ui/ai/reasoning-line.tsx'
 import { Markdown } from './markdown.tsx'
 import type { ReasoningItem } from './rows.ts'
 import { durationOf } from './text.ts'
@@ -27,35 +18,17 @@ function thoughtOf(seconds: number | null | undefined, running: boolean): string
 export function ThinkingLine({ part }: { part: ReasoningItem }) {
   const running = part.streaming
   const reasoning = part.reasoning.trim()
-  const label = thoughtOf(part.seconds, running)
-  const [open, setOpen] = useState(false)
-
-  if (running || reasoning.length === 0) {
-    return (
-      <TraceLine status={running ? 'running' : undefined}>
-        <TraceIcon>
-          <BrainIcon />
-        </TraceIcon>
-        <TraceTitle>{label}</TraceTitle>
-      </TraceLine>
-    )
-  }
-
   return (
-    <TraceCollapsible open={open} onOpenChange={setOpen}>
-      <TraceCollapsibleTrigger>
-        <TraceLine>
-          <TraceIcon>
-            <BrainIcon />
-          </TraceIcon>
-          <TraceTitle>{label}</TraceTitle>
-        </TraceLine>
-      </TraceCollapsibleTrigger>
-      <TraceCollapsibleContent className="pt-xs text-text-2">
-        <div className="rounded-control bg-surface-3 p-sm text-fact">
-          <Markdown text={reasoning} />
-        </div>
-      </TraceCollapsibleContent>
-    </TraceCollapsible>
+    <ReasoningLine
+      label={thoughtOf(part.seconds, running)}
+      state={
+        running
+          ? { kind: 'THINKING' }
+          : {
+              kind: 'DONE',
+              body: reasoning.length === 0 ? undefined : <Markdown text={reasoning} />,
+            }
+      }
+    />
   )
 }
