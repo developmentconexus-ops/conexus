@@ -25,7 +25,10 @@ Database roles and grants live beside the migrations, not in a second list here.
   impact, not just syntax. Failure: a manual database edit never reaches the next environment,
   or a generated rename drops data. [review]
 - **D6.** A migration **must** only add, and a rename or a drop **must** be a later migration, after
-  no running code reads the old shape. [CI migration check]
+  no running code reads the old shape. A pull request that drops a column or a table also adds a
+  line to the exceptions of the roll-back in [architecture](../architecture.md), naming the release
+  before which no image runs on the migrated database: the schema of an older image names the
+  column in every read of the table. [CI migration check, review]
 - **D7.** A migration that reached main **must not** change; before that it may. [CI migration check]
 - **D9.** Migrations **must** run by the program's `migrate` subcommand before the Hub starts, on
   the direct address, and the program **must** refuse to start when the database lacks a
