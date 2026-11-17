@@ -61,7 +61,7 @@ function lineUp() {
 /**
  * Every published agent as one `new Agent` on the Hub's `Mastra`, under its id (step 24.3, U2), as
  * Mastra's editor registers a stored agent (`packages/editor/src/namespaces/agent.ts:1169-1199`,
- * `:438-446`): `removeAgent` before `addAgent`, since `addAgent` ignores a key it already holds. It
+ * `:438-446`): `removeAgent` before `addAgent`, since `addAgent` throws on a key another agent holds. It
  * looks an agent up only by `listAgents()`, never by `getAgent`, whose error lists every company's
  * keys (security S40). A swap and a lazy registration of the same agent wait in one line (C63).
  */
