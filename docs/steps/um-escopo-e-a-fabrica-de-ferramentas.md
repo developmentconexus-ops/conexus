@@ -253,7 +253,6 @@ As outras gravações não mudam: `connector_note_save` e `copy_propose` só ace
 | F8 | O `Speaker` ganha a variante `AGENT` (pessoa, papel e declaração); `VERSION` fica para o app publicado e a corrida da cópia | `app-calls.ts:104-107` e `copy-port.ts:125-130` não mudam (3(d)) | juntar as variantes |
 | F9 | As ferramentas do Knowledge ficam fora de `CompanyToolName` | entram pelo `knowledge` do Mastra, não por `tools:` (`assistant/company-memory.ts:11-15,345-353`) | trazê-las para a fábrica quando a memória do Projeto entrar |
 | F10 | `conexus.md` fica em `conversation/prompt/`; o dono da leitura é `controller-kit/instructions.ts` | dois testes o leem pelo caminho (`assistant/instructions.test.ts:23`, `agents/conversation.test.ts:31`) | mover o arquivo |
-| F11 | A recusa dos critérios 19 e 21 é a da rota: o `guard` lê a marca pela `markIn` de `controller-kit/run.ts` e a marca de outra empresa ou pessoa dá 404 `CONVERSATION_NOT_FOUND`; a admissão do Construtor recusa o Projeto da marca que não é vivo na empresa do dono | sem isso o `guard` só lia o recurso, o turno começava e as instruções lançavam antes do `processInput`: nenhuma chamada ao modelo, mas a pessoa lia `MODEL_CALL_FAILED`, porque `CONVERSATION_NOT_FOUND` não é `TurnFailureCode` (`packages/hub-api/src/conversations.ts:47-62`); os outros 404 do `guard` já são a recusa da conversa alheia (`conversation/guard.test.ts:85`) | tirar `markIn` do `guard` e `construtorAdmission`, e levar a recusa ao fluxo com um `TurnFailureCode` novo |
 
 ## U1 Subtrair
 
