@@ -1,6 +1,6 @@
 # Documentation map
 
-One line per document (`check-docs`).
+One line per document.
 
 ## Overview
 
@@ -10,7 +10,7 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals/](approvals/): one per card.
 - [architecture.md](architecture.md): design.
-- [explanation/](explanation/): how it works: [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
+- [explanation/](explanation/): [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
 - [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail.
@@ -103,4 +103,5 @@ One line per document (`check-docs`).
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
+- [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): evals.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
