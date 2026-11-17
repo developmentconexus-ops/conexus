@@ -216,9 +216,12 @@ test('Passo 4: Ir para o início sem pedir nada', async () => {
 
 test('Passo 4: Enviar não cobre o passo com a tela de abertura, os Projetos já vieram', async () => {
   home({ at: STEP_FOUR })
+  const arrived = Promise.withResolvers<void>()
+  let reads = 0
   server.use(
     http.get(`*/api/companies/${COMPANY.id}/projects`, async () => {
-      await new Promise((done) => setTimeout(done, 300))
+      reads += 1
+      if (reads > 1) await arrived.promise
       return HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true })
     }),
   )
@@ -227,4 +230,5 @@ test('Passo 4: Enviar não cobre o passo com a tela de abertura, os Projetos já
   expect(screen.getByText('Passo 4 de 4')).toBeTruthy()
   expect(screen.queryByText('Abrindo o Conexus')).toBeNull()
   expect(screen.getByLabelText('Nome do projeto')).toBeTruthy()
+  arrived.resolve()
 })
