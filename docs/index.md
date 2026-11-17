@@ -23,6 +23,7 @@ One line per document.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): checklist.
 - [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
+- Product layer: [concept](explanation/conceito.md), [map](explanation/mapa.md), [journeys](explanation/jornadas.md), [screens](reference/telas.md), [patterns](reference/catalogo.md), [motion](reference/movimento.md).
 - [reference/impeccable.md](reference/impeccable.md): files, commands.
 
 ## Guides: the rules
@@ -98,9 +99,9 @@ One line per document.
 
 ## Skills
 
-- [conexus-study](../.agents/skills/conexus-study/SKILL.md), [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md), [lens](../.agents/skills/conexus-study/references/lens.md): study; report; proof; screens; libraries; lens.
-- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; pattern card; screen card.
-- [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
+- [conexus-study](../.agents/skills/conexus-study/SKILL.md), [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md), [lens](../.agents/skills/conexus-study/references/lens.md): study, with its references.
+- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): cards.
+- [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit, old code, defects, screens.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): evals.
