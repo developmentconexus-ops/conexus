@@ -83,7 +83,7 @@ clientes, um Projeto que recebeu as duas, e uma segunda pessoa no papel Membro q
 7. Diga o que viu e aprove os textos das telas.
 
 **O que você faz, e quando.** Antes: nada; o firstmate convida a segunda pessoa e prepara o Projeto e
-a falha da cópia. No começo: aprova esta página e responde às decisões abaixo. Antes da U9 e da U13:
+a falha da cópia. No começo: aprova esta página (as decisões abaixo já têm a sua resposta). Antes da U9 e da U13:
 julga o protótipo da tela do Registro e o da seção Avisos (estão pendentes: a U9 e a U13 não começam
 sem eles). No meio: a palavra de merge do pull request do G2, que muda uma permissão de funções no
 banco da empresa, e a autorização de uma chamada a um ramo de teste do banco da empresa para provar
@@ -114,9 +114,11 @@ aprova os textos das telas, que cada pull request lista.
   mudar logins, e esta só lê pelo login do papel, que já existe). A **1147** e a **1148** são de Agentes
   e Apps.
 
-**As decisões suas nesta etapa.** Três, cada uma com a recomendação.
+**As decisões suas nesta etapa.** Três, respondidas por você no quadro em 2026-11-17, as três com a
+recomendação: "F1. O Construtor num Projeto lê com o papel de quem conversa: a", "F2. Quem segue uma
+cópia e vê Avisos: a", "F3. A guarda do Registro: a". As opções ficam abaixo como foram postas.
 
-- **F1. O Construtor num Projeto lê com o papel de quem conversa?** A sua C(b), no quadro do Registro,
+- **F1. O Construtor num Projeto lê com o papel de quem conversa?** Respondida: (a). A sua C(b), no quadro do Registro,
   dizia "o Builder segue lendo pela liberação do Projeto". Depois, na decisão 1 do estudo único, que
   você confirmou com "Sim", a consequência escrita era outra: "vale para todo consumidor de conversa, o
   Construtor incluído". Os dois textos divergem, e só você decide.
@@ -129,7 +131,8 @@ aprova os textos das telas, que cada pull request lista.
     Veredito nativo: o login do papel já existe; o Hub confere o lugar.
   - (b) O Construtor lê pela liberação do Projeto, como hoje. Carla vê a amostra dos clientes no
     Construtor.
-- **F2. Quem segue uma cópia e vê a seção Avisos, depois de "fora do papel ninguém vê".** A spec do
+- **F2. Quem segue uma cópia e vê a seção Avisos, depois de "fora do papel ninguém vê".** Respondida:
+  (a). A spec do
   aviso dá **Seguir** e **Avisos** a quem administra cópias, e ela foi escrita quando o Desenvolvedor
   ainda administrava. Desde a U13 de Cada papel, só Dono e Administrador administram; o Membro e o
   Desenvolvedor veem na página Dados as tabelas do papel.
@@ -140,7 +143,8 @@ aprova os textos das telas, que cada pull request lista.
     Dono e Administrador têm a lista da empresa) e o que a tela `b4-avisos-dev-vazio` já desenhava para
     quem não administra. Veredito nativo: o módulo de notificações e a porta `hub/access`.
   - (b) Só Dono e Administrador seguem e veem Avisos. Bruno não recebe aviso.
-- **F3. A guarda do Registro.** A sua E4a diz "sem prazo por ora". O estudo único lembrou que a linha
+- **F3. A guarda do Registro.** Respondida: (a); o texto da issue de gatilho está logo abaixo, e o
+  firstmate a abre quando esta página for aprovada. A sua E4a diz "sem prazo por ora". O estudo único lembrou que a linha
   guarda o texto da consulta, que pode trazer um valor da empresa digitado pelo agente, e deixou a guarda
   sem dono.
   - (a) Sem prazo, como a E4a. Uma issue com gatilho (a tabela passar de um milhão de linhas numa
@@ -148,6 +152,25 @@ aprova os textos das telas, que cada pull request lista.
     guardam de 7 a 365 dias, por plano.
   - (b) Um prazo agora, com uma tarefa diária que apaga as linhas mais velhas. Pede uma permissão de
     apagar na tabela (data D11) e um número seu.
+
+**A issue de gatilho da F3.** Título: "Registro de dados: o prazo de guarda de `data.data_read` quando
+uma empresa passar de um milhão de linhas". Corpo:
+
+> O Registro de dados guarda cada leitura sem prazo (E4a, confirmada na F3 (a) do cartão Registro e
+> conformidade, 2026-11-17). A linha leva o texto da consulta, até 4.000 caracteres, que pode trazer
+> um valor da empresa digitado pelo agente; nunca o resultado.
+>
+> **Gatilho.** Uma empresa passa de 1.000.000 de linhas em `data.data_read`, contadas por
+> `SELECT company_id, count(*) FROM data.data_read GROUP BY company_id`.
+>
+> **O que se decide então.** O prazo de guarda (as referências guardam de 7 a 365 dias, conforme o
+> plano), se ele varia por plano, e se a consulta sai da linha antes da linha inteira.
+>
+> **O que a decisão pede.** Uma permissão de apagar em `data.data_read`, num pull request só dela
+> (data D11); uma tarefa diária que apaga as linhas mais velhas que o prazo; e a palavra do fundador
+> com o número.
+>
+> **Até lá.** Nada apaga linha do Registro; o login do Hub segura só `SELECT` e `INSERT` nela.
 
 ## As unidades
 
@@ -157,13 +180,13 @@ aprova os textos das telas, que cada pull request lista.
 | G1 | U2 A leitura ao vivo e o esquema do app | `readThrough` grava `LIVE` pela porta atrasada `recordRead`, pulando a cópia; a leitura do esquema do app pelo Construtor e pelo agente grava `QUERY` | `apps/server/src/hub/connectors/` (`read.ts`, `rows.ts`, `public.ts`), `apps/server/src/hub/apps/` (`builder-data.ts`, `public.ts`), `apps/server/src/builder/app-data/` (só `tools.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D22); testing (T5, T27) | U1 |
 | G1 | U3 O plano lê só `sync` | A consulta do agente que lê fora de `sync` (catálogo do sistema, `information_schema`) ou chama uma função da lista recusada volta `NOT_IN_CATALOG` sem linha, e deixa linha no Registro (a sua 4(b)) | `apps/server/src/hub/data/` (`query.ts`, `plan.ts` novo), `scripts/rerun-never.json` | data (D20); testing (T5, T13, T27); security S10 | U1 |
 | G2 A permissão de funções (um PR próprio; palavra de merge) | U4 `EXECUTE` das funções que leem por texto | `ensureSync` tira de `PUBLIC` o `EXECUTE` de `query_to_xml` e das irmãs no banco da empresa; a prova num ramo de teste autorizado | `apps/server/src/platform/` (`copy-sql.ts`), `scripts/rerun-never.json` | data (D10, D13); testing (T13); security S41 | U3 mesclado; a autorização do fundador para o ramo de teste |
-| G3 O lugar e o contrato inteiro (um PR) | U5 A conversa num Projeto com o papel | No lugar Projeto, o catálogo é o que o Projeto recebeu cruzado com o que o papel lê; a consulta e a página de tabela leem pelo login do papel (a sua C(b), com F1) | `apps/server/src/hub/copies/` (`access-source.ts`), `apps/server/src/hub/data/` (`query.ts`, `rows.ts`), `scripts/rerun-never.json` | data (D22); testing (T5, T27); security S10 | G1 mesclado |
+| G3 O lugar e o contrato inteiro (um PR) | U5 A conversa num Projeto com o papel | No lugar Projeto, o catálogo é o que o Projeto recebeu cruzado com o que o papel lê; a consulta e a página de tabela leem pelo login do papel (a sua C(b), com a F1 (a)) | `apps/server/src/hub/copies/` (`access-source.ts`), `apps/server/src/hub/data/` (`query.ts`, `rows.ts`), `scripts/rerun-never.json` | data (D22); testing (T5, T27); security S10 | G1 mesclado |
 | G3 | U6 `live` e `funnel` ligados (a H2a) | `liveOf` e `funnelOf` sobre a porta do Assistente de `hub/connectors`; `TurnBinding` com quem aprovou; `NOT_GRANTED` só sem turno | `apps/server/src/hub/data/` (`live.ts`, `funnel.ts` novos, `public.ts`, `deps.ts`), `apps/server/src/hub/connectors/` (`assistant-port.ts`, `public.ts`), `apps/server/src/main.ts` | data (D22); testing (T5, T26, T27) | U5 |
 | G3 | U7 A prova contra o banco de verdade | `runDataConformance` com `make(t)` assíncrono e o contrato vinculado; as 22 leis e duas novas contra o mundo real na Empresa e num Projeto; as leis (c), (d) e (f) da porta; a lista de migração que não cresce | `packages/hub-api/src/` (`company-data-conformance.ts`, `company-data-world.ts`, `company-data.test.ts`), `apps/server/src/hub/data/` (`conformance.test.ts` novo, `test-world.ts` novo), `apps/server/src/hub/access/` (só `conformance.test.ts`), `scripts/rules-doors.test.ts`, `scripts/rerun-never.json` | testing (T4, T5, T27); code C3 a C8; L27 (muda `packages/hub-api`) | U6 |
 | G4 O Registro na tela (um PR) | U8 As rotas do Registro | `listDataReads` e `exportDataReads`, recortadas por pessoa (Dono e Administrador tudo); a página por chave (hora, id), da mais nova; os índices | `packages/hub-api/src/` (`data-reads.ts` novo, `index.ts`, `failures.ts` se preciso), `apps/server/src/hub/data/` (`reads.ts`, `routes.ts` novos, `public.ts`, `tables.ts`), `apps/server/migrations/`, `apps/server/src/main.ts`, `apps/web/sweep-replies.ts` | data (D15, D19); testing (T5, T6, T10); security S8, S10; L27 | G1 mesclado |
 | G4 | U9 A página Registro de dados (`p4-04` a `p4-06`) | Configurações, **Registro de dados**: 50 por página, filtros no endereço, a linha aberta, **Abrir a conversa**, **Copiar a consulta**, **Exportar** em CSV; a versão do membro | `apps/web/src/routes/_app/companies/$companyId_/settings/` (`data-reads.tsx` novo), `apps/web/src/hub/data/` (novo), `apps/web/sweep-data-reads-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U8; o protótipo julgado |
 | G5 O app no Registro (um PR) | U10 A borda avisa o Hub | Depois de cada `db.query` de um app, a borda manda ao Hub a consulta, a contagem e o tempo, com um id dela; o Hub grava `APP` sem repetir; a consulta recusada também | `apps/edge/src/` (`db.ts`, `dispatcher.ts`, `dispatch.ts`, `hub.ts`), `packages/hub-api/src/` (`apps.ts`), `apps/server/src/hub/apps/` (`routes.ts`, `read-notice.ts` novo, `public.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | security (S8, S40); testing (T5, T13, T27); L27 | G1 mesclado |
-| G6 Seguir e Avisos (um PR) | U11 Seguir e a lista da empresa | O contrato `copy-alerts.ts` (seguir, deixar de seguir, a lista, pôr e tirar e-mail); a ação `manageCopyAlerts`; `CopySummary.following`; quem segue pela porta (F2) | `packages/hub-api/src/` (`copy-alerts.ts` novo, `copies.ts`, `roles.ts`, `failures.ts`, `index.ts`), `apps/server/src/hub/notifications/` (`copy-alerts.ts` novo, `routes.ts`, `public.ts`), `apps/server/src/hub/identity/` (`admission.ts`, `companies.ts`), `apps/server/src/hub/copies/` (`list.ts`), `apps/web/src/platform/test-may.ts`, `apps/web/sweep-replies.ts` | security (S8, S10); testing (T5, T10); L27 | o `main` |
+| G6 Seguir e Avisos (um PR) | U11 Seguir e a lista da empresa | O contrato `copy-alerts.ts` (seguir, deixar de seguir, a lista, pôr e tirar e-mail); a ação `manageCopyAlerts`; `CopySummary.following`; quem segue pela porta (F2 (a)) | `packages/hub-api/src/` (`copy-alerts.ts` novo, `copies.ts`, `roles.ts`, `failures.ts`, `index.ts`), `apps/server/src/hub/notifications/` (`copy-alerts.ts` novo, `routes.ts`, `public.ts`), `apps/server/src/hub/identity/` (`admission.ts`, `companies.ts`), `apps/server/src/hub/copies/` (`list.ts`), `apps/web/src/platform/test-may.ts`, `apps/web/sweep-replies.ts` | security (S8, S10); testing (T5, T10); L27 | o `main` |
 | G6 | U12 O aviso na primeira falha | Em `ended`, a primeira falha seguida avisa no sino e por e-mail quem segue e ainda lê a tabela, e cada e-mail da lista; a segunda não; o corte e a regra de `system_code` (1135) | `apps/server/src/hub/copies/` (`run.ts`, `store.ts`, `tables.ts`), `apps/server/src/hub/notifications/` (`notifications.ts`, `copy-email.tsx` novo, `mail.ts`, `notification-render.mjs` gerado), `packages/hub-api/src/` (`notifications.ts`), `apps/server/migrations/`, `apps/server/package.json` (o script `build`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D6, D15, D22); security S40; testing (T5, T10, T27) | U11 |
 | G6 | U13 As telas de Seguir e Avisos (`v06`, `b3` a `b5`) | **Seguir** na página da tabela; a seção **Avisos**; o aviso `COPY_FAILED` no sino | `apps/web/src/hub/copies/` (`copy-detail.tsx`, `text.ts`, `queries.ts`), `apps/web/src/hub/notifications/` (`bell.tsx`, `copy-alerts.tsx` novo), `apps/web/src/routes/_app/companies/$companyId_/settings/` (`alerts.tsx` novo), `apps/web/sweep-alerts-states.ts` (novo), `docs/reference/` (só `screens.md`) | web, design, testing | U11, U12; o protótipo julgado |
 
@@ -262,7 +285,7 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 | 40 | U5 | Num Projeto que recebeu `sankhya_vendas` e `sankhya_clientes`, o catálogo do Assistente e do agente salvo de Bruno lista só `sankhya_vendas`; o de Dono e Administrador lista as duas | `apps/server/src/hub/data/place-role.test.ts`, "no Projeto, o catálogo é o que o Projeto recebeu e o papel lê" | must |
 | 41 | U5 | No mesmo Projeto, `read({kind:'TABLE', table:'sankhya_clientes'})` de Bruno volta `NOT_IN_CATALOG`; a consulta `select * from sync.sankhya_clientes` volta `NOT_IN_ROLE` ou `NOT_IN_CATALOG`, sem linha | `place-role.test.ts`, "no Projeto, a tabela fora do papel é recusada" | must |
 | 42 | U5 | No Projeto, uma consulta de Bruno roda como `conexus_role_<id do papel>` (`current_user`), e uma tabela que o papel lê mas o Projeto não recebeu volta `NOT_IN_CATALOG` | `place-role.test.ts`, "no Projeto, o banco segura o papel e o Hub o lugar" | must |
-| 43 | U5 | Com F1(a), o Construtor de Carla, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes`; com F1(b), recebe as duas, e o caso troca de lado | `place-role.test.ts`, "o Construtor no Projeto segue a F1" | must |
+| 43 | U5 | O Construtor de Carla, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes` (F1 (a)) | `place-role.test.ts`, "o Construtor no Projeto segue a F1" | must |
 | 44 | U5 | O app publicado do Projeto continua lendo as duas tabelas pelo login do Projeto (a sua 3(d)) | `apps/server/src/hub/apps/app-read-place.test.ts`, "o app lê pela liberação do Projeto" | must |
 | 45 | U6 | Com um turno vinculado, `read({kind:'OPERATION'})` de uma leitura que nenhuma tabela guarda chama o sistema uma vez e volta `LIVE` com o valor; sem turno, `NOT_GRANTED` | `apps/server/src/hub/data/live.test.ts`, "a leitura ao vivo pelo contrato chama o sistema com o turno" | must |
 | 46 | U6 | A leitura ao vivo pelo contrato gasta o mesmo limite de chamadas do turno que a ferramenta de hoje: na chamada além do limite volta `CALLS_SPENT` | `live.test.ts`, "o contrato gasta o limite do turno" | must |
@@ -310,7 +333,7 @@ Cada grupo tem a sua faixa: G1 de 1 a 29, G2 de 30 a 39, G3 de 40 a 69, G4 de 70
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 110 | U11 | `PUT .../copies/{copyId}/follow` como Bruno, numa cópia que o papel dele lê, segue; `DELETE` deixa de seguir; repetir cada um responde igual. Recusa: a cópia que o papel não lê dá 404 `COPY_NOT_FOUND` (com F2(a); com F2(b), quem não administra recebe 404) | `apps/server/src/hub/notifications/copy-alerts.test.ts`, "seguir e deixar de seguir" | must |
+| 110 | U11 | `PUT .../copies/{copyId}/follow` como Bruno, numa cópia que o papel dele lê, segue; `DELETE` deixa de seguir; repetir cada um responde igual. Recusa: a cópia que o papel não lê dá 404 `COPY_NOT_FOUND` (F2 (a)) | `apps/server/src/hub/notifications/copy-alerts.test.ts`, "seguir e deixar de seguir" | must |
 | 111 | U11 | Ninguém segue por outro: a rota não tem campo de pessoa, e a regra do banco recusa um `insert` com outra pessoa | `copy-alerts.test.ts`, "ninguém segue por outro" | must |
 | 112 | U11 | `GET .../copy-alerts` devolve as cópias que a pessoa segue e ainda lê, e `recipients` só para Dono e Administrador (nulo para os outros) | `copy-alerts.test.ts`, "a lista de quem segue e a lista da empresa" | must |
 | 113 | U11 | Pôr na lista: o e-mail repetido (qualquer caixa) dá 409 `ALERT_RECIPIENT_TAKEN`; o 21º dá 409 `ALERT_RECIPIENTS_FULL`; tirar um que não existe dá 404. Recusa: o Membro recebe 404 em pôr e tirar | `copy-alerts.test.ts`, "a lista da empresa" | must |
@@ -362,9 +385,9 @@ para `NOT_IN_CATALOG` (de hoje).
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Seguir** na página da tabela | **Seguir** | — | "Seguindo…" no botão pendente | a frase do Hub ao lado | — | quem não pode seguir (F2): sem o botão | o de hoje |
+| **Seguir** na página da tabela | **Seguir** | — | "Seguindo…" no botão pendente | a frase do Hub ao lado | — | quem não lê a tabela não a vê, e não há botão (F2 (a)) | o de hoje |
 | Avisos, Dono e Administrador (`b3-avisos`, `v06`) | a lista vazia: "Nenhum e-mail na lista." e o campo | "Você não segue nenhuma cópia. Siga uma na página dela." | esqueletos | "Não deu para ler os avisos agora." com **Tentar de novo** | — | — | o de hoje |
-| Avisos, quem não administra (`b4-avisos-dev-vazio`; o Membro com F2(a) é protótipo pendente) | só "Cópias que você segue" | o mesmo vazio | esqueletos | o mesmo | com F2(b), o Membro: a página de não encontrado (W34) | — | o de hoje |
+| Avisos, quem não administra (`b4-avisos-dev-vazio`; o Membro, pela F2 (a), é protótipo pendente) | só "Cópias que você segue" | o mesmo vazio | esqueletos | o mesmo | — | — | o de hoje |
 | Pôr na lista (`b5-avisos-repetido`) | — | — | "Pondo…" | "Esse e-mail já está na lista." ou "A lista já tem 20 e-mails. Tire um para pôr outro." | — | — | — |
 | O aviso no sino | — | — | — | — | a cópia apagada: o aviso sai com ela (cascata) | — | — |
 
@@ -378,7 +401,7 @@ para `NOT_IN_CATALOG` (de hoje).
 
 Uma etapa com tela leva o desenho de caixas de cada tela a 1280 e 390 px. Os desenhos aprovados são os
 da proposta (`p4-04` a `p4-06`, `v06`) e os do kit da spec 3 (`b3` a `b5`), fora do repositório
-(delivery L21). As duas versões novas, o Registro do Membro e Avisos do Membro com F2(a), são o
+(delivery L21). As duas versões novas, o Registro do Membro e Avisos do Membro pela F2 (a), são o
 protótipo pendente `registro-e-avisos-do-membro`, que o fundador julga antes da U9 e da U13
 ([screens](../../.agents/skills/conexus-scope/references/screens.md)).
 
@@ -445,7 +468,7 @@ ou a tela aprovada que a traz (L28).
 | A consulta do app publicado | U10 | `db.query` numa transação só de leitura (`apps/edge/src/db.ts:49-61`); `DbProps` sem pessoa (`:10`); a pessoa e o Projeto estão em `call.caller` (`apps/edge/src/dispatch.ts:145-160`) | As duas plataformas registram a leitura de um app no próprio portão, que está no caminho (documentado); aqui o Hub não está no caminho | embrulhado: uma operação nova da borda ao Hub, pela porta que já existe (`apps/edge/src/hub.ts`, `access: 'edge'`), com o id da borda | os critérios 100 a 104 | a sua A(b); 3(d); a decisão D do estudo (uma linha por consulta, sem a lista de tabelas) | `apps/server/src/hub/apps/read-notice.ts` |
 | Seguir uma cópia e a lista da empresa | U11 | tabelas e permissões no `main` (`apps/server/migrations/20261115191116_copy_alerts`, `20261115223016_copy_alerts_grants`; `apps/server/database-grants.sql:444-447`); nenhuma rota | A de ingestão: cada pessoa liga o aviso das fontes que segue; dono e admin têm a lista da empresa (documentado) | nativo: o módulo de notificações (`apps/server/src/hub/notifications/`) | — | spec 3, item (b), requisitos 5 e 6; F2 | `apps/server/src/hub/notifications/copy-alerts.ts` |
 | O aviso na primeira falha | U12 | `ended` (`apps/server/src/hub/copies/run.ts:116-165`) não lê a rodada anterior; o aviso da automação (`apps/server/src/hub/notifications/notifications.ts:306`) | A de ingestão avisa toda falha e não avisa a volta (documentado); a de catálogo cala até a última tentativa (relay) | embrulhado: um tipo novo no sino e no e-mail | — | spec 3, item (b), requisito 4; `v06` | `apps/server/src/hub/notifications/copy-email.tsx` |
-| As telas de Seguir e Avisos | U13 | nenhuma seção Avisos; `RunNowButton` em `apps/web/src/hub/copies/copy-list.tsx:111`; o sino em `apps/web/src/hub/notifications/bell.tsx:66`, `:82` | — | nativo: as peças de `ui/` | — | `v06`, `b3` a `b5`; o protótipo do Membro (F2(a)), pendente | `apps/web/src/hub/notifications/copy-alerts.tsx` |
+| As telas de Seguir e Avisos | U13 | nenhuma seção Avisos; `RunNowButton` em `apps/web/src/hub/copies/copy-list.tsx:111`; o sino em `apps/web/src/hub/notifications/bell.tsx:66`, `:82` | — | nativo: as peças de `ui/` | — | `v06`, `b3` a `b5`; o protótipo do Membro (F2 (a)), pendente | `apps/web/src/hub/notifications/copy-alerts.tsx` |
 | A Amostra de uma pessoa na página Dados | fica de fora | `sampleCopy` não passa pelo contrato | As referências divergem | nativo: fica como hoje, fora do Registro | — | a sua B(a) | — |
 | A aba Leituras de uma tabela | fica de fora | nenhuma | nenhuma faz por tabela | nativo: o filtro por tabela do Registro (U9) responde | — | corte do estudo | — |
 
@@ -472,7 +495,7 @@ para a seção 11 da arquitetura no fechamento.
 | R.10 | O CSV é montado na tela, a partir do JSON de `exportDataReads` | O contrato só serve JSON (`packages/hub-api/src/operation.ts:15-34`) | Uma rota de arquivo |
 | R.11 | Os índices novos de `data.data_read`: (empresa, hora desc, id desc) e (empresa, pessoa, hora desc, id desc), numa migração da U8; o de hoje, (empresa, hora), sai na mesma migração | A página e o recorte por pessoa leem por eles; o de hoje fica coberto pelo primeiro | Manter o de hoje |
 | R.12 | A U12 toma a 1135: `systemOf` corta `system_code` em 100 caracteres e a regra `copy_run_system_code` entra | O aviso lê as colunas da rodada; a 1135 tem o rótulo `next-card` e pede exatamente isso | Tirar a regra numa migração |
-| R.13 | Quem segue e quem é avisado saem da porta `hub/access` (a lista de tabelas da pessoa), não de `readCopies` | code C81: toda lista de dado sai da porta; `readCopies` hoje é o mesmo `statement` de `manageCopies` (`admission.ts:100-101`), que só Dono e Administrador têm | Voltar a `readCopies`, se a F2 for (b) |
+| R.13 | Quem segue e quem é avisado saem da porta `hub/access` (a lista de tabelas da pessoa), não de `readCopies` | code C81: toda lista de dado sai da porta; `readCopies` hoje é o mesmo `statement` de `manageCopies` (`admission.ts:100-101`), que só Dono e Administrador têm | Voltar a `readCopies`, se o fundador mudar a F2 para (b) |
 | R.14 | O aviso da borda vai por `ctx.waitUntil` do `Db` (`apps/edge/src/dispatcher.ts:26`), com uma nova tentativa | O app não espera o Registro (critério 103); o Worker continua até o aviso terminar | Esperar o aviso antes de responder |
 
 ## U1 O gravador e o contrato
@@ -774,14 +797,14 @@ resultado do ramo de teste no corpo do pull request. Mescla só com a palavra do
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/access-source.ts` | Muda: no Projeto, liberadas ∩ papel (com F1(b), exceto o consumidor `builder`) | a porta `hub/access` |
-| `apps/server/src/hub/data/` (`query.ts`, `rows.ts`, `place-role.test.ts` novo) | Muda: no Projeto, o login do papel; sai `projectRead` (com F1(a)) | o contrato |
+| `apps/server/src/hub/copies/access-source.ts` | Muda: no Projeto, liberadas ∩ papel, para todo consumidor, o `builder` incluído (F1 (a)) | a porta `hub/access` |
+| `apps/server/src/hub/data/` (`query.ts`, `rows.ts`, `place-role.test.ts` novo) | Muda: no Projeto, o login do papel; sai `projectRead` (F1 (a)) | o contrato |
 | `apps/server/src/hub/apps/app-read-place.test.ts` novo | Cria | — |
 
 ### Os contratos que a unidade cria
 
-`AccessSources.tables` (`apps/server/src/hub/access/model.ts:45`) passa a receber o consumidor, para a
-F1(b) ter onde morar; com F1(a), não muda.
+Nenhum. `AccessSources.tables` (`apps/server/src/hub/access/model.ts:45`) não muda: com a F1 (a), o
+consumidor não entra no cruzamento.
 
 ### As skills e a leitura
 
@@ -792,7 +815,7 @@ As da U1. O guia de dados (D22).
 1. **O catálogo do lugar.** Critérios: 40, 43.
    - **Mutações à mão:** devolva só as liberadas (critério 40 vermelho).
 2. **A leitura pelo papel.** Critérios: 41, 42, 44.
-   - **O que sai:** `projectRead` e o ramo `PROJECT` de `queryOf` e `rowsOf` (com F1(a)).
+   - **O que sai:** `projectRead` e o ramo `PROJECT` de `queryOf` e `rowsOf` (F1 (a)).
    - **Mutações à mão:** leia com `{ kind: 'ALL' }` em `rowsOf` (critério 41 vermelho).
 
 ### Como se prova
@@ -1145,7 +1168,7 @@ e-mails. Tire um para pôr outro."), 409.
 
 ### Parar se
 
-- A F2 vier (b): `followCopy` passa a pedir `manageCopyAlerts`, e a R.13 cai; nada mais muda.
+- O fundador mudar a F2 para (b): `followCopy` passa a pedir `manageCopyAlerts`, e a R.13 cai.
 
 ## U12 O aviso na primeira falha
 
@@ -1247,7 +1270,7 @@ A varredura de estados e os testes de navegador.
 
 ### Parar se
 
-- O protótipo do Membro (F2(a)) não estiver julgado: a U13 constrói só as telas de `b3` a `b5` e para.
+- O protótipo do Membro (F2 (a)) não estiver julgado: a U13 constrói só as telas de `b3` a `b5` e para.
 
 ## G5 O ponto de conferência
 
