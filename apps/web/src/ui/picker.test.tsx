@@ -188,7 +188,7 @@ test.each([
   },
 )
 
-test('Mais Projetos fica desligado enquanto a página vem: o segundo clique não pede outra', async () => {
+test('Mais Projetos fica desligado enquanto a página vem: o segundo clique não repete o pedido', async () => {
   const onMore = vi.fn()
   function more(loading: boolean): PickerMore {
     return { kind: 'MORE', loading, label: 'Mais Projetos', onMore }
