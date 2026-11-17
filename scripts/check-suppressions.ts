@@ -11,13 +11,14 @@ const root = resolve(process.argv[2] ?? '.')
 const SKIPPED = new Set(['node_modules', '.git', 'dist', 'coverage'])
 const SOURCE = /\.(?:[cm]?[jt]sx?|css)$/
 const SUPPRESSION =
-  /^\s*\{?\s*(?:\/\/|\/\*+)\s*(biome-ignore(?:-all|-start|-end)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b(.*)$/
+  /^\s*\{?\s*(?:\/\/|\/\*+)\s*(biome-ignore(?:-all|-start|-end)?|@ts-ignore|@ts-expect-error|@ts-nocheck|oxlint-disable(?:-next-line|-line)?)\b(.*)$/
 // Workflow files carry zizmor and ShellCheck suppressions as comments, and the checkers' configs
 // carry them as `ignore:` blocks, which need a comment line above for the cause.
 const WORKFLOW = /^\.github\/.*\.ya?ml$/
 const WORKFLOW_SUPPRESSION =
   /(?:#\s*(zizmor:\s*ignore\[[^\]]*\]|shellcheck\s+disable=\S+)(.*)|^(\s*ignore:)\s*$)/
 const CAUSE_AFTER_COLON = /^[^:]*:\s*\S/
+const CAUSE_AFTER_DASHES = /\s--\s*\S/
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -30,6 +31,7 @@ function walk(dir: string): string[] {
 function hasCause(kind: string, rest: string): boolean {
   if (kind === 'biome-ignore-end') return true
   if (kind.startsWith('biome-ignore')) return CAUSE_AFTER_COLON.test(rest)
+  if (kind.startsWith('oxlint-disable')) return CAUSE_AFTER_DASHES.test(rest)
   return rest.replace(/\*\/\s*\}?\s*$/, '').trim().length > 0
 }
 

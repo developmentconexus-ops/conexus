@@ -31,7 +31,7 @@ export function textOf(value: unknown): string | undefined {
 
 function Labelled({ label, text }: { label: string; text: string }) {
   return (
-    <div className="flex flex-col gap-xxs">
+    <div className="flex flex-col">
       <span className="font-sans text-text-2">{label}</span>
       <pre className={BLOCK}>{shown(text)}</pre>
     </div>

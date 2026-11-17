@@ -56,7 +56,7 @@ function SystemTable(props: Listing) {
       <HeadRow heads={DATA_COLUMNS} right="Linhas" />
       {systems.map((system) => (
         <TableBody key={system.connector}>
-          <TableRow className="bg-surface-2">
+          <TableRow>
             <TableCell colSpan={DATA_COLUMNS.length + 1} className={CELL}>
               <SystemTitle system={system} connectors={connectors} />
             </TableCell>

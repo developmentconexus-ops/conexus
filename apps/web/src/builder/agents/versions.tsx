@@ -64,7 +64,7 @@ export function Versions(props: {
             key={version.number}
             className="flex flex-wrap items-center justify-between gap-sm py-sm"
           >
-            <span className="flex min-w-0 flex-wrap items-center gap-x-sm gap-y-xxs">
+            <span className="flex min-w-0 flex-wrap items-center gap-x-sm">
               <span>v{version.number}</span>
               {version.active && <Stamp tone="success">{ACTIVE_VERSION}</Stamp>}
               <span className="break-words text-label text-text-2">
