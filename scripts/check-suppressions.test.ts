@@ -53,6 +53,18 @@ test('recusa supressão sem causa', () => {
   assert.match(run.stderr, /^suppression-without-cause: a\.ts:1$/m)
 })
 
+test('conta o oxlint-disable e recusa o que não tem causa depois de --', () => {
+  const rule = 'shadcn/no-unknown-classes'
+  const bare = suppression('oxlint-disable-next-line', rule)
+  const caused = suppression('oxlint-disable-next-line', `${rule} -- the class is injected at runtime`)
+  assert.equal(check({ 'a.tsx': `${caused}\nexport const a = 1\n` }, { 'a.tsx': 1 }).status, 0)
+  const uncounted = check({ 'a.tsx': `${caused}\nexport const a = 1\n` }, {})
+  assert.match(uncounted.stderr, /^suppression-count-changed: a\.tsx: 1 in the file, 0 /m)
+  const run = check({ 'a.tsx': `${bare}\nexport const a = 1\n` }, { 'a.tsx': 1 })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^suppression-without-cause: a\.tsx:1$/m)
+})
+
 test('recusa @ts-expect-error sem causa', () => {
   const run = check(
     { 'a.ts': `${suppression('@ts-expect-error', '')}\nexport const a: number = ''\n` },

@@ -1,6 +1,7 @@
 {
   "jsPlugins": ["@shadcn/lint"],
   "categories": { "correctness": "off" },
+  "options": { "respectEslintDisableDirectives": false, "reportUnusedDisableDirectives": "error" },
   "rules": {
     "shadcn/no-restyle": ["warn", { "allow": ["layout"] }],
     "shadcn/no-raw-colors": "warn",
