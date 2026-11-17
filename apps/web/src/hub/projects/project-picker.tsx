@@ -54,7 +54,11 @@ export function ProjectPicker<Fixed extends string>(props: Props<Fixed>): ReactE
 
 function WithRecent<Fixed extends string>(props: Props<Fixed> & { personId: PersonId }) {
   const bare = useInfiniteQuery(projectsPagedQuery(props.companyId, undefined))
-  const recent = useRecentProjects(props.companyId, props.personId, pagesOf(bare.data))
+  const recent = useRecentProjects(
+    props.companyId,
+    props.personId,
+    bare.isPending ? undefined : pagesOf(bare.data),
+  )
   return <Choosing {...props} recent={recent} />
 }
 
@@ -90,7 +94,14 @@ function Choosing<Fixed extends string>(props: Props<Fixed> & { recent: Recent }
   const rows = known.length + before.length + after.length
   const searchable = asked !== undefined || rows >= SEARCH_FROM || bare.hasNextPage
 
-  const chosen = useChosen({ companyId, value, before, after, loaded: [...known, ...projects] })
+  const chosen = useChosen({
+    companyId,
+    value,
+    before,
+    after,
+    loaded: [...known, ...projects],
+    listing: bare.isPending,
+  })
 
   const more: PickerMore = read.hasNextPage
     ? {
@@ -132,12 +143,14 @@ function useChosen<Fixed extends string>(input: {
   before: readonly PickerItem<Fixed>[]
   after: readonly PickerItem<Fixed>[]
   loaded: readonly ProjectSummary[]
+  /** The first page is still on its way: the value may be in it, so its name is not read yet. */
+  listing: boolean
 }): PickerItem<ProjectId | Fixed> | undefined {
   const { companyId, value, loaded } = input
   const fixed = [...input.before, ...input.after].find((item) => item.value === value)
   const id = fixed === undefined ? ProjectId.safeParse(value) : undefined
   const listed = id?.success ? loaded.find((project) => project.id === id.data) : undefined
-  const outside = id?.success && listed === undefined ? [id.data] : []
+  const outside = id?.success && listed === undefined && !input.listing ? [id.data] : []
   const [named] = useQueries({ queries: outside.map((one) => projectQuery(companyId, one)) })
   if (fixed !== undefined) return fixed
   if (listed !== undefined) return { value: listed.id, label: listed.name }

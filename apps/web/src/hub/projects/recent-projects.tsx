@@ -24,17 +24,20 @@ export function rememberProject(input: {
 /**
  * Up to five ids remembered in this browser, each with its name from the pages read or from
  * `projectQuery`; one the Hub no longer finds (`NOT_FOUND`) leaves, one still being read waits.
+ * With `loaded` undefined the first page is still on its way, so nothing is read yet.
  */
 export function useRecentProjects(
   companyId: CompanyId,
   personId: PersonId,
-  loaded: readonly ProjectSummary[],
+  loaded: readonly ProjectSummary[] | undefined,
 ): readonly { id: ProjectId; name: string }[] {
   const opened = recall({ list: listOf(companyId), personId }).slice(0, SHOWN)
-  const outside = opened.filter((id) => !loaded.some((project) => project.id === id))
+  const known = loaded ?? []
+  const outside =
+    loaded === undefined ? [] : opened.filter((id) => !known.some((project) => project.id === id))
   const reads = useQueries({ queries: outside.map((id) => projectQuery(companyId, id)) })
   return opened.flatMap((id) => {
-    const listed = loaded.find((project) => project.id === id)
+    const listed = known.find((project) => project.id === id)
     if (listed !== undefined) return [{ id, name: listed.name }]
     const read = reads[outside.indexOf(id)]
     if (read === undefined || read.isPending) return []
