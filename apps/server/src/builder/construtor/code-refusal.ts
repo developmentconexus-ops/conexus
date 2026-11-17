@@ -12,10 +12,9 @@ const NOT_A_READ_HINT =
   'Alguma operação de reads não é uma leitura dessa ligação. Use só as operações que project_read mostra em offered para ela.'
 
 /** What the model needs to correct a refusal that has no test output: the cause in words, never a bare code. */
-export function hintOf(field: string | undefined, reason: string | undefined): string | undefined {
+export function hintOf(_field: string | undefined, reason: string | undefined): string | undefined {
   if (reason === 'NOT_OFFERED') return NOT_OFFERED_HINT
   if (reason === 'NOT_A_READ') return NOT_A_READ_HINT
-  if (field === 'operation') return NOT_A_READ_HINT
   return undefined
 }
 
@@ -33,4 +32,13 @@ export function missingOf(input: {
     ...(input.connectionId === undefined ? ['connectionId'] : []),
   ].join(' e ')
   return `Uma ferramenta de código nova precisa de slug, de connectionId (uma ligação que o Projeto recebeu, em offered de project_read) e de pelo menos uma leitura em reads. Faltou: ${missing}. Toda ferramenta de código lê uma ligação; se o Projeto não recebeu nenhuma, diga à pessoa para abrir Integrações do Projeto e tocar em "Liberar para ler".`
+}
+
+/** The field a call that fits neither shape lacks: the one `missingOf` names first. */
+export function fieldOf(input: {
+  toolId?: unknown
+  slug?: unknown
+}): 'toolId' | 'slug' | 'connectionId' {
+  if (input.toolId !== undefined) return 'toolId'
+  return input.slug === undefined ? 'slug' : 'connectionId'
 }

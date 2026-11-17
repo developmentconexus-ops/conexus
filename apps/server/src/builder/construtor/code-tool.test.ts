@@ -1,85 +1,14 @@
 import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { test } from 'node:test'
-import { AgentId, CodeSaveResult, CompanyId, ProjectId } from '@conexus/hub-api'
+import { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { agentOf, drafted, madeAgent } from '../agents/test-agents.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
+import { answerOf, FAILING, matrizOf, SOURCE, saving, searching } from './test-code-tool.ts'
 import type { Step } from './test-construtor.ts'
-import { building, keeping, listOf, resultOf } from './test-construtor.ts'
-
-/** The tool's code: counts the rows the read answers, as a Worker module of the platform. */
-const SOURCE = `import { z } from 'zod'
-
-export const input = z.object({ mes: z.string() })
-export const output = z.object({ total: z.number() })
-
-type Data = { read(operation: string, input: unknown): Promise<unknown> }
-
-export default {
-  async fetch(request: Request, _env: unknown, ctx: { props: { data: Data } }) {
-    const { mes } = input.parse(await request.json())
-    const lido = z.object({ linhas: z.array(z.unknown()) }).parse(
-      await ctx.props.data.read('pedidos', { mes }),
-    )
-    return Response.json(output.parse({ total: lido.linhas.length }))
-  },
-}
-`
-
-const TEST = `import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { test } from 'node:test'
-import tool from './tool.ts'
-
-const fixtures = JSON.parse(readFileSync(new URL('./fixtures.json', import.meta.url), 'utf8'))
-
-test('conta as linhas lidas', async () => {
-  const ctx = { props: { data: { read: async (operation: string) => fixtures[operation] } } }
-  const request = new Request('http://tool/', { method: 'POST', body: JSON.stringify({ mes: '2026-09' }) })
-  const answer = await tool.fetch(request, {}, ctx)
-  const body = await answer.json()
-  assert.equal(body.total, fixtures.pedidos.linhas.length)
-})
-`
-
-const FAILING = TEST.replace('fixtures.pedidos.linhas.length', 'fixtures.pedidos.linhas.length + 1')
-
-function saving(connectionId: string, change: object = {}) {
-  return {
-    slug: 'vendas_por_vendedor',
-    connectionId,
-    reads: ['pedidos'],
-    description: 'Soma as vendas de cada vendedor num mês.',
-    source: SOURCE,
-    test: TEST,
-    samples: { pedidos: { codigoEmpresa: 1, page: 1 } },
-    ...change,
-  }
-}
-
-function answerOf(answers: Record<string, unknown>[], at = 0) {
-  return CodeSaveResult.parse(answers[at])
-}
-
-/** The Matriz as the model learns it: the ready read of pedidos that tool_search shows. */
-function matrizOf(asked: Parameters<Step>[0]) {
-  const orders = listOf(resultOf(asked).ready).find((each) => each.operation === 'pedidos')
-  assert.ok(orders, 'a ready read of pedidos')
-  return String(orders.connectionId)
-}
-
-/** The model searches the library, then saves what `change` says on the connection the search showed. */
-function searching(known: { matriz: string }, change: object = {}): Step[] {
-  return [
-    () => [tool('tool_search', {})],
-    (asked) => {
-      known.matriz = matrizOf(asked)
-      return [tool('tool_code_save', saving(known.matriz, change))]
-    },
-  ]
-}
+import { building, keeping, resultOf } from './test-construtor.ts'
 
 /** The folders of tools the machine still holds: the fixtures are the company's rows. */
 function leftOnMachine(on: { hub: { assistantMachines: { tuning: { workFolder: string } } } }) {
@@ -158,48 +87,6 @@ test('o teste não passa: o Construtor recebe TOOL_TEST_FAILED com o erro, nada 
   const listed = await call(on.hub, on.ana, 'GET', on.tools)
   assert.deepEqual(Object(listed.json()).tools, [])
   assert.deepEqual(leftOnMachine(on), [], 'the fixtures left the machine with the folder')
-})
-
-test('sem connectionId o Construtor recebe a causa em palavras: precisa de connectionId e de leituras em reads, e onde liberar uma ligação', async (t) => {
-  const answers: Record<string, unknown>[] = []
-  const { connectionId: _omitted, ...withoutConnection } = saving('')
-  const on = await building(t, [
-    () => [tool('tool_code_save', withoutConnection)],
-    keeping(answers),
-  ])
-  assert.equal(
-    endOf(await on.conversation.say('Crie uma ferramenta que formata datas')),
-    'complete',
-  )
-
-  const refused = answerOf(answers)
-  assert.equal(refused.kind, 'REFUSED')
-  if (refused.kind !== 'REFUSED') return
-  assert.equal(refused.code, 'REQUEST_MALFORMED')
-  assert.equal(refused.field, 'connectionId')
-  assert.match(String(refused.output), /connectionId/)
-  assert.match(String(refused.output), /reads/)
-  assert.match(String(refused.output), /Integrações do Projeto.*Liberar para ler/)
-  const listed = await call(on.hub, on.ana, 'GET', on.tools)
-  assert.deepEqual(Object(listed.json()).tools, [])
-})
-
-test('uma ligação que o Projeto não recebeu é recusada com NOT_OFFERED, sem máquina e sem linha', async (t) => {
-  const answers: Record<string, unknown>[] = []
-  const on = await building(t, [
-    () => [tool('tool_code_save', saving('00000000-0000-4000-8000-000000000000'))],
-    keeping(answers),
-  ])
-  assert.equal(endOf(await on.conversation.say('Crie')), 'complete')
-
-  const refused = answerOf(answers)
-  assert.deepEqual(
-    [refused.kind, Object(refused).code, Object(refused).field, Object(refused).reason],
-    ['REFUSED', 'TOOL_REFUSED', 'connectionId', 'NOT_OFFERED'],
-  )
-  assert.match(String(Object(refused).output), /Integrações do Projeto.*Liberar para ler/)
-  const listed = await call(on.hub, on.ana, 'GET', on.tools)
-  assert.deepEqual(Object(listed.json()).tools, [])
 })
 
 test('um esquema com callback que chama JSON.parse não é estado: a regra olha a chamada, não o texto', async (t) => {
