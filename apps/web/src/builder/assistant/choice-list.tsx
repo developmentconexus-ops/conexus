@@ -9,18 +9,11 @@ export const WORDS = '@max-[26rem]:sr-only'
 export const CHIP =
   'h-control-sm min-w-[2rem] shrink-0 justify-center gap-xs px-xs text-fact text-text-2'
 
-/** The Hub's reads are plain lists: a search shows from this many rows (the founder: "7 ou mais"). */
-export const SEARCH_FROM = 7
-
 export const LIST = 'flex max-h-64 flex-col overflow-y-auto'
 export const ROW = cn(
   listRow,
   'shrink-0 gap-sm rounded-control text-left text-text hover:bg-surface-3',
 )
-
-export function matches(text: string, query: string): boolean {
-  return text.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))
-}
 
 /** The search of a list, shown only once the list has `SEARCH_FROM` rows. */
 export function Search(props: { label: string; value: string; onChange: (query: string) => void }) {

@@ -1,15 +1,14 @@
 import type { AgentListed, CompanyId, ProjectId } from '@conexus/hub-api'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { BotIcon } from 'lucide-react'
+import { BotIcon, ChevronDownIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { projectQuery, projectsPagedQuery } from '../../hub/projects/public.ts'
+import { ProjectPicker } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
+import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { PageTitle } from '../../ui/list.tsx'
-import { ChoiceSelect } from '../../ui/select.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -23,7 +22,6 @@ import {
   AREA_TITLE,
   FILTER_PROJECT,
   lastRunText,
-  MORE_PROJECTS,
   NO_AGENTS,
   NO_AGENTS_COMPANY,
   NO_AGENTS_IN_PROJECT,
@@ -142,60 +140,32 @@ export function AgentList(props: Place & { inicio?: boolean }) {
 }
 
 const ALL = 'ALL'
-const MORE = 'MORE'
 
-type Chosen = { id: ProjectId; name: string }
-
-function FilterBox({ companyId, projectId, chosen }: Place & { chosen?: Chosen }) {
+/** The filter by Projeto: Todos os Projetos and the company's, whose choice is a value of the address. */
+function ProjectFilter({ companyId, projectId }: Place) {
   const navigate = useNavigate()
-  const read = useInfiniteQuery(projectsPagedQuery(companyId))
-  const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
-  const named = chosen !== undefined && !projects.some((project) => project.id === chosen.id)
-  const items = [
-    { value: ALL, label: ALL_PROJECTS },
-    ...(named ? [{ value: chosen.id, label: chosen.name }] : []),
-    ...projects.map((project) => ({ value: project.id, label: project.name })),
-    ...(read.hasNextPage ? [{ value: MORE, label: MORE_PROJECTS }] : []),
-  ]
   return (
-    <>
-      <ChoiceSelect
-        label={FILTER_PROJECT}
-        className="sm:w-60"
-        value={projectId ?? ALL}
-        items={items}
-        onValueChange={(next) => {
-          if (next === MORE) {
-            void read.fetchNextPage()
-            return
-          }
-          const picked = projects.find((project) => project.id === next)?.id
-          void navigate({
-            to: '/companies/$companyId/agents',
-            params: { companyId },
-            search: picked === undefined ? {} : { projectId: picked },
-          })
-        }}
-      />
-      {read.isError && <Alert tone="danger">{sentenceOf(read.error)}</Alert>}
-    </>
-  )
-}
-
-/** The Projeto the address names, read on its own: its page may not be among those the filter has loaded. */
-function NamedFilter(props: Place & { projectId: ProjectId }) {
-  const { companyId, projectId } = props
-  const project = useQuery(projectQuery(companyId, projectId)).data?.project
-  return <FilterBox {...props} chosen={project && { id: project.id, name: project.name }} />
-}
-
-/** The filter by Projeto: the Projetos of the company, whose choice is a value of the address. */
-function ProjectFilter(props: Place) {
-  const { projectId } = props
-  return projectId === undefined ? (
-    <FilterBox {...props} />
-  ) : (
-    <NamedFilter {...props} projectId={projectId} />
+    <ProjectPicker<typeof ALL>
+      companyId={companyId}
+      label={FILTER_PROJECT}
+      trigger={(chosen) => (
+        <Button className="justify-between sm:w-60">
+          <span className="truncate">{chosen?.label}</span>
+          <ChevronDownIcon aria-hidden="true" className="text-text-2" />
+        </Button>
+      )}
+      value={projectId ?? ALL}
+      onPick={(value) =>
+        void navigate({
+          to: '/companies/$companyId/agents',
+          params: { companyId },
+          search: value === ALL ? {} : { projectId: value },
+        })
+      }
+      before={[{ value: ALL, label: ALL_PROJECTS }]}
+      after={[]}
+      recentFor={undefined}
+    />
   )
 }
 

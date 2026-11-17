@@ -61,5 +61,5 @@ test('celular de verdade: a gaveta tem as mesmas entradas da barra do Projeto', 
   for (const name of ['Construir', 'Sobre', 'Quem usa o app']) {
     expect(within(drawer).getByRole('link', { name })).toBeTruthy()
   }
-  expect(within(drawer).getByRole('button', { name: /Trocar de Projeto/ })).toBeTruthy()
+  expect(within(drawer).getByRole('combobox', { name: /Trocar de Projeto/ })).toBeTruthy()
 })

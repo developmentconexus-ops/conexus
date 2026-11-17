@@ -43,7 +43,7 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
   open(PROJECT)
   const list = await bar()
   expect(
-    await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' }),
+    await list.findByRole('combobox', { name: 'Trocar de Projeto. Agora: Pedidos' }),
   ).toBeTruthy()
   const entries = list.getAllByRole('link').map((link) => link.textContent)
   expect(entries).toEqual([
@@ -67,7 +67,7 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
 test('o membro não vê Agentes, Automações nem Dados na barra do Projeto (steps 24.2 e 24.3, capacidade 1)', async () => {
   open(PROJECT, { role: 'member' })
   const list = await bar()
-  await list.findByRole('button', { name: 'Trocar de Projeto. Agora: Pedidos' })
+  await list.findByRole('combobox', { name: 'Trocar de Projeto. Agora: Pedidos' })
   expect(list.queryByRole('link', { name: 'Agentes' })).toBeNull()
   expect(list.queryByRole('link', { name: 'Automações' })).toBeNull()
   expect(list.queryByRole('link', { name: 'Dados' })).toBeNull()

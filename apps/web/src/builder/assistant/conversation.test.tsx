@@ -119,7 +119,7 @@ describe('a pasta', () => {
     expect(await field()).toBeTruthy()
     const left = (await toolsOf()).parentElement
     expect(await within(left ?? document.body).findByText(PEDIDOS.name)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
   })
 
   test('na conversa da empresa a pasta fica apagada, com o nome "Conversa sem Projeto", e não abre nada', async () => {
@@ -127,7 +127,7 @@ describe('a pasta', () => {
     await toolsOf()
     const folder = screen.getByRole('img', { name: 'Conversa sem Projeto' })
     expect(folder.closest('button')).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Projeto da conversa' })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
   })
 })
 

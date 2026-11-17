@@ -258,3 +258,55 @@ test('o pedido aberto: o Projeto lido e o criado de novo trazem mayPublish e o p
   })
   assert.deepEqual([decided.statusCode, codeOf(decided)], [404, 'NOT_FOUND'])
 })
+
+test('a busca: q acha pelo nome sem diferenciar caixa, % e _ valem como letra, a ficha traz a página seguinte da mesma busca, e q vazio ou longo é 400 (26)', async (t) => {
+  const { hub, ana, bruno, projects } = await companyWithMember(t)
+  const names = [
+    ...Array.from({ length: 56 }, (_, index) => `Filler ${String(index).padStart(2, '0')}`),
+    'Ação',
+    '500',
+    'Meta 50% vendas',
+    'Lote 5_0 norte',
+  ]
+  for (const name of names) {
+    const made = await post(hub, ana, projects, { name })
+    assert.equal(made.statusCode, 201, `${name}: ${made.body}`)
+  }
+  type Listed = { projects: { name: string }[]; next: { kind: string; page?: string } }
+  async function search(person: Person, query: string): Promise<Listed> {
+    const read = await call(hub, person, 'GET', `${projects}?${query}`)
+    assert.equal(read.statusCode, 200, read.body)
+    return Object(read.json())
+  }
+  function at(q: string, page?: string) {
+    const query = new URLSearchParams({ q })
+    if (page !== undefined) query.set('page', page)
+    return query.toString()
+  }
+  function namesOf(listed: Listed) {
+    return listed.projects.map((each) => each.name)
+  }
+  assert.equal((await search(ana, '')).projects.length, 50)
+  assert.deepEqual(namesOf(await search(ana, at('ÇÃO'))), ['Ação'])
+  assert.deepEqual(namesOf(await search(bruno, at('ação'))), ['Ação'])
+  assert.deepEqual(namesOf(await search(ana, at('50%'))), ['Meta 50% vendas'])
+  assert.deepEqual(namesOf(await search(ana, at('5_0'))), ['Lote 5_0 norte'])
+  assert.deepEqual(namesOf(await search(ana, at('  norte  '))), ['Lote 5_0 norte'])
+  assert.deepEqual(namesOf(await search(ana, at('inexistente'))), [])
+  const first = await search(ana, at('filler'))
+  assert.equal(first.projects.length, 50)
+  assert.equal(first.next.kind, 'MORE')
+  const second = await search(ana, at('filler', first.next.page))
+  assert.deepEqual(namesOf(second), names.slice(50, 56))
+  assert.deepEqual(second.next, { kind: 'END' })
+  for (const bad of [at('   '), at('a'.repeat(101))]) {
+    const refused = await call(hub, ana, 'GET', `${projects}?${bad}`)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [400, 'REQUEST_MALFORMED'])
+  }
+  const carla = await personOn(hub, CARLA)
+  await plantCompany(hub.test, carla.id, 'Outra Empresa')
+  for (const query of ['', at('Filler')]) {
+    const refused = await call(hub, carla, 'GET', `${projects}?${query}`)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
+  }
+})

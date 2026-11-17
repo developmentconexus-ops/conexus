@@ -102,7 +102,7 @@ function ProjectGroup(props: {
  * its own group.
  */
 export function AppsLayer({ companyId }: { companyId: CompanyId }) {
-  const projects = useInfiniteQuery(projectsPagedQuery(companyId))
+  const projects = useInfiniteQuery(projectsPagedQuery(companyId, undefined))
   const withApp = (projects.data?.pages ?? []).flatMap((page) => page.projects).filter(hasApp)
   const reads = useQueries({ queries: withApp.map((one) => appTablesQuery(companyId, one.id)) })
   if (projects.isPending) return <Skeleton className="h-24 w-full" />

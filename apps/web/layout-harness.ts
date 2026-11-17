@@ -79,7 +79,10 @@ export function failure(code: FailureCode): Reply {
   return { status: row.status, json: problemOf(code) }
 }
 
-/** Replies by "METHOD /path"; a request with none is recorded as unanswered and answered 500. */
+/**
+ * Replies by "METHOD /path", or by "METHOD /path?query" as the browser sends the query, which wins
+ * over the path alone; a request with none is recorded as unanswered and answered 500.
+ */
 export type Replies = Record<string, Reply>
 
 type Seen = { method: string; path: string; search: string; body: string | null }
@@ -166,7 +169,7 @@ export function createHarness(
           search: url.search,
           body: request.postData(),
         })
-        const reply = options.replies[key]
+        const reply = options.replies[`${key}${url.search}`] ?? options.replies[key]
         if (!reply) {
           unanswered.push(key)
           return route.fulfill({ status: 500, json: failure('INTERNAL_UNEXPECTED').json })

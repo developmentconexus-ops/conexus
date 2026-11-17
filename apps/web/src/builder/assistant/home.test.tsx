@@ -3,6 +3,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer, outsideBlock, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { choose } from '../conversation/test-hub.tsx'
 import {
   assistantScreens,
   COMPANY_ROOT,
@@ -37,8 +38,7 @@ async function turnOff(name: string) {
 
 /** Opens the folder's list and picks the Projeto by its name. */
 async function chooseProject(name: string) {
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  fireEvent.click(await screen.findByRole('button', { name }))
+  await choose(await screen.findByRole('combobox', { name: 'Projeto da conversa' }), name)
 }
 
 /** An alert that is not the one of a block of Início, which reads the same list on its own. */
@@ -61,7 +61,7 @@ test('o dono vê a caixa do Assistente com as ferramentas todas ligadas, a pasta
     await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
   ).toBeTruthy()
   await toolsOf()
-  expect(screen.getByRole('button', { name: 'Projeto da conversa' })).toBeTruthy()
+  expect(screen.getByRole('combobox', { name: 'Projeto da conversa' })).toBeTruthy()
   expect(screen.queryByRole('group', { name: 'Ligações da conversa' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Ajustar' })).toBeNull()
   expect(screen.queryByRole('button', { name: /Memória da conversa/ })).toBeNull()
@@ -195,10 +195,10 @@ test('com 31 Projetos, o seletor oferece os 30 da primeira página e, em "Mais P
     }),
   )
   await toolsOf()
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Projeto da conversa' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Mais Projetos' }))
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Mais Projetos' })).toBeNull())
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto 31' }))
+  fireEvent.click(await screen.findByRole('option', { name: 'Projeto 31' }))
   await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[30]?.id}`))
   await ask('Como foram as vendas?')
   await waitFor(() => expect(writes()[0]?.body).toMatchObject({ projectId: projects[30]?.id }))
@@ -256,7 +256,7 @@ test('se a lista dos Projetos falha depois de lida, a lista da pasta diz a frase
   await toolsOf()
   server.use(http.get('*/api/companies/:companyId/projects', () => refusal('DATABASE_UNAVAILABLE')))
   await act(() => conexus.queryClient.invalidateQueries())
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Projeto da conversa' }))
   expect(await alertOutside('Projetos')).toBeTruthy()
 })
 
@@ -292,20 +292,20 @@ test('a pasta: abre Sem Projeto e os Projetos, e a busca só aparece a partir de
   server.use(
     http.get('*/api/companies/:companyId/projects', () =>
       HttpResponse.json({
-        projects: projects.slice(0, 6),
+        projects: projects.slice(0, 5),
         next: { kind: 'END' },
         databaseReady: true,
       }),
     ),
   )
   await toolsOf()
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  const none = await screen.findByRole('button', { name: 'Sem Projeto' })
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Projeto da conversa' }))
+  const none = await screen.findByRole('option', { name: 'Sem Projeto' })
   expect(screen.getByText('Em qual Projeto?')).toBeTruthy()
-  expect(none.getAttribute('aria-pressed')).toBe('true')
+  expect(none.getAttribute('aria-selected')).toBe('true')
   expect(none.querySelector('svg')).not.toBeNull()
-  expect(screen.getByRole('button', { name: 'Vendas' }).querySelector('svg')).toBeNull()
-  expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
+  expect(screen.getByRole('option', { name: 'Vendas' }).querySelector('svg')).toBeNull()
+  expect(screen.queryByRole('combobox', { name: 'Buscar Projeto' })).toBeNull()
 })
 
 test('a pasta: com 7 Projetos a busca filtra pelo nome e escolher Vendas fecha a lista', async () => {
@@ -316,14 +316,14 @@ test('a pasta: com 7 Projetos a busca filtra pelo nome e escolher Vendas fecha a
     ),
   )
   await toolsOf()
-  fireEvent.click(await screen.findByRole('button', { name: 'Projeto da conversa' }))
-  const search = await screen.findByRole('searchbox', { name: 'Buscar Projeto' })
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Projeto da conversa' }))
+  const search = await screen.findByRole('combobox', { name: 'Buscar Projeto' })
   fireEvent.change(search, { target: { value: 'vend' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Vendas' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Vendas' }))
   await waitFor(() => expect(asked.at(-1)).toContain(`projectId=${projects[0]?.id}`))
-  expect(screen.queryByRole('searchbox', { name: 'Buscar Projeto' })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Projeto da conversa' }))
-  expect(await screen.findByRole('searchbox', { name: 'Buscar Projeto' })).toHaveProperty(
+  expect(screen.queryByRole('combobox', { name: 'Buscar Projeto' })).toBeNull()
+  fireEvent.click(screen.getByRole('combobox', { name: 'Projeto da conversa' }))
+  expect(await screen.findByRole('combobox', { name: 'Buscar Projeto' })).toHaveProperty(
     'value',
     '',
   )

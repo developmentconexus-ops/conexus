@@ -1,26 +1,18 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { CheckIcon, FolderIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
-import { projectQuery, projectsPagedQuery } from '../../hub/projects/public.ts'
-import { sentenceOf } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
+import { useQuery } from '@tanstack/react-query'
+import { FolderIcon } from 'lucide-react'
+import { ProjectPicker, projectQuery } from '../../hub/projects/public.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
-import { CHIP, LIST, matches, ROW, SEARCH_FROM, Search, WORDS } from './choice-list.tsx'
+import { CHIP, WORDS } from './choice-list.tsx'
 import type { ComposerPlace } from './plus-menu.tsx'
 import { projectOf } from './plus-menu.tsx'
 import {
-  MORE_PROJECTS,
   NO_PROJECT_CHIP,
-  NO_PROJECT_MATCH,
   NO_PROJECT_OPTION,
   PROJECT_CHOICE,
   PROJECT_FALLBACK,
   PROJECT_MENU_TITLE,
-  SEARCH_PROJECT,
 } from './text.ts'
 
 /** The folder of a conversation with no Projeto: faded, named for a screen reader, opening nothing. */
@@ -48,95 +40,36 @@ function FixedProjectChip(props: { companyId: CompanyId; projectId: ProjectId })
   )
 }
 
-/** Início's choice of the Projeto a conversation is born in, only until its first question: "Sem Projeto" and the Projetos, with a search from `SEARCH_FROM`. */
+const NONE = 'NONE'
+
+/** Início's choice of the Projeto a conversation is born in, only until its first question: "Sem Projeto" and the Projetos. */
 function ProjectChoice(props: {
   companyId: CompanyId
   value: ProjectId | undefined
   onChange: (projectId: ProjectId | undefined) => void
 }) {
-  const read = useInfiniteQuery(projectsPagedQuery(props.companyId))
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const projects = read.data?.pages.flatMap((page) => page.projects) ?? []
-  const shown = projects.filter((project) => matches(project.name, query))
-  const chosen = projects.find((project) => project.id === props.value)
-  // A list reopened starts with an empty search, however it was closed.
-  function change(next: boolean) {
-    setOpen(next)
-    if (!next) setQuery('')
-  }
-  function pick(projectId: ProjectId | undefined) {
-    props.onChange(projectId)
-    change(false)
-  }
   return (
-    <Popover open={open} onOpenChange={change}>
-      <PopoverTrigger
-        aria-label={PROJECT_CHOICE}
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP)}
-      >
-        <FolderIcon aria-hidden="true" className="size-4 shrink-0" />
-        {chosen !== undefined && (
-          <span className={cn('max-w-40 truncate text-text', WORDS)}>{chosen.name}</span>
-        )}
-      </PopoverTrigger>
-      <PopoverContent side="top" align="start" aria-label={PROJECT_CHOICE} className="gap-xs p-xs">
-        <p className="px-sm pt-xs text-label text-text-2">{PROJECT_MENU_TITLE}</p>
-        {projects.length >= SEARCH_FROM && (
-          <Search label={SEARCH_PROJECT} value={query} onChange={setQuery} />
-        )}
-        <div className={LIST}>
-          {query === '' && (
-            <ProjectRow checked={props.value === undefined} onPick={() => pick(undefined)}>
-              {NO_PROJECT_OPTION}
-            </ProjectRow>
+    <ProjectPicker<typeof NONE>
+      companyId={props.companyId}
+      label={PROJECT_CHOICE}
+      title={PROJECT_MENU_TITLE}
+      trigger={(chosen) => (
+        <button
+          type="button"
+          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), CHIP)}
+        >
+          <FolderIcon aria-hidden="true" className="size-4 shrink-0" />
+          {chosen !== undefined && chosen.value !== NONE && (
+            <span className={cn('max-w-40 truncate text-text', WORDS)}>{chosen.label}</span>
           )}
-          {shown.map((project) => (
-            <ProjectRow
-              key={project.id}
-              checked={project.id === props.value}
-              onPick={() => pick(project.id)}
-            >
-              <span className="truncate">{project.name}</span>
-            </ProjectRow>
-          ))}
-          {query !== '' && shown.length === 0 && (
-            <p className="px-sm py-xs text-text-2">{NO_PROJECT_MATCH}</p>
-          )}
-        </div>
-        {read.hasNextPage && (
-          <button
-            type="button"
-            className={ROW}
-            disabled={read.isFetchingNextPage}
-            onClick={() => void read.fetchNextPage()}
-          >
-            {MORE_PROJECTS}
-          </button>
-        )}
-        {read.isError && (
-          <Alert tone="danger" className="px-sm py-xs">
-            {sentenceOf(read.error)}
-          </Alert>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function ProjectRow(props: { checked: boolean; onPick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={props.checked}
-      className={cn(ROW, props.checked && 'bg-surface-3')}
-      onClick={props.onPick}
-    >
-      {props.children}
-      {props.checked && (
-        <CheckIcon aria-hidden="true" className="ml-auto size-4 shrink-0 text-accent" />
+        </button>
       )}
-    </button>
+      value={props.value ?? NONE}
+      onPick={(value) => props.onChange(value === NONE ? undefined : value)}
+      before={[{ value: NONE, label: NO_PROJECT_OPTION }]}
+      after={[]}
+      recentFor={undefined}
+    />
   )
 }
 

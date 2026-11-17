@@ -1,24 +1,17 @@
-import type { CompanyId } from '@conexus/hub-api'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { FilterIcon, XIcon } from 'lucide-react'
-import { projectsQuery } from '../../hub/projects/public.ts'
+import { ProjectPicker, projectQuery } from '../../hub/projects/public.ts'
 import { Button, touchArea } from '../../ui/button.tsx'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '../../ui/dropdown-menu.tsx'
 import type { Place } from './list-view.ts'
-import { viewOf } from './list-view.ts'
 import {
   ALL_PLACES,
   AUTOMATIONS_PLACE,
   CLEAR_FILTER,
   FILTER_CONVERSATIONS,
   HOME_PLACE,
+  PROJECT_FALLBACK,
 } from './text.ts'
 
 const ALL = 'ALL'
@@ -35,55 +28,47 @@ function usePlace() {
     })
 }
 
-function placeName(place: Place, projects: { id: string; name: string }[]) {
-  if (place === 'HOME') return HOME_PLACE
-  if (place === 'AUTOMATIONS') return AUTOMATIONS_PLACE
-  return projects.find((each) => each.id === place)?.name ?? place
-}
-
-/** The filter's icon and its menu: Todas, Início, each Projeto, Automações. */
+/** The filter's icon and its list: Todas, Início, each Projeto, Automações. */
 export function PlaceFilter(props: { companyId: CompanyId; place: Place | undefined }) {
-  const projects = useQuery(projectsQuery(props.companyId, undefined))
   const choose = usePlace()
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-label={FILTER_CONVERSATIONS} />}
-      >
-        <FilterIcon aria-hidden="true" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuRadioGroup
-          value={props.place ?? ALL}
-          onValueChange={(value) => {
-            void choose(viewOf({ place: value }).place)
-          }}
-        >
-          <DropdownMenuRadioItem value={ALL} closeOnClick>
-            {ALL_PLACES}
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="HOME" closeOnClick>
-            {HOME_PLACE}
-          </DropdownMenuRadioItem>
-          {projects.data?.projects.map((project) => (
-            <DropdownMenuRadioItem key={project.id} value={project.id} closeOnClick>
-              {project.name}
-            </DropdownMenuRadioItem>
-          ))}
-          <DropdownMenuRadioItem value="AUTOMATIONS" closeOnClick>
-            {AUTOMATIONS_PLACE}
-          </DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ProjectPicker<typeof ALL | 'HOME' | 'AUTOMATIONS'>
+      companyId={props.companyId}
+      label={FILTER_CONVERSATIONS}
+      trigger={() => (
+        <Button variant="ghost" size="icon-sm">
+          <FilterIcon aria-hidden="true" />
+        </Button>
+      )}
+      value={props.place ?? ALL}
+      onPick={(value) => void choose(value === ALL ? undefined : value)}
+      before={[
+        { value: ALL, label: ALL_PLACES },
+        { value: 'HOME', label: HOME_PLACE },
+      ]}
+      after={[{ value: 'AUTOMATIONS', label: AUTOMATIONS_PLACE }]}
+      recentFor={undefined}
+    />
   )
 }
 
 /** The place chosen, as a label with "×" to take it out. */
 export function PlaceLabel(props: { companyId: CompanyId; place: Place }) {
-  const projects = useQuery(projectsQuery(props.companyId, undefined))
+  const { companyId, place } = props
+  if (place === 'HOME') return <Chosen name={HOME_PLACE} />
+  if (place === 'AUTOMATIONS') return <Chosen name={AUTOMATIONS_PLACE} />
+  return <ProjectPlace companyId={companyId} projectId={place} />
+}
+
+/** A Projeto's name, read on its own: the filter's pages may not hold it; "Projeto" if the read fails. */
+function ProjectPlace(props: { companyId: CompanyId; projectId: ProjectId }) {
+  const read = useQuery(projectQuery(props.companyId, props.projectId))
+  if (read.isPending) return null
+  return <Chosen name={read.isError ? PROJECT_FALLBACK : read.data.project.name} />
+}
+
+function Chosen({ name }: { name: string }) {
   const choose = usePlace()
-  const name = placeName(props.place, projects.data?.projects ?? [])
   return (
     <span className="mb-xs inline-flex min-h-8 w-fit items-center gap-xs rounded-pill border border-line pl-sm text-fact text-text-2">
       {name}

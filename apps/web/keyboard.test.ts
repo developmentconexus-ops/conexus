@@ -6,8 +6,10 @@ import {
   orderModelAccounts,
   setConversationModel,
 } from '@conexus/hub-api'
+import type { Locator } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
+import { PLACES, triggerOf } from './picker-places.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { withAccounts } from './sweep-accounts-states.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -220,3 +222,38 @@ test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou n
   await pressed('Descer Claude do financeiro', 'Descer Claude do financeiro')
   await page.close()
 })
+
+async function walkTo(list: Locator, name: string) {
+  const option = list.getByRole('option', { name, exact: true })
+  for (let step = 0; step < 8 && (await option.getAttribute('data-highlighted')) === null; step++)
+    await list.page().keyboard.press('ArrowDown')
+  assert.notEqual(
+    await option.getAttribute('data-highlighted'),
+    null,
+    `the arrows never reach ${name}`,
+  )
+}
+
+for (const place of PLACES)
+  test(`${place.name}, pelo teclado: Enter abre, as setas andam, Esc fecha e devolve o foco ao gatilho, a seta reabre e Enter escolhe (critério 11)`, async () => {
+    const page = await harness.open(place.path, { viewport: DESKTOP, replies: place.replies({}) })
+    const trigger = await triggerOf(page, place)
+    await trigger.focus()
+    await page.keyboard.press('Enter')
+    const list = page.getByRole('listbox', { name: place.label, exact: true })
+    await walkTo(list, place.pick.option)
+    await page.keyboard.press('Escape')
+    await list.waitFor({ state: 'hidden' })
+    await page.waitForFunction(
+      (label) => document.activeElement?.getAttribute('aria-label') === label,
+      place.label,
+    )
+    await page.keyboard.press('ArrowDown')
+    await walkTo(list, place.pick.option)
+    await page.keyboard.press('Enter')
+    await list.waitFor({ state: 'hidden' })
+    const { address } = place.pick
+    if (address === undefined) await trigger.getByText(place.pick.option).waitFor()
+    else await page.waitForURL(address)
+    await page.close()
+  })

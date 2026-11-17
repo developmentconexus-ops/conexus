@@ -13,6 +13,7 @@ import {
   revokeAppAccess,
   revokeProjectCopy,
 } from '@conexus/hub-api'
+import type { QueryKey } from '@tanstack/react-query'
 import { infiniteQueryOptions } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
@@ -21,17 +22,27 @@ export function projectsQuery(companyId: CompanyId, page: string | undefined) {
 }
 const FIRST_PAGE: string | undefined = undefined
 
-/** The company's Projects a page at a time, each page asked when the person asks for more (code C44). */
-export function projectsPagedQuery(companyId: CompanyId) {
+function withoutText(key: QueryKey) {
+  return JSON.stringify(key, (name, value: unknown) => (name === 'q' ? undefined : value))
+}
+
+/** The company's Projects a page at a time, all of them or those whose name holds the text (code C44). */
+export function projectsPagedQuery(companyId: CompanyId, q: string | undefined) {
+  const queryKey = [...hubQueryPrefix(listProjects, { companyId }), 'paged', { q }]
+  const here = withoutText(queryKey)
   return infiniteQueryOptions({
-    queryKey: [...hubQueryPrefix(listProjects, { companyId }), 'paged'],
+    queryKey,
     initialPageParam: FIRST_PAGE,
     queryFn: (context) =>
       hubQuery(listProjects, {
         params: { companyId },
-        query: { page: context.pageParam },
+        query: { page: context.pageParam, q },
       }).queryFn(context),
     getNextPageParam: (last) => (last.next.kind === 'MORE' ? last.next.page : undefined),
+    placeholderData: (previous, previousQuery) =>
+      previousQuery !== undefined && withoutText(previousQuery.queryKey) === here
+        ? previous
+        : undefined,
   })
 }
 /** Every page of a company's Projects. */

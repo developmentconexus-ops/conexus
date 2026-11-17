@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import type { CompanyId, Person, PersonId, Project, ProjectName, Role } from '@conexus/hub-api'
 import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, ilike, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
@@ -286,10 +286,15 @@ function get(deps: Deps, input: OfProject) {
   })
 }
 
-/** The company's Projects by name, 50 a page (code C44), and whether its database is ready. */
+/** The text as the letters of a `LIKE`: `\`, `%` and `_` stand for themselves (Postgres's default escape). */
+function likeText(text: string): string {
+  return text.replace(/[\\%_]/g, '\\$&')
+}
+
+/** The company's Projects by name, all or those whose name holds `q`, 50 a page (code C44), and whether its database is ready. */
 function list(
   deps: Deps,
-  input: { person: Person; companyId: CompanyId; page: string | undefined },
+  input: { person: Person; companyId: CompanyId; page: string | undefined; q: string | undefined },
 ) {
   return deps.database.read(scopeOf(input.person, input.companyId), async (tx) => {
     const { companyId } = input
@@ -307,6 +312,7 @@ function list(
         and(
           eq(project.companyId, companyId),
           isNull(project.deletingSince),
+          input.q === undefined ? undefined : ilike(project.name, `%${likeText(input.q)}%`),
           after(sql`(${project.name}, ${project.id})`, key, (id) =>
             tx
               .select({ name: project.name, id: project.id })
