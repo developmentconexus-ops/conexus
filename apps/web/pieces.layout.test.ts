@@ -69,13 +69,18 @@ for (const [reducedMotion, moves] of [
     const mark = page.locator('svg[width="48"]')
     const offsets = new Set<string>()
     for (let frame = 0; frame < 6; frame++) {
+      await page.evaluate((at) => {
+        for (const one of document.getAnimations()) {
+          one.pause()
+          one.currentTime = at
+        }
+      }, frame * 150)
       offsets.add(
         await mark
           .locator('path')
           .first()
           .evaluate((piece) => getComputedStyle(piece).transform),
       )
-      await page.waitForTimeout(150)
     }
     assert.equal(offsets.size > 1, moves)
     await page.close()

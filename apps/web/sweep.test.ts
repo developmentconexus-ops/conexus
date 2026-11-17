@@ -85,8 +85,15 @@ describe('pré-carga do trilho', { concurrency: 4 }, () => {
       await state.settle(page)
       const link = page.locator('a[href$="/projects"]').first()
       if (await link.count()) {
+        await page.clock.install()
         await link.focus()
-        await page.waitForTimeout(250)
+        await page.clock.runFor(50)
+        await page.evaluate(
+          () =>
+            new Promise((done) => {
+              Object.assign(new Image(), { onload: done, onerror: done, src: '/' })
+            }),
+        )
       }
       await page.close()
     })

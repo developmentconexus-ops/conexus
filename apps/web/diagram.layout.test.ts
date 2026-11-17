@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Frame, Page, Request } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 
 // The diagram of a message, drawn in the drawing frame under the Hub's policy in a real browser
@@ -124,7 +125,7 @@ test('o diagrama não roda nem busca nada: o HTML, o @import e o url() de fora',
   const page = await open('case=hostile')
   const asked = outsideOf(page)
   await srcOf(page)
-  await page.waitForTimeout(500)
+  await page.waitForLoadState('networkidle')
   assert.equal(await page.evaluate(() => Object(window).pwned), undefined, 'no script in the page')
   assert.equal(
     await drawingFrame(page).evaluate(() => Object(window).pwned),
@@ -190,11 +191,20 @@ test('uma mensagem forjada de outra janela à página é recusada', async () => 
     await route.fallback()
   })
   await page.evaluate(() => Object(window).showAnswer())
-  await page.evaluate((svg) => {
-    window.postMessage({ ready: true }, '*')
-    window.postMessage({ id: 0, ok: true, svg }, '*')
-  }, FORGED)
-  await page.waitForTimeout(500)
+  await page.evaluate(
+    (svg) =>
+      new Promise<void>((heard) => {
+        window.addEventListener('message', function once(event) {
+          if (Object(event.data).marker !== true) return
+          window.removeEventListener('message', once)
+          heard()
+        })
+        window.postMessage({ ready: true }, '*')
+        window.postMessage({ id: 0, ok: true, svg }, '*')
+        window.postMessage({ marker: true }, '*')
+      }),
+    FORGED,
+  )
   assert.equal(await page.getByRole('img', DRAWN).count(), 0, 'the forged picture was drawn')
   assert.ok(await page.getByText('flowchart TD').isVisible(), 'the code stays')
   released.resolve()
@@ -238,7 +248,6 @@ test('uma mensagem forjada de outra janela ao quadro não tem resposta', async (
     undefined,
     { timeout: 30_000 },
   )
-  await page.waitForTimeout(500)
   const ids = await page.evaluate(() =>
     Object(window).heard.map((each: unknown) => Object(each).id),
   )
@@ -253,7 +262,8 @@ test('mermaid só é baixado quando o bloco fechado de uma resposta acabada é d
     replies: {},
   })
   const early = watching(waiting)
-  await waiting.waitForTimeout(1_500)
+  await waiting.getByText('flowchart TD').waitFor()
+  await atRest(waiting)
   assert.deepEqual(
     early.filter((url) => /diagram-frame|mermaid/.test(url)),
     [],

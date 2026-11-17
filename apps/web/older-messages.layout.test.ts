@@ -7,6 +7,7 @@ import {
   listAssistantConnections,
   readAssistantConversation,
 } from '@conexus/hub-api'
+import { atRest } from './at-rest.ts'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -42,10 +43,11 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
       replies: WITH_CONVERSATIONS,
     })
     const limits: number[] = []
+    const olderRead = Promise.withResolvers<void>()
     await page.route(`**${THREAD}*`, async (route) => {
       const limit = Number(new URL(route.request().url()).searchParams.get('limit'))
       limits.push(limit)
-      if (limit > 100) await new Promise((resolve) => setTimeout(resolve, 600))
+      if (limit > 100) await olderRead.promise
       return route.fulfill({ json: { messages: LONG_CONVERSATION.slice(-limit) } })
     })
     await page.reload()
@@ -60,7 +62,7 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
     await page.mouse.wheel(0, -1200)
     // The fake stream ends and reopens by itself, and each reopening reads the window again, so
     // the number of reads races it; what the person is owed is that none asks for more than the window.
-    await page.waitForTimeout(300)
+    await atRest(page)
     assert.deepEqual(
       [...new Set(limits)],
       [100],
@@ -69,7 +71,7 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
     const anchor = page.getByText('Resposta 151', { exact: true })
     for (let wheel = 0; wheel < 80 && !limits.some((limit) => limit > 100); wheel++) {
       await page.mouse.wheel(0, -2000)
-      await page.waitForTimeout(30)
+      await atRest(page)
     }
     await page.getByRole('status', { name: 'Carregando mensagens anteriores' }).waitFor()
     const before = await anchor.evaluate((el) => el.getBoundingClientRect().top)
@@ -78,8 +80,9 @@ test('ao chegar ao topo as 100 mensagens anteriores chegam sem mexer no ponto da
       1,
       `${viewport.width}px: the messages on screen stay while the read arrives`,
     )
+    olderRead.resolve()
     await page.getByText('Resposta 51', { exact: true }).waitFor({ state: 'attached' })
-    await page.waitForTimeout(300)
+    await atRest(page)
     const after = await anchor.evaluate((el) => el.getBoundingClientRect().top)
     assert.ok(
       Math.abs(after - before) <= 1,
@@ -140,7 +143,7 @@ test('uma conversa do Início com mais de 100 mensagens abre no fim, rola dentro
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   for (let wheel = 0; wheel < 80 && !limits.some((limit) => limit > 100); wheel++) {
     await page.mouse.wheel(0, -2000)
-    await page.waitForTimeout(30)
+    await atRest(page)
   }
   assert.ok(
     limits.some((limit) => limit > 100),

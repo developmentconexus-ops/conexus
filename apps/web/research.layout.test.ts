@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
+import { atRest } from './at-rest.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 import { recordedSubagent } from './src/builder/conversation/test-recorded.ts'
@@ -77,7 +78,7 @@ for (const viewport of [DESKTOP, PHONE])
         () => (document.scrollingElement?.scrollWidth ?? 0) - window.innerWidth,
       )
       assert.ok(sideways <= 0, `the page scrolls ${sideways}px sideways`)
-      await page.waitForTimeout(400)
+      await atRest(page)
       mkdirSync(CAPTURES, { recursive: true })
       await page.screenshot({ path: join(CAPTURES, `ajudante-${viewport.width}-${scheme}.png`) })
       assert.deepEqual(page.problems, [])

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import type { Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Viewport } from './layout-harness.ts'
 
 /**
@@ -21,7 +22,7 @@ export async function holdsColumn(page: Page & { problems: string[] }, viewport:
   await scroller.evaluate((el) => {
     el.scrollTop = 0
   })
-  await page.waitForTimeout(200)
+  await atRest(page)
   const after = await box.boundingBox()
   const document_ = await page.evaluate(() => ({
     height: document.documentElement.scrollHeight,
