@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
+import { chooserAt } from '../../hub/access/test-principal.ts'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
 import { endOf } from '../conversation/test-conversation.ts'
@@ -57,7 +58,7 @@ test('a leitura pelo nome: com a ligação "Sankhya", o id do conector como nome
 test('a recusa da porta: a ligação que a conversa não escolheu volta NOT_GRANTED e o log diz por quê (ao vivo L2)', async (t) => {
   const on = await assisting(t)
   const answered = await on.hub.connectors.assistant.read(
-    { ...ownerOf(on), place: { kind: 'COMPANY' }, chosen: [] },
+    chooserAt({ ...ownerOf(on), place: { kind: 'COMPANY' } }, []),
     {
       connectionId: ConnectionId.parse(on.matriz),
       turn: TurnKey.parse(randomUUID()),

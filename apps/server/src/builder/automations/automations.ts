@@ -9,21 +9,19 @@ import {
 import type { Mastra } from '@mastra/core/mastra'
 import type { WorkflowSchedule } from '@mastra/core/schedules'
 import { z } from 'zod'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Access, Place } from '../../hub/access/public.ts'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Assistant } from '../assistant/public.ts'
-import { offeredOnly, placeOf } from '../assistant/public.ts'
+import { offeredAmong, offeredWith, placeOf } from '../assistant/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import { attemptIdOf, resourceOf } from '../controller-kit/public.ts'
 import { ACTIVE_AUTOMATIONS_PER_COMPANY, AUTOMATION_TIMEZONE, cronOf } from './cadence.ts'
 import { deleteRunsOf, stored } from './release.ts'
 import { AUTOMATION_WORKFLOW, AutomationInput } from './run.ts'
 import type { AutomationRuns } from './runs.ts'
-
-type Place = SessionScope['place']
 
 /** What the row's `metadata` keeps beside its `inputData`: the cadence the person chose, the proposal it came from and the creation's hash (code C37). */
 const Metadata = z.object({
@@ -38,7 +36,7 @@ type Owned = { view: WorkflowSchedule; input: AutomationInput }
 export type AutomationsDeps = {
   mastra: Mastra
   assistant: Pick<Assistant, 'admitAutomations'>
-  connectors: Pick<Connectors['assistant'], 'connections'>
+  access: Pick<Access, 'viewOf'>
   runs: AutomationRuns
   updating: () => boolean
   log: FailureLog
@@ -87,7 +85,8 @@ async function summaryOf(
   { view, input }: Owned,
 ): Promise<AutomationSummary> {
   const { cadence, origin } = Metadata.parse(view.metadata)
-  const offered = await deps.connectors.connections({ ...input, chosen: input.connections })
+  const owner = { companyId: input.companyId, personId: input.personId }
+  const connections = await offeredWith(deps.access, owner, input.place, input.connections)
   const paused = view.status !== 'active'
   return {
     id: input.automationId,
@@ -95,9 +94,7 @@ async function summaryOf(
     prompt: input.prompt,
     cadence,
     projectId: input.place.kind === 'PROJECT' ? input.place.projectId : null,
-    connections: offered.map(({ connectionId, connector, name, chosen }) => ({
-      ...{ connectionId, connector, name, chosen },
-    })),
+    connections,
     origin: origin ?? null,
     state: paused ? 'PAUSED' : 'ACTIVE',
     nextRunAt: paused ? null : new Date(view.nextFireAt).toISOString(),
@@ -158,7 +155,7 @@ async function create(
   if (await atLimit(deps, owner.companyId)) throw new Failure('AUTOMATION_LIMIT')
   // A `create` after the scheduler stopped would start it again.
   if (deps.updating()) throw new Failure('HUB_UPDATING')
-  const connections = await offeredOnly(deps, { ...owner, place, chosen: [] }, body.connections)
+  const connections = await offeredAmong(deps.access, owner, place, body.connections)
   const input: AutomationInput = {
     ...{ version: 1, automationId: id, ...owner, place },
     ...{ name: body.name, prompt: body.prompt, connections },

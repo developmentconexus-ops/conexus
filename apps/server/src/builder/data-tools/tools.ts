@@ -1,13 +1,9 @@
 import type { CompanyData, DataOrigin, DataResult, DataSystem, ReadAnswer } from '@conexus/hub-api'
 import { DATA_TOOL, DESCRIBE_SAMPLE_ROWS, QUERY_SQL_MAX } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
-import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { INSTANTS_NOTE, inZone, zoneOf } from './reader-zone.ts'
-
-/** The data a conversation may read: bound to its place and its person, or none when the conversation has no scope. */
-export type DataOf = (requestContext: RequestContext) => Promise<CompanyData | undefined>
 
 type Described = Extract<Awaited<ReturnType<CompanyData['describe']>>, { kind: 'CATALOG' }>
 type Kept = Described['tables'][number]['kept']
@@ -168,23 +164,15 @@ async function queried(
     : { kind: 'ROWS', columns, rows, complete, origin }
 }
 
-/** The two tools that read the company's copied data, the same for every agent; each request decides what it may read. */
-export function dataTools(deps: { dataOf: DataOf }): ToolsInput {
-  const { dataOf } = deps
-
-  async function dataFor(requestContext: RequestContext | undefined): Promise<CompanyData> {
-    const data = requestContext === undefined ? undefined : await dataOf(requestContext)
-    if (data === undefined) return refused({ kind: 'NOT_GRANTED' })
-    return data
-  }
-
+/** The two tools that read the company's copied data, the same for every agent, bound to the data of one run's place and person. */
+export function dataTools(deps: { data: CompanyData }): ToolsInput {
+  const { data } = deps
   return {
     [DATA_TOOL.describe]: createTool({
       id: DATA_TOOL.describe,
       description: DESCRIBE_DESCRIPTION,
       inputSchema: z.object({ table: z.string().max(40).optional() }),
       execute: async ({ table }, { requestContext, abortSignal: signal }) => {
-        const data = await dataFor(requestContext)
         const catalog = await catalogOf(data, signal)
         const zone = zoneOf(requestContext)
         return table === undefined
@@ -197,7 +185,7 @@ export function dataTools(deps: { dataOf: DataOf }): ToolsInput {
       description: QUERY_DESCRIPTION,
       inputSchema: z.object({ sql: z.string().trim().min(1).max(QUERY_SQL_MAX) }),
       execute: async ({ sql }, { requestContext, abortSignal: signal }) =>
-        queried({ data: await dataFor(requestContext), sql, zone: zoneOf(requestContext), signal }),
+        queried({ data, sql, zone: zoneOf(requestContext), signal }),
     }),
   }
 }

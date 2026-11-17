@@ -1,3 +1,10 @@
+import { readFileSync } from 'node:fs'
+
+export const CONEXUS_PROMPT = readFileSync(
+  new URL('../conversation/prompt/conexus.md', import.meta.url),
+  'utf8',
+).trim()
+
 const CACHED = { anthropic: { cacheControl: { type: 'ephemeral', ttl: '1h' } } } as const
 
 /**

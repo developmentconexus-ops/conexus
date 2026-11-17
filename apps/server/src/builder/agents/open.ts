@@ -6,11 +6,11 @@ import type { Database } from '../../platform/database.ts'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Kept, Owner } from '../controller-kit/public.ts'
-import { openSession, releaseThreads } from '../controller-kit/public.ts'
+import { marksOf, openSession, releaseThreads } from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { InProject } from '../tools/public.ts'
-import { AGENT_MARK, keptRun } from './controller.ts'
+import { keptRun } from './controller.ts'
 import type { FrozenVersion } from './frozen.ts'
 import { agentConversation } from './tables.ts'
 
@@ -69,13 +69,7 @@ export async function openAgentConversation(
 ) {
   const { scope, agentId, draft, id } = input
   const owner = { companyId: scope.companyId, personId: scope.personId }
-  const tags = {
-    [AGENT_MARK.company]: scope.companyId,
-    [AGENT_MARK.person]: scope.personId,
-    [AGENT_MARK.project]: scope.projectId,
-    [AGENT_MARK.agent]: agentId,
-    [AGENT_MARK.draft]: String(draft),
-  }
+  const tags = marksOf('agents', { ...scope, agent: { agentId, draft } })
   const opened = await openSession(deps, {
     ...{ kind: 'agents', owner, id, tags, model: input.frozen.model ?? undefined },
     keep: () => keep(deps.database, owner, { id, agentId, draft }),

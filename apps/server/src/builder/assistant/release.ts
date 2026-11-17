@@ -1,9 +1,8 @@
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { ReleaseScope } from '../controller-kit/public.ts'
-import { releaseThreads, threadsByMarks } from '../controller-kit/public.ts'
+import { RUN_MARKS, releaseThreads, threadsByMarks } from '../controller-kit/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
-import { SESSION_MARK } from './context.ts'
 import type { assistantMemory } from './memory.ts'
 
 /**
@@ -21,9 +20,9 @@ export async function releaseConversations(
   scope: ReleaseScope,
 ): Promise<void> {
   const ids = await threadsByMarks(deps.memory, {
-    [SESSION_MARK.company]: scope.companyId,
-    ...(scope.personId === undefined ? {} : { [SESSION_MARK.person]: scope.personId }),
-    ...(scope.projectId === undefined ? {} : { [SESSION_MARK.project]: scope.projectId }),
+    [RUN_MARKS.assistant.company]: scope.companyId,
+    ...(scope.personId === undefined ? {} : { [RUN_MARKS.assistant.person]: scope.personId }),
+    ...(scope.projectId === undefined ? {} : { [RUN_MARKS.assistant.project]: scope.projectId }),
   })
   const count = await releaseThreads(deps, ids, (id) => deps.machines.kill(id))
   deps.log.info({ companyId: scope.companyId, count }, 'ASSISTANT_CONVERSATIONS_RELEASED')

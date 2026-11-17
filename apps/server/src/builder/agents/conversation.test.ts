@@ -124,7 +124,7 @@ test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da 
   assert.equal(changed.revision, agent.revision + 1)
 })
 
-test('o texto fixo: o agente e o Construtor mandam a mensagem do Conexus com a marca de cache de 1 h', async (t) => {
+test('o texto do Conexus: o agente e o Construtor mandam os bytes de conexus.md sem os brancos das pontas, com a marca de cache de 1 h', async (t) => {
   const on = await agentsOn(t)
   const agent = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda sobre as vendas.',
@@ -137,7 +137,7 @@ test('o texto fixo: o agente e o Construtor mandam a mensagem do Conexus com a m
   for (const asked of [on.calls.at(-1), builder.calls.at(-1)]) {
     assert.ok(asked)
     const [fixed] = asked.systems
-    assert.ok(fixed?.text.startsWith(CONEXUS.trim().slice(0, 200)))
+    assert.equal(fixed?.text, CONEXUS.trim())
     assert.equal(fixed?.cached, true)
     assert.deepEqual(asked.cached[0], { at: 'system', ttl: '1h' })
   }

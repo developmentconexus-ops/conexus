@@ -67,11 +67,7 @@ export const MIXED = catalogOf([table('mista', [A, NOT_GIVEN], null)])
 
 type Reached = { catalog: number; rows: string[]; query: string[]; signals: unknown[] }
 
-export function world(
-  catalog: Catalog,
-  over: Partial<DataSources> = {},
-  scoped: (requestContext: RequestContext) => boolean = () => true,
-) {
+export function world(catalog: Catalog, over: Partial<DataSources> = {}) {
   const reached: Reached = { catalog: 0, rows: [], query: [], signals: [] }
   const sources: DataSources = {
     async catalog({ signal }) {
@@ -105,10 +101,7 @@ export function world(
     ...over,
   }
   const tools = dataTools({
-    dataOf: async (requestContext) =>
-      scoped(requestContext)
-        ? companyData({ sources, now: () => new Date('2026-11-14T12:00:00.000Z') })
-        : undefined,
+    data: companyData({ sources, now: () => new Date('2026-11-14T12:00:00.000Z') }),
   })
   return { tools, reached }
 }

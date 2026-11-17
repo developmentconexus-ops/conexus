@@ -15,8 +15,9 @@ import {
   ToolCallId,
 } from '@conexus/hub-api'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { chooserAt } from '../access/test-principal.ts'
 import { call, codeOf, post } from '../identity/test-hub.ts'
-import type { SessionScope, WriteRequest } from './public.ts'
+import type { WriteRequest } from './public.ts'
 import { TurnKey } from './public.ts'
 import { appsOf, completeOf, consentAt, hubspotOn, startOf, testOf } from './test-connections.ts'
 
@@ -72,13 +73,11 @@ async function portalOn(t: TestContext, reads: readonly string[] = ['contatos'])
       { connectionId, personId: PersonId.parse(person.id), runId: run, operation, input },
     )
   }
-  function scopeOf(person: { id: string }): SessionScope {
-    return {
-      companyId,
-      personId: PersonId.parse(person.id),
-      place: { kind: 'PROJECT', projectId },
-      chosen: [connectionId],
-    }
+  function scopeOf(person: { id: string }) {
+    return chooserAt(
+      { companyId, personId: PersonId.parse(person.id), place: { kind: 'PROJECT', projectId } },
+      [connectionId],
+    )
   }
   function assistantRead(person: { id: string }, operation: string, input: unknown) {
     const turn = TurnKey.parse(randomUUID())

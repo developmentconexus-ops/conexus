@@ -13,7 +13,7 @@ import {
 } from './test-machine.ts'
 
 test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases vão ao ouvinte do turno, a máquina que sumiu entre turnos volta nova sem MACHINE_LOST, e o turno que não a usou não guarda nada', async (t) => {
-  const { control, machines, base, folder } = await world(t)
+  const { control, machines, folder } = await world(t)
   function turn(onPhase: (phase: string) => void) {
     return machines.workspaceFor({
       ...{ companyId: COMPANY, projectId: PROJECT, conversationId: CONVERSATION },
@@ -30,7 +30,7 @@ test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases
   await next.filesystem?.writeFile('b.ts', 'dois\n')
   assert.deepEqual(second, ['copying'], 'the second turn’s listener hears the second turn’s phases')
   assert.deepEqual(first, ['starting', 'copying'], 'and the first one hears nothing more')
-  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  const collected = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(
     typeof collected === 'object',
     'a machine that died between turns is no loss of this one',
@@ -38,7 +38,7 @@ test('máquina: a sessão vive com a conversa mas cada turno recomeça: as fases
   await machines.release(CONVERSATION)
   await turn(() => undefined)
   assert.equal(machines.touched(CONVERSATION), false)
-  assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
+  assert.equal(await machines.collect({ conversationId: CONVERSATION }), 'unchanged')
   assert.equal(await machines.changed({ conversationId: CONVERSATION }), false)
   assert.ok(folder.length > 0)
 })
@@ -74,7 +74,7 @@ test('máquina: o início que falhou não fica recusado para sempre: a ferrament
 })
 
 test('máquina: a releitura das marcas que falha (saída diferente de zero) falha a ferramenta, e a seguinte e o collect passam', async (t) => {
-  const { open, machines, base, folder } = await world(t)
+  const { open, machines, folder } = await world(t)
   await (await open()).filesystem?.writeFile('a.ts', 'um\n')
   await machines.release(CONVERSATION)
   const git = join(folder, 'app', '.git')
@@ -83,7 +83,7 @@ test('máquina: a releitura das marcas que falha (saída diferente de zero) falh
   await assert.rejects(next.filesystem?.exists('a.ts') ?? Promise.reject(), /markers not read/)
   renameSync(`${git}.away`, git)
   assert.equal(await next.filesystem?.exists('a.ts'), true, 'the next tool reads again and goes on')
-  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  const collected = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof collected === 'object', 'and the turn saves what it wrote')
 })
 

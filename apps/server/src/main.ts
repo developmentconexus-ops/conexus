@@ -165,9 +165,9 @@ export function subjectsOf(deps: {
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
-    copies: lateCopies,
-    // The data is made below, after the copies it reads; a turn comes long after.
-    companyData: (scope, context) => data(scope, context),
+    // The data and the access door are made below, after the copies they read; a turn comes long after.
+    ...{ copies: lateCopies, companyData: (principal, context) => data(principal, context) },
+    access: { viewOf: (principal) => access.viewOf(principal) },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
   const releaseConversations = conversations.release

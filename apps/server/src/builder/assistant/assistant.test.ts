@@ -8,6 +8,7 @@ import { TITLE } from '../controller-kit/public.ts'
 import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
 import {
+  anasChoice,
   assisting,
   created,
   publishedApp,
@@ -53,12 +54,7 @@ test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya 
   assert.equal(on.reads.length, 2)
   for (const read of on.reads) {
     assert.equal(read.connectionId, on.matriz)
-    assert.deepEqual(read.scope, {
-      companyId: on.companyId,
-      personId: on.ana.id,
-      place: { kind: 'PROJECT', projectId: on.projectId },
-      chosen: [on.matriz],
-    })
+    assert.deepEqual(read.scope, anasChoice(on, on.projectId, [on.matriz]))
   }
   assert.equal(on.reads[0]?.turn, on.reads[1]?.turn)
 

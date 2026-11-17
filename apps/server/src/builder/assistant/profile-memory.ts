@@ -4,17 +4,17 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
+import type { CompanyProjects } from '../company-tools/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import { resourceOf } from '../controller-kit/public.ts'
 import type { assistantMemory } from './memory.ts'
 import { LEGACY_PROFILE_TEMPLATE, PROFILE_TEMPLATE } from './memory.ts'
 import { admitted } from './open.ts'
-import type { AssistantProjects } from './ports.ts'
 
 type Deps = {
   database: Database
   identity: IdentityPorts
-  projects: Pick<AssistantProjects, 'liveProjectOf'>
+  projects: Pick<CompanyProjects, 'liveProjectOf'>
   memory: ReturnType<typeof assistantMemory>
 }
 

@@ -3,7 +3,6 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { subscribe } from 'node:diagnostics_channel'
 import { once } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
@@ -43,6 +42,7 @@ import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
+import { freePort } from './test-port.ts'
 
 // Roles belong to the whole server, so suites that touch them take turns on this lock.
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
@@ -272,14 +272,6 @@ export async function whenIdle(database: Database): Promise<void> {
   const pool = database.libraryOrm({}).$client
   const signal = AbortSignal.timeout(TEST_IDLE_MS + 4_000)
   while (pool.totalCount > 0) await once(pool, 'remove', { signal })
-}
-
-export async function freePort(): Promise<number> {
-  const server = createServer()
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  const address = server.address()
-  await new Promise((resolve) => server.close(resolve))
-  return typeof address === 'object' && address !== null ? address.port : 0
 }
 
 export async function unreachableDatabaseUrl(login = 'nobody'): Promise<DatabaseUrl> {

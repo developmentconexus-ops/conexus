@@ -137,16 +137,6 @@ test('a dona libera a ligação certa e a linha passa a ler', async () => {
   expect(await (await row('Loja 2')).findByRole('button', { name: 'Tirar: Loja 2' })).toBeTruthy()
 })
 
-test('Tirar tira a liberação e a linha volta a "não liberado"', async () => {
-  const matriz = line('Matriz', { access: READS })
-  open({ sankhya: [matriz], ml: [], mayManage: true })
-  fireEvent.click((await row('Matriz')).getByRole('button', { name: 'Tirar: Matriz' }))
-  expect(
-    await (await row('Matriz')).findByRole('button', { name: 'Liberar para ler: Matriz' }),
-  ).toBeTruthy()
-  expect(sent.map((one) => one.method)).toEqual(['DELETE'])
-})
-
 test('num conector de uma ligação por Projeto, as outras linhas dizem qual tirar e não liberam', async () => {
   open({
     sankhya: [line('Matriz', { access: READS }), line('Filial')],

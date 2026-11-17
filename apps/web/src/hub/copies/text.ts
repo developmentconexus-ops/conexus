@@ -9,6 +9,7 @@ import type {
 import { phraseOf } from '@conexus/hub-api'
 import { dayAndHour, dayAndMonth } from '../../platform/dates.ts'
 import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
+import { AND_LIST } from '../../platform/lists.ts'
 
 /** The words of the Dados screens (Capacidade 2, U4); the founder approves them at the step's end. */
 export const DATA_TITLE = 'Dados'
@@ -118,19 +119,13 @@ export function inactiveMark(since: string): string {
   return `Inativa desde ${dayAndMonth(since)}`
 }
 
-/** "A", "A e B", "A, B e C". */
-function listed(names: readonly string[]): string {
-  if (names.length < 2) return names.join('')
-  return `${names.slice(0, -1).join(', ')} e ${names.at(-1)}`
-}
-
 /** The notice on top of a table whose source stopped sending columns: nothing was erased. */
 export function inactiveNotice(system: string, names: readonly string[], since: string): string {
   const day = dayAndMonth(since)
   if (names.length === 1) {
-    return `O ${system} parou de enviar a coluna ${listed(names)} desde ${day}. Ela fica aqui, inativa, e nada foi apagado.`
+    return `O ${system} parou de enviar a coluna ${AND_LIST.format(names)} desde ${day}. Ela fica aqui, inativa, e nada foi apagado.`
   }
-  return `O ${system} parou de enviar as colunas ${listed(names)} desde ${day}. Elas ficam aqui, inativas, e nada foi apagado.`
+  return `O ${system} parou de enviar as colunas ${AND_LIST.format(names)} desde ${day}. Elas ficam aqui, inativas, e nada foi apagado.`
 }
 export const RUNS_TITLE = 'Rodadas'
 export const READERS_TITLE = 'Quem lê'

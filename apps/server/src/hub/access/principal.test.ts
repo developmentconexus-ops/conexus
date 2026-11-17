@@ -6,9 +6,8 @@ import { operationLeaf, Principal, principalFor, tableLeaf } from './public.ts'
 test('um Principal só sai de principalFor', async (t) => {
   const w = await rolesWorld(t, 'NONE')
   const made = principalFor({
-    consumer: 'assistant',
-    companyId: w.on.companyId,
-    personId: w.brunoId,
+    ...{ consumer: 'assistant', companyId: w.on.companyId, personId: w.brunoId },
+    ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
   })
   const fields = {
     ...{ consumer: made.consumer, companyId: made.companyId, personId: made.personId },
@@ -28,7 +27,10 @@ test('may diz o teto e o fora do alcance', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const sankhya = w.on.connectionId
   const view = await w.on.hub.access.viewOf(
-    principalFor({ consumer: 'assistant', companyId: w.on.companyId, personId: w.brunoId }),
+    principalFor({
+      ...{ consumer: 'assistant', companyId: w.on.companyId, personId: w.brunoId },
+      ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
+    }),
   )
   assert.deepEqual(view.may(tableLeaf('sankhya_vendas'), 'WRITE'), {
     kind: 'REFUSED',

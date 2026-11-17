@@ -78,20 +78,15 @@ function searchText(tool: Tool): string | undefined {
     : `${tools}, ${automationsText(found.automations.length)}`
 }
 
-/** The tool in code: what its test read when it passed, and the error when it did not. */
+/** The tool in code: what its test read when it passed; when it did not, a sentence only, the test's output goes to the model and the log. */
 function codeSaveRow(tool: Tool, status: Parameters<typeof headOf>[1]) {
   const saved = CodeSaveResult.safeParse(tool.result).data
   const failed = status === 'error' || status === 'denied' || saved?.kind === 'REFUSED'
   const test = saved?.kind === 'SAVED' ? saved.tool.versions.at(-1) : undefined
   const detail =
-    saved?.kind === 'REFUSED' && saved.code === 'TOOL_TEST_FAILED'
-      ? saved.output
-          ?.split('\n')
-          .find((line) => line.trim() !== '')
-          ?.slice(0, 160)
-      : test?.kind === 'CODE'
-        ? `Testei com ${test.test.rows} ${test.test.rows === 1 ? 'linha' : 'linhas'}`
-        : undefined
+    test?.kind === 'CODE'
+      ? `Testei com ${test.test.rows} ${test.test.rows === 1 ? 'linha' : 'linhas'}`
+      : undefined
   return {
     icon: failed ? CircleAlertIcon : CodeIcon,
     sentence:

@@ -3,13 +3,21 @@ import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
+import { AND_LIST } from '../../platform/lists.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { CodeBadge } from './code-version.tsx'
 import { sendToolDeletion } from './queries.ts'
-import { deleteWarning, EFFECT_TEXT, NOBODY_USES, readNames, UNCONFIRMED_DELETE } from './text.ts'
+import {
+  deleteWarning,
+  EFFECT_TEXT,
+  inUseWarning,
+  NOBODY_USES,
+  readNames,
+  UNCONFIRMED_DELETE,
+} from './text.ts'
 import { NewVersion } from './tool-page.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -18,12 +26,15 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 function Refused(props: { scope: Scope; failure: unknown }) {
   const { failure } = props
   if (failure instanceof HubFailure && failure.code === 'TOOL_IN_USE' && failure.agents) {
+    const separators = AND_LIST.formatToParts(failure.agents.map((agent) => agent.name))
+      .filter((part) => part.type === 'literal')
+      .map((part) => part.value)
     return (
       <p role="alert" className="text-danger">
         Usada por{' '}
         {failure.agents.map((agent, index) => (
           <span key={agent.id}>
-            {index > 0 && ', '}
+            {index > 0 && separators[index - 1]}
             <Link
               to="/companies/$companyId/projects/$projectId/agents/$agentId"
               params={{
@@ -75,14 +86,15 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
   const [confirming, setConfirming] = useState(false)
   const [versioning, setVersioning] = useState(false)
   const cancel = useRef<HTMLButtonElement>(null)
+  // The dialog waits for the Hub: it closes once the list is read again, the row gone with it.
   async function erase() {
-    setConfirming(false)
     setFailure(undefined)
     try {
       await remove.mutateAsync({ params: { ...scope, toolId: tool.id } })
     } catch (error) {
       setFailure(error)
     }
+    setConfirming(false)
   }
   const actions = (
     <>
@@ -110,11 +122,16 @@ export function ToolRow({ scope, tool }: { scope: Scope; tool: ToolSummary }) {
           description={deleteWarning(tool.slug)}
           initialFocus={cancel}
         >
+          {tool.usedBy.length > 0 && <p>{inUseWarning(tool.usedBy.map((one) => one.name))}</p>}
           <div className="flex flex-wrap gap-md">
-            <Button variant="danger-confirm" onClick={() => void erase()}>
-              Apagar ferramenta
+            <Button
+              variant="danger-confirm"
+              disabled={remove.isPending}
+              onClick={() => void erase()}
+            >
+              {remove.isPending ? 'Apagando…' : 'Apagar ferramenta'}
             </Button>
-            <Button ref={cancel} onClick={() => setConfirming(false)}>
+            <Button ref={cancel} disabled={remove.isPending} onClick={() => setConfirming(false)}>
               Cancelar
             </Button>
           </div>

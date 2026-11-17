@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { chooserAt } from '../../hub/access/test-principal.ts'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { endOf, hubBeside, messagesOf } from '../conversation/test-conversation.ts'
@@ -107,12 +108,14 @@ test('a leitura fora do papel não existe', async (t) => {
   assert.deepEqual(on.reads, [], 'the made-up call never reached the door')
 
   const door = await on.hub.connectors.assistant.read(
-    {
-      companyId: CompanyId.parse(on.companyId),
-      personId: PersonId.parse(bruno.id),
-      place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
-      chosen: [ConnectionId.parse(on.matriz)],
-    },
+    chooserAt(
+      {
+        companyId: CompanyId.parse(on.companyId),
+        personId: PersonId.parse(bruno.id),
+        place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
+      },
+      [ConnectionId.parse(on.matriz)],
+    ),
     {
       connectionId: ConnectionId.parse(on.matriz),
       turn: TurnKey.parse(randomUUID()),

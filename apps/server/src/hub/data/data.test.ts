@@ -10,8 +10,9 @@ import {
   ToolCallId,
 } from '@conexus/hub-api'
 import { unreachableDatabase } from '../../platform/test-database.ts'
+import type { Place } from '../access/public.ts'
 import { createAccess } from '../access/public.ts'
-import type { SessionScope } from '../connectors/public.ts'
+import { readerAt } from '../access/test-principal.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync, copiesOn } from '../copies/test-copies.ts'
 import { memberOn } from '../identity/test-hub.ts'
@@ -20,8 +21,8 @@ import { createCompanyData } from './public.ts'
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
 const BIA = { name: 'Bia Reis', email: 'bia@example.test' }
 
-function scopeOf(on: CopiesOn, personId: PersonId, place: SessionScope['place']): SessionScope {
-  return { companyId: on.companyId, personId, place, chosen: [] }
+function scopeOf(on: CopiesOn, personId: PersonId, place: Place) {
+  return readerAt({ companyId: on.companyId, personId, place })
 }
 
 function inCompany(on: CopiesOn, personId: PersonId = on.anaId) {

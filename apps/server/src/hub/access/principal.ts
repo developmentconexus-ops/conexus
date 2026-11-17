@@ -1,5 +1,6 @@
 import type { CompanyId, PersonId } from '@conexus/hub-api'
-import type { Consumer, ConsumerContext, Declared, Place } from './model.ts'
+import type { Declared } from '../identity/public.ts'
+import type { Choice, Consumer, ConsumerContext, Place } from './model.ts'
 
 let sealPrincipal: (fields: Fields) => Principal
 
@@ -9,6 +10,7 @@ type Fields = Readonly<{
   personId: PersonId
   place: Place
   declared: Declared | undefined
+  choice: Choice
 }>
 
 // Nominal like MemberProof: the private constructor keeps out `new`, the private member keeps out a
@@ -22,6 +24,8 @@ export class Principal {
   readonly place: Place
   /** What a published version declares. */
   readonly declared: Declared | undefined
+  /** The connections the conversation reads among those its place offers. */
+  readonly choice: Choice
   declare private readonly nominal: never
 
   private constructor(fields: Fields) {
@@ -30,6 +34,7 @@ export class Principal {
     this.personId = fields.personId
     this.place = fields.place
     this.declared = fields.declared
+    this.choice = fields.choice
   }
 
   static {
@@ -37,23 +42,26 @@ export class Principal {
   }
 }
 
+const ANY: Choice = { kind: 'ANY' }
+
 export function principalFor(context: ConsumerContext): Principal {
   const { consumer, companyId, personId } = context
   switch (context.consumer) {
     case 'assistant':
       return sealPrincipal({
-        ...{ consumer, companyId, personId },
-        ...{ place: { kind: 'COMPANY' }, declared: undefined },
+        ...{ consumer, companyId, personId, declared: undefined },
+        ...{ place: context.place, choice: context.choice },
       })
     case 'builder':
+    case 'construtor':
       return sealPrincipal({
-        ...{ consumer, companyId, personId, declared: undefined },
+        ...{ consumer, companyId, personId, declared: undefined, choice: ANY },
         place: { kind: 'PROJECT', projectId: context.projectId },
       })
     case 'agent':
       return sealPrincipal({
         ...{ consumer, companyId, personId },
-        ...{ place: context.place, declared: context.declared },
+        ...{ place: context.place, declared: context.declared, choice: context.choice },
       })
     default:
       return context satisfies never

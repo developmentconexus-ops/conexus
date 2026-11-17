@@ -369,11 +369,16 @@ export async function accountRows(
   return { kind: 'DONE', rows: Number(answer.value.at(-1)?.[0]?.n) }
 }
 
-/** The table of a copy that ended: the app logins' `SELECT` goes with it; repeatable. */
+/**
+ * The table of a copy that ended: the app logins' `SELECT` goes with it; repeatable. It takes its
+ * turn (`ROLES_LOCK`): a `GRANT` or `REVOKE` on all of `sync`'s tables made together rewrites the
+ * table's catalog row, and the `DROP` would be refused (`XX000`).
+ */
 export function dropCopyTable(
   context: Context,
   sync: DatabaseUrl,
   input: { copy: string },
 ): Promise<SqlAnswer> {
-  return sent(context, sync, { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` })
+  const drop = { text: `DROP TABLE IF EXISTS ${tableOf(input.copy)}` }
+  return context.transport(sync, [ROLES_LOCK, drop], budget())
 }

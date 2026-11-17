@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { chooserAt } from '../access/test-principal.ts'
 import { plantCompany } from '../identity/test-hub.ts'
-import type { SessionScope } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
 
 test('operationOf: uma leitura de uma ligação que o Projeto recebeu dá a entrada do kit; uma operação que não é leitura, uma ligação não recebida e outra empresa, nada; o membro lê como a dona', async (t) => {
@@ -11,13 +11,15 @@ test('operationOf: uma leitura de uma ligação que o Projeto recebeu dá a entr
   const matriz = ConnectionId.parse(await on.connect('Matriz'))
   const filial = ConnectionId.parse(await on.connect('Filial', false))
   const elsewhere = CompanyId.parse(await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa'))
-  function scope(who: { id: string }, companyId = CompanyId.parse(on.companyId)): SessionScope {
-    return {
-      companyId,
-      personId: PersonId.parse(who.id),
-      place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
-      chosen: [],
-    }
+  function scope(who: { id: string }, companyId = CompanyId.parse(on.companyId)) {
+    return chooserAt(
+      {
+        companyId,
+        personId: PersonId.parse(who.id),
+        place: { kind: 'PROJECT', projectId: ProjectId.parse(on.projectId) },
+      },
+      [],
+    )
   }
   const port = on.hub.connectors.assistant
   const kit = connectorOf('sankhya')?.operations.find((each) => each.id === 'pedidos')

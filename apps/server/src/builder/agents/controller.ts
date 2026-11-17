@@ -6,22 +6,20 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
 import { and, eq, sql } from 'drizzle-orm'
-import type { Connectors, SessionScope } from '../../hub/connectors/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
-import { conversationRun } from '../controller-context/public.ts'
-import type { Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
+import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   agentManagerAdmission,
   controllerOf,
   conversationMemory,
-  oncePerRun,
-  ownerOfResource,
+  RUN_MARKS,
   releaseThreads,
   routedModel,
   sessionTurns,
@@ -37,23 +35,11 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
-import { resolverOf, scopesOf } from './resolver.ts'
+import { agentRuns, scopesOf } from './resolver.ts'
 import { agent, agentConversation } from './tables.ts'
 import { mayApproveAgents, writeOfAgents } from './write-of.ts'
 
 const MODE = 'conversa'
-
-/**
- * The marks of an agent's thread, stamped by `createSession({ tags })`: its own keys, so the
- * Assistant's sweep by `companyId` never takes an agent's thread, nor this one an Assistant's.
- */
-export const AGENT_MARK = {
-  company: 'conexusAgentCompany',
-  person: 'conexusAgentPerson',
-  project: 'conexusAgentProject',
-  agent: 'conexusAgent',
-  draft: 'conexusAgentDraft',
-} as const
 
 /** Which agent a conversation of the owner's runs, and whether its draft, as the Hub keeps it. */
 export async function keptRun(database: Database, owner: Owner, id: ConversationId) {
@@ -74,17 +60,7 @@ export async function keptRun(database: Database, owner: Owner, id: Conversation
   return { kind: row.draft ? 'DRAFT' : 'PUBLISHED', scope, agentId } satisfies AgentRun
 }
 
-/** The run a conversation of the agents' controller is: its owner by the thread, its agent by the Hub's row. */
-function runsOf(database: Database) {
-  return oncePerRun(async (requestContext): Promise<AgentRun | undefined> => {
-    const run = conversationRun(requestContext)
-    if (run === undefined) return undefined
-    const owner = ownerOfResource(run.resourceId)
-    if (owner?.kind !== 'agents') return undefined
-    const { companyId, personId } = owner
-    return keptRun(database, { companyId, personId }, run.sessionId)
-  })
-}
+type RunOf = (requestContext: RequestContext) => Promise<AgentRun | undefined>
 
 type Resolved = (requestContext: RequestContext) => Promise<Agent>
 
@@ -117,7 +93,7 @@ async function markRun(database: Database, log: FailureLog, run: AgentRun): Prom
  */
 function agentTurns(
   queue: QueueDeps,
-  runOf: ReturnType<typeof runsOf>,
+  runOf: RunOf,
   resolvedOf: Resolved,
   own: { database: Database; log: FailureLog; machines: ConversationMachines },
 ) {
@@ -139,7 +115,7 @@ function agentTurns(
  * None outside an agent's conversation, and none when the version has no Computador, so listing
  * agents or talking to one without it starts and makes nothing.
  */
-function machineMarks(runOf: ReturnType<typeof runsOf>, resolvedOf: Resolved) {
+function machineMarks(runOf: RunOf, resolvedOf: Resolved) {
   return async (requestContext: RequestContext): Promise<Record<string, string> | undefined> => {
     const run = await runOf(requestContext)
     if (run === undefined) return undefined
@@ -198,9 +174,10 @@ type Deps = {
   identity: IdentityPorts
   queue: QueueDeps
   connectors: Connectors['assistant']
-  speakersOf: (scope: SessionScope) => Promise<Speakers>
+  speakersOf: AgentDeps['speakersOf']
   appData: AppDataPort
   companyData: AgentDeps['companyData']
+  access: AgentDeps['access']
   agents: AgentReads & Pick<AgentEvents, 'onChange'>
   /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
   machine: ConversationMachine
@@ -233,8 +210,10 @@ export function createAgentConversations(deps: Deps) {
     ...{ mastra: deps.mastra, log },
     build: (live) => agentOf({ ...deps, memories, machines }, live),
   })
-  const runOf = runsOf(database)
-  const resolvedOf = resolverOf(runOf, registry)
+  const { runOf, resolvedOf } = agentRuns({
+    ...{ memory, registry },
+    keptRun: (owner, id) => keptRun(database, owner, id),
+  })
   const machines = createConversationMachines(
     {
       ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS, otherTemplate: 'replace' },
@@ -283,9 +262,9 @@ export function createAgentConversations(deps: Deps) {
       mayApprove: mayApproveAgents((owner, id) => keptRun(database, owner, id), deps.agents, deps),
       async release(scope: ReleaseScope): Promise<void> {
         const count = await sweep({
-          [AGENT_MARK.company]: scope.companyId,
-          ...(scope.personId === undefined ? {} : { [AGENT_MARK.person]: scope.personId }),
-          ...(scope.projectId === undefined ? {} : { [AGENT_MARK.project]: scope.projectId }),
+          [RUN_MARKS.agents.company]: scope.companyId,
+          ...(scope.personId === undefined ? {} : { [RUN_MARKS.agents.person]: scope.personId }),
+          ...(scope.projectId === undefined ? {} : { [RUN_MARKS.agents.project]: scope.projectId }),
         })
         log.info({ companyId: scope.companyId, count }, 'AGENT_CONVERSATIONS_RELEASED')
       },
@@ -321,8 +300,8 @@ async function followed(
       return event satisfies never
   }
   const count = await own.sweep({
-    [AGENT_MARK.company]: event.companyId,
-    [AGENT_MARK.agent]: event.agentId,
+    [RUN_MARKS.agents.company]: event.companyId,
+    [RUN_MARKS.agents.agent]: event.agentId,
   })
   own.log.info(
     { companyId: event.companyId, agentId: event.agentId, count },
