@@ -29,14 +29,16 @@ de onde é cada conversa, e **uma fábrica só** de ferramentas, de onde os quat
 - **O Assistente deixa de citar leituras que não pode usar.** Hoje ele lista, para o modelo, leituras ao
   vivo de conexões que a conversa não escolheu, e depois a leitura recusa. Passa a listar só as das
   conexões escolhidas.
-- **O agente da empresa não lê mais do que quem conversa com ele.** Hoje a versão publicada de um agente
-  substitui a pessoa: o agente lê tudo o que declara, mesmo que quem conversa com ele não tenha o papel
-  para isso. Passa a ler o que declara **e** o que o papel de quem conversa alcança. Um agente do
-  Administrador, aberto por um Desenvolvedor sem aquela leitura no papel, responde que não alcança. É a
-  regra "fora do papel ninguém vê, nem o Desenvolvedor", a sua escolha 1 de 2026-11-16, e a tabela de
-  consumidores do desenho da porta única que você aprovou ("1. A forma: a", confirmado com "Sim"). A
-  aprovação das escritas não muda: quem toca Aprovar continua precisando da escrita no próprio papel
-  (a sua `D3-a`). O app publicado também não muda: ele lê como o Projeto, pela sua decisão 3 (d).
+- **O agente da empresa não usa mais do que o papel de quem conversa com ele.** Hoje a versão publicada
+  substitui a pessoa: o agente lê, consulta o caderno e escreve tudo o que a versão declara, mesmo que quem
+  conversa com ele não tenha o papel para isso. Passa a usar o que a versão declara **e** o que o papel de
+  quem conversa alcança. Um agente do Administrador, aberto por um Desenvolvedor sem aquela leitura no
+  papel, responde que não a alcança, e uma escrita que ele fazia sozinho para esse Desenvolvedor passa a
+  ser recusada. É a sua resposta P1 (a) de 2026-11-14 ("O agente salvo, numa conversa, lê com o papel de
+  quem pergunta"), a tabela de consumidores do desenho da porta única que você aprovou ("1. A forma: a",
+  confirmado com "Sim") e a H6 do redesenho, que a "R2 a" pôs nesta etapa. A aprovação das escritas não
+  muda: quem toca Aprovar continua precisando da escrita no próprio papel (a sua `D3-a`). O app publicado
+  também não muda: ele lê como o Projeto, pela sua decisão 3 (d).
 - **Primeiro se apaga.** Antes de construir, sai o que está repetido: o texto fixo do Conexus lido três
   vezes, duas fábricas iguais da ferramenta que lê os dados do app, a frase do limite de 50 chamadas
   escrita à mão em quatro lugares e uma citação velha.
@@ -67,26 +69,36 @@ que viu.
 - A memória do Projeto no Knowledge: é o item 5 do Brain, na trilha Dados. O Knowledge segue só no
   Assistente.
 - O alvo de eval, o MCP de fora e o nome "Estúdio" (H7 a H9): depois, cada um no seu cartão.
+- As issues `next-card` que esperam: https://github.com/developmentconexus-ops/conexus/issues/1136
+  (achar a cópia pelo nome pede uma leitura nova no serviço de cópias, e a issue pede medir antes);
+  https://github.com/developmentconexus-ops/conexus/issues/1140 (o `copy_runs` muda de pasta, mas as
+  horas no fuso da empresa mudam a resposta que você lê);
+  https://github.com/developmentconexus-ops/conexus/issues/1016 (muda a forma das linhas na web);
+  https://github.com/developmentconexus-ops/conexus/issues/1017 e
+  https://github.com/developmentconexus-ops/conexus/issues/1115 (as instruções dos agentes não mudam um
+  byte nesta etapa); https://github.com/developmentconexus-ops/conexus/issues/814 (pede a sua palavra);
+  https://github.com/developmentconexus-ops/conexus/issues/994 (nenhum gatilho dela chegou). As outras
+  158 abertas não tocam o código que a etapa reescreve.
 
-**As decisões suas nesta etapa.** Nenhuma nova. A etapa aplica o que você já decidiu: "R2 a", a escolha 1
-de 2026-11-16, o desenho da porta única ("1. A forma: a", "Sim"), a `D3-a` da 24.5 e a decisão 3 (d).
-As escolhas técnicas são do firstmate, com a evidência e o jeito de desfazer, na tabela "As decisões do
+**As decisões suas nesta etapa.** Nenhuma nova. A etapa aplica o que você já decidiu: "R2 a", a P1 (a)
+de 2026-11-14, a escolha 1 de 2026-11-16 (fora do papel ninguém vê), o desenho da porta única ("1. A
+forma: a", "Sim"), a `D3-a` da 24.5 e a decisão 3 (d). As escolhas técnicas são do firstmate, com a evidência e o jeito de desfazer, na tabela "As decisões do
 firstmate".
 
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 Subtrair | `conexus.md` lido uma vez; uma fábrica do `app_data_read`; a frase do teto de chamadas feita da constante; a citação de `conexus_overview` corrigida | `builder/controller-kit/`, `builder/assistant/`, `builder/construtor/`, `builder/agents/`, `builder/app-data/`, `builder/connectors/`, `hub/connectors/public.ts` | [testing](../guides/testing.md) | nada |
-| G1 | U2 Um escopo | `RunScope`, o resolvedor e `principalOf`; a escolha e o consumidor `construtor` na porta; a lista e a criação da conversa nova pela porta (issue 1147); sai `SessionScope` | `builder/controller-kit/`, `builder/assistant/`, `builder/automations/`, `builder/construtor/`, `builder/agents/`, `builder/conversation/`, `builder/tools/`, `hub/access/`, `hub/connectors/`, `hub/data/` | [security](../guides/security.md) | U1 |
+| G1 | U1 Subtrair | `conexus.md` lido uma vez; uma fábrica do `app_data_read`; a frase do teto de chamadas feita da constante; a citação de `conexus_overview` corrigida | `builder/controller-kit/`, `builder/assistant/`, `builder/construtor/`, `builder/agents/`, `builder/app-data/`, `builder/connectors/`, `builder/conversation/` (o teste do 6), `hub/connectors/public.ts` | [testing](../guides/testing.md) | nada |
+| G1 | U2 Um escopo | `RunScope`, o resolvedor e `principalOf`; a escolha e o consumidor `construtor` na porta; a lista e a criação da conversa nova pela porta (issue 1147); sai `SessionScope` | `builder/controller-kit/`, `builder/assistant/`, `builder/automations/`, `builder/construtor/`, `builder/agents/`, `builder/conversation/`, `builder/tools/`, `hub/access/`, `hub/identity/`, `hub/connectors/`, `hub/data/`, o teste de `hub/copies/` | [security](../guides/security.md) | U1 |
 | G2 | U3 A fábrica | `builder/company-tools/`: `companyTools`, `TOOLS_OF` e o escopo por closure; toda lista das ferramentas, as skills e a linha de conexões pela vista | `builder/company-tools/`, `builder/assistant/`, `builder/conversation/`, `builder/construtor/`, `builder/agents/`, `builder/data-tools/`, `builder/connectors/`, `.dependency-cruiser.cjs` | [testing](../guides/testing.md) | U2 |
-| G2 | U4 O teto | o agente salvo lê o papel de quem o roda ∩ o que a versão declara, na lista, na leitura, no caderno e na escrita | `hub/identity/`, `hub/access/`, `hub/connectors/`, `builder/agents/` | [security](../guides/security.md) | U2, U3 |
+| G2 | U4 O teto | o agente salvo lê o papel de quem o roda ∩ o que a versão declara, na lista, na leitura, no caderno e na escrita | `hub/identity/`, `hub/access/`, `hub/connectors/`, `builder/agents/`; os testes de `hub/data/` e `builder/automations/` | [security](../guides/security.md) | U2, U3 |
 
-G2 lê os contratos de G1, então os grupos não correm em paralelo. Em cada grupo, a ordem da tabela, um
-commit por unidade (delivery L9). `hub/connectors/` e `hub/data/` são da trilha Dados (decisão F2).
+G2 lê os contratos de G1: os grupos não correm em paralelo. Em cada grupo, a ordem da tabela, um commit
+por unidade (delivery L9). `hub/connectors/` e `hub/data/` são da trilha Dados (decisão F2).
 
-**Orçamento de código alterado.** U1: cerca de 50. U2: cerca de 710. U3: cerca de 560. U4: cerca de 90.
-Total: cerca de 1.410 linhas, 520 a menos (inferido pela leitura, não medido).
+**Orçamento de código alterado.** U1: cerca de 50. U2: 710. U3: 560. U4: 90.
+Total: cerca de 1.410 linhas, 520 a menos, sem contar os testes (inferido pela leitura, não medido).
 
 ## Os critérios de aceite
 
@@ -99,7 +111,7 @@ Total: cerca de 1.410 linhas, 520 a menos (inferido pela leitura, não medido).
 | 5 | U1 | O `app_data_read` lê, corta, recusa (`NOT_FOUND`, `APP_DATA_NO_APP`, SQLSTATE) e estoura o tempo como hoje | `agents/app-data.test.ts`, `app-data/access.test.ts`, sem mudar | must |
 | 6 | U1 | Toda descrição de leitura de conector (`connector_read` do Builder, do Construtor e do agente; leituras tipadas) diz "At most 50 connector calls per answer.". Recusa: "per run" ou outro número | `conversation/conversation-connectors.test.ts`, "o Builder diz o teto como os outros" | must |
 | 7 | U1 | Fora o `connector_read` do Builder, nenhuma descrição nem esquema muda | a gravação do passo 5 | must |
-| 8 | U1 | A 51ª chamada de conector de uma execução volta `CALLS_SPENT` | idem, "a 51ª chamada…" | must |
+| 8 | U1 | A 51ª chamada de conector de uma execução volta `CALLS_SPENT` | `conversation/conversation-connectors.test.ts:184`; `hub/connectors/assistant-port.test.ts:170`, sem mudar | must |
 | 9 | U1 | O comentário de `conexus_overview` cita uma linha que existe | revisão: `mastra-1.83` `mastracode/factory/src/tools/read-tools.ts:245` | should |
 | 10 | U2 | `GET /assistant/connections`, na empresa e num Projeto, lista só a conexão com operação no alcance; "Vazio" recebe `[]`, o dono as duas | `assistant/reach-choice.test.ts`, "a lista não oferece a conexão fora do alcance" | must |
 | 11 | U2 | Criar com ela: 201, sem ela na escolha, em `connections` e na linha | idem, "criar: ela não fica" | must |
@@ -120,7 +132,7 @@ Total: cerca de 1.410 linhas, 520 a menos (inferido pela leitura, não medido).
 | 26 | U2 | As suítes de `hub/connectors`, `hub/data`, `assistant`, `construtor`, `agents`, `automations`, `conversation` passam sem mudar asserção | as suítes | must |
 | 27 | U2 | As instruções de cada agente não mudam um byte | `assistant/instructions.test.ts`, `conversation/` | should |
 | 28 | U2 | O Construtor lê toda conexão recebida pelo Projeto (`ANY`) | `construtor/code-tool.test.ts`, sem mudar | should |
-| 29 | U2 | Banco fora ao listar ou criar: `DATABASE_UNAVAILABLE`, nada guardado | `assistant/database-down.test.ts`, "a porta fora na criação" (novo) | should |
+| 29 | U2 | Banco fora na porta ao listar, criar, trocar a escolha ou criar a automação: `DATABASE_UNAVAILABLE`, nada guardado | `assistant/database-down.test.ts`, "a porta fora na criação" e "na troca" (novos); `automations/reach-choice.test.ts`, "a porta fora" | should |
 | 30 | U3 | Cada assento recebe os nomes de ferramenta do `main` `f4ccc150`. Recusa: um nome a mais ou a menos | `company-tools/tool-sets.test.ts`, "os nomes de hoje" | must |
 | 31 | U3 | Nenhuma ferramenta de `TOOLS_OF`, em assento algum, nomeia algo fora da vista. Recusa plantada: `clientes`, `sankhya_clientes` | `company-tools/conformance.test.ts`, "lei (a): nada de fora…" | must |
 | 32 | U3 | Tudo o que uma ferramenta lista está na vista do assento | idem, "lei (a): tudo está na vista…" | must |
@@ -138,7 +150,7 @@ Total: cerca de 1.410 linhas, 520 a menos (inferido pela leitura, não medido).
 | 44 | U3 | O `connector_read` do ajudante de pesquisa só nomeia escolhidas da vista | `assistant/research.test.ts`, sem mudar; `conformance.test.ts`, assento `research` | should |
 | 45 | U3 | A rodada de automação não leva `connector_note_save`, nem para quem administra conexões | `assistant/note-save.test.ts`, "a rodada de automação…", sem mudar | must |
 | 46 | U3 | A vista é lida uma vez por execução; duas no Assistente com escolha (`view`, `reach`) | `conformance.test.ts`, "uma vez por execução" | should |
-| 47 | U3 | A thread com a marca de outra empresa não monta ferramenta da empresa | idem, "marca de outra empresa" | must |
+| 47 | U3 | A thread com a marca de outra empresa não monta ferramenta da empresa; a recusa é do 19 | idem, "marca de outra empresa", só a fábrica | must |
 | 50 | U4 | Tirada `pedidos` do papel de quem roda o agente que a declara, a vista seguinte não a lista e `may` dá `OUT_OF_REACH` | `hub/access/conformance.test.ts`, "lei (e) em agent (ROLE)" | must |
 | 51 | U4 | A versão que declara `empresas`, rodada por um Atendente só com `pedidos`: `NOT_IN_ROLE` com o papel, nada ao dublê | `hub/connectors/role-doors.test.ts`, "a versão não alarga o papel" | must |
 | 52 | U4 | A versão ainda estreita: `consultar` no papel e não declarada dá `NOT_IN_ROLE`; `pedidos`, declarada, lê | idem, "o funil: a versão lê só o que declara" | must |
@@ -155,37 +167,41 @@ Total: cerca de 1.410 linhas, 520 a menos (inferido pela leitura, não medido).
 | 63 | U4 | Dono rebaixado: o disparo não abre conversa, `SKIPPED` com `OWNER_CANNOT_ASK`, automação `PAUSED` | `builder/automations/run.test.ts`, "o dono virou membro…", sem mudar | must |
 | 64 | U4 | Papel do dono estreitado depois da criação: a execução seguinte não recebe a operação, nada ao dublê | `builder/automations/role-run.test.ts`, "papel do dono estreitado" | should |
 
+Não há 48 nem 49; a U4 guarda os seus números.
+
 ## A matriz de estados
 
-Nenhuma tela nem texto novo. A lista de conexões da conversa nova do Assistente e da automação, e o
-resumo das duas, mostram só as conexões de que o papel usa alguma coisa (critérios 10 a 14), com os estados
-de hoje: o papel sem nenhuma vê o estado vazio que já existe.
+Nenhuma tela nem texto novo. As listas de conexões da conversa nova e da automação, e os resumos,
+mostram só as conexões de que o papel usa algo (critérios 10 a 14), com os estados de hoje, o vazio
+incluído.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `RunScope.kind`, `owner`, `conversation` | `runResolver` | `principalOf`; as marcas da máquina (`machineMarks`); a fábrica (U3) |
+| `RunScope.kind`, `owner`, `conversation` | `runResolver` | `kind` e `owner`: `principalOf`; `conversation`: `machineMarks` e `keptRun`; os três: a fábrica (U3) |
 | `RunScope.place` | o `stored` de cada dono | `principalOf`, `speakersOf`, as marcas da máquina |
 | `RunScope.choice` | o `stored` (linha do Assistente; `selected` do agente; `ANY` nos outros) | `principalOf` → `Principal.choice` |
 | `RunScope.ceiling` | o `stored` do agente | `principalOf` → `declared`; U4 |
 | `RunScope.attended` | o `stored` do Assistente (marca de automação) | a lista de ferramentas (`propose_app`); U3 |
 | `Principal.choice` | `principalFor` | `createAccess.viewFor`, `assistant-port.ts` `readable`, `write.ts:81` |
-| `CompanyToolScope.run` | `resolveRun` (U2) | `companyTools`, `companyConnections`, o resumo (`chosen`) |
+| `CompanyToolScope.run` | `runResolver` (U2) | `companyTools`, `companyConnections`, o resumo (`chosen`) |
 | `CompanyToolScope.view` | `companyToolScope` | toda ferramenta, `inView`, o filtro do `search_tools` |
 | `CompanyToolScope.reach` | `companyToolScope` | só o `conexus_overview` |
 | `CompanyToolScope.grants` | cada montagem (`maysOf` no Assistente, `data.access` no Builder, `frozen.appData` no agente) | a poda de `companyTools` |
 | `TOOLS_OF` | `company-tools/names.ts` | `companyTools`; `tool-sets.test.ts` |
 | `Speaker` `AGENT` (`personId`, `role`, `declared`) | `withinVersion`, chamado por `access/public.ts`, `assistant-port.ts` `mayAsk` e `write.ts` `admitted` | `may-use.ts` `mayUseEach`, `speaking.ts` `mayUseNotebook`, `roleOfSpeaker` (`read.ts:147`, `write.ts:107`) |
 | `WriteRequest.speaker` `AGENT` (`personId`, `declared`) | `builder/agents/tools.ts` `requestOf` | `write.ts` `admitted`; `write-record.ts` `aboutOf` (pela `agentId`) |
-| `Declared` | `builder/agents/frozen.ts` `declaredOf` (`:262-271`) | `may-use.ts`; `access/model.ts`; `Principal.declared` |
+| `Declared` (dona: `hub/identity/may-use.ts`, desde a U2) | `builder/agents/frozen.ts` `declaredOf` (`:262-271`) | `may-use.ts`; `access/model.ts`; `Principal.declared` |
 
 ## A tabela de falhas
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio (depois de uma instrução ou chamada) | Uma dependência fora (banco ou terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Criar a conversa do Assistente (`openConversation`: a porta lê, `chosen.keep` grava, depois a thread) | a mesma chave dá o mesmo id; outro lugar, `IDEMPOTENCY_CONFLICT` (já, `routes.test.ts:32`); o papel que muda entre a leitura da porta e a gravação vale na próxima leitura (cada chamada confere, S10) | cortada depois da linha: a repetição acha a linha e termina, com a primeira escolha (`create.test.ts:22`) | o banco fora na porta: 503 `DATABASE_UNAVAILABLE`, nada guardado | `ASSISTANT_CONVERSATION_CREATED` uma vez | 11, 29 |
+| Trocar a escolha (`routes.ts:271-283`: a porta lê, `chosen.change` grava) | vale a última (`chosen.ts:64-69` substitui); o papel, como acima | a repetição grava a mesma lista | como acima | `ASSISTANT_CONNECTIONS_CHANGED` por troca | 12, 29 |
+| Criar a automação (`automations.ts:156-187`: a porta lê, `schedules.create` grava) | a mesma chave, a mesma automação (`:156`; a corrida, `:183`); o papel, como acima | a repetição a acha (`:156`) | como acima | `AUTOMATION_CREATED` uma vez | 14, 29 |
 
-As outras gravações não mudam: `connector_note_save` e `copy_propose` só aceitam as conexões da vista
-(critério 39); a escrita recusada pelo teto não grava linha (admissão antes do registro, critério 55).
+As outras gravações não mudam: `connector_note_save` e `copy_propose` só aceitam conexões da vista
+(critério 39); a escrita recusada pelo teto não grava linha (critério 55).
 
 ## A tabela de referência
 
@@ -199,12 +215,12 @@ As outras gravações não mudam: `connector_note_save` e `copy_propose` só ace
 | A marca da thread | U2 | três esquemas (`SESSION_MARK`, `CONSTRUTOR_MARK`, `AGENT_MARK`) | `mastra-1.83` `packages/core/src/agent-controller/agent-controller.ts:539,562`; `scope.ts:52-56` | `tags` em `createSession`; a marca não decide sozinha | nativo | — | — | idem |
 | A escolha na porta | U2 | `hub/access/model.ts:21-31` sem escolha; `hub/data/public.ts:47-48` | code C81; `hub/access/view.ts:27` | a lista e a execução saem da mesma vista | nativo | — | — | — |
 | A lista da conversa nova e a criação | U2 | `assistant/routes.ts:204`, `open.ts:85-93,137`, `automations.ts:90,161` por `visibleTo` | `hub/access/view.ts:27`; issue 1147 | o sistema sem operação alcançada sai | nativo | — | — | — |
-| A fábrica de ferramentas da empresa | U3 | quatro `tools:` à mão: `assistant.ts:247-264`, `builder.ts:172-191`, `construtor.ts:197-222`, `agent.ts:249-290` | `mastra-1.83` `mastracode/factory/src/tools/index.ts:33-56`; `factory.ts:1898-1912,1980-1994`; `mcp/routes.ts:178-190` | um conjunto para um escopo resolvido, com o subconjunto por tipo dentro da fábrica e nome repetido recusado | nativo | — | — | `company-tools/factory.ts`, `names.ts` |
+| A fábrica de ferramentas da empresa | U3 | quatro `tools:` à mão: `assistant.ts:247-264`, `builder.ts:172-191`, `construtor.ts:197-222`, `agent.ts:249-290` | `mastra-1.83` `mastracode/factory/src/tools/index.ts:33-56`; `factory.ts:1898-1912,1980-1994`; `mcp/routes.ts:178-190` | um conjunto por escopo resolvido, o subconjunto por tipo dentro da fábrica, nome repetido recusado | nativo | — | — | `company-tools/factory.ts`, `names.ts` |
 | O escopo por closure | U3 | `data-tools/tools.ts:175-179`, `copy-runs.ts:96`, `overview.ts:39` leem o `requestContext` | `tools/index.ts:34-36`; `read-tools.ts:222-223`; `@mastra/core` 1.83 `reference-agents-agent.md:558,564` | a ferramenta recebe o escopo e as portas na construção; só a função `tools` lê o pedido | nativo | — | — | `company-tools/scope.ts` |
 | As leituras tipadas sob demanda | U3 | `typed-search.ts:34-40`; `offersRead`, `typed-reads.ts:59-67` | `reference-processors-tool-search-processor.md:48,100-127` (`filter`); `:131,157` (`includeResolvedTools` esconde tudo) | catálogo fixo na construção, filtro por pedido | nativo: o `filter` lê `scope.view` | — | — | `company-tools/search.ts` |
 | As listas, as skills e a linha de conexões | U3 | `overview.ts:98-130`; `copy-runs.ts:103`; `builder.ts:44-87,165-170`; `construtor.ts:143,163-166,192`; `agent.ts:199,331-335`; `assistant.ts:265-270` | `hub/access/view.ts:19-38`; code C81; `read-tools.ts:223` | cada lista lê só o escopo resolvido | nativo | — | — | `company-tools/listed.ts` |
-| `kitReads` e `legacyTools` | fica de fora | `agent.ts:173-184`; `agents.ts:181,227,276`; `tools/check.ts:50` | — | — | nativo, sem mudança: fica de fora, porque a edição e as versões anteriores à E4 ainda os usam; o teto da U4 vale nelas na chamada | — | — | — |
-| O alcance do agente salvo (lista e execução) | U4 | `may-use.ts:93`; `access/public.ts:46-51`; `assistant-port.ts:129`; `speaking.ts:97`; `agents/tools.ts:177-185`; `write.ts:101` | `mastra-1.83` `mastracode/factory/src/tools/scope.ts:96-104`; `better-auth@1.7.8` `dist/plugins/organization/has-permission.mjs:7` | a sessão de uma pessoa age como quem entrou, resolvida a cada vez; o papel decide pelo `hasPermission` | embrulhado: o `hasPermission` decide o papel, e o nosso código só acrescenta a interseção com a declaração da versão | critérios 50 a 59 | 1(a), 2026-11-16; opção 1 "fora do papel ninguém vê", 2026-11-16; `C1`, 2026-11-06 (segue valendo na publicação) | — |
+| `kitReads` e `legacyTools` | fica de fora | `agent.ts:173-184`; `agents.ts:181,227,276`; `tools/check.ts:50` | — | — | nativo, sem mudança: a edição e as versões anteriores à E4 ainda os usam; o teto da U4 vale nelas na chamada | — | — | — |
+| O alcance do agente salvo (lista e execução) | U4 | `may-use.ts:93`; `access/public.ts:46-51`; `assistant-port.ts:129`; `speaking.ts:97`; `agents/tools.ts:177-185`; `write.ts:101` | `mastra-1.83` `mastracode/factory/src/tools/scope.ts:96-104`; `better-auth@1.7.8` `dist/plugins/organization/has-permission.mjs:7` | a sessão de uma pessoa age como quem entrou, resolvida a cada vez; o papel, pelo `hasPermission` | embrulhado: o `hasPermission` decide o papel; o nosso código só acrescenta a interseção com a declaração | critérios 50 a 59 | P1 (a), 2026-11-14; 1(a), 2026-11-16; opção 1 "fora do papel ninguém vê", 2026-11-16; `C1`, 2026-11-06 (segue valendo na publicação) | — |
 | A automação roda como o dono, pelo papel de agora | U4 | `automations/run.ts:79-90,205-215`; `assistant-port.ts:121-129` | `mastra-1.83` `mastracode/factory/src/tools/scope.ts:96,99-100` | o trabalho sem pessoa age como o dono da linha | nativo, já no `main` | critérios 62 a 64 | e242 (automações) | — |
 | O app publicado lê como o Projeto | fica de fora (decisão 3(d)) | `app-calls.ts:102-107` | `mastra-1.83` `mastracode/factory/src/tools/scope.ts:96-100` (o trabalho sem pessoa age como a linha guardada) | o app tem o seu principal; quem o usa é a lista do app | nativo, já no `main` | critério 60 | 3(d), 2026-11-16 | — |
 
@@ -212,53 +228,51 @@ As outras gravações não mudam: `connector_note_save` e `copy_propose` só ace
 
 **A dívida.**
 
-- `keptRun` (leitor guardado do agente, seis chamadores de rota) e `InProject` (id de rota do S8) ficam,
-  fora do escopo do turno.
-- As chaves das marcas de thread ficam as de hoje, sob um dono só (`RUN_MARKS`), para não migrar threads
-  guardadas.
+- `keptRun` (seis chamadores de rota) e `InProject` (id de rota do S8) ficam, fora do escopo do turno.
+- As chaves das marcas ficam as de hoje, sob `RUN_MARKS`, para não migrar threads guardadas.
 - `kitReads` e `legacyTools`, como diz a linha deles.
-- As leituras tipadas do Assistente resolvem o escopo pelo pedido, não por closure, porque o catálogo do
+- As leituras tipadas resolvem o escopo pelo pedido, não por closure: o catálogo do
   `ToolSearchProcessor` é fixo na construção; o filtro lê a mesma vista.
-- Num Projeto, a tabela sai da liberação ao Projeto, não do papel de quem conversa, para o Builder, o
-  Construtor e o agente. A leitura com o login do papel é da etapa do Registro e conformidade (U4 de
-  permissões, `view.read`).
+- Num Projeto, a tabela do Builder, do Construtor e do agente sai da liberação ao Projeto, não do papel de
+  quem conversa; a leitura com o login do papel é do Registro e conformidade (U4 de permissões,
+  `view.read`).
 
 ## As decisões do firstmate
 
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
-| F1 | A automação não ganha variante de teto: roda como o Assistente do dono, com `choice: CHOSEN` das conexões dela e `attended: false` | as conexões dela já chegam como escolha (C26), e o dono que sai ou é rebaixado já a para (`automations/release.test.ts:84`, `run.test.ts:196`) | uma variante `AUTOMATION` em `Ceiling` |
-| F2 | A U2 muda `hub/connectors/` e `hub/data/` (trilha Dados) na própria unidade, sem um pull request de Dados antes | os verbos de `company-data.ts` não mudam (o pedido por issue `contrato` vale para eles), nada de Dados está em construção (L1), e a H1 ("R2 a") tira `SessionScope` de `hub/connectors` | separar os passos 1 e 2 da U2 num pull request da trilha Dados |
+| F1 | A automação não ganha variante de teto: roda como o Assistente do dono, com `choice: CHOSEN` das conexões dela e `attended: false` | as conexões dela já chegam como escolha (C26); o dono que sai ou é rebaixado já a para (`automations/release.test.ts:84`, `run.test.ts:196`) | uma variante `AUTOMATION` em `Ceiling` |
+| F2 | A U2 muda `hub/connectors/` e `hub/data/` (trilha Dados) na própria unidade, sem um pull request de Dados antes | os verbos de `company-data.ts` não mudam (o pedido por issue `contrato` vale para eles), nada de Dados está em construção (L1), e a H1 tira `SessionScope` de `hub/connectors` | separar os passos 1 e 2 da U2 num pull request da trilha Dados |
 | F3 | Criar ou trocar a escolha com uma conexão fora do alcance descarta a conexão, sem código de recusa novo | a criação já faz isso com a conexão que o lugar não oferece (`packages/hub-api/src/assistant.ts:275`, `routes.test.ts:32,127`) | um código de recusa próprio |
 | F4 | A descrição do `connector_read` do Builder diz "per answer", como as outras | `RunId` (`runs/runs.ts:120`) e `TurnKey` (`controller-kit/turns.ts:103-105`) contam uma resposta; ninguém vê a descrição | voltar a palavra |
 | F5 | O `copy_runs` num Projeto acha só as cópias liberadas ao Projeto | segue a vista (code C81), "a pessoa ∩ o Projeto" (C(b), do fundador) | voltar a lista da empresa no `copy_runs` |
-| F6 | `Choice` e `Place` moram em `hub/access/model.ts`; o tipo de conversa é o `ControllerKind` de hoje; o agente salvo também leva `choice` (as ligações que a versão selecionou) | `hub-does-not-import-builder`; `controller-kit/kinds.ts:19-26` já é o dono (C26); com `ANY` a versão leria todo caderno do Projeto (`agents/agent.ts:185-192`) | mover os tipos |
-| F7 | A ferramenta de uma versão que o papel de quem roda não alcança continua na lista do modelo e recusa na chamada com `NOT_IN_ROLE` | esconder a escrita tiraria o cartão que a `D3-a` confere (`autonomy.test.ts:283`); o catálogo já não a lista (critério 53) | filtrar as ferramentas da versão pela vista na fábrica |
+| F6 | `Choice` e `Place` moram em `hub/access/model.ts`, `Declared` em `hub/identity/may-use.ts`; o tipo de conversa é o `ControllerKind` de hoje; o agente salvo também leva `choice` (as ligações que a versão selecionou) | `hub-does-not-import-builder`; `controller-kit/kinds.ts:19-26` já é o dono (C26); com `ANY` a versão leria todo caderno do Projeto (`agents/agent.ts:185-192`) | mover os tipos |
+| F7 | A ferramenta da versão que o papel de quem roda não alcança fica na lista do modelo e recusa na chamada (`NOT_IN_ROLE`) | esconder a escrita tiraria o cartão que a `D3-a` confere (`autonomy.test.ts:283`); o catálogo já não a lista (critério 53); difere da tabela de consumidores do estudo: mostra e recusa | filtrar as ferramentas da versão pela vista na fábrica |
 | F8 | O `Speaker` ganha a variante `AGENT` (pessoa, papel e declaração); `VERSION` fica para o app publicado e a corrida da cópia | `app-calls.ts:104-107` e `copy-port.ts:125-130` não mudam (3(d)) | juntar as variantes |
 | F9 | As ferramentas do Knowledge ficam fora de `CompanyToolName` | entram pelo `knowledge` do Mastra, não por `tools:` (`assistant/company-memory.ts:11-15,345-353`) | trazê-las para a fábrica quando a memória do Projeto entrar |
 | F10 | `conexus.md` fica em `conversation/prompt/`; o dono da leitura é `controller-kit/instructions.ts` | dois testes o leem pelo caminho (`assistant/instructions.test.ts:23`, `agents/conversation.test.ts:31`) | mover o arquivo |
 
 ## U1 Subtrair
 
-**Base e modelo.** `main` `f4ccc150`, `@mastra/core` 1.83.0. Sonnet: quatro deduplicações em
-`apps/server/src/builder/`, sem desenho entre módulos; nenhuma ferramenta nem texto de tela muda.
+**Base e modelo.** `main` `f4ccc150`, `@mastra/core` 1.83.0. Sonnet: quatro deduplicações em `builder/`,
+sem desenho entre módulos; nenhuma ferramenta nem tela muda.
 
 ### As linhas da tabela
 
-Ver as linhas U1 da tabela de referência; mais:
+Além das linhas U1:
 
-1. **O texto fixo.** Os três leitores já importam `fixedSystem` de `controller-kit/instructions.ts:7`
-   por `controller-kit/public.ts:4`. O Builder não lê `conexus.md` (o dele é
-   `conversation/prompt/builder.md`). Na referência, `buildFullPrompt` e `buildBasePrompt`.
-2. **`app_data_read`.** `appDataTools` (id `AGENT_TOOL.appDataRead`) e `builderAppDataTools` (id
-   `APP_DATA_TOOL.read`, o mesmo id por `packages/hub-api/src/agents.ts:165`) dividem `AppDataInput`
+1. **O texto fixo.** Os três leitores já importam `fixedSystem` (`controller-kit/instructions.ts:7`,
+   por `public.ts:4`). O Builder lê `conversation/prompt/builder.md`, não `conexus.md`. Na referência,
+   `buildFullPrompt` e `buildBasePrompt`.
+2. **`app_data_read`.** `appDataTools` (`AGENT_TOOL.appDataRead`) e `builderAppDataTools`
+   (`APP_DATA_TOOL.read`, o mesmo id por `packages/hub-api/src/agents.ts:165`) dividem `AppDataInput`
    (`:12`), `answered` (`:42-53`) e `withDeadline` (`:56-59`); muda só a porta (`AppDataPort.read`,
    `app-data/port.ts:16-21`, ou `BuilderData.read`, `hub/apps/builder-data.ts:20`).
-3. **O teto.** O 50 conta em `createSpending` (`:122-133`) e hoje só sai para testes
-   (`hub/connectors/test-app-calls.ts:24`); `assistant/typed-search.ts:35` também lê `ASSISTANT_LIMIT`. A
-   `answerWords` (`connector-tools.ts:197-199`) põe a frase em `connector_read` (`connector-tools.ts:248`)
-   e nas leituras tipadas (`connectors/typed-reads.ts:105`).
-4. **A citação.** Ver a linha; hoje cita `supervisor/read-tools.ts:187` e `factory_overview`; a irmã
+3. **O teto.** O 50 conta em `createSpending` (`:122-133`) e só sai para testes
+   (`hub/connectors/test-app-calls.ts:24`); `assistant/typed-search.ts:35` lê `ASSISTANT_LIMIT`.
+   `answerWords` (`connector-tools.ts:197-199`) põe a frase em `connector_read` (`:248`) e nas leituras
+   tipadas (`connectors/typed-reads.ts:105`).
+4. **A citação.** Hoje cita `supervisor/read-tools.ts:187` e `factory_overview`; a irmã
    (`read-tools.ts:245-286`) corta em `MAX_LIST` como o "at most 50" de `overview.ts:36`.
 
 ### O raio da mudança
@@ -272,6 +286,7 @@ Ver as linhas U1 da tabela de referência; mais:
 | `builder/app-data/tools.ts` | as duas fábricas montam `app_data_read` por uma função privada; os nomes exportados ficam | `conversation/builder.ts:186`, `agents/agent.ts:270`, os testes de `app-data/` |
 | `builder/connectors/` (`connector-tools.ts`, `typed-reads.ts`, `test-access.ts`) | `wording` perde `limit`; `answerWords` e `typedReads` perdem o parâmetro do teto | `assistant/`, `construtor/`, `agents/`, `conversation/builder.ts` |
 | `hub/connectors/public.ts` (Plataforma) | exporta `CONNECTOR_CALLS_PER_TURN` (C4) | `builder/connectors/connector-tools.ts` |
+| `builder/conversation/conversation-connectors.test.ts` | o caso novo do 6 | — |
 
 `builder/conversation/prompt/conexus.md` fica onde está (decisão F10).
 
@@ -301,16 +316,15 @@ export function typedReads(accessOf: AccessOf): ToolSearchProcessorOptions['tool
 export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 ```
 
-Apaga `ASSISTANT_LIMIT` (`assistant/connector-access.ts:13`), os três `FIXED`, `wording.limit` e o
-`limit` de `typedTool`/`typedReads`. Nenhum estado ou id novo (`AppDataCheckOutput`,
+Apaga o que os passos 1 e 3 dizem. Nenhum estado ou id novo (`AppDataCheckOutput`,
 `app-data/tools.ts:91-99`, C21; C23). Donos (C4, C26): o texto, `controller-kit/instructions.ts`
 (`conversations-do-not-import-the-assistant`); o 50, `hub/connectors/builder-port.ts:33`; a frase,
 `answerWords`; a ferramenta, `appDataReadTool`. Zod: `AppDataInput` (C27). Modelo: `app-data/tools.ts`.
 
 ### As skills e a leitura
 
-`docs/reference/stack.md`, linhas de `apps/server/src/builder` (`@mastra/core`, `@mastra/memory`,
-`@mastra/pg`, `ai`): a skill `mastra`; ler primeiro `createTool` no `dist/docs`. Guia: `docs/guides/testing.md` (T5, T26, T27).
+`docs/reference/stack.md`, linhas de `apps/server/src/builder`: a skill `mastra`; ler primeiro `createTool`
+no `dist/docs`. Guia: testing (T5, T26, T27).
 
 ### A ordem do trabalho
 
@@ -320,22 +334,22 @@ Apaga `ASSISTANT_LIMIT` (`assistant/connector-access.ts:13`), os três `FIXED`, 
    - **O que sai:** `FIXED` de `construtor.ts:59-62` e `agent.ts:50-53`, a primeira entrada do array de
      `assistant/instructions.ts:20` e os `readFileSync` sem uso.
    - **O que entra:** `CONEXUS_PROMPT` por `new URL('../conversation/prompt/conexus.md', import.meta.url)`
-     com `.trim()`; Construtor e agente passam `fixedSystem(CONEXUS_PROMPT)`; o Assistente,
+     com `.trim()`; Construtor e agente, `fixedSystem(CONEXUS_PROMPT)`; o Assistente,
      `[CONEXUS_PROMPT, assistant.md com trim].join('\n\n')`. Regras: C4, C26.
    - **Testes e mutações à mão:** o caso novo do 1; sem `.trim()`, vermelhos ele e "a mensagem fixa…";
-     com `'\n'` no Assistente, "a mensagem fixa…".
-   - **Pronto quando:** o grep do critério 3 mostra só `controller-kit/instructions.ts`, o comentário de
+     com `'\n'` no Assistente, este.
+   - **Pronto quando:** o grep do 3 mostra só `controller-kit/instructions.ts`, o comentário de
      `assistant/instructions.ts:17` e os dois testes.
 2. **Uma fábrica de `app_data_read`.** Critérios: 4, 5.
-   - **O que sai:** os dois `createTool` de leitura (`:72-84` e `:111-117`).
+   - **O que sai:** os dois `createTool` de leitura (`:72-84`, `:111-117`).
    - **O que entra:** `appDataReadTool(read)` com `APP_DATA_TOOL.read`, `READ_DESCRIPTION`, `AppDataInput`
      e `answered(await read({ text: sql }, withDeadline(abortSignal)))`. `appDataTools` passa
      `(statement, signal) => deps.appData.read({ scope: deps.scope, projectId: deps.projectId, statement, signal })`;
-     `builderAppDataTools`, `(statement, signal) => data.read(ids, statement, signal)`. Regra: C26.
+     `builderAppDataTools`, `(statement, signal) => data.read(ids, statement, signal)`. C26.
    - **Testes e mutações à mão:** o caso novo do 4, no molde de `app-data/context.test.ts:257-275`; a
      leitura crua no lugar de `answered` deixa vermelhos "o Builder lê com o corte das leituras de
      conector" e "lê: a ferramenta devolve as linhas…"; sem `withDeadline`, "o tempo…" (ou T27).
-   - **Pronto quando:** `npm run quality -- --fast` não acha clone em `app-data/tools.ts`.
+   - **Pronto quando:** `npm run quality -- --fast` não acha clone ali.
 3. **Um dono da frase do teto.** Critérios: 6, 7, 8.
    - **O que sai:** `ASSISTANT_LIMIT` e seu import em `typed-search.ts:7`; o `limit` das quatro `wording`
      (`'50 connector calls per answer'`, e `'50 connector calls per run'` no Builder) e de
@@ -357,69 +371,65 @@ Apaga `ASSISTANT_LIMIT` (`assistant/connector-access.ts:13`), os três `FIXED`, 
 
 ### Como se prova
 
-Pelo teste de cada critério. O caso novo do 1 passa hoje (as mutações provam que vê um byte a mais); o
-do 6 falha (`per run`). Mudam só o argumento de `typedReads` em `connectors/typed-reads-openai.test.ts:75`
-e o ajudante `connectors/test-access.ts:46`, sem asserção.
+O caso novo do 1 passa hoje (as mutações provam que vê um byte a mais); o do 6 falha (`per run`).
+Mudam só o argumento de `typedReads` em `connectors/typed-reads-openai.test.ts:75` e
+`connectors/test-access.ts:46`, sem asserção.
 
 ### Parar se
 
-- O `diff` do passo 5 mostrar outra diferença: ache o byte.
-- `dependency-cruiser` recusar o import de `CONNECTOR_CALLS_PER_TURN` em `builder/connectors/`: reporte,
+- O `diff` do passo 5 mostrar outra diferença: ache-a.
+- `dependency-cruiser` recusar o import de `CONNECTOR_CALLS_PER_TURN` em `builder/connectors/`: reporte;
   não copie o número.
 - A U2 já tiver mudado `hub/connectors/public.ts`: junte, sem reescrever a da U2.
 
 ## U2 Um escopo
 
-**Base e modelo.** `main` `f4ccc150`, `@mastra/core` 1.83.0. Opus: o desenho cruza `hub/access`,
-`hub/connectors`, `hub/data` e as quatro conversas, e muda o tipo que 29 arquivos importam.
+**Base e modelo.** `main` `f4ccc150`, `@mastra/core` 1.83.0. Opus: cruza `hub/access`, `hub/connectors`,
+`hub/data` e as quatro conversas, e muda o tipo que 29 arquivos importam.
 
 ### As linhas da tabela
 
-Ver as linhas U2 da tabela de referência; ler também:
+Além das linhas U2:
 
-- **O escopo de uma execução.** `assistant/context.ts:40-58` (`ScopeOf`, `sessionScopes`),
-  `construtor/construtor.ts:108-122` (`scopes`), `agents/controller.ts:59-87` (`keptRun`, `runsOf`),
-  `conversation/turn-of.ts:21-31,75-87` (`conversationOf`, `projectIn`), `hub/connectors/scope.ts:5-30`.
-  Na Factory, `scope.ts:107` lê o projeto com a organização de quem chama e `:118` é o `interactive`
-  (aqui `attended`).
-- **A marca da thread.** `assistant/context.ts:14-20` (`SESSION_MARK`), `construtor/open.ts:13-26`
-  (`CONSTRUTOR_MARK`), `agents/controller.ts:50-56` (`AGENT_MARK`), `assistant/open.ts:68-112`. Na
-  referência, `tags: Record<string, string>`, e `:732` põe o `controller` na `requestContext` (tipo em
+- **O escopo.** Também `context.ts:40-47`, `controller.ts:59-77` (`keptRun`), `turn-of.ts:75-87`
+  (`projectIn`). Na Factory, `scope.ts:107` lê o projeto com a organização de quem chama; `:118` é o
+  `interactive` (aqui `attended`).
+- **A marca.** `assistant/context.ts:14-20`, `construtor/open.ts:13-26`, `agents/controller.ts:50-56`,
+  `assistant/open.ts:68-112`. Na referência, `tags: Record<string, string>`; `:732` põe o `controller` na `requestContext` (tipo em
   `types.ts:1142`).
-- **A escolha na porta.** `hub/access/model.ts:16-31`, `principal.ts:40-61`, `public.ts:35-58`,
-  `view.ts:19-28`, `hub/data/public.ts:41-63` (`contextOf` manda o Assistente num Projeto como
-  `builder`, `:47-48`).
-- **A lista da conversa nova (issue 1147).** `assistant/routes.ts:91-107,200-212,271-283`,
-  `assistant/open.ts:84-93,137`, `automations/automations.ts:90,161`. A causa: `visibleTo`
+- **A escolha.** Também `principal.ts:40-61`, `public.ts:35-58`; `contextOf` (`hub/data/public.ts:41-63`)
+  manda o Assistente num Projeto como `builder`.
+- **A lista (issue 1147).** Também `routes.ts:91-107,271-283`. A causa: `visibleTo`
   (`hub/connectors/speaking.ts:69-80`) filtra as leituras e mantém a conexão sem nenhuma.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `hub/access/` (`model.ts`, `principal.ts`, `public.ts`, `view.ts`) | o passo 1; exporta `Place`, `Declared`, `Choice` | `hub/data/`, `hub/connectors/`, `builder/controller-kit/run.ts`, `builder/assistant/routes.ts`, `automations/automations.ts`, `main.ts` |
-| `hub/access/conformance.test.ts` (trilha Dados) | cenários por `Principal`; `assistant` com `CHOSEN`; `construtor` | — |
+| `hub/access/` (`model.ts`, `principal.ts`, `public.ts`, `view.ts`) | o passo 1; exporta `Place` (já em `model.ts:16`) e `Choice`; importa `Declared` | `hub/data/`, `hub/connectors/`, `builder/controller-kit/run.ts`, `builder/assistant/routes.ts`, `automations/automations.ts`, `main.ts` |
+| `hub/identity/may-use.ts`, `public.ts` | recebe `Declared`; sai o `Extract` de `access/model.ts:18` | `hub/access/model.ts`, `hub/connectors/` |
+| `hub/access/conformance.test.ts` (Dados) | cenários por `Principal`; `assistant` com `CHOSEN`; `construtor` | — |
 | `hub/connectors/` (trilha Dados): `scope.ts`, `assistant-port.ts`, `write.ts`, `write-record.ts`, `approval.ts`, `tool-door.ts`, `public.ts` | o passo 2; `readable` está em `:169` | as conversas de `builder/`, `conversations-of.ts` |
 | `hub/data/` (trilha Dados): `public.ts`, `query.ts`, `rows.ts` | apaga `contextOf`; `createCompanyData` recebe `Principal` | `main.ts:213`, `conversations-of.ts:164` |
-| `builder/controller-kit/` | cria `run.ts`; `public.ts` exporta | as quatro conversas |
-| `builder/assistant/` | apaga o do passo 4; muda `assistant.ts`, `routes.ts`, `open.ts`, `overview.ts`, `research.ts`, `typed-search.ts`, `propose.ts`, `connector-access.ts`, `turn.ts`, `company-memory.ts`, `propose-company-memory.ts`, `copy-runs.ts`, `search.ts`, `release.ts`, `test-assistant.ts` | `automations/`, `conversations-of.ts` |
-| `builder/automations/automations.ts` | a lista e a criação pela porta com `ANY` | rotas de automação |
-| `builder/construtor/` (`construtor.ts`, `open.ts`, `routes.ts`) | apaga o do passo 4; marcas por `RUN_MARKS` | — |
+| `hub/copies/readers-routes.test.ts:145-148` | o literal `{ place, chosen: [] }` vira `principalFor(...)` | — |
+| `builder/controller-kit/` | cria `run.ts` (lê `conversationRun` de `controller-context/public.ts`, como `turns.ts:8`) e `test-run.ts`; `public.ts` exporta | as quatro conversas |
+| `builder/assistant/` | apaga o do passo 4 e o `offeredOnly` de `public.ts:4`; muda `assistant.ts`, `routes.ts`, `open.ts`, `overview.ts`, `research.ts`, `typed-search.ts`, `propose.ts`, `connector-access.ts`, `turn.ts`, `company-memory.ts`, `propose-company-memory.ts`, `copy-runs.ts`, `search.ts`, `release.ts`, `test-assistant.ts` | `automations/`, `conversations-of.ts` |
+| `builder/automations/automations.ts` | lista e criação pela porta, `ANY` | rotas de automação |
+| `builder/construtor/` (`construtor.ts`, `open.ts`, `routes.ts`) | apaga o do passo 4; `RUN_MARKS` | — |
 | `builder/agents/` (`agent.ts`, `controller.ts`, `tools.ts`, `code-tools.ts`, `open.ts`, `conversation-routes.ts`) | apaga `runsOf`; `keptRun` vira o leitor guardado do agente | `construtor/draft-trial.ts` |
 | `builder/conversation/` (`turn-of.ts`, `builder.ts`) | apaga `projectIn`; `builderDataOf` recebe `principalOf` | — |
 | `builder/tools/check.ts` | `sessionScopeOf` devolve `Principal` (`builder`); `InProject` fica | `tools/`, `agents/agents.ts`, `agents/conversation-routes.ts` |
 | `conversations-of.ts`, `main.ts` | `companyData` e `access` com `Principal` | — |
 
-Os 29 arquivos (não teste) que importam `SessionScope`. Apaga:
-`hub/connectors/scope.ts`; `public.ts:61` (o reexport); em `builder/assistant/context.ts`, o tipo do
-escopo (fica `machineMarks` sobre `RunScope`). Passam a `Principal`: `assistant-port.ts`,
+Os 29 arquivos (não teste) de `SessionScope`. Apaga: `hub/connectors/scope.ts`; o reexport de
+`public.ts:61`; o tipo do escopo em `assistant/context.ts` (fica `machineMarks` sobre `RunScope`). Passam a `Principal`: `assistant-port.ts`,
 `approval.ts:107`, `tool-door.ts:13`, `write-record.ts:33,251`, `test-write.ts:25,81`; `hub/data/public.ts`,
 `query.ts:44-118`, `rows.ts:13`; `routes.ts:27,91` (pela porta); `test-assistant.ts:65,201`;
 `conversation/builder.ts:9,75,138`; `tools/check.ts:11-50`; `conversations-of.ts:22,164`. Passam a
 `RunScope`: `assistant.ts:119-147,352-355` (com `Place`); `propose.ts:102`, `connector-access.ts:15`;
 `construtor/construtor.ts:16,87,200` (com `principalOf`); `agents/agent.ts:17,115-133,189`,
-`controller.ts:9,201`, `tools.ts:12,89`, `code-tools.ts:6,78` (com `Principal`). `runOf` no lugar de
-`scopeOf`: `overview.ts:26-118`, `research.ts:47`, `typed-search.ts:20`. `Place` da porta:
+`controller.ts:9,201`, `tools.ts:12,89`, `code-tools.ts:6,78` (com `Principal`). O `runResolver` no lugar
+de `scopeOf`: `overview.ts:26-118`, `research.ts:47`, `typed-search.ts:20`. `Place` da porta:
 `open.ts:12,25,87` (sai `offeredOnly`), `automations/automations.ts:12,26`.
 
 ### Os contratos que a unidade cria
@@ -427,7 +437,7 @@ escopo (fica `machineMarks` sobre `RunScope`). Passam a `Principal`: `assistant-
 Em `hub/access/model.ts` (decisão F6):
 
 ```ts
-export type Place = Readonly<{ kind: 'COMPANY' } | { kind: 'PROJECT'; projectId: ProjectId }>
+export type Place = Readonly<{ kind: 'COMPANY' } | { kind: 'PROJECT'; projectId: ProjectId }>   // já existe (:16); sai a cópia de hub/connectors/scope.ts:6
 export type Choice = Readonly<{ kind: 'ANY' } | { kind: 'CHOSEN'; connections: readonly ConnectionId[] }>
 export type ConsumerContext = Readonly<
   | { consumer: 'assistant'; companyId: CompanyId; personId: PersonId; place: Place; choice: Choice }
@@ -445,7 +455,7 @@ tabelas não dependem da escolha.
 Em `builder/controller-kit/run.ts`:
 
 ```ts
-export type Ceiling = Readonly<{ kind: 'PERSON' } | { kind: 'VERSION'; declared: Declared }>
+export type Ceiling = Readonly<{ kind: 'PERSON' } | { kind: 'DECLARED'; declared: Declared }>
 export type RunThread = Readonly<{ kind: 'THREAD'; id: ConversationId } | { kind: 'TRIAL' }>
 export type RunScope = Readonly<{
   kind: ControllerKind          // kinds.ts:19-26
@@ -476,28 +486,26 @@ export function principalOf(run: RunScope): Principal
 - **Estados e ids.** Uniões por `kind` (C21); `ANY` é a variante, nenhum `chosen: []` quer dizer "tudo".
   Ids do `@conexus/hub-api`, por parse (C23): o dono pelo recurso (`ownerOfResource`,
   `kinds.ts:61-67`), a conversa por `conversationRun` (`controller-in.ts:37-40`), o resto por `runMark`.
-- **Donos.** `Place`, `Choice`, `Declared`, `chosenIn`: `hub/access`. `RunScope`, `RUN_MARKS` e as chaves
-  de marca (as de hoje, byte a byte: dados guardados que as varreduras de remoção procuram):
-  `controller-kit/run.ts`. A escolha é da linha do Hub de cada dono (Assistente
+- **Donos.** `Place`, `Choice`, `chosenIn`: `hub/access`; `Declared`: `hub/identity/may-use.ts`, para
+  onde a U2 o move. `RunScope`, `RUN_MARKS` e as chaves de marca (as de hoje, byte a byte, que as
+  varreduras de remoção procuram): `controller-kit/run.ts`. A escolha é da linha do Hub (Assistente
   `chosen.ts`, agente `keptRun` com a versão), nunca da marca (C26).
 - **Entrada externa.** `runMark(kind)`: `z.object` sobre as chaves do tipo, `CompanyId`/`PersonId`
-  obrigatórios, `ProjectId` opcional, um `.refine` de nada: a comparação com o recurso é do `runResolver`. O
+  obrigatórios, `ProjectId` opcional, sem `.refine`: a comparação com o recurso é do `runResolver`. O
   lugar do Assistente e do agente vem da linha (teste F15, `create.test.ts:107`); só o Construtor, sem
   linha, lê a marca de Projeto, conferida contra o Projeto vivo da empresa (`liveProjectOf`), como
   `scope.ts:107` da Factory (C27).
 - **Arquivo modelo.** `hub/access/view.ts`: `Verdict` por `kind`, `LeafKey` com marca (parse em
   `reach.ts`), o corte de sistema sem operação num dono (`:27`).
+- **Ao apagar.** Nenhuma rota, tabela, coluna ou código de falha novo.
 
 ### As skills e a leitura
 
-`docs/reference/stack.md:20` (`@mastra/core`, `apps/server/src/builder`): a skill `mastra`; ler primeiro
-`node_modules/@mastra/core/dist/docs` sobre `AgentController` e `requestContext`. `:34` (`zod`): C27.
-`:35` (`fastify`): `fastify-best-practices` só se uma rota mudar de forma (não muda). Guia: testing
+`docs/reference/stack.md:20` (`@mastra/core`): a skill `mastra`; ler primeiro o `dist/docs` sobre
+`AgentController` e `requestContext`. `:34` (`zod`): C27. Nenhuma rota muda de forma. Guia: testing
 (T5, T26, T27).
 
 ### A ordem do trabalho
-
-Cada passo testa os casos dos seus critérios.
 
 1. **A porta aprende a escolha.** Critérios: 17, 18.
    - **Arquivos:** `hub/access/` do raio. **Referência a seguir:** `hub/access/view.ts:19-28`; C81.
@@ -505,41 +513,43 @@ Cada passo testa os casos dos seus critérios.
    - **O que entra:** `Choice`, `chosenIn`, `construtor`, `assistant` com `place`; `principalFor` põe
      `ANY` em `builder` e `construtor`. Regras: C21, C26, C81.
    - **Testes:** o cenário `construtor` (`tablesBy: 'RELEASE'`, `revokedBy: 'ROLE'`).
-   - **Mutações à mão:** sem o corte por `chosenIn`, o 18 fica vermelho.
+   - **Mutações à mão:** sem o corte por `chosenIn`, vermelho o 18.
 2. **`hub/connectors` e `hub/data` recebem `Principal`.** Critérios: 23, 25, 26.
-   - **Arquivos:** `hub/connectors` e `hub/data` do raio. **Referência a seguir:** `assistant-port.ts:121-137` (`mayAsk`: `declared` no lugar de
-     `agentVersion`, a mesma troca de falante; o teto é da U4), `:163-178`.
-   - **O que sai:** `SessionScope` e `Place` de `scope.ts`, com os 29 chamadores; `contextOf`, com
+   - **Arquivos:** os do raio. **Referência a seguir:** `assistant-port.ts:121-137` (`mayAsk`:
+     `declared` no lugar de `agentVersion`, o mesmo falante; o teto é da U4), `:163-178`.
+   - **O que sai:** `SessionScope` e `Place` de `scope.ts`, com os 29 chamadores; `Declared` vai para `may-use.ts`; `contextOf`, com
      `conformance.test.ts:143`.
    - **O que entra:** `idsOf(principal)`; `readable`, `write.ts:81` e `chosenAmong` por
-     `chosenIn(principal.choice, id)`. Sem mudança de comportamento: `chosen: X` vira `CHOSEN X` em todo
-     chamador, exceto o Construtor (passo 4) e a lista da conversa nova (passo 5).
+     `chosenIn(principal.choice, id)`. Sem mudar comportamento: `chosen: X` vira `CHOSEN X` em todo
+     chamador, salvo o Construtor (passo 4) e a lista da conversa nova (passo 5).
    - **Testes:** as suítes de `hub/connectors/` e `hub/data/`, com `principalFor` no lugar do literal.
-   - **Mutações à mão:** `chosenIn` sempre `true` em `readable` deixa vermelho `assistant-port.test.ts`.
+   - **Mutações à mão:** `chosenIn` sempre `true` em `readable`: vermelho `assistant-port.test.ts`.
    - **Pronto quando:** `npm run typecheck` e `npm run deps` passam.
 3. **`run.ts`: um escopo, uma marca.** Critérios: 19, 20, 21, 24.
    - **Arquivos:** cria `controller-kit/run.ts`; muda `public.ts`. **Referência a seguir:**
      `mastra-1.83` `mastracode/factory/src/tools/scope.ts:58-121`.
    - **O que sai:** nada (passo 4).
-   - **O que entra:** `runResolver` lê `conversationRun`, `ownerOfResource` (o tipo tem de ser o do
-     `kind`), a thread e `runMark(kind)`; devolve `undefined` para a marca cuja empresa ou pessoa difere do
-     recurso; chama `stored`. Regras: C21, C23, C27.
-   - **Mutações à mão:** `!==` por `===` na comparação de empresa deixa
-     vermelho o 19.
-4. **As quatro conversas leem `RunScope`.** Critérios: 20, 22, 23, 25, 26, 27.
-   - **Arquivos:** `builder/` do raio. **Referência a seguir:** a linha "O escopo de uma execução".
+   - **O que entra:** `runResolver` lê `conversationRun`, `ownerOfResource` (do tipo do `kind`), a thread
+     e `runMark(kind)`; devolve `undefined` se a empresa ou a pessoa da marca difere do recurso; chama
+     `stored`. Regras: C21, C23, C27.
+   - **Testes:** a marca estranha entra por `plantMark(hub, conversationId, marks)`, novo em
+     `controller-kit/test-run.ts`: `updateThread` sobre `createMastraStorage(hub.test.mastraPool)`, como
+     `mastra/tracing.test.ts:296-325`; a recusa, o `CONVERSATION_NOT_FOUND` de `conversation/guard.ts:175-181`.
+   - **Mutações à mão:** `!==` por `===` na comparação de empresa: vermelho o 19.
+4. **As quatro conversas leem `RunScope`.** Critérios: 20, 22, 23, 25, 26, 27, 28.
+   - **Arquivos:** `builder/` do raio. **Referência a seguir:** a linha do escopo.
    - **O que sai:** `sessionScopes`, `scopeOn`, `ScopeOf` (`context.ts:29-58`); `scopes` e o `door`
      (`construtor.ts:108-122,200-204`); `runsOf` (`controller.ts:78-87`); `projectIn` (`turn-of.ts:75-87`);
      `automationRunFor` (`open.ts:165-175`), agora `run.attended`; as três marcas, agora `RUN_MARKS`.
-   - **O que entra:** o `stored` de cada dono. Assistente: `chosen.of` (`CHOSEN`), `attended` pela marca de
-     automação. Builder: `index.projectOf`, `ANY`. Construtor: o Projeto da marca conferido, `ANY` (o
+   - **O que entra:** o `stored` de cada dono. Assistente: `chosen.of` (`CHOSEN`), `attended` pela marca
+     de automação. Builder: `index.projectOf`, `ANY`. Construtor: o Projeto da marca conferido, `ANY` (o
      `door` de hoje passa todas as oferecidas). Agente: `keptRun` mais a versão de
-     `registry.resolve(run, activationIn(rc))`, `CHOSEN` = `selected` (`agent.ts:185-188`), `VERSION` =
-     `declaredOf(tools)`; o plano (`agent.ts:154-201`) lê o `RunScope` e não monta escopo.
-   - **Mutações à mão:** `attended` sempre `true` deixa vermelho `propose.test.ts:113`; a escolha do agente
-     como `ANY`, o caso novo de `agent-read.test.ts`.
+     `registry.resolve(run, activationIn(rc))`, `CHOSEN` = `selected` (`agent.ts:185-188`), `DECLARED` =
+     `declaredOf(tools)`; o plano (`agent.ts:154-201`) lê o `RunScope`, sem montar escopo.
+   - **Mutações à mão:** `attended` sempre `true`: vermelho `propose.test.ts:113`; a escolha do agente
+     `ANY`, o caso novo de `agent-read.test.ts`.
    - **Pronto quando:** `grep -rn 'SessionScope\|ScopeOf\|projectIn\|sessionScopes' apps/server/src` vazio.
-5. **A lista da conversa nova pela porta (issue 1147).** Critérios: 10 a 16.
+5. **A lista da conversa nova pela porta (issue 1147).** Critérios: 10 a 16, 29.
    - **Arquivos:** `assistant/routes.ts`, `assistant/open.ts`, `automations/automations.ts`,
      `conversations-of.ts` (a dependência `access`). **Referência a seguir:** `hub/access/view.ts:27`.
    - **O que sai:** `offeredOnly` (`open.ts:84-93`) e as chamadas de `routes.ts:92,204,275`,
@@ -551,53 +561,51 @@ Cada passo testa os casos dos seus critérios.
 
 ### Como se prova
 
-Pela porta pública (T5). Gravações (T26): a linha `builder.assistant_conversation` e a agenda da
-automação, lidas de volta. Hoje falham:
-10 e 11 (o papel sem alcance vê e guarda a conexão, `speaking.ts:76-79`); 15 e 16 (a `data_describe`
+Pela porta pública (T5). Gravações (T26): a linha `builder.assistant_conversation` e a agenda, lidas de
+volta. Hoje falham:
+10 a 14 (o papel sem alcance vê e guarda a conexão, `speaking.ts:76-79`); 15 e 16 (a `data_describe`
 lista a Filial não escolhida e a leitura tipada a recusa `NOT_CHOSEN`); 17 (sem cenário `construtor`,
 `satisfies Record<Consumer, Scenario>` em `conformance.test.ts:86` não compila depois do passo 1); 19 e
-21 (nenhum resolvedor compara a marca com o recurso). Os outros passam hoje.
+21 (nenhum resolvedor compara a marca com o recurso). Não compilam hoje: 18 e 23. Os outros passam hoje.
 
 ### Parar se
 
-- Uma recusa nova for pedida: não criar (decisão F3; `ProblemReason.NOT_OFFERED`, `agent-failures.ts:120`,
-  é de ferramenta).
-- Uma rota do Mastra deixar o cliente gravar `metadata` de thread (`conversation/guard.ts`).
-- O plano do agente precisar ler a versão duas vezes: parar e mostrar.
-- Uma asserção de hoje mudar fora dos critérios 10 a 16.
+- Uma recusa nova for pedida: não criar (F3; `ProblemReason.NOT_OFFERED`, `agent-failures.ts:120`, é de
+  ferramenta).
+- Uma rota do Mastra deixar o cliente gravar `metadata` de thread (`guard.ts`).
+- O plano do agente precisar ler a versão duas vezes: mostre.
+- Mudar uma asserção de hoje fora dos critérios 10 a 16.
 - O corte por escolha mudar as instruções de algum agente (as listas são da U3).
 
 ## U3 A fábrica
 
 **Base e modelo.** `main` `f4ccc150` com a U2, `@mastra/core` 1.83.0. Opus: cruza cinco pastas e troca
-de uma vez a fonte de toda lista de ferramenta. Os nomes ficam; some só a conexão fora da vista (C81).
+a fonte de toda lista de ferramenta. Os nomes ficam; some só a conexão fora da vista (C81).
 
 ### As linhas da tabela
 
-As linhas U3 da tabela de referência, mais:
+Além das linhas U3:
 
-- **A fábrica.** Na linha da tabela, `:47` é o subconjunto por tipo de sessão,
-  `factory.ts:1898-1912` é `extraTools` e `mergeTools` e `:1980-1994`, `resolveFactoryToolScope` e
-  `createFactoryTools`.
+- **A fábrica.** `:47`, o subconjunto por tipo de sessão; `factory.ts:1898-1912`, `extraTools` e
+  `mergeTools`; `:1980-1994`, `resolveFactoryToolScope` e `createFactoryTools`.
 - **O escopo por closure.** `read-tools.ts:222-223` lê só `scope.orgId` e `scope.factoryProjectId`; em
-  `dist/docs/references/reference-agents-agent.md`, `tools` (`:564`) e `instructions` (`:558`) recebem o
-  `requestContext`.
+  `reference-agents-agent.md`, `tools` (`:564`) e `instructions` (`:558`) recebem o `requestContext`.
 - **As leituras tipadas.** `offersRead`: `connectors/typed-reads.ts:59-67`. `includeResolvedTools`
   (`:131,157`) fica de fora: esconde toda ferramenta atrás da busca.
-- **As listas.** Também `agent.ts:252`; `overview.ts:98-130` é `reachedBy` e `connectionsOffered`.
+- **As listas.** Também `agent.ts:252`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `builder/company-tools/` | cria `scope`, `names`, `listed`, `factory`, `search` e `public.ts`; recebe `overview.ts` e `copy-runs.ts` | `assistant/assistant.ts`, `assistant/research.ts`, `assistant/instructions.ts`, `conversation/builder.ts`, `conversation/instructions.ts`, `construtor/construtor.ts`, `agents/agent.ts` |
-| `builder/assistant/` | apaga o do passo 2 e `typed-search.ts`; o par `overview.ts`/`copy-runs.ts` sai; `researchReads` e `assistantConnectorTools` montam pela fábrica | `assistant.ts`; os testes por `test-assistant.ts:14,210-212` |
-| `builder/conversation/` | apaga o do passo 2 em `builder.ts`; `builderInstructions` recebe a lista da fábrica | `conversations-of.ts` (a ponte `builderDataOf` de `conversations-of.ts:98` é outra função e fica) |
+| `builder/company-tools/` | cria `scope`, `names`, `listed`, `factory`, `search` e `public.ts`; recebe `overview.ts`, `copy-runs.ts` e `ports.ts` | `assistant/assistant.ts`, `assistant/research.ts`, `assistant/instructions.ts`, `conversation/builder.ts`, `conversation/instructions.ts`, `construtor/construtor.ts`, `agents/agent.ts` |
+| `builder/assistant/` | apaga o do passo 2 e `typed-search.ts`; saem `overview.ts`, `copy-runs.ts` e `ports.ts` (seus tipos viram `CompanyCopies` e `CompanyProjects`, de `company-tools/public.ts`); `researchReads` e `assistantConnectorTools` montam pela fábrica | `assistant.ts`; os testes por `test-assistant.ts:14,210-212` |
+| `builder/conversation/` | apaga o do passo 2 em `builder.ts`; `builderInstructions` recebe a lista da fábrica | `conversations-of.ts` (o `builderDataOf` dele, `:98`, é outro e fica) |
 | `builder/construtor/` | apaga `offeredOf` e a `door` à mão (`construtor.ts:163-166,199-216`); `projectReader` (`:143`) lê a lista da fábrica | `construtor/tools.ts:47` (`project_read`) |
-| `builder/agents/` | `runToolsOf` e `instructions` leem a lista da fábrica (`agent.ts:252,331`); `neverAsking`, `presetTools` e `codeTools` ficam | `agents/controller.ts` |
-| `builder/connectors/` | exporta `readTarget(name)` (o conector e a operação de uma leitura tipada) | `company-tools/search.ts` |
-| `builder/data-tools/` | `dataTools({ data })` recebe a `CompanyData` presa ao escopo, sem `DataOf` | `company-tools/factory.ts` |
-| `.dependency-cruiser.cjs` | `company-tools` entra em `AGENTS_AND_APPS` (`:21`); a lista de migração não muda | `npm run deps` |
+| `builder/agents/` | `runToolsOf` e `instructions` leem a lista da fábrica (`agent.ts:252,331`); ficam `neverAsking`, `presetTools`, `codeTools` | `agents/controller.ts` |
+| `builder/connectors/` | exporta `readTarget(name)`: o conector e a operação da leitura tipada | `company-tools/search.ts` |
+| `builder/data-tools/` | `dataTools({ data })` recebe a `CompanyData` presa, sem `DataOf` | `company-tools/factory.ts` |
+| `.dependency-cruiser.cjs`, `.dependency-cruiser-migration.cjs` | `company-tools` entra em `AGENTS_AND_APPS` (`:21`); saem da lista `assistant/overview` e `assistant/typed-search` (movido e apagado); nada entra | `npm run deps` |
 
 ### Os contratos que a unidade cria
 
@@ -611,13 +619,13 @@ type CompanyToolName =
   | typeof APP_DATA_TOOL[keyof typeof APP_DATA_TOOL]            // app_data_read, app_data_check
   | typeof ASSISTANT_TOOL['overview' | 'copyRuns']              // conexus_overview, copy_runs
   | 'typed_reads'   // TYPED_READ_NAMES, só pelo search_tools
-type CompanyToolSeat = ConversationKind | 'research'    // o ajudante do Assistente
+type CompanyToolSeat = ControllerKind | 'research'    // controller-kit/kinds.ts:19-26; research, o ajudante
 const TOOLS_OF: Readonly<Record<CompanyToolSeat, readonly CompanyToolName[]>>
 //   assistant:     data_describe, data_query, typed_reads, connector_notes, connector_note_save, copy_runs, conexus_overview
 //   research:      connector_read
-//   app-builder:   connector_read, connector_notes, connector_note_save, copy_propose, app_data_read, app_data_check, data_describe, data_query
-//   agent-builder: connector_read, connector_notes
-//   agent:         connector_notes, app_data_read, data_describe, data_query
+//   builder:       connector_read, connector_notes, connector_note_save, copy_propose, app_data_read, app_data_check, data_describe, data_query
+//   construtor:    connector_read, connector_notes
+//   agents:        connector_notes, app_data_read, data_describe, data_query
 
 // scope.ts
 type AppDataGrant = { kind: 'NONE' } | { kind: 'READ' } | { kind: 'READ_AND_CHECK' }    // C21
@@ -640,7 +648,7 @@ type CompanyToolDeps = Readonly<{
   data: (run: RunScope) => CompanyData
   connections: (run: RunScope) => Promise<readonly ConnectionDetail[]>   // skill, copies, perProject, notes
   connector: Readonly<{ read: ReadCall; notes: NotesCall; saveNote?: NoteSave; propose?: ProposeCall }>
-  copies?: () => Pick<AssistantCopies, 'list' | 'runs'>
+  copies?: () => Pick<CompanyCopies, 'list' | 'runs'>   // ports.ts
   projects?: (run: RunScope) => Promise<Omit<Overview, 'connections'>>
   appData?: AppDataDoor
   turn: (requestContext: RequestContext) => TurnKey     // não quem é
@@ -649,11 +657,17 @@ function companyTools(scope: CompanyToolScope, seat: CompanyToolSeat, deps: Comp
 function companyConnections(scope: CompanyToolScope, deps: CompanyToolDeps): Promise<Listed<ConnectionDetail>>
 // search.ts: catálogo fixo; o filtro lê a vista
 function companyReadSearch(scopeOf: (rc: RequestContext) => Promise<CompanyToolScope | undefined>, deps: CompanyToolDeps): ToolSearchProcessor
+
+// public.ts: companyToolScope, companyTools, companyConnections, companyReadSearch, TOOLS_OF e os tipos
+// CompanyToolScope, CompanyToolSeat, CompanyToolDeps, CompanyCopies, CompanyProjects; inView fica dentro
 ```
 
+Sem import de `assistant/` em `company-tools`, não há ciclo (C4, `no-circular`); o `overview.ts` movido
+lê `RunScope`, não `hub/connectors`. Nenhuma rota, tabela, coluna ou código de falha novo.
+
 `ConnectionDetail`, `ReadCall`, `NotesCall`, `NoteSave` e `ProposeCall` vêm de `builder/connectors/public.ts`
-e do `@conexus/hub-api`, nunca de `hub/connectors` (`agents-and-apps-reach-data-only-through-the-contract`,
-`.dependency-cruiser.cjs:68-78`); as portas de `hub/` chegam pelas `deps`.
+e do `@conexus/hub-api`, nunca de `hub/connectors` (`.dependency-cruiser.cjs:68-78`); as portas de
+`hub/` chegam pelas `deps`.
 
 Estados: `AppDataGrant` por `kind` (C21). Ids: `ConnectionId`, parseado na fonte da vista
 (`CatalogSystem.connection`); nenhum novo. Donos (C26): os nomes, do hub-api; `TOOLS_OF`, a única tabela
@@ -664,24 +678,26 @@ de subconjuntos; `inView`, a única regra da vista; o escopo, `companyToolScope`
 
 ### As skills e a leitura
 
-`docs/reference/stack.md`, `apps/server/src/builder`: a skill `mastra` e o `dist/docs` do `@mastra/core`
-(`reference-agents-agent.md`, `reference-processors-tool-search-processor.md`). Ler primeiro
-`hub/access/view.ts` e os cenários da U2 em `hub/access/conformance.test.ts`. Guia: testing (T5, T26, T27).
+A skill `mastra` e, no `dist/docs`, `reference-agents-agent.md` e
+`reference-processors-tool-search-processor.md`. Ler primeiro `hub/access/view.ts` e os cenários da U2
+em `hub/access/conformance.test.ts`. Guia: testing (T5, T26, T27).
 
 ### A ordem do trabalho
 
 Os casos novos, salvo o passo 1, vão em `company-tools/conformance.test.ts`, no mundo
-`rolesWorld(t, 'PLANTED')` de `hub/copies/test-readers.ts`.
+`rolesWorld(t, 'PLANTED')` de `hub/copies/test-readers.ts`. Os dois entram pela porta (T5,
+`.dependency-cruiser.cjs:136-143`): cada assento é uma conversa (`assisting`, `conversing`, `building`,
+`agentsOn`), lida pelo `Sent` de `platform/test-anthropic-body.ts`.
 
 1. **Gravar os nomes de hoje.** Critério: 30.
    - **Arquivos:** cria `company-tools/tool-sets.test.ts`. **Referência a seguir:**
-     `construtor/construtor.test.ts:55-66` (compara `asked.tools` ordenado). **O que sai:** nada.
+     `construtor/construtor.test.ts:55-66` (`asked.tools` ordenado). **O que sai:** nada.
    - **O que entra:** um caso por assento (Assistente no Início e num Projeto, rodada de automação,
-     Builder, Construtor, agente salvo com e sem `appData`), com a lista literal de uma rodada no `main`.
+     Builder, Construtor, agente salvo com e sem `appData`), com a lista literal do `main`.
    - **Pronto quando:** o arquivo fica verde no `main`.
 2. **Subtrair.** Critério: 41. No mesmo commit do passo 3.
    - **Arquivos:** `assistant.ts` (`offeredFor`, `:176-181`; `dataOfScope`, `:184-189`); `overview.ts`
-     (`reachedBy` e `connectionsOffered`, `:98-130`; a citação velha, `:21`); `typed-reads.ts:59-67`
+     (`reachedBy`, `connectionsOffered`, `:98-130`); `typed-reads.ts:59-67`
      (`offersRead`); `builder.ts` (`grantedFor`, `admittedFor`, `builderDataOf`, `builderConnectorTools`,
      `:44-87,109-118`). **Referência a seguir:** apagar antes de pôr.
    - **O que sai:** esses e seus chamadores. **O que entra:** nada.
@@ -690,13 +706,14 @@ Os casos novos, salvo o passo 1, vão em `company-tools/conformance.test.ts`, no
      `oncePerRun` (`controller-kit/once.ts:7`).
    - **O que entra:** os contratos desses arquivos; a `reach` só quando `run.choice.kind === 'CHOSEN'`.
      Regras: C26, C81.
-   - **Testes:** o 46 conta as chamadas de `viewOf` numa porta de contagem.
-     **Mutações à mão:** sem `oncePerRun`, o 46 fica vermelho. **Pronto quando:** `npm run typecheck` passa.
+   - **Testes:** o 46 conta as chamadas por `t.mock.method(w.on.hub.access, 'viewOf')`, o `access` que
+     `main.ts:212-218` passa às conversas, que `companyToolScope` chama na hora.
+     **Mutações à mão:** sem `oncePerRun`, vermelho o 46. **Pronto quando:** `npm run typecheck` passa.
 4. **A fábrica.** Critérios: 31, 32, 36, 39.
    - **Arquivos:** cria `factory.ts` e `public.ts`; em `data-tools/tools.ts`, `dataTools({ data })` recebe
-     a `CompanyData` presa e `zoneOf(requestContext)` fica (é o fuso, não quem é). **Referência a
+     a `CompanyData` presa; `zoneOf(requestContext)` fica (é o fuso). **Referência a
      seguir:** `tools/index.ts:45-56`; `mcp/routes.ts:183-190`.
-   - **O que entra:** por nome de `TOOLS_OF[seat]`, a peça que já existe (`connectorTools` com
+   - **O que entra:** por nome de `TOOLS_OF[seat]`, a peça de hoje (`connectorTools` com
      `inView(scope.view, details)`, `dataTools`, `appDataTools`), podada pelos `grants` e, no
      `connector_note_save`, por `run.attended`; `copy_propose` só sobre as conexões de `inView` com
      `copies`; nome repetido lança erro, como `mergeTools`.
@@ -704,75 +721,72 @@ Os casos novos, salvo o passo 1, vão em `company-tools/conformance.test.ts`, no
    - **Mutações à mão:** `details` sem `inView` (vermelho o 31); sem a poda de `attended`
      (`note-save.test.ts:53`). **Pronto quando:** verdes contra a fábrica, antes de ligar os agentes.
 5. **As ferramentas só do Assistente.** Critérios: 33, 37, 38, 44.
-   - **Arquivos:** move `overview.ts` e `copy-runs.ts` para `company-tools/` (em `assistant/` fariam um
-     ciclo, que `no-circular` recusa); cria `search.ts`; muda `research.ts:44-63`. **Referência a
+   - **Arquivos:** move `overview.ts`, `copy-runs.ts` e `ports.ts` para `company-tools/` (em `assistant/`
+     fariam um ciclo); cria `search.ts`; muda `research.ts:44-63`. **Referência a
      seguir:** `reference-processors-tool-search-processor.md:100-127`.
-   - **O que entra:** `conexus_overview` lista os sistemas de `scope.reach` mais as fontes das tabelas
-     dela (o `reachedIn` de hoje, `overview.ts:90-95`), com `chosen` pela `run.choice`; `copy_runs` só
+   - **O que entra:** `conexus_overview` lista os sistemas de `scope.reach` e as fontes das tabelas
+     dela (`reachedIn`, `overview.ts:90-95`), com `chosen` pela `run.choice`; `copy_runs` só
      acha a tabela de `scope.view.list('table')`, e `copies().list` dá o id; o `filter` do
      `search_tools` passa a leitura cujo conector (`readTarget`) tem um sistema em `scope.view` que lista
      a operação; o ajudante monta `companyTools(scope, 'research', deps)`.
-   - **Testes:** sem mudar, `overview-reach.test.ts`, `copy-runs.test.ts`, `typed-reads.test.ts:87`. **Mutações à mão:** `reach` por `view` no resumo (vermelho o 37); o
+   - **Testes:** os do 37, 38 e 33, sem mudar. **Mutações à mão:** `reach` por `view` no resumo (vermelho o 37); o
      filtro sempre `true` (o 33).
-6. **Ligar os quatro agentes.** Critérios: 30, 34, 35, 40, 43, 45.
+6. **Ligar os quatro agentes.** Critérios: 30, 34, 35, 40, 42, 43, 45.
    - **Arquivos:** `assistant.ts` (`tools:`, `skills:`, `inputProcessors`), `assistant/instructions.ts:45-71`,
      `builder.ts:155-191`, `conversation/instructions.ts:35,46-65`, `construtor.ts:184-222`,
      `agent.ts:154-201,249-276,328-335`. **Referência a seguir:** a linha da fábrica. **O que sai:** os
      `tools:` à mão.
    - **O que entra:** cada montagem resolve `companyToolScope` uma vez e espalha `companyTools(...)` na
-     mesma ordem de chaves; as skills, a linha "Connections in
-     this conversation" e o `## Connections` do Builder (`connectionsContext`, que fica, H4) leem
-     `companyConnections`; o agente salvo passa a mesma lista a `presetTools` como `offered`.
-   - **Testes:** `tool-sets.test.ts` sem mudar; o 34 por assento. **Mutações à mão:**
+     mesma ordem de chaves; as skills, a linha "Connections in this conversation" e o `## Connections`
+     do Builder (`connectionsContext`, que fica, H4) leem `companyConnections`; o agente salvo passa essa
+     lista a `presetTools` como `offered`.
+   - **Testes:** `tool-sets.test.ts`, sem mudar; o 34, por assento. **Mutações à mão:**
      `copy_propose` em `TOOLS_OF.assistant` (vermelho `tool-sets.test.ts`). **Pronto quando:**
      `npm run deps`, `typecheck`, `lint` e os testes tocados passam.
 
 ### Como se prova
 
-Nada novo é gravado (T26). Hoje falham o 31 e o 32 (o papel não alcança `clientes`;
-`sankhya_clientes` não está liberada): o `connector_notes` e o `connector_read` do Builder
-nomeiam a conexão recebida sem operação no alcance, que `visibleTo` mantém
-(`hub/connectors/speaking.ts:69-81`, issue 1145), e a linha de conexões do Construtor também
-(`construtor.ts:192`); o `copy_runs` num Projeto acha a cópia não liberada (`copy-runs.ts:103` lê a lista
-da empresa). Sem a U3, o `conexus_overview` perderia as não escolhidas (`reachedBy` lê a `describe` que a
-U2 restringe).
+Nada se grava (T26). Hoje falham 31, 32, 34, 35 e 38 (o papel não alcança `clientes`;
+`sankhya_clientes`, não liberada): `connector_notes`, o `connector_read` do Builder e a linha de
+conexões do Construtor (`construtor.ts:192`) nomeiam a conexão recebida sem operação no alcance, que
+`visibleTo` mantém (`speaking.ts:69-81`, issue 1145); o `copy_runs` num Projeto acha a cópia não liberada
+(`copy-runs.ts:103` lê a lista da empresa). Sem a U3, o `conexus_overview` perderia as não escolhidas
+(`reachedBy` lê a `describe` que a U2 restringe).
 
 ### Parar se
 
-- Um tipo de `CompanyToolDeps` pedir import de `hub/connectors`, `hub/copies` ou `hub/data`: nada entra
-  na lista de migração (`.dependency-cruiser-migration.cjs:1`); relate.
+- Um tipo de `CompanyToolDeps` pedir import de `hub/connectors`, `hub/copies` ou `hub/data`: relate;
+  nada entra na lista de migração.
 - `tool-sets.test.ts` mudar um nome ou a ordem das chaves, ou a U2 não entregar `principalOf` com
-  `choice` e a vista com `choice: ANY`.
+  `choice` e a vista `ANY`.
 - A lei (a) pedir que o Construtor (`tool_search`, `ready`) ou a edição de agente deixem de listar
-  leituras `allowed: false`: é a lista de edição, fora da U3.
+  leituras `allowed: false`: é a lista de edição, fora daqui.
 - A lei (a) pedir que `legacyTools` deixe de ler `kitReads`: é a U4.
 
 ## U4 O teto
 
-**Base e modelo.** `main` `f4ccc150`, depois de U2 e U3, no grupo G2. Sonnet: forma decidida, mudança
-pequena, um teste por lugar. Revisão Opus: fronteira de segurança. O agente salvo passa a alcançar o
-papel de quem o roda, lido na hora, ∩ o que a versão declara; app e cópia seguem pela versão (3(d)).
+**Base e modelo.** `main` `f4ccc150`, depois de U2 e U3 (G2). Sonnet: forma decidida, mudança
+pequena, um teste por lugar. Revisão Opus: fronteira de segurança. O agente salvo alcança o papel
+de quem o roda, lido na hora, ∩ o que a versão declara; app e cópia seguem pela versão (3(d)).
 
 ### As linhas da tabela
 
-Ver as linhas U4 da tabela de referência; os lugares do alcance são os passos 2 a 4. Mais:
-`hub/identity/may-use.ts:22-27` é o `Speaker` com `VERSION` e `:54-56` o `roleOfSpeaker` que dá `null`; o
-escopo nasce em `builder/agents/agent.ts:189-196` (o `planner` põe `agentVersion`, no publicado e no
-rascunho) e, depois de U2, em `ceiling: { kind: 'VERSION' }` e `Principal.declared`
-(`hub/access/principal.ts:23-24`). Na referência, ver a linha do alcance (resolvido a cada vez,
-`resolveFactoryToolScope`, `:58`) e a da automação, que já cumpre a regra: a execução é uma conversa do Assistente do dono, com as conexões
-escolhidas (`automations/run.ts:113-116`), e a unidade só acrescenta testes. A corrida da cópia
-(`hub/connectors/copy-port.ts:118-137`) fala como `VERSION`, como o app, e não muda.
+Além das linhas U4: os lugares do alcance são os passos 2 a 4. `may-use.ts:22-27` é o `Speaker`
+com `VERSION`, `:54-56` o `roleOfSpeaker` que dá `null`. O escopo nasce em `agents/agent.ts:189-196` (o
+`planner` põe `agentVersion`, no publicado e no rascunho) e, depois de U2, em `ceiling: DECLARED` e
+`Principal.declared` (`principal.ts:23-24`). A automação já cumpre a regra: é uma conversa do Assistente
+do dono, com as conexões escolhidas (`automations/run.ts:113-116`); a unidade só acrescenta testes. A
+corrida da cópia (`copy-port.ts:118-137`) fala como `VERSION`, como o app, e não muda.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `hub/identity/may-use.ts`, `hub/identity/public.ts` | o passo 1 | `hub/access/public.ts`, `hub/connectors/*` (`speaking.ts`, `write.ts`, `read.ts`, `copy-sources.ts`, `copy-proof.ts`) |
-| `hub/access/public.ts`, `hub/access/model.ts` | a vista do agente fala como `AGENT` | `hub/data/catalog.ts`, `hub/data/public.ts`, `builder/company-tools/` |
+| `hub/access/public.ts` | a vista do agente fala como `AGENT` | `hub/data/catalog.ts`, `hub/data/public.ts`, `builder/company-tools/` |
 | `hub/connectors/assistant-port.ts`, `speaking.ts`, `write.ts`, `write-record.ts` | o agente fala como `AGENT` na leitura, no caderno e na escrita | `builder/agents/agent.ts`, `builder/agents/tools.ts`, `builder/agents/code-tools.ts`, `builder/assistant/` |
 | `builder/agents/tools.ts` | a escrita publicada pede `AGENT` com a pessoa da execução | `builder/agents/agent.ts` |
-| `hub/connectors/app-calls.ts`, `hub/connectors/copy-port.ts` | não muda; o comentário do `VERSION` em `may-use.ts` diz que ele é do app e da cópia | `apps/edge` pela rota do app; as cópias |
+| `hub/connectors/app-calls.ts`, `copy-port.ts` | não mudam; o comentário do `VERSION` em `may-use.ts` diz que é do app e da cópia | `apps/edge` pela rota do app; as cópias |
 | os testes dos critérios 50 a 64 | mudam ou ganham casos | — |
 
 ### Os contratos que a unidade cria
@@ -805,9 +819,8 @@ type Agent = Readonly<{ kind: 'AGENT'; personId: PersonId; declared: Declared }>
 // WriteRequest: (Readonly<{ speaker: Person }> | Readonly<{ speaker: Agent; agentId: AgentId; number: number }>)
 ```
 
-Em `hub/access/model.ts`, `Declared` deixa de ser `Extract<Speaker, ...>['declared']` (`:18`) e vem de
-`hub/identity/public.ts`. `Principal`, `ConsumerContext` e `Ceiling` não mudam: `principalOf` preenche
-`Principal.declared` com o `declared` do `ceiling: VERSION`.
+`Declared` mora em `may-use.ts` desde a U2. `Principal`, `ConsumerContext` e `Ceiling` não mudam:
+`principalOf` preenche `Principal.declared` com o do `ceiling: DECLARED`.
 
 Estados: `Speaker` por `kind`, `switch` exaustivo em `mayUseEach` e `mayUseNotebook` (C21). Ids: nenhum
 novo (C23). Donos: o falante e "papel ∩ declaração", `may-use.ts`; `public.ts`, `assistant-port.ts` e
@@ -819,29 +832,28 @@ Nenhuma rota, tabela, coluna, código de falha ou texto de tela novo. A recusa �
 
 ### As skills e a leitura
 
-`docs/reference/stack.md`, linhas `fastify` e `@mastra/core`: as skills `mastra`,
-`fastify-best-practices` e `organization-best-practices` (`hasPermission`). Ler primeiro `may-use.ts` inteiro, `hub/access/public.ts` e `mastra-1.83`
-`mastracode/factory/src/tools/scope.ts:58-121`. Guia: [testing](../guides/testing.md) (T5, T27).
+As skills `mastra`, `fastify-best-practices` e `organization-best-practices` (`hasPermission`). Ler
+primeiro `may-use.ts` inteiro, `hub/access/public.ts` e `mastra-1.83` `mastracode/factory/src/tools/scope.ts:58-121`. Guia: [testing](../guides/testing.md) (T5, T27).
 
 ### A ordem do trabalho
 
 1. **O falante `AGENT` na dona.** Critérios: 52, 61.
-   - **Arquivos:** `hub/identity/may-use.ts`, `hub/identity/public.ts`, `hub/access/model.ts`.
+   - **Arquivos:** `hub/identity/may-use.ts`, `hub/identity/public.ts`.
    - **Referência a seguir:** `has-permission.mjs:7`, chamado como em `may-use.ts:74-79`.
-   - **O que sai:** o `if (speaker.kind === 'VERSION')` de `:93`; o `Extract` de `access/model.ts:18`.
+   - **O que sai:** o `if (speaker.kind === 'VERSION')` de `:93`.
    - **O que entra:** os contratos acima. Regras: C21, C26.
-   - **Testes:** o do 52 (`role-doors.test.ts:117`), com `role: 'atendente'` no lugar de `null`.
-   - **Mutações à mão:** em `AGENT`, `declares && permitted` por `permitted` deixa vermelho o 52; por
+   - **Testes:** o do 52 (tabela abaixo), com `role: 'atendente'`.
+   - **Mutações à mão:** em `AGENT`, `declares && permitted` por `permitted`: vermelho o 52; por
      `declares`, o 51.
-   - **Pronto quando:** `npm run typecheck` aponta cada lugar que ainda monta `VERSION` para um agente.
+   - **Pronto quando:** `npm run typecheck` aponta cada lugar que monta `VERSION` para um agente.
 2. **A lista.** Critérios: 50, 53.
    - **Arquivos:** `hub/access/public.ts:46-51`.
    - **O que sai:** o literal `{ kind: 'VERSION', declared }` de `:49`.
    - **O que entra:** `withinVersion(personOf(personId, read.role), principal.declared)`, com o papel que
      `admitMember` já leu em `:38-41`, na mesma transação.
    - **Testes:** no cenário `agent`, `revokedBy` vira `readonly ('ROLE' | 'DECLARATION')[]` e a lei (e)
-     roda uma vez por caminho (50); o 53 reescreve `catalog-role.test.ts:273` (Dora, da Recepção, `[]`).
-   - **Mutações à mão:** `:49` de volta a `VERSION` deixa os dois vermelhos.
+     roda uma vez por caminho (50); o 53, `[]` para a Dora (tabela abaixo).
+   - **Mutações à mão:** `:49` de volta a `VERSION`: os dois vermelhos.
 3. **A leitura, o caderno e a execução.** Critérios: 51, 54, 57, 58, 59.
    - **Arquivos:** `hub/connectors/assistant-port.ts:121-137` (`mayAsk`), `hub/connectors/speaking.ts:91-108`
      (`mayUseNotebook`).
@@ -849,14 +861,12 @@ Nenhuma rota, tabela, coluna, código de falha ou texto de tela novo. A recusa �
      `Principal.declared`); o `return undefined` de `speaking.ts:97` só para `VERSION`.
    - **O que entra:** em `mayAsk`, `withinVersion(personOf(personId, admitted.role), declared)` quando o
      principal tem teto. Em `mayUseNotebook`, um `switch`: `VERSION` passa (app e cópia); `PERSON` e
-     `AGENT` conferem `consultar` no papel. O caderno não é operação declarada: a versão não o estreita,
-     o papel sim.
-   - **Testes:** o 51 reescreve `role-doors.test.ts:193`; 58 e 59 são novos ali; 54 e 57, novos em
+     `AGENT` conferem `consultar` no papel (o caderno não é operação declarada).
+   - **Testes:** o 51 (tabela abaixo); 58 e 59, novos em `role-doors.test.ts`; 54 e 57, novos em
      `agent-read.test.ts`, pela rota da conversa (T5).
-   - **Mutações à mão:** `mayAsk` devolvendo o `personOf` sem teto deixa vermelho o 52; o caderno deixando
+   - **Mutações à mão:** `mayAsk` devolvendo o `personOf` sem teto: vermelho o 52; o caderno deixando
      o `AGENT` passar, o 58.
-   - **Pronto quando:** esses passam, e `agent-read.test.ts` "selecionar a ligação não dá leitura ao
-     vivo..." (`:33`), rodado pela Ana, passa sem mudar.
+   - **Pronto quando:** esses passam, e `agent-read.test.ts:33`, rodado pela Ana, passa sem mudar.
 4. **A escrita.** Critérios: 55, 56.
    - **Arquivos:** `builder/agents/tools.ts:177-185`, `hub/connectors/write-record.ts:24-25,45,97-101`,
      `hub/connectors/write.ts:101`.
@@ -864,54 +874,55 @@ Nenhuma rota, tabela, coluna, código de falha ou texto de tela novo. A recusa �
    - **O que entra:** `requestOf` monta `{ kind: 'AGENT', personId, declared }` com a pessoa da execução.
      O funil faz um `switch`: `PERSON`, a pessoa lida em `:84`; `AGENT`,
      `withinVersion(found.person, a.speaker.declared)`. O autor da linha (`authorOf`,
-     `write-record.ts:97-101`) segue a versão, por `agentId` e `number`. O rascunho segue `PERSON`: as
-     ferramentas dele são só as declaradas, e o alcance é o mesmo.
+     `write-record.ts:97-101`) segue a versão (`agentId`, `number`). O rascunho segue `PERSON`: só tem as
+     ferramentas declaradas, com o mesmo alcance.
    - **Testes:** sem mudar, `approval-refused.test.ts` e `approval-returned.test.ts`.
-   - **Mutações à mão:** em `write.ts`, `a.speaker` para `AGENT` sem o papel deixa vermelho o 55.
-   - **Pronto quando:** o 55 passa, e `mustAsk` (`hub/connectors/approval.ts:63-75`) e `requireApproval`
-     não mudam (0053).
+   - **Mutações à mão:** em `write.ts`, `a.speaker` para `AGENT` sem o papel: vermelho o 55.
+   - **Pronto quando:** o 55 passa, sem mudar `mustAsk` (`hub/connectors/approval.ts:63-75`) e
+     `requireApproval` (0053).
 5. **O que não muda, provado.** Critérios: 60 a 64. Novos: o 60 em `app-calls.test.ts` e o 64 em
    `role-run.test.ts`. Sem mudar, e já verdes no `main`: `copy-port.test.ts`,
    `builder/automations/release.test.ts:84`, `builder/automations/run.test.ts:196`.
 
 ### Como se prova
 
-Pela porta pública: rotas do Hub (`call`, `talkedTo`), `hub.connectors` e `hub.access`. T26: nenhum
-evento do Mastra lido. Gravações tocadas: o papel em
-`auth.member` e `organizationRole`, por `PUT /roles/<papel>`, e nenhuma linha em `connector_write` na
-escrita recusada (`write.ts:159,174`). Hoje falham: 50 (`public.ts:49` ignora o papel); 51 e 53
+Pela porta pública: rotas do Hub (`call`, `talkedTo`), `hub.connectors`, `hub.access`; nenhum evento do
+Mastra (T26). Gravações: o papel (`auth.member`, `organizationRole`) por `PUT /roles/<papel>`, e
+nenhuma linha em `connector_write` na escrita recusada (`write.ts:159,174`). Hoje falham: 50 (`public.ts:49` ignora o papel); 51 e 53
 (tabela abaixo); 54 e 57 (`assistant-port.ts:129` usa a versão); 55 (`write.ts:101` usa a versão, e a escrita chega ao dublê);
-59 (a segunda chamada lê). Os outros passam hoje.
+58 (`speaking.ts:97` deixa a versão passar sem `consultar`); 59 (a segunda chamada lê). Os outros passam hoje.
 
 ### Parar se
 
-- Um teste de agente rodado por outra pessoa que não a Ana mudar fora da tabela abaixo: reporte.
+- Um teste de agente rodado por quem não é a Ana mudar fora da tabela abaixo: reporte.
 - O `hasPermission` pedir uma segunda leitura dos papéis por alvo do `AGENT`: pare (a leitura única por
   chamada, `may-use.ts:103-105`, é critério de desempenho).
-- Esconder uma ferramenta da versão (`tool_<slug>`) parecer necessário: não esconda (decisão F7).
+- Esconder uma ferramenta da versão (`tool_<slug>`) parecer necessário: não esconda (F7).
 - U2 entregar o `Principal` sem `declared` ou o `ceiling` fora de `principalOf`.
+- Se aparecer um caminho que roda o agente salvo sem pessoa (agenda), pare: a P1 (a) diz que ele lê pela
+  liberação do Projeto.
 
 ### Os testes que mudam, e por quê
 
-O porquê: a palavra do fundador na linha do alcance da tabela de referência; o depois: o critério.
+O porquê: a palavra do fundador na linha do alcance; o depois: o critério.
 
 | Teste | Hoje | Critério |
 | --- | --- | --- |
-| `hub/connectors/role-doors.test.ts:193` "a versão publicada roda para quem conversa sem a operação..." | o Atendente lê `empresas` pela versão | 51 |
-| `hub/connectors/role-doors.test.ts:117` "o funil: uma versão publicada lê só o que declara..." | `role: null`; a recusa não muda | 52 |
-| `hub/data/catalog-role.test.ts:273` "a versão do agente lista o que declara, como hoje" | Dora, sem leitura no papel, vê `pedidos`; Bruno segue vendo (C81) | 53 |
+| `hub/connectors/role-doors.test.ts:193` "a versão publicada roda…" | o Atendente lê `empresas` pela versão | 51 |
+| `hub/connectors/role-doors.test.ts:117` "o funil…" | `role: null`; a recusa não muda | 52 |
+| `hub/data/catalog-role.test.ts:273` "a versão do agente lista…" | Dora, sem leitura no papel, vê `pedidos`; Bruno segue vendo (C81) | 53 |
 | `hub/access/conformance.test.ts:72-85` (cenário `agent`) | revoga só pela declaração; a lei (e) vale para todo consumidor | 50 |
 
-Nenhum teste de `builder/agents/*.test.ts` muda de expectativa: quem roda o agente neles é a Ana, Dona,
-que alcança tudo (`test-approval.ts:60-64`), ou quem aprova, que o `D3-a` já confere pelo papel
+Nenhum teste de `builder/agents/*.test.ts` muda de expectativa: quem roda o agente é a Ana, Dona, que
+alcança tudo (`test-approval.ts:60-64`), ou quem aprova, que o `D3-a` já confere pelo papel
 (`autonomy.test.ts:283`).
 
 ## G1 O ponto de conferência
 
 Depois da U2, antes do pull request, os passos 6 e 7 de [`conexus-build`](../../.agents/skills/conexus-build/SKILL.md)
 nas suítes de `builder/` (`assistant`, `automations`, `construtor`, `agents`, `conversation`) e de
-`hub/` (`access`, `connectors`, `data`); `npm run deps` sem a lista de migração crescer; e
-`GET /assistant/connections`, criar e trocar a escolha, com "Vazio" e o Dono. A gravação da U1
+`hub/` (`access`, `connectors`, `data`); `npm run deps`; e `GET /assistant/connections`, criar e trocar
+a escolha, com "Vazio" e o Dono. A gravação da U1
 (critério 2) vai no pull request.
 
 ## G2 O ponto de conferência
