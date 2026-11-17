@@ -1,4 +1,5 @@
 import type { Cadence, Weekday } from '@conexus/hub-api'
+import { AND_LIST } from '../../platform/lists.ts'
 
 const DAY_NAMES: Record<Weekday, string> = {
   MON: 'segunda',
@@ -20,9 +21,7 @@ function capitalized(text: string): string {
 function daysText(days: readonly Weekday[]): string {
   const names = WEEK.filter((day) => days.includes(day)).map((day) => DAY_NAMES[day])
   if (names.length === WEEK.length) return 'Todo dia'
-  const last = names.at(-1)
-  const text = names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} e ${last}`
-  return capitalized(text)
+  return capitalized(AND_LIST.format(names))
 }
 
 /** When an automation runs, in words (code C26: the one owner of the text of a cadence). */

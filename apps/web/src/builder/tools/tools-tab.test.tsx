@@ -31,8 +31,8 @@ test('Apagar uma ferramenta usada recebe TOOL_IN_USE e mostra os agentes, sem ti
   if (row === null) throw new Error('a ferramenta não está numa linha')
   fireEvent.click(within(row).getByRole('button', { name: 'Apagar vendas_de_ontem' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
-  const said = await screen.findByText(/^Usada por /)
-  expect(said.textContent).toBe('Usada por Conferente de metas, Resumo de estoque.')
+  const said = await screen.findByRole('alert')
+  expect(said.textContent).toBe('Usada por Conferente de metas e Resumo de estoque.')
   expect(within(said).getByRole('link', { name: 'Conferente de metas' }).getAttribute('href')).toBe(
     `${AREA}/${AGENT}`,
   )
@@ -58,6 +58,41 @@ test('Apagar uma ferramenta que ninguém usa a tira da lista', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar vendas_de_ontem' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
   expect(await screen.findByText(/^Nenhuma ferramenta ainda\./)).toBeTruthy()
+})
+
+test('Apagar uma ferramenta usada diz na confirmação quais agentes a usam', async () => {
+  at(TABS, { agents: [agent()], tools: [toolSummary({ usedBy: USERS })] })
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar vendas_de_ontem' }))
+  const dialog = await screen.findByRole('alertdialog')
+  expect(
+    within(dialog).getByText(
+      'Usada por Conferente de metas e Resumo de estoque. Enquanto um agente a usar, ela não é apagada.',
+    ),
+  ).toBeTruthy()
+})
+
+test('Apagar confirmado espera o Hub no diálogo e tira a linha sem recarregar', async () => {
+  const tools = [toolSummary()]
+  at(TABS, { agents: [agent()], tools })
+  let answer: (() => void) | undefined
+  server.use(
+    http.delete(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/tools/:toolId`, async () => {
+      await new Promise<void>((resolve) => {
+        answer = resolve
+      })
+      tools.length = 0
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar vendas_de_ontem' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar ferramenta' }))
+  const dialog = screen.getByRole('alertdialog')
+  expect(await within(dialog).findByRole('button', { name: 'Apagando…' })).toBeTruthy()
+  await waitFor(() => expect(answer).toBeDefined())
+  answer?.()
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(screen.queryByText('vendas_de_ontem')).toBeNull()
+  expect(screen.getByText(/^Nenhuma ferramenta ainda\./)).toBeTruthy()
 })
 
 test('a lista é uma tabela com Ferramenta, Lê de, Efeito, Usada por e Versão', async () => {

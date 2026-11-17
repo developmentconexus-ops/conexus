@@ -25,6 +25,7 @@ export {
   readingText,
   reauthText,
   remedyText,
+  revokeText,
   stateBadge,
   unreachableText,
 } from './text.ts'

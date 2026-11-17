@@ -1,10 +1,9 @@
 import type { CompanyId, ProjectConnections, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
-import { Button } from '../../ui/button.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
@@ -22,9 +21,11 @@ import {
   REVOKE,
   readingText,
   remedyText,
+  revokeText,
   sendRevoke,
   stateBadge,
 } from '../connectors/public.ts'
+import { ActionDialog } from '../identity/public.ts'
 import { GrantDialog } from './grant-dialog.tsx'
 import { ProjectCopies } from './project-copies.tsx'
 
@@ -32,7 +33,10 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
 type Group = ProjectConnections['connectors'][number]
 type Line = Group['connections'][number]
 
-function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
+/** "Tirar": the confirmation says what stops working in the Projeto, as "Liberar" says what it gives. */
+function Revoke(props: Scope & { line: Line; connectorName: string }) {
+  const { companyId, projectId, line } = props
+  const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const revoke = useMutation({
     ...sendRevoke,
@@ -40,17 +44,21 @@ function Revoke({ companyId, projectId, line }: Scope & { line: Line }) {
       queryClient.invalidateQueries({ queryKey: projectConnectionsKey(companyId, projectId) }),
   })
   return (
-    <div className="flex flex-col items-start gap-xs">
-      <Button
-        size="sm"
-        aria-label={`${REVOKE}: ${line.name}`}
-        disabled={revoke.isPending}
-        onClick={() => revoke.mutate({ params: { companyId, projectId, connectionId: line.id } })}
-      >
-        {revoke.isPending ? 'Tirando…' : REVOKE}
-      </Button>
-      {revoke.isError && <Alert tone="danger">{sentenceOf(revoke.error)}</Alert>}
-    </div>
+    <ActionDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={{ label: REVOKE, name: `${REVOKE}: ${line.name}`, danger: true }}
+      title={`Tirar ${line.name} deste Projeto?`}
+      description={revokeText(props.connectorName)}
+      confirm={{ label: REVOKE, pending: 'Tirando…' }}
+      write={revoke}
+      onConfirm={() =>
+        revoke.mutate(
+          { params: { companyId, projectId, connectionId: line.id } },
+          { onSuccess: () => setOpen(false) },
+        )
+      }
+    />
   )
 }
 
@@ -59,7 +67,14 @@ function Action(props: Scope & { group: Group; line: Line; mayManage: boolean })
   const { group, line } = props
   if (!props.mayManage) return null
   if (line.access.kind === 'READS' || line.access.kind === 'RELEASED_NOT_WORKING')
-    return <Revoke companyId={props.companyId} projectId={props.projectId} line={line} />
+    return (
+      <Revoke
+        companyId={props.companyId}
+        projectId={props.projectId}
+        line={line}
+        connectorName={group.connector.name}
+      />
+    )
   if (line.access.kind === 'NOT_RELEASED_NOT_WORKING') return null
   const taken =
     group.perProject === 'one' ? group.connections.find((one) => 'grant' in one.access) : undefined
