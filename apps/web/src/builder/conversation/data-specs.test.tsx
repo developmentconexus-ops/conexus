@@ -9,7 +9,7 @@ import { DataPart, recordedPart } from './test-recorded.ts'
 import { ToolRow } from './tool-row.tsx'
 
 const SQL =
-  'select sum("VLRNOTA") as total from sync.sankhya_vendas where "DTNEG" >= \'2026-10-01\''
+  'select sum("VLRNOTA") as total from sync.vendas where "DTNEG" >= \'2026-10-01\''
 
 afterEach(() => {
   Reflect.deleteProperty(navigator, 'clipboard')
@@ -87,10 +87,10 @@ test('o catálogo: a chamada em erro ou negada diz que não conseguiu ler o cat�
   expect(screen.getByText('Não conseguiu ler o catálogo agora.')).toBeTruthy()
 })
 
-test('a amostra: Viu sankhya_vendas, 5 linhas, há mais', () => {
+test('a amostra: Viu vendas, 5 linhas, há mais', () => {
   const inv = table()
   draw(itemOf(inv))
-  expect(screen.getByText('Viu sankhya_vendas')).toBeTruthy()
+  expect(screen.getByText('Viu vendas')).toBeTruthy()
   expect(screen.getByText('5 linhas, há mais')).toBeTruthy()
 })
 
@@ -107,7 +107,7 @@ test('a amostra: rodando diz Vendo, e uma amostra sem mais linhas não diz "há 
   expect(screen.getByText('Nenhuma linha.')).toBeTruthy()
   empty.unmount()
   draw(itemOf(running(inv)))
-  expect(screen.getByText('Vendo sankhya_vendas')).toBeTruthy()
+  expect(screen.getByText('Vendo vendas')).toBeTruthy()
 })
 
 test('rodando: Consultando os dados', () => {
@@ -115,9 +115,9 @@ test('rodando: Consultando os dados', () => {
   expect(screen.getByText('Consultando os dados')).toBeTruthy()
 })
 
-test('a consulta: Consultou sankhya_vendas, 1 linha', () => {
+test('a consulta: Consultou vendas, 1 linha', () => {
   draw(itemOf(query().inv))
-  expect(screen.getByText('Consultou sankhya_vendas')).toBeTruthy()
+  expect(screen.getByText('Consultou vendas')).toBeTruthy()
   expect(screen.getByText('1 linha')).toBeTruthy()
 })
 
@@ -137,7 +137,7 @@ test('a consulta: n linhas, há mais quando não veio completa, e duas tabelas j
       },
     }),
   )
-  expect(screen.getByText('Consultou sankhya_vendas, sankhya_clientes')).toBeTruthy()
+  expect(screen.getByText('Consultou vendas, sankhya_clientes')).toBeTruthy()
   expect(screen.getByText('3 linhas, há mais')).toBeTruthy()
 })
 
@@ -196,8 +196,8 @@ test('na sala do Builder, as mesmas linhas', () => {
   expect(textsIn(rows, BUILDER_ROOM)).toEqual(textsIn(rows, ASSISTANT_ROOM))
   expect(textsIn(rows, BUILDER_ROOM)).toEqual([
     'Consultou o catálogo5 tabelas',
-    'Viu sankhya_vendas5 linhas, há mais',
-    'Consultou sankhya_vendas1 linha',
+    'Viu vendas5 linhas, há mais',
+    'Consultou vendas1 linha',
   ])
 })
 
@@ -206,14 +206,14 @@ function clipboard(writeText: (text: string) => Promise<void>) {
 }
 
 test('aberta, a linha mostra a consulta e Copiar a consulta põe o texto na área de transferência', async () => {
-  const sql = `select ${'"VLRNOTA", '.repeat(100)}1 from sync.sankhya_vendas`
+  const sql = `select ${'"VLRNOTA", '.repeat(100)}1 from sync.vendas`
   expect(sql.length).toBeGreaterThan(800)
   const writeText = vi.fn(() => Promise.resolve())
   clipboard(writeText)
   const { inv } = query()
   draw(itemOf({ ...inv, args: { sql } }))
   expect(screen.queryByText('Copiar a consulta')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: /Consultou sankhya_vendas/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Consultou vendas/ }))
   expect(screen.getByText(sql)).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Copiar a consulta' }))
   expect(await screen.findByRole('button', { name: 'Consulta copiada' })).toBeTruthy()
@@ -228,7 +228,7 @@ test.each([
   const log = vi.spyOn(console, 'error').mockReturnValue(undefined)
   if (hasClipboard) clipboard(() => Promise.reject(cause))
   draw(itemOf({ ...query().inv, args: { sql: SQL } }))
-  fireEvent.click(screen.getByRole('button', { name: /Consultou sankhya_vendas/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Consultou vendas/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Copiar a consulta' }))
   expect(await screen.findByText('Não deu para copiar. Selecione a consulta e copie.')).toBeTruthy()
   await waitFor(() =>

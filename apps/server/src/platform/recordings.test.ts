@@ -135,7 +135,7 @@ test('as gravações desta etapa são da Mastra instalada e guardam o resultado 
     ['CATALOG', 'TABLE', 'ROWS'],
   )
   const [, table, rows] = data
-  assert.equal(table?.kind === 'TABLE' && table.origin.table, 'sankhya_vendas')
+  assert.equal(table?.kind === 'TABLE' && table.origin.table, 'vendas')
   assert.equal(rows?.kind === 'ROWS' && rows.origin.length > 0, true)
 
   const [read] = toolResultsOf('reads')

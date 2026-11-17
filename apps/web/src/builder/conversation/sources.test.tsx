@@ -180,7 +180,7 @@ const COPIED = 'copiado hoje às 08:45'
 
 test('a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45', () => {
   clockAt(COPY_DAY)
-  const line = { logo: true, name: 'Sankhya · Matriz', badges: [], table: 'sankhya_vendas' }
+  const line = { logo: true, name: 'Sankhya · Matriz', badges: [], table: 'vendas' }
   expect(linesOf([queried({ systems: [MATRIZ] })])).toMatchObject([{ ...line, stamp: COPIED }])
 })
 
@@ -191,7 +191,7 @@ test('a conexão com o nome do sistema não se repete na fonte de cópia', () =>
 
 test('a fonte vem também do data_describe de uma tabela', () => {
   clockAt(COPY_DAY)
-  expect(linesOf([described()])[0]).toMatchObject({ table: 'sankhya_vendas', stamp: COPIED })
+  expect(linesOf([described()])[0]).toMatchObject({ table: 'vendas', stamp: COPIED })
 })
 
 function seen(change: { lastRun?: string; lastRunEndedAt?: string | null }) {
@@ -271,7 +271,7 @@ test('a conexão ativa não mostra selo', () => {
 test('a fonte não dada ao Projeto mostra só o sistema e a logo', () => {
   clockAt(COPY_DAY)
   expect(linesOf([queried({ systems: [{ kind: 'NOT_GIVEN' }] })])).toMatchObject([
-    { logo: true, name: 'Sankhya', badges: [], table: 'sankhya_vendas', stamp: COPIED },
+    { logo: true, name: 'Sankhya', badges: [], table: 'vendas', stamp: COPIED },
   ])
 })
 
@@ -285,7 +285,7 @@ test('duas fontes são duas linhas, cada uma com a sua logo', () => {
   clockAt(COPY_DAY)
   const lines = linesOf([queried({}), queried({ table: 'sankhya_notas' })])
   expect(lines.map((line) => [line.logo, line.table])).toEqual([
-    [true, 'sankhya_vendas'],
+    [true, 'vendas'],
     [true, 'sankhya_notas'],
   ])
 })
