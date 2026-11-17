@@ -48,7 +48,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
 | `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
 
-Cada papel lê só o seu fechou em 2026-11-17; segue a do Registro e conformidade. O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
+Cada papel lê só o seu e a subida do Mastra para a 1.83 fecharam em 2026-11-17; segue a do Registro e conformidade. O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
 [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -62,9 +62,9 @@ Cada papel lê só o seu fechou em 2026-11-17; segue a do Registro e conformidad
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A máquina que não pausa fechou em 2026-11-17; o rastreio do Mastra (Plataforma) também.
-Antes de `A1` vem Um escopo e a fábrica de ferramentas (H0, H1, H3, H6), pela sua palavra: "R2 a".
-Mais na [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
+Um escopo e a fábrica de ferramentas fechou em 2026-11-17. Antes de `A1` vem a fundação do
+front-end, pela sua resposta "A. A ordem na trilha: a". Mais na
+[trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
 plano em `A3`, código e teste em `A1`, revisão em `A4`.
