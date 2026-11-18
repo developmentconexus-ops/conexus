@@ -631,7 +631,7 @@ modelo lê.
 | `apps/server/src/builder/runs/context.ts`, `runs.ts`, `test-runs.ts` | Muda: `RunsDeps.confer`; `check` com as duas conferências | `processors.ts` |
 | `apps/server/src/builder/conversation/processors.ts` | Muda: o texto de `feedback` e de `CHECK_DESCRIPTION` | o Builder |
 | `apps/server/src/builder/conversation/test-conversation.ts` | Muda: o dublê de `confer` | os testes da conversa |
-| `packages/app/src/check/test-app.ts`, `check.test.ts` | Muda: `ENCOMENDAS_DEFEITO` e o caso do critério 23 | `builder.eval.test.ts` |
+| `packages/app/src/check/test-app.ts`, `check.test.ts` | Muda: `ENCOMENDAS_DEFEITO`, `CONECTOR_NA_ENTRADA` e o caso do critério 23 | `builder.eval.test.ts`, o ponto de conferência de G2 |
 | `apps/server/src/builder/conversation/builder.eval.test.ts` | Muda: o caso do critério 18 | o ponto de conferência de G2 |
 
 ### Os contratos que a unidade cria
@@ -684,15 +684,19 @@ As linhas de `stack.md` de `@mastra/core`, a skill `mastra` (`isTaskComplete` e 
      `mastra_workspace_read_file`; `CHECK_DESCRIPTION` troca "opens the app in a browser" pelo que a
      conferência faz agora, e tira "It does not prove ... that a screen shows the right values" na
      parte que ela passa a provar.
-3. **O defeito plantado.** Critérios: 23, 18.
+3. **O defeito plantado e o conector na entrada.** Critérios: 23, 18, 21.
    - **Arquivos:** muda `packages/app/src/check/test-app.ts` (`ENCOMENDAS_DEFEITO`: a lista chama
      `listarEncomendas`, declarada e tipada, cujo manipulador lê `encomenda` sem migração que a
      crie), `check.test.ts` (critério 23) e `builder.eval.test.ts` (critério 18, a pasta da
-     conversa semeada com `ENCOMENDAS_DEFEITO`).
+     conversa semeada com `ENCOMENDAS_DEFEITO`). No mesmo `test-app.ts`, ao lado,
+     `CONECTOR_NA_ENTRADA`: a operação da lista, declarada no manifesto com um conector e uma
+     leitura dele, chama `connectors.call` e devolve o estado `SEM_CONEXAO` quando a resposta é
+     `NOT_GRANTED`; a tela de entrada mostra "Sem conexão" nesse estado, sem erro.
    - **Prove primeiro:** o caso do critério 23 passa na conferência da máquina de hoje. Um defeito
      que o passo `tipos` pega (uma chamada a uma operação que não existe, porque `createApi` só
      aceita nomes declarados, `packages/app/src/client.ts:84-88`) nunca chega ao navegador.
-   - **Pronto quando:** o caso roda no ponto de conferência, na nuvem.
+   - **Pronto quando:** o caso do defeito roda no ponto de conferência, na nuvem, e lá a conferência
+     de `CONECTOR_NA_ENTRADA` dá `CLEAN` com a captura em "Sem conexão" (critério 21).
 
 ### Como se prova
 
@@ -717,7 +721,8 @@ de conferência.
 `builder/conversation/`; a migração com `npm run migrations`. A ordem no ar: o despachante novo
 primeiro (o mesmo código, com o `packages/hub-api` novo), depois o Hub. No Hub da nuvem com o
 template de G1, uma conferência que chega ao Worker `c-<projectId>` pelo despachante de verdade, o roteiro de uso inteiro, o teste
-do defeito plantado (critério 18), os dois apps de teste (critério 19) e os tempos (critério 20),
+do defeito plantado (critério 18), a conferência de `CONECTOR_NA_ENTRADA` com a captura em "Sem
+conexão" (critério 21), os dois apps de teste (critério 19) e os tempos (critério 20),
 com as capturas antes e depois no pull request.
 
 ## U4 O fechamento
