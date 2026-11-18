@@ -52,7 +52,11 @@ test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, a
   assert.equal(options.id, `conexus-hub-${CONVERSATION}`)
   assert.equal('sandboxId' in options, false)
   assert.equal('reattach' in options, false)
-  assert.deepEqual(options.network, { allowOut: ['registry.npmjs.org'], denyOut: ['0.0.0.0/0'] })
+  assert.deepEqual(options.network, {
+    allowOut: ['registry.npmjs.org'],
+    denyOut: ['0.0.0.0/0'],
+    allowPublicTraffic: false,
+  })
   assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
   assert.equal(options.metadata.conexus_origin, 'hub.example.test')
   assert.equal(options.metadata.conexus_conversation, CONVERSATION)
@@ -79,6 +83,7 @@ test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe
   assert.deepEqual(networkOf(PACKAGE_HOSTS), {
     allowOut: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
     denyOut: ['0.0.0.0/0'],
+    allowPublicTraffic: false,
   })
 })
 
