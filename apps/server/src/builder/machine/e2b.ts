@@ -23,10 +23,9 @@ type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
  * (creation only: `updateNetwork` does not take it, e2b `SandboxNetworkUpdate`) makes every
  * `<port>-<id>.e2b.app` url answer 403 without the traffic token; omitted, the machine is public.
  */
-const egress = (allowOut: readonly string[]) => ({
-  allowOut: [...allowOut],
-  denyOut: [ALL_TRAFFIC],
-})
+function egress(allowOut: readonly string[]) {
+  return { allowOut: [...allowOut], denyOut: [ALL_TRAFFIC] }
+}
 
 /** The one adapter to E2B for a machine (code C56): the SDK, and nothing of ours inside it. */
 export function createE2bKit(config: Credentials): KitFactory {
@@ -57,8 +56,7 @@ export function createE2bKit(config: Credentials): KitFactory {
             ...(signal === undefined ? {} : { signal }),
           }),
       },
-      closeNetwork: () =>
-        sandbox.e2b.updateNetwork(egress(options.allowOut)),
+      closeNetwork: () => sandbox.e2b.updateNetwork(egress(options.allowOut)),
     }
   }
 }
