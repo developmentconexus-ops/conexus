@@ -4,7 +4,7 @@ import { Plan } from '../../ui/ai/plan.tsx'
 import { Markdown } from './markdown.tsx'
 import { CARD_TEXT, useAnswer } from './question-card.tsx'
 import type { PlanCardItem } from './rows.ts'
-import { useWaitingLine } from './working-line.tsx'
+import { WaitingOnPhone } from './working-line.tsx'
 
 const PLAN_TEXT: PlanText = {
   readAll: 'Ler plano completo',
@@ -30,13 +30,12 @@ const ENDED = {
  */
 export function PlanCard({ part }: { part: PlanCardItem }) {
   const { answer, sending, error } = useAnswer(ToolCallId.parse(part.toolCallId))
-  const waiting = useWaitingLine()
   const shown = { title: part.title, plan: part.plan, path: part.path }
   const state: PlanState =
     part.state === 'open'
       ? {
           kind: 'OPEN',
-          waiting,
+          waiting: <WaitingOnPhone />,
           busy: sending,
           error,
           onApprove: () => void answer({ action: 'approved', ...shown }),

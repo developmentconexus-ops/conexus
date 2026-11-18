@@ -24,20 +24,30 @@ function where(tree: ts.SourceFile, node: ts.Node): string {
   return `${tree.fileName}:${tree.getLineAndCharacterOfPosition(node.getStart()).line + 1}`
 }
 
+/** The text a literal says, or a literal inside `{…}`; undefined for anything computed. */
+function said(node: ts.Node | undefined): string | undefined {
+  if (node === undefined) return undefined
+  if (ts.isJsxExpression(node)) return said(node.expression)
+  return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)
+    ? node.text
+    : undefined
+}
+
 function phrasesIn(name: string, text: string): string[] {
   const tree = treeOf(name, text)
   const found: string[] = []
   visit(tree, (node) => {
-    if (ts.isJsxText(node) && LETTER.test(node.text))
-      found.push(`${where(tree, node)} ${node.text.trim()}`)
-    if (
-      ts.isJsxAttribute(node) &&
-      SPOKEN.has(node.name.getText(tree)) &&
-      node.initializer !== undefined &&
-      ts.isStringLiteral(node.initializer) &&
-      LETTER.test(node.initializer.text)
-    )
-      found.push(`${where(tree, node)} ${node.getText(tree)}`)
+    const between =
+      ts.isJsxText(node) ||
+      (ts.isJsxExpression(node) && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent)))
+    const spoken = ts.isJsxAttribute(node) && SPOKEN.has(node.name.getText(tree))
+    const words = ts.isJsxText(node)
+      ? node.text
+      : between || spoken
+        ? said(spoken ? node.initializer : node)
+        : undefined
+    if (words !== undefined && LETTER.test(words))
+      found.push(`${where(tree, node)} ${node.getText(tree).trim()}`)
   })
   return found
 }
@@ -94,8 +104,22 @@ function read(folder: string, file: string): string {
 
 test('nenhuma peça de ui/ai/ tem frase própria', () => {
   assert.deepEqual(
-    phrasesIn('sources.tsx', '<section aria-label="Fontes"><h3>Fontes</h3>{label}</section>'),
-    ['sources.tsx:1 aria-label="Fontes"', 'sources.tsx:1 Fontes'],
+    phrasesIn(
+      'sources.tsx',
+      [
+        '<section aria-label="Fontes"><h3>Fontes</h3>{label}</section>',
+        "<section aria-label={'Fontes'}><h3>{'Fontes'}</h3>{label}</section>",
+        '<section aria-label={`Fontes`}><h3>{`Fontes`}</h3>{label}</section>',
+      ].join('\n'),
+    ),
+    [
+      'sources.tsx:1 aria-label="Fontes"',
+      'sources.tsx:1 Fontes',
+      "sources.tsx:2 aria-label={'Fontes'}",
+      "sources.tsx:2 {'Fontes'}",
+      'sources.tsx:3 aria-label={`Fontes`}',
+      'sources.tsx:3 {`Fontes`}',
+    ],
     'the check finds a planted phrase',
   )
   const found = pieces().flatMap((file) => phrasesIn(file, read(AI, file)))

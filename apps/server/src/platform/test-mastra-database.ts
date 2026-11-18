@@ -1,3 +1,5 @@
+import type { Server, Socket } from 'node:net'
+import { connect, createServer } from 'node:net'
 import pg from 'pg'
 import type { Config } from './config.ts'
 import type { MastraPool } from './database.ts'
@@ -60,4 +62,50 @@ export function mastraPoolAt(address: string): MastraPool {
     log: { info: () => undefined, error: () => undefined },
     timings: TEST_POOL_TIMINGS,
   })
+}
+
+export type Outage = 'REFUSED' | 'SILENT'
+
+/**
+ * Mastra's database behind a door of this test: shut, the port refuses (`REFUSED`) or accepts and
+ * never answers (`SILENT`); opened, it reaches the database, so the Hub's end can close Mastra.
+ */
+export async function mastraDoor(url: { reveal(): string }, outage: Outage) {
+  const target = new URL(url.reveal())
+  const sockets = new Set<Socket>()
+  let reaching = false
+  function listening(): Promise<Server> {
+    const server = createServer((socket) => {
+      sockets.add(socket)
+      socket.on('close', () => sockets.delete(socket))
+      if (!reaching) return
+      const upstream = connect(Number(target.port), target.hostname)
+      socket.pipe(upstream).pipe(socket)
+      upstream.on('error', () => socket.destroy())
+      socket.on('error', () => upstream.destroy())
+    })
+    return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)))
+  }
+  let port = 0
+  let server = await listening()
+  const address = server.address()
+  port = typeof address === 'object' && address !== null ? address.port : 0
+  async function shut() {
+    await new Promise((resolve) => server.close(resolve))
+  }
+  if (outage === 'REFUSED') await shut()
+  const through = new URL(url.reveal())
+  through.host = `127.0.0.1:${port}`
+  return {
+    address: through.toString(),
+    async open() {
+      for (const socket of sockets) socket.destroy()
+      if (outage === 'REFUSED') server = await listening()
+      reaching = true
+    },
+    async close() {
+      for (const socket of sockets) socket.destroy()
+      await shut()
+    },
+  }
 }

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { WorkingLine as Line } from '../../ui/ai/working-line.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -62,9 +61,9 @@ export function WorkingLine({
  * working line, which the chat hides then (founder, 2026-10-22, "Aprovo"; one line for both screens,
  * founder, 2026-11-17, "Aprovo").
  */
-export function useWaitingLine(): ReactNode | undefined {
+/** The waiting line at the top of an open card on a phone; its own component, so the phone check re-renders only it, not the card. */
+export function WaitingOnPhone() {
   const { agent } = useRoom()
-  const phone = useIsMobile()
-  if (!phone) return undefined
+  if (!useIsMobile()) return null
   return <Line state={{ kind: 'WAITING', sentence: `${agent} esperando sua resposta` }} />
 }

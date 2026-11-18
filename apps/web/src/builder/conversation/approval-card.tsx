@@ -19,7 +19,7 @@ import type { WriteTool } from './room.ts'
 import { useApprove, useRoom } from './room.ts'
 import { refusedLabelText } from './text.ts'
 import type { ConnectorWords } from './tool-spec.ts'
-import { useWaitingLine } from './working-line.tsx'
+import { WaitingOnPhone } from './working-line.tsx'
 
 type Reply = 'approve' | 'decline'
 
@@ -173,7 +173,6 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const decision = decided(part, writtenBy(read, part.toolCallId), read?.kind === 'READING')
   // Where the room reads the open sends, a person approves only after the read answered.
   const checked = read === undefined || read.kind === 'READ'
-  const waiting = useWaitingLine()
   const of = { connector: write?.connector ?? '', action }
   const outcome =
     decision.outcome === undefined ? undefined : outcomeView(decision.outcome, of, room.connectors)
@@ -182,7 +181,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
     decision.state === 'open'
       ? {
           kind: 'OPEN',
-          waiting,
+          waiting: <WaitingOnPhone />,
           lit: part.lit && checked,
           sending: sending === undefined ? undefined : SENDING[sending],
           error,

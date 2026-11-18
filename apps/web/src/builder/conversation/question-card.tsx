@@ -7,7 +7,7 @@ import type { QuestionState, QuestionText, QuestionView } from '../../ui/ai/ques
 import { Question as Questions } from '../../ui/ai/question.tsx'
 import { useAnswerTo, useRoom } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
-import { useWaitingLine } from './working-line.tsx'
+import { WaitingOnPhone } from './working-line.tsx'
 
 /** The card's words, from the state matrix of step 14's card. */
 export const CARD_TEXT = {
@@ -93,13 +93,12 @@ function closedText(state: QuestionCardItem['state'], agent: string): string | u
 export function QuestionCard({ part }: { part: QuestionCardItem }) {
   const { answer, sending, error } = useAnswer(ToolCallId.parse(part.toolCallId))
   const { agent } = useRoom()
-  const waiting = useWaitingLine()
   const count = part.questions.length
   const state: QuestionState =
     part.state === 'open'
       ? {
           kind: 'OPEN',
-          waiting,
+          waiting: <WaitingOnPhone />,
           busy: sending,
           onSubmit: (answers) =>
             void answer(answers.map((one) => (typeof one === 'string' ? one : [...one]))),
