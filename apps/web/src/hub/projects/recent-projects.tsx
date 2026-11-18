@@ -9,15 +9,8 @@ import { PROJECT_FALLBACK } from './text.ts'
 
 const SHOWN = 5
 
-const lists = new Map<CompanyId, RememberedList<typeof ProjectId>>()
-
-// One object for each company, so a render reading the list sees the same one every time.
 function listOf(companyId: CompanyId): RememberedList<typeof ProjectId> {
-  const known = lists.get(companyId)
-  if (known !== undefined) return known
-  const made = { name: `projects.${companyId}`, id: ProjectId, keep: SHOWN }
-  lists.set(companyId, made)
-  return made
+  return { name: `projects.${companyId}`, id: ProjectId, keep: SHOWN }
 }
 
 export function rememberProject(input: {

@@ -26,3 +26,20 @@ test('um seletor já montado mostra o Projeto que se grava depois, sem outra ren
   act(() => rememberProject({ personId, companyId, projectId: PEDIDOS.id }))
   expect(screen.getByText(PEDIDOS.name)).toBeTruthy()
 })
+
+test('outra aba que grava a lista também aparece no seletor montado (evento storage)', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <Names />
+    </QueryClientProvider>,
+  )
+  expect(screen.getByText('nenhum')).toBeTruthy()
+  act(() => {
+    globalThis.localStorage.setItem(
+      `conexus-remembered:${personId}:projects.${companyId}`,
+      PEDIDOS.id,
+    )
+    globalThis.dispatchEvent(new StorageEvent('storage'))
+  })
+  expect(screen.getByText(PEDIDOS.name)).toBeTruthy()
+})

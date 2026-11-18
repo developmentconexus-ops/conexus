@@ -1,5 +1,5 @@
 import type { PersonId } from '@conexus/hub-api'
-import { useMemo, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import type { z } from 'zod'
 import { pageStorage } from './storage.ts'
 
@@ -61,7 +61,7 @@ export function useRecalled<Id extends z.ZodType<string>>(input: {
 }): z.output<Id>[] {
   const { list, personId } = input
   const stored = useSyncExternalStore(subscribe, () => lists.getItem(keyOf(list.name, personId)))
-  return useMemo(() => parse(list, stored), [list, stored])
+  return parse(list, stored)
 }
 
 /**
