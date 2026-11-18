@@ -14,7 +14,9 @@ Lido em `main` `044e16c3` (depois dos pull requests 1195, 1199 e 1202), com `@ma
 `@mastra/e2b` 0.17.0, `e2b` 2.63.0 e o CLI `agent-browser` 0.43.0 lido pelo `npm pack`. Os cinco
 estudos e provas do A1 ficam fora do repositório (delivery L21): o estudo curto máquina contra
 Worker, o estudo do navegador, o de segurança, as quatro provas na E2B e a implementação provada na
-E2B. A tabela de referência vem do último, linha por linha; as linhas que ele riscou (o
+E2B; e, depois da leitura por outro modelo, a prova local do cookie (o `agent-browser` 0.43.0
+contra um servidor HTTPS local, oito variantes). A tabela de referência vem da implementação
+provada, linha por linha; as linhas que ele riscou (o
 `AgentBrowser` no Hub, o proxy WebSocket, `maskRequestHost`) não entram. Cada linha de `main`
 citada aqui foi relida em `044e16c3`.
 
@@ -23,9 +25,9 @@ citada aqui foi relida em `044e16c3`.
 **No fim desta etapa** o Builder confere o app que acabou de construir antes de dizer que terminou.
 Ele sobe a versão de verdade na Cloudflare, sobre um banco de teste vazio, abre a tela num navegador
 dentro da máquina da conversa e olha o que apareceu: a imagem da tela, os erros da página e os
-pedidos que falharam. Se a tela chama uma operação que não existe, ou a página dá erro, a
-conferência reprova, e o Builder recebe o que viu e corrige sozinho, na mesma conversa. Só a versão
-que passou vai para a Prévia, como hoje.
+pedidos que falharam. Se a tela mostra erro porque a operação por trás dela falha, ou a página
+quebra, a conferência reprova, e o Builder recebe o que viu e corrige sozinho, na mesma conversa.
+Só a versão que passou vai para a Prévia, como hoje.
 
 **O roteiro de uso.**
 
@@ -33,16 +35,16 @@ que passou vai para a Prévia, como hoje.
    lista e um botão Nova". Enquanto ele trabalha, a conversa mostra o trabalho como hoje.
 2. Abra a Prévia quando o Builder disser que terminou. A lista aparece, vazia, sem "Erro ao
    carregar", e **Nova** abre o formulário.
-3. Peça: "Mude a lista para mostrar também o telefone do cliente". Se a primeira tentativa dele
-   chamar uma operação que não existe, você vê na conversa mais uma volta de trabalho, sem ninguém
-   ter avisado. A Prévia só muda quando a tela estiver ligada.
-4. Abra **Dados** do Projeto. As encomendas que você criou na Prévia estão lá. O que o Builder
-   gravou ao conferir não está: a conferência grava no banco de teste.
-5. Abra a página do pull request do último grupo e veja o teste que planta um defeito visível e o
-   Builder de verdade o corrigindo, com a imagem da tela antes e depois.
+3. Crie duas encomendas na Prévia. Peça: "Mude a lista para mostrar também o telefone do
+   cliente". Quando ele disser que terminou, a Prévia mostra a coluna Telefone, com as duas
+   encomendas, sem "Erro ao carregar".
+4. Abra **Dados** do Projeto. As duas encomendas que você criou estão lá, e nada mais: o que o
+   Builder gravou ao conferir ficou no banco de teste.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde às duas
-decisões abaixo. No fim: faz o roteiro, diz o que viu. Nenhum texto de tela muda.
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde à decisão
+abaixo. No fim: faz o roteiro, diz o que viu. Nenhum texto de tela muda. O teste em que um defeito
+é plantado e o Builder de verdade o corrige sem aviso roda antes, pelo firstmate, e o relatório
+dele traz a imagem da tela antes e depois.
 
 **Fica de fora.**
 
@@ -51,60 +53,60 @@ decisões abaixo. No fim: faz o roteiro, diz o que viu. Nenhum texto de tela mud
   recebe o que ela viu. Navegar sozinho vem quando um marco pedir, com a mesma peça.
 - Abrir cada tela do app. A conferência abre a tela de entrada. As outras telas ficam para o
   marco que trouxer o plano conferido (`A3`).
-- A rede da máquina continua saindo para o DNS do Google (`8.8.8.8`), como hoje por causa do npm.
-  A E2B abre esse endereço sempre que a lista tem um domínio. Fechar exige pôr o endereço do npm
-  num arquivo da máquina, e o npm muda de endereço. Isso existe hoje sem o A1 e vai para uma issue.
+- Fechar a consulta de nomes que a máquina faz ao serviço público do Google. Ela existe hoje,
+  sem o A1, por causa do npm, e vai para uma issue.
 - Os itens abertos com o rótulo `next-card`. Nenhum tem o gatilho num arquivo que esta etapa
   muda. O 1164 (o turno recusado quando outra conversa salvou) é da sincronização da máquina, que
   esta etapa não toca.
 
-**As decisões suas nesta etapa.**
+**Já decidido pelo firstmate; você muda ao aprovar, se quiser.**
 
-- **A. Como o navegador da conferência entra no app.** O app exige login. O navegador da máquina
-  não tem a sua sessão do Hub, e não deve ter: o código do app roda na mesma máquina.
+- **Os conectores não respondem na conferência.** Durante a conferência, toda leitura do app por
+  um conector (Google, Sankhya e os outros) recebe a recusa "Sem conexão no ambiente de
+  conferência", e nenhuma chamada sai para uma conexão real. É o que segue a sua palavra "2. a":
+  a conferência grava num banco de teste vazio, e não toca o que é de verdade. A alternativa seria
+  a conferência ler pelas suas conexões reais, como a Prévia lê.
 
-  - (a) O Hub cria uma sessão só da conferência: um app, o ambiente de conferência (o banco de
-    teste), em seu nome, que acaba no fim da conferência e vence em 10 minutos de qualquer jeito.
-    Exemplo: o Builder confere às 14h02; às 14h03 a sessão já não existe, e às 14h12 ela não
-    abriria nada mesmo que sobrasse.
-  - (b) A sessão da conferência fica pendurada na sua sessão do Hub, como a Prévia. Ela morre se você
-    sai do Hub com a conversa ainda trabalhando, e o Hub teria de guardar qual sessão do Hub começou
-    cada turno.
+**A decisão sua nesta etapa.**
 
-  **Recomendo (a).** Veredito: embrulhado. A sessão de app já é nossa (`apps.app_session`); a de
-  conferência é uma tabela irmã, sem a sessão do Hub e com prazo. É o que fecha mais, porque só
-  alcança o banco de teste.
-- **B. Em quem a conferência confia.** O navegador roda na máquina, ao lado do código do app. Um
-  código feito para isso poderia mexer no navegador e fazer a conferência passar.
+- **Em quem a conferência confia.** O navegador da conferência roda na máquina da conversa, junto
+  com o código que o Builder escreve, e as telas do app rodam nesse navegador. Um código feito para
+  enganar poderia mexer no navegador e fazer a conferência passar.
 
   - (a) Aceitar. O pior caso é uma versão quebrada chegar à Prévia, que é o que acontece hoje
-    sempre. Nenhum dado fica em risco: o banco é o de teste e a sessão vence em minutos.
-  - (b) O despachante da Cloudflare também conta, do lado dele, os pedidos da sessão de conferência
-    que falharam, e o juiz cruza as duas listas. São umas 200 linhas a mais no despachante e no Hub.
+    sempre. A conferência nunca toca: os dados da Prévia e do app publicado (ela grava num banco
+    de teste), as conexões da empresa (os conectores recusam), nem outro app ou o resto do Hub (a
+    entrada da conferência abre só aquele app, só no banco de teste, e vence em 10 minutos).
+  - (b) A porta dos apps na Cloudflare também conta, do lado dela, os pedidos da conferência que
+    falharam, e o juiz cruza as duas listas. São umas 200 linhas a mais.
 
-  **Recomendo (a).** Veredito: nativo. A forma nativa é a do estudo de segurança: a máquina é o
-  lugar feito para código não confiável. O relatório de segurança pôs (b) como condição. Esta
-  página pergunta se você a mantém.
+  **Recomendo (a).** Veredito: nativo. A máquina é o lugar feito para código não confiável, e o que
+  um engano alcança é a Prévia de hoje. O estudo de segurança pôs (b) como condição; esta página
+  pergunta se você a mantém.
 
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 | O navegador na máquina: o CLI `agent-browser` no template, o invólucro que aponta o Chromium da conferência, e `Machines.confer`, que abre a rede para um host, abre a tela, captura e devolve o que a página disse, e fecha a rede; a emenda da decisão 0051 | `infra/e2b/`, `apps/server/src/builder/machine/`, `package.json`, `package-lock.json`, `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md`, `docs/reference/stack.md` | security | — |
-| G2 | U2 | O ambiente de conferência no Hub: a versão num Worker de conferência por Projeto, o esquema de teste vazio a cada conferência, a sessão de conferência, a chamada do app nesse ambiente, e a remoção junto com o Projeto | `packages/hub-api/src/`, `apps/server/src/hub/apps/`, `apps/server/src/hub/projects/`, `apps/server/src/platform/company-postgres.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/main.ts` | data | U1 |
-| G2 | U3 | O juiz: `Runs.check` faz a conferência da máquina e, se ela passou, a conferência no navegador; a falha volta ao modelo com o que a tela mostrou; o teste do defeito plantado com o modelo de verdade | `apps/server/src/builder/runs/`, `apps/server/src/builder/conversation/`, `tests/apps/` | testing | U2 |
-| G3 | U4 | O fechamento: a linha de uso, a issue do DNS, o cartão apagado | `docs/steps/`, `docs/approvals/`, `docs/architecture.md` | delivery | o uso |
+| G2 | U2 | O ambiente de conferência no Hub: a versão num Worker de conferência por Projeto, o esquema de teste vazio a cada conferência, a sessão de conferência, a chamada do app nesse ambiente, e a remoção junto com o Projeto | `packages/hub-api/src/`, `apps/server/src/hub/apps/`, `apps/server/src/hub/projects/`, `apps/server/src/hub/connectors/`, `apps/server/src/platform/company-postgres.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/server/src/main.ts`, `apps/edge/src/` (só teste) | data | U1 |
+| G2 | U3 | O juiz: `Runs.check` faz a conferência da máquina e, se ela passou, a conferência no navegador; a falha volta ao modelo com o que a tela mostrou; o teste do defeito plantado com o modelo de verdade | `apps/server/src/builder/runs/`, `apps/server/src/builder/conversation/`, `packages/app/src/check/` (só teste) | testing | U2 |
+| G3 | U4 | O fechamento: a linha de uso, as issues da dívida, o cartão apagado | `docs/steps/`, `docs/approvals/`, `docs/architecture.md` | delivery | o uso |
 
 G1 vem sozinho e primeiro: o template novo precisa estar publicado na E2B (a tag que
-`HUB_MACHINE_TEMPLATE` lê) antes que G2 rode a conferência na nuvem. G2 junta U2 e U3 porque o
+`HUB_MACHINE_TEMPLATE` lê) antes que G2 rode a conferência na nuvem. Em G2 o despachante não muda
+de código, mas muda de pacote: `AppWorker` e as falhas das chamadas de app moram em
+`packages/hub-api`, que o despachante embute e com que ele lê a resposta do Hub
+(`apps/edge/src/hub.ts:43`, `:147-150`). O despachante novo vai ao ar antes do Hub novo: o velho
+leria um `c-<projectId>` como resposta inválida (`EDGE_HUB_UNAVAILABLE`). G2 junta U2 e U3 porque o
 contrato da conferência (`BuilderConfer`) entra com o seu primeiro chamador (o modelo do cartão). G3
 é o pull request de fechamento, só de documentos, depois do uso (delivery L17, L19). Nenhuma unidade
 corre em paralelo: U2 e U3 dividem `main.ts` e o contrato, e U3 chama `Machines.confer` de U1.
 
 **Orçamento de código alterado.** U1: 300 (o template 20, `confer` e o seu relatório 220, a
-emenda e a linha de `stack.md` à parte). U2: 650 (o contrato 60, a migração e as permissões 80, o
-esquema de teste 120, a conferência no Hub 250, a chamada e a remoção 140). U3: 250. U4: só
-documento. Total da etapa: cerca de 1.200 linhas, dentro das 4.000 de delivery L2. Os testes não
+emenda e a linha de `stack.md` à parte). U2: 700 (o contrato 70, a migração e as permissões 80, o
+esquema de teste 130, a conferência no Hub 260, a chamada, os conectores e a remoção 160). U3: 280.
+U4: só documento. Total da etapa: cerca de 1.300 linhas, dentro das 4.000 de delivery L2. Os testes não
 contam.
 
 ## Os critérios de aceite
@@ -112,25 +114,30 @@ contam.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Numa máquina do template novo, `agent-browser --version` imprime a versão do `package.json` da raiz, e `agent-browser open about:blank` abre o Chromium da conferência (o `chrome-headless-shell` de `/opt/conexus/browsers`) sem baixar outro | o ponto de conferência de G1, numa máquina E2B do template novo; a saída no pull request | must |
-| 2 | U1 | `confer` abre a rede da máquina para o host pedido e para o npm, e só para eles, durante a conferência: de dentro, `curl https://<host>` responde e `curl https://example.org` falha. No fim, sucesso ou falha, a rede volta a só o npm: `curl https://<host>` falha | `apps/server/src/builder/machine/machine-confer.test.ts`, a ordem das chamadas ao `Kit` do dublê (abrir, comandos, fechar no `finally`, também com um comando que lança); o ponto de conferência de G1 com os dois `curl` numa máquina E2B | must |
-| 3 | U1 | Uma tela que desenha e chama `POST /api/listarEncomendas` com 404 dá `DIRTY` com um `REQUEST_FAILED` (`POST`, `/api/listarEncomendas`, 404) e um `CONSOLE_ERROR`; uma tela que só desenha dá `CLEAN`. Nos dois a captura fica em `node_modules/.conexus/tela.png` da pasta do app | `machine-confer.test.ts`, o CLI de verdade (`agent-browser` do `node_modules`) contra uma página servida no teste, com o Chromium do Playwright, por um `TimedExec` local, como `check.test.ts` roda a conferência | must |
-| 4 | U1 | Um erro de JavaScript na página dá `PAGE_ERROR` com a mensagem; um pedido a outro host (bloqueado pela rede) não conta como falha da tela | `machine-confer.test.ts`, os mesmos dois casos | must |
+| 2 | U1 | `confer` abre a rede da máquina para a lista da própria máquina (`allowOut` de quando ela foi criada, hoje só o npm) mais o host pedido, e só isso, durante a conferência: de dentro, `curl https://<host>` responde e `curl https://example.org` falha. No fim, sucesso ou falha, a rede volta à lista da máquina: `curl https://<host>` falha | `apps/server/src/builder/machine/machine-confer.test.ts`, a ordem das chamadas ao `Kit` do dublê (abrir, comandos, fechar no `finally`, também com um comando que lança); o ponto de conferência de G1 com os dois `curl` numa máquina E2B | must |
+| 3 | U1 | Uma tela que desenha e chama `POST /api/listarEncomendas` com 500 dá `DIRTY` com um `REQUEST_FAILED` (`POST`, `/api/listarEncomendas`, 500); o erro que o Chromium escreve no console por isso vai em `console`, que informa e não reprova (decisão 0055, a decisão 11 do firstmate); uma tela que só desenha dá `CLEAN`. Nos dois a captura fica em `node_modules/.conexus/tela.png` da pasta do app | `machine-confer.test.ts`, o CLI de verdade (`agent-browser` do `node_modules`) contra uma página HTTPS servida no teste, com o Chromium do Playwright, por `conferIn` com um `TimedExec` local, como `checkIn` recebe o seu (`apps/server/src/builder/machine/check.ts:30-58`) | must |
+| 4 | U1 | Um erro de JavaScript na página dá `PAGE_ERROR` com a mensagem; um pedido a outro host (bloqueado pela rede) não é `REQUEST_FAILED` e dá `CLEAN`, com o erro do console dele em `console` | `machine-confer.test.ts`, os mesmos dois casos | must |
 | 5 | U1 | Um comando do navegador que não roda (saída diferente de zero, saída que não é o JSON do CLI, ou o prazo) é `CONFER_PLATFORM_FAILED`, nunca `CLEAN` nem `DIRTY`, e a rede fecha | `machine-confer.test.ts`, o dublê com saída 1 e com texto solto | must |
 | 6 | U1 | No fim da conferência o navegador está fechado: `agent-browser close` roda no `finally`, e a conferência seguinte abre um Chromium novo, sem a sessão da anterior | `machine-confer.test.ts`, a lista de comandos; `agent-browser cookies` vazio depois de `close`, no CLI de verdade | must |
-| 7 | U1 | O token da sessão de conferência não aparece em nenhum comando nem no log: entra num arquivo que o Hub escreve pelo `Transport`, lido por `cookies set --curl` e apagado no `finally` | `machine-confer.test.ts`, que procura o token nos argumentos de cada `executeCommand` do dublê e nas linhas do log | must |
-| 8 | U1 | A decisão 0051 diz a regra nova: durante a conferência a máquina alcança também o host exato do app do seu Projeto, nunca `*.` do domínio dos apps, e só até o fim dela; e diz que a E2B abre `8.8.8.8` sempre que a lista tem um domínio | `npm run docs`; leitura do diff | must |
-| 9 | U2 | `openConference` sobe a versão como o Worker `c-<projectId>` do namespace, com as marcas da empresa e do Projeto e o limite de CPU de `uploadVersion`; uma versão que não inicia (10021) volta `NOT_STARTING` e não toca o banco | `apps/server/src/hub/apps/conference.test.ts`, o dublê da Cloudflare de `send-guards.test.ts`; um caso com `NOT_STARTING` que confere que o Neon não foi chamado | must |
+| 7 | U1 | O token da sessão de conferência chega ao app como o cookie `__Host-conexus-app` (o nome do despachante, `apps/edge/src/headers.ts:5-7`), só do host, `Secure`, `Path=/`, e não aparece em nenhum comando nem no log: entra num arquivo que o Hub escreve pelo `Transport`, lido por `cookies set --curl <arquivo> --url https://<host>/` e apagado no `finally`. As mensagens dos problemas (`BrowserProblem.message`, `console`) também não vão ao log | `machine-confer.test.ts`: o servidor HTTPS do teste diz se recebeu o cookie; o teste procura o token nos argumentos de cada comando e nas linhas do log, e uma mensagem marcada da página nas linhas do log | must |
+| 8 | U1 | A decisão 0051 diz a regra nova: durante a conferência a máquina alcança também o host exato do app do seu Projeto, nunca `*.` do domínio dos apps, e só até o fim dela; diz que a E2B abre `8.8.8.8` sempre que a lista tem um domínio; e diz o limite da regra da E2B, que olha o nome pedido (o SNI no 443) e não o endereço, então um código na máquina alcança outro servidor que aceite o nome liberado | `npm run docs`; leitura do diff | must |
+| 9 | U2 | `openConference` cria a linha de `apps.app` do Projeto quando não há e sobe a versão como o Worker `c-<projectId>` do namespace, com as marcas da empresa e do Projeto e o limite de CPU de `uploadVersion`; uma versão que não inicia (10021) volta `NOT_STARTING` e não toca o banco | `apps/server/src/hub/apps/conference.test.ts`, o dublê da Cloudflare de `send-guards.test.ts`; um caso com `NOT_STARTING` que confere que o Neon não foi chamado | must |
 | 10 | U2 | Cada conferência começa com o esquema `app_<projectId>_check` vazio: o que a conferência anterior gravou some, e as migrações da versão rodam pela mesma regra de `migrateApp`. Uma migração recusada volta `MIGRATION_REFUSED` com a causa, e o esquema do app (o da Prévia) não muda | `conference.test.ts` no Postgres real (`test-database.ts`): uma conferência grava uma linha pelo login de conferência, a seguinte não a vê; uma migração com `DROP TABLE` volta recusada e `app_<projectId>` fica igual | must |
 | 11 | U2 | Uma chamada ao app com a sessão de conferência chega ao Worker `c-<projectId>` com o login `app_<projectId>_check_run`; a mesma pessoa na Prévia continua no Worker da versão da Prévia e no login do app | `apps/server/src/hub/apps/app-handoff.test.ts`, pela porta `checkCall` (`createAppDoor`), um caso de cada ambiente | must |
-| 12 | U2 | A sessão de conferência recusa: depois de `endConference`, depois de 10 minutos, em outro host, e para uma pessoa tirada da empresa. Cada recusa é `APP_SESSION_INVALID`, como uma sessão de app vencida | `app-handoff.test.ts`, um caso por recusa, o relógio pelo `statement_timestamp()` do Postgres | must |
-| 13 | U2 | Apagar o Projeto remove o Worker `c-<projectId>` e o esquema e os logins de conferência, também quando o Projeto nunca mandou versão à Prévia | `apps/server/src/hub/projects/projects-delete.test.ts`, caso novo com um Projeto que só conferiu, pela rota de apagar o Projeto | must |
+| 21 | U2 | Na conferência, `callAppConnector` e `listAppConnections` com a sessão de conferência recusam com `CONNECTOR_OFF_IN_CHECK` ("Sem conexão no ambiente de conferência."), antes de ler a concessão ou a conexão: o dublê do conector não é chamado. A mesma pessoa na Prévia continua lendo | `apps/server/src/hub/connectors/app-calls.test.ts`, um caso de cada rota e o da Prévia | must |
+| 22 | U2 | O despachante lê a resposta do Hub com `version.worker: c-<projectId>` e encaminha a chamada ao Worker `c-<projectId>` do namespace; um nome fora de `^[vc]-` continua recusado como `EDGE_HUB_UNAVAILABLE` | `apps/edge/src/dispatcher-versions.test.ts`, caso novo com `test-edge.ts` | must |
+| 12 | U2 | A sessão de conferência recusa: depois de `endConference`, depois de 10 minutos, em outro host, e para uma pessoa tirada do Projeto (`endAppSessions` apaga também as dela, S13). Cada recusa é `APP_SESSION_INVALID`, como uma sessão de app vencida | `app-handoff.test.ts`, um caso por recusa, o relógio pelo `statement_timestamp()` do Postgres | must |
+| 13 | U2 | Apagar o Projeto remove o Worker `c-<projectId>` e o esquema e os logins de conferência, também quando o Projeto só conferiu (a linha de `apps.app` criada pela conferência, sem versão na Prévia) | `apps/server/src/hub/projects/projects-delete.test.ts`, dois casos novos pela rota de apagar o Projeto: um Projeto que só conferiu e um com Prévia que também conferiu | must |
 | 14 | U2 | A migração nova passa em `npm run migrations` e no retrato do catálogo; `apps.check_session` só é lida e escrita pelo login da instalação, como `apps.app_session` | `npm run migrations -- --base origin/main`; `apps/server/src/platform/catalog.test.ts` (o retrato do catálogo contra `database-grants.sql`) | must |
-| 15 | U3 | Um turno cuja tela chama uma operação que não existe recebe, no fim, nota 0 com o relatório da conferência no navegador: os pedidos que falharam, os erros e o caminho da captura. O modelo lê a captura com `mastra_workspace_read_file` e recebe a imagem | `apps/server/src/builder/conversation/conversation-check.test.ts`, caso novo, com a máquina e o Hub em dublê e o modelo de teste; a imagem pelo `read_file` com o `SandboxFilesystem` sobre o dublê | must |
+| 15 | U3 | Um turno cuja tela recebe 500 da operação que a desenha recebe, no fim, nota 0 com o relatório da conferência no navegador: os pedidos que falharam, os erros e o caminho da captura. O modelo lê a captura com `mastra_workspace_read_file` e recebe a imagem | `apps/server/src/builder/conversation/conversation-check.test.ts`, caso novo, com a máquina e o Hub em dublê e o modelo de teste; a imagem pelo `read_file` com o `SandboxFilesystem` sobre o dublê | must |
 | 16 | U3 | Uma conferência da máquina que falha não chega ao navegador: nenhum `confer` roda. Uma conferência no navegador que não pôde rodar (`CONFER_PLATFORM_FAILED`, ou o Hub fora) encerra o turno como `unchecked`, sem gastar volta, como a máquina que não conferiu | `conversation-check.test.ts`, dois casos | must |
 | 17 | U3 | `conexus_check` e o fim do turno dão o mesmo relatório, pelo mesmo `Runs.check` | `conversation-check.test.ts`, o caso que já compara os dois, estendido | must |
-| 18 | U3 | O teste do defeito plantado: a partir do app de teste `tests/apps/encomendas-defeito` (a tela chama `listarEncomendas`, que não existe), o Builder de verdade, com o pedido "Confira e entregue o app", termina com a conferência `passed` sem que a conversa diga qual é o defeito, em até `CHECK_LIMITS.checks` voltas, com a versão salva | `apps/server/src/builder/conversation/builder.eval.test.ts`, caso novo; roda no ponto de conferência de G2, na nuvem, com a conta de modelo de teste | must |
+| 23 | U3 | O app do defeito plantado, `ENCOMENDAS_DEFEITO`, os arquivos que mudam no app inicial na forma de `Files` (`packages/app/src/check/test-app.ts:25`), passa na conferência da máquina de hoje (todos os passos `passed` ou `informed`) e reprova na conferência no navegador: a operação `listarEncomendas` está declarada e tipada, mas o manipulador lê a tabela `encomenda`, que nenhuma migração cria; a lista recebe 500 e mostra "Erro ao carregar" | `packages/app/src/check/check.test.ts`, caso novo que roda a conferência da máquina sobre o app; a reprova no navegador no ponto de conferência de G2 | must |
+| 18 | U3 | O teste do defeito plantado: a partir de `ENCOMENDAS_DEFEITO` (critério 23), o Builder de verdade, com o pedido "Confira e entregue o app", termina com a conferência `passed` sem que a conversa diga qual é o defeito, em até `CHECK_LIMITS.checks` voltas, com a versão salva. Passa quando acerta em pelo menos uma de duas corridas; o relatório traz as duas, com o que cada conferência disse | `apps/server/src/builder/conversation/builder.eval.test.ts`, caso novo; roda no ponto de conferência de G2, na nuvem, com a conta de modelo de teste | must |
 | 19 | U3 | Os dois apps de teste da trilha (o CRM e o acompanhamento de vendedor) construídos uma vez com Claude dentro do Builder, com a conferência ligada; o número de voltas e o que cada conferência reprovou vão para o relatório | o ponto de conferência de G2 (a medida da página da trilha) | should |
 | 20 | U3 | O tempo de uma conferência no navegador, do servidor de produção, e o tempo de cada parte (subir, banco, abrir, ler), medidos em cinco turnos, vão para o relatório | o ponto de conferência de G2 | should |
+
+Os critérios 21 a 23 entraram depois da leitura por outro modelo; os números dos outros não mudaram.
 
 ## A matriz de estados
 
@@ -146,9 +153,10 @@ existe (a linha do turno com `rounds`), e o fim do turno com os estados de `Vers
 | --- | --- | --- |
 | `Conference` (`OPENED`, `NOT_STARTING`, `MIGRATION_REFUSED`) | `openConference` (U2) | `Runs.check` (U3) |
 | `Conference.url`, `Conference.session` | `openConference` | `Machines.confer` (U1): o host vai para a rede, a sessão para o arquivo de cookie |
-| `BrowserReport` (`CLEAN`, `DIRTY`) e `BrowserProblem` | `Machines.confer` (U1) | `Runs.check`, e o modelo pelo texto do juiz (U3) |
+| `BrowserReport` (`CLEAN`, `DIRTY`), `BrowserProblem` e `console` | `Machines.confer` (U1) | `Runs.check`, e o modelo pelo texto do juiz (U3); nunca o log |
+| `BuilderCheck` (`MACHINE_FAILED`, `CONFERENCE_REFUSED`, `SEEN`) | `Runs.check` (U3) | o juiz e `conexus_check` (`processors.ts`) |
 | `apps.check_session.expires_at` | `openConference` | `admitCall` (U2) |
-| `AppCall.version.worker` com `c-<projectId>` | `callTo` no ambiente `check` (U2) | o despachante, sem mudança (`apps/edge/src/dispatch.ts:146-160`) |
+| `AppCall.version.worker` com `c-<projectId>` | `callTo` no ambiente `check` (U2) | o despachante, sem mudança de código e publicado de novo com o `packages/hub-api` novo (`apps/edge/src/hub.ts:147-150`, `dispatch.ts:146-160`) |
 | `AppCall.database.login` com `app_<projectId>_check_run` | `callTo` no ambiente `check` | o `Db` do despachante, que deriva a senha pelo nome (`packages/hub-api/src/app-login.ts:30-40`) |
 
 ## A tabela de falhas
@@ -157,9 +165,10 @@ existe (a linha do turno com `rounds`), e o fim do turno com os estados de `Vers
 | --- | --- | --- | --- | --- | --- |
 | `cloudflare.upload` do Worker `c-<projectId>` | não acontece: o turno que confere segura o Projeto (`Runs.#writing`, `runs/runs.ts:296-297`), um por Projeto | 10021: `NOT_STARTING`, o banco não é tocado, o modelo lê "o app não inicia" | `CONFER_PLATFORM_FAILED`: o turno termina `unchecked`, sem gastar volta | `APP_CONFERENCE_UPLOADED` com ids; a falha com o código da Cloudflare, sem corpo | 9, 16 |
 | O esquema de teste refeito (`DROP SCHEMA ... CASCADE`, `ensureApp` de conferência, `migrate`) | o mesmo: o Projeto está seguro pelo turno | cada ato é uma transação (`company-postgres.ts:250-260`); um corte deixa o esquema meio feito, e a próxima conferência começa pelo `DROP` | Neon fora: `CONFER_PLATFORM_FAILED` | `APP_CONFERENCE_DATABASE_READY`, ou `APP_MIGRATION_REFUSED` com a regra, sem valor (C52) | 10, 16 |
-| `insert` e `delete` em `apps.check_session` | duas conferências do mesmo Projeto não correm juntas (acima); duas sessões de Projetos diferentes não se tocam | um `delete` que falha deixa a linha, e o `expires_at` a recusa em 10 minutos | o banco do Hub fora: `CONFER_PLATFORM_FAILED` antes do navegador | nada além do registro da rota de hoje | 12 |
+| As leituras por conector com a sessão de conferência (`callAppConnector`, `listAppConnections`) | não se aplica: recusa | não se aplica: a recusa vem antes de ler a concessão | não se aplica | a recusa `CONNECTOR_OFF_IN_CHECK` com os ids, como as outras do conector | 21 |
+| `insert` e `delete` em `apps.check_session` | duas conferências do mesmo Projeto não correm juntas (acima); duas sessões de Projetos diferentes não se tocam | um `delete` que falha deixa a linha, e o `expires_at` a recusa em 10 minutos; `endAppSessions` apaga as da pessoa tirada | o banco do Hub fora: `CONFER_PLATFORM_FAILED` antes do navegador | nada além do registro da rota de hoje | 12 |
 | `updateNetwork` de abrir e de fechar (`e2b`) | uma conferência por máquina: o juiz roda uma vez por volta | abrir que falha: `CONFER_PLATFORM_FAILED`, nada aberto; fechar que falha: `MACHINE_NETWORK_CLOSE_FAILED` no log, e a próxima partida da máquina fecha de novo (`machines.ts:194-197`) | E2B fora: o mesmo | `MACHINE_NETWORK_CLOSE_FAILED` com a conversa | 2 |
-| Os comandos `agent-browser` (`cookies set`, `open`, `wait`, `screenshot`, `console`, `errors`, `network requests`, `close`) | o mesmo | um comando que não roda é `CONFER_PLATFORM_FAILED`; `close` e a remoção do arquivo de cookie rodam no `finally` | a máquina morta: `CONFER_PLATFORM_FAILED` | os tipos e as contagens de problemas, nunca as mensagens (a mensagem pode trazer o que o app escreveu) | 3 a 7 |
+| Os comandos `agent-browser` (`cookies set`, `open`, `wait`, `screenshot`, `console`, `errors`, `network requests`, `close`) | o mesmo | um comando que não roda é `CONFER_PLATFORM_FAILED`; `close` e a remoção do arquivo de cookie rodam no `finally` | a máquina morta: `CONFER_PLATFORM_FAILED` | os tipos e as contagens de problemas, nunca as mensagens nem o `console` (podem trazer o que o app escreveu) | 3 a 7 |
 | `mastra_workspace_read_file` da captura, pelo modelo | não se aplica: leitura | não se aplica | a máquina morta: o erro da ferramenta, como hoje | o que a ferramenta já registra | 15 |
 
 ## A tabela de referência
@@ -168,20 +177,21 @@ existe (a linha do turno com `rounds`), e o fim do turno com os estados de `Vers
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Navegador do Builder dentro da máquina | nenhum: o passo `navegador` serve só os arquivos (`packages/app/src/check/browser.ts:32-45`) | `agent-browser` 0.43.0, `skill-data/vercel-sandbox/SKILL.md`; `@agent-browser/sandbox` 0.43.0 `dist/vercel.js:43-58`; E2B `use-cases/remote-browser.md:220` | o CLI instalado na imagem da máquina, uma ação por comando, a captura num arquivo | nativo | — | U1 | nenhum: muda `infra/e2b/template.ts` (`TOOLS`, o invólucro, um `runCmd`) |
 | O Chromium do navegador | o `chrome-headless-shell` da conferência (`infra/e2b/template.ts:90`) | `agent-browser` 0.43.0 `commands.md:559` (`--executable-path`); a variável `AGENT_BROWSER_EXECUTABLE_PATH` | o CLI dirige um Chromium que ele acha ou que se aponta | embrulhado: o invólucro `/usr/local/bin/agent-browser`, porque `setEnvs` só vale no build (`e2b` 2.63.0 `index.d.ts:12660-12661`) | a implementação provada na E2B, teste 1 (`Chrome not found` sem ele) | U1 | o invólucro, escrito pelo template |
-| Quem dirige o navegador | nenhum | `@mastra/core` 1.83.0 `workspace-BAqspXXH.js:6225-6233` (o Mastra reconhece `agent-browser`), `:6855-6882` (sem `browser` no workspace o comando roda como veio); `docs-browser.md:12-17` | comandos na sandbox | nativo: o juiz roda os comandos pelo `executeCommand` da sandbox que o Hub já usa (`machine/machines.ts:51-59`) | — | U1 | nenhum: `machine/confer.ts` |
+| Quem dirige o navegador | nenhum | `@mastra/core` 1.83.0 `workspace-BAqspXXH.js:6225-6233` (o Mastra reconhece `agent-browser`), `:6855-6882` (sem `browser` no workspace o comando roda como veio); `docs-browser.md:12-17` | comandos na sandbox | nativo: o juiz roda os comandos pelo `executeCommand` da sandbox que o Hub já usa (`machine/machines.ts:51-59`), e não pela ferramenta `mastra_workspace_execute_command` que as linhas do Mastra descrevem e a implementação provou (teste 2); abaixo das duas está o mesmo `executeCommand` da E2B | — | U1 | `machine/confer.ts` |
 | A captura como imagem | nenhuma | `reference-workspace-workspace-class.md:490` (`mediaTypes` padrão com `image/png`); implementação provada, teste 2 | `read_file` devolve a imagem como parte de mídia | nativo; a captura fica em `node_modules/.conexus/`, dentro da pasta do app e fora do Git (`packages/app/src/check/report.ts:26`) | — | U1, U3 | — |
 | Console, erros, pedidos | o `CONSOLE_ERROR` só informa (`browser.ts:141-143`, `run.ts:37-41`) | `agent-browser` 0.43.0 `commands.md:590-593` (`console`, `errors`), `:260` (`network requests`), `:547` (`--json`); vibesdk `9da158d` `worker/agents/think/browser-logs-tool.ts:16-24` | a lista de console, erros da página e pedidos falhos volta ao agente | nativo | — | U1 | — |
 | O que o modelo sabe do CLI | — | `agent-browser` 0.43.0 `skills/agent-browser/SKILL.md` | a skill do CLI | nativo; fica de fora: nesta etapa só o juiz dirige o navegador (a decisão 2 do firstmate) | — | — | — |
 | Rede: só o endereço de conferência | `ALLOWED_HOSTS` (`machine/kit.ts:27`), aplicado em `machine/e2b.ts:26-28`, `:43`, `:59` | `e2b` 2.63.0 `index.d.ts:9753-9775` (`allowOut`, `denyOut`), `:9916-9930` (`updateNetwork` troca tudo); as provas na E2B, prova 2 | lista exata trocada com a máquina ligada | nativo | — | U1 | — |
 | Rede: URLs da máquina privadas | `allowPublicTraffic: false` (`machine/e2b.ts:43`, pull request 1199) | `network/restrict-public-access.md:15-19` | 403 sem o token | nativo; já no `main` | — | fica de fora: feito | — |
 | Rede: DNS | `8.8.8.8` aberto pela E2B quando há domínio na lista | `e2b` 2.63.0 `index.d.ts:9837-9866`; implementação provada, teste 3 | `dnsServers: []` fecha, mas o nome precisa estar em `/etc/hosts` | nativo; fica como hoje (a decisão 3 do firstmate) | — | U1 (só o texto da 0051) | — |
-| Segunda cerca no navegador | nenhuma | `agent-browser` 0.43.0 `commands.md:533` (`--allowed-domains`) | o navegador recusa outro domínio | nativo; fica de fora: a rede da máquina já cerca, e o juiz só abre um endereço | — | — | — |
+| Segunda cerca no navegador | nenhuma | `agent-browser` 0.43.0 `--help` (`--allowed-domains`), `skill-data/core/SKILL.md:260` | o navegador recusa outro domínio | nativo; fica de fora: a rede da máquina já cerca, e o juiz só abre um endereço | — | — | — |
 | Onde a versão de conferência roda | Workers for Platforms, um Worker por versão (`hub/apps/send.ts:89-101`) | o mesmo Workers for Platforms; vibesdk `9da158d` `space/src/space/durable-object.ts:741-756` (Worker Loader) | o motor de produção carrega a versão | nativo: o mesmo `cloudflare.upload`, com um Worker por Projeto (a decisão 1 do firstmate) | — | U2 | `apps/server/src/hub/apps/conference.ts` |
 | Dados da conferência | um esquema para Prévia e publicado (`packages/hub-api/src/app-login.ts:8-15`) | vibesdk `durable-object.ts:658`, `:694` contra `worker/services/deployer/think-user-deploy.ts:102-108` | o estado da prévia separado do publicado | embrulhado: um esquema irmão pelo mesmo `ensureApp` e `migrate` (`platform/company-postgres.ts:223-305`) | o fundador, "2. a" | U2 | — |
 | Ambiente da sessão | `APP_ENVIRONMENTS = ['preview', 'published']` (`hub/apps/tables.ts:34`) | vibesdk `durable-object.ts:834-846` (a rota própria da prévia) | um ambiente a mais | nativo: um terceiro valor, `check`, só na chamada (`CallEnvironment`) | — | U2 | — |
-| A sessão do navegador | a sessão de app pela passagem (`hub/apps/handoff.ts:49-124`), pendurada na sessão do Hub | — (as referências põem o navegador fora do código julgado) | — | embrulhado: `apps.check_session`, a decisão A do fundador | — | U2 | — |
+| A sessão do navegador | a sessão de app pela passagem (`hub/apps/handoff.ts:49-124`), pendurada na sessão do Hub | — (as referências põem o navegador fora do código julgado) | — | embrulhado: `apps.check_session` (a decisão 8 do firstmate), entregue pelo `cookies set --curl <arquivo> --url` do CLI (a decisão 9) | a prova local do cookie, variantes A a H | U1, U2 | — |
+| Os conectores na conferência | `connectorCall` admite a sessão e lê a versão da Prévia (`hub/apps/handoff.ts:215-241`) | — | — | embrulhado: a recusa `CONNECTOR_OFF_IN_CHECK` no ambiente `check` (a decisão 10 do firstmate) | a palavra do fundador "2. a" | U2 | — |
 | Quem decide "terminei" | `conexusCheck` `isTaskComplete` (`conversation/processors.ts:83-132`) | Mastra 1.83.0 `isTaskComplete`; bolt.diy `353b44c` `app/lib/common/agentLoop.ts:198-210`; vibesdk `worker/agents/core/behaviors/think.ts:322-327` | por código, no fim do turno; o vibesdk só pelo prompt | nativo; o juiz passa a esperar a conferência no navegador | — | U3 | — |
-| O juiz da tela não ligada | `informed` não reprova (`packages/app/src/check/run.ts:37-41`) | vibesdk `browser-logs-tool.ts:16-24`, `think.ts:322-327` ("until the deploy succeeds and the console is clean") | repetir até o console limpo | nativo: o relatório do CLI decide; o cruzamento com o despachante é a decisão B do fundador | — | U3 | — |
+| O juiz da tela não ligada | `informed` não reprova (`packages/app/src/check/run.ts:37-41`) | vibesdk `browser-logs-tool.ts:16-24`, `think.ts:322-327` ("until the deploy succeeds and the console is clean") | repetir até o console limpo | nativo: o relatório do CLI decide; o cruzamento com o despachante é a decisão do fundador | — | U3 | — |
 
 As peças que a implementação provada riscou não entram: o `AgentBrowser` de `@mastra/agent-browser`
 0.6.0 no Hub com o proxy WebSocket (o motor 0.19.0 ignora `cdpHeaders`), `maskRequestHost` e o
@@ -201,7 +211,12 @@ implementação, e o resto é código novo sobre peças do `main`.
   Chromium. O `npm` que o modelo roda não usa o cache de `/opt/conexus/npm-cache`. Vai para uma
   issue no fechamento, com o comentário de `template.ts:51`, que diz o contrário.
 - O MMDS do Firecracker em `169.254.169.254` responde dentro da máquina com identificadores da E2B
-  (as provas na E2B, prova 2, seção 4.3). Nada do Conexus está ali.
+  (as provas na E2B, prova 2, seção 4.3; o `accessTokenHash` que ele mostra não foi verificado).
+  Nada do Conexus está ali.
+- A regra de rede da E2B olha o nome no 443 (SNI) e o `Host` no 80, não o endereço: um código na
+  máquina com o IP de outro servidor que aceite o nome liberado chega lá (as provas na E2B, prova
+  2, seção 4.4). Vale hoje para o npm; a 0051 passa a dizer (critério 8).
+- O cookie de conferência não é `HttpOnly` (a decisão 9 do firstmate): o JavaScript do app o lê.
 
 ## As decisões do firstmate
 
@@ -214,6 +229,10 @@ implementação, e o resto é código novo sobre peças do `main`.
 | 5 | A conferência abre só a entrada do app (`/`) e espera `networkidle` | o critério do roteiro é a tela não ligada; a entrada é a tela que toda versão tem; o CLI avisa que `networkidle` pode não chegar numa página com SSE (`commands.md:171-177`), e o app de hoje não tem SSE | esperar um seletor que o app declare, quando o contrato tiver telas |
 | 6 | A versão do CLI mora no `package.json` da raiz, como `devDependency` exata, lida pelo template como o `wrangler` (`template.ts:31-49`) | um dono só da versão (C26); o teste do critério 3 roda o mesmo CLI no CI | uma constante no template |
 | 7 | Um pedido falho é um pedido ao host do app com status 400 ou mais, ou sem resposta; pedidos a outros hosts não contam | só o host do app está na rede; um pedido a outro host falha sempre, e contar isso reprovaria todo app que chama uma fonte | contar também os outros hosts |
+| 8 | A entrada do navegador é uma sessão só da conferência, `apps.check_session`: um app, o ambiente `check`, em nome da pessoa do turno, apagada no fim e vencida em 10 minutos | o navegador da máquina não deve ter a sessão do Hub da pessoa; pendurar a conferência na sessão do Hub (como a Prévia) mataria a conferência quando a pessoa sai do Hub com o turno trabalhando, e o Hub teria de guardar qual sessão começou cada turno; as duas formas dão a mesma tela ao fundador | a sessão de app de hoje, com `hub_session_id` da sessão que começou o turno |
+| 9 | O cookie entra por `cookies set --curl <arquivo> --url https://<host>/`, sem `HttpOnly` | a prova local do cookie (fora do repositório, delivery L21), com o `chrome-headless-shell` 1243 do template e um servidor HTTPS: `--domain <host>`, a forma da primeira versão deste cartão, é recusada pelo Chrome (`Invalid cookie fields`: o prefixo `__Host-` proíbe `Domain`); `--curl` com `--url` grava o cookie só do host, `Secure`, `Path=/`, e o servidor o recebe no primeiro `open`; os campos `httpOnly` do arquivo são ignorados; `close` deixa a sessão seguinte sem cookie. O `HttpOnly` só vem com o token na linha de comando (`cookies set <nome> <valor> --url --secure --http-only`), contra o critério 7. Sem `HttpOnly`, o JavaScript do app lê o token, que só abre aquele app, no banco de teste, sem conectores, por 10 minutos, e o código do app já roda nessa máquina | o token na linha de comando com `--http-only`, com o comando fora do log |
+| 10 | Na conferência os conectores recusam com `CONNECTOR_OFF_IN_CHECK`, por um ramo explícito em `connectorCall` (C21) | a palavra do fundador "2. a": a conferência grava num banco de teste vazio e não toca o real; sem o ramo, a sessão de conferência passaria por `connectorCall` (`handoff.ts:215-241`), que leria a concessão da versão da Prévia e chamaria a conexão real da pessoa | o ambiente `check` lido como a Prévia em `connectorCall` |
+| 11 | Um erro de console informa e não reprova; reprovam o erro da página e o pedido falho | a decisão 0055 (`packages/app/src/check/browser.ts:141-143`): o console de hoje só informa; o Chromium escreve no console cada pedido bloqueado de outro host (implementação provada, teste 2, `net::ERR_CONNECTION_CLOSED`), e contar isso reprovaria todo app que chama uma fonte | o erro de console reprovar, com a lista do que se ignora |
 
 ## U1 O navegador na máquina
 
@@ -229,7 +248,10 @@ template e uma função que roda comandos e lê JSON.
 - **O Chromium do navegador.** `template.ts:90` instala o `chrome-headless-shell` em
   `${BROWSERS}`; o invólucro o aponta com `AGENT_BROWSER_EXECUTABLE_PATH`.
 - **Quem dirige o navegador.** `machine/machines.ts:51-59` (`run`, com prazo e saída limitada),
-  `:285-291` (`check`, o modelo de função que roda na sessão da conversa).
+  `:285-291` (`check`, o modelo de função que roda na sessão da conversa);
+  `machine/check.ts:30-58` (`checkIn`, que recebe o `exec` e por isso roda no teste sem E2B).
+- **A sessão do navegador.** A prova local do cookie: só `cookies set --curl <arquivo> --url
+  https://<host>/` grava o `__Host-conexus-app` (a decisão 9 do firstmate).
 - **Console, erros, pedidos.** `commands.md:590-593`, `:260`, `:547`; o formato JSON de cada um é
   o que o CLI imprime com `--json` (ler a saída de verdade no passo 2, e registrar o esquema Zod).
 - **Rede.** `machine/e2b.ts:26-28` (`egress`), `:59` (`closeNetwork`); `machines.ts:194-197` (a
@@ -241,9 +263,9 @@ template e uma função que roda comandos e lê JSON.
 | --- | --- | --- |
 | `infra/e2b/template.ts` | Muda: `agent-browser` em `TOOLS`, o invólucro, o `printf` dele | o build do template (firstmate) |
 | `package.json`, `package-lock.json` | Muda: `devDependencies` ganha `agent-browser` exato | o template (`versionOf`), `machine-confer.test.ts` |
-| `apps/server/src/builder/machine/kit.ts` | Muda: o `Kit` ganha `openNetwork(hosts)` | `machines.ts` |
-| `apps/server/src/builder/machine/e2b.ts` | Muda: `openNetwork` pelo `updateNetwork` com `egress` | `createE2bKit` |
-| `apps/server/src/builder/machine/confer.ts` | Cria: os comandos, o esquema do JSON do CLI, `BrowserReport` | `machines.ts` |
+| `apps/server/src/builder/machine/kit.ts` | Muda: o `Kit` ganha `openNetwork(extra)` | `machines.ts` |
+| `apps/server/src/builder/machine/e2b.ts` | Muda: `openNetwork` pelo `updateNetwork` com `egress([...options.allowOut, ...extra])` | `createE2bKit` |
+| `apps/server/src/builder/machine/confer.ts` | Cria: `conferIn`, os comandos, o esquema do JSON do CLI, `BrowserReport` | `machines.ts`, `machine-confer.test.ts` |
 | `apps/server/src/builder/machine/machines.ts`, `port.ts`, `public.ts` | Muda: `Machines.confer` | `builder/runs/` (U3) |
 | `apps/server/src/builder/machine/test-machine.ts` | Muda: o dublê do `Kit` ganha `openNetwork` | os testes da máquina |
 | `docs/decisions/0051-builder-machine-git-and-copy-in-r2.md` | Muda: a emenda da rede | — |
@@ -254,20 +276,37 @@ template e uma função que roda comandos e lê JSON.
 Em `apps/server/src/builder/machine/confer.ts`, exportados por `machine/public.ts`:
 
 ```ts
+/** O que reprova a tela. O erro de console só informa (decisão 0055), e vai em `console`. */
 export type BrowserProblem =
   | { kind: 'PAGE_ERROR'; message: string }
-  | { kind: 'CONSOLE_ERROR'; message: string }
   | { kind: 'REQUEST_FAILED'; method: string; path: string; status: number | null }
 
 export type BrowserReport =
-  | { kind: 'CLEAN'; shot: string }
-  | { kind: 'DIRTY'; problems: BrowserProblem[]; shot: string }
+  | { kind: 'CLEAN'; shot: string; console: string[] }
+  | { kind: 'DIRTY'; problems: BrowserProblem[]; shot: string; console: string[] }
 
 export type ConferPlatformFailed = 'CONFER_PLATFORM_FAILED'
 
 /** O endereço do app no ambiente de conferência e a sessão que o abre. */
 export type ConferAt = Readonly<{ url: URL; session: AppSessionToken }>
+
+/** A conferência sobre o que a máquina dá, como `checkIn`: o teste passa um `exec` local. */
+export function conferIn(
+  input: Readonly<{
+    exec: TimedExec
+    files: Readonly<{ write(path: string, text: string): Promise<void>; remove(path: string): Promise<void> }>
+    network: Readonly<{ open(extra: readonly string[]): Promise<void>; close(): Promise<void> }>
+    workdir: string
+    at: ConferAt
+    log: FailureLog
+  }>,
+): Promise<Result<BrowserReport, ConferPlatformFailed>>
 ```
+
+`Machines.confer` só liga `conferIn` ao `Kit` da conversa: `run` como `exec`, o `Transport` como
+`files`, `openNetwork` e `closeNetwork` como `network`. `problems` e `console` guardam no máximo
+`CHECK_LIMITS.problems` itens, cada mensagem cortada como `Problem.message`
+(`packages/app/src/check/report.ts:9-12`).
 
 Em `port.ts`, no `Machines`:
 
@@ -275,8 +314,9 @@ Em `port.ts`, no `Machines`:
 confer(input: { conversationId: ConversationId; at: ConferAt }): Promise<Result<BrowserReport, ConferPlatformFailed>>
 ```
 
-E no `Kit` (`kit.ts`): `openNetwork(hosts: readonly string[]): Promise<void>`, ao lado de
-`closeNetwork`.
+E no `Kit` (`kit.ts`): `openNetwork(extra: readonly string[]): Promise<void>`, ao lado de
+`closeNetwork`: a lista da máquina (`options.allowOut`) mais `extra`, para que abrir e fechar
+partam da mesma lista.
 
 A forma de cada coisa:
 
@@ -284,8 +324,8 @@ A forma de cada coisa:
 - **Cada id**: `AppSessionToken` é a marca do contrato (`packages/hub-api`), conferida por quem a
   cria (U2); `shot` é o caminho relativo à pasta do app, `node_modules/.conexus/tela.png`.
 - **O dono de cada fato compartilhado**: o caminho da captura é uma constante de `confer.ts`, ao
-  lado de `WORK_FOLDER` (`packages/app/src/check/report.ts:26`), importado de lá (C26). Os hosts
-  da conferência são `[...ALLOWED_HOSTS, url.hostname]`, montados só em `confer`.
+  lado de `WORK_FOLDER` (`packages/app/src/check/report.ts:26`), importado de lá (C26). O host a
+  mais é `url.hostname`, passado só por `conferIn`; a lista da máquina é do `Kit`.
 - **O esquema Zod de cada entrada externa**: a saída `--json` de `console`, `errors` e
   `network requests` (C27), com o que o passo 2 ler da saída de verdade.
 - **O arquivo modelo**: `machine/check.ts` (um programa na máquina, a saída lida por esquema, o
@@ -322,18 +362,21 @@ As linhas de `docs/reference/stack.md` de `e2b` e `@mastra/core`, a skill `mastr
    - **Referência a seguir:** `commands.md:590-593`, `:260`, `:547`. Rode o CLI do `node_modules`
      contra uma página local e grave a saída `--json` de cada comando antes de escrever o esquema.
    - **O que entra:** `reportOf(outputs, host): BrowserReport`, função pura: um `REQUEST_FAILED`
-     só para o host do app (a decisão 7 do firstmate).
+     só para o host do app (a decisão 7 do firstmate); o console em `console`, sem reprovar (a
+     decisão 11).
    - **Testes:** `machine-confer.test.ts`, os casos dos critérios 3 e 4.
    - **Mutações à mão:** trocar `>= 400` por `> 400` → o 404 vira `CLEAN`, o caso do critério 3
      fica vermelho; tirar o filtro de host → o caso do pedido a outro host do critério 4 fica
-     vermelho.
+     vermelho; contar o console como problema → o mesmo caso fica vermelho.
 3. **A rede e o `confer`.** Critérios: 2, 5, 6, 7.
-   - **Arquivos:** muda `kit.ts`, `e2b.ts`, `machines.ts`, `port.ts`, `public.ts`,
+   - **Arquivos:** muda `kit.ts`, `e2b.ts`, `confer.ts`, `machines.ts`, `port.ts`, `public.ts`,
      `test-machine.ts`.
-   - **O que entra:** `openNetwork` é `sandbox.e2b.updateNetwork(egress(hosts))`: o
-     `updateNetwork` troca a regra inteira (`index.d.ts:9916-9930`), então abrir e fechar mandam a
-     lista toda. O `confer` escreve o cookie pelo `Transport` (`kit.ts`, `Transport.write`) num
-     arquivo fora da pasta do app, roda `cookies set --curl <arquivo> --domain <host>`, `open`,
+   - **O que entra:** `openNetwork(extra)` é
+     `sandbox.e2b.updateNetwork(egress([...options.allowOut, ...extra]))`: o `updateNetwork` troca
+     a regra inteira (`index.d.ts:9916-9930`), então abrir e fechar mandam a lista toda. O
+     `conferIn` escreve o cookie (`[{"name":"__Host-conexus-app","value":<token>}]`) por `files`
+     num arquivo fora da pasta do app, roda `open` sem endereço (o navegador limpo),
+     `cookies set --curl <arquivo> --url https://<host>/` (nunca `--domain`: a decisão 9), `open`,
      `wait --load networkidle`, `screenshot <shot>`, `console --json`, `errors --json`,
      `network requests --json`, e no `finally` `close`, apaga o arquivo e `closeNetwork`. Cada
      comando pelo `run` com prazo (C57). Regras: C57, S40.
@@ -357,16 +400,18 @@ chamar. Critérios 1 e 2: o ponto de conferência, numa máquina E2B do template
 
 - O CLI no CI não acha o Chromium do Playwright: aponte `AGENT_BROWSER_EXECUTABLE_PATH` no teste,
   como o invólucro faz, e anote.
-- `cookies set --curl` recusa o cookie `__Host-` (o nome que o despachante lê,
-  `apps/edge/src/headers.ts:7`) ou não o manda ao host: pare, com a saída, porque a sessão é a
-  decisão A.
+- `cookies set --curl <arquivo> --url` deixa de gravar o cookie `__Host-` no CLI fixado (a prova
+  local do cookie passou com 0.43.0): pare, com a saída, porque a entrada é a decisão 9.
+- O caso do critério 3 passa no CI com o Chromium do Playwright do repositório e falha na máquina,
+  que tem o `chrome-headless-shell` 1243 do template: pare, com as duas saídas.
 - A saída `--json` de algum comando não traz o status do pedido: pare, com a saída.
 
 ## G1 O ponto de conferência
 
 `npm run check`; os testes de `builder/machine/`; o build do template novo na E2B com a tag de G1
 (firstmate, com a chave da conta de hoje); numa máquina desse template, os comandos dos critérios 1
-e 2 com `example.com` como host liberado, e um `confer` contra `example.com`. As saídas no pull
+e 2 com `example.com` como host liberado, e um `confer` contra `example.com`, com o cookie de teste
+lido de volta por `agent-browser cookies`. As saídas no pull
 request. Nenhuma tela muda.
 
 ## U2 O ambiente de conferência no Hub
@@ -383,20 +428,31 @@ app e um esquema irmão no banco de cada empresa, que se cruzam com a remoção 
   `hub/apps/app-database.ts:43-81` (`openAppDatabase`), `:114-150` (`migrateApp`);
   `packages/hub-api/src/app-login.ts:8-15`.
 - **Ambiente da sessão e a sessão do navegador.** `hub/apps/tables.ts:33-79`;
-  `hub/apps/handoff.ts:140-189` (`admitCall`), `:248-288` (`callTo`);
-  `hub/projects/hosts.ts:124-155` (`admitToApp`, que recebe o ambiente como literal).
-- **A remoção.** `hub/apps/removal.ts:61-110`.
+  `hub/apps/handoff.ts:140-189` (`admitCall`), `:248-288` (`callTo`), `:291-300`
+  (`endAppSessions`); `hub/projects/hosts.ts:124-155` (`admitToApp`, que recebe o ambiente como
+  literal).
+- **Os conectores na conferência.** `hub/apps/handoff.ts:215-241` (`connectorCall`, a porta das
+  duas rotas, `main.ts:200`, `hub/apps/public.ts:101`); `packages/hub-api/src/project-connections.ts:122-158`
+  (`APP_CALL_FAILURES`); `packages/hub-api/src/app-failures.ts:4-20` (a forma de uma linha de falha).
+- **O despachante.** `apps/edge/src/hub.ts:43`, `:147-150` (a resposta lida pelo esquema de
+  `checkAppCall`); `apps/edge/src/dispatcher-versions.test.ts` e `test-edge.ts` (o modelo do teste).
+- **A remoção.** `hub/apps/removal.ts:61-110`; `platform/cloudflare.ts:324-330` (`removeWorkers`,
+  genérico no id).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/apps.ts` | Muda: `AppWorker` aceita `c-<id>`; `appCheckWorkerOf` | o despachante (sem mudança de código), `conference.ts`, `removal.ts` |
+| `packages/hub-api/src/apps.ts` | Muda: `AppWorker` aceita `c-<id>`; `appCheckWorkerOf` | o despachante (sem mudança de código, publicado de novo), `conference.ts`, `removal.ts` |
+| `packages/hub-api/src/project-connections.ts`, `app-failures.ts` | Muda: `CONNECTOR_OFF_IN_CHECK` em `APP_CALL_FAILURES` e a sua linha de falha | `handoff.ts`, o despachante |
+| `apps/edge/src/dispatcher-versions.test.ts` | Muda: o caso do critério 22 | — |
 | `packages/hub-api/src/app-login.ts` | Muda: `appCheckLogin` | `company-postgres.ts`, `handoff.ts` |
 | `apps/server/src/hub/apps/tables.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql` | Muda e cria: `CallEnvironment`; `apps.check_session` | `handoff.ts`, `conference.ts` |
-| `apps/server/src/platform/company-postgres.ts` | Muda: `resetCheck` e `dropApp` com o esquema de conferência | `conference.ts`, `removal.ts` |
+| `apps/server/src/platform/company-postgres.ts` | Muda: `resetCheck`, `migrate` com o conjunto de logins, `dropApp` com o esquema de conferência | `conference.ts`, `app-database.ts`, `removal.ts` |
+| `apps/server/src/hub/apps/send.ts`, `app-database.ts` | Muda: `uploadVersion` recebe o nome do Worker; `migrateApp` passa `appLogin` a `migrate` | `prepare`, `conference.ts` |
 | `apps/server/src/hub/apps/conference.ts` | Cria: `openConference`, `endConference` | `apps/server/src/main.ts` (a porta do Builder) |
-| `apps/server/src/hub/apps/handoff.ts` | Muda: `admitCall` lê também `check_session`; `callTo` no ambiente `check` | o despachante, por `checkAppCall` |
+| `apps/server/src/hub/apps/handoff.ts` | Muda: `admitCall` lê também `check_session`; `callTo` no ambiente `check`; `connectorCall` recusa no `check`; `endAppSessions` apaga também `check_session` | o despachante, por `checkAppCall`, `callAppConnector` e `listAppConnections` |
+| `apps/server/src/hub/connectors/app-calls.test.ts` | Muda: os casos do critério 21 | — |
 | `apps/server/src/hub/projects/hosts.ts` | Muda: o literal do ambiente ganha `check`, admitido como `preview` | `handoff.ts` |
 | `apps/server/src/hub/apps/removal.ts` | Muda: o Worker de conferência sai com os outros | a remoção do Projeto |
 | `apps/server/src/hub/apps/public.ts`, `apps/server/src/main.ts` | Muda: a porta `confer` ao lado de `sendFromBuilder` (`main.ts:160`) | `builder/runs/` (U3) |
@@ -430,7 +486,30 @@ A tabela `apps.check_session`, na migração nova:
 Lida e escrita só pelo login da instalação, como `apps.app_session` (`database-grants.sql`).
 `APP_ENVIRONMENTS` e as restrições `handoff_environment` e `app_session_environment` ficam como
 estão: nenhuma passagem nem sessão de app é de conferência. O ambiente de uma chamada é
-`CallEnvironment = AppEnvironment | 'check'`, em `tables.ts`, lido por `admitCall` e `callTo`.
+`CallEnvironment = AppEnvironment | 'check'`, em `tables.ts`, lido por `admitCall`, `callTo` e
+`connectorCall`, cada um com o ramo `check` explícito e `satisfies never` no fim (C21).
+
+As assinaturas que mudam:
+
+```ts
+// hub/apps/send.ts: o nome do Worker vem de quem chama; `prepare` passa appWorkerOf(versionId)
+export function uploadVersion(
+  cloudflare: CloudflareApps,
+  input: Ids & { worker: AppWorker; manifest: Manifest; files: readonly WorkerFile[] },
+)
+
+// platform/company-postgres.ts, no `CompanyPostgres`
+/** O esquema de conferência vazio: derruba e refaz, numa transação, com os logins que faltam. */
+resetCheck(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+/** `logins` é `appLogin(projectId)` para a Prévia e `appCheckLogin(projectId)` para a conferência. */
+migrate(owner: DatabaseUrl, logins: AppLogins, migrations: readonly AppMigration[]): Promise<MigrateAnswer>
+```
+
+`AppLogins` é o tipo de `appLogin` sem o login de leitura (`Omit<ReturnType<typeof appLogin>,
+'readLogin'>`), em `packages/hub-api/src/app-login.ts`. `schemaStatements` passa a receber
+`AppLogins`, e `resetCheck` usa `missingLogins` como `ensureApp` (`company-postgres.ts:250-260`). A
+falha nova, na forma de `APP_FAILURES`: `CONNECTOR_OFF_IN_CHECK`, `USER`, status 409, frase "Sem
+conexão no ambiente de conferência.", sem ação.
 
 Em `apps/server/src/hub/apps/conference.ts`:
 
@@ -490,19 +569,29 @@ guia além do de código: data (D17, D22).
      `projectDatabase`, `app-database.ts:87-109`), sobe o Worker com `uploadVersion` trocando o nome
      por `appCheckWorkerOf`, abre o banco da empresa (`openAppDatabase`), chama `resetCheck` e o
      `migrate` de conferência, grava a `check_session` e devolve o endereço `appHostOf` do Projeto.
+   - **Arquivos, além:** muda `send.ts` (`uploadVersion` com `worker`), `app-database.ts`
+     (`migrateApp` com `appLogin`).
    - **Testes:** `conference.test.ts`, critério 9.
-4. **A chamada no ambiente de conferência.** Critérios: 11, 12.
-   - **Arquivos:** muda `handoff.ts`, `hosts.ts`.
+4. **A chamada no ambiente de conferência.** Critérios: 11, 12, 21, 22.
+   - **Arquivos:** muda `handoff.ts`, `hosts.ts`, `project-connections.ts`, `app-failures.ts`,
+     `app-calls.test.ts`, `dispatcher-versions.test.ts`.
    - **O que entra:** `admitCall` procura o token em `app_session` e, sem achar, em `check_session`
      com `expires_at > statement_timestamp()`; acha `environment: 'check'`; a admissão da pessoa é a
      mesma (`admitToApp` com `check` admitido como `preview`). `callTo` no `check` devolve
-     `appCheckWorkerOf` e `appCheckLogin(...).runLogin`. Regras: S8, S13, S22.
+     `appCheckWorkerOf` e `appCheckLogin(...).runLogin`. `connectorCall` recusa o `check` com
+     `CONNECTOR_OFF_IN_CHECK` logo depois de `admitCall`, antes da leitura da versão.
+     `endAppSessions` apaga as linhas de `check_session` da pessoa e do Projeto na mesma
+     transação. Regras: S8, S13, S22.
    - **Mutações à mão:** tirar a condição de `expires_at` → o caso de 10 minutos do critério 12
-     fica vermelho.
+     fica vermelho; tirar o ramo `check` de `connectorCall` → o caso do critério 21 fica vermelho
+     (o dublê do conector é chamado).
 5. **A remoção.** Critério: 13.
    - **Arquivos:** muda `removal.ts`.
-   - **O que entra:** `removeProjectApp` remove `appCheckWorkerOf(projectId)` com os Workers das
-     versões, e `dropApp` leva o esquema de conferência.
+   - **O que entra:** `removeProjectApp` chama `removeWorkers(deps.cloudflare, [projectId],
+     appCheckWorkerOf)` ao lado da chamada dos Workers das versões (`removal.ts:94`), e `dropApp`
+     leva o esquema e os dois logins de conferência. A linha de `apps.app` existe sempre que houve
+     conferência (o passo 3 a cria), então o caminho sem linha (`removal.ts:75-90`) continua sem
+     nada de conferência a remover.
 
 ### Como se prova
 
@@ -512,8 +601,9 @@ caso do critério 11 fica vermelho.
 
 ### Parar se
 
-- O despachante recusa o nome `c-<id>` em outro lugar além de `AppWorker`: pare, porque o
-  despachante não muda nesta etapa.
+- O despachante recusa o nome `c-<id>` em outro lugar além do esquema de `AppWorker` (o caso do
+  critério 22 fica vermelho com o esquema novo): pare, porque o código do despachante não muda
+  nesta etapa.
 - O `GRANT` do login de migração de conferência ao dono falha no Neon por limite de papéis: pare,
   com o código.
 
@@ -536,7 +626,8 @@ modelo lê.
 | `apps/server/src/builder/runs/context.ts`, `runs.ts`, `test-runs.ts` | Muda: `RunsDeps.confer`; `check` com as duas conferências | `processors.ts` |
 | `apps/server/src/builder/conversation/processors.ts` | Muda: o texto de `feedback` e de `CHECK_DESCRIPTION` | o Builder |
 | `apps/server/src/builder/conversation/test-conversation.ts` | Muda: o dublê de `confer` | os testes da conversa |
-| `tests/apps/encomendas-defeito/` | Cria: o app de teste do defeito plantado | `builder.eval.test.ts` |
+| `packages/app/src/check/test-app.ts`, `check.test.ts` | Muda: `ENCOMENDAS_DEFEITO` e o caso do critério 23 | `builder.eval.test.ts` |
+| `apps/server/src/builder/conversation/builder.eval.test.ts` | Muda: o caso do critério 18 | o ponto de conferência de G2 |
 
 ### Os contratos que a unidade cria
 
@@ -549,10 +640,21 @@ type BuilderConfer = {
 }
 ```
 
-`Runs.check` passa a devolver `Result<CheckReport & { browser?: BrowserReport | Conference }, CheckPlatformFailed>`:
-o relatório da máquina de hoje, com a conferência no navegador quando ela rodou. `ok` do relatório
-fica `false` quando a conferência não é `OPENED` com `CLEAN`. Nenhuma forma nova chega à tela:
-`VersionCheck` fica como está.
+`Runs.check` passa a devolver uma união própria, e o `CheckReport` da máquina fica como é (o seu
+`ok` é o dos passos, `packages/app/src/check/report.ts:47-50`):
+
+```ts
+export type BuilderCheck =
+  | { kind: 'MACHINE_FAILED'; machine: CheckReport }
+  | { kind: 'CONFERENCE_REFUSED'; machine: CheckReport; conference: Exclude<Conference, { kind: 'OPENED' }> }
+  | { kind: 'SEEN'; machine: CheckReport; browser: BrowserReport }
+
+check(...): Promise<Result<BuilderCheck, CheckPlatformFailed | ConferPlatformFailed>>
+```
+
+Passou só `SEEN` com `browser.kind === 'CLEAN'`, numa função de `processors.ts` com
+`satisfies never` no fim (C21). As duas falhas de plataforma dão `unchecked`, como hoje. Nenhuma
+forma nova chega à tela: `VersionCheck` fica como está.
 
 - **O dono de cada fato**: o texto do juiz é de `processors.ts`; o caminho da captura, de U1.
 - **O arquivo modelo**: `processors.ts` (C21 nas uniões que ele lê).
@@ -566,8 +668,9 @@ As linhas de `stack.md` de `@mastra/core`, a skill `mastra` (`isTaskComplete` e 
 
 1. **As duas conferências num caminho.** Critérios: 15, 16, 17.
    - **Arquivos:** muda `runs/context.ts`, `runs.ts`, `test-runs.ts`, `main.ts`.
-   - **O que entra:** `check` roda a da máquina; se passou, `machines.pack`, `confer.open`, e com
-     `OPENED` o `machines.confer` com o endereço e a sessão, e `confer.end` no `finally`.
+   - **O que entra:** `check` roda a da máquina; reprovada, `MACHINE_FAILED`; se passou,
+     `machines.pack`, `confer.open`, e com `OPENED` o `machines.confer` com o endereço e a sessão,
+     e `confer.end` no `finally`; `NOT_STARTING` e `MIGRATION_REFUSED` são `CONFERENCE_REFUSED`.
    - **Mutações à mão:** rodar o `confer` antes da conferência da máquina → o caso "nenhum `confer`
      roda" do critério 16 fica vermelho.
 2. **O texto que o modelo lê.** Critério: 15.
@@ -576,28 +679,39 @@ As linhas de `stack.md` de `@mastra/core`, a skill `mastra` (`isTaskComplete` e 
      `mastra_workspace_read_file`; `CHECK_DESCRIPTION` troca "opens the app in a browser" pelo que a
      conferência faz agora, e tira "It does not prove ... that a screen shows the right values" na
      parte que ela passa a provar.
-3. **O defeito plantado.** Critério: 18.
-   - **Arquivos:** cria `tests/apps/encomendas-defeito/` (como `tests/apps/recados-defeito/`), com
-     a tela chamando `listarEncomendas` que o servidor não declara; muda `builder.eval.test.ts`.
+3. **O defeito plantado.** Critérios: 23, 18.
+   - **Arquivos:** muda `packages/app/src/check/test-app.ts` (`ENCOMENDAS_DEFEITO`: a lista chama
+     `listarEncomendas`, declarada e tipada, cujo manipulador lê `encomenda` sem migração que a
+     crie), `check.test.ts` (critério 23) e `builder.eval.test.ts` (critério 18, a pasta da
+     conversa semeada com `ENCOMENDAS_DEFEITO`).
+   - **Prove primeiro:** o caso do critério 23 passa na conferência da máquina de hoje. Um defeito
+     que o passo `tipos` pega (uma chamada a uma operação que não existe, porque `createApi` só
+     aceita nomes declarados, `packages/app/src/client.ts:84-88`) nunca chega ao navegador.
    - **Pronto quando:** o caso roda no ponto de conferência, na nuvem.
 
 ### Como se prova
 
 Critérios 15 a 17 por `conversation-check.test.ts`, com a máquina, o Hub e o modelo em dublê. Hoje o
-juiz encerra com `FINISHED` sobre a mesma tela: o caso do critério 15 fica vermelho. Critérios 18 a
-20 no ponto de conferência.
+juiz encerra com `FINISHED` sobre a mesma tela: o caso do critério 15 fica vermelho. Critério 23
+por `check.test.ts`, que prova que o defeito passa pela máquina de hoje. Critérios 18 a 20 no ponto
+de conferência.
 
 ### Parar se
 
 - O `read_file` do Builder não devolve a imagem da captura em `node_modules/.conexus/`: pare, com a
   saída, porque o lugar da captura é a única prova que a implementação não fez.
-- O modelo de verdade não corrige o defeito em `CHECK_LIMITS.checks` voltas em duas corridas: pare
-  e relate o que cada conferência disse; não mude o texto do juiz para passar o teste.
+- O modelo de verdade não corrige o defeito em `CHECK_LIMITS.checks` voltas em nenhuma de duas
+  corridas: pare e relate o que cada conferência disse; não mude o texto do juiz para passar o
+  teste.
+- O caso do critério 23 reprova na conferência da máquina de hoje: o defeito não é o que o
+  navegador pega; troque o defeito, nunca a conferência da máquina.
 
 ## G2 O ponto de conferência
 
-`npm run check`; os testes de `hub/apps/`, de `builder/runs/` e de `builder/conversation/`; a migração
-com `npm run migrations`; no Hub da nuvem com o template de G1, o roteiro de uso inteiro, o teste
+`npm run check`; os testes de `hub/apps/`, `hub/connectors/`, `apps/edge/`, `builder/runs/` e
+`builder/conversation/`; a migração com `npm run migrations`. A ordem no ar: o despachante novo
+primeiro (o mesmo código, com o `packages/hub-api` novo), depois o Hub. No Hub da nuvem com o
+template de G1, uma conferência que chega ao Worker `c-<projectId>` pelo despachante de verdade, o roteiro de uso inteiro, o teste
 do defeito plantado (critério 18), os dois apps de teste (critério 19) e os tempos (critério 20),
 com as capturas antes e depois no pull request.
 
@@ -606,5 +720,5 @@ com as capturas antes e depois no pull request.
 **Base e modelo.** A cabeça de G2 em `main`, depois do uso. Sonnet: só documentos.
 
 Muda `docs/architecture.md` (a máquina passa a abrir o app de conferência, seção 11 com a dívida),
-abre as duas issues da dívida (o DNS e o `setEnvs`), grava a linha de uso no arquivo de aprovação e
+abre as issues da dívida (o DNS, o `setEnvs`, o SNI), grava a linha de uso no arquivo de aprovação e
 apaga este cartão (delivery L19). Nenhuma linha da tabela é remendo: `boundaries.md` não muda.
