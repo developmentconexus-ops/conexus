@@ -3,7 +3,7 @@ import { ProjectId } from '@conexus/hub-api'
 import { useQueries } from '@tanstack/react-query'
 import { HubFailure } from '../../platform/hub.ts'
 import type { RememberedList } from '../../platform/remembered.ts'
-import { recall, remember } from '../../platform/remembered.ts'
+import { remember, useRecalled } from '../../platform/remembered.ts'
 import { projectQuery } from './queries.ts'
 import { PROJECT_FALLBACK } from './text.ts'
 
@@ -31,7 +31,7 @@ export function useRecentProjects(
   personId: PersonId,
   loaded: readonly ProjectSummary[] | undefined,
 ): readonly { id: ProjectId; name: string }[] {
-  const opened = recall({ list: listOf(companyId), personId }).slice(0, SHOWN)
+  const opened = useRecalled({ list: listOf(companyId), personId }).slice(0, SHOWN)
   const known = loaded ?? []
   const outside =
     loaded === undefined ? [] : opened.filter((id) => !known.some((project) => project.id === id))

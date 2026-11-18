@@ -130,6 +130,18 @@ test('os Projetos recentes do cabeçalho do Projeto: só os lembrados que seguem
   expect(await recents(4)).toEqual(['Projeto 1', 'Projeto 7', 'Projeto 3', 'Projeto 6'])
 })
 
+test('entrando num Projeto sem nada lembrado, o seletor já montado do cabeçalho lista esse Projeto entre os recentes (roteiro de uso 5)', async () => {
+  open(`${HOME}/projects`)
+  fireEvent.click(await screen.findByRole('link', { name: /Projeto 1/ }))
+  await waitFor(() => {
+    const trigger = screen.getByRole('combobox', { name: 'Trocar de Projeto. Agora: Projeto 1' })
+    if (trigger.getAttribute('aria-expanded') !== 'true') fireEvent.click(trigger)
+    expect(screen.getByRole('group', { name: 'Projetos recentes' })).toBeTruthy()
+  })
+  const group = within(screen.getByRole('group', { name: 'Projetos recentes' }))
+  expect(group.getAllByRole('option').map((item) => item.textContent)).toEqual(['Projeto 1'])
+})
+
 test('um Projeto lembrado que o Hub já não acha fica de fora, e o que existe fora da primeira página aparece com o nome lido à parte (critério 16)', async () => {
   globalThis.localStorage.setItem(
     `conexus-remembered:${ANA.id}:projects.${COMPANY.id}`,
