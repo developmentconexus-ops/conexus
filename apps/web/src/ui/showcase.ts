@@ -1,4 +1,6 @@
 import { ACTIONS } from './showcase/actions.tsx'
+import { AI_CARDS } from './showcase/ai-cards.tsx'
+import { AI_LINES } from './showcase/ai-lines.tsx'
 import { CHAT } from './showcase/chat.tsx'
 import { DATA } from './showcase/data.tsx'
 import { FEEDBACK } from './showcase/feedback.tsx'
@@ -16,4 +18,6 @@ export const SHOWCASE: readonly ShowcaseEntry[] = [
   ...FEEDBACK,
   ...OVERLAYS,
   ...CHAT,
+  ...AI_LINES,
+  ...AI_CARDS,
 ]

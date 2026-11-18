@@ -224,30 +224,42 @@ test('o grupo nasce fechado enquanto a resposta trabalha, e só o clique da pess
   )
 })
 
-test('o grupo fechado conta os passos feitos e os que falharam', () => {
-  const steps: TranscriptItem[] = [
-    toolItem('t-1', 'mastra_workspace_list_files'),
-    toolItem('t-2', 'mastra_workspace_grep'),
-    {
-      kind: 'tool',
-      id: 't-3',
-      toolCallId: 't-3',
-      toolName: 'mastra_workspace_read_file',
-      state: 'output-error',
-      args: { path: 't-3.ts' },
-      errorText: 'falhou',
-    },
-  ]
+const ONE_FAILED: TranscriptItem[] = [
+  toolItem('t-1', 'mastra_workspace_list_files'),
+  toolItem('t-2', 'mastra_workspace_grep'),
+  {
+    kind: 'tool',
+    id: 't-3',
+    toolCallId: 't-3',
+    toolName: 'mastra_workspace_read_file',
+    state: 'output-error',
+    args: { path: 't-3.ts' },
+    errorText: 'falhou',
+  },
+]
+
+function renderOneFailed() {
   render(
     <Transcript
-      turns={[turnOf(steps, false)]}
+      turns={[turnOf(ONE_FAILED, false)]}
       steers={[]}
       model={MODEL}
       older={NO_OLDER}
       onAsk={() => undefined}
     />,
   )
+}
+
+test('o grupo fechado conta os passos feitos e os que falharam', () => {
+  renderOneFailed()
   expect(screen.getByText('2 feitos, 1 falhou')).toBeTruthy()
+})
+
+test('o grupo fechado com um passo que falhou fica no estado de erro, como a linha que falhou', () => {
+  renderOneFailed()
+  expect(
+    screen.getByText('2 feitos, 1 falhou').closest('[data-status]')?.getAttribute('data-status'),
+  ).toBe('error')
 })
 
 test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferramentas (Critério 9)', () => {

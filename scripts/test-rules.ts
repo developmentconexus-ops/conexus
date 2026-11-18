@@ -95,8 +95,8 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     '@neondatabase/serverless',
     {},
   ],
-  // A bare package: the cruise's exclude drops a resolved @mastra/core from the graph, so this rule sees only what does not resolve.
-  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/memory', {}],
+  // @mastra/core resolves (rules.test.ts links it), as a real import does: the cruise keeps Mastra's packages as leaves.
+  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
   'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
   's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],

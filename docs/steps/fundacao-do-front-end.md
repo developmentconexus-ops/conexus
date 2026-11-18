@@ -1145,7 +1145,7 @@ ligação); a linha de `@mastra/client-js` em `stack.md`.
    - **Testes:** os do critério 22, sem mudar; `ui/ai/pieces.test.ts` (critérios 21 e 23); a
      entrada da vitrine com cada membro de cada união.
    - **Mutações à mão:** trocar `FAILED` por `DONE` na ligação da linha de ferramenta →
-     `tool-row.layout.test.ts` falha.
+     `tool-row.test.tsx` falha (Critério 8).
    - **Pronto quando:** cada arquivo de `builder/conversation/` desses nove só traduz e passa props.
 
 ### Como se prova

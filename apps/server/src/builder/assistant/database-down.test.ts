@@ -1,59 +1,12 @@
 import assert from 'node:assert/strict'
-import type { Server, Socket } from 'node:net'
-import { connect, createServer } from 'node:net'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { mastraPoolAt } from '../../platform/test-mastra-database.ts'
+import type { Outage } from '../../platform/test-mastra-database.ts'
+import { mastraDoor, mastraPoolAt } from '../../platform/test-mastra-database.ts'
 import { hubBeside, MODEL, sent } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 import { doorDropped } from './test-door-down.ts'
-
-type Outage = 'REFUSED' | 'SILENT'
-
-/**
- * Mastra's database behind a door of this test: shut, the port refuses (`REFUSED`) or accepts and
- * never answers (`SILENT`); opened, it reaches the database, so the Hub's end can close Mastra.
- */
-async function doorTo(url: { reveal(): string }, outage: Outage) {
-  const target = new URL(url.reveal())
-  const sockets = new Set<Socket>()
-  let reaching = false
-  function listening(): Promise<Server> {
-    const server = createServer((socket) => {
-      sockets.add(socket)
-      socket.on('close', () => sockets.delete(socket))
-      if (!reaching) return
-      const upstream = connect(Number(target.port), target.hostname)
-      socket.pipe(upstream).pipe(socket)
-      upstream.on('error', () => socket.destroy())
-      socket.on('error', () => upstream.destroy())
-    })
-    return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)))
-  }
-  let port = 0
-  let server = await listening()
-  const address = server.address()
-  port = typeof address === 'object' && address !== null ? address.port : 0
-  async function shut() {
-    await new Promise((resolve) => server.close(resolve))
-  }
-  if (outage === 'REFUSED') await shut()
-  const through = new URL(url.reveal())
-  through.host = `127.0.0.1:${port}`
-  return {
-    address: through.toString(),
-    async open() {
-      for (const socket of sockets) socket.destroy()
-      if (outage === 'REFUSED') server = await listening()
-      reaching = true
-    },
-    async close() {
-      for (const socket of sockets) socket.destroy()
-      await shut()
-    },
-  }
-}
 
 /**
  * Ana's Assistant on a Hub whose own database answers and whose Mastra database is out as
@@ -63,7 +16,7 @@ async function doorTo(url: { reveal(): string }, outage: Outage) {
 async function everyRouteUnavailable(t: TestContext, outage: Outage) {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
-  const door = await doorTo(on.hub.config.mastraDatabaseUrl, outage)
+  const door = await mastraDoor(on.hub.config.mastraDatabaseUrl, outage)
   const mastraPool = mastraPoolAt(door.address)
   const broken = { ...on.hub, test: { ...on.hub.test, mastraPool } }
   const down = await hubBeside(t, broken, undefined, false)

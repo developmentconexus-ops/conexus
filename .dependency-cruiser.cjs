@@ -210,7 +210,7 @@ module.exports = {
       comment:
         'W7, decision 0033: @mastra/* is imported only inside builder/, on the server and the web.',
       severity: 'error',
-      from: { pathNot: '^apps/(server|web)/src/builder/' },
+      from: { path: '^apps/(server|web)/src/', pathNot: '^apps/(server|web)/src/builder/' },
       to: { path: '(^|node_modules/)@mastra/' },
     },
     {
@@ -285,6 +285,14 @@ module.exports = {
       to: { path: `${WEB}/(hub|builder|routes)/` },
     },
     {
+      name: 'ui-ai-takes-ready-data',
+      comment:
+        "Criterion 21 of the front-end foundation card: a piece of ui/ai/ takes ready data, never the Hub's contract.",
+      severity: 'error',
+      from: { path: `${WEB}/ui/ai/` },
+      to: { path: '(^|node_modules/|/)@conexus/hub-api(/|$)|^packages/hub-api/' },
+    },
+    {
       name: 'routes-reach-subject-through-public',
       comment: 'W6: routes/ reaches a subject only through its public.ts.',
       severity: 'error',
@@ -301,8 +309,8 @@ module.exports = {
       conditionNames: ['import', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],
     },
-    // Packages stay out of the graph except Mastra's ee code, so no-mastra-ee sees an import that resolves.
+    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-builder and no-mastra-ee see an import that resolves.
     // .lab/ is a builder's scratch folder, listed in .gitignore: git does not hold it, so it stays out here too (check-suppressions reads git's list).
-    exclude: { path: `^(?!.*${MASTRA_EE}/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/` },
+    exclude: { path: '^(?!.*node_modules/@mastra/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/' },
   },
 }
