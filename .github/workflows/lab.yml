@@ -1,0 +1,51 @@
+# Laboratório da trilha de dados: roda na VPS um script de lab/ tirado do ramo do laboratório.
+# Disparo manual do main, que é o que o gancho do executor aceita (infra/runner-job-started.sh).
+# O fundador autorizou em 2026-11-19 afrouxar a regra S36 para isso: o script vem de outro ramo.
+# Sem o ambiente production, sem segredos, só leitura do repositório.
+name: lab
+on:
+  workflow_dispatch:
+    inputs:
+      ramo:
+        description: "Ramo de onde vem o script"
+        required: true
+        default: claude/wizardly-edison-fgdnyp
+        type: string
+      script:
+        description: "Nome do script em lab/, por exemplo latencias.sh"
+        required: true
+        type: string
+      minutos:
+        description: "Tempo máximo em minutos"
+        required: true
+        default: "30"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: lab
+  cancel-in-progress: false
+jobs:
+  rodar:
+    runs-on: [self-hosted, hub]
+    timeout-minutes: 480
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ramo }}
+          persist-credentials: false
+      - name: Rodar o script do laboratório
+        env:
+          SCRIPT: ${{ inputs.script }}
+          MINUTOS: ${{ inputs.minutos }}
+        run: |
+          [[ $SCRIPT =~ ^[a-z0-9_-]+\.sh$ ]] || { echo "nome de script inválido: $SCRIPT"; exit 1; }
+          [[ $MINUTOS =~ ^[0-9]+$ ]] && [ "$MINUTOS" -le 480 ] || { echo "minutos inválido: $MINUTOS"; exit 1; }
+          mkdir -p lab/out
+          timeout --kill-after=60 "${MINUTOS}m" bash "lab/$SCRIPT" 2>&1 | tee "lab/out/${SCRIPT%.sh}.log"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lab-saida
+          path: lab/out/
+          retention-days: 30
