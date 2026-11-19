@@ -10,7 +10,7 @@ import type { Locator } from 'playwright-core'
 import { atRest } from './at-rest.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
-import { PLACES, triggerOf } from './picker-places.ts'
+import { PLACES, popupOf, triggerOf } from './picker-places.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { withAccounts } from './sweep-accounts-states.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -225,6 +225,9 @@ test('as filas, pelo teclado: depois de Subir ou Descer o foco fica na seta ou n
 })
 
 async function walkTo(list: Locator, name: string) {
+  // Base UI highlights the first option a frame before it moves focus into the popup; a key pressed
+  // in that frame lands on the trigger, where Enter closes the list without choosing (issue 1194).
+  await popupOf(list.page()).locator(':focus').waitFor()
   const option = list.getByRole('option', { name, exact: true })
   for (let step = 0; step < 8 && (await option.getAttribute('data-highlighted')) === null; step++)
     await list.page().keyboard.press('ArrowDown')
