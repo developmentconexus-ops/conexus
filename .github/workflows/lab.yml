@@ -1,7 +1,8 @@
 # Laboratório da trilha de dados: roda na VPS um script de lab/ tirado do ramo do laboratório.
 # Disparo manual do main, que é o que o gancho do executor aceita (infra/runner-job-started.sh).
 # O fundador autorizou em 2026-11-19 afrouxar a regra S36 para isso: o script vem de outro ramo.
-# Sem o ambiente production, sem segredos, só leitura do repositório.
+# Usa o ambiente production, como todo trabalho neste executor (scripts/workflows.test.ts), mas não lê
+# nenhum segredo dele: nada de secrets neste arquivo, e só leitura do repositório.
 name: lab
 on:
   workflow_dispatch:
@@ -28,6 +29,7 @@ concurrency:
 jobs:
   rodar:
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 480
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
