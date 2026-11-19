@@ -22,10 +22,11 @@ image_pattern='^ghcr\.io/developmentconexus-ops/conexus-hub@sha256:[0-9a-f]{64}$
 
 say() { printf '{"v17":"%s","motivo":"%s"}\n' "$1" "$2"; }
 
-# A janela: dias úteis das 20h às 6h, e o fim de semana inteiro, no horário de Brasília.
-hour="$(TZ=America/Sao_Paulo date +%-H)"
+# A janela: fora do expediente da empresa, que vai até as 17h30 no horário de Brasília (palavra do
+# fundador em 2026-11-19): dias úteis das 17h30 às 6h, e o fim de semana inteiro.
+minutes="$(( 10#$(TZ=America/Sao_Paulo date +%H) * 60 + 10#$(TZ=America/Sao_Paulo date +%M) ))"
 weekday="$(TZ=America/Sao_Paulo date +%u)"
-if [ "${V17_IGNORAR_JANELA:-}" != "prova-local" ] && [ "$weekday" -le 5 ] && [ "$hour" -ge 6 ] && [ "$hour" -lt 20 ]; then
+if [ "${V17_IGNORAR_JANELA:-}" != "prova-local" ] && [ "$weekday" -le 5 ] && [ "$minutes" -ge 360 ] && [ "$minutes" -lt 1050 ]; then
   say recusa fora-da-janela
   exit 2
 fi
