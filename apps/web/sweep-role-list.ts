@@ -1,4 +1,4 @@
-import { listRoles } from '@conexus/hub-api'
+import { listDataReads, listRoles } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { KIT_SANKHYA as SANKHYA } from './src/platform/test-kit.ts'
@@ -63,14 +63,21 @@ function rolesPage(id: string, mayManage: boolean): Replies {
   return mayManage ? { [`GET /api/companies/${id}/roles`]: ok(listRoles, { roles: ROLES }) } : {}
 }
 
+/** The Registro de dados, which only whoever manages the company reads: empty. */
+function dataReadsPage(id: string, mayManage: boolean): Replies {
+  const empty = ok(listDataReads, { reads: [], next: { kind: 'END' } })
+  return mayManage ? { [`GET /api/companies/${id}/data-reads`]: empty } : {}
+}
+
 /**
- * What the company's settings read: the connections and the roles they preload on focus, and the
+ * What the company's settings read: the connections, the roles and the Registro they preload on focus, and the
  * memories Minha conta and Memória da empresa show, each from its own page's replies.
  */
 export function settingsLists(id: string, mayManage: boolean): Replies {
   return {
     ...connectionsPage(id, mayManage),
     ...rolesPage(id, mayManage),
+    ...dataReadsPage(id, mayManage),
     ...memoryPages(id, mayManage),
   }
 }

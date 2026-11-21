@@ -9,6 +9,7 @@ import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { COPIES_STATES } from './sweep-copies-states.ts'
 import { COPY_PROPOSAL_STATES } from './sweep-copy-proposal-states.ts'
+import { DATA_READS_STATES } from './sweep-data-reads-states.ts'
 import { DATA_STATES } from './sweep-data-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
@@ -66,6 +67,7 @@ export const STATES: State[] = [
   ...LAYER_STATES,
   ...COPY_PROPOSAL_STATES,
   ...ROLES_STATES,
+  ...DATA_READS_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
