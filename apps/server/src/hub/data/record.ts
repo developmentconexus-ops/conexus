@@ -52,7 +52,13 @@ export type ReadEntry = Who &
         operation: OperationId
       }
   > &
-  Readonly<{ outcome: string; rows: number | null; ms: number }>
+  Readonly<{
+    outcome: string
+    rows: number | null
+    ms: number
+    /** The read's own id when its caller names it, so a repeat leaves no second row (the edge's notice). */
+    id?: string
+  }>
 
 type Recorded = 'RECORDED' | 'UNRECORDED'
 export type RecordRead = (entry: ReadEntry) => Promise<Recorded>
@@ -67,30 +73,36 @@ const AGENT_OF = {
   app: 'APP',
 } as const satisfies Record<Consumer | 'app', DataReadAgent>
 
-/** The one writer of data.data_read: one insert in the Hub's database, never in the caller's transaction. */
+/**
+ * The one writer of data.data_read: one insert in the Hub's database, never in the caller's
+ * transaction; an id already written is the same read, recorded once.
+ */
 export function recordReadOf(deps: Pick<DataDeps, 'database' | 'log'>): RecordRead {
   return async (entry) => {
     const { companyId, personId } = entry
     try {
       await deps.database.command({ kind: 'COMPANY', companyId, personId }, (tx) =>
-        tx.insert(dataRead).values({
-          id: DataReadId.parse(randomUUID()),
-          companyId,
-          at: sql`statement_timestamp()`,
-          personId,
-          agent: AGENT_OF[entry.by],
-          projectId: entry.projectId,
-          agentId: entry.agentId,
-          threadId: entry.threadId,
-          verb: entry.verb,
-          tables: [...entry.tables],
-          connectionId: entry.connectionId,
-          operation: entry.operation,
-          query: entry.query,
-          outcome: entry.outcome,
-          rows: entry.rows,
-          ms: entry.ms,
-        }),
+        tx
+          .insert(dataRead)
+          .values({
+            id: DataReadId.parse(entry.id ?? randomUUID()),
+            companyId,
+            at: sql`statement_timestamp()`,
+            personId,
+            agent: AGENT_OF[entry.by],
+            projectId: entry.projectId,
+            agentId: entry.agentId,
+            threadId: entry.threadId,
+            verb: entry.verb,
+            tables: [...entry.tables],
+            connectionId: entry.connectionId,
+            operation: entry.operation,
+            query: entry.query,
+            outcome: entry.outcome,
+            rows: entry.rows,
+            ms: entry.ms,
+          })
+          .onConflictDoNothing({ target: dataRead.id }),
       )
       return 'RECORDED'
     } catch (error) {

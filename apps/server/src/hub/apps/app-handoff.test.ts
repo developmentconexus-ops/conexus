@@ -3,27 +3,19 @@ import { createHash, randomBytes } from 'node:crypto'
 import { test } from 'node:test'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
 import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
-import type { Hub, Person } from '../identity/test-hub.ts'
+import type { Hub } from '../identity/test-hub.ts'
 import { call, codeOf, personOn, post } from '../identity/test-hub.ts'
 import {
   browser,
+  codeFor,
   companyWithApps,
   ESTOQUE,
-  frameHandoff,
-  handoff,
   openPath,
   PEDIDOS,
+  redeem,
+  sessionOf,
 } from './test-handoff.ts'
 import { companyForVersions, folder, send, versionNumbered } from './test-versions.ts'
-
-function redeem(hub: Hub, body: { host: string; code: string; binding: string }) {
-  return hub.edge.inject({
-    method: 'POST',
-    url: '/api/app-sessions',
-    headers: { 'content-type': 'application/json' },
-    payload: JSON.stringify(body),
-  })
-}
 
 function check(hub: Hub, host: string, session: string) {
   return hub.edge.inject({
@@ -31,45 +23,6 @@ function check(hub: Hub, host: string, session: string) {
     url: `/api/app-sessions/current?host=${host}`,
     headers: { [APP_SESSION_HEADER]: session },
   })
-}
-
-/**
- * The pass the Hub gives the person for this browser, as the code in its location: a tab's, through
- * `/apps/open`, or the Prévia frame's.
- */
-async function codeFor(
-  hub: Hub,
-  person: Person,
-  host: string,
-  hash: string,
-  environment: 'preview' | 'published' = 'published',
-) {
-  const body = { host, binding: hash }
-  const made =
-    environment === 'published'
-      ? await handoff(hub, person, body)
-      : await frameHandoff(hub, person, body)
-  assert.equal(made.statusCode, environment === 'published' ? 303 : 200)
-  const location =
-    environment === 'published' ? made.headers.location : Object(made.json()).location
-  return String(new URL(String(location)).searchParams.get('code'))
-}
-
-/** An app session of the person on the host, as the dispatcher holds it. */
-async function sessionOf(
-  hub: Hub,
-  person: Person,
-  host: string,
-  environment: 'preview' | 'published' = 'preview',
-) {
-  const { binding, hash } = browser()
-  const redeemed = await redeem(hub, {
-    host,
-    code: await codeFor(hub, person, host, hash, environment),
-    binding,
-  })
-  assert.equal(redeemed.statusCode, 201)
-  return String(Object(redeemed.json()).session)
 }
 
 test('resgate: outro vínculo, outro host, vencido 403; o certo 201; de novo 403 (LT2)', async (t) => {

@@ -3,6 +3,7 @@ import { CallerAccess } from '@conexus/app-contract'
 import { z } from 'zod'
 import { HostLabel } from './address.ts'
 import { CompanyId } from './companies.ts'
+import { QUERY_SQL_MAX } from './company-data.ts'
 import { PersonId } from './identity.ts'
 import { LIBRARY_ID, ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
@@ -120,6 +121,32 @@ export const checkAppCall = defineOperation({
 /** The session the dispatcher read from the app's cookie, parsed at the edge door. */
 export const AppSessionToken = DoorSecret.brand('AppSessionToken')
 export type AppSessionToken = z.infer<typeof AppSessionToken>
+
+/**
+ * What the dispatcher tells the Hub after an app's `db.query`, the query cut to its ceiling: the
+ * person, the company and the Projeto come from the session, never from the body; `id` is the
+ * dispatcher's, so a notice sent again leaves no second row.
+ */
+export const recordAppRead = defineOperation({
+  id: 'recordAppRead',
+  summary: "Records an app's query in the Registro de dados, for the person of its session.",
+  access: 'edge',
+  method: 'POST',
+  path: '/api/app-reads',
+  bodyLimit: 16 * 1024,
+  input: {
+    query: OnHost,
+    body: z.strictObject({
+      id: z.uuid(),
+      query: z.string().max(QUERY_SQL_MAX),
+      outcome: z.string().min(1).max(40),
+      rows: z.int().nonnegative().nullable(),
+      ms: z.int().nonnegative(),
+    }),
+  },
+  success: { status: 204 },
+  failures: ['APP_SESSION_INVALID', 'APP_ACCESS_REFUSED', 'APP_NOT_FOUND', 'DATABASE_UNAVAILABLE'],
+})
 
 /** Why a failed version did not enter: its code is the failure's, read by the screen (C48). */
 export const AppVersionFailure = z.enum([
