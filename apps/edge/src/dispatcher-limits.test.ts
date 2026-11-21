@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { edge, pageText, SESSION, VERSION_CALL } from './test-edge.ts'
+import { edge, HOST, pageText, SESSION, VERSION_CALL } from './test-edge.ts'
 
 const LIVE = { Cookie: `__Host-conexus-app=${SESSION}` }
 
@@ -78,8 +78,9 @@ test('limites: o prazo vai só no db do despachante; o app recebe caller e db, s
     'db',
   ])
   const [bound] = door.dbBindings
-  const { endsAt = 0, ...login } = bound ?? {}
+  const { endsAt = 0, session, label, ...login } = bound ?? {}
   assert.deepEqual(login, VERSION_CALL.database)
+  assert.deepEqual([session, label], [SESSION, HOST])
   assert.ok(endsAt >= before + 10_000 && endsAt <= Date.now() + 10_000, `endsAt ${endsAt}`)
 })
 

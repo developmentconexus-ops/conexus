@@ -154,7 +154,12 @@ async function toApp(visit: Visit, call: AppCall, session: AppSessionToken): Pro
             {
               props: {
                 caller,
-                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
+                db: visit.exports.Db({
+                  props: {
+                    ...{ ...call.database, endsAt: deadline.endsAt },
+                    ...{ session, label: visit.label },
+                  },
+                }),
                 connectors: visit.exports.Connectors({
                   props: { host: visit.label, session, endsAt: deadline.endsAt },
                 }),

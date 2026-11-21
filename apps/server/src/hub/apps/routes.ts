@@ -10,6 +10,7 @@ import {
   listAppVersions,
   listCopyRows,
   publishAppVersion,
+  recordAppRead,
 } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { optionalSessionOf } from '../../platform/access.ts'
@@ -17,8 +18,10 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { sendPage } from '../../platform/screens.ts'
 import type { AppData } from './app-data.ts'
+import type { RecordAppRead } from './app-data-record.ts'
 import type { AppVersions } from './app-versions.ts'
 import type { AppDoor } from './handoff.ts'
+import { recordNotice } from './read-notice.ts'
 
 /**
  * The handoff answers a navigation, so a failure is never JSON: a missing session goes to sign-in
@@ -100,8 +103,12 @@ export function registerDataRoutes(app: FastifyInstance, data: AppData): void {
   )
 }
 
-/** The dispatcher's two calls, on the edge listener alone (security S48). */
-export function registerEdgeRoutes(edge: FastifyInstance, door: AppDoor): void {
+/** The dispatcher's calls, on the edge listener alone (security S48). */
+export function registerEdgeRoutes(
+  edge: FastifyInstance,
+  door: AppDoor,
+  recordRead: RecordAppRead,
+): void {
   serve(edge, createAppSession, async ({ body, log }) => {
     const made = await door.redeemHandoff(body)
     log.info({ companyId: made.companyId, projectId: made.projectId }, 'APP_SESSION_CREATED')
@@ -110,4 +117,11 @@ export function registerEdgeRoutes(edge: FastifyInstance, door: AppDoor): void {
   serve(edge, checkAppCall, async ({ query, headers }) =>
     answer(await door.checkCall({ host: query.host, headers })),
   )
+  serve(edge, recordAppRead, async ({ query, headers, body }) => {
+    await recordNotice(
+      { admitCall: door.admitCall, recordRead },
+      { host: query.host, headers, notice: body },
+    )
+    return answer(undefined)
+  })
 }

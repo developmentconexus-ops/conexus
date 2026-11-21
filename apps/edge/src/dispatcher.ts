@@ -25,11 +25,21 @@ import { serveTool, TOOLS_LABEL, toolDataOf } from './tools.ts'
  */
 export class Db extends WorkerEntrypoint<Env, DbProps> {
   query(text: string, values: readonly unknown[] = []): Promise<DbResult> {
-    return dbOf(this.env.APP_LOGIN_KEY, this.ctx.props).query(text, values)
+    return this.db().query(text, values)
   }
 
   batch(statements: readonly Statement[]): ReturnType<AppDb['batch']> {
-    return dbOf(this.env.APP_LOGIN_KEY, this.ctx.props).batch(statements)
+    return this.db().batch(statements)
+  }
+
+  /** The notice of a query runs past its answer, for as long as the Worker's `waitUntil` lets it (R.14). */
+  private db(): AppDb {
+    const { ctx } = this
+    const notices = {
+      hub: hubOf(this.env),
+      waitUntil: (told: Promise<void>) => ctx.waitUntil(told),
+    }
+    return dbOf(this.env.APP_LOGIN_KEY, ctx.props, notices)
   }
 }
 

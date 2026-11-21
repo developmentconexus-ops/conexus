@@ -299,9 +299,10 @@ export async function endAppSessions(
   )
 }
 
-/** The door's three acts, each bound to its dependencies. */
+/** The door's acts, each bound to its dependencies. */
 export function createAppDoor(deps: AppDeps) {
   return Object.freeze({
+    admitCall: (input: Parameters<typeof admitCall>[1]) => admitCall(deps, input),
     createHandoff: (input: Parameters<typeof createHandoff>[1]) => createHandoff(deps, input),
     redeemHandoff: (input: Parameters<typeof redeemHandoff>[1]) => redeemHandoff(deps, input),
     checkCall: (input: Parameters<typeof checkCall>[1]) => checkCall(deps, input),

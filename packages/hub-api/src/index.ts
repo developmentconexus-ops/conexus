@@ -41,6 +41,7 @@ export {
   listAppVersions,
   OfProject,
   publishAppVersion,
+  recordAppRead,
   VersionFileInput,
 } from './apps.ts'
 export * from './assistant.ts'

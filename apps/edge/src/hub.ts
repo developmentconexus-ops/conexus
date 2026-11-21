@@ -1,4 +1,4 @@
-import type { AppSessionToken, FailureCode, Operation } from '@conexus/hub-api'
+import type { AppSessionToken, FailureCode, HostLabel, Operation } from '@conexus/hub-api'
 import {
   APP_CONNECTOR_REPLY_BYTES,
   APP_SESSION_HEADER,
@@ -8,8 +8,9 @@ import {
   createAppSession,
   listAppConnections,
   Problem,
+  recordAppRead,
 } from '@conexus/hub-api'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 /** Why the Hub gave no answer; it names no request data, so the log line can carry it (S41). */
 export type NoAnswerReason =
@@ -34,6 +35,10 @@ type ToolReadRequest = Omit<z.infer<typeof callToolConnector.input.body>, 'deadl
 type ConnectionsRequest = z.infer<typeof listAppConnections.input.query> & {
   session: AppSessionToken
 }
+type NoticeRequest = z.infer<typeof recordAppRead.input.body> & {
+  host: HostLabel
+  session: AppSessionToken
+}
 
 /** The Hub's edge operations, the only ones the dispatcher calls (security S48). */
 export type HubPort = {
@@ -54,6 +59,8 @@ export type HubPort = {
     input: ToolReadRequest,
     deadlineMs: number,
   ): Promise<HubAnswer<z.infer<typeof callToolConnector.success.body>>>
+  /** An app's `db.query`, told after the app had its answer (the Registro de dados). */
+  recordAppRead(input: NoticeRequest): Promise<HubAnswer<undefined>>
 }
 
 // Decision 0041: the VPC took 31 to 119 ms and the sleeping database takes up to 1.6 s; the
@@ -90,7 +97,9 @@ export function parsedJson(text: string): unknown {
 }
 
 type HubRequest<S extends z.ZodType> = {
-  operation: Operation & { success: { body: S } }
+  operation: Operation
+  /** What the success carries: the operation's body, or nothing for a 204. */
+  reply: S
   url: string
   headers: Headers
   body?: string
@@ -114,7 +123,7 @@ async function called<S extends z.ZodType>(
     if (text === undefined) return { kind: 'NO_ANSWER', reason: 'TOO_LARGE' }
     const json = parsedJson(text)
     if (response.status === input.operation.success.status) {
-      const value = input.operation.success.body.safeParse(json)
+      const value = input.reply.safeParse(json)
       if (value.success) return { kind: 'DONE', value: value.data }
       return { kind: 'NO_ANSWER', reason: 'UNREADABLE' }
     }
@@ -138,6 +147,7 @@ export function hubOf(env: Env): HubPort {
     createAppSession(body) {
       return call({
         operation: createAppSession,
+        reply: createAppSession.success.body,
         url: createAppSession.path,
         headers: new Headers({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(body),
@@ -147,6 +157,7 @@ export function hubOf(env: Env): HubPort {
     checkAppCall({ host, session }) {
       return call({
         operation: checkAppCall,
+        reply: checkAppCall.success.body,
         url: `${checkAppCall.path}?${new URLSearchParams({ host })}`,
         headers: new Headers({ [APP_SESSION_HEADER]: session }),
         ...SHORT_ANSWER,
@@ -155,6 +166,7 @@ export function hubOf(env: Env): HubPort {
     callAppConnector({ session, ...body }, deadlineMs) {
       return call({
         operation: callAppConnector,
+        reply: callAppConnector.success.body,
         url: callAppConnector.path,
         headers: new Headers({
           'Content-Type': 'application/json',
@@ -168,6 +180,7 @@ export function hubOf(env: Env): HubPort {
     callToolConnector(body, deadlineMs) {
       return call({
         operation: callToolConnector,
+        reply: callToolConnector.success.body,
         url: callToolConnector.path,
         headers: new Headers({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...body, deadlineMs }),
@@ -175,9 +188,23 @@ export function hubOf(env: Env): HubPort {
         capBytes: APP_CONNECTOR_REPLY_BYTES,
       })
     },
+    recordAppRead({ session, host, ...body }) {
+      return call({
+        operation: recordAppRead,
+        reply: z.undefined(),
+        url: `${recordAppRead.path}?${new URLSearchParams({ host })}`,
+        headers: new Headers({
+          'Content-Type': 'application/json',
+          [APP_SESSION_HEADER]: session,
+        }),
+        body: JSON.stringify(body),
+        ...SHORT_ANSWER,
+      })
+    },
     listAppConnections({ session, host, connector }) {
       return call({
         operation: listAppConnections,
+        reply: listAppConnections.success.body,
         url: `${listAppConnections.path}?${new URLSearchParams({ host, connector })}`,
         headers: new Headers({ [APP_SESSION_HEADER]: session }),
         ...SHORT_ANSWER,

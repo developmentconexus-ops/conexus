@@ -163,6 +163,8 @@ export function edge(
       return serveTool(new Request(`${TOOLS_ORIGIN}${path}`, init), env, toolExports, access)
     },
     hubCalls,
+    /** The dispatcher's port to the Hub double, for an entrypoint tested on its own. */
+    hub: hubOf(env),
     appCalls,
     dbBindings,
     connectorBindings,

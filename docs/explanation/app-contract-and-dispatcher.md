@@ -109,6 +109,16 @@ login name under `APP_LOGIN_KEY` (`packages/hub-api/src/app-login.ts`). The Hub 
 password when it creates the login, so no password is stored or sent. Each `db` call is a new
 HTTP transaction through Neon's serverless driver, and nothing carries between calls.
 
+The stub also holds the app session and the host. After each `db.query`, once the app has its
+answer, it tells the Hub `POST /api/app-reads` the query (its first 4,000 characters), the outcome,
+the row count, the time and an id of its own. It sends this through the Worker's `waitUntil`, so
+the app never waits for it. The Hub admits the session as in step 4, and the person, the company
+and the Project come from it. It writes one `APP` row in the Registro de dados
+(`apps/server/src/hub/apps/read-notice.ts`), and an id it already holds writes nothing. A notice
+whose outcome is unknown (no answer, or a refusal that does not settle, such as the Hub's database
+down) is sent once more under the same id. A row still not written leaves `EDGE_READ_UNRECORDED`
+in the dispatcher's log, without the query. `db.batch` sends no notice.
+
 ## Call limits
 
 `APP_CALL_LIMITS` holds the numbers (`packages/app-contract/src/limits.ts`), and each has one
