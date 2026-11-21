@@ -27,7 +27,7 @@ the lake's sums equal the source's.
   to the source.
 - Adapter: copied the kit's Sankhya double through 4 renewals and passed the SDK's 68 tests; a
   generic prototype read HubSpot.
-- Money: 200,010 rows sum in the lake exactly as at the source.
+- Money: 200,010 rows sum exactly as at the source (local catalog).
 
 **Not proved.** One adapter on two classes; a real Sankhya copied into the lake (if it fails, this
 returns to the founder); exact money inside AWS.
