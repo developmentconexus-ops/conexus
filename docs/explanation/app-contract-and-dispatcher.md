@@ -101,6 +101,12 @@ that posts the host and binding to the Hub page, which calls `POST /api/apps/fra
 pass row only when the code, the binding, the host and the deadline all match, and creates the
 app session in the same transaction. A tab's session is `published`; a frame's is `preview`.
 
+The redeemed pass sets the session cookie and lands on `/__conexus/entrada`, whose address carries
+the session's hash. A browser that sends that session back goes on to `/`. One that sends none, or
+another, did not keep it: instead of a second trip to the Hub, which would loop until the browser
+stops at "too many redirects", the dispatcher answers a 401 page with a link that starts over, and
+logs `EDGE_SESSION_NOT_KEPT` with the host (`apps/edge/src/dispatch.ts`).
+
 ## The database path
 
 The dispatcher's `Db` entrypoint holds the run login's name, host and database, and the call's

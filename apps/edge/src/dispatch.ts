@@ -25,9 +25,9 @@ import {
   setCookie,
   withSecurityHeaders,
 } from './headers.ts'
-import type { HubPort, NoAnswerReason } from './hub.ts'
+import type { HubPort } from './hub.ts'
 import { hubOf } from './hub.ts'
-import type { PageCode } from './pages.ts'
+import type { PageCode, PageLog } from './pages.ts'
 import { failurePage } from './pages.ts'
 
 /** A Projeto with no version on the air runs the example app of step 8. */
@@ -35,6 +35,9 @@ const EXAMPLE_SCRIPT = 'conexus-example'
 /** The dispatcher's own paths on an app's host, which the app never receives. */
 const DISPATCHER_PATHS = '/__conexus/'
 const ENTRY_SCRIPT = `${DISPATCHER_PATHS}entry.js`
+/** Where a redeemed pass lands, with the hash of the session it set in `SESSION_MARK`. */
+const LANDING_PATH = `${DISPATCHER_PATHS}entrada`
+const SESSION_MARK = 'sessao'
 const SECRET_BYTES = 32
 
 /** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043) and the `connectors` stub. */
@@ -60,8 +63,8 @@ function redirect(visit: Visit, location: string, cookies: string[]): Response {
   return new Response(null, { status: 303, headers: withSecurityHeaders(headers, visit.policy) })
 }
 
-function failure(visit: Visit, code: PageCode, reason?: NoAnswerReason) {
-  return failurePage(code, visit.env.HUB_PUBLIC_ORIGIN, reason)
+function failure(visit: Visit, code: PageCode, log?: PageLog) {
+  return failurePage(code, visit.env.HUB_PUBLIC_ORIGIN, log)
 }
 
 /** A write without this host's exact `Origin`, or that `Sec-Fetch-Site` calls cross-site (S24). */
@@ -100,7 +103,14 @@ async function toHub(visit: Visit, cleared: string[]): Promise<Response> {
   return redirect(visit, `${hubOrigin}${APP_OPEN_PATH}?${query}`, cookies)
 }
 
-/** Trades the Hub's pass for the app's session, on the browser the pass was made for. */
+async function markOf(session: string): Promise<string> {
+  return base64Of(await sha256Of(session), 'url')
+}
+
+/**
+ * Trades the Hub's pass for the app's session, on the browser the pass was made for. It lands on
+ * `LANDING_PATH`, whose address, not a cookie, says a pass was just redeemed and for which session.
+ */
 async function redeem(visit: Visit): Promise<Response> {
   const body = createAppSession.input.body.safeParse({
     host: visit.label,
@@ -110,7 +120,9 @@ async function redeem(visit: Visit): Promise<Response> {
   if (!body.success) return failure(visit, 'APP_HANDOFF_INVALID')
   const answer = await visit.hub.createAppSession(body.data)
   if (answer.kind === 'DONE') {
-    return redirect(visit, '/', appSessionCookies(answer.value.session, visit.place))
+    const { session } = answer.value
+    const landing = `${LANDING_PATH}?${new URLSearchParams({ [SESSION_MARK]: await markOf(session) })}`
+    return redirect(visit, landing, appSessionCookies(session, visit.place))
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failure(visit, 'APP_HANDOFF_INVALID')
@@ -118,8 +130,21 @@ async function redeem(visit: Visit): Promise<Response> {
   return failure(
     visit,
     'EDGE_HUB_UNAVAILABLE',
-    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+    answer.kind === 'NO_ANSWER' ? { reason: answer.reason } : {},
   )
+}
+
+/**
+ * The browser came back from the pass with the session it set, so on to the app; or without it, and
+ * this second round in a row without a session is a page, not another trip to the Hub that loops
+ * until "too many redirects" (oauth2-proxy's error page, Vouch's count of tries). A stale cookie the
+ * browser keeps sending instead of the new one counts as not kept.
+ */
+async function land(visit: Visit): Promise<Response> {
+  const sent = cookiesOf(visit.request.headers).get(APP_SESSION_COOKIE)
+  const mark = visit.url.searchParams.get(SESSION_MARK)
+  if (sent !== undefined && (await markOf(sent)) === mark) return redirect(visit, '/', [])
+  return failure(visit, 'EDGE_SESSION_NOT_KEPT', { host: visit.label, rounds: 2 })
 }
 
 /**
@@ -212,6 +237,7 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
   const place = placeOf(request.headers)
   const visit: Visit = { request, env, exports, hub: hubOf(env), url, label: data, policy, place }
   if (url.pathname === HANDOFF_PATH) return redeem(visit)
+  if (url.pathname === LANDING_PATH) return land(visit)
   if (url.pathname === ENTRY_SCRIPT) return entryScript(policy)
   if (url.pathname.startsWith(DISPATCHER_PATHS)) return failure(visit, 'APP_NOT_FOUND')
 
@@ -226,7 +252,7 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
   return failure(
     visit,
     refusal ?? 'EDGE_HUB_UNAVAILABLE',
-    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+    answer.kind === 'NO_ANSWER' ? { reason: answer.reason } : {},
   )
 }
 
