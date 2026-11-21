@@ -111,6 +111,17 @@ test('a lista e o filtro no endereço', async () => {
   expect(screen.getByRole('combobox', { name: 'Resultado' }).textContent).toBe('Não encontrada')
 })
 
+test('no computador, Limpar os filtros aparece com um filtro ligado e linhas na tela', async () => {
+  // Founder, "3. A": not only in the phone's sheet and the filtered empty state.
+  readsHub({ as: 'owner', reads: () => [read()] })
+  const { router } = openReads('?person=person-bruno&agent=ASSISTANT')
+  await screen.findByRole('table', { name: 'Registro de dados' })
+  fireEvent.click(screen.getByRole('link', { name: 'Limpar os filtros' }))
+  await waitFor(() => expect(router.state.location.search).toEqual({}))
+  await screen.findByRole('table', { name: 'Registro de dados' })
+  expect(screen.queryByRole('link', { name: 'Limpar os filtros' })).toBeNull()
+})
+
 test('a linha aberta', async () => {
   const mine = read({
     ...{ person: { id: ANA.id, name: ANA.name }, threadId: THREAD, verb: 'QUERY' },
