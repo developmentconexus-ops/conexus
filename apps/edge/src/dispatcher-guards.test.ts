@@ -42,7 +42,7 @@ test('GET de outro site é atendido: a passagem do Hub e a primeira visita', asy
   })
   const first = await door.fetch('/pedidos', { headers })
   assert.deepEqual([redeemed.status, first.status], [303, 303])
-  assert.equal(redeemed.headers.get('Location'), '/')
+  assert.match(redeemed.headers.get('Location') ?? '', /^\/__conexus\/entrada\?sessao=/)
   assert.match(first.headers.get('Location') ?? '', new RegExp(`/apps/open\\?host=${HOST}&`))
 })
 

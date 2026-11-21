@@ -178,7 +178,7 @@ async function enter(s: Scenario, browser: Jar) {
   const pass = await getPass(s, browser)
   const redeemed = await s.visit(browser, pass)
   assert.equal(redeemed.status, 303)
-  assert.equal(redeemed.headers.get('location'), '/')
+  assert.match(redeemed.headers.get('location') ?? '', /^\/__conexus\/entrada\?sessao=[\w-]{43}$/)
   assert.match(browser.header(), /__Host-conexus-app=[\w-]{43}/)
   return pass
 }
