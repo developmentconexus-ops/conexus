@@ -155,9 +155,9 @@ function countOf(answer: ReadAnswer): number | null {
   return answer.kind === 'TABLE' || answer.kind === 'QUERY' ? answer.rows.length : null
 }
 
-/** What the fake database answers a query: the role's refusal, the column's, or one row. */
-function queried(sql: string): Answer<'query'> {
-  if (sql === HIDDEN.query) return { kind: 'NOT_IN_ROLE' }
+/** What the fake database answers a query: the table outside the catalog, the column's refusal, or one row. */
+function queried(sql: string, tables: readonly string[]): Answer<'query'> {
+  if (sql === HIDDEN.query && !tables.includes(HIDDEN.table)) return { kind: 'NOT_IN_CATALOG' }
   if (sql === QUERIES.refused)
     return {
       kind: 'QUERY_REFUSED',
@@ -194,10 +194,10 @@ export function fakeWorld(catalog: Catalog = CATALOG): DataWorld {
       gave.live.push(answer)
       return answer
     },
-    async query({ sql, signal }) {
+    async query({ sql, tables, signal }) {
       reached.signals.push(signal)
       if (!isDown.query) reached.query.push(sql)
-      const answer = isDown.query ? { kind: 'TABLE_UNAVAILABLE' as const } : queried(sql)
+      const answer = isDown.query ? { kind: 'TABLE_UNAVAILABLE' as const } : queried(sql, tables)
       gave.query.push(answer)
       return answer
     },

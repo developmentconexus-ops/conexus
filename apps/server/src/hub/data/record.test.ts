@@ -99,7 +99,7 @@ test('cada recusa deixa uma linha sem contagem', async (t) => {
   const refused = [
     [{ kind: 'TABLE', table: 'nao_existe' }, 'NOT_IN_CATALOG'],
     [{ kind: 'QUERY', sql: 'select from from' }, 'QUERY_REFUSED'],
-    [{ kind: 'QUERY', sql: 'select * from sync.sankhya_clientes' }, 'NOT_IN_ROLE'],
+    [{ kind: 'QUERY', sql: 'delete from sync.sankhya_vendas' }, 'NOT_IN_ROLE'],
   ] as const
   for (const [request, kind] of refused) {
     const answer = await data.read(request)

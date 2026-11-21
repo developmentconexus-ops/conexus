@@ -107,7 +107,7 @@ test('uma CTE e uma subconsulta nomeiam a tabela de baixo', async (t) => {
   )
 })
 
-test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução são 42601', async (t) => {
+test('não grava: a escrita é NOT_IN_ROLE, CREATE nomeia uma tabela fora do catálogo e mais de uma instrução é 42601', async (t) => {
   const { on } = await withCopies(t)
   const before = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
   const writes = [
@@ -116,11 +116,10 @@ test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução sã
     `update sync.sankhya_vendas set "VLRNOTA" = 0`,
   ]
   for (const sql of writes) assert.deepEqual(await queried(on, sql), { kind: 'NOT_IN_ROLE' }, sql)
-  for (const sql of ['create table sync.x (a int)', 'select 1; select 2']) {
-    const answer = await queried(on, sql)
-    assert.ok(answer.kind === 'QUERY_REFUSED', sql)
-    assert.equal(answer.sqlstate, '42601', sql)
-  }
+  assert.deepEqual(await queried(on, 'create table sync.x (a int)'), { kind: 'NOT_IN_CATALOG' })
+  const answer = await queried(on, 'select 1; select 2')
+  assert.ok(answer.kind === 'QUERY_REFUSED')
+  assert.equal(answer.sqlstate, '42601')
   assert.deepEqual(await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA']), before)
 })
 
@@ -207,13 +206,13 @@ test('o prazo dá DEADLINE e registra TIMEOUT', async (t) => {
   assert.equal(failed?.fields.cause, 'TIMEOUT')
 })
 
-test('o membro no Início não lê: NOT_IN_ROLE', async (t) => {
+test('o membro no Início não lê: a tabela fora do catálogo dele é NOT_IN_CATALOG', async (t) => {
   const { on } = await withCopies(t)
   const answer = await inCompany(on, PersonId.parse(on.carla.id)).read({
     ...{ kind: 'QUERY' },
     sql: 'select count(*) from sync.sankhya_vendas',
   })
-  assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
+  assert.deepEqual(answer, { kind: 'NOT_IN_CATALOG' })
 })
 
 test('quem não é da empresa é recusado e a consulta não chega ao banco da empresa', async (t) => {
