@@ -3,33 +3,22 @@ import type {
   CompanyData,
   ConversationId,
   DataSources,
-  PersonId,
   ReadAnswer,
   ReadRequest,
 } from '@conexus/hub-api'
 import { companyData } from '@conexus/hub-api'
 import type { Principal } from '../access/public.ts'
-import type { TurnKey } from '../connectors/public.ts'
-import type { Speaker } from '../identity/public.ts'
 import { catalogOf } from './catalog.ts'
-import type { DataDeps } from './deps.ts'
+import type { DataDeps, TurnBinding } from './deps.ts'
+import { funnelOf } from './funnel.ts'
+import { liveOf } from './live.ts'
 import { queryOf } from './query.ts'
 import type { ReadEntry, RecordRead, Who } from './record.ts'
 import { recordReadOf } from './record.ts'
 import { rowsOf } from './rows.ts'
 
-export type { DataDeps } from './deps.ts'
+export type { DataDeps, TurnBinding } from './deps.ts'
 export { recordReadOf as recordRead } from './record.ts'
-
-type TurnBinding = Readonly<{ turn: TurnKey }> &
-  (
-    | Readonly<{ speaker: Readonly<{ kind: 'PERSON'; personId: PersonId }> }>
-    | Readonly<{
-        speaker: Extract<Speaker, { kind: 'VERSION' }>
-        agentId: AgentId
-        number: number
-      }>
-  )
 
 export type DataContext = Readonly<{
   /** The conversation the run belongs to; none in the Construtor's test of a draft. */
@@ -79,6 +68,8 @@ const BEFORE_THE_SYSTEM: readonly ReadAnswer['kind'][] = [
   'NOT_IN_CATALOG',
   'CATALOG_UNAVAILABLE',
   'TABLE_UNAVAILABLE',
+  'NOT_GRANTED',
+  'CALLS_SPENT',
 ]
 
 /** A read leaves its row before its answer returns; without the row nothing returns. Describe and act pass untouched. */
@@ -102,7 +93,7 @@ export function createCompanyData(
   const record = recordReadOf(deps)
   return (principal, context) =>
     recorded(
-      companyData({ sources: sourcesFor(deps, principal), now: () => new Date() }),
+      companyData({ sources: sourcesFor(deps, principal, context), now: () => new Date() }),
       record,
       whoOf(principal, context),
     )
@@ -117,12 +108,17 @@ function whoOf(principal: Principal, context: DataContext): Who {
   }
 }
 
-function sourcesFor(deps: DataDeps, principal: Principal): DataSources {
+const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
+
+/** A live read and an act need a turn to spend: without one bound, neither reaches the system. */
+function sourcesFor(deps: DataDeps, principal: Principal, context: DataContext): DataSources {
+  const { turn, thread } = context
   return {
     catalog: () => catalogOf(deps, principal),
     rows: ({ table, signal }) => rowsOf(deps, principal, { table, signal }),
-    live: async () => ({ kind: 'NOT_GRANTED' }),
+    live: async (a) =>
+      turn === undefined ? NOT_GRANTED : liveOf(deps, principal, { turn, thread }, a),
     query: (a) => queryOf(deps, principal, a),
-    funnel: async () => ({ kind: 'NOT_GRANTED' }),
+    funnel: async (a) => (turn === undefined ? NOT_GRANTED : funnelOf(deps, principal, turn, a)),
   }
 }

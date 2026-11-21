@@ -212,6 +212,7 @@ export function subjectsOf(deps: {
   const access = createAccess({ database, identity, sources })
   const data = createCompanyData({
     ...{ database, identity, log, access, copies: () => copies.data, projects: projects.ports },
+    connectors: () => connectors,
   })
   return {
     ...{ runs, projects, operations, apps, modelAccounts, requests, access },

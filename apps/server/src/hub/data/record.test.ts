@@ -52,6 +52,7 @@ function unrecordedData(w: RolesWorld, silent: Awaited<ReturnType<typeof unreach
     ...{ database, identity: on.hub.identity, log: logOf(on) },
     access: createAccess({ database: on.hub.test.database, identity: on.hub.identity, sources }),
     ...{ copies: () => on.hub.copies.data, projects: on.hub.projects.ports },
+    connectors: () => on.hub.connectors,
   })
 }
 
@@ -116,6 +117,7 @@ test('cada recusa deixa uma linha sem contagem', async (t) => {
       sources,
     }),
     ...{ copies: () => w.on.hub.copies.data, projects: w.on.hub.projects.ports },
+    connectors: () => w.on.hub.connectors,
   })
   const scope = readerAt({
     companyId: w.on.companyId,
@@ -217,12 +219,17 @@ test('a leitura de operação deixa exatamente uma linha', async (t) => {
   })
   assert.equal(toTheSystem.kind, 'NOT_GRANTED')
   const records = await recordsOf(on)
-  assert.equal(records.length, 2)
-  const [, live] = records
-  assert.equal(live?.verb, 'LIVE')
-  assert.equal(live?.connection_id, connection)
-  assert.equal(live?.operation, other)
-  assert.deepEqual(live?.tables, [])
+  assert.equal(records.length, 3, 'every read asked leaves its row, the one with no turn too')
+  const [, notInCatalog, ungranted] = records
+  for (const [live, operation, outcome] of [
+    [notInCatalog, other, 'NOT_IN_CATALOG'],
+    [ungranted, reached.operation, 'NOT_GRANTED'],
+  ] as const) {
+    assert.equal(live?.verb, 'LIVE')
+    assert.equal(live?.connection_id, connection)
+    assert.deepEqual([live?.operation, live?.outcome, live?.rows], [operation, outcome, null])
+    assert.deepEqual(live?.tables, [])
+  }
 })
 
 test('o agente e o Projeto da linha vêm do principal', async (t) => {
