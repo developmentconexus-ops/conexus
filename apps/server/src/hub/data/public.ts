@@ -86,17 +86,23 @@ function recorded(data: CompanyData, record: RecordRead, who: Who): CompanyData 
   }
 }
 
+/** The contract over `sources`, each read recorded as `principal` asked it in `context`: the Hub's own, and the conformance world's over its watched sources. */
+export function recordedData(
+  deps: DataDeps,
+  principal: Principal,
+  context: DataContext,
+  sources: DataSources,
+): CompanyData {
+  const data = companyData({ sources, now: () => new Date() })
+  return recorded(data, recordReadOf(deps), whoOf(principal, context))
+}
+
 /** The access contract bound to who asks and where, as the access door's principal. */
 export function createCompanyData(
   deps: DataDeps,
 ): (principal: Principal, context: DataContext) => CompanyData {
-  const record = recordReadOf(deps)
   return (principal, context) =>
-    recorded(
-      companyData({ sources: sourcesFor(deps, principal, context), now: () => new Date() }),
-      record,
-      whoOf(principal, context),
-    )
+    recordedData(deps, principal, context, sourcesFor(deps, principal, context))
 }
 
 function whoOf(principal: Principal, context: DataContext): Who {
@@ -111,7 +117,11 @@ function whoOf(principal: Principal, context: DataContext): Who {
 const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
 /** A live read and an act need a turn to spend: without one bound, neither reaches the system. */
-function sourcesFor(deps: DataDeps, principal: Principal, context: DataContext): DataSources {
+export function sourcesFor(
+  deps: DataDeps,
+  principal: Principal,
+  context: DataContext,
+): DataSources {
   const { turn, thread } = context
   return {
     catalog: () => catalogOf(deps, principal),

@@ -1,5 +1,7 @@
 # Documento de desenho: parte 2, o conector, com a entrada conversada
 
+**Emenda de 2026-11-21: a marca "só ao vivo" sai.** Vale a nota no topo de [requirements.md](requirements.md); o que este arquivo diz da marca `liveOnly` e da lei que a confere não vale.
+
 Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repositório. Depende da parte 1: a regra de nome, a descrição nos modelos de cópia e o catálogo. **[CARTÃO x]** é o cartão em rascunho da Entrada conversada, no PR https://github.com/developmentconexus-ops/conexus/pull/982, commit `b79bfbe1`, linha x. A Nango, referência de padrão, é citada pelo commit: `nango@e6c6131` e `integration-templates@9afa0aab`.
 
 ## Visão geral

@@ -200,7 +200,6 @@ test('o resumo lista o alcance do lugar com chosen pela escolha; as ferramentas,
     connection: LOJA,
     connector: 'sankhya',
     name: 'Filial',
-    liveOnly: false,
     reads: [{ operation: 'clientes', label: 'Clientes', summary: 'clientes' }],
     actions: [],
   })

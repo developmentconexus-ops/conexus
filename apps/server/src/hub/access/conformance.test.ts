@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { CatalogSystem } from '@conexus/hub-api'
 import { Catalog, ConnectionId, OperationId } from '@conexus/hub-api'
 import type { RolesWorld } from '../copies/test-readers.ts'
-import { copyOf, put, rolesWorld, VENDAS } from '../copies/test-readers.ts'
+import { copyOf, put, rolesWorld, roleTables, VENDAS } from '../copies/test-readers.ts'
 import { call } from '../identity/test-hub.ts'
 import type { Consumer, ConsumerContext } from './public.ts'
 import { operationLeaf, principalFor, tableLeaf } from './public.ts'
@@ -13,8 +14,10 @@ type Scenario = Readonly<{
   /** The context Bruno converses in, for the consumer, as the conversation tells the door. */
   context: (w: RolesWorld) => Promise<ConsumerContext>
   revokedBy: readonly ('ROLE' | 'DECLARATION')[]
-  /** Whether the role's marks decide his tables here (Empresa) or the Projeto's release does (P1). */
+  /** Whether the role's marks alone decide his tables (Empresa) or the Projeto's release too (P1, C(b)). */
   tablesBy: 'ROLE' | 'RELEASE'
+  /** What the Registro calls the consumer (record.ts AGENT_OF). */
+  agent: 'ASSISTANT' | 'BUILDER' | 'CONSTRUTOR' | 'AGENT'
 }>
 
 /** The Projeto with the Sankhya and only `sankhya_vendas` released to it. */
@@ -46,6 +49,7 @@ const SCENARIOS = {
     }),
     revokedBy: ['ROLE'],
     tablesBy: 'ROLE',
+    agent: 'ASSISTANT',
   },
   builder: {
     context: async (w) => ({
@@ -54,6 +58,7 @@ const SCENARIOS = {
     }),
     revokedBy: ['ROLE'],
     tablesBy: 'RELEASE',
+    agent: 'BUILDER',
   },
   construtor: {
     context: async (w) => ({
@@ -62,6 +67,7 @@ const SCENARIOS = {
     }),
     revokedBy: ['ROLE'],
     tablesBy: 'RELEASE',
+    agent: 'CONSTRUTOR',
   },
   agent: {
     context: async (w) => ({
@@ -72,6 +78,7 @@ const SCENARIOS = {
     }),
     revokedBy: ['ROLE', 'DECLARATION'],
     tablesBy: 'RELEASE',
+    agent: 'AGENT',
   },
 } satisfies Record<Consumer, Scenario>
 
@@ -115,6 +122,24 @@ async function revoke(
     default:
       return path satisfies never
   }
+}
+
+const OUTSIDE = [
+  "select query_to_xml('select * from sync.sankhya_clientes', true, false, '')",
+  'select relname from pg_class',
+]
+
+function loginsAsked(t: TestContext, w: RolesWorld) {
+  const reads = t.mock.method(w.on.hub.postgres.companyPostgres, 'readCopies')
+  return () =>
+    reads.mock.calls.map(({ arguments: [address] }) => new URL(address.reveal()).username)
+}
+
+function recordsOf(w: RolesWorld) {
+  return w.on.hub.test.asOwner(
+    'select * from data.data_read where company_id = $1 order by at, id',
+    [w.on.companyId],
+  )
 }
 
 function names(systems: readonly CatalogSystem[]) {
@@ -194,6 +219,43 @@ for (const [consumer, scenario] of Object.entries(SCENARIOS)) {
       assert.equal(listed, scenario.tablesBy === 'RELEASE')
     })
   }
+
+  test(`lei (c) e (d): toda leitura aceita deixa uma linha, pelo login que só lê o papel, em ${consumer}`, async (t) => {
+    const w = await rolesWorld(t, 'PLANTED')
+    const context = await scenario.context(w)
+    const logins = loginsAsked(t, w)
+    const data = w.on.hub.data(principalFor(context), { thread: null })
+    const { tables } = await describedIn(w, context)
+    assert.ok(tables.length > 0, 'the scenario lists a table')
+    for (const { name } of tables) {
+      const read = await data.read({ kind: 'TABLE', table: name })
+      assert.equal(read.kind, 'TABLE', name)
+    }
+    const sql = 'select count(*) from sync.sankhya_vendas'
+    assert.equal((await data.read({ kind: 'QUERY', sql })).kind, 'QUERY')
+    const rows = await recordsOf(w)
+    assert.equal(rows.length, tables.length + 1, 'one row per accepted read')
+    for (const row of rows) assert.equal(row.agent, scenario.agent, JSON.stringify(row))
+    const role = `conexus_role_${w.vendas.id}`
+    assert.deepEqual([...new Set(logins())], [role])
+    assert.deepEqual(await roleTables(w.on, w.vendas.id), VENDAS)
+  })
+
+  test(`lei (f): a consulta que lê por fora recusa e deixa linha, em ${consumer}`, async (t) => {
+    const w = await rolesWorld(t, 'PLANTED')
+    const data = w.on.hub.data(principalFor(await scenario.context(w)), { thread: null })
+    for (const sql of OUTSIDE)
+      assert.deepEqual(await data.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_CATALOG' }, sql)
+    const rows = await recordsOf(w)
+    assert.deepEqual(
+      rows.map(({ verb, query, outcome, agent }) => ({ verb, query, outcome, agent })),
+      OUTSIDE.map((query) => ({
+        ...{ verb: 'QUERY', query, outcome: 'NOT_IN_CATALOG' },
+        agent: scenario.agent,
+      })),
+    )
+    assert.ok(rows.every((row) => row.rows === null))
+  })
 }
 
 test('a escolha estreita os sistemas, não as tabelas: CHOSEN lista as escolhidas que a pessoa alcança, ANY todas as alcançadas', async (t) => {

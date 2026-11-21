@@ -1,5 +1,7 @@
 # Documento de requisitos: parte 2, o conector, com a entrada conversada
 
+**Emenda de 2026-11-21: a marca "só ao vivo" sai.** O fundador decidiu (B1, "a") que a marca `liveOnly` sai do kit, do contrato de acesso e desta spec, junto com a lei da conformidade que a confere. A regra "nunca copiar" passa a ser da ligação de pessoa, que ainda não existe, e entra com o cartão que a criar. Até lá, nesta parte não valem: o requisito 1.1 e o 1.3 na marca `liveOnly`, o requisito 2 inteiro, a 3.3 na parte do conector só ao vivo e o `liveOnly: true` do requisito 8.2; no plano, a unidade 1.2, o grupo 2 e o `liveOnly` da 3.1. A lei saiu no G3 do cartão Registro e conformidade (`packages/hub-api/src/company-data-conformance.ts`), e o campo, de `CatalogSystem` (`packages/hub-api/src/company-data.ts`).
+
 ## Introdução
 
 No fim desta parte a dona da empresa liga o Sankhya, o HubSpot e o Gmail pelo mesmo caminho de quatro passos: sistema, acesso, o que copiar e revisão. Todo conector é do kit do Conexus, com o login do kit (decisão do fundador, P3 do índice, registro 0069). Quem não tem a senha recebe um link de 30 minutos e preenche só os campos pedidos. Um sistema só ao vivo, como o Gmail, nunca é copiado, e a tela e a máquina dizem isso. Uma empresa nova entra por uma conversa que aprende a empresa, mostra as etapas e os documentos e leva a ligar o primeiro sistema. As decisões vêm do `design.md` desta pasta, do escopo aprovado (seção 4, telas `p2-01` a `p2-15`, decisões E2a, `T2` e `T3`) e das palavras do fundador ali citadas. O Sankhya real não é lido nesta parte.

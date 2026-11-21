@@ -42,7 +42,6 @@ function catalogOf(tables: ReturnType<typeof table>[]): Catalog {
       connection,
       connector: 'erp-falso',
       name: index === 0 ? 'Loja A' : 'Loja B',
-      liveOnly: false,
       reads: [{ operation: 'listar', label: 'Listar', summary: 'Lista os itens.' }],
       actions: [],
     })),

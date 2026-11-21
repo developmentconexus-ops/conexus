@@ -28,8 +28,6 @@ export const CatalogSystem = z.object({
   connection: ConnectionId,
   connector: ConnectorId,
   name: z.string(),
-  /** The system is never copied: no table has it as its origin; agents read it live. */
-  liveOnly: z.boolean(),
   reads: z.array(OperationEntry),
   /** An action the provider declares without an effect counts as a write, so it asks before it runs (D1). */
   actions: z.array(OperationEntry.extend({ effect: OperationEffect.exclude(['READ']) })),

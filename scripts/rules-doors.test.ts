@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { cpSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import { plant, ROOT, removePlanted } from './test-rules.ts'
@@ -85,4 +86,41 @@ test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante te
     violations.filter((violation) => Object.hasOwn(GOOD, violation.from)),
     [],
   )
+})
+
+/** The files that still reach the data directly today: the list only shrinks, and a name that leaves leaves here in the same commit. */
+const MIGRATION_TODAY = [
+  ...['agents/agent', 'agents/choose', 'agents/code-tools', 'agents/controller'],
+  ...['agents/conversation-routes', 'agents/legacy', 'agents/publish', 'agents/tools'],
+  ...['agents/write-of', 'app-data/context', 'app-data/tools', 'assistant/assistant'],
+  ...['assistant/connector-access', 'assistant/context', 'assistant/open', 'assistant/propose'],
+  ...['assistant/routes', 'automations/automations', 'connectors/connector-tools'],
+  ...['connectors/copy-propose', 'connectors/typed-reads', 'construtor/code-tool'],
+  ...['construtor/construtor', 'controller-kit/turns', 'conversation/builder'],
+  ...['conversation/public', 'tools/check'],
+]
+  .map((file) => `^apps/server/src/builder/${file}\\.ts$`)
+  .concat('^packages/app/src/connectors\\.ts$')
+
+function grown(listed: readonly string[]): string[] {
+  return listed.filter((one) => !MIGRATION_TODAY.includes(one))
+}
+
+/** The rule's own list: its `pathNot` after the tests and the test helpers. */
+function listedToday(): string[] {
+  const config = createRequire(import.meta.url)(join(ROOT, '.dependency-cruiser.cjs'))
+  const rule = config.forbidden.find(
+    (one: { name: string }) => one.name === 'agents-and-apps-reach-data-only-through-the-contract',
+  )
+  return rule.from.pathNot.slice(2)
+}
+
+test('a lista de migração do contrato não cresce', () => {
+  assert.deepEqual(grown(listedToday()), [])
+  assert.deepEqual(grown(MIGRATION_TODAY.slice(1)), [], 'one name fewer passes')
+})
+
+test('um nome novo na lista falha', () => {
+  const added = '^apps/server/src/builder/app-data/check\\.ts$'
+  assert.deepEqual(grown([...MIGRATION_TODAY, added]), [added])
 })

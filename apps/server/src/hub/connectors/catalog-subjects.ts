@@ -41,8 +41,6 @@ export function systemOf(
     connection: row.id,
     connector: ConnectorId.parse(connector.id),
     name: row.name,
-    // The kit has no live-only mark yet; part 2 replaces this with the connector's own.
-    liveOnly: false,
     reads: operationsOf(connector)
       .filter((operation) => operation.class === 'read')
       .map(entryOf),
