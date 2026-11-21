@@ -84,7 +84,9 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   is the one drawing frame of the conversation, which carries its own policy and draws the
   diagrams a message holds) and `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
   Hub's origin in `frame-ancestors`, and the dispatcher's cookies are `__Host-`, `Secure`,
-  `HttpOnly`, `SameSite=None; Partitioned` (step 14.1). Failure: a cross-site authenticated GET
+  `HttpOnly`, and `SameSite=None; Partitioned` in the Hub's Prévia frame (step 14.1) but
+  `SameSite=Lax` in the app's own tab, where Safari drops a partitioned cookie set at the end of the
+  redirect chain from the Hub (WebKit bug 306194). Failure: a cross-site authenticated GET
   discloses the person, or a form post bypasses admission. Existing configuration and header tests
   stay; Fastify does not supply this policy automatically. [review]
 - **S48.** The six access kinds of [code C33](code.md) mean: `page`, a read of any address outside

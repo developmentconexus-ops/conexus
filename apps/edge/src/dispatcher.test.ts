@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { serveApp } from '@conexus/app-contract'
 import { BINDING, CODE, EXAMPLE_CALL, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
 
-const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=None; Partitioned'
+const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax'
 const HUB = 'https://hub.conexus.fun'
 const HUB_OPEN = `${HUB}/apps/open`
 
