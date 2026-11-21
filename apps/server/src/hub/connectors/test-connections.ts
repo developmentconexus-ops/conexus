@@ -113,7 +113,6 @@ export function hubspotOn(t: TestContext, a: OAuthOn = {}) {
   return oauthOn(t, { ...a, id: 'hubspot', fake })
 }
 
-/** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
 type Earlier = Parameters<Connector['operations'][number]['probe']>[0]
 
 /** A kit connector's input for each read, as its `probe` declares it; a read that chains on another read's answer finds it in `earlier`, and has none without it. */
@@ -128,6 +127,7 @@ export function kitOf(id: string, earlier: Earlier = new Map()) {
   return probes
 }
 
+/** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */
 export async function mercadoLivreServed(t: TestContext) {
   const fake = mercadoLivreFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   const served = await fake.serve()

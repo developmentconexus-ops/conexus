@@ -106,13 +106,13 @@ function grown(listed: readonly string[]): string[] {
   return listed.filter((one) => !MIGRATION_TODAY.includes(one))
 }
 
-/** The rule's own list: its `pathNot` after the tests and the test helpers. */
+/** The rule's own list: the files its `pathNot` names one by one, wherever they sit; the tests and the test helpers are patterns. */
 function listedToday(): string[] {
   const config = createRequire(import.meta.url)(join(ROOT, '.dependency-cruiser.cjs'))
   const rule = config.forbidden.find(
     (one: { name: string }) => one.name === 'agents-and-apps-reach-data-only-through-the-contract',
   )
-  return rule.from.pathNot.slice(2)
+  return rule.from.pathNot.filter((one: string) => !one.includes('.*'))
 }
 
 test('a lista de migração do contrato não cresce', () => {
