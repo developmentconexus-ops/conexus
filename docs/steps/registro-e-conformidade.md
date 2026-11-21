@@ -28,8 +28,8 @@ Dono e Administrador veem o Registro (2026-11-21, `"D1 a D2 a"`). O item (b) da 
 **Registro de dados**, em Configurações. A linha diz quem perguntou, por qual agente, o que foi lido,
 a consulta, o resultado e quantas linhas voltaram. Ela nunca guarda o resultado. A consulta fica como
 foi escrita, até 4.000 caracteres, e pode trazer um valor que o próprio agente digitou nela. Só Dono e
-Administrador veem o Registro, sem prazo, no grupo **Pessoas e acesso** de Configurações, ao lado de
-Papéis. Quem não administra não tem o item: vê a origem de cada leitura na própria conversa, na linha
+Administrador veem o Registro, sem prazo, em Configurações, no grupo com o nome da empresa, logo
+depois de Papéis. Quem não administra não tem o item: vê a origem de cada leitura na própria conversa, na linha
 da ferramenta e no bloco **Fontes**. Toda leitura pedida deixa linha, também a recusada. Se o Registro
 não conseguir gravar a linha da leitura de um agente, a leitura não devolve nada. Para a consulta de um
 app publicado a garantia é mais fraca: o app recebe a resposta antes, e a borda tenta gravar a linha
@@ -54,7 +54,8 @@ clientes temos?". Na conversa ele vê "Consultou sankhya_vendas", a consulta se 
 bloco **Fontes** de quando é a cópia. Em Configurações ele não tem o item Registro de dados. Você, como
 dono, abre o Registro e vê as linhas de todo mundo. Filtra por Bruno e vê as duas dele: a leitura de
 `sankhya_vendas`, **Lida**, com 1 linha e a consulta, e a de clientes, **Não encontrada**, sem nenhuma
-linha. Abre uma e toca em **Abrir a conversa**.
+linha. Abre uma e vê a consulta. **Abrir a conversa** aparece só nas suas próprias leituras, porque a
+conversa abre só para a pessoa dela.
 
 **O que muda em relação aos estudos, e por quê.** São mudanças técnicas, decididas pelo firstmate
 (tabela "As decisões do firstmate"). Nenhuma muda o que você vê:
@@ -74,11 +75,12 @@ clientes, um Projeto que recebeu as duas, e uma segunda pessoa no papel Membro q
    ele lê, sem nomear `sankhya_clientes`. Em Configurações ele não tem o item **Registro de dados**.
 2. Ainda como ele, converse com o Assistente dentro do Projeto e pergunte pelos clientes. Ele diz que
    não achou: o Projeto recebeu a tabela, mas o papel dele não a lê.
-3. Como dono, abra Configurações, **Pessoas e acesso**, **Registro de dados**. Aparecem as leituras de
-   todos. Filtre por essa pessoa: a de vendas **Lida**, com a contagem, e a de clientes e a consulta ao
-   catálogo **Não encontrada**, todas sem nenhuma linha do resultado. Abra uma linha e veja a
-   consulta. Toque em **Abrir a conversa**, volte, escolha um período de até 31 dias e toque em
-   **Exportar**.
+3. Como dono, pergunte algo ao Assistente e abra Configurações: no grupo com o nome da empresa, logo
+   depois de Papéis, **Registro de dados**. Aparecem as leituras de todos. Filtre por essa pessoa: a
+   de vendas **Lida**, com a contagem, e a de clientes e a consulta ao catálogo **Não encontrada**,
+   todas sem nenhuma linha do resultado. Abra uma linha e veja a consulta; na leitura dela não há
+   **Abrir a conversa**. Tire o filtro, abra a sua leitura, toque em **Abrir a conversa**, volte,
+   escolha um período de até 31 dias e toque em **Exportar**.
 4. Abra um app publicado do Projeto que lê a tabela de vendas. No Registro aparece uma linha do app,
    com o seu nome e "no Projeto {nome}".
 5. Diga o que viu e aprove os textos das telas.
@@ -152,6 +154,18 @@ respondeu: `"D1 a D2 a D3 a"`, "P3 a p4 a", "P6 b", "P7 a", "P8 okay", "R1 a R2 
 - **Os textos do protótipo** (P8) para Exportar, os filtros e o título da linha aberta, com "As 5.000
   leituras mais novas." quando a exportação para no teto.
 - **A marca de sistema "só ao vivo" e a lei dela saíram** do contrato (B1 (a)); a prova roda 23 leis.
+
+**A emenda do fechamento (2026-11-21).** Depois da QA, você respondeu "1. B" ao achado 1. O que mudou
+nesta página:
+- **A consulta a uma tabela fora do seu catálogo volta Não encontrada** (`NOT_IN_CATALOG`), como a
+  tabela que não existe, e não roda. Antes, o banco a recusava pelo papel e o Registro dizia
+  **Recusada**, enquanto a conversa dizia que a tabela não está no catálogo. Agora as duas telas dizem
+  o mesmo, e a resposta não deixa saber se a tabela existe (security S10), como o lago fará. Os
+  critérios 41 e 43 dizem isso.
+- **O lugar do item.** A tela não tem um grupo Pessoas e acesso: o item fica no grupo com o nome da
+  empresa, logo depois de Papéis, como pede o critério 77. A `D2` (a) vale assim.
+- **Abrir a conversa** aparece só nas leituras de quem olha (decisão E4 (a) do G4). O passo 3 do
+  roteiro diz isso.
 
 **As decisões suas nesta etapa.** Três, respondidas por você no quadro em 2026-11-17, as três com a
 recomendação: "F1. O Construtor num Projeto lê com o papel de quem conversa: a", "F2. Quem segue uma
@@ -299,9 +313,9 @@ do G6, na de 2026-11-21; os números que sobram ficam livres para a leitura do c
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 40 | U5 | Num Projeto que recebeu `sankhya_vendas` e `sankhya_clientes`, o catálogo do Assistente e do agente salvo de Bruno lista só `sankhya_vendas`; o de Dono e Administrador lista as duas | `apps/server/src/hub/data/place-role.test.ts`, "no Projeto, o catálogo é o que o Projeto recebeu e o papel lê" | must |
-| 41 | U5 | No mesmo Projeto, `read({kind:'TABLE', table:'sankhya_clientes'})` de Bruno volta `NOT_IN_CATALOG`; a consulta `select * from sync.sankhya_clientes` volta `NOT_IN_ROLE` ou `NOT_IN_CATALOG`, sem linha | `place-role.test.ts`, "no Projeto, a tabela fora do papel é recusada" | must |
+| 41 | U5 | No mesmo Projeto, `read({kind:'TABLE', table:'sankhya_clientes'})` de Bruno volta `NOT_IN_CATALOG`; a consulta `select * from sync.sankhya_clientes` também volta `NOT_IN_CATALOG`, sem linha e sem perguntar ao banco ("1. B") | `place-role.test.ts`, "no Projeto, a tabela fora do papel é recusada" | must |
 | 42 | U5 | No Projeto, uma consulta de Bruno roda como `conexus_role_<id do papel>` (`current_user`), e uma tabela que o papel lê mas o Projeto não recebeu volta `NOT_IN_CATALOG` | `place-role.test.ts`, "no Projeto, o banco segura o papel e o Hub o lugar" | must |
-| 43 | U5 | O Builder de Carla, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes` (F1 (a)) | `place-role.test.ts`, "o Builder no Projeto segue a F1" | must |
+| 43 | U5 | O Builder de Bruno, sem o papel que lê clientes, recebe o catálogo sem `sankhya_clientes` e não a lê; o de Carla, de Financeiro, recebe `sankhya_clientes` (F1 (a)) | `place-role.test.ts`, "o Builder no Projeto segue a F1" | must |
 | 44 | U5 | O app publicado do Projeto continua lendo as duas tabelas pelo login do Projeto (a sua 3(d)) | `apps/server/src/hub/apps/app-read-place.test.ts`, "o app lê pela liberação do Projeto" | must |
 | 45 | U6 | Com um turno vinculado, `read({kind:'OPERATION'})` de uma leitura que nenhuma tabela guarda chama o sistema uma vez e volta `LIVE` com o valor; sem turno, `NOT_GRANTED`, sem chamar o sistema e com a sua linha `LIVE` | `apps/server/src/hub/data/live.test.ts`, "a leitura ao vivo pelo contrato chama o sistema com o turno" | must |
 | 46 | U6 | A leitura ao vivo pelo contrato gasta o mesmo limite de chamadas do turno que a ferramenta de hoje: na chamada além do limite volta `CALLS_SPENT`, com a sua linha `LIVE` | `live.test.ts`, "o contrato gasta o limite do turno" | must |
@@ -440,7 +454,7 @@ ou a tela aprovada que a traz (L28).
 | `live` e `funnel` ligados no contrato | U6 | `NOT_GRANTED` fixo (`apps/server/src/hub/data/public.ts:43`, `:45`); a porta do Assistente lê e escreve (`apps/server/src/hub/connectors/assistant-port.ts:295-324`) | O banco de grafos faz cada ferramenta chamar o mesmo handler da rota e testa a igualdade (lido) | nativo: a porta que já existe, desenhada na spec parte 3, 6.2 (`docs/steps/trilhas/dados-spec/03-leitura-para-analise/tasks.md:666-720`) | — | R3 "A" | `live.ts`, `funnel.ts` |
 | As leis contra a implementação real | U7 | `runDataConformance` (`packages/hub-api/src/company-data-conformance.ts:316`), `make` síncrono, só contra o mundo falso (`company-data.test.ts:211`); a porta já tem as leis (a), (b) e (e) contra o banco de teste (`apps/server/src/hub/access/conformance.test.ts`) | O banco de grafos tem o teste de paridade entre as duas portas (lido); as plataformas não têm (procurado) | embrulhado: `node:test` e as nossas leis | — | spec parte 3, grupos 5 e 6 | `apps/server/src/hub/data/conformance.test.ts` |
 | Nenhum caminho novo fora do contrato | U7 | 30 nomes em `.dependency-cruiser-migration.cjs` e `packages/app/src/connectors.ts`; a regra em `.dependency-cruiser.cjs:69` | nenhuma faz | embrulhado: `dependency-cruiser`, que o repositório já usa, e um teste que impede a lista de crescer; a regra de a lista não crescer é nossa, sem referência | — | spec parte 3, 6.1 | — |
-| Quem vê o Registro: só Dono e Administrador, em Pessoas e acesso | U8, U9 | nenhuma rota; `seeData` aberto a todo membro (`apps/server/src/hub/identity/admission.ts:104`); Papéis admite por `manageRoles` (`admission.ts:107`), e a tela esconde a seção por `needs` e responde não encontrado (`apps/web/src/routes/_app/companies/$companyId_/settings/roles.tsx:27`, `:36`) | A de ingestão registra só o que as credenciais de máquina fazem, os tokens de API e de MCP: dono e admin veem todas as linhas, o membro vê as linhas dos tokens que ele criou; a atividade das pessoas é outra tela, só de dono e admin (documentado). Nas outras referências lidas, o registro de todos é de quem administra, ou de quem ele autoriza por papel, e quem conversa com um agente vê a origem na conversa (documentado) | nativo: uma ação da tabela de admissão (`readDataReads`) e `CompanyMay`, como Papéis | — | `D1` (a) e `D2` (a) (`"D1 a D2 a"`, 2026-11-21); spec parte 4, requisito 7.2 | `apps/server/src/hub/data/reads.ts` |
+| Quem vê o Registro: só Dono e Administrador, no grupo da empresa depois de Papéis | U8, U9 | nenhuma rota; `seeData` aberto a todo membro (`apps/server/src/hub/identity/admission.ts:104`); Papéis admite por `manageRoles` (`admission.ts:107`), e a tela esconde a seção por `needs` e responde não encontrado (`apps/web/src/routes/_app/companies/$companyId_/settings/roles.tsx:27`, `:36`) | A de ingestão registra só o que as credenciais de máquina fazem, os tokens de API e de MCP: dono e admin veem todas as linhas, o membro vê as linhas dos tokens que ele criou; a atividade das pessoas é outra tela, só de dono e admin (documentado). Nas outras referências lidas, o registro de todos é de quem administra, ou de quem ele autoriza por papel, e quem conversa com um agente vê a origem na conversa (documentado) | nativo: uma ação da tabela de admissão (`readDataReads`) e `CompanyMay`, como Papéis | — | `D1` (a) e `D2` (a) (`"D1 a D2 a"`, 2026-11-21); spec parte 4, requisito 7.2 | `apps/server/src/hub/data/reads.ts` |
 | A página por chave, da mais nova | U8 | `pageOf`, `pageKey` e `after` (`apps/server/src/platform/pages.ts:12`, `:30`, `:47`), só crescente; o cursor composto de `apps/server/src/builder/automations/runs.ts:37-49` | — | nativo: a chave (hora, id) do PostgreSQL, com o índice | — | — | — |
 | A página: lista de 50, filtros, linha aberta, exportar | U9 | nenhuma; `FramedTable` (`apps/web/src/ui/table.tsx:70`), `Pager` (`ui/pager.tsx:9`), `Empty` (`ui/states.tsx:125`); a seção por `staticData.section` (`settings/route.tsx:30-45`) | A de ingestão: filtros por token, status e data, detalhe com o SQL, exportar até 31 dias por vez (visto, documentado) | nativo: as peças de `apps/web/src/ui/`; o teto de 31 dias é o da referência | o critério 82 | telas `p4-04` a `p4-06`; P3 (a), P7 (a) e P8 (2026-11-21); "Tudo A", 2026-11-17 | `apps/web/src/hub/data/data-reads.tsx` |
 | O CSV | U9 | nenhum; o único download é por `Blob` (`apps/web/src/builder/conversation/shown-file.tsx:39-48`) | A de ingestão exporta arquivo (documentado) | nativo: `Blob` e `<a download>` | o critério 80 (fórmula desarmada) | — | `apps/web/src/hub/data/csv.ts` |
