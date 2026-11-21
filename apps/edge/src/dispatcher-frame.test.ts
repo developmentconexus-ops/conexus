@@ -16,7 +16,7 @@ const IN_FRAME = { 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Site': 'cross-site' }
 const DISPATCHER_COOKIE =
   /^__Host-conexus-(binding|app)=[^;]*; Path=\/; Secure; HttpOnly; SameSite=None; Partitioned(; Max-Age=0)?$/
 
-test('cookies particionados no iframe: o vínculo, a sessão e o apagar de cada um', async () => {
+test('cookies particionados no iframe: o vínculo, a sessão e o apagar, que leva também a forma da aba', async () => {
   const first = await edge().fetch('/', { headers: IN_FRAME })
   const redeemed = await edge({
     hub: () => Response.json({ session: SESSION }, { status: 201 }),
@@ -27,8 +27,11 @@ test('cookies particionados no iframe: o vínculo, a sessão e o apagar de cada 
     headers: { ...IN_FRAME, Cookie: `__Host-conexus-app=${SESSION}` },
   })
   const cookies = [first, redeemed, expired].flatMap((response) => response.headers.getSetCookie())
-  assert.equal(cookies.length, 4)
-  for (const cookie of cookies) assert.match(cookie, DISPATCHER_COOKIE)
+  assert.equal(cookies.length, 5)
+  assert.deepEqual(
+    cookies.filter((cookie) => !DISPATCHER_COOKIE.test(cookie)),
+    ['__Host-conexus-app=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0'],
+  )
 })
 
 /** The value of the `frame-ancestors` directive, the policy's last. */
