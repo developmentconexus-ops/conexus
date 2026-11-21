@@ -26,4 +26,5 @@ Node's type stripping fails on the real code, or a library requires a build.
 
 ## State
 
-Brought. Founder, 2026-10-13: "6. A".
+Brought. Founder, 2026-10-13: "6. A". Amended by
+[0074](0074-python-for-extraction-in-apps-extraction.md): the extraction is Python.

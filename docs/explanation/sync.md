@@ -1,5 +1,10 @@
 # The Sync: the company's copies
 
+This page describes today's copy engine. Copies are moving, table by table, to each company's lake
+on AWS ([0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md)) as Singer taps
+([0071](../decisions/0071-connectors-kit-live-copies-singer.md)), and this engine leaves when the
+seventh lake stage closes ([Data track](../steps/trilhas/dados.md)).
+
 A copy is a table of a company system's rows, kept in the company's own database and refreshed on a
 schedule, so a Projeto reads it without calling the system. This page explains how the pieces work
 today. The kit's capability is in `packages/connectors/src/kernel/copy.ts`; the Hub's side is

@@ -26,4 +26,6 @@ Restore or isolation fails on Neon, or the price changes beyond the plan.
 
 ## State
 
-Brought. From the cloud study of 2026-10-09.
+Brought. From the cloud study of 2026-10-09. Amended by
+[0070](0070-copied-company-data-lives-in-a-lake-on-aws.md): Neon holds the Hub's databases and the
+apps' data; copied company data lives in the lake.
