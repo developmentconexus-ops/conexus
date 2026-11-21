@@ -2,13 +2,21 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { CopyId, DataSources } from '@conexus/hub-api'
-import { ConnectionId, ConversationId, CopyId as CopyIdSchema, Role } from '@conexus/hub-api'
+import {
+  ConnectionId,
+  ConversationId,
+  CopyId as CopyIdSchema,
+  OperationId,
+  Role,
+} from '@conexus/hub-api'
 import type { DataWorld } from '@conexus/hub-api/conformance'
+import { LAWS_AT } from '@conexus/hub-api/conformance'
 import { Failure } from '../../platform/failure.ts'
 import type { Place } from '../access/public.ts'
 import { principalFor } from '../access/public.ts'
 import { CopyDefinitionV2, TurnKey } from '../connectors/public.ts'
 import {
+  kitOf,
   linkMercadoLivre,
   linkSankhya,
   mercadoLivreServed,
@@ -25,11 +33,33 @@ import { recordedData, sourcesFor } from './public.ts'
 
 /** What Bruno's role uses of the Sankhya: two reads a copy keeps, one read no copy keeps, and the order's write. */
 const REACH = ['pedidos', 'notasFiscais', 'devolucoes', 'lancarPedido']
-/** Empresa Alfa of the Sankhya double, a whole first page: an input the kit accepts for its sales reads. */
-const ALFA = { codigoEmpresa: 1, page: 0 }
 const OUTSIDE = 'fora_do_catalogo'
 
-function planted(operation: string, input: Record<string, number>) {
+type Input = Readonly<Record<string, unknown>>
+
+/** The input a kit's probe declares for a read. */
+function probeOf(kit: ReadonlyMap<string, unknown>, operation: string): Input {
+  const input = kit.get(operation)
+  assert.ok(typeof input === 'object' && input !== null, `the kit's probe of ${operation}`)
+  return { ...input }
+}
+
+/** The Sankhya kit's probes, its sales reads chained on the `empresas` the Matriz answers Ana. */
+async function sankhyaKit(w: RolesWorld) {
+  const { on } = w
+  const ana = principalFor({
+    ...{ consumer: 'assistant', companyId: on.companyId, personId: on.anaId },
+    ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
+  })
+  const empresas = await on.hub.connectors.assistant.read(ana, {
+    ...{ connectionId: on.connectionId, operation: 'empresas' },
+    ...{ input: probeOf(kitOf('sankhya'), 'empresas'), turn: TurnKey.parse(randomUUID()) },
+  })
+  assert.ok(empresas.kind === 'OK', JSON.stringify(empresas))
+  return kitOf('sankhya', new Map([[OperationId.parse('empresas'), empresas.whole]]))
+}
+
+function planted(operation: string, input: Input) {
   return CopyDefinitionV2.parse({
     version: 2,
     source: { kind: 'OPERATION', operation, input },
@@ -129,16 +159,6 @@ async function storesOf(
   return stores
 }
 
-const SANKHYA = {
-  live: ALFA,
-  another: [
-    { ...ALFA, confirmada: true },
-    { ...ALFA, page: 1 },
-  ],
-}
-/** A Mercado Livre page both of its reads in reach accept. */
-const FIVE = { limit: 5 }
-
 /** The company's world for Bruno, in Vendas: what the laws find in his catalog, at the company or in the Projeto. */
 async function plantedWorld(t: TestContext, at: Place['kind']) {
   const ml = await mercadoLivreServed(t)
@@ -148,24 +168,31 @@ async function plantedWorld(t: TestContext, at: Place['kind']) {
   const connectors = { sankhya: REACH, 'mercado-livre': ['pedidos', 'anuncios'] }
   const reach = await call(on.hub, on.ana, 'PUT', role, { connectors })
   assert.equal(reach.statusCode, 200, reach.body)
+  const sankhya = await sankhyaKit(w)
+  const pedidos = probeOf(sankhya, 'pedidos')
   const matriz = { connector: 'sankhya', connection: on.connectionId }
-  const kept = await plantCopy(w, 'sankhya_pedidos_alfa', planted('pedidos', ALFA), matriz)
+  const kept = await plantCopy(w, 'sankhya_pedidos_alfa', planted('pedidos', pedidos), matriz)
   const whole = await plantCopy(w, 'sankhya_devolucoes', planted('devolucoes', {}), matriz)
   if (at === 'PROJECT') {
     // A Sankhya is the Projeto's alone (project_connection_one_key); a Mercado Livre store is not.
     const [lojaA, lojaB] = await storesOf(w, ml.fake)
     assert.ok(lojaA && lojaB)
     const store = { connector: 'mercado-livre', connection: lojaA }
-    const paged = await plantCopy(w, 'mercado_livre_pedidos', planted('pedidos', FIVE), store)
+    const stores = kitOf('mercado-livre')
+    const page = probeOf(stores, 'pedidos')
+    const paged = await plantCopy(w, 'mercado_livre_pedidos', planted('pedidos', page), store)
     const marked = await put(w, on.ana, w.vendas.role, [...idsOf(w, VENDAS), paged, whole])
     assert.equal(marked.statusCode, 200, marked.body)
     const released = ['sankhya_vendas', 'sankhya_clientes'].map((name) => copyOf(w.copies, name))
     await release(w, [on.connectionId, lojaA, lojaB], [...released, paged, whole])
     // Vendas reads sankhya_produtos; the Projeto did not receive it.
     const outside = 'select count(*) from sync.sankhya_produtos'
-    const another = [{ ...FIVE, status: 'paid' }, { limit: 2 }]
-    // The read no copy keeps is the stores' anuncios, which asks for a page size.
-    return { w, outside, inputs: { live: FIVE, another } }
+    const another = [
+      { ...page, status: 'paid' },
+      { ...page, limit: 2 },
+    ]
+    // The read no copy keeps is the stores' anuncios.
+    return { w, outside, inputs: { live: probeOf(stores, 'anuncios'), another } }
   }
   const marked = await put(w, on.ana, w.vendas.role, [...idsOf(w, VENDAS), kept, whole])
   assert.equal(marked.statusCode, 200, marked.body)
@@ -174,7 +201,14 @@ async function plantedWorld(t: TestContext, at: Place['kind']) {
     await client.query(`create table sync.${OUTSIDE} as select 1 as n`)
     await client.query(`grant select on sync.${OUTSIDE} to "conexus_role_${w.vendas.id}"`)
   })
-  return { w, outside: `select n from sync.${OUTSIDE}`, inputs: SANKHYA }
+  const inputs = {
+    live: probeOf(sankhya, 'notasFiscais'),
+    another: [
+      { ...pedidos, confirmada: true },
+      { ...pedidos, page: 1 },
+    ],
+  }
+  return { w, outside: `select n from sync.${OUTSIDE}`, inputs }
 }
 
 type Reached = DataWorld['reached']
@@ -274,7 +308,7 @@ export async function realWorld(t: TestContext, at: Place['kind']): Promise<Data
   const sources = watched(sourcesFor(deps, principal, context), reached, gave)
   return {
     sources,
-    data: recordedData(deps, principal, context, sources),
+    data: recordedData(deps, principal, context, sources, () => LAWS_AT),
     reads: () =>
       on.hub.test.asOwner('select * from data.data_read where company_id = $1 order by at, id', [
         on.companyId,

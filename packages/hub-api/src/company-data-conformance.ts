@@ -1,15 +1,9 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { describe, it } from 'node:test'
-import type {
-  Catalog,
-  CatalogTable,
-  CompanyData,
-  DataSources,
-  ReadRequest,
-} from './company-data.ts'
-import { ActAnswer, companyData, Described, ReadAnswer } from './company-data.ts'
-import { catalogOf, fixturesOf, keptInput, namedConnections } from './company-data-fixtures.ts'
+import type { CatalogTable, CompanyData, ReadRequest } from './company-data.ts'
+import { ActAnswer, companyData, ReadAnswer } from './company-data.ts'
+import { fixturesOf, keptInput, namedConnections } from './company-data-fixtures.ts'
 import { queryLaws } from './company-data-query-conformance.ts'
 import { recordLaws } from './company-data-record-conformance.ts'
 import { roleLaws } from './company-data-role-conformance.ts'
@@ -21,7 +15,8 @@ import { ConversationId } from './conversations.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
 
-const AT = new Date('2026-11-14T12:00:00.000Z')
+/** The clock the laws read a live answer's hour by; a world that binds its contract binds it to this. */
+export const LAWS_AT = new Date('2026-11-14T12:00:00.000Z')
 const UNKNOWN = OperationId.parse('naoDeclarada')
 const CALL = {
   thread: ConversationId.parse('00000000-0000-4000-8000-000000000001'),
@@ -42,15 +37,13 @@ function assertTable(world: DataWorld, answer: ReadAnswer, table: CatalogTable):
   assert.deepEqual(world.reached.rows, [table.name])
 }
 
-/** Each answer is the live source's, dated in ISO by whoever binds the contract. */
+/** Each answer is the live source's, dated in ISO by the laws' clock. */
 function assertLive(world: DataWorld, answers: readonly ReadAnswer[]): void {
-  assert.equal(answers.length, world.gave.live.length, 'one live read per answer')
-  for (const [index, answer] of answers.entries()) {
-    assert.ok(answer.kind === 'LIVE', JSON.stringify(answer))
-    const { at, ...rest } = answer
-    assert.equal(new Date(at).toISOString(), at)
-    assert.deepEqual(rest, { ...world.gave.live[index], kind: 'LIVE' })
-  }
+  const at = LAWS_AT.toISOString()
+  assert.deepEqual(
+    answers,
+    world.gave.live.map((gave) => ({ ...gave, kind: 'LIVE', at })),
+  )
 }
 
 async function readsOnlyLive(
@@ -261,6 +254,8 @@ const LAWS: readonly (readonly [string, Law])[] = [
   ...recordLaws,
 ]
 
+export const DATA_LAWS: readonly string[] = LAWS.map(([law]) => law)
+
 /** What every implementation of the data track's sources passes, against a fake connector or the real database; the world is made for each law. */
 export function runDataConformance(
   name: string,
@@ -271,7 +266,7 @@ export function runDataConformance(
     for (const [law, run] of LAWS)
       it(law, async (t) => {
         const world = await make(t)
-        await run(world, world.data ?? companyData({ sources: world.sources, now: () => AT }))
+        await run(world, world.data ?? companyData({ sources: world.sources, now: () => LAWS_AT }))
       })
   })
 }

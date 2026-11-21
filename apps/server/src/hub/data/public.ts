@@ -86,14 +86,15 @@ function recorded(data: CompanyData, record: RecordRead, who: Who): CompanyData 
   }
 }
 
-/** The contract over `sources`, each read recorded as `principal` asked it in `context`: the Hub's own, and the conformance world's over its watched sources. */
+/** The contract over `sources`, each read recorded as `principal` asked it in `context`: the Hub's own, and the conformance world's over its watched sources on the laws' clock. */
 export function recordedData(
   deps: DataDeps,
   principal: Principal,
   context: DataContext,
   sources: DataSources,
+  now: () => Date,
 ): CompanyData {
-  const data = companyData({ sources, now: () => new Date() })
+  const data = companyData({ sources, now })
   return recorded(data, recordReadOf(deps), whoOf(principal, context))
 }
 
@@ -102,7 +103,7 @@ export function createCompanyData(
   deps: DataDeps,
 ): (principal: Principal, context: DataContext) => CompanyData {
   return (principal, context) =>
-    recordedData(deps, principal, context, sourcesFor(deps, principal, context))
+    recordedData(deps, principal, context, sourcesFor(deps, principal, context), () => new Date())
 }
 
 function whoOf(principal: Principal, context: DataContext): Who {

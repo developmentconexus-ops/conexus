@@ -37,25 +37,36 @@ async function readsAsked(world: DataWorld): Promise<ReadRequest[]> {
   ]
 }
 
-async function recordsEveryReadOnce(world: DataWorld, data: CompanyData): Promise<void> {
+/** A string shorter than this could sit in a row's names or counts by chance. */
+const CELL_MIN = 4
+
+export async function recordsEveryReadOnce(world: DataWorld, data: CompanyData): Promise<void> {
   const asked = await readsAsked(world)
   const before = (await world.reads()).length
   await data.describe()
   assert.equal((await world.reads()).length, before, 'describe leaves no row')
-  const answers: ReadAnswer[] = []
-  for (const request of asked) answers.push(ReadAnswer.parse(await data.read(request)))
-  const rows = (await world.reads()).slice(before)
-  assert.equal(rows.length, asked.length, 'exactly one row per read')
   const named = new Set(stringsOf(asked))
-  const cells = new Set(answers.flatMap((answer) => stringsOf(broughtOf(answer))))
-  const read = [...cells].filter((cell) => !named.has(cell))
-  assert.ok(read.length > 0, 'the reads brought a value to look for')
-  for (const row of rows)
-    for (const field of stringsOf(row))
-      assert.ok(!read.includes(field), `a row holds the value ${field}`)
+  let looked = 0
+  for (const request of asked) {
+    const was = (await world.reads()).length
+    const answer = ReadAnswer.parse(await data.read(request))
+    const rows = await world.reads()
+    assert.equal(rows.length, was + 1, `${request.kind} answered ${answer.kind}: one row`)
+    const record = JSON.stringify(rows)
+    const cells = stringsOf(broughtOf(answer)).filter(
+      (cell) => cell.length >= CELL_MIN && !named.has(cell),
+    )
+    looked += cells.length
+    for (const cell of cells)
+      assert.ok(
+        !record.includes(JSON.stringify(cell).slice(1, -1)),
+        `a row holds the value ${cell}`,
+      )
+  }
+  assert.ok(looked > 0, 'the reads brought a value to look for')
 }
 
-async function returnsNothingUnrecorded(world: DataWorld, data: CompanyData): Promise<void> {
+export async function returnsNothingUnrecorded(world: DataWorld, data: CompanyData): Promise<void> {
   const asked = await readsAsked(world)
   await world.failRecord()
   for (const request of asked) {

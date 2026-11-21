@@ -5,7 +5,7 @@ import type { DataWorld } from './company-data-world.ts'
 import type { ConnectionId } from './connectors.ts'
 import { OperationId } from './tools.ts'
 
-export async function catalogOf(world: DataWorld): Promise<Catalog> {
+async function catalogOf(world: DataWorld): Promise<Catalog> {
   const described = Described.parse(await world.sources.catalog({}))
   assert.equal(described.kind, 'CATALOG')
   return described

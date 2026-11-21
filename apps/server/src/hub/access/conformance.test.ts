@@ -14,8 +14,6 @@ type Scenario = Readonly<{
   /** The context Bruno converses in, for the consumer, as the conversation tells the door. */
   context: (w: RolesWorld) => Promise<ConsumerContext>
   revokedBy: readonly ('ROLE' | 'DECLARATION')[]
-  /** Whether the role's marks alone decide his tables (Empresa) or the Projeto's release too (P1, C(b)). */
-  tablesBy: 'ROLE' | 'RELEASE'
   /** What the Registro calls the consumer (record.ts AGENT_OF). */
   agent: 'ASSISTANT' | 'BUILDER' | 'CONSTRUTOR' | 'AGENT'
 }>
@@ -48,7 +46,6 @@ const SCENARIOS = {
       choice: { kind: 'CHOSEN', connections: [w.on.connectionId] },
     }),
     revokedBy: ['ROLE'],
-    tablesBy: 'ROLE',
     agent: 'ASSISTANT',
   },
   builder: {
@@ -57,7 +54,6 @@ const SCENARIOS = {
       projectId: await released(w),
     }),
     revokedBy: ['ROLE'],
-    tablesBy: 'RELEASE',
     agent: 'BUILDER',
   },
   construtor: {
@@ -66,7 +62,6 @@ const SCENARIOS = {
       projectId: await released(w),
     }),
     revokedBy: ['ROLE'],
-    tablesBy: 'RELEASE',
     agent: 'CONSTRUTOR',
   },
   agent: {
@@ -77,7 +72,6 @@ const SCENARIOS = {
       choice: { kind: 'CHOSEN', connections: [w.on.connectionId] },
     }),
     revokedBy: ['ROLE', 'DECLARATION'],
-    tablesBy: 'RELEASE',
     agent: 'AGENT',
   },
 } satisfies Record<Consumer, Scenario>
@@ -195,28 +189,28 @@ for (const [consumer, scenario] of Object.entries(SCENARIOS)) {
   })
 
   for (const path of scenario.revokedBy) {
-    test(`lei (e) em ${consumer} (${path}): tirar pedidos muda a vista seguinte`, async (t) => {
+    test(`lei (e) em ${consumer} (${path}): tirar pedidos e a marca de vendas muda a vista seguinte`, async (t) => {
       const w = await rolesWorld(t, 'PLANTED')
       const context = await scenario.context(w)
       const before = await viewFor(w, context)
       assert.ok(names(before.list('system')).includes('pedidos'))
       assert.ok(before.list('table').some(({ name }) => name === 'sankhya_vendas'))
       const after = await revoke(w, path, context)
-      if (scenario.tablesBy === 'ROLE') {
-        const kept = VENDAS.filter((name) => name !== 'sankhya_vendas').map((name) =>
-          copyOf(w.copies, name),
-        )
-        const marked = await put(w, w.on.ana, w.vendas.role, kept)
-        assert.equal(marked.statusCode, 200, marked.body)
-      }
+      const kept = VENDAS.filter((name) => name !== 'sankhya_vendas').map((name) =>
+        copyOf(w.copies, name),
+      )
+      const marked = await put(w, w.on.ana, w.vendas.role, kept)
+      assert.equal(marked.statusCode, 200, marked.body)
       const next = await viewFor(w, after)
       assert.ok(!names(next.list('system')).includes('pedidos'))
       assert.deepEqual(next.may(operationLeaf(w.on.connectionId, 'pedidos'), 'READ'), {
         kind: 'REFUSED',
         reason: 'OUT_OF_REACH',
       })
-      const listed = next.list('table').some(({ name }) => name === 'sankhya_vendas')
-      assert.equal(listed, scenario.tablesBy === 'RELEASE')
+      assert.ok(
+        !next.list('table').some(({ name }) => name === 'sankhya_vendas'),
+        'o papel decide as tabelas em todo lugar, no Projeto também',
+      )
     })
   }
 

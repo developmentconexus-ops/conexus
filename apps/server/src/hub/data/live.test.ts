@@ -47,3 +47,12 @@ test('o contrato gasta o limite do turno', async (t) => {
   )
   assert.deepEqual(spent, [{ verb: 'LIVE', outcome: 'CALLS_SPENT', rows: null }])
 })
+
+test('a leitura ao vivo sem nada a ler volta marcada vazia pelo contrato', async (t) => {
+  const on = await turnWorld(t)
+  on.fake.switches.nothingFound = true
+  const asked = { kind: 'OPERATION', connection: on.matriz, operation: EMPRESAS, ...READ } as const
+  const live = await on.bound(on.anaTurn).read(asked)
+  assert.ok(live.kind === 'LIVE', JSON.stringify(live))
+  assert.equal(live.empty, true, 'the kit had nothing to read, and the contract says so')
+})
