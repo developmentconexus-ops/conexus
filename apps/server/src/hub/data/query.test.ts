@@ -178,7 +178,7 @@ test('a recusa inteira: o SQLSTATE e a mensagem vão ao modelo e o log não tem 
   assert.ok(!logged.includes(answer.message))
 })
 
-test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem a consulta', async (t) => {
+test('num Projeto, a tabela que o papel lê e o Projeto não recebeu dá NOT_IN_CATALOG e o log não tem a consulta', async (t) => {
   const { on, sellers } = await withCopies(t)
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
@@ -188,7 +188,7 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     thread: null,
   })
   const sql = 'select * from sync.sankhya_vendas'
-  assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_ROLE' })
+  assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_CATALOG' })
   const granted = queryOf(
     await project.read({ kind: 'QUERY', sql: 'select * from sync.sankhya_vendedores limit 1' }),
   )
@@ -196,8 +196,6 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     granted.tables.map(({ table }) => table),
     ['sankhya_vendedores'],
   )
-  const line = on.hub.lines.find(({ message }) => message === 'DATA_READ_REFUSED')
-  assert.ok(line)
   assert.ok(!JSON.stringify(on.hub.lines).includes(sql))
 })
 

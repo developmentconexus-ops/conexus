@@ -52,7 +52,6 @@ function unrecordedData(w: RolesWorld, silent: Awaited<ReturnType<typeof unreach
     ...{ database, identity: on.hub.identity, log: logOf(on) },
     access: createAccess({ database: on.hub.test.database, identity: on.hub.identity, sources }),
     ...{ copies: () => on.hub.copies.data, projects: on.hub.projects.ports },
-    ...{ companyPostgres: on.hub.postgres.companyPostgres, neon: on.hub.neon.neon },
   })
 }
 
@@ -117,7 +116,6 @@ test('cada recusa deixa uma linha sem contagem', async (t) => {
       sources,
     }),
     ...{ copies: () => w.on.hub.copies.data, projects: w.on.hub.projects.ports },
-    ...{ companyPostgres: w.on.hub.postgres.companyPostgres, neon: w.on.hub.neon.neon },
   })
   const scope = readerAt({
     companyId: w.on.companyId,

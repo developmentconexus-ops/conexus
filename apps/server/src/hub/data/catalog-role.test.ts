@@ -7,7 +7,7 @@ import type { Place, Principal } from '../access/public.ts'
 import { readerAt, versionAt } from '../access/test-principal.ts'
 import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync } from '../copies/test-copies.ts'
-import { copyOf, logged, rolesWorld, roleTables, VENDAS } from '../copies/test-readers.ts'
+import { logged, rolesWorld, roleTables, VENDAS } from '../copies/test-readers.ts'
 import { call, memberOn, post } from '../identity/test-hub.ts'
 
 const BIA = { name: 'Bia Reis', email: 'bia@example.test' }
@@ -149,24 +149,6 @@ test('o dono lê tudo com conexus_read', async (t) => {
     ])
     assert.ok(rowsOf(await inCompany(w.on, person).read({ kind: 'QUERY', sql: JOIN })).length > 0)
   }
-})
-
-test('no Projeto, o catálogo traz as cópias liberadas e o login é o do Projeto', async (t) => {
-  const w = await rolesWorld(t, 'PLANTED')
-  for (const name of ['sankhya_vendas', 'sankhya_clientes']) {
-    await w.on.copies.grant({
-      ...{ companyId: w.on.companyId, personId: w.on.anaId },
-      ...{ projectId: w.on.projectId, copyId: copyOf(w.copies, name) },
-    })
-  }
-  const place = { kind: 'PROJECT', projectId: w.on.projectId } as const
-  assert.deepEqual(await tablesOf(w.on, w.brunoId, place), ['sankhya_clientes', 'sankhya_vendas'])
-  const asked = loginsAsked(t, w.on)
-  const project = w.on.hub.data(scopeOf(w.on, w.brunoId, place), { thread: null })
-  rowsOf(await project.read({ kind: 'QUERY', sql: JOIN }))
-  const host = new URL(w.on.owner.reveal()).hostname
-  const login = await w.on.hub.postgres.companyPostgres.readAddress(host, w.on.projectId)
-  assert.deepEqual(asked(), [new URL(login.reveal()).username])
 })
 
 test('decisão D: o nome de sync em pg_class fica atrás do plano, e as linhas atrás do papel', async (t) => {

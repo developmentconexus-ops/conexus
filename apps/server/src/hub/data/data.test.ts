@@ -197,9 +197,7 @@ test('o Hub calado dá CATALOG_UNAVAILABLE', async (t) => {
       access: createAccess({ database, identity: on.hub.identity, sources }),
     },
     ...{ copies: () => on.hub.copies.data, log: logOf(on) },
-    ...{ projects: on.hub.projects.ports, companyPostgres: on.hub.postgres.companyPostgres },
-    neon: on.hub.neon.neon,
-    database,
+    ...{ projects: on.hub.projects.ports, database },
   })
   const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' }), {
     thread: null,

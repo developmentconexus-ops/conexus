@@ -19,9 +19,12 @@ import type { CopiesDeps } from './store.ts'
 import { companyScope, parsedCopy, shownOf } from './store.ts'
 import { copy } from './tables.ts'
 
-type Place = 'ALL' | { projectId: ProjectId } | { copies: readonly CopyId[] }
+type Place =
+  | 'ALL'
+  | { projectId: ProjectId; reads: 'ALL' | readonly CopyId[] }
+  | { copies: readonly CopyId[] }
 
-/** Every copy of the company, the ones a Projeto has released, or the ones named, with its stored definition. */
+/** Every copy of the company, the ones a Projeto has released among those read, or the ones named, with its stored definition. */
 async function copiesOf(tx: ReadTx, companyId: CompanyId, only: Place) {
   if (only === 'ALL') {
     const rows = await tx
@@ -33,7 +36,12 @@ async function copiesOf(tx: ReadTx, companyId: CompanyId, only: Place) {
   }
   if ('projectId' in only) {
     const rows = await projectCopyRows(tx, { companyId, projectId: only.projectId })
-    return rows.filter(({ granted }) => granted).map(({ copy: stored }) => stored)
+    const { reads } = only
+    return rows
+      .filter(
+        ({ granted, copy: stored }) => granted && (reads === 'ALL' || reads.includes(stored.id)),
+      )
+      .map(({ copy: stored }) => stored)
   }
   if (only.copies.length === 0) return []
   const rows = await tx
