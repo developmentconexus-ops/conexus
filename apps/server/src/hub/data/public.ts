@@ -7,18 +7,27 @@ import type {
   ReadRequest,
 } from '@conexus/hub-api'
 import { companyData } from '@conexus/hub-api'
+import type { FastifyInstance } from 'fastify'
 import type { Principal } from '../access/public.ts'
 import { catalogOf } from './catalog.ts'
 import type { DataDeps, TurnBinding } from './deps.ts'
 import { funnelOf } from './funnel.ts'
 import { liveOf } from './live.ts'
 import { queryOf } from './query.ts'
+import type { ReadsDeps } from './reads.ts'
 import type { ReadEntry, RecordRead, Who } from './record.ts'
 import { recordReadOf } from './record.ts'
+import { registerDataReadRoutes } from './routes.ts'
 import { rowsOf } from './rows.ts'
 
 export type { DataDeps, TurnBinding } from './deps.ts'
+export type { ReadsDeps } from './reads.ts'
 export { recordReadOf as recordRead } from './record.ts'
+
+/** The Registro de dados on the screens' routes (U8). */
+export function createDataReads(deps: ReadsDeps) {
+  return { routes: (app: FastifyInstance) => registerDataReadRoutes(app, deps) }
+}
 
 export type DataContext = Readonly<{
   /** The conversation the run belongs to; none in the Construtor's test of a draft. */

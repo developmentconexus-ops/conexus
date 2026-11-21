@@ -37,6 +37,7 @@ import { Route as AppCompaniesCompanyIdProjectsProjectIdRouteImport } from './ro
 import { Route as AppCompaniesCompanyIdSettingsIndexRouteImport } from './routes/_app/companies/$companyId_/settings/index.tsx'
 import { Route as AppCompaniesCompanyIdSettingsAccountRouteImport } from './routes/_app/companies/$companyId_/settings/account.tsx'
 import { Route as AppCompaniesCompanyIdSettingsCompanyMemoryRouteImport } from './routes/_app/companies/$companyId_/settings/company-memory.tsx'
+import { Route as AppCompaniesCompanyIdSettingsDataReadsRouteImport } from './routes/_app/companies/$companyId_/settings/data-reads.tsx'
 import { Route as AppCompaniesCompanyIdSettingsDefaultsRouteImport } from './routes/_app/companies/$companyId_/settings/defaults.tsx'
 import { Route as AppCompaniesCompanyIdSettingsGeneralRouteImport } from './routes/_app/companies/$companyId_/settings/general.tsx'
 import { Route as AppCompaniesCompanyIdSettingsModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/model-accounts.tsx'
@@ -257,6 +258,12 @@ const AppCompaniesCompanyIdSettingsCompanyMemoryRoute =
   AppCompaniesCompanyIdSettingsCompanyMemoryRouteImport.update({
     id: '/company-memory',
     path: '/company-memory',
+    getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
+  } as any)
+const AppCompaniesCompanyIdSettingsDataReadsRoute =
+  AppCompaniesCompanyIdSettingsDataReadsRouteImport.update({
+    id: '/data-reads',
+    path: '/data-reads',
     getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
   } as any)
 const AppCompaniesCompanyIdSettingsDefaultsRoute =
@@ -483,6 +490,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/companies/$companyId/settings/company-memory': typeof AppCompaniesCompanyIdSettingsCompanyMemoryRoute
+  '/companies/$companyId/settings/data-reads': typeof AppCompaniesCompanyIdSettingsDataReadsRoute
   '/companies/$companyId/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
@@ -543,6 +551,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/integrations/$connectionId': typeof AppCompaniesCompanyIdIntegrationsConnectionIdRoute
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/companies/$companyId/settings/company-memory': typeof AppCompaniesCompanyIdSettingsCompanyMemoryRoute
+  '/companies/$companyId/settings/data-reads': typeof AppCompaniesCompanyIdSettingsDataReadsRoute
   '/companies/$companyId/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
@@ -610,6 +619,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/_app/companies/$companyId_/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/_app/companies/$companyId_/settings/company-memory': typeof AppCompaniesCompanyIdSettingsCompanyMemoryRoute
+  '/_app/companies/$companyId_/settings/data-reads': typeof AppCompaniesCompanyIdSettingsDataReadsRoute
   '/_app/companies/$companyId_/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/_app/companies/$companyId_/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/_app/companies/$companyId_/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
@@ -677,6 +687,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/$projectId'
     | '/companies/$companyId/settings/account'
     | '/companies/$companyId/settings/company-memory'
+    | '/companies/$companyId/settings/data-reads'
     | '/companies/$companyId/settings/defaults'
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
@@ -737,6 +748,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/integrations/$connectionId'
     | '/companies/$companyId/settings/account'
     | '/companies/$companyId/settings/company-memory'
+    | '/companies/$companyId/settings/data-reads'
     | '/companies/$companyId/settings/defaults'
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
@@ -803,6 +815,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/$projectId'
     | '/_app/companies/$companyId_/settings/account'
     | '/_app/companies/$companyId_/settings/company-memory'
+    | '/_app/companies/$companyId_/settings/data-reads'
     | '/_app/companies/$companyId_/settings/defaults'
     | '/_app/companies/$companyId_/settings/general'
     | '/_app/companies/$companyId_/settings/model-accounts'
@@ -1086,6 +1099,13 @@ declare module '@tanstack/react-router' {
       path: '/company-memory'
       fullPath: '/companies/$companyId/settings/company-memory'
       preLoaderRoute: typeof AppCompaniesCompanyIdSettingsCompanyMemoryRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
+    }
+    '/_app/companies/$companyId_/settings/data-reads': {
+      id: '/_app/companies/$companyId_/settings/data-reads'
+      path: '/data-reads'
+      fullPath: '/companies/$companyId/settings/data-reads'
+      preLoaderRoute: typeof AppCompaniesCompanyIdSettingsDataReadsRouteImport
       parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
     }
     '/_app/companies/$companyId_/settings/defaults': {
@@ -1471,6 +1491,7 @@ const AppCompaniesCompanyIdRouteRouteWithChildren =
 interface AppCompaniesCompanyIdSettingsRouteRouteChildren {
   AppCompaniesCompanyIdSettingsAccountRoute: typeof AppCompaniesCompanyIdSettingsAccountRoute
   AppCompaniesCompanyIdSettingsCompanyMemoryRoute: typeof AppCompaniesCompanyIdSettingsCompanyMemoryRoute
+  AppCompaniesCompanyIdSettingsDataReadsRoute: typeof AppCompaniesCompanyIdSettingsDataReadsRoute
   AppCompaniesCompanyIdSettingsDefaultsRoute: typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   AppCompaniesCompanyIdSettingsGeneralRoute: typeof AppCompaniesCompanyIdSettingsGeneralRoute
   AppCompaniesCompanyIdSettingsModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
@@ -1487,6 +1508,8 @@ const AppCompaniesCompanyIdSettingsRouteRouteChildren: AppCompaniesCompanyIdSett
       AppCompaniesCompanyIdSettingsAccountRoute,
     AppCompaniesCompanyIdSettingsCompanyMemoryRoute:
       AppCompaniesCompanyIdSettingsCompanyMemoryRoute,
+    AppCompaniesCompanyIdSettingsDataReadsRoute:
+      AppCompaniesCompanyIdSettingsDataReadsRoute,
     AppCompaniesCompanyIdSettingsDefaultsRoute:
       AppCompaniesCompanyIdSettingsDefaultsRoute,
     AppCompaniesCompanyIdSettingsGeneralRoute:

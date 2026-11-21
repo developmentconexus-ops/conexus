@@ -30,6 +30,7 @@
     "apps/server/src/hub/data/live.test.ts",
     "apps/server/src/hub/data/place-role.test.ts",
     "apps/server/src/hub/data/record.test.ts",
+    "apps/server/src/hub/data/reads.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
     "apps/server/src/platform/copy-role-races.test.ts",

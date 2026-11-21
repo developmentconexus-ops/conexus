@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { DownloadIcon, XIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { saveBlob } from '../../platform/download.ts'
 import { failureOf, hubClientFetch, sentenceOf, sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -33,19 +34,9 @@ async function whyNot(url: string): Promise<void> {
   await readFile(url)
 }
 
-/** How long the saved file's address lives: Firefox reads the blob after the click returns. */
-const REVOKE_AFTER_MS = 40_000
-
 /** Saves the file the route answers: the bytes become a blob that an `<a download>` saves. */
 async function save(file: { url: string; name: string }): Promise<void> {
-  const href = URL.createObjectURL(await (await readFile(file.url)).blob())
-  const link = document.createElement('a')
-  link.href = href
-  link.download = file.name
-  document.body.append(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(href), REVOKE_AFTER_MS)
+  saveBlob(await (await readFile(file.url)).blob(), file.name)
 }
 
 type PictureState = 'LOADING' | 'DRAWN' | 'FAILED'

@@ -28,7 +28,7 @@ import {
 } from './text.ts'
 
 /** A copy's query in mono, a line at a time, scrolling inside its box (the detail and the dialog). */
-function QueryBlock({ query }: { query: string }) {
+export function QueryBlock({ query }: { query: string }) {
   return (
     <CodeBlock>
       <CodeBlockContent>

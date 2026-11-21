@@ -1,7 +1,7 @@
 import type { Next } from '@conexus/hub-api'
 import { PAGE_SIZE } from '@conexus/hub-api'
 import type { SQL, SQLWrapper } from 'drizzle-orm'
-import { gt } from 'drizzle-orm'
+import { gt, lt } from 'drizzle-orm'
 import type { z } from 'zod'
 import { Failure } from './failure.ts'
 
@@ -41,13 +41,16 @@ export function pageKey<Id extends z.ZodType<string, string>>(
 }
 
 /**
- * Rows ordered after the one `id` names, whose order key `anchor` selects; every row on no id. The
- * caller's `(a, b)` is SQL because the builder has no row value (boundaries).
+ * Rows ordered after the one `id` names, whose order key `anchor` selects, in the list's direction
+ * (a newest-first list goes `DESC`); every row on no id. The caller's `(a, b)` is SQL because the
+ * builder has no row value (boundaries).
  */
 export function after(
   order: SQL,
   id: string | undefined,
   anchor: (id: string) => SQLWrapper,
+  direction: 'ASC' | 'DESC' = 'ASC',
 ): SQL | undefined {
-  return id === undefined ? undefined : gt(order, anchor(id))
+  if (id === undefined) return undefined
+  return direction === 'ASC' ? gt(order, anchor(id)) : lt(order, anchor(id))
 }

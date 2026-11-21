@@ -1,3 +1,4 @@
+import { DATA_READ_AGENTS, DATA_READ_VERBS } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -16,8 +17,6 @@ import { company } from '../identity/public-tables.ts'
 // The data trail's own schema in the Hub's database: the record of each read of a company's data.
 export const data = pgSchema('data')
 
-export const DATA_READ_AGENTS = ['ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP'] as const
-export const DATA_READ_VERBS = ['SAMPLE', 'QUERY', 'LIVE'] as const
 export const DATA_READ_QUERY_MAX = 4000
 
 function listed(values: readonly string[]) {
@@ -59,7 +58,18 @@ export const dataRead = data.table(
       columns: [table.companyId],
       foreignColumns: [company.id],
     }).onDelete('cascade'),
-    index('data_read_company_at_idx').on(table.companyId, table.at),
+    // The Registro's page, newest first, and its cut by person (R.11).
+    index('data_read_company_newest_idx').on(
+      table.companyId,
+      table.at.desc().nullsFirst(),
+      table.id.desc().nullsFirst(),
+    ),
+    index('data_read_person_newest_idx').on(
+      table.companyId,
+      table.personId,
+      table.at.desc().nullsFirst(),
+      table.id.desc().nullsFirst(),
+    ),
     check('data_read_agent', sql`${table.agent} in (${listed(DATA_READ_AGENTS)})`),
     check('data_read_verb', sql`${table.verb} in (${listed(DATA_READ_VERBS)})`),
     check(
