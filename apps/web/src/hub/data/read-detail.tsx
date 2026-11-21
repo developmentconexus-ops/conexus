@@ -127,7 +127,7 @@ export function readTitle(read: DataReadEntry, now: Date): string {
  */
 export function ReadDetail(props: Opened & { names: ReadNames }) {
   const { read, names, viewer } = props
-  const live = read.connection !== null
+  const live = read.verb === 'LIVE'
   return (
     <dl className="flex flex-col gap-lg">
       <Fact term="Quem">{read.person.name}</Fact>

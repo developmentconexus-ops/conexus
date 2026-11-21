@@ -26,12 +26,6 @@ function midnightOf(day: string, after = 0): Date {
   return new Date(year, month - 1, date + after)
 }
 
-/**
- * Chromium's own calendar button is a Tab stop inside a date field, where the field stops matching
- * `:focus-visible` and `:focus`; the field keeps its focus halo while any part of it holds focus (design V28).
- */
-const DATE_FOCUS = 'focus-within:outline-transparent focus-within:focus-field'
-
 /** The last day of the 31 the export may take from `from`, and the first it may take up to `to`. */
 const SPAN = DATA_READS_EXPORT_DAYS - 1
 
@@ -88,7 +82,6 @@ export function ExportReads(props: {
             <Input
               id="export-from"
               type="date"
-              className={DATE_FOCUS}
               value={from}
               min={dayOf(midnightOf(to, -SPAN))}
               max={to}
@@ -100,7 +93,6 @@ export function ExportReads(props: {
             <Input
               id="export-to"
               type="date"
-              className={DATE_FOCUS}
               value={to}
               min={from}
               max={dayOf(midnightOf(from, SPAN))}

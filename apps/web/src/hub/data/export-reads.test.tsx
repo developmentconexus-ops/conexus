@@ -94,3 +94,32 @@ test('Exportar com o Hub calado diz a frase do Hub ao lado do botão', async () 
   expect(await dialog.findByRole('alert')).toBeTruthy()
   expect(dialog.getByRole('alert').textContent).toMatch(/banco do Conexus/)
 })
+
+test('Exportar pendente: "Exportando…" no botão desligado, e um pedido só', async () => {
+  savedFiles()
+  let release: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let asked = 0
+  readsHub({ as: 'owner', reads: () => [read()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/data-reads/export`, async () => {
+      asked += 1
+      await held
+      return HttpResponse.json(
+        exportDataReads.success.body.parse({ reads: [read()], complete: true }),
+      )
+    }),
+  )
+  openReads()
+  fireEvent.click(await screen.findByRole('button', { name: 'Exportar' }))
+  const dialog = within(await screen.findByRole('dialog', { name: 'Exportar' }))
+  fireEvent.click(dialog.getByRole('button', { name: 'Exportar' }))
+  const pending = await dialog.findByRole('button', { name: 'Exportando…' })
+  expect(pending.hasAttribute('disabled')).toBe(true)
+  fireEvent.click(pending)
+  release()
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(asked).toBe(1)
+})

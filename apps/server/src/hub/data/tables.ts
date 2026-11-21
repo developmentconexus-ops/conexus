@@ -1,3 +1,4 @@
+import { DATA_READ_AGENTS, DATA_READ_VERBS } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   check,
@@ -16,8 +17,6 @@ import { company } from '../identity/public-tables.ts'
 // The data trail's own schema in the Hub's database: the record of each read of a company's data.
 export const data = pgSchema('data')
 
-export const DATA_READ_AGENTS = ['ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP'] as const
-export const DATA_READ_VERBS = ['SAMPLE', 'QUERY', 'LIVE'] as const
 export const DATA_READ_QUERY_MAX = 4000
 
 function listed(values: readonly string[]) {

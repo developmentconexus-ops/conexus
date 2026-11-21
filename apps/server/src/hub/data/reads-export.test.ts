@@ -39,6 +39,23 @@ test('a exportação leva no máximo 31 dias', async (t) => {
   assert.deepEqual(before.json(), { reads: [], complete: true })
 })
 
+test('o período é meio aberto: a leitura no instante de "até" fica para a exportação seguinte', async (t) => {
+  const w = await registry(t)
+  await sampled(w, w.ana)
+  const midnight = '2026-11-01T03:00:00.000Z'
+  await w.hub.test.asOwner('update data.data_read set at = $2 where company_id = $1', [
+    w.companyId,
+    midnight,
+  ])
+  const at = Date.parse(midnight)
+  async function countIn(from: number, to: number) {
+    const answer = await call(w.hub, w.ana, 'GET', exportUrl(w, iso(from), iso(to)))
+    return Object(answer.json()).reads.length
+  }
+  assert.equal(await countIn(at - DAY_MS, at), 0)
+  assert.equal(await countIn(at, at + DAY_MS), 1)
+})
+
 test('a exportação para em 5.000', async (t) => {
   const w = await registry(t)
   for (let batch = 0; batch < 50; batch += 1) {

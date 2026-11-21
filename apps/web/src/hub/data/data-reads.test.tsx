@@ -1,8 +1,9 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
-import { BRUNO, MATRIZ, openReads, RESUMO, read, readsHub, THREAD } from './test-hub.tsx'
+import { BRUNO, MATRIZ, openReads, RESUMO, read, readsHub, server, THREAD } from './test-hub.tsx'
 
 // Configurações, Registro de dados (`p4-04` a `p4-06`): only an owner or an administrator (D1 (a)).
 
@@ -65,7 +66,8 @@ test('a lista e o filtro no endereço', async () => {
     }),
   ]
   readsHub({ as: 'owner', reads: () => reads, asked })
-  const { router } = openReads()
+  // A filter changed on the second page goes back to the first (web W18).
+  const { router } = openReads('?page=abc')
   await screen.findByRole('table', { name: 'Registro de dados' })
   const rows = rowTexts().map(([_, ...cells]) => cells)
   expect(rows).toEqual([
@@ -160,5 +162,24 @@ test('os três estados: vazio, filtrado sem nada e o Hub calado', async () => {
   expect(await screen.findByText('Não deu para ler o registro agora.')).toBeTruthy()
   silent = false
   fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  expect(await screen.findByRole('table', { name: 'Registro de dados' })).toBeTruthy()
+})
+
+test('carregando: o quadro fica e as linhas são esqueletos', async () => {
+  let answer: (reads: ReturnType<typeof read>[]) => void = () => undefined
+  const held = new Promise<ReturnType<typeof read>[]>((resolve) => {
+    answer = resolve
+  })
+  readsHub({ as: 'owner' })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/data-reads`, async () =>
+      HttpResponse.json({ reads: await held, next: { kind: 'END' } }),
+    ),
+  )
+  openReads()
+  const waiting = await screen.findByRole('status', { name: 'Carregando' })
+  expect(waiting.querySelectorAll('[data-slot=skeleton]')).toHaveLength(6)
+  expect(screen.getByRole('navigation', { name: 'Navegação' })).toBeTruthy()
+  answer([read()])
   expect(await screen.findByRole('table', { name: 'Registro de dados' })).toBeTruthy()
 })

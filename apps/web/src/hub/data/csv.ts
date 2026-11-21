@@ -1,4 +1,5 @@
 import type { DataReadEntry } from '@conexus/hub-api'
+import { saveBlob } from '../../platform/download.ts'
 import type { ReadNames } from './text.ts'
 import { agentOf, placeOf, resultWord, whatOf } from './text.ts'
 
@@ -49,17 +50,7 @@ export function readsCsv(reads: readonly DataReadEntry[], names: ReadNames): str
   return `﻿${text}\r\n`
 }
 
-/** How long the file's address lives: Firefox reads the blob after the click returns. */
-const REVOKE_AFTER_MS = 40_000
-
-/** Saves the text as a file through a blob that an `<a download>` saves. */
+/** Saves the text as a CSV file. */
 export function saveCsv(text: string, name: string): void {
-  const href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }))
-  const link = document.createElement('a')
-  link.href = href
-  link.download = name
-  document.body.append(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(href), REVOKE_AFTER_MS)
+  saveBlob(new Blob([text], { type: 'text/csv;charset=utf-8' }), name)
 }

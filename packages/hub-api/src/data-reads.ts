@@ -8,7 +8,10 @@ import { ProjectId } from './library-ids.ts'
 import { defineOperation } from './operation.ts'
 import { OperationId } from './tools.ts'
 
-export const DataReadAgent = z.enum(['ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP'])
+/** The agents and the verbs of a read: the contract's, which the Hub's table checks too (code C26). */
+export const DATA_READ_AGENTS = ['ASSISTANT', 'BUILDER', 'CONSTRUTOR', 'AGENT', 'APP'] as const
+export const DATA_READ_VERBS = ['SAMPLE', 'QUERY', 'LIVE'] as const
+export const DataReadAgent = z.enum(DATA_READ_AGENTS)
 export type DataReadAgent = z.infer<typeof DataReadAgent>
 
 /** The word a read's outcome takes on the screen and in the filter (founder, P3 (a)). */
@@ -55,7 +58,7 @@ export const DataReadEntry = z.object({
   project: z.object({ id: ProjectId, name: z.string().nullable() }).nullable(),
   agentId: AgentId.nullable(),
   threadId: ConversationId.nullable(),
-  verb: z.enum(['SAMPLE', 'QUERY', 'LIVE']),
+  verb: z.enum(DATA_READ_VERBS),
   tables: z.array(z.string()),
   connection: ConnectionId.nullable(),
   operation: OperationId.nullable(),

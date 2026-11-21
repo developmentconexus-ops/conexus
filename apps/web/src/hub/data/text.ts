@@ -91,9 +91,9 @@ export function agentOf(read: DataReadEntry, names: ReadNames): string {
 
 /** What was read: the tables, a live read's connection and operation, or a query that named none. */
 export function whatOf(read: DataReadEntry, names: ReadNames): string {
-  if (read.connection !== null) {
-    const connection = names.connection(read.connection) ?? CONNECTION_GONE
-    return `${connection} · ${read.operation ?? ''}`
+  if (read.verb === 'LIVE') {
+    const named = read.connection === null ? undefined : names.connection(read.connection)
+    return `${named ?? CONNECTION_GONE} · ${read.operation ?? ''}`
   }
   return read.tables.length > 0 ? read.tables.join(', ') : A_QUERY
 }

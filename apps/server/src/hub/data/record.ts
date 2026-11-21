@@ -4,6 +4,7 @@ import type {
   CompanyId,
   ConnectionId,
   ConversationId,
+  DataReadAgent,
   DataReadFilters,
   DataReadResult,
   OperationId,
@@ -16,9 +17,9 @@ import { and, arrayContains, desc, eq, gte, inArray, lt, notInArray, sql } from 
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { after } from '../../platform/pages.ts'
 import type { Consumer } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
-import type { DATA_READ_AGENTS } from './tables.ts'
 import { dataRead } from './tables.ts'
 
 const DataReadId = z.uuid().brand('DataReadId')
@@ -67,8 +68,6 @@ export type ReadEntry = Who &
 
 type Recorded = 'RECORDED' | 'UNRECORDED'
 export type RecordRead = (entry: ReadEntry) => Promise<Recorded>
-
-type DataReadAgent = (typeof DATA_READ_AGENTS)[number]
 
 const AGENT_OF = {
   assistant: 'ASSISTANT',
@@ -153,17 +152,17 @@ export function pageOfReads(
     limit: number
   },
 ): Promise<StoredRead[]> {
-  const { companyId, after } = input
-  const anchor =
-    after === undefined
-      ? undefined
-      : lt(
-          sql`(${dataRead.at}, ${dataRead.id})`,
-          tx
-            .select({ at: dataRead.at, id: dataRead.id })
-            .from(dataRead)
-            .where(and(eq(dataRead.id, after), eq(dataRead.companyId, companyId))),
-        )
+  const { companyId } = input
+  const anchor = after(
+    sql`(${dataRead.at}, ${dataRead.id})`,
+    input.after,
+    (id) =>
+      tx
+        .select({ at: dataRead.at, id: dataRead.id })
+        .from(dataRead)
+        .where(and(eq(dataRead.id, id), eq(dataRead.companyId, companyId))),
+    'DESC',
+  )
   return tx
     .select()
     .from(dataRead)

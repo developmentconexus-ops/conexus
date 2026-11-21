@@ -12,6 +12,7 @@ import {
 } from '@conexus/hub-api'
 import type { Person } from '../identity/test-hub.ts'
 import { call, plantCompany, post } from '../identity/test-hub.ts'
+import type { Registry } from './test-reads.ts'
 import {
   exportUrl,
   idsNewestFirst,
@@ -39,15 +40,34 @@ test('o dono lê todas, por página, sem repetir', async (t) => {
         (select id from data.data_read where company_id = $1 order by at limit 10)`,
     [w.companyId],
   )
+  await assertBothPages(w)
+})
+
+/** The two pages of 52 reads, 50 and 2, in the order the database gives by hour and then by id. */
+async function assertBothPages(w: Registry) {
   const one = await listed(w.hub, w.ana, url(w))
   assert.equal(one.reads.length, 50)
-  assert.equal(one.next.kind, 'MORE')
   assert.ok(one.next.kind === 'MORE')
   const two = await listed(w.hub, w.ana, url(w, `?page=${one.next.page}`))
   assert.deepEqual(two.next, { kind: 'END' })
   const seen = [...one.reads, ...two.reads].map((read) => read.id)
   assert.deepEqual(seen, await idsNewestFirst(w))
   assert.equal(new Set(seen).size, 52)
+}
+
+test('sem os índices, a mesma hora segue pelo id, de uma página à outra', async (t) => {
+  const w = await registry(t)
+  for (let n = 0; n < 52; n += 1) await sampled(w, w.bruno)
+  // Without the two indexes the plan sorts the rows itself: only the id can order a tie (R.11).
+  await w.hub.test.asOwner(
+    'drop index data.data_read_company_newest_idx; drop index data.data_read_person_newest_idx',
+  )
+  await w.hub.test.asOwner(
+    `update data.data_read set at = (select max(at) from data.data_read where company_id = $1)
+      where company_id = $1`,
+    [w.companyId],
+  )
+  await assertBothPages(w)
 })
 
 test('só Dono e Administrador leem o Registro', async (t) => {
