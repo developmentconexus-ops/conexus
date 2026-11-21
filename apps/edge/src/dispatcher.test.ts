@@ -5,6 +5,8 @@ import { serveApp } from '@conexus/app-contract'
 import { BINDING, CODE, EXAMPLE_CALL, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
 
 const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax'
+const PARTITIONED_DELETED =
+  '__Host-conexus-app=; Path=/; Secure; HttpOnly; SameSite=None; Partitioned; Max-Age=0'
 const HUB = 'https://hub.conexus.fun'
 const HUB_OPEN = `${HUB}/apps/open`
 
@@ -41,7 +43,7 @@ test('primeira visita com vínculo: o mesmo, sem cookie novo', async () => {
   assert.equal(hashOf(BINDING), '8BtXImJhrjdWuTk24cTmuEn5pbCTP6O5GEO_QZW52WQ')
 })
 
-test('passagem certa: sessão, vínculo mantido para a passagem da outra aba e 303 à entrada com o hash da sessão', async () => {
+test('passagem certa: a forma particionada antiga apagada, sessão, vínculo mantido e 303 à entrada com o hash da sessão', async () => {
   const door = edge({ hub: () => Response.json({ session: SESSION }, { status: 201 }) })
   const response = await door.fetch(`/__conexus/passagem?code=${CODE}`, {
     headers: { Cookie: `__Host-conexus-binding=${BINDING}` },
@@ -49,6 +51,7 @@ test('passagem certa: sessão, vínculo mantido para a passagem da outra aba e 3
   assert.equal(response.status, 303)
   assert.equal(response.headers.get('Location'), `/__conexus/entrada?sessao=${hashOf(SESSION)}`)
   assert.deepEqual(response.headers.getSetCookie(), [
+    PARTITIONED_DELETED,
     `__Host-conexus-app=${SESSION}; ${COOKIE_ATTRIBUTES}`,
   ])
   const [call] = door.hubCalls
@@ -81,7 +84,7 @@ test('passagem sem vínculo ou sem código: 403, sem perguntar ao Hub', async ()
   assert.equal(door.hubCalls.length, 0)
 })
 
-test('sessão que o Hub não aceita (401): apagada, e de volta ao Hub', async () => {
+test('sessão que o Hub não aceita (401): apagada nas duas formas, e de volta ao Hub', async () => {
   const door = edge({ hub: () => problem('APP_SESSION_INVALID') })
   const response = await door.fetch('/', {
     headers: { Cookie: `__Host-conexus-app=${SESSION}; __Host-conexus-binding=${BINDING}` },
@@ -92,6 +95,7 @@ test('sessão que o Hub não aceita (401): apagada, e de volta ao Hub', async ()
     `${HUB_OPEN}?host=${HOST}&binding=${hashOf(BINDING)}`,
   )
   assert.deepEqual(response.headers.getSetCookie(), [
+    PARTITIONED_DELETED,
     `__Host-conexus-app=; ${COOKIE_ATTRIBUTES}; Max-Age=0`,
   ])
   assert.equal(door.appCalls.length, 0)
