@@ -1,5 +1,7 @@
 # Plano de implementação: parte 2, o conector, com a entrada conversada
 
+**Emenda de 2026-11-21: a marca "só ao vivo" sai.** Vale a nota no topo de [requirements.md](requirements.md); o que este arquivo diz da marca `liveOnly` e da lei que a confere não vale.
+
 ## Visão geral
 
 O plano tem nove grupos, cada um um PR com uma rodada de CI. Os grupos 1 a 6 são o bloco A e podem começar agora, salvo as esperas marcadas no título. Os grupos 7 a 9 são o bloco B, os primeiros sistemas comuns pelo login do kit (decisão do fundador, P3 do índice, registro 0069): os grupos 7 e 8 podem começar agora e fecham com o dublê na forma da referência, e só o grupo 9, a gravação dos corpos reais, espera dois atos do fundador, o app de login em cada sistema e uma conta de teste de cada um. O marco `D1` fecha depois do grupo 9. O bloco C não vira grupo: as Notas dizem o que espera o quê.

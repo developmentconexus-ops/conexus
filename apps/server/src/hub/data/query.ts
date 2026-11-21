@@ -1,11 +1,10 @@
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { ProjectId, QueryPage } from '@conexus/hub-api'
+import type { QueryPage } from '@conexus/hub-api'
 import { QUERY_ROWS } from '@conexus/hub-api'
-import type { ReadResult, SqlStatement } from '../../platform/app-sql.ts'
+import type { ReadResult } from '../../platform/app-sql.ts'
 import type { SyncRead } from '../../platform/copy-reader.ts'
 import { withoutPassColumn } from '../../platform/copy-sql.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { NeonProjectId } from '../../platform/neon.ts'
 import type { Principal } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
 import { planVerdict, statementVerdict } from './plan.ts'
@@ -17,8 +16,7 @@ function withDeadline(signal: AbortSignal | undefined): AbortSignal {
   return signal === undefined ? deadline : AbortSignal.any([signal, deadline])
 }
 
-type Ready = { host: string; neonProjectId: NeonProjectId }
-type Asked = { deps: DataDeps; scope: Principal; ready: Ready }
+type Asked = { deps: DataDeps; scope: Principal }
 
 function unavailable(deps: DataDeps, scope: Principal, cause: string): QueryPage {
   deps.log.error({ companyId: scope.companyId, cause }, 'DATA_QUERY_FAILED')
@@ -36,28 +34,6 @@ function outside(deps: DataDeps, scope: Principal, reason: string): QueryPage {
     'DATA_READ_REFUSED',
   )
   return { kind: 'NOT_IN_CATALOG' }
-}
-
-/** The statements as the Projeto's read login; a login not made yet is made as the owner and asked once more. */
-async function projectRead(
-  { deps, ready }: Asked,
-  projectId: ProjectId,
-  statements: readonly SqlStatement[],
-  signal: AbortSignal,
-): Promise<SyncRead | { kind: 'FAILED'; cause: string }> {
-  const address = await deps.companyPostgres.readAddress(ready.host, projectId)
-  const read = await deps.companyPostgres.readCopies(address, statements, signal)
-  if (read.kind !== 'NO_LOGIN') return read
-  const owner = await deps.neon.ownerConnection(ready.neonProjectId)
-  if (owner.kind !== 'DONE') return { kind: 'FAILED', cause: `OWNER_${owner.kind}` }
-  const made = await deps.companyPostgres.ensureReadLogin(owner.value, projectId)
-  if (made.kind !== 'DONE') {
-    return {
-      kind: 'FAILED',
-      cause: `READ_LOGIN_${made.kind === 'REFUSED' ? made.code : made.kind}`,
-    }
-  }
-  return deps.companyPostgres.readCopies(address, statements, signal)
 }
 
 function rowsOfRead(asked: Asked, results: readonly ReadResult[]): QueryPage {
@@ -105,7 +81,7 @@ export async function queryOf(
   scope: Principal,
   a: { sql: string; signal?: AbortSignal },
 ): Promise<QueryPage> {
-  const { companyId, personId, place } = scope
+  const { companyId, personId } = scope
   const { readers } = deps.copies()
   const { reader, ready } = await deps.database.read(
     { kind: 'COMPANY', companyId, personId },
@@ -125,18 +101,13 @@ export async function queryOf(
   const named = statementVerdict(a.sql)
   if (named.kind === 'OUTSIDE') return outside(deps, scope, named.reason)
   if (ready?.host == null) return unavailable(deps, scope, 'NO_DATABASE')
-  const asked = {
-    ...{ deps, scope },
-    ready: { host: ready.host, neonProjectId: ready.neonProjectId },
-  }
   const statements = [{ text: `EXPLAIN (VERBOSE, FORMAT JSON) ${a.sql}` }, { text: a.sql }]
   const signal = withDeadline(a.signal)
-  const read =
-    place.kind === 'PROJECT'
-      ? await projectRead(asked, place.projectId, statements, signal)
-      : await readers.readAs({ companyId, personId, host: ready.host, reader, statements, signal })
-  if (read.kind === 'FAILED') return unavailable(deps, scope, read.cause)
+  const read = await readers.readAs({
+    ...{ companyId, personId, host: ready.host },
+    ...{ reader, statements, signal },
+  })
   if (read.kind === 'NO_LOGIN') return unavailable(deps, scope, 'NO_LOGIN')
   if (read.kind === 'NOT_IN_ROLE') return read
-  return pageOf(asked, read)
+  return pageOf({ deps, scope }, read)
 }

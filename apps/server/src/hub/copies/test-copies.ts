@@ -19,6 +19,7 @@ import {
 import { sql } from 'drizzle-orm'
 import pg from 'pg'
 import { z } from 'zod'
+import type { Config } from '../../platform/config.ts'
 import { ROLES_LOCK } from '../../platform/copy-sql.ts'
 import type { DatabaseUrl } from '../../platform/database.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
@@ -148,15 +149,17 @@ export async function copiesOn(
   t: TestContext,
   tuning: CopyTuning = TEST_TUNING,
   schedulerTickMs?: number,
+  /** Another double's configuration, before the Sankhya's is added to it. */
+  also: (config: Config) => Config = (same) => same,
 ) {
   const fake = sankhyaFake()
   const served = await fake.serve()
   t.after(() => served.close())
   const { gate, through } = gateOf(t)
   const origin = await through(served.origin)
-  const hub = await hubWithLog(t, (config) => ({
-    ...config,
-    connectorOrigins: new Map([['sankhya', origin]]),
+  const hub = await hubWithLog(t, (given) => ({
+    ...also(given),
+    connectorOrigins: new Map([...(also(given).connectorOrigins ?? []), ['sankhya', origin]]),
     // A scheduler that ticks fast enough for a test to wait for a run it made due (T20).
     ...(schedulerTickMs === undefined
       ? {}

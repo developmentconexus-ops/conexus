@@ -40,7 +40,6 @@ export const VIEW = listing(
       connection: SANKHYA,
       connector: 'sankhya',
       name: 'Matriz',
-      liveOnly: false,
       reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
       actions: [],
     }),

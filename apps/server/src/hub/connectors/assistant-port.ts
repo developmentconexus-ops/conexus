@@ -1,5 +1,5 @@
 import { connectorOf } from '@conexus/connectors'
-import type { ConnectionId } from '@conexus/hub-api'
+import type { ConnectionId, ConversationId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
@@ -44,7 +44,7 @@ type AssistantConnection = {
 
 /** The Builder's answer (builder-port.ts); an OK one also carries the connector's answer before the cut. */
 type AssistantRead =
-  | (Extract<ShapedRead, { kind: 'OK' }> & { whole: unknown })
+  | (Extract<ShapedRead, { kind: 'OK' }> & { whole: unknown; empty?: true })
   | Exclude<ShapedRead, { kind: 'OK' }>
   | Spent
 
@@ -68,6 +68,8 @@ export type AssistantConnectors = {
       input: unknown
       /** The turn's stop: a read waiting in its connection's line leaves it at once. */
       signal?: AbortSignal
+      /** The conversation that asked, for the Registro's row; the access contract passes it. */
+      thread?: ConversationId
     },
   ): Promise<AssistantRead>
   /** One write of a chosen, offered connection for an agent, never sent twice; it spends one of the turn's calls like a read. */
@@ -313,10 +315,11 @@ export function createAssistantConnectors(deps: Deps): AssistantConnectors {
         input: call.input,
         deadlineMs: CALL_DEADLINE_MS,
         signal: call.signal,
+        ...(call.thread === undefined ? {} : { thread: call.thread }),
       })
-      return answered.kind === 'OK'
-        ? { kind: 'OK', ...shaped(answered.value), whole: answered.value }
-        : answered
+      if (answered.kind !== 'OK') return answered
+      const { value, empty } = answered
+      return { kind: 'OK', ...shaped(value), whole: value, ...(empty === true ? { empty } : {}) }
     },
 
     async write(request) {

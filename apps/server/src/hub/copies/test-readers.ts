@@ -9,8 +9,9 @@ import { roleLoginOf } from '../../platform/test-company-postgres.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { BRUNO, call, memberOn, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
+import type { CopyTuning } from './public.ts'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn } from './test-copies.ts'
+import { copiesOn, TEST_TUNING } from './test-copies.ts'
 
 const KEY = testAppsConfig().appLoginKey
 
@@ -55,8 +56,13 @@ export function copyOf(copies: ReadonlyMap<string, CopyId>, name: string): CopyI
  * Vendas reads sales, sale items, sellers and products and Financeiro the clients, marked in the
  * Hub before the runs; with `NONE`, no role reads a copy.
  */
-export async function rolesWorld(t: TestContext, marks: 'PLANTED' | 'NONE') {
-  const on = await copiesOn(t)
+export async function rolesWorld(
+  t: TestContext,
+  marks: 'PLANTED' | 'NONE',
+  tuning: CopyTuning = TEST_TUNING,
+  also?: Parameters<typeof copiesOn>[3],
+) {
+  const on = await copiesOn(t, tuning, undefined, also)
   const copies = new Map<string, CopyId>()
   for (const model of ['clientes', 'vendedores', 'produtos', 'vendas', 'itens_venda']) {
     copies.set(`sankhya_${model}`, await on.enable(model))
