@@ -118,8 +118,12 @@ test('a linha aberta', async () => {
   })
   const theirs = read({ threadId: THREAD, project: { id: PEDIDOS.id, name: 'Pedidos' } })
   const app = read({ agent: 'APP', verb: 'QUERY', tables: [], query: 'select 2', outcome: 'ROWS' })
-  readsHub({ as: 'owner', reads: () => [mine, theirs, app] })
-  const { unmount } = openReads(`?read=${mine.id}`)
+  const live = read({
+    ...{ agent: 'CONSTRUTOR', verb: 'LIVE', tables: [], connection: MATRIZ },
+    ...{ operation: 'lerPedidos', outcome: 'OK', rows: null },
+  })
+  readsHub({ as: 'owner', reads: () => [mine, theirs, app, live] })
+  const first = openReads(`?read=${mine.id}`)
   const panel = await screen.findByRole('dialog')
   const open = within(panel)
   expect(open.getByRole('heading').textContent).toMatch(/^Leitura de hoje, \d\d:\d\d$/)
@@ -140,14 +144,29 @@ test('a linha aberta', async () => {
   )
   expect(open.getByRole('button', { name: 'Copiar a consulta' })).toBeTruthy()
   expect(open.getByText('40 ms')).toBeTruthy()
-  unmount()
-  openReads(`?read=${theirs.id}`)
+  first.unmount()
+  const { unmount } = openReads(`?read=${theirs.id}`)
   const other = within(await screen.findByRole('dialog'))
   expect(other.getByText('no Projeto Pedidos')).toBeTruthy()
   expect(other.queryByRole('link', { name: 'Abrir a conversa' })).toBeNull()
   expect(other.queryByRole('button', { name: 'Copiar a consulta' })).toBeNull()
   fireEvent.click(other.getByRole('button', { name: 'Fechar' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  unmount()
+  async function factsOf(id: string) {
+    const opened = openReads(`?read=${id}`)
+    const panel = await screen.findByRole('dialog')
+    await within(panel).findByText('Tempo')
+    const terms = Array.from(panel.querySelectorAll('dt')).map((dt) => dt.textContent)
+    return { terms, panel: within(panel), unmount: opened.unmount }
+  }
+  // A query that named no table shows its query, with no "Tabelas" that repeats it (QA, finding 4).
+  const queried = await factsOf(app.id)
+  expect(queried.terms).toEqual(['Quem', 'Agente', 'Consulta', 'Resultado', 'Linhas', 'Tempo'])
+  queried.unmount()
+  const operated = await factsOf(live.id)
+  expect(operated.terms).toEqual(['Quem', 'Agente', 'Operação', 'Resultado', 'Linhas', 'Tempo'])
+  expect(operated.panel.getByText('Matriz · lerPedidos')).toBeTruthy()
 })
 
 test('uma leitura que não está na página, pelo endereço: Leitura não encontrada.', async () => {
