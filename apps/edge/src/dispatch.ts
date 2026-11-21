@@ -12,6 +12,7 @@ import type { ConnectorsProps } from './connectors.ts'
 import type { DbProps } from './db.ts'
 import { base64Of, sha256Of } from './digest.ts'
 import { entryPage, entryScript } from './entry.ts'
+import type { Place } from './headers.ts'
 import {
   APP_SESSION_COOKIE,
   appPolicyOf,
@@ -19,6 +20,7 @@ import {
   cookiesOf,
   headersFromApp,
   headersToApp,
+  placeOf,
   setCookie,
   withSecurityHeaders,
 } from './headers.ts'
@@ -48,6 +50,7 @@ type Visit = {
   url: URL
   label: Label
   policy: string
+  place: Place
 }
 
 function redirect(visit: Visit, location: string, cookies: string[]): Response {
@@ -77,10 +80,12 @@ async function toHub(visit: Visit, cleared: string[]): Promise<Response> {
     cookiesOf(visit.request.headers).get(BINDING_COOKIE),
   )
   const binding = kept.data ?? base64Of(crypto.getRandomValues(new Uint8Array(SECRET_BYTES)), 'url')
-  const cookies = kept.success ? cleared : [...cleared, setCookie(BINDING_COOKIE, binding)]
+  const cookies = kept.success
+    ? cleared
+    : [...cleared, setCookie(BINDING_COOKIE, binding, visit.place)]
   const hash = base64Of(await sha256Of(binding), 'url')
   const hubOrigin = visit.env.HUB_PUBLIC_ORIGIN
-  if (visit.request.headers.get('Sec-Fetch-Dest') === 'iframe') {
+  if (visit.place === 'FRAME') {
     return entryPage({
       hubOrigin,
       host: visit.label,
@@ -104,7 +109,7 @@ async function redeem(visit: Visit): Promise<Response> {
   if (!body.success) return failure(visit, 'APP_HANDOFF_INVALID')
   const answer = await visit.hub.createAppSession(body.data)
   if (answer.kind === 'DONE') {
-    return redirect(visit, '/', [setCookie(APP_SESSION_COOKIE, answer.value.session)])
+    return redirect(visit, '/', [setCookie(APP_SESSION_COOKIE, answer.value.session, visit.place)])
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failure(visit, 'APP_HANDOFF_INVALID')
@@ -202,7 +207,9 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
     return failurePage('REQUEST_ORIGIN_REFUSED', env.HUB_PUBLIC_ORIGIN)
   }
   const policy = appPolicyOf(env)
-  const visit: Visit = { request, env, exports, hub: hubOf(env), url, label: label.data, policy }
+  const { data } = label
+  const place = placeOf(request.headers)
+  const visit: Visit = { request, env, exports, hub: hubOf(env), url, label: data, policy, place }
   if (url.pathname === HANDOFF_PATH) return redeem(visit)
   if (url.pathname === ENTRY_SCRIPT) return entryScript(policy)
   if (url.pathname.startsWith(DISPATCHER_PATHS)) return failure(visit, 'APP_NOT_FOUND')
@@ -212,7 +219,7 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
   const answer = await visit.hub.checkAppCall({ host: visit.label, session: session.data })
   if (answer.kind === 'DONE') return toApp(visit, answer.value, session.data)
   if (answer.kind === 'REFUSED' && answer.code === 'APP_SESSION_INVALID') {
-    return toHub(visit, [setCookie(APP_SESSION_COOKIE, '')])
+    return toHub(visit, [setCookie(APP_SESSION_COOKIE, '', place)])
   }
   const refusal = answer.kind === 'REFUSED' ? CHECK_REFUSALS[answer.code] : undefined
   return failure(

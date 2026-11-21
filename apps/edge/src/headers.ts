@@ -29,14 +29,24 @@ export function cookiesOf(headers: Headers): Map<string, string> {
   return cookies
 }
 
+/** Where the request runs: the app's own tab, or the Hub's Prévia frame (`Sec-Fetch-Dest`). */
+export type Place = 'TAB' | 'FRAME'
+
+export function placeOf(headers: Headers): Place {
+  return headers.get('Sec-Fetch-Dest') === 'iframe' ? 'FRAME' : 'TAB'
+}
+
 /**
- * A cookie of the browser's session on this host only (security S17), sent inside the Hub's Prévia
- * too: `SameSite=None` reaches the framed app, and `Partitioned` keeps it to the Hub's frame, as
- * vibesdk's preview cookie (`spacePreviewToken.ts:60-83`). An empty value deletes it.
+ * A cookie of the browser's session on this host only (security S17). In the Hub's Prévia,
+ * `SameSite=None` reaches the framed app and `Partitioned` keeps it to the Hub's frame, as vibesdk's
+ * preview cookie (`spacePreviewToken.ts:60-83`). The tab's is `SameSite=Lax`, which no frame of
+ * another site receives: Safari drops a `Partitioned` cookie set at the end of the tab's redirect
+ * chain from the Hub (WebKit bug 306194). An empty value deletes it.
  */
-export function setCookie(name: string, value: string): string {
+export function setCookie(name: string, value: string, place: Place): string {
   const lifetime = value === '' ? '; Max-Age=0' : ''
-  return `${name}=${value}; Path=/; Secure; HttpOnly; SameSite=None; Partitioned${lifetime}`
+  const site = place === 'FRAME' ? 'SameSite=None; Partitioned' : 'SameSite=Lax'
+  return `${name}=${value}; Path=/; Secure; HttpOnly; ${site}${lifetime}`
 }
 
 /** The request's headers as the app receives them: without the dispatcher's cookies or session. */

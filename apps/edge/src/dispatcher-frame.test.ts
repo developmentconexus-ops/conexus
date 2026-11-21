@@ -16,12 +16,12 @@ const IN_FRAME = { 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Site': 'cross-site' }
 const DISPATCHER_COOKIE =
   /^__Host-conexus-(binding|app)=[^;]*; Path=\/; Secure; HttpOnly; SameSite=None; Partitioned(; Max-Age=0)?$/
 
-test('cookies particionados: o vínculo, a sessão e o apagar de cada um', async () => {
-  const first = await edge().fetch('/')
+test('cookies particionados no iframe: o vínculo, a sessão e o apagar de cada um', async () => {
+  const first = await edge().fetch('/', { headers: IN_FRAME })
   const redeemed = await edge({
     hub: () => Response.json({ session: SESSION }, { status: 201 }),
   }).fetch(`/__conexus/passagem?code=${CODE}`, {
-    headers: { Cookie: `__Host-conexus-binding=${BINDING}` },
+    headers: { ...IN_FRAME, Cookie: `__Host-conexus-binding=${BINDING}` },
   })
   const expired = await edge({ hub: () => problem('APP_SESSION_INVALID') }).fetch('/', {
     headers: { ...IN_FRAME, Cookie: `__Host-conexus-app=${SESSION}` },
