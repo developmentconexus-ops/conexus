@@ -4,12 +4,17 @@ import type {
   CompanyId,
   ConnectionId,
   ConversationId,
+  DataReadFilters,
+  DataReadResult,
   OperationId,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
-import { sql } from 'drizzle-orm'
+import { OUTCOMES_OF } from '@conexus/hub-api'
+import type { SQL } from 'drizzle-orm'
+import { and, arrayContains, desc, eq, gte, inArray, lt, notInArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Consumer } from '../access/public.ts'
 import type { DataDeps } from './deps.ts'
@@ -111,4 +116,72 @@ export function recordReadOf(deps: Pick<DataDeps, 'database' | 'log'>): RecordRe
       return 'UNRECORDED'
     }
   }
+}
+
+/** The rows of one word: its outcomes, or for `NOT_READ` every outcome no other word holds. */
+function outcomeIs(result: DataReadResult): SQL {
+  if (result !== 'NOT_READ') return inArray(dataRead.outcome, [...OUTCOMES_OF[result]])
+  return notInArray(dataRead.outcome, Object.values(OUTCOMES_OF).flat())
+}
+
+/** The company's rows the filters keep; `table` finds a query that read it among others. */
+function kept(companyId: CompanyId, filters: DataReadFilters): SQL | undefined {
+  return and(
+    eq(dataRead.companyId, companyId),
+    filters.person === undefined ? undefined : eq(dataRead.personId, filters.person),
+    filters.agent === undefined ? undefined : eq(dataRead.agent, filters.agent),
+    filters.table === undefined ? undefined : arrayContains(dataRead.tables, [filters.table]),
+    filters.outcome === undefined ? undefined : outcomeIs(filters.outcome),
+  )
+}
+
+export type StoredRead = typeof dataRead.$inferSelect
+
+const NEWEST_FIRST = [desc(dataRead.at), desc(dataRead.id)]
+
+/**
+ * The filters' rows newest first, after the row `after` names by its hour and then its id, so two
+ * reads of the same hour are neither repeated nor skipped; `limit` rows at most. Read in the caller's
+ * transaction, which admitted the reader.
+ */
+export function pageOfReads(
+  tx: ReadTx,
+  input: {
+    companyId: CompanyId
+    filters: DataReadFilters
+    after: string | undefined
+    limit: number
+  },
+): Promise<StoredRead[]> {
+  const { companyId, after } = input
+  const anchor =
+    after === undefined
+      ? undefined
+      : lt(
+          sql`(${dataRead.at}, ${dataRead.id})`,
+          tx
+            .select({ at: dataRead.at, id: dataRead.id })
+            .from(dataRead)
+            .where(and(eq(dataRead.id, after), eq(dataRead.companyId, companyId))),
+        )
+  return tx
+    .select()
+    .from(dataRead)
+    .where(and(kept(companyId, input.filters), anchor))
+    .orderBy(...NEWEST_FIRST)
+    .limit(input.limit)
+}
+
+/** The filters' rows in `[from, to)`, newest first, `limit` at most. */
+export function periodOfReads(
+  tx: ReadTx,
+  input: { companyId: CompanyId; filters: DataReadFilters; from: Date; to: Date; limit: number },
+): Promise<StoredRead[]> {
+  const { companyId, from, to } = input
+  return tx
+    .select()
+    .from(dataRead)
+    .where(and(kept(companyId, input.filters), gte(dataRead.at, from), lt(dataRead.at, to)))
+    .orderBy(...NEWEST_FIRST)
+    .limit(input.limit)
 }

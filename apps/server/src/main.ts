@@ -23,7 +23,8 @@ import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './h
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
-import { createCompanyData, recordRead } from './hub/data/public.ts'
+import type { DataDeps } from './hub/data/public.ts'
+import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity } from './hub/identity/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
@@ -88,7 +89,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.copies],
+    ...[deps.requests, deps.copies, deps.dataReads],
   ]) {
     part.routes(app)
   }
@@ -210,14 +211,19 @@ export function subjectsOf(deps: {
   })
   const sources = { systems: connectors.access.systems, tables: copies.access.tables }
   const access = createAccess({ database, identity, sources })
-  const data = createCompanyData({
+  const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, copies: () => copies.data, projects: projects.ports },
     connectors: () => connectors,
   })
   return {
-    ...{ runs, projects, operations, apps, modelAccounts, requests, access },
+    ...{ runs, projects, operations, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
+}
+
+/** The access contract the agents read through, and the Registro de dados its reads leave. */
+function dataOf(deps: DataDeps) {
+  return { data: createCompanyData(deps), dataReads: createDataReads(deps) }
 }
 
 async function runServer(): Promise<void> {

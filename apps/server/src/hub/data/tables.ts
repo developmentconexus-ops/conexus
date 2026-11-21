@@ -59,7 +59,18 @@ export const dataRead = data.table(
       columns: [table.companyId],
       foreignColumns: [company.id],
     }).onDelete('cascade'),
-    index('data_read_company_at_idx').on(table.companyId, table.at),
+    // The Registro's page, newest first, and its cut by person (R.11).
+    index('data_read_company_newest_idx').on(
+      table.companyId,
+      table.at.desc().nullsFirst(),
+      table.id.desc().nullsFirst(),
+    ),
+    index('data_read_person_newest_idx').on(
+      table.companyId,
+      table.personId,
+      table.at.desc().nullsFirst(),
+      table.id.desc().nullsFirst(),
+    ),
     check('data_read_agent', sql`${table.agent} in (${listed(DATA_READ_AGENTS)})`),
     check('data_read_verb', sql`${table.verb} in (${listed(DATA_READ_VERBS)})`),
     check(
