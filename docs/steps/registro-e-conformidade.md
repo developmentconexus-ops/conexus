@@ -160,8 +160,14 @@ nesta página:
 - **A consulta a uma tabela fora do seu catálogo volta Não encontrada** (`NOT_IN_CATALOG`), como a
   tabela que não existe, e não roda. Antes, o banco a recusava pelo papel e o Registro dizia
   **Recusada**, enquanto a conversa dizia que a tabela não está no catálogo. Agora as duas telas dizem
-  o mesmo, e a resposta não deixa saber se a tabela existe (security S10), como o lago fará. Os
-  critérios 41 e 43 dizem isso.
+  o mesmo. Os critérios 41 e 43 dizem isso.
+- **O nome e as colunas de uma tabela fora do seu papel ainda podem aparecer** a quem é da mesma
+  empresa. Você respondeu "1 B" ao achado 1 da revisão do PR 1223: por ora só as linhas são segredo,
+  e elas continuam atrás do papel. A consulta direta a uma tabela fora do catálogo volta Não
+  encontrada, como a que não existe, sem linha; o nome e as colunas aparecem por consultas ao
+  catálogo do próprio PostgreSQL, que todo login lê, e por `format_type`, pelo cast para o tipo da
+  tabela, por `nextval` e por `SELECT INTO`. Esconder o nome e as colunas é critério da etapa 3 do
+  lago, onde o Lake Formation os esconde.
 - **O lugar do item.** A tela não tem um grupo Pessoas e acesso: o item fica no grupo com o nome da
   empresa, logo depois de Papéis, como pede o critério 77. A `D2` (a) vale assim.
 - **Abrir a conversa** aparece só nas leituras de quem olha (decisão E4 (a) do G4). O passo 3 do

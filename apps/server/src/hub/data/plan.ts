@@ -110,9 +110,11 @@ function outsideCatalog(found: Names, tables: readonly string[]): boolean {
  * What the text names before anything runs: a relation outside `sync`, a table outside the asker's
  * catalog, a function that reads by name or by query text, a cast to a `reg*` type. The login of the
  * role is the wall; this keeps a name, or an error that quotes one, from reaching around it
- * (decision R.3), and answers a table the asker may not read as one that does not exist (security
- * S10). Text the parser refuses is left clear: PostgreSQL gives that refusal itself, and runs
- * nothing.
+ * (decision R.3), and answers a table named in FROM, JOIN or as a write's target outside the asker's
+ * catalog as one that does not exist. A table's name and columns can still show through
+ * PostgreSQL's own catalog, `format_type`, a cast to its row type, `nextval` or `SELECT INTO`; only
+ * its rows stay behind the role, until the lake hides the names. Text the parser refuses is left
+ * clear: PostgreSQL gives that refusal itself, and runs nothing.
  */
 export function statementVerdict(sql: string, tables: readonly string[]): StatementVerdict {
   const found: Names = { functions: [], types: [], relations: [], withNames: [] }

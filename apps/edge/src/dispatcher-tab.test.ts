@@ -14,8 +14,9 @@ import {
 
 // The app's own tab coming back with a live Hub session: app, Hub, the pass, its landing and the
 // app again, all 303s. In WebKit a `Partitioned` cookie is not reliably sent back to a tab after a redirect chain
-// (WebKit bugs 316066 and 306194). The jar models what the founder's loop showed, not either bug:
-// the partitioned session that the pass's answer writes never comes back. A browser that keeps no
+// (WebKit bugs 316066 and 306194). The jar models one reading of the founder's loop: the partitioned
+// session that the pass's answer writes never comes back. The Hub's logs at the loop's hour tell it
+// from a stale cookie that never leaves, which the third test covers. A browser that keeps no
 // session from the pass gets a page at its second round, never a chain run until "too many redirects".
 const HUB = 'https://hub.conexus.fun'
 const MAX_HOPS = 16
