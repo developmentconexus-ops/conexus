@@ -3,8 +3,8 @@
 ## Context
 
 A company links its own system, the Sankhya first, and reads it without anyone seeing the
-credential. [0031] named a raw `connectors.fetch`, never proved. Basis: the deep study of the
-connectors and the founder's words of 2026-10-28 on step 19's card (`A1`, `I1`, `K1`, `L1`, `M1`,
+credential. [0031] named a raw `connectors.fetch`, never proved. Basis: the connectors study and
+the founder's words of 2026-10-28 on step 19's card (`A1`, `I1`, `K1`, `L1`, `M1`,
 `N`).
 
 ## Decision
@@ -46,4 +46,5 @@ A provider needs a call the kit cannot declare as data, or a Worker cannot reach
 ## State
 
 Proposed 2026-10-29 (step 19), awaiting the founder. Amended by
-[0062](0062-a-write-declares-its-provider-facts.md).
+[0062](0062-a-write-declares-its-provider-facts.md) and
+[0071](0071-connectors-kit-live-copies-singer.md).

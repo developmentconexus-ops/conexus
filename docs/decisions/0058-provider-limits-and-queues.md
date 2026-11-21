@@ -41,4 +41,5 @@ reopened it.
 
 ## State
 
-Approved by the founder on 2026-10-30 (the study's path); this record is proposed with the fix.
+Approved by the founder on 2026-10-30 (the study's path); proposed with the fix. Amended by
+[0076](0076-a-copy-runs-as-a-fargate-task-ending-by-a-queue.md).

@@ -9,7 +9,7 @@ Nango functions. The founder asked which source runs a connector and chose one, 
 
 ## Decision
 
-- One source of connectors: the kit `@conexus/connectors`, with copies in our own copy engine.
+- One source of connectors: the kit `@conexus/connectors`.
 - Authorization login, token storage and renewal stay in the kit, with our login app in each system.
 - The Nango stays out of the code. It is a reference for patterns only (link lifetime, credential
   fields, authorization and token pages).
@@ -42,6 +42,8 @@ read more often than a person's do.
 
 Accepted 2026-11-14. Founder, choosing among the options for the source of connectors (the option
 label is a retired process name, so it is not quoted): one source only, our kit, with the Nango out
-of the code and kept as a pattern reference. It replaces H5. Builds on [0056].
+of the code and kept as a pattern reference. It replaces H5. Builds on [0056]. Amended 2026-11-21
+by [0071]: copies left our own copy engine for Singer taps.
 
 [0056]: 0056-connectors-kit-and-one-executor.md
+[0071]: 0071-connectors-kit-live-copies-singer.md

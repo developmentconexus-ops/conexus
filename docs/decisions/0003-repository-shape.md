@@ -26,4 +26,7 @@ The checker cannot express a rule the guides need, or a subject needs to be depl
 
 ## State
 
-Brought. Founder, 2026-10-13: "5. B", "6. A", "7. A".
+Brought. Founder, 2026-10-13: "5. B", "6. A", "7. A". Amended by
+[0073](0073-platform-by-cdk-one-stack-per-company.md) and
+[0074](0074-python-for-extraction-in-apps-extraction.md): `infra/aws/` and the Python project
+`apps/extraction/` join the tree.
