@@ -79,7 +79,7 @@ function pageOf(asked: Asked, read: Exclude<SyncRead, { kind: 'NO_LOGIN' }>): Qu
 export async function queryOf(
   deps: DataDeps,
   scope: Principal,
-  a: { sql: string; signal?: AbortSignal },
+  a: { sql: string; tables: readonly string[]; signal?: AbortSignal },
 ): Promise<QueryPage> {
   const { companyId, personId } = scope
   const { readers } = deps.copies()
@@ -98,7 +98,7 @@ export async function queryOf(
       }
     },
   )
-  const named = statementVerdict(a.sql)
+  const named = statementVerdict(a.sql, a.tables)
   if (named.kind === 'OUTSIDE') return outside(deps, scope, named.reason)
   if (ready?.host == null) return unavailable(deps, scope, 'NO_DATABASE')
   const statements = [{ text: `EXPLAIN (VERBOSE, FORMAT JSON) ${a.sql}` }, { text: a.sql }]

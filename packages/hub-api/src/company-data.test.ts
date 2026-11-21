@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { after, test } from 'node:test'
-import { Catalog, companyData, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
+import { Catalog, Described, QUERY_SQL_MAX, ReadRequest } from './company-data.ts'
 import { DATA_LAWS, runDataConformance } from './company-data-conformance.ts'
 import { CATALOG, fakeWorld } from './test-company-data-world.ts'
-import { OperationId } from './tools.ts'
 
 runDataConformance('o contrato sobre um ERP e um correio falsos', () => fakeWorld())
 
@@ -20,19 +19,6 @@ after(() => {
     DATA_LAWS,
     'one TestContext per law',
   )
-})
-
-test('a leitura ao vivo vem com a hora do relógio do contrato, em ISO', async () => {
-  const at = new Date('2026-11-14T12:00:00.000Z')
-  const world = fakeWorld()
-  const data = companyData({ sources: world.sources, now: () => at })
-  const [mail] = CATALOG.systems.filter(({ connector }) => connector === 'correio-falso')
-  assert.ok(mail)
-  const answer = await data.read({
-    ...{ kind: 'OPERATION', connection: mail.connection, input: {} },
-    operation: OperationId.parse('buscarMensagens'),
-  })
-  assert.deepEqual(answer, { kind: 'LIVE', at: at.toISOString(), value: [{ assunto: 'Pedido 7' }] })
 })
 
 test('o contrato recusa a tabela do catálogo sem descrição', () => {

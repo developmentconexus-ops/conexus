@@ -115,11 +115,44 @@ test('Exportar pendente: "Exportando…" no botão desligado, e um pedido só', 
   openReads()
   fireEvent.click(await screen.findByRole('button', { name: 'Exportar' }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Exportar' }))
-  fireEvent.click(dialog.getByRole('button', { name: 'Exportar' }))
+  const button = dialog.getByRole('button', { name: 'Exportar' })
+  // A double click: the second arrives before the button shows it is pending (QA, finding 5).
+  fireEvent.click(button)
+  fireEvent.click(button)
   const pending = await dialog.findByRole('button', { name: 'Exportando…' })
   expect(pending.hasAttribute('disabled')).toBe(true)
   fireEvent.click(pending)
   release()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   expect(asked).toBe(1)
+})
+
+test('Exportar fechado no meio: aberto de novo, exporta outra vez', async () => {
+  savedFiles()
+  let asked = 0
+  let held = true
+  readsHub({ as: 'owner', reads: () => [read()] })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/data-reads/export`, async () => {
+      asked += 1
+      if (held) await new Promise(() => undefined)
+      return HttpResponse.json(
+        exportDataReads.success.body.parse({ reads: [read()], complete: true }),
+      )
+    }),
+  )
+  openReads()
+  const trigger = await screen.findByRole('button', { name: 'Exportar' })
+  fireEvent.click(trigger)
+  const first = within(await screen.findByRole('dialog', { name: 'Exportar' }))
+  fireEvent.click(first.getByRole('button', { name: 'Exportar' }))
+  await first.findByRole('button', { name: 'Exportando…' })
+  fireEvent.click(first.getByRole('button', { name: 'Fechar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  held = false
+  fireEvent.click(trigger)
+  const again = within(await screen.findByRole('dialog', { name: 'Exportar' }))
+  fireEvent.click(again.getByRole('button', { name: 'Exportar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  expect(asked).toBe(2)
 })

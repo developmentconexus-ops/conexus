@@ -1,5 +1,7 @@
 # Plano de implementação: parte 3, a leitura para análise
 
+> Os grupos 5 e 6 desta parte foram construídos pelo cartão Registro e conformidade ([`docs/steps/registro-e-conformidade.md`](../../../registro-e-conformidade.md), U7), e o que ele decidiu vale sobre este texto (o fechamento dele, 2026-11-21). As leis rodam contra o banco de verdade, na Empresa e num Projeto, e a consulta que nomeia a tabela que o papel não lê responde `NOT_IN_CATALOG`, e não `NOT_IN_ROLE` ("1. B"). O registro do cartão está em [aprovações](../../../../approvals/registro-e-conformidade.md).
+
 > Os grupos 3 e 4 desta parte foram construídos pelo cartão A pergunta respondida com a origem, fechado em 2026-11-16, e o que ele decidiu vale sobre este texto. Uma tabela cuja conexão não está em `systems` é lida, e a origem vem do registro gravado da cópia, com o estado da conexão (`NAMED` ou `NOT_GIVEN`): onde esta parte manda responder `CATALOG_UNAVAILABLE` e registrar `DATA_ORIGIN_UNREAD` nesse caso, o texto está superado (a emenda de 2026-11-15, "1. A"). O registro do cartão está em [aprovações](../../../../approvals/a-pergunta-respondida-com-a-origem.md).
 
 ## Visão geral

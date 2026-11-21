@@ -4,6 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { ChoiceSelect } from '../../ui/select.tsx'
@@ -142,10 +143,11 @@ function PhoneFilters(props: { lists: DataReadsLists; filters: DataReadFilters }
 
 const NO_FILTERS = { person: undefined, agent: undefined, table: undefined, outcome: undefined }
 
-function ClearFilters() {
+/** Every filter off, back to the first page; `inRow` sits level with the filters' fields. */
+function ClearFilters({ inRow = false }: { inRow?: boolean }) {
   return (
     <Link
-      className="self-start text-label underline"
+      className={cn('text-label underline', inRow ? 'flex h-9 items-center' : 'self-start')}
       to="."
       search={(old) => ({ ...old, ...NO_FILTERS, page: undefined, read: undefined })}
     >
@@ -256,7 +258,11 @@ export function DataReads({ lists }: { lists: DataReadsLists }) {
           {phone ? (
             <PhoneFilters lists={lists} filters={filters} />
           ) : (
-            <Filters lists={lists} filters={filters} />
+            <>
+              <Filters lists={lists} filters={filters} />
+              {/* With rows on the screen; the empty state has its own (founder, "3. A"). */}
+              {filtered && data.reads.length > 0 && <ClearFilters inRow />}
+            </>
           )}
         </div>
         <ExportReads

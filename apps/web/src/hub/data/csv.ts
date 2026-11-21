@@ -16,6 +16,20 @@ function cellOf(value: string): string {
   return QUOTED.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** An instant as RFC 3339 in the viewer's zone, with its offset: the zone the screen shows (founder, "2. A"). */
+function localStamp(at: string): string {
+  const date = new Date(at)
+  const east = -date.getTimezoneOffset()
+  const offset = `${east < 0 ? '-' : '+'}${twoDigits(Math.trunc(Math.abs(east) / 60))}:${twoDigits(Math.abs(east) % 60)}`
+  const day = `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())}`
+  const clock = [date.getHours(), date.getMinutes(), date.getSeconds()].map(twoDigits).join(':')
+  return `${day}T${clock}${offset}`
+}
+
 const HEADER = [
   'Quando',
   'Quem',
@@ -30,12 +44,12 @@ const HEADER = [
 ]
 
 /**
- * The reads as a CSV file's text: one line each, in the table's columns, the hour as the Hub
- * wrote it (UTC) and the query whole. The byte-order mark makes a spreadsheet read the accents.
+ * The reads as a CSV file's text: one line each, in the table's columns, the hour in the viewer's
+ * zone and the query whole. The byte-order mark makes a spreadsheet read the accents.
  */
 export function readsCsv(reads: readonly DataReadEntry[], names: ReadNames): string {
   const lines = reads.map((read) => [
-    read.at,
+    localStamp(read.at),
     read.person.name,
     agentOf(read, names),
     placeOf(read.project),

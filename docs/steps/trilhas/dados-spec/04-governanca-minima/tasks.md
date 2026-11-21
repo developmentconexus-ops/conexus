@@ -1,5 +1,7 @@
 # Plano de implementação: parte 4, a governança mínima
 
+> O cartão Registro e conformidade ([`docs/steps/registro-e-conformidade.md`](../../../registro-e-conformidade.md)) construiu os requisitos 6 e 7, o `C6` e o grupo 9 desta parte, e o que ele decidiu vale sobre este texto (o fechamento dele, 2026-11-21). Só Dono e Administrador veem o Registro de dados, e o requisito 7.2 volta a valer. A leitura deixa uma linha só, gravada depois de ler e antes de devolver. A consulta que nomeia uma tabela fora do catálogo de quem pergunta volta `NOT_IN_CATALOG` sem rodar, como a tabela que não existe ("1. B"). O registro do cartão está em [aprovações](../../../../approvals/registro-e-conformidade.md).
+
 ## Visão geral
 
 Nove grupos, um pull request cada. O grupo 1 cria as duas tabelas. Os grupos 2 e 3 dão as permissões delas no banco do Hub, cada uma num PR só dela, com a palavra do fundador dada em 2026-11-14 (P2, no índice). O grupo 4 faz o banco da empresa garantir a leitura por papel. O grupo 5 muda só o contrato. O grupo 6 liga o catálogo, as rotas e o membro ao papel. O grupo 7 muda as telas. O grupo 8 foi desfeito em 2026-11-15. O grupo 9 grava e mostra o Registro de dados.

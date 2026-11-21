@@ -15,12 +15,12 @@ async function keepsHiddenTableOut(world: DataWorld, data: CompanyData): Promise
   assert.deepEqual(world.reached.rows, [])
 }
 
-async function returnsNoRowsWhenTheDatabaseRefusesForRole(
+async function answersTheHiddenTableAsAbsentInAQuery(
   world: DataWorld,
   data: CompanyData,
 ): Promise<void> {
   const answer = await data.read({ kind: 'QUERY', sql: world.hidden.query })
-  assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
+  assert.deepEqual(answer, { kind: 'NOT_IN_CATALOG' })
   assert.equal(Object.hasOwn(answer, 'rows'), false)
 }
 
@@ -31,7 +31,7 @@ export const roleLaws: readonly (readonly [string, Law])[] = [
     keepsHiddenTableOut,
   ],
   [
-    'uma consulta que o banco recusa por permissão responde NOT_IN_ROLE e não devolve linha',
-    returnsNoRowsWhenTheDatabaseRefusesForRole,
+    'uma consulta que nomeia a tabela que o papel não lê responde NOT_IN_CATALOG e não devolve linha',
+    answersTheHiddenTableAsAbsentInAQuery,
   ],
 ]

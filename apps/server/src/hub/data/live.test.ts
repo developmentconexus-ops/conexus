@@ -30,6 +30,10 @@ test('a leitura ao vivo pelo contrato chama o sistema com o turno', async (t) =>
     before + 2,
     'without a turn the system is not called',
   )
+  const refused = await on.hub.test.asOwner(
+    "select verb, operation, rows from data.data_read where outcome = 'NOT_GRANTED'",
+  )
+  assert.deepEqual(refused, [{ verb: 'LIVE', operation: 'empresas', rows: null }])
 })
 
 test('o contrato gasta o limite do turno', async (t) => {

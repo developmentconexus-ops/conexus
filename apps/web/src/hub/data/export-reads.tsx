@@ -1,7 +1,7 @@
 import type { CompanyId, DataReadFilters } from '@conexus/hub-api'
 import { DATA_READS_EXPORT_DAYS } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -45,8 +45,12 @@ export function ExportReads(props: {
   const [from, setFrom] = useState(dayOf(midnightOf(today, -SPAN)))
   const [to, setTo] = useState(today)
   const send = useMutation(exportReads)
+  // `isPending` turns on only after the next render, and a double click's second arrives first.
+  const sending = useRef(false)
   const valid = from !== '' && to !== '' && from <= to && to <= dayOf(midnightOf(from, SPAN))
   function exported() {
+    if (sending.current) return
+    sending.current = true
     send.mutate(
       {
         params: { companyId: props.companyId },
@@ -57,6 +61,9 @@ export function ExportReads(props: {
         },
       },
       {
+        onSettled: () => {
+          sending.current = false
+        },
         onSuccess: (answer) => {
           saveCsv(readsCsv(answer.reads, props.names), `registro-de-dados-${from}-${to}.csv`)
           if (answer.complete) setOpen(false)
@@ -69,7 +76,10 @@ export function ExportReads(props: {
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (!next) send.reset()
+        if (next) return
+        // A reset drops the call's own callbacks: the export closed mid-way may be asked again.
+        send.reset()
+        sending.current = false
       }}
     >
       <DialogTrigger render={<Button disabled={props.disabled} />}>

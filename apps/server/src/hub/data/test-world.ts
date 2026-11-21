@@ -29,7 +29,7 @@ import { STORE_A, STORE_B } from '../copies/test-sources.ts'
 import { personOf } from '../identity/public.ts'
 import { call } from '../identity/test-hub.ts'
 import type { DataDeps } from './public.ts'
-import { recordedData, sourcesFor } from './public.ts'
+import { recordedData, sourcesFor } from './recorded.ts'
 
 /** What Bruno's role uses of the Sankhya: two reads a copy keeps, one read no copy keeps, and the order's write. */
 const REACH = ['pedidos', 'notasFiscais', 'devolucoes', 'lancarPedido']

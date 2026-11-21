@@ -121,8 +121,8 @@ export function readTitle(read: DataReadEntry, now: Date): string {
 }
 
 /**
- * One read opened (`p4-05`): who, the agent, the conversation, what was read, the query, the
- * outcome, the rows and the time; nothing it read. **Abrir a conversa** only for the viewer's own
+ * One read opened (`p4-05`): who, the agent, the conversation, the tables or the operation (none for a
+ * query that named no table), the query, the outcome, the rows and the time; nothing it read. **Abrir a conversa** only for the viewer's own
  * read, since a conversation opens only for its person (decision E4 (a)).
  */
 export function ReadDetail(props: Opened & { names: ReadNames }) {
@@ -143,9 +143,11 @@ export function ReadDetail(props: Opened & { names: ReadNames }) {
       {read.threadId === null && read.project !== null && (
         <Fact term="Projeto">{placeOf(read.project)}</Fact>
       )}
-      <Fact term={live ? 'Operação' : 'Tabelas'}>
-        <span className={live ? undefined : 'font-mono'}>{whatOf(read, names)}</span>
-      </Fact>
+      {(live || read.tables.length > 0) && (
+        <Fact term={live ? 'Operação' : 'Tabelas'}>
+          <span className={live ? undefined : 'font-mono'}>{whatOf(read, names)}</span>
+        </Fact>
+      )}
       {read.query !== null && (
         <Fact term="Consulta">
           <Query sql={read.query} />

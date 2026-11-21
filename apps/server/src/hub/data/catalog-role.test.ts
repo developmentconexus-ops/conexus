@@ -98,17 +98,30 @@ test('Bruno pede sankhya_clientes pelo nome e recebe NOT_IN_CATALOG, sem linha, 
   assert.deepEqual(asked(), [])
 })
 
-test('uma consulta de Bruno que junta vendas e clientes é recusada pelo banco e não devolve linha', async (t) => {
+test('a consulta de Bruno que nomeia clientes responde como a de uma tabela que não existe, sem perguntar ao banco', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
-  const answer = await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql: JOIN })
-  assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
+  const asked = loginsAsked(t, w.on)
+  const data = inCompany(w.on, w.brunoId)
+  const absent = JOIN.replace('sankhya_clientes', 'sankhya_nao_existe')
+  const named = [
+    'with v as (select 1) select * from sankhya_clientes, v',
+    'delete from sankhya_clientes',
+  ]
+  for (const sql of [JOIN, absent, ...named])
+    assert.deepEqual(await data.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_CATALOG' }, sql)
+  assert.deepEqual(asked(), [])
+  const own = await data.read({
+    kind: 'QUERY',
+    sql: 'with sankhya_clientes as (select 1 as n) select n from sankhya_clientes, sankhya_vendas',
+  })
+  assert.equal(own.kind, 'QUERY', JSON.stringify(own))
 })
 
 test('DATA_READ_REFUSED leva a pessoa e não leva a consulta', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql: JOIN })
   assert.deepEqual(logged(w.on, 'DATA_READ_REFUSED'), [
-    { companyId: w.on.companyId, personId: w.brunoId },
+    { companyId: w.on.companyId, personId: w.brunoId, reason: 'CATALOG' },
   ])
   assert.ok(!JSON.stringify(w.on.hub.lines).includes('sankhya_clientes c'))
 })
@@ -151,7 +164,7 @@ test('o dono lê tudo com conexus_read', async (t) => {
   }
 })
 
-test('decisão D: o nome de sync em pg_class fica atrás do plano, e as linhas atrás do papel', async (t) => {
+test('decisão D: o nome de sync em pg_class fica atrás do plano, e a tabela fora do papel atrás do catálogo', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
   const bruno = inCompany(w.on, w.brunoId)
   const names = await bruno.read({
@@ -161,7 +174,7 @@ test('decisão D: o nome de sync em pg_class fica atrás do plano, e as linhas a
   assert.deepEqual(names, { kind: 'NOT_IN_CATALOG' })
   assert.deepEqual(
     await bruno.read({ kind: 'QUERY', sql: 'select count(*) from sync.sankhya_clientes' }),
-    { kind: 'NOT_IN_ROLE' },
+    { kind: 'NOT_IN_CATALOG' },
   )
 })
 
@@ -192,7 +205,8 @@ test('a recusa de um papel sem marca não chama a reconciliação', async (t) =>
   const postgres = w.on.hub.postgres.companyPostgres
   const tickets = t.mock.method(postgres, 'takeReadersTicket')
   const reconciles = t.mock.method(postgres, 'reconcileReaders')
-  const sql = 'select count(*) from sync.sankhya_vendas'
+  // Names no table, so the database's own refusal answers.
+  const sql = "select lo_import('/nada')"
   assert.deepEqual(await inCompany(w.on, w.brunoId).read({ kind: 'QUERY', sql }), {
     kind: 'NOT_IN_ROLE',
   })

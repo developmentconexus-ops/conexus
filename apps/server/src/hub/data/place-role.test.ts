@@ -68,10 +68,10 @@ test('no Projeto, a tabela fora do papel é recusada', async (t) => {
   const bruno = w.on.hub.data(assistantOf(w, w.brunoId), { thread: null })
   const table = await bruno.read({ kind: 'TABLE', table: 'sankhya_clientes' })
   assert.deepEqual(table, { kind: 'NOT_IN_CATALOG' })
-  assert.deepEqual(asked(), [], 'the table outside the role asks the database nothing')
   const query = await bruno.read({ kind: 'QUERY', sql: 'select * from sync.sankhya_clientes' })
-  assert.ok(['NOT_IN_ROLE', 'NOT_IN_CATALOG'].includes(query.kind), JSON.stringify(query))
+  assert.deepEqual(query, { kind: 'NOT_IN_CATALOG' })
   noRows(query)
+  assert.deepEqual(asked(), [], 'the table outside the role asks the database nothing')
 })
 
 test('no Projeto, o banco segura o papel e o Hub o lugar', async (t) => {

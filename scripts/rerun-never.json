@@ -1218,7 +1218,7 @@
     },
     {
       "file": "packages/hub-api/src/company-data.test.ts",
-      "name": "uma consulta que o banco recusa por permissão responde NOT_IN_ROLE e não devolve linha"
+      "name": "uma consulta que nomeia a tabela que o papel não lê responde NOT_IN_CATALOG e não devolve linha"
     },
     {
       "file": "scripts/deploy.test.ts",
