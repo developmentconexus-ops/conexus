@@ -47,3 +47,9 @@ test('o CSV põe entre aspas a célula com vírgula, aspas ou quebra de linha', 
     `Bruno Reis,Assistente,no Início,sankhya_vendas,Lida,QUERY,1,12,"select a,\n""b"" from sync.sankhya_vendas"\r\n`,
   )
 })
+
+test('o CSV dá a hora no fuso de quem olha, com o deslocamento (fundador, "2. A")', () => {
+  // The tests run in America/Sao_Paulo (vitest.config.ts): 13:02 UTC is 10:02 there.
+  const text = readsCsv([read({ at: '2026-11-21T13:02:00.000Z' })], NAMES)
+  expect(cellsOf(text)[1]?.split(',')[0]).toBe('2026-11-21T10:02:00-03:00')
+})
