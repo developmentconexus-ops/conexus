@@ -16,6 +16,7 @@ import type { Place } from './headers.ts'
 import {
   APP_SESSION_COOKIE,
   appPolicyOf,
+  appSessionCookies,
   BINDING_COOKIE,
   cookiesOf,
   headersFromApp,
@@ -109,7 +110,7 @@ async function redeem(visit: Visit): Promise<Response> {
   if (!body.success) return failure(visit, 'APP_HANDOFF_INVALID')
   const answer = await visit.hub.createAppSession(body.data)
   if (answer.kind === 'DONE') {
-    return redirect(visit, '/', [setCookie(APP_SESSION_COOKIE, answer.value.session, visit.place)])
+    return redirect(visit, '/', appSessionCookies(answer.value.session, visit.place))
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failure(visit, 'APP_HANDOFF_INVALID')
@@ -219,7 +220,7 @@ async function dispatch(request: Request, env: Env, exports: Exports): Promise<R
   const answer = await visit.hub.checkAppCall({ host: visit.label, session: session.data })
   if (answer.kind === 'DONE') return toApp(visit, answer.value, session.data)
   if (answer.kind === 'REFUSED' && answer.code === 'APP_SESSION_INVALID') {
-    return toHub(visit, [setCookie(APP_SESSION_COOKIE, '', place)])
+    return toHub(visit, appSessionCookies('', place))
   }
   const refusal = answer.kind === 'REFUSED' ? CHECK_REFUSALS[answer.code] : undefined
   return failure(

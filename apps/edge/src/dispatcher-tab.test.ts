@@ -3,25 +3,35 @@ import { test } from 'node:test'
 import { APP_ORIGIN, CODE, EXAMPLE_CALL, edge, problem, SESSION } from './test-edge.ts'
 
 // The app's own tab coming back with a live Hub session: app, Hub, the pass and the app again, all
-// 303s. Safari drops a `Partitioned` cookie set at the end of a redirect chain that left the site
-// and came back (WebKit bug 306194, Safari 26.2 on macOS and iOS), so a tab whose session cookie is
-// partitioned never keeps the pass's session and runs the chain until "too many redirects".
+// 303s. In WebKit a `Partitioned` cookie is not reliably sent back to a tab after a redirect chain
+// (WebKit bugs 316066 and 306194). The jar models what the founder's loop showed, not either bug:
+// the partitioned session that the pass's answer writes never comes back, and the chain runs until
+// "too many redirects".
 const HUB = 'https://hub.conexus.fun'
 const MAX_HOPS = 16
 
-/** A tab's cookie jar on the app's host, as Safari keeps it at the top level. */
-function safariTab() {
+/**
+ * How a browser keeps the tab's cookies. `partitions`: a `Partitioned` cookie is kept apart from an
+ * unpartitioned one of the same name (CHIPS); `returnsLatePartitioned`: a partitioned cookie written
+ * after the Hub comes back.
+ */
+type Browser = { partitions: boolean; returnsLatePartitioned: boolean }
+const WEBKIT: Browser = { partitions: true, returnsLatePartitioned: false }
+const CHROMIUM: Browser = { partitions: true, returnsLatePartitioned: true }
+const NO_CHIPS: Browser = { partitions: false, returnsLatePartitioned: true }
+
+/** A tab's cookie jar on the app's host, at the top level; the older cookie is sent first. */
+function tabOf(browser: Browser) {
   const jar = new Map<string, string>()
   return {
-    header: () => [...jar].map(([name, value]) => `${name}=${value}`).join('; '),
+    header: () => [...jar.values()].join('; '),
     store(lines: readonly string[], crossings: number) {
       for (const line of lines) {
         const [pair = '', ...attributes] = line.split('; ')
-        const at = pair.indexOf('=')
-        if (attributes.includes('Max-Age=0')) jar.delete(pair.slice(0, at))
-        else if (!(attributes.includes('Partitioned') && crossings >= 2)) {
-          jar.set(pair.slice(0, at), pair.slice(at + 1))
-        }
+        const partitioned = browser.partitions && attributes.includes('Partitioned')
+        const key = `${pair.slice(0, pair.indexOf('='))}${partitioned ? '; Partitioned' : ''}`
+        if (attributes.includes('Max-Age=0')) jar.delete(key)
+        else if (!partitioned || crossings < 2 || browser.returnsLatePartitioned) jar.set(key, pair)
       }
     },
   }
@@ -34,7 +44,7 @@ function hubOpens(url: URL): string {
 }
 
 /** Follows the 303s as a tab does, from the app's address, until a page or `MAX_HOPS`. */
-async function visit(door: ReturnType<typeof edge>, tab: ReturnType<typeof safariTab>) {
+async function visit(door: ReturnType<typeof edge>, tab: ReturnType<typeof tabOf>) {
   const hops: string[] = []
   let at = new URL('/', APP_ORIGIN)
   let crossings = 0
@@ -74,16 +84,45 @@ function liveHub(request: Request): Response {
   return Response.json(EXAMPLE_CALL)
 }
 
+const STALE = `__Host-conexus-app=${'v'.repeat(43)}; Path=/; Secure; HttpOnly`
+
+/** The app session cookies the tab sends once the app opened. */
+function sessionsOf(tab: ReturnType<typeof tabOf>): string[] {
+  return tab
+    .header()
+    .split('; ')
+    .filter((pair) => pair.startsWith('__Host-conexus-app='))
+}
+
 test('aba que volta ao app com o Hub aberto: a passagem leva ao app, sem laço de redirecionamentos', async () => {
-  const { hops, response } = await visit(edge({ hub: liveHub }), safariTab())
+  const tab = tabOf(WEBKIT)
+  const { hops, response } = await visit(edge({ hub: liveHub }), tab)
+  assert.deepEqual(hops, ['/', 'hub', '/__conexus/passagem', '/'])
+  assert.equal(await response?.text(), 'Olá, Ana Souza.')
+  assert.deepEqual(sessionsOf(tab), [`__Host-conexus-app=${SESSION}`])
+})
+
+test('aba com a sessão do app vencida e o Hub aberto: apagada, e o app abre na volta', async () => {
+  const tab = tabOf(WEBKIT)
+  tab.store([`${STALE}; SameSite=Lax`], 0)
+  const { hops, response } = await visit(edge({ hub: liveHub }), tab)
   assert.deepEqual(hops, ['/', 'hub', '/__conexus/passagem', '/'])
   assert.equal(await response?.text(), 'Olá, Ana Souza.')
 })
 
-test('aba com a sessão do app vencida e o Hub aberto: apagada, e o app abre na volta', async () => {
-  const tab = safariTab()
-  tab.store([`__Host-conexus-app=${'v'.repeat(43)}; Path=/; Secure; HttpOnly; SameSite=Lax`], 0)
+test('aba com a sessão particionada de antes, vencida: as duas formas saem, e fica só a nova', async () => {
+  const tab = tabOf(CHROMIUM)
+  tab.store([`${STALE}; SameSite=None; Partitioned`], 0)
   const { hops, response } = await visit(edge({ hub: liveHub }), tab)
   assert.deepEqual(hops, ['/', 'hub', '/__conexus/passagem', '/'])
   assert.equal(await response?.text(), 'Olá, Ana Souza.')
+  assert.deepEqual(sessionsOf(tab), [`__Host-conexus-app=${SESSION}`])
+})
+
+test('navegador que ignora Partitioned: apagar a forma antiga não leva a sessão nova', async () => {
+  const tab = tabOf(NO_CHIPS)
+  const { hops, response } = await visit(edge({ hub: liveHub }), tab)
+  assert.deepEqual(hops, ['/', 'hub', '/__conexus/passagem', '/'])
+  assert.equal(await response?.text(), 'Olá, Ana Souza.')
+  assert.deepEqual(sessionsOf(tab), [`__Host-conexus-app=${SESSION}`])
 })

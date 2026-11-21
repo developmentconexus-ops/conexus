@@ -40,13 +40,28 @@ export function placeOf(headers: Headers): Place {
  * A cookie of the browser's session on this host only (security S17). In the Hub's Prévia,
  * `SameSite=None` reaches the framed app and `Partitioned` keeps it to the Hub's frame, as vibesdk's
  * preview cookie (`spacePreviewToken.ts:60-83`). The tab's is `SameSite=Lax`, which no frame of
- * another site receives: Safari drops a `Partitioned` cookie set at the end of the tab's redirect
- * chain from the Hub (WebKit bug 306194). An empty value deletes it.
+ * another site receives: in WebKit a `Partitioned` cookie is not reliably sent back to a tab after
+ * a redirect chain (WebKit bugs 316066 and 306194); which of them loops a tab was not reproduced.
+ * An empty value deletes it.
  */
 export function setCookie(name: string, value: string, place: Place): string {
   const lifetime = value === '' ? '; Max-Age=0' : ''
   const site = place === 'FRAME' ? 'SameSite=None; Partitioned' : 'SameSite=Lax'
   return `${name}=${value}; Path=/; Secure; HttpOnly; ${site}${lifetime}`
+}
+
+/**
+ * The app session's lines; an empty session deletes it. The browser keeps the partitioned and the
+ * unpartitioned cookie of one name apart, so a delete names both forms, as GitBook's logout does
+ * (`visitors.ts:419-426`). A tab kept the partitioned form before it moved to `SameSite=Lax`, and
+ * writing the new one deletes that form first: a browser that ignores `Partitioned` reads that line
+ * as a delete of the same cookie.
+ */
+export function appSessionCookies(session: string, place: Place): string[] {
+  const partitioned = setCookie(APP_SESSION_COOKIE, '', 'FRAME')
+  if (session === '') return [partitioned, setCookie(APP_SESSION_COOKIE, '', 'TAB')]
+  const written = setCookie(APP_SESSION_COOKIE, session, place)
+  return place === 'TAB' ? [partitioned, written] : [written]
 }
 
 /** The request's headers as the app receives them: without the dispatcher's cookies or session. */
