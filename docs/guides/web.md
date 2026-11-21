@@ -148,7 +148,7 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   groups by owner, the company's by task: Você (Minha conta, Suas contas de modelo, Meus padrões) and, under the company's name, Geral, Pessoas e acesso, Modelos (Contas da empresa, Padrões da empresa, a collapsed Avançado with Memória observacional) and Avisos; founder,
   2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
   there (founder, 2026-10-28: "O1"). Owner and administrator change the company's group; a developer or a member
-  reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: owner and administrator only (founder, 2026-11-21: `"D1 a"`).
+  reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: each person's own readings (founder, 2026-11-15: "3. Sim").
   Atividade and Uso are reserved there and appear only when a card asks. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
