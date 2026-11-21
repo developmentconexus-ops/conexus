@@ -20,14 +20,23 @@ export type DataReadResult = z.infer<typeof DataReadResult>
 
 /**
  * The outcomes of each word but the last: what a read answered, a table outside the catalog, and a
- * query the role or the database refused. Every other outcome, an app's SQLSTATE among them, does
- * not read (code C26: the Hub filters and the screen names by this one table).
+ * query the role or the database refused; an app's refused query is Recusada by its SQLSTATE
+ * (`REFUSED_BY_DATABASE`). Every other outcome does not read (code C26: the Hub filters and the
+ * screen names by this one table).
  */
 export const OUTCOMES_OF = {
   READ: ['TABLE', 'QUERY', 'LIVE', 'OK', 'ROWS'],
   NOT_FOUND: ['NOT_IN_CATALOG'],
   REFUSED: ['NOT_IN_ROLE', 'QUERY_REFUSED'],
 } as const satisfies Record<Exclude<DataReadResult, 'NOT_READ'>, readonly string[]>
+
+/**
+ * An app's query the database refused comes back with the PostgreSQL SQLSTATE, five characters with
+ * a digit, and is Recusada too (founder, 2026-11-21, "3. A"). Class 08 is a connection that never
+ * answered, as the edge marks its own (`08000`), and does not read. A regular expression that both
+ * the screen and PostgreSQL read (code C26).
+ */
+export const REFUSED_BY_DATABASE = '^(?!08)(?=.*[0-9])[0-9A-Z]{5}$'
 
 const WORDS = ['READ', 'NOT_FOUND', 'REFUSED'] as const
 
@@ -37,7 +46,8 @@ export function resultOf(outcome: string): DataReadResult {
     const outcomes: readonly string[] = OUTCOMES_OF[word]
     return outcomes.includes(outcome)
   })
-  return found ?? 'NOT_READ'
+  if (found !== undefined) return found
+  return new RegExp(REFUSED_BY_DATABASE).test(outcome) ? 'REFUSED' : 'NOT_READ'
 }
 
 /** The most reads one export answers (founder, P8: "As 5.000 leituras mais novas."). */

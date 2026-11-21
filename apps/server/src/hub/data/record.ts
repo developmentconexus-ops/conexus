@@ -11,9 +11,21 @@ import type {
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
-import { OUTCOMES_OF } from '@conexus/hub-api'
+import { OUTCOMES_OF, REFUSED_BY_DATABASE } from '@conexus/hub-api'
 import type { SQL } from 'drizzle-orm'
-import { and, arrayContains, desc, eq, gte, inArray, lt, notInArray, sql } from 'drizzle-orm'
+import {
+  and,
+  arrayContains,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  not,
+  notInArray,
+  or,
+  sql,
+} from 'drizzle-orm'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -117,10 +129,20 @@ export function recordReadOf(deps: Pick<DataDeps, 'database' | 'log'>): RecordRe
   }
 }
 
-/** The rows of one word: its outcomes, or for `NOT_READ` every outcome no other word holds. */
-function outcomeIs(result: DataReadResult): SQL {
-  if (result !== 'NOT_READ') return inArray(dataRead.outcome, [...OUTCOMES_OF[result]])
-  return notInArray(dataRead.outcome, Object.values(OUTCOMES_OF).flat())
+/** The rows of one word: its outcomes, an app's SQLSTATE for `REFUSED`, and for `NOT_READ` the rest. */
+function outcomeIs(result: DataReadResult): SQL | undefined {
+  const byDatabase = sql`${dataRead.outcome} ~ ${REFUSED_BY_DATABASE}`
+  switch (result) {
+    case 'READ':
+    case 'NOT_FOUND':
+      return inArray(dataRead.outcome, [...OUTCOMES_OF[result]])
+    case 'REFUSED':
+      return or(inArray(dataRead.outcome, [...OUTCOMES_OF.REFUSED]), byDatabase)
+    case 'NOT_READ':
+      return and(notInArray(dataRead.outcome, Object.values(OUTCOMES_OF).flat()), not(byDatabase))
+    default:
+      return result satisfies never
+  }
 }
 
 /** The company's rows the filters keep; `table` finds a query that read it among others. */

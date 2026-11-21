@@ -329,7 +329,7 @@ do G6, na de 2026-11-21; os números que sobram ficam livres para a leitura do c
 | 75 | U8 | Quem não é membro da empresa recebe 404 `NOT_FOUND` nas duas rotas (security S10); uma página com `page` malformado recebe 400 | `reads.test.ts`, "fora da empresa, não encontrado" | must |
 | 76 | U8 | Nenhuma linha da resposta tem um campo de valor lido: o esquema `DataReadEntry` não tem campo de linhas, e a resposta passa nele | `reads.test.ts`, "a resposta passa no esquema sem linhas" | must |
 | 77 | U9 | O índice de Configurações mostra **Registro de dados** no grupo da empresa, logo depois de Papéis, só a quem tem `readDataReads` (Dono e Administrador); para o Membro e o Desenvolvedor o item não existe, e o endereço da página dá a página de não encontrado | `apps/web/src/hub/data/data-reads.test.tsx`, "o item só para quem administra" | must |
-| 78 | U9 | A lista mostra quando, quem, qual agente (com "no Projeto {nome}" embaixo, quando há Projeto), o que foi lido, o resultado e quantas linhas. O resultado é uma palavra, com o código no `title`: **Lida**; **Não encontrada** para todo `NOT_IN_CATALOG`; **Recusada** para `NOT_IN_ROLE` e `QUERY_REFUSED`; **Não lida** para o resto. O filtro escolhido fica no endereço e volta ao recarregar | `data-reads.test.tsx`, "a lista e o filtro no endereço" | must |
+| 78 | U9 | A lista mostra quando, quem, qual agente (com "no Projeto {nome}" embaixo, quando há Projeto), o que foi lido, o resultado e quantas linhas. O resultado é uma palavra, com o código no `title`: **Lida**; **Não encontrada** para todo `NOT_IN_CATALOG`; **Recusada** para `NOT_IN_ROLE`, `QUERY_REFUSED` e a consulta de um app que o banco recusa (o código do PostgreSQL; a classe 08, sem conexão, não); **Não lida** para o resto. O filtro escolhido fica no endereço e volta ao recarregar | `data-reads.test.tsx`, "a lista e o filtro no endereço" | must |
 | 79 | U9 | A linha aberta, com o título "Leitura de {quando}", mostra quem, o agente, a conversa ("Conversa: no Início" ou "no Projeto {nome}"), as tabelas ou a operação, a consulta, o resultado, as linhas e o tempo, com **Abrir a conversa** quando a conversa é conhecida e **Copiar a consulta** quando há consulta; nada mais | `data-reads.test.tsx`, "a linha aberta" | must |
 | 80 | U9 | **Exportar** abre o diálogo "Exportar", "As leituras dos filtros de agora, num arquivo CSV. No máximo 31 dias por vez.", com "De" e "Até" (a tela não deixa escolher mais de 31 dias), e baixa um CSV com as linhas do filtro no período; com `complete` falso, diz "As 5.000 leituras mais novas."; uma consulta que começa com `=`, `+`, `-` ou `@` sai com um apóstrofo na frente | `apps/web/src/hub/data/csv.test.ts`, "o CSV desarma fórmula" | must |
 | 81 | U9 | Vazio: "Nenhuma leitura ainda." e o que vai aparecer ali; carregando: esqueletos; erro: "Não deu para ler o registro agora." com **Tentar de novo** | `data-reads.test.tsx`, os três estados, e `apps/web/sweep-data-reads-states.ts` | must |
@@ -1034,8 +1034,8 @@ de rota (T5).
 ### Os contratos que a unidade cria
 
 Nenhum do servidor. Os textos em `text.ts`, um dono (C26): as palavras do Resultado (P3 (a)): **Lida**,
-**Não encontrada** (todo `NOT_IN_CATALOG`), **Recusada** (`NOT_IN_ROLE`, `QUERY_REFUSED`) e **Não lida**
-(o resto), com o código no `title`; "no Projeto {nome}" e "Conversa: no Início" (P7 (a)); a folha
+**Não encontrada** (todo `NOT_IN_CATALOG`), **Recusada** (`NOT_IN_ROLE`, `QUERY_REFUSED` e o código do
+PostgreSQL da consulta de um app) e **Não lida** (o resto), com o código no `title`; "no Projeto {nome}" e "Conversa: no Início" (P7 (a)); a folha
 "Ver as leituras", com "Todas" e "Todos"; o diálogo "Exportar", "As leituras dos filtros de agora, num
 arquivo CSV. No máximo 31 dias por vez.", "De" e "Até"; o título "Leitura de {quando}"; e "As 5.000
 leituras mais novas." (P8). A frase sob o título é a do desenho de caixas.

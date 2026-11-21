@@ -64,6 +64,23 @@ test('a lista e o filtro no endereço', async () => {
       ...{ agent: 'CONSTRUTOR', verb: 'LIVE', tables: [], connection: MATRIZ },
       ...{ operation: 'lerPedidos', outcome: 'UNREACHABLE', rows: null },
     }),
+    // An app's query the database refused, and one that never reached it (founder, "3. A").
+    read({
+      agent: 'APP',
+      verb: 'QUERY',
+      tables: [],
+      query: 'select 2',
+      outcome: '42501',
+      rows: null,
+    }),
+    read({
+      agent: 'APP',
+      verb: 'QUERY',
+      tables: [],
+      query: 'select 3',
+      outcome: '08000',
+      rows: null,
+    }),
   ]
   readsHub({ as: 'owner', reads: () => reads, asked })
   // A filter changed on the second page goes back to the first (web W18).
@@ -77,6 +94,8 @@ test('a lista e o filtro no endereço', async () => {
     ['Bruno Reis', 'Resumo semanal', 'sankhya_vendas', 'Recusada', '–'],
     ['Bruno Reis', 'Agente apagadonum Projeto apagado', 'sankhya_vendas', 'Lida', '1'],
     ['Bruno Reis', 'Construtor', 'Matriz · lerPedidos', 'Não lida', '–'],
+    ['Bruno Reis', 'App', 'Consulta', 'Recusada', '–'],
+    ['Bruno Reis', 'App', 'Consulta', 'Não lida', '–'],
   ])
   expect(screen.getByText('Não encontrada').getAttribute('title')).toBe('NOT_IN_CATALOG')
   expect(rowTexts()[0]?.[0]).toMatch(/^hoje, \d\d:\d\d$/)

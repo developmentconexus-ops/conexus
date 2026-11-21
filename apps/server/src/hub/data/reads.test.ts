@@ -113,6 +113,10 @@ test('os filtros recortam', async (t) => {
   const read = ['sankhya_produtos', 'sankhya_itens_venda']
   await w.record({ ...queried, ...query, tables: read, outcome: 'QUERY', rows: 3, ms: 2 })
   await w.record({ ...queried, ...query, tables: [], outcome: 'NOT_IN_ROLE', rows: null, ms: 2 })
+  // An app's query: the database refused it (its SQLSTATE), and then never answered (08000).
+  const app = { ...who(w, w.ana), by: 'app' as const, ...query, tables: [], rows: null, ms: 4 }
+  await w.record({ ...app, outcome: '42501' })
+  await w.record({ ...app, outcome: '08000' })
   async function tablesOf(query: string) {
     const { reads } = await listed(w.hub, w.ana, url(w, query))
     return reads.map((read) => [read.outcome, ...read.tables])
@@ -133,8 +137,11 @@ test('os filtros recortam', async (t) => {
     ['TABLE', 'sankhya_vendas'],
   ])
   assert.deepEqual(await tablesOf('?outcome=NOT_FOUND'), [['NOT_IN_CATALOG', 'sankhya_clientes']])
-  assert.deepEqual(await tablesOf('?outcome=REFUSED'), [['NOT_IN_ROLE']])
-  assert.deepEqual(await tablesOf('?outcome=NOT_READ'), [['TABLE_UNAVAILABLE', 'sankhya_clientes']])
+  assert.deepEqual(await tablesOf('?outcome=REFUSED'), [['42501'], ['NOT_IN_ROLE']])
+  assert.deepEqual(await tablesOf('?outcome=NOT_READ'), [
+    ['08000'],
+    ['TABLE_UNAVAILABLE', 'sankhya_clientes'],
+  ])
   assert.deepEqual(await tablesOf(`?person=${w.bruno.id}&outcome=READ`), [
     ['TABLE', 'sankhya_vendas'],
   ])
