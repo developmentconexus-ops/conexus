@@ -79,6 +79,13 @@ Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
 A ordem entre as duas frentes é decidida quando a etapa 7 fechar.
 
+O cartão da etapa 2 leva o aviso de cópia parada, que saiu do Registro e conformidade (2026-11-21,
+"R1 a R2 a"): o aviso vai a quem pode consertar a cópia e à lista de e-mails da empresa; a unidade é
+a parada, e não a rodada, com um aviso quando a cópia para e um lembrete por dia enquanto ela
+continuar parada; o botão Seguir só entra se alguém pedir. O estudo da etapa decide se a parada é da
+conexão ou da tabela, com a rodada do lago na mão, e se usa as tabelas `copy_follower`,
+`alert_recipient` e `copy_notice`, que estão no `main` sem uso.
+
 O motor de cópias de hoje sai inteiro quando a etapa 7 fechar. Até lá ele copia o que o lago ainda
 não copia, e o cartão de cada etapa diz o que sai nela.
 
@@ -153,7 +160,7 @@ em 2026-11-14 ("Aprovado", E1a a E5a) e respondeu às três perguntas da spec: P
 Okay") e P3, a fonte única de conectores, o kit (decisão
 [0069](../../decisions/0069-connectors-one-source-the-kit.md)). A entrada conversada entra pelo
 cartão em rascunho do PR 982 (E2a). A consulta fica visível a quem lê a tabela, recolhida (E3a). O
-Registro de dados mostra a cada pessoa as próprias leituras, e ao dono e ao administrador todas, sem prazo por ora (E4a, emendada em 2026-11-15).
+Registro de dados é só do dono e do administrador, sem prazo por ora (E4a; 2026-11-21, `"D1 a D2 a"`).
 
 ## Como a outra trilha pede uma mudança no contrato
 

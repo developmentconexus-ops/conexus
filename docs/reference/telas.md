@@ -178,7 +178,7 @@ A Primeira entrada é do Dono, uma vez (web W33). Quem não é Dono vai ao Iníc
 
 ### Configurações
 
-A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/settings-index.tsx`); o mapa 6.4 pede Você, e na empresa Geral, Pessoas e acesso, Modelos, e Avisos e uso (este nasce com o primeiro cartão). Só Papéis esconde a seção (`needs: 'manageRoles'`); as outras desligam a ação e dizem quem pode. No celular o índice não aparece a 390 px. Tudo de "Você" mora na rota da empresa.
+A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/settings-index.tsx`); o mapa 6.4 pede Você, e na empresa Geral, Pessoas e acesso, Modelos, e Avisos e uso (este nasce com o primeiro cartão). Só Papéis esconde a seção (`needs: 'manageRoles'`), e o Registro de dados, quando chegar, esconde do mesmo jeito (2026-11-21, `"D1 a D2 a"`); as outras desligam a ação e dizem quem pode. No celular o índice não aparece a 390 px. Tudo de "Você" mora na rota da empresa.
 
 #### TB13. Minha conta (Você)
 
@@ -304,13 +304,11 @@ A tela é hipótese, fora do repositório até o estudo do marco. O cartão e o 
 
 | Grupo | Cartão | Resultado | Marco | Referência mais próxima |
 | --- | --- | --- | --- | --- |
-| Você | Minhas leituras | `C6` | Registro e conformidade, U9 | Registro de auditoria com filtros e exportação |
-| Você | Cópias que você segue | `C1`, `C7` | U13 | nenhuma |
 | Empresa: Geral | Identidade da empresa | A4 | `A2`, "3B" | Página de identidade da organização |
-| Empresa: Pessoas e acesso | Registro de dados da empresa | `C6` | U9 | Registro de auditoria |
+| Empresa: Pessoas e acesso | Registro de dados, só Dono e Administrador | `C6` | Registro e conformidade, U9 | Registro de auditoria com filtros e exportação |
 | Empresa: Pessoas e acesso | Chaves para agentes de fora | sem número (perto de G8) | `docs/steps/trilhas/dados.md` | Chaves de acesso e contas de serviço |
 | Empresa: Modelos | Limites por provedor | G4, A1 | etapa 20, decisão 0058 | Limites de gasto por provedor |
-| Empresa: Avisos e uso | Avisos | `C1`, `C7` | U13 | nenhuma |
+| Empresa: Avisos e uso | Avisos (os e-mails da empresa) | `C1`, `C7` | a etapa 2 do lago | a lista de e-mails da empresa que recebe a falha de qualquer fonte |
 | Empresa: Avisos e uso | Uso | sem número | `D6` | Página de plano e uso |
 | Empresa: Avisos e uso | Atividade | G9 | 21.1 | Registro de auditoria |
 | Empresa: Avisos e uso | Plano e cobrança | sem número | etapa 23 | Página de plano e uso |

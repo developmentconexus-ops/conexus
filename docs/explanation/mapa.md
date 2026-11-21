@@ -208,8 +208,8 @@ Dois grupos, Você e o nome da empresa.
 
 | Configuração | Quando | Fonte | Doc ou inferido |
 | --- | --- | --- | --- |
-| Registro de dados: as leituras de cada pessoa; Dono e Administrador veem todas | Registro e conformidade, U9 | `docs/steps/registro-e-conformidade.md`; web W32 | doc |
-| Avisos: os e-mails que recebem a falha de cópia; as cópias que você segue | Registro e conformidade, U13 | o mesmo cartão; web W32 | doc |
+| Registro de dados: as leituras de todos, só para Dono e Administrador (2026-11-21, `"D1 a D2 a"`) | Registro e conformidade, U9 | `docs/steps/registro-e-conformidade.md`; web W32 | doc |
+| Avisos: os e-mails da empresa que recebem o aviso de cópia parada | o cartão da etapa 2 do lago (2026-11-21, "R1 a R2 a") | `docs/steps/trilhas/dados.md`; web W32 | doc |
 | Atividade e Uso, reservados | 21.1 e `D6` | web W32; `docs/roadmap.md` | doc; se ficam com a empresa ou com a Central, inferido |
 | Identidade da empresa (cores, letras, formas que os apps seguem) | `A2` ("3B") | `docs/roadmap.md`; trilha Agentes e Apps | doc; que fique nas Configurações, inferido |
 | Chaves para agentes de fora (a porta MCP) | cartão próprio, depois | `docs/steps/trilhas/dados.md`; spec dos dados, parte 8 | doc; a tela, inferido |
@@ -239,9 +239,9 @@ contas (duas das referências). "IA" como grupo aparece em duas, e fraco nas dua
 
 | Grupo | Hoje | Quando o cartão chegar |
 | --- | --- | --- |
-| Você | Minha conta; Suas contas de modelo; Meus padrões | Minhas leituras (Registro); Cópias que você segue (Avisos) |
+| Você | Minha conta; Suas contas de modelo; Meus padrões | nada previsto (2026-11-21: o Registro é de quem administra, e Seguir só entra se alguém pedir) |
 | Empresa: Geral | Geral | Identidade da empresa (`A2`) |
-| Empresa: Pessoas e acesso | Pessoas e convites; Papéis | Registro de dados da empresa; Chaves para agentes de fora |
+| Empresa: Pessoas e acesso | Pessoas e convites; Papéis | Registro de dados, só Dono e Administrador; Chaves para agentes de fora |
 | Empresa: Modelos | Contas da empresa e Troca automática; Padrões da empresa; Memória observacional, num "Avançado" (E2 b) | Limites por provedor |
 | Empresa: Avisos e uso | nada ainda (o grupo nasce com o primeiro cartão, web W31) | Avisos; Uso; Atividade; Plano e cobrança |
 
