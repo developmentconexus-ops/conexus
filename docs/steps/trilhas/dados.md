@@ -20,12 +20,17 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-O cartão em construção é o [Registro e conformidade](../registro-e-conformidade.md), a etapa 3 a
-caminho de `D2`, aprovado em 2026-11-17
-([arquivo de aprovação](../../approvals/registro-e-conformidade.md)). Ele termina no banco da
-empresa, como está, por palavra do fundador em 2026-11-19.
+O Registro e conformidade, a etapa 3 a caminho de `D2`, fechou em 2026-11-22: o fundador o usou na
+nuvem, na v0.24.109, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/registro-e-conformidade.md). Ele terminou no banco da
+empresa, como está, por palavra do fundador em 2026-11-19. O cartão está no histórico do `main`, no
+commit `07aa2924`, o último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão da
+etapa seguinte entrar.
 
-As duas etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
+A etapa seguinte é a 1 do lago, O lago da empresa nasce e some, com o cartão em rascunho em
+https://github.com/developmentconexus-ops/conexus/pull/1231.
+
+As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)), e cada papel lê só o seu, com
 a porta única, em 2026-11-17 ([aprovação](../../approvals/cada-papel-le-so-o-seu.md)).
 
@@ -60,7 +65,7 @@ estudo e cartão próprios e fecha quando o fundador a usa.
 | 6. Escolher o que copiar | Eu marco o que quero copiar de cada sistema, com as tabelas e os campos da minha empresa, e nada vem marcado? | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
 | 7. A tabela grande e sem coluna de alteração | As fiscais e as contábeis entram, a primeira carga termina numa tarde, e o que sumiu da fonte some do lago? | As fiscais e contábeis do Sankhya; as listas do Mercado Livre sem filtro de alteração |
 
-Antes da etapa 1 entram o fechamento do Registro e conformidade e a mudança de método que dá ao
+Antes da etapa 1 entra a mudança de método que dá ao
 repositório regra, teste e conferência para Python, para a infraestrutura da AWS e para testar o
 Hub sem a AWS (delivery L20); nela a regra D25 é reescrita pelo motivo dela, sem exceção. Antes de
 qualquer outra empresa entra a etapa da conta oficial da AWS, que está no

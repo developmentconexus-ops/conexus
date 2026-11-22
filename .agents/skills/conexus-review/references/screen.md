@@ -6,6 +6,10 @@ which of its commands, hooks and configuration Conexus allows.
 - Refuse the step's study report when the step has a screen and the report has no captures
   folder: no "What a person saw" without shots is no study of a screen. Say so as a finding.
 - Compare each changed screen with the old shots the card carries, state by state.
+- Piece before screen ([design V62](../../../../docs/guides/design.md)): a look the diff draws
+  outside `apps/web/src/ui/` that a `ui/` piece already draws, or a new `ui/` piece without its
+  showcase entry and its `DESIGN.md` line, is a finding. Open the showcase (`/pieces`) in both
+  themes beside the screens.
 - Open the screen the founder approved (the chosen design or the proposal's prototype) beside the
   built one and compare them element by element: each element it draws (logo, name, pill,
   coloured dot, badge) is in the build, or the card records why not. A criterion's text is not the
