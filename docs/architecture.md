@@ -161,8 +161,8 @@ the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
 | E2B | Build, Assistant and agent machines behind a domain list, under the founder's free-account key | [0028] [0051] [0059] |
 | AWS, a lab account for now [0072] | The lakes, read by the agents [0079]; Fargate copy tasks; the Hub's stack per company; the CDK platform | [0070] [0073] [0075] [0076] |
 
-**Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
-command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
+**Publish.** Merging a release note tags `main`, builds the image and puts it live with no command
+on the server; no other merge publishes [0035] [0044] [0081]. Migrations run before the
 program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
