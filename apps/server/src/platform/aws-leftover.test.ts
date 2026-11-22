@@ -48,8 +48,14 @@ function tablesCalls(received: { action: string }[]) {
 }
 
 test('aws: o depósito que a pilha criou e apagou, ou que nunca começou, nem é procurado', async (t) => {
-  // Created and deleted (the study's P5); never begun, refused by validation (lab run 45081093044).
-  for (const recording of ['describe-stack-events-falha', 'describe-stack-events-validacao']) {
+  // Created and deleted: the study's P5, and the published template in lab run 45083865870, whose
+  // bucket the Hub's session removed before the undoing reached it (the grants after it then failed).
+  // Never begun: refused by validation (lab run 45081093044).
+  for (const recording of [
+    'describe-stack-events-falha',
+    'describe-stack-events-criado-e-apagado',
+    'describe-stack-events-validacao',
+  ]) {
     const none = await awsAt(t, leftoverAt(awsRecording(recording), []))
     assert.deepEqual(await none.stacks.leftover(AT, FAILED_LAKE), { kind: 'DONE', value: 'NONE' })
     assert.deepEqual(tablesCalls(none.received), [], recording)
