@@ -33,6 +33,8 @@ const need = (name) => {
   return value
 }
 const orphan = need('ORFAO')
+// The record names its run here, on the server, so the file's sha-256 is the one the run prints.
+const SOURCE = `U4 step 1, from the Hub server with the Hub key (lab run ${need('LAB_RUN')}), laboratory account, values changed (S40)`
 if (!/^conexus-[a-z0-9]{12}$/.test(orphan)) throw new Error('ORFAO não é conexus-<12>')
 const HUB_KEY_PROFILE = 'default'
 const require = createRequire(join(deps, 'package.json'))
@@ -68,7 +70,13 @@ const recording = {
     const chunks = []
     for await (const chunk of response.body) chunks.push(Buffer.from(chunk))
     const body = Buffer.concat(chunks)
-    last = { status: response.statusCode, contentType: response.headers['content-type'], body: body.toString('utf8') }
+    // restJson1 (S3 Tables) names the error's class only in x-amzn-errortype; the SDK reads it first.
+    last = {
+      status: response.statusCode,
+      contentType: response.headers['content-type'],
+      errorType: response.headers['x-amzn-errortype'],
+      body: body.toString('utf8'),
+    }
     const { Readable } = await import('node:stream')
     response.body = Readable.from([body])
     return { response }
@@ -95,8 +103,10 @@ function save(name, service, api) {
     api,
     sdk: `@aws-sdk/client-${service} ${SDK}`,
     recordedAt: new Date().toISOString().slice(0, 10),
+    source: SOURCE,
     status: last.status,
     contentType: last.contentType,
+    errorType: last.errorType === undefined ? undefined : scrub(last.errorType),
     body: scrub(last.body),
   }
   writeFileSync(join(out, `${name}.json`), `${JSON.stringify(record, null, 2)}\n`)

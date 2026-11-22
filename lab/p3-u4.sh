@@ -55,6 +55,7 @@ timeout --kill-after=30 1500 docker run --rm --pull never --user 1000:1000 \
   --mount "type=bind,source=$saida,target=/out" \
   -e HOME=/deps/home -e AWS_SHARED_CREDENTIALS_FILE=/run/secrets/hub_aws_credentials \
   -e AWS_CONFIG_FILE=/deps/sem-config -e AWS_REGION=us-east-2 -e ORFAO="$orfao" -e SO_U4="$so_u4" \
+  -e LAB_RUN="${GITHUB_RUN_ID:?o lab.yml dá o GITHUB_RUN_ID}" \
   --entrypoint /bin/sh "$imagem" -euc '
     echo "== 0. o arquivo da chave: $(stat -c "%u:%g %a %s" /run/secrets/hub_aws_credentials)"
     cd /deps && echo "{\"private\":true}" > package.json
