@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import type { AwsDeadlines } from './aws.ts'
-import { createLakeStacks } from './aws.ts'
+import { createLakeStacks, LakeId, StackId } from './aws.ts'
 import type { WireAnswer } from './test-aws.ts'
 import { awsRecording, testAws, testAwsCredentials } from './test-aws.ts'
 import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
@@ -86,4 +86,10 @@ export function session(): Reply {
   const { status, body } = awsRecording('assume-role-aceito')
   const expiration = new Date(Date.now() + 15 * 60_000).toISOString()
   return { status, body: body.replace(/<Expiration>[^<]*</, `<Expiration>${expiration}<`) }
+}
+
+/** A lake whose creation failed, under the stack the recordings name (create-stack-mesma-chave). */
+export function failedLake(): { id: LakeId; stack: StackId } {
+  const stack = /<StackId>([^<]+)<\/StackId>/.exec(awsRecording('create-stack-mesma-chave').body)
+  return { id: LakeId.parse('k3x9a0b1c2d3'), stack: StackId.parse(stack?.[1]) }
 }
