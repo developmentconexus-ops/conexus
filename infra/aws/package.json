@@ -1,0 +1,17 @@
+{
+  "name": "@conexus/infra-aws",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "synth": "cdk synth LakeStack --json > lake.template.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node ../../scripts/test-run.ts --test-reporter=../../scripts/test-reporter.ts \"test/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "aws-cdk": "2.1149.0",
+    "aws-cdk-lib": "2.278.0",
+    "constructs": "10.8.1",
+    "zod": "4.6.5"
+  }
+}

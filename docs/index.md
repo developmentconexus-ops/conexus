@@ -16,6 +16,7 @@ One line per document.
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
+- [how-to/aws-conta-de-laboratorio.md](how-to/aws-conta-de-laboratorio.md): the lab AWS account's preparation.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).

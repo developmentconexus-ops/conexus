@@ -18,9 +18,11 @@ type Job = {
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
-  'runs-on': unknown
+  'runs-on'?: unknown
   environment?: string
   outputs?: Record<string, string>
+  /** A call of another workflow, which has no steps of its own. */
+  uses?: string
   steps: Step[]
 }
 type Workflow = { on: Record<string, unknown>; jobs: Record<string, Job> }
@@ -44,15 +46,22 @@ const BUILT_TEMPLATE = ['${{', 'needs.template.outputs.template', '}}'].join(' '
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 const ci = workflow('ci.yml')
+const awsPlatform = workflow('aws-platform.yml')
 
-/** Only a GitHub-hosted machine is not the server: a label list, a group or a bare label may reach it. */
+/**
+ * Only a GitHub-hosted machine is not the server: a label list, a group or a bare label may reach
+ * it. A call of another workflow runs nowhere itself; that workflow's own jobs are read.
+ */
 function onServer(job: Job): boolean {
+  if (job.uses !== undefined) return false
   const labels = job['runs-on']
   return !(typeof labels === 'string' && labels.startsWith('ubuntu-'))
 }
 
-test('o Release publica o Hub depois da imagem e do template, e a borda depois do Hub', () => {
-  assert.deepEqual(publish.jobs.deploy?.needs, ['image', 'template'])
+test('o Release publica o Hub depois da imagem, do template e da plataforma da AWS, e a borda depois do Hub', () => {
+  assert.deepEqual(publish.jobs.deploy?.needs, ['image', 'template', 'aws-platform'])
+  assert.equal(publish.jobs['aws-platform']?.needs, 'image')
+  assert.equal(publish.jobs['aws-platform']?.uses, './.github/workflows/aws-platform.yml')
   assert.equal(publish.jobs.edge?.needs, 'deploy')
 })
 
@@ -67,7 +76,7 @@ test('nenhum trabalho que instala dependências tem um token que escreve no repo
   for (const workflow of [publish, rollback, ci]) {
     for (const [name, job] of Object.entries(workflow.jobs)) {
       if (job.permissions?.contents !== 'write') continue
-      const installs = job.steps.filter(
+      const installs = (job.steps ?? []).filter(
         (step) =>
           step.uses?.startsWith('actions/checkout@') ||
           step.uses === './.github/actions/install' ||
@@ -87,16 +96,16 @@ test('a volta acha o registro antes de mexer na borda, e põe a borda de volta a
 test('a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor', () => {
   assert.equal(publish.jobs.image?.['runs-on'], 'ubuntu-24.04')
   const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
-    ([name]) => !['image', 'template', 'apps', 'apps-release'].includes(name),
+    ([name]) => !['image', 'template', 'apps', 'apps-release', 'aws-platform'].includes(name),
   )
   for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
 
 test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', () => {
-  const checkouts = Object.values(publish.jobs).flatMap((job) =>
-    job.steps.filter((step) => step.uses?.startsWith('actions/checkout@')),
+  const checkouts = [...Object.values(publish.jobs), ...Object.values(awsPlatform.jobs)].flatMap(
+    (job) => (job.steps ?? []).filter((step) => step.uses?.startsWith('actions/checkout@')),
   )
-  assert.equal(checkouts.length, 5)
+  assert.equal(checkouts.length, 6)
   for (const step of checkouts) assert.equal(step.with?.ref, SHA)
 })
 
@@ -162,7 +171,7 @@ test('a chave da E2B vem só do segredo do GitHub e só ao passo do build, nunca
   const key = ['${{', 'secrets.E2B_API_KEY', '}}'].join(' ')
   for (const [file, workflow] of Object.entries({ publish, rollback, ci })) {
     for (const [name, job] of Object.entries(workflow.jobs)) {
-      for (const step of job.steps) {
+      for (const step of job.steps ?? []) {
         const holds = JSON.stringify(step).includes('E2B_API_KEY')
         const isBuild = file === 'publish' && name === 'template' && step.id === 'build'
         assert.equal(holds, isBuild, `${file}: ${name}: ${step.id ?? step.name ?? step.uses}`)

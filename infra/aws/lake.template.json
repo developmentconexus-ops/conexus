@@ -1,0 +1,500 @@
+{
+  "Parameters": {
+    "LakeId": {
+      "Type": "String",
+      "AllowedPattern": "^[a-z0-9]{12}$"
+    },
+    "CompanyId": {
+      "Type": "String",
+      "AllowedPattern": "^[A-Za-z0-9]{32}$"
+    }
+  },
+  "Resources": {
+    "Bucket": {
+      "Type": "AWS::S3Tables::TableBucket",
+      "Properties": {
+        "TableBucketName": {
+          "Fn::Join": [
+            "",
+            [
+              "conexus-",
+              {
+                "Ref": "LakeId"
+              }
+            ]
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "conexus-empresa",
+            "Value": {
+              "Ref": "CompanyId"
+            }
+          }
+        ]
+      }
+    },
+    "Raw": {
+      "Type": "AWS::S3Tables::Namespace",
+      "Properties": {
+        "Namespace": "raw",
+        "TableBucketARN": {
+          "Fn::GetAtt": [
+            "Bucket",
+            "TableBucketARN"
+          ]
+        }
+      }
+    },
+    "Current": {
+      "Type": "AWS::S3Tables::Namespace",
+      "Properties": {
+        "Namespace": "current",
+        "TableBucketARN": {
+          "Fn::GetAtt": [
+            "Bucket",
+            "TableBucketARN"
+          ]
+        }
+      }
+    },
+    "ReaderF7BF189D": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "ArnEquals": {
+                  "aws:PrincipalArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":iam::",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":role/conexus-hub"
+                      ]
+                    ]
+                  }
+                },
+                "StringEquals": {
+                  "aws:PrincipalTag/conexus-empresa": {
+                    "Ref": "CompanyId"
+                  },
+                  "aws:RequestTag/conexus-empresa": {
+                    "Ref": "CompanyId"
+                  }
+                },
+                "Null": {
+                  "aws:RequestTag/conexus-leitor": "false"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              }
+            },
+            {
+              "Action": "sts:TagSession",
+              "Condition": {
+                "ArnEquals": {
+                  "aws:PrincipalArn": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":iam::",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":role/conexus-hub"
+                      ]
+                    ]
+                  }
+                },
+                "StringEquals": {
+                  "aws:PrincipalTag/conexus-empresa": {
+                    "Ref": "CompanyId"
+                  },
+                  "aws:RequestTag/conexus-empresa": {
+                    "Ref": "CompanyId"
+                  }
+                },
+                "ForAllValues:StringEquals": {
+                  "aws:TagKeys": [
+                    "conexus-empresa",
+                    "conexus-leitor"
+                  ]
+                },
+                "Null": {
+                  "aws:TagKeys": "false"
+                }
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":iam::",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":root"
+                    ]
+                  ]
+                }
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "MaxSessionDuration": 3600,
+        "PermissionsBoundary": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":iam::",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":policy/conexus-limite"
+            ]
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "athena:StartQueryExecution",
+                    "athena:GetQueryExecution",
+                    "athena:GetQueryResults",
+                    "athena:StopQueryExecution",
+                    "athena:GetWorkGroup"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:",
+                        {
+                          "Ref": "AWS::Partition"
+                        },
+                        ":athena:",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ":",
+                        {
+                          "Ref": "AWS::AccountId"
+                        },
+                        ":workgroup/conexus-",
+                        {
+                          "Ref": "LakeId"
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Action": [
+                    "glue:GetCatalog",
+                    "glue:GetCatalogs",
+                    "glue:GetDatabase",
+                    "glue:GetDatabases",
+                    "glue:GetTable",
+                    "glue:GetTables"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":glue:",
+                          {
+                            "Ref": "AWS::Region"
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":catalog"
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":glue:",
+                          {
+                            "Ref": "AWS::Region"
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":catalog/s3tablescatalog"
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":glue:",
+                          {
+                            "Ref": "AWS::Region"
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":catalog/s3tablescatalog/conexus-",
+                          {
+                            "Ref": "LakeId"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":glue:",
+                          {
+                            "Ref": "AWS::Region"
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":database/s3tablescatalog/conexus-",
+                          {
+                            "Ref": "LakeId"
+                          },
+                          "/*"
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:",
+                          {
+                            "Ref": "AWS::Partition"
+                          },
+                          ":glue:",
+                          {
+                            "Ref": "AWS::Region"
+                          },
+                          ":",
+                          {
+                            "Ref": "AWS::AccountId"
+                          },
+                          ":table/s3tablescatalog/conexus-",
+                          {
+                            "Ref": "LakeId"
+                          },
+                          "/*/*"
+                        ]
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Action": "lakeformation:GetDataAccess",
+                  "Effect": "Allow",
+                  "Resource": "*"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "conexus"
+          }
+        ],
+        "RoleName": {
+          "Fn::Join": [
+            "",
+            [
+              "conexus-",
+              {
+                "Ref": "LakeId"
+              },
+              "-leitor"
+            ]
+          ]
+        }
+      }
+    },
+    "WorkGroup": {
+      "Type": "AWS::Athena::WorkGroup",
+      "Properties": {
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              "conexus-",
+              {
+                "Ref": "LakeId"
+              }
+            ]
+          ]
+        },
+        "RecursiveDeleteOption": true,
+        "WorkGroupConfiguration": {
+          "BytesScannedCutoffPerQuery": 1073741824,
+          "EnforceWorkGroupConfiguration": true,
+          "EngineVersion": {
+            "SelectedEngineVersion": "AUTO"
+          },
+          "ManagedQueryResultsConfiguration": {
+            "Enabled": true
+          },
+          "PublishCloudWatchMetricsEnabled": false
+        }
+      }
+    },
+    "DescribeCatalog": {
+      "Type": "AWS::LakeFormation::PrincipalPermissions",
+      "Properties": {
+        "Permissions": [
+          "DESCRIBE"
+        ],
+        "PermissionsWithGrantOption": [],
+        "Principal": {
+          "DataLakePrincipalIdentifier": {
+            "Fn::GetAtt": [
+              "ReaderF7BF189D",
+              "Arn"
+            ]
+          }
+        },
+        "Resource": {
+          "Catalog": {
+            "Id": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":s3tablescatalog/conexus-",
+                  {
+                    "Ref": "LakeId"
+                  }
+                ]
+              ]
+            }
+          }
+        }
+      },
+      "DependsOn": [
+        "Current"
+      ]
+    },
+    "DescribeCurrent": {
+      "Type": "AWS::LakeFormation::PrincipalPermissions",
+      "Properties": {
+        "Permissions": [
+          "DESCRIBE"
+        ],
+        "PermissionsWithGrantOption": [],
+        "Principal": {
+          "DataLakePrincipalIdentifier": {
+            "Fn::GetAtt": [
+              "ReaderF7BF189D",
+              "Arn"
+            ]
+          }
+        },
+        "Resource": {
+          "Database": {
+            "CatalogId": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":s3tablescatalog/conexus-",
+                  {
+                    "Ref": "LakeId"
+                  }
+                ]
+              ]
+            },
+            "Name": "current"
+          }
+        }
+      },
+      "DependsOn": [
+        "Current"
+      ]
+    }
+  },
+  "Outputs": {
+    "BucketArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Bucket",
+          "TableBucketARN"
+        ]
+      }
+    }
+  }
+}

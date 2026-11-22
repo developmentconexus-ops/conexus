@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import {
+  ACCOUNT,
+  actionsOf,
+  bySid,
+  find,
+  readable,
+  resourcesOf,
+  statementsOf,
+  trustOf,
+} from './policies.ts'
+
+const preparation = readable('preparation')
+
+test('a Release só entra do ambiente production', () => {
+  const role = find(preparation, 'ReleaseRole')
+  assert.equal(role.Properties.RoleName, 'conexus-release')
+  assert.deepEqual(trustOf(role), [
+    {
+      Action: 'sts:AssumeRoleWithWebIdentity',
+      Effect: 'Allow',
+      Principal: { Federated: '{GitHub}' },
+      Condition: {
+        StringEquals: {
+          'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+          'token.actions.githubusercontent.com:sub':
+            'repo:{GitHubRepository}:environment:production',
+        },
+      },
+    },
+  ])
+  assert.equal(
+    find(preparation, 'GitHub').Properties.Url,
+    'https://token.actions.githubusercontent.com',
+  )
+  assert.deepEqual(statementsOf(role), [
+    {
+      Sid: 'AssumeTheCdkRoles',
+      Effect: 'Allow',
+      Action: 'sts:AssumeRole',
+      Resource: `arn:aws:iam::${ACCOUNT}:role/cdk-*`,
+    },
+  ])
+})
+
+test('a execução do CDK não é administradora', () => {
+  const policy = find(preparation, 'CdkExecution')
+  assert.equal(policy.Properties.ManagedPolicyName, 'conexus-cdk-execucao')
+  const statements = statementsOf(policy)
+  const allowed = statements.filter((statement) => statement.Effect === 'Allow')
+  for (const statement of allowed) {
+    for (const action of actionsOf(statement)) assert.notEqual(action, '*')
+    const iamActions = actionsOf(statement).filter((action) => action.startsWith('iam:'))
+    for (const action of iamActions) assert.doesNotMatch(action, /\*|User|AccessKey/, action)
+    if (iamActions.length > 0) {
+      assert.deepEqual(resourcesOf(statement), [
+        `arn:aws:iam::${ACCOUNT}:role/conexus-*`,
+        `arn:aws:iam::${ACCOUNT}:policy/conexus-*`,
+      ])
+    }
+  }
+  const preparationItself = bySid(statements, 'NeverThePreparation')
+  assert.equal(preparationItself.Effect, 'Deny')
+  assert.deepEqual(resourcesOf(preparationItself), [
+    `arn:aws:iam::${ACCOUNT}:role/conexus-release`,
+    `arn:aws:iam::${ACCOUNT}:policy/conexus-cdk-execucao`,
+    `arn:aws:iam::${ACCOUNT}:user/conexus-hub-chave`,
+  ])
+})
+
+test('a chave base só assume o papel do Hub', () => {
+  const user = find(preparation, 'HubKeyUser')
+  assert.equal(user.Properties.UserName, 'conexus-hub-chave')
+  assert.equal(
+    Object.values(preparation).some((resource) => resource.Type === 'AWS::IAM::AccessKey'),
+    false,
+  )
+  assert.deepEqual(statementsOf(find(preparation, 'HubKeyUserDefaultPolicy')), [
+    {
+      Sid: 'OnlyTheHubRole',
+      Effect: 'Allow',
+      Action: ['sts:AssumeRole', 'sts:TagSession'],
+      Resource: `arn:aws:iam::${ACCOUNT}:role/conexus-hub`,
+    },
+  ])
+})
