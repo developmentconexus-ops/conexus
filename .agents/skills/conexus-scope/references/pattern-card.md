@@ -38,7 +38,8 @@ The light method, gate by gate:
 ## Linhas da tabela de referência
 
 <só as peças novas: arquivo do `main`, como as referências fazem, veredito nativo, embrulhado ou
-remendo; o que o kit já cobre fica de fora>
+remendo; o que o kit já cobre fica de fora. Com tela, as peças de `ui/` que ela usa e cada peça
+nova, pela design V62>
 
 ## Os critérios de aceite
 

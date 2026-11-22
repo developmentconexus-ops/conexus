@@ -39,14 +39,18 @@ As respostas do fundador:
 
 ## O cartão de hoje
 
-Um escopo e a fábrica de ferramentas (H0, H1, H3, H6) fechou em 2026-11-17: o fundador mandou
-fechar, e a linha de fechamento está no
-[arquivo de aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md). Todo o código está
-no `main` e no ar na v0.24.105. A trilha está sem cartão em `docs/steps/` até o cartão da etapa
-seguinte entrar.
+A fundação do front-end fechou em 2026-11-22: o fundador a usou na nuvem, na v0.24.109, e a linha
+de fechamento está no [arquivo de aprovação](../../approvals/fundacao-do-front-end.md). O cartão está
+no histórico do `main`, no commit `8030631f`, o último que o mudou. A regra "peça antes de tela", a
+U6 do cartão, entrou no fechamento: é a design V62, com o passo dela nas skills de construir,
+revisar, escrever o cartão e testar a tela. A trilha está sem cartão em `docs/steps/` até o cartão
+da etapa seguinte entrar.
 
-A etapa seguinte, antes de `A1`, é a fundação do front-end, pela resposta do fundador de 2026-11-17
-à ordem na trilha: "A. A ordem na trilha: a". A ordem dos marcos não muda.
+A etapa seguinte é A Prévia, com o cartão em rascunho em
+https://github.com/developmentconexus-ops/conexus/pull/1229. Antes dela fecharam Um escopo e a
+fábrica de ferramentas, em 2026-11-17
+([aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md)), e a fundação. A ordem dos
+marcos não muda.
 
 O estudo de referência sobre como uma plataforma de referência cria apps terminou em 2026-11-16, fora
 do repositório. O fundador respondeu duas coisas nele. Sobre a IA dentro do app: "Agora não; quando

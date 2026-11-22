@@ -57,7 +57,8 @@ verificado**.
 Each reference in a "Referência" cell names the situation it solves (what input, which user, what
 trigger) and carries one match label:
 
-- **mesma situação**: with the `file:line` **lido**, or the docs URL and the quoted sentence.
+- **mesma situação**: with the `file:line` **lido**, or the docs URL and the quoted sentence, and
+  both questions of [code C75](../../../../docs/guides/code.md) answered yes.
 - **situação diferente: <a diferença>**: it shows a shape, never grounds a verdict, an option or a
   recommendation, and the founder's page never says "a referência faz" for it.
 - **não faz**: with where it was searched.

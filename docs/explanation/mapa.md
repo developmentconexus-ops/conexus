@@ -200,6 +200,7 @@ Dois grupos, Você e o nome da empresa.
 | Empresa | Geral (nome e apelido, só leitura) | da empresa |
 | Empresa | Pessoas e convites (com Quem usa os apps) | da empresa |
 | Empresa | Papéis | da empresa |
+| Empresa | Registro de dados (as leituras de todos, só para Dono e Administrador, 2026-11-21, `"D1 a D2 a"`) | da empresa |
 | Empresa | Padrões da empresa (a mesma peça de Meus padrões) | da empresa |
 | Empresa | Memória observacional (os modelos que resumem a conversa, tirados das contas da empresa) | da empresa |
 | Empresa | Memória da empresa | da empresa; vai para Conhecimento  |
@@ -208,7 +209,6 @@ Dois grupos, Você e o nome da empresa.
 
 | Configuração | Quando | Fonte | Doc ou inferido |
 | --- | --- | --- | --- |
-| Registro de dados: as leituras de todos, só para Dono e Administrador (2026-11-21, `"D1 a D2 a"`) | Registro e conformidade, U9 | `docs/steps/registro-e-conformidade.md`; web W32 | doc |
 | Avisos: os e-mails da empresa que recebem o aviso de cópia parada | o cartão da etapa 2 do lago (2026-11-21, "R1 a R2 a") | `docs/steps/trilhas/dados.md`; web W32 | doc |
 | Atividade e Uso, reservados | 21.1 e `D6` | web W32; `docs/roadmap.md` | doc; se ficam com a empresa ou com a Central, inferido |
 | Identidade da empresa (cores, letras, formas que os apps seguem) | `A2` ("3B") | `docs/roadmap.md`; trilha Agentes e Apps | doc; que fique nas Configurações, inferido |
