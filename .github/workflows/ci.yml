@@ -128,6 +128,11 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+      - name: The release note names a new version and comes alone
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run release-note -- check --base "origin/$BASE_REF"
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
