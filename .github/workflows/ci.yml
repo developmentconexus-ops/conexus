@@ -356,9 +356,12 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
-      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api
+      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api -w @conexus/infra-aws
         env:
           CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl
+      # The CDK's own validator fails the synthesis on an error (cdk.json), with no AWS account.
+      - name: The lake template is what the synthesis writes
+        run: npm run synth -w @conexus/infra-aws && git diff --exit-code infra/aws
       - run: npm run test:unit -w @conexus/web
         env:
           CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl

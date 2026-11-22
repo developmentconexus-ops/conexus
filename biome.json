@@ -15,7 +15,8 @@
       "!packages/connectors/src/*/logo.svg",
       "!packages/connectors/src/*/recordings",
       "!packages/app/starter",
-      "!packages/app/skills"
+      "!packages/app/skills",
+      "!infra/aws/lake.template.json"
     ]
   },
   "formatter": {
@@ -89,7 +90,13 @@
               "vitest": "Only screen files use Vitest (decision 0034).",
               "msw": "Only screen files use MSW (decision 0034).",
               "@testing-library/react": "Only screen files use Testing Library (decision 0034)."
-            }
+            },
+            "patterns": [
+              {
+                "group": ["aws-cdk-lib", "aws-cdk-lib/**", "constructs"],
+                "message": "Only the platform in infra/aws/ uses the CDK (decision 0073)."
+              }
+            ]
           }
         }
       },
@@ -190,7 +197,13 @@
                   "@testing-library/react": "Only screen files use Testing Library (decision 0034).",
                   "node:timers": "A clock has one owner (decision 0051): the copy retry in builder/runs/.",
                   "node:timers/promises": "A clock has one owner (decision 0051): the copy retry in builder/runs/."
-                }
+                },
+                "patterns": [
+                  {
+                    "group": ["aws-cdk-lib", "aws-cdk-lib/**", "constructs"],
+                    "message": "Only the platform in infra/aws/ uses the CDK (decision 0073)."
+                  }
+                ]
               }
             },
             "noRestrictedGlobals": {
@@ -236,6 +249,16 @@
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["infra/aws/**"],
       "linter": {
         "rules": {
           "style": {

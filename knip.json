@@ -32,6 +32,9 @@
         "recharts"
       ]
     },
+    "infra/aws": {
+      "entry": ["bin/app.ts", "test/**/*.test.ts"]
+    },
     "apps/edge": {
       "entry": ["clone/worker.ts"],
       "ignoreDependencies": ["cloudflare"]
