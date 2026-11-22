@@ -10,6 +10,7 @@ import {
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
+  PEDIDOS_PREVIEW_ADDRESS,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -47,6 +48,7 @@ function hub(answer?: () => Response | Promise<Response>) {
               mayPublish: true,
               publishRequest: null,
               address: PEDIDOS_ADDRESS,
+              previewAddress: PEDIDOS_PREVIEW_ADDRESS,
               appVersion: null,
               publishedVersion: null,
             },

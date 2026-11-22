@@ -1,11 +1,12 @@
 import type { CallerAccess } from '@conexus/app-contract'
-import type { AppEntry, CompanyId, HostLabel, PersonId } from '@conexus/hub-api'
+import type { AppEntry, AppEnvironment, CompanyId, HostLabel, PersonId } from '@conexus/hub-api'
 import {
   appHostOf,
   CompanyId as CompanyIdSchema,
   HostLabel as HostLabelSchema,
   PAGE_SIZE,
   ProjectId,
+  previewHostOf,
 } from '@conexus/hub-api'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -36,6 +37,18 @@ const AppOfPerson = z.object({
   company_name: z.string().min(1),
   host_label: HostLabelSchema.nullable(),
 })
+
+/**
+ * A Projeto's addresses: its app's host name and its Prévia's; none for a Projeto made before
+ * addresses, and no Prévia's for a label that leaves no room for the mark.
+ */
+export function addressesOf(label: HostLabel | null, appsDomain: string) {
+  const preview = label === null ? undefined : previewHostOf(label)
+  return {
+    address: label === null ? null : appHostOf({ label, appsDomain }),
+    previewAddress: preview === undefined ? null : appHostOf({ label: preview, appsDomain }),
+  }
+}
 
 /**
  * The apps a person uses, from every company, through the one function that reads their rows
@@ -76,7 +89,7 @@ async function accessOf(
     personId: PersonId
     companyId: CompanyId
     projectId: ProjectId
-    environment: 'preview' | 'published'
+    environment: AppEnvironment
   },
 ): Promise<CallerAccess | Refused> {
   const { personId, companyId, projectId } = input
@@ -127,8 +140,7 @@ export function admitToApp(
     personId: PersonId
     companyId: CompanyId
     projectId: ProjectId
-    // A literal: the apps' `AppEnvironment` would close a cycle, apps importing Projects (code C6).
-    environment: 'preview' | 'published'
+    environment: AppEnvironment
   },
 ): Promise<AppAdmission> {
   const scope = { kind: 'COMPANY', companyId: input.companyId, personId: input.personId } as const

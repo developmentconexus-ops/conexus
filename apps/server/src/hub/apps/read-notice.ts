@@ -1,4 +1,4 @@
-import type { HostLabel, recordAppRead } from '@conexus/hub-api'
+import type { AppHost, recordAppRead } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { RecordAppRead } from './app-data-record.ts'
@@ -13,7 +13,7 @@ type Notice = z.infer<typeof recordAppRead.input.body>
  */
 export async function recordNotice(
   deps: { admitCall: AppDoor['admitCall']; recordRead: RecordAppRead },
-  input: { host: HostLabel; headers: Headers; notice: Notice },
+  input: { host: AppHost; headers: Headers; notice: Notice },
 ): Promise<void> {
   const { ids, caller } = await deps.admitCall({ host: input.host, headers: input.headers })
   const { id, query, outcome, rows, ms } = input.notice

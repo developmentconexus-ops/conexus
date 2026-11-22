@@ -1,11 +1,11 @@
 import type { ConnectionsAnswer, ConnectorAnswer, Connectors } from '@conexus/app-contract'
-import type { AppSessionToken, HostLabel } from '@conexus/hub-api'
+import type { AppHost, AppSessionToken } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS } from '@conexus/hub-api'
 import type { HubPort } from './hub.ts'
 
 /** What the dispatcher binds one call's connectors to; the app reads none of it. */
 export type ConnectorsProps = Readonly<{
-  host: HostLabel
+  host: AppHost
   session: AppSessionToken
   endsAt: number
 }>

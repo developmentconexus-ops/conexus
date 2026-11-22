@@ -20,7 +20,15 @@ import {
   plantCompany,
   post,
 } from '../identity/test-hub.ts'
-import { browser, ESTOQUE, frameHandoff, handoff, PEDIDOS } from './test-handoff.ts'
+import {
+  browser,
+  ESTOQUE,
+  frameHandoff,
+  handoff,
+  PEDIDOS,
+  PEDIDOS_PREVIA,
+  passes,
+} from './test-handoff.ts'
 import { folder, readyForVersions, send } from './test-versions.ts'
 
 const ROLES = [
@@ -130,6 +138,10 @@ test('papel no app, troca, tirar, na chamada seguinte', async (t) => {
   assert.equal(none.statusCode, 404)
 
   await c.give(carla, CARLA.email, 'vendedor')
+  // Given the app, not the Prévia: its pass is refused like an outsider's, and none is made.
+  const preview = await frameHandoff(hub, carla, { host: PEDIDOS_PREVIA, binding: browser().hash })
+  assert.deepEqual(refused(preview), [404, 'NOT_FOUND'])
+  assert.equal(await passes(hub), 0)
   const session = await sessionOf(hub, carla, PEDIDOS)
   const checked = await check(hub, PEDIDOS, session)
   assert.equal(checked.statusCode, 200, checked.body)
@@ -157,7 +169,7 @@ test('papel no app, troca, tirar, na chamada seguinte', async (t) => {
   assert.deepEqual(refused(await check(hub, PEDIDOS, session)), [401, 'APP_SESSION_INVALID'])
   const again = await handoff(hub, carla, { host: PEDIDOS, binding: browser().hash })
   assert.equal(again.statusCode, 404)
-  const frame = await frameHandoff(hub, carla, { host: PEDIDOS, binding: browser().hash })
+  const frame = await frameHandoff(hub, carla, { host: PEDIDOS_PREVIA, binding: browser().hash })
   assert.equal(frame.statusCode, 404)
   assert.deepEqual(await peopleOf(c), [])
 })

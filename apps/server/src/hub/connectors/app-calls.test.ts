@@ -2,9 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
-import { CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { APP_SESSION_HEADER, CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { PEDIDOS_PREVIA, sessionOf } from '../apps/test-handoff.ts'
+import { folder } from '../apps/test-versions.ts'
 import { call } from '../identity/test-hub.ts'
-import { appCalls, readOf } from './test-app-calls.ts'
+import { appCalls, READS, readOf } from './test-app-calls.ts'
 import { testOf } from './test-connections.ts'
 
 test('a porta da borda: com sessão e a ligação liberada o app lê e recebe OK com as linhas', async (t) => {
@@ -21,6 +23,33 @@ test('a porta da borda: com sessão e a ligação liberada o app lê e recebe OK
     headers: { 'x-conexus-app-session': on.session },
   })
   assert.deepEqual(names.json(), { names: ['Matriz'] })
+})
+
+test('o host diz o manifesto: no da Prévia, o da versão da Prévia; no do app, o da publicada', async (t) => {
+  const on = await appCalls(t, { declared: [] })
+  await on.connect('Matriz')
+  const preview = randomUUID().replaceAll('-', '')
+  await on.hub.test.asOwner(
+    `insert into apps.app_version (id, company_id, project_id, number, state, manifest, digest,
+       sent_by, attempt_key, created_at)
+     values ($1, $2, $3, 2, 'ready', $4::jsonb, repeat('0', 64), $5, $1, now())`,
+    [
+      preview,
+      on.companyId,
+      on.projectId,
+      JSON.stringify(folder({ connectors: READS }).manifest),
+      on.ana.id,
+    ],
+  )
+  await on.hub.test.asOwner('update apps.app set live_version_id = $1 where project_id = $2', [
+    preview,
+    on.projectId,
+  ])
+  const session = await sessionOf(on.hub, on.ana, PEDIDOS_PREVIA)
+  const inPreview = await on.read({ host: PEDIDOS_PREVIA }, { [APP_SESSION_HEADER]: session })
+  assert.equal(inPreview.statusCode, 200, inPreview.body)
+  assert.equal(Object(inPreview.json()).kind, 'OK')
+  assert.deepEqual((await on.read()).json(), { kind: 'NOT_GRANTED' })
 })
 
 test('toda recusa de admissão é a mesma NOT_GRANTED', async (t) => {

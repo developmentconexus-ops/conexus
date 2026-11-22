@@ -10,6 +10,7 @@ import {
   handoff,
   openPath,
   PEDIDOS,
+  PEDIDOS_PREVIA,
   passes,
 } from './test-handoff.ts'
 
@@ -116,7 +117,7 @@ test('passagem: a sessão que sai entre a leitura e a gravação, 303 a Entrar; 
   assert.equal(await passes(hub), 0)
 })
 
-test('passagem: host desconhecido, de fora, empresa marcada, Projeto apagado ou busca fora da forma: a página com 404, nenhum passe', async (t) => {
+test('passagem: host desconhecido, de fora, empresa marcada, Projeto apagado ou busca fora da forma, o host da Prévia incluído: a página com 404, nenhum passe', async (t) => {
   const { hub, ana, bruno, companyId, project } = await companyWithApps(t)
   const { hash } = browser()
   const carla = await personOn(hub, CARLA)
@@ -125,6 +126,7 @@ test('passagem: host desconhecido, de fora, empresa marcada, Projeto apagado ou 
     await handoff(hub, bruno, { host: 'nada--empresa-a', binding: hash }),
     await handoff(hub, carla, { host: PEDIDOS, binding: hash }),
     await handoff(hub, bruno, { host: 'Pedidos', binding: hash }),
+    await handoff(hub, bruno, { host: PEDIDOS_PREVIA, binding: hash }),
     await handoff(hub, bruno, { host: PEDIDOS, binding: 'curto' }),
     await hub.app.inject({
       method: 'GET',

@@ -1,6 +1,6 @@
 import { ConnectorAnswer } from '@conexus/app-contract'
 import { z } from 'zod'
-import { HostLabel } from './address.ts'
+import { AppHost } from './address.ts'
 import { ToolVersionId } from './agent-ids.ts'
 import { InCompany } from './companies.ts'
 import {
@@ -118,7 +118,7 @@ export const deleteConnectionNote = defineOperation({
 /** The most an answer to the dispatcher carries, the executor's own cap (`wire.ts`). */
 export const APP_CONNECTOR_REPLY_BYTES = 2 * 1024 * 1024
 
-const OnConnector = z.object({ host: HostLabel, connector: z.string().max(64) })
+const OnConnector = z.object({ host: AppHost, connector: z.string().max(64) })
 const APP_CALL_FAILURES = [
   'APP_SESSION_INVALID',
   'APP_ACCESS_REFUSED',

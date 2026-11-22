@@ -37,6 +37,7 @@ test('criar: o membro cria, só o primeiro Projeto chama o Neon e o banco da emp
     mayPublish: false,
     publishRequest: null,
     address: `pedidos--empresa-${companyId.slice(0, 8)}.${TEST_APPS_DOMAIN}`,
+    previewAddress: `pedidos--empresa-${companyId.slice(0, 8)}--previa.${TEST_APPS_DOMAIN}`,
     appVersion: null,
     publishedVersion: null,
   })

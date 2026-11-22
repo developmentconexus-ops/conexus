@@ -10,6 +10,7 @@ import {
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
+  PEDIDOS_PREVIEW_ADDRESS,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -86,7 +87,7 @@ test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () =
 })
 
 for (const role of ['owner', 'admin', 'member'] as const) {
-  test(`${role}: o endereço e "Abrir app", um link para https://<endereço>/`, async () => {
+  test(`${role}: o endereço da Prévia e "Abrir app", um link para https://<endereço>/`, async () => {
     server.use(
       ...projectsRead({
         projects: [PEDIDOS],
@@ -98,7 +99,7 @@ for (const role of ['owner', 'admin', 'member'] as const) {
       }),
     )
     render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
-    expect(await screen.findByText(PEDIDOS_ADDRESS)).toBeTruthy()
+    expect(await screen.findByText(PEDIDOS_PREVIEW_ADDRESS)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(
       `https://${PEDIDOS_ADDRESS}/`,
     )

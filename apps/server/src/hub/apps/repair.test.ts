@@ -12,7 +12,7 @@ import {
 } from '../../platform/test-company-postgres.ts'
 import { whenIdle } from '../../platform/test-database.ts'
 import { call, codeOf, post } from '../identity/test-hub.ts'
-import { browser, frameHandoff, PEDIDOS } from './test-handoff.ts'
+import { PEDIDOS, sessionOf } from './test-handoff.ts'
 import {
   companyForVersions,
   folder,
@@ -70,18 +70,8 @@ test('a 17 entra com a versão no ar publicada, e as sessões de antes saem', as
       .join('\n')
       .trim(),
   )
-  // A session of before the step, planted as the Prévia's frame would have left it.
-  const { binding, hash } = browser()
-  const made = await frameHandoff(hub, bruno, { host: PEDIDOS, binding: hash })
-  const code = new URL(String(Object(made.json()).location)).searchParams.get('code')
-  const redeemed = await hub.edge.inject({
-    method: 'POST',
-    url: '/api/app-sessions',
-    headers: { 'content-type': 'application/json' },
-    payload: JSON.stringify({ host: PEDIDOS, binding, code }),
-  })
-  assert.equal(redeemed.statusCode, 201)
-  const session = String(Object(redeemed.json()).session)
+  // A session of before the step, on the app's host, where the Prévia's frame left it then.
+  const session = await sessionOf(hub, bruno, PEDIDOS)
   // The Projetos of before the step have no published version; the migration's own statements run.
   await hub.test.asOwner('update apps.app set published_version_id = null')
   for (const statement of statements.filter((one) => /^(DELETE|UPDATE) /.test(one))) {

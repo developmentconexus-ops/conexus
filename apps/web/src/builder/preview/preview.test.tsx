@@ -1,4 +1,4 @@
-import { CompanyId } from '@conexus/hub-api'
+import { CompanyId, getProject } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -12,6 +12,7 @@ import {
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
+  PEDIDOS_PREVIEW_ADDRESS,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -20,12 +21,17 @@ import { previewChanged } from './public.ts'
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const APP = `https://${PEDIDOS_ADDRESS}`
+const PREVIEW = `https://${PEDIDOS_PREVIEW_ADDRESS}`
 const NO_PREVIEW = 'Ainda não há uma prévia disponível. Descreva o aplicativo para começar.'
 const WEBKIT = 'O app pode não abrir aqui dentro neste navegador.'
-const LOCATION = `${APP}/?pass=abc`
+const LOCATION = `${PREVIEW}/?pass=abc`
 const APPLE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1'
-const ENTRY = { type: 'conexus-entry', host: 'pedidos--empresa-teste', binding: 'b'.repeat(43) }
+const ENTRY = {
+  type: 'conexus-entry',
+  host: 'pedidos--empresa-teste--previa',
+  binding: 'b'.repeat(43),
+}
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -89,10 +95,10 @@ test('vazio: antes do primeiro app, a Prévia diz que não há prévia', async (
   expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
 })
 
-test('janela: o app num iframe do endereço do Projeto, com Recarregar, o endereço e Computador e Celular só de ícone', async () => {
+test('janela: o app num iframe do endereço da Prévia, com Recarregar, esse endereço e Computador e Celular só de ícone', async () => {
   openProject({ appVersion: 1 })
   const frame = await screen.findByTitle('Prévia')
-  expect(frame.getAttribute('src')).toBe(`${APP}/`)
+  expect(frame.getAttribute('src')).toBe(`${PREVIEW}/`)
   const sandbox = frame.getAttribute('sandbox') ?? ''
   expect(sandbox).toContain('allow-scripts')
   expect(sandbox).not.toContain('allow-top-navigation')
@@ -100,7 +106,8 @@ test('janela: o app num iframe do endereço do Projeto, com Recarregar, o endere
   expect(computer.getAttribute('aria-pressed')).toBe('true')
   expect(frame.className).not.toContain('w-phone')
   const bar = screen.getByRole('region', { name: 'Prévia' })
-  expect(within(bar).getByText(PEDIDOS_ADDRESS).className).toContain('font-mono')
+  expect(within(bar).getByText(PEDIDOS_PREVIEW_ADDRESS).className).toContain('font-mono')
+  expect(within(bar).queryByText(PEDIDOS_ADDRESS)).toBeNull()
   expect(within(bar).getByText('versão 1')).toBeTruthy()
   expect(computer.textContent).toBe('')
   fireEvent.click(screen.getByRole('button', { name: 'Celular' }))
@@ -131,12 +138,12 @@ test('Celular: a visão fica no endereço e volta com Computador', async () => {
   expect(iframe().className).not.toContain('w-phone')
 })
 
-test('celular de verdade: Recarregar, o endereço e Abrir app na barra; sem Computador e Celular', async () => {
+test('celular de verdade: Recarregar, o endereço da Prévia e Abrir app ao publicado na barra; sem Computador e Celular', async () => {
   onAPhone()
   openProject({ appVersion: 1, publishedVersion: 1 })
   const bar = await screen.findByRole('region', { name: 'Prévia' })
   expect(within(bar).getByRole('button', { name: 'Recarregar' })).toBeTruthy()
-  expect(within(bar).getByText(PEDIDOS_ADDRESS)).toBeTruthy()
+  expect(within(bar).getByText(PEDIDOS_PREVIEW_ADDRESS)).toBeTruthy()
   expect(within(bar).getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(`${APP}/`)
   expect(screen.queryByRole('button', { name: 'Computador' })).toBeNull()
   expect(screen.getAllByRole('link', { name: 'Abrir app' })).toHaveLength(1)
@@ -176,7 +183,7 @@ test('entrada: a mensagem do iframe leva à passagem, e o iframe vai ao location
   openProject({ appVersion: 1 })
   const bodies = handoffs()
   await screen.findByTitle('Prévia')
-  sent(iframe().contentWindow, APP)
+  sent(iframe().contentWindow, PREVIEW)
   await waitFor(() => expect(iframe().getAttribute('src')).toBe(LOCATION))
   expect(bodies).toEqual([{ host: ENTRY.host, binding: ENTRY.binding }])
 })
@@ -186,11 +193,12 @@ test('entrada: uma mensagem de outra origem, de outra janela ou que não é a en
   const bodies = handoffs()
   await screen.findByTitle('Prévia')
   sent(iframe().contentWindow, 'https://outro.example.test')
-  sent(window, APP)
-  sent(iframe().contentWindow, APP, { type: 'outra', host: ENTRY.host })
+  sent(iframe().contentWindow, APP)
+  sent(window, PREVIEW)
+  sent(iframe().contentWindow, PREVIEW, { type: 'outra', host: ENTRY.host })
   await new Promise((resolve) => setTimeout(resolve, 50))
   expect(bodies).toEqual([])
-  expect(iframe().getAttribute('src')).toBe(`${APP}/`)
+  expect(iframe().getAttribute('src')).toBe(`${PREVIEW}/`)
 })
 
 test('aviso: no WebKit da Apple, dentro da janela e acima do iframe; o Abrir app é o do alto', async () => {
@@ -207,7 +215,7 @@ test('aviso: no WebKit da Apple, dentro da janela e acima do iframe; o Abrir app
   expect(link.getAttribute('target')).toBe('_blank')
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   expect(notice.compareDocumentPosition(iframe()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(iframe().getAttribute('src')).toBe(`${APP}/`)
+  expect(iframe().getAttribute('src')).toBe(`${PREVIEW}/`)
 })
 
 test('aviso: antes do primeiro Publicar, sem Abrir app em lugar nenhum', async () => {
@@ -234,13 +242,31 @@ test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta 
   openProject({ appVersion: 1 })
   server.use(http.post('*/api/apps/frame-handoff', () => refusal('DATABASE_UNAVAILABLE')))
   await screen.findByTitle('Prévia')
-  sent(iframe().contentWindow, APP)
+  sent(iframe().contentWindow, PREVIEW)
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
   expect(screen.queryByTitle('Prévia')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
-  expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
+  expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${PREVIEW}/`)
+})
+
+test('sem o endereço da Prévia, o palco, mesmo com o endereço do app e uma versão', async () => {
+  const project = {
+    ...{ ...PEDIDOS, appVersion: 1, publishedVersion: 1 },
+    ...{ mayDelete: true, mayPublish: true, publishRequest: null },
+    ...{ address: PEDIDOS_ADDRESS, previewAddress: null },
+  }
+  server.use(
+    conversationsNone,
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`, () =>
+      HttpResponse.json(getProject.success.body.parse({ project })),
+    ),
+    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }),
+  )
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
+  expect(screen.queryByTitle('Prévia')).toBeNull()
 })
 
 test('aviso: fora do WebKit da Apple, nada', async () => {

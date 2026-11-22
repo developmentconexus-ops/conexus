@@ -273,6 +273,7 @@ export function undecided(cut: string): [string, () => Response][] {
 }
 
 export const PEDIDOS_ADDRESS = 'pedidos--empresa-teste.apps.example.test'
+export const PEDIDOS_PREVIEW_ADDRESS = 'pedidos--empresa-teste--previa.apps.example.test'
 
 export const PEDIDOS = ProjectSummary.parse({
   id: 'p'.repeat(32),
@@ -337,6 +338,7 @@ export function projectsRead(view: ProjectsView) {
                 mayPublish: view.mayPublish ?? view.mayDelete,
                 publishRequest: view.publishRequest ?? null,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
+                previewAddress: view.address === null ? null : PEDIDOS_PREVIEW_ADDRESS,
                 appVersion: view.appVersion ?? null,
                 publishedVersion: view.publishedVersion ?? null,
               },
