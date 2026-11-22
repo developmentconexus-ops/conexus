@@ -47,6 +47,19 @@ export function readable(stack: 'preparation' | 'platform' | 'lake'): Resources 
   return readableResources(Template.fromStack(conexusApp()[stack]).toJSON())
 }
 
+/** A stack's outputs, read as `readableResources` reads resources. */
+export function readableOutputs(stack: 'platform' | 'lake'): Record<string, string> {
+  const { Outputs } = z
+    .object({ Outputs: z.record(z.string(), z.unknown()) })
+    .parse(Template.fromStack(conexusApp()[stack]).toJSON())
+  return z
+    .record(
+      z.string(),
+      z.object({ Value: z.string() }).transform((output) => output.Value),
+    )
+    .parse(resolve(Outputs))
+}
+
 function resolve(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(resolve)
   if (value === null || typeof value !== 'object') return value

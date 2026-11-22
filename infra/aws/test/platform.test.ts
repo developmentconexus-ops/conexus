@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Template } from 'aws-cdk-lib/assertions'
 import { conexusApp } from '../lib/app.ts'
-import { templateUrl } from '../lib/names.ts'
+import { TEMPLATE_PREFIX, templateBucket, templateUrl } from '../lib/names.ts'
 import type { Statement } from './policies.ts'
 import {
   ACCOUNT,
@@ -11,6 +11,7 @@ import {
   find,
   REGION,
   readable,
+  readableOutputs,
   resourcesOf,
   statementsOf,
   trustOf,
@@ -234,4 +235,12 @@ test('o endereço que o Hub manda casa com o padrão, e a forma de caminho não'
   assert.match(templateUrl(bucket, REGION, version), pattern)
   assert.doesNotMatch(`https://s3.${REGION}.amazonaws.com/${bucket}/lago/${version}.json`, pattern)
   assert.doesNotMatch(`https://${bucket}.s3.${REGION}.amazonaws.com/outra/${version}.json`, pattern)
+})
+
+test('a plataforma diz à Release o depósito e a pasta das receitas, os de names.ts', () => {
+  assert.deepEqual(readableOutputs('platform'), {
+    TemplatesBucket: '{Templates}',
+    TemplatesPrefix: TEMPLATE_PREFIX,
+  })
+  assert.equal(find(platform, 'Templates').Properties.BucketName, templateBucket(ACCOUNT, REGION))
 })

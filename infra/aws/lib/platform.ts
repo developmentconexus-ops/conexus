@@ -1,6 +1,7 @@
 import type { StackProps } from 'aws-cdk-lib'
 import {
   aws_budgets as budgets,
+  CfnOutput,
   CfnParameter,
   aws_ce as ce,
   aws_glue as glue,
@@ -91,6 +92,9 @@ export class PlatformStack extends Stack {
     })
     const place = new Place(this)
     const templates = templatesBucket(this, place)
+    // The Release writes the template where these say, so the names have one owner (names.ts).
+    new CfnOutput(this, 'TemplatesBucket', { value: templates.bucketName })
+    new CfnOutput(this, 'TemplatesPrefix', { value: TEMPLATE_PREFIX })
     const boundary = boundaryPolicy(this, place)
     const service = serviceRole(this, place, boundary)
     hubRole(this, place, { service, templates, sourceIp: hubSourceIp.valueAsString })

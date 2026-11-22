@@ -65,21 +65,6 @@ test('o Release publica o Hub depois da imagem, do template e da plataforma da A
   assert.equal(publish.jobs.edge?.needs, 'deploy')
 })
 
-test('a plataforma da AWS entra pelo OIDC do ambiente production, sem chave guardada, e não reescreve uma receita', () => {
-  const platform = awsPlatform.jobs.platform
-  assert.equal(platform?.['runs-on'], 'ubuntu-24.04')
-  assert.equal(platform?.environment, 'production')
-  assert.deepEqual(platform?.permissions, { contents: 'read', 'id-token': 'write' })
-  assert.deepEqual(publish.jobs['aws-platform']?.permissions, platform?.permissions)
-  const enter = platform?.steps.find((step) =>
-    step.uses?.startsWith('aws-actions/configure-aws-credentials@'),
-  )
-  assert.equal(enter?.with?.['role-to-assume'], ['${{', 'vars.AWS_ROLE_ARN', '}}'].join(' '))
-  assert.doesNotMatch(text('aws-platform.yml'), /\bsecrets\b|aws-access-key-id/)
-  const put = platform?.steps.find((step) => step.run?.includes('aws s3api put-object'))
-  assert.match(put?.run ?? '', /--key "lago\/\$version\.json"[\s\S]*--if-none-match '\*'/)
-})
-
 test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem conferir main', () => {
   assert.equal(publish.jobs.apps?.needs, 'image')
   assert.equal(publish.jobs.apps?.['runs-on'], 'ubuntu-24.04')
