@@ -15,7 +15,7 @@ compare-os por `jq -S '.DataLakeSettings | .AuthorizedSessionTagValueList //= []
 ## 1. A preparação
 
 ```sh
-npx cdk deploy PreparationStack --profile <perfil> --parameters GitHubRepository=developmentconexus-ops/conexus
+npx cdk deploy PreparationStack --profile <perfil> --parameters GitHubRepository=developmentconexus-ops@306942867/conexus@1417749446
 ```
 
 Depois: `conexus-preparacao` em `CREATE_COMPLETE`, com o provedor OIDC do GitHub, o papel

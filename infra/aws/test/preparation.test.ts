@@ -48,6 +48,67 @@ test('a Release só entra do ambiente production', () => {
   ])
 })
 
+const REPOSITORY = 'octo-org@123456/octo-repo@456789'
+
+/** Whether IAM would let a token with this `sub` and `aud` assume the Release role. */
+function releaseAdmits(sub: string): boolean {
+  const token: Record<string, string> = {
+    'token.actions.githubusercontent.com:sub': sub,
+    'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+  }
+  const [trust] = trustOf(find(preparation, 'ReleaseRole'))
+  return Object.entries(trust?.Condition ?? {}).every(([operator, keys]) =>
+    Object.entries(keys).every(([key, expected]) => {
+      const value = token[key]
+      const patterns = (typeof expected === 'string' ? [expected] : expected).map((pattern) =>
+        pattern.replaceAll('{GitHubRepository}', REPOSITORY),
+      )
+      if (value === undefined) return false
+      if (operator === 'StringEquals') return patterns.includes(value)
+      if (operator === 'StringLike') return patterns.some((pattern) => glob(pattern).test(value))
+      throw new Error(`operator ${operator} not read by this test`)
+    }),
+  )
+}
+
+function glob(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escaped.replaceAll('*', '.*').replaceAll('?', '.')}$`)
+}
+
+test('a Release só entra com os ids imutáveis do dono e do repositório', () => {
+  assert.equal(releaseAdmits('repo:octo-org@123456/octo-repo@456789:environment:production'), true)
+  for (const sub of [
+    'repo:octo-org/octo-repo:environment:production',
+    'repo:octo-org@123456/octo-repo@456789:environment:preview',
+    'repo:octo-org@123456/octo-repo@456789:ref:refs/heads/main',
+    'repo:octo-org@123456/octo-repo@999999:environment:production',
+    'repo:octo-org@999999/octo-repo@456789:environment:production',
+    'repo:other@1/r@2:workflow:octo-org@123456/octo-repo@456789:environment:production',
+  ]) {
+    assert.equal(releaseAdmits(sub), false, sub)
+  }
+})
+
+test('a preparação só aceita o repositório com os ids do dono e dele', () => {
+  const { Parameters } = z
+    .object({
+      Parameters: z.object({ GitHubRepository: z.object({ AllowedPattern: z.string() }) }),
+    })
+    .parse(Template.fromStack(conexusApp().preparation).toJSON())
+  const accepted = new RegExp(Parameters.GitHubRepository.AllowedPattern)
+  assert.match(REPOSITORY, accepted)
+  for (const repository of [
+    'octo-org/octo-repo',
+    'octo-org@123456/octo-repo',
+    'octo-org/octo-repo@456789',
+    'octo-org@x/octo-repo@456789',
+    'octo-org@123456/octo-repo@456789:environment:*',
+  ]) {
+    assert.doesNotMatch(repository, accepted)
+  }
+})
+
 test('a execução do CDK não é administradora', () => {
   const policy = find(preparation, 'CdkExecution')
   assert.equal(policy.Properties.ManagedPolicyName, 'conexus-cdk-execucao')
