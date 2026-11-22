@@ -31,6 +31,13 @@ const LAKE_FORMATION_TABLE_ACTIONS = [
 ]
 
 /**
+ * What the registration and its delete do to the role they name, as the CloudFormation schema of
+ * AWS::LakeFormation::Resource gives its handlers, without the writes that serve only the
+ * service-linked role (iam:PutRolePolicy, iam:CreateServiceLinkedRole).
+ */
+const REGISTRATION_ROLE_ACTIONS = ['iam:PassRole', 'iam:GetRole', 'iam:GetRolePolicy']
+
+/**
  * A delete whose id is not ours: the id of a create that failed is the function's log stream, so
  * the delete names nothing that exists and is not refused for it.
  */
@@ -120,11 +127,15 @@ function registerTableBuckets(
         actions: [
           'lakeformation:RegisterResource',
           'lakeformation:RegisterResourceWithPrivilegedAccess',
+          'lakeformation:CreateCatalog',
           'lakeformation:DeregisterResource',
         ],
         resources: ['*'],
       }),
-      new iam.PolicyStatement({ actions: ['iam:PassRole'], resources: [lakeFormation.roleArn] }),
+      new iam.PolicyStatement({
+        actions: REGISTRATION_ROLE_ACTIONS,
+        resources: [lakeFormation.roleArn],
+      }),
     ]),
     onCreate: {
       service: 'LakeFormation',
