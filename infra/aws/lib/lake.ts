@@ -108,13 +108,25 @@ export class LakeStack extends Stack {
   }
 }
 
-/** The reader trusts only the Hub, and only with this company's tag and a reader's tag, no third. */
+/**
+ * The reader trusts the account, not the Hub's role by name, so the Hub's own policy must also allow
+ * the call (none does before step 3); and only a session of the Hub's role already tagged with this
+ * company, asking for this company's tag and a reader's tag, no third.
+ */
 function readerRole(stack: Stack, name: string, company: string): iam.Role {
   function glue(resource: string): string {
     return `arn:${stack.partition}:glue:${stack.region}:${stack.account}:${resource}`
   }
-  const hub = new iam.ArnPrincipal(`arn:${stack.partition}:iam::${stack.account}:role/${HUB_ROLE}`)
-  const thisCompany = { [`aws:RequestTag/${TAG_COMPANY}`]: company }
+  const account = new iam.AccountRootPrincipal()
+  const theHub = {
+    ArnEquals: {
+      'aws:PrincipalArn': `arn:${stack.partition}:iam::${stack.account}:role/${HUB_ROLE}`,
+    },
+  }
+  const thisCompany = {
+    [`aws:PrincipalTag/${TAG_COMPANY}`]: company,
+    [`aws:RequestTag/${TAG_COMPANY}`]: company,
+  }
   const reader = new iam.Role(stack, 'Reader', {
     roleName: `${name}${READER_SUFFIX}`,
     maxSessionDuration: Duration.hours(1),
@@ -123,7 +135,8 @@ function readerRole(stack: Stack, name: string, company: string): iam.Role {
       'Boundary',
       `arn:${stack.partition}:iam::${stack.account}:policy/${BOUNDARY}`,
     ),
-    assumedBy: hub.withConditions({
+    assumedBy: account.withConditions({
+      ...theHub,
       StringEquals: thisCompany,
       Null: { [`aws:RequestTag/${TAG_READER}`]: 'false' },
     }),
@@ -154,8 +167,9 @@ function readerRole(stack: Stack, name: string, company: string): iam.Role {
   reader.assumeRolePolicy?.addStatements(
     new iam.PolicyStatement({
       actions: ['sts:TagSession'],
-      principals: [hub],
+      principals: [account],
       conditions: {
+        ...theHub,
         StringEquals: thisCompany,
         'ForAllValues:StringEquals': { 'aws:TagKeys': [TAG_COMPANY, TAG_READER] },
         Null: { 'aws:TagKeys': 'false' },
