@@ -264,13 +264,16 @@ function absent(error: unknown): void {
 }
 
 /**
- * Whether CloudFormation may have left the bucket: no event, its creation never began; its newest
- * DELETE_COMPLETE, the deletion took it. Any other newest event may hide one, as the handler that
- * owned a bucket and reported CREATE_FAILED did on 20/11.
+ * Whether CloudFormation may have left the bucket. No event: its creation never began. Gone only when
+ * CloudFormation created it and then deleted it: a CREATE_COMPLETE, and DELETE_COMPLETE the newest.
+ * After a CREATE_FAILED its DELETE_COMPLETE speaks of a bucket it did not create (the held name of lab
+ * run 45081093044), as the handler that owned one and reported CREATE_FAILED did on 20/11.
  */
 function bucketMayBeLeft(events: readonly StackEvent[]): boolean {
-  const newest = events.find((event) => event.ResourceType === BUCKET_TYPE)
-  return newest !== undefined && newest.ResourceStatus !== 'DELETE_COMPLETE'
+  const bucket = events.filter((event) => event.ResourceType === BUCKET_TYPE)
+  if (bucket.length === 0) return false
+  const created = bucket.some((event) => event.ResourceStatus === 'CREATE_COMPLETE')
+  return !(created && bucket[0]?.ResourceStatus === 'DELETE_COMPLETE')
 }
 
 async function clearLeftover(session: Session, at: Where, lake: { id: LakeId; stack: StackId }) {
