@@ -35,7 +35,7 @@ export type AwsConfig = Readonly<{
   hubRoleArn: string
   serviceRoleArn: string
   templateBucket: string
-  /** The SDK's shared credentials file with the base key; read by the SDK, never by the Hub (S31). */
+  /** The SDK's shared credentials file with the base key: the Hub only checks its mode and that it is not empty, the SDK reads the key (S31). */
   credentialsFile: string
   templateVersion: TemplateVersion
   endpoint?: string

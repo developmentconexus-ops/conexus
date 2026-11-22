@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { createServer } from 'node:http'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId } from '@conexus/hub-api'
 import {
@@ -13,8 +11,7 @@ import {
   templateBucket,
   templateUrlPattern,
 } from '../../../../infra/aws/lib/names.ts'
-import type { AwsDeadlines } from './aws.ts'
-import { bucketName, createLakeStacks, LakeId, StackId, stackName, templateUrl } from './aws.ts'
+import { bucketName, LakeId, StackId, stackName, templateUrl } from './aws.ts'
 import {
   awsRecording,
   TEST_AWS_ACCOUNT,
@@ -22,7 +19,7 @@ import {
   testAws,
   testAwsCredentials,
 } from './test-aws.ts'
-import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
+import { awsAt, recorded, session } from './test-aws-wire.ts'
 
 const LAKE_TEMPLATE = new URL('../../../../infra/aws/lake.template.json', import.meta.url)
 const COMPANY = CompanyId.parse('EmpresaTesteA0000000000000000001')
@@ -31,77 +28,6 @@ const AT = { company: COMPANY, account: TEST_AWS_ACCOUNT, region: TEST_AWS_REGIO
 const RECORDED_STACK = StackId.parse(
   /<StackId>([^<]+)<\/StackId>/.exec(awsRecording('create-stack-mesma-chave').body)?.[1],
 )
-
-type Received = { action: string; form: URLSearchParams; authorization: string }
-type Reply = { status: number; body: string } | 'SILENT'
-
-/** AWS behind a port, as the recordings answer it (T29): each request recorded, each answer `reply`'s. */
-async function awsAt(
-  t: TestContext,
-  reply: (received: Received) => Reply,
-  deadlines?: AwsDeadlines,
-) {
-  const received: Received[] = []
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = []
-    request.on('data', (chunk: Buffer) => chunks.push(chunk))
-    request.on('end', () => {
-      const form = new URLSearchParams(Buffer.concat(chunks).toString('utf8'))
-      const entry = {
-        action: form.get('Action') ?? `${request.method} ${request.url}`,
-        form,
-        authorization: request.headers.authorization ?? '',
-      }
-      received.push(entry)
-      const answer = reply(entry)
-      if (answer === 'SILENT') return
-      response.writeHead(answer.status, { 'content-type': 'text/xml' })
-      response.end(answer.body)
-    })
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const lines: { fields: Record<string, unknown>; message: string }[] = []
-  const log = {
-    info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
-    error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
-  }
-  const aws = testAws(`http://127.0.0.1:${address.port}`, testAwsCredentials(t))
-  const config = { ...testConfig(await unreachableDatabaseUrl()), aws }
-  const stacks = createLakeStacks({
-    config,
-    log,
-    ...(deadlines === undefined ? {} : { deadlines }),
-  })
-  return {
-    stacks,
-    received,
-    lines,
-    config,
-    of: (action: string) => received.filter((r) => r.action === action),
-  }
-}
-
-/** The session first, then `answers` by action, in order. */
-function recorded(answers: Record<string, string[]>): (received: Received) => Reply {
-  return ({ action }) => {
-    if (action === 'AssumeRole') return session()
-    const name = answers[action]?.shift()
-    assert.ok(name !== undefined, `no answer for ${action}`)
-    return awsRecording(name)
-  }
-}
-
-function session(): Reply {
-  const { status, body } = awsRecording('assume-role-aceito')
-  const expiration = new Date(Date.now() + 15 * 60_000).toISOString()
-  return { status, body: body.replace(/<Expiration>[^<]*</, `<Expiration>${expiration}<`) }
-}
 
 const version = testAws().templateVersion
 
@@ -306,4 +232,49 @@ test('aws: o registro do Hub não leva o pedido, a chave nem a frase da AWS', as
   ]) {
     assert.ok(!written.includes(secret), secret)
   }
+})
+
+test('aws: duas empresas, duas sessões, cada uma com a sua etiqueta', async (t) => {
+  const { stacks, of } = await awsAt(
+    t,
+    recorded({ CreateStack: ['create-stack-mesma-chave', 'create-stack-mesma-chave'] }),
+  )
+  const other = CompanyId.parse('EmpresaTesteB0000000000000000002')
+  await stacks.create(AT, { id: LAKE, template: version })
+  await stacks.create({ ...AT, company: other }, { id: LAKE, template: version })
+  assert.deepEqual(
+    of('AssumeRole').map((sent) => sent.form.get('Tags.member.1.Value')),
+    [COMPANY, other],
+  )
+})
+
+test('aws: a resposta do STS maior que o teto vira NO_ANSWER, sem chamar a pilha', async (t) => {
+  const { body } = awsRecording('assume-role-aceito')
+  const padded = body.replace('<ResponseMetadata>', `${' '.repeat(1024 * 1024)}<ResponseMetadata>`)
+  const { stacks, of } = await awsAt(t, ({ action }) =>
+    action === 'AssumeRole'
+      ? { status: 200, body: padded }
+      : awsRecording('create-stack-mesma-chave'),
+  )
+  assert.deepEqual(await stacks.create(AT, { id: LAKE, template: version }), { kind: 'NO_ANSWER' })
+  assert.equal(of('CreateStack').length, 0)
+})
+
+test('aws: o primeiro evento de falha lê as páginas seguintes', async (t) => {
+  const first = awsRecording('describe-stack-events-pronta')
+  // The recorded page with a next page named, as CloudFormation pages a long history (values changed, T29).
+  const paged = first.body.replace(
+    '</StackEvents>',
+    '</StackEvents>\n    <NextToken>pagina-2</NextToken>',
+  )
+  const replies = [{ status: 200, body: paged }, awsRecording('describe-stack-events-falha')]
+  const { stacks, of } = await awsAt(t, ({ action }) =>
+    action === 'AssumeRole' ? session() : (replies.shift() ?? { status: 500, body: '' }),
+  )
+  const failed = await stacks.firstFailure(AT, RECORDED_STACK)
+  assert.deepEqual(failed, { kind: 'DONE', value: { resource: 'Reader', type: 'AWS::IAM::Role' } })
+  assert.deepEqual(
+    of('DescribeStackEvents').map((sent) => sent.form.get('NextToken')),
+    [null, 'pagina-2'],
+  )
 })
