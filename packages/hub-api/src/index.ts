@@ -160,6 +160,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export { ClientLake, createClientLake, deleteClientLake, getClientLake } from './lakes.ts'
 export * from './library-ids.ts'
 export * from './machine.ts'
 export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'

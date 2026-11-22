@@ -9,6 +9,7 @@ import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { closeListeners } from '../../platform/lifecycle.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
+import { fakeAws } from '../../platform/test-aws.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -77,8 +78,9 @@ async function hubServing(
   const identity = testIdentity({ database: test.database, config, sendMail })
   const cloudflare = fakeCloudflare()
   const tools = fakeCloudflare()
+  const aws = fakeAws()
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools })
+  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools, aws })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
@@ -106,8 +108,8 @@ async function hubServing(
     edge,
     test,
     config,
-    neon,
-    cloudflare,
+    // The companies' lakes in AWS are of memory too (card o-lago-da-empresa-nasce-e-some).
+    ...{ neon, aws, cloudflare },
     /** The saved tools' namespace of memory (step 24.4). */
     tools,
     postgres,

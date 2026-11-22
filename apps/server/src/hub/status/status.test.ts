@@ -35,6 +35,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const {
     projects,
     operations,
+    lakes,
     apps,
     modelAccounts,
     conversations,
@@ -59,6 +60,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     status,
     identity,
     operations,
+    lakes,
     projects,
     apps,
     modelAccounts,
@@ -142,6 +144,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const {
     projects,
     operations,
+    lakes,
     apps,
     modelAccounts,
     conversations,
@@ -166,6 +169,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     status,
     identity,
     operations,
+    lakes,
     projects,
     apps,
     modelAccounts,

@@ -39,6 +39,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
   const {
     projects,
     operations,
+    lakes,
     apps,
     modelAccounts,
     conversations,
@@ -64,6 +65,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     status,
     identity,
     operations,
+    lakes,
     projects,
     apps,
     modelAccounts,
