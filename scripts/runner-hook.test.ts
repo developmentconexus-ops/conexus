@@ -64,22 +64,22 @@ function hook(event: string, ref: string, sha: string, at = mirror) {
 
 const accepted = { status: 0, stderr: '' }
 
-test('um Release de um commit de main é aceito, também o que o espelho ainda não tinha', () => {
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', onMain), accepted)
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.1', newOnMain), accepted)
+test('um push em main de um commit de main é aceito, também o que o espelho ainda não tinha', () => {
+  assert.deepEqual(hook('push', 'refs/heads/main', onMain), accepted)
+  assert.deepEqual(hook('push', 'refs/heads/main', newOnMain), accepted)
 })
 
 test('um disparo manual de main é aceito', () => {
   assert.deepEqual(hook('workflow_dispatch', 'refs/heads/main', newOnMain), accepted)
 })
 
-test('um Release de um commit fora de main é recusado', () => {
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', offMain), {
+test('um push em main de um commit fora de main é recusado', () => {
+  assert.deepEqual(hook('push', 'refs/heads/main', offMain), {
     status: 1,
     stderr: `refused: the commit ${offMain} is not on main\n`,
   })
   const unknown = 'f'.repeat(40)
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', unknown), {
+  assert.deepEqual(hook('push', 'refs/heads/main', unknown), {
     status: 1,
     stderr: `refused: the commit ${unknown} is not on main\n`,
   })
@@ -94,7 +94,7 @@ test('um disparo manual de main num commit fora de main é recusado', () => {
 
 test('sem espelho, ou sem conseguir buscar main, tudo é recusado', () => {
   const absent = join(dir, 'absent.git')
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', onMain, absent), {
+  assert.deepEqual(hook('push', 'refs/heads/main', onMain, absent), {
     status: 1,
     stderr: `refused: no mirror of main at ${absent}\n`,
   })
@@ -108,20 +108,31 @@ test('sem espelho, ou sem conseguir buscar main, tudo é recusado', () => {
 })
 
 test('um commit que não é um nome de commit é recusado', () => {
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', '--all'), {
+  assert.deepEqual(hook('push', 'refs/heads/main', '--all'), {
     status: 1,
     stderr: "refused: '--all' is not a commit\n",
   })
-  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', ''), {
+  assert.deepEqual(hook('push', 'refs/heads/main', ''), {
     status: 1,
     stderr: "refused: '' is not a commit\n",
   })
 })
 
-test('um push é recusado, mesmo em main', () => {
-  assert.deepEqual(hook('push', 'refs/heads/main', onMain), {
+test('um Release é recusado, mesmo de um commit de main', () => {
+  assert.deepEqual(hook('release', 'refs/tags/v0.8.0', onMain), {
     status: 1,
-    stderr: "refused: a 'push' event does not reach this runner\n",
+    stderr: "refused: a 'release' event does not reach this runner\n",
+  })
+})
+
+test('um push de outro ramo ou de uma tag é recusado, mesmo de um commit de main', () => {
+  assert.deepEqual(hook('push', 'refs/heads/feat/x', onMain), {
+    status: 1,
+    stderr: 'refused: a push to refs/heads/feat/x is not main\n',
+  })
+  assert.deepEqual(hook('push', 'refs/tags/v0.8.0', onMain), {
+    status: 1,
+    stderr: 'refused: a push to refs/tags/v0.8.0 is not main\n',
   })
 })
 

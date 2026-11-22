@@ -3,8 +3,7 @@
 How a roadmap step moves from its card to the founder's use. This guide adapts
 [Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and
 [DORA's small-batch capability](https://dora.dev/capabilities/), within the founder's decisions.
-[AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures. This guide changes
-only with the founder's word.
+[AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures.
 
 In every guide, each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
 **must not** state a requirement; **should** and **should not** need a stated reason to break;
@@ -41,7 +40,7 @@ product decision, security boundary or operational prohibition.
   amendments, his mid-step decisions (no new approval) and the use line. Firstmate
   decides a reversible technical call on every track, except L28, with its evidence and how to undo it; the
   founder keeps product, spend, security, table permissions, live use, merge words and his own
-  decisions. Founder, 2026-10-27: "3. Sim". [processo, review]
+  decisions. [processo, review]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder.  
@@ -89,7 +88,7 @@ product decision, security boundary or operational prohibition.
   pass and its review approves the same commit. The card's pull request and a proof's decision record carry
   documents only; the step's last pull request adds the closing (L19). One founder merge word
   covers a step's units; review and CI still gate each.
-  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim"; 2026-11-09: "U1, U2 e U3 seriam um PR".
+  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the `ci` and `processo` checks reported green on that
@@ -104,12 +103,13 @@ product decision, security boundary or operational prohibition.
   firstmate item by item through the card's use script before the founder is told, then used by him
   through it. His words, the date and the address go in the
   card's approval file (L6), and only then **may** the next step start, but for the units of L1.
-  Publishing is a GitHub Release firstmate creates after the merge, with a note of what the step
-  delivers. It **may** leave at once when the green run of the merged head, its suites run, tested
+  Publishing is the merge of a pull request that changes only releases/note.md, whose first line
+  names the version; Publish then creates the tag and the Release with the note on the merge commit
+  and puts it live, in one run. It **may** leave at once when the green run of the merged head, its suites run, tested
   `main`'s tip at the merge as the base of its test merge; if `main` moved, it waits for green CI on `main`.
   Founder, 2026-11-15. Its names: `v0.N.0` for step N, `v0.N.P` for a fix of
   it, `v1.0.0` with the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
-  releases its proof creates. Failed use leaves the step open for a fix. [CI for the names,
+  releases its proof creates. Failed use leaves the step open for a fix. [CI for the names and the note alone,
   firstmate's publish step for the wait]
 
 ## 5. Closing a step
@@ -120,7 +120,7 @@ product decision, security boundary or operational prohibition.
   move each remendo row of the reference table into [boundaries](../reference/boundaries.md) with
   its package version; the card leaves with the use line, after the use (L17). Each week, an agent
   that built none of the week's steps runs the [CI health review](../how-to/ci-health.md) and sends
-  its findings to firstmate. Founder, 2026-11-04: "D A". [review]
+  its findings to firstmate. [review]
 - **L20.** Skills and guides **must** change only in a step's closing, or in the week's one
   documents-only pull request of method changes with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs

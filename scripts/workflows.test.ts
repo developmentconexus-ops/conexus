@@ -43,6 +43,7 @@ const VERSION = ['${{', 'inputs.version', '}}'].join(' ')
 const RECORDED = ['${{', 'needs.record.outputs.reference', '}}'].join(' ')
 const RECORDED_TEMPLATE = ['${{', 'needs.record.outputs.template', '}}'].join(' ')
 const BUILT_TEMPLATE = ['${{', 'needs.template.outputs.template', '}}'].join(' ')
+const NOTE_VERSION = ['${{', 'needs.version.outputs.version', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 const ci = workflow('ci.yml')
@@ -58,21 +59,33 @@ function onServer(job: Job): boolean {
   return !(typeof labels === 'string' && labels.startsWith('ubuntu-'))
 }
 
-test('o Release publica o Hub depois da imagem, do template e da plataforma da AWS, e a borda depois do Hub', () => {
-  assert.deepEqual(publish.jobs.deploy?.needs, ['image', 'template', 'aws-platform'])
-  assert.equal(publish.jobs['aws-platform']?.needs, 'image')
-  assert.equal(publish.jobs['aws-platform']?.uses, './.github/workflows/aws-platform.yml')
-  assert.equal(publish.jobs.edge?.needs, 'deploy')
+test('a nota cria a tag e a Release antes da imagem, o Hub vem depois da imagem, do template e da plataforma da AWS, e a borda depois do Hub', () => {
+  const { jobs } = publish
+  assert.deepEqual([jobs.release?.needs, jobs.image?.needs], ['version', ['version', 'release']])
+  assert.deepEqual(jobs.deploy?.needs, ['version', 'image', 'template', 'aws-platform'])
+  assert.deepEqual([jobs['aws-platform']?.needs, jobs.edge?.needs], ['image', 'deploy'])
+  assert.equal(jobs['aws-platform']?.uses, './.github/workflows/aws-platform.yml')
+  const note = jobs.version?.steps.find((step) => step.id === 'note')
+  assert.match(note?.run ?? '', /^node scripts\/release-note\.ts publish .+ >> "\$GITHUB_OUTPUT"$/)
+  assert.match(String(jobs.version?.outputs?.version), /\bsteps\.note\.outputs\.version\b/)
+  const create = jobs.release?.steps.find((step) => step.run?.includes('gh release create'))
+  assert.match(create?.run ?? '', /create "\$VERSION" --target "\$GITHUB_SHA" .+ note\.md /s)
+  const steps = Object.values(jobs).flatMap((job) => job.steps ?? [])
+  const versions = new Set(steps.filter((s) => s.env?.VERSION).map((s) => s.env?.VERSION))
+  assert.deepEqual(versions, new Set([NOTE_VERSION]))
 })
 
-test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem conferir main', () => {
+test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem', () => {
   assert.equal(publish.jobs.apps?.needs, 'image')
   assert.equal(publish.jobs.apps?.['runs-on'], 'ubuntu-24.04')
-  assert.equal(publish.jobs['apps-release']?.needs, 'apps')
+  assert.deepEqual(publish.jobs['apps-release']?.needs, ['version', 'apps'])
   assert.equal(publish.jobs['apps-release']?.['runs-on'], 'ubuntu-24.04')
 })
 
 test('nenhum trabalho que instala dependências tem um token que escreve no repositório', () => {
+  const { jobs } = publish
+  const writers = Object.keys(jobs).filter((id) => jobs[id]?.permissions?.contents === 'write')
+  assert.deepEqual(writers, ['release', 'apps-release'])
   for (const workflow of [publish, rollback, ci]) {
     for (const [name, job] of Object.entries(workflow.jobs)) {
       if (job.permissions?.contents !== 'write') continue
@@ -93,19 +106,20 @@ test('a volta acha o registro antes de mexer na borda, e põe a borda de volta a
   assert.deepEqual(rollback.jobs.rollback?.needs, ['record', 'edge'])
 })
 
-test('a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor', () => {
-  assert.equal(publish.jobs.image?.['runs-on'], 'ubuntu-24.04')
+test('a nota, a Release e a imagem nascem em máquinas novas do GitHub, e o resto roda no runner do servidor', () => {
+  const hosted = ['version', 'release', 'image', 'template', 'apps', 'apps-release']
+  for (const name of hosted) assert.equal(publish.jobs[name]?.['runs-on'], 'ubuntu-24.04', name)
   const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
-    ([name]) => !['image', 'template', 'apps', 'apps-release', 'aws-platform'].includes(name),
+    ([name]) => ![...hosted, 'aws-platform'].includes(name),
   )
   for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
 
-test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', () => {
+test('cada trabalho do Publish usa o commit que o gancho conferiu', () => {
   const checkouts = [...Object.values(publish.jobs), ...Object.values(awsPlatform.jobs)].flatMap(
     (job) => (job.steps ?? []).filter((step) => step.uses?.startsWith('actions/checkout@')),
   )
-  assert.equal(checkouts.length, 6)
+  assert.equal(checkouts.length, 7)
   for (const step of checkouts) assert.equal(step.with?.ref, SHA)
 })
 
@@ -146,7 +160,7 @@ test('a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR'
     for (const step of job.steps) assert.doesNotMatch(step.run ?? '', /imagetools/)
 })
 
-test('o Release sobe e registra o digest com o template do mesmo commit, o registro depois do deploy', () => {
+test('o Publish sobe e registra o digest com o template do mesmo commit, o registro depois do deploy', () => {
   const steps = publish.jobs.deploy?.steps ?? []
   const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE" "$TEMPLATE"')
   const record = steps.findIndex(
@@ -156,7 +170,7 @@ test('o Release sobe e registra o digest com o template do mesmo commit, o regis
   for (const at of [deploy, record]) assert.equal(steps[at]?.env?.TEMPLATE, BUILT_TEMPLATE)
 })
 
-test('o template nasce do commit do Release numa máquina nova do GitHub, depois da imagem conferir main', () => {
+test('o template nasce do commit do merge numa máquina nova do GitHub, depois da imagem', () => {
   const job = publish.jobs.template
   assert.equal(job?.needs, 'image')
   assert.equal(job?.['runs-on'], 'ubuntu-24.04')
@@ -196,12 +210,16 @@ test('a CI roda em máquinas do GitHub e não usa segredo, porque um pull reques
   assert.doesNotMatch(text('ci.yml'), /\bsecrets\b/)
 })
 
-test('só o Release e o disparo manual chegam ao runner do servidor', () => {
+test('só o push da nota no main e o disparo manual chegam ao runner do servidor', () => {
+  assert.deepEqual(publish.on, { push: { branches: ['main'], paths: ['releases/note.md'] } })
   for (const name of readdirSync(FOLDER)) {
+    assert.doesNotMatch(text(name), /github\.event\.release/, name)
     const file = workflow(name)
+    assert.ok(!('release' in file.on), name)
     if (!Object.values(file.jobs).some(onServer)) continue
     for (const event of Object.keys(file.on))
-      assert.ok(['release', 'workflow_dispatch'].includes(event), `${name}: ${event}`)
+      assert.ok(['push', 'workflow_dispatch'].includes(event), `${name}: ${event}`)
+    if ('push' in file.on) assert.deepEqual(file.on.push, publish.on.push, name)
   }
 })
 

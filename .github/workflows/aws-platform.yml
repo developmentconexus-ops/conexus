@@ -1,7 +1,7 @@
 name: AWS platform
 
-# The lake's platform in the AWS account, before the Hub that uses it (card L7): called by the
-# Release ahead of its deploy, and run by hand on main for the proof that spends no Release name
+# The lake's platform in the AWS account, before the Hub that uses it (card L7): called by Publish
+# ahead of its deploy, and run by hand on main for the proof that spends no version name
 # (delivery L17). It enters AWS through GitHub's OIDC, with no stored key: the Release role trusts
 # only this repository's `production` environment, so a job without it is refused.
 on:

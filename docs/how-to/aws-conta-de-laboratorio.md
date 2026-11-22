@@ -1,6 +1,6 @@
 # Preparar a conta de laboratório da AWS
 
-O que só um administrador faz, uma vez, para a Release publicar a plataforma do lago sem chave
+O que só um administrador faz, uma vez, para o Publish publicar a plataforma do lago sem chave
 guardada. Decisões: [0073](../decisions/0073-platform-by-cdk-one-stack-per-company.md) e
 [0075](../decisions/0075-how-the-hub-reaches-aws.md). Roda o firstmate, com a palavra do fundador.
 Nunca na conta oficial.
