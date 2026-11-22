@@ -58,10 +58,12 @@ construção, porque este PR mexe em `infra/`, que é da trilha Dados.
 
 | Opção | O que acontece |
 | --- | --- |
-| **E1. Você põe o rótulo `emergência` no PR desta etapa** (recomendo) | O código e a regra entram juntos; a L17 nunca descreve uma porta que não existe mais. O rótulo é a exceção que a L20 já prevê, contada na linha deste cartão. |
-| E2. A L17 espera o próximo PR de método | O PR entra sem mexer em `docs/guides/`. Até lá a L17 descreve a porta antiga, e só a decisão 0081 e os como-fazer dizem a nova. |
+| **E3. O texto novo da L17 vai no PR de método, mesclado antes deste** (recomendo) | O PR desta etapa não mexe em `docs/guides/` e passa no `method-freeze` sem rótulo. A regra nova chega antes do código: entre o merge do PR de método e a visita ao servidor, a L17 já descreve o PR da nota, e nenhuma nota sai nesse intervalo (a tabela de falhas), então ninguém segue a regra antes de a porta existir. |
+| E1. Você põe o rótulo `emergência` no PR desta etapa (não recomendo) | O código e a regra entram juntos. Mas não é emergência: nada está quebrado em produção, e a L20 guarda o rótulo para isso. |
+| E2. A L17 espera um PR de método depois deste | O PR entra sem mexer em `docs/guides/`. Até lá a L17 descreve a porta antiga, e só a decisão 0081 e os como-fazer dizem a nova. |
 
-Veredito: nativo nas duas (a exceção da L20 é regra nossa já escrita); a escolha é só de quando.
+Veredito: nativo nas três (o PR de método e a exceção da L20 são regras nossas já escritas); a escolha
+é só de quando e por qual PR.
 
 ## As unidades
 
@@ -71,7 +73,7 @@ Veredito: nativo nas duas (a exceção da L20 é regra nossa já escrita); a esc
 | G1 | U2 | A nota: o script que lê e confere `releases/note.md`, e o passo da CI que o roda no PR | `scripts/`, `.github/workflows/ci.yml`, `package.json` | delivery | U1 |
 | G1 | U3 | O Publish no push do `main` que muda a nota, com a tag e a Release como primeiro ato | `.github/workflows/publish.yml`, `scripts/workflows.test.ts` | delivery | U2 |
 | G1 | U4 | O gancho do servidor: aceita push no `main`, deixa de aceitar Release | `infra/`, `scripts/runner-hook.test.ts` | security | — |
-| G1 | U5 | Os documentos da porta nova: a L17, a decisão 0081 e os como-fazer | `docs/` | delivery | U3, U4 |
+| G1 | U5 | Os documentos da porta nova: a decisão 0081 e os como-fazer; a L17 conforme a decisão E | `docs/` | delivery | U3, U4 |
 
 Um pull request só (G1), um commit por unidade; U1 tem dois (um workflow precisa ser empurrado para
 rodar, e sai no commit seguinte). U4 não divide arquivo com U2 e U3 e pode correr ao lado delas.
@@ -307,7 +309,7 @@ Linhas 8 e 14.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `docs/guides/delivery.md` | Muda a L17, só com a E1 | — |
+| `docs/guides/delivery.md` | Muda a L17 só com a E1; com a E3 o texto vai no PR de método, e com a E2 num depois | — |
 | `docs/decisions/0081-publish-on-the-merge-of-a-release-note.md` | Cria | `docs/index.md` |
 | `docs/decisions/0035-publish-through-a-runner-on-the-server.md`, `docs/decisions/0044-release-image-built-on-a-github-hosted-machine.md` | Muda: a linha State, "Amended by [0081]" | — |
 | `docs/architecture.md`, `docs/how-to/hub-server.md`, `docs/how-to/apps-edge.md`, `docs/index.md` | Muda | — |
@@ -315,7 +317,7 @@ Linhas 8 e 14.
 ### A ordem do trabalho
 
 1. **Os textos.** Critérios: 9.
-   - A L17 (com E1): "Publishing is the merge of a pull request that changes only `releases/note.md`, whose first line names the version; Publish then creates the tag and the Release with the note on the merge commit and puts it live, in one run." A espera e os nomes ficam; o colchete diz "CI for the names and the note alone".
+   - A L17 (no PR de método com a E3, aqui só com a E1): "Publishing is the merge of a pull request that changes only `releases/note.md`, whose first line names the version; Publish then creates the tag and the Release with the note on the merge commit and puts it live, in one run." A espera e os nomes ficam; o colchete diz "CI for the names and the note alone".
    - A 0081, até 350 palavras: o push no `main` que muda a nota publica; a Release pela tela não; o gancho aceita push e disparo manual do `main`; a prova de U1 é o seu critério; base: as três referências e "`A1 B1 C1 D1`".
    - `architecture.md:164`, `hub-server.md:71-73`, `apps-edge.md:38,55,62,66-70`: a porta nova e `--event push` no passo 5.
    - **Pronto quando:** `npm run docs` verde.
