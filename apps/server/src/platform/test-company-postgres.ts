@@ -10,8 +10,8 @@ import type {
   SqlTransport,
 } from './company-postgres.ts'
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
-import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
+import type { AppLoginKey } from './config-apps.ts'
 import { roleLogin } from './copy-reader.ts'
 import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'

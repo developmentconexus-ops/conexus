@@ -99,6 +99,11 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
   'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
   'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
   's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
+  'aws-sdk-only-in-the-aws-adapter': [
+    'apps/server/src/hub/a/stacks.ts',
+    '@aws-sdk/client-cloudformation',
+    {},
+  ],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
   'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],
   'app-reads-kit-types-only': ['packages/app/src/run.ts', '@conexus/connectors/calls', {}],
