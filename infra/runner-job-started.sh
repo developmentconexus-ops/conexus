@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # The runner calls this before the first step of every job (ACTIONS_RUNNER_HOOK_JOB_STARTED), and a
-# job whose hook fails never starts a step. So only a release or a manual run of main whose commit is
-# on main reach the token of the edge and the Hub's keys; a push, another branch, a pull request or a
-# commit outside main ends here (decision 0035, security S36).
+# job whose hook fails never starts a step. So only a push or a manual run of main whose commit is on
+# main reach the token of the edge and the Hub's keys; a release, a tag, another branch, a pull request
+# or a commit outside main ends here (decisions 0035 and 0081, security S36).
 #
-# The commit is checked, not a name: a release event names the default branch as its target even for
-# a tag on any commit. Main comes from a bare mirror of GitHub's main on this server, fetched first,
-# anonymously over HTTPS from the public repository; a missing mirror or a failed fetch refuses.
+# The commit is checked, not only the name: main comes from a bare mirror of GitHub's main on this
+# server, fetched first, anonymously over HTTPS from the public repository; a missing mirror or a
+# failed fetch refuses.
 # The runner passes the hook no argument, so the first one exists only for scripts/runner-hook.test.ts.
 set -euo pipefail
 
@@ -21,7 +21,9 @@ case "${GITHUB_EVENT_NAME:-}" in
   workflow_dispatch)
     [ "${GITHUB_REF:-}" = refs/heads/main ] || refuse "a manual run of ${GITHUB_REF:-no ref} is not main"
     ;;
-  release) ;;
+  push)
+    [ "${GITHUB_REF:-}" = refs/heads/main ] || refuse "a push to ${GITHUB_REF:-no ref} is not main"
+    ;;
   *)
     refuse "a '${GITHUB_EVENT_NAME:-}' event does not reach this runner"
     ;;

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run as root, from a checkout of main. Gives the runner the hook that refuses every job but a release
-# or a manual run of main whose commit is on main (decision 0035, security S36), and git, which the
+# Run as root, from a checkout of main. Gives the runner the hook that refuses every job but a push
+# or a manual run of main whose commit is on main (decisions 0035 and 0081, security S36), and git, which the
 # hook checks the commit with. The hook file is root's, so a job cannot change it; the runner's .env
 # that names it, and the mirror of main the hook fetches into, stay the runner's, so only a job the
 # hook already let through could change them (and the runner, in the docker group, holds root anyway).
