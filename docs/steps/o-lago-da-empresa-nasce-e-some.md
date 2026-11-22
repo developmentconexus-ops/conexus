@@ -170,12 +170,12 @@ desta lista.
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 A plataforma na conta (um PR) | U1 A preparação, a plataforma e a receita | `infra/aws/` como pacote: o aplicativo CDK com três pilhas: a preparação, feita uma vez pelo firstmate (o OIDC do GitHub, o papel da Release, o usuário da chave base do Hub, a política de execução do CDK); a plataforma (o papel do Hub, o papel de serviço, o limite de permissão, o papel de serviço como administrador do lago, a ligação do `S3 Tables` em modo Lake Formation, o depósito das receitas, o orçamento e o monitor); e a receita do lago de uma empresa, sintetizada e guardada em `infra/aws/lake.template.json`. O passo a passo da preparação, em português. O P2 e o P3 rodados na conta de laboratório | `infra/aws/` (novo), `package.json`, `package-lock.json`, `knip.json`, `.dependency-cruiser.cjs`, `docs/reference/stack.md`, `docs/how-to/` (`aws-conta-de-laboratorio.md` novo), `docs/index.md` | security (S36, S40) | o `main` depois da mudança de método |
-| G1 | U2 A Release e a imagem | O workflow `aws-platform.yml`, chamado pela Release antes do `deploy`: entra na AWS pelo OIDC do GitHub, publica a plataforma e a receita em `lago/<versão>.json`; a imagem do Hub leva a receita e não o CDK; o P4 | `.github/workflows/` (`aws-platform.yml` novo, `publish.yml`, `ci.yml` só no job `image`), `infra/hub.Dockerfile`, `scripts/` (só a conferência dos workflows, se ela recusar o job novo) | delivery (L17) | U1 |
-| G2 A tabela do lago (um PR, data D11) | U3 A linha do lago | O esquema `lake`, a tabela `lake.company_lake`, a migração, as permissões do login do operador e a foto do catálogo | `apps/server/src/hub/lake/` (só `tables.ts`), `apps/server/migrations/`, `apps/server/database-grants.sql` | data (D4, D10, D11, D15, D17) | o `main` depois da mudança de método |
-| G3 O lago pelo Hub (um PR) | U4 O adaptador da AWS | `platform/aws.ts`: a porta `LakeStacks` e o adaptador único, a sessão de 15 minutos com a etiqueta da empresa, os prazos, o teto de bytes e as três respostas; o dublê de memória e o servidor de respostas gravadas em `platform/test-aws.ts`; as gravações; a configuração e o segredo no servidor | `apps/server/src/platform/` (`aws.ts`, `test-aws.ts`, `config.ts`, `test-database.ts` se ele monta a configuração, `recordings/aws/`), `apps/server/package.json`, `package-lock.json`, `.dependency-cruiser.cjs`, `infra/compose.yaml` | testing (T5, T14, T29) | G1 e G2 mesclados |
-| G3 | U5 O lago no Hub | As três rotas, a admissão, o estado lido da pilha, o motivo da falha, a conferência do que sobrou, e o lago como segundo recurso de fora na exclusão do cliente | `apps/server/src/hub/lake/` (novo), `apps/server/src/hub/operations/` (`clients.ts`, `routes.ts`, `public.ts`), `apps/server/src/hub/projects/public.ts`, `apps/server/src/hub/identity/admission.ts`, `packages/hub-api/src/` (`lakes.ts` novo, `index.ts`, `failures.ts`, `project-failures.ts`), `apps/server/src/main.ts`, `scripts/rerun-never.json` | data (D22); security (S8, S10, S41) | U4 |
-| G3 | U6 O bloco na Central | O bloco **Lago de dados** na página do cliente, com os seis estados, os dois botões e a confirmação pelo nome; a frase nova de `CLIENT_DELETION_PENDING` e o texto de **Apagar cliente** com o lago | `apps/web/src/hub/operations/` (`lake.tsx` novo, `queries.ts`, `client.tsx`, `client.test.tsx`, `delete-client-dialog.tsx`), `apps/web/src/routes/_app/operations/clients/$companyId.tsx`, `apps/web/sweep-replies.ts`, `apps/web/sweep-states.ts`, `apps/web/sweep-project-states.ts`, `packages/hub-api/src/project-failures.ts` (só a frase), `docs/reference/telas.md` (só TB24) | web, design | U5 |
+| G1 A plataforma na conta (um PR) | U1 A preparação, a plataforma e a receita | `infra/aws/` como pacote CDK com três pilhas: a preparação, feita uma vez pelo firstmate; a plataforma; e a receita do lago de uma empresa, guardada em `infra/aws/lake.template.json`. O passo a passo da preparação. O P2 e o P3 na conta de laboratório | o raio da U1 | security (S36, S40) | o `main` depois da mudança de método |
+| G1 | U2 A Release e a imagem | O workflow `aws-platform.yml`, chamado pela Release antes do `deploy`: entra na AWS pelo OIDC do GitHub, publica a plataforma e a receita em `lago/<versão>.json`; a imagem do Hub leva a receita e não o CDK; o P4 | o raio da U2 | delivery (L17) | U1 |
+| G2 A tabela do lago (um PR, data D11) | U3 A linha do lago | O esquema `lake`, a tabela `lake.company_lake`, a migração, as permissões do login do operador e a foto do catálogo | o raio da U3 | data (D4, D10, D11, D15, D17) | o `main` depois da mudança de método |
+| G3 O lago pelo Hub (um PR) | U4 O adaptador da AWS | `platform/aws.ts`, a porta `LakeStacks` e o adaptador único; os dois dublês em `platform/test-aws.ts`; as gravações; a configuração e o segredo no servidor | o raio da U4 | testing (T5, T14, T29) | G1 e G2 mesclados |
+| G3 | U5 O lago no Hub | As três rotas, a admissão, o estado lido da pilha, o motivo da falha, a conferência do que sobrou, e o lago como segundo recurso de fora na exclusão do cliente | o raio da U5 | data (D22); security (S8, S10, S41) | U4 |
+| G3 | U6 O bloco na Central | O bloco **Lago de dados** na página do cliente, com os seis estados, os dois botões e a confirmação pelo nome; a frase nova de `CLIENT_DELETION_PENDING` e o texto de **Apagar cliente** com o lago | o raio da U6 | web, design | U5 |
 
 Três grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
@@ -190,29 +190,10 @@ Três grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um co
   `hub/operations/clients.ts`, da Plataforma. O pull request do G3 avisa a outra trilha (delivery L27).
 - **A QA** ([testing T25](../guides/testing.md)) roda depois do G3, no Hub local com o servidor de
   respostas gravadas da U4.
-- **Os modelos.** U1, U4 e U5 em Opus (permissões da AWS entre dois papéis; a tradução dos erros do
-  SDK; o estado entre o banco do Hub e a pilha). U2, U3 e U6 em Sonnet.
 
 **Orçamento de código alterado.** Linhas mudadas, as tiradas também, sem testes nem gerados (o
-`lake.template.json` é gerado).
-
-- U1: ~880 (`bin/app.ts` ≈30; `lib/preparation.ts` ≈110; `lib/platform.ts` ≈340, os papéis e as
-  suas políticas, a ligação, o depósito, o orçamento e o monitor; `lib/lake.ts` ≈170, a receita;
-  `lib/names.ts` ≈30; `package.json`, `tsconfig.json` e `cdk.json` ≈40; `knip.json`,
-  `.dependency-cruiser.cjs` ≈10; `stack.md` ≈10; o passo a passo ≈140 linhas de texto; `docs/index.md` 1).
-- U2: ~120 (`aws-platform.yml` ≈90; `publish.yml` ≈10; `hub.Dockerfile` ≈6, o `package.json` de
-  `infra/aws` nos dois estágios e a receita; `ci.yml` ≈10).
-- U3: ~80 (`tables.ts` ≈45; as duas migrações ≈20, uma gerada; `database-grants.sql` ≈15).
-- U4: ~420 (`aws.ts` ≈290, com o teto de bytes; `test-aws.ts` ≈90, que conta, porque o servidor serve
-  a QA; `config.ts` ≈30; `compose.yaml` ≈8; `package.json` 4;
-  `.dependency-cruiser.cjs` ≈8).
-- U5: ~420 (`hub/lake/lake.ts` ≈190, criar, ler e apagar; `settle.ts` ≈60, a função de estado;
-  `routes.ts` ≈45; `public.ts` ≈25; `hub-api/lakes.ts` ≈60; `failures.ts` ≈10; `admission.ts` 2;
-  `clients.ts` ≈20, o recurso de fora; `projects/public.ts` ≈5; `main.ts` ≈6).
-- U6: ~200 (`lake.tsx` ≈140; `queries.ts` ≈15; `client.tsx` ≈5; `delete-client-dialog.tsx` 1; a rota
-  ≈5; `sweep-replies.ts` ≈20; `project-failures.ts` 1; `sweep-project-states.ts` 1; `telas.md` ≈5).
-
-**Total da etapa:** cerca de 2.120 linhas alteradas.
+`lake.template.json` é gerado; o `test-aws.ts` conta, porque serve a QA). U1: ~880, com o passo a
+passo. U2: ~120. U3: ~80. U4: ~420. U5: ~420. U6: ~200. Total da etapa: cerca de 2.120 linhas.
 
 ## Os critérios de aceite
 
@@ -242,7 +223,7 @@ CI chega à AWS.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 20 | U3 | A migração cria `lake.company_lake`; a foto do catálogo traz só as permissões da decisão G; o login da empresa não lê a tabela; o login do operador não muda `company_id`, `account` nem `region` de uma linha | `apps/server/src/platform/catalog.test.ts`, de hoje, contra a foto nova; `apps/server/src/hub/lake/tables.test.ts`, "a empresa não lê o lago" e "a conta e a região não mudam" | must |
+| 20 | U3 | A migração cria `lake.company_lake`; a foto do catálogo traz só as permissões da decisão G; o login da empresa não lê a tabela | `apps/server/src/platform/catalog.test.ts`, de hoje, contra a foto nova; `apps/server/src/hub/lake/tables.test.ts`, "a empresa não lê o lago" | must |
 | 21 | U3 | O banco recusa: um `lake_id` fora de `^[a-z0-9]{12}$`; dois lagos com o mesmo `lake_id`; `failed` sem `failure`, ou `failure` fora de `failed`; `ready`, `deleting` ou `delete_failed` sem `stack_id` | `tables.test.ts`, "cada regra recusa a linha errada" | must |
 
 ### G3
@@ -416,7 +397,7 @@ que só nasce de um banco do Hub restaurado de cópia, acha-se pelas etiquetas `
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
 | L.1 | A pilha da etapa 1 leva o depósito, as áreas `raw` e `current`, o papel leitor, o grupo do Athena e as duas permissões; o papel de escrita vem na etapa 2 e o publicador na 4 | Nada na etapa 1 escreve nem publica; a permissão de `DESCRIBE` no banco precisa do banco; o 0073 diz que mudar todas as empresas é "one `UpdateStack` each" | Uma atualização da pilha acrescenta ou tira |
-| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha porque quem chama informa o nome da pilha e a região; aqui o operador informa a empresa, e o nome da pilha muda a cada tentativa (L.4). Quem mantém uma pilha por cliente guarda uma linha por cliente: o Nuon (estado, modelo, pilha, conta, região), o Databricks (região, ids, estado), os exemplos SaaS da AWS (o nome da pilha e a versão). A AWS só lê a pilha apagada pelo id, e não busca pilha por etiqueta; o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
+| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha porque quem chama informa o nome da pilha e a região; aqui o operador informa a empresa, e o nome da pilha muda a cada tentativa (L.4). Quem mantém uma pilha por cliente guarda uma linha por cliente (linha 3); a AWS só lê a pilha apagada pelo id, e não busca pilha por etiqueta; o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
 | L.3 | Ler a pilha quando alguém lê o lago, sem esperar nem relógio | O ParallelCluster, mesma situação; nenhum pedido fica aberto 25 s; nada roda quando ninguém olha (a ideia da data D27) | Um aviso por fila, quando a etapa 2 trouxer a fila |
 | L.4 | `lakeId` de 12 minúsculas e números, por `crypto.randomInt`, novo a cada tentativa; `ClientRequestToken` igual a ele; o Hub manda o `CreateStack` de novo só quando não guardou o `stack_id` | O P6 do estudo: a mesma chave depois de uma pilha que falhou e sumiu cria uma pilha nova, e o nome do depósito fica preso mesmo depois da falha | Outro formato antes da primeira tabela |
 | L.5 | As duas permissões de `DESCRIBE` por nome, ao papel leitor, dentro da pilha | O P1 do estudo passou, com o controle | A concessão pelo Hub depois de criar |
@@ -507,13 +488,10 @@ políticas do estudo são o ponto de partida, e não modelo de código.
 
 - **O papel do Hub** (`conexus-hub`). Confia só no usuário da chave base, com `aws:SourceIp` igual a
   `HubSourceIp` na própria confiança (registro 0075), e `sts:TagSession` só para a chave
-  `conexus-empresa`. A política, a do critério 4, em declarações separadas. `CreateStack` em `stack/conexus-lago-*` com
-  `cloudformation:RoleArn` igual ao papel de serviço, `cloudformation:TemplateUrl` casando por `StringLike` com o
-  padrão do endereço da receita e `aws:RequestTag/conexus-empresa` igual a `${aws:PrincipalTag/conexus-empresa}`.
-  `TagResource` no mesmo recurso, só com `aws:RequestTag/conexus-empresa` igual à etiqueta da sessão: a referência de
-  serviço da AWS não lista `RoleArn` nem `TemplateUrl` para essa ação. Uma recusa (`Deny`) de `CreateStack`,
-  `UpdateStack`, `CreateChangeSet`, `CreateStackSet` e `UpdateStackSet` com `StringNotLike` em
-  `cloudformation:TemplateUrl` sobre o mesmo padrão. Nenhuma condição de `aws:SourceIp` nesta política nem na do
+  `conexus-empresa`. A política, a do critério 4, em declarações separadas: `CreateStack` e `TagResource` em
+  `stack/conexus-lago-*`, a etiqueta da sessão como `${aws:PrincipalTag/conexus-empresa}`, e o
+  `TagResource` só com a etiqueta, porque a referência de serviço da AWS não lista `RoleArn` nem
+  `TemplateUrl` para essa ação. Nenhuma condição de `aws:SourceIp` nesta política nem na do
   depósito: o CloudFormation lê a receita com a credencial do Hub, a partir do endereço dele, e não do servidor; `DescribeStacks`, `DescribeStackEvents` e
   `DeleteStack` com `aws:ResourceTag/conexus-empresa` igual à etiqueta da sessão; `iam:PassRole` do
   papel de serviço com `iam:PassedToService` igual a `cloudformation.amazonaws.com`; `s3:GetObject` em
@@ -741,8 +719,7 @@ chave estrangeira (D17).
    - **Mutações à mão:** tire a regra de `failure` (critério 21).
 2. **As permissões e a foto.** Critério: 20.
    - **Arquivos:** a migração à mão; `database-grants.sql`.
-   - **Testes:** `catalog.test.ts` de hoje; `tables.test.ts`, "a empresa não lê o lago" e "a conta e a
-     região não mudam".
+   - **Testes:** `catalog.test.ts` de hoje; `tables.test.ts`, "a empresa não lê o lago".
    - **Pronto quando:** `npm run test -w @conexus/server -- catalog` passa.
 
 ### Como se prova
@@ -842,7 +819,8 @@ mudança de método.
 1. **A prova que grava.** Critério: 35. Primeiro, com a credencial do firstmate, na conta de
    laboratório: um depósito órfão plantado com a etiqueta de uma empresa de teste, e as respostas de
    `GetTableBucket`, `ListNamespaces`, `DeleteNamespace` e `DeleteTableBucket` gravadas pela sessão do
-   Hub, aceitas e recusadas (o depósito de outra empresa), com os valores trocados (S40). O `S3 Tables`
+   Hub, aceitas e recusadas (o depósito de outra empresa), e a do `DeleteStack` de uma pilha já
+   apagada (critério 56), com os valores trocados (S40). O `S3 Tables`
    fala JSON por REST, e o CloudFormation, XML por consulta: nenhum serve de envelope ao outro. As
    respostas de limitação de taxa e de erro 500 do CloudFormation, que o estudo não gravou, usam o
    envelope `ErrorResponse` gravado (`create-stack-recusado.xml`) com o código trocado, como testing
@@ -884,7 +862,7 @@ mudança de método.
      escreveu a regra do C56 para `@aws-sdk/*`, a U4 só põe `platform/aws.ts` nela.
    - **Testes:** `npm run deps`; `aws.test.ts`, "o registro do Hub não leva o pedido", que lê o
      registro capturado de um `create` e procura a receita, a chave e a frase da AWS.
-5. **Os dublês.** Critérios: os da U5 que usam `fakeAws` (40 a 55).
+5. **Os dublês.** Critérios: os da U5 que usam `fakeAws` (40 a 56).
    - **Arquivos:** cria `test-aws.ts`.
    - **Referência a seguir:** `test-neon.ts:60-143` (o dublê de memória) e `:152` (o servidor).
    - **O que entra:** `fakeAws` guarda as pilhas por id, com a etiqueta da empresa, e recusa a chamada
