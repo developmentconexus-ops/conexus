@@ -68,8 +68,8 @@ passo 6 termina antes deste e já tirou o monitor feito à mão:
    ```
 3. O monitor de antes do passo 6 de novo, e então
    `npx cdk deploy PlatformStack --region us-east-2 --profile <perfil> <parâmetros>`.
-4. Confira que o orçamento `conexus-orcamento-mensal` e o monitor `conexus-gasto-fora-do-normal`
-   existem e que o e-mail de aviso chega. Só então apague o orçamento `conexus-lab-mensal` e o papel
+4. Confira que o orçamento e o monitor `conexus-gasto-fora-do-normal` existem e que o e-mail de
+   aviso chega. Só então apague o orçamento `conexus-lab-mensal` e o papel
    `conexus-lab-lf-s3tables`.
 5. `get-data-lake-settings` de novo: igual a `antes.json`, com só `conexus-cfn` a mais em
    `DataLakeAdmins`.
