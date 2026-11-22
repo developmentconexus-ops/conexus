@@ -77,18 +77,24 @@ function ViewSwitch({ view }: { view: FrameView }) {
 }
 
 /**
- * The app in its frame. A frame with no session of the app says so to the Hub (`conexus-entry`), and
- * the Hub's pass takes the frame to the app, signed in; a message from another origin or window is
- * not heard.
+ * The app in its frame, on the Prévia's own host. A frame with no session of the app says so to the
+ * Hub (`conexus-entry`), and the Hub's pass takes the frame to the app, signed in; a message from
+ * another origin, the published app's included, or from another window is not heard.
  */
-function Frame(props: { address: string; view: FrameView }) {
-  const { address } = props
-  const [state, setState] = useState<FrameState>({ kind: 'framed', src: `https://${address}/` })
+function Frame(props: { previewAddress: string; view: FrameView }) {
+  const { previewAddress } = props
+  const [state, setState] = useState<FrameState>({
+    kind: 'framed',
+    src: `https://${previewAddress}/`,
+  })
   const frame = useRef<HTMLIFrameElement>(null)
   const { mutate } = useMutation(sendFrameHandoff)
   useEffect(() => {
     function heard(event: MessageEvent) {
-      if (event.origin !== `https://${address}` || event.source !== frame.current?.contentWindow) {
+      if (
+        event.origin !== `https://${previewAddress}` ||
+        event.source !== frame.current?.contentWindow
+      ) {
         return
       }
       const entry = FrameEntry.safeParse(event.data)
@@ -104,7 +110,7 @@ function Frame(props: { address: string; view: FrameView }) {
     }
     window.addEventListener('message', heard)
     return () => window.removeEventListener('message', heard)
-  }, [address, mutate])
+  }, [previewAddress, mutate])
   if (state.kind === 'refused') {
     return (
       <div className="min-h-0 flex-1 overflow-auto p-xl">
@@ -134,7 +140,11 @@ function Frame(props: { address: string; view: FrameView }) {
   )
 }
 
-/** The Prévia of a Projeto: its app in a browser window the Hub draws, or the Stage before its first app. */
+/**
+ * The Prévia of a Projeto: its app in a browser window the Hub draws, whose bar shows the address
+ * the Prévia loads; or the Stage before its first app or without that address. Abrir app opens
+ * the published app's address.
+ */
 export function Preview({
   project,
   reloads,
@@ -149,8 +159,8 @@ export function Preview({
   const [notice, setNotice] = useState<NoticeState>(() =>
     storage.getItem(NOTICE_CLOSED) === 'true' ? 'closed' : 'open',
   )
-  const { address, appVersion, publishedVersion } = project
-  if (appVersion === null || address === null) return <Stage />
+  const { address, previewAddress, appVersion, publishedVersion } = project
+  if (appVersion === null || address === null || previewAddress === null) return <Stage />
   const phone = view === 'phone'
   return (
     <div
@@ -182,7 +192,7 @@ export function Preview({
           </Tip>
           <div className="flex h-8 min-w-0 items-center gap-sm rounded-pill bg-surface-3 px-lg md:justify-center max-md:bg-surface">
             <LockIcon className="size-3 shrink-0 text-text-2" aria-hidden="true" />
-            <span className="min-w-0 truncate font-mono text-fact text-text">{address}</span>
+            <span className="min-w-0 truncate font-mono text-fact text-text">{previewAddress}</span>
             <span className="shrink-0 border-l border-line pl-sm text-label text-text-2 max-md:hidden">
               versão {appVersion}
             </span>
@@ -228,7 +238,7 @@ export function Preview({
             </Button>
           </div>
         )}
-        <Frame key={`${appVersion}-${reloads}`} address={address} view={view} />
+        <Frame key={`${appVersion}-${reloads}`} previewAddress={previewAddress} view={view} />
       </section>
     </div>
   )
