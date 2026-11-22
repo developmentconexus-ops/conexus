@@ -51,8 +51,8 @@ para apagar. Uma criação que falha leva de 2 a 3 minutos até a AWS desfazer t
 bloco continua em "Criando o lago…" e termina em "Não deu para criar o lago.", com **Tentar de
 novo**.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde às decisões F,
-G e H. Na construção do primeiro grupo: dá a palavra para o firstmate preparar a conta de laboratório
+**O que você faz, e quando.** Antes: nada. No começo: aprova esta página; as decisões F, G e H
+já têm as suas respostas. Na construção do primeiro grupo: dá a palavra para o firstmate preparar a conta de laboratório
 pelo passo a passo guardado (a sua "9a"), que agora inclui a H. Antes de o último grupo ir ao ar: dá
 a palavra para o firstmate pôr a chave do Hub num arquivo no servidor, pelo mesmo passo a passo; se
 para isso for preciso abrir o acesso ao servidor por um momento, como na visita de 22/11 (você abre
@@ -106,10 +106,14 @@ tentados, e os quatro falharam. Esse poder entra nesta etapa; a decisão F diz c
 - **Um aviso de que a conta chegou perto das 100 empresas.** O registro 0070 reabre perto de 90; a
   falha de cota aparece hoje como "Não deu para criar o lago.", e o motivo fica no registro do Hub.
 - **Um botão "Conferir isolamento"** (a sua C (a)).
+- **A empresa ver o próprio lago.** Nesta etapa só a Central lê a linha do lago. A etapa que primeiro
+  ler o lago a pedido da empresa (a cópia, na etapa 2) pede a permissão de leitura para o login da
+  empresa, num pull request próprio (data D11).
 - **A conta oficial da AWS e o certificado no lugar da chave** (registro 0072).
 - **As issues `next-card` abertas.** Nenhuma trata do lago; cada uma espera a etapa da sua pasta.
 
-**As decisões suas nesta etapa.** Três novas, F, G e H.
+**As decisões suas nesta etapa.** Três novas, F, G e H, com as suas respostas de 2026-11-22 no fim
+desta lista.
 
 - **F. Como conter o poder do robô que monta os lagos.** Se alguém roubar a chave do Hub e usá-la a
   partir do servidor, hoje já pode escolher a empresa; isso você já aceitou em 20/11 (registro 0075). Com o poder novo
@@ -119,10 +123,11 @@ tentados, e os quatro falharam. Esse poder entra nesta etapa; a decisão F diz c
   - **(a)** As receitas ficam guardadas num depósito da AWS em que só a Release escreve, e o Hub só
     pode pedir receitas desse depósito. Uma chave roubada só monta lagos da nossa receita. Exemplo: a
     Release guarda `lago/<versão>.json`; o Hub pede "monte a receita deste endereço"; um pedido com
-    outra receita é recusado pela AWS antes de rodar. **Recomendo a.** É o que faz o programa da AWS
-    que cria um conjunto destes por cliente, na mesma situação que a nossa (o ParallelCluster). Custa
-    um depósito, que guarda só as receitas, e um passo a mais na Release. Veredito: nativo; a AWS
-    documenta essa trava.
+    outra receita é recusado pela AWS antes de rodar. **Recomendo a.** É a forma que a AWS documenta para este caso: o guia dela de menor
+    privilégio traz esta mesma regra, um depósito de receitas aprovadas que o robô só lê. O programa da
+    AWS que cria um conjunto destes por cliente (o ParallelCluster) também guarda a receita num
+    depósito e manda o endereço, mas não usa a trava. Custa um depósito, que guarda só as receitas, e
+    um passo a mais na Release. Veredito: nativo; a AWS documenta essa trava.
   - **(b)** Nesta etapa a receita vai dentro de cada pedido do Hub, como o estudo propunha, e a trava
     de (a) entra antes da primeira cópia, na etapa 2. Nesta etapa os lagos não têm dado nenhum, então
     a receita falsa não teria o que ler ainda.
@@ -130,12 +135,17 @@ tentados, e os quatro falharam. Esse poder entra nesta etapa; a decisão F diz c
   com lago: qual é o lago, em que conta e região, a versão da receita e o último estado visto.
   - **(a)** O login que o Hub usa para a Central lê, grava, muda o estado e apaga essas linhas; o
     login que o Hub usa para a empresa não as vê. Exemplo: você cria o lago de A, a linha nasce;
-    apaga, a linha sai. **Recomendo a.** É uma forma nova: hoje, no banco da empresa, a Central só lê
+    apaga, a linha sai. **Recomendo a.** Guardar essa linha é o que fazem os sistemas com a mesma
+    forma: a Nekt e o Databricks guardam, para cada workspace, em que nuvem e região ele está e em
+    que estado; o kit da AWS para produtos com muitos clientes guarda uma linha por cliente; o Nuon,
+    que mantém uma pilha por cliente como nós, guarda a pilha, a conta, a região e a versão da
+    receita. Em todos, só o sistema central escreve a linha. É uma forma nova: hoje, no banco da empresa, a Central só lê
     e apaga a linha, porque quem a cria é a própria empresa ao abrir o primeiro Projeto; o lago, quem
     cria é a Central. Veredito: nativo (as permissões do PostgreSQL por SQL, data D10).
   - **(b)** Sem tabela: o Hub guarda nada e pergunta tudo à AWS, como o ParallelCluster. Custa: a
-    conta e a região deixam de ser dado da empresa (o registro 0072 pede que sejam), e o Hub precisa
-    procurar o lago pelo nome, que a AWS recusa responder quando ele não existe (o teste de 21/11).
+    conta e a região deixam de ser dado da empresa (o registro 0072 pede que sejam); a AWS não procura
+    um lago pela empresa, só lista todos; e um lago que falhou ao nascer some da AWS, então a tela não
+    teria como dizer "Não deu para criar o lago". O Terraform começou sem guardar nada e voltou atrás.
 - **H. Tirar da conta de laboratório as peças feitas à mão em 19/11.** A ligação do lago com o serviço de
   consultas e o orçamento de US$ 75 foram criados à mão. A plataforma passa a criá-los como código, e a AWS não
   deixa criar a ligação por cima da que já existe. Nenhum lago usa a ligação hoje.
@@ -145,6 +155,16 @@ tentados, e os quatro falharam. Esse poder entra nesta etapa; a decisão F diz c
     contas, a de laboratório e a oficial, ficam com a mesma forma, escrita no repositório.
   - **(b)** As peças feitas à mão ficam, e a plataforma, só na conta de laboratório, não cria a
     ligação nem o orçamento. A conta oficial nasce já pela plataforma.
+
+**As suas respostas** (2026-11-22):
+
+- **F (a), com os ajustes da verificação** ("F1 a f2 okay"). Você aprovaria a (a) se ela seguisse
+  100% a orientação da AWS; a verificação deu "conforme com ajustes nomeados", e os quatro ajustes e
+  os dois reforços já estão neste cartão (critérios 4, 10 e 30, a U1 e a linha 19 da tabela de
+  referência). A F2 liberou a documentação da AWS para conferir as páginas inteiras.
+- **G (a)** ("2. A"), depois de conferida contra a Nekt e outras referências com a mesma forma:
+  todas guardam uma linha por cliente, menos o ParallelCluster. O critério 56 vem dessa conferência.
+- **H (a)** ("1. A"): o orçamento e o alarme novos primeiro, depois as peças feitas à mão saem.
 
 ## As unidades
 
@@ -207,14 +227,14 @@ CI chega à AWS.
 | 1 | U1 | `npm run synth -w @conexus/infra-aws` roda sem conta da AWS e escreve `infra/aws/lake.template.json` igual ao do repositório; um modelo mudado sem sintetizar deixa a conferência vermelha | `infra/aws/test/lake.test.ts`, "o modelo guardado é o que a síntese escreve" | must |
 | 2 | U1 | O modelo do lago só tem `Parameters` (`LakeId`, `CompanyId`), `Resources` e `Outputs`: nenhum `BootstrapVersion`, `Rules`, `CDKMetadata` nem arquivo anexo; os recursos são o depósito `conexus-<LakeId>` com a etiqueta `conexus-empresa`, as áreas `raw` e `current`, o papel leitor `conexus-<LakeId>-leitor` com o limite `conexus-limite` (o ARN montado de `AWS::AccountId`, sem número no modelo), o grupo do Athena com os resultados geridos e o teto de bytes, e as duas concessões de `DESCRIBE` ao papel leitor, pelo nome, no catálogo da empresa e no banco `current` | `lake.test.ts`, "o modelo leva só as sete peças da empresa" | must |
 | 3 | U1 | A confiança do papel leitor só aceita o papel do Hub, e só com `conexus-empresa` igual ao `CompanyId` e `conexus-leitor` presente, com `ForAllValues` e um `Null` sobre as chaves; recusa: uma terceira chave de etiqueta | `lake.test.ts`, "o leitor só confia no Hub com as duas etiquetas"; ao vivo no passo 5 do roteiro, por uma sessão de teste do firstmate marcada com A: o Hub não entra em leitor nesta etapa (critério 4) | must |
-| 4 | U1 | A política do papel do Hub: `CreateStack` e `TagResource` só com `RoleARN` do papel de serviço, `TemplateURL` no depósito das receitas sob `lago/` (decisão F (a)) e a etiqueta `conexus-empresa` igual à da sessão; ler, ler os eventos e apagar só a pilha com a etiqueta da sessão; `PassRole` só do papel de serviço ao CloudFormation; apagar áreas e depósito de tabelas só com a etiqueta da sessão; nenhum `iam:Create*`, nenhum `s3tables:CreateTableBucket`, nenhum `cloudformation:UpdateStack`, nenhum `sts:AssumeRole` em papel de empresa (entra na etapa 3) | `infra/aws/test/platform.test.ts`, "o Hub só cria da receita, pelo papel de serviço, na própria empresa"; ao vivo, o P3 de novo com a plataforma de verdade: as sete recusas da tabela B.4 do estudo e mais quatro: `CreateStack` com `TemplateBody`, com um `TemplateURL` fora de `lago/`, e `DeleteTableBucket` e `DeleteNamespace` no depósito de outra empresa | must |
+| 4 | U1 | A política do papel do Hub. As ações `cloudformation:` permitidas são exatamente cinco, sem curinga: `CreateStack`, `TagResource`, `DescribeStacks`, `DescribeStackEvents` e `DeleteStack`. `CreateStack` só com `RoleARN` do papel de serviço, `TemplateURL` casando por `StringLike` com `https://<depósito>.s3.<região>.amazonaws.com/lago/*` (decisão F (a)) e a etiqueta `conexus-empresa` igual à da sessão. `TagResource` numa declaração própria, só com `aws:RequestTag/conexus-empresa` igual à da sessão. Uma recusa explícita de `CreateStack`, `UpdateStack`, `CreateChangeSet`, `CreateStackSet` e `UpdateStackSet` quando `cloudformation:TemplateUrl` não casa com o mesmo padrão (`StringNotLike`, que também recusa o pedido sem endereço). Ler, ler os eventos e apagar só a pilha com a etiqueta da sessão; `PassRole` só do papel de serviço ao CloudFormation; apagar áreas e depósito de tabelas só com a etiqueta da sessão; nenhum `iam:Create*`, nenhum `s3tables:CreateTableBucket`, nenhum `sts:AssumeRole` em papel de empresa (entra na etapa 3) | `infra/aws/test/platform.test.ts`, "o Hub só cria da receita, pelo papel de serviço, na própria empresa" e "as ações do CloudFormation são só as cinco"; ao vivo, o P3 de novo com a plataforma de verdade: a criação aceita com as duas etiquetas, as sete recusas da tabela B.4 do estudo e mais cinco: `CreateStack` com `TemplateBody`, com um `TemplateURL` fora de `lago/`, com o endereço da própria receita na forma de caminho (`https://s3.<região>.amazonaws.com/<depósito>/lago/<sha-256>.json`), e `DeleteTableBucket` e `DeleteNamespace` no depósito de outra empresa | must |
 | 5 | U1 | O papel de serviço só cria papel `conexus-*-leitor` com o limite de permissão preso, nunca o tira, e não muda `conexus-hub`, `conexus-cfn`, `conexus-limite` nem os papéis da preparação; entra na lista de administradores do lago com `MutationType: APPEND`: as configurações inteiras do Lake Formation (`GetDataLakeSettings`), lidas antes e depois do `cdk deploy`, só ganham o papel de serviço na lista | `platform.test.ts`, "o papel de serviço só cuida dos papéis de empresa"; ao vivo: `GetDataLakeSettings` antes, depois do deploy e depois do `cdk destroy`, na região vazia | must |
 | 6 | U1 | O P2: numa região da conta de laboratório sem a ligação, a plataforma cria o `s3tablescatalog` em modo Lake Formation (as duas permissões padrão vazias, `AllowFullTableExternalDataAccess` em `"False"`), um lago novo aparece como catálogo filho, e um papel com IAM completo e sem concessão do Lake Formation não lê tabela nenhuma; apagada a pilha da plataforma, a região volta como estava | ao vivo, no pull request do G1 | must |
 | 7 | U1 | O orçamento mensal, o alarme por e-mail e o monitor de gasto fora do normal nascem da plataforma, com o valor e o e-mail lidos de parâmetros; nenhum número de conta, e-mail, endereço de servidor ou valor em dólar no repositório | `platform.test.ts`, "o orçamento lê o valor e o e-mail de parâmetros"; `lake.test.ts`, "nenhum número de conta no modelo" | must |
 | 8 | U1 | A síntese passa pelo validador que o CDK traz, como erro: `@aws-cdk/core:validateAgainstDefaultRules` ligado em `infra/aws/cdk.json` | `npm run synth -w @conexus/infra-aws` | should |
 | 9 | U1 | A preparação: o papel da Release só confia no OIDC do GitHub com o `sub` deste repositório no ambiente `production`; a política de execução do CDK não é `AdministratorAccess` e não dá `iam:` fora de `conexus-*` | `infra/aws/test/preparation.test.ts`, "a Release só entra do ambiente production" e "a execução do CDK não é administradora" | must |
 | 13 | U1 | O passo a passo da preparação diz, na ordem, o que só um administrador faz, cada passo com o comando e o que ver depois, para a região vazia do P2 e para us-east-2 | leitura do firstmate, que o segue na conta de laboratório no passo 4 da U1 | must |
-| 10 | U2 | A Release chama `aws-platform.yml` antes do `deploy`: o job entra na AWS pelo OIDC, sem chave guardada, no ambiente `production`; publica a plataforma; e grava a receita em `lago/<sha-256 do arquivo>.json`, sem sobrescrever uma versão já publicada | a conferência dos workflows (`npm run check:workflows`); ao vivo, o P4: o workflow disparado à mão no `main` depois do G1 mesclado, sem gastar nome de Release (delivery L17) | must |
+| 10 | U2 | A Release chama `aws-platform.yml` antes do `deploy`: o job entra na AWS pelo OIDC, sem chave guardada, no ambiente `production`; publica a plataforma; e grava a receita em `lago/<sha-256 do arquivo>.json`, sem sobrescrever uma versão já publicada | a conferência dos workflows (`npm run check:workflows`); ao vivo, o P4: o workflow disparado à mão no `main` depois do G1 mesclado, sem gastar nome de Release (delivery L17); um `put-object` na chave de uma receita publicada é recusado sem `--if-none-match` (403) e volta 412 com ele | must |
 | 11 | U2 | Um job fora do ambiente `production` não entra na AWS | `preparation.test.ts` (critério 9); ao vivo, no P4: o mesmo passo de entrada num job sem `environment`, disparado à mão uma vez, recebe a recusa de `AssumeRoleWithWebIdentity` | must |
 | 12 | U2 | A imagem do Hub leva `lake.template.json` e não leva o CDK | o job `image` de `.github/workflows/ci.yml`, um passo novo: "a imagem tem a receita do lago e não tem aws-cdk-lib" | should |
 
@@ -222,14 +242,14 @@ CI chega à AWS.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 20 | U3 | A migração cria `lake.company_lake`; a foto do catálogo traz só as permissões da decisão G; o login da empresa não lê a tabela | `apps/server/src/platform/catalog.test.ts`, de hoje, contra a foto nova; `apps/server/src/hub/lake/tables.test.ts`, "a empresa não lê o lago" | must |
+| 20 | U3 | A migração cria `lake.company_lake`; a foto do catálogo traz só as permissões da decisão G; o login da empresa não lê a tabela; o login do operador não muda `company_id`, `account` nem `region` de uma linha | `apps/server/src/platform/catalog.test.ts`, de hoje, contra a foto nova; `apps/server/src/hub/lake/tables.test.ts`, "a empresa não lê o lago" e "a conta e a região não mudam" | must |
 | 21 | U3 | O banco recusa: um `lake_id` fora de `^[a-z0-9]{12}$`; dois lagos com o mesmo `lake_id`; `failed` sem `failure`, ou `failure` fora de `failed`; `ready`, `deleting` ou `delete_failed` sem `stack_id` | `tables.test.ts`, "cada regra recusa a linha errada" | must |
 
 ### G3
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 30 | U4 | `create` manda um `CreateStack` com o nome `conexus-lago-<lakeId>`, `ClientRequestToken` igual ao `lakeId`, `OnFailure: DELETE`, `Capabilities: ['CAPABILITY_NAMED_IAM']`, o `RoleARN` do papel de serviço, o `TemplateURL` da versão, `LakeId` e `CompanyId` com a empresa da sessão, e as etiquetas `conexus-empresa` e `conexus-modelo`; a resposta gravada vira `DONE` com o id da pilha. Os nomes de `aws.ts` batem com `lake.template.json` | `apps/server/src/platform/aws.test.ts`, "criar manda o pedido inteiro e lê o id" e "os nomes batem com a receita" | must |
+| 30 | U4 | `create` manda um `CreateStack` com o nome `conexus-lago-<lakeId>`, `ClientRequestToken` igual ao `lakeId`, `OnFailure: DELETE`, `Capabilities: ['CAPABILITY_NAMED_IAM']`, o `RoleARN` do papel de serviço, o `TemplateURL` da versão na forma única de `names.ts`, `LakeId` e `CompanyId` com a empresa da sessão, e as etiquetas `conexus-empresa` e `conexus-modelo`; a resposta gravada vira `DONE` com o id da pilha. Os nomes de `aws.ts` batem com `lake.template.json` | `apps/server/src/platform/aws.test.ts`, "criar manda o pedido inteiro e lê o id" e "os nomes batem com a receita", que também confere que o endereço que `aws.ts` monta casa com o padrão da política sintetizada | must |
 | 31 | U4 | Toda chamada vai por uma sessão do papel do Hub com a etiqueta `conexus-empresa` da empresa do pedido e 900 s; o `AssumeRole` recusado vira `REFUSED`, sem chamada ao CloudFormation | `aws.test.ts`, "a sessão leva a etiqueta da empresa" e "a sessão recusada não chama a pilha" | must |
 | 32 | U4 | Limitação de taxa e erro 500 são repetidos pelo SDK e, esgotados, viram `NO_ANSWER`; `AccessDenied` e `ValidationError` viram `REFUSED` na primeira; uma AWS que não responde vira `NO_ANSWER` dentro do prazo da chamada; uma resposta acima de 1 MiB é cortada e vira `NO_ANSWER` (C59) | `aws.test.ts`, "a repetição é a do SDK", "a recusa não repete", "a AWS calada responde dentro do prazo", "resposta maior que o teto" | must |
 | 33 | U4 | Ler e apagar recebem só o id da pilha (`StackId`), nunca o nome; a pilha apagada, lida pelo id, volta `DELETE_COMPLETE` | `aws.test.ts`, "a pilha apagada lida pelo id" | must |
@@ -254,6 +274,7 @@ CI chega à AWS.
 | 53 | U5 | Cada chamada à AWS de um pedido vai pela sessão da empresa daquele pedido: o dublê recusa a chamada de A pela pilha de B, e o Hub nunca a faz | `lake.test.ts`, "o Hub só chama a pilha da empresa do pedido" | must |
 | 54 | U5 | O registro do Hub leva só `companyId`, `lakeId`, a chamada, o código e o recurso que falhou; nenhuma frase da AWS, nenhum id de conta | `lake.test.ts`, "o registro do lago só tem campos escolhidos" | must |
 | 55 | U5 | Toda recusa da AWS termina num estado que a tela mostra, nunca em "Criando…" para sempre: `CreateStack` recusado grava `FAILED`; a pilha em `DELETE_FAILED`, `ROLLBACK_COMPLETE` ou `ROLLBACK_FAILED` com a linha em `creating` grava `DELETE_FAILED`, que se apaga de novo; `leftover` recusado ainda grava `FAILED` e registra `LAKE_LEFTOVER_REFUSED`; `status` recusado mantém a linha e registra `LAKE_AWS_REFUSED` | `settle.test.ts`, a tabela inteira; `lake.test.ts`, "cada recusa termina num estado" | must |
+| 56 | U5 | A pilha apagada por fora (a linha em `ready`, a pilha em `DELETE_COMPLETE`): **Apagar o lago** responde 202 `DELETING`, qualquer que seja a resposta da AWS ao `DeleteStack`; a leitura seguinte lê a pilha pelo id, acha `DELETE_COMPLETE`, e a linha sai. Nenhuma rota de "esquecer" | `lake.test.ts`, "a pilha apagada por fora sai pelo apagar"; a resposta da AWS ao `DeleteStack` de uma pilha já apagada, gravada na prova da U4 | must |
 | 60 | U6 | Sem lago: "Esta empresa ainda não tem lago." e **Criar o lago**; o clique mostra "Criando o lago…", a tela pergunta de novo a cada 5 s, e para em **Pronto** com o nome, a região e a hora | `apps/web/src/hub/operations/lake.test.tsx`, "do sem lago ao pronto"; QA | must |
 | 61 | U6 | Falhou: "Não deu para criar o lago." e **Tentar de novo**, que cria outro | `lake.test.tsx`, "a falha oferece tentar de novo" | must |
 | 62 | U6 | **Apagar o lago** abre a confirmação; o botão fica desligado até o nome exato; o nome recusado pelo Hub aparece no campo; confirmado, "Apagando o lago…" e depois o sem lago | `lake.test.tsx`, "apagar pede o nome" | must |
@@ -336,7 +357,10 @@ A tabela do estudo, com a unidade e o arquivo novo; as células encurtam as dele
 `pypi:aws-parallelcluster==3.16.3 pcluster/`; `PF` é `pypi:prefect-aws==0.8.1 prefect_aws/_cli/`;
 `SAM` é `pypi:aws-sam-cli==1.174.0 samcli/`; `SBT` é `npm:@cdklabs/sbt-aws@0.9.5`; `CFN` é
 `npm:@aws-sdk/client-cloudformation@3.1175.0`; `CDK` é `npm:aws-cdk-lib@2.278.0`; `NK` é a
-documentação da Nekt salva em 2026-11-19, fora do repositório. A situação: ParallelCluster, um servidor
+documentação da Nekt salva em 2026-11-19, fora do repositório; `NU` é
+`nuonco/nuon@c1ec42c5 services/ctl-api/internal/`; `DBX` é
+`databricks/databricks-sdk-go@0a5c1bdd service/provisioning/`; `SLS` é
+`aws-samples/aws-saas-factory-ref-solution-serverless-saas@8fc7cedf server/`. A situação: ParallelCluster, um servidor
 na frente do CloudFormation, uma pilha por cluster, **mesma**; prefect-aws, a receita no pacote,
 **mesma** para isso; SAM e prefect-aws esperam num terminal, **diferente** para a espera; SBT, de
 dentro da AWS, com a pilha por cliente só no exemplo, **diferente**; Nekt Express, o lago do cliente
@@ -346,7 +370,7 @@ na conta dela, **mesma** para o que a pessoa vê.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | O bloco **Lago de dados**: os seis estados e os dois botões | U6 | `apps/web/src/hub/operations/client.tsx:50-97` (`Client`); a confirmação pelo nome em `delete-client-dialog.tsx:27-72`; a pergunta de novo em `apps/web/src/hub/copies/queries.ts:50-60` (`refetchInterval`) | `PC api/controllers/cluster_operations_controller.py:80`, `:140`: 202 com `CREATE_IN_PROGRESS`, o cliente pergunta de novo; `PC api/converters.py:17-28`: os estados de desfazer viram um. Nekt Express: "provisioned and ready in a few minutes" (`NK:7663`); apagar pede o identificador (`NK:195511-195520`) | embrulhado: `refetchInterval` do TanStack Query e o diálogo de hoje; o nosso é o bloco | — | A ("6.a"), B ("7a") | `apps/web/src/hub/operations/lake.tsx` |
 | 2 | As três rotas e a admissão, só o operador | U5 | `packages/hub-api/src/operations.ts:82-92` (`getClient`), `:140-161` (`deleteClient`); `apps/server/src/hub/operations/routes.ts:18-60`; `apps/server/src/hub/identity/admission.ts:118-122` | `PC api/controllers/cluster_operations_controller.py:179-186`: apagar responde 202 e pula se já está apagando; `PC api/controllers/common.py:144-147`: o apagado responde 404 | embrulhado: o molde das rotas da Central; o nosso são três operações e duas ações | — | A | `packages/hub-api/src/lakes.ts`, `apps/server/src/hub/lake/routes.ts` |
-| 3 | A linha do lago no banco do Hub | U3, U5 | `apps/server/src/hub/projects/tables.ts:130-155` (`companyDatabase`, o análogo) | `PC models/cluster.py:316`: o estado é o da pilha; `PC aws/cfn.py:152-154`: a lista pelas etiquetas. `SBT resources/functions/tenant-registrations/index.py:53-62`: uma linha por cliente, sem estado de criação | embrulhado: a pilha é a verdade; a linha guarda o que o CloudFormation não sabe (a empresa, a conta, a região, a versão) | — | L.2; registro 0072; decisão G | `apps/server/src/hub/lake/tables.ts` |
+| 3 | A linha do lago no banco do Hub | U3, U5 | `apps/server/src/hub/projects/tables.ts:130-155` (`companyDatabase`, o análogo) | Convergem numa linha própria por cliente; só o ParallelCluster vive sem ela, porque quem chama informa o nome e a região (`PC models/cluster.py:316`: o estado é o da pilha; `PC aws/cfn.py:152-154`: a lista pelas etiquetas). `NU app/install_stack_version.go:32-39`, `NU app/aws_account.go:28-29`: uma linha por instalação, com o estado, a soma de verificação e o endereço do modelo, o nome da pilha, a conta e a região. `DBX model.go:1468-1540`: o registro do workspace, com a região, os ids e `workspace_status`. `SLS cdk/lib/tenant-template/tenant-template-stack.ts:79-93`: `stackName` e a versão por cliente; `SLS cdk/lib/tenant-pipeline/deployemntstatemachine.asl.json:59`: pergunta o estado à pilha antes de agir. `SBT resources/functions/tenant-registrations/index.py:53-62`: uma linha por cliente, sem estado de criação. Nekt: o workspace é registro dela, e a pilha avisa os identificadores (`NK:7704`, `NK:195516`). A AWS: a pilha apagada só se lê pelo id (`CFN dist-types/models/models_0.d.ts:5320`), e `ListStacks` só filtra por estado (`:9098-9112`) | embrulhado: a pilha é a verdade do estado; a linha é o índice e a intenção. Ela diz de qual empresa é o lago e onde perguntar por ele (a conta, a região, o id da pilha), guarda a tentativa antes de a pilha existir e o último estado visto. As etiquetas da pilha repetem a empresa e a versão, para a linha poder ser refeita a partir da AWS | — | L.2; registro 0072; decisão G | `apps/server/src/hub/lake/tables.ts` |
 | 4 | O adaptador da AWS: porta, prazos, erros | U4 | `apps/server/src/platform/neon.ts:39-52` (`NeonAnswer`, a porta), `:61-67` (prazos, teto), `:95-108` (`mapped`); o único cliente do SDK, `apps/server/src/builder/git/copy/copy.ts:78-88` | O SDK repete 3 vezes, só limitação de taxa e erro passageiro (`npm:@smithy/core dist-cjs/submodules/retry/index.js:468-469`, `:559-561`), e não tem prazo por padrão (`npm:@smithy/node-http-handler dist-cjs/index.js:232`); provado pela sonda do estudo | embrulhado: os prazos (C57) e as três respostas da porta | — | — | `apps/server/src/platform/aws.ts` |
 | 5 | A credencial: a cadeia padrão, o papel do Hub, a sessão de 15 minutos com a etiqueta | U4 | `apps/server/src/platform/config.ts:249-256` (`readSecret`), `:310` | A cadeia lê o ambiente e depois os arquivos (`npm:@aws-sdk/credential-provider-node dist-types/defaultProvider.d.ts:14-27`), o caminho em `AWS_SHARED_CREDENTIALS_FILE` (`npm:@smithy/core dist-es/submodules/config/shared-ini-file-loader/getCredentialsFilepath.js:3-4`); `fromTemporaryCredentials` aceita `Tags` e encadeia (`npm:@aws-sdk/credential-providers@3.1175.0 dist-types/fromTemporaryCredentials.base.d.ts:5-8`). `SBT lib/point-solutions/libraries/src/token-vending-machine/src/token-vending-machine.js:58-66`: `AssumeRole` com `Tags` por cliente | nativo | — | registro 0075 (F-B "A") | — |
 | 6 | Criar: uma chamada que se pode repetir | U4, U5 | `apps/server/src/hub/projects/company-database.ts:23-48` (`claimDatabase`); os dois motivos dele em `docs/reference/boundaries.md:894-909` | A chave de repetição (`CFN dist-types/models/models_0.d.ts:2117-2134`). As referências usam só o nome: `PC aws/cfn.py:65-71`, `PF utils.py:314-320`, `SBT lib/core-app-plane/integ.default.js:90` | nativo: o nome único e a `ClientRequestToken`. **A posse com prazo do `main` não vem** | — | L.4; P6 do estudo | — |
@@ -362,7 +386,7 @@ na conta dela, **mesma** para o que a pessoa vê.
 | 16 | A plataforma: o papel do Hub, o papel de serviço, o limite e o papel de serviço como administrador do lago | U1 | nenhum | "If you specify a service role, CloudFormation uses that role's credentials" (documentado); `SAM lib/deploy/deployer.py:273-277`: o papel opcional. `AWS::LakeFormation::DataLakeSettings` com `Admins` e `MutationType` `APPEND` ou `REPLACE` (documentado, lido em 2026-11-22) | nativo | o P3 do estudo: com o papel de serviço administrador do lago, `CREATE_COMPLETE`; quatro formas mais estreitas falharam; as sete recusas da tabela B.4 | registro 0073 (os quatro ajustes); L.9 | `infra/aws/lib/platform.ts` |
 | 17 | O orçamento e o alarme, como código | U1 | nenhum | `CDK aws-budgets/lib/budgets.generated.d.ts:687`, `:695` (`CfnBudget`) | nativo | — | D ("9a") | — |
 | 18 | A preparação do CDK e a Release sem chave guardada | U1, U2 | `.github/workflows/publish.yml`: o `deploy` no ambiente `production` (`:155`); nenhum `id-token` | `npm:aws-cdk@2.1149.0 lib/api/bootstrap/bootstrap-template.yaml:14-18`, `:45-48`: as políticas do papel que cria pilhas e o limite; o IAM exige a condição `sub` do GitHub (documentado) | nativo | a confiança sem `sub` foi recusada na prova de 20/11; o job de verdade é o P4 (critério 10) | D, H | `infra/aws/lib/preparation.ts`, `.github/workflows/aws-platform.yml`, `docs/how-to/aws-conta-de-laboratorio.md` |
-| 19 | O modelo chega à AWS por um endereço fixo | U1, U2, U4 | `infra/hub.Dockerfile:4-19` (o estágio `build`) | Divergem. `PC models/cluster.py:388-391`: guarda o modelo no `S3` e manda o endereço. `PF utils.py:69-70`, `PF ecs_worker.py:239`: no corpo do pedido. `SAM commands/deploy/deploy_context.py:115`: no corpo até 51.200 bytes. A AWS documenta a condição `cloudformation:TemplateUrl` em `CreateStack` (lido em 2026-11-22) | nativo, na forma do ParallelCluster: `TemplateURL`, com a política do Hub presa ao depósito | — | F (a) | — |
+| 19 | O modelo chega à AWS por um endereço fixo | U1, U2, U4 | `infra/hub.Dockerfile:4-19` (o estágio `build`) | Divergem. `PC models/cluster.py:388-391`: guarda o modelo no `S3` e manda o endereço. `PF utils.py:69-70`, `PF ecs_worker.py:239`: no corpo do pedido. `SAM commands/deploy/deploy_context.py:115`: no corpo até 51.200 bytes. A AWS documenta a trava: a chave `cloudformation:TemplateUrl` em `CreateStack` (guia do usuário do CloudFormation, "Control CloudFormation access with IAM") e a política de exemplo do AWS Prescriptive Guidance ("Sample identity-based policies for CloudFormation": `StringLike` no depósito dos modelos aprovados, que o principal só lê). O ParallelCluster não usa a trava: a política documentada dele dá `cloudformation:*` em `*` (lido em 2026-11-22) | nativo: `TemplateURL` na forma de endereço do ParallelCluster; a trava na forma do Prescriptive Guidance | — | F (a) | — |
 | 20 | O dublê da AWS nos testes e na QA | U4 | `apps/server/src/platform/test-neon.ts:60-143` (`fakeNeon`), `:152` (`neonServer`); `neon.test.ts:51-85` | `npm:aws-sdk-client-mock@4.1.0 dist/cjs/mockClient.js:9-25`: troca só o `send`, e o STS interno de `fromTemporaryCredentials` escapa (provado pelo estudo); `pypi:moto==5.2.5 moto/cloudformation/parsing.py:277-279`: declara criada a pilha de recursos que não conhece | embrulhado: a porta de memória e o servidor de respostas gravadas, na forma do Neon; as respostas entram pelo `requestHandler` do SDK | a sonda do estudo: o `requestHandler` exercita a repetição e as classes de erro | a regra da mudança de método | `apps/server/src/platform/test-aws.ts` |
 | 21 | As gravações da AWS | U4 | `npm run record` só grava o Mastra (testing T26); testing T29 para conectores | Não se aplica | embrulhado: as respostas gravadas da AWS que o dublê devolve, na forma da regra da mudança de método | as 13 respostas do P5 do estudo, com valores inventados; as do `S3 Tables` gravadas na prova da U4 | a regra da mudança de método | `apps/server/src/platform/recordings/aws/` |
 | 22 | Mudar todas as empresas quando o modelo muda | fica de fora: na etapa 1 não há modelo anterior | nenhum | `PC api/controllers/cluster_operations_controller.py:372-378`: só atualiza a pilha da mesma versão; `PF utils.py:298-311`: "No updates are to be performed" é sucesso | nativo quando entrar (`UpdateStack`); fica de fora nesta etapa, e a versão vai na linha e na etiqueta `conexus-modelo` | — | L.8 | — |
@@ -381,12 +405,18 @@ trilha: apagar uma área com tabela dentro falha ("namespace not empty", B.3 do 
 da etapa 2; e a recusa por `DESCRIBE` e por `SELECT` tem de virar o mesmo "não encontrado" (security
 S10; B.6 do estudo), para o cartão da etapa 3.
 
+A linha em `ready` não relê a AWS; uma pilha mudada ou apagada por fora só aparece quando alguém
+apaga o lago (critério 56). A etapa que primeiro usar o lago decide quando reler: antes de agir na
+pilha, como o exemplo serverless da AWS, ou por um relógio, como o Crossplane. Uma pilha sem linha,
+que só nasce de um banco do Hub restaurado de cópia, acha-se pelas etiquetas `conexus-empresa` e
+`conexus-modelo`; nenhuma etapa constrói esse inventário (0073).
+
 ## As decisões do firstmate
 
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
 | L.1 | A pilha da etapa 1 leva o depósito, as áreas `raw` e `current`, o papel leitor, o grupo do Athena e as duas permissões; o papel de escrita vem na etapa 2 e o publicador na 4 | Nada na etapa 1 escreve nem publica; a permissão de `DESCRIBE` no banco precisa do banco; o 0073 diz que mudar todas as empresas é "one `UpdateStack` each" | Uma atualização da pilha acrescenta ou tira |
-| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha, mas não precisa saber de que cliente é a pilha; o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
+| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha porque quem chama informa o nome da pilha e a região; aqui o operador informa a empresa, e o nome da pilha muda a cada tentativa (L.4). Quem mantém uma pilha por cliente guarda uma linha por cliente: o Nuon (estado, modelo, pilha, conta, região), o Databricks (região, ids, estado), os exemplos SaaS da AWS (o nome da pilha e a versão). A AWS só lê a pilha apagada pelo id, e não busca pilha por etiqueta; o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
 | L.3 | Ler a pilha quando alguém lê o lago, sem esperar nem relógio | O ParallelCluster, mesma situação; nenhum pedido fica aberto 25 s; nada roda quando ninguém olha (a ideia da data D27) | Um aviso por fila, quando a etapa 2 trouxer a fila |
 | L.4 | `lakeId` de 12 minúsculas e números, por `crypto.randomInt`, novo a cada tentativa; `ClientRequestToken` igual a ele; o Hub manda o `CreateStack` de novo só quando não guardou o `stack_id` | O P6 do estudo: a mesma chave depois de uma pilha que falhou e sumiu cria uma pilha nova, e o nome do depósito fica preso mesmo depois da falha | Outro formato antes da primeira tabela |
 | L.5 | As duas permissões de `DESCRIBE` por nome, ao papel leitor, dentro da pilha | O P1 do estudo passou, com o controle | A concessão pelo Hub depois de criar |
@@ -394,7 +424,7 @@ S10; B.6 do estudo), para o cartão da etapa 3.
 | L.7 | O modelo sintetizado fica no repositório, em `infra/aws/lake.template.json`, conferido contra a síntese; a versão é o sha-256 do arquivo; o CDK é só dependência de montagem | A diferença do modelo aparece no pull request, e a imagem e a Release usam os mesmos bytes sem sintetizar duas vezes; a síntese roda sem conta (provado pelo estudo) | Sintetizar na montagem da imagem |
 | L.8 | Sem caminho de atualização; a versão vai na linha e na etiqueta `conexus-modelo` | Não há modelo anterior; o ParallelCluster só atualiza a pilha da mesma versão, então a versão precisa estar gravada desde o começo | A etapa que mudar o modelo constrói o caminho |
 | L.9 | O papel de serviço entra como administrador do lago por `AWS::LakeFormation::DataLakeSettings` com `MutationType: APPEND`, na pilha da plataforma; o papel de serviço só cuida dos papéis `conexus-*-leitor` e é recusado nos da plataforma e da preparação | O P3 do estudo: quatro formas mais estreitas falharam; `APPEND` não tira quem já administra (documentado). As configurações inteiras do Lake Formation antes e depois, e o que acontece quando a pilha da plataforma sai, são provados na U1 (critérios 5 e 6). O poder é largo, e a decisão F do fundador diz como contê-lo; a página o explica antes da F | Tirar o papel da lista |
-| L.10 | A forma da decisão H (a), se o fundador a escolher: em us-east-2, o orçamento e o monitor novos nascem primeiro, com outro nome, e só depois saem os feitos à mão; a ligação feita à mão (o catálogo e o registro) sai antes do primeiro `cdk deploy` da plataforma, que a recria | A pilha não cria um catálogo que já existe (B.2 do estudo); nenhum lago usa a ligação hoje (o inventário do estudo: nenhum catálogo filho); a regra "orçamento e alarme antes de qualquer recurso" (2026-11-19) pede que nunca fique sem orçamento | Recriar à mão pelas duas chamadas que o estudo anotou |
+| L.10 | A forma da decisão H (a), que o fundador escolheu ("1. A"): em us-east-2, o orçamento e o monitor novos nascem primeiro, com outro nome, e só depois saem os feitos à mão; a ligação feita à mão (o catálogo e o registro) sai antes do primeiro `cdk deploy` da plataforma, que a recria | A pilha não cria um catálogo que já existe (B.2 do estudo); nenhum lago usa a ligação hoje (o inventário do estudo: nenhum catálogo filho); a regra "orçamento e alarme antes de qualquer recurso" (2026-11-19) pede que nunca fique sem orçamento | Recriar à mão pelas duas chamadas que o estudo anotou |
 | L.11 | O lago mora num assunto novo, `apps/server/src/hub/lake/`, com o esquema `lake` (data D4); o fechamento põe a pasta na lista da trilha Dados | Nenhuma pasta de hoje é dona do lago; `hub/data/` é o contrato de acesso | Mover para `hub/data/` |
 | L.12 | A leitura `GET …/lake` acerta a linha quando a pilha mudou | É o "lê o estado quando perguntam" do ParallelCluster, com a linha de L.2; o `update` leva o estado lido na condição | Uma rota de acerto separada |
 | L.13 | Na exclusão do cliente, `clients.ts` recebe uma lista de recursos de fora, cada um com `has` e `release`; o banco da empresa e o lago são os dois; a cada tentativa todos são pedidos, e o pedido responde `CLIENT_DELETION_PENDING` se algum não saiu | `clients.ts:221` testa um caso só; o lago seria um segundo `if` (a lente do estudo) | Voltar a dois testes |
@@ -439,6 +469,7 @@ export const TAG_COMPANY = 'conexus-empresa'       // a sessão do Hub, a pilha,
 export const TAG_READER = 'conexus-leitor'         // só na sessão do leitor (etapa 3)
 export const TAG_TEMPLATE = 'conexus-modelo'       // a versão da receita, na pilha
 export const TEMPLATE_PREFIX = 'lago/'             // lago/<sha-256>.json no depósito das receitas
+// e a forma única do endereço da receita, com o nome que quem constrói escolher
 export const PLATFORM_ROLES = ['conexus-hub', 'conexus-cfn', 'conexus-release'] as const
 
 // infra/aws/lib/preparation.ts
@@ -448,6 +479,11 @@ export class PlatformStack extends Stack           // Parameters: BudgetUsd, Ala
 // infra/aws/lib/lake.ts
 export class LakeStack extends Stack               // Parameters: LakeId, CompanyId; sem BootstrapVersion
 ```
+
+A forma do endereço da receita é uma só: `https://<depósito>.s3.<região>.amazonaws.com/lago/<sha-256>.json`, com o
+depósito no começo, como o ParallelCluster monta (`PC models/s3_bucket.py:413`). A política usa essa forma no
+padrão, e `aws.ts` a usa no pedido. A chave `cloudformation:TemplateUrl` compara o texto do pedido: o mesmo objeto
+por outra forma de endereço é recusado. O depósito fica na região das pilhas.
 
 O servidor não importa de `infra/`: a U4 repete os nomes em `platform/aws.ts`, e um teste da U4 lê
 `lake.template.json` e confere que batem (critério 30). Cada estado, id e esquema Zod: nenhum nesta
@@ -471,10 +507,14 @@ políticas do estudo são o ponto de partida, e não modelo de código.
 
 - **O papel do Hub** (`conexus-hub`). Confia só no usuário da chave base, com `aws:SourceIp` igual a
   `HubSourceIp` na própria confiança (registro 0075), e `sts:TagSession` só para a chave
-  `conexus-empresa`. A política, a do critério 4: `CreateStack` e `TagResource` em
-  `stack/conexus-lago-*` com `cloudformation:RoleArn` igual ao papel de serviço,
-  `cloudformation:TemplateUrl` sob `lago/` do depósito das receitas e `aws:RequestTag/conexus-empresa`
-  igual a `${aws:PrincipalTag/conexus-empresa}`; `DescribeStacks`, `DescribeStackEvents` e
+  `conexus-empresa`. A política, a do critério 4, em declarações separadas. `CreateStack` em `stack/conexus-lago-*` com
+  `cloudformation:RoleArn` igual ao papel de serviço, `cloudformation:TemplateUrl` casando por `StringLike` com o
+  padrão do endereço da receita e `aws:RequestTag/conexus-empresa` igual a `${aws:PrincipalTag/conexus-empresa}`.
+  `TagResource` no mesmo recurso, só com `aws:RequestTag/conexus-empresa` igual à etiqueta da sessão: a referência de
+  serviço da AWS não lista `RoleArn` nem `TemplateUrl` para essa ação. Uma recusa (`Deny`) de `CreateStack`,
+  `UpdateStack`, `CreateChangeSet`, `CreateStackSet` e `UpdateStackSet` com `StringNotLike` em
+  `cloudformation:TemplateUrl` sobre o mesmo padrão. Nenhuma condição de `aws:SourceIp` nesta política nem na do
+  depósito: o CloudFormation lê a receita com a credencial do Hub, a partir do endereço dele, e não do servidor; `DescribeStacks`, `DescribeStackEvents` e
   `DeleteStack` com `aws:ResourceTag/conexus-empresa` igual à etiqueta da sessão; `iam:PassRole` do
   papel de serviço com `iam:PassedToService` igual a `cloudformation.amazonaws.com`; `s3:GetObject` em
   `lago/*`; `s3tables:GetTableBucket`, `ListNamespaces`, `DeleteNamespace` e `DeleteTableBucket` em
@@ -497,10 +537,11 @@ políticas do estudo são o ponto de partida, e não modelo de código.
   `CfnCatalog` do Glue `s3tablescatalog` com `CreateDatabaseDefaultPermissions` e
   `CreateTableDefaultPermissions` vazios e `AllowFullTableExternalDataAccess` `"False"`. Se o P2
   recusar a forma, o recuo é `AwsCustomResource` com as duas chamadas.
-- **O depósito das receitas**: `S3`, bloqueado ao público, com `s3:PutObject` só para o papel da
-  Release e `s3:GetObject` para o Hub; `RemovalPolicy.RETAIN`, porque uma pilha antiga ainda aponta
-  para a receita dela. Com a decisão F (b), este depósito e a condição `TemplateUrl` saem, o critério 4
-  troca `TemplateURL` por `TemplateBody`, e o 10 e o 30 também.
+- **O depósito das receitas**: `S3`, na região das pilhas, bloqueado ao público, com versionamento ligado e só por
+  TLS (recusa com `aws:SecureTransport` falso). `s3:PutObject` só para o papel da Release e só com o cabeçalho
+  `If-None-Match` (condição `Null` em `s3:if-none-match` igual a `false`, na política que dá a permissão); nenhum
+  `s3:DeleteObject` para a Release; `s3:GetObject` para o Hub, que não escreve em parte nenhuma do depósito;
+  `RemovalPolicy.RETAIN`, porque uma pilha antiga ainda aponta para a receita dela.
 - **O orçamento e o monitor**: `CfnBudget` mensal com o valor de `BudgetUsd` e uma notificação por
   e-mail a `AlarmEmail` em 80% do real e 100% do previsto; `CfnAnomalyMonitor` e `CfnAnomalySubscription`
   para o mesmo e-mail (L.14).
@@ -537,7 +578,8 @@ confiança com `aws:SourceIp`, a do OIDC com `sub`); `aws-cloudformation`. Ler p
    - **Arquivos:** `lib/preparation.ts`, `lib/platform.ts`, `test/preparation.test.ts`,
      `test/platform.test.ts`.
    - **Referência a seguir:** `p3-politicas.json` do estudo; a condição `cloudformation:TemplateUrl`
-     (guia do usuário do CloudFormation, "Require a specific template URL", lido em 2026-11-22).
+     (guia do usuário do CloudFormation, "Require a specific template URL", lido em 2026-11-22, e AWS
+     Prescriptive Guidance, "Sample identity-based policies for CloudFormation").
    - **Testes:** um caso por recusa do critério 4 e do 9.
    - **Mutações à mão:** tire a condição de `RoleArn` (critério 4); troque `APPEND` por `REPLACE`
      (critério 5); tire a recusa dos `PLATFORM_ROLES` (critério 5).
@@ -553,7 +595,7 @@ confiança com `aws:SourceIp`, a do OIDC com `sub`); `aws-cloudformation`. Ler p
    laboratório, seguindo o passo a passo, depois da palavra do fundador (decisões D e H).
    - **O P2:** na região vazia (L.6), `cdk deploy PlatformStack`, um lago criado com a receita, as três
      conferências do critério 6, `GetDataLakeSettings` antes, depois e depois do `cdk destroy`.
-   - **O P3 de novo:** em us-east-2, com a plataforma de verdade, as onze recusas do critério 4.
+   - **O P3 de novo:** em us-east-2, com a plataforma de verdade, a criação aceita e as doze recusas do critério 4.
    - **O que sai:** os comandos e as saídas, com o número da conta trocado, num comentário do pull
      request (security S40).
 
@@ -675,6 +717,8 @@ D17) e `:130-155` (`companyDatabase`: as regras e as políticas); `apps/server/d
 | `since` | `timestamptz` | não nulo, a hora da última mudança de estado | — |
 | `failure` | `text` | não nulo só em `failed`, `LAKE_CREATE_FAILED` | — |
 
+`state` é o último estado que o Hub viu na pilha, e não uma garantia; a verdade é a pilha, lida pelo `stack_id` (linha 3). `account`, `region` e `stack_id` dizem onde perguntar.
+
 A política por linha: só o escopo `OPERATOR` lê e escreve. É uma forma nova: em `company_database`
 o operador só lê e apaga (`tables.ts:151-153`, `database-grants.sql:497-504`), porque quem cria é a
 empresa; aqui quem cria é a Central (decisão G). As permissões (decisão G): o login do operador com `SELECT`,
@@ -697,7 +741,8 @@ chave estrangeira (D17).
    - **Mutações à mão:** tire a regra de `failure` (critério 21).
 2. **As permissões e a foto.** Critério: 20.
    - **Arquivos:** a migração à mão; `database-grants.sql`.
-   - **Testes:** `catalog.test.ts` de hoje; `tables.test.ts`, "a empresa não lê o lago".
+   - **Testes:** `catalog.test.ts` de hoje; `tables.test.ts`, "a empresa não lê o lago" e "a conta e a
+     região não mudam".
    - **Pronto quando:** `npm run test -w @conexus/server -- catalog` passa.
 
 ### Como se prova
@@ -972,7 +1017,7 @@ remove  tx: lockCompany, admitOperator(deleteClientLake), o nome (`identity.comp
    - **Testes:** `settle.test.ts`, a tabela inteira de linha por estado da pilha.
    - **Mutações à mão:** faça `creating` com `DELETE_COMPLETE` dar `GONE` (critério 44); faça
      `creating` com `DELETE_FAILED` dar `KEEP` (critério 55).
-2. **As rotas e a admissão.** Critérios: 40, 41, 46, 49, 53, 54, 55.
+2. **As rotas e a admissão.** Critérios: 40, 41, 46, 49, 53, 54, 55, 56.
    - **Arquivos:** cria `lakes.ts`, `lake.ts`, `routes.ts`, `public.ts`, `lake.test.ts`; muda
      `admission.ts`, `failures.ts`, `index.ts`, `main.ts`.
    - **Referência a seguir:** `operations/routes.ts:18-60`; `clients.ts:212-227` (a trava e a
@@ -1009,6 +1054,7 @@ L17). Hoje as rotas não existem.
 - A política `OPERATOR` da U3 não deixa o `update` condicional da leitura: volte ao firstmate.
 - A leitura pede uma escrita no banco que `getClient` não faz hoje e uma regra recusa um `GET` que
   grava: registre a regra e siga L.12; se for regra de máquina, volte ao firstmate.
+- A AWS recusar o `DeleteStack` de uma pilha já apagada de um jeito que deixe a linha fora de `deleting`: volte ao firstmate.
 
 ## U6 O bloco na Central
 
