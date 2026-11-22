@@ -1,0 +1,12 @@
+{
+  "app": "node bin/app.ts",
+  "output": "cdk.out",
+  "versionReporting": false,
+  "pathMetadata": false,
+  "assetMetadata": false,
+  "notices": false,
+  "cli-telemetry": false,
+  "context": {
+    "@aws-cdk/core:validateAgainstDefaultRules": true
+  }
+}

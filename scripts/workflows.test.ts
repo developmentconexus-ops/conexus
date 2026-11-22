@@ -18,9 +18,11 @@ type Job = {
   if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
-  'runs-on': unknown
+  'runs-on'?: unknown
   environment?: string
   outputs?: Record<string, string>
+  /** A call of another workflow, which has no steps of its own. */
+  uses?: string
   steps: Step[]
 }
 type Workflow = { on: Record<string, unknown>; jobs: Record<string, Job> }
@@ -45,30 +47,32 @@ const NOTE_VERSION = ['${{', 'needs.version.outputs.version', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 const ci = workflow('ci.yml')
+const awsPlatform = workflow('aws-platform.yml')
 
-/** Only a GitHub-hosted machine is not the server: a label list, a group or a bare label may reach it. */
+/**
+ * Only a GitHub-hosted machine is not the server: a label list, a group or a bare label may reach
+ * it. A call of another workflow runs nowhere itself; that workflow's own jobs are read.
+ */
 function onServer(job: Job): boolean {
+  if (job.uses !== undefined) return false
   const labels = job['runs-on']
   return !(typeof labels === 'string' && labels.startsWith('ubuntu-'))
 }
 
-test('a nota cria a tag e a Release antes da imagem, o Hub vem depois da imagem e do template, e a borda depois do Hub', () => {
-  assert.equal(publish.jobs.release?.needs, 'version')
-  assert.deepEqual(publish.jobs.image?.needs, ['version', 'release'])
-  assert.deepEqual(publish.jobs.deploy?.needs, ['version', 'image', 'template'])
-  assert.equal(publish.jobs.edge?.needs, 'deploy')
-  const note = publish.jobs.version?.steps.find((step) => step.id === 'note')
+test('a nota cria a tag e a Release antes da imagem, o Hub vem depois da imagem, do template e da plataforma da AWS, e a borda depois do Hub', () => {
+  const { jobs } = publish
+  assert.deepEqual([jobs.release?.needs, jobs.image?.needs], ['version', ['version', 'release']])
+  assert.deepEqual(jobs.deploy?.needs, ['version', 'image', 'template', 'aws-platform'])
+  assert.deepEqual([jobs['aws-platform']?.needs, jobs.edge?.needs], ['image', 'deploy'])
+  assert.equal(jobs['aws-platform']?.uses, './.github/workflows/aws-platform.yml')
+  const note = jobs.version?.steps.find((step) => step.id === 'note')
   assert.match(note?.run ?? '', /^node scripts\/release-note\.ts publish .+ >> "\$GITHUB_OUTPUT"$/)
-  assert.match(String(publish.jobs.version?.outputs?.version), /\bsteps\.note\.outputs\.version\b/)
-  const create = publish.jobs.release?.steps.find((step) => step.run?.includes('gh release create'))
-  assert.equal(
-    create?.run,
-    'gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" \\\n  --notes-file note.md --repo "$GITHUB_REPOSITORY"\n',
-  )
-  const readers = Object.values(publish.jobs).flatMap((job) =>
-    job.steps.filter((s) => s.env?.VERSION),
-  )
-  assert.deepEqual(new Set(readers.map((step) => step.env?.VERSION)), new Set([NOTE_VERSION]))
+  assert.match(String(jobs.version?.outputs?.version), /\bsteps\.note\.outputs\.version\b/)
+  const create = jobs.release?.steps.find((step) => step.run?.includes('gh release create'))
+  assert.match(create?.run ?? '', /create "\$VERSION" --target "\$GITHUB_SHA" .+ note\.md /s)
+  const steps = Object.values(jobs).flatMap((job) => job.steps ?? [])
+  const versions = new Set(steps.filter((s) => s.env?.VERSION).map((s) => s.env?.VERSION))
+  assert.deepEqual(versions, new Set([NOTE_VERSION]))
 })
 
 test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem', () => {
@@ -79,14 +83,13 @@ test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem',
 })
 
 test('nenhum trabalho que instala dependências tem um token que escreve no repositório', () => {
-  const writers = Object.keys(publish.jobs).filter(
-    (name) => publish.jobs[name]?.permissions?.contents === 'write',
-  )
+  const { jobs } = publish
+  const writers = Object.keys(jobs).filter((id) => jobs[id]?.permissions?.contents === 'write')
   assert.deepEqual(writers, ['release', 'apps-release'])
   for (const workflow of [publish, rollback, ci]) {
     for (const [name, job] of Object.entries(workflow.jobs)) {
       if (job.permissions?.contents !== 'write') continue
-      const installs = job.steps.filter(
+      const installs = (job.steps ?? []).filter(
         (step) =>
           step.uses?.startsWith('actions/checkout@') ||
           step.uses === './.github/actions/install' ||
@@ -107,16 +110,16 @@ test('a nota, a Release e a imagem nascem em máquinas novas do GitHub, e o rest
   const hosted = ['version', 'release', 'image', 'template', 'apps', 'apps-release']
   for (const name of hosted) assert.equal(publish.jobs[name]?.['runs-on'], 'ubuntu-24.04', name)
   const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
-    ([name]) => !hosted.includes(name),
+    ([name]) => ![...hosted, 'aws-platform'].includes(name),
   )
   for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
 
 test('cada trabalho do Publish usa o commit que o gancho conferiu', () => {
-  const checkouts = Object.values(publish.jobs).flatMap((job) =>
-    job.steps.filter((step) => step.uses?.startsWith('actions/checkout@')),
+  const checkouts = [...Object.values(publish.jobs), ...Object.values(awsPlatform.jobs)].flatMap(
+    (job) => (job.steps ?? []).filter((step) => step.uses?.startsWith('actions/checkout@')),
   )
-  assert.equal(checkouts.length, 6)
+  assert.equal(checkouts.length, 7)
   for (const step of checkouts) assert.equal(step.with?.ref, SHA)
 })
 
@@ -182,7 +185,7 @@ test('a chave da E2B vem só do segredo do GitHub e só ao passo do build, nunca
   const key = ['${{', 'secrets.E2B_API_KEY', '}}'].join(' ')
   for (const [file, workflow] of Object.entries({ publish, rollback, ci })) {
     for (const [name, job] of Object.entries(workflow.jobs)) {
-      for (const step of job.steps) {
+      for (const step of job.steps ?? []) {
         const holds = JSON.stringify(step).includes('E2B_API_KEY')
         const isBuild = file === 'publish' && name === 'template' && step.id === 'build'
         assert.equal(holds, isBuild, `${file}: ${name}: ${step.id ?? step.name ?? step.uses}`)

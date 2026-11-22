@@ -185,8 +185,17 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: gh release upload "$VERSION" recados-*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
+  # The lake's platform and template in AWS, once the image is built. A failed job fails the run
+  # before the deploy, and the running Hub keeps its image.
+  aws-platform:
+    needs: image
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/aws-platform.yml # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+
   deploy:
-    needs: [version, image, template]
+    needs: [version, image, template, aws-platform]
     runs-on: [self-hosted, hub]
     environment: production
     timeout-minutes: 10
