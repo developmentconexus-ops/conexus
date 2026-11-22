@@ -87,7 +87,7 @@ choice of test tools.
   account through the client's `requestHandler` (`@aws-sdk/client-s3@3.1146.0`
   `S3Client.d.ts:144`), so the SDK's own retries and error classes run; Hub tests and QA use the
   port's in-memory double with state, as Neon's (`platform/test-neon.ts`). `aws-sdk-client-mock`
-  replaces only `send` (`@4.1.0` `mockClient.js:9`) and `moto` skips unknown resources
+  replaces only `send` (`@4.1.0` `dist/cjs/mockClient.js:9`) and `moto` skips unknown resources
   (`==5.2.5` `cloudformation/parsing.py:277-279`): neither stands in. [review]
 - **T28.** In a model double, the arguments of a tool call **must** use only what the model call
   showed the model (names, texts), never an id or a value only the test knows. A double that knows

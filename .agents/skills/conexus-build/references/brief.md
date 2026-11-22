@@ -4,8 +4,8 @@ The instructions that start a build session: what firstmate writes and the build
 failure this prevents: in the G3 of Registro e conformidade, the session whose brief said "no local
 typecheck" left a top commit that did not compile, its one Bloqueia in two blind reviews; the
 session with this brief left every commit green, in less time and fewer tokens, with one stop
-against three. One pair, under unequal conditions: the instruction made the clear difference, not
-the model.
+against three. One pair, under unequal conditions; the one clear difference, the typecheck, came
+from the instruction.
 
 ## What the brief carries
 

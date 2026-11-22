@@ -250,10 +250,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   package version, and its decision ([delivery L6](delivery.md)). Every remendo row new in a step
   reaches its decider with the native how beside it; one already decided returns only when its
   library's version changes. Each row answers two questions, each with its evidence: is the
-  reference's unit ours, and is the reference's person ours? A row calls a reference the same
-  situation only with both answered yes. In the Registro study three rows matched a closed product's
-  sentence word for word, while its unit was a whole source's run, not one table's, and its person
-  a token's owner, not the person in the conversation.
+  reference's unit ours, and is the reference's person ours? In the Registro study three rows
+  matched a closed product's sentence word for word: in one, its person was a token's owner, not the
+  person in the conversation; in two, its unit was a whole source's pipeline or run, not one table.
   Founder, 2026-10-22: "A"; 2026-10-25: "1. A". Code that no row or contract explains, or a row
   without its proof, is a Bloqueia in review. A correct native solution stays when a guide
   conflicts: record the conflict for closing; ask the founder when behavior or scope changes
