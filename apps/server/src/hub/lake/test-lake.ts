@@ -29,8 +29,12 @@ export async function clientOn(hub: Hub, owner: Person, name: string) {
 }
 
 /** Ana operates the Central; Davi owns "Empresa Teste A" and Beatriz "Empresa Teste B". */
-export async function lakeWorld(t: TestContext) {
-  const hub = await hubWithLog(t)
+export async function lakeWorld(
+  t: TestContext,
+  change?: Parameters<typeof hubWithLog>[1],
+  tuning?: Parameters<typeof hubWithLog>[2],
+) {
+  const hub = await hubWithLog(t, change, tuning)
   const ana = await personOn(hub, ANA)
   const davi = await personOn(hub, DAVI)
   const a = await clientOn(hub, davi, 'Empresa Teste A')

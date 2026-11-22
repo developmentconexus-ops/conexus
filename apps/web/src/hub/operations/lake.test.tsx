@@ -2,7 +2,7 @@ import type { Client, ClientLake } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
+import { delay, HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import {
@@ -30,7 +30,7 @@ async function tick() {
   await vi.advanceTimersByTimeAsync(5_100)
 }
 
-type Answer = () => Response
+type Answer = () => Response | Promise<Response>
 
 /** The Central with one client whose lake is `held.lake`; creating and deleting answer as told. */
 function world(
@@ -80,10 +80,12 @@ test('lago: do sem lago ao pronto, perguntando de novo a cada 5 s', async () => 
   )
   held.lake = READY
   await tick()
-  await waitFor(() =>
-    expect(lake.getByText(/está em us-east-2 desde \d\d\/\d\d\/2026 \d\d:\d\d\./)).toBeTruthy(),
+  // The region never breaks at its hyphen (QA of PR 1248, finding 6).
+  const region = await lake.findByText('us-east-2')
+  expect(region.className).toContain('whitespace-nowrap')
+  expect(region.closest('p')?.textContent).toMatch(
+    /^Pronto\. O lago conexus-k3x9a0b1c2d3 está em us-east-2 desde \d\d\/\d\d\/2026 \d\d:\d\d\.$/,
   )
-  expect(lake.getByText('conexus-k3x9a0b1c2d3')).toBeTruthy()
   expect(lake.getByRole('button', { name: 'Apagar o lago' })).toBeTruthy()
   expect(held.created).toBe(1)
 })
@@ -137,6 +139,8 @@ test('lago: o apagar que falhou oferece tentar de novo; o lago ocupado mostra a 
   const held = world({ state: 'DELETE_FAILED', at: AT }, { remove: () => refusal('LAKE_BUSY') })
   const lake = await block()
   expect(await lake.findByText('Não deu para apagar o lago.')).toBeTruthy()
+  // Another tab's deletion went first: a read now says so (QA of PR 1248, finding 2).
+  held.lake = { state: 'DELETING', since: AT }
   fireEvent.click(lake.getByRole('button', { name: 'Tentar apagar de novo' }))
   expect((await lake.findByRole('alert')).textContent).toBe(FAILURES.LAKE_BUSY.phrase)
   expect(held.deleted).toEqual([{ name: ACTIVE_CLIENT.name }])
@@ -161,11 +165,23 @@ test('lago: o erro de leitura fica no bloco, e o resto da página fica', async (
   expect(await lake.findByText('Esta empresa ainda não tem lago.')).toBeTruthy()
 })
 
+test('lago: a página desenha sem esperar o lago; o bloco mostra o esqueleto', async () => {
+  world({ state: 'NONE' }, { read: () => delay('infinite').then(() => HttpResponse.json({})) })
+  expect(await screen.findByRole('heading', { name: ACTIVE_CLIENT.name })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Apagar cliente' })).toBeTruthy()
+  const lake = await block()
+  expect(lake.queryByText('Esta empresa ainda não tem lago.')).toBeNull()
+  expect(lake.queryByText('Não deu para ler o lago agora.')).toBeNull()
+})
+
 test('lago: o pedido de criar recusado mostra a frase do Hub, e o estado de antes fica', async () => {
   let code: 'LAKE_BUSY' | 'DATABASE_UNAVAILABLE' = 'LAKE_BUSY'
-  world({ state: 'NONE' }, { create: () => refusal(code) })
+  const held = world({ state: 'NONE' }, { create: () => refusal(code) })
   const lake = await block()
-  fireEvent.click(await lake.findByRole('button', { name: 'Criar o lago' }))
+  const create = await lake.findByRole('button', { name: 'Criar o lago' })
+  // Another tab's lake is being deleted: a read now says so (QA of PR 1248, finding 2).
+  held.lake = { state: 'DELETING', since: AT }
+  fireEvent.click(create)
   expect((await lake.findByRole('alert')).textContent).toBe(FAILURES.LAKE_BUSY.phrase)
   expect(lake.getByText('Esta empresa ainda não tem lago.')).toBeTruthy()
   code = 'DATABASE_UNAVAILABLE'
@@ -189,4 +205,37 @@ test('lago: o texto de Apagar cliente nomeia o lago', async () => {
   expect(dialog.textContent).toContain(
     'Os Projetos, o banco e o lago da empresa também serão apagados.',
   )
+})
+
+test('lago: depois de criar e de apagar, o foco volta ao bloco; Esc o devolve ao botão', async () => {
+  const held = world({ state: 'NONE' })
+  const lake = await block()
+  const region = screen.getByRole('region', { name: 'Lago de dados' })
+  const create = await lake.findByRole('button', { name: 'Criar o lago' })
+  create.focus()
+  fireEvent.click(create)
+  held.lake = { state: 'CREATING', since: AT }
+  await lake.findByText('Criando o lago…')
+  await waitFor(() => expect(document.activeElement).toBe(region))
+  held.lake = READY
+  await tick()
+  const remove = await lake.findByRole('button', { name: 'Apagar o lago' })
+  remove.focus()
+  fireEvent.click(remove)
+  const dialog = within(await screen.findByRole('alertdialog'))
+  fireEvent.keyDown(dialog.getByLabelText(`Digite ${ACTIVE_CLIENT.name} para confirmar`), {
+    key: 'Escape',
+  })
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  await waitFor(() => expect(document.activeElement).toBe(remove))
+  fireEvent.click(remove)
+  const again = within(await screen.findByRole('alertdialog'))
+  fireEvent.change(again.getByLabelText(`Digite ${ACTIVE_CLIENT.name} para confirmar`), {
+    target: { value: ACTIVE_CLIENT.name },
+  })
+  held.lake = { state: 'DELETING', since: AT }
+  fireEvent.click(again.getByRole('button', { name: 'Apagar o lago' }))
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  await lake.findByText('Apagando o lago…')
+  await waitFor(() => expect(document.activeElement).toBe(region))
 })

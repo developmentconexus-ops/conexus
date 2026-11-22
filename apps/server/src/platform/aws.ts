@@ -75,9 +75,12 @@ export function templateUrl(bucket: string, region: AwsRegion, version: Template
   return `https://${bucket}.s3.${region}.amazonaws.com/${TEMPLATE_PREFIX}${version}.json`
 }
 
-// The 25 s of a creation are CloudFormation's, after CreateStack answers; one request answers in
-// under a second (the study's P5). The SDK tries three times, all within the call's deadline.
-const DEADLINES = { connectionMs: 3_000, requestMs: 10_000, callMs: 30_000 }
+// The screen gives up on the Hub at 10 s (web platform/hub.ts), and a read of a moving lake makes
+// up to three calls in a row: the stack, then its first failure and the leftover, or the deletion
+// and the stack again. So a call has 3 s, its retries included, and a silent AWS leaves the read
+// answering the row as it is (criterion 49). One request answers in under a second (the study's
+// P5); the 25 s of a creation are CloudFormation's, after CreateStack answers.
+const DEADLINES = { connectionMs: 1_000, requestMs: 2_000, callMs: 3_000 }
 export type AwsDeadlines = typeof DEADLINES
 /** The shortest session AssumeRole grants; the Hub role allows an hour. */
 const SESSION_SECONDS = 900

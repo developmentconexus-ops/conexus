@@ -5,6 +5,7 @@ import { setTimeout } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER, CompanyId } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, subjectsOf } from '../../main.ts'
+import type { LakeStacks } from '../../platform/aws.ts'
 import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { closeListeners } from '../../platform/lifecycle.ts'
@@ -42,7 +43,8 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
-type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'>
+/** `aws` puts the real AWS adapter in the Hub, in place of the AWS of memory. */
+type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'> & { aws?: LakeStacks }
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -78,7 +80,7 @@ async function hubServing(
   const identity = testIdentity({ database: test.database, config, sendMail })
   const cloudflare = fakeCloudflare()
   const tools = fakeCloudflare()
-  const aws = fakeAws()
+  const aws = { ...fakeAws(), ...(tuning.aws === undefined ? {} : { aws: tuning.aws }) }
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres, tools, aws })
   const subjects = subjectsOf({

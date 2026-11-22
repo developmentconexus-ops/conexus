@@ -47,5 +47,8 @@ export function clientLakeQuery(companyId: CompanyId) {
   })
 }
 
-export const sendLakeCreation = hubMutation(createClientLake)
-export const sendLakeDeletion = hubMutation(deleteClientLake)
+// The lake's writes set the block from the Hub's answer, and a refused one leaves the state before
+// under the Hub's phrase (criteria 63 and 67): they keep the cache the others refresh (web W12).
+const KEEP_CACHE = { keepCache: true } as const
+export const sendLakeCreation = { ...hubMutation(createClientLake), meta: KEEP_CACHE }
+export const sendLakeDeletion = { ...hubMutation(deleteClientLake), meta: KEEP_CACHE }

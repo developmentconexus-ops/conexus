@@ -223,7 +223,8 @@ const SETTLES: Partial<Record<StackStatus, StackStatus>> = {
 /**
  * STS and CloudFormation behind a port, with state, from the recorded answers, for a Hub that runs
  * as a program and the QA (T14, card L.17): each creation finishes at the second read, as each
- * deletion does. S3 Tables waits for the U4 proof that records it, and answers 501 until then.
+ * deletion does. S3 Tables waits for the U4 proof that records it, and answers 501 until then:
+ * the leftover gets no answer, so a failed creation stays "Criando o lago…" here (the QA of PR 1248).
  */
 export async function awsServer(t: TestContext) {
   const stacks = new Map<string, ServedStack>()
@@ -252,6 +253,11 @@ export async function awsServer(t: TestContext) {
           200,
           stackReply('create-stack-mesma-chave', id, { name: '', status: 'CREATE_IN_PROGRESS' }),
         )
+      }
+      // S3 Tables is REST, with no Action: it gets its 501 here, not CloudFormation's refusal.
+      if (action === null) {
+        response.writeHead(501).end()
+        return
       }
       const id = form.get('StackName') ?? ''
       const stack = stacks.get(id)

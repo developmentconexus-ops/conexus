@@ -1,8 +1,8 @@
 import type { Client, ClientLake } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
+import type { ReactNode, RefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { clockOf, dayOf } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -17,6 +17,12 @@ import { clientLakeQuery, sendLakeCreation, sendLakeDeletion } from './queries.t
 const LOST =
   'Tudo o que for copiado para o lago desta empresa sai, sem volta. O dado continua nos sistemas da empresa.'
 
+/**
+ * Set when an action of the block starts: the control that has the focus may leave with the state it
+ * belongs to, and the block then takes the focus (design V30).
+ */
+type Acted = RefObject<boolean>
+
 /** The lake the Hub answered, kept as the block's state until the next read. */
 function useKeep(client: Client) {
   const queryClient = useQueryClient()
@@ -25,9 +31,15 @@ function useKeep(client: Client) {
 }
 
 /** "Criar o lago", and "Tentar de novo" after a failed creation: a refusal leaves the block as it was. */
-function CreateLake({ client, label }: { client: Client; label: string }) {
+function CreateLake({ client, label, acted }: { client: Client; label: string; acted: Acted }) {
   const keep = useKeep(client)
-  const send = useMutation({ ...sendLakeCreation, onSuccess: keep })
+  const send = useMutation({
+    ...sendLakeCreation,
+    onMutate: () => {
+      acted.current = true
+    },
+    onSuccess: keep,
+  })
   return (
     <div className="flex flex-col items-start gap-sm">
       <Button
@@ -42,12 +54,21 @@ function CreateLake({ client, label }: { client: Client; label: string }) {
   )
 }
 
-function DeleteForm({ client, onDone }: { client: Client; onDone: () => void }) {
+function DeleteForm({
+  client,
+  acted,
+  onDone,
+}: {
+  client: Client
+  acted: Acted
+  onDone: () => void
+}) {
   const keep = useKeep(client)
   const send = useMutation(sendLakeDeletion)
   const { form, ready } = useNameConfirmation(client.name)
 
   async function submit({ name }: { name: string }) {
+    acted.current = true
     try {
       keep(await send.mutateAsync({ params: { companyId: client.companyId }, body: { name } }))
       onDone()
@@ -79,7 +100,7 @@ function DeleteForm({ client, onDone }: { client: Client; onDone: () => void }) 
 }
 
 /** "Apagar o lago": at once and for good, once the company's name is typed (decision B). */
-function DeleteLake({ client }: { client: Client }) {
+function DeleteLake({ client, acted }: { client: Client; acted: Acted }) {
   const [open, setOpen] = useState(false)
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -87,16 +108,22 @@ function DeleteLake({ client }: { client: Client }) {
         Apagar o lago
       </AlertDialogTrigger>
       <AlertDialogContent title={`Apagar o lago de ${client.name}?`} description={LOST}>
-        <DeleteForm client={client} onDone={() => setOpen(false)} />
+        <DeleteForm client={client} acted={acted} onDone={() => setOpen(false)} />
       </AlertDialogContent>
     </AlertDialog>
   )
 }
 
 /** "Tentar apagar de novo": the deletion already confirmed, sent again with no name to type. */
-function DeleteAgain({ client }: { client: Client }) {
+function DeleteAgain({ client, acted }: { client: Client; acted: Acted }) {
   const keep = useKeep(client)
-  const send = useMutation({ ...sendLakeDeletion, onSuccess: keep })
+  const send = useMutation({
+    ...sendLakeDeletion,
+    onMutate: () => {
+      acted.current = true
+    },
+    onSuccess: keep,
+  })
   return (
     <div className="flex flex-col items-start gap-sm">
       <Button
@@ -114,13 +141,13 @@ function DeleteAgain({ client }: { client: Client }) {
   )
 }
 
-function stateOf(client: Client, lake: ClientLake): ReactNode {
+function stateOf(client: Client, lake: ClientLake, acted: Acted): ReactNode {
   switch (lake.state) {
     case 'NONE':
       return (
         <>
           <p>Esta empresa ainda não tem lago.</p>
-          <CreateLake client={client} label="Criar o lago" />
+          <CreateLake client={client} label="Criar o lago" acted={acted} />
         </>
       )
     case 'CREATING':
@@ -132,21 +159,22 @@ function stateOf(client: Client, lake: ClientLake): ReactNode {
       )
     case 'READY':
       return (
-        <>
+        <div className="flex flex-col gap-md sm:flex-row sm:items-end sm:justify-between">
           <p className="min-w-0 break-words">
-            Pronto. O lago <code className="break-all">{lake.bucket}</code>
-            {` está em ${lake.region} desde ${dayOf(lake.readyAt)} ${clockOf(lake.readyAt)}.`}
+            Pronto. O lago <code className="break-all">{lake.bucket}</code> está em{' '}
+            <span className="whitespace-nowrap">{lake.region}</span>
+            {` desde ${dayOf(lake.readyAt)} ${clockOf(lake.readyAt)}.`}
           </p>
-          <div>
-            <DeleteLake client={client} />
+          <div className="shrink-0">
+            <DeleteLake client={client} acted={acted} />
           </div>
-        </>
+        </div>
       )
     case 'FAILED':
       return (
         <>
           <p>Não deu para criar o lago. A AWS desfez o que tinha começado.</p>
-          <CreateLake client={client} label="Tentar de novo" />
+          <CreateLake client={client} label="Tentar de novo" acted={acted} />
         </>
       )
     case 'DELETING':
@@ -155,7 +183,7 @@ function stateOf(client: Client, lake: ClientLake): ReactNode {
       return (
         <>
           <p>Não deu para apagar o lago.</p>
-          <DeleteAgain client={client} />
+          <DeleteAgain client={client} acted={acted} />
         </>
       )
     default:
@@ -169,11 +197,26 @@ function stateOf(client: Client, lake: ClientLake): ReactNode {
  */
 export function ClientLakeBlock({ client }: { client: Client }) {
   const read = useQuery(clientLakeQuery(client.companyId))
+  const block = useRef<HTMLElement>(null)
+  const acted = useRef(false)
+  const state = read.data?.lake.state
+  // The state an action led to: when its control left with the state before, the focus fell to the
+  // page, and the block takes it (QA of PR 1248, finding 3).
+  useEffect(() => {
+    if (state === undefined || !acted.current) return
+    acted.current = false
+    if (document.activeElement === document.body) block.current?.focus()
+  }, [state])
   return (
-    <section aria-label="Lago de dados" className="flex min-w-0 flex-col gap-md">
+    <section
+      ref={block}
+      tabIndex={-1}
+      aria-label="Lago de dados"
+      className="flex min-w-0 flex-col gap-md"
+    >
       <SectionTitle>Lago de dados</SectionTitle>
       {read.data !== undefined ? (
-        stateOf(client, read.data.lake)
+        stateOf(client, read.data.lake, acted)
       ) : read.isError ? (
         <div className="flex flex-col items-start gap-sm">
           <p>Não deu para ler o lago agora.</p>

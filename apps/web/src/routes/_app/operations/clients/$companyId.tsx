@@ -29,8 +29,9 @@ export const Route = createFileRoute('/_app/operations/clients/$companyId')({
       queryClient.ensureQueryData(clientQuery(params.companyId)),
     )
     if (client.state.kind === 'DELETING') return
-    // The lake's own read: when it fails the block says so, and the page stands.
-    await queryClient.prefetchQuery(clientLakeQuery(params.companyId))
+    // The lake's own read, not waited for: the block shows its skeleton until AWS's answer comes
+    // back, and says so when it fails; the page stands either way (QA of PR 1248, finding 1).
+    void queryClient.prefetchQuery(clientLakeQuery(params.companyId))
     if (client.state.kind !== 'ACTIVE') return
     await readOrNotFound(
       Promise.all([

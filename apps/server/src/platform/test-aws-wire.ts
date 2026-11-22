@@ -10,11 +10,7 @@ export type Received = { action: string; form: URLSearchParams; authorization: s
 type Reply = { status: number; body: string } | 'SILENT'
 
 /** AWS behind a port, as the recordings answer it (T29): each request recorded, each answer `reply`'s. */
-export async function awsAt(
-  t: TestContext,
-  reply: (received: Received) => Reply,
-  deadlines?: AwsDeadlines,
-) {
+export async function awsWire(t: TestContext, reply: (received: Received) => Reply) {
   const received: Received[] = []
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
@@ -40,12 +36,22 @@ export async function awsAt(
   })
   const address = server.address()
   assert.ok(address !== null && typeof address === 'object')
+  return { endpoint: `http://127.0.0.1:${address.port}`, received }
+}
+
+/** The adapter against `awsWire`, under `deadlines` or production's. */
+export async function awsAt(
+  t: TestContext,
+  reply: (received: Received) => Reply,
+  deadlines?: AwsDeadlines,
+) {
+  const { endpoint, received } = await awsWire(t, reply)
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
   }
-  const aws = testAws(`http://127.0.0.1:${address.port}`, testAwsCredentials(t))
+  const aws = testAws(endpoint, testAwsCredentials(t))
   const config = { ...testConfig(await unreachableDatabaseUrl()), aws }
   const stacks = createLakeStacks({
     config,

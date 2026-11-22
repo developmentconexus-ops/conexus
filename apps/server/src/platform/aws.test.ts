@@ -11,15 +11,17 @@ import {
   templateBucket,
   templateUrlPattern,
 } from '../../../../infra/aws/lib/names.ts'
-import { bucketName, LakeId, StackId, stackName, templateUrl } from './aws.ts'
+import { bucketName, createLakeStacks, LakeId, StackId, stackName, templateUrl } from './aws.ts'
 import {
   awsRecording,
+  awsServer,
   TEST_AWS_ACCOUNT,
   TEST_AWS_REGION,
   testAws,
   testAwsCredentials,
 } from './test-aws.ts'
 import { awsAt, recorded, session } from './test-aws-wire.ts'
+import { silent, testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
 const LAKE_TEMPLATE = new URL('../../../../infra/aws/lake.template.json', import.meta.url)
 const COMPANY = CompanyId.parse('EmpresaTesteA0000000000000000001')
@@ -277,4 +279,12 @@ test('aws: o primeiro evento de falha lê as páginas seguintes', async (t) => {
     of('DescribeStackEvents').map((sent) => sent.form.get('NextToken')),
     [null, 'pagina-2'],
   )
+})
+
+test('aws: o dublê da QA não responde pelo S3 Tables, como diz, até a gravação do critério 35', async (t) => {
+  const served = await awsServer(t)
+  const aws = testAws(served.endpoint.origin, served.credentialsFile)
+  const config = { ...testConfig(await unreachableDatabaseUrl()), aws }
+  const stacks = createLakeStacks({ config, log: silent })
+  assert.deepEqual(await stacks.leftover(AT, LAKE), { kind: 'NO_ANSWER' })
 })
