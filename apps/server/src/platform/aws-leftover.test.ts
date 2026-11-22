@@ -31,13 +31,13 @@ function createdNotDeleted(): WireAnswer {
 const HELD_NAME = 'describe-stack-events-nome-preso'
 
 /** The session, the stack's diary, then S3 Tables' recorded answers in the order of its calls. */
-function leftoverAt(diary: WireAnswer, tables: string[]) {
+function leftoverAt(diary: WireAnswer, tables: (string | WireAnswer)[]) {
   return ({ action }: Received) => {
     if (action === 'AssumeRole') return session()
     if (action === 'DescribeStackEvents') return diary
-    const name = tables.shift()
-    assert.ok(name !== undefined, `no answer for ${action}`)
-    return awsRecording(name)
+    const next = tables.shift()
+    assert.ok(next !== undefined, `no answer for ${action}`)
+    return typeof next === 'string' ? awsRecording(next) : next
   }
 }
 
@@ -90,6 +90,36 @@ test('aws: o depósito que sobrou sai; um CREATE_FAILED procura, mesmo com DELET
       `DELETE /buckets/${arn}`,
     ])
   }
+})
+
+/**
+ * A namespace another read deleted between the list and the delete: S3 Tables' NotFoundException, on the
+ * recorded DeleteNamespace envelope with the class and status changed (T29). The Hub's session gets it
+ * only while the tagged bucket exists, so no lab run records it.
+ */
+function namespaceGone(): WireAnswer {
+  const refused = awsRecording('delete-namespace-outra-empresa')
+  return {
+    ...refused,
+    status: 404,
+    errorType: 'NotFoundException:http://internal.amazon.com/coral/com.amazon.coral.service/',
+    body: '{"Message":"The specified namespace does not exist."}',
+  }
+}
+
+test('aws: a área que outra leitura já apagou conta como feita, e o depósito sai', async (t) => {
+  const { stacks, received } = await awsAt(
+    t,
+    leftoverAt(awsRecording(HELD_NAME), [
+      'get-table-bucket',
+      'list-namespaces',
+      namespaceGone(),
+      'delete-namespace',
+      'delete-table-bucket',
+    ]),
+  )
+  assert.deepEqual(await stacks.leftover(AT, FAILED_LAKE), { kind: 'DONE', value: 'DELETED' })
+  assert.equal(tablesCalls(received).length, 5)
 })
 
 async function refusedBy(t: TestContext, recording: string) {

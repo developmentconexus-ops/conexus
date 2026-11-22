@@ -267,7 +267,7 @@ function absent(error: unknown): void {
  * Whether CloudFormation may have left the bucket. No event: its creation never began. Gone only when
  * CloudFormation created it and then deleted it: a CREATE_COMPLETE, and DELETE_COMPLETE the newest.
  * After a CREATE_FAILED its DELETE_COMPLETE speaks of a bucket it did not create (the held name of lab
- * run 45081093044), as the handler that owned one and reported CREATE_FAILED did on 20/11.
+ * run 45081093044), as the handler that owned one on 20/11 probably did.
  */
 function bucketMayBeLeft(events: readonly StackEvent[]): boolean {
   const bucket = events.filter((event) => event.ResourceType === BUCKET_TYPE)
