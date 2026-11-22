@@ -27,15 +27,15 @@ and [testing](../../../docs/guides/testing.md).
    with your own container name and a free port, and export its three variables. Run the local Hub
    the end-to-end journeys use (`tests/e2e/live-hub.ts`), with T24 provider doubles. No paid or
    outside service.
-3. Check the browser before the journey: open a blank page and take one capture. Use
+3. Check the browser before the journey: open a blank page, take one capture. Use
    `chrome-devtools-axi` attached to its own instance; when it cannot attach, drive the
    repository's `playwright-core` and its own Chromium from a runner in the task folder. Never
    ports 9333 or 9334.
 4. Walk every action of the card's use script. Then every row of its state matrix, including
    loading, server error, not found and expired, forcing each state through the doubles or the
    database, and a turn that calls every tool the model is offered ([testing T24](../../../docs/guides/testing.md)).
-5. Capture each criterion's states at 1366 and 390 px, light and dark, and open every capture you
-   make. Make a keyboard pass through the focus stops and a 200% zoom check. Horizontal overflow and
+5. Capture each criterion's states at 1366 and 390 px, light and dark, and the showcase
+   (`/pieces`, [design V62](../../../docs/guides/design.md)) in both themes; open each capture. Make a keyboard pass through the focus stops and a 200% zoom check. Horizontal overflow and
    a phone field under 16px ([design V18](../../../docs/guides/design.md)) are the browser
    checks' (T25); measure them by hand only for a state their sweep lacks. Record console errors and
    CSP reports (T23).

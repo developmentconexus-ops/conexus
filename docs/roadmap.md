@@ -54,8 +54,9 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b");
-depois vêm os conectores por classe e a porta de fora. As etapas, os dez de `D3` e o Brain
-estão na [trilha Dados](steps/trilhas/dados.md).
+depois vêm os conectores por classe e a porta de fora. Fechado o Registro, segue a etapa 1
+(https://github.com/developmentconexus-ops/conexus/pull/1231). As etapas, os dez de `D3` e o
+Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
 
@@ -68,8 +69,8 @@ estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-Antes de `A1` vem a fundação do
-front-end, pela sua resposta "A. A ordem na trilha: a". Mais na
+A fundação do front-end fechou; segue A Prévia
+(https://github.com/developmentconexus-ops/conexus/pull/1229). Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
