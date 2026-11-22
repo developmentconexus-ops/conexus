@@ -7,6 +7,7 @@ import {
   HUB_ROLE,
   PLATFORM_STACK,
   RELEASE_ROLE,
+  TABLES_CATALOG_LOGS,
   templateBucket,
 } from './names.ts'
 
@@ -50,17 +51,38 @@ const OUR_IAM_ACTIONS = [
 const LAKE_SETTINGS_ACTIONS = [
   'lakeformation:GetDataLakeSettings',
   'lakeformation:PutDataLakeSettings',
-  'lakeformation:RegisterResource',
-  'lakeformation:RegisterResourceWithPrivilegedAccess',
-  'lakeformation:DeregisterResource',
-  'lakeformation:DescribeResource',
-  'lakeformation:CreateCatalog',
-  'glue:CreateCatalog',
-  'glue:DeleteCatalog',
-  'glue:GetCatalog',
-  'glue:GetCatalogs',
-  'glue:UpdateCatalog',
-  'glue:PassConnection',
+]
+
+/**
+ * The function that registers the table buckets and creates their catalog: what
+ * AWS::Lambda::Function's handlers call for a function without VPC, KMS, image or concurrency,
+ * and CloudFormation's invoke of a custom resource.
+ */
+const CATALOG_FUNCTION_ACTIONS = [
+  'lambda:CreateFunction',
+  'lambda:DeleteFunction',
+  'lambda:GetFunction',
+  'lambda:GetFunctionCodeSigningConfig',
+  'lambda:GetFunctionRecursionConfig',
+  'lambda:GetFunctionScalingConfig',
+  'lambda:GetRuntimeManagementConfig',
+  'lambda:InvokeFunction',
+  'lambda:TagResource',
+  'lambda:UntagResource',
+  'lambda:UpdateFunctionCode',
+  'lambda:UpdateFunctionConfiguration',
+]
+
+/** What AWS::Logs::LogGroup's handlers call for the function's group, with no KMS or delivery. */
+const CATALOG_LOGS_ACTIONS = [
+  'logs:CreateLogGroup',
+  'logs:DeleteLogGroup',
+  'logs:PutRetentionPolicy',
+  'logs:TagResource',
+  'logs:UntagResource',
+  'logs:ListTagsForResource',
+  'logs:GetDataProtectionPolicy',
+  'logs:DescribeIndexPolicies',
 ]
 
 const SPEND_ACTIONS = [
@@ -107,6 +129,16 @@ export class PreparationStack extends Stack {
   }
 }
 
+/** The bucket `cdk bootstrap` creates for file assets, in every region, under the default qualifier. */
+function fileAssetsBucket(account: string): string {
+  return DefaultStackSynthesizer.DEFAULT_FILE_ASSETS_BUCKET_NAME.replace(
+    '${Qualifier}',
+    DefaultStackSynthesizer.DEFAULT_QUALIFIER,
+  )
+    .replace('${AWS::AccountId}', account)
+    .replace('${AWS::Region}', '*')
+}
+
 function iamArn(stack: Stack, resource: string): string {
   return `arn:${stack.partition}:iam::${stack.account}:${resource}`
 }
@@ -140,6 +172,35 @@ function releaseRole(stack: Stack, repository: string): iam.Role {
   })
 }
 
+/** The function that registers the table buckets and creates their catalog: its code and its logs. */
+function catalogFunctionStatements(stack: Stack): iam.PolicyStatement[] {
+  return [
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunction',
+      actions: CATALOG_FUNCTION_ACTIONS,
+      resources: [`arn:${stack.partition}:lambda:*:${stack.account}:function:${PLATFORM_STACK}-*`],
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunctionCode',
+      actions: ['s3:GetObject', 's3:GetObjectVersion'],
+      resources: [`arn:${stack.partition}:s3:::${fileAssetsBucket(stack.account)}/*`],
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunctionLogs',
+      actions: CATALOG_LOGS_ACTIONS,
+      resources: [
+        `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}`,
+        `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}:*`,
+      ],
+    }),
+    new iam.PolicyStatement({
+      sid: 'DescribeLogGroups',
+      actions: ['logs:DescribeLogGroups', 'logs:DescribeResourcePolicies'],
+      resources: ['*'],
+    }),
+  ]
+}
+
 /** In place of `AdministratorAccess`: IAM only on conexus-*, never on the preparation itself. */
 function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
   return new iam.ManagedPolicy(stack, 'CdkExecution', {
@@ -161,10 +222,11 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         ],
       }),
       new iam.PolicyStatement({
-        sid: 'LakeFormationAndTheCatalog',
+        sid: 'LakeFormationSettings',
         actions: LAKE_SETTINGS_ACTIONS,
         resources: ['*'],
       }),
+      ...catalogFunctionStatements(stack),
       new iam.PolicyStatement({
         sid: 'TheTemplatesBucket',
         actions: ['s3:*'],

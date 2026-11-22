@@ -120,7 +120,8 @@ for b in conexus-receitas-<conta>-<vazia> cdk-hnb659fds-assets-<conta>-<vazia>; 
 done
 ```
 
-Os dois depósitos ficam quando as pilhas saem e têm versões: as versões e as marcas de exclusão
-saem antes. Depois: `get-data-lake-settings`
-igual a `antes.json`, `get-catalog` de novo `EntityNotFoundException`, nenhuma pilha nem depósito
-`conexus-` ou `cdk-` na região. Nenhum deploy posterior roda nela.
+Depois: `get-data-lake-settings` igual a `antes.json`, `get-catalog` com
+`EntityNotFoundException`, `list-resources`, `list-permissions --resource-type DATA_LOCATION` e
+`describe-log-groups --log-group-name-prefix conexus-` vazios, nenhuma pilha nem depósito `conexus-`
+ou `cdk-` na região. Nenhum deploy posterior roda nela. Um `destroy` parado em
+`TableBucketsLocationGrant` volta ao firstmate, que revoga a concessão.
