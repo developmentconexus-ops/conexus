@@ -2,21 +2,21 @@
 
 The template the Builder's E2B machines start from ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md),
 [0055](../decisions/0055-apps-on-the-platform-contract.md)). It carries the SDK the Hub's image
-expects, so a Release builds both from one commit.
+expects, so each publish builds both from one commit.
 
-## Every Release
+## Every publish
 
-The workflow Publish builds the template from the Release's commit with `node infra/e2b/template.ts`.
+The workflow Publish builds the template from the note's merge commit with `node infra/e2b/template.ts`.
 The account's key comes from the repository secret `E2B_API_KEY`, only into that step. The build
 prints `HUB_E2B_TEMPLATE=conexus-builder:<commit>`. The deploy starts the Hub with that template
-beside the image and records both for Voltar atrás. A failed build fails the Release before the
+beside the image and records both for Voltar atrás. A failed build fails the run before the
 deploy, and the Hub keeps its image and template.
 
 Each machine carries the template it was made from in its mark. On a conversation's next turn, the
 Hub kills that conversation's paused machine when its template is not the Hub's, and starts a new
 one from `main`, as for a new conversation.
 
-Every Release builds, even when the SDK did not change: the template also depends on
+Every publish builds, even when the SDK did not change: the template also depends on
 `infra/e2b/template.ts`, the edge's `wrangler` and the Node image, and E2B reuses the cached layers
 of an unchanged build.
 

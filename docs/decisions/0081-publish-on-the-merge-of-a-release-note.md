@@ -9,7 +9,7 @@ name nothing checked before it ran.
 
 - Publishing is the merge of a pull request that changes only `releases/note.md`: its first line
   is `# v<n>.<n>.<n>`, a version with no tag yet, and the text under it is the note.
-  `scripts/release-note.ts` owns that format; CI runs it on the pull request, Publish's `version`
+  `scripts/release-note.ts` owns the note's format; CI runs it on the pull request, Publish's `version`
   job on the push.
 - Publish runs on a push to `main` that changes the note, never on a Release. Its `release` job,
   with no checkout, creates the tag and the Release on the merge commit with the run's own token;

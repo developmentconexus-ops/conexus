@@ -2,7 +2,9 @@
 // travels with other files or carries no text would merge and publish nothing, or the wrong thing
 // (delivery L17). No configuration GitHub has says "the name is a version and its tag does not
 // exist", so the pull request's check and Publish's `version` job both run this file, the one owner
-// of the name's format (decision 0081). Refusals are proved in release-note.test.ts.
+// of the note's format (decision 0081); rollback.yml and infra/releases.sh keep their own check of
+// the name they are given. Refusals, and a failed question to origin, are proved in
+// release-note.test.ts.
 // It reads only Node's own modules: the `version` job runs it without `npm ci`.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'

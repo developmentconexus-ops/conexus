@@ -122,3 +122,16 @@ test('publish recusa uma versão que já tem tag', () => {
   assert.equal(run.stdout, '')
   assert.match(run.stderr, /^note-published: the tag v0\.1\.0 already exists\n$/)
 })
+
+test('sem conseguir perguntar ao origin pela tag, a nota é recusada, nunca tida por nova', () => {
+  change({ 'releases/note.md': '# v0.2.0\n\nO que muda.\n' })
+  git(work, 'remote', 'set-url', 'origin', `file://${join(dir, 'gone.git')}`)
+  try {
+    const run = check()
+    assert.equal(run.status, 1)
+    assert.equal(run.stdout, '')
+    assert.match(run.stderr, /release-note: could not ask origin for the tag v0\.2\.0\n$/)
+  } finally {
+    git(work, 'remote', 'set-url', 'origin', `file://${origin}`)
+  }
+})
