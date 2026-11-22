@@ -170,36 +170,6 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
   ])
 })
 
-test('as tabelas entram no Lake Formation sem permissão padrão', () => {
-  const lakeFormation = { Service: 'lakeformation.amazonaws.com' }
-  const thisAccount = { StringEquals: { 'aws:SourceAccount': ACCOUNT } }
-  assert.deepEqual(trustOf(find(platform, 'LakeFormationRole')), [
-    { Action: 'sts:AssumeRole', Effect: 'Allow', Principal: lakeFormation, Condition: thisAccount },
-    {
-      Action: ['sts:SetContext', 'sts:SetSourceIdentity'],
-      Effect: 'Allow',
-      Principal: lakeFormation,
-      Condition: thisAccount,
-    },
-  ])
-  assert.deepEqual(find(platform, 'TablesCatalog').Properties, {
-    Name: 's3tablescatalog',
-    FederatedCatalog: {
-      Identifier: `arn:aws:s3tables:${REGION}:${ACCOUNT}:bucket/*`,
-      ConnectionName: 'aws:s3tables',
-    },
-    CreateDatabaseDefaultPermissions: [],
-    CreateTableDefaultPermissions: [],
-    AllowFullTableExternalDataAccess: 'False',
-  })
-  assert.deepEqual(find(platform, 'TableBucketsRegistration').Properties, {
-    ResourceArn: `arn:aws:s3tables:${REGION}:${ACCOUNT}:bucket/*`,
-    RoleArn: '<LakeFormationRole.Arn>',
-    UseServiceLinkedRole: false,
-    WithFederation: true,
-  })
-})
-
 test('o depósito das receitas só recebe versão nova, da Release, por TLS', () => {
   const bucket = find(platform, 'Templates')
   assert.equal(bucket.Properties.BucketName, `conexus-receitas-${ACCOUNT}-${REGION}`)

@@ -4,7 +4,6 @@ import {
   CfnOutput,
   CfnParameter,
   aws_ce as ce,
-  aws_glue as glue,
   aws_iam as iam,
   aws_lakeformation as lakeformation,
   RemovalPolicy,
@@ -27,6 +26,7 @@ import {
   templateBucket,
 } from './names.ts'
 import { Place } from './place.ts'
+import { tablesInLakeFormation } from './tables.ts'
 
 const TEND_READER_ACTIONS = [
   'iam:DeleteRole',
@@ -50,26 +50,6 @@ const WORKGROUP_ACTIONS = [
   'athena:TagResource',
   'athena:UntagResource',
   'athena:ListTagsForResource',
-]
-
-/** The Lake Formation role's table access, as the integration page gives it. */
-const LAKE_FORMATION_TABLE_ACTIONS = [
-  's3tables:CreateTableBucket',
-  's3tables:GetTableBucket',
-  's3tables:CreateNamespace',
-  's3tables:GetNamespace',
-  's3tables:ListNamespaces',
-  's3tables:DeleteNamespace',
-  's3tables:DeleteTableBucket',
-  's3tables:CreateTable',
-  's3tables:DeleteTable',
-  's3tables:GetTable',
-  's3tables:ListTables',
-  's3tables:RenameTable',
-  's3tables:UpdateTableMetadataLocation',
-  's3tables:GetTableMetadataLocation',
-  's3tables:GetTableData',
-  's3tables:PutTableData',
 ]
 
 /**
@@ -208,48 +188,6 @@ function serviceRole(stack: Stack, place: Place, boundary: iam.ManagedPolicy): i
     }),
     inlinePolicies: { conexus: new iam.PolicyDocument({ statements }) },
   })
-}
-
-/** The S3 Tables integration in Lake Formation mode: the role, the registration and the catalog. */
-function tablesInLakeFormation(stack: Stack, place: Place): void {
-  const lakeFormationService = new iam.ServicePrincipal('lakeformation.amazonaws.com', {
-    conditions: { StringEquals: { 'aws:SourceAccount': stack.account } },
-  })
-  const role = new iam.Role(stack, 'LakeFormationRole', {
-    roleName: LAKE_FORMATION_ROLE,
-    assumedBy: lakeFormationService,
-    inlinePolicies: {
-      conexus: new iam.PolicyDocument({
-        statements: [
-          new iam.PolicyStatement({ actions: ['s3tables:ListTableBuckets'], resources: ['*'] }),
-          new iam.PolicyStatement({
-            actions: LAKE_FORMATION_TABLE_ACTIONS,
-            resources: [place.allTableBuckets],
-          }),
-        ],
-      }),
-    },
-  })
-  role.assumeRolePolicy?.addStatements(
-    new iam.PolicyStatement({
-      actions: ['sts:SetContext', 'sts:SetSourceIdentity'],
-      principals: [lakeFormationService],
-    }),
-  )
-  const registration = new lakeformation.CfnResource(stack, 'TableBucketsRegistration', {
-    resourceArn: place.allTableBuckets,
-    roleArn: role.roleArn,
-    useServiceLinkedRole: false,
-    withFederation: true,
-  })
-  const catalog = new glue.CfnCatalog(stack, 'TablesCatalog', {
-    name: 's3tablescatalog',
-    federatedCatalog: { identifier: place.allTableBuckets, connectionName: 'aws:s3tables' },
-    createDatabaseDefaultPermissions: [],
-    createTableDefaultPermissions: [],
-    allowFullTableExternalDataAccess: 'False',
-  })
-  catalog.addResourceDependency(registration)
 }
 
 /** The monthly budget, mailed at 80% of the actual and 100% of the forecast, and the anomaly monitor. */

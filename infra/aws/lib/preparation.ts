@@ -50,17 +50,26 @@ const OUR_IAM_ACTIONS = [
 const LAKE_SETTINGS_ACTIONS = [
   'lakeformation:GetDataLakeSettings',
   'lakeformation:PutDataLakeSettings',
-  'lakeformation:RegisterResource',
-  'lakeformation:RegisterResourceWithPrivilegedAccess',
-  'lakeformation:DeregisterResource',
-  'lakeformation:DescribeResource',
-  'lakeformation:CreateCatalog',
-  'glue:CreateCatalog',
-  'glue:DeleteCatalog',
-  'glue:GetCatalog',
-  'glue:GetCatalogs',
-  'glue:UpdateCatalog',
-  'glue:PassConnection',
+]
+
+/**
+ * The function that registers the table buckets and creates their catalog: what
+ * AWS::Lambda::Function's handlers call for a function without VPC, KMS, image or concurrency,
+ * and CloudFormation's invoke of a custom resource.
+ */
+const CATALOG_FUNCTION_ACTIONS = [
+  'lambda:CreateFunction',
+  'lambda:DeleteFunction',
+  'lambda:GetFunction',
+  'lambda:GetFunctionCodeSigningConfig',
+  'lambda:GetFunctionRecursionConfig',
+  'lambda:GetFunctionScalingConfig',
+  'lambda:GetRuntimeManagementConfig',
+  'lambda:InvokeFunction',
+  'lambda:TagResource',
+  'lambda:UntagResource',
+  'lambda:UpdateFunctionCode',
+  'lambda:UpdateFunctionConfiguration',
 ]
 
 const SPEND_ACTIONS = [
@@ -105,6 +114,16 @@ export class PreparationStack extends Stack {
     )
     cdkExecutionPolicy(this)
   }
+}
+
+/** The bucket `cdk bootstrap` creates for file assets, in every region, under the default qualifier. */
+function fileAssetsBucket(account: string): string {
+  return DefaultStackSynthesizer.DEFAULT_FILE_ASSETS_BUCKET_NAME.replace(
+    '${Qualifier}',
+    DefaultStackSynthesizer.DEFAULT_QUALIFIER,
+  )
+    .replace('${AWS::AccountId}', account)
+    .replace('${AWS::Region}', '*')
 }
 
 function iamArn(stack: Stack, resource: string): string {
@@ -161,9 +180,21 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         ],
       }),
       new iam.PolicyStatement({
-        sid: 'LakeFormationAndTheCatalog',
+        sid: 'LakeFormationSettings',
         actions: LAKE_SETTINGS_ACTIONS,
         resources: ['*'],
+      }),
+      new iam.PolicyStatement({
+        sid: 'TheCatalogFunction',
+        actions: CATALOG_FUNCTION_ACTIONS,
+        resources: [
+          `arn:${stack.partition}:lambda:*:${stack.account}:function:${PLATFORM_STACK}-*`,
+        ],
+      }),
+      new iam.PolicyStatement({
+        sid: 'TheCatalogFunctionCode',
+        actions: ['s3:GetObject', 's3:GetObjectVersion'],
+        resources: [`arn:${stack.partition}:s3:::${fileAssetsBucket(stack.account)}/*`],
       }),
       new iam.PolicyStatement({
         sid: 'TheTemplatesBucket',

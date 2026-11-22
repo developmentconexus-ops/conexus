@@ -20,6 +20,7 @@ const Resource = z.object({
   Type: z.string(),
   Properties: z.record(z.string(), z.unknown()),
   DeletionPolicy: z.string().optional(),
+  DependsOn: z.array(z.string()).optional(),
 })
 type Resource = z.infer<typeof Resource>
 const Resources = z.record(z.string(), Resource)

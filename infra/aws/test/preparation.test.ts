@@ -102,3 +102,23 @@ test('a execução do CDK lê a versão do bootstrap que a plataforma confere', 
   })
   assert.equal(Parameters.BootstrapVersion.Default, '/cdk-bootstrap/hnb659fds/version')
 })
+
+test('a execução do CDK só cria a função do catálogo, e não registra nem cria o catálogo', () => {
+  const statements = statementsOf(find(preparation, 'CdkExecution'))
+  const lakeAndCatalog = statements
+    .flatMap(actionsOf)
+    .filter((action) => action.startsWith('lakeformation:') || action.startsWith('glue:'))
+  assert.deepEqual(lakeAndCatalog, [
+    'lakeformation:GetDataLakeSettings',
+    'lakeformation:PutDataLakeSettings',
+  ])
+  assert.deepEqual(resourcesOf(bySid(statements, 'TheCatalogFunction')), [
+    `arn:aws:lambda:*:${ACCOUNT}:function:conexus-plataforma-*`,
+  ])
+  assert.deepEqual(bySid(statements, 'TheCatalogFunctionCode'), {
+    Sid: 'TheCatalogFunctionCode',
+    Effect: 'Allow',
+    Action: ['s3:GetObject', 's3:GetObjectVersion'],
+    Resource: `arn:aws:s3:::cdk-hnb659fds-assets-${ACCOUNT}-*/*`,
+  })
+})
