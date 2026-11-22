@@ -16,5 +16,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          main="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+          echo "main: $main"
           gh api --include --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
-            -f ref=refs/tags/vprova-regra -f sha="$GITHUB_SHA" || true
+            -f ref=refs/tags/vprova-regra -f sha="$main" || true
