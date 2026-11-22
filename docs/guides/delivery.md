@@ -104,14 +104,13 @@ product decision, security boundary or operational prohibition.
   firstmate item by item through the card's use script before the founder is told, then used by him
   through it. His words, the date and the address go in the
   card's approval file (L6), and only then **may** the next step start, but for the units of L1.
-  Publishing is merging a pull request that changes only the release note, its first line the
-  version; Publish then creates the tag and the Release with the note on the merge commit and puts
-  it live, in one run (founder, 2026-11-22). It **may** leave at once when the green run of the merged head, its suites run, tested
+  Publishing is a GitHub Release firstmate creates after the merge, with a note of what the step
+  delivers. It **may** leave at once when the green run of the merged head, its suites run, tested
   `main`'s tip at the merge as the base of its test merge; if `main` moved, it waits for green CI on `main`.
   Founder, 2026-11-15. Its names: `v0.N.0` for step N, `v0.N.P` for a fix of
   it, `v1.0.0` with the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
-  releases its proof creates. Failed use leaves the step open for a fix. [CI for the names and
-  the note alone, firstmate's publish step for the wait]
+  releases its proof creates. Failed use leaves the step open for a fix. [CI for the names,
+  firstmate's publish step for the wait]
 
 ## 5. Closing a step
 
@@ -158,7 +157,7 @@ product decision, security boundary or operational prohibition.
 | `docs/guides/security.md` | 3,000 |
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
-| `docs/guides/delivery.md` | 2,250 |
+| `docs/guides/delivery.md` | 2,200 |
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | 2,500 per unit (review), none (L21) on the founder's page |
 | `docs/how-to/*.md` | 800 |
