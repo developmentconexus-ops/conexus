@@ -20,7 +20,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
 1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
-   Record reads and commit; an unloaded skill is read from its `stack.md` docs column.
+   An unloaded skill is read from its `stack.md` docs column.
 2. A unit review reads every file of its commit against its section. The step review
    ([delivery L9](../../../docs/guides/delivery.md)) reads only the whole reference table and the
    seams between pull requests, its diff in steps 5 and 6; never an approved one.
@@ -41,7 +41,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
    ([compare](references/compare.md)). Two findings on one mechanism: should it exist, or does a
    library hold it?
 6. Walk the checklist across the diff; fill its sweep table. A
-   screen: [screen](references/screen.md).
+   screen: [screen](references/screen.md), with [design V62](../../../docs/guides/design.md).
 7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). Each code-shape Fechamento
    goes on the closing list, checked as done.
 8. Write one verdict; an unfinished step is no verdict.
