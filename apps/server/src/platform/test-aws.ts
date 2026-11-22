@@ -42,11 +42,22 @@ export function testAwsCredentials(t: TestContext): string {
   return path
 }
 
+/**
+ * One AWS answer as it came on the wire. S3 Tables speaks restJson1: the SDK reads the error's class
+ * from `x-amzn-errortype` (`errorType`), so a JSON refusal replayed without it is `Unknown`.
+ */
+export type WireAnswer = { status: number; body: string; contentType?: string; errorType?: string }
+
 /** One AWS answer the adapter records, as `recordings/aws/<name>.json` holds it. */
-export function awsRecording(name: string): { status: number; body: string } {
+export function awsRecording(name: string): WireAnswer {
   const url = new URL(`./recordings/aws/${name}.json`, import.meta.url)
-  const { status, body } = JSON.parse(readFileSync(url, 'utf8'))
-  return { status, body }
+  const { status, body, contentType, errorType } = JSON.parse(readFileSync(url, 'utf8'))
+  return {
+    status,
+    body,
+    ...(typeof contentType === 'string' ? { contentType } : {}),
+    ...(typeof errorType === 'string' ? { errorType } : {}),
+  }
 }
 
 type Call = 'create' | 'status' | 'firstFailure' | 'remove' | 'leftover'
