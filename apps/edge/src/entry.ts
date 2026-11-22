@@ -1,4 +1,4 @@
-import type { HostLabel } from '@conexus/hub-api'
+import type { AppHost } from '@conexus/hub-api'
 import { FRAME_ENTRY } from '@conexus/hub-api'
 import { withSecurityHeaders } from './headers.ts'
 
@@ -24,7 +24,7 @@ export function entryScript(contentSecurityPolicy: string): Response {
 /** What a frame of the app gets with no session: the page that asks the Hub for a pass. */
 export function entryPage(input: {
   hubOrigin: string
-  host: HostLabel
+  host: AppHost
   binding: string
   script: string
   cookies: readonly string[]

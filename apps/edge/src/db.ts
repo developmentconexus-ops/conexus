@@ -1,5 +1,5 @@
 import type { Db as AppDb, DbResult, Row } from '@conexus/app-contract'
-import type { AppSessionToken, HostLabel } from '@conexus/hub-api'
+import type { AppHost, AppSessionToken } from '@conexus/hub-api'
 import { appLoginPassword, FAILURES, QUERY_SQL_MAX } from '@conexus/hub-api'
 import { NeonDbError, neon } from '@neondatabase/serverless'
 import type { HubPort } from './hub.ts'
@@ -8,7 +8,7 @@ import type { HubPort } from './hub.ts'
  * What the dispatcher binds one call's `db` to; the app reads none of it (decision 0043). The
  * login's own `search_path` names its schema, set when the login is made; `endsAt` is the instant,
  * in epoch milliseconds, the app's call reaches its deadline (decision 0047). The session and the
- * app's host `label` name, to the Hub, who each query is recorded for.
+ * host the browser opened, `label`, name to the Hub who each query is recorded for.
  */
 export type DbProps = Readonly<{
   login: string
@@ -16,7 +16,7 @@ export type DbProps = Readonly<{
   database: string
   endsAt: number
   session: AppSessionToken
-  label: HostLabel
+  label: AppHost
 }>
 
 /** Where each `query` is told to the Hub, and the Worker kept alive until it is, after the app has its answer. */

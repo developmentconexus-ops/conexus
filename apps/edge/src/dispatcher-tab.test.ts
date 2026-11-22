@@ -3,10 +3,15 @@ import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import {
   APP_ORIGIN,
+  BINDING,
   CODE,
   EXAMPLE_CALL,
   edge,
+  frameAncestorsOf,
   HOST,
+  HUB_ORIGIN,
+  PREVIEW_HOST,
+  PREVIEW_ORIGIN,
   pageText,
   problem,
   SESSION,
@@ -18,7 +23,7 @@ import {
 // session that the pass's answer writes never comes back. The Hub's logs at the loop's hour tell it
 // from a stale cookie that never leaves, which the third test covers. A browser that keeps no
 // session from the pass gets a page at its second round, never a chain run until "too many redirects".
-const HUB = 'https://hub.conexus.fun'
+const HUB = HUB_ORIGIN
 const MAX_HOPS = 16
 const SESSION_COOKIE = '__Host-conexus-app'
 const PASS = ['/', 'hub', '/__conexus/passagem', '/__conexus/entrada']
@@ -202,17 +207,23 @@ test('entrada com a sessão que a passagem gravou: 303 a /, sem cookie nem pergu
   assert.deepEqual([door.hubCalls.length, door.appCalls.length], [0, 0])
 })
 
-test('entrada sem a sessão, com outra ou sem o hash, também na Prévia: a página 401, sem o Hub', async () => {
+test('entrada sem a sessão, com outra ou sem o hash, nos dois hosts: a página 401 com o host no log, sem o Hub', async () => {
   const door = edge()
   const mark = `sessao=${hashOf(SESSION)}`
-  const answers = await Promise.all([
-    door.fetch(`/__conexus/entrada?${mark}`),
-    door.fetch(`/__conexus/entrada?${mark}`, {
-      headers: { Cookie: `__Host-conexus-app=${'v'.repeat(43)}` },
-    }),
-    door.fetch('/__conexus/entrada', { headers: { Cookie: `__Host-conexus-app=${SESSION}` } }),
-    door.fetch(`/__conexus/entrada?${mark}`, { headers: { 'Sec-Fetch-Dest': 'iframe' } }),
-  ])
+  const { result: answers, lines } = await logged(() =>
+    Promise.all([
+      door.fetch(`/__conexus/entrada?${mark}`),
+      door.fetch(`/__conexus/entrada?${mark}`, {
+        headers: { Cookie: `__Host-conexus-app=${'v'.repeat(43)}` },
+      }),
+      door.fetch('/__conexus/entrada', { headers: { Cookie: `__Host-conexus-app=${SESSION}` } }),
+      door.fetch(
+        `/__conexus/entrada?${mark}`,
+        { headers: { 'Sec-Fetch-Dest': 'iframe' } },
+        PREVIEW_ORIGIN,
+      ),
+    ]),
+  )
   for (const response of answers) {
     assert.equal(response.status, 401)
     assert.equal(
@@ -220,5 +231,73 @@ test('entrada sem a sessão, com outra ou sem o hash, também na Prévia: a pág
       '<h1>Este navegador não guardou a sua entrada.</h1><a href="/">Tentar de novo</a>',
     )
   }
+  // The four ran at once, so their lines come in any order.
+  assert.deepEqual(
+    lines.map((line) => JSON.stringify(line)).sort(),
+    [...Array(3).fill(NOT_KEPT_LINE), { ...NOT_KEPT_LINE, host: PREVIEW_HOST }]
+      .map((line) => JSON.stringify(line))
+      .sort(),
+  )
   assert.deepEqual([door.hubCalls.length, door.appCalls.length], [0, 0])
+})
+
+test('ninguém emoldura o host do app: toda resposta dele leva frame-ancestors none', async () => {
+  const live = { headers: { Cookie: `__Host-conexus-app=${SESSION}` } }
+  const { result: answers } = await logged(async () => [
+    await edge().fetch('/'),
+    await edge().fetch('/', { headers: { 'Sec-Fetch-Dest': 'iframe' } }),
+    await edge().fetch('/__conexus/entry.js'),
+    await edge().fetch('/', live),
+    await edge().fetch('/__conexus/entrada?sessao=x'),
+    await edge().fetch('/__conexus/outra', live),
+    await edge().fetch('/__conexus/passagem'),
+    await edge({ hub: () => problem('APP_NOT_FOUND') }).fetch('/', live),
+    await edge().fetch('/', { method: 'POST', headers: { Origin: 'https://fora.example' } }),
+  ])
+  const failed = await edge({ missingScript: true }).fetch('/', live)
+  assert.deepEqual(
+    [...answers, failed].map((response) => response.status),
+    [303, 303, 200, 200, 401, 404, 403, 404, 403, 502],
+  )
+  for (const response of [...answers, failed]) assert.equal(frameAncestorsOf(response), "'none'")
+})
+
+test('no host do app, os cookies são Lax sem partição: gravar apaga antes a forma particionada, apagar leva as duas', async () => {
+  const first = await edge().fetch('/')
+  const redeemed = await edge({
+    hub: () => Response.json({ session: SESSION }, { status: 201 }),
+  }).fetch(`/__conexus/passagem?code=${CODE}`, {
+    headers: { Cookie: `__Host-conexus-binding=${BINDING}` },
+  })
+  const expired = await edge({ hub: () => problem('APP_SESSION_INVALID') }).fetch('/', {
+    headers: { Cookie: `__Host-conexus-app=${SESSION}` },
+  })
+  const tail = 'Path=/; Secure; HttpOnly; SameSite'
+  assert.match(
+    first.headers.getSetCookie()[0] ?? '',
+    /^__Host-conexus-binding=[\w-]{43}; Path=\/; Secure; HttpOnly; SameSite=Lax$/,
+  )
+  assert.deepEqual(redeemed.headers.getSetCookie(), [
+    `__Host-conexus-app=; ${tail}=None; Partitioned; Max-Age=0`,
+    `__Host-conexus-app=${SESSION}; ${tail}=Lax`,
+  ])
+  assert.deepEqual(expired.headers.getSetCookie().slice(0, 2), [
+    `__Host-conexus-app=; ${tail}=None; Partitioned; Max-Age=0`,
+    `__Host-conexus-app=; ${tail}=Lax; Max-Age=0`,
+  ])
+  assert.equal(expired.headers.getSetCookie().length, 3)
+})
+
+test('sem sessão, o host do app é sempre o 303 a /apps/open com o rótulo publicado, também num quadro', async () => {
+  for (const dest of ['document', 'iframe', undefined]) {
+    const door = edge()
+    const response = await door.fetch('/', {
+      headers: dest === undefined ? {} : { 'Sec-Fetch-Dest': dest },
+    })
+    assert.equal(response.status, 303, dest)
+    const location = new URL(response.headers.get('Location') ?? '')
+    assert.equal(`${location.origin}${location.pathname}`, `${HUB_ORIGIN}/apps/open`)
+    assert.equal(location.searchParams.get('host'), HOST)
+    assert.equal(door.hubCalls.length, 0)
+  }
 })

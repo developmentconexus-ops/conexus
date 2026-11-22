@@ -1,13 +1,19 @@
-import type { HostLabel } from '@conexus/hub-api'
+import type { AppEnvironment, AppHost } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { base64Of, sha256Of } from './digest.ts'
-import { withSecurityHeaders } from './headers.ts'
+import { frameAncestorOf, withSecurityHeaders } from './headers.ts'
 import type { NoAnswerReason } from './hub.ts'
 
 // What each page says: the Hub's own rows, and the ones the dispatcher alone meets, which never
 // pass through the Hub (step 8's state matrix). An app past its call's deadline reads as one that
 // failed, and its log line says which (decision 0047).
-type Page = { status: number; phrase: string; action: string; retry?: string }
+type Page = {
+  status: number
+  phrase: string
+  action: string
+  /** A link to the app's root, or to the Hub. */
+  link?: { text: string; to: 'APP' | 'HUB' }
+}
 const APP_FAILED = { status: 502, phrase: 'O app não conseguiu responder agora.', action: '' }
 const PAGES = {
   APP_HANDOFF_INVALID: FAILURES.APP_HANDOFF_INVALID,
@@ -29,13 +35,21 @@ const PAGES = {
     status: 401,
     phrase: 'Este navegador não guardou a sua entrada.',
     action: '',
-    retry: 'Tentar de novo',
+    link: { text: 'Tentar de novo', to: 'APP' },
+  },
+  // The Prévia's host outside the Hub's frame: a fixed 401 that never redirects, as vibesdk answers
+  // a preview opened without its token (`space-preview.ts:171-174`). No pass is ever made for a tab.
+  EDGE_PREVIEW_OUTSIDE_HUB: {
+    status: 401,
+    phrase: 'A Prévia abre dentro do Conexus.',
+    action: '',
+    link: { text: 'Abrir o Conexus', to: 'HUB' },
   },
 } as const satisfies Record<string, Page>
 export type PageCode = keyof typeof PAGES
 
 /** The scalar fields a page's log line may carry (security S41). */
-export type PageLog = { reason?: NoAnswerReason } | { host: HostLabel; rounds: number }
+export type PageLog = { reason?: NoAnswerReason } | { host: AppHost; rounds?: number }
 
 // The Hub's light and dark tokens (apps/web/src/brand/tokens.css), with system fonts: the page
 // loads nothing, so its own CSP names this one style by its hash.
@@ -53,15 +67,15 @@ const STYLE = [
 /**
  * The page of a failure, in Portuguese and without script. Its log line has the Hub's shape, a pino
  * level and a code (scripts/log-line.ts), and nothing the person sent (security S41); `log` adds
- * fixed words or a parsed host. A retry is a link to the app's root. Only the Hub may frame it, so a
- * failure inside the Prévia reads as on the app's own tab.
+ * fixed words or a parsed host. It may be framed as its host is, so a failure inside the Prévia
+ * reads there as on the app's own tab.
  */
 export async function failurePage(
   code: PageCode,
-  hubOrigin: string,
+  page: { hubOrigin: string; environment: AppEnvironment | undefined },
   log: PageLog = {},
 ): Promise<Response> {
-  const { status, phrase, action, retry }: Page = PAGES[code]
+  const { status, phrase, action, link }: Page = PAGES[code]
   const line = { msg: code, status, ...log }
   if (status >= 500) console.error(JSON.stringify({ level: 50, ...line }))
   else console.log(JSON.stringify({ level: 30, ...line }))
@@ -71,12 +85,12 @@ export async function failurePage(
     '<html lang="pt-BR">',
     '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>Conexus</title><style>${STYLE}</style></head>`,
-    `<body><main><h1>${phrase}</h1>${action === '' ? '' : `<p>${action}</p>`}${retry === undefined ? '' : `<a href="/">${retry}</a>`}</main></body>`,
+    `<body><main><h1>${phrase}</h1>${action === '' ? '' : `<p>${action}</p>`}${link === undefined ? '' : `<a href="${link.to === 'HUB' ? page.hubOrigin : '/'}">${link.text}</a>`}</main></body>`,
     '</html>',
   ].join('\n')
   const headers = withSecurityHeaders(
     new Headers({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }),
-    `default-src 'none'; style-src 'sha256-${styleHash}'; base-uri 'none'; form-action 'none'; frame-ancestors ${hubOrigin}`,
+    `default-src 'none'; style-src 'sha256-${styleHash}'; base-uri 'none'; form-action 'none'; frame-ancestors ${frameAncestorOf(page.hubOrigin, page.environment)}`,
   )
   return new Response(html, { status, headers })
 }

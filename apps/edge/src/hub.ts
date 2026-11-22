@@ -1,4 +1,4 @@
-import type { AppSessionToken, FailureCode, HostLabel, Operation } from '@conexus/hub-api'
+import type { AppHost, AppSessionToken, FailureCode, Operation } from '@conexus/hub-api'
 import {
   APP_CONNECTOR_REPLY_BYTES,
   APP_SESSION_HEADER,
@@ -36,7 +36,7 @@ type ConnectionsRequest = z.infer<typeof listAppConnections.input.query> & {
   session: AppSessionToken
 }
 type NoticeRequest = z.infer<typeof recordAppRead.input.body> & {
-  host: HostLabel
+  host: AppHost
   session: AppSessionToken
 }
 

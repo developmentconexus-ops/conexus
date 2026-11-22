@@ -207,7 +207,7 @@ test('uma página do despachante: sem script, um estilo pelo hash na CSP', async
   assert.equal(response.headers.get('Content-Type'), 'text/html; charset=utf-8')
   assert.equal(
     response.headers.get('Content-Security-Policy'),
-    `default-src 'none'; style-src 'sha256-${hash}'; base-uri 'none'; form-action 'none'; frame-ancestors ${HUB}`,
+    `default-src 'none'; style-src 'sha256-${hash}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
   )
   assert.ok(style.length > 0 && !html.includes('<script'))
   assert.match(html, /^<!doctype html>\n<html lang="pt-BR">/)
@@ -297,7 +297,7 @@ test('app: a CSP do app e os cabeçalhos de S24 substituem os dele', async () =>
   const response = await door.fetch('/', { headers: LIVE })
   assert.equal(
     response.headers.get('Content-Security-Policy'),
-    `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors ${HUB}`,
+    `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'`,
   )
   assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')
