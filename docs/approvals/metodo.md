@@ -99,7 +99,7 @@ Com cartões em construção, o pull request entra pela exceção da L20, com o 
 
 ## Mudança de método: o PR entre o Registro e o Lago 1
 
-Em 2026-11-22, à noite, ao firstmate perguntar se preparava o PR de método enquanto ele dormia, o fundador respondeu: "3. A" (preparar à noite; ele aprova o texto de manhã). Ao ler o texto, na manhã de 2026-11-22, à ordem de merge proposta (os fechamentos do Registro e da Fundação, depois este pull request, depois os cartões): "Aprovo". Entram, num pull request só de documentos (L20), com o `scripts/check-docs.ts` do teto:
+Em 2026-11-22, à noite, ao firstmate perguntar se preparava o PR de método enquanto ele dormia, o fundador respondeu: "3. A" (preparar à noite; ele aprova o texto de manhã). Ao ler o texto, na manhã de 2026-11-22, à ordem de merge proposta (os fechamentos do Registro e da Fundação, depois este pull request, depois os cartões): "Aprovo". Entram, num pull request só de documentos (L20):
 
 - web W32: o Registro de dados só para Dono e Administrador, logo depois de Papéis. É a emenda de 2026-11-21 do cartão Registro e conformidade (`"D1 a D2 a"` e "Aprovo"), que a W32 esperava por este PR.
 - security S24: o cookie do app com uma forma por endereço, a partir da etapa A Prévia em endereço próprio (até lá, um endereço e a forma por `Sec-Fetch-Dest`): `SameSite=Lax` no endereço publicado e `SameSite=None; Partitioned` no endereço `--previa`, nunca escolhida por cabeçalho. Vêm do PR 1211 ("1. Okay 2 A", 2026-11-21), que deixou o texto para este PR, e das respostas ao estudo da Prévia ("2.a 3.b 4a 5a", 2026-11-21).
