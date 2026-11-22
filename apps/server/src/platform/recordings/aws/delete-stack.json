@@ -1,9 +1,10 @@
 {
   "service": "cloudformation",
   "api": "DeleteStack",
-  "sdk": "@aws-sdk/client-cloudformation 3.1175.0 reads it; recorded by aws-cli --debug",
-  "recordedAt": "2026-11-21",
-  "source": "study P5, laboratory account, values changed (S40); status from the error code",
+  "sdk": "@aws-sdk/client-cloudformation 3.1175.0",
+  "recordedAt": "2026-11-22",
+  "source": "U4 step 1, from the Hub server with the Hub key (lab run 45073176840), laboratory account, values changed (S40)",
   "status": 200,
-  "body": "<DeleteStackResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\">\n  <ResponseMetadata>\n    <RequestId>00000000-0000-4000-8000-000000000001</RequestId>\n  </ResponseMetadata>\n</DeleteStackResponse>\n"
+  "contentType": "text/xml",
+  "body": "<DeleteStackResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\">\n  <ResponseMetadata>\n    <RequestId>00000000-0000-4000-8000-000000000000</RequestId>\n  </ResponseMetadata>\n</DeleteStackResponse>\n"
 }

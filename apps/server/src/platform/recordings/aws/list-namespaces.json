@@ -1,0 +1,10 @@
+{
+  "service": "s3tables",
+  "api": "ListNamespaces",
+  "sdk": "@aws-sdk/client-s3tables 3.1175.0",
+  "recordedAt": "2026-11-22",
+  "source": "U4 step 1, from the Hub server with the Hub key (lab run 45073176840), laboratory account, values changed (S40)",
+  "status": 200,
+  "contentType": "application/json",
+  "body": "{\"namespaces\":[{\"createdAt\":\"2026-11-22T21:36:11.480881634Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"current\"],\"namespaceId\":\"fa10d007-dd03-4ae8-98a2-b99c314bed38\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"},{\"createdAt\":\"2026-11-22T21:36:09.553894294Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"raw\"],\"namespaceId\":\"a2b24cb7-7a5b-48cb-bc65-ad446fce4719\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"}]}"
+}

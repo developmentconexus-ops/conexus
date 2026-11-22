@@ -1,0 +1,10 @@
+{
+  "service": "s3tables",
+  "api": "ListNamespaces",
+  "sdk": "@aws-sdk/client-s3tables 3.1175.0",
+  "recordedAt": "2026-11-22",
+  "source": "U4 step 1, from the Hub server with the Hub key (lab run 45073176840), laboratory account, values changed (S40)",
+  "status": 403,
+  "contentType": "application/json",
+  "body": "{\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-hub/hub-EmpresaTesteB0000000000000000002 is not authorized to perform: s3tables:ListNamespaces on resource: arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-w1vbxl1izr9x because no identity-based policy allows the s3tables:ListNamespaces action\"}"
+}
