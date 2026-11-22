@@ -1,5 +1,5 @@
 import type { StackProps } from 'aws-cdk-lib'
-import { CfnParameter, Duration, aws_iam as iam, Stack } from 'aws-cdk-lib'
+import { CfnParameter, DefaultStackSynthesizer, Duration, aws_iam as iam, Stack } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
 import {
   CDK_EXECUTION_POLICY,
@@ -11,6 +11,13 @@ import {
 } from './names.ts'
 
 const GITHUB = 'token.actions.githubusercontent.com'
+
+/** The parameter the platform stack's bootstrap rule reads, under the default qualifier. */
+const BOOTSTRAP_VERSION_PARAMETER =
+  DefaultStackSynthesizer.DEFAULT_BOOTSTRAP_STACK_VERSION_SSM_PARAMETER.replace(
+    '${Qualifier}',
+    DefaultStackSynthesizer.DEFAULT_QUALIFIER,
+  )
 
 /** What CloudFormation may do to our roles and policies while it deploys the platform. */
 const OUR_IAM_ACTIONS = [
@@ -173,6 +180,15 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         actions: ['cloudformation:*'],
         resources: [
           `arn:${stack.partition}:cloudformation:*:${stack.account}:stack/${PLATFORM_STACK}/*`,
+        ],
+      }),
+      // As the bootstrap's deploy role reads it: CreateChangeSet resolves the platform's
+      // BootstrapVersion parameter with this role, which AdministratorAccess would have covered.
+      new iam.PolicyStatement({
+        sid: 'ReadBootstrapVersion',
+        actions: ['ssm:GetParameter', 'ssm:GetParameters'],
+        resources: [
+          `arn:${stack.partition}:ssm:${stack.region}:${stack.account}:parameter${BOOTSTRAP_VERSION_PARAMETER}`,
         ],
       }),
     ],
