@@ -114,7 +114,7 @@ export class PreparationStack extends Stack {
     super(scope, id, props)
     const repository = new CfnParameter(this, 'GitHubRepository', {
       type: 'String',
-      allowedPattern: '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$',
+      allowedPattern: '^[A-Za-z0-9-]+@[0-9]+/[A-Za-z0-9_.-]+@[0-9]+$',
     })
     releaseRole(this, repository.valueAsString)
     const keyUser = new iam.User(this, 'HubKeyUser', { userName: HUB_KEY_USER })
@@ -143,7 +143,11 @@ function iamArn(stack: Stack, resource: string): string {
   return `arn:${stack.partition}:iam::${stack.account}:${resource}`
 }
 
-/** The Release enters only from this repository's `production` environment, with no stored key. */
+/**
+ * The Release enters only from this repository's `production` environment, with no stored key.
+ * `repository` is `owner@owner-id/name@repository-id`, the immutable form GitHub writes in the
+ * `sub`: a repository created again under the same name has another id, and its tokens do not match.
+ */
 function releaseRole(stack: Stack, repository: string): iam.Role {
   const github = new iam.OidcProviderNative(stack, 'GitHub', {
     url: `https://${GITHUB}`,
