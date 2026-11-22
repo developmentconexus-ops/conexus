@@ -206,9 +206,9 @@ function spendAlarms(stack: Stack, usd: number, address: string): void {
       subscribers: email,
     }
   }
+  // No fixed name: a new subscriber replaces the budget, and the new one is created first.
   new budgets.CfnBudget(stack, 'Budget', {
     budget: {
-      budgetName: 'conexus-orcamento-mensal',
       budgetType: 'COST',
       timeUnit: 'MONTHLY',
       budgetLimit: { amount: usd, unit: 'USD' },

@@ -230,6 +230,11 @@ test('o orçamento lê o valor e o e-mail de parâmetros', () => {
   assert.doesNotMatch(raw, /\d{12}|@[a-z]|\d+\.\d+\.\d+\.\d+/)
 })
 
+test('trocar o e-mail substitui o orçamento, então ele não tem nome fixo', () => {
+  // NotificationsWithSubscribers pede um recurso novo, criado antes de o velho sair.
+  assert.equal('BudgetName' in Object(find(platform, 'Budget').Properties.Budget), false)
+})
+
 test('o endereço que o Hub manda casa com o padrão, e a forma de caminho não', () => {
   const bucket = `conexus-receitas-${ACCOUNT}-${REGION}`
   const version = 'a'.repeat(64)
