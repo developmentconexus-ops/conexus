@@ -60,14 +60,18 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
 
 // AWS's answers as the U4 proof and the study's P5 recorded them, the adapter's (testing T29):
 // each names its service, API, SDK and date; the account is the invented one and no key is real (S40).
-const AwsRecording = z.object({
-  service: z.enum(['sts', 'cloudformation', 's3tables']),
-  api: z.string().min(1),
-  sdk: z.string().min(1),
-  recordedAt: z.iso.date(),
-  status: z.number().int(),
-  body: z.string().min(1),
-})
+// Only a 204 has no body: S3 Tables answers DeleteNamespace and DeleteTableBucket so.
+const AwsRecording = z
+  .object({
+    service: z.enum(['sts', 'cloudformation', 's3tables']),
+    api: z.string().min(1),
+    sdk: z.string().min(1),
+    recordedAt: z.iso.date(),
+    status: z.number().int(),
+    body: z.string(),
+  })
+  .refine((r) => r.body.length > 0 || r.status === 204, 'only a 204 has no body')
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 
 test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventada e nenhuma chave de verdade (T29, S40)', () => {
   const folder = join(RECORDINGS, 'aws')
@@ -75,13 +79,15 @@ test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventad
   assert.ok(files.length > 0)
   for (const file of files) {
     const text = readFileSync(join(folder, file), 'utf8')
-    AwsRecording.parse(JSON.parse(text))
+    const parsed = AwsRecording.safeParse(JSON.parse(text))
+    assert.ok(parsed.success, `${file}: ${parsed.error?.message}`)
     assert.equal(LEAK.test(text), false, `${file} carries an address or a credential`)
-    const accounts = new Set(
-      [...text.matchAll(/arn:aws:[a-z0-9-]+:[a-z0-9-]*:(\d{12}):/g)].map((m) => m[1]),
-    )
-    assert.ok(
-      [...accounts].every((account) => account === '111122223333'),
+    // An account is any run of exactly 12 digits: in an ARN, in S3 Tables' ownerAccountId and
+    // createdBy, anywhere. The invented UUIDs end in 12 digits too, so they go first.
+    const accounts = new Set(text.replace(UUID, '').match(/(?<!\d)\d{12}(?!\d)/g) ?? [])
+    assert.deepEqual(
+      [...accounts].filter((account) => account !== '111122223333'),
+      [],
       file,
     )
     assert.doesNotMatch(text, /\b(AKIA|ASIA)(?!INVENTED)[A-Z0-9]{12,}/, file)

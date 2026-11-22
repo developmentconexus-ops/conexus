@@ -993,6 +993,10 @@
       "name": "tipo: a rota handoff só GET"
     },
     {
+      "file": "apps/server/src/platform/aws.test.ts",
+      "name": "aws: o depósito de outra empresa recusa o resto"
+    },
+    {
       "file": "apps/server/src/platform/cloudflare.test.ts",
       "name": "quem a pediu desiste"
     },

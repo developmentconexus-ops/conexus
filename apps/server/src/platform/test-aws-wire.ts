@@ -3,11 +3,12 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import type { AwsDeadlines } from './aws.ts'
 import { createLakeStacks } from './aws.ts'
+import type { WireAnswer } from './test-aws.ts'
 import { awsRecording, testAws, testAwsCredentials } from './test-aws.ts'
 import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
 export type Received = { action: string; form: URLSearchParams; authorization: string }
-type Reply = { status: number; body: string } | 'SILENT'
+type Reply = WireAnswer | 'SILENT'
 
 /** AWS behind a port, as the recordings answer it (T29): each request recorded, each answer `reply`'s. */
 export async function awsWire(t: TestContext, reply: (received: Received) => Reply) {
@@ -25,7 +26,11 @@ export async function awsWire(t: TestContext, reply: (received: Received) => Rep
       received.push(entry)
       const answer = reply(entry)
       if (answer === 'SILENT') return
-      response.writeHead(answer.status, { 'content-type': 'text/xml' })
+      // CloudFormation and STS answer XML; a recording of S3 Tables names its JSON and error class.
+      response.writeHead(answer.status, {
+        'content-type': answer.contentType ?? 'text/xml',
+        ...(answer.errorType === undefined ? {} : { 'x-amzn-errortype': answer.errorType }),
+      })
       response.end(answer.body)
     })
   })
