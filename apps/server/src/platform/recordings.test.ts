@@ -33,7 +33,10 @@ const EXPECTED = [
 test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabeçalho, token ou e-mail (T24, S40)', () => {
   const files = readdirSync(RECORDINGS)
     .filter(
-      (file) => !file.endsWith('.list.json') && !file.endsWith('-models.json') && file !== 'mastra',
+      (file) =>
+        !file.endsWith('.list.json') &&
+        !file.endsWith('-models.json') &&
+        !['mastra', 'aws'].includes(file),
     )
     .sort()
   const bodies = files.filter((file) => file.endsWith('.sse')).map((file) => file.slice(0, -4))
@@ -52,6 +55,36 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
       assert.equal(LEAK.test(text), false, `${file} carries an address or a credential`)
       assert.doesNotMatch(text, /^(authorization|x-api-key|cookie|set-cookie):/im, file)
     }
+  }
+})
+
+// AWS's answers as the U4 proof and the study's P5 recorded them, the adapter's (testing T29):
+// each names its service, API, SDK and date; the account is the invented one and no key is real (S40).
+const AwsRecording = z.object({
+  service: z.enum(['sts', 'cloudformation', 's3tables']),
+  api: z.string().min(1),
+  sdk: z.string().min(1),
+  recordedAt: z.iso.date(),
+  status: z.number().int(),
+  body: z.string().min(1),
+})
+
+test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventada e nenhuma chave de verdade (T29, S40)', () => {
+  const folder = join(RECORDINGS, 'aws')
+  const files = readdirSync(folder)
+  assert.ok(files.length > 0)
+  for (const file of files) {
+    const text = readFileSync(join(folder, file), 'utf8')
+    AwsRecording.parse(JSON.parse(text))
+    assert.equal(LEAK.test(text), false, `${file} carries an address or a credential`)
+    const accounts = new Set(
+      [...text.matchAll(/arn:aws:[a-z0-9-]+:[a-z0-9-]*:(\d{12}):/g)].map((m) => m[1]),
+    )
+    assert.ok(
+      [...accounts].every((account) => account === '111122223333'),
+      file,
+    )
+    assert.doesNotMatch(text, /\b(AKIA|ASIA)(?!INVENTED)[A-Z0-9]{12,}/, file)
   }
 })
 

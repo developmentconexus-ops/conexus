@@ -245,3 +245,27 @@ test('o catálogo do lago: as colunas, as políticas e a segurança por linha', 
     [{ secured: true }],
   )
 })
+
+test('o operador só apaga o lago da empresa do escopo; quem não é administrador não muda nem apaga linha nenhuma', async (t) => {
+  const { database, asOwner } = await seeded(t)
+  await asOwner(
+    `insert into lake.company_lake
+       (company_id, lake_id, state, account, region, template, since)
+     values ('${A}', 'abcdefghij12', 'creating', '${ACCOUNT}', 'us-east-2', '${SHA}', now()),
+            ('${B}', 'abcdefghij13', 'creating', '${ACCOUNT}', 'us-east-2', '${SHA}', now())`,
+  )
+  const rows = `select company_id, since from lake.company_lake order by company_id`
+  const before = await asOwner(rows)
+  // The administrator in A's scope reaches B's row to read, never to delete (review of PR 1239, M1).
+  await database.command(operator(OPERATOR), (tx) =>
+    tx.execute(sql`delete from lake.company_lake where company_id = ${B}`),
+  )
+  assert.deepEqual(await asOwner(rows), before)
+  // With no WHERE the SELECT policy hides nothing, so only the administrator test stops them (M10, M11).
+  const plain = operator(ANA)
+  await database.command(plain, (tx) =>
+    tx.execute(sql`update lake.company_lake set since = now() + interval '1 day'`),
+  )
+  await database.command(plain, (tx) => tx.execute(sql`delete from lake.company_lake`))
+  assert.deepEqual(await asOwner(rows), before)
+})

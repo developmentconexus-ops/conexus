@@ -1,5 +1,8 @@
 import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
+import { AppLoginKey, CloudflareAppsToken, CloudflareName } from './config-apps.ts'
+import type { AwsConfig } from './config-aws.ts'
+import { AwsEnvironment, awsConfigOf } from './config-aws.ts'
 import type { ConnectorApp } from './config-connectors.ts'
 import { ConnectorApps } from './config-connectors.ts'
 import type { GitCopyBucket } from './config-git.ts'
@@ -103,37 +106,9 @@ export const NeonApiKey = {
   },
 }
 
-/**
- * Derives every app login's password (decision 0043); `createCompanyPostgres` reveals it into its SQL.
- * It is what `openssl rand -hex 32` writes, as `publish-edge.sh` requires of the dispatcher's copy:
- * any other byte would derive other passwords on each side.
- */
-export type AppLoginKey = Secret<'AppLoginKey'>
-export const AppLoginKey = {
-  parse(value: string): AppLoginKey {
-    if (!/^[0-9a-f]{64}$/.test(value)) throw new TypeError('app login key not 64 hex digits')
-    return new Secret('AppLoginKey', value)
-  },
-}
-
 /** Cloudflare's API the apps' token is sent to: the one place it goes (S36). */
 export const CloudflareApiUrl = z.string().refine(overHttpsOrLoopback).brand('CloudflareApiUrl')
 export type CloudflareApiUrl = z.infer<typeof CloudflareApiUrl>
-
-/** Uploads and removes the versions' Workers in the apps' namespace (decision 0043). */
-export type CloudflareAppsToken = Secret<'CloudflareAppsToken'>
-export const CloudflareAppsToken = {
-  parse(value: string): CloudflareAppsToken {
-    return new Secret('CloudflareAppsToken', value)
-  },
-}
-
-/** The account and the dispatch namespace that hold the apps' Workers. */
-export const CloudflareName = z
-  .string()
-  .regex(/^[a-z0-9][a-z0-9-]{0,62}$/)
-  .brand('CloudflareName')
-export type CloudflareName = z.infer<typeof CloudflareName>
 
 type BaseConfig = {
   version: Version
@@ -180,6 +155,7 @@ export type Config = BaseConfig & {
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId
+  aws: AwsConfig
 }
 /**
  * CLIProxyAPI's program for Google's sign-in, the sha256 it must have to run, and how long it keeps
@@ -238,6 +214,7 @@ const ServeEnvironment = z.object({
   HUB_CONNECTOR_ORIGINS: ConnectorOrigins.optional(),
   HUB_CONNECTOR_APPS_FILE: z.string().min(1).optional(),
   ...MachineEnvironment.shape,
+  ...AwsEnvironment.shape,
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -279,9 +256,9 @@ function baseConfig(data: z.output<typeof Environment>): BaseConfig {
   }
 }
 
-export function readConfig(mode: 'serve', env?: NodeJS.ProcessEnv): Config
+export function readConfig(mode: 'serve', env?: NodeJS.ProcessEnv, template?: URL): Config
 export function readConfig(mode: 'migrate', env?: NodeJS.ProcessEnv): MigrateConfig
-export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config | MigrateConfig {
+export function readConfig(mode: 'serve' | 'migrate', env = process.env, template?: URL) {
   const data = parsed(Environment, env)
   if (mode === 'migrate') {
     const path = parsed(MigrationKey, env).HUB_MIGRATION_DATABASE_URL_FILE
@@ -344,6 +321,7 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
     installationId: serve.HUB_INSTALLATION_ID,
+    aws: awsConfigOf(serve, env, template),
   }
 }
 

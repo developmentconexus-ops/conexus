@@ -119,6 +119,9 @@ const ACTIONS = {
   registerClient: { by: 'OPERATOR', locks: true },
   correctClient: { by: 'OPERATOR', locks: true },
   deleteClient: { by: 'OPERATOR', locks: true },
+  // The client's data lake: only the operator creates and deletes it (decision A).
+  createClientLake: { by: 'OPERATOR', locks: true },
+  deleteClientLake: { by: 'OPERATOR', locks: true },
   setAccountKinds: { by: 'OPERATOR', locks: true },
 } as const satisfies Record<string, ActionRule>
 

@@ -1,0 +1,9 @@
+{
+  "service": "sts",
+  "api": "AssumeRole",
+  "sdk": "@aws-sdk/client-sts 3.1175.0 reads it; recorded by aws-cli --debug",
+  "recordedAt": "2026-11-21",
+  "source": "study P5, laboratory account, values changed (S40); status from the error code",
+  "status": 200,
+  "body": "<AssumeRoleResponse xmlns=\"https://sts.amazonaws.com/doc/2011-06-15/\">\n  <AssumeRoleResult>\n    <AssumedRoleUser>\n      <AssumedRoleId>AROAINVENTED00000001:gravacao</AssumedRoleId>\n      <Arn>arn:aws:sts::111122223333:assumed-role/conexus-hub/gravacao</Arn>\n    </AssumedRoleUser>\n    <Credentials>\n      <AccessKeyId>ASIAINVENTED000000001</AccessKeyId>\n      <SecretAccessKey>invented-secret</SecretAccessKey>\n      <SessionToken>invented-session-token</SessionToken>\n      <Expiration>2026-11-21T23:24:21Z</Expiration>\n    </Credentials>\n    <PackedPolicySize>23</PackedPolicySize>\n    <SessionTokenSize>948</SessionTokenSize>\n    <SessionTokenUtilization>23</SessionTokenUtilization>\n  </AssumeRoleResult>\n  <ResponseMetadata>\n    <RequestId>00000000-0000-4000-8000-000000000001</RequestId>\n  </ResponseMetadata>\n</AssumeRoleResponse>\n"
+}

@@ -160,6 +160,8 @@ export function centralHub(clients: Client[]) {
     }),
     // The client page reads the account kinds the Central opens; none are open here.
     http.get('*/api/clients/:companyId/account-kinds', () => HttpResponse.json({ kinds: [] })),
+    // The client page reads its data lake; none exists here.
+    http.get('*/api/clients/:companyId/lake', () => HttpResponse.json({ lake: { state: 'NONE' } })),
     http.get(`*/api/companies/:companyId/members`, () =>
       HttpResponse.json(
         listMembers.success.body.parse({

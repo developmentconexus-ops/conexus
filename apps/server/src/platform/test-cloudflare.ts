@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import type { CloudflareAnswer, CloudflareApps, WorkerUpload } from './cloudflare.ts'
-import { AppLoginKey, CloudflareApiUrl, CloudflareAppsToken, CloudflareName } from './config.ts'
+import { CloudflareApiUrl } from './config.ts'
+import { AppLoginKey, CloudflareAppsToken, CloudflareName } from './config-apps.ts'
 import { ToolsOrigin } from './config-tools.ts'
 import { Secret } from './secret.ts'
 

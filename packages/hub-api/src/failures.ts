@@ -4,6 +4,7 @@ import { APP_DATA_FAILURES, APP_FAILURES, APP_VERSION_FAILURES } from './app-fai
 import { ASSISTANT_FAILURES } from './assistant-failures.ts'
 import { AUTOMATION_FAILURES } from './automation-failures.ts'
 import { CAPACITY } from './capacity.ts'
+import { CLIENT_FAILURES } from './client-failures.ts'
 import { CONNECTOR_FAILURES } from './connector-failures.ts'
 import { CONVERSATION_FAILURES } from './conversation-failures.ts'
 import type { FailureRow } from './failure-row.ts'
@@ -181,54 +182,7 @@ export const FAILURES = {
     actionKind: 'NONE',
   },
   // The registration's own refusals: the two on a field show no action, as the card says.
-  CLIENT_EXISTS: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Já existe um cliente com este CNPJ.',
-    action: '',
-    actionKind: 'NONE',
-  },
-  CLIENT_OWNER_IS_OPERATOR: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'Este e-mail é de um operador da Conexus.',
-    action: '',
-    actionKind: 'NONE',
-  },
-  CLIENT_STALE: {
-    category: 'USER',
-    settles: true,
-    status: 412,
-    phrase: 'Este cliente mudou.',
-    action: 'Recarregue a página.',
-    actionKind: 'NONE',
-  },
-  CLIENT_NAME_MISMATCH: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'O nome não confere.',
-    action: '',
-    actionKind: 'NONE',
-  },
-  CLIENT_ACTIVE: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Este cliente já está ativo.',
-    action: 'Recarregue a página.',
-    actionKind: 'NONE',
-  },
-  OWNER_INVITATION_OPEN: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Já há um convite de dono em aberto.',
-    action: 'Cancele-o antes de convidar outro e-mail.',
-    actionKind: 'NONE',
-  },
+  ...CLIENT_FAILURES,
   ...PEOPLE_FAILURES,
   ROLE_NAME_TAKEN: {
     category: 'USER',

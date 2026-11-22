@@ -276,3 +276,50 @@ test('configuração: recusa ler um valor fora do formato, nomeando a variável'
     await t.test(`${name}=${value}`, () => refusal({ ...env, [name]: value }, name))
   }
 })
+
+test('configuração: a chave da AWS só por arquivo, legível só pelo dono', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  assert.equal(readConfig('serve', env).aws.credentialsFile, env.AWS_SHARED_CREDENTIALS_FILE)
+  for (const name of [
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_SESSION_TOKEN',
+    'AWS_PROFILE',
+  ]) {
+    refusal({ ...env, [name]: 'x' }, name)
+  }
+  refusal({ ...env, AWS_SHARED_CREDENTIALS_FILE: undefined }, 'AWS_SHARED_CREDENTIALS_FILE')
+  chmodSync(env.AWS_SHARED_CREDENTIALS_FILE, 0o644)
+  refusal(env, 'AWS_SHARED_CREDENTIALS_FILE')
+})
+
+test('configuração: sem receita o Hub não sobe; com ela, a versão é o sha-256 do arquivo', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  const absent = new URL('file:///nonexistent/infra/aws/lake.template.json')
+  assert.throws(
+    () => readConfig('serve', env, absent),
+    (error: unknown) => Reflect.get(Object(error), 'code') === 'CONFIG_INVALID',
+  )
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-template-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const template = join(dir, 'lake.template.json')
+  writeFileSync(template, '{}')
+  assert.equal(
+    readConfig('serve', env, new URL(`file://${template}`)).aws.templateVersion,
+    '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
+  )
+})
+
+test('configuração: o endereço da AWS de teste só no próprio computador', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  assert.equal(readConfig('serve', env).aws.endpoint, undefined)
+  for (const endpoint of ['http://127.0.0.1:4566', 'http://localhost:4566']) {
+    assert.equal(readConfig('serve', { ...env, HUB_AWS_ENDPOINT: endpoint }).aws.endpoint, endpoint)
+  }
+  for (const endpoint of [
+    'https://cloudformation.us-east-2.amazonaws.com',
+    'http://10.0.0.1:4566',
+  ]) {
+    refusal({ ...env, HUB_AWS_ENDPOINT: endpoint }, 'HUB_AWS_ENDPOINT')
+  }
+})

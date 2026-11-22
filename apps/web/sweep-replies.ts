@@ -1,6 +1,7 @@
 import {
   getAccountKinds,
   getClient,
+  getClientLake,
   getCompany,
   getInvitation,
   getProject,
@@ -313,14 +314,13 @@ const DELETING = { ...CLIENT, state: { kind: 'DELETING' as const } }
 /** The Operations Central as the operator sees it, with `client` behind its one row. */
 export function central(client: 'AWAITING' | 'ACTIVE' | 'DELETING' | 'NONE'): Replies {
   const shown = { ACTIVE, DELETING, AWAITING: CLIENT, NONE: CLIENT }[client]
+  const listed = client === 'NONE' ? [] : [shown]
   return {
     ...(client === 'ACTIVE' ? companyPage('owner', ['owner'], CLIENT_ID) : {}),
     ...companies([], true),
-    'GET /api/clients': ok(listClients, {
-      clients: client === 'NONE' ? [] : [shown],
-      next: { kind: 'END' },
-    }),
+    'GET /api/clients': ok(listClients, { clients: listed, next: { kind: 'END' } }),
     [`GET /api/clients/${CLIENT_ID}`]: ok(getClient, { client: shown }),
     [`GET /api/clients/${CLIENT_ID}/account-kinds`]: ok(getAccountKinds, { kinds: [] }),
+    [`GET /api/clients/${CLIENT_ID}/lake`]: ok(getClientLake, { lake: { state: 'NONE' } }),
   }
 }

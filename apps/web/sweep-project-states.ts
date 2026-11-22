@@ -220,7 +220,7 @@ export const PROJECT_STATES: State[] = [
     },
     settle: async (page) => {
       await page.getByRole('button', { name: 'Tentar concluir exclusão' }).click()
-      await waitFor(page, 'A exclusão começou, mas o banco da empresa ainda não saiu.')
+      await waitFor(page, 'A exclusão começou, mas o banco ou o lago da empresa ainda não saiu.')
     },
   },
 ]

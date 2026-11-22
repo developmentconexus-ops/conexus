@@ -2,11 +2,11 @@ import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import type { CompanyAppRemoval, CompanyConversationRelease } from './clients.ts'
+import type { CompanyAppRemoval, CompanyConversationRelease, OutsideResource } from './clients.ts'
 import { createClients } from './clients.ts'
 import { registerClientRoutes } from './routes.ts'
 
-export type { CompanyConversationRelease } from './clients.ts'
+export type { CompanyConversationRelease, OutsideResource } from './clients.ts'
 
 /**
  * The Operations Central: Conexus's record of its clients, which reaches identity only through its
@@ -18,6 +18,8 @@ export function createOperations(deps: {
   projects: ProjectPorts
   appRemoval: CompanyAppRemoval
   releaseConversations: CompanyConversationRelease
+  /** The company's database and its lake, which deleting its client frees (card L.13). */
+  outside: readonly OutsideResource[]
 }) {
   const clients = createClients(deps)
   return Object.freeze({

@@ -6,6 +6,7 @@ import type { Config } from './config.ts'
 import { roleLogin } from './copy-reader.ts'
 import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
+import { fakeAws } from './test-aws.ts'
 import { fakeCloudflare } from './test-cloudflare.ts'
 import { pgTransport } from './test-company-postgres.ts'
 import { silent, withRoleLock } from './test-database.ts'
@@ -111,6 +112,8 @@ type Doubles = {
   postgres: ReturnType<typeof heldCompanyPostgres>
   /** The saved tools' namespace (step 24.4); one of its own when the test does not look at it. */
   tools?: ReturnType<typeof fakeCloudflare>
+  /** The companies' lakes in AWS; one of its own when the test does not look at it. */
+  aws?: ReturnType<typeof fakeAws>
 }
 
 /** The ports the apps reach the outside through, as doubles: Neon and Cloudflare of memory (T14). */
@@ -125,6 +128,7 @@ export function testAppPorts(
 ) {
   return {
     neon: doubles.neon.neon,
+    lakeStacks: (doubles.aws ?? fakeAws()).aws,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
     cloudflareTools: (doubles.tools ?? fakeCloudflare()).cloudflare,

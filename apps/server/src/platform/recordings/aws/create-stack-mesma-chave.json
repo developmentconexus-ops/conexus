@@ -1,0 +1,9 @@
+{
+  "service": "cloudformation",
+  "api": "CreateStack",
+  "sdk": "@aws-sdk/client-cloudformation 3.1175.0 reads it; recorded by aws-cli --debug",
+  "recordedAt": "2026-11-21",
+  "source": "study P5, laboratory account, values changed (S40); status from the error code",
+  "status": 200,
+  "body": "<CreateStackResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\">\n  <CreateStackResult>\n    <StackId>arn:aws:cloudformation:us-east-2:111122223333:stack/conexus-lago-l1pc1aaa0005/00000000-0000-4000-8000-000000000001</StackId>\n  </CreateStackResult>\n  <ResponseMetadata>\n    <RequestId>00000000-0000-4000-8000-000000000002</RequestId>\n  </ResponseMetadata>\n</CreateStackResponse>\n"
+}
