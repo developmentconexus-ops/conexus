@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { Template } from 'aws-cdk-lib/assertions'
+import { z } from 'zod'
+import { conexusApp } from '../lib/app.ts'
 import {
   ACCOUNT,
   actionsOf,
   bySid,
   find,
+  REGION,
   readable,
   resourcesOf,
   statementsOf,
@@ -84,4 +88,17 @@ test('a chave base só assume o papel do Hub', () => {
       Resource: `arn:aws:iam::${ACCOUNT}:role/conexus-hub`,
     },
   ])
+})
+
+test('a execução do CDK lê a versão do bootstrap que a plataforma confere', () => {
+  const { Parameters } = z
+    .object({ Parameters: z.object({ BootstrapVersion: z.object({ Default: z.string() }) }) })
+    .parse(Template.fromStack(conexusApp().platform).toJSON())
+  assert.deepEqual(bySid(statementsOf(find(preparation, 'CdkExecution')), 'ReadBootstrapVersion'), {
+    Sid: 'ReadBootstrapVersion',
+    Effect: 'Allow',
+    Action: ['ssm:GetParameter', 'ssm:GetParameters'],
+    Resource: `arn:aws:ssm:${REGION}:${ACCOUNT}:parameter${Parameters.BootstrapVersion.Default}`,
+  })
+  assert.equal(Parameters.BootstrapVersion.Default, '/cdk-bootstrap/hnb659fds/version')
 })
