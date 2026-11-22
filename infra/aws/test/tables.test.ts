@@ -95,11 +95,16 @@ test('quem registra as tabelas é quem cria o catálogo, sem ser administrador d
       Action: [
         'lakeformation:RegisterResource',
         'lakeformation:RegisterResourceWithPrivilegedAccess',
+        'lakeformation:CreateCatalog',
         'lakeformation:DeregisterResource',
       ],
       Resource: '*',
     },
-    { Effect: 'Allow', Action: 'iam:PassRole', Resource: '<LakeFormationRole.Arn>' },
+    {
+      Effect: 'Allow',
+      Action: ['iam:PassRole', 'iam:GetRole', 'iam:GetRolePolicy'],
+      Resource: '<LakeFormationRole.Arn>',
+    },
   ])
   assert.deepEqual(statementsOf(find(platform, 'TablesCatalogCustomResourcePolicy')), [
     {
