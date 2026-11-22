@@ -31,6 +31,10 @@ export const BOUNDARY = 'conexus-limite'
 export const HUB_KEY_USER = 'conexus-hub-chave'
 export const CDK_EXECUTION_POLICY = 'conexus-cdk-execucao'
 export const LAKE_FORMATION_ROLE = 'conexus-lf-s3tables'
+/** The role of the function that registers the table buckets and creates their catalog. */
+export const TABLES_CATALOG_ROLE = 'conexus-s3tables-catalogo'
+/** That function's log group, which the platform stack owns and deletes. */
+export const TABLES_CATALOG_LOGS = `${PLATFORM_STACK}-catalogo`
 
 /** The templates bucket, one per account and region, in the region of the stacks. */
 export function templateBucket(account: string, region: string): string {

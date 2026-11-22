@@ -120,7 +120,8 @@ for b in conexus-receitas-<conta>-<vazia> cdk-hnb659fds-assets-<conta>-<vazia>; 
 done
 ```
 
-Os dois depósitos ficam quando as pilhas saem e têm versões: as versões e as marcas de exclusão
-saem antes. Depois: `get-data-lake-settings`
-igual a `antes.json`, `get-catalog` de novo `EntityNotFoundException`, nenhuma pilha nem depósito
-`conexus-` ou `cdk-` na região. Nenhum deploy posterior roda nela.
+Os depósitos ficam quando as pilhas saem; versões e marcas de exclusão saem antes.
+Depois: `get-data-lake-settings` igual a `antes.json`, `get-catalog` com
+`EntityNotFoundException`, `list-permissions --resource-type DATA_LOCATION` e
+`describe-log-groups --log-group-name-prefix conexus-` vazios, nenhuma pilha nem depósito `conexus-`
+ou `cdk-` na região. Nenhum deploy posterior roda nela.

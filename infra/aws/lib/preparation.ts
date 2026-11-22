@@ -7,6 +7,7 @@ import {
   HUB_ROLE,
   PLATFORM_STACK,
   RELEASE_ROLE,
+  TABLES_CATALOG_LOGS,
   templateBucket,
 } from './names.ts'
 
@@ -70,6 +71,18 @@ const CATALOG_FUNCTION_ACTIONS = [
   'lambda:UntagResource',
   'lambda:UpdateFunctionCode',
   'lambda:UpdateFunctionConfiguration',
+]
+
+/** What AWS::Logs::LogGroup's handlers call for the function's group, with no KMS or delivery. */
+const CATALOG_LOGS_ACTIONS = [
+  'logs:CreateLogGroup',
+  'logs:DeleteLogGroup',
+  'logs:PutRetentionPolicy',
+  'logs:TagResource',
+  'logs:UntagResource',
+  'logs:ListTagsForResource',
+  'logs:GetDataProtectionPolicy',
+  'logs:DescribeIndexPolicies',
 ]
 
 const SPEND_ACTIONS = [
@@ -159,6 +172,35 @@ function releaseRole(stack: Stack, repository: string): iam.Role {
   })
 }
 
+/** The function that registers the table buckets and creates their catalog: its code and its logs. */
+function catalogFunctionStatements(stack: Stack): iam.PolicyStatement[] {
+  return [
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunction',
+      actions: CATALOG_FUNCTION_ACTIONS,
+      resources: [`arn:${stack.partition}:lambda:*:${stack.account}:function:${PLATFORM_STACK}-*`],
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunctionCode',
+      actions: ['s3:GetObject', 's3:GetObjectVersion'],
+      resources: [`arn:${stack.partition}:s3:::${fileAssetsBucket(stack.account)}/*`],
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheCatalogFunctionLogs',
+      actions: CATALOG_LOGS_ACTIONS,
+      resources: [
+        `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}`,
+        `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}:*`,
+      ],
+    }),
+    new iam.PolicyStatement({
+      sid: 'DescribeLogGroups',
+      actions: ['logs:DescribeLogGroups', 'logs:DescribeResourcePolicies'],
+      resources: ['*'],
+    }),
+  ]
+}
+
 /** In place of `AdministratorAccess`: IAM only on conexus-*, never on the preparation itself. */
 function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
   return new iam.ManagedPolicy(stack, 'CdkExecution', {
@@ -184,18 +226,7 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         actions: LAKE_SETTINGS_ACTIONS,
         resources: ['*'],
       }),
-      new iam.PolicyStatement({
-        sid: 'TheCatalogFunction',
-        actions: CATALOG_FUNCTION_ACTIONS,
-        resources: [
-          `arn:${stack.partition}:lambda:*:${stack.account}:function:${PLATFORM_STACK}-*`,
-        ],
-      }),
-      new iam.PolicyStatement({
-        sid: 'TheCatalogFunctionCode',
-        actions: ['s3:GetObject', 's3:GetObjectVersion'],
-        resources: [`arn:${stack.partition}:s3:::${fileAssetsBucket(stack.account)}/*`],
-      }),
+      ...catalogFunctionStatements(stack),
       new iam.PolicyStatement({
         sid: 'TheTemplatesBucket',
         actions: ['s3:*'],

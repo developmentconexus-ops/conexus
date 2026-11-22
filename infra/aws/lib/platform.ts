@@ -22,6 +22,7 @@ import {
   READER_SUFFIX,
   RELEASE_ROLE,
   SERVICE_ROLE,
+  TABLES_CATALOG_ROLE,
   TEMPLATE_PREFIX,
   templateBucket,
 } from './names.ts'
@@ -153,6 +154,7 @@ function serviceRole(stack: Stack, place: Place, boundary: iam.ManagedPolicy): i
       resources: [
         ...PLATFORM_ROLES.map((role) => place.iam(`role/${role}`)),
         place.iam(`role/${LAKE_FORMATION_ROLE}`),
+        place.iam(`role/${TABLES_CATALOG_ROLE}`),
         place.iam('role/cdk-*'),
         place.iam(`user/${HUB_KEY_USER}`),
         place.iam('policy/conexus-*'),

@@ -112,9 +112,47 @@ test('a execução do CDK só cria a função do catálogo, e não registra nem 
     'lakeformation:GetDataLakeSettings',
     'lakeformation:PutDataLakeSettings',
   ])
-  assert.deepEqual(resourcesOf(bySid(statements, 'TheCatalogFunction')), [
-    `arn:aws:lambda:*:${ACCOUNT}:function:conexus-plataforma-*`,
-  ])
+  assert.deepEqual(bySid(statements, 'TheCatalogFunction'), {
+    Sid: 'TheCatalogFunction',
+    Effect: 'Allow',
+    Action: [
+      'lambda:CreateFunction',
+      'lambda:DeleteFunction',
+      'lambda:GetFunction',
+      'lambda:GetFunctionCodeSigningConfig',
+      'lambda:GetFunctionRecursionConfig',
+      'lambda:GetFunctionScalingConfig',
+      'lambda:GetRuntimeManagementConfig',
+      'lambda:InvokeFunction',
+      'lambda:TagResource',
+      'lambda:UntagResource',
+      'lambda:UpdateFunctionCode',
+      'lambda:UpdateFunctionConfiguration',
+    ],
+    Resource: `arn:aws:lambda:*:${ACCOUNT}:function:conexus-plataforma-*`,
+  })
+  const group = `arn:aws:logs:*:${ACCOUNT}:log-group:conexus-plataforma-catalogo`
+  assert.deepEqual(bySid(statements, 'TheCatalogFunctionLogs'), {
+    Sid: 'TheCatalogFunctionLogs',
+    Effect: 'Allow',
+    Action: [
+      'logs:CreateLogGroup',
+      'logs:DeleteLogGroup',
+      'logs:PutRetentionPolicy',
+      'logs:TagResource',
+      'logs:UntagResource',
+      'logs:ListTagsForResource',
+      'logs:GetDataProtectionPolicy',
+      'logs:DescribeIndexPolicies',
+    ],
+    Resource: [group, `${group}:*`],
+  })
+  assert.deepEqual(bySid(statements, 'DescribeLogGroups'), {
+    Sid: 'DescribeLogGroups',
+    Effect: 'Allow',
+    Action: ['logs:DescribeLogGroups', 'logs:DescribeResourcePolicies'],
+    Resource: '*',
+  })
   assert.deepEqual(bySid(statements, 'TheCatalogFunctionCode'), {
     Sid: 'TheCatalogFunctionCode',
     Effect: 'Allow',

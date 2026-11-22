@@ -142,6 +142,7 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
   assert.deepEqual(actionsOf(platformPieces), ['iam:*'])
   for (const piece of [
     'role/conexus-lf-s3tables',
+    'role/conexus-s3tables-catalogo',
     'role/conexus-hub',
     'role/conexus-cfn',
     'role/conexus-release',
