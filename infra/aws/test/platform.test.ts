@@ -26,7 +26,7 @@ function allowed(statements: Statement[]): string[] {
 
 const LAKE_STACKS = `arn:aws:cloudformation:${REGION}:${ACCOUNT}:stack/conexus-lago-*/*`
 const OUR_TEMPLATES = `https://conexus-receitas-${ACCOUNT}-${REGION}.s3.${REGION}.amazonaws.com/lago/*`
-const SESSION_COMPANY = '${aws:PrincipalTag/conexus-empresa}'
+const SESSION_COMPANY = ['$', '{aws:PrincipalTag/conexus-empresa}'].join('')
 
 test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', () => {
   assert.deepEqual(bySid(hub, 'CreateFromOurTemplateThroughTheServiceRole'), {
@@ -141,6 +141,7 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
   assert.equal(platformPieces.Effect, 'Deny')
   assert.deepEqual(actionsOf(platformPieces), ['iam:*'])
   for (const piece of [
+    'role/conexus-lf-s3tables',
     'role/conexus-hub',
     'role/conexus-cfn',
     'role/conexus-release',
@@ -170,6 +171,17 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
 })
 
 test('as tabelas entram no Lake Formation sem permissão padrão', () => {
+  const lakeFormation = { Service: 'lakeformation.amazonaws.com' }
+  const thisAccount = { StringEquals: { 'aws:SourceAccount': ACCOUNT } }
+  assert.deepEqual(trustOf(find(platform, 'LakeFormationRole')), [
+    { Action: 'sts:AssumeRole', Effect: 'Allow', Principal: lakeFormation, Condition: thisAccount },
+    {
+      Action: ['sts:SetContext', 'sts:SetSourceIdentity'],
+      Effect: 'Allow',
+      Principal: lakeFormation,
+      Condition: thisAccount,
+    },
+  ])
   assert.deepEqual(find(platform, 'TablesCatalog').Properties, {
     Name: 's3tablescatalog',
     FederatedCatalog: {
@@ -219,7 +231,26 @@ test('o orçamento lê o valor e o e-mail de parâmetros', () => {
   const email = [{ SubscriptionType: 'EMAIL', Address: '{AlarmEmail}' }]
   assert.partialDeepStrictEqual(find(platform, 'Budget').Properties, {
     Budget: { BudgetLimit: { Amount: '{BudgetUsd}', Unit: 'USD' }, TimeUnit: 'MONTHLY' },
-    NotificationsWithSubscribers: [{ Subscribers: email }, { Subscribers: email }],
+    NotificationsWithSubscribers: [
+      {
+        Notification: {
+          NotificationType: 'ACTUAL',
+          ComparisonOperator: 'GREATER_THAN',
+          Threshold: 80,
+          ThresholdType: 'PERCENTAGE',
+        },
+        Subscribers: email,
+      },
+      {
+        Notification: {
+          NotificationType: 'FORECASTED',
+          ComparisonOperator: 'GREATER_THAN',
+          Threshold: 100,
+          ThresholdType: 'PERCENTAGE',
+        },
+        Subscribers: email,
+      },
+    ],
   })
   assert.deepEqual(find(platform, 'AnomalySubscription').Properties.Subscribers, [
     { Type: 'EMAIL', Address: '{AlarmEmail}' },
