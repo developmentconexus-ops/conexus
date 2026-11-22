@@ -1,0 +1,5 @@
+# O lago da empresa nasce e some
+
+Em 2026-11-21, ao estudo da etapa Lago 1, pelo firstmate: "6.a 7a 8a 9a 10a" (as decisões A a E do cartão: o lago na Central, por botão do operador; apagar na hora, digitando o nome, e apagar o cliente leva o lago; o isolamento conferido no roteiro, sem botão; a preparação da conta pelo firstmate, com a sua palavra, por um passo a passo guardado; depois de uma criação que falha, o Hub apaga o que sobrou). Em 2026-11-22, sobre o cartão escrito à noite: "5. Aprovo".
+
+Cartão de O lago da empresa nasce e some (`docs/steps/o-lago-da-empresa-nasce-e-some.md`) aprovado em 2026-11-22 (commit b8617de3429efd02618f40ac25deea48e2f70e12), com as decisões F, G e H: "F okay de acordo com toolkit AWS skills e documentacoes voce esta segundoo da maneira 100% virreta a orientacao se sim eu aprovo" e, à verificação da F contra a documentação da AWS (conforme, com quatro ajustes e dois reforços, aplicados ao cartão), "F1 a f2 okay"; à G, depois da conferência contra as referências com a mesma forma (a Nekt, o Databricks, o kit SaaS da AWS, o Nuon e outras), "2. A"; à H: "1. A".
