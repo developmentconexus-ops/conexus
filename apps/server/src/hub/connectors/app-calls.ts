@@ -1,6 +1,6 @@
 import type { ConnectorAnswer } from '@conexus/app-contract'
 import { connectorOf } from '@conexus/connectors'
-import type { HostLabel } from '@conexus/hub-api'
+import type { AppHost } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId, OperationId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
@@ -14,10 +14,10 @@ import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
 
 /** What the apps' door gives of a call: who, the version the session gets and its manifest. */
-export type AppDoorPort = (input: { host: HostLabel; headers: Headers }) => Promise<ConnectorCall>
+export type AppDoorPort = (input: { host: AppHost; headers: Headers }) => Promise<ConnectorCall>
 
 type Call = Readonly<{
-  host: HostLabel
+  host: AppHost
   headers: Headers
   body: Readonly<{
     connector: string
@@ -121,7 +121,7 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
     },
 
     /** The names the app may pass as `connection`; none for a connector its version did not declare. */
-    async names(input: { host: HostLabel; headers: Headers; connector: string }) {
+    async names(input: { host: AppHost; headers: Headers; connector: string }) {
       const call = await door(input)
       if (call.manifest.connectors?.some((one) => one.connector === input.connector) !== true)
         return []

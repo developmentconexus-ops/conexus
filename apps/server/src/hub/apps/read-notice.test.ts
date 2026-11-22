@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { APP_SESSION_HEADER, QUERY_SQL_MAX } from '@conexus/hub-api'
 import type { Hub } from '../identity/test-hub.ts'
 import { codeOf } from '../identity/test-hub.ts'
-import { companyWithApps, ESTOQUE, PEDIDOS, sessionOf } from './test-handoff.ts'
+import { companyWithApps, ESTOQUE, PEDIDOS, PEDIDOS_PREVIA, sessionOf } from './test-handoff.ts'
 
 const QUERY = 'select count(*) from sankhya_vendas'
 
@@ -53,6 +53,20 @@ test('a consulta do app deixa uma linha APP', async (t) => {
       ...{ verb: 'QUERY', tables: [], connection_id: null, operation: null },
       ...{ query: QUERY, outcome: 'ROWS', rows: 1, ms: 12 },
     },
+  )
+})
+
+test('no host da Prévia, a consulta grava a linha para a pessoa da sessão', async (t) => {
+  const { hub, bruno, companyId, projectId } = await companyWithApps(t)
+  const session = await sessionOf(hub, bruno, PEDIDOS_PREVIA)
+  const sent = await notice(hub, PEDIDOS_PREVIA, session, bodyOf())
+  assert.equal(sent.statusCode, 204, sent.body)
+  const crossed = await notice(hub, PEDIDOS, session, bodyOf())
+  assert.deepEqual([crossed.statusCode, codeOf(crossed)], [401, 'APP_SESSION_INVALID'])
+  const lines = await linesOf(hub, companyId)
+  assert.deepEqual(
+    lines.map((line) => [line.person_id, line.project_id, line.agent]),
+    [[bruno.id, projectId, 'APP']],
   )
 })
 

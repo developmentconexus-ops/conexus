@@ -1,7 +1,7 @@
 import type { Caller } from '@conexus/app-contract'
 import { CallerAccess } from '@conexus/app-contract'
 import { z } from 'zod'
-import { HostLabel } from './address.ts'
+import { AppHost, HostLabel, PreviewHost } from './address.ts'
 import { CompanyId } from './companies.ts'
 import { QUERY_SQL_MAX } from './company-data.ts'
 import { PersonId } from './identity.ts'
@@ -30,14 +30,21 @@ export const AppCaller = z.object({
 }) satisfies z.ZodType<Caller>
 export type AppCaller = z.infer<typeof AppCaller>
 
-const OnHost = z.object({ host: HostLabel })
+/** Any host of an app: the dispatcher's calls come from the published one or the Prévia's. */
+const OnHost = z.object({ host: AppHost })
 
-/** The search of `APP_OPEN_PATH`: the app's host, and the hash of its binding cookie's secret. */
-export const AppOpenQuery = OnHost.extend({ binding: DoorSecret })
+/**
+ * The search of `APP_OPEN_PATH`: the published app's host, and the hash of its binding cookie's
+ * secret. A tab gets the published app; the Prévia's host never comes here.
+ */
+export const AppOpenQuery = z.object({ host: HostLabel, binding: DoorSecret })
+
+/** The Prévia's pass asks for its own host, and the hash of the frame's binding cookie's secret. */
+const FrameHandoffBody = z.object({ host: PreviewHost, binding: DoorSecret })
 
 /** The message the app's entry page sends the Hub's Prévia, from a frame with no app session. */
 export const FRAME_ENTRY = 'conexus-entry'
-export const FrameEntry = AppOpenQuery.extend({ type: z.literal(FRAME_ENTRY) })
+export const FrameEntry = FrameHandoffBody.extend({ type: z.literal(FRAME_ENTRY) })
 export type FrameEntry = z.infer<typeof FrameEntry>
 
 export const createAppFrameHandoff = defineOperation({
@@ -48,7 +55,7 @@ export const createAppFrameHandoff = defineOperation({
   method: 'POST',
   path: '/api/apps/frame-handoff',
   bodyLimit: 1024,
-  input: { body: AppOpenQuery },
+  input: { body: FrameHandoffBody },
   success: { status: 200, body: z.object({ location: z.url() }) },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

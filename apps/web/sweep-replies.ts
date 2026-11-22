@@ -225,6 +225,7 @@ export function projectsPage(
         ...{ mayDelete: view.mayDelete ?? true, mayPublish: view.mayDelete ?? true },
         publishRequest: null,
         address: ADDRESS,
+        previewAddress: ADDRESS.replace('.', '--previa.'),
         appVersion: view.appVersion ?? null,
         publishedVersion: view.publishedVersion ?? null,
       },

@@ -25,7 +25,11 @@ const WEBKIT = 'O app pode não abrir aqui dentro neste navegador.'
 const LOCATION = `${APP}/?pass=abc`
 const APPLE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1'
-const ENTRY = { type: 'conexus-entry', host: 'pedidos--empresa-teste', binding: 'b'.repeat(43) }
+const ENTRY = {
+  type: 'conexus-entry',
+  host: 'pedidos--empresa-teste--previa',
+  binding: 'b'.repeat(43),
+}
 
 afterEach(() => {
   vi.restoreAllMocks()

@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { PEDIDOS, PEDIDOS_ADDRESS } from '../../platform/test-hub.tsx'
+import { PEDIDOS, PEDIDOS_ADDRESS, PEDIDOS_PREVIEW_ADDRESS } from '../../platform/test-hub.tsx'
 import type { Answers } from './test-hub.tsx'
 import { screens, view } from './test-hub.tsx'
 
@@ -61,6 +61,7 @@ export function startHub(server: ReturnType<typeof setupServer>) {
                 mayPublish: true,
                 publishRequest: null,
                 address: PEDIDOS_ADDRESS,
+                previewAddress: PEDIDOS_PREVIEW_ADDRESS,
                 appVersion: null,
                 publishedVersion: null,
               },

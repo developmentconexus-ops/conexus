@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { appHostOf, HostLabel } from '@conexus/hub-api'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { browser, frameHandoff, PEDIDOS } from '../apps/test-handoff.ts'
+import { browser, frameHandoff, PEDIDOS, PEDIDOS_PREVIA } from '../apps/test-handoff.ts'
 import { folder, readyForVersions, send } from '../apps/test-versions.ts'
 import type { Hub, Person } from './test-hub.ts'
 import {
@@ -157,7 +157,7 @@ test('o convite de um app: aceitar não faz membro, e leva ao app', async (t) =>
       await call(hub, person, 'GET', projects),
       await call(hub, person, 'GET', `${projects}/${projectId}`),
       await call(hub, person, 'GET', `/api/companies/${companyId}/members`),
-      await frameHandoff(hub, person, { host: PEDIDOS, binding: browser().hash }),
+      await frameHandoff(hub, person, { host: PEDIDOS_PREVIA, binding: browser().hash }),
     ]
     assert.deepEqual(closed.map(refused), Array(4).fill([404, 'NOT_FOUND']))
     const joined = await link(hub, person, invitationId)

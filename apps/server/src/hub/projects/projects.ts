@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import type { CompanyId, Person, PersonId, Project, ProjectName, Role } from '@conexus/hub-api'
-import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
+import { HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, asc, eq, ilike, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
@@ -12,6 +12,7 @@ import type { NeonProjects } from '../../platform/neon.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
+import { addressesOf } from './hosts.ts'
 import { finishMarkedProject, ofProject } from './marked.ts'
 import type {
   AppRemoval,
@@ -83,11 +84,9 @@ async function appOf(deps: Deps, tx: ReadTx, projectId: ProjectId, reader: Reade
 type AppOf = Awaited<ReturnType<typeof appOf>>
 
 function viewOf(deps: Deps, input: { row: ProjectRow; rights: Rights; app?: AppOf }): Project {
-  const { hostLabel } = input.row
-  const address =
-    hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
   const publishRequest = input.app?.publishRequest ?? null
-  return { ...summaryOf(input.row, input.app?.versions), ...input.rights, publishRequest, address }
+  const shown = { publishRequest, ...addressesOf(input.row.hostLabel, deps.appsDomain) }
+  return { ...summaryOf(input.row, input.app?.versions), ...input.rights, ...shown }
 }
 
 /**

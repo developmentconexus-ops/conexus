@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { AppHost, appOfHost } from '@conexus/hub-api'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
@@ -15,6 +16,9 @@ import {
 
 export const PEDIDOS = 'pedidos--empresa-a'
 export const ESTOQUE = 'estoque--empresa-a'
+/** The Prévia's hosts of Pedidos and Estoque. */
+export const PEDIDOS_PREVIA = 'pedidos--empresa-a--previa'
+export const ESTOQUE_PREVIA = 'estoque--empresa-a--previa'
 
 /** A browser's binding: the secret its cookie on the app's host holds, and the hash the Hub keeps. */
 export function browser() {
@@ -97,38 +101,24 @@ export function redeem(hub: Hub, body: { host: string; code: string; binding: st
 }
 
 /**
- * The pass the Hub gives the person for this browser, as the code in its location: a tab's, through
- * `/apps/open`, or the Prévia frame's.
+ * The pass the Hub gives the person for this browser, as the code in its location: through
+ * `/apps/open` on the published app's host, or the Prévia frame's on the Prévia's.
  */
-export async function codeFor(
-  hub: Hub,
-  person: Person,
-  host: string,
-  hash: string,
-  environment: 'preview' | 'published' = 'published',
-) {
+export async function codeFor(hub: Hub, person: Person, host: string, hash: string) {
   const body = { host, binding: hash }
-  const made =
-    environment === 'published'
-      ? await handoff(hub, person, body)
-      : await frameHandoff(hub, person, body)
-  assert.equal(made.statusCode, environment === 'published' ? 303 : 200)
-  const location =
-    environment === 'published' ? made.headers.location : Object(made.json()).location
+  const published = appOfHost(AppHost.parse(host)).environment === 'published'
+  const made = published ? await handoff(hub, person, body) : await frameHandoff(hub, person, body)
+  assert.equal(made.statusCode, published ? 303 : 200)
+  const location = published ? made.headers.location : Object(made.json()).location
   return String(new URL(String(location)).searchParams.get('code'))
 }
 
 /** An app session of the person on the host, as the dispatcher holds it. */
-export async function sessionOf(
-  hub: Hub,
-  person: Person,
-  host: string,
-  environment: 'preview' | 'published' = 'preview',
-) {
+export async function sessionOf(hub: Hub, person: Person, host: string) {
   const { binding, hash } = browser()
   const redeemed = await redeem(hub, {
     host,
-    code: await codeFor(hub, person, host, hash, environment),
+    code: await codeFor(hub, person, host, hash),
     binding,
   })
   assert.equal(redeemed.statusCode, 201)
