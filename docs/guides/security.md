@@ -84,7 +84,12 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   is the one drawing frame of the conversation, which carries its own policy and draws the
   diagrams a message holds) and `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
   Hub's origin in `frame-ancestors`, and the dispatcher's cookies are `__Host-`, `Secure`,
-  `HttpOnly`, `SameSite=None; Partitioned` (step 14.1). Failure: a cross-site authenticated GET
+  `HttpOnly`, with one form per address: `SameSite=Lax` on the published app's address and
+  `SameSite=None; Partitioned` on its Prévia's own `--previa` address, never chosen by a request
+  header, as vibesdk@9da158d8 fixes each cookie's form (`worker/utils/ownerPreviewToken.ts:81-97`,
+  `worker/utils/spacePreviewToken.ts:63-87`); a cookie never carries `Domain`, so one address never
+  reads another's (cloudflare-docs@180f5595
+  `src/content/docs/sandbox/previews/serve-previews-on-their-own-hostnames.mdx:176`). Failure: a cross-site authenticated GET
   discloses the person, or a form post bypasses admission. Existing configuration and header tests
   stay; Fastify does not supply this policy automatically. [review]
 - **S48.** The six access kinds of [code C33](code.md) mean: `page`, a read of any address outside
@@ -115,7 +120,10 @@ choice, including the guarantee that a database copy alone opens no Hub session.
 - **S31.** The configuration owner **should** read secrets from restricted, nonempty files, with
   only paths in the environment, preserving native exceptions already decided in [0036]. Failure:
   a registration token appears in a process argument or environment. An exception needs an
-  explicit decision, not a silent fallback. [review]
+  explicit decision, not a silent fallback. The AWS SDK reads its key from its shared credentials
+  file, the path in `AWS_SHARED_CREDENTIALS_FILE`, never from `AWS_ACCESS_KEY_ID`, which its default
+  chain reads first (`@smithy/core@3.36.1` `getCredentialsFilepath.js:3-4`;
+  `@aws-sdk/credential-provider-node@3.972.87` `defaultProvider.d.ts:14-27`). [review]
 - **S32.** Stored credentials **should** be sealed with the installation key and bound to their
   owning row, with retired keys decrypt-only and rotation rehearsed. Failure: copying ciphertext
   to another row changes the connection's identity. [review]
