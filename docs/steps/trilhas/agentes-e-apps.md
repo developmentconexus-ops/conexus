@@ -42,9 +42,9 @@ As respostas do fundador:
 A fundação do front-end fechou em 2026-11-22: o fundador a usou na nuvem, na v0.24.109, e a linha
 de fechamento está no [arquivo de aprovação](../../approvals/fundacao-do-front-end.md). O cartão está
 no histórico do `main`, no commit `8030631f`, o último que o mudou. A regra "peça antes de tela", a
-U6 do cartão, não entrou no fechamento: ela muda o guia de design e as skills, e espera um pull
-request de método (delivery L20). A trilha está sem cartão em `docs/steps/` até o cartão da etapa
-seguinte entrar.
+U6 do cartão, entrou no fechamento: é a design V62, com o passo dela nas skills de construir,
+revisar, escrever o cartão e testar a tela. A trilha está sem cartão em `docs/steps/` até o cartão
+da etapa seguinte entrar.
 
 A etapa seguinte é A Prévia, com o cartão em rascunho em
 https://github.com/developmentconexus-ops/conexus/pull/1229. Antes dela fecharam Um escopo e a

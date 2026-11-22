@@ -12,7 +12,7 @@ the session that wrote the card.
 
 ## What it receives
 
-The card (in `docs/steps/` or its pull request) and the unit. A ruling not in the card is not built.
+The card (in `docs/steps/` or its pull request) and the unit.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
 unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
@@ -28,7 +28,8 @@ unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mod
    unit; if not, stop.
 2a. Build each of the unit's reference table rows as its verdict says
    ([code C75](../../../docs/guides/code.md)): a nativo row uses the named API, an embrulhado row
-   adds only its line. Fix a defect at its root cause: name the first wrong state, fix there,
+   adds only its line. A screen first finds its pieces in `ui/` and the showcase
+   ([design V62](../../../docs/guides/design.md)). Fix a defect at its root cause: name the first wrong state, fix there,
    sweep its class.
 3. Delete before adding: remove what the card removes and move every caller. No shim, parallel
    old path or temporary shape.
