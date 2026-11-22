@@ -10,7 +10,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { IdentityPorts, OperatorProof } from '../identity/public.ts'
 import { newLakeId } from './lake-id.ts'
-import type { LakeState } from './settle.ts'
+import type { LakeState, Step } from './settle.ts'
 import { settle } from './settle.ts'
 import { companyLake } from './tables.ts'
 
@@ -76,6 +76,8 @@ function viewOf(lake: Lake | undefined): ClientLake {
       return { state: 'DELETING', since: at }
     case 'delete_failed':
       return { state: 'DELETE_FAILED', at }
+    default:
+      return lake.state satisfies never
   }
 }
 
@@ -139,9 +141,21 @@ async function sendCreate(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lak
   })
 }
 
-async function sendDelete(deps: LakeDeps, lake: Lake): Promise<void> {
-  if (lake.stackId === null) return
-  logged(deps, lake, 'DeleteStack', await deps.aws.remove(lake.at, lake.stackId))
+/**
+ * The deletion, sent again while the row says `deleting`. A refusal reads the stack: one already
+ * gone leaves (criterion 56), one still there goes to "Não deu para apagar" with its retry, never to
+ * "Apagando…" for good (review of PR 1248, finding 6).
+ */
+async function sendDelete(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lake | undefined> {
+  if (lake.stackId === null) return lake
+  const answer = await deps.aws.remove(lake.at, lake.stackId)
+  logged(deps, lake, 'DeleteStack', answer)
+  if (answer.kind !== 'REFUSED') return lake
+  const status = await deps.aws.status(lake.at, lake.stackId)
+  logged(deps, lake, 'DescribeStacks', status)
+  if (status.kind !== 'DONE') return lake
+  const step = settle(lake, status.value).do
+  return applied(deps, scope, lake, step === 'RESEND_DELETE' ? 'DELETE_FAILED' : step)
 }
 
 /** The creation that failed: its first failed resource to the log, and the bucket it left (decision E). */
@@ -158,31 +172,43 @@ async function failure(deps: LakeDeps, scope: Scope, lake: Lake, stack: StackId)
   return failed(deps, scope, lake, first.kind === 'DONE' && first.value !== null ? first.value : {})
 }
 
-/** Reads the stack of a moving row and settles the row by it (card L.12); `undefined` when it left. */
-async function settled(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lake | undefined> {
-  if (settle(lake, null).do === 'RESEND_CREATE') return sendCreate(deps, scope, lake)
-  if (lake.stackId === null) return lake
-  const status = await deps.aws.status(lake.at, lake.stackId)
-  logged(deps, lake, 'DescribeStacks', status)
-  if (status.kind !== 'DONE') return lake
+/** The one place a step of `settle` moves the row (C21); `undefined` when the lake left. */
+async function applied(
+  deps: LakeDeps,
+  scope: Scope,
+  lake: Lake,
+  step: Step['do'],
+): Promise<Lake | undefined> {
   const fields = { companyId: lake.at.company, lakeId: lake.lakeId }
-  switch (settle(lake, status.value).do) {
+  switch (step) {
+    case 'KEEP':
+      return lake
+    case 'RESEND_CREATE':
+      return sendCreate(deps, scope, lake)
     case 'READY':
       deps.log.info(fields, 'LAKE_READY')
       return moved(deps, scope, lake, { state: 'ready' })
     case 'FAIL':
-      return failure(deps, scope, lake, lake.stackId)
+      return lake.stackId === null ? lake : failure(deps, scope, lake, lake.stackId)
     case 'RESEND_DELETE':
-      await sendDelete(deps, lake)
-      return lake
+      return sendDelete(deps, scope, lake)
     case 'GONE':
       deps.log.info(fields, 'LAKE_DELETED')
       return moved(deps, scope, lake, undefined)
     case 'DELETE_FAILED':
       return moved(deps, scope, lake, { state: 'delete_failed' })
     default:
-      return lake
+      return step satisfies never
   }
+}
+
+/** Reads the stack of a moving row and settles the row by it (card L.12); `undefined` when it left. */
+async function settled(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lake | undefined> {
+  if (lake.stackId === null) return applied(deps, scope, lake, settle(lake, null).do)
+  const status = await deps.aws.status(lake.at, lake.stackId)
+  logged(deps, lake, 'DescribeStacks', status)
+  if (status.kind !== 'DONE') return lake
+  return applied(deps, scope, lake, settle(lake, status.value).do)
 }
 
 async function known(deps: LakeDeps, tx: ReadTx, admitted: OperatorProof, companyId: CompanyId) {
@@ -263,7 +289,7 @@ async function remove(deps: LakeDeps, input: Input & { name: string }): Promise<
     deps.log.info({ companyId: input.companyId, lakeId: before.lakeId }, 'LAKE_DELETE_REQUESTED')
     return lakeOf(tx, input.companyId)
   })
-  if (lake !== undefined) await sendDelete(deps, lake)
+  if (lake !== undefined) await sendDelete(deps, scope, lake)
   return viewOf(lake)
 }
 
@@ -282,7 +308,7 @@ async function release(deps: LakeDeps, input: Of): Promise<'GONE' | 'PENDING'> {
     return (await moved(deps, scope, lake, undefined)) ? 'PENDING' : 'GONE'
   if (lake.state === 'ready' || lake.state === 'delete_failed') {
     const deleting = await moved(deps, scope, lake, { state: 'deleting' })
-    if (deleting !== undefined) await sendDelete(deps, deleting)
+    if (deleting !== undefined) await sendDelete(deps, scope, deleting)
   }
   return 'PENDING'
 }

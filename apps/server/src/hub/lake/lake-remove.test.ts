@@ -73,3 +73,14 @@ test('lago: a pilha apagada por fora sai pelo apagar, qualquer que seja a respos
     assert.deepEqual(lakeIn(await readLake(hub, ana, client)), { state: 'NONE' })
   }
 })
+
+test('lago: o apagar recusado numa pilha viva vai a não deu para apagar, que se tenta de novo', async (t) => {
+  const { hub, ana, a } = await lakeWorld(t)
+  await readyLake(hub, ana, a)
+  hub.aws.script('remove', 'REFUSED')
+  assert.equal(lakeIn(await deleteLake(hub, ana, a)).state, 'DELETING')
+  assert.equal((await rowOf(hub, a))?.state, 'delete_failed')
+  assert.equal(lakeIn(await readLake(hub, ana, a)).state, 'DELETE_FAILED')
+  assert.equal(lakeIn(await deleteLake(hub, ana, a)).state, 'DELETING')
+  assert.equal(hub.aws.stacks()[0]?.status, 'DELETE_IN_PROGRESS')
+})

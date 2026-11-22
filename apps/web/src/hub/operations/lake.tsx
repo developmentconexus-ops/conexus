@@ -158,6 +158,8 @@ function stateOf(client: Client, lake: ClientLake): ReactNode {
           <DeleteAgain client={client} />
         </>
       )
+    default:
+      return lake satisfies never
   }
 }
 
