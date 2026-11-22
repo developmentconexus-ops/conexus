@@ -3,8 +3,8 @@
   "api": "GetTableBucket",
   "sdk": "@aws-sdk/client-s3tables 3.1175.0",
   "recordedAt": "2026-11-22",
-  "source": "U4 step 1, from the Hub server with the Hub key (lab run 45073176840), laboratory account, values changed (S40)",
+  "source": "U4 step 1, from the Hub server with the Hub key (lab run 45076374332), laboratory account, values changed (S40)",
   "status": 200,
   "contentType": "application/json",
-  "body": "{\"arn\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-w1vbxl1izr9x\",\"createdAt\":\"2026-11-22T21:36:07.441867986Z\",\"name\":\"conexus-w1vbxl1izr9x\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\",\"type\":\"customer\"}"
+  "body": "{\"arn\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-qsernp35vqu6\",\"createdAt\":\"2026-11-22T22:10:55.595243298Z\",\"name\":\"conexus-qsernp35vqu6\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\",\"type\":\"customer\"}"
 }

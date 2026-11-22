@@ -307,3 +307,13 @@ test('aws: o fio leva o tipo e a classe do erro de uma resposta JSON, sem os qua
   const unnamed = await awsAt(t, ({ action }) => (action === 'AssumeRole' ? session() : missing()))
   assert.notDeepEqual(await unnamed.stacks.leftover(AT, LAKE), { kind: 'DONE', value: 'NONE' })
 })
+
+test('aws: o depósito de outra empresa recusa o resto, com a classe que a AWS gravou', async (t) => {
+  const { stacks } = await awsAt(t, ({ action }) =>
+    action === 'AssumeRole' ? session() : awsRecording('get-table-bucket-outra-empresa'),
+  )
+  assert.deepEqual(await stacks.leftover(AT, LAKE), {
+    kind: 'REFUSED',
+    code: 'AccessDeniedException',
+  })
+})
