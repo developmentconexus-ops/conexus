@@ -62,7 +62,7 @@ export const PROJECT_FAILURES = {
     category: 'THIRD_PARTY',
     settles: false,
     status: 503,
-    phrase: 'A exclusão começou, mas o banco da empresa ainda não saiu.',
+    phrase: 'A exclusão começou, mas o banco ou o lago da empresa ainda não saiu.',
     action: 'Tente concluir a exclusão.',
     actionKind: 'RETRY',
   },

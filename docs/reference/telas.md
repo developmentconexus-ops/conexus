@@ -343,11 +343,11 @@ Quem não opera vê "não encontrado" (`routes/_app/operations/route.tsx`). O op
 
 #### TB24. Cliente (`/operations/clients/$companyId`)
 
-- **Para que serve.** Acompanhar um cliente (dados, convite do Dono, pessoas, tipos de conta, exclusão).
-- **Conteúdo obrigatório.** Nome e estado; dados; aguardando o Dono, "Corrigir dados" e o convite (Reenviar, Cancelar, "Convidar outro e-mail"); ativo, o mesmo bloco de Pessoas das Configurações (`hub/operations/client.tsx`) e Tipos de conta (`account-kinds.tsx`); Apagar cliente (`client.tsx`).
+- **Para que serve.** Acompanhar um cliente (dados, convite do Dono, pessoas, tipos de conta, lago de dados, exclusão).
+- **Conteúdo obrigatório.** Nome e estado; dados; aguardando o Dono, "Corrigir dados" e o convite (Reenviar, Cancelar, "Convidar outro e-mail"); ativo, o mesmo bloco de Pessoas das Configurações (`hub/operations/client.tsx`) e Tipos de conta (`account-kinds.tsx`); aguardando ou ativo, o bloco Lago de dados (`lake.tsx`), com Criar o lago, Tentar de novo, Apagar o lago (pelo nome da empresa) e Tentar apagar de novo; Apagar cliente (`client.tsx`), que leva o banco e o lago.
 - **Ações.** Todas, o operador.
 - **Ação principal.** Aguardando o Dono, Reenviar o convite; ativo, nenhuma.
-- **Estados.** Aguardando (pendente, vencido, recusado, cancelado); ativo; excluindo, retomável; não existe mais.
+- **Estados.** Aguardando (pendente, vencido, recusado, cancelado); ativo; excluindo, retomável; não existe mais. O lago: sem lago, criando (pergunta de novo a cada 5 s), pronto, não deu para criar, apagando, não deu para apagar, e a leitura que falha, só no bloco.
 - **Faixa de dados.** Pessoas de 1 a 100; tipos de conta 1 e mais N.
 - **Hoje falta.** Não diz se o Dono abriu o e-mail nem em que passo da Primeira entrada está.
 - **Referência.** Nenhuma.

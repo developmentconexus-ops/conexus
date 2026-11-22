@@ -12,6 +12,7 @@ import { maskedCnpj } from './cnpj.ts'
 import { CorrectClientForm } from './correct-client-form.tsx'
 import { DeleteClientDialog } from './delete-client-dialog.tsx'
 import { FinishDeletion } from './finish-deletion.tsx'
+import { ClientLakeBlock } from './lake.tsx'
 import { OwnerInvitationSection } from './owner-invitation.tsx'
 import { clientQuery } from './queries.ts'
 
@@ -45,7 +46,8 @@ function Data({ client }: { client: ClientRecord }) {
 /**
  * A client of the Operations Central: its data, and either its administrator's invitation and the
  * correction while it awaits, or its people once active, whom the Central takes out and invites owners to (step 6); and its deletion (step 5).
- * Once active it also shows `kinds`, the account kinds the Central opens for the company (step 11).
+ * Once active it also shows `kinds`, the account kinds the Central opens for the company (step 11),
+ * and, until its deletion starts, the company's data lake.
  */
 export function Client({ kinds }: { kinds?: ReactNode }) {
   const { companyId } = route.useParams()
@@ -86,6 +88,7 @@ export function Client({ kinds }: { kinds?: ReactNode }) {
         />
       )}
       {state.kind === 'ACTIVE' && !correcting && kinds}
+      {state.kind !== 'DELETING' && !correcting && <ClientLakeBlock client={client} />}
       {state.kind === 'DELETING' && <FinishDeletion client={client} />}
       {!correcting && state.kind !== 'DELETING' && (
         <div>

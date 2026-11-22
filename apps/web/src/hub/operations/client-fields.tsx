@@ -1,12 +1,22 @@
 import type { FailureCode } from '@conexus/hub-api'
 import { COMPANY_NAME_MAX_LENGTH, LEGAL_NAME_MAX_LENGTH } from '@conexus/hub-api'
+import { z } from 'zod'
 import { HubFailure } from '../../platform/hub.ts'
-import { TextField } from '../../ui/form.tsx'
+import { TextField, useSchemaForm } from '../../ui/form.tsx'
 
 /** The refusals that belong on a field of the registration or the correction (web W23). */
 const FIELD_OF: Partial<Record<FailureCode, 'cnpj' | 'ownerEmail'>> = {
   CLIENT_EXISTS: 'cnpj',
   CLIENT_OWNER_IS_OPERATOR: 'ownerEmail',
+}
+
+/**
+ * A deletion confirmed by the client's exact name: its form, and whether the name is typed yet, so
+ * the confirm button stays off until it is and Enter cannot confirm without it.
+ */
+export function useNameConfirmation(name: string) {
+  const form = useSchemaForm(z.object({ name: z.literal(name) }), { name: '' })
+  return { form, ready: form.watch('name') === name }
 }
 
 export function fieldOf(error: unknown) {
