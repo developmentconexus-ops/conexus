@@ -12,6 +12,7 @@ ALTER SCHEMA copies OWNER TO test_owner;
 ALTER SCHEMA data OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
+ALTER SCHEMA lake OWNER TO test_owner;
 ALTER SCHEMA notifications OWNER TO test_owner;
 ALTER SCHEMA ontology OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
@@ -90,6 +91,7 @@ ALTER TABLE data.data_read OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
+ALTER TABLE lake.company_lake OWNER TO test_owner;
 ALTER TABLE notifications.alert_recipient OWNER TO test_owner;
 ALTER TABLE notifications.copy_follower OWNER TO test_owner;
 ALTER TABLE notifications.copy_notice OWNER TO test_owner;
@@ -151,6 +153,9 @@ GRANT USAGE ON SCHEMA copies TO hub_company;
 GRANT USAGE ON SCHEMA data TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
+-- The company's lake (data D11, founder 2026-11-22, "2. A", decision G): the Central's login reads,
+-- creates, changes the state of and deletes a lake's row; a company's login sees none.
+GRANT USAGE ON SCHEMA lake TO hub_operator;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
 GRANT USAGE ON SCHEMA ontology TO hub_company;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
@@ -437,6 +442,13 @@ GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
 GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
+GRANT SELECT,INSERT,DELETE ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(lake_id) ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(state) ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(template) ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(stack_id) ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(since) ON TABLE lake.company_lake TO hub_operator;
+GRANT UPDATE(failure) ON TABLE lake.company_lake TO hub_operator;
 -- A pergunta respondida com a origem, U10, founder 2026-11-15 ("A1", the seven in a pull request of their own; data D11): a
 -- company's routes read, add and remove who a copy's failure alerts reach, and read, add and remove
 -- who follows a copy (both rows are deleted when someone is taken out or stops following); they read
