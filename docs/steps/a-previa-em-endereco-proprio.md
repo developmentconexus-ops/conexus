@@ -19,9 +19,11 @@ em `9da158d8` (`docs/reference/stack.md:12-13`), as páginas da Cloudflare em `c
 
 **No fim desta etapa** a Prévia e o app publicado moram cada um no seu endereço. O app publicado
 continua em `estoque--metal-nobre.conexusapp.tech`, o endereço que as pessoas salvam. A Prévia abre
-dentro do Hub em `estoque--metal-nobre--previa.conexusapp.tech`. Cada endereço guarda uma entrada
-só, de um tipo só. O iPhone deixa de depender dos três consertos do laço, e nenhuma página de fora,
-nem o Hub, consegue mostrar o app publicado dentro de outra página.
+dentro do Hub em `estoque--metal-nobre--previa.conexusapp.tech`. Cada endereço guarda a sua
+entrada, e uma nunca derruba a outra. Hoje os dois moram no mesmo endereço, e foi isso que pediu os
+três consertos do app que voltava ao Hub sem parar no iPhone. Nenhuma página, nem o Hub, consegue
+mais mostrar o app publicado dentro de outra página. Se o iPhone abre os dois ao mesmo tempo, é o
+seu roteiro que mostra: aqui não há iPhone para provar.
 
 **O roteiro de uso.**
 
@@ -44,28 +46,28 @@ certificado de hoje. Se a contagem não der zero, o cartão volta a você com a 
 aprova esta página. No fim: faz o roteiro no computador e no iPhone, diz o que viu e aprova os dois
 textos novos, "A Prévia abre dentro do Conexus." e **Abrir o Conexus**.
 
-**O que muda nos três consertos do laço e na regra do cookie.**
+**O que muda nos três consertos do iPhone e na regra de segurança da entrada.**
 
 | O quê | O que fica | O que sai |
 | --- | --- | --- |
-| O conserto da forma do cookie pelo lugar (pull request 1211) | As duas formas do cookie, agora uma em cada endereço | A escolha da forma por um cabeçalho de cada pedido |
-| O conserto que apaga as duas formas (pull request 1213) | No endereço publicado, a linha que limpa o cookie antigo de quem ainda o tem, com uma data para reler | No endereço da Prévia, tudo: o endereço é novo e não tem cookie antigo |
-| A página "Este navegador não guardou a sua entrada." (pull request 1214) | Inteira, nos dois endereços | Nada |
-| A regra S24 do guia de segurança | A regra passa a dizer: no endereço publicado o cookie comum e ninguém emoldura; no da Prévia o cookie particionado e só o Hub emoldura. O pull request de método desta noite já a escreve assim; o fechamento desta etapa só confere | "Todo cookie particionado" e "o Hub emoldura todo endereço de app" |
+| O conserto 1: dois tipos de entrada, um para a aba e outro para a Prévia | Os dois tipos, agora um em cada endereço | Escolher o tipo pelo que cada pedido diz de si |
+| O conserto 2: apagar a entrada dos dois tipos | No endereço publicado, a linha que limpa a entrada antiga de quem ainda a tem, com uma data para reler | No endereço da Prévia, tudo: o endereço é novo e ninguém tem entrada antiga nele |
+| O conserto 3: a página "Este navegador não guardou a sua entrada." | Inteira, nos dois endereços | Nada |
+| A regra de segurança da entrada (S24) | Passa a dizer: no endereço publicado, a entrada comum, e ninguém mostra o app dentro de outra página; no da Prévia, a entrada que só vale dentro do Hub, e só o Hub mostra. O pull request de método desta noite já a escreve assim; o fechamento só confere | "Toda entrada é do tipo da Prévia" e "o Hub pode mostrar qualquer app dentro dele" |
 
 **Fica de fora.**
 
 - **Abrir a Prévia numa aba nova.** A vibesdk oferece isso no aviso do Safari. Pediria uma entrada
-  de aba no endereço da Prévia, que traria de volta duas formas de cookie num endereço. Espera o
-  primeiro relato de alguém num navegador Apple (o gatilho da issue 440).
+  de aba no endereço da Prévia, que traria de volta dois tipos de entrada num endereço só. Espera o
+  primeiro relato de alguém com problema num iPhone, iPad ou Mac.
 - **A conferência do Builder (o marco `A1`).** O cartão dele cria um terceiro ambiente no mesmo
   endereço do app. Ele relê as linhas que esta etapa troca; a lista está no fim deste cartão.
 - **O Safari abaixo do 26.2 dentro da Prévia.** A Prévia não abre nele, como hoje, e o aviso da
   tela cobre.
-- **As issues `next-card`.** Esta etapa leva a 358 (não havia teste de ponta a ponta da entrada da
-  Prévia; esta etapa escreve um) e tira da 440 o primeiro item (o quadro e a aba juntando a entrada
-  num navegador que ignora o cookie particionado), que deixa de existir: endereços diferentes nunca
-  dividem cookie. Nenhuma outra issue aberta com o rótulo toca os arquivos desta etapa.
+- **As pendências guardadas para o próximo cartão.** Esta etapa leva duas: um teste que faz a
+  entrada da Prévia de ponta a ponta, que faltava, e uma dívida da etapa 17 (num navegador antigo, a
+  Prévia e a aba podiam juntar as entradas), que deixa de existir: endereços diferentes nunca
+  dividem entrada. Nenhuma outra pendência toca os arquivos desta etapa.
 
 **As decisões suas nesta etapa.** Todas respondidas em 2026-11-21, ao estudo: "2.a 3.b 4a 5a". Na
 numeração do estudo, 2 é a A, 3 é a B, 4 é a C e 5 é a D. As suas palavras vão para o arquivo de
@@ -74,7 +76,7 @@ aprovação deste cartão quando você aprovar a página.
 - **A. Onde mora o endereço da Prévia.** (a) a marca `--previa` no mesmo domínio,
   `estoque--metal-nobre--previa.conexusapp.tech`; (b) um domínio só de prévias; (c) um nível abaixo,
   `estoque--metal-nobre.previa.conexusapp.tech`, com certificado pago. **A sua resposta: a.** Veredito
-  embrulhado: a rota, o DNS e o certificado de hoje já atendem; o que é nosso é a marca no nome. É
+  embrulhado: a Cloudflare já atende esse endereço como está hoje; o que é nosso é a marca no nome. É
   como a Cloudflare nomeia as prévias de Workers em `workers.dev`. O custo: o nome de um Projeto
   novo cabe em 8 letras a menos, e um nome muito longo é cortado um pouco antes.
 - **B. O que a barra da Prévia mostra.** (a) o endereço publicado; (b) o endereço que a Prévia
@@ -114,23 +116,23 @@ borda em 24 linhas somadas e 12 apagadas (`laboratorio/prototipo.diff`, fora do 
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | G0 | Nenhum Projeto tem `host_label` com mais de 55 caracteres: `select count(*) from projects.project where length(host_label) > 55` dá 0 no banco do Hub da nuvem, rodada antes do merge de G1 e de novo no ponto de conferência de G1. E `https://<rótulo>--previa.conexusapp.tech/` responde a página 404 da borda (`APP_NOT_FOUND`) com certificado válido, antes de qualquer código | à mão, pelo firstmate, só leitura; a saída no pull request de G1 | must |
+| 1 | G0 | Nenhum Projeto tem `host_label` com mais de 55 caracteres: `select count(*) from projects.project where length(host_label) > 55` dá 0 no banco do Hub da nuvem, rodada antes do merge de G1, de novo no ponto de conferência de G1 e uma última vez logo depois da publicação de G1 (o código de antes aceita rótulos até 63 até lá). E `https://<rótulo>--previa.conexusapp.tech/` responde a página 404 da borda (`APP_NOT_FOUND`) com certificado válido, antes de qualquer código | à mão, pelo firstmate, só leitura; a saída no pull request de G1 | must |
 | 2 | U1 | `previewHostOf('estoque--metal-nobre')` é `estoque--metal-nobre--previa`; `appOfHost` devolve `{ label: 'estoque--metal-nobre', environment: 'preview' }` para ele e `environment: 'published'` para o rótulo publicado. `AppHost` recusa três partes sem `previa` no fim, quatro partes, `previa` sozinho, uma parte com `--` e mais de 63 caracteres; `HostLabel` recusa o host da Prévia e `PreviewHost` recusa o publicado | `packages/hub-api/src/address.test.ts`, um caso por forma | must |
 | 3 | U1 | Todo rótulo que `hostLabelOf` devolve tem host de Prévia: um nome de 100 caracteres com um apelido de 30 dá um rótulo de no máximo 55, e `previewHostOf` dele existe. `previewHostOf` de um rótulo de 56 a 63 caracteres não existe | `address.test.ts`: o caso do nome longo de hoje (linha 23) passa a 55; um caso de cada comprimento de apelido, de 3 a 30, com o nome de 100 | must |
 | 4 | U1 | `/apps/open` com um host de Prévia responde a página com 404 e não grava passe; com o host publicado, o 303 de hoje, para `https://<rótulo>.<domínio>/__conexus/passagem` | `apps/server/src/hub/apps/handoff-route.test.ts`, o caso "busca fora da forma" com o host de Prévia | must |
-| 5 | U1 | `createAppFrameHandoff` com o host publicado responde 400 `REQUEST_MALFORMED` e não grava passe; com o host da Prévia, 200 com `location` em `https://<rótulo>--previa.<domínio>/__conexus/passagem`, e a linha de `apps.handoff` guarda `host_label` igual ao host da Prévia | `apps/server/src/hub/apps/frame-handoff.test.ts`, o primeiro e o segundo casos | must |
-| 6 | U1 | Uma sessão nasce presa ao host em que foi trocada: a sessão do host da Prévia, enviada a `checkAppCall` com o host publicado, dá `APP_SESSION_INVALID`, e a do publicado no host da Prévia também | `apps/server/src/hub/apps/app-handoff.test.ts`, pela porta `edge` do Hub (`hub.edge.inject`), os dois sentidos | must |
+| 5 | U1 | `createAppFrameHandoff` com o host publicado responde 400 `REQUEST_MALFORMED` e não grava passe; com o host da Prévia, 200 com `location` em `https://<rótulo>--previa.<domínio>/__conexus/passagem`, e a linha de `apps.handoff` guarda `host_label` igual ao host da Prévia e `environment` igual a `preview`; o passe de `/apps/open`, `published` (até U4, a volta de imagem lê a coluna: a decisão 6 do firstmate) | `apps/server/src/hub/apps/frame-handoff.test.ts`, o primeiro e o segundo casos | must |
+| 6 | U1 | Uma sessão nasce presa ao host em que foi trocada: a sessão do host da Prévia, enviada a `checkAppCall` com o host publicado, dá `APP_SESSION_INVALID`, e a do publicado no host da Prévia também. Uma sessão de antes de G1, com `environment` `preview` e o rótulo publicado em `host_label`, vale no host publicado e recebe a versão publicada (a decisão 5 do firstmate) | `apps/server/src/hub/apps/app-handoff.test.ts`, pela porta `edge` do Hub (`hub.edge.inject`), os dois sentidos; a sessão de antes plantada com `asOwner` | must |
 | 7 | U1 | A versão vem do host: a mesma pessoa, ao mesmo tempo, recebe no host da Prévia o Worker da versão da Prévia e no publicado o da versão publicada; o host publicado sem versão publicada dá `APP_NOT_PUBLISHED`; o host da Prévia sem versão dá o app de exemplo. Uma pessoa que só recebeu o app (acesso `USER`) é recusada na Prévia: `createAppFrameHandoff` responde 404 e nenhum passe é gravado | `app-handoff.test.ts` e `frame-handoff.test.ts`, pela porta `edge` e pela rota da Prévia | must |
 | 8 | U1 | Os conectores e o Registro seguem o host: `callAppConnector` com o host da Prévia lê o manifesto da versão da Prévia, e `recordAppRead` com o host da Prévia grava a leitura para a pessoa da sessão | `apps/server/src/hub/connectors/app-calls.test.ts` e `apps/server/src/hub/apps/read-notice.test.ts`, um caso com o host da Prévia em cada | should |
-| 9 | U1 | `getProject` devolve `previewAddress: '<rótulo>--previa.<domínio>'` ao lado de `address`, e `null` quando `address` é `null` | `apps/server/src/hub/projects/projects.test.ts`, pela rota, os dois casos | must |
+| 9 | U1 | `getProject` devolve `previewAddress: '<rótulo>--previa.<domínio>'` ao lado de `address`; `null` quando `address` é `null` e quando o rótulo tem de 56 a 63 caracteres (plantado com `asOwner`) | `apps/server/src/hub/projects/projects.test.ts`, pela rota, os três casos | must |
 | 10 | U2 | No host publicado, toda resposta (o app, o 303, a página de entrada vencida, as páginas de falha, `entry.js`) leva `frame-ancestors 'none'`; os cookies são `SameSite=Lax`, sem `Partitioned`; gravar a sessão apaga antes a forma particionada antiga, e apagar a sessão leva as duas formas | `apps/edge/src/dispatcher-tab.test.ts`, os casos de hoje com o host publicado e um caso que lê o `Content-Security-Policy` de cada resposta | must |
 | 11 | U2 | No host da Prévia, toda resposta leva `frame-ancestors` só com a origem do Hub; os cookies são `SameSite=None; Partitioned`, nunca `Lax`; apagar a sessão leva só a forma particionada | `apps/edge/src/dispatcher-frame.test.ts`, os casos de hoje com o host da Prévia | must |
-| 12 | U2 | No host da Prévia sem sessão: com `Sec-Fetch-Dest: iframe`, a página de entrada, com `data-host` igual ao host da Prévia; com `document` ou sem o cabeçalho, a página 401 "A Prévia abre dentro do Conexus." com o link **Abrir o Conexus** para a origem do Hub, sem redirecionar, sem gravar cookie e sem perguntar ao Hub, e a linha de log `EDGE_PREVIEW_OUTSIDE_HUB` com o host | `dispatcher-frame.test.ts`, os três valores do cabeçalho | must |
+| 12 | U2 | No host da Prévia sem sessão: com `Sec-Fetch-Dest: iframe`, a página de entrada, com `data-host` igual ao host da Prévia; com `document` ou sem o cabeçalho, a página 401 "A Prévia abre dentro do Conexus." com o link **Abrir o Conexus** para a origem do Hub, sem redirecionar, sem gravar cookie novo (no caminho da sessão recusada, só os que apagam a sessão) e sem perguntar ao Hub, e a linha de log `EDGE_PREVIEW_OUTSIDE_HUB` com o host, no nível `info`. Um pedido de dentro da Prévia que não é de quadro (`empty`, um `fetch` com a sessão vencida) recebe a mesma página | `dispatcher-frame.test.ts`, os quatro valores do cabeçalho (`iframe`, `document`, `empty`, nenhum) | must |
 | 13 | U2 | No host publicado sem sessão, o 303 para `/apps/open` com `host` igual ao rótulo publicado, qualquer que seja `Sec-Fetch-Dest`, `iframe` incluído: o host publicado nunca dá a página de entrada | `dispatcher-tab.test.ts`, os três valores do cabeçalho | must |
-| 14 | U2 | Uma página de falha leva o ancestral do seu host: `'none'` no publicado e num host que não é de app, a origem do Hub no da Prévia, também a página 500 de um erro inesperado | `apps/edge/src/dispatcher-guards.test.ts`: 404 de host desconhecido, 403 de escrita de fora e 500 em cada host | must |
-| 15 | U2 | O `db` e os `connectors` de uma versão levam o host que o navegador abriu: no host da Prévia, o dublê do Hub recebe o host da Prévia em `recordAppRead` e em `callAppConnector` | `apps/edge/src/dispatcher-connectors.test.ts` e `apps/edge/src/db.test.ts`, um caso no host da Prévia | should |
+| 14 | U2 | Uma página de falha leva o ancestral do seu host: `'none'` no publicado e num host que não é de app, a origem do Hub no da Prévia, também a página 500 de um erro inesperado | `apps/edge/src/dispatcher-guards.test.ts`, casos novos: 404 de host desconhecido, 403 de escrita de fora em cada host, e 500 em cada host com um dublê do Hub que lança (`edge({ hub })` de `test-edge.ts`) | must |
+| 15 | U2 | O `db` e os `connectors` de uma versão levam o host que o navegador abriu: no host da Prévia, `DbProps.label` e `ConnectorsProps.host` são o host da Prévia | `apps/edge/src/dispatcher-connectors.test.ts`, um caso no host da Prévia, pelos `dbBindings` e `connectorBindings` de `edge()` (`test-edge.ts:97-100`), por `serveDispatch` | should |
 | 16 | U2 | A página "Este navegador não guardou a sua entrada." vale nos dois hosts, e a linha de log diz o host | `dispatcher-tab.test.ts`, o caso da segunda volta sem sessão, nos dois hosts | should |
-| 17 | U3 | A Prévia carrega `https://<previewAddress>/`, ouve a entrada só dessa origem e da janela do quadro (uma mensagem da origem publicada é ignorada), e a barra mostra `previewAddress` e "versão N"; **Abrir app**, no celular e com versão publicada, leva a `https://<address>/` | `apps/web/src/builder/preview/preview.test.tsx`, os casos de hoje com os dois endereços | must |
+| 17 | U3 | A Prévia carrega `https://<previewAddress>/`, ouve a entrada só dessa origem e da janela do quadro (uma mensagem da origem publicada é ignorada), e a barra mostra `previewAddress` e "versão N"; **Abrir app**, no celular e com versão publicada, leva a `https://<address>/`; com `previewAddress` `null`, o palco | `apps/web/src/builder/preview/preview.test.tsx`, os casos de hoje com os dois endereços e o do palco | must |
 | 18 | U3 | Num Chromium, com o Hub e o despachante de verdade: a Prévia mostra a versão 2 enquanto uma aba do app publicado mostra a 1, as duas recarregadas ficam na sua; o pote tem o cookie `Lax` sem partição no host publicado e o `Partitioned` no da Prévia; uma página do Hub que emoldura o host publicado é bloqueada por `frame-ancestors 'none'`; o host da Prévia numa aba mostra a página do critério 12 | `tests/e2e/preview-host.test.ts`, novo, na lista de `npm run e2e` | must |
 | 19 | U3 | A Prévia e a página do endereço da Prévia numa aba passam pelo QA a 1366 e 390 px, nos dois temas (testing T25): a barra com o endereço da Prévia sem estourar a 390 px, a página nova sem rolagem lateral | o relatório de QA no pull request de G1 | must |
 | 20 | U4 | As colunas e as restrições `environment` saem de `apps.app_session` e `apps.handoff`; a migração tem a linha `-- contract:`; a arquitetura nomeia a publicação antes da qual nenhuma imagem roda | `apps/server/src/hub/apps/tables.test.ts` (o catálogo sem as duas colunas), `npm run migrations`, `npm run docs` | must |
@@ -151,7 +153,7 @@ borda em 24 linhas somadas e 12 apagadas (`laboratorio/prototipo.diff`, fora do 
 | `host` de `createAppSession`, `checkAppCall`, `recordAppRead`, `callAppConnector`, `listAppConnections` (`AppHost`) | a borda, do host do pedido | o Hub: `redeemHandoff`, `admitCall` |
 | `AppOpenQuery.host` (`HostLabel`, só o publicado) | a borda, no 303 | o Hub, `/apps/open` |
 | `apps.handoff.host_label`, `apps.app_session.host_label` | o Hub, com o host que o navegador vê | o Hub, `redeemHandoff` e `admitCall` |
-| `environment` das duas tabelas, até G2 | o Hub, do host, só para uma volta de imagem | ninguém: sai em U4 |
+| `environment` das duas tabelas, até G2 | o Hub, do host, só para uma volta de imagem | nenhum código de G1; só uma imagem de antes de G1, numa volta. Sai em U4 |
 
 O desenho de caixas não muda na Prévia: só o texto da barra. A página nova é a página de falha da
 borda (`apps/edge/src/pages.ts:59-82`), a mesma caixa da página "Este navegador não guardou a sua
@@ -196,13 +198,13 @@ As citações de `main` em `4d143a99`; as da vibesdk em `9da158d8`; as da Cloudf
 | 7. A entrada na aba | U1, U2 | `dispatch.ts:82-104` (`toHub`), `:114-135` (`redeem`); `routes.ts:47-70` | o fluxo de código de autorização (relay do estudo de desenho) | a cadeia de 303 | nativo, sem mudança; `/apps/open` aceita só host publicado, pelo esquema | — | não precisa | — |
 | 8. O host da Prévia numa aba | U2 | nenhum | vibesdk `space-preview.ts:171-174`, `:68-78` | uma página 401 fixa, nunca redireciona | embrulhado: `failurePage` com o código `EDGE_PREVIEW_OUTSIDE_HUB` e um link ao Hub. `Sec-Fetch-Dest` só escolhe entre a página de entrada e esta, nunca a forma de um cookie; sem o cabeçalho, esta | `run-2.txt`, cenário 5 | fundador, 2026-11-21: "4a"; o texto, no fim | — |
 | 9. Quem pode emoldurar | U2 | `headers.ts:10-12` (`appPolicyOf`, sempre o Hub); `apps/edge/src/pages.ts:79`; `dispatch.ts:67`, `:231`, `:233`, `:264`; `apps/server/src/platform/http.ts:46` | `packages/app-contract/src/page.ts:5-7`, a peça nativa já em uso; nenhuma referência lida recusa moldura no app publicado (vibesdk `worker/config/security.ts:212` vale só para a API do painel) | `appContentSecurityPolicy(frameAncestor)` já aceita `'none'`, que a conferência usa | embrulhado: `'none'` no host publicado, o Hub no da Prévia, nas respostas do app e nas páginas da borda. O `frame-src` do Hub fica `https://*.<domínio>`: a gramática da CSP só aceita `*.` no começo (`w3c/webappsec-csp` `e3461f7c` `index.bs:687`) | `run-2.txt`, cenário 4 | não precisa | — |
-| 10. A passagem e a sessão sem `environment` | U1, U4 | `apps/server/src/hub/apps/tables.ts:33-35`, `:47`, `:51`, `:69`, `:72`; `handoff.ts:56`, `:61-66`, `:82`, `:122`, `:163`, `:177-178`; `routes.ts:64`, `:76` | vibesdk `ownerPreviewToken.ts:18-23`, `:40-54`; `spacePreviewToken.ts:7-17`, `:27-48` | a credencial nomeia o seu escopo e leva um `purpose` que separa a da prévia da do publicado | nativo: `host_label` já prende a sessão ao host (`handoff.ts:107`, `:151`), e com a marca ele faz o papel do `purpose`; o ambiente sai do rótulo por `appOfHost`. U1 para de ler a coluna; U4 a tira | `run-2.txt`, cenário 7 com o Hub de mentira; no Hub de verdade, o critério 6 | não precisa | as duas migrações de U4 numa pasta nova de `apps/server/migrations/` |
-| 11. Qual versão a chamada recebe | U1 | `handoff.ts:215-241` (`connectorCall`), `:248-285` (`callTo`); `apps/server/src/hub/projects/hosts.ts:167-203`, `:219-246` | vibesdk `worker/index.ts:162-206` | pelo host, depois `dispatcher.get(appName)` | nativo: os dois ponteiros ficam; escolhe o ambiente do host da sessão | — | não precisa | — |
+| 10. A passagem e a sessão sem `environment` | U1, U4 | `apps/server/src/hub/apps/tables.ts:33-35`, `:47`, `:51`, `:69`, `:72`; `handoff.ts:56`, `:61-66`, `:82`, `:122`, `:163`, `:177-178`; `routes.ts:64`, `:76` | vibesdk `ownerPreviewToken.ts:18-23`, `:40-54`; `spacePreviewToken.ts:7-17`, `:27-48` | a credencial nomeia o seu escopo e leva um `purpose` que separa a da prévia da do publicado | nativo: `host_label` já prende a sessão ao host (`handoff.ts:107`, `:151`), e com a marca ele faz o papel do `purpose`; o ambiente sai do rótulo por `appOfHost`. U1 para de ler a coluna; U4 a tira | `run-2.txt`, cenário 7 com o Hub de mentira; no Hub de verdade, o critério 6 | não precisa | a migração de U4, numa pasta nova de `apps/server/migrations/` |
+| 11. Qual versão a chamada recebe | U1 | `handoff.ts:215-241` (`connectorCall`), `:248-285` (`callTo`); `apps/server/src/hub/projects/hosts.ts:72-108`, `:124-150` | vibesdk `worker/index.ts:162-206` | pelo host, depois `dispatcher.get(appName)` | nativo: os dois ponteiros ficam; escolhe o ambiente do host da sessão | — | não precisa | — |
 | 12. A tela da Prévia: o quadro e a barra | U1, U3 | `preview.tsx:86` (o `src`), `:91` (a origem ouvida), `:183-189` (a barra), `:191-202` (**Abrir app**); `packages/hub-api/src/projects.ts:38-43` (`Project.address`) | vibesdk `src/routes/chat/components/main-content-panel.tsx:185`, `:284-292` | a barra mostra o título do app e copia o endereço real da prévia | nativo: troca de texto e de `src`; o endereço vem do Hub (`previewAddress`), pela regra de `address.ts` | — | fundador, 2026-11-21: "3.b" | — |
 | 13. O aviso do WebKit na Prévia | — | `preview.tsx:208-230`; `apps/web/src/builder/preview/webkit.ts` | vibesdk `src/routes/chat/components/preview-compat-banner.tsx:28-34`, `:56-65` | o aviso em navegador Apple, com "Open in new tab" | nativo; fica de fora: fica como está, e o botão de nova aba espera (fica de fora, na página) | — | não precisa | — |
 | 14. A página "Este navegador não guardou a sua entrada." | U2 | `dispatch.ts:143-148` (`land`); `pages.ts:28-33` | vibesdk `space-preview.ts:171-174` | página no lugar de nova volta | embrulhado, como no pull request 1214: fica como está, nos dois hosts | a revisão do pull request 1214 | já decidida ("4. B", 2026-11-21) | — |
 | 15. O vínculo `__Host-conexus-binding` | U2 | `dispatch.ts:83-90` | as das linhas 4 e 5 | a forma do cookie é a do host | nativo | `run-2.txt` | não precisa | — |
-| 16. As regras escritas | U4 | `docs/guides/security.md:74-88` (S24); `docs/decisions/0024-app-address-one-host-per-app.md`; `docs/explanation/app-contract-and-dispatcher.md:79-81`, `:95-102`; `docs/explanation/hub-apps.md:63-64` | — | — | nativo: só documento, no fechamento (delivery L19, L20) | — | fundador, pela aprovação do cartão | — |
+| 16. As regras escritas | U4 | `docs/guides/security.md:74-88` (S24); `docs/decisions/0024-app-address-one-host-per-app.md`; `docs/explanation/app-contract-and-dispatcher.md:79-81`, `:95-102`; `docs/explanation/hub-apps.md:57-65` | — | — | nativo: só documento, no fechamento (delivery L19, L20) | — | fundador, pela aprovação do cartão | — |
 
 **A medida do transplante.** Não se aplica: nada vem do repositório antigo. A Prévia nasceu na 14.1,
 da forma da vibesdk.
@@ -224,7 +226,7 @@ da forma da vibesdk.
 | 2 | A forma do contrato: `HostLabel` fica o rótulo do app (duas partes); entram `PreviewHost` (três partes, a última `previa`) e `AppHost = HostLabel \| PreviewHost`. Cada porta recusa o host do outro ambiente pelo esquema: `/apps/open` só `HostLabel`, `createAppFrameHandoff` só `PreviewHost`, as rotas da borda `AppHost` | a outra forma, a do protótipo (alargar `HostLabel` e um `isPreviewHost` booleano), deixa cada rota aceitar os dois e pede um `if` à mão em cada porta; com ela, `/apps/open` daria um passe publicado a um host da Prévia sem o `if`. Com a união, o tipo diz o ambiente (code C22, C27) | alargar `HostLabel` e checar à mão |
 | 3 | O endereço da Prévia vem do Hub, `Project.previewAddress`, e não é montado na tela | a regra do endereço tem um dono, `address.ts` (0024, code C26), e o Hub já monta `address` por ela (`projects.ts:87-88`); a tela só tem o host, não o rótulo | a tela chamar `previewHostOf` sobre um rótulo que o Hub mande |
 | 4 | Um rótulo de 56 a 63 caracteres não tem host de Prévia: `previewHostOf` devolve `undefined`, o Hub manda `previewAddress: null` e a Prévia mostra o palco, como para um Projeto sem endereço. O critério 1 confere que nenhum existe | a contagem do estudo ficou sem acesso ao banco; a saída da Cloudflare (cortar e pôr um código, guardado numa coluna) só se paga se houver algum. Com a reserva, nenhum rótulo novo passa de 55 | a coluna de rótulo de Prévia guardado, por emenda deste cartão |
-| 5 | Nenhuma sessão ou passe é apagado em G1. Uma sessão de Prévia de hoje tem o rótulo publicado em `host_label`; depois de G1 ela vale no host publicado, para a mesma pessoa e o mesmo Projeto, com a admissão lida de novo | o membro é admitido nos dois ambientes (`hosts.ts:185`) e quem só recebeu o app nunca teve sessão de Prévia; o pior caso é um membro ver a versão publicada no host publicado, que é o certo. O estudo propunha apagar; não muda nada que a pessoa veja | uma migração que apaga as sessões `preview` |
+| 5 | Nenhuma sessão ou passe é apagado em G1. Uma sessão de Prévia de hoje tem o rótulo publicado em `host_label`; depois de G1 ela vale no host publicado, para a mesma pessoa e o mesmo Projeto, com a admissão lida de novo | o membro é admitido nos dois ambientes (`hosts.ts:90`) e quem só recebeu o app nunca teve sessão de Prévia; o pior caso é um membro ver a versão publicada no host publicado, que é o certo. O estudo propunha apagar; não muda nada que a pessoa veja | uma migração que apaga as sessões `preview` |
 | 6 | Em G1 o Hub continua gravando `environment`, tirado do host, e nunca o lê; U4 tira a coluna | data D6: uma imagem de antes de G1 lê a linha inteira (`handoff.ts:146-149`); voltar a ela com a coluna nula a leria como Prévia. Duas fontes por uma publicação, só de escrita | tirar a coluna já em G1, com a linha de volta da arquitetura nomeando a publicação de G1 |
 | 7 | A publicação de G1 põe a borda e o Hub no ar sem ordem escolhida: a Prévia pode falhar por minutos entre as duas; o app publicado não falha em nenhuma ordem | o caminho do publicado não muda; só membros usam a Prévia | publicar a borda por último |
 | 8 | A página nova responde 401 e o link leva à origem do Hub (`/`), não ao Projeto | a vibesdk responde 401 (`space-preview.ts:171-174`); a borda não sabe o id do Projeto, e montar o endereço do Projeto pediria ao Hub um dado que a recusa não deve pedir | outro destino para o link |
@@ -243,6 +245,10 @@ entrar depois relê; com a ordem "5a", é ele:
   `appOfHost(input.host)`. Uma sessão de conferência achada em `check_session` no host publicado
   teria dois ambientes; o `A1` escolhe entre ler o ambiente da tabela de conferência ou dar à
   conferência o host dela pela mesma regra (por exemplo `--conferencia`).
+- **O que o build do `A1` espera.** U4 tira as restrições que a linha 490 dele mantém, e os
+  arquivos das linhas 453, 556 e 580-581 dele (`tables.ts` e o retrato do catálogo, `hosts.ts`,
+  `app-calls.ts`, `dispatcher-versions.test.ts`) são de U1, U2 e U4. O cartão do `A1` é relido
+  depois do merge de G2, e o build dele parte desse `main`.
 - **Linha 575** (`openConference` devolve `appHostOf` do Projeto) e o critério 7 dele (o cookie
   `__Host-conexus-app` no host do app): o host publicado passa a ter `frame-ancestors 'none'` e
   cookie `Lax`, o que o navegador da máquina, numa aba, aceita.
@@ -261,7 +267,7 @@ porta de entrada dos apps (security S22, S24).
 - **10. A passagem e a sessão.** Ler `apps/server/src/hub/apps/handoff.ts` inteiro e
   `tables.ts:23-79`. Seguir vibesdk `worker/utils/spacePreviewToken.ts:27-48` (a credencial com o
   seu escopo, comparada com o do pedido).
-- **11. A versão.** Ler `handoff.ts:195-285` e `apps/server/src/hub/projects/hosts.ts:156-246`.
+- **11. A versão.** Ler `handoff.ts:195-285` e `apps/server/src/hub/projects/hosts.ts:61-150`.
 - **12. O endereço na tela.** Ler `packages/hub-api/src/projects.ts:33-44` e
   `apps/server/src/hub/projects/projects.ts:85-91`.
 
@@ -274,7 +280,8 @@ porta de entrada dos apps (security S22, S24).
 | `apps/server/src/hub/apps/` | Muda: `handoff.ts`, `routes.ts`, `tables.ts`, `read-notice.ts` e os testes | `hub/connectors/app-calls.ts`, `hub/projects/` |
 | `apps/server/src/hub/projects/` | Muda: `hosts.ts` (o tipo do ambiente), `projects.ts` (`previewAddress`) | `hub/apps/` |
 | `apps/server/src/hub/connectors/app-calls.ts` | Muda: o tipo do host | as rotas da borda |
-| `apps/web/src/platform/test-hub.tsx`, `apps/web/src/builder/conversation/test-start.tsx`, os testes que montam um `Project` (`hub/projects/new-project.test.tsx`, `hub/requests/*.test.tsx`), `apps/web/src/builder/preview/preview.test.tsx:28` | Muda: só os dublês (o campo novo e o host da `FrameEntry`), consequência direta do contrato (delivery L7) | os testes da web |
+| Os dublês do servidor: `apps/server/src/hub/apps/test-handoff.ts` (uma constante do host da Prévia ao lado de `PEDIDOS` e `ESTOQUE`, `:16-17`; `sessionOf`, que hoje põe `preview` em `PEDIDOS`, e `codeFor`, que pede o passe da Prévia no host publicado, `:108-134`), `hub/connectors/test-app-calls.ts`, e os testes que os usam: `app-handoff.test.ts`, `read-notice.test.ts`, `frame-handoff.test.ts`, `app-access-journey.test.ts:86`, `:160`, `repair.test.ts:75`, `hub/projects/app-access.test.ts`, `hub/identity/invitation-app.test.ts:160` | Muda: a sessão e o passe da Prévia passam ao host da Prévia | os testes do servidor |
+| Os dublês da web que montam um `Project` ou uma `FrameEntry`: `apps/web/src/platform/test-hub.tsx`, `test-hub-access.tsx:109`, `apps/web/src/builder/conversation/test-start.tsx`, `hub/projects/new-project.test.tsx`, `hub/requests/*.test.tsx`, `apps/web/frame.layout.test.ts:266`, `home.layout.test.ts:145`, `sweep-app-states.ts:40`, `sweep-replies.ts:226`, `apps/web/src/builder/preview/preview.test.tsx:28` | Muda: só o campo novo e o host da `FrameEntry`, consequência direta do contrato (delivery L7) | os testes da web |
 
 ### Os contratos que a unidade cria
 
@@ -323,7 +330,7 @@ connectorCall(deps, input: { host: AppHost; headers: Headers }): Promise<Connect
 
 `createHandoff` perde o campo `environment`; `routes.ts:64` e `:76` perdem a constante.
 `admitToApp` e `accessOf` (`hosts.ts`) tomam `environment: AppEnvironment`, importado de
-`@conexus/hub-api`, e o comentário de C6 em `:225` sai. Nenhuma rota, código de falha ou coluna
+`@conexus/hub-api`, e o comentário de C6 em `:130` sai. Nenhuma rota, código de falha ou coluna
 nova; nenhuma migração em U1.
 
 - **Cada estado.** `AppEnvironment` é a união de literais; `appOfHost` é o único lugar que a tira do
@@ -350,7 +357,8 @@ nova; nenhuma migração em U1.
    - **O que sai:** nada.
    - **O que entra:** `PREVIEW_MARK`, `AppEnvironment`, `PreviewHost`, `AppHost`, `appOfHost`,
      `previewHostOf`, a reserva em `hostLabelOf`, `appHostOf` com `AppHost`. Regras: C22, C23, C26.
-   - **Testes:** `address.test.ts`, os casos dos critérios 2 e 3; o caso da linha 23 passa a 55.
+   - **Testes:** `address.test.ts`, os casos dos critérios 2 e 3; os casos das linhas 23 e 27-28
+     (o nome longo e o corte no hífen) passam ao corte de 55.
    - **Mutações à mão:** tirar a reserva de `room` → o caso do nome de 100 com apelido de 30 fica
      vermelho; aceitar qualquer terceira parte em `PreviewHost` → o caso de três partes sem
      `previa` fica vermelho.
@@ -375,13 +383,13 @@ nova; nenhuma migração em U1.
      `app-calls.test.ts`, `read-notice.test.ts`.
    - **O que sai:** a leitura de `row.environment` em `admitCall` (`handoff.ts:163`, `:177`);
      `APP_ENVIRONMENTS` e `AppEnvironment` de `tables.ts:33-35` (a coluna passa a usar
-     `AppEnvironment.options` de `@conexus/hub-api`); o literal de `hosts.ts:174`, `:225-226`.
+     `AppEnvironment.options` de `@conexus/hub-api`); os literais de `hosts.ts:79` e `:131`, com o comentário de `:130`.
    - **O que entra:** `createHandoff` e `admitCall` tiram `{ label, environment }` de
      `appOfHost(input.host)` e chamam `projectOfHost(label)`; `createHandoff` grava `host_label`
      igual a `input.host` e, até U4, `environment` igual ao do host; o `location` é
      `appHostOf({ label: input.host, … })`. `redeemHandoff` como hoje. Regras: S8, S10, S22, C65.
    - **Testes:** os casos dos critérios 6, 7, 8, pela porta `edge` (`hub.edge.inject`) e pela rota
-     da Prévia.
+     da Prévia; os dublês do raio passam ao host da Prévia onde fazem a Prévia.
    - **Mutações à mão:** `admitCall` sem `eq(appSession.hostLabel, input.host)` (`:151`) → o caso
      do critério 6 fica vermelho; `appOfHost` devolvendo sempre `published` → o caso da versão da
      Prévia do critério 7 fica vermelho.
@@ -391,7 +399,9 @@ nova; nenhuma migração em U1.
      e `projects.test.ts`; os dublês da web do raio.
    - **O que entra:** `viewOf` monta `previewAddress` com `previewHostOf` e `appHostOf`.
    - **Testes:** o caso do critério 9.
-   - **Pronto quando:** `npm run check` e os testes das três áreas verdes.
+   - **Pronto quando:** `npm run check` e os testes de `hub-api`, `server` e `web` verdes. O
+     `npm run e2e` só fica verde depois de U3 (o `tests/e2e/app.test.ts` pede a borda nova); cada
+     commit de G1 fica verde nos testes de unidade, e o ponto de conferência roda o `e2e`.
 
 ### Como se prova
 
@@ -430,7 +440,7 @@ critérios 5, 6 e 7 falham: não há host da Prévia.
 | `apps/edge/src/dispatch.ts` | Muda: o host por `AppHost`, o ambiente por `appOfHost`, `toHub` por ambiente | `dispatcher.ts`, `tests/e2e/` |
 | `apps/edge/src/pages.ts` | Muda: o código `EDGE_PREVIEW_OUTSIDE_HUB`; o link da página por destino; `failurePage` com o ancestral | `dispatch.ts` |
 | `apps/edge/src/entry.ts`, `db.ts`, `connectors.ts`, `hub.ts` | Muda: o tipo do host (`PreviewHost`, `AppHost`) | `dispatch.ts`, `dispatcher.ts` |
-| `apps/edge/src/*.test.ts`, `test-edge.ts` | Muda: os casos de hoje nos dois hosts | — |
+| `apps/edge/src/*.test.ts`, `test-edge.ts` | Muda: os casos de hoje nos dois hosts, também `dispatcher.test.ts:8-9`, `:54`, `:98`, `:210`, que hoje esperam `PARTITIONED_DELETED` e `frame-ancestors` do Hub no host publicado | — |
 
 ### Os contratos que a unidade cria
 
@@ -475,14 +485,14 @@ S22, S24, S41.
 
 1. **O ambiente pelo host.** Critérios: 10, 11, 13, 15.
    - **Arquivos:** muda `headers.ts`, `dispatch.ts`, `entry.ts`, `db.ts`, `connectors.ts`, `hub.ts`;
-     os testes `dispatcher-tab.test.ts`, `dispatcher-frame.test.ts`, `dispatcher-connectors.test.ts`,
-     `db.test.ts`.
+     os testes `dispatcher.test.ts`, `dispatcher-tab.test.ts`, `dispatcher-frame.test.ts`,
+     `dispatcher-connectors.test.ts`.
    - **Referência a seguir:** vibesdk `worker/index.ts:272-279`; `space-preview.ts:137`.
    - **O que sai:** `Place` e `placeOf` (`headers.ts:32-37`), com o chamador `dispatch.ts:237`; o
      ramo `visit.place === 'FRAME'` de `toHub` (`dispatch.ts:92`) como escolha de cookie.
    - **O que entra:** `dispatch` lê `AppHost` do hostname e `appOfHost`; `toHub` no publicado é o 303
      de sempre; na Prévia, a página de entrada quando `Sec-Fetch-Dest` é `iframe`. Os cookies pelo
-     ambiente. `Db` e `Connectors` recebem `host`. Comentário "Revalidate by 2027-02-22" na linha de
+     ambiente. `DbProps.label` e `ConnectorsProps.host` passam a `AppHost`, com o host do pedido. Comentário "Revalidate by 2027-02-22" na linha de
      transição. Regras: S17, S22, S24.
    - **Testes:** os casos dos critérios 10, 11, 13, 15.
    - **Mutações à mão:** `setCookie` com `Lax` na Prévia → o caso do critério 11 fica vermelho;
@@ -530,7 +540,7 @@ Pelos dublês de `apps/edge/src/test-edge.ts`, que chamam `serveDispatch` como a
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/preview/` | Muda: `preview.tsx`, `preview.test.tsx` | `builder/conversation/` (o painel) |
-| `tests/e2e/` | Cria: `preview-host.test.ts` | `npm run e2e` |
+| `tests/e2e/` | Cria: `preview-host.test.ts`. Muda: `app.test.ts:162-175` (`getPass` pede o passe da Prévia no host publicado) e `apps-edge.ts:334` (a origem sai só do rótulo): a visita da Prévia passa ao host da Prévia | `npm run e2e` |
 | `package.json` | Muda: a lista de `e2e` | CI |
 
 ### Os contratos que a unidade cria
@@ -556,7 +566,8 @@ T14, T25.
    - **Testes:** os casos do critério 17; uma mensagem da origem publicada é ignorada.
    - **Mutações à mão:** ouvir a origem publicada → o caso da mensagem ignorada fica vermelho.
 2. **A prova de ponta a ponta.** Critério: 18.
-   - **Arquivos:** cria `tests/e2e/preview-host.test.ts`; muda `package.json`.
+   - **Arquivos:** cria `tests/e2e/preview-host.test.ts`; muda `package.json`, `tests/e2e/app.test.ts`
+     e `tests/e2e/apps-edge.ts` (a visita da Prévia no host da Prévia).
    - **Referência a seguir:** `tests/e2e/app-open.test.ts:29-42` (os dois sites no mesmo Chromium,
      pelos nomes resolvidos para o servidor TLS local); o roteiro `drive.mjs` do estudo (fora do
      repositório).
@@ -589,7 +600,7 @@ dois temas, para o QA (testing T25).
 ### As linhas da tabela
 
 - **10. Sem `environment`.** Ler `apps/server/src/hub/apps/tables.ts:33-79`, `handoff.ts` nas
-  gravações de `environment`, `tables.test.ts:7-60` e a migração da 17
+  gravações de `environment`, `tables.test.ts` inteiro (as restrições em `:73` e `:88`) e a migração da 17
   (`apps/server/migrations/20261028172015_e17_published_version/migration.sql`).
 - **16. As regras escritas.** Ler S24, a 0024, as duas explicações nas linhas da tabela e
   `docs/architecture.md:168-174` (a volta de imagem).
@@ -606,7 +617,7 @@ dois temas, para o QA (testing T25).
 
 Saem de `apps.app_session` e `apps.handoff` a coluna `environment` e as restrições
 `app_session_environment` e `handoff_environment`. Nenhuma chave estrangeira muda. A migração leva
-a linha `-- contract: no image since G1's release reads environment; the host says it` (data D6).
+a linha `-- contract: the host says the environment since G1; images before U4's release name the column in whole-row reads, so none of them runs on the migrated database` (data D6).
 `docs/architecture.md`, "Roll back", ganha a publicação de U4 na lista das que nenhuma imagem
 anterior atravessa.
 
