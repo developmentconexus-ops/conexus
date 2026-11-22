@@ -2,16 +2,14 @@
 
 Trilha Dados, a etapa 1 do lago, na ordem de [trilhas/dados.md](trilhas/dados.md). A pergunta:
 "O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS?"
-O estudo da etapa fica fora do repositório (delivery L21), com as sondas, as notas e os sete testes
-que rodaram na conta de laboratório em 2026-11-21; este cartão cita dele só o que a construção
-precisa. As cinco letras do fundador ao estudo já estão dadas: "6.a 7a 8a 9a 10a" (2026-11-21),
-que são as decisões A a E abaixo. Em 2026-11-22 ele pediu os cartões escritos à noite, para ler e
+O estudo da etapa fica fora do repositório (delivery L21); este cartão cita dele só o que a
+construção precisa. Em 2026-11-22 o fundador pediu os cartões escritos à noite, para ler e
 aprovar de manhã ("2. A"); esta página ainda não está aprovada.
 
 Cada linha do `main` citada foi lida em `4d143a99`. As versões que a construção instala são as que o
 estudo leu: `aws-cdk-lib` 2.278.0, `aws-cdk` 2.1149.0, `constructs` da faixa que o `aws-cdk-lib`
 pede, e `@aws-sdk/client-cloudformation`, `@aws-sdk/client-s3tables`, `@aws-sdk/client-sts` e
-`@aws-sdk/credential-providers` 3.1175.0. O `main` instala hoje só `@aws-sdk/client-s3`, na 3.1146.0.
+`@aws-sdk/credential-providers` 3.1175.0. O `client-s3` de hoje fica (L.20).
 
 **Antes da construção.** Esta etapa constrói só depois de duas coisas no `main`: o fechamento do
 Registro e conformidade, e a mudança de método que a [trilha Dados](trilhas/dados.md) põe antes da
@@ -19,8 +17,6 @@ etapa 1 (delivery L20). Dela, a etapa usa: a regra do dublê da AWS no guia de t
 conferência de `infra/aws/` na CI; a regra C56 para `@aws-sdk/*`; a forma da chave da AWS na S31; e a
 D25 reescrita pelo motivo dela. Se ela mesclar com outra forma, a unidade segue a forma mesclada e o
 firstmate relê esta seção.
-
-A medida: cerca de 2.120 linhas alteradas em 6 unidades, abaixo das 4.000 da delivery L2.
 
 ## A página do fundador
 
@@ -181,20 +177,16 @@ desta lista.
 Três grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
 - **A linha principal.** G1 e G2 em paralelo: não dividem pasta. G3 parte dos dois mesclados, porque
-  o adaptador usa os nomes que a plataforma fixa e o lago usa a tabela. O G3 só vai ao ar depois de a
-  chave base estar no servidor (o passo a passo, com a palavra do fundador): sem o arquivo, o Hub não
-  sobe (critério 37).
-- **O G2 é só a tabela e as permissões**, num pull request próprio com a palavra do fundador (data
-  D11; decisão G). Nenhum outro grupo cria ou tira permissão no banco do Hub.
-- **O que toca a outra trilha.** Nenhum arquivo de `builder/`. Em `packages/hub-api`, a U5 cria as
-  operações e `LAKE_BUSY`, e a U6 muda só a frase de `CLIENT_DELETION_PENDING`. A U5 muda
-  `hub/operations/clients.ts`, da Plataforma. O pull request do G3 avisa a outra trilha (delivery L27).
+  o adaptador usa os nomes que a plataforma fixa e o lago usa a tabela.
+- **Só o G2 cria ou tira permissão no banco do Hub** (data D11).
+- **O que toca a outra trilha.** Nenhum arquivo de `builder/`. A U5 e a U6 mudam `packages/hub-api`, e a U5
+  muda `hub/operations/clients.ts`, da Plataforma (os raios das duas). O pull request do G3 avisa a outra trilha (delivery L27).
 - **A QA** ([testing T25](../guides/testing.md)) roda depois do G3, no Hub local com o servidor de
   respostas gravadas da U4.
 
 **Orçamento de código alterado.** Linhas mudadas, as tiradas também, sem testes nem gerados (o
 `lake.template.json` é gerado; o `test-aws.ts` conta, porque serve a QA). U1: ~880, com o passo a
-passo. U2: ~120. U3: ~80. U4: ~420. U5: ~420. U6: ~200. Total da etapa: cerca de 2.120 linhas.
+passo. U2: ~120. U3: ~80. U4: ~420. U5: ~420. U6: ~200. Total da etapa: cerca de 2.120 linhas, abaixo das 4.000 da delivery L2.
 
 ## Os critérios de aceite
 
@@ -282,9 +274,9 @@ CI chega à AWS.
 
 O texto da confirmação: "Tudo o que for copiado para o lago desta empresa sai, sem volta. O dado
 continua nos sistemas da empresa." O campo: "Digite {nome} para confirmar". O botão: **Apagar o
-lago**, desligado até o nome exato, como **Apagar cliente** (`delete-client-dialog.tsx:19-32`). A
+lago**, como **Apagar cliente** (`delete-client-dialog.tsx:19-32`). A
 nova frase de `CLIENT_DELETION_PENDING`: "A exclusão começou, mas o banco ou o lago da empresa ainda
-não saiu." Os textos vão ao fundador no pull request do G3.
+não saiu."
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -313,8 +305,7 @@ não saiu." Os textos vão ao fundador no pull request do G3.
 na largura inteira; o nome do lago quebra sem rolar de lado.
 ```
 
-O bloco fica depois de Pessoas e Tipos de conta e antes de **Apagar cliente**, para o cliente ativo
-ou aguardando o Dono, e some quando o cliente está em exclusão. Não há captura de outro produto
+O bloco fica onde o desenho mostra, para o cliente ativo ou aguardando o Dono. Não há captura de outro produto
 nem do antigo, que não tinha lago (a seção 6 do estudo); a forma segue as peças da página de hoje.
 
 ## A tabela de falhas
@@ -328,7 +319,7 @@ nem do antigo, que não tinha lago (a seção 6 do estudo); a forma segue as pe�
 | O motivo da falha e o que sobrou (U4, U5) | duas leituras acham a pilha sumida: as duas apagam o depósito; a segunda recebe "não existe" e conta como apagado; uma só grava `FAILED` | o depósito saiu e a linha não gravou: a próxima leitura acha nada a apagar e grava | `NO_ANSWER`: a linha fica `creating`, e a próxima leitura tenta de novo; `REFUSED` do `leftover`: grava `FAILED` assim mesmo | `LAKE_CREATE_FAILED` (`lakeId`, o recurso e o tipo do primeiro evento de falha); `LAKE_LEFTOVER_DELETED`; `LAKE_LEFTOVER_REFUSED` | 34, 35, 44, 55 |
 | Apagar: a linha `deleting` e o `DeleteStack` (U5, U4) | a trava serializa; o segundo recebe `LAKE_BUSY` | a linha `deleting` e o `DeleteStack` perdido: a leitura acha a pilha pronta e manda de novo | `NO_ANSWER`: a linha fica `deleting`; a leitura repete | `LAKE_DELETE_REQUESTED` | 46, 47, 48 |
 | A linha sai quando a pilha sumiu (`GONE`, U5) | `delete … where state = 'deleting' and lake_id = $`: uma só apaga | a linha saiu e a resposta se perdeu: a próxima leitura não acha linha e responde `NONE` | o Hub calado: a linha fica, e a próxima leitura repete | `LAKE_DELETED` | 46 |
-| Apagar o cliente com lago (U5, na exclusão em fases de hoje) | a trava da empresa, como hoje | a primeira transação marcou `DELETING`; o lago ainda não saiu: `CLIENT_DELETION_PENDING` e o mesmo pedido retoma, lendo a pilha e acertando a linha; `failed` sai na hora; `delete_failed` manda o `DeleteStack` de novo | a AWS calada: `CLIENT_DELETION_PENDING` | o de hoje | 51, 52 |
+| Apagar o cliente com lago (U5, na exclusão em fases de hoje) | a trava da empresa, como hoje | a primeira transação marcou `DELETING`; o lago ainda não saiu: `CLIENT_DELETION_PENDING`, e o mesmo pedido retoma (U5, passo 4) | a AWS calada: `CLIENT_DELETION_PENDING` | o de hoje | 51, 52 |
 | `cdk deploy` da plataforma (U2), pela Release; o da preparação (U1), pelo firstmate, uma vez | o CloudFormation recusa a segunda atualização da mesma pilha; o job falha e se roda de novo | o CloudFormation desfaz a atualização da plataforma; o `deploy` do Hub não roda | a AWS calada: o job falha, o Hub não muda | o do CDK, no job | 10 |
 | O modelo em `lago/<sha-256>.json` (U2) | a mesma chave e os mesmos bytes | o arquivo não subiu: o `deploy` não roda, e o Hub antigo segue com o modelo antigo | igual | o do job | 10 |
 | A migração de `lake.company_lake` (U3) | `LOCK_BUSY` e uma nova tentativa (`platform/migrate.ts`) | uma transação | a implantação para antes de servir | o de hoje | 20 |
@@ -375,9 +366,7 @@ na conta dela, **mesma** para o que a pessoa vê.
 | 23 | As recusas do roteiro: a etiqueta de outra empresa e outro endereço | fica de fora: é a prova da garantia, não uma peça | nenhum | Não se aplica | nativo: a recusa é da AWS, sem código de produto | 16 de 16 na prova de 20/11; refeitas no P1 e no P3 de 21/11; ao vivo no passo 5 | C ("8a") | — |
 
 **A medida do transplante.** Nenhuma parte vem do repositório antigo: ele não tinha lago nem AWS (a
-biblioteca de estudos lista para ele só o `S3` para arquivos de app). Do `main` não se copia nada; o
-protocolo de reivindicar e adotar de `company-database.ts` fica onde está, porque o motivo dele
-(`boundaries.md:894-909`) não vale para o CloudFormation.
+biblioteca de estudos lista para ele só o `S3` para arquivos de app). Do `main` não se copia nada (linha 6).
 
 **A dívida.** O órfão de papel ou de grupo do Athena depois de uma criação que falhou não foi visto;
 o Hub não tem `iam:` nem `athena:` para conferi-lo, e a etapa que o vir decide. A mensagem própria
@@ -398,7 +387,7 @@ que só nasce de um banco do Hub restaurado de cópia, acha-se pelas etiquetas `
 | # | Decisão reversível ([delivery L6](../guides/delivery.md)) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
 | L.1 | A pilha da etapa 1 leva o depósito, as áreas `raw` e `current`, o papel leitor, o grupo do Athena e as duas permissões; o papel de escrita vem na etapa 2 e o publicador na 4 | Nada na etapa 1 escreve nem publica; a permissão de `DESCRIBE` no banco precisa do banco; o 0073 diz que mudar todas as empresas é "one `UpdateStack` each" | Uma atualização da pilha acrescenta ou tira |
-| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha porque quem chama informa o nome da pilha e a região; aqui o operador informa a empresa, e o nome da pilha muda a cada tentativa (L.4). Quem mantém uma pilha por cliente guarda uma linha por cliente (linha 3); a AWS só lê a pilha apagada pelo id, e não busca pilha por etiqueta; o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
+| L.2 | Uma linha por lago no banco do Hub: conta, região, `lakeId`, `stack_id`, versão do modelo, estado e hora | O ParallelCluster vive sem linha porque quem chama informa o nome da pilha e a região; aqui o operador informa a empresa, e o nome da pilha muda a cada tentativa (L.4). Quem mantém uma pilha por cliente guarda uma linha por cliente, e a AWS não acha a pilha pela empresa (linha 3); o 0072 quer conta e região como dado | A tabela é nova e ninguém mais a lê |
 | L.3 | Ler a pilha quando alguém lê o lago, sem esperar nem relógio | O ParallelCluster, mesma situação; nenhum pedido fica aberto 25 s; nada roda quando ninguém olha (a ideia da data D27) | Um aviso por fila, quando a etapa 2 trouxer a fila |
 | L.4 | `lakeId` de 12 minúsculas e números, por `crypto.randomInt`, novo a cada tentativa; `ClientRequestToken` igual a ele; o Hub manda o `CreateStack` de novo só quando não guardou o `stack_id` | O P6 do estudo: a mesma chave depois de uma pilha que falhou e sumiu cria uma pilha nova, e o nome do depósito fica preso mesmo depois da falha | Outro formato antes da primeira tabela |
 | L.5 | As duas permissões de `DESCRIBE` por nome, ao papel leitor, dentro da pilha | O P1 do estudo passou, com o controle | A concessão pelo Hub depois de criar |
@@ -462,16 +451,13 @@ export class PlatformStack extends Stack           // Parameters: BudgetUsd, Ala
 export class LakeStack extends Stack               // Parameters: LakeId, CompanyId; sem BootstrapVersion
 ```
 
-A forma do endereço da receita é uma só: `https://<depósito>.s3.<região>.amazonaws.com/lago/<sha-256>.json`, com o
-depósito no começo, como no exemplo do Prescriptive Guidance e como o ParallelCluster monta
-(`PC models/s3_bucket.py:413`). A política usa essa forma no
-padrão, e `aws.ts` a usa no pedido. A chave `cloudformation:TemplateUrl` compara o texto do pedido: o mesmo objeto
-por outra forma de endereço é recusado. O depósito nasce na região das pilhas.
+A forma do endereço da receita é uma só, a do critério 4, com o depósito no começo, como no exemplo
+do Prescriptive Guidance e como o ParallelCluster monta (`PC models/s3_bucket.py:413`): a política a
+usa no padrão, e `aws.ts` no pedido. A chave compara o texto do pedido, então outra forma do mesmo
+objeto é recusada. O depósito nasce na região das pilhas.
 
-O servidor não importa de `infra/`: a U4 repete os nomes em `platform/aws.ts`, e um teste da U4 lê
-`lake.template.json` e confere que batem (critério 30). Cada estado, id e esquema Zod: nenhum nesta
-unidade (são recursos declarados, sem estado nosso). O arquivo modelo: nenhum no `main`; as
-políticas do estudo são o ponto de partida, e não modelo de código.
+O servidor não importa de `infra/`; a U4 repete os nomes (critério 30). Cada estado, id e esquema Zod: nenhum nesta
+unidade (são recursos declarados, sem estado nosso). O arquivo modelo: nenhum no `main`.
 
 `PreparationStack`, o que só um administrador faz, uma vez por conta:
 
@@ -499,25 +485,21 @@ políticas do estudo são o ponto de partida, e não modelo de código.
   `DeleteStack` com `aws:ResourceTag/conexus-empresa` igual à etiqueta da sessão; `iam:PassRole` do
   papel de serviço com `iam:PassedToService` igual a `cloudformation.amazonaws.com`; `s3:GetObject` em
   `lago/*`; `s3tables:GetTableBucket`, `ListNamespaces`, `DeleteNamespace` e `DeleteTableBucket` em
-  `bucket/conexus-*` com a etiqueta da sessão. Nada mais: o `AssumeRole` dos leitores entra na etapa 3,
-  preso à etiqueta.
+  `bucket/conexus-*` com a etiqueta da sessão. Nada mais (critério 4).
 - **O papel de serviço** (`conexus-cfn`). Confia só no CloudFormation, com `aws:SourceAccount`. A
   política do P3, mais estreita: `s3tables:*` em `bucket/conexus-*`; `iam:CreateRole` só em
   `role/conexus-*-leitor` e com `iam:PermissionsBoundary` igual ao limite; as ações de cuidar de papel
   só em `role/conexus-*-leitor`; uma recusa explícita de toda ação do IAM nos `PLATFORM_ROLES`, no
   limite e nos papéis da preparação do CDK; a recusa de tirar ou trocar o limite; o Athena em
-  `workgroup/conexus-*`; e as concessões do Lake Formation. Com a decisão F (a), a confiança de um papel
-  criado é a da receita, fixa; o limite não prende a confiança, e é por isso que a F importa.
+  `workgroup/conexus-*`; e as concessões do Lake Formation.
 - **O limite de permissão** (`conexus-limite`): o máximo de um papel de empresa: o Athena nos grupos
-  `conexus-*`, a leitura do Glue e `lakeformation:GetDataAccess`. A receita monta o ARN dele de
-  `AWS::AccountId` e do nome.
+  `conexus-*`, a leitura do Glue e `lakeformation:GetDataAccess`.
 - **O papel de serviço administrador do lago**: `CfnDataLakeSettings` com `admins` = [o papel de
   serviço] e `mutationType: 'APPEND'` (L.9).
 - **A ligação do `S3 Tables` com o Athena em modo Lake Formation**: o papel que o Lake Formation usa
   para o `S3 Tables`, com o nome `conexus-lf-s3tables` (a política de execução só cuida de `conexus-*`), `CfnResource` do Lake Formation com o ARN `bucket/*` e `withFederation`, e o
   `CfnCatalog` do Glue `s3tablescatalog` com `CreateDatabaseDefaultPermissions` e
-  `CreateTableDefaultPermissions` vazios e `AllowFullTableExternalDataAccess` `"False"`. Se o P2
-  recusar a forma, o recuo é `AwsCustomResource` com as duas chamadas.
+  `CreateTableDefaultPermissions` vazios e `AllowFullTableExternalDataAccess` `"False"`.
 - **O depósito das receitas**: `S3`, na região das pilhas, bloqueado ao público, com versionamento ligado e só por
   TLS (recusa com `aws:SecureTransport` falso). `s3:PutObject` só para o papel da Release e só com o cabeçalho
   `If-None-Match` (condição `Null` em `s3:if-none-match` igual a `false`, na declaração que dá a permissão); nenhum
@@ -572,19 +554,15 @@ confiança com `aws:SourceIp`, a do OIDC com `sub`); `aws-cloudformation`. Ler p
    600 no servidor, com o caminho em `AWS_SHARED_CREDENTIALS_FILE` (S31), só antes de o G3 ir ao ar;
    (4) em us-east-2, a decisão H na ordem de L.10; (5) as variáveis do ambiente `production`; (6) na
    região vazia, depois do P2, `cdk destroy` e a pilha `CDKToolkit` apagada: nenhum deploy posterior
-   roda nessa região. Nenhum número de conta.
+   roda nessa região.
 4. **A prova na conta de laboratório.** Critérios: 4, 5, 6, 13. Roda o firstmate, com a credencial de
    laboratório, seguindo o passo a passo, depois da palavra do fundador (decisões D e H).
-   - **O P2:** na região vazia (L.6), `cdk deploy PlatformStack`, um lago criado com a receita, as três
-     conferências do critério 6, `GetDataLakeSettings` antes, depois e depois do `cdk destroy`.
+   - **O P2:** na região vazia (L.6), `cdk deploy PlatformStack` e os critérios 5 e 6.
    - **O P3 de novo:** em us-east-2, com a plataforma de verdade, a criação aceita e as doze recusas do critério 4.
-   - **O que sai:** os comandos e as saídas, com o número da conta trocado, num comentário do pull
-     request (security S40).
 
 ### Como se prova
 
-Os critérios 1 a 5, 7, 8 e 9 por `npm run test -w @conexus/infra-aws` e pela síntese, na CI, sem conta.
-O 4, o 5, o 6 e o 13 também ao vivo, no passo 4. Hoje nenhum falha porque `infra/aws/` não existe.
+Os critérios 1 a 5, 7, 8 e 9 por `npm run test -w @conexus/infra-aws` e pela síntese, na CI, sem conta. Hoje nenhum falha porque `infra/aws/` não existe.
 
 ### Parar se
 
@@ -626,7 +604,7 @@ versão publicada, com o papel da Release e a região das variáveis do ambiente
 --require-approval never` com os parâmetros das variáveis (`vars.AWS_BUDGET_USD`,
 `vars.AWS_ALARM_EMAIL`, `vars.HUB_SOURCE_IP`); e `aws s3api put-object` da receita em
 `lago/<sha-256>.json` com `--if-none-match '*'`, para nunca sobrescrever: o 412 de uma versão que já
-existe conta como feito. Nenhum número de conta no repositório.
+existe conta como feito.
 
 ### As skills e a leitura
 
@@ -647,8 +625,7 @@ de Release gasto pela prova).
 
 ### Como se prova
 
-O critério 12 pela CI. O 10 e o 11 ao vivo, no P4, com a saída num comentário do pull request do G1
-depois de mesclado.
+O critério 12 pela CI. O 10 e o 11 ao vivo, no P4.
 
 ### Parar se
 
@@ -660,8 +637,7 @@ depois de mesclado.
 ## G1 O ponto de conferência
 
 Depois da U2: `npm run test -w @conexus/infra-aws`, `npm run synth -w @conexus/infra-aws && git diff
---exit-code`, `npm run check`, `docker build` da imagem; o passo 4 da U1 (o P2 e o P3), com as saídas
-no pull request. O P4 roda depois do merge.
+--exit-code`, `npm run check`, `docker build` da imagem; o passo 4 da U1.
 
 ## U3 A linha do lago
 
@@ -699,14 +675,12 @@ D17) e `:130-155` (`companyDatabase`: as regras e as políticas); `apps/server/d
 | `since` | `timestamptz` | não nulo, a hora da última mudança de estado | — |
 | `failure` | `text` | não nulo só em `failed`, `LAKE_CREATE_FAILED` | — |
 
-`state` é o último estado que o Hub viu na pilha, e não uma garantia; a verdade é a pilha, lida pelo `stack_id` (linha 3). `account`, `region` e `stack_id` dizem onde perguntar.
+`state` é o último estado que o Hub viu, e não a verdade, que é a pilha (linha 3).
 
-A política por linha: só o escopo `OPERATOR` lê e escreve. É uma forma nova: em `company_database`
-o operador só lê e apaga (`tables.ts:151-153`, `database-grants.sql:497-504`), porque quem cria é a
-empresa; aqui quem cria é a Central (decisão G). As permissões (decisão G): o login do operador com `SELECT`,
+A política por linha: só o escopo `OPERATOR` lê e escreve, uma forma nova (decisão G; o análogo em
+`tables.ts:151-153`, `database-grants.sql:497-504`). As permissões (decisão G): o login do operador com `SELECT`,
 `INSERT`, `DELETE` e `UPDATE` em `lake_id`, `state`, `template`, `stack_id`, `since` e `failure`;
-`account`, `region` e `company_id` não mudam. O login da empresa, nada. Sem chave estrangeira, nenhum
-"ao apagar"; a linha sai pela U5, quando a pilha sai.
+`account`, `region` e `company_id` não mudam. O login da empresa, nada.
 
 ### As skills e a leitura
 
@@ -728,8 +702,7 @@ chave estrangeira (D17).
 
 ### Como se prova
 
-`catalog.test.ts` compara o catálogo depois da migração com a foto; `tables.test.ts` tenta cada linha
-errada. Hoje a tabela não existe.
+Os testes da ordem do trabalho, contra o banco de teste. Hoje a tabela não existe.
 
 ### Parar se
 
@@ -801,7 +774,7 @@ A configuração, em `ServeEnvironment` (`config.ts:217`): `HUB_AWS_ACCOUNT`, `H
 `HUB_AWS_HUB_ROLE_ARN`, `HUB_AWS_SERVICE_ROLE_ARN`, `HUB_AWS_TEMPLATE_BUCKET`,
 `AWS_SHARED_CREDENTIALS_FILE` (o arquivo lido como a S31 pede), e `HUB_AWS_ENDPOINT` só fora de
 produção (L.17). A versão do modelo é o sha-256 de `infra/aws/lake.template.json` na imagem, lido uma
-vez na subida; sem o arquivo, o Hub não sobe (`CONFIG_INVALID`).
+vez na subida (critério 38).
 
 - **Cada estado.** `AwsAnswer` por `kind`; `StackStatus` é o tipo do SDK, sem cópia (C26).
 - **Cada id.** `LakeId`, `StackId`, `AwsAccount`, `AwsRegion`, `TemplateVersion` com marca, parseados
@@ -964,8 +937,7 @@ export type OutsideResource = {
 - **O dono de cada fato.** O nome do depósito, `conexus-<lakeId>`, só em `platform/aws.ts` (U4), e a
   resposta o recebe dali; a frase de `LAKE_BUSY` em `failures.ts`; quem pode, as ações de
   `admission.ts`.
-- **O arquivo modelo.** `clients.ts:212-242` para a exclusão em fases e as duas transações; não é
-  modelo para o `if` de `:221`, que a lista substitui.
+- **O arquivo modelo.** `clients.ts:212-242` para a exclusão em fases e as duas transações (L.13).
 
 A ordem de cada operação, sem trava durante a chamada à AWS (data D22):
 
@@ -1055,7 +1027,7 @@ rota `apps/web/src/routes/_app/operations/clients/$companyId.tsx:9-39`; `apps/we
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/operations/` (`lake.tsx`, `lake.test.tsx`, `queries.ts`, `client.tsx`, `client.test.tsx`, `delete-client-dialog.tsx`) | Cria o bloco; muda a página, o texto de `LOST` com o lago e o teste da frase nova | a rota |
-| `packages/hub-api/src/project-failures.ts` | Muda só a frase de `CLIENT_DELETION_PENDING`: "A exclusão começou, mas o banco ou o lago da empresa ainda não saiu." | `client.test.tsx:86`, `sweep-project-states.ts:223` |
+| `packages/hub-api/src/project-failures.ts` | Muda só a frase de `CLIENT_DELETION_PENDING`, a da matriz de estados | `client.test.tsx:86`, `sweep-project-states.ts:223` |
 | `apps/web/src/routes/_app/operations/clients/$companyId.tsx` | Muda: o carregador lê o lago quando o cliente não está em exclusão | — |
 | `apps/web/sweep-replies.ts`, `sweep-states.ts`, `sweep-project-states.ts` | Muda: as respostas e os estados do lago; a frase nova | `npm run sweep` |
 | `docs/reference/telas.md` | Muda: o bloco em TB24 | — |
@@ -1076,8 +1048,7 @@ export function ClientLakeBlock(props: { client: Client }): ReactNode
 
 `isMoving` (verdadeiro em `CREATING` e `DELETING`) e `WHILE_MOVING` moram em `queries.ts`, ao lado da
 consulta, como `WHILE_RUNNING` em `copies/queries.ts:20`. O dono das frases é `lake.tsx`, como as de
-`client.tsx` (nenhum `text.ts` em `hub/operations/`); as frases das falhas vêm do Hub (`sentenceOf`),
-e a nova de `CLIENT_DELETION_PENDING` mora em `packages/hub-api/src/project-failures.ts:61-68`. Cada
+`client.tsx` (nenhum `text.ts` em `hub/operations/`); as frases das falhas vêm do Hub (`sentenceOf`). Cada
 estado por `ClientLake.state` (C21), sem id novo; o arquivo modelo é `delete-client-dialog.tsx` para a
 confirmação e `finish-deletion.tsx` para o estado em andamento.
 
@@ -1100,8 +1071,7 @@ e o de design; [Impeccable](../reference/impeccable.md).
 
 ### Como se prova
 
-`lake.test.tsx` pelos componentes com as respostas da varredura; a QA no Hub local com `awsServer`
-(L.17), pelo roteiro e pela matriz.
+`lake.test.tsx` pelos componentes com as respostas da varredura; a QA, pelo roteiro e pela matriz.
 
 ### Parar se
 
