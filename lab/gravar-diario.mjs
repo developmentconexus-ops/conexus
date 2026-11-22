@@ -4,15 +4,17 @@
 //
 // Uso: node gravar-diario.mjs <deps> <raiz do repositório> <região> <pasta de saída>
 //
-// Dois cenários, cada um com uma pilha que falha com OnFailure DELETE, lida pelo id depois de
-// DELETE_COMPLETE, e a verdade conferida por um GetTableBucket da sessão do Hub:
-//  N. o depósito nunca criado: a pilha 1 (lago X) nasce e se apaga; logo depois a pilha 2, com outro
-//     nome e o mesmo lago X, pede o depósito conexus-X, cujo nome ainda está preso (610 s, prova de 20/11).
-//  A. o depósito apagado: a pilha 3 (lago Z) nasce; a sessão do Hub apaga as áreas e o depósito dela por
-//     fora; depois de 620 s, a pilha 4, com outro nome e o mesmo lago Z, cria o depósito conexus-Z, e o
-//     papel e o grupo de trabalho de Z, que a pilha 3 ainda tem, fazem a criação falhar.
-// Nada fica de pé no fim: a pilha 3 sai (com RetainResources só do que já saiu por fora), e um depósito
-// que sobrar é apagado e dito.
+// Três cenários, escolhidos por CENARIOS (padrão C), cada um com uma pilha que falha com OnFailure
+// DELETE, lida pelo id depois de DELETE_COMPLETE, e a verdade conferida por um GetTableBucket da sessão
+// do Hub:
+//  N. o nome preso: a pilha 1 (lago X) nasce e se apaga; logo depois a pilha 2, com outro nome e o
+//     mesmo lago X, pede o depósito conexus-X, cujo nome ainda está preso. No run 45081093044: o
+//     depósito CREATE_FAILED e, depois, DELETE_COMPLETE de um depósito que a pilha não criou.
+//  A. o papel e o grupo de trabalho já existem (os da pilha 3). No run 45081093044 a validação do
+//     CloudFormation recusou a pilha 4 antes de qualquer recurso: nenhum evento do depósito.
+//  C. o caso comum: o depósito CREATE_COMPLETE, um recurso depois falha, e o desfazer o apaga
+//     (scenarioC diz como, só com as permissões do Hub).
+// Nada fica de pé no fim, e um depósito que sobrar é apagado e dito.
 import { createHash, randomInt } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -220,7 +222,7 @@ async function removeStack(stackId) {
 const outcome = {}
 const made = []
 
-async function main() {
+async function scenarioN() {
   console.log('== N. o depósito nunca criado')
   const x = lakeId()
   const s1 = await create(x, x)
@@ -237,8 +239,10 @@ async function main() {
     outcome.N = (await truth(x, 'get-table-bucket-depois-nunca-criado')) ? 'SOBROU' : 'não existe'
     if (outcome.N === 'SOBROU') await clearBucket(x)
   }
+}
 
-  console.log('== A. o depósito apagado')
+async function scenarioA() {
+  console.log('== A. o papel e o grupo de trabalho já existem')
   const z = lakeId()
   const s3 = await create(z, z)
   if ((await settled(s3)) !== 'CREATE_COMPLETE') throw new Error('a pilha 3 não nasceu')
@@ -258,7 +262,60 @@ async function main() {
   }
   console.log('== a pilha 3, que ainda tem o papel e o grupo de Z')
   await removeStack(s3)
-  console.log(`resultado: N ${outcome.N}; A ${outcome.A}; nada ficou de pé`)
+}
+
+/** Events of the stack, newest first, no recording: the watch of scenario C. */
+async function eventsNow(stackId) {
+  const read = await stacks.send(new cfn.DescribeStackEventsCommand({ StackName: stackId }))
+  return read.StackEvents ?? []
+}
+
+/**
+ * C. The common case: the bucket CREATE_COMPLETE, a later resource fails, and the undoing deletes the
+ * bucket. As soon as the namespace `current` is CREATE_COMPLETE, the Hub's session removes the
+ * namespaces and the bucket (the leftover's own permissions): the two Lake Formation grants, which
+ * depend on `current`, fail, and OnFailure DELETE undoes the stack. Up to three tries, in case the
+ * stack finishes before the watch acts.
+ */
+async function scenarioC() {
+  console.log('== C. o depósito criado, um recurso depois falha, e o depósito apagado')
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const lake = lakeId()
+    const stackId = await create(lake, lake)
+    let acted = false
+    for (let i = 0; i < 600 && !acted; i += 1) {
+      const events = await eventsNow(stackId)
+      const done = (logical) =>
+        events.some((e) => e.LogicalResourceId === logical && e.ResourceStatus === 'CREATE_COMPLETE')
+      const stackDone = events.some(
+        (e) => e.ResourceType === 'AWS::CloudFormation::Stack' && !e.ResourceStatus?.endsWith('_IN_PROGRESS'),
+      )
+      if (stackDone) break
+      if (done('Bucket') && done('Raw') && done('Current')) {
+        await clearBucket(lake)
+        acted = true
+      } else await sleep(500)
+    }
+    const now = await settled(stackId)
+    console.log(`  tentativa ${attempt}: ${acted ? 'áreas e depósito apagados por fora' : 'não deu tempo'}; a pilha ${now}`)
+    if (now === 'DELETE_COMPLETE') {
+      await diary(stackId, 'describe-stack-events-criado-e-apagado')
+      outcome.C = (await truth(lake, 'get-table-bucket-depois-criado-e-apagado')) ? 'SOBROU' : 'não existe'
+      if (outcome.C === 'SOBROU') await clearBucket(lake)
+      return
+    }
+    console.log('  a pilha não falhou; apagando e tentando de novo')
+    await removeStack(stackId)
+  }
+  outcome.C = 'sem falha em três tentativas'
+}
+
+async function main() {
+  const wanted = (process.env.CENARIOS ?? 'C').split(',')
+  if (wanted.includes('N')) await scenarioN()
+  if (wanted.includes('A')) await scenarioA()
+  if (wanted.includes('C')) await scenarioC()
+  console.log(`resultado: ${JSON.stringify(outcome)}; nada ficou de pé`)
 }
 
 try {

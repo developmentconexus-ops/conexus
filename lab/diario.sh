@@ -6,7 +6,7 @@
 # Num contêiner de uso único da imagem do Hub em execução (ou node:24-slim já baixada), como uid 1000, o
 # dono da chave, com só /etc/conexus/secrets/hub_aws_credentials montado, só leitura:
 # 1. instala numa pasta de uso único os clientes do SDK nas versões do package-lock deste ramo (o main);
-# 2. node lab/gravar-diario.mjs: duas criações que falham pela receita publicada, o DescribeStackEvents de
+# 2. node lab/gravar-diario.mjs: as criações que falham (CENARIOS, padrão C) pela receita publicada, o DescribeStackEvents de
 #    cada pilha apagada, pelo id, e o GetTableBucket que diz se o depósito existe, em lab/out/gravacoes/;
 # 3. node lab/conferir.mjs: apaga a gravação que tiver a conta, a chave ou um id de chave de verdade;
 # 4. imprime cada gravação limpa em base64, entre marcadores, porque o artefato pode não chegar a quem lê.
@@ -46,7 +46,7 @@ timeout --kill-after=30 2400 docker run --rm --pull never --user 1000:1000 \
   --mount "type=bind,source=$trabalho,target=/deps" \
   --mount "type=bind,source=$saida,target=/out" \
   -e HOME=/deps/home -e AWS_SHARED_CREDENTIALS_FILE=/run/secrets/hub_aws_credentials \
-  -e AWS_CONFIG_FILE=/deps/sem-config -e AWS_REGION=us-east-2 \
+  -e AWS_CONFIG_FILE=/deps/sem-config -e AWS_REGION=us-east-2 -e CENARIOS="${CENARIOS:-C}" \
   -e LAB_RUN="${GITHUB_RUN_ID:?o lab.yml dá o GITHUB_RUN_ID}" \
   --entrypoint /bin/sh "$imagem" -euc '
     echo "== 0. o arquivo da chave: $(stat -c "%u:%g %a %s" /run/secrets/hub_aws_credentials)"
