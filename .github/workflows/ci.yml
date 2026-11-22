@@ -493,7 +493,12 @@ jobs:
 
       - name: The image has the lake template and not aws-cdk-lib
         run: |
-          docker run --rm -i --entrypoint cmp conexus-hub:ci infra/aws/lake.template.json - < infra/aws/lake.template.json
+          expected="$(sha256sum infra/aws/lake.template.json | cut -d ' ' -f 1)"
+          actual="$(docker run --rm --entrypoint sha256sum conexus-hub:ci infra/aws/lake.template.json | cut -d ' ' -f 1)"
+          if [ "$actual" != "$expected" ]; then
+            echo "the image's lake template is not the repository's"
+            exit 1
+          fi
           if docker run --rm --entrypoint test conexus-hub:ci -e node_modules/aws-cdk-lib; then
             echo "the image carries aws-cdk-lib"
             exit 1
