@@ -1,0 +1,69 @@
+name: AWS platform
+
+# The lake's platform in the AWS account, before the Hub that uses it (card L7): called by the
+# Release ahead of its deploy, and run by hand on main for the proof that spends no Release name
+# (delivery L17). It enters AWS through GitHub's OIDC, with no stored key: the Release role trusts
+# only this repository's `production` environment, so a job without it is refused.
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-platform
+  cancel-in-progress: false
+
+jobs:
+  platform:
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund -w @conexus/infra-aws
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: conexus-release
+      - name: The platform
+        working-directory: infra/aws
+        env:
+          BUDGET_USD: ${{ vars.AWS_BUDGET_USD }}
+          ALARM_EMAIL: ${{ vars.AWS_ALARM_EMAIL }}
+          HUB_SOURCE_IP: ${{ vars.HUB_SOURCE_IP }}
+        run: |
+          npx cdk deploy PlatformStack --require-approval never \
+            --parameters "BudgetUsd=$BUDGET_USD" \
+            --parameters "AlarmEmail=$ALARM_EMAIL" \
+            --parameters "HubSourceIp=$HUB_SOURCE_IP"
+      # The address is lago/<sha-256 of the file>.json. A version already there is never rewritten:
+      # the bucket refuses a put without If-None-Match, and with it answers 412, which counts as done.
+      - name: The lake template
+        env:
+          REGION: ${{ vars.AWS_REGION }}
+        run: |
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          version="$(sha256sum infra/aws/lake.template.json | cut -d ' ' -f 1)"
+          if ! out="$(aws s3api put-object --bucket "conexus-receitas-$account-$REGION" \
+            --key "lago/$version.json" --body infra/aws/lake.template.json \
+            --content-type application/json --if-none-match '*' 2>&1)"; then
+            if ! grep -q PreconditionFailed <<<"$out"; then
+              echo "$out"
+              exit 1
+            fi
+            echo "lago/$version.json was already published"
+          fi

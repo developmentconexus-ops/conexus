@@ -491,6 +491,14 @@ jobs:
       - name: The final image carries the system CA roots the sign-in program reads
         run: docker run --rm --entrypoint test conexus-hub:ci -s /etc/ssl/certs/ca-certificates.crt
 
+      - name: The image has the lake template and not aws-cdk-lib
+        run: |
+          docker run --rm -i --entrypoint cmp conexus-hub:ci infra/aws/lake.template.json - < infra/aws/lake.template.json
+          if docker run --rm --entrypoint test conexus-hub:ci -e node_modules/aws-cdk-lib; then
+            echo "the image carries aws-cdk-lib"
+            exit 1
+          fi
+
       - name: The final image sends rendered HTML and text through the real Hub
         run: npm run test:image
 
