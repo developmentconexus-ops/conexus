@@ -15,6 +15,9 @@ Read only when the step creates or changes a screen.
    carry the founder's word on his page; without it the cell opens on what the tool keeps (arguments,
    result, error). Step 14's card declared such a row; the build met the card and the person met
    "Usou uma ferramenta", and neither review nor QA could see it.
-6. A finding of Impeccable never blocks alone; [delivery L12](../../../../docs/guides/delivery.md)
+6. Piece before screen ([design V62](../../../../docs/guides/design.md)): the card lists the
+   `ui/` pieces each screen uses and the new ones it needs. Each new piece gets its reference
+   table row, its showcase entry and its `DESIGN.md` line in the unit of the screen that uses it.
+7. A finding of Impeccable never blocks alone; [delivery L12](../../../../docs/guides/delivery.md)
    judges it. Which commands, hooks and configuration Conexus allows is owned by
    [Impeccable](../../../../docs/reference/impeccable.md).

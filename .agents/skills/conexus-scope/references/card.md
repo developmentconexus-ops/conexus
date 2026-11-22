@@ -49,8 +49,8 @@ paralelo, porque não dividem pasta>
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 
-Uma etapa com tela leva o desenho de caixas de cada tela, a 1280 e 390 px, e as capturas do
-produto antigo que o protótipo seguiu ([screens](screens.md)).
+Uma etapa com tela leva o desenho de caixas, a 1280 e 390 px, as capturas que o protótipo seguiu
+e as peças de `ui/` que usa ([screens](screens.md)).
 
 ## A tabela de falhas
 

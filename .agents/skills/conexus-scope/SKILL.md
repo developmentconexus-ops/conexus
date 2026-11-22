@@ -36,7 +36,8 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    [delivery L28](../../../docs/guides/delivery.md).
 5. Fill the state matrix: each screen's states, and for each contract field who writes and
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
-   rules](../../../docs/reference/impeccable.md). A brought part passes the study's rule.
+   rules](../../../docs/reference/impeccable.md), and list its `ui/` pieces, each new one with its
+   reference row ([design V62](../../../docs/guides/design.md)). A brought part passes the study's rule.
 6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads; its
    skills come from the `docs/reference/stack.md` rows for its folders, and
    the reference lines it follows.
