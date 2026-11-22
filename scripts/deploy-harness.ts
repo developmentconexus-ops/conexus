@@ -17,6 +17,7 @@ export const SECRETS = [
   'hub_git_copy_key',
   'hub_e2b_api_key',
   'hub_connector_apps',
+  'hub_aws_credentials',
 ]
 
 const DEPLOY = resolve(import.meta.dirname, '../infra/deploy.sh')
