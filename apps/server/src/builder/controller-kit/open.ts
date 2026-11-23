@@ -88,9 +88,9 @@ export async function openSession(
 /**
  * Puts a conversation on the model and effort the person chose, kept together on its thread
  * (`switch`), for its next turns; the Builder's, the Assistant's and the Construtor's routes of
- * `…/model` all end here. The model needs an account the person may use and the effort one the model
- * offers, or nothing changes. `createSession` finds the session, or recovers it with the marks its
- * creation stamped (`tags`), so one is never born without them.
+ * `…/model` all end here, by `answerModelChange`. The model needs an account the person may use and
+ * the effort one the model offers, or nothing changes. `createSession` finds the session, or
+ * recovers it with the marks its creation stamped (`tags`), so one is never born without them.
  */
 export async function changeModel(
   deps: { controller: AgentController; queue: QueueDeps },
