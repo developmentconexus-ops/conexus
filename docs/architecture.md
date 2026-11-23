@@ -6,10 +6,9 @@ it. The rules live in the [guides](guides/).
 
 ## 1. Introduction and goals
 
-Conexus gathers company data, systems and know-how in a context and ontology layer that learns.
-On it the company analyses, automates, uses AI and asks for apps; the Builder agent writes them, for
-its people, on its data. One founder operates it, for a handful of invited companies
-at launch.
+What Conexus is, what it never does and what each of its three Solutions refuses is
+[`VISION.md`](../VISION.md), in Portuguese. The Builder agent writes a company's apps, for its
+people, on its data. One founder operates it, for a handful of invited companies at launch.
 
 **Quality goals, in order.**
 
@@ -23,13 +22,6 @@ at launch.
    the line where the library does less.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
    finds any fact's owner [0002] [0003].
-
-**What the product never does.** It never invents a value or simulates progress: a figure shown as
-from a system came from a real read, and an unknown is shown as unavailable, never as zero.
-It never lets the model declare work done; Conexus owns the run's state. It never overwrites someone
-else's newer work. It never shows a credential. It never publishes on its own. Conexus is not an ERP
-replacement, a database console or a drag-and-drop tool: people create by conversation, the result
-is real code, and the official data stays in the company's systems.
 
 **Who has a stake.** The founder: product owner, operator, and the person who closes each step by
 using it. Company administrators and members, who use the Hub and apps. The agents that build

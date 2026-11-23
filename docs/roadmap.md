@@ -30,7 +30,9 @@ lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
 ### A direção
 
-O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
+O Conexus são três Solutions, Dados e contexto, Agentes e Apps, sobre a Plataforma
+([VISION.md](../VISION.md)); as ferramentas ao vivo do kit são de Dados e a biblioteca de
+ferramentas, de Agentes. Os agentes e os apps
 chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
 do contrato podem estar as nossas cópias, no lago de cada empresa, na AWS
 ([0070](decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md)); as ferramentas ao vivo do
@@ -79,11 +81,8 @@ plano em `A3`, código e teste em `A1`, revisão em `A4`.
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
 bonitos e quebrados.
 
-**O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
-a Nango fica fora do código. O kit serve o ao vivo e o login; a cópia é tap Singer
-gerado dele ([0071](decisions/0071-connectors-kit-live-copies-singer.md)). A Fábrica gera
-declarações do kit, conferidas com uma leitura de teste. Mais de um estudo aberto
-por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
+**O que não se faz.** O que nunca se faz está na [VISION.md](../VISION.md). Agora: mais de um
+estudo aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
 agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
 
 ### O que você fornece, e quando

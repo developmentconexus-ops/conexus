@@ -15,16 +15,11 @@ the Central. Owner: docs/architecture.md §1 "Who has a stake". Concept: docs/ex
 
 ## Product Purpose
 
-Conexus gathers a company's data, systems and knowledge of how it operates into a context and ontology
-layer that learns with use. On it the company analyses, automates, puts AI to work and asks the Builder
-for the apps its processes need; Conexus builds, previews, publishes and runs them on that company's
-data. Owner: docs/architecture.md §1.
+Owner: VISION.md (in Portuguese), "O Conexus".
 
 ## Positioning
 
-A context and ontology layer first; apps are one of four things built on it. Creation by conversation,
-real code, official data stays in the company's systems. Not an ERP, a database console or a
-drag-and-drop tool. Owner: docs/architecture.md §1 "What the product never does".
+Owner: VISION.md: three Solutions on the Platform, and what Conexus is not.
 
 ## Capabilities and Constraints
 
@@ -43,8 +38,7 @@ No customer yet. Never invent testimonials, customers, numbers or claims.
 
 ## Product Principles
 
-It never invents a value or simulates progress. It never lets the model declare work done. It never
-overwrites someone else's newer work. It never shows a credential. It never publishes on its own.
+Owner: VISION.md: the "Nunca" lines and each Solution's refusal test.
 
 ## Accessibility & Inclusion
 

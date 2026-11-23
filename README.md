@@ -1,8 +1,6 @@
 # Conexus
 
-O Conexus deixa uma pessoa de uma empresa pedir, em português, um aplicativo para o trabalho dela.
-Um agente, o Builder, escreve o aplicativo, e o Conexus o põe no ar para as pessoas daquela empresa,
-com os dados dela.
+O que o Conexus é, e o que ele não é, está na [VISION.md](VISION.md).
 
 Este repositório guarda o programa do servidor (o Hub e o Builder), as telas do Hub, a parte que
 roda no Cloudflare e os contratos entre eles. Os estudos e as provas que levaram a este desenho
