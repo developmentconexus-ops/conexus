@@ -1,12 +1,13 @@
 # Uma ficha por agente
 
-Trilho: assistente
+Trilho: harness
 
 Trilha Agentes e Apps, a etapa 1 do harness: "Uma ficha por agente". As palavras do fundador ao
-estudo, em 2026-11-22: "A: Sua recomendacao", "B: Okay" e "C: Okay". A marca `Trilho: assistente` é
-a que a verificação `second-card` lê para esta trilha (`scripts/cli.ts:17-22`, `trackOf`), como nos
-cartões da Prévia e do `A1`. O cartão espera num pull request em rascunho e entra em `docs/steps/`
-quando A Prévia em endereço próprio sair no seu fechamento (delivery L5). Lido em `main` `b5d93116`.
+estudo, em 2026-11-22: "A: Sua recomendacao", "B: Okay" e "C: Okay". Em 2026-11-23 ele pôs o
+harness em paralelo com a Prévia e o Lago 1: "Não tem problema ter as coisas andando em paralelo.
+Eu quero isso. [...] eu quero as três." A marca `Trilho: harness` é a que a verificação
+`second-card` lê para este trilho próprio (`scripts/cli.ts`, `trackOf`; delivery L5), e o cartão
+entra em `docs/steps/` ao lado do da Prévia, sem esperar o fechamento dela. Lido em `main` `b5d93116`.
 O estudo fica fora do repositório (delivery L21): ele leu em `2fc19ec5`, e entre os dois só mudou
 `docs/how-to/aws-conta-de-laboratorio.md`; cada linha de `main` citada aqui foi relida em
 `b5d93116`. As referências: `@mastra/core` 1.83.0 instalado (`node_modules/@mastra/core/dist/`, `NM/`
@@ -89,8 +90,9 @@ as suas palavras vão para o arquivo de aprovação deste cartão quando você a
 
 - **A. A ordem das duas etapas.** (a) esta etapa logo depois da Prévia, antes do `A1`, e a etapa 2
   depois do `A1` e antes do `A3`; (b) as duas antes do `A1`; (c) só esta agora e a etapa 2 depois
-  do `A4`. **A sua resposta: a** ("Sua recomendacao"). A ordem fica: Prévia, esta etapa, `A1`,
-  etapa 2, `A2`, `A3`.
+  do `A4`. **A sua resposta: a** ("Sua recomendacao"). Em 2026-11-23 esta etapa passou a correr em
+  paralelo com a Prévia, no trilho próprio do harness; o resto da ordem fica: `A1`, etapa 2, `A2`,
+  `A3`.
 - **B. Os nomes que a pessoa vê.** (a) na etapa 2, com protótipo antes, "Construtor de apps" e
   "Construtor de agentes", e no código `app-builder` e `agent-builder`; (b) como estava, depois do
   `A4`. **A sua resposta: a** ("Okay"). Esta etapa não muda nenhum nome.

@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
 
-// One card per track (delivery L5): the frontier's, the pattern's, the design's and the Assistant's.
+// One card per track (delivery L5): the frontier's, the pattern's, the design's, the Assistant's
+// and the harness's.
 const SCRIPT = resolve(import.meta.dirname, 'check-second-card.ts')
 const dirs: string[] = []
 after(() => {
@@ -70,6 +71,23 @@ test('recusa dois cartões do trilho do Assistente, nomeando o trilho', () => {
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /second-card: docs\/steps: assistant: /)
+})
+
+test('aceita um cartão do harness ao lado de um do Assistente', () => {
+  const run = check({
+    'a-previa.md': '# a\n\nTrilho: assistente\n',
+    'uma-ficha.md': '# b\n\nTrilho: harness\n',
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('recusa dois cartões do harness, nomeando o trilho', () => {
+  const run = check({
+    'e05-a.md': '# a\n\nTrilho: harness\n',
+    'e06-b.md': '# b\n\nTrilho: harness\n',
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /second-card: docs\/steps: harness: /)
 })
 
 test('um pull request em rascunho aceita o segundo cartão da trilha; fora do rascunho, recusa', () => {
