@@ -128,7 +128,7 @@ export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore; 
       return judge(deps, requestContext).catch((cause: unknown) => {
         const conversationId = conversationIn(requestContext)
         const about = {
-          runId: run.runId,
+          ...(run.runId === undefined ? {} : { runId: run.runId }),
           ...(conversationId === undefined ? {} : { conversationId }),
         }
         logFailure(
