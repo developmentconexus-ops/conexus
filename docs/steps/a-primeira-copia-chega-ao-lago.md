@@ -10,7 +10,8 @@ decisões dela estão abertas.
 Cada linha do `main` citada foi lida em `b2406e07` (v0.24.110). As versões que a construção
 instala são as que o estudo leu e rodou: `meltano` 4.4.1, `singer-sdk` 0.54.9, `pyiceberg` 0.12.0,
 `pyarrow` 26.0.1, Python 3.13, e `@aws-sdk/client-ecs`, `client-sqs`, `client-ssm` e
-`client-athena` 3.1175.0, a versão que o `main` fixa para os outros clientes da AWS.
+`client-athena` 3.1175.0, a versão que o `main` fixa para o `client-cloudformation` e o
+`client-s3tables` (o `client-s3` de hoje fica em 3.1146.0).
 
 **Antes da construção.** Três coisas no `main`:
 
@@ -25,6 +26,11 @@ instala são as que o estudo leu e rodou: `meltano` 4.4.1, `singer-sdk` 0.54.9, 
    configuração, com a palavra do fundador (delivery L20). A U3 e a U4 não começam antes dele.
 3. **A segunda preparação da conta de laboratório** (decisão E), pelo firstmate, com a palavra do
    fundador, antes de a U5 publicar a plataforma.
+4. **O L.2 à mão**, antes do G1: o firstmate, com a palavra do fundador, sobe na conta de laboratório
+   uma tarefa avulsa na forma da prova (`conexus-lab-trilho/fases2a4/plataforma.py:80-90`), que faz o
+   login e lê uma página do Sankhya do fundador. Se o gateway recusar o endereço da AWS, nenhuma
+   unidade começa e a etapa volta ao fundador (0071). O critério 29 repete o teste com a imagem e a
+   plataforma da U5.
 
 Se a mudança de método mesclar com outra forma, a unidade segue a forma mesclada e o firstmate relê
 esta seção.
@@ -50,8 +56,9 @@ Sankhya ligada.
 1. Em **Dados**, clique **Ligar uma cópia**. Escolha a conexão do Sankhya, o modelo **Vendas** e o
    intervalo. Aparece um campo novo, **Onde guardar**; escolha **No lago**.
 2. A linha `vendas` aparece na lista com a marca **No lago** e "Rodando…". Quando a primeira carga
-   termina, ela diz **Em dia**, com o número de linhas e a hora. A primeira carga pode levar dezenas
-   de minutos: a conta do estudo dá uns 27, e não foi medida.
+   termina, ela diz **Em dia**, com o número de linhas e a hora. O modelo Vendas traz as vendas dos
+   últimos 30 dias (decisão F), então "inteira" quer dizer a janela inteira. Quanto tempo a primeira
+   carga leva não foi medido.
 3. Abra a tabela e vá em **Rodadas**: a primeira diz "Completa · inteira" e quantas linhas leu. Em
    **Detalhes**, a frase diz "As linhas ficam no lago da empresa."
 4. O firstmate mostra na sua frente, no console da AWS, a tabela `vendas` dentro do lago da sua
@@ -60,7 +67,9 @@ Sankhya ligada.
 
 *Parte 2, a mudança aparece.*
 
-5. Lance ou altere uma venda no Sankhya. Clique **Rodar agora**, ou espere o intervalo.
+5. Lance ou altere uma venda dos últimos 30 dias no Sankhya. Clique **Rodar agora**, ou espere o
+   intervalo. A cópia acha a venda alterada pela data de alteração dela; que o Sankhya da sua empresa
+   a muda numa alteração não foi verificado, e o firstmate confere antes do roteiro.
 6. A rodada seguinte diz "Completa · só o que mudou" e mostra poucas linhas lidas. O total de linhas
    sobe ou fica igual.
 7. O firstmate mostra no console a venda alterada na tabela do lago, com o valor de hoje.
@@ -72,10 +81,12 @@ Sankhya ligada.
    lembrete. Ele conserta a senha, e na rodada seguinte ela volta a **Em dia**, sem e-mail.
 
 **O que você faz, e quando.** Antes: nada; a conexão do Sankhya da sua empresa já está ligada. No
-começo: aprova esta página e responde as decisões A a I. Na construção da parte 1: dá a palavra
-para a segunda preparação da conta (decisão E) e para o primeiro teste da tarefa contra o seu
-Sankhya, de dentro da AWS (o L.2 do estudo). Se o Sankhya recusar o endereço da AWS, a etapa volta a
-você antes de qualquer outra unidade. No fim de cada parte: faz o roteiro dela, diz o que viu e
+começo: aprova esta página e responde as decisões A, B, C, E, F, G, H e I, e dá a palavra para o
+primeiro teste de uma tarefa contra o seu Sankhya de dentro da AWS (o L.2 do estudo), que roda à
+mão antes de qualquer unidade: se o Sankhya recusar o endereço da AWS, nada é construído e a etapa
+volta a você. Na construção da parte 1: dá a palavra para a segunda preparação da conta (decisão
+E). No começo da parte 3: dá a palavra para o login da empresa ler e gravar as duas tabelas novas
+do aviso (data D11, a mesma regra da H). No fim de cada parte: faz o roteiro dela, diz o que viu e
 aprova os textos novos da tela, que o pull request daquela parte lista.
 
 **Fica de fora.**
@@ -191,11 +202,17 @@ primeira opção é a que o cartão já está escrito.
 - **F. Qual tabela do Sankhya prova a etapa.** O kit oferece cinco modelos com coluna de alteração.
   - **(a)** **Vendas**, o cabeçalho das notas de venda. Tem dinheiro, então prova o valor exato
     dentro da AWS, que o registro 0071 lista como não provado. Cada venda lançada é uma linha nova,
-    então "a mudança de hoje" aparece com uma venda de verdade. **Recomendo a.** A tabela de notas da
-    sua empresa tem 719 mil linhas; o modelo Vendas pega só uma parte, que ninguém contou ainda.
+    então "a mudança de hoje" aparece com uma venda de verdade. **Recomendo a.** O que o estudo não
+    disse e o cartão acrescenta: o modelo Vendas de hoje tem uma janela, as vendas dos últimos 30
+    dias pela data da negociação (`C/packages/connectors/src/sankhya/copies.ts:83`, `:151-152`).
+    Então a cópia no lago guarda essa janela, como a cópia no banco guarda hoje: uma venda que sai da
+    janela sai da tabela atual na passada seguinte. O cartão constrói a leitura e a atualização da
+    janela (U3 e U9), que o estudo deixava para a etapa 7. A tabela de notas da sua empresa tem 719
+    mil linhas; quantas caem em 30 dias ninguém contou.
   - **(b)** **Clientes.** É menor e mais fácil de alterar à mão, mas não tem dinheiro.
-  - *Se não for a (a):* o roteiro troca Vendas por Clientes, e o critério do valor exato dentro da
-    AWS sai desta etapa e vai para a dívida, até a primeira tabela com dinheiro.
+  - *Se não for a (a):* o roteiro troca Vendas por Clientes, que não tem janela; a leitura e a
+    atualização da janela saem da U3 e da U9 e voltam para a etapa 7; e o critério do valor exato
+    dentro da AWS sai desta etapa e vai para a dívida, até a primeira tabela com dinheiro.
 
 - **G. Uma tarefa por tabela ou uma por sistema.** Hoje cada tabela tem o seu relógio e a sua
   rodada, e a página mostra o **Intervalo** por tabela. Exemplo: daqui a algumas etapas a sua
@@ -228,25 +245,28 @@ primeira opção é a que o cartão já está escrito.
 
 - **I. Onde a empresa escreve a lista de e-mails que recebe o aviso** (o cartão precisou; o estudo
   não tinha). Você decidiu em 2026-11-21 que o aviso vai a quem pode consertar e "à lista de e-mails
-  da empresa". A tabela dessa lista existe no `main`, mas nenhuma tela nem rota a preenche: hoje ela
-  está vazia em toda empresa. Exemplo: a sua empresa quer que o aviso chegue também ao
+  da empresa". A tabela dessa lista existe no `main`, mas nenhuma tela nem rota a preenche. O mapa
+  de telas já a põe em Configurações, na seção **Avisos** da empresa, "a etapa 2 do lago"
+  (`docs/reference/telas.md:311`; `docs/explanation/mapa.md:212`). Exemplo: a sua empresa quer que o aviso chegue também ao
   `ti@empresa.com.br`, que não é login de ninguém.
-  - **(a)** Um bloco pequeno na página **Dados**, **Quem recebe os avisos de cópia**, que só o Dono
-    e o Administrador veem: a lista, um campo para acrescentar um e-mail e o botão de tirar.
+  - **(a)** Em Configurações, a seção **Avisos**, como o mapa de telas prevê, que só o Dono e o
+    Administrador veem: a lista, um campo para acrescentar um e-mail e o botão de tirar.
     **Recomendo a**: sem ele a sua decisão de 21/11 fica pela metade. Custa umas 200 linhas na parte
-    3. Veredito: embrulhado (a lista e o campo de `ui/` que a página já usa). A Nekt também manda o
+    3. Veredito: embrulhado (a lista e o campo de `ui/` que Configurações já usa). A Nekt também manda o
     aviso a uma lista de e-mails da empresa (`NK:22357-22360`).
   - **(b)** Nesta etapa o aviso vai só ao Dono e aos Administradores; a lista espera uma etapa
     própria.
   - *Se não for a (a):* a U12 sai, o critério da lista sai, e o roteiro do passo 8 diz só "chega um
     e-mail a você".
 
-**O que muda em relação ao estudo, e por quê.** Quatro coisas:
+**O que muda em relação ao estudo, e por quê.** Cinco coisas:
 
 - **Um cartão em três partes, e não três cartões** (acima). O estudo recomendou três cartões.
 - **O Hub ganha poderes na AWS** que o estudo não listou: é o item 4 da E.
 - **O login da empresa lê a linha do lago**: é a H.
-- **A lista de e-mails ganha onde ser escrita**: é a I, a única que muda o que você vê.
+- **A lista de e-mails ganha onde ser escrita**: é a I.
+- **A janela de 30 dias do Vendas entra nesta etapa**, e não na 7: está na F. Ela e a I são as
+  duas que mudam o que você vê.
 
 ## As unidades
 
@@ -263,29 +283,33 @@ primeira opção é a que o cartão já está escrito.
 | G6 A mudança aparece (um PR, parte 2) | U9 Só o que mudou | O ponto de parada do Meltano no depósito `S3`; o modo incremental; o atualizar; a limpeza da bruta (decisão A); a passada inteira de domingo; o L.4 e o L.7 | o raio da U9 | data (D25) | a parte 1 usada |
 | G7 A tabela do aviso (um PR, data D11, parte 3) | U10 As tabelas da parada | A parada na cópia, a parada da conexão, o aviso no sino; saem `copy_follower` e `copy_notice` | o raio da U10 | data (D6, D11, D15) | a parte 2 usada |
 | G8 O aviso (um PR, parte 3) | U11 O aviso de cópia parada | A parada anotada por tabela, o e-mail por conexão, a linha no sino, o lembrete por dia, a marca **Parada** na lista | o raio da U11 | web; security (S41) | G7 mesclado |
-| G8 | U12 A lista de e-mails (decisão I) | As rotas de listar, acrescentar e tirar um e-mail da lista, e o bloco **Quem recebe os avisos de cópia** na página Dados | o raio da U12 | web, design; security (S8) | G7 mesclado |
+| G8 | U12 A lista de e-mails (decisão I) | As rotas de listar, acrescentar e tirar um e-mail da lista, e a seção **Avisos** de Configurações | o raio da U12 | web, design; security (S8) | G7 mesclado |
 
 Oito grupos, um pull request cada ([delivery L9](../guides/delivery.md)), um commit por unidade.
 
 - **A linha principal.** G1, G2 e G4 em paralelo: não dividem pasta. G3 parte do G2 mesclado,
   porque a imagem leva o adaptador. G5 parte do G3 e do G4 mesclados.
 - **As três partes.** A parte 1 (G1 a G5) termina no roteiro 1 a 4. A parte 2 (G6) e a parte 3 (G7 e
-  G8) começam cada uma depois de o fundador usar a anterior; cada parte publica uma versão
-  `v0.25.P` (delivery L17), e a etapa fecha com a parte 3.
+  G8) começam cada uma depois de o fundador usar a anterior; cada parte publica uma versão, com o
+  nome que o firstmate dá pela delivery L17 (a parte 1, a da etapa; as outras, as seguintes), e a
+  etapa fecha com a parte 3. Publicar e usar no meio da etapa é leitura deste cartão, com a palavra
+  do fundador ao aprová-lo.
 - **Só o G4 e o G7 criam ou tiram permissão no banco do Hub** (data D11).
 - **O que toca a outra trilha.** Nenhum arquivo de `builder/` além de `builder/copy-clock/` (U7, U9),
-  que a trilha Dados possui. A U6, a U7, a U10 e a U11 mudam `packages/hub-api`; a U11 muda
-  `hub/notifications/`, da Plataforma. Os pull requests do G4, do G5, do G7 e do G8 avisam a outra
-  trilha (delivery L27).
+  que a trilha Dados possui. Da Plataforma ou do contrato compartilhado: `packages/hub-api` (U1, U6,
+  U7, U11, U12), `platform/app-sql.ts`, `copy-reader.ts`, `aws.ts`, `config-aws.ts` (U1, U7, U9),
+  `hub/lake/` (U6, U7) e `hub/notifications/` (U10, U11, U12). Os pull requests do G1, do G4, do
+  G5, do G7 e do G8 avisam a outra trilha (delivery L27).
 - **A QA** ([testing T25](../guides/testing.md)) roda depois do G5, do G6 e do G8, no Hub local com o
   servidor de respostas gravadas.
 
 **Orçamento de código alterado.** Linhas mudadas, as tiradas também, sem testes nem gerados (o
 `lake.template.json` é gerado; os dublês e as gravações não contam; o Python conta). As medidas do
-estudo estão entre parênteses. U1: ~90. U2: ~380 (a sessão, 87). U3: ~380 (344). U4: ~520 (o
-gravador, 165). U5: ~480. U6: ~90. U7: ~680 (os fechadores, de 172 a 312). U8: ~200. U9: ~420 (o
-atualizar, 144). U10: ~90. U11: ~480. U12: ~200. Total da etapa: cerca de 4.010 linhas, no limite das
-4.000 da delivery L2 (3.810 com a decisão I (b)). Parte 1: ~2.820; parte 2: ~420; parte 3: ~770. Se a parte 1 medir acima de 3.200 no
+estudo estão entre parênteses. U1: ~90. U2: ~380 (a sessão, 87). U3: ~410 (344, mais a janela). U4:
+~520 (o gravador, 165). U5: ~480. U6: ~90. U7: ~740 (os fechadores, de 172 a 312). U8: ~230. U9: ~460
+(o atualizar, 144, mais a janela). U10: ~90. U11: ~480. U12: ~200. Total da etapa: cerca de 4.170
+linhas, uns 4% acima das 4.000 da delivery L2 (3.970 com a decisão I (b)). Parte 1: ~2.940; parte 2:
+~460; parte 3: ~770. A razão de não cortar já está em T.9. Se a parte 1 medir acima de 3.300 no
 fim do G5, a parte 3 sai deste cartão e vira um cartão próprio, com as mesmas unidades; o firstmate
 diz ao fundador antes de começar a parte 2.
 
@@ -305,12 +329,12 @@ pull request, e não no CI (T14).
 | 3 | U1 | A Amostra de uma cópia entra com a senha nova do login de leitura, pelo mesmo caminho | `apps/server/src/hub/copies/sample.test.ts`, "a Amostra depois da troca" | must |
 | 4 | U1 | Pela Neon (L.10), num projeto de teste: depois da troca, a conexão com a senha nova entra na primeira tentativa; com a antiga, não | Lab, no pull request do G1 | should |
 | 5 | U2 | Numa cópia que dura mais que o token, a sessão do kit renova antes do fim, desloga a velha, e no fim não sobra sessão aberta; uma leitura recusada por sessão vencida renova e repete uma vez, e a segunda recusa termina em `COPY_SOURCE_NEEDS_REAUTH` | `packages/connectors/src/kernel/session.test.ts`, com o dublê do Sankhya e o relógio de teste | must |
-| 6 | U2 | O Hub lê e confere uma conexão pela sessão do kit; o "renova e repete uma vez" sai de `hub/connectors/` | `apps/server/src/hub/connectors/read.test.ts` e `check.test.ts`, os casos de hoje, verdes sem mudar o que esperam | must |
+| 6 | U2 | O Hub lê e confere uma conexão pela sessão do kit; o "renova e repete uma vez" sai de `hub/connectors/` | `apps/server/src/hub/connectors/connections-refresh.test.ts`, `connections-sessions.test.ts` e `write-lost.test.ts`, os casos de hoje, verdes sem mudar o que esperam | must |
 | 7 | U2 | Todo login do kit declara a classe da credencial; o Sankhya declara compartilhável; os outros, exclusiva; a conformidade recusa um conector sem a classe | `packages/connectors/src/kernel/conformance.test.ts`, "a classe da credencial" | must |
 | 8 | U2 | O Sankhya lê páginas de 5.000 linhas; um conector que não declara usa 500; `PAGE_ROWS` não existe mais | `packages/connectors/src/kernel/copy.test.ts`, "o tamanho de página é do conector" | must |
-| 9 | U2 | O número `12345678901234567890` num corpo chega ao Hub e ao adaptador como `"12345678901234567890"` quando o conector declara números exatos; `wire.ts` não chama mais `JSON.parse` sem o leitor do kit | `packages/connectors/src/kernel/exact-json.test.ts`; `apps/server/src/hub/connectors/wire.test.ts`, "o número grande" | must |
+| 9 | U2 | O número `12345678901234567890` num corpo JSON chega ao Hub e ao adaptador como `"12345678901234567890"` quando o conector declara números exatos; `wire.ts` não chama mais `JSON.parse` sem o leitor do kit. O dublê do Sankhya passa a guardar `VLRNOTA` como texto (hoje `REAL`, `fake-sales.ts:131`, que perde dígitos) e ganha uma venda de `1234567890123.123456` | `packages/connectors/src/kernel/exact-json.test.ts`, com o corpo em bytes; `apps/server/src/hub/connectors/wire.test.ts`, "o número grande"; `sankhya/fake.test.ts`, "o valor de 19 dígitos" | must |
 | 10 | U2 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts`, "o registro muda entre duas leituras" | must |
-| 11 | U3 | `tap --about` e `tap --discover` respondem para todo conector que declara uma tabela; a bateria padrão do singer-sdk passa sobre a saída crua do Sankhya e do HubSpot (34 e 24 testes) | `apps/extraction/tap/src/tap.test.ts`; `apps/extraction/tests/test_tap_battery.py` | must |
+| 11 | U3 | `tap --about` e `tap --discover` respondem para todo conector que declara uma tabela; a bateria padrão do singer-sdk passa sobre a saída crua do Sankhya e do HubSpot (34 e 24 na sonda do estudo; a U3 os refaz sobre o adaptador dela) | `apps/extraction/tap/src/tap.test.ts`; `apps/extraction/tests/test_tap_battery.py` | must |
 | 12 | U3 | Uma passada inteira emite SCHEMA, RECORD com a versão da passada, STATE a cada página e ACTIVATE_VERSION no fim; nenhum campo da credencial aparece na saída | `apps/extraction/tap/src/tap.test.ts`, "a passada inteira" e "nada do segredo na saída" | must |
 | 13 | U3 | Um login recusado faz o adaptador sair com código diferente de zero e escrever no arquivo de resultado o código do kit (`COPY_SOURCE_NEEDS_REAUTH`, `COPY_SOURCE_REFUSED`, `COPY_SOURCE_UNREACHABLE` ou `COPY_SOURCE_UNREADABLE`), nunca o corpo | `apps/extraction/tap/src/tap.test.ts`, "a fonte recusa" | must |
 | 14 | U3 | A regra de máquina da mudança de método recusa um import de `packages/connectors/src/sankhya/` e um nome de conector plantados no adaptador | o check da regra, rodado em `npm run deps` com o caso plantado no teste da regra | must |
@@ -329,7 +353,7 @@ pull request, e não no CI (T14).
 | 27 | U5 | A preparação deixa a Release criar as peças do 23 e nada além do que já deixava | `infra/aws/test/preparation.test.ts`, "a segunda preparação" | must |
 | 28 | U5 | A Release monta a imagem, publica-a no depósito de imagens e só então publica a plataforma, com a tarefa apontando para a imagem pelo digest | `scripts/workflows.test.ts`, "a imagem da cópia antes da plataforma" | must |
 | 29 | U5 | Na AWS (L.2), uma tarefa faz o login e lê uma página do Sankhya do fundador. Se o gateway recusar, a etapa para e volta ao fundador | Lab, no pull request do G3, antes de qualquer outro teste da parte 1 | must |
-| 30 | U6 | Duas cópias `vendas` da mesma empresa, uma em cada lugar, coexistem; uma segunda no mesmo lugar é recusada pelo banco | `apps/server/src/hub/copies/tables.test.ts`, "o nome é único por lugar" | must |
+| 30 | U6 | Duas cópias `vendas` da mesma empresa, uma em cada lugar, coexistem; uma segunda no mesmo lugar é recusada pelo banco; `copy_follower` e `copy_notice` não existem mais, e com elas a conferência que repete `CopyRunFailureCode` no banco | `apps/server/src/hub/copies/tables.test.ts`, "o nome é único por lugar" | must |
 | 31 | U6 | O login da empresa lê, da linha do lago, só a da própria empresa e só as colunas nomeadas; gravar, mudar ou apagar é recusado; a foto do catálogo muda só nisso e nas colunas novas | `apps/server/src/hub/lake/tables.test.ts`, "a empresa lê a sua linha"; `catalog.test.ts` | must |
 | 32 | U7 | `listCopyModels` oferece `LAKE` só numa empresa com lago pronto; `enableCopy` com `place: LAKE` numa empresa sem lago pronto responde 409 `COPY_LAKE_NOT_READY` e não cria nada | `apps/server/src/hub/copies/routes.test.ts`, "ligar no lago" | must |
 | 33 | U7 | A cada disparo de uma cópia do lago, o Hub abre uma rodada, grava o parâmetro dela e inicia a tarefa com o papel da empresa e o `clientToken` de rodada e tentativa; com rodada aberta, o disparo responde "já está rodando" e não grava nada | `apps/server/src/hub/copies/lake-run.test.ts`, "o disparo", contra as gravações da AWS | must |
@@ -344,7 +368,10 @@ pull request, e não no CI (T14).
 | 42 | U7 | Apagar o lago de uma empresa com tabelas apaga as tabelas, depois as áreas e a pilha, e leva as cópias do lago da empresa; na AWS (L.8), nada sobra | `apps/server/src/hub/lake/lake-remove.test.ts`, "o lago com tabela"; Lab | must |
 | 43 | U7 | O registro do Hub mostra `COPY_RUN_ENDED` com as contagens e o lugar; nem ele nem a fila levam o conteúdo de uma linha ou do segredo | `lake-queue.test.ts`, "o que o registro leva" | must |
 | 44 | U7 | O `system_code` de uma rodada passa a ter teto e conferência no banco (#1135) | `run.test.ts`, "o código do sistema com teto" | must |
-| 45 | U7 | Sem cópia do lago, o Hub não chama a AWS; com cópias, o consumidor da fila não abre conexão com o banco enquanto não chega mensagem (data D27) | o teste do banco que dorme, com o consumidor ligado | must |
+| 45 | U7 | Sem cópia do lago, o Hub não chama a AWS; com cópias, o consumidor da fila não abre conexão com o banco enquanto não chega mensagem (data D27) | o teste do banco que dorme de hoje (data D27, "sleeping-database test"), com o consumidor ligado | must |
+| 64 | U7 | Uma cópia do lago não cria nada no banco da empresa (nem o esquema `sync`, nem o login, nem a tabela), não entra no catálogo que o Assistente e os Projetos leem, não se libera a um Projeto nem a um papel, e a Amostra dela responde 409 `COPY_IN_LAKE`; a cópia do banco com o mesmo nome continua como hoje | `apps/server/src/hub/copies/routes.test.ts`, "a cópia do lago fica fora do banco"; `catalog-view` pelo teste de conformidade do contrato | must |
+| 65 | U8 | Na tabela de uma cópia do lago, as abas **Amostra** e **Colunas** e a liberação a Projetos dizem "As linhas ficam no lago. A leitura delas chega numa próxima etapa." e não chamam o Hub | `apps/web/src/hub/copies/copy-detail.test.tsx`, "o que a cópia do lago não mostra" | must |
+| 66 | U9 | Uma cópia do lago com janela (Vendas) lê, numa passada, as linhas mudadas dentro dos 30 dias; a atualização tira da atual as linhas da janela que não voltaram e as que saíram dela, como a cópia do banco faz hoje (`copy-sql.ts:287-301`) | `apps/extraction/tests/test_update.py`, "a janela"; `apps/extraction/tap/src/tap.test.ts`, "a janela" | must |
 | 46 | U8 | Em **Ligar uma cópia**, **Onde guardar** aparece só quando a empresa oferece o lago, com "No banco da empresa" escolhido; a escolha vai na criação | `apps/web/src/hub/copies/new-copy.test.tsx`, "onde guardar" | must |
 | 47 | U8 | A lista mostra a linha do lago com a marca **No lago**, ao lado da do banco com o mesmo nome | `apps/web/src/hub/copies/copy-list.test.tsx`, "duas linhas vendas" | must |
 | 48 | U8 | Em **Rodadas**, o resultado diz "Completa · inteira" ou "Completa · só o que mudou"; em **Detalhes**, "As linhas ficam no lago da empresa."; cada código novo tem a sua frase | `apps/web/src/hub/copies/copy-detail.test.tsx`, "a cópia do lago" | must |
@@ -364,15 +391,15 @@ pull request, e não no CI (T14).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 55 | U10 | Existem a parada na cópia, a parada da conexão e o aviso no sino, com as conferências do banco; `copy_follower` e `copy_notice` não existem mais; a foto do catálogo muda só nisso | `apps/server/src/hub/notifications/tables.test.ts`; `catalog.test.ts` | must |
+| 55 | U10 | Existem a parada na cópia, a parada da conexão e o aviso no sino, com as conferências do banco; a foto do catálogo muda só nisso | `apps/server/src/hub/notifications/tables.test.ts`; `catalog.test.ts` | must |
 | 56 | U11 | A primeira rodada com erro de uma cópia do lago anota a parada da tabela, com a hora e o código; se a conexão não tinha parada aberta, sai um e-mail ao Dono, a cada Administrador e à lista de e-mails da empresa, e uma linha no sino de cada Dono e Administrador | `apps/server/src/hub/notifications/copy-stop.test.ts`, "a primeira falha" | must |
 | 57 | U11 | Dez tabelas da mesma conexão que param uma depois da outra dão um e-mail e uma linha no sino por pessoa | `copy-stop.test.ts`, "dez tabelas, um aviso" | must |
-| 58 | U11 | A primeira rodada completa tira a parada da tabela; quando nenhuma tabela da conexão continua parada, a parada da conexão fecha, sem e-mail | `copy-stop.test.ts`, "a volta" | must |
-| 59 | U11 | Um lembrete por dia, às 8h de São Paulo, por conexão ainda parada, com as tabelas paradas dela; nenhum lembrete depois que ela volta, e nenhum no dia em que ela parou | `copy-stop.test.ts`, "o lembrete" | must |
+| 58 | U11 | A primeira rodada completa tira a parada da tabela, e apagar a cópia ou a conexão também; quando nenhuma tabela da conexão continua parada, a parada da conexão fecha, o relógio do lembrete sai, sem e-mail | `copy-stop.test.ts`, "a volta" | must |
+| 59 | U11 | Um lembrete por dia, na hora de T.15, por conexão ainda parada, com as tabelas paradas dela; nenhum lembrete depois que ela volta, e nenhum no dia em que ela parou | `copy-stop.test.ts`, "o lembrete" | must |
 | 60 | U11 | Uma cópia do banco da empresa que falha não anota parada nem avisa | `copy-stop.test.ts`, "a cópia do banco não avisa" | must |
 | 61 | U11 | Na página Dados, a cópia parada mostra **Parada** e o motivo; quem não é Dono nem Administrador não recebe o aviso no sino | `apps/web/src/hub/copies/copy-list.test.tsx`, "parada"; `copy-stop.test.ts`, "quem recebe" | must |
 | 62 | U11 | Um e-mail que não sai não desfaz a parada e é registrado; o próximo lembrete do dia vai | `copy-stop.test.ts`, "o e-mail que não sai" | must |
-| 63 | U12 | O Dono e o Administrador listam, acrescentam e tiram um e-mail da lista; o mesmo e-mail com outra caixa é recusado (409 `ALERT_RECIPIENT_EXISTS`); quem não é Dono nem Administrador recebe 403 e não vê o bloco; um e-mail acrescentado recebe o próximo aviso | `apps/server/src/hub/notifications/routes.test.ts`, "a lista de e-mails"; `apps/web/src/hub/copies/alert-recipients.test.tsx` | must |
+| 63 | U12 | O Dono e o Administrador listam, acrescentam e tiram um e-mail da lista; o mesmo e-mail com outra caixa é recusado (409 `ALERT_RECIPIENT_EXISTS`); quem não é Dono nem Administrador recebe 403 e não vê a seção; um e-mail acrescentado recebe o próximo aviso | `apps/server/src/hub/notifications/routes.test.ts`, "a lista de e-mails"; `apps/web/src/hub/identity/alert-recipients.test.tsx` | must |
 
 ## A matriz de estados
 
@@ -380,9 +407,10 @@ pull request, e não no CI (T14).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Dados, a lista (U8, U11) | A empresa com lago e nenhuma cópia no lago: a lista de hoje, sem marca | Nenhuma cópia: o vazio de hoje, sem mudança | O de hoje | O de hoje | Uma cópia apagada noutra aba some na próxima leitura, como hoje | Quem não gerencia cópias vê a lista sem **Ligar uma cópia**, como hoje; a marca **No lago** aparece para todos que leem a lista | A última rodada com erro: o selo de hoje, com a frase do código; parte 3: **Parada**, com o motivo |
 | Ligar uma cópia, o diálogo (U8) | Empresa com lago pronto: **Onde guardar** aparece, com "No banco da empresa" escolhido | Empresa sem lago pronto: o campo não aparece, e a cópia vai ao banco, como hoje | Os modelos carregando, como hoje | `COPY_LAKE_NOT_READY` (o lago foi apagado ou está mudando entre abrir e confirmar): "O lago desta empresa não está pronto. Ligue no banco da empresa ou tente quando o lago estiver pronto." | A conexão apagada: a frase de hoje | O botão não aparece, como hoje | O nome já ligado naquele lugar: a frase de hoje do nome repetido |
+| A tabela de uma cópia do lago, Amostra, Colunas e Projetos (U8) | "As linhas ficam no lago. A leitura delas chega numa próxima etapa." | O mesmo | — | — | — | Como hoje | — |
 | A tabela, Rodadas e Detalhes (U8) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: o vazio de hoje | O de hoje | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." | A tabela apagada: a frase de hoje | Como hoje | A rodada interrompida: a frase de hoje de `INTERRUPTED` |
 | O sino, a linha da parada (U11) | A primeira parada: "A cópia de <conexão> parou: <tabelas>." | Sem parada: nenhuma linha | O de hoje | O de hoje | A conexão apagada depois do aviso: a linha fica, com o nome guardado | Só Dono e Administrador recebem a linha | — |
-| Quem recebe os avisos de cópia, o bloco em Dados (U12) | A lista vazia: "Só o Dono e os Administradores recebem os avisos." e o campo de e-mail | O mesmo da primeira vez | O de hoje da página | Um e-mail já na lista: "Este e-mail já recebe os avisos." | Um e-mail tirado noutra aba some na próxima leitura | Quem não é Dono nem Administrador não vê o bloco | — |
+| Configurações, a seção Avisos (U12) | A lista vazia: "Só o Dono e os Administradores recebem os avisos." e o campo de e-mail | O mesmo da primeira vez | O de hoje da página | Um e-mail já na lista: "Este e-mail já recebe os avisos." | Um e-mail tirado noutra aba some na próxima leitura | Quem não é Dono nem Administrador não vê a seção | — |
 | O e-mail da parada e o lembrete (U11) | "A cópia de <conexão> parou", com as tabelas, o motivo e o link para Dados | — | — | Um e-mail que não sai fica no registro do Hub (critério 62) | — | Vai só ao Dono, aos Administradores e à lista | — |
 
 As caixas, a 1280 e a 390 px, seguem a organização A do estudo (uma linha a mais, com a marca), que
@@ -410,8 +438,9 @@ Airbyte, `capturas/referencias/cloud-status-page.png`.
                                                      +----------------------------+
 ```
 
-As peças de `ui/`: a lista, o diálogo, o grupo de opções e o selo que a página Dados já usa. A marca
-**No lago** é o selo de hoje com outro texto; nenhuma peça nova. A interface do Impeccable roda na
+As peças de `ui/`: a lista, o diálogo e o selo que a página Dados já usa, e a escolha de duas opções
+(`toggle-group.tsx`, que já existe em `ui/`, ou o `ChoiceSelect` do diálogo, o que o catálogo de
+`ui/` mandar). A marca **No lago** é o selo de hoje com outro texto; nenhuma peça nova. A interface do Impeccable roda na
 QA de cada parte com tela ([Impeccable](../reference/impeccable.md)).
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -419,6 +448,8 @@ QA de cada parte com tela ([Impeccable](../reference/impeccable.md)).
 | `CopySummary.place` (`DATABASE` ou `LAKE`) | U7, `hub/copies/list.ts`, da coluna `copy.place` | U8, `copy-list.tsx` e `copy-detail.tsx` |
 | `listCopyModels`: `places` | U7, `hub/copies/routes.ts`, do estado da linha do lago | U8, `new-copy.tsx` |
 | `EnableCopyFromModel.place` | U8, `new-copy.tsx` | U7, `hub/copies/enable.ts` |
+| As falhas de rota `COPY_LAKE_NOT_READY` (ligar) e `COPY_IN_LAKE` (Amostra) | U7, `enable.ts` e `sample.ts` | U8, `text.ts` |
+| `connection_stop.told_at`, a hora do último e-mail da parada | U11, no primeiro e-mail e em cada lembrete | U11, o lembrete não sai duas vezes no mesmo dia |
 | `CopyRunFailureCode`: `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED` | U7 no fim da rodada; U4 no resultado | U8, `text.ts` |
 | `CopyRun.whole` | U7 (sempre `true` na parte 1); U9 pelo modo | U8, a coluna Resultado |
 | `CopySummary.rows` de uma cópia do lago | U7, do `rows` do resultado | U8, a coluna Linhas |
@@ -442,6 +473,7 @@ QA de cada parte com tela ([Impeccable](../reference/impeccable.md)).
 | Iniciar a tarefa (`RunTask`) | O `clientToken` de rodada e tentativa: a AWS devolve a mesma tarefa | Sem resposta: repetido com o mesmo token; recusado: a rodada fecha e o parâmetro sai | A AWS fora: `COPY_LAKE_UNAVAILABLE` | `COPY_LAKE_START_FAILED` | 33, 39 |
 | O resultado e a parada na fila (o fim) | Quem chega primeiro fecha (`UPDATE ... WHERE ended_at IS NULL`); o segundo não muda nada | A mensagem só sai da fila depois do fim gravado; três entregas falhas vão à fila de mortos | Banco fora: a mensagem volta à fila e é lida de novo | `COPY_RUN_ENDED`; uma mensagem ilegível, `COPY_QUEUE_UNREADABLE`, apagada da fila | 35, 36, 43 |
 | Apagar o parâmetro no fim | Apagar duas vezes: a segunda acha nada e conta como apagado | A rodada já está fechada; a tarefa que ainda roda para no lote seguinte | A AWS fora: a varredura do próximo disparo apaga | `COPY_PARAMETER_LEFT` | 19, 38 |
+| Gravar `copy_run.task_arn` depois do `RunTask` | Uma rodada só grava (a linha dela) | O Hub cai entre o `RunTask` e a gravação: a varredura acha a tarefa pelo `startedBy` da rodada (`ListTasks`), ou fecha a rodada pelas 6 horas | Banco fora: o mesmo | `COPY_TASK_UNRECORDED` | 37 |
 | A varredura no disparo | Duas varreduras fecham a mesma rodada uma vez (o mesmo `UPDATE`) | — | A AWS fora: a rodada aberta há mais de 6 h fecha mesmo assim, como `COPY_TASK_LOST` | `COPY_RUN_SWEPT` | 37 |
 | O gravador acrescenta na bruta (`append` do PyIceberg) | Uma rodada aberta por cópia (o índice); o PyIceberg refaz o commit em conflito 4 vezes | Um lote sem commit não aparece; o estado não sai antes dele | O catálogo responde 429 e o PyIceberg não refaz: a rodada termina `COPY_LAKE_WRITE_FAILED` | A linha `METRIC` do SDK e o resultado; nunca uma linha de dado | 15, 16, 18 |
 | A tarefa confere a rodada a cada lote | — | Parâmetro apagado: para sem mandar resultado; a parada do ECS fecha o que sobrou | A AWS fora na conferência: conta como fechada e para | `RUN_CLOSED` no registro da tarefa | 19 |
@@ -466,7 +498,7 @@ texto da Nekt guardado em 2026-11-19), guardadas em `data/conexus-credenciais-fr
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | A declaração de cópia por tabela: chave, paginação, tamanho de página, modo | `C/packages/connectors/src/kernel/copy.ts:66-97`, `:129-165`; `kernel/operation.ts:148-167`; `PAGE_ROWS = 500`, `copy.ts:6` | `CDK .../declarative_component_schema.yaml:1896-1951`, `:4046-4070`, `:2244-2271`, `:1147-1155`; a fábrica, `model_to_component_factory.py:2136-2150`: um bloco por tabela com `primary_key`, paginador com `page_size` e `incremental_sync`. Mesma situação numa API REST; diferente num ERP por SQL (`:4453-4457`). `TRM tap.py:506-540`, paginação por leitor (`:519-522`) | remendo: a declaração é do kit; acrescenta o tamanho de página por conector | O adaptador copiou duas classes lendo só a declaração (estudo, Apêndice B, com singer-sdk 0.54.9 e Meltano 4.4.1) | 0080 | U2 | — (muda `kernel/copy.ts`) |
 | 2 | O adaptador: do kit a um leitor Singer, um só | nenhum; o laço mora no Hub, `C/apps/server/src/hub/copies/source-pass.ts:194-212`, `hub/connectors/copy-port.ts:243-315` | `TRM tap.py:455` e `CDK .../concurrent_declarative_source.py:165`: um leitor genérico configurado por dado; as tabelas nascem num laço sobre a configuração. `singer-sdk@0.54.9 singer_sdk/streams/core.py`: um código por sistema, situação diferente | remendo: TypeScript que fala Singer, porque o kit é TypeScript (0074) | 344 linhas, duas classes, 34 e 24 testes da bateria do singer-sdk 0.54.9 (estudo); a P2, 68 testes | 0071 | U3 | `apps/extraction/tap/src/tap.ts` |
-| 3 | A sessão dentro da tarefa: reusar, renovar antes do fim, deslogar | `C/apps/server/src/hub/connectors/limits.ts:127` (`createEndings`); "renova e repete uma vez", `read.ts:111`, `check.ts:44` | `singer-sdk@0.54.9 singer_sdk/authenticators.py:526-527`, `:609-619`: confere a validade antes de cada pedido e renova quando venceu | remendo: a peça é do kit | A P2: 87 linhas, 4 renovações em 100 s, nenhuma sessão pendurada; o autenticador lido no singer-sdk 0.54.9 | 0077 | U2 | `packages/connectors/src/kernel/session.ts` |
+| 3 | A sessão dentro da tarefa: reusar, renovar antes do fim, deslogar | `C/apps/server/src/hub/connectors/limits.ts:127` (`createEndings`, o logout antes de o token vencer); "renova e repete uma vez", `read.ts:109-115`, `check.ts:43-48` | `singer-sdk@0.54.9 singer_sdk/authenticators.py:526-527`, `:609-619`: confere a validade antes de cada pedido e renova quando venceu | remendo: a peça é do kit | A P2: 87 linhas, 4 renovações em 100 s, nenhuma sessão pendurada; o autenticador lido no singer-sdk 0.54.9 | 0077 | U2 | `packages/connectors/src/kernel/session.ts` |
 | 4 | A classe da credencial, compartilhável ou exclusiva | nenhum | nenhuma faz como dado: as referências renovam sempre no processo que copia | remendo | O Sankhya: o token vence aos 300 s em uso, e duas sessões convivem (`docs/decisions/0077-how-a-credential-reaches-the-copy-task.md`) | 0077 | U2 | — (muda `kernel/auth.ts`) |
 | 5 | O número exato, do provedor ao lago | `C/apps/server/src/hub/connectors/wire.ts:71` (`JSON.parse`); `kernel/list.ts:53-62` | `JSON.parse` com `context.source`, do Node 24; `singer-sdk@0.54.9 singerlib/json.py:40-44` (`parse_float=decimal.Decimal`); `DLT dlt/common/arithmetics.py:18-19`, decimal (38, 9); `AB .../AirbyteTypeToIcebergSchema.kt:70`, `double`, que a 0071 recusou | nativo nas pontas; embrulhado no meio | `1234567890123.123456` igual em `decimal(38,9)`; a função devolve o inteiro de 20 dígitos (estudo, `numero-exato.txt`) | 0071; T.4 | U2, U4 | `packages/connectors/src/kernel/exact-json.ts` |
 | 6 | O gravador: só acrescenta na bruta, em Iceberg | nenhum | `singer-sdk@0.54.9 target_base.py:479-492` (o estado depois dos lotes), `sinks/core.py:135`, `:475-506`; `pyiceberg@0.12.0 table/__init__.py:1705-1724` (`append`), `:1123-1158` (refaz o commit 4 vezes). `AB .../S3DataLakeStreamLoader.kt:105`: sem bruta, situação diferente | embrulhado: o esquema Arrow, o decimal e a marca da passada | 165 linhas, 183 e 230 linhas gravadas, soma igual (estudo). Não provado no `S3 Tables`: L.1 | 0071 | U4 | `apps/extraction/src/conexus_extraction/target.py` |
@@ -487,13 +519,13 @@ texto da Nekt guardado em 2026-11-19), guardadas em `data/conexus-credenciais-fr
 | 21 | Apagar o lago que tem tabela | `C/apps/server/src/platform/aws.ts:279-296`; a AWS recusa a área com tabela, `C/docs/reference/stack.md:24` | `@aws-sdk/client-s3tables@3.1175.0` `ListTablesCommand.d.ts`, `DeleteTableCommand.d.ts` (parâmetros não lidos) | nativo | Não provado: L.8. O papel do Hub não tem a permissão (`C/infra/aws/test/platform.test.ts:74-86`) | cartão da etapa 1, `o-lago-da-empresa-nasce-e-some.md:100-101` | U5, U7 | — |
 | 22 | A receita muda: o papel que escreve, as três travas, os lagos já criados | `C/infra/aws/lib/platform.ts:114-123`, `:127`, `:139-144`; `preparation.ts:209-262`; `hub.ts:14-20` | 0073: "A change to every company is one `UpdateStack` each" | nativo | Não provado: o papel dentro da pilha, L.6 | E; T.5 | U5 | — |
 | 23 | A plataforma da cópia: fila, tarefa, imagens, regra, rede | nenhum | `aws-cdk-lib@2.278.0` `aws-ecs/lib/fargate/fargate-task-definition.d.ts`, `aws-sqs/lib/queue.d.ts`, `aws-events/lib/rule.d.ts`, `aws-ecr/lib/repository.d.ts` (não lidos linha a linha) | nativo | À mão, `conexus-lab-trilho/fases2a4/plataforma.py:80-90` | 0073, 0076 | U5 | `infra/aws/lib/copy.ts` |
-| 24 | O aviso de cópia parada | três tabelas sem uso, `C/apps/server/src/hub/notifications/tables.ts:154-234`; o e-mail, `notifications.ts:282-322` | `AP .../JobsHandler.kt:55-76` (por rodada); `AP .../application.yml:434-437` (desliga aos 30 e 7); Nekt, `NK:12403-12404`, `NK:22357-22360`; nenhuma manda lembrete | remendo: um aviso por parada e um lembrete por dia | Lido no airbyte-platform v2.0.0 (`AP`): nenhum lembrete nos dois módulos de aviso | C; fundador, "R1 a R2 a" | U10, U11 | `apps/server/src/hub/notifications/copy-stop.ts` |
+| 24 | O aviso de cópia parada | três tabelas sem uso, `C/apps/server/src/hub/notifications/tables.ts:154-234`; o e-mail, `mail.ts` e `automation-email.tsx` | `AP .../JobsHandler.kt:55-76` (por rodada); `AP .../application.yml:434-437` (desliga aos 30 e 7); Nekt, `NK:12403-12404`, `NK:22357-22360`; nenhuma manda lembrete | remendo: um aviso por parada e um lembrete por dia | Lido no airbyte-platform v2.0.0 (`AP`): nenhum lembrete nos dois módulos de aviso | C; fundador, "R1 a R2 a" | U10, U11 | `apps/server/src/hub/notifications/copy-stop.ts` |
 | 25 | A D4: as senhas por empresa | `C/packages/hub-api/src/app-login.ts:30-40`; `C/apps/server/src/platform/copy-sql.ts:150-179`; `copy-reader.ts:51-82`; `app-sql.ts:72-87` | PostgreSQL 18, `ALTER ROLE ... PASSWORD`; registro 0043 | embrulhado | Local (estudo, `sondas/d4-senhas/`). Não provado pela Neon: L.10 | D | U1 | — |
 | 26 | O método para Python | nenhum | não estudado | nativo (as ferramentas de Python que a mudança de método escolher) | — | 0074 | fica de fora: é a mudança de método antes da construção | — |
 | 27 | As gravações das formas nativas | 33 gravações em `C/apps/server/src/platform/recordings/aws/` | testing T14 e T29, `C/docs/guides/testing.md:57-70`, `:85-91` | nativo (o servidor de respostas gravadas da etapa 1) | Gravadas, locais: as mensagens Singer, o estado do Meltano, o resumo do PyIceberg, as linhas `METRIC`. Faltam: `RunTask`, a fila, o parâmetro, o Athena | — | U4, U7, U9 | `apps/server/src/platform/recordings/aws/ecs-*.json` e os outros |
 | 28 | O login da empresa lê a linha do lago | `C/apps/server/src/hub/lake/tables.ts:48-56`: só o operador | as permissões por coluna e a regra por linha do PostgreSQL (`GRANT SELECT (colunas)`, `CREATE POLICY`) | nativo (data D10, D11) | — | H | U6 | a migração da U6 |
 | 29 | O nome único por lugar | `copy_company_id_name_key`, `C/apps/server/src/hub/copies/tables.ts:78` | o índice único do PostgreSQL sobre três colunas | nativo (data D15) | — | B | U6 | a migração da U6 |
-| 30 | A lista de e-mails que recebe o aviso | `alert_recipient`, `C/apps/server/src/hub/notifications/tables.ts:153-172`, sem rota nem tela | Nekt: a lista de e-mails da empresa recebe o aviso (`NK:22357-22360`) | embrulhado (a lista e o campo de `ui/`) | — | I | U12 | `apps/web/src/hub/copies/alert-recipients.tsx` |
+| 30 | A lista de e-mails que recebe o aviso | `alert_recipient`, `C/apps/server/src/hub/notifications/tables.ts:153-172`, sem rota nem tela; o lugar, Configurações, Avisos, `C/docs/reference/telas.md:311` | Nekt: a lista de e-mails da empresa recebe o aviso (`NK:22357-22360`) | embrulhado (a lista e o campo de `ui/`) | — | I | U12 | `apps/web/src/hub/identity/alert-recipients.tsx` |
 
 **A medida do transplante.** Nenhum código do repositório antigo entra. O adaptador e o gravador da
 sonda do estudo (`sondas/adaptador-duas-classes/`) são ponto de partida, e não transplante: cada um
@@ -507,7 +539,8 @@ cartão.
   renovação na tarefa fica provada só no Sankhya até a etapa 5.
 - O texto da 0076 sobre o token de 32 caracteres e a frase da 0078 sobre quem tem credencial da AWS
   (T.3, T.8): o fechamento da etapa os corrige.
-- A janela de datas, a tabela sem chave e a tabela com mais de 231 colunas no atualizar: etapa 7.
+- A tabela sem chave e a tabela com mais de 231 colunas no atualizar: etapa 7. A janela de datas entra
+  nesta etapa (decisão F (a)).
 - Um `RunTask` sem resposta repete com o mesmo token. Por quanto tempo a AWS guarda o token não
   foi lido: a U7 lê no tipo instalado e, se for menor que a espera da repetição, para (o "Parar se"
   dela).
@@ -524,12 +557,13 @@ cartão.
 | T.6 | A tarefa em sub-redes públicas, IP público, sem NAT; x86; 2 vCPU | A forma medida: 30 tabelas em 180 s com 2 vCPU, 588 s com 1 (P1) | Trocar a sub-rede e a arquitetura na definição |
 | T.7 | O gravador sobre a base do singer-sdk | A base já dá o laço, o lote, o estado depois de gravar, as colunas `_sdc_*` e o decimal (premissa 7 do estudo) | Voltar ao laço escrito à mão das provas |
 | T.8 | O `clientToken` é a rodada e a tentativa, até 64 caracteres; o `startedBy` leva a rodada | O limite de 36 é de `StartTask` (`@aws-sdk/client-ecs@3.1175.0 dist-types/models/models_1.d.ts:3315`, `:3330`, `:3407`); a P4 casou identificadores de 40 caracteres. O fechamento corrige a 0076 | — |
-| T.9 | Um cartão em três partes, cada uma usada pelo fundador, e não três cartões | O total cabe, no limite, nas 4.000 linhas; as decisões são as mesmas para as três; o corte do estudo fica, como as partes | Dividir o arquivo em três cartões, com as mesmas unidades; o gatilho está no orçamento |
+| T.9 | Um cartão em três partes, cada uma usada pelo fundador, e não três cartões | O total, ~4.170, passa uns 4% das 4.000 da delivery L2, que é "should": a razão é que cada parte é usada e fechada sozinha (a maior, ~2.940), que é o que a L2 pede de um lote, e as decisões são as mesmas para as três; o corte do estudo fica, como as partes | Dividir o arquivo em três cartões, com as mesmas unidades; o gatilho está no orçamento |
 | T.10 | O adaptador mora em `apps/extraction/tap/`, um pacote TypeScript do espaço de trabalho, ao lado do projeto Python | A trilha diz que `apps/extraction/` guarda "o tap gerado do kit" (`C/docs/steps/trilhas/dados.md`, "O que a trilha possui"); a imagem leva os dois | Mover para `packages/` |
 | T.11 | O parâmetro da rodada leva a especificação inteira (`CopyTaskSpec`), no nível padrão, até 4 KB; uma especificação maior é recusada antes do `RunTask` | Um lugar só para o que a tarefa recebe, cifrado; as cinco declarações do Sankhya cabem com folga (`copies.ts:85-170`) | Passar a declaração pelo ambiente da tarefa e só o segredo pelo parâmetro |
 | T.12 | Uma rodada aberta há mais de 6 horas é fechada pela varredura como `COPY_TASK_LOST` | A primeira carga estimada leva uns 27 minutos; 6 horas é teto de folga (code C26) | Mudar a constante |
-| T.13 | Três códigos novos de rodada: `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED`; e um de ligar: `COPY_LAKE_NOT_READY` | Cada um tem uma frase diferente na tela e um dono do fim diferente | Fundir códigos |
+| T.13 | Três códigos novos de rodada: `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED`; um de ligar, `COPY_LAKE_NOT_READY`; e um da Amostra, `COPY_IN_LAKE` | Cada um tem uma frase diferente na tela e um dono do fim diferente | Fundir códigos |
 | T.14 | A mensagem que falha três vezes vai à fila de mortos, lida só pelo firstmate | A forma da P4; um fim perdido é fechado pela varredura | Mudar o `maxReceiveCount` |
+| T.15 | O lembrete sai às 8h de São Paulo, o fuso dos relógios das cópias (`clock.ts:11-12`), no começo do dia de trabalho | Nenhuma referência manda lembrete; o fundador disse "um lembrete por dia" sem hora | Mudar a constante do relógio do lembrete |
 
 ## U1 A D4
 
@@ -599,7 +633,9 @@ As linhas de `@neondatabase/serverless` e `pg` do `stack.md`: a skill `neon:neon
    - **Mutações à mão:** tirar o `ALTER ROLE`: o 2 fica vermelho.
    - **Pronto quando:** a cópia de hoje roda numa empresa criada antes da mudança.
 3. **O L.10.** Critério: 4. Num projeto de teste da Neon, com a palavra do fundador: o login criado
-   pela conta antiga, a troca, a conexão com a nova na primeira tentativa, a recusa da antiga. A
+   pela conta antiga, a troca, a conexão com a nova na primeira tentativa, a recusa da antiga. O
+   `ALTER ROLE` roda como o dono, que recebeu o login só com `SET` (`copy-sql.ts:158-161`): o L.10
+   confere que a Neon deixa o dono que o criou trocar a senha. A
    saída vai no pull request.
 
 ### Como se prova
@@ -640,7 +676,7 @@ na tarefa, e erra em silêncio.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/connectors/src/kernel/` | Cria `session.ts`, `exact-json.ts`; muda `copy.ts`, `auth.ts`, `list.ts`, `conformance.ts`, o índice | `apps/server/src/hub/connectors/`, `hub/copies/`, o adaptador (U3) |
+| `packages/connectors/src/kernel/` | Cria `session.ts`, `exact-json.ts` e os testes `session.test.ts`, `exact-json.test.ts`, `conformance.test.ts`; muda `copy.ts`, `auth.ts`, `list.ts`, `conformance.ts`, o índice | `apps/server/src/hub/connectors/`, `hub/copies/`, o adaptador (U3) |
 | `packages/connectors/src/sankhya/`, `hubspot/`, `mercado-livre/` | Muda: a classe da credencial, o tamanho de página do Sankhya, as rotas de teste dos dois dublês | o kit; `hub/copies/test-sources.ts` |
 | `apps/server/src/hub/connectors/` | Muda `read.ts`, `check.ts`, `limits.ts`, `wire.ts`, `copy-port.ts`: usam a sessão e o leitor do kit | `hub/copies/`, `hub/data/` |
 | `apps/server/src/hub/copies/run.ts` | Muda: `RUN_DEFAULTS.pageRows` passa a vir do conector | `builder/copy-clock/` |
@@ -688,7 +724,8 @@ export function parseExact(text: string): unknown
 - `ProviderSend` é a assinatura que `tokenRequest` e `logoutRequest` já pressupõem
   (`auth.ts:69`, `:88`): um `ProviderRequest` entra, um `ProviderAnswer` sai. Se o kit já tiver esse
   tipo com outro nome, a unidade usa o dele.
-- **O arquivo modelo**: `kernel/auth.ts`, se o builder confirmar C21 e C26 nele; se não, nenhum.
+- **O arquivo modelo**: nenhum declarado; o cartão não conferiu C21 e C26 num arquivo do kit, e a
+  unidade segue as regras direto.
 - As rotas de teste dos dublês: `POST /__teste/notas/<id>` (alterar, criar, apagar) no Sankhya e
   `POST /__teste/negocios/<id>` no HubSpot, só no modo dublê (T29); o modo real não as registra.
 
@@ -712,14 +749,18 @@ As linhas de `packages/connectors` do `stack.md`. O guia de testes, T5 e T29.
    - **Mutações à mão:** tirar o logout: o teste conta uma sessão aberta e fica vermelho.
 4. **O número exato.** Critério: 9. `parseExact` com `context.source`; `wire.ts` passa a chamá-lo
    pelo índice do kit para o conector com `numbers: 'EXACT'` (o Sankhya).
-5. **Os dublês.** Critério: 10. As rotas de teste mudam o banco em memória do Sankhya e os dados do
-   HubSpot entre duas leituras; o modo real não as tem. Testes: `fake.test.ts` dos dois.
+5. **Os dublês.** Critérios: 9, 10. As rotas de teste mudam o banco em memória do Sankhya e os dados
+   do HubSpot entre duas leituras; o modo real não as tem. O dublê do Sankhya guarda `VLRNOTA` como
+   texto (hoje `REAL`, `C/packages/connectors/src/sankhya/fake-sales.ts:131`) e ganha uma venda de
+   `1234567890123.123456`, que os critérios 15 e 22 somam. Testes: `sankhya/fake.test.ts` e
+   `hubspot/fake.test.ts`, que a unidade cria.
 
 ### Como se prova
 
 O 5 entra pela sessão do índice do kit contra o dublê; o 6 pelas rotas de leitura e conferência do
-Hub, com os casos de hoje; o 9 por uma leitura do Hub contra o dublê do Sankhya com um número de 20
-dígitos, que hoje chega cortado.
+Hub, com os casos de hoje; o 9 por `parseExact` com o corpo em bytes e por `wire.ts` com um corpo
+gravado de número de 20 dígitos, que hoje o `JSON.parse` corta, e pela venda de 19 dígitos do dublê,
+que hoje o `REAL` corta.
 
 ### Parar se
 
@@ -774,7 +815,7 @@ export type TapFailure = { code: CopySourceFailureCode; system: CopySystemMessag
 - **O que o adaptador não faz**: não lê variável de ambiente para o segredo (lê `secret_path`); não
   importa nada fora do índice de `@conexus/connectors`; não nomeia conector (a regra de máquina da
   mudança de método).
-- **O arquivo modelo**: `packages/connectors/src/kernel/copy.ts` (C21, C26, C27).
+- **O arquivo modelo**: nenhum declarado; a unidade segue C21, C26 e C27 direto.
 
 ### As skills e a leitura
 
@@ -784,9 +825,12 @@ especificação do Singer que ela cita.
 ### A ordem do trabalho
 
 1. **`--about` e `--discover`.** Critério: 11. Do índice do kit, para cada declaração de tabela.
-2. **A leitura.** Critérios: 12, 13. A sessão do kit (U2), uma página por vez com o tamanho do
+2. **A leitura.** Critérios: 12, 13, 66. A sessão do kit (U2), uma página por vez com o tamanho do
    conector, `STATE` depois de cada página, a versão da passada inteira, `ACTIVATE_VERSION` no fim; a
-   recusa da fonte escreve `TapFailure` em `result_path` e sai com código 1.
+   recusa da fonte escreve `TapFailure` em `result_path` e sai com código 1. A janela da declaração
+   (`window`) dá o começo da leitura como o motor de hoje (`C/apps/server/src/hub/copies/source-pass.ts:37-46`,
+   `datesOf`): numa passada inteira, a janela inteira; numa só do que mudou (parte 2), as mudadas
+   dentro dela.
    - **Testes:** `tap.test.ts` contra os dublês do Sankhya e do HubSpot; `test_tap_battery.py` roda a
      bateria padrão do singer-sdk sobre a saída gravada.
    - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha.
@@ -890,8 +934,7 @@ export const CopyTaskResult = z.object({
   qualquer outra coisa; uma inválida termina a tarefa com código de saída e sem resultado, e a parada
   do ECS fecha a rodada (`COPY_TASK_LOST`).
 - **O ambiente da tarefa** tem só `CONEXUS_RUN_PARAMETER` (o nome do parâmetro) e a região.
-- **O arquivo modelo**: `packages/hub-api/src/copy-shown.ts`, se o builder confirmar C21 e C26 nele;
-  se não, nenhum.
+- **O arquivo modelo**: nenhum declarado; a unidade segue C21, C23 e C26 direto.
 
 ### As skills e a leitura
 
@@ -925,7 +968,8 @@ acrescenta ao `stack.md`; as linhas de `@aws-sdk/client-sqs` e `client-ssm`. A s
 4. **A imagem.** Critério: 20. `Dockerfile` em dois estágios: o adaptador em um arquivo só, com o
    Node 24; o Python 3.13 com `uv sync --frozen`; `x86_64`.
 5. **Os testes na AWS.** Critérios: 20, 21, 22 (L.1, L.3, L.5), na conta de laboratório, com a imagem
-   que a U5 publica; a saída vai no pull request do G3.
+   que a U5 publica; a saída vai no pull request do G3. O commit da U4 fecha com os critérios 15 a 19;
+   o 20 a 22 fecham no ponto de conferência do G3, depois da U5.
 
 ### Como se prova
 
@@ -981,13 +1025,15 @@ abre o lago de uma empresa a outra.
   confiando só em `ecs-tasks.amazonaws.com` com `aws:SourceAccount`; grava nas duas áreas do lago da
   empresa pelas concessões do Lake Formation por nome; lê só `/conexus/copia/<empresa>/*`; manda
   mensagem só à fila da cópia.
-- **O teto**: acrescenta a escrita nas tabelas dos depósitos `conexus-*`, a leitura de parâmetros sob
+- **O teto**: acrescenta a escrita nas tabelas das duas áreas (`raw` e `current`) dos depósitos `conexus-*`, a leitura de parâmetros sob
   `/conexus/copia/` e o envio à fila; continua sem `iam:*`.
 - **O papel do Hub**: `ecs:RunTask` só na definição da cópia, com `ecs:cluster` igual ao cluster;
-  `ecs:StopTask` e `ecs:DescribeTasks` só no cluster; `iam:PassRole` só em `role/conexus-*-escritor`
+  `ecs:StopTask`, `ecs:DescribeTasks` e `ecs:ListTasks` só no cluster; `iam:PassRole` só em `role/conexus-*-escritor`
   com `iam:PassedToService` igual a `ecs-tasks.amazonaws.com`, e no papel de execução;
   `ssm:PutParameter`, `ssm:DeleteParameter` em `parameter/conexus/copia/*`; `sqs:ReceiveMessage`,
   `sqs:DeleteMessage` na fila; `s3tables:ListTables`, `s3tables:DeleteTable` nos depósitos de lago.
+- **O estado, o id e a entrada**: nenhuma união nem id novo no código da plataforma; os nomes são
+  constantes; o CDK valida as entradas. Arquivo modelo: `infra/aws/lib/lake.ts`, o papel que lê.
 - **A regra**: o evento "ECS Task State Change" com `lastStatus` `STOPPED` do cluster da cópia vai à
   fila; a fila só aceita mensagem dessa regra e dos papéis que escrevem.
 
@@ -1002,7 +1048,9 @@ A security S36 e S40.
    Testes: `platform.test.ts`, "a plataforma da cópia", pelas asserções do `aws-cdk-lib`.
 2. **O papel que escreve e o teto.** Critério: 24. Em `lake.ts` e `platform.ts`; o robô ganha
    `iam:CreateRole` em `role/conexus-*-escritor` com a condição do teto, como faz hoje com os que
-   leem (`platform.ts:139-144`). Testes: `lake.test.ts`, "o papel que escreve".
+   leem (`platform.ts:139-144`), e as ações de cuidar deles, as mesmas de `TendReaders`
+   (`platform.ts:145-149`), para apagar e etiquetar o papel. Testes: `lake.test.ts`, "o papel que
+   escreve".
    - **Mutações à mão:** tirar a condição do teto na criação: o teste fica vermelho.
 3. **Os poderes do Hub.** Critério: 26. Testes: `platform.test.ts`, "os poderes do Hub", que lista
    cada ação e cada recurso e recusa qualquer outro.
@@ -1049,6 +1097,7 @@ uma permissão nomeada.
 | --- | --- | --- |
 | `apps/server/src/hub/copies/tables.ts` | Muda: `place`; `task_arn`, `attempt`; o teto de `system_code` | todo `hub/copies/` |
 | `apps/server/src/hub/lake/tables.ts` | Muda: a política de leitura da empresa | `hub/lake/`; U7 |
+| `apps/server/src/hub/notifications/tables.ts`, `docs/architecture.md` (as exceções do roll-back) | Apaga `copy_follower` e `copy_notice`; uma linha nas exceções (data D6) | nenhum código as lê |
 | `apps/server/drizzle/`, `database-grants.sql`, a foto do catálogo | Cria duas migrações; muda as permissões | `migrate`; `catalog.test.ts` |
 | `packages/hub-api/src/copies.ts` | Muda: `CopyPlace` | U7, U8 |
 
@@ -1071,7 +1120,11 @@ export type CopyPlace = z.infer<typeof CopyPlace>
 export const SYSTEM_CODE_MAX = 64
 ```
 
-- Nenhuma chave estrangeira nova.
+- Nenhuma chave estrangeira nova. Saem `notifications.copy_follower` e `notifications.copy_notice`,
+  que nenhum código lê, nesta migração e não na U10: a conferência `copy_notice_code` repete
+  `CopyRunFailureCode` no banco (`C/apps/server/src/hub/notifications/tables.ts:35`, `:230`), e a U7
+  acrescenta códigos a ela.
+- **O arquivo modelo**: `apps/server/src/hub/lake/tables.ts`.
 - **O dono do fato**: `CopyPlace` em `hub-api`; o teto do código ao lado do da mensagem (C26).
 
 ### As skills e a leitura
@@ -1081,8 +1134,8 @@ D6, D10, D11, D15.
 
 ### A ordem do trabalho
 
-1. **As colunas e o nome por lugar.** Critério: 30. A primeira migração acrescenta; a segunda tira a
-   restrição antiga. Testes: `tables.test.ts`, "o nome é único por lugar".
+1. **As colunas e o nome por lugar.** Critérios: 30, 44 (a conferência do teto). A primeira migração
+   acrescenta e tira as duas tabelas sem uso; a segunda tira a restrição antiga. Testes: `tables.test.ts`, "o nome é único por lugar".
 2. **A leitura da linha do lago.** Critério: 31. A política e a permissão por coluna; a foto do
    catálogo. Testes: `lake/tables.test.ts`, "a empresa lê a sua linha": lê a própria, não acha a de
    outra, é recusada ao gravar, mudar e apagar.
@@ -1098,6 +1151,7 @@ Pelo `migrate` num PostgreSQL local e pelas leituras com o login da empresa. Hoj
 - A conferência de migrações recusa tirar a restrição na mesma etapa: a segunda migração vai para o
   primeiro pull request depois, e o firstmate diz ao fundador.
 - Uma leitura de hoje depende de `copy_company_id_name_key` (um `ON CONFLICT` por nome).
+- Um código de hoje ainda lê `copy_follower` ou `copy_notice`.
 
 ## G4 O ponto de conferência
 
@@ -1133,7 +1187,7 @@ e o fim de uma rodada que roda fora do Hub.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/platform/aws.ts`, `config-aws.ts`, `test-aws.ts`, `recordings/aws/` | Muda: as portas `CopyTasks` e `LakeTables`, os nomes da U5, as saídas da plataforma na configuração; os dublês | `hub/copies/`, `hub/lake/`, a QA |
-| `apps/server/src/hub/copies/` | Cria `lake-run.ts`, `lake-queue.ts`; muda `service.ts`, `enable.ts`, `list.ts`, `routes.ts`, `leave.ts`, `run.ts` (o teto do código) | `builder/copy-clock/`, `hub/data/`, `hub/projects/` |
+| `apps/server/src/hub/copies/` | Cria `lake-run.ts`, `lake-queue.ts`; muda `service.ts`, `enable.ts`, `list.ts`, `routes.ts`, `leave.ts`, `run.ts` (o teto do código), `catalog-view.ts`, `role-copies.ts`, `readers.ts`, `project-view.ts`, `sample.ts` (a cópia do lago fica de fora) | `builder/copy-clock/`, `hub/data/`, `hub/projects/` |
 | `apps/server/src/hub/lake/lake.ts` | Muda: apagar o lago apaga as tabelas e as cópias do lago | `hub/operations/` |
 | `apps/server/src/builder/copy-clock/workflow.ts` | Muda: o passo aceita `STARTED` | o relógio |
 | `packages/hub-api/src/copies.ts`, `copy-failures.ts`, `failures.ts` | Muda: `place`, `places`, os códigos novos | U8; a outra trilha lê `CopySummary` |
@@ -1194,8 +1248,13 @@ export const CopyQueueMessage = z.discriminatedUnion('type', [
   `copy.last_run_id` e `copy.rows`, apaga o parâmetro e registra `COPY_RUN_ENDED`.
 - **O consumidor** só lê a fila enquanto há rodada do lago aberta que o Hub conhece: o disparo o
   acorda; ao subir, o Hub lê uma vez as rodadas abertas do lago (data D27).
-- **O arquivo modelo**: `apps/server/src/hub/lake/lake.ts` para o uso do adaptador da AWS, se o
-  builder confirmar C21, C23 e C26 nele; se não, nenhum.
+- **A cópia do lago fora do banco**: `enable.ts` não chama `ensureSync`, `ensureReader`,
+  `ensureCopyTable` nem `released` para `place: LAKE` (`C/apps/server/src/hub/copies/enable.ts:158-196`);
+  `catalog-view.ts`, `role-copies.ts`, `readers.ts` e `project-view.ts` leem só `place = 'DATABASE'`;
+  a Amostra responde 409 `COPY_IN_LAKE`.
+- **A varredura sem `task_arn`**: uma rodada aberta sem `task_arn` acha a tarefa pelo `startedBy`
+  (`ListTasks`); sem tarefa, fecha como `COPY_TASK_LOST`.
+- **O arquivo modelo**: nenhum declarado; a unidade segue C21, C23 e C26 direto.
 
 ### As skills e a leitura
 
@@ -1226,11 +1285,13 @@ D27; a security S8 e S41.
      mensagem duas vezes; a mensagem ilegível.
    - **Mutações à mão:** tirar o `ended_at IS NULL`: a parada que chega depois reescreve o resultado e
      o 35 fica vermelho.
-5. **Apagar.** Critérios: 41, 42. A cópia: parar a tarefa, fechar a rodada `INTERRUPTED`, apagar a
+5. **A cópia do lago fora do banco.** Critério: 64. Testes: `routes.test.ts`, "a cópia do lago fica
+   fora do banco".
+6. **Apagar.** Critérios: 41, 42. A cópia: parar a tarefa, fechar a rodada `INTERRUPTED`, apagar a
    tabela, o relógio e a linha, nessa ordem; a conexão que sai leva as cópias do lago dela pelo mesmo
    caminho. O lago: as tabelas das duas áreas, as cópias do lago da empresa, depois o fluxo da etapa 1.
-6. **A #1135.** Critério: 44. O código do sistema cortado em `SYSTEM_CODE_MAX` antes de gravar.
-7. **Os testes na AWS.** Critérios: 40, 41, 42 (L.8, L.9).
+7. **A #1135.** Critério: 44. O código do sistema cortado em `SYSTEM_CODE_MAX` antes de gravar.
+8. **Os testes na AWS.** Critérios: 40, 41, 42 (L.8, L.9).
 
 ### Como se prova
 
@@ -1259,7 +1320,7 @@ PostgreSQL local; a varredura por um disparo com uma rodada aberta antiga. Hoje 
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/hub/copies/` | Muda `new-copy.tsx`, `copy-list.tsx`, `copy-detail.tsx`, `copy-facts.tsx`, `text.ts`, `test-hub.tsx` | a página Dados |
+| `apps/web/src/hub/copies/` | Muda `new-copy.tsx`, `copy-list.tsx`, `copy-detail.tsx`, `copy-facts.tsx`, `copy-sample.tsx`, `copy-readers.tsx`, `text.ts`, `test-hub.tsx` | a página Dados |
 
 ### Os contratos que a unidade cria
 
@@ -1275,8 +1336,11 @@ o `DESIGN.md`.
 
 ### A ordem do trabalho
 
-1. **O diálogo.** Critério: 46. O grupo de opções de `ui/`, só quando `places` tem `LAKE`.
-2. **A lista e a tabela.** Critérios: 47, 48. O selo de hoje com o texto novo; o Resultado com o tipo
+1. **O diálogo.** Critério: 46. A escolha entre duas opções com a peça que o catálogo de `ui/` dá para
+   isso (`apps/web/src/ui/toggle-group.tsx`, ou o `ChoiceSelect` que o diálogo já usa,
+   `new-copy.tsx:98-118`), só quando `places` tem `LAKE`.
+2. **A lista e a tabela.** Critérios: 47, 48, 65. As abas Amostra e Colunas e a liberação a Projetos de
+   uma cópia do lago mostram a frase da matriz e não chamam o Hub. O selo de hoje com o texto novo; o Resultado com o tipo
    da rodada pelo `whole`; a frase do lugar.
    - **Testes:** os três arquivos de teste da tela, com o Hub falso de `test-hub.tsx`.
 
@@ -1318,9 +1382,9 @@ juntos, e entre duas instruções a tabela fica num estado do meio.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/extraction/` | Cria `src/conexus_extraction/update.py`; muda `entry.py`, `meltano.yml`, `tests/` | a imagem |
+| `apps/extraction/` | Cria `src/conexus_extraction/update.py`; muda `entry.py`, `meltano.yml`, `tests/`; a atualização da janela (critério 66) | a imagem |
 | `apps/extraction/tap/` | Muda: a retomada pelo `--state` e o modo incremental | o `meltano.yml` |
-| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado), `lake.ts` (o prefixo da empresa e a área atual para o papel que escreve; o grupo de consultas do lago), `platform.ts` (o Hub apaga o prefixo de uma cópia) | o Hub, pela Release |
+| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado), `lake.ts` (o prefixo do estado da empresa e o grupo de consultas do lago para o papel que escreve), `platform.ts` (o Hub apaga o prefixo de uma cópia) | o Hub, pela Release |
 | `apps/server/src/hub/copies/` | Muda `lake-run.ts` (`whole` pelo modo), `leave.ts` (apagar a atual e o estado) | — |
 | `apps/server/src/platform/aws.ts`, `recordings/aws/` | Muda: apagar o prefixo do estado; as gravações do Athena | — |
 
@@ -1334,6 +1398,9 @@ juntos, e entre duas instruções a tabela fica num estado do meio.
   cópia incremental.
 - `update.py`: `update(table, whole) -> UpdateCounts` com as três instruções e a limpeza; cada
   instrução espera o fim no Athena e uma falha termina a rodada `COPY_LAKE_WRITE_FAILED`.
+- **A janela** (decisão F (a)): o atualizar de uma cópia com `window` tira da atual as linhas da
+  janela que a passada não trouxe e as que saíram da janela, a forma de hoje no banco
+  (`C/apps/server/src/platform/copy-sql.ts:287-301`). Critério: 66.
 - **O arquivo modelo**: `conexus_extraction/target.py` (U4).
 
 ### As skills e a leitura
@@ -1378,7 +1445,7 @@ parte 2; na nuvem, o firstmate faz o roteiro 5 a 7 antes de chamar o fundador.
 ### As linhas da tabela
 
 - **Linha 24.** Ler `C/apps/server/src/hub/notifications/tables.ts:154-234` (`alert_recipient`, que
-  fica; `copy_follower` e `copy_notice`, que saem) e `:125-150` (`request_notice`, a forma da linha
+  fica; `copy_follower` e `copy_notice`, que a U6 já tirou) e `:125-150` (`request_notice`, a forma da linha
   no sino que a parada segue).
 
 ### O raio da mudança
@@ -1386,7 +1453,7 @@ parte 2; na nuvem, o firstmate faz o roteiro 5 a 7 antes de chamar o fundador.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/notifications/tables.ts`, `hub/copies/tables.ts` | Muda | `hub/notifications/`, `hub/copies/` |
-| `apps/server/drizzle/`, `database-grants.sql`, a foto do catálogo, `docs/architecture.md` (as exceções do roll-back) | Cria a migração; muda as permissões; uma linha nas exceções | `migrate`; `catalog.test.ts` |
+| `apps/server/drizzle/`, `database-grants.sql`, a foto do catálogo | Cria a migração; muda as permissões | `migrate`; `catalog.test.ts` |
 
 ### Os contratos que a unidade cria
 
@@ -1394,11 +1461,11 @@ parte 2; na nuvem, o firstmate faz o roteiro 5 a 7 antes de chamar o fundador.
 | --- | --- | --- | --- | --- |
 | `copies.copy` | `stopped_since`, `stopped_code` | `timestamptz`, `text` | os dois nulos ou os dois não; o código em `CopyRunFailureCode` | — |
 | `notifications.connection_stop` | `company_id`, `connector_id`, `connection_id`, `since`, `told_at` | `text`, `text`, `uuid`, `timestamptz NOT NULL`, `timestamptz` | chave `(company_id, connection_id)` | a conexão (`company_id, connector_id, connection_id`): `cascade`; a empresa: `cascade` |
-| `notifications.copy_stop_notice` | `id`, `company_id`, `person_id`, `connection_name`, `tables`, `code`, `created_at`, `read_at` | `uuid`, `text`, `text`, `text`, `text[]`, `text`, `timestamptz`, `timestamptz` | `tables` de 1 a 50 nomes; o código em `CopyRunFailureCode`; as políticas da pessoa, como `request_notice` | o membro: `cascade`; nenhuma chave para a conexão, que pode sair antes (data D17) |
-| `notifications.copy_follower`, `copy_notice` | — | — | saem (data D6; nenhum código as lê) | — |
+| `notifications.copy_stop_notice` | `id`, `company_id`, `person_id`, `connection_name`, `tables`, `code`, `created_at`, `read_at` | `uuid`, `text`, `text`, `text`, `text[]`, `text`, `timestamptz`, `timestamptz` | `tables` com ao menos um nome; o código em `CopyRunFailureCode`; as políticas da pessoa, como `request_notice` | o membro: `cascade`; nenhuma chave para a conexão, que pode sair antes (data D17) |
 
-- As permissões do login da empresa nas duas tabelas novas, e em `alert_recipient` se ele ainda não
-  as tiver (para a U12).
+- As permissões do login da empresa nas duas tabelas novas; em `alert_recipient` ele já tem
+  `SELECT`, `INSERT` e `DELETE` (`C/apps/server/database-grants.sql:456`).
+- `told_at`: a hora do último e-mail daquela parada, o primeiro ou um lembrete.
 - **O dono do fato**: os códigos, `CopyRunFailureCode` de `hub-api` (C26).
 
 ### As skills e a leitura
@@ -1407,8 +1474,8 @@ A skill `drizzle`. O guia de dados, D6, D11, D15, D17.
 
 ### A ordem do trabalho
 
-1. **A migração e as permissões.** Critério: 55. A linha nas exceções do roll-back da arquitetura
-   nomeia a versão antes da qual nenhuma imagem roda no banco migrado.
+1. **A migração e as permissões.** Critério: 55, com a palavra do fundador (data D11), pedida no
+   começo da parte 3.
    - **Testes:** `tables.test.ts` das notificações e `catalog.test.ts`.
 
 ### Como se prova
@@ -1417,7 +1484,7 @@ Pelo `migrate` num PostgreSQL local.
 
 ### Parar se
 
-- Um código de hoje ainda lê `copy_follower` ou `copy_notice`.
+- A parada precisa de uma coluna que a U11 descubra só no teste.
 
 ## G7 O ponto de conferência
 
@@ -1441,9 +1508,10 @@ dois e-mails, e uma que volta não pode dar nenhum.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/notifications/` | Cria `copy-stop.ts`, `copy-stop-email.tsx`; muda `notifications.ts` (a lista do sino) | `hub/copies/lake-queue.ts` |
+| `apps/server/src/hub/notifications/` | Cria `copy-stop.ts`, `copy-stop-email.tsx`; muda `notifications.ts` (a lista do sino), `notification-render.d.mts` | `hub/copies/lake-queue.ts`, `hub/copies/leave.ts` |
 | `apps/server/src/hub/copies/lake-queue.ts`, `list.ts` | Muda: `closeLakeRun` anota e tira a parada; `CopySummary.stopped` | — |
 | `apps/server/src/builder/copy-clock/` | Muda: o relógio do lembrete de uma parada | — |
+| `apps/server/package.json` (o `build` que compila os e-mails com `esbuild`), `.gitignore` | Muda: o segundo modelo de e-mail | a Release |
 | `packages/hub-api/src/copies.ts`, `notifications.ts` | Muda: `stopped`; o aviso de parada no sino | U11 na tela |
 | `apps/web/src/hub/copies/`, `apps/web/src/hub/notifications/bell.tsx` | Muda: a marca **Parada**; a linha no sino | — |
 
@@ -1463,13 +1531,14 @@ export function recovered(tx: CommandTx, run: { companyId: CompanyId; copyId: Co
 - **Quem abre a parada da conexão**: o `INSERT ... ON CONFLICT DO NOTHING RETURNING` em
   `connection_stop`; só a transação que recebe a linha grava as linhas do sino e manda o e-mail.
 - **O lembrete**: um relógio por parada de conexão, criado com ela e apagado quando ela fecha,
-  diário às 8h de São Paulo, no `mastra.schedules` (data D27); a primeira hora dele é o dia
-  seguinte.
+  diário na hora de T.15, no `mastra.schedules` (data D27); a primeira hora dele é o dia
+  seguinte. Apagar a cópia ou a conexão chama `recovered` (de `leave.ts`), e a última tabela que sai
+  fecha a parada e o relógio.
 - **Quem recebe**: os membros com papel de Dono ou Administrador da empresa, e a lista
   `alert_recipient`; o texto do e-mail nunca leva uma linha de dado nem a mensagem crua do sistema
   (S41).
-- **O arquivo modelo**: `hub/notifications/request-notices.ts`, se o builder confirmar C21 e C26
-  nele; se não, nenhum.
+- **O arquivo modelo**: nenhum declarado; a unidade segue C21 e C26 direto, com a forma de
+  `hub/notifications/request-notices.ts`.
 
 ### As skills e a leitura
 
@@ -1499,13 +1568,13 @@ e o e-mail de teste de hoje; o lembrete pelo disparo do relógio. Hoje nenhum av
 
 ## U12 A lista de e-mails
 
-**Base e modelo.** O G7 mesclado. Sonnet: uma lista de três rotas e um bloco.
+**Base e modelo.** O G7 mesclado. Sonnet: uma lista de três rotas e uma seção de Configurações.
 
 ### As linhas da tabela
 
 - **Linha 30.** Ler `C/apps/server/src/hub/notifications/tables.ts:153-172` (`alert_recipient`,
-  único por empresa sem caixa). A Nekt manda o aviso a uma lista de e-mails da empresa
-  (`NK:22357-22360`).
+  único por empresa sem caixa) e `C/docs/reference/telas.md:311` (o lugar: Configurações, Avisos,
+  "a etapa 2 do lago"). A Nekt manda o aviso a uma lista de e-mails da empresa (`NK:22357-22360`).
 
 ### O raio da mudança
 
@@ -1513,7 +1582,7 @@ e o e-mail de teste de hoje; o lembrete pelo disparo do relógio. Hoje nenhum av
 | --- | --- | --- |
 | `packages/hub-api/src/notifications.ts` | Muda: as três operações | a tela |
 | `apps/server/src/hub/notifications/` | Muda `routes.ts`; cria `alert-recipients.ts` | U11 lê a lista |
-| `apps/web/src/hub/copies/` | Cria `alert-recipients.tsx`; muda a página Dados | — |
+| `apps/web/src/hub/identity/` | Cria `alert-recipients.tsx`, a seção **Avisos** de Configurações, ao lado de `company-general.tsx`; muda o índice de Configurações (web W32) | — |
 
 ### Os contratos que a unidade cria
 
@@ -1530,7 +1599,7 @@ As linhas de `fastify` e `react` do `stack.md`. O guia de web e o de desenho.
 ### A ordem do trabalho
 
 1. **As rotas.** Critério: 63. Testes: `routes.test.ts`, "a lista de e-mails".
-2. **O bloco.** Critério: 63. Testes: `alert-recipients.test.tsx`.
+2. **A seção Avisos.** Critério: 63. Testes: `alert-recipients.test.tsx`.
 
 ### Como se prova
 
