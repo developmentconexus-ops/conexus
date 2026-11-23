@@ -198,6 +198,19 @@ test('429 de teto de uso: a conta ganha o limite do crédito, não o da taxa, e 
   assert.equal(Object(refused?.fields).kind, 'quota')
 })
 
+test('429 que diz acesso negado: o status manda, a conta ganha o limite da taxa e a próxima assume', async (t) => {
+  const f = await fleet(t, {
+    'Time 1': { kind: 'refuse', status: 429, type: 'authentication_error' },
+  })
+  await f.add('Dois')
+  const before = Date.now()
+  await f.ask()
+  assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
+  assert.deepEqual(await f.listed(), { 'Time 1': 'ready', Dois: 'ready' })
+  const until = (await f.states())['Time 1']?.limitedUntil ?? 0
+  assert.ok(Math.abs(until - (before + 15 * MINUTE)) < 30_000, `${until - before}`)
+})
+
 test('400 de formato: o turno falha, sem troca, e o log traz o tipo fechado', async (t) => {
   const message = 'messages: text content blocks must be non-empty'
   const f = await fleet(t, { 'Time 1': { kind: 'refuse', status: 400, message } })

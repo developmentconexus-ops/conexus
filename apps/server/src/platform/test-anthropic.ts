@@ -17,6 +17,7 @@ const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 const MODEL = 'claude-sonnet-4-6'
 /** What a provider's cybersecurity safeguard answers with (Mastra's `CyberRefusalHandler` reads it). */
 const CYBER_REFUSAL = 'This content was flagged for possible cybersecurity risk.'
+const PLANTED_REFUSAL = 'planted refusal SECRET-PLANTED-TEXT'
 /** The line the subscription's endpoint requires first in the system of a bearer call. */
 const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Claude."
 
@@ -37,6 +38,7 @@ type Settled =
       headers?: Record<string, string>
       cyber?: true
       message?: string
+      type?: string
     }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string; before?: Block[] }
   | { kind: 'reset' }
@@ -233,10 +235,8 @@ function replied(sent: Sent, reply: Settled, signal: AbortSignal | null | undefi
     const error = {
       type: 'error',
       error: {
-        type: ERROR_TYPES[reply.status],
-        message:
-          reply.message ??
-          (reply.cyber === true ? CYBER_REFUSAL : 'planted refusal SECRET-PLANTED-TEXT'),
+        type: reply.type ?? ERROR_TYPES[reply.status],
+        message: reply.message ?? (reply.cyber === true ? CYBER_REFUSAL : PLANTED_REFUSAL),
       },
     }
     const headers = { 'content-type': 'application/json', ...reply.headers }

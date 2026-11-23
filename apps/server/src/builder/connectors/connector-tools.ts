@@ -9,7 +9,7 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { CONNECTOR_CALLS_PER_TURN, deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { toldBody, toldText } from '../../platform/model-text.ts'
+import { toldNative } from '../../platform/model-text.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
 import type { ProposeCall } from './copy-propose.ts'
 import { copyProposeTool } from './copy-propose.ts'
@@ -216,21 +216,11 @@ function failedRead(answered: { native: Native }) {
   } as const
 }
 
-/** The provider's answer as the model reads it: its message and body up to the ceiling of C79; the record the Hub made keeps them whole. */
-function toldNative(native: Native): Native {
-  const { message } = native
-  return {
-    ...native,
-    message: message === null ? null : toldText(message),
-    body: toldBody(native.body),
-  }
-}
-
-/** What the model reads of a read that did not answer OK: the provider's answer up to the ceiling, with the failed-read words when it was not a refusal of access. */
+/** What the model reads of a read that did not answer OK: the provider's refusal within the ceiling of C79, with the failed-read words when it was not a refusal of access. */
 export function unansweredRead(answered: Exclude<Answer, { kind: 'OK' }>) {
-  if (answered.kind !== 'REFUSED') return answered
+  if (!('native' in answered)) return answered
   const told = { ...answered, native: toldNative(answered.native) }
-  return deniesAccess(answered.native) ? told : failedRead(told)
+  return answered.kind === 'REFUSED' && !deniesAccess(answered.native) ? failedRead(told) : told
 }
 
 /** One read through the access's door: the model gets the cut with the time the answer came back, and the whole answer goes to the machine's file when there is one. */
