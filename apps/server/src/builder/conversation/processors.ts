@@ -7,7 +7,8 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
-import { Failure, type FailureLog, logFailure } from '../../platform/failure.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { controllerIn } from '../controller-context/public.ts'
 import { turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
@@ -115,11 +116,7 @@ async function judge(
 }
 
 /** The end of the turn as Mastra's `isTaskComplete` scores it, by code (Mastra Code `agent/goal` is a model's judge). */
-export function conexusCheck(deps: {
-  runs: Runs
-  storage: MastraCompositeStore
-  log: FailureLog
-}) {
+export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore; log: FailureLog }) {
   return createScorer({
     id: 'conexus-check',
     name: 'Conferência do app',

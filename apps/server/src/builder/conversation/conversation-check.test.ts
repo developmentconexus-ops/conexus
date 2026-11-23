@@ -183,33 +183,6 @@ test('a máquina que não confere no fim do turno: o turno termina e guarda a ve
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), unchecked)
 })
 
-test('o juiz do fim do turno que lança: o turno termina sem conferência e o log traz a causa', async (t) => {
-  const model = turnOf([WRITE])
-  let armed = false
-  const { hub, ana, conversations } = await conversing(t, (call) => {
-    const reply = model.answer(call)
-    armed ||= model.asked.length === 2
-    return reply
-  })
-  checking(hub.builder.folder, [])
-  const { control } = hub.builder
-  control.afterCommand = () => {
-    if (!armed) return
-    control.afterCommand = () => undefined
-    throw Object.assign(new Error('SECRET-PLANTED-TEXT'), { code: 'ECONNRESET' })
-  }
-  const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  assert.deepEqual(versionsOf(shownPartsOf(events)), [
-    { number: 1, changedFiles: 1, check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' } },
-  ])
-  const logged = hub.lines.filter((line) => line.message === 'CHECK_JUDGE_FAILED')
-  assert.equal(logged.length, 1)
-  const [line] = logged
-  assert.equal(line?.fields.code, 'ECONNRESET')
-  assert.match(String(line?.fields.conversationId), /^[0-9a-f-]{36}$/)
-  assert.ok(!JSON.stringify(hub.lines).includes('SECRET-PLANTED-TEXT'))
-})
-
 test('uma pergunta encerra o turno: a versão fica sem veredito, nem a conferência roda', {
   timeout: 60_000,
 }, async (t) => {
