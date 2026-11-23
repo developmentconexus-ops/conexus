@@ -33,6 +33,10 @@ async function messagesOf(
         return [fixedSystem(part.text)]
       case 'TEXT':
         return [{ role: 'system', content: part.text } as const]
+      case 'BY_MODEL': {
+        const content = part.blocks[sessionModel(requestContext)]
+        return content === undefined ? [] : [{ role: 'system', content } as const]
+      }
       case 'OF_RUN': {
         const content = ofRun[at]
         return content === undefined ? [] : [{ role: 'system', content } as const]
@@ -144,7 +148,7 @@ export function agentOfSpec(
     instructions: instructionsOf(spec.prompt),
     model: modelOf(spec.model),
     tools: ({ requestContext }) => toolsOfSpec(spec, requestContext),
-    ...agentDefaults(deps.queue, turns),
+    ...agentDefaults(deps.queue, turns, spec.processors),
     memory: spec.memory,
     ...(spec.skills === undefined ? {} : { skills: spec.skills }),
     ...(spec.signals === undefined ? {} : { signals: spec.signals }),
@@ -164,13 +168,22 @@ export function mountAgent(
   spec: ConversationSpec,
   deps: { queue: QueueDeps; storage: MastraCompositeStore },
 ): Readonly<{ agent: Agent; controller: AgentController }> {
-  const { kind, threads, memory, mode, own, workspace, ...fields } = spec
+  const { kind, threads, memory, mode, own, workspace, subagents, ...fields } = spec
   const { agent, watch } = agentOfSpec(
     { ...fields, id: CONTROLLER_KINDS[kind].id, memory: memory ?? threads },
     deps,
   )
   const controller = controllerOf({
-    ...{ kind, storage: deps.storage, memory: threads, agent, mode, workspace, tools: own },
+    ...{
+      kind,
+      storage: deps.storage,
+      memory: threads,
+      agent,
+      mode,
+      workspace,
+      tools: own,
+      subagents,
+    },
     initialState: initialStateOf(spec.approval),
   })
   watch?.(controller)
