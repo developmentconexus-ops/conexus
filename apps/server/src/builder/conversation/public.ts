@@ -25,7 +25,6 @@ export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra, MayApprove, WriteOf } from './guard.ts'
 export { approvedCallOf } from './guard.ts'
-export { skillOf } from './instructions.ts'
 export { createMastraStorage } from './storage.ts'
 export { TurnTally } from './turn-line.ts'
 export { TOOL_CLOSURE }

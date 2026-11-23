@@ -39,15 +39,16 @@ import {
   ASK_USER_TOOL,
   admitAsker,
   agentDefaults,
+  CONVERSATION_MODE,
   controllerOf,
   createAskUserTool,
   dataContextOf,
   MODEL_TIMEOUT,
   principalOf,
   sessionModel,
+  skillOf,
   toolsOf,
 } from '../controller-kit/public.ts'
-import { skillOf } from '../conversation/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -79,7 +80,6 @@ import { assistantTurns, turnEnd, turnKey } from './turn.ts'
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
 
-const MODE = 'conversa'
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
 const SEARCH_TOOLS = 'search_tools'
 /** The memory's own tools, by the ids `@mastra/memory` gives them (`listTools`). */
@@ -292,7 +292,7 @@ export function createAssistant(deps: Deps) {
   })
   const controller = controllerOf({
     ...{ kind: 'assistant', storage, memory, agent },
-    mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
+    mode: { id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS },
     // The helper's `connector_read` is made for each run, closed on the conversation's scope: the
     // helper's own context cannot find the conversation (`research.ts`).
     tools: {
