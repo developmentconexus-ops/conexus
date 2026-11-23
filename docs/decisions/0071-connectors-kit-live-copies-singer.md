@@ -14,7 +14,7 @@ chose Singer as the copy contract, run by Meltano, and asked that no piece take 
   [0080], imports only the kit's index and names no connector; its tests run for every connector
   declaring a table. Machine rules, from the first copy stage.
 - Money stays an exact decimal; a value that does not fit fails the run.
-- Meltano's ready taps stay out until a system asks; they are references for ours.
+- Meltano's ready taps stay out until a system asks; they are references.
 
 ## Criterion
 
@@ -44,7 +44,7 @@ A system's copy cannot be declared as data, or a client asks for a database sour
 ## State
 
 Accepted 2026-11-21. Founder, 2026-11-19: "A sim"; 2026-11-20: "sim" (the kit for credentials),
-"Confirma" (the adapter's tap); 2026-11-21: "G2 a".
+"Confirma" (the adapter's tap); 2026-11-21: "G2 a". Amended by [0082](0082-the-lake-holds-tables-and-files.md).
 
 [0056]: 0056-connectors-kit-and-one-executor.md
 [0057]: 0057-connections-by-oauth.md

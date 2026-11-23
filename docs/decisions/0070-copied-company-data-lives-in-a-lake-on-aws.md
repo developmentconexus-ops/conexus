@@ -43,7 +43,7 @@ Near 90 companies in one account; data in the client's own cloud; treatment that
 ## State
 
 Accepted 2026-11-19: the founder chose AWS for the data side (firstmate's note, no quote kept).
-The bucket per company: founder, 2026-11-20, "8 sim". Amends [0008].
+The bucket per company: founder, 2026-11-20, "8 sim". Amends [0008]. Amended by [0082](0082-the-lake-holds-tables-and-files.md).
 
 [0008]: 0008-neon-as-provider.md
 [0072]: 0072-the-lab-aws-account-is-provisional.md

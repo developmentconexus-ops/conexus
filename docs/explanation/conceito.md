@@ -64,7 +64,7 @@ trilha ou numa decisão gravada.
 
 | # | A empresa consegue | Hoje | Marco ou decisão |
 | --- | --- | --- | --- |
-| `C1` | Ligar os seus sistemas pela tela, sem colar chave, e ver cada um funcionando ou parado | parte: Sankhya, Mercado Livre e HubSpot ligam; o login pelo kit é o `D1` | `D1`, `D3` (dez sistemas com a mesma prova) |
+| `C1` | Ligar os seus sistemas pela tela, sem colar chave, e ver cada um funcionando ou parado | parte: Sankhya, Mercado Livre e HubSpot ligam; o login pelo kit é o `D1` | `D1`, `D3` (onze sistemas com a mesma prova) |
 | `C2` | Ver todo o dado copiado num catálogo só: cada tabela com nome, descrição, colunas, de quando é e quem lê | tem: Dados, com Visão geral, Colunas, Amostra, Rodadas e Quem lê | `D2` |
 | `C3` | Dar nome ao que a empresa chama de pedido, cliente, margem: os conceitos, cada um ligado às tabelas e provado com uma consulta | falta: a pasta Negócio existe, vazia | a etapa do Negócio e `D4`; decisões 0064 e 0067 |
 | `C4` | Guardar como a empresa opera: as regras, os processos, as exceções, em páginas que todo agente segue | parte: Memória da empresa, hoje nas Configurações | o Brain, decisão 0065 |
