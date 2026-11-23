@@ -3,8 +3,8 @@
 The card's founder's page, in Portuguese, is the only part the founder approves. The rest may be in
 Portuguese or English, one language per card.
 
-The card never carries whole files. A unit's section is its build spec, what its builder reads.
-The reader opens every cited line; the closing deletes the card; then the code is the only source.
+The card never carries whole files. A unit's section is its build spec.
+The closing deletes the card; then the code is the only source.
 
 ```markdown
 # Etapa <n>: <nome>
@@ -19,6 +19,9 @@ The reader opens every cited line; the closing deletes the card; then the code i
 
 **O que você faz, e quando.** Antes: <o que fornece>. No começo: aprova esta página. No fim: faz o
 roteiro, diz o que viu e aprova os textos das telas.
+
+**A visão.** <as linhas da `VISION.md` que a etapa serve, pela frase; cruzar uma pede antes a
+mudança ao fundador>
 
 **Fica de fora.** <o que não entra, e por quê>
 
@@ -82,8 +85,7 @@ módulos, concorrência ou algoritmo sutil).
 ### As linhas da tabela
 
 <cada linha da tabela de referência desta unidade: o que ler na base (arquivo, símbolo, linhas) e
-as linhas da referência que a unidade segue (`arquivo:linha`; no Mastra, o Mastra Code e o
-Factory)>
+as linhas da referência que a unidade segue (`arquivo:linha`)>
 
 ### O raio da mudança
 

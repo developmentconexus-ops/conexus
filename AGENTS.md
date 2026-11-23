@@ -1,8 +1,8 @@
 # Conexus: instructions for agents
 
-Conexus lets a person in a company ask an agent, the Builder, for a business app in Portuguese, and
-runs that app for the company. This repository holds the server program (Hub and Builder), the
-Hub's screens, the Cloudflare edge and the shared contracts. The design is
+Conexus joins a company's systems and know-how into one context that its agents and apps read;
+[VISION.md](VISION.md) says what it is and refuses. This repository holds the server program (Hub
+and Builder), the Hub's screens, the Cloudflare edge and the shared contracts. The design is
 [docs/architecture.md](docs/architecture.md); the map of every document and the subject it owns is
 [docs/index.md](docs/index.md).
 
