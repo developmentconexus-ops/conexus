@@ -6,7 +6,6 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connection, copy, copyRun, detailOf, openCopies, VENDAS } from './test-hub.tsx'
 import { CATALOG, ORDERS_SHOWN } from './test-sources.ts'
 
-// Uma cópia: o que é copiado e as rodadas (Capacidade 2, criterion 34).
 const server = hubServer()
 const DETAIL = detailOf(VENDAS)
 const RUNS = `${DETAIL}?tab=runs`
@@ -85,40 +84,17 @@ test('as rodadas: a passada inteira aparece na linha do celular', async () => {
   }
 })
 
-test('a cópia e as rodadas: sem rodada, a frase de primeira vez; Rodar agora e o caminho para Dados estão à mão', async () => {
+test('a cópia e as rodadas: sem rodada, a frase de primeira vez e o caminho para Dados à mão', async () => {
   openCopies(server, { copies: [copy({ run: null })], runs: [] }, RUNS)
   expect(await screen.findByText('A primeira rodada ainda não terminou.')).toBeTruthy()
   expect(within(screen.getByRole('main')).getByRole('link', { name: 'Dados' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Ações: Vendas' })).toBeTruthy()
 })
 
-test('o caminho leva a Dados', async () => {
-  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
-  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
-  expect(path.getByRole('link', { name: 'Dados' })).toBeTruthy()
-  expect(path.getByRole('link', { name: 'Sankhya' })).toBeTruthy()
-  expect(path.getByText('vendas')).toBeTruthy()
-  expect(screen.queryByRole('link', { name: /← Dados/ })).toBeNull()
-  expect(screen.queryByText(/a cada 30 min/)).toBeNull()
-})
-
-test('o caminho', async () => {
-  openCopies(server, { copies: [copy()], runs: [] }, DETAIL)
-  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
-  expect(path.getAllByRole('link')).toHaveLength(2)
-  for (const link of path.getAllByRole('link')) expect(link.getAttribute('aria-current')).toBeNull()
-  fireEvent.click(path.getByRole('link', { name: 'Sankhya' }))
-  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
-})
-
-test('o caminho leva a busca', async () => {
-  openCopies(server, { copies: [copy()], runs: [] }, `${DETAIL}?q=NUNOTA`)
-  const path = within(await screen.findByRole('navigation', { name: 'Caminho' }))
-  for (const link of path.getAllByRole('link')) {
-    const href = link.getAttribute('href') ?? ''
-    expect(href).toContain('q=NUNOTA')
-    expect(href).not.toContain('layer')
-  }
+test('sem o motor de hoje', async () => {
+  openCopies(server, { copies: [copy()], runs: [copyRun()] }, RUNS)
+  await screen.findByRole('heading', { name: 'vendas' })
+  const engine = /^Ações:|Pausar|Retomar|Intervalo|Rodar agora|Apagar/
+  expect(screen.queryAllByRole('button', { name: engine })).toEqual([])
 })
 
 const COPIED = /^Copiada do Sankhya em .+ · 118\.402 linhas$/

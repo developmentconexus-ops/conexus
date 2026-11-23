@@ -1,20 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { z } from 'zod'
-import { sankhya } from '../sankhya/definition.ts'
-import type { ConnectorCopy, CopyModel } from './copy.ts'
 import {
   CANONICAL_CELL,
   CopyDefinition,
   CopyDefinitionV1,
   CopyDefinitionV2,
-  CopyName,
   CopyPosition,
   Instant,
-  PageInput,
 } from './copy.ts'
-import { defineConnector } from './definition.ts'
-import { defineOperation } from './operation.ts'
 
 const DEFINITION = {
   version: 1,
@@ -102,82 +95,6 @@ test('a definição', () => {
   )
   columnCounts()
   acceptsLowerCase()
-  assert.equal(
-    PageInput.safeParse({
-      definition: DEFINITION,
-      after: [1, 2],
-      since: '1900-01-01',
-      windowFrom: null,
-      limit: 500,
-    }).success,
-    false,
-    'um valor de after por coluna da chave',
-  )
-})
-
-const copyRead = defineOperation({
-  id: 'lerPaginaTeste',
-  class: 'read' as const,
-  subject: 'porta',
-  idempotent: true,
-  summary: 'Página.',
-  label: 'Página',
-  input: PageInput,
-  output: z.object({ rows: z.array(z.array(z.string().nullable())), more: z.boolean() }),
-  probe: () => null,
-  request: () => ({ method: 'POST', path: '/p', query: {}, body: {} }),
-  answer: () => ({ kind: 'OK', value: { rows: [], more: false } }),
-})
-
-const MODEL: CopyModel = {
-  id: CopyName.parse('modelo'),
-  label: 'Modelo',
-  definition: CopyDefinitionV1.parse({
-    ...DEFINITION,
-    description: 'Linhas do modelo.',
-    columns: DEFINITION.columns.map((column) => ({
-      ...column,
-      description: `A coluna ${column.name}.`,
-    })),
-  }),
-}
-
-/** A copy the types would refuse, to meet the run-time checks of `defineConnector`. */
-const Unchecked = z.custom<ConnectorCopy>()
-
-function withCopy(copy: unknown) {
-  const { id: _id, ...rest } = sankhya
-  return () => defineConnector({ ...rest, id: 'sankhya', copy: Unchecked.parse(copy) })
-}
-
-test('o kit recusa uma cópia mal declarada', () => {
-  assert.equal(sankhya.copy?.models.length, 5)
-  assert.deepEqual(
-    sankhya.copy?.models.map((model) => model.id),
-    ['clientes', 'vendedores', 'produtos', 'vendas', 'itens_venda'],
-  )
-  assert.doesNotThrow(withCopy({ read: copyRead, models: [MODEL] }))
-  assert.throws(
-    withCopy({ read: { ...copyRead, class: 'write' }, models: [MODEL] }),
-    /Copy read not read/,
-  )
-  const door = sankhya.readDoor?.consultar
-  assert.ok(door)
-  assert.throws(
-    withCopy({ read: { ...copyRead, id: door.id }, models: [MODEL] }),
-    /repeats operation id/,
-  )
-  assert.throws(
-    withCopy({ read: copyRead, models: [MODEL, { ...MODEL, label: 'Outro' }] }),
-    /Repeated copy template id/,
-  )
-  assert.throws(
-    withCopy({
-      read: copyRead,
-      models: [{ ...MODEL, definition: { ...MODEL.definition, key: ['NOME'] } }],
-    }),
-    z.ZodError,
-  )
 })
 
 const V2 = {

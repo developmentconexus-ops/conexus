@@ -149,7 +149,7 @@ test('os nomes de hoje: a rodada de automação', async (t) => {
   }
 })
 
-test('os nomes de hoje: o Builder', async (t) => {
+test('os nomes de hoje: o Builder, sem copy_propose', async (t) => {
   const on = await assisting(t)
   const url = `${on.conversations}/${await started(on.hub, on.ana, on.conversations)}`
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
@@ -161,7 +161,6 @@ test('os nomes de hoje: o Builder', async (t) => {
     'connector_note_save',
     'connector_notes',
     'connector_read',
-    'copy_propose',
     'data_describe',
     'data_query',
     'mastra_workspace_delete',

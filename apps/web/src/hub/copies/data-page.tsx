@@ -1,15 +1,12 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { PageHeader } from '../../ui/page-header.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { AppsLayer } from './apps-layer.tsx'
-import { NoteLine, useNote } from './copy-list.tsx'
 import { useMay, useOwnRoleLabel } from './member.ts'
-import { NewCopy } from './new-copy.tsx'
 import { copiesQuery } from './queries.ts'
 import { RawLayer } from './raw-layer.tsx'
-import { useRunRequests } from './run-requests.ts'
 import { DataLayer } from './search.ts'
 import {
   CATALOG_FAILED,
@@ -44,39 +41,21 @@ function RoleNote({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-/**
- * **Dados**: what the agents and the apps of the company can read, in the layer the address says
- * (web W18) and the tree chooses; **Ligar uma cópia** stays on top.
- */
 export function DataPage(props: { companyId: CompanyId; layer: DataLayer; q: string | undefined }) {
   const { companyId, q } = props
   const may = useMay()
   const layer =
     props.layer === DataLayer.enum.apps && !may.viewAppData ? DataLayer.enum.raw : props.layer
-  const requests = useRunRequests()
-  const read = useQuery(copiesQuery(companyId, requests))
-  const [note, setNote] = useNote(read.data?.copies ?? [])
+  const read = useQuery(copiesQuery(companyId))
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
-      <PageHeader
-        title={DATA_TITLE}
-        intro={
-          <>
-            <p className="max-w-message text-text-2">{DATA_INTRO}</p>
-            {!may.manageCopies && <RoleNote companyId={companyId} />}
-          </>
-        }
-        actions={may.manageCopies && <NewCopy companyId={companyId} />}
-      />
-      {note !== undefined && <NoteLine note={note} />}
+      <div className="flex min-w-0 flex-col gap-xs">
+        <PageTitle>{DATA_TITLE}</PageTitle>
+        <p className="max-w-message text-text-2">{DATA_INTRO}</p>
+        {!may.manageCopies && <RoleNote companyId={companyId} />}
+      </div>
       {layer === DataLayer.enum.raw && (
-        <RawLayer
-          companyId={companyId}
-          read={read}
-          q={q}
-          onNote={setNote}
-          manage={may.manageCopies}
-        />
+        <RawLayer companyId={companyId} read={read} q={q} manage={may.manageCopies} />
       )}
       {layer === DataLayer.enum.business && <BusinessLayer />}
       {layer === DataLayer.enum.apps && <AppsLayer companyId={companyId} />}

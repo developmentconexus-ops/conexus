@@ -310,11 +310,6 @@ async function readCopies(
   }
 }
 
-/** A copy act of `copy-sql.ts` with the context already given. */
-export type Bound<F> = F extends (context: Context, ...rest: infer A) => infer R
-  ? (...rest: A) => R
-  : never
-
 /** The read login's acts with the context already given. */
 export type CopyReader = {
   /** The login that reads the `sync` schema and nothing else, after `ensureSync`; repeatable. */

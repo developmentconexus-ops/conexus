@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { sankhyaFake } from '../../hub/connectors/test-sales.ts'
 import { SANKHYA_REFUSED } from '../../hub/copies/test-copies.ts'
+import { plantRun } from '../../hub/copies/test-planted.ts'
 import { releasing } from '../../hub/copies/test-released.ts'
 import { BRUNO, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
@@ -31,10 +32,15 @@ async function copyWorld(t: TestContext, steps: ReturnType<typeof ask>) {
 
 type World = Awaited<ReturnType<typeof copyWorld>>
 
-function refusedRun(w: World, name: string, signal = AbortSignal.timeout(60_000)) {
+function refusedRun(w: World, name: string, secondsAfterNow = 0) {
   const copyId = w.ids.get(name)
   assert.ok(copyId, name)
-  return w.on.hub.copies.run({ companyId: w.companyId, copyId }, signal)
+  const refused = {
+    outcome: 'ERROR',
+    reason: 'COPY_SOURCE_REFUSED',
+    system: SANKHYA_REFUSED,
+  } as const
+  return plantRun(w.on, copyId, refused, 0, new Date(Date.now() + secondsAfterNow * 1000))
 }
 
 async function conversation(t: TestContext, w: World, who = w.on.ana) {
@@ -67,7 +73,6 @@ async function readerOfVendas(w: World) {
 
 test('a causa de uma cópia parada', async (t) => {
   const w = await copyWorld(t, ask('sankhya_vendas'))
-  w.fake.switches.refuse.add('consultar')
   await refusedRun(w, 'vendas')
   await turn(t, w)
   const [result] = resultsOf(w)
@@ -76,8 +81,8 @@ test('a causa de uma cópia parada', async (t) => {
   assert.deepEqual(answer.copy, {
     name: 'sankhya_vendas',
     connections: ['Matriz'],
-    schedule: answer.copy.schedule,
-    interval: '30m',
+    schedule: { kind: 'MISSING' },
+    interval: null,
   })
   const [refused, complete] = answer.runs
   const { startedAt, endedAt, ...rest } = refused
@@ -98,8 +103,7 @@ test('a causa de uma cópia parada', async (t) => {
 
 test('cinco rodadas no máximo', async (t) => {
   const w = await copyWorld(t, ask('sankhya_clientes'))
-  w.fake.switches.refuse.add('consultar')
-  for (let each = 0; each < 6; each += 1) await refusedRun(w, 'clientes')
+  for (let each = 0; each < 6; each += 1) await refusedRun(w, 'clientes', each)
   await turn(t, w)
   const { runs } = JSON.parse(resultsOf(w)[0]?.text ?? 'null')
   assert.equal(runs.length, 5)
@@ -108,6 +112,7 @@ test('cinco rodadas no máximo', async (t) => {
     starts,
     [...starts].sort((a, b) => b - a),
   )
+  assert.ok((starts[0] ?? 0) - (starts[4] ?? 0) >= 4000, 'as cinco mais recentes das seis')
 })
 
 test('o membro também recebe copy_runs', async (t) => {
@@ -174,7 +179,7 @@ test('o desenvolvedor recebe a tabela de fora do papel como a que não existe', 
 test('a cópia que some entre a lista e as rodadas responde como a que não existe', async (t) => {
   const w = await copyWorld(t, ask('sankhya_vendas'))
   const { companyId, personId } = w
-  const { copies } = await w.on.hub.copies.list({ companyId, personId, named: [] })
+  const { copies } = await w.on.hub.copies.list({ companyId, personId })
   const thrown = await copyGoneBetween({ companyId, personId, copies }, 'sankhya_vendas')
   assert.equal(JSON.parse(thrown.message).kind, 'NOT_FOUND')
 })

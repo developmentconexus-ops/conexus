@@ -645,18 +645,6 @@
       "name": "o pedido sem resposta \\(a\\): uma linha SENDING de outra chamada faz WRITE_OPEN com a marca dela, sem gravar nem enviar"
     },
     {
-      "file": "apps/server/src/hub/copies/delete.test.ts",
-      "name": "de novo: a mesma resposta, e a cópia de outra empresa não muda"
-    },
-    {
-      "file": "apps/server/src/hub/copies/enable.test.ts",
-      "name": "ligar: repetir com a mesma chave não pede outra rodada"
-    },
-    {
-      "file": "apps/server/src/hub/copies/run-system.test.ts",
-      "name": "a mensagem não vai ao log"
-    },
-    {
       "file": "apps/server/src/hub/identity/companies.test.ts",
       "name": "fora: o membro"
     },

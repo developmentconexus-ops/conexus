@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { CLIENTES, connection, copy, LIST, openCopies, proposal } from './test-hub.tsx'
+import { CLIENTES, connection, copy, LIST, openCopies } from './test-hub.tsx'
 import { CATALOG, STORES } from './test-sources.ts'
 
 // Dados: the Bruto layer by system, the search, the empty states and the layer in the address (parte 1, 8.1 to 8.14).
@@ -163,13 +163,6 @@ test('Dados: uma conexão que não está ativa não vira sistema', async () => {
   const main = within(await screen.findByRole('main'))
   expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
   expect(main.queryByText('Nenhuma tabela copiada')).toBeNull()
-})
-
-test('Dados: sem sistema ligado, uma proposta aberta ainda aparece e a frase de vazio some', async () => {
-  openCopies(server, { copies: [], connections: [], proposals: [proposal()] }, LIST)
-  const main = within(await screen.findByRole('main'))
-  expect(await main.findByText('Proposta')).toBeTruthy()
-  expect(main.queryByText('Nenhum sistema ligado ainda')).toBeNull()
 })
 
 test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {

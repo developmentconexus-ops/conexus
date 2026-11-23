@@ -9,9 +9,9 @@ import { roleLoginOf } from '../../platform/test-company-postgres.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { BRUNO, call, memberOn, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
-import type { CopyTuning } from './public.ts'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn, TEST_TUNING } from './test-copies.ts'
+import { copiesOn } from './test-copies.ts'
+import { PLANTED_MODEL_NAMES } from './test-planted.ts'
 
 const KEY = testAppsConfig().appLoginKey
 
@@ -51,21 +51,15 @@ export function copyOf(copies: ReadonlyMap<string, CopyId>, name: string): CopyI
   return copyId
 }
 
-/**
- * Empresa A with its five copies run, Bruno in Vendas and Carla in Financeiro. With `PLANTED`,
- * Vendas reads sales, sale items, sellers and products and Financeiro the clients, marked in the
- * Hub before the runs; with `NONE`, no role reads a copy.
- */
 export async function rolesWorld(
   t: TestContext,
   marks: 'PLANTED' | 'NONE',
-  tuning: CopyTuning = TEST_TUNING,
-  also?: Parameters<typeof copiesOn>[3],
+  also?: Parameters<typeof copiesOn>[1],
 ) {
-  const on = await copiesOn(t, tuning, undefined, also)
+  const on = await copiesOn(t, also)
   const copies = new Map<string, CopyId>()
-  for (const model of ['clientes', 'vendedores', 'produtos', 'vendas', 'itens_venda']) {
-    copies.set(`sankhya_${model}`, await on.enable(model))
+  for (const model of PLANTED_MODEL_NAMES) {
+    copies.set(`sankhya_${model}`, await on.plant(model))
   }
   const vendas = await roleOn(on, 'Vendas')
   const financeiro = await roleOn(on, 'Financeiro')
@@ -77,7 +71,7 @@ export async function rolesWorld(
   const url = `/api/companies/${on.companyId}/members/${on.carla.id}`
   const moved = await call(on.hub, on.ana, 'PUT', url, { role: financeiro.role, from: 'member' })
   assert.equal(moved.statusCode, 200, moved.body)
-  for (const copyId of copies.values()) assert.equal((await on.run(copyId)).kind, 'ENDED')
+  assert.equal(await on.reconcile(), 'DONE')
   return {
     ...{ on, copies, vendas, financeiro },
     brunoId: PersonId.parse(bruno.id),

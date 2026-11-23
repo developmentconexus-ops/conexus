@@ -114,11 +114,10 @@ test('liberar, o banco da empresa não respondeu: a frase e o botão de novo', a
   })
 })
 
-test('nenhuma cópia na empresa: a frase e o caminho para Dados', async () => {
+test('nenhuma cópia na empresa: a frase, sem caminho para ligar uma', async () => {
   open([], 'owner')
   expect(await screen.findByText('A empresa ainda não tem cópias.')).toBeTruthy()
-  const link = screen.getByRole('link', { name: 'Ligar uma cópia' })
-  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data`)
+  expect(screen.queryByRole('link', { name: 'Ligar uma cópia' })).toBeNull()
 })
 
 test.each(['member', 'developer'])(

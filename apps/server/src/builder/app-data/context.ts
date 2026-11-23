@@ -14,14 +14,14 @@ const UNANSWERED =
 
 /** The source rule, the same sentence here, in the Builder's prompt and in `conexus-data` (O Sync de qualquer conector, U4). */
 export const SOURCE_RULE =
-  'Where a connector copies or declares a read that lists rows, the app reads the company data from the copy (`sync.<name>`, through `db`) and you propose the copy that is missing with `copy_propose`; an app reads a system live only for a connector with neither, and to write.'
+  'Where a connector copies or declares a read that lists rows, the app reads the company data from the copy (`sync.<name>`, through `db`); an app reads a system live only for a connector with neither, and to write.'
 
 const HOW_TO_READ = [
   '## Data',
   "The company's copies released to this Project are tables of the `sync` schema, read only: write `sync.<name>` and put every column in double quotes exactly as it is listed below, in its own case.",
   'Count a read on the real data with `app_data_check`, and see the columns and a few rows of a copy with `data_describe`, in the order of `## Company data`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`.',
   `${SOURCE_RULE} Reading the system live (\`connector_read\`) is for you to investigate. A refusal with \`42501\` on a listed copy means its release is still pending: say so, and do not work around it.`,
-  'A copy listed here is on and released to this Project: nothing is left to activate. One marked as your proposal is the proposal you made, which the person turned on; it is read here, on the next turn after they turn it on. Never write in the plan or the code that the data waits for someone to activate a copy without looking at this block.',
+  'A copy listed here is on and released to this Project: nothing is left to activate. Never write in the plan or the code that the data waits for someone to activate a copy without looking at this block.',
 ]
 
 const WHOLE_WEIGHT =
@@ -63,8 +63,7 @@ function releasedLine(copy: Released): string {
     )
     .join(', ')
   const described = copy.description === null ? '' : ` ${copy.description}.`
-  const proposed = copy.proposedHere ? ' [your proposal, turned on]' : ''
-  return `- \`sync.${copy.name}\`${proposed} (${modeText(copy.mode)}), from ${originText(copy)}.${described} Columns: ${columns}`
+  return `- \`sync.${copy.name}\` (${modeText(copy.mode)}), from ${originText(copy)}.${described} Columns: ${columns}`
 }
 
 /**
@@ -74,20 +73,15 @@ function releasedLine(copy: Released): string {
  */
 export function dataContext(view: ProjectCopiesView): string {
   if (view.kind === 'FAILED') return UNANSWERED
-  if (view.released.length === 0 && view.unreleased.length === 0 && view.proposals.length === 0)
-    return ''
-  const waiting = view.proposals.map(
-    ({ name, label }) =>
-      `Your proposal \`sync.${name}\` (${label}) is open: it shows as a card in this conversation and waits for whoever may turn copies on, with the card's Ligar. It is not readable yet; go on with what does not depend on it, and look at this block on the next turn.`,
-  )
+  if (view.released.length === 0 && view.unreleased.length === 0) return ''
   const others =
     view.unreleased.length === 0
       ? []
       : [
-          `Released to other Projects or not yet released here: ${view.unreleased.map((name) => `\`sync.${name}\``).join(', ')}. Ask the owner to release one to this Project; never propose a copy that exists.`,
+          `Released to other Projects or not yet released here: ${view.unreleased.map((name) => `\`sync.${name}\``).join(', ')}. Ask the owner to release one to this Project.`,
         ]
   const whole = view.released.some(({ mode }) => mode.kind === 'WHOLE') ? [WHOLE_WEIGHT] : []
-  const fixed = [...HOW_TO_READ, ...whole, ...others, ...waiting]
+  const fixed = [...HOW_TO_READ, ...whole, ...others]
   let budget = BLOCK_BYTES - bytesOf(fixed.join('\n'))
   const listed: string[] = []
   const named: string[] = []
@@ -105,5 +99,5 @@ export function dataContext(view: ProjectCopiesView): string {
       : [
           `More copies are released to this Project, named only: ${named.join(', ')}. \`app_data_check\` on \`select * from sync.<name>\` returns the columns of one.`,
         ]
-  return [...HOW_TO_READ, ...listed, ...tail, ...whole, ...others, ...waiting].join('\n')
+  return [...HOW_TO_READ, ...listed, ...tail, ...whole, ...others].join('\n')
 }

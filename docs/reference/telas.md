@@ -441,18 +441,6 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Referência.** Plataformas de dados fazem a pergunta dentro da amostra e filtram as rodadas.
 - **Princípios.** E1 P. E3 P. E4 P. E5 P. E6 em parte (`copy-readers.tsx`). E7 P.
 
-#### TD7. Janelas de Dados (Ligar uma cópia, Ligar uma proposta, Intervalo, Apagar)
-
-- **Para que serve.** Criar, ajustar e apagar uma cópia dizendo antes o que muda. `C2` e E4.
-- **Conteúdo obrigatório.** Ligar uma cópia: Conexão, Modelo, Intervalo (30 min, `packages/hub-api/src/copies.ts`); sem conexão, "Ir para Integrações" (`new-copy.tsx`). Proposta: o que lê, chave, modo, intervalo, "Libera ao Projeto {nome}" (`copy-proposal.tsx`). Intervalo: seis escolhas (`interval.tsx`). Apagar: linhas que saem, Projetos que perdem leitura, recomeço do zero (`copy-delete.tsx`).
-- **Ações.** Ligar, Salvar, Apagar, Cancelar. Quem gerencia.
-- **Ação principal.** A de confirmar, em cada janela.
-- **Estados.** Carregando; erro de campo; erro do Hub; resultado desconhecido; proposta já decidida por outra pessoa (`copy-proposal.tsx`); tabela que o banco não soltou (`copy-delete.tsx`).
-- **Faixa de dados.** Chamadas por passada, "cerca de 6" no exemplo (`text.ts`). Projetos que perdem leitura, 0 a poucos (hipótese).
-- **Hoje falta.** Ligar uma cópia não mostra o que será copiado antes de salvar.
-- **Referência.** Uma plataforma de dados aceita item por item. Outras usam assistentes em passos.
-- **Princípios.** E4 P. E5 P. E6 em parte. E7 em parte ("Ligar" nomeia cópia e ligação).
-
 #### TD8. Cópias, o endereço antigo (`copies.index.tsx`, `copies.$copyId.tsx`)
 
 - **Para que serve.** Manter o endereço antigo, que leva a Dados (`copies.index.tsx`; `copies.$copyId.tsx`).

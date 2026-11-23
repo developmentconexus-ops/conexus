@@ -8,7 +8,6 @@ import { ATENDENTE } from '../identity/test-roles.ts'
 import {
   asRole,
   copiesUrl,
-  copyOf,
   erred,
   holdNextReconcile,
   hubMarks,
@@ -85,7 +84,7 @@ test('a reposição de um PUT que falhou não desfaz o PUT seguinte que deu cert
   assert.deepEqual(erred(w, 'COPY_READERS_PENDING'), [
     { companyId: w.on.companyId, role: w.financeiro.role },
   ])
-  assert.equal((await w.on.run(copyOf(w.copies, 'sankhya_clientes'))).kind, 'ENDED')
+  assert.equal(await w.on.reconcile(), 'DONE')
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { refused: '42501' })
 })
 
@@ -127,7 +126,7 @@ test('a reposição que falha diz COPY_READERS_PENDING como erro e a rodada segu
   silent.mock.restore()
   await asOwner('grant insert on copies.copy_reader to hub_company')
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { rows: 56 })
-  assert.equal((await w.on.run(copyOf(w.copies, 'sankhya_clientes'))).kind, 'ENDED')
+  assert.equal(await w.on.reconcile(), 'DONE')
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { refused: '42501' })
 })
 
@@ -191,12 +190,12 @@ test('a ordem da rodada 3, item 1(c): uma reconciliação que leu o Hub antes de
     200,
   )
   const held = holdNextReconcile(t, w)
-  const running = w.on.run(copyOf(w.copies, 'sankhya_vendas'))
+  const running = w.on.reconcile()
   await held.arrived
   const taken = await put(w, w.on.ana, w.financeiro.role, [])
   assert.equal(taken.statusCode, 200, taken.body)
   held.release()
-  assert.equal((await running).kind, 'ENDED')
+  assert.equal(await running, 'DONE')
   assert.deepEqual(held.answers, ['SUPERSEDED'])
   assert.deepEqual(await asRole(w.on, w.financeiro.id, 'sankhya_clientes'), { refused: '42501' })
 })

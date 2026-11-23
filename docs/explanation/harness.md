@@ -173,9 +173,8 @@ The Builder's end-of-turn judge is a code scorer made with `createScorer` and gi
 
 ## Workflow and scheduler
 
-Three workflows, built with `createWorkflow` and `createStep`. `conexus-automation-run` runs
-automations and `conexus-copy-run` runs the Sync's copies (`builder/copy-clock/workflow.ts`); both
-are rows of `mastra.schedules`. `conexus-retention-prune` drops old traces at 03:30 in São Paulo
+Two workflows, built with `createWorkflow` and `createStep`. `conexus-automation-run` runs
+automations and is a row of `mastra.schedules`. `conexus-retention-prune` drops old traces at 03:30 in São Paulo
 (`builder/mastra/retention.ts`). The scheduler polls every 10 seconds and
 starts only when a schedule row exists. Renaming the workflow would make Mastra delete every
 automation (`builder/automations/run.ts`).

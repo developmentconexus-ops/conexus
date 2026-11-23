@@ -14,9 +14,7 @@ import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
-import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
-import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
 import { grant, mayGrant } from './grants.ts'
@@ -28,33 +26,25 @@ import {
   registerConnectionRoutes,
   registerToolCallRoutes,
 } from './routes.ts'
-import type { ConnectionCopies, Deps } from './rows.ts'
+import type { Deps } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
 export type { Connector, Native, Operation } from '@conexus/connectors'
 /** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056), and `deniesAccess`, which tells a 403 from a request to correct. */
 export {
-  AccountRef,
   CONNECTORS,
   CopyDefinition,
   CopyDefinitionV2,
   CopyName,
-  CopyPosition,
-  copyPrefixOf,
   deniesAccess,
 } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { WriteShape } from './assistant-port.ts'
-export type { Proposal, ProposeAnswer } from './builder-port.ts'
 export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export {
-  connectionForCopy,
-  connectionNamesOf,
-  lackedSourceReadOf,
-} from './copy-sources.ts'
+export { connectionNamesOf } from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export type { KitRead } from './kit-reads.ts'
@@ -91,10 +81,6 @@ export function createConnectors(deps: {
   log: FailureLog
   /** The apps' door: who an app's call is, the version its session gets and its manifest. */
   door: AppDoorPort
-  /** `hub/copies`' proposing, handed on to the Builder (Capacidade 3): it is made after the connectors. */
-  propose: () => Propose
-  /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
-  copies: () => ConnectionCopies
   /** The Registro's one writer, which every live read leaves its line through. */
   recordRead: Deps['recordRead']
   tuning?: ConnectorTuning
@@ -164,8 +150,6 @@ export function createConnectors(deps: {
     },
     /** The connections a place offers, for the access door. */
     access: Object.freeze({ systems: accessSystems(routeDeps) }),
-    /** The copies' templates and their paged read (Capacidade 2, U2). */
-    copies: createCopyPort(routeDeps),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })

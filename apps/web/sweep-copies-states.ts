@@ -1,11 +1,5 @@
-import type { CopyProposalSummary, CopyRun, CopySummary } from '@conexus/hub-api'
-import {
-  listConnections,
-  listCopies,
-  listCopyModels,
-  listCopyReaders,
-  listCopyRuns,
-} from '@conexus/hub-api'
+import type { CopyRun, CopySummary } from '@conexus/hub-api'
+import { listConnections, listCopies, listCopyReaders, listCopyRuns } from '@conexus/hub-api'
 import type { z } from 'zod'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
@@ -15,14 +9,13 @@ import { OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
 type CopyIn = z.input<typeof CopySummary>
 export type RunIn = z.input<typeof CopyRun>
-export type ProposalIn = z.input<typeof CopyProposalSummary>
 
 export const COMPANY_API = `/api/companies/${COMPANY.id}`
 export const PAGE = `/companies/${COMPANY.id}/data`
 export const VENDAS = '11111111-1111-4111-8111-111111111111'
 export const CLIENTES = '22222222-2222-4222-8222-222222222222'
 const PRODUTOS = '33333333-3333-4333-8333-333333333333'
-export const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const CONNECTION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 
 export const DONE: RunIn = {
   id: '44444444-4444-4444-8444-444444444444',
@@ -113,12 +106,6 @@ export const LISTED = [
   }),
 ]
 
-const MODELS = ok(listCopyModels, {
-  models: [
-    { connector: 'sankhya', id: 'vendas', label: 'Vendas' },
-    { connector: 'sankhya', id: 'clientes', label: 'Clientes' },
-  ],
-})
 const CONNECTIONS = ok(listConnections, {
   connectors: [],
   connections: [
@@ -154,17 +141,16 @@ export function readersPage(copies: CopyIn[], marked: { role: string; label: str
   }
 }
 
-export function copiesList(copies: CopyIn[], proposals: ProposalIn[] = []) {
-  return { [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies, proposals }) }
+export function copiesList(copies: CopyIn[]) {
+  return { [`GET ${COMPANY_API}/copies`]: ok(listCopies, { copies }) }
 }
 
-export function copiesPage(copies: CopyIn[], proposals: ProposalIn[] = []) {
+export function copiesPage(copies: CopyIn[]) {
   return {
     ...OWNER,
     ...projectsPage(COMPANY.id),
     ...readersPage(copies, [{ role: 'financeiro', label: 'Financeiro' }]),
-    ...copiesList(copies, proposals),
-    [`GET ${COMPANY_API}/copy-models`]: MODELS,
+    ...copiesList(copies),
     [`GET ${COMPANY_API}/connections`]: CONNECTIONS,
     // The list's links preload each copy's page.
     ...Object.fromEntries(
@@ -176,29 +162,6 @@ export function copiesPage(copies: CopyIn[], proposals: ProposalIn[] = []) {
   }
 }
 
-/** The dialog of Ligar with a connection and a model chosen, then Ligar pressed: the Hub refuses with `replies`. */
-function linkRefused(code: 'COPY_DATABASE_UNAVAILABLE' | 'COPY_EXISTS', sentence: string): State {
-  return {
-    name: `Ligar uma cópia, recusada: ${code}`,
-    path: PAGE,
-    replies: { ...copiesPage(LISTED), [`POST ${COMPANY_API}/copies`]: failure(code) },
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ligar uma cópia' }).click()
-      for (const [field, option] of [
-        ['Conexão', 'Matriz'],
-        ['Modelo', 'Vendas'],
-      ] as const) {
-        await p.getByRole('combobox', { name: field }).click()
-        await p.getByRole('option', { name: option }).click()
-      }
-      await p.getByRole('button', { name: 'Ligar', exact: true }).click()
-      await waitFor(p, sentence)
-    },
-  }
-}
-
-// The screens capacity 2 brings: the company's Dados, its dialog to turn one on, and one copy.
 export const COPIES_STATES: State[] = [
   {
     name: 'Dados, a lista com uma em dia, uma rodando, uma com erro e uma sem relógio',
@@ -221,64 +184,4 @@ export const COPIES_STATES: State[] = [
     },
     settle: (p) => waitFor(p, 'Tentar de novo'),
   },
-  {
-    name: 'Ligar uma cópia, o diálogo',
-    path: PAGE,
-    replies: copiesPage(LISTED),
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ligar uma cópia' }).click()
-      await waitFor(p, 'Modelo')
-    },
-  },
-  {
-    name: 'Ligar uma cópia, sem conexão que ofereça cópias',
-    path: PAGE,
-    replies: {
-      ...copiesPage(LISTED),
-      [`GET ${COMPANY_API}/copy-models`]: ok(listCopyModels, { models: [] }),
-    },
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ligar uma cópia' }).click()
-      await waitFor(p, 'Ligue em Integrações uma conexão que ofereça cópias.')
-    },
-  },
-  {
-    name: 'Dados, o menu da linha',
-    path: PAGE,
-    replies: copiesPage(LISTED),
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
-      await p.getByRole('menuitem', { name: 'Rodar agora' }).waitFor()
-    },
-  },
-  {
-    name: 'Dados, o diálogo do Intervalo',
-    path: PAGE,
-    replies: copiesPage(LISTED),
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
-      await p.getByRole('menuitem', { name: 'Intervalo' }).click()
-      await waitFor(p, 'O mínimo é 15 minutos.')
-    },
-  },
-  {
-    name: 'Dados, o pedido de Rodar agora enviado',
-    path: PAGE,
-    replies: {
-      ...copiesPage(LISTED),
-      [`POST ${COMPANY_API}/copies/${VENDAS}/run`]: { status: 202, json: {} },
-    },
-    settle: async (p) => {
-      await waitFor(p, 'Sem relógio')
-      await p.getByRole('button', { name: 'Ações: Vendas' }).click()
-      await p.getByRole('menuitem', { name: 'Rodar agora' }).click()
-      await waitFor(p, 'Pedido enviado. A rodada aparece na lista.')
-    },
-  },
-  linkRefused('COPY_DATABASE_UNAVAILABLE', 'O banco da empresa não respondeu.'),
-  linkRefused('COPY_EXISTS', 'A empresa já tem esta cópia.'),
 ]

@@ -1,12 +1,7 @@
 import type {
   CompanyId,
   CopyId,
-  CopyInterval,
-  CopyModelSummary,
-  CopyProposalId,
-  CopyProposalSummary,
   CopyRun,
-  CopySchedule,
   CopySource,
   CopySummary,
   ProjectId,
@@ -26,8 +21,8 @@ import { Failure } from '../../platform/failure.ts'
 import { pageKey, pageOf } from '../../platform/pages.ts'
 import { copyModeOf } from './mode.ts'
 import { copiesReadBy } from './readers.ts'
-import type { CopiesDeps, CopyState, InCompany, StoredCopy } from './store.ts'
-import { parsedCopy, personScope, proposalsOf, shownOf, sourcesNamed, storedCopy } from './store.ts'
+import type { CopiesDeps, InCompany, StoredCopy } from './store.ts'
+import { parsedCopy, personScope, shownOf, sourcesNamed, storedCopy } from './store.ts'
 import { copy, copyRun, copySource, projectCopy } from './tables.ts'
 
 /** The runs of a copy a page holds. */
@@ -149,7 +144,7 @@ async function seenBy(deps: CopiesDeps, tx: ReadTx, input: InCompany): Promise<'
   return copiesReadBy(deps, tx, { companyId: input.companyId, role: proof.role })
 }
 
-/** The company's copies (or the one) as the contract states them; the clock is asked outside the read. */
+/** The company's copies (or the one) as the contract states them. */
 async function summaries(
   deps: CopiesDeps,
   input: InCompany,
@@ -174,19 +169,14 @@ async function summaries(
     }
   })
   if (only !== undefined && read.stored.length === 0) throw new Failure('COPY_NOT_FOUND')
-  const states: ReadonlyMap<CopyId, CopyState> =
-    read.stored.length === 0 ? new Map() : await deps.clock().states(companyId)
   return read.stored.map((row) => {
-    const state = states.get(row.id)
-    const schedule: CopySchedule = state?.schedule ?? { kind: 'MISSING' }
-    const interval: CopyInterval | null = state?.interval ?? null
     return {
       id: row.id,
       name: row.name,
       label: row.label,
       sources: read.sources.get(row.id) ?? [],
-      interval,
-      schedule,
+      interval: null,
+      schedule: { kind: 'MISSING' },
       run: read.runs.get(row.id) ?? null,
       rows: row.rows,
       mode: copyModeOf(row.definition),
@@ -196,28 +186,8 @@ async function summaries(
   })
 }
 
-/** The list's page: the company's copies, and its open proposals with those `named` whatever their state (Capacidade 3). */
-async function listed(
-  deps: CopiesDeps,
-  input: InCompany & { named: readonly CopyProposalId[] },
-): Promise<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }> {
-  const copies = await summaries(deps, input)
-  const proposals = await deps.database.read(personScope(input), async (tx) => {
-    const proof = await deps.identity.admitMember({ tx, ...input, action: 'seeData' })
-    return deps.identity.allows(proof.role, 'manageCopies') ? proposalsOf(deps, tx, input) : []
-  })
-  return { copies, proposals }
-}
-
-/** The copy models the connectors offer. */
-async function models(deps: CopiesDeps, input: InCompany): Promise<CopyModelSummary[]> {
-  await deps.database.read(personScope(input), (tx) =>
-    deps.identity.admitMember({ tx, ...input, action: 'readCopies' }),
-  )
-  return deps
-    .connectors()
-    .catalog()
-    .map(({ connector, model }) => ({ connector, id: model.id, label: model.label }))
+async function listed(deps: CopiesDeps, input: InCompany): Promise<{ copies: CopySummary[] }> {
+  return { copies: await summaries(deps, input) }
 }
 
 /** The copy's runs, newest first, a page of 20 after the run the token names; with the copy's summary. */
@@ -289,4 +259,4 @@ async function ofProject(deps: CopiesDeps, input: InCompany & { projectId: Proje
   })
 }
 
-export { listed, models, ofProject, projectCopyRows, runs, seenBy, summaries }
+export { listed, ofProject, projectCopyRows, runs, seenBy }

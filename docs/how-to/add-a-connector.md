@@ -49,12 +49,6 @@ copies a connector's rows is [the Sync](../explanation/sync.md).
 - **The walls.** `.dependency-cruiser.cjs` keeps the kit apart from the rest, so a connector that
   imports the Hub fails `npm run deps`.
 
-## Copy, optionally
-
-A connector that can feed the Sync declares `copy` (`ConnectorCopy`, `kernel/copy.ts`): its models,
-each a `CopyDefinition`, and how a page is read. `defineConnector` checks that each copy's operations
-are among the connector's own. The Sync's side needs no change.
-
 ## Check it
 
 Run the connector's tests, then `npm run deps` and `npm run check`.

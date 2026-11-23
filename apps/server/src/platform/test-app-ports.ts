@@ -83,12 +83,6 @@ export function heldCompanyPostgres(config: Config) {
     readCopies: (reader, statements, signal) => inner.readCopies(reader, statements, signal),
     ensureCopyTable: (sync, table) => inner.ensureCopyTable(sync, table),
     syncAddress: (host) => addressOn(host, SYNC_LOGIN),
-    writePage: (sync, input, signal) => inner.writePage(sync, input, signal),
-    closePass: (sync, input, signal) => inner.closePass(sync, input, signal),
-    dropAccountRows: (sync, input) => inner.dropAccountRows(sync, input),
-    dropForeignRows: (sync, input, signal) => inner.dropForeignRows(sync, input, signal),
-    accountRows: (sync, input) => inner.accountRows(sync, input),
-    dropCopyTable: (sync, input) => inner.dropCopyTable(sync, input),
     grantCopy: (sync, input) => inner.grantCopy(sync, input),
     revokeCopy: (sync, input) => inner.revokeCopy(sync, input),
   }

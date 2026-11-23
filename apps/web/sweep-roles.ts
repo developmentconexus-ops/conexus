@@ -35,7 +35,7 @@ const READERS = [
 export function rolesReplies(): Replies {
   return {
     ...companies([{ name: 'Empresa Teste', role: 'owner' }], false),
-    [`GET /api/companies/${COMPANY_ID}/copies`]: ok(listCopies, { copies: TABLES, proposals: [] }),
+    [`GET /api/companies/${COMPANY_ID}/copies`]: ok(listCopies, { copies: TABLES }),
     [`GET /api/companies/${COMPANY_ID}/copy-readers`]: ok(listCopyReaders, { readers: READERS }),
   }
 }

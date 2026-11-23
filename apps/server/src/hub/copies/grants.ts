@@ -52,7 +52,7 @@ async function undoRelease(deps: CopiesDeps, input: OfRelease): Promise<void> {
  * and logins by their owner, `hub/apps`, then the `GRANT`, which repeats safely. None when the
  * Projeto's database did not open or the company has no sync login yet.
  */
-export async function grantedInDatabase(
+async function grantedInDatabase(
   deps: CopiesDeps,
   input: InCompany & { projectId: ProjectId },
   release: { name: string; sync: DatabaseUrl | undefined },
@@ -105,7 +105,7 @@ export async function grantCopy(deps: CopiesDeps, input: OfRelease): Promise<voi
  * (data D22): the one `REVOKE` of Tirar, Apagar and Desligar. None to do without a sync login; a
  * silent database answers 503 and nothing else has changed.
  */
-export async function revokedInDatabase(
+async function revokedInDatabase(
   deps: CopiesDeps,
   input: OfRelease,
   release: { name: string; sync: DatabaseUrl | undefined },

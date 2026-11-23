@@ -1,6 +1,6 @@
 import type { CompanyId, CopyId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { getRouteApi, Link } from '@tanstack/react-router'
+import { getRouteApi } from '@tanstack/react-router'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
@@ -13,7 +13,6 @@ import { projectCopiesQuery, sendCopyGrant, sendCopyRevoke } from './queries.ts'
 const company = getRouteApi('/_app/companies/$companyId')
 
 const NO_COPIES = 'A empresa ainda não tem cópias.'
-const LINK_COPIES = 'Ligar uma cópia'
 const ASK_MANAGER = 'Dono ou administrador libera uma cópia.'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
@@ -65,18 +64,7 @@ export function ProjectCopies(scope: Scope) {
           <Skeleton className="h-12" />
         </div>
       )}
-      {read.data?.copies.length === 0 && (
-        <div className="flex flex-col items-start gap-sm">
-          <Empty>{NO_COPIES}</Empty>
-          <Link
-            to="/companies/$companyId/data"
-            params={{ companyId }}
-            className="text-text-2 underline underline-offset-2"
-          >
-            {LINK_COPIES}
-          </Link>
-        </div>
-      )}
+      {read.data?.copies.length === 0 && <Empty>{NO_COPIES}</Empty>}
       {read.data !== undefined && read.data.copies.length > 0 && (
         <List>
           {read.data.copies.map(({ copy, granted }) => (

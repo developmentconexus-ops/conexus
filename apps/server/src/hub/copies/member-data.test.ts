@@ -4,10 +4,9 @@ import { test } from 'node:test'
 import { CopySample, listCopies, listCopyReaders, listCopyRuns } from '@conexus/hub-api'
 import type { Person } from '../identity/test-hub.ts'
 import { call, codeOf, memberOn, personOn } from '../identity/test-hub.ts'
-import { grantMatriz, proposed } from './test-proposals.ts'
+import { copiesUrl } from './test-copies.ts'
 import type { RolesWorld } from './test-readers.ts'
 import { copyOf, put, rolesWorld } from './test-readers.ts'
-import { copiesUrl } from './test-routes.ts'
 
 const DAVI = { name: 'Davi Costa', email: 'davi@example.test' }
 const EDU = { name: 'Edu Lima', email: 'edu@example.test' }
@@ -27,17 +26,13 @@ async function listedBy(w: RolesWorld, person: Person) {
   return listCopies.success.body.parse(read.json())
 }
 
-test('o membro lista só as tabelas do papel dele e nenhuma proposta', async (t) => {
+test('o membro lista só as tabelas do papel dele', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
-  await grantMatriz(w.on)
-  await proposed(w.on)
-  assert.equal((await listedBy(w, w.on.ana)).proposals.length, 1)
   const carla = await listedBy(w, w.on.carla)
   assert.deepEqual(
     carla.copies.map(({ name }) => name),
     ['sankhya_clientes'],
   )
-  assert.deepEqual(carla.proposals, [])
   const models = await call(
     w.on.hub,
     w.on.carla,
@@ -74,10 +69,8 @@ test('quem não é da empresa recebe 404', async (t) => {
   }
 })
 
-test('o desenvolvedor vê só as tabelas do papel, as rodadas e os leitores delas, e nenhuma proposta', async (t) => {
+test('o desenvolvedor vê só as tabelas do papel, as rodadas e os leitores delas', async (t) => {
   const w = await rolesWorld(t, 'PLANTED')
-  await grantMatriz(w.on)
-  await proposed(w.on)
   const developer = await memberOn(w.on.hub, w.on.companyId, DAVI, 'developer')
   assert.deepEqual((await listedBy(w, developer)).copies, [])
   const clientes = copyOf(w.copies, 'sankhya_clientes')
@@ -87,7 +80,6 @@ test('o desenvolvedor vê só as tabelas do papel, as rodadas e os leitores dela
     listed.copies.map(({ id }) => id),
     [clientes],
   )
-  assert.deepEqual(listed.proposals, [])
   const readers = await call(
     w.on.hub,
     developer,

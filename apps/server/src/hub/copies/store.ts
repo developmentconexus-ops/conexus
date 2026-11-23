@@ -2,15 +2,9 @@ import type {
   CompanyId,
   ConnectionId,
   CopyId,
-  CopyInterval,
   CopyOrigin,
-  CopyProposalId,
-  CopyProposalSummary,
-  CopyRunFailureCode,
-  CopySchedule,
   CopyShown,
   CopySource,
-  CopySystemMessage,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
@@ -18,17 +12,13 @@ import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
   CopyId as CopyIdSchema,
-  CopyProposalId as CopyProposalIdSchema,
   PersonId as PersonIdSchema,
-  ProjectId as ProjectIdSchema,
 } from '@conexus/hub-api'
-import { and, asc, desc, eq, inArray, or, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
-import type { CopyTable } from '../../platform/copy-sql.ts'
 import type { Database, DatabaseUrl, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
-import type { Connectors } from '../connectors/public.ts'
 import {
   CopyDefinition,
   CopyName,
@@ -36,36 +26,9 @@ import {
   operationLabel,
 } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
-import { personNameColumn } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
 import { ColumnState } from './column-state.ts'
-import { copyModeOf } from './mode.ts'
-import { copy, copyProposal, copyProposalSource } from './tables.ts'
-
-/** What the clock holds for a copy: its schedule, and the interval it was set with. */
-export type CopyState = Readonly<{ schedule: CopySchedule; interval: CopyInterval }>
-
-/** What the clock does for a copy (the weekly row follows the normal one in `pause`, `resume` and `remove`; `runNow` is the normal's): the Builder implements it, and the Hub never imports the Builder. */
-export type CopyClock = {
-  /** CREATED for the one call that made the schedule, even among concurrent ones; UPDATED otherwise. */
-  set(input: {
-    companyId: CompanyId
-    copyId: CopyId
-    interval: CopyInterval
-    incremental: boolean
-  }): Promise<'CREATED' | 'UPDATED'>
-  /** The weekly whole pass's row for a copy that has the normal one and no weekly; a pause of the normal row carries over, and the normal row is left as it is. */
-  ensureWhole(input: { companyId: CompanyId; copyId: CopyId }): Promise<void>
-  /** The copies with a normal row and no weekly one, whether or not they are incremental. */
-  wholeMissing(): Promise<readonly { companyId: CompanyId; copyId: CopyId }[]>
-  pause(copyId: CopyId): Promise<void>
-  /** A MISSING copy is not resumed here: the service calls `set`. */
-  resume(copyId: CopyId): Promise<void>
-  runNow(copyId: CopyId): Promise<void>
-  remove(copyId: CopyId): Promise<void>
-  /** The company's copies that have a schedule; one with none is not in the map (MISSING). */
-  states(companyId: CompanyId): Promise<ReadonlyMap<CopyId, CopyState>>
-}
+import { copy } from './tables.ts'
 
 /** The Projeto's schema and logins in the company's database, made by `hub/apps` when it has no app yet. */
 type ProjectDatabase = {
@@ -76,37 +39,14 @@ type ProjectDatabase = {
   }): Promise<{ kind: 'OPEN' } | { kind: 'FAILED' }>
 }
 
-export type CopyOutcome =
-  | { kind: 'COMPLETE' }
-  /** WAIT: the provider answered 429, or the connector's lane passed its deadline; each source keeps its position. */
-  | { kind: 'PARTIAL'; reason: 'CAP' | 'STOPPED' | 'WAIT' }
-  | { kind: 'ERROR'; code: CopyRunFailureCode; system: CopySystemMessage | null }
-  | { kind: 'INTERRUPTED' }
-
-export type CopyRunEnd =
-  /** Another run holds the lease: nothing read, no run row. */
-  | { kind: 'RUNNING' }
-  /** No such copy: the clock removes its schedule. */
-  | { kind: 'GONE' }
-  | { kind: 'ENDED'; outcome: CopyOutcome }
-
-/** What tests shorten (T20); production's are `RUN_DEFAULTS`. */
-export type CopyTuning = { pageRows?: number; runPages?: number; runMs?: number; leaseMs?: number }
-
 export type CopiesDeps = {
   database: Database
   identity: IdentityPorts
   projects: ProjectPorts
   neon: NeonProjects
   companyPostgres: CompanyPostgres
-  connectors: () => Connectors['copies']
-  /** One page of a proposed copy as the Builder's turn may read the connection, counted in its run (Capacidade 3). */
-  prove: () => Connectors['builder']['provePage']
   apps: () => ProjectDatabase
-  clock: () => CopyClock
   log: FailureLog
-  updating: () => boolean
-  tuning: Required<CopyTuning>
 }
 
 export type InCompany = Readonly<{ companyId: CompanyId; personId: PersonId }>
@@ -142,19 +82,6 @@ export function parsedCopy(row: typeof copy.$inferSelect) {
   }
 }
 export type StoredCopy = ReturnType<typeof parsedCopy>
-
-/** The copy's table as the company's database keeps it: with the account's columns when its sources have an account, and a version 2's instants with their offset. */
-export function copyTableOf(
-  stored: Pick<StoredCopy, 'name' | 'definition'>,
-  sources: readonly { accountRef: string | null }[],
-): CopyTable {
-  return {
-    name: stored.name,
-    definition: stored.definition,
-    accounts: sources.some((source) => source.accountRef !== null),
-    instants: stored.definition.version === 2 ? 'OFFSET' : 'LOCAL',
-  }
-}
 
 /**
  * The company's database owner for this act alone, with no transaction open (data D22), the host
@@ -198,7 +125,7 @@ export async function syncOf(
 }
 
 /** What a copy reads, as the list and the model read it: version 1's query, or version 2's list read by its label, with its fixed input. */
-export function originOf(connector: string, definition: CopyDefinition): CopyOrigin {
+function originOf(connector: string, definition: CopyDefinition): CopyOrigin {
   if (definition.version === 1) return { kind: 'QUERY', query: definition.source.sql }
   const { operation, input } = definition.source
   return { kind: 'OPERATION', operation, label: operationLabel(connector, operation), input }
@@ -241,97 +168,4 @@ export async function sourcesNamed(
     sources.set(row.of, [...(sources.get(row.of) ?? []), { connection }])
   }
   return sources
-}
-
-/** Each proposal's connections, its own first. */
-async function proposalSources(tx: ReadTx, companyId: CompanyId, ids: readonly string[]) {
-  if (ids.length === 0) return new Map<string, CopySource[]>()
-  const rows = await tx
-    .select({
-      of: copyProposalSource.proposalId,
-      connectionId: copyProposalSource.connectionId,
-    })
-    .from(copyProposalSource)
-    .innerJoin(copyProposal, eq(copyProposal.id, copyProposalSource.proposalId))
-    .where(
-      and(
-        eq(copyProposalSource.companyId, companyId),
-        inArray(copyProposalSource.proposalId, [...ids]),
-      ),
-    )
-    .orderBy(
-      desc(sql`${copyProposalSource.connectionId} = ${copyProposal.connectionId}`),
-      asc(copyProposalSource.connectionId),
-    )
-  const parsed = rows.map((row) => ({
-    ...row,
-    connectionId: ConnectionIdSchema.parse(row.connectionId),
-  }))
-  return sourcesNamed(tx, companyId, parsed)
-}
-
-/**
- * The company's open proposals, and those `named` by id whatever their state (the conversation's
- * cards), as the list states them; one of a Projeto deleted or marked is left out.
- */
-export async function proposalsOf(
-  deps: Pick<CopiesDeps, 'projects'>,
-  tx: ReadTx,
-  input: { companyId: CompanyId; named: readonly CopyProposalId[] },
-): Promise<CopyProposalSummary[]> {
-  const { companyId } = input
-  const rows = await tx
-    .select({ row: copyProposal, proposedByName: personNameColumn(copyProposal.proposedBy) })
-    .from(copyProposal)
-    .where(
-      and(
-        eq(copyProposal.companyId, companyId),
-        or(
-          eq(copyProposal.state, 'OPEN'),
-          input.named.length === 0 ? undefined : inArray(copyProposal.id, [...input.named]),
-        ),
-      ),
-    )
-    .orderBy(copyProposal.name)
-  const projects = await deps.projects.liveProjectNamesOf(tx, {
-    companyId,
-    ids: rows.map(({ row }) => ProjectIdSchema.parse(row.projectId)),
-  })
-  const sources = await proposalSources(
-    tx,
-    companyId,
-    rows.map(({ row }) => row.id),
-  )
-  return rows.flatMap(({ row, proposedByName }) => {
-    const projectId = ProjectIdSchema.parse(row.projectId)
-    const project = projects.get(projectId)
-    if (project === undefined) return []
-    const definition = CopyDefinition.parse(row.definition)
-    return [
-      {
-        id: CopyProposalIdSchema.parse(row.id),
-        name: row.name,
-        label: row.label,
-        sources: sources.get(row.id) ?? [],
-        project: { id: projectId, name: project },
-        shown: shownOf(row.connectorId, definition),
-        mode: copyModeOf(definition),
-        proved: { rows: row.provedRows, more: row.provedMore, calls: row.provedCalls },
-        proposedBy: { id: PersonIdSchema.parse(row.proposedBy), name: proposedByName ?? '' },
-        state: row.state,
-      },
-    ]
-  })
-}
-
-/** The connector's model a copy was ligada from, as the kit offers it now; none when the copy has no model or the kit dropped it. */
-export function modelOf(
-  deps: Pick<CopiesDeps, 'connectors'>,
-  stored: Pick<StoredCopy, 'connectorId' | 'model'>,
-) {
-  if (stored.model === null) return undefined
-  return deps
-    .connectors()
-    .catalog()
-    .find((entry) => entry.connector === stored.connectorId && entry.model.id === stored.model)
 }

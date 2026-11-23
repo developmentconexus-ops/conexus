@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CatalogSystem, CatalogTable, fixedRole } from '@conexus/hub-api'
 import pg from 'pg'
 import type { CopiesOn } from './test-copies.ts'
-import { copiesOn, holdPage, plantCopy } from './test-copies.ts'
+import { copiesOn } from './test-copies.ts'
 
 function COMPANY_SCOPE(on: CopiesOn) {
   return { kind: 'COMPANY', companyId: on.companyId, personId: null } as const
+}
+
+function setCopy(on: CopiesOn, copyId: string, set: string) {
+  return on.hub.test.asOwner(`update copies.copy set ${set} where id = $1`, [copyId])
 }
 
 function tablesOf(on: CopiesOn, only: 'ALL' | { projectId: typeof on.projectId }) {
@@ -21,9 +26,8 @@ function tablesOf(on: CopiesOn, only: 'ALL' | { projectId: typeof on.projectId }
 
 test('as tabelas da empresa com descrição, rótulo e última rodada terminada', async (t) => {
   const on = await copiesOn(t)
-  const sold = await on.enable('vendas')
-  await on.enable('clientes')
-  assert.equal((await on.run(sold)).kind, 'ENDED')
+  await on.plant('vendas')
+  await on.plant('clientes', { runs: [] })
   const tables = (await tablesOf(on, 'ALL')).map((table) => CatalogTable.parse(table))
   assert.deepEqual(
     tables.map(({ name }) => name),
@@ -44,8 +48,8 @@ test('as tabelas da empresa com descrição, rótulo e última rodada terminada'
 
 test('as tabelas de um Projeto são as liberadas', async (t) => {
   const on = await copiesOn(t)
-  await on.enable('vendas')
-  const clients = await on.enable('clientes')
+  await on.plant('vendas')
+  const clients = await on.plant('clientes')
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId: clients },
@@ -59,8 +63,8 @@ test('as tabelas de um Projeto são as liberadas', async (t) => {
 
 test('a descrição ausente vira o rótulo', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  await plantCopy(on, copyId, "definition = definition - 'description'")
+  const copyId = await on.plant('vendas')
+  await setCopy(on, copyId, "definition = definition - 'description'")
   const [table] = await tablesOf(on, 'ALL')
   assert.ok(table)
   assert.equal(table.description, table.label)
@@ -68,10 +72,9 @@ test('a descrição ausente vira o rótulo', async (t) => {
 
 test('sem last_run_id a cópia não tem última rodada', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   const [ended] = await tablesOf(on, 'ALL')
-  await plantCopy(on, copyId, 'last_run_id = null')
+  await setCopy(on, copyId, 'last_run_id = null')
   const [none] = await tablesOf(on, 'ALL')
   assert.ok(ended?.kept.lastRun)
   assert.equal(none?.kept.lastRun, null)
@@ -79,21 +82,19 @@ test('sem last_run_id a cópia não tem última rodada', async (t) => {
 
 test('a última rodada é a que terminou, não a que está aberta', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
-  const held = holdPage(on)
-  const second = on.run(copyId)
-  await held.arrived
+  const copyId = await on.plant('vendas')
+  await on.hub.test.asOwner(
+    'insert into copies.copy_run (id, company_id, copy_id, started_at) values ($1, $2, $3, now())',
+    [randomUUID(), on.companyId, copyId],
+  )
   const [table] = await tablesOf(on, 'ALL')
-  held.release()
-  await second
   assert.equal(table?.kept.lastRun?.outcome.kind, 'COMPLETE')
   assert.ok(table?.kept.lastRun?.endedAt)
 })
 
 test('uma cópia sem fonte viva fica fora do catálogo', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
+  const copyId = await on.plant('vendas', { runs: [] })
   const client = new pg.Client({ connectionString: on.hub.test.ownerUrl.reveal() })
   await client.connect()
   try {
@@ -120,8 +121,7 @@ test('os sistemas da empresa', async (t) => {
 
 test('uma página de uma tabela pelo nome', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  await on.plant('vendas')
   const signal = AbortSignal.timeout(30_000)
   const page = await on.copies.data.tableRows({
     ...{ companyId: on.companyId, personId: on.anaId, name: 'sankhya_vendas', limit: 200 },

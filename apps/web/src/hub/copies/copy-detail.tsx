@@ -16,12 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import { ColumnsTab, DetailsPanel, OverviewTab } from './copy-facts.tsx'
-import { CopyMenu, NoteLine, RunNowButton, StateBadge, useNote } from './copy-list.tsx'
+import { StateBadge } from './copy-list.tsx'
 import { ReadersTab, readersOf } from './copy-readers.tsx'
 import { CopySample } from './copy-sample.tsx'
 import { useMay } from './member.ts'
 import { copyReadersQuery, copyRunsQuery } from './queries.ts'
-import { useRunRequests } from './run-requests.ts'
 import { TableTab } from './search.ts'
 import {
   COLUMNS_TITLE,
@@ -173,17 +172,14 @@ export function CopyDetail(props: {
   tab: TableTab | undefined
   page?: string
   q?: string
-  /** What the route draws before Rodar agora, for every member: a link into another subject (web W6). */
   ask?: (table: string) => ReactNode
 }) {
   const { companyId, copyId, page, q } = props
-  const requests = useRunRequests()
-  const read = useQuery(copyRunsQuery(companyId, copyId, page, requests))
+  const read = useQuery(copyRunsQuery(companyId, copyId, page))
   const connections = useQuery(connectionsQuery(companyId))
   const readers = useQuery(copyReadersQuery(companyId))
   const may = useMay()
   const navigate = useNavigate()
-  const [note, setNote] = useNote(read.data === undefined ? [] : [read.data.copy])
   if (read.isPending || connections.isPending) return <Skeleton className="h-24 w-full" />
   if (connections.isError) {
     return (
@@ -211,26 +207,9 @@ export function CopyDetail(props: {
           <PageTitle className="min-w-0 break-words font-mono">{copy.name}</PageTitle>
           <StateBadge copy={copy} />
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-sm">
-          {props.ask?.(copy.name)}
-          {may.manageCopies && (
-            <>
-              <RunNowButton companyId={companyId} copy={copy} onNote={setNote} />
-              <CopyMenu
-                companyId={companyId}
-                copy={copy}
-                onNote={setNote}
-                withRun={false}
-                onDeleted={() =>
-                  void navigate({ to: '/companies/$companyId/data', params: { companyId } })
-                }
-              />
-            </>
-          )}
-        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-sm">{props.ask?.(copy.name)}</div>
       </div>
       <p className="text-text-2 tabular-nums">{copiedText(system, copy)}</p>
-      {note !== undefined && <NoteLine note={note} />}
       {inactive !== undefined && (
         <div className="flex flex-wrap items-baseline gap-md">
           <Alert tone="danger">{inactiveNotice(system, inactive.names, inactive.since)}</Alert>

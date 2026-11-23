@@ -142,7 +142,7 @@ async function reconciledOrRestored(
  * transaction open (data D22), the company's database made to match. A silent database that was
  * to take a read away answers 503 with the Hub's marks restored, so the login never reads more
  * than the Hub says, unless a later set took the role's turn, whose marks then stay; one that was
- * only to give answers 200, and the next read or run gives it.
+ * only to give answers 200, and the next read gives it.
  */
 export async function setRoleCopies(
   deps: CopiesDeps,

@@ -1,113 +1,54 @@
-import type {
-  CompanyId,
-  ConnectionId,
-  CopyId,
-  CopyProposalId,
-  OfProject,
-  PersonId,
-  ProjectId,
-} from '@conexus/hub-api'
+import type { CompanyId, CopyId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { SqlAnswer } from '../../platform/company-postgres.ts'
-import type { Proposal } from '../connectors/public.ts'
-import type { Accepting } from './accept.ts'
-import { dismissProposal } from './accept.ts'
 import { accessTables } from './access-source.ts'
 import { tableRowsByName } from './catalog-view.ts'
-import type { Enabling } from './enable.ts'
-import { enableCopy } from './enable.ts'
 import type { OfRelease } from './grants.ts'
 import { applyGrants, grantCopy, revokeAllOf, revokeCopy } from './grants.ts'
-import {
-  copiesOfConnection,
-  deleteCopy,
-  dropEndedCopies,
-  endedSourceless,
-  leaveCopies,
-  lockedCopiesOf,
-} from './leave.ts'
-import { listed, models, ofProject, runs } from './list.ts'
+import { listed, ofProject, runs } from './list.ts'
 import { projectView } from './project-view.ts'
-import { propose } from './propose.ts'
 import { copiesReadBy, listedReaders, readAs, readerOf } from './readers.ts'
 import { setRoleCopies } from './role-copies.ts'
-import { RUN_DEFAULTS, runCopy } from './run.ts'
 import { sampleOf } from './sample.ts'
-import { changeInterval, pauseCopy, resumeCopy, runNow, summaryOf } from './schedule.ts'
-import type { CopiesDeps, CopyTuning, InCompany } from './store.ts'
-import { ensureWholeLines } from './whole.ts'
+import type { CopiesDeps, InCompany } from './store.ts'
 
 type Of = InCompany & { copyId: CopyId }
 
 /** The copies' acts, each bound to its dependencies; the routes and the Hub's own passes call these. */
-export function createCopyService(
-  deps: Omit<CopiesDeps, 'tuning'> & { tuning?: CopyTuning | undefined },
-) {
-  const full: CopiesDeps = { ...deps, tuning: { ...RUN_DEFAULTS, ...deps.tuning } }
+export function createCopyService(deps: CopiesDeps) {
   return Object.freeze({
-    /** Ligar: the row, the company's table and the clock. */
-    enable: (input: Enabling) => enableCopy(full, input),
-    /** One run of one copy; the clock's workflow calls it. */
-    run: (input: { companyId: CompanyId; copyId: CopyId; whole?: boolean }, signal: AbortSignal) =>
-      runCopy(full, { ...input, whole: input.whole === true }, signal),
-    /** The reads, admitting `seeData`: the copies the role reads, and for whoever manages them the open proposals and those named. */
-    list: (input: InCompany & { named: readonly CopyProposalId[] }) => listed(full, input),
-    summaryOf: (input: Of) => summaryOf(full, input),
-    models: (input: InCompany) => models(full, input),
-    runs: (input: Of & { page: string | undefined }) => runs(full, input),
-    ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(full, input),
+    list: (input: InCompany) => listed(deps, input),
+    runs: (input: Of & { page: string | undefined }) => runs(deps, input),
+    ofProject: (input: InCompany & { projectId: ProjectId }) => ofProject(deps, input),
     /** The first rows of a copy's table, read as the member's role. */
-    sample: (input: Of & { signal: AbortSignal }) => sampleOf(full, input),
+    sample: (input: Of & { signal: AbortSignal }) => sampleOf(deps, input),
     /** What the Builder's turn sees of the company's copies for a Projeto, the unreleased only those the person's role reads. */
     projectView: (input: { companyId: CompanyId; personId: PersonId; projectId: ProjectId }) =>
-      projectView(full, input),
+      projectView(deps, input),
     /** The copies a place reads, for the access door. */
-    access: Object.freeze({ tables: accessTables(full) }),
+    access: Object.freeze({ tables: accessTables(deps) }),
     /** What the data contract reads; admits nobody, the caller did: one page of a table by its name, and who reads what. */
     data: Object.freeze({
-      tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(full, input),
+      tableRows: (input: Parameters<typeof tableRowsByName>[1]) => tableRowsByName(deps, input),
       readers: Object.freeze({
         copiesReadBy,
         readerOf,
-        readAs: (input: Parameters<typeof readAs>[1]) => readAs(full, input),
+        readAs: (input: Parameters<typeof readAs>[1]) => readAs(deps, input),
       }),
     }),
     /** Who reads each copy, admitting `seeData`, and the copies a role reads, admitting `manageRoles`. */
     readers: Object.freeze({
-      list: (input: InCompany) => listedReaders(full, input),
-      set: (input: Parameters<typeof setRoleCopies>[1]) => setRoleCopies(full, input),
+      list: (input: InCompany) => listedReaders(deps, input),
+      set: (input: Parameters<typeof setRoleCopies>[1]) => setRoleCopies(deps, input),
     }),
-    /** The schedule's acts, admitting `manageCopies`. */
-    pause: (input: Of) => pauseCopy(full, input),
-    resume: (input: Of) => resumeCopy(full, input),
-    changeInterval: (input: Of & Parameters<typeof changeInterval>[1]) =>
-      changeInterval(full, input),
-    runNow: (input: Of) => runNow(full, input),
-    /** Once at start: the copies made before the weekly row get it. */
-    ensureWholeLines: () => ensureWholeLines(full),
-    /** Apagar a copy with its table, admitting `manageCopies`. */
-    delete: (input: Of) => deleteCopy(full, input),
-    /** Propor (Capacidade 3): the Builder's turn, through the connectors' door; admits nobody, the turn did. */
-    propose: (ids: OfProject, a: Proposal) => propose(full, ids, a),
-    /** Dispensar a proposal, admitting `manageCopies`. */
-    dismiss: (input: Omit<Accepting, 'attemptKey'>) => dismissProposal(full, input),
     /** Liberar and Tirar a copy to a Projeto. */
-    grant: (input: OfRelease) => grantCopy(full, input),
-    revoke: (input: OfRelease) => revokeCopy(full, input),
+    grant: (input: OfRelease) => grantCopy(deps, input),
+    revoke: (input: OfRelease) => revokeCopy(deps, input),
     /** Before an app's logins are dropped: every release of the Projeto revoked. */
     revokeAllOf: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer> =>
-      revokeAllOf(full, input),
+      revokeAllOf(deps, input),
     /** After an app's logins are made: every release of the Projeto granted again (repair only). */
     applyGrants: (input: { companyId: CompanyId; projectId: ProjectId }): Promise<SqlAnswer> =>
-      applyGrants(full, input),
-    /** What Desligar asks of the copies, through the connectors' lazy port (O Sync de qualquer conector). */
-    ofConnections: Object.freeze({
-      copiesOf: (input: InCompany & { connectionId: ConnectionId }) =>
-        copiesOfConnection(full, input),
-      leave: (input: InCompany & { connectionId: ConnectionId }) => leaveCopies(full, input),
-      locked: lockedCopiesOf,
-      ended: endedSourceless,
-      dropEnded: (input: InCompany) => dropEndedCopies(full, input),
-    }),
+      applyGrants(deps, input),
   })
 }
 export type CopyService = ReturnType<typeof createCopyService>

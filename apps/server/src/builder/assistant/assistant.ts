@@ -112,7 +112,7 @@ type Deps = {
 }
 
 /** The company's tools of the Assistant's runs and its helper's, every call through the door as the run's principal. */
-function companyDeps(deps: Deps): CompanyToolDeps<AssistantConnection> {
+function companyDeps(deps: Deps): CompanyToolDeps {
   return {
     ...{ log: deps.log, copies: deps.copies, savedAt: readsFiles() },
     data: (run) => deps.companyData(principalOf(run), dataContextOf(run)),
@@ -126,7 +126,7 @@ const FIRST: readonly string[] = [ASSISTANT_TOOL.overview, ASSISTANT_TOOL.copyRu
 /** The company's tools split as the request lists them: the overview and the copies' runs before the Assistant's own, the connectors' and the data's after. */
 async function inRequestOrder(
   scope: CompanyToolScope<AssistantConnection> | undefined,
-  tools: CompanyToolDeps<AssistantConnection>,
+  tools: CompanyToolDeps,
 ) {
   const company = Object.entries(
     scope === undefined ? {} : await companyTools(scope, 'assistant', tools),
@@ -143,7 +143,7 @@ type Parts = {
   machines: ConversationMachines
   scopeOf: RunOf
   toolScopeOf: ScopeOf<AssistantConnection>
-  tools: CompanyToolDeps<AssistantConnection>
+  tools: CompanyToolDeps
   maysFor: ReturnType<typeof maysOf>
   speakersFor: (requestContext: RequestContext) => Promise<Speakers | undefined>
 }
