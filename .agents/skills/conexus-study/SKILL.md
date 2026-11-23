@@ -1,6 +1,6 @@
 ---
 name: conexus-study
-description: "Studies a Conexus roadmap step before its card: writes the reference table, one row per piece the use script touches, with main's file, how the references do it at the versions Conexus installs, and a verdict nativo, embrulhado or remendo; runs the references and records their native shapes; tests the repository's own decisions against them; recommends what they converge on. Use at the start of every step, including one that brings code."
+description: "Studies a Conexus roadmap step before its card: reads the vision and the founder's recorded decisions before main; writes the reference table, one row per piece the use script touches, with what the founder already decided, main's file, how the references do it at the versions Conexus installs, and a verdict nativo, embrulhado or remendo; runs the references and records their native shapes; tests the repository's own decisions against them; recommends what they converge on. Use at the start of every step, including one that brings code."
 ---
 
 # Study
@@ -12,22 +12,21 @@ decisions and today's code are input to test.
 
 ## What it receives
 
-The step's line in [the roadmap](../../../docs/roadmap.md), the founder's words, the base commit;
-for brought code, the entry sheets and the old code at its frozen commit.
+The step's line in [the roadmap](../../../docs/roadmap.md), [the vision](../../../VISION.md), the
+founder's words and his decisions on the subject ([delivery L6](../../../docs/guides/delivery.md)),
+the base commit; for brought code, the entry sheets and the old code at its frozen commit.
 
 ## Steps
 
 1. Write each question as what a person sees, one sentence, with its premise.
 2. **The reference table** ([report](references/report.md), section 3; verdicts by
    [code C75](../../../docs/guides/code.md)). One row per piece the use script touches. Fill
-   "Hoje no main": every file of `main` the use script runs through, inherited ones included.
+   "O que o fundador já decidiu" first, from the vision and his decisions, read before `main`;
+   then "Hoje no main": every file of `main` the use script runs through, inherited ones included.
    Then "Referência": three to six closest analogs (for the AI build flow, AI app builders first),
    the library's own products, the native feature and the old product, read at the installed
-   version, each with its situation and match label ([sources](references/sources.md)), the options
-   a guarantee rests on, their defaults, and the errors the library handles itself (code C50). Name
-   where you searched. **Trace** each built row in the closest reference's source,
-   `file:line`, **lido**; Mastra rows also in Mastra Code and Factory
-   ([sources](references/sources.md)).
+   version, each with its situation and match label ([sources](references/sources.md)). Name where
+   you searched. **Trace** each built row in the closest reference's source, `file:line`, **lido**.
 3. **Run** the old product for anything it did, and one reference wherever the step changes what a
    person sees; a screen follows [screens](references/screens.md). A one-way door gets a
    [proof](references/proof.md). For every library stream, stored row or tool result the step's
@@ -45,22 +44,21 @@ for brought code, the entry sheets and the old code at its frozen commit.
 6. **Recommend** what you would write from zero (pstack `poteto-mode`), and list what of `main` it
    deletes. Where references diverge, the options are theirs, each with its how
    ([report](references/report.md), section 4); without it, it is not brought.
-7. **Reopen.** Every reader line, or label it relay; every cell reaching the founder's page or an
-   option table, by the author.
-8. **The verification pass** ([sources](references/sources.md)), by a reader that wrote none of
-   the report, before it is final.
+7. **Reopen** every reader line, or label it relay; never relay on the founder's page.
+8. **The verification pass** ([sources](references/sources.md)).
 
 **The study rule**: a decision whose only basis is "implemented so",
-"only tested so" or "decided before" is dropped, or defended in writing with a reason of its own. A
-part is brought only if it would be written that way from nothing. Its measure: lines brought and
-changed until the criteria pass, old tests passing unchanged through the public door, session hours.
+"only tested so" or "decided before" is dropped, or defended in writing with a reason of its own.
+A piece of `main` stays in the design only citing the founder's decision or reference that
+justifies it, else it leaves. A part is brought only if it would be written that way from nothing.
+Its measure: lines brought and changed until the criteria pass, old tests passing unchanged through
+the public door, session hours.
 Past a third of its brought lines changed, it is written new.
 
 ## What it produces
 
-The report ([template](references/report.md)), outside the repository ([delivery
-L21](../../../docs/guides/delivery.md)), whose reference table the card copies; for a one-way door,
-a decision record "proposed" with its Criterion.
+The report ([template](references/report.md)), whose reference table the card copies; for a
+one-way door, a decision record "proposed" with its Criterion.
 
 ## Stop and ask
 

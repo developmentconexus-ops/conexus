@@ -39,6 +39,7 @@ test('aceita uma árvore limpa', () => {
 
 const REFUSALS: [string, Record<string, string>][] = [
   ['document-too-long', { 'docs/decisions/0001-x.md': words(351) }],
+  ['document-too-long', { 'VISION.md': words(1601) }],
   ['broken-link', { 'AGENTS.md': 'See [gone](docs/gone.md).\n' }],
   ['broken-link', { 'AGENTS.md': 'See [gone][target].\n\n[target]: docs/gone.md\n' }],
   ['broken-fragment', { 'AGENTS.md': '# Title\n\nSee [up](#nowhere).\n' }],
