@@ -1,4 +1,4 @@
-import type { CompanyId, ConnectionId, ConversationId, Person, PersonId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'

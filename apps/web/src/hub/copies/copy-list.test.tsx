@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import {
@@ -10,12 +10,10 @@ import {
   onPhone,
   openCopies,
   PRODUTOS,
-  proposal,
   VENDAS,
 } from './test-hub.tsx'
 import { ORDERS_SHOWN, STORES } from './test-sources.ts'
 
-// Dados: the rail, the list and the actions of a row (Capacidade 2, criteria 30, 31, 33 and 35).
 const server = hubServer()
 
 async function rowOf(name: string): Promise<HTMLElement> {
@@ -73,16 +71,45 @@ test('o membro no celular vê as linhas das tabelas do papel sem o menu da linha
   })
 })
 
-test('o membro não vê as propostas do Builder (critério 70)', async () => {
-  openCopies(
-    server,
-    { copies: [copy()], readers: MEMBER_READS, proposals: [proposal()] },
-    LIST,
-    'member',
-  )
+const ENGINE = [
+  /Ligar uma cópia/,
+  /^Ações:/,
+  /Pausar/,
+  /Retomar/,
+  /Intervalo/,
+  /Rodar agora/,
+  /Apagar/,
+]
+
+function expectNoEngine() {
+  for (const name of ENGINE) {
+    expect(screen.queryByRole('button', { name })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name })).toBeNull()
+  }
+  expect(screen.queryByText(/Proposta/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Dispensar' })).toBeNull()
+}
+
+test('sem o motor de hoje', async () => {
+  const paused = copy({
+    id: CLIENTES,
+    name: 'clientes',
+    label: 'Clientes',
+    schedule: { kind: 'PAUSED' },
+  })
+  openCopies(server, { copies: [copy(), paused] }, LIST)
   await rowOf('Vendas')
-  expect(screen.queryByText('Devoluções')).toBeNull()
-  expect(screen.queryByRole('button', { name: /Ligar/ })).toBeNull()
+  await rowOf('Clientes')
+  expectNoEngine()
+  expect(screen.queryByRole('columnheader', { name: 'Ações' })).toBeNull()
+})
+
+test('sem o motor de hoje, no celular', async () => {
+  await onPhone(async () => {
+    openCopies(server, { copies: [copy()] }, LIST)
+    expect((await rowOf('Vendas')).tagName).toBe('LI')
+    expectNoEngine()
+  })
 })
 
 test('o membro que abre uma tabela de outro papel vê a página de não encontrado (critério 71)', async () => {
@@ -177,72 +204,12 @@ test('Dados: um sistema sem cópia e nenhum sistema ligado', async () => {
   const main = within(await screen.findByRole('main'))
   expect(await main.findByText('Sankhya · Matriz')).toBeTruthy()
   expect(main.getByText('Nenhuma tabela copiada')).toBeTruthy()
-  expect(main.getByRole('button', { name: 'Ligar uma cópia' })).toBeTruthy()
 })
 
 test('Cópias: a falha de leitura mostra a frase e Tentar de novo', async () => {
   openCopies(server, { copies: [], answers: { list: () => refusal('DATABASE_UNAVAILABLE') } }, LIST)
   const main = within(await screen.findByRole('main'))
   expect(await main.findByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
-})
-
-test('Cópias: as ações chamam a rota e a linha mostra o estado novo; uma rodando mostra a frase do código', async () => {
-  let refuse = false
-  const hub = openCopies(
-    server,
-    {
-      copies: [copy()],
-      answers: { write: () => (refuse ? refusal('COPY_RUNNING') : undefined) },
-    },
-    LIST,
-  )
-  const row = await rowOf('Vendas')
-  fireEvent.click(within(row).getByRole('button', { name: 'Ações: Vendas' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Pausar' }))
-  await waitFor(async () => expect(within(await rowOf('Vendas')).getByText('Pausada')).toBeTruthy())
-  fireEvent.click(within(await rowOf('Vendas')).getByRole('button', { name: 'Ações: Vendas' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Retomar' }))
-  await waitFor(async () => expect(within(await rowOf('Vendas')).getByText('Em dia')).toBeTruthy())
-  refuse = true
-  fireEvent.click(within(await rowOf('Vendas')).getByRole('button', { name: 'Ações: Vendas' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Rodar agora' }))
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'Esta cópia já está rodando. Espere ela terminar.',
-  )
-  expect(hub.writes().map((one) => one.path.split('/').at(-1))).toEqual(['pause', 'resume', 'run'])
-})
-
-test('Cópias: Intervalo muda o intervalo da linha; uma sem relógio não oferece Rodar agora', async () => {
-  const hub = openCopies(
-    server,
-    {
-      copies: [
-        copy(),
-        copy({ id: CLIENTES, label: 'Clientes', schedule: { kind: 'MISSING' }, interval: null }),
-      ],
-    },
-    LIST,
-  )
-  const row = await rowOf('Vendas')
-  fireEvent.click(within(row).getByRole('button', { name: 'Ações: Vendas' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Intervalo' }))
-  const dialog = await screen.findByRole('dialog')
-  fireEvent.click(within(dialog).getByRole('combobox', { name: 'Intervalo' }))
-  const option = await screen.findByRole('option', { name: '6 h' })
-  fireEvent.pointerDown(option)
-  fireEvent.mouseDown(option)
-  fireEvent.pointerUp(option)
-  fireEvent.mouseUp(option)
-  fireEvent.click(option)
-  await waitFor(() =>
-    expect(within(dialog).getByRole('combobox', { name: 'Intervalo' }).textContent).toBe('6 h'),
-  )
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
-  await waitFor(() => expect(hub.writes().map((one) => one.body)).toEqual([{ interval: '6h' }]))
-  await waitFor(async () => expect(within(await rowOf('Vendas')).getByText('6 h')).toBeTruthy())
-  fireEvent.click(within(await rowOf('Clientes')).getByRole('button', { name: 'Ações: Clientes' }))
-  expect(await screen.findByRole('menuitem', { name: 'Retomar' })).toBeTruthy()
-  expect(screen.queryByRole('menuitem', { name: 'Rodar agora' })).toBeNull()
 })
 
 test('Cópias: no celular, a lista vira linhas que quebram', async () => {

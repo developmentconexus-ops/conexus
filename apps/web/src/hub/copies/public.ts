@@ -5,10 +5,10 @@ import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
 export { CopyDetail } from './copy-detail.tsx'
-export { QueryBlock } from './copy-proposal.tsx'
 export { DataPage, DataReadFailure } from './data-page.tsx'
 export { DataTree } from './data-tree.tsx'
 export { copiesQuery, copyReadersQuery, sendRoleCopies } from './queries.ts'
+export { QueryBlock } from './query-block.tsx'
 export { DataLayer, DataSearch, TableSearch } from './search.ts'
 export { systemText } from './text.ts'
 

@@ -2,12 +2,13 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { ConnectionId, CopyId } from '@conexus/hub-api'
 import { CopyId as CopyIdSchema } from '@conexus/hub-api'
+import pg from 'pg'
 import type { CopyRows, CopyTable } from '../../platform/copy-sql.ts'
+import { ROLES_LOCK } from '../../platform/copy-sql.ts'
 import type { DatabaseUrl } from '../../platform/database.ts'
 import { CopyDefinition } from '../connectors/public.ts'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../connectors/test-sales.ts'
 import type { Hub } from '../identity/test-hub.ts'
-import { asSync } from './test-copies.ts'
 import { MODELS } from './test-planted-models.ts'
 
 export type PlantedModel = keyof typeof MODELS
@@ -158,4 +159,30 @@ async function plantRuns(on: PlantOn, copyId: CopyId, rows: number, runs: readon
   for (const [at, run] of runs.entries()) {
     await plantRun(on, copyId, run, rows, new Date(now - (runs.length - at) * 60_000))
   }
+}
+
+export async function asSync<T>(owner: DatabaseUrl, act: (client: pg.Client) => Promise<T>) {
+  const client = new pg.Client({ connectionString: owner.reveal() })
+  await client.connect()
+  try {
+    await client.query('begin')
+    await client.query(ROLES_LOCK.text)
+    await client.query('set local role conexus_sync')
+    const done = await act(client)
+    await client.query('commit')
+    return done
+  } finally {
+    await client.end()
+  }
+}
+
+export function syncRows(owner: DatabaseUrl, name: string, key: readonly string[]) {
+  const columns = key.map((column) => `"${column}"::text`).join(', ')
+  return asSync(owner, async (client) => {
+    const result = await client.query({
+      text: `select ${columns}, _pass from sync."${name}" order by ${key.map((k) => `"${k}"`).join(', ')}`,
+      rowMode: 'array',
+    })
+    return result.rows.map((row: unknown[]) => row.map(String))
+  })
 }

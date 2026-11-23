@@ -179,7 +179,7 @@ test('o desenvolvedor recebe a tabela de fora do papel como a que não existe', 
 test('a cópia que some entre a lista e as rodadas responde como a que não existe', async (t) => {
   const w = await copyWorld(t, ask('sankhya_vendas'))
   const { companyId, personId } = w
-  const { copies } = await w.on.hub.copies.list({ companyId, personId, named: [] })
+  const { copies } = await w.on.hub.copies.list({ companyId, personId })
   const thrown = await copyGoneBetween({ companyId, personId, copies }, 'sankhya_vendas')
   assert.equal(JSON.parse(thrown.message).kind, 'NOT_FOUND')
 })

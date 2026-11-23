@@ -208,7 +208,7 @@ async function sealedText(
   return open(deps.sealKeys, sealContext(row), await sealedOf(tx, row.id)).reveal()
 }
 
-export async function viewIn(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<Connection> {
+async function viewIn(tx: ReadTx, viewer: Viewer, id: ConnectionId): Promise<Connection> {
   const [row] = await tx.select(columns).from(connection).where(ofCompany(viewer, id))
   if (row === undefined) throw new Failure('CONNECTION_NOT_FOUND')
   return viewOf(row)
@@ -294,40 +294,22 @@ function whereOf(input: OfConnection, connector: Connector) {
   return { connectionId: input.connectionId, connector: connector.id }
 }
 
-/**
- * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
- * First the account's rows leave the company's copies, so a silent company database refuses before
- * anything leaves the Hub or the provider (O Sync de qualquer conector). Then a connector that
- * declares a revoke is asked to take the authorization back; the provider refusing or being down
- * never stops the removal. Then, in one transaction, the connection's copies locked, the connection
- * deleted with its sources and each copy left with no source ended; last their tables dropped.
- */
 export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
   await deps.database.command(scopeOf(input), (tx) =>
     admitted(deps, tx, input, 'manageConnections'),
   )
-  const { companyId, connectionId } = input
-  await deps.copies().leave({ companyId, personId: input.person.id, connectionId })
+  const { connectionId } = input
   const revocation = await revoked(deps, input)
   const removed = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
-    const copyIds = await deps.copies().locked(tx, { companyId, connectionId })
     const rows = await tx
       .delete(connection)
       .where(ofCompany(input, connectionId))
       .returning({ id: connection.id })
-    if (rows.length === 0) return undefined
-    const ended = await deps.copies().ended(tx, { companyId, copyIds })
-    return copyIds.map((copyId) => ({ copyId, ended: ended.includes(copyId) }))
+    return rows.length > 0
   })
   await deps.limits.forget(connectionId)
-  const { tablesLeft } = await deps.copies().dropEnded({ companyId, personId: input.person.id })
-  return {
-    removed: removed !== undefined,
-    revocation: removed === undefined ? ('NONE' as const) : revocation,
-    copies: removed ?? [],
-    tablesLeft,
-  }
+  return { removed, revocation: removed ? revocation : ('NONE' as const) }
 }
 
 /** One connection, as every member reads it. */

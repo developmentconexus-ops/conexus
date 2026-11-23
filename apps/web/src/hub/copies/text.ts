@@ -1,14 +1,12 @@
 import type {
   CopyInterval,
   CopyMode,
-  CopyProposalSummary,
   CopyRun,
   CopySummary,
   CopySystemMessage,
 } from '@conexus/hub-api'
 import { phraseOf } from '@conexus/hub-api'
 import { dayAndHour, dayAndMonth } from '../../platform/dates.ts'
-import { HubFailure, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 import { AND_LIST } from '../../platform/lists.ts'
 
 /** The words of the Dados screens (Capacidade 2, U4); the founder approves them at the step's end. */
@@ -44,9 +42,6 @@ export function systemText(system: string, accounts: readonly string[], tables: 
   const named = accounts.filter((account) => account !== system)
   return [system, named.join(', '), ...counted].filter((part) => part !== '').join(' · ')
 }
-export const ENABLE_COPY = 'Ligar uma cópia'
-export const NO_MODEL_CONNECTION = 'Ligue em Integrações uma conexão que ofereça cópias.'
-export const TO_INTEGRATIONS = 'Ir para Integrações'
 export const NO_RUNS_YET = 'A primeira rodada ainda não terminou.'
 export const APPS_INTRO =
   'As tabelas que cada app guarda. Elas são do Projeto e ficam aqui só para leitura.'
@@ -145,22 +140,7 @@ export function peopleText(members: number): string {
 export function roleTablesText(label: string): string {
   return `Você vê as tabelas que o papel ${label} lê.`
 }
-export const RUN_REQUESTED = 'Pedido enviado. A rodada aparece na lista.'
 export const NO_SCHEDULE = '—'
-export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
-export const UNCONFIRMED_ENABLE = unconfirmedText('a cópia', 'Toque de novo.')
-export const PROPOSAL_WORD = 'Proposta'
-const PROPOSAL_GONE = 'Esta proposta não existe mais.'
-/**
- * What the dialog of Ligar a proposal says of a refusal: the table's words, except `NOT_FOUND`,
- * written for another screen, which tells to check an address.
- */
-export function enableFailureText(error: unknown): string {
-  if (error instanceof HubFailure && !error.outcomeUnknown && error.code === 'NOT_FOUND') {
-    return PROPOSAL_GONE
-  }
-  return writeFailureText(error, UNCONFIRMED_ENABLE)
-}
 
 /** The six intervals, each in its words once (the column, the detail and the dialog read these). */
 export const INTERVAL_LABEL = {
@@ -264,40 +244,4 @@ export function modeText(mode: CopyMode): string {
     case 'CHANGES':
       return 'só o alterado'
   }
-}
-
-/** The page of proof in words: "teste: 50 linhas", "teste: mais de 50 linhas". */
-export function provedText(proved: CopyProposalSummary['proved']): string {
-  return `teste: ${proved.more ? 'mais de ' : ''}${countText(proved.rows)} linhas`
-}
-
-/** The calls a whole pass of a list read spends, as the proof answered: "cerca de 6 chamadas por passada". */
-export function callsText(calls: number | null): string {
-  if (calls === null) return 'a leitura não informa o total'
-  return `cerca de ${countText(calls)} ${calls === 1 ? 'chamada' : 'chamadas'} por passada`
-}
-
-/** A list read's fixed input, each field and its value; "nenhum" when the copy reads it all. */
-export function inputText(input: Readonly<Record<string, string | number | boolean>>): string {
-  const fixed = Object.entries(input).map(([field, value]) => `${field}: ${String(value)}`)
-  return fixed.length === 0 ? 'nenhum' : fixed.join(', ')
-}
-
-export const DELETE_RESTART = 'Se você ligar esta cópia de novo, ela copia tudo do zero.'
-export const UNCONFIRMED_DELETE = unconfirmedText('o apagamento', 'Veja a lista.')
-
-/** What Apagar takes from the company's database, said before the click: the copy's rows, or that their count is not known. */
-export function deleteRowsText(rows: number | null): string {
-  if (rows === null) return 'As linhas desta cópia saem do banco da empresa e não voltam.'
-  if (rows === 1) return 'A 1 linha sai do banco da empresa e não volta.'
-  return `As ${countText(rows)} linhas saem do banco da empresa e não voltam.`
-}
-
-export function deleteProjectText(project: string): string {
-  return `O app do Projeto ${project} deixa de ler esta cópia. Onde ele a usava, vai mostrar erro.`
-}
-
-/** The table of a deleted copy that the company's database did not drop yet; the copy is gone all the same. */
-export function deletedTableLeftText(name: string): string {
-  return `A cópia foi apagada. A tabela ${name} ainda não saiu do banco da empresa; o Conexus a apaga no próximo Apagar, Desligar ou quando uma cópia for ligada.`
 }

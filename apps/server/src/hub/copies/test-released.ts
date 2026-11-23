@@ -85,13 +85,7 @@ export function copiesWithoutHubDatabase(hub: Hub) {
   return createCopies({
     ...{ database: down, identity: hub.identity, projects: hub.projects.ports },
     ...{ neon: hub.neon.neon, companyPostgres: hub.postgres.companyPostgres },
-    connectors: () => hub.connectors.copies,
-    prove: () => hub.connectors.builder.provePage,
     apps: () => hub.apps,
-    clock: () => {
-      throw new Error('the view reads no clock')
-    },
     log: { info: () => undefined, error: () => undefined },
-    updating: () => false,
   })
 }

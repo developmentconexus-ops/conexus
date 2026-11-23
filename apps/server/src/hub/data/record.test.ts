@@ -11,8 +11,8 @@ import type { CopiesOn } from '../copies/test-copies.ts'
 import { asSync } from '../copies/test-copies.ts'
 import type { RolesWorld } from '../copies/test-readers.ts'
 import { rolesWorld } from '../copies/test-readers.ts'
-import { ordersCopy, STORE_A, storesOn } from '../copies/test-sources.ts'
 import { createCompanyData } from './public.ts'
+import { storeWithOrders } from './test-stores.ts'
 
 async function world(t: TestContext) {
   return rolesWorld(t, 'PLANTED')
@@ -189,11 +189,8 @@ test('descrever não grava', async (t) => {
 })
 
 test('a leitura de operação deixa exatamente uma linha', async (t) => {
-  const on = await storesOn(t, { stores: [STORE_A] })
-  const copyId = await on.planted('pedidos', ordersCopy(false), [STORE_A.ref])
-  await on.ended(copyId)
-  const connection = on.stores.get(STORE_A.ref)
-  assert.ok(connection)
+  const on = await storeWithOrders(t)
+  const { connection } = on
   const data = on.hub.data(
     readerAt({ companyId: on.companyId, personId: on.anaId, place: { kind: 'COMPANY' } }),
     {

@@ -1,16 +1,8 @@
-import type { CompanyId, CopyId, CopyRun } from '@conexus/hub-api'
+import type { CompanyId, CopyId } from '@conexus/hub-api'
 import {
-  changeCopyInterval,
-  deleteCopy,
-  dismissCopyProposal,
-  enableCopy,
   listCopies,
-  listCopyModels,
   listCopyReaders,
   listCopyRuns,
-  pauseCopy,
-  resumeCopy,
-  runCopy,
   sampleCopy,
   setRoleCopies,
 } from '@conexus/hub-api'
@@ -18,50 +10,15 @@ import { queryOptions } from '@tanstack/react-query'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 const WHILE_RUNNING = 5_000
-/** How long a run the person asked for is waited for before the list stops looking for it. */
-const REQUEST_WINDOW_MS = 60_000
 
-/** A Rodar agora or a Ligar: when it left, which copy, and the run that copy showed then (none for a new one). */
-export type RunRequest = { at: number; copyId: string; before: string | null }
-
-type Run = Pick<CopyRun, 'id' | 'outcome'> | null
-
-function waitingFor(requests: RunRequest[], copyId: string, run: Run) {
-  return requests.some(
-    (one) =>
-      one.copyId === copyId &&
-      Date.now() - one.at < REQUEST_WINDOW_MS &&
-      (run === null || run.id === one.before),
-  )
-}
-
-/** Whether the run one request asked for is still owed or open: not in the list yet, or running, within the window. */
-export function requestOpen(one: RunRequest, run: Run) {
-  return (
-    Date.now() - one.at < REQUEST_WINDOW_MS &&
-    (run === null || run.id === one.before || run.outcome.kind === 'RUNNING')
-  )
-}
-
-/**
- * The company's copies, read again every 5 s while one runs, and while a run the person asked for
- * has not appeared (the write's own re-read can come back before the Hub opened the run).
- */
-export function copiesQuery(companyId: CompanyId, requests: RunRequest[] = []) {
+export function copiesQuery(companyId: CompanyId) {
   return queryOptions({
-    ...hubQuery(listCopies, { params: { companyId }, query: {} }),
+    ...hubQuery(listCopies, { params: { companyId } }),
     refetchInterval: (query) =>
-      query.state.data?.copies.some(
-        (copy) => copy.run?.outcome.kind === 'RUNNING' || waitingFor(requests, copy.id, copy.run),
-      )
+      query.state.data?.copies.some((copy) => copy.run?.outcome.kind === 'RUNNING')
         ? WHILE_RUNNING
         : false,
   })
-}
-
-/** The models the company's connectors offer to copy. */
-export function copyModelsQuery(companyId: CompanyId) {
-  return hubQuery(listCopyModels, { params: { companyId } })
 }
 
 /** For each copy the person reads, the roles that read it and how many people hold each. */
@@ -69,20 +26,11 @@ export function copyReadersQuery(companyId: CompanyId) {
   return hubQuery(listCopyReaders, { params: { companyId } })
 }
 
-/** The runs of one copy, newest first, a page at a time, with the copy itself; read again while one runs or one asked for has not appeared. */
-export function copyRunsQuery(
-  companyId: CompanyId,
-  copyId: CopyId,
-  page: string | undefined,
-  requests: RunRequest[] = [],
-) {
+export function copyRunsQuery(companyId: CompanyId, copyId: CopyId, page: string | undefined) {
   return queryOptions({
     ...hubQuery(listCopyRuns, { params: { companyId, copyId }, query: { page } }),
     refetchInterval: (query) =>
-      query.state.data?.runs.some((run) => run.outcome.kind === 'RUNNING') ||
-      (page === undefined && waitingFor(requests, copyId, query.state.data?.runs[0] ?? null))
-        ? WHILE_RUNNING
-        : false,
+      query.state.data?.runs.some((run) => run.outcome.kind === 'RUNNING') ? WHILE_RUNNING : false,
   })
 }
 
@@ -93,11 +41,3 @@ export function copySampleQuery(companyId: CompanyId, copyId: CopyId) {
 
 /** Salvar of an open role: the whole list of copies it reads. */
 export const sendRoleCopies = hubMutation(setRoleCopies)
-export const sendCopyEnable = hubMutation(enableCopy)
-export const sendCopyPause = hubMutation(pauseCopy)
-export const sendCopyResume = hubMutation(resumeCopy)
-export const sendCopyInterval = hubMutation(changeCopyInterval)
-export const sendCopyRun = hubMutation(runCopy)
-/** Apagar: the cache stays as it is until the dialog is read and closed (`keepCache`, web W12). */
-export const sendCopyDelete = { ...hubMutation(deleteCopy), meta: { keepCache: true } } as const
-export const sendProposalDismiss = hubMutation(dismissCopyProposal)

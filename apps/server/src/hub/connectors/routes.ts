@@ -7,7 +7,6 @@ import {
   grantProjectConnection,
   linkConnection,
   listAppConnections,
-  listConnectionCopies,
   listConnections,
   listProjectConnections,
   reconnectConnection,
@@ -19,7 +18,6 @@ import {
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
 import type { AppCalls } from './app-calls.ts'
-import { copiesOfConnection } from './connection-copies.ts'
 import { detail, link, list, reconnect, unlink } from './connections.ts'
 import { grant, list as listGrants, revoke } from './grants.ts'
 import { erase } from './notes.ts'
@@ -94,16 +92,11 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
 
   registerGrantRoutes(app, deps)
 
-  serve(app, listConnectionCopies, async ({ person, params }) =>
-    answer({ copies: await copiesOfConnection(deps, { person, ...params }) }),
-  )
-
   serve(app, unlinkConnection, async ({ person, params, log }) => {
-    const { removed, revocation, copies, tablesLeft } = await unlink(deps, { person, ...params })
+    const { removed, revocation } = await unlink(deps, { person, ...params })
     const { connectionId } = params
     if (removed) log.info({ by: person.id, connectionId }, 'CONNECTION_REMOVED')
-    for (const { copyId, ended } of copies) log.info({ connectionId, copyId, ended }, 'COPIES_LEFT')
-    return answer({ revocation, tablesLeft })
+    return answer({ revocation })
   })
 }
 

@@ -106,9 +106,8 @@ test('o membro e o desenvolvedor na página da tabela não veem Rodar agora nem 
       'Rodadas',
       'Quem lê 2',
     ])
-    const builds = role === 'owner'
-    expect(screen.queryByRole('button', { name: /Rodar agora/ }) !== null).toBe(builds)
-    expect(screen.queryByRole('button', { name: /^Ações:/ }) !== null).toBe(builds)
+    expect(screen.queryByRole('button', { name: /Rodar agora/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Ações:/ })).toBeNull()
     cleanup()
   }
 })

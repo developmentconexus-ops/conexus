@@ -211,13 +211,6 @@ test('log por pedido', async (t) => {
   assert.doesNotMatch(JSON.stringify(lines), /0af7651916cd43dd8448eb211c80319c/)
 })
 
-test('ao subir, o Hub passa as linhas semanais', async (t) => {
-  const { lines, stop, until } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
-  await until('COPY_WHOLE_LINES')
-  await stop()
-  assert.equal(lines.filter((line) => line.msg === 'COPY_WHOLE_LINES').length, 1)
-})
-
 test('desligamento', async (t) => {
   const { lines, stop } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
   await stop()

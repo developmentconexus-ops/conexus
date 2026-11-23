@@ -1,24 +1,13 @@
-import type { CopyDefinition, ListRead, Operation } from '@conexus/connectors'
+import type { ListRead, Operation } from '@conexus/connectors'
 import { connectorOf } from '@conexus/connectors'
-import type {
-  CompanyId,
-  CopyProposed,
-  OfProject,
-  PersonId,
-  ProjectId,
-  RunId,
-} from '@conexus/hub-api'
+import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import type { Speaker } from '../identity/public.ts'
-import type { Proved } from './copy-proof.ts'
-import { provedPage } from './copy-proof.ts'
 import { shaped } from './cut.ts'
 import type { OpenedConnection } from './executor.ts'
 import { readOf } from './grants.ts'
-import type { ListMisfit, ListProved } from './list-proof.ts'
-import { provedList } from './list-proof.ts'
 import type { NoteSaved } from './notes.ts'
 import { Notes, provedAndSaved } from './notes.ts'
 import type { NotInRole, ReadAnswer } from './read.ts'
@@ -63,33 +52,6 @@ export type ShapedRead =
   | Readonly<{ kind: 'NOT_GRANTED' }>
   | NotInRole
 export type Spent = Readonly<{ kind: 'CALLS_SPENT' }>
-/** Why the Builder's read or proof brought nothing: the source's refusal whole, as `connector_read` gets it. */
-type BuilderReadRefusal = Exclude<ShapedRead, { kind: 'OK' }> | Spent
-
-/** What proposing a copy answers to the model (`hub/copies/propose.ts` writes it). */
-export type ProposeAnswer =
-  | CopyProposed
-  /** The proof of a connection found a key cell null or a key repeated in its rows. */
-  | Readonly<{ kind: 'KEY_NOT_UNIQUE'; connection: string; keyNull: number; keyRepeated: number }>
-  /** The proof of a connection found cells of `column` that do not fit its type. */
-  | Readonly<{ kind: 'TYPE_MISFIT'; connection: string; column: string; count: number }>
-  /** A copy of the company or an open proposal has the name; `releasedHere` when it is a copy released to this Projeto. */
-  | Readonly<{ kind: 'EXISTS'; name: string; releasedHere: boolean }>
-  /** `CopyDefinition`'s paths and messages, or the name's. */
-  | Readonly<{ kind: 'MALFORMED'; issues: string[] }>
-  | BuilderReadRefusal
-
-/** What proposing takes: the Projeto and the person of the turn, the run its call counts in, what the model wrote. */
-export type Proposal = Readonly<{
-  /** One or more, of one connector; the first is the proposal's own. */
-  connections: readonly ConnectionId[]
-  personId: PersonId
-  runId: RunId
-  name: string
-  label: string
-  definition: unknown
-  signal: AbortSignal
-}>
 
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>
 type Asking = OfProject & Readonly<{ personId: PersonId }>
@@ -105,11 +67,6 @@ export type BuilderConnectors = {
     ids: OfProject,
     a: Of & Readonly<{ concept: string; mapping: string; provingQuery: string }>,
   ): Promise<NoteSaved | Spent>
-  /** The proof of one connection, as the person may read it: the counts, never a row. */
-  provePage(
-    ids: OfProject,
-    a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
-  ): Promise<Proved | ListProved | ListMisfit | BuilderReadRefusal>
 }
 
 /** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
@@ -290,15 +247,6 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const read = readerOf({ ids, ...a, speaker, opened })
       return provedAndSaved(deps, { ...a, read })
-    },
-
-    async provePage(ids, a) {
-      const opened = await admit(deps, ids, a)
-      const { definition } = a
-      const proving = { ...a, ids, opened, spend: () => spend(a.runId) }
-      return definition.version === 1
-        ? provedPage(deps, { ...proving, definition })
-        : provedList(deps, { ...proving, definition })
     },
   }
 }

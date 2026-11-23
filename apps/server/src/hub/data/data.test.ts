@@ -42,16 +42,18 @@ function logOf(on: CopiesOn) {
   return { info: line, error: line }
 }
 
+function calledOf(on: CopiesOn) {
+  return on.hub.lines.filter(({ message }) => message === 'CONNECTOR_CALLED').length
+}
+
 async function endedCopy(on: CopiesOn, model: string) {
-  const copyId = await on.enable(model)
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
-  return copyId
+  return on.plant(model)
 }
 
 test('descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro não', async (t) => {
   const on = await copiesOn(t)
   const developer = await memberOn(on.hub, on.companyId, DAVI, 'developer')
-  await on.enable('vendas')
+  await on.plant('vendas', { runs: [] })
   const described = await inCompany(on).describe()
   assert.deepEqual(Object.keys(described).sort(), ['kind', 'systems', 'tables'])
   const owner = Catalog.parse(described)
@@ -75,8 +77,8 @@ test('descrever na empresa: o dono vê as cópias, o desenvolvedor e o membro n�
 
 test('descrever num Projeto: só as liberadas', async (t) => {
   const on = await copiesOn(t)
-  await on.enable('vendas')
-  const clients = await on.enable('clientes')
+  await on.plant('vendas', { runs: [] })
+  const clients = await on.plant('clientes', { runs: [] })
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId: clients },
@@ -110,8 +112,8 @@ test('descrever num Projeto: só as liberadas', async (t) => {
 
 test('o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia a conexão que ele não recebeu', async (t) => {
   const on = await copiesOn(t)
-  const clients = await on.enable('clientes')
-  await on.enable('vendas')
+  const clients = await on.plant('clientes', { runs: [] })
+  await on.plant('vendas', { runs: [] })
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
     ...{ projectId: on.projectId, copyId: clients },
@@ -162,8 +164,8 @@ test('o catálogo do lugar diz o estado da conexão, e o do Projeto não nomeia 
 
 test('toda tabela do catálogo traz descrição', async (t) => {
   const on = await copiesOn(t)
-  await on.enable('vendas')
-  await on.enable('clientes')
+  await on.plant('vendas', { runs: [] })
+  await on.plant('clientes', { runs: [] })
   const seen = await catalogOf(inCompany(on))
   assert.equal(seen.tables.length, 2)
   assert.ok(seen.tables.every(({ description }) => description.length > 0))
@@ -213,12 +215,12 @@ test('o banco da empresa calado dá TABLE_UNAVAILABLE e não lê ao vivo', async
     kind: 'UNAVAILABLE' as const,
     cause: 'DOWN',
   }))
-  const before = on.gate.pages
+  const before = calledOf(on)
   const answer = await inCompany(on).read({ kind: 'TABLE', table: 'sankhya_vendas' })
   assert.deepEqual(answer, { kind: 'TABLE_UNAVAILABLE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_ROWS_FAILED')
   assert.equal(failed?.fields.reason, 'DOWN')
-  assert.equal(on.gate.pages, before)
+  assert.equal(calledOf(on), before)
 })
 
 test('a tabela antes da primeira rodada dá TABLE_UNAVAILABLE', async (t) => {

@@ -167,7 +167,10 @@ test('git: o gc que falha é anotado e o main segue onde a versão o deixou', as
   assert.equal(await repository.main(), received.value)
 })
 
-async function refusal(t: TestContext, prepare: (box: Machine, base: string) => Buffer | void) {
+async function refusal(
+  t: TestContext,
+  prepare: (box: Machine, base: string) => Buffer | undefined,
+) {
   const { repository, base } = await opened(t)
   const box = await machine(t, await repository.bundleOfMain())
   const given = prepare(box, base)
@@ -178,7 +181,7 @@ async function refusal(t: TestContext, prepare: (box: Machine, base: string) => 
 }
 
 test('git: dois commits, pai errado, não regular, corrompido, 2.000 arquivos e 64 MiB são recusados, e o main não muda', async (t) => {
-  const cases: Record<string, (box: Machine, base: string) => Buffer | void> = {
+  const cases: Record<string, (box: Machine, base: string) => Buffer | undefined> = {
     'two-commits': (box) => {
       writeFileSync(join(box.dir, 'a'), '1')
       commit(box.dir)

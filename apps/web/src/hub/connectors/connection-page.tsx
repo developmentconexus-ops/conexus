@@ -340,7 +340,6 @@ export function ConnectionPage() {
         <UnlinkDialog
           companyId={companyId}
           connection={connection}
-          connectorName={name}
           open={unlinking}
           onOpenChange={setUnlinking}
         />

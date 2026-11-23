@@ -16,9 +16,8 @@ function inCompany(on: CopiesOn) {
 
 async function withCopies(t: Parameters<typeof copiesOn>[0]) {
   const on = await copiesOn(t)
-  const sales = await on.enable('vendas')
-  const sellers = await on.enable('vendedores')
-  for (const copyId of [sales, sellers]) assert.equal((await on.run(copyId)).kind, 'ENDED')
+  await on.plant('vendas')
+  const sellers = await on.plant('vendedores')
   return { on, sellers }
 }
 
@@ -71,11 +70,14 @@ test('o banco calado dá TABLE_UNAVAILABLE e não lê ao vivo', async (t) => {
     kind: 'UNAVAILABLE' as const,
     cause: 'DOWN',
   }))
-  const before = on.gate.pages
+  function called() {
+    return on.hub.lines.filter(({ message }) => message === 'CONNECTOR_CALLED').length
+  }
+  const before = called()
   assert.deepEqual(await queried(on, 'select 1'), { kind: 'TABLE_UNAVAILABLE' })
   const failed = on.hub.lines.find(({ message }) => message === 'DATA_QUERY_FAILED')
   assert.equal(failed?.fields.cause, 'DOWN')
-  assert.equal(on.gate.pages, before)
+  assert.equal(called(), before)
 })
 
 test('o plano ilegível falha com INTERNAL_UNEXPECTED depois do log DATA_PLAN_UNREAD', async (t) => {

@@ -78,7 +78,7 @@ test('a dona liga e testa num toque, e desliga: a janela monta os campos do cat�
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Desligar' }))
   const confirm = await screen.findByRole('alertdialog')
   expect(within(confirm).getByText('Desligar Comercial?')).toBeTruthy()
-  await confirmUnlink(confirm)
+  confirmUnlink(confirm)
   expect(await screen.findByText('Nenhuma integração ligada ainda.')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['POST', 'POST', 'DELETE'])
 })

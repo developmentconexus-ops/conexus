@@ -16,15 +16,15 @@ import {
   mercadoLivreServed,
   testOf,
 } from '../connectors/test-connections.ts'
-import { asSync, TEST_TUNING } from '../copies/test-copies.ts'
-import { plantCopy } from '../copies/test-planted.ts'
+import { asSync } from '../copies/test-copies.ts'
+import { doubleRows, plantCopy, plantRun } from '../copies/test-planted.ts'
 import type { RolesWorld } from '../copies/test-readers.ts'
 import { copyOf, idsOf, put, rolesWorld, VENDAS } from '../copies/test-readers.ts'
-import { STORE_A, STORE_B } from '../copies/test-sources.ts'
 import { personOf } from '../identity/public.ts'
 import { call } from '../identity/test-hub.ts'
 import type { DataDeps } from './public.ts'
 import { recordedData, sourcesFor } from './recorded.ts'
+import { STORE_A, STORE_B } from './test-stores.ts'
 
 /** What Bruno's role uses of the Sankhya: two reads a copy keeps, one read no copy keeps, and the order's write. */
 const REACH = ['pedidos', 'notasFiscais', 'devolucoes', 'lancarPedido']
@@ -127,7 +127,11 @@ async function storesOf(
 /** The company's world for Bruno, in Vendas: what the laws find in his catalog, at the company or in the Projeto. */
 async function plantedWorld(t: TestContext, at: Place['kind']) {
   const ml = await mercadoLivreServed(t)
-  const w = await rolesWorld(t, 'PLANTED', { ...TEST_TUNING, runPages: 2 }, ml.change)
+  const w = await rolesWorld(t, 'PLANTED', ml.change)
+  for (const model of ['vendas', 'itens_venda']) {
+    const copyId = copyOf(w.copies, `sankhya_${model}`)
+    await plantRun(w.on, copyId, { outcome: 'PARTIAL', reason: 'CAP' }, doubleRows(model).length)
+  }
   const { on } = w
   const role = `/api/companies/${on.companyId}/roles/${w.vendas.role}`
   const connectors = { sankhya: REACH, 'mercado-livre': ['pedidos', 'anuncios'] }

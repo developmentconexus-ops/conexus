@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import type { CopyId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword, PersonId, ProjectId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import pg from 'pg'
@@ -52,7 +53,7 @@ async function loginsOf(owner: DatabaseUrl, projectId: ProjectId) {
   }
 }
 
-function release(on: CopiesOn, copyId: Parameters<CopiesOn['run']>[0]) {
+function release(on: CopiesOn, copyId: CopyId) {
   return { companyId: on.companyId, personId: on.anaId, projectId: on.projectId, copyId }
 }
 
@@ -62,8 +63,7 @@ async function refusedWith(code: string, act: () => Promise<unknown>) {
 
 test('o desenvolvedor não libera nem tira cópia de um Projeto, e a fora do papel não chega ao Projeto', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   const who = { name: 'Davi Costa', email: 'davi@example.test' }
   const developer = await memberOn(on.hub, on.companyId, who, 'developer')
   const byDeveloper = { ...release(on, copyId), personId: PersonId.parse(developer.id) }
@@ -76,8 +76,7 @@ test('o desenvolvedor não libera nem tira cópia de um Projeto, e a fora do pap
 
 test('liberar e tirar', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   const { runLogin, readLogin } = appLogin(on.projectId)
   await on.copies.grant(release(on, copyId))
   assert.equal(await releasesOf(on), 1)
@@ -119,8 +118,7 @@ async function listedGrants(on: CopiesOn) {
 
 test('liberar: o GRANT que falha desfaz a linha, e a lista diz não liberada', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   const silent = t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
     kind: 'NO_ANSWER' as const,
   }))
@@ -156,8 +154,7 @@ async function refuseDeletes(on: CopiesOn) {
 
 test('liberar: o apagar que também falha registra e responde o mesmo 503', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   await refuseDeletes(on)
   t.mock.method(on.hub.postgres.companyPostgres, 'grantCopy', async () => ({
     kind: 'NO_ANSWER' as const,
@@ -172,8 +169,7 @@ test('liberar: o apagar que também falha registra e responde o mesmo 503', asyn
 test('liberar a um Projeto sem app', async (t) => {
   const on = await copiesOn(t)
   await readyForVersions(t, on.hub, on.ana, on.companyId)
-  const copyId = await on.enable('clientes')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('clientes')
   assert.deepEqual(await loginsOf(on.owner, on.projectId), [], 'o Projeto ainda não tem app')
   on.hub.neon.script('ownerConnection', 'NO_ANSWER')
   await refusedWith('COPY_DATABASE_UNAVAILABLE', () => on.copies.grant(release(on, copyId)))
@@ -195,8 +191,7 @@ test('liberar a um Projeto sem app', async (t) => {
 
 test('apagar o Projeto com a cópia liberada', async (t) => {
   const on = await copiesOn(t)
-  const copyId = await on.enable('vendas')
-  assert.equal((await on.run(copyId)).kind, 'ENDED')
+  const copyId = await on.plant('vendas')
   const made = await post(on.hub, on.ana, on.projects, { name: 'Estoque' })
   assert.equal(made.statusCode, 201, made.body)
   const other = ProjectId.parse(Object(made.json()).project.id)

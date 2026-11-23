@@ -166,7 +166,7 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents, copyClock } = conversationsOf({
+  const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
@@ -203,14 +203,10 @@ export function subjectsOf(deps: {
   })
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
-    copies: () => copies.ofConnections,
   })
   const copies = createCopies({
     ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
-    ...{ projects: projects.ports, connectors: () => connectors.copies, apps: () => apps },
-    prove: () => connectors.builder.provePage,
-    clock: () => copyClock,
-    updating: () => conversations.updating(),
+    ...{ projects: projects.ports, apps: () => apps },
   })
   const sources = { systems: connectors.access.systems, tables: copies.access.tables }
   const access = createAccess({ database, identity, sources })
@@ -264,7 +260,7 @@ async function runServer(): Promise<void> {
       ...{ neon, lakeStacks, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors, copies } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
@@ -292,9 +288,6 @@ async function runServer(): Promise<void> {
         .catch((error: unknown) =>
           logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
         )
-      void copies
-        .ensureWholeLines()
-        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
