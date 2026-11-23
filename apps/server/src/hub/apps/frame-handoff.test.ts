@@ -36,10 +36,8 @@ test('passagem do iframe: o membro com sessão recebe {location} no host da Pré
   assert.equal(location.origin, `https://${PEDIDOS_PREVIA}.apps.example.test`)
   assert.equal(location.pathname, '/__conexus/passagem')
   assert.match(codeIn(made), /^[A-Za-z0-9_-]{43}$/)
-  const [row] = await hub.test.asOwner(
-    `select binding_hash, host_label, environment from apps.handoff`,
-  )
-  assert.deepEqual(row, { binding_hash: hash, host_label: PEDIDOS_PREVIA, environment: 'preview' })
+  const [row] = await hub.test.asOwner(`select binding_hash, host_label from apps.handoff`)
+  assert.deepEqual(row, { binding_hash: hash, host_label: PEDIDOS_PREVIA })
   const sameOrigin = await frameHandoff(
     hub,
     bruno,
@@ -51,11 +49,8 @@ test('passagem do iframe: o membro com sessão recebe {location} no host da Pré
   const tab = browser().hash
   assert.equal((await handoff(hub, bruno, { host: PEDIDOS, binding: tab })).statusCode, 303)
   assert.deepEqual(
-    await hub.test.asOwner(
-      `select host_label, environment from apps.handoff where binding_hash = $1`,
-      [tab],
-    ),
-    [{ host_label: PEDIDOS, environment: 'published' }],
+    await hub.test.asOwner(`select host_label from apps.handoff where binding_hash = $1`, [tab]),
+    [{ host_label: PEDIDOS }],
   )
 })
 

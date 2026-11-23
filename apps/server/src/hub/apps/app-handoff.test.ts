@@ -282,18 +282,3 @@ test('a sessão é do host em que foi trocada: a da Prévia no host do app 401, 
   )
   assert.equal((await check(hub, PEDIDOS_PREVIA, frame)).statusCode, 200)
 })
-
-test('uma sessão da Prévia de antes, com o rótulo do app, vale no host do app e recebe a publicada', async (t) => {
-  const subject = await companyForVersions(t)
-  const { hub, ana, bruno, versions } = subject
-  const old = await sessionOf(hub, bruno, PEDIDOS)
-  // Before the Prévia had its own host, its pass was made on the app's and its row said `preview`.
-  await hub.test.asOwner(`update apps.app_session set environment = 'preview'`)
-  const one = await versionNumbered(subject, (await send(subject, ana)).number)
-  const published = `${versions.replace(/\/versions$/, '')}/published-version`
-  assert.equal((await call(hub, ana, 'PUT', published, { number: 1 })).statusCode, 200)
-  await versionNumbered(subject, (await send(subject, ana, folder({}, '#6b2fa3'))).number)
-  assert.equal(workerOf(await check(hub, PEDIDOS, old)), `v-${one.id}`)
-  const crossed = await check(hub, PEDIDOS_PREVIA, old)
-  assert.deepEqual([crossed.statusCode, codeOf(crossed)], [401, 'APP_SESSION_INVALID'])
-})
