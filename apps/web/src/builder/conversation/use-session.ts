@@ -131,7 +131,8 @@ async function refused(hooks: Hooks, error: unknown): Promise<boolean> {
  * Follows the session's stream until the screen leaves, as the Factory UI does
  * (`useAgentControllerConnection.ts`): Mastra's client opens it again after a drop, and each open
  * reads the transcript again. Opening it is retried here, after a pause, except for a conversation
- * gone or a session ended; Mastra's client says the same refusals of a reopening to `onError`.
+ * gone or a session ended. Mastra's client says its other terminal errors to `onError` too ("the
+ * subscription is dead after this fires"), so those open it again here with the same pause.
  */
 async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
   // React mounts a screen twice in development: the first is let go before this turn ends.
@@ -139,17 +140,26 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
   let pause = FIRST_RETRY_MS
   while (!signal.aborted) {
     try {
+      const over = Promise.withResolvers<boolean>()
       const subscription = await hooks.builder.session.subscribe({
         onEvent: (event) => heard(hooks, event),
         reconnect: true,
         onReconnect: () => resync(hooks),
-        onError: (error) => void refused(hooks, error),
+        onError: (error) => void refused(hooks, error).then(over.resolve),
       })
       if (signal.aborted) return subscription.unsubscribe()
-      signal.addEventListener('abort', () => subscription.unsubscribe(), { once: true })
+      signal.addEventListener(
+        'abort',
+        () => {
+          subscription.unsubscribe()
+          over.resolve(true)
+        },
+        { once: true },
+      )
       hooks.onFollowing()
       reread(hooks)
-      return
+      pause = FIRST_RETRY_MS
+      if (await over.promise) return
     } catch (error) {
       if (signal.aborted || (await refused(hooks, error))) return
     }
