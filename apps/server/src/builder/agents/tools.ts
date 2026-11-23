@@ -237,8 +237,8 @@ function writeTool(deps: Deps, tool: PresetFrozenTool, write: WriteShape) {
 /**
  * The version's tools, one `createTool` each under `tool_<slug>` (step 24.3), as the version holds
  * them: a read's call goes through the company's door with the fixed values over what the model
- * sent, so the model never changes one, counted in the turn's 50 calls, and the model gets the cut;
- * a write's goes through the write funnel the same way (step 24.5). The writes are apart, for the
+ * sent, so the model never changes one, counted in the turn's `CONNECTOR_CALLS_PER_TURN` calls, and
+ * the model gets the cut; a write's goes through the write funnel the same way (step 24.5). The writes are apart, for the
  * program does not call them (criterion 10). A connection the Projeto no longer offers has no input,
  * and its read answers `NOT_GRANTED`.
  */

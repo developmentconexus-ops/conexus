@@ -908,6 +908,55 @@ changes, reread the line it names.
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
 
+## aws-cdk-lib 2.278.0: the table buckets' catalog in Lake Formation mode (O lago da empresa nasce e some)
+
+- **Library line.** `CfnResourceProps` of `AWS::LakeFormation::Resource`
+  (`aws-cdk-lib/aws-lakeformation/lib/lakeformation.generated.d.ts:1533`) has five properties and
+  no `WithPrivilegedAccess`. Without it, whoever registers the table buckets' location gets no Lake
+  Formation permission on it, and `AWS::Glue::Catalog` failed in the lab's platform deploy with
+  "Insufficient Lake Formation permission(s)" on `bucket/*`: the CDK execution role that calls
+  `CreateCatalog` is no lake administrator.
+- **Hand-made piece.** Three `AwsCustomResource` of `aws-cdk-lib` in `infra/aws/lib/tables.ts`, on
+  one function role, `conexus-s3tables-catalogo`: `TableBucketsRegistration` calls
+  `RegisterResource` with `WithFederation` and `WithPrivilegedAccess` and, on delete,
+  `DeregisterResource`; `TableBucketsLocationGrant`, made after it, revokes on delete the
+  `DATA_LOCATION_ACCESS` the registration gave; `TablesCatalog` calls `CreateCatalog` and
+  `DeleteCatalog`, with both default permissions empty. It is the card's fallback for the native
+  types (row 15), chosen in https://github.com/developmentconexus-ops/conexus/pull/1247; the
+  function's policy grows by the reads the resource schema's handlers do on the Lake Formation role
+  (https://github.com/developmentconexus-ops/conexus/pull/1249).
+- **Why.** The documented prerequisite of the `S3 Tables` integration: a principal with
+  `RegisterResource`, `RegisterResourceWithPrivilegedAccess` and `CreateCatalog` that registers the
+  location receives only `DATA_LOCATION_ACCESS` there, so no new role becomes a lake administrator
+  (the card's L.9 stays). Revalidate when `AWS::LakeFormation::Resource` gains
+  `WithPrivilegedAccess`.
+
+## @aws-sdk/client-cloudformation and @aws-sdk/client-s3tables 3.1175.0: what a failed lake creation leaves (O lago da empresa nasce e some)
+
+- **Library line.** `CreateStack` with `OnFailure: DELETE` (`createStack` in
+  `apps/server/src/platform/aws.ts`) undoes a failed stack, but CloudFormation deletes only what it
+  finished creating: one table bucket was left behind in eight creations at once in the lab proof
+  of 2026-11-20, and a removed bucket's name stays held for minutes (lab run 45081093044).
+  No reference checks for a leftover: SaaS Builder Toolkit 0.9.5 has no rollback or cleanup,
+  ParallelCluster 3.16.3 removes only its own files (`pcluster/models/cluster.py:408-410`), and SAM
+  CLI 1.174.0 passes `--on-failure DELETE` (`samcli/lib/deploy/deployer.py:906-913`).
+- **Hand-made piece.** `leftover` of `LakeStacks` (`bucketMayBeLeft` and `clearLeftover` in
+  `apps/server/src/platform/aws.ts`), which `failure` in `apps/server/src/hub/lake/lake.ts` calls
+  after it reads the first failed event. It reads the stack's `DescribeStackEvents` by its id: no
+  bucket event, or a `CREATE_COMPLETE` with `DELETE_COMPLETE` the newest, means nothing is left;
+  anything else, a `CREATE_FAILED` included, searches. The search is `GetTableBucket`,
+  `ListNamespaces`, `DeleteNamespace` for each (a `NotFoundException` counts as done) and
+  `DeleteTableBucket`, under the Hub's session and the company's tag
+  (`ClearTheSessionCompanyLeftover` in `infra/aws/lib/hub.ts`), so a bucket that is not there
+  answers 403. A refusal logs `LAKE_LEFTOVER_REFUSED` at error level, and the lake still becomes
+  `FAILED`. `aws-leftover.test.ts` covers the three recorded diaries and the namespace another read
+  already removed.
+- **Why.** The founder's decision E ("10a", 2026-11-21): after a creation that fails, the Hub
+  removes what is left. Only the bucket is checked: the Hub has no `iam:` or `athena:`, and an
+  orphan reader role or Athena workgroup was never seen. Revalidate on the first orphan of another
+  kind, on a table-bucket quota refusal no live lake explains, or when CloudFormation deletes what a
+  failed creation began.
+
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the

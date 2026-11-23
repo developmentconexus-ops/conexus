@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import {
   ASSISTANT_TOOL,
+  ATTEMPT_KEY_HEADER,
   CompanyId,
   ConnectionId,
   ConversationId,
@@ -20,7 +21,7 @@ import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Config } from '../../platform/config.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
-import { silent as silentLog } from '../../platform/test-database.ts'
+import { silent as silentLog, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { companyToolScope, companyTools } from '../company-tools/public.ts'
 import type { RunScope } from '../controller-kit/public.ts'
 import { conversing, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
@@ -169,6 +170,27 @@ export async function assisting(
     calls,
     reads,
   }
+}
+
+/** The company's ChatGPT subscription, signed in through the double's device flow (`plantCodex`). */
+export async function subscribed(on: Awaited<ReturnType<typeof assisting>>) {
+  await on.hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'openai_codex')`,
+    [on.companyId],
+  )
+  const signIns = `${on.company}/model-account-sign-ins`
+  const begun = await post(on.hub, on.ana, signIns, {
+    owner: 'company',
+    kind: 'openai_codex',
+    label: 'Assinatura',
+  })
+  assert.equal(begun.statusCode, 201, begun.body)
+  const polled = await on.hub.app.inject({
+    method: 'POST',
+    url: `${signIns}/${String(Object(begun.json()).signInId)}/poll`,
+    headers: { origin: TEST_ORIGIN, cookie: on.ana.cookie, [ATTEMPT_KEY_HEADER]: randomUUID() },
+  })
+  assert.equal(polled.statusCode, 200, polled.body)
 }
 
 /** A new conversation of the Assistant, created by `person` with `body`; its Hub URL. */

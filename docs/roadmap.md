@@ -54,8 +54,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b");
-depois vêm os conectores por classe e a porta de fora. Fechado o Registro, segue a etapa 1
-(https://github.com/developmentconexus-ops/conexus/pull/1231). As etapas, os dez de `D3` e o
+depois vêm os conectores por classe e a porta de fora. A etapa 1 fechou; segue a 2. As etapas, os dez de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**

@@ -1,13 +1,10 @@
 import { CHECK_LIMITS } from '@conexus/app/check'
-import type { SkillFiles } from '@conexus/app/skills'
 import { readSkills } from '@conexus/app/skills'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
-import { createSkill, validateSkillContent } from '@mastra/core/skills'
-import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { GrantedConnection } from '../connectors/public.ts'
-import { turnDate } from '../controller-kit/public.ts'
+import { skillOf, turnDate } from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { chosenModel } from '../model-accounts/public.ts'
@@ -67,25 +64,6 @@ export function builderInstructions(deps: {
     })
     return `${prompt}\n\n${dataOrder()}`
   }
-}
-
-const Metadata = z.object({ name: z.string(), description: z.string() })
-
-/** A skill of `@conexus/app/skills`, checked as Mastra checks a `SKILL.md` it loads (code C27). */
-export function skillOf(files: SkillFiles) {
-  const checked = validateSkillContent({ content: files.content, directoryName: files.directory })
-  if (!checked.valid) {
-    throw new Failure('INTERNAL_UNEXPECTED', {
-      details: {
-        reason: 'SKILL_INVALID',
-        skill: files.directory,
-        errors: checked.errors.join('; '),
-      },
-    })
-  }
-  const { name, description } = Metadata.parse(checked.metadata)
-  const instructions = checked.instructions ?? ''
-  return createSkill({ name, description, instructions, references: files.references })
 }
 
 /**
