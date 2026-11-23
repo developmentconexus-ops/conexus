@@ -29,7 +29,8 @@ cartão da etapa seguinte entrar.
 
 A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago: o cartão dela está em
 [a-primeira-copia-chega-ao-lago.md](../a-primeira-copia-chega-ao-lago.md), à espera da aprovação do
-fundador.
+fundador. Ele vem em cinco partes: a parte 0, em que o legado sai do banco da empresa; a etapa O
+conector no padrão novo; e as partes 1 a 3 da cópia.
 
 As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
@@ -54,13 +55,29 @@ registro, do 0070 ao 0080, traz o critério, o resultado medido e o que a prova 
 
 As etapas, em ordem (2026-11-21: "G1 b e lembrar que mercado livre tem na Nekt como referencia e ja
 usamos"). Cada etapa tem o nome de uma capacidade que vale para toda classe de conector; o sistema
-que a prova fica ao lado. Uma capacidade nova nasce desenhada com duas classes. Cada etapa tem
-estudo e cartão próprios e fecha quando o fundador a usa.
+que a prova fica ao lado. Uma capacidade nova nasce desenhada com duas classes. Cada etapa tem estudo e cartão próprios e fecha quando o fundador a usa. A etapa O conector no padrão
+novo é a exceção: ela é uma seção do cartão da etapa 2, porque fica entre duas partes dele, e
+`docs/steps/` guarda um cartão por trilha (delivery L5). O fundador, 2026-11-23, ao estudo do ao vivo
+(`conexus-ao-vivo-estudo`): "Aprovado suas recomendacoes conector". A recomendação aprovada:
+
+- **A (a).** As pastas do Sankhya e do Mercado Livre são refeitas do zero, e também cada peça do Hub
+  que diverge do decidido. As peças do Hub que já são o decidido ficam (o executor, o login por
+  autorização, as leituras como ferramentas e a escrita com o cartão). A Fábrica é provada no TOTVS.
+- **B (a).** Na etapa nova, gravar no Caderno pede o sim de quem gerencia a ligação. O Caderno sai na
+  etapa do Negócio ([0064](../../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md)).
+- **C (a).** A etapa própria fica entre a parte 0 e a parte 1 da etapa 2, com um pull request por
+  conector, sem o Assistente perder as leituras ao vivo.
+- **Uma tabela por ligação** no lago (`conexus-n5-duas-ligacoes`).
+
+A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos (spec 02) vêm numa
+etapa própria logo depois da etapa 2. O passo "o que copiar" dessa janela é a seção Tabelas no lago,
+que a etapa 2 cria.
 
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
 | 2. A primeira cópia chega ao lago | Uma tabela de um sistema ligado chega inteira, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | Uma tabela do Sankhya; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
+| O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
 | 4. O app lê o que foi publicado | Um app publicado mostra o dado do lago sem nunca ver uma tabela pela metade? | Qualquer tabela copiada |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
@@ -92,9 +109,9 @@ A etapa 1 deixa às seguintes o que o estudo dela achou e o cartão não constru
 Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
 - **Os conectores por classe**, nesta ordem: o TOTVS, criado pela Fábrica, como fonte do lago; o
-  Gmail e o Drive como ferramenta do agente, que é o `D1`; a planilha no lago; o SharePoint; e o
-  resto do `D3`. O TOTVS espera o fundador dizer qual e de que empresa vem o acesso; o Google e o
-  SharePoint esperam o app de login de cada um.
+  Gmail com a Agenda e o Drive como ferramenta do agente, que é o `D1`; a planilha do Drive no lago;
+  o e-mail e a agenda do Outlook; o SharePoint; a NF-e; e o Sicoob. O TOTVS espera o fundador dizer
+  qual e de que empresa vem o acesso; o Google e a Microsoft esperam o app de login de cada um.
 - **A porta de fora**, para sistemas e agentes de fora lerem o lago pelo Hub (2026-11-21: "P3
   sim"). Ela é desenhada quando chegar; chave de API, por ora, não entra.
 
@@ -107,11 +124,25 @@ continuar parada; o botão Seguir só entra se alguém pedir. O estudo da etapa 
 conexão ou da tabela, com a rodada do lago na mão, e se usa as tabelas `copy_follower`,
 `alert_recipient` e `copy_notice`, que estão no `main` sem uso.
 
-O motor de cópias de hoje sai em três pedaços, cada um na etapa que substitui o que ele fazia, porque
-o lago é a única fonte e nenhuma tabela mora em dois lugares (fundador, 2026-11-23: "nao e pra ter
-essa opcao [...] nossa fonte e o lago"). Na etapa 2 sai o que cria cópia no banco da empresa; na
-etapa 3, a leitura do contrato pelo banco da empresa, a Amostra e os logins de leitura por papel; na
-etapa 4, a liberação a Projetos, o esquema `sync` e os logins `conexus_sync` e `conexus_read`.
+O motor de cópias de hoje sai inteiro na parte 0 da etapa 2, antes de o padrão novo entrar, porque o
+lago é a única fonte e nenhuma tabela mora em dois lugares. O fundador, 2026-11-23: "nao e pra ter
+essa opcao [...] nossa fonte e o lago"; "o que a gente tem atualmente... do Legacy, de Sunk, Mercado
+Livre, tem que ser desfeito para entrar o novo jeito"; e, ao estudo do conector no estilo novo, "sim"
+para tirar na parte 0 também o que lê o banco da empresa. Saem na parte 0:
+
+- o que cria cópia no banco da empresa;
+- a leitura do contrato pelo banco da empresa, a Amostra e os logins de leitura por papel;
+- a liberação a Projetos, o esquema `sync` e os logins `conexus_sync` e `conexus_read`;
+- as tabelas das cópias no banco do Hub.
+
+Até a etapa 3, o Assistente lê os sistemas só ao vivo; até a etapa 4, os apps ficam sem a tabela
+copiada.
+
+No lago, o nome de uma tabela é de negócio, em português, declarado no kit: `sankhya_notas`, com o
+rótulo "Notas e pedidos" e a `TGFCAB` ao lado, como origem. Uma tabela que o kit não declara fica com
+o código. Duas ligações do mesmo sistema dão duas tabelas. O fundador respondeu em 2026-11-23, ao
+estudo `conexus-conector-estilo-novo-estudo`, com "okay" às duas primeiras letras e "sim" às duas
+seguintes.
 
 Ficam para depois do lago implementado, por palavra do fundador em 2026-11-20: o tratamento e a
 qualidade dos dados, a camada Negócio no lago e o agente de dados. Por decisões anteriores: o
@@ -196,7 +227,11 @@ Registro de dados é só do dono e do administrador, sem prazo por ora (E4a; 202
 
 ## Os sistemas de `D3`
 
-Os dez sistemas de `D3` saem da antiga fila do molde (2026-10-30: "1. Sim 2. Sim 3. Sim"). Há uma
+O fundador, 2026-11-23: "Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS - Gmail com
+Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob". São onze, e a
+lista substitui a da antiga fila do molde (2026-10-30: "1. Sim 2. Sim 3. Sim") e a que o estudo do ao
+vivo recomendava. Os de fora (Bling, Omie, Conta Azul, Shopee, Nuvemshop, os extratos de banco e a
+Jet) voltam quando um cliente pedir, como declaração do kit. Há uma
 fonte só de conectores, o nosso kit (decisão
 [0069](../../decisions/0069-connectors-one-source-the-kit.md), emendada pela
 [0071](../../decisions/0071-connectors-kit-live-copies-singer.md)): o kit serve o ao vivo, a
@@ -206,10 +241,12 @@ kit por um adaptador só, que lê a declaração de cópia de cada tabela
 declarações do kit, escritas pela IA a partir da documentação do sistema e conferidas com uma
 leitura de teste.
 
-1. Os sistemas das quatro empresas.
-2. Bling, Omie (login por chave fixa) e Conta Azul, todos declarações do kit.
-3. Shopee, Nuvemshop, Google Sheets, NF-e recebida, extratos de banco. A Jet (20.3) quando alguém a
-   usar.
+1. O Sankhya e o Mercado Livre, refeitos no padrão novo na etapa 2.
+2. O HubSpot, no `D1`.
+3. O TOTVS, feito pela Fábrica.
+4. O Gmail com a Agenda e o Google Drive.
+5. O e-mail e a agenda do Outlook, e o SharePoint.
+6. A NF-e e o Sicoob.
 
 Em espera: 19.2 Central de Ajuda.
 
@@ -223,6 +260,8 @@ da empresa, o item 1, volta como a etapa do Negócio, com cartão próprio, e pa
 consumidos pela trilha Agentes e Apps.
 
 1. **A Ontologia da empresa**: os conceitos de cada demanda, provados e aprovados na página Conhecimento.
+   As anotações do Caderno viram propostas a provar de novo, e o Caderno sai (2026-11-23, B do
+   conector).
 2. **O fluxo da empresa**: os estados e as passagens, lidos dos documentos ou do histórico; entre dois sistemas, sem ligação.
 3. **A saúde da Ontologia**: a prova refeita todo dia e o aviso no Início.
 4. **Ligações e duas fontes**; sobe antes da saúde se o próximo cliente tiver dois sistemas no fluxo principal.

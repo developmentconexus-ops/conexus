@@ -54,9 +54,10 @@ target nosso que grava e o dinheiro exato. O lugar onde a tarefa roda e o lago e
 
 ## Aberto
 
-- As decisões do cartão do Lago 2, no PR 1260 e na página
-  [Decisões do Lago 2](https://claude.ai/artifact/8BmoqomUhP9mMTrGtfk6Du).
-- O nome de negócio da tabela e uma tabela por ligação, em [Conectores](conectores.md).
+- A aprovação do cartão do Lago 2, no PR https://github.com/developmentconexus-ops/conexus/pull/1260.
+  As decisões dele já estão respondidas: as da página
+  [Decisões do Lago 2](https://claude.ai/artifact/8BmoqomUhP9mMTrGtfk6Du), e o nome de negócio da
+  tabela e uma tabela por ligação, em [Conectores](conectores.md).
 
 ## Estudos de origem
 
@@ -64,7 +65,7 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
-| 2026-11-23 | `conexus-n5-duas-ligacoes` | aberto | - | Uma tabela por ligação: as quatro referências separam pela credencial e juntam só na camada seguinte; uma tabela única quebraria a passada inteira da [0080](../decisions/0080-copy-declared-per-table-raw-appends.md). |
+| 2026-11-23 | `conexus-n5-duas-ligacoes` | decidido | PR 1260 (cartão do Lago 2) | Uma tabela por ligação: as quatro referências separam pela credencial e juntam só na camada seguinte; uma tabela única quebraria a passada inteira da [0080](../decisions/0080-copy-declared-per-table-raw-appends.md). |
 | 2026-11-23 | `conexus-lago2-reestudo` | decidido | PR 1260 (cartão em aprovação) | O modelo Vendas fugia do padrão: regra de negócio, 11 de 450 colunas e nome de negócio; a cópia traz a tabela inteira, e o lago é a única fonte. |
 | 2026-11-23 | `conexus-lago2-estudo` | superado, por conexus-lago2-reestudo | PR 1260 | Estudo da primeira cópia no lago; um adaptador copiou os falsos do Sankhya e do HubSpot pelo Meltano até um lago local; o Sankhya trouxe só o que mudou. |
 | 2026-11-23 | `conexus-lago2-cartao-2` | em curso | PR 1260 | Cartão reescrito com o lago como única fonte: 13 unidades, 69 critérios, 38 linhas de referência; a parte 0 tira a cópia do banco da empresa. |

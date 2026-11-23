@@ -18,6 +18,20 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
 - Os conectores do marco `D3`. O fundador, 2026-11-23: "Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS - Gmail com Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob".
   São onze, e a lista substitui a recomendada na seção 1.5 de `conexus-ao-vivo-estudo` (a decisão D
   do estudo).
+- O ao vivo refeito, ao estudo `conexus-ao-vivo-estudo`. O fundador, 2026-11-23: "Aprovado suas
+  recomendacoes conector".
+  - **A (a):** as pastas do Sankhya e do Mercado Livre são refeitas do zero, com os mesmos ids, e
+    cada peça do Hub que diverge do decidido também. As que já são o decidido ficam: o executor, o
+    login por autorização, as leituras como ferramentas e a escrita com o cartão. A Fábrica é provada
+    no TOTVS.
+  - **B (a):** gravar no Caderno pede o sim de quem gerencia a ligação; o Caderno sai na etapa do
+    Negócio (0064).
+  - **C (a):** uma etapa própria, O conector no padrão novo, entre a parte 0 e a parte 1 do Lago 2,
+    com um pull request por conector.
+  - **Uma tabela por ligação** (`conexus-n5-duas-ligacoes`): a segunda leva o nome da ligação.
+- Os nomes no lago, ao estudo `conexus-conector-estilo-novo-estudo`, em 2026-11-23: o nome de negócio
+  em português declarado no kit (`sankhya_notas`, "Notas e pedidos", origem `TGFCAB`); a tabela que o
+  kit não declara fica com o código; o que lê o `sync` sai na parte 0 do Lago 2.
 - Aprovações: [e19-conectores](../approvals/e19-conectores.md),
   [e191-ligar-por-oauth](../approvals/e191-ligar-por-oauth.md),
   [e20-app-com-dados](../approvals/e20-app-com-dados.md),
@@ -68,27 +82,10 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
 
 ## Aberto
 
-O desenho do ao vivo já está quase todo decidido: o executor único, o login por autorização, o
-funil de escrita com o cartão e as leituras como ferramentas são a [0056](../decisions/0056-connectors-kit-and-one-executor.md), a [0057](../decisions/0057-connections-by-oauth.md) e a [0062](../decisions/0062-a-write-declares-its-provider-facts.md), com as
-etapas 24.3.5 e 24.5. O código diverge do decidido em dez pontos, que saem ou são refeitos: a cópia
-dentro do kit, a classe da credencial, a renovação no Hub, o número exato, a skill escrita à mão, o
-Caderno, a descrição do sistema, a janela Ligar, o Desligar e as pastas do Sankhya e do Mercado Livre
-(`conexus-ao-vivo-estudo`, 2026-11-23). A decisão D do estudo já está em Decidido. Ficam para o fundador:
-
-- **A. O alcance do "refeito" de 2026-11-23.** O estudo recomenda refazer do zero as pastas do
-  Sankhya e do Mercado Livre e as peças do Hub que divergem; as que já são o decidido ficam.
-- **B. Quando o Caderno sai.** A [0064](../decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) já decidiu que ele sai e vira proposta da Ontologia. O estudo
-  recomenda que a gravação peça o sim de quem gerencia a ligação já na etapa nova, e que o Caderno saia
-  na etapa do Negócio.
-- **C. Onde a troca entra no roteiro.** O estudo recomenda uma etapa própria, "O conector no padrão
-  novo", entre a parte 0 e a parte 1 do Lago 2, com um pull request por conector, para o Assistente
-  não perder as leituras ao vivo.
-- **Duas ligações do mesmo sistema** (`conexus-n5-duas-ligacoes`): uma tabela por ligação,
-  recomendada; as quatro referências separam pela credencial e juntam só na camada seguinte.
-- **O nome técnico de cada tabela no lago** (`conexus-conector-estilo-novo-estudo`): o nome de
-  negócio declarado no kit (`sankhya_notas`), com `TGFCAB` só como origem.
-- **O novo cartão do Lago 2** (PR 1260), reescrito com o lago como única fonte, à espera da
-  aprovação.
+- **O novo cartão do Lago 2** (PR https://github.com/developmentconexus-ops/conexus/pull/1260), com a
+  etapa O conector no padrão novo entre a parte 0 e a parte 1, à espera da aprovação.
+- **A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos** (spec 02): uma
+  etapa própria logo depois do Lago 2, com estudo e cartão.
 
 A Nango e o Composio já foram lidos (as linhas de 2026-11-14 a 2026-11-20 abaixo). O firstmate parou
 uma pesquisa nova deles no estudo do ao vivo, que reusou o decidido.
@@ -99,8 +96,8 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
-| 2026-11-23 | `conexus-conector-estilo-novo-estudo` | aberto | PR 1260 (cartão do Lago 2) | O nome técnico no lago deve ser de negócio em português, declarado no kit (sankhya_notas), com TGFCAB só como origem; nenhum ERP da Nekt usa o código da tabela. |
-| 2026-11-23 | `conexus-ao-vivo-estudo` | aberto | - | O ao vivo já está decidido nas [0056](../decisions/0056-connectors-kit-and-one-executor.md), [0057](../decisions/0057-connections-by-oauth.md) e [0062](../decisions/0062-a-write-declares-its-provider-facts.md); o código diverge em dez pontos; quatro decisões ao fundador: alcance, Caderno, onde entra, os dez do `D3`. |
+| 2026-11-23 | `conexus-conector-estilo-novo-estudo` | decidido | PR 1260 (cartão do Lago 2) | O nome técnico no lago deve ser de negócio em português, declarado no kit (sankhya_notas), com TGFCAB só como origem; nenhum ERP da Nekt usa o código da tabela. |
+| 2026-11-23 | `conexus-ao-vivo-estudo` | decidido | PR 1260 (a etapa O conector no padrão novo) | O ao vivo já está decidido nas [0056](../decisions/0056-connectors-kit-and-one-executor.md), [0057](../decisions/0057-connections-by-oauth.md) e [0062](../decisions/0062-a-write-declares-its-provider-facts.md); o código diverge em dez pontos; quatro decisões ao fundador: alcance, Caderno, onde entra, os dez do `D3`. |
 | 2026-11-21 | `conexus-conectores-documentos` | decidido | [0071](../decisions/0071-connectors-kit-live-copies-singer.md) (G2 a) | A loja do Meltano não tem Drive, Outlook nem OneDrive; taps prontos ficam fora até um sistema pedir; documento: tabela no lago, original em Arquivos, texto no Knowledge. |
 | 2026-11-20 | `conexus-a0e-sankhya-decimal` | decidido | [0071](../decisions/0071-connectors-kit-live-copies-singer.md) | O gateway manda o NUMBER como número JSON exato; o JSON.parse do kit perde dígitos a partir do 16º; ler pelo context.source. |
 | 2026-11-20 | `conexus-a0d-sankhya-kit-mes` | decidido | [0080](../decisions/0080-copy-declared-per-table-raw-appends.md); [0063](../decisions/0063-copy-models-proof.md) | O limite é a página de 500 do kit, não o SQL: 397 contra 3.140 linhas/s; levou a subir a página para 5.000 linhas. |

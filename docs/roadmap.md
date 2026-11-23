@@ -49,13 +49,14 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | --- | --- | --- |
 | `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Como a [trilha Dados](steps/trilhas/dados.md) descreve |
 | `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no lago da empresa na rodada seguinte. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
-| `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
+| `D3`. Onze sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Onze sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
 | `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas do lago ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow com chave única |
 | `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b");
-depois vêm os conectores por classe e a porta de fora. A etapa 1 fechou; segue a 2. As etapas, os dez de `D3` e o
+depois vêm os conectores por classe e a porta de fora. A etapa 1 fechou; segue a 2, com a etapa O
+conector no padrão novo entre a parte 0 e a parte 1 dela. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
