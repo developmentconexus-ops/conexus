@@ -24,12 +24,7 @@ at launch.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
    finds any fact's owner [0002] [0003].
 
-**What the product never does.** It never invents a value or simulates progress: a figure shown as
-from a system came from a real read, and an unknown is shown as unavailable, never as zero.
-It never lets the model declare work done; Conexus owns the run's state. It never overwrites someone
-else's newer work. It never shows a credential. It never publishes on its own. Conexus is not an ERP
-replacement, a database console or a drag-and-drop tool: people create by conversation, the result
-is real code, and the official data stays in the company's systems.
+**What the product never does** is [`VISION.md`](../VISION.md), in Portuguese.
 
 **Who has a stake.** The founder: product owner, operator, and the person who closes each step by
 using it. Company administrators and members, who use the Hub and apps. The agents that build
