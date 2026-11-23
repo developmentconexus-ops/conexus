@@ -44,8 +44,8 @@ A proof above fails; the fallback covers what failed.
 
 ## State
 
-Accepted 2026-11-21. Founder, 2026-11-20: F-C "okay" (if the proof fails, an IAM role per role);
+Accepted 2026-11-21. Founder, 2026-11-20: F-C "okay" (fallback: an IAM role per role);
 2026-11-21: "p1 a"; on API keys, "p2 foi apenas um exemplo que vi da Nekt de permissao, por agora
-nem vamos utilizar isso".
+nem vamos utilizar isso". Amended by [0082](0082-the-lake-holds-tables-and-files.md).
 
 [0073]: 0073-platform-by-cdk-one-stack-per-company.md

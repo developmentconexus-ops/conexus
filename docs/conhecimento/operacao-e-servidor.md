@@ -12,6 +12,8 @@ operar está em [hub-server](../how-to/hub-server.md) e em [ci-health](../how-to
 - [0037](../decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md): PostgreSQL 18 e Drizzle 1.0 no banco do Hub.
 - [0081](../decisions/0081-publish-on-the-merge-of-a-release-note.md), proposto em 2026-11-22: publicar pelo merge de uma nota de versão. Aprovação:
   [publicar-pelo-merge-da-nota](../approvals/publicar-pelo-merge-da-nota.md).
+- Em 2026-11-23 o workflow do laboratório (`lab.yml`) saiu, e com ele o afrouxamento da regra S36 de 2026-11-19 (o script vinha de outro ramo). As visitas ao servidor passam
+  pelo SSH de [hub-server](../how-to/hub-server.md), e cada escrita no servidor leva a palavra do fundador.
 
 ## Provado
 
@@ -36,8 +38,6 @@ operar está em [hub-server](../how-to/hub-server.md) e em [ci-health](../how-to
 
 - De onde vem a saída de dados do banco do Hub, cerca de 460 MB por dia (o estudo
   `conexus-hub-egress-source`, na fila).
-- O Hub novo não sobe sem as variáveis da AWS no ambiente do servidor (`conexus-hub-env-aws`, em
-  curso).
 - As etapas 16 (atualizar sem cair) e 22 (cópia e restauração do Hub) têm cartão sem aprovação.
 - O cartão de visita ao servidor sem SSH foi cancelado pelo fundador.
 
@@ -47,7 +47,7 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
-| 2026-11-23 | `conexus-hub-env-aws` | em curso | - | A primeira publicação pela nota parou: o Hub novo não sobe sem as variáveis da AWS no ambiente do servidor; um script de laboratório as preenche fora do Git. |
+| 2026-11-23 | `conexus-hub-env-aws` | decidido | - | A primeira publicação pela nota parou: o Hub novo não sobe sem as variáveis da AWS no ambiente do servidor; elas foram gravadas fora do Git e chegam ao Hub, conferido em 2026-11-23. |
 | 2026-11-23 | `conexus-cartao-visita-sem-ssh` | superado, por cancelado pelo fundador | - | Cancelado pelo fundador antes de qualquer resultado, por não ter relação com o desenvolvimento do produto. |
 | 2026-11-22 | `conexus-servidor-acesso-estudo` | aberto | - | A porta sem SSH já existe: o executor do GitHub no servidor rodou 8 vezes pelo lab.yml, e seu usuário está no grupo docker; propõe um cartão de visita. |
 | 2026-11-22 | `conexus-release-pelo-merge-cartao` | decidido | [publicar-pelo-merge-da-nota](../approvals/publicar-pelo-merge-da-nota.md); PR 1228 | Cartão curto com cinco unidades e dez critérios: prova da tag pelo GITHUB_TOKEN, conferência da nota, Publish no push, gancho que aceita push e recusa Release, decisão [0081](../decisions/0081-publish-on-the-merge-of-a-release-note.md). |
