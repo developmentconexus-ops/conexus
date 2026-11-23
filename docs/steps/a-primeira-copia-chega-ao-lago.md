@@ -69,9 +69,12 @@ As versões que a construção instala são as que o estudo leu e rodou:
    - **PS1, as colunas de arquivo** (`LAK` seção 5): as colunas `BLOB`, `CLOB`, `NCLOB`, `LONG`,
      `LONG RAW`, `RAW` e `BFILE` das 42 tabelas e das candidatas, com o maior valor de cada uma; o
      nome e o tipo da coluna do XML na `TGFNFE`; e a tabela de anexos do Sankhya, com as colunas e o
-     maior anexo. Se uma das 42 tiver uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor, a U3 não a
-     declara antes de o fundador ver a coluna e o maior valor (T.41). A tabela de anexos não entra
-     nesta etapa: é o alvo da etapa 3a.
+     maior anexo. Com o resultado, antes da U3, o firstmate fixa o teto da coluna binária na linha,
+     do maior valor medido e do limite de 32 MB da PS4 (`LAK` 1.1: "o teto sai da PS1 e do limite de
+     32 MB"). Uma coluna binária abaixo do teto vai na linha, no tipo binário (T.36). Uma acima dele,
+     a coluna do XML se não for de texto, e uma `BFILE` (um ponteiro para um arquivo fora do banco)
+     param a U3 naquela tabela, e o firstmate leva ao fundador a coluna e o maior valor (T.41). A
+     tabela de anexos não entra nesta etapa: é o alvo da etapa 3a.
    - **P2**: a chave, as colunas de alteração, as datas e os índices das tabelas que nenhuma sonda
      leu (a `TGFDIN`, a `TCBLAN`, a `TGFFIN` e as outras de `SK:283`).
    - **P3**: páginas cronometradas de 1 MiB na `TGFDIN`, `TGFITE`, `TCBLAN`, `TGFCAB`, `TGFFIN` e
@@ -162,9 +165,9 @@ o mapa do desenho, entrevistou você, e você confirmou o desenho. O cartão mud
   Databricks: o arquivo mora num depósito de arquivos da empresa, ligado à sua linha numa tabela do
   lago. Eles entram numa etapa própria, a 3a, "O arquivo chega ao lago, ligado à sua linha", logo
   depois da 3 e antes do XML lido em linhas. Esta etapa fica no seu escopo, sem fechar porta para
-  eles: a sonda PS1 mostra antes da U3 se alguma das 42 tabelas tem uma coluna binária com valor, e
-  essa tabela espera você ver o número (T.41). O desenho está no registro 0082, escrito nesta mudança,
-  que emenda a 0070, a 0071, a 0073, a 0078 e a 0080. Os poderes de `S3` só no depósito de cada empresa entram
+  eles: a sonda PS1 mede antes da U3 as colunas de arquivo das 42 tabelas, e uma coluna binária
+  grande demais para a linha espera você ver o número (T.41). O desenho está no registro 0082, novo
+  neste pull request, que emenda a 0070, a 0071, a 0073, a 0078 e a 0080. Os poderes de `S3` só no depósito de cada empresa entram
   na 3a.
 
 **Como a etapa chega até você: em três partes.** A parte 0, a etapa do conector e a parte 1. Cada
@@ -259,8 +262,9 @@ No Mercado Livre, que tem a credencial exclusiva até a etapa 5, a janela vai do
   (E), para o L.2, o primeiro teste de uma tarefa contra o seu Sankhya de dentro da AWS, e para as
   sondas só de leitura do Sankhya completo, a P6 num dia útil. Se o Sankhya recusar o endereço da
   AWS, nada da parte 1 é construído e a etapa volta a você. Se a P6 der mais que o dobro, a primeira
-  carga "na hora" volta a você com o número. Se a PS1 achar numa das 42 tabelas uma coluna binária com
-  valor, você vê a coluna e o maior valor antes de essa tabela entrar.
+  carga "na hora" volta a você com o número. Se a PS1 achar numa das 42 tabelas uma coluna binária acima
+  do teto, ou a coluna do XML não for de texto, você vê a coluna e o maior valor antes de essa tabela
+  entrar.
 - **Na parte 1:** dá a palavra para as permissões novas no banco do Hub (data D11): o login da
   empresa ler a linha do próprio lago (H), as tabelas novas da cópia e a do link.
 - **No fim de cada parte:** faz o roteiro dela, diz o que viu e aprova os textos novos da tela, que
@@ -331,7 +335,7 @@ Nada cruza a visão.
   até a etapa 7. A passada inteira de domingo do motor de hoje não vem (T.17).
 - **O binário muito grande no depósito** (imagem, PDF anexado): a regra de tamanho entra na 3a
   (`LAK` 1.1). Nesta etapa o binário fica na linha, no tipo binário do Iceberg, abaixo do limite de
-  32 MB do Athena (PS4), e só numa tabela que passou pela PS1 (T.41).
+  32 MB do Athena (PS4), e abaixo do teto que sai da PS1 (T.41).
 - **O histórico nas outras tabelas** (decisão A): só a dos dados da NF-e o liga.
 - **A descrição do sistema** (spec 02, `C1`): o fluxo que você confirmou não a usa; ela entra com a
   etapa que a pedir.
@@ -988,7 +992,7 @@ que está feito como atual").
 | T.38 | A hora de partida é `lake_copy.created_at`, a hora em que a pessoa clicou **Ligar e copiar agora**; mudar o intervalo não a muda | O fundador: "o intervalo contado de quando a ligação foi feita" (Relógio); a cópia da ligação nasce nesse clique | Ancorar em `connection.created_at` |
 | T.39 | Gravar a cópia com uma tabela nova dispara na hora uma rodada da ligação, que lê inteira só a nova; a página de uma tabela mostra o tipo da rodada daquela tabela (`lake_table_run.whole`) | A Nekt aplica a tabela nova na fonte viva, e ela começa lendo tudo (`MAPA` 1.3); disparar na hora é o "a primeira carga sai na hora" da janela, para a tabela nova | Esperar o relógio |
 | T.40 | A U3 acrescenta ao Sankhya os assuntos `fiscal` e `contabil`, com o rótulo e a parte da skill; as tabelas usam os assuntos de hoje (`cadastros`, `produtos`, `vendas`, `estoque`, `financeiro`, `precos`, `logistica`, `C/packages/connectors/src/sankhya/operations/index.ts:68-75`) e esses dois | O grupo de uma tabela é um assunto do conector (critério 10), e o completo traz o fiscal e o contábil ("Sim, núcleo+fiscal+contábil") | Agrupar as fiscais e contábeis num assunto de hoje |
-| T.41 | Esta etapa não fecha porta para os arquivos. Uma tabela das 42 com uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor (PS1) não é declarada antes de o fundador ver a coluna e o maior valor; a tabela de anexos do Sankhya fica para a 3a. O resto já deixa a porta aberta: as colunas `_` continuam do motor (`C/packages/connectors/src/kernel/copy.ts:145-151`, que a U3 leva para `tables.ts`, critério 10), as propriedades `conexus.*` já estão no catálogo, a declaração da U3 ganha `parent` e `file` como campos opcionais sem mudar os modos (0080), e o depósito de arquivos entra na pilha por um `UpdateStack` por empresa (0073), que a 3a constrói | A coluna binária é a única porta que esta etapa pode fechar: a forma de uma coluna fica fixa depois de criada, e uma coluna de arquivo acima do teto mora no depósito, não na linha (`LAK` 1.1, seção 4); o fundador, "F1. A F2. A" | Declarar a tabela com o binário na linha e mudar a forma na 3a |
+| T.41 | Esta etapa não fecha porta para os arquivos. Antes da U3, o firstmate fixa o teto da coluna binária na linha, do maior valor que a PS1 medir e do limite de 32 MB da PS4. Uma coluna acima do teto, uma `BFILE` ou a coluna do XML que não for de texto param a U3 naquela tabela, e o firstmate leva ao fundador a coluna e o maior valor, como na T.34; o cartão não decide. A tabela de anexos do Sankhya fica para a 3a. O resto deixa a porta aberta: as colunas `_` continuam do motor (`C/packages/connectors/src/kernel/copy.ts:145-151`, que a U3 leva para `tables.ts`, critério 10); as propriedades `conexus.*` já estão no catálogo; a 3a acrescenta `parent?` e `file?` à `TableDeclaration` sem tocar `TableMode` (a U3 não os cria), e as colunas `_arquivo_*` entram como coluna nova (critério 105). O depósito de arquivos entra na pilha de cada lago pela 3a: hoje o Hub não tem `UpdateStack` (T.5, `C/infra/aws/lib/hub.ts:13-19`), e somar o depósito a um lago que existe não foi provado (`LAK` PF4); se não der, os lagos da etapa 2 são criados de novo e refazem a primeira carga | Uma coluna binária grande na linha é a única porta que esta etapa pode fechar: acima do teto, o arquivo mora no depósito, e trocar a forma de uma coluna que já tem linhas pede refazer a tabela (`LAK` 1.1, seção 4, inferido). Abaixo do teto, o binário na linha é a regra do fundador ("E, não, beleza"); o fundador, "F1. A F2. A" | Declarar a coluna grande na linha; na 3a, apagar a tabela das duas áreas e refazer a primeira carga dela |
 
 ## O reajuste, os passos do firstmate
 
@@ -1919,8 +1923,9 @@ o 16 pelas rotas de teste; o 88 junto com a U4. Hoje nada disso existe.
   builder diz ao firstmate qual.
 - A PS2 mostrou que a porta de consulta não devolve o XML inteiro, ou a PS1, a PS2 ou a PS4 acharam uma
   linha perto do limite de 32 MB do Athena (T.36).
-- A PS1 achou numa das 42 tabelas uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor, e o fundador ainda
-  não viu a coluna e o maior valor (T.41): essa tabela fica fora da lista até a palavra dele.
+- A PS1 achou numa das 42 tabelas uma coluna binária acima do teto, uma `BFILE`, ou a coluna do XML
+  da `TGFNFE` que não é de texto, e o fundador ainda não viu a coluna e o maior valor (T.41): essa
+  tabela fica fora da lista até a palavra dele.
 - O fundador ainda não viu o tamanho da bruta da `sankhya_notas_nfe` (T.34).
 - O dicionário do dublê não tem a forma da sonda, ou a sonda não trouxe o mapa de um tipo.
 - A descoberta do Sankhya achou uma coluna que começa por `_` (T.41).
