@@ -115,14 +115,20 @@ function heard(hooks: Hooks, event: AgentControllerEvent): void {
     hooks.onTitled()
 }
 
-/** A refusal that ends the following: the conversation gone, or the person's session ended. */
+/**
+ * A refusal that ends the following: the conversation gone, or the person's session ended. Any
+ * other error is logged with its code, and the stream opens again.
+ */
 async function refused(hooks: Hooks, error: unknown): Promise<boolean> {
   const failure = error instanceof MastraClientError ? failureOfProblem(error.body) : undefined
   if (failure?.code === 'CONVERSATION_NOT_FOUND') {
     hooks.onGone()
     return true
   }
-  if (failure?.code !== 'SESSION_REQUIRED') return false
+  if (failure?.code !== 'SESSION_REQUIRED') {
+    console.error('SESSION_STREAM_REOPENED', failure?.code ?? error)
+    return false
+  }
   hooks.onEnded()
   return true
 }

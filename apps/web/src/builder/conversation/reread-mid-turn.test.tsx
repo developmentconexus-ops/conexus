@@ -76,3 +76,21 @@ test('o resultado que a leitura salvou de uma chamada que o stream não terminou
   expect(calls).toEqual(['result', 'call'])
   expect(drawn(state).filter((item) => item === SAID)).toHaveLength(1)
 })
+
+test('a cópia salva que cobre a mensagem da execução toma o lugar das partes dela, com o texto que o stream não ouviu', () => {
+  const version: MastraMessagePart = { type: 'data-conexus-version', data: { id: 'v1' } }
+  let state = told([
+    signalStarted('person-1', 'Leia'),
+    AGENT_START,
+    stepStarted('run-1', [{ type: 'text', text: 'Vou ler' }, call('t1', 'call'), version]),
+  ])
+  const step1 = builderSaid(SAID, 'step-1')
+  step1.content = {
+    ...step1.content,
+    parts: [{ type: 'text', text: SAID }, call('t1', 'result'), version],
+  }
+  state = session(state, { type: 'loaded', messages: [personSaid('Leia', 'person-1'), step1] })
+  const run = state.messages.find((message) => message.id === 'run-1')
+  expect(run?.content.parts).toEqual(step1.content.parts)
+  expect(state.messages.map((message) => message.id)).toEqual(['person-1', 'run-1'])
+})
