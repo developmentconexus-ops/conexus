@@ -7,14 +7,14 @@ description: "Studies a Conexus roadmap step before its card: reads the vision a
 
 ## When to use
 
-Every roadmap step's start, before `conexus-scope`. Entry sheets,
-decisions and today's code are input to test.
+Every roadmap step's start, before `conexus-scope`.
 
 ## What it receives
 
 The step's line in [the roadmap](../../../docs/roadmap.md), [the vision](../../../VISION.md), the
 founder's words and his decisions on the subject ([delivery L6](../../../docs/guides/delivery.md)),
-the base commit; for brought code, the entry sheets and the old code at its frozen commit.
+its [knowledge page](../../../docs/conhecimento/README.md), reused before researching, the base
+commit; for brought code, the entry sheets and the old code at its frozen commit.
 
 ## Steps
 
@@ -57,8 +57,8 @@ Past a third of its brought lines changed, it is written new.
 
 ## What it produces
 
-The report ([template](references/report.md)), whose reference table the card copies; for a
-one-way door, a decision record "proposed" with its Criterion.
+The report ([template](references/report.md)), naming what it reused, whose reference table the
+card copies; its knowledge line; for a one-way door, a decision record "proposed" with its Criterion.
 
 ## Stop and ask
 

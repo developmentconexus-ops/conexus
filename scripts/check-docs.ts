@@ -29,6 +29,7 @@ const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^docs\/guides\/delivery\.md$/, 2200],
   [/^docs\/decisions\/[^/]+\.md$/, 350],
   [/^docs\/how-to\/[^/]+\.md$/, 800],
+  [/^docs\/conhecimento\/[^/]+\.md$/, 3000],
   [/^\.agents\/skills\/[^/]+\/SKILL\.md$/, 600],
   [/^\.agents\/skills\/[^/]+\/references\/[^/]+\.md$/, 1500],
 ]

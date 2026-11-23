@@ -39,8 +39,8 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 
 ## Lido
 
-- AWS: `S3 Tables`, Athena, Lake Formation, IAM com etiqueta de sessão, CloudFormation e
-  ParallelCluster (a pilha por botão), SQS e EventBridge (o fim da tarefa). A conta grátis não tem
+- AWS: `S3 Tables`, Athena, Lake Formation, IAM com etiqueta de sessão, CloudFormation,
+  ParallelCluster, SQS e EventBridge. A conta grátis não tem
   IAM Roles Anywhere nem CUR 2.0 (`conexus-alinhamento-hub-aws`).
 - PyIceberg 0.12, DuckDB 2.0.0, DuckLake e Lakekeeper 0.15.1: medidos na fase de candidatas, antes
   da [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md) (`conexus-e1-armazenamento`, `conexus-e1-concorrencia-docs`, `conexus-passada-inteira`).
@@ -57,8 +57,7 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 ## Superado
 
 - As candidatas de lugar e formato (VPS, R2, DuckDB, DuckLake, Iceberg num catálogo nosso, Google)
-  caíram com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md). Os números delas continuam como prova do porquê: o `MERGE` de 10,1 milhões de
-  itens falhou por memória com 1 GB nos dois formatos.
+  caíram com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md).
 - A cópia no banco Neon da empresa (a Capacidade 2, a spec de dados e o `conexus-dados-spec-3`)
   caiu com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md) e a [0079](../decisions/0079-the-agent-reads-the-lake-neon-serves-apps.md). O Neon da empresa fica só para os apps.
 - "Não ter lakehouse", de `conexus-databricks-study` (2026-11-10), caiu com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md).
