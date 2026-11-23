@@ -24,7 +24,7 @@ export type AgentReads = {
 }
 
 /** The agent a turn runs, and the activation it runs: none for the draft. */
-type Resolution = { agent: Agent; activation: Activation | undefined }
+export type Resolution = { agent: Agent; activation: Activation | undefined }
 
 export type Registry = {
   /** Before `startWorkers`; never throws for one agent alone. */
