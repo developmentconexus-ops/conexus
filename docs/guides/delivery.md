@@ -25,7 +25,7 @@ product decision, security boundary or operational prohibition.
   previous step's use, fixes and closing run beside them. A small change that
   [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
-  tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
+  tests/generated files; split before build past that budget.
   [review]
 - **L4.** A production defect **should** become an explicit fix at the queue's front rather than
   hide in the next scope. [review]
@@ -40,7 +40,9 @@ product decision, security boundary or operational prohibition.
   amendments, his mid-step decisions (no new approval) and the use line. Firstmate
   decides a reversible technical call on every track, except L28, with its evidence and how to undo it; the
   founder keeps product, spend, security, table permissions, live use, merge words and his own
-  decisions. [processo, review]
+  decisions. Firstmate **must** write his other decisions on a track the same day, with words and
+  date, on the track's page in `docs/steps/trilhas/` or `docs/approvals/fora-de-uma-etapa.md`.
+  [processo, review]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder.  
@@ -74,8 +76,8 @@ product decision, security boundary or operational prohibition.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
   the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
   card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
-  test that cannot fail; two owners of one rule; red CI. Fechamento (wording, name, citation,
-  guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
+  test that cannot fail; two owners of one rule; a change `VISION.md` refuses, by its quoted line;
+  red CI. Fechamento (wording, name, citation, guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
@@ -95,8 +97,8 @@ product decision, security boundary or operational prohibition.
   exact commit. After the opening commit nobody **may** push to `main` directly.
   [firstmate's merge script, review]
 - **L15.** CI **must** have one check, `ci`, that fails when any job of the code fails, is skipped or is cancelled. A second check, `processo`, always present, holds the gates of L5, L6 and L20; a merge needs both green.
-  Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
-  starts no `pull_request` run. [CI, review]
+  A pull request **must not** wait on CI while CONFLICTING: it starts no `pull_request` run.
+  [CI, review]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
   is on the list of expensive choices. [CI, review]
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
@@ -143,12 +145,14 @@ product decision, security boundary or operational prohibition.
   under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
-  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
-  card has 2,500 words per unit: its words outside the founder's page, divided by its units. L21 guards it and `docs/approvals/`: keep only what changes what the next agent does. [check-docs, review]
+  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A card's
+  words outside the founder's page, divided by its units, stay under 2,500; L21 guards the page and
+  `docs/approvals/`. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
 | `AGENTS.md` | 400 |
+| `VISION.md` | 1,600 |
 | `docs/index.md` | 500 |
 | `docs/roadmap.md` | 1,600 |
 | `docs/approvals/*.md` | none (L21) |
@@ -176,6 +180,6 @@ product decision, security boundary or operational prohibition.
 
 ## 8. Git
 
-- **L26.** Work and commits belonging to others **should** be preserved, with the operational
-  prohibitions of AGENTS.md and merge authority of L13/L14 still binding.  This never permits reset, clean, stash, force-push or discarding another's work.
+- **L26.** Work and commits belonging to others **should** be preserved; this never permits
+  reset, clean, stash, force-push or discarding another's work.
   [review]

@@ -1,17 +1,27 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { ModelId } from '@conexus/hub-api'
 import { Knowledge } from '@mastra/core/knowledge'
 import { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import { createSkill } from '@mastra/core/skills'
 import { InMemoryStore } from '@mastra/core/storage'
+import { createTool } from '@mastra/core/tools'
 import { Workspace } from '@mastra/core/workspace'
 import { Memory } from '@mastra/memory'
+import { z } from 'zod'
 import { hubOn } from '../../hub/identity/test-hub.ts'
 import { silent } from '../../platform/test-database.ts'
-import type { ConversationSpec } from './public.ts'
-import { CONTROLLER_KINDS, CONVERSATION_MODE, mountAgent } from './public.ts'
+import type { AgentSpec, ConversationSpec, Taken } from './public.ts'
+import {
+  agentOfSpec,
+  CONTROLLER_KINDS,
+  CONVERSATION_MODE,
+  mountAgent,
+  NEVER_ASKS,
+  routedModel,
+} from './public.ts'
 
 /** A Hub's account queue and a store of memory: what the mount needs; no turn runs here. */
 async function mounting(t: TestContext) {
@@ -36,8 +46,26 @@ async function mounting(t: TestContext) {
     threads: new Memory({ storage }),
     mode: { id: CONVERSATION_MODE },
   }
+  const alone: AgentSpec = {
+    id: 'agent-de-teste',
+    name: 'Agente de teste',
+    base: 'AGENT',
+    prompt: { kind: 'MESSAGES', parts: [{ kind: 'TEXT', text: 'Responda.' }] },
+    model: { kind: 'OF_RUN', of: async () => routedModel(ModelId.parse('anthropic/claude-test')) },
+    tools: async () => ({}),
+    approval: { kind: 'THE_WRITE_ASKS' },
+    memory: new Memory({ storage }),
+    turn: {
+      kind: 'RUN',
+      id: 'conexus-spec-run',
+      none: 'SEM_VEZ',
+      resumes: false,
+      take: async () => ({ kind: 'NONE' }) satisfies Taken,
+    },
+  }
   return {
     storage,
+    alone: (fields: Partial<AgentSpec> = {}) => agentOfSpec({ ...alone, ...fields }, { queue }),
     mount: (fields: Partial<ConversationSpec> = {}) =>
       mountAgent({ ...base, ...fields }, { queue, storage }),
   }
@@ -106,4 +134,80 @@ test('as instruções seguem a ordem da ficha, e uma parte do run que não dá n
     { role: 'system', content: 'Primeiro.' },
     { role: 'system', content: 'Do run.' },
   ])
+})
+
+test('o regime "a escrita pergunta" dá NEVER_ASKS, numa cópia, a toda ferramenta sem regra em função', async (t) => {
+  const { mount } = await mounting(t)
+  const unruled = createTool({
+    id: 'sem_regra',
+    description: 'Sem regra própria.',
+    inputSchema: z.object({}),
+    execute: async () => ({}),
+  })
+  function own() {
+    return true
+  }
+  const ruled = createTool({
+    id: 'com_regra',
+    description: 'Com regra em função.',
+    inputSchema: z.object({}),
+    requireApproval: own,
+    execute: async () => ({}),
+  })
+  const { agent } = mount({
+    approval: { kind: 'THE_WRITE_ASKS' },
+    tools: async () => ({ sem_regra: unruled, com_regra: ruled }),
+  })
+  const listed = await agent.listTools({ requestContext: new RequestContext() })
+  assert.equal(Reflect.get(listed.sem_regra ?? {}, 'requireApproval'), NEVER_ASKS)
+  assert.notEqual(listed.sem_regra, unruled)
+  assert.equal(Object.getPrototypeOf(listed.sem_regra), Object.getPrototypeOf(unruled))
+  assert.equal(unruled.requireApproval, false)
+  assert.equal(listed.com_regra, ruled)
+  assert.equal(ruled.requireApproval, own)
+  assert.equal(NEVER_ASKS(), false)
+})
+
+test('o regime "nada pergunta" deixa as ferramentas como estão', async (t) => {
+  const { mount } = await mounting(t)
+  const unruled = createTool({
+    id: 'sem_regra',
+    description: 'Sem regra própria.',
+    inputSchema: z.object({}),
+    execute: async () => ({}),
+  })
+  const { agent } = mount({ tools: async () => ({ sem_regra: unruled }) })
+  const listed = await agent.listTools({ requestContext: new RequestContext() })
+  assert.equal(listed.sem_regra, unruled)
+})
+
+test('a ficha de um agente que roda sozinho leva a descrição, o modelo do run e uma vez sem sessão', async (t) => {
+  const { alone } = await mounting(t)
+  assert.equal(alone().agent.getDescription(), '')
+  assert.equal(alone({ description: 'Faz uma coisa.' }).agent.getDescription(), 'Faz uma coisa.')
+  assert.equal(alone().watch, undefined)
+  const context = new RequestContext()
+  const model = await alone().agent.getModel({ requestContext: context })
+  assert.equal(model.modelId, 'claude-test')
+})
+
+test('o turno RUN da ficha leva o id dela e só retoma no primeiro passo se a ficha disser', async (t) => {
+  const { alone } = await mounting(t)
+  async function processorOf(resumes: boolean) {
+    const turn = {
+      kind: 'RUN',
+      id: 'conexus-spec-run',
+      none: 'SEM_VEZ',
+      resumes,
+      take: async () => ({ kind: 'NONE' }) satisfies Taken,
+    } as const
+    const found = await alone({ turn }).agent.resolveProcessorById(
+      'conexus-spec-run',
+      new RequestContext(),
+    )
+    assert.equal(found?.id, 'conexus-spec-run')
+    return found ?? {}
+  }
+  assert.equal('processInputStep' in (await processorOf(false)), false)
+  assert.equal('processInputStep' in (await processorOf(true)), true)
 })

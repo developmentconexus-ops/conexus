@@ -76,7 +76,8 @@ or versions; it asks the Hub on every call (`apps/edge/src/dispatch.ts`):
    same Project. And the person must still be admitted: a member as `BUILDER`, or a person with an
    access row, in the published app only, as `USER` with that row's role
    (`apps/server/src/hub/projects/hosts.ts`).
-5. The session records its environment, `preview` or `published`. The Hub answers with the
+5. The host says the environment: `<label>--previa` is the Prévia's, the label alone the
+   published app's (`appOfHost` in `packages/hub-api/src/address.ts`). The Hub answers with the
    version for that environment (the Prévia's version or the published one), the run login's
    address, and the `caller` it built (`callTo` in `handoff.ts`).
 6. The dispatcher loads the version's Worker `v-<versionId>` from the Workers for Platforms
@@ -99,7 +100,12 @@ app's `/__conexus/passagem`. Inside the Prévia's frame, the dispatcher serves a
 that posts the host and binding to the Hub page, which calls `POST /api/apps/frame-handoff`
 (`apps/edge/src/entry.ts`). In both cases the dispatcher redeems the pass. The Hub deletes the
 pass row only when the code, the binding, the host and the deadline all match, and creates the
-app session in the same transaction. A tab's session is `published`; a frame's is `preview`.
+app session in the same transaction, bound to the host it was redeemed on: a session of one host
+is refused on the other. `/apps/open` makes passes only for the published app's host and
+`createAppFrameHandoff` only for the Prévia's, each by its schema (`HostLabel`, `PreviewHost`).
+The published app's host never serves the entry page and allows no frame; the Prévia's serves it
+only to a frame (`Sec-Fetch-Dest: iframe`), and anywhere else a page that sends to the Hub
+(security S24).
 
 The redeemed pass sets the session cookie and lands on `/__conexus/entrada`, whose address carries
 the session's hash. A browser that sends that session back goes on to `/`. One that sends none, or

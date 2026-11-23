@@ -7,8 +7,7 @@ import type {
   OfProject,
 } from '@conexus/hub-api'
 import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/hub-api'
-import type { AgentInstructions, ToolsInput } from '@mastra/core/agent'
-import { Agent } from '@mastra/core/agent'
+import type { Agent, ToolsInput } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
@@ -25,16 +24,14 @@ import { companyConnections } from '../company-tools/public.ts'
 import { conversationRun } from '../controller-context/public.ts'
 import type { DataBinding, Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
 import {
-  agentDefaults,
+  agentOfSpec,
   blockOf,
   CONEXUS_PROMPT,
-  fixedSystem,
   oncePerRun,
   principalOf,
   routedModel,
   toolsOf,
   turnKeyOn,
-  turnProcessor,
 } from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
@@ -49,7 +46,7 @@ import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { declaredOf } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
 import type { WriteAuthor } from './tools.ts'
-import { NEVER_ASKS, presetTools } from './tools.ts'
+import { presetTools } from './tools.ts'
 
 const READ_ONLY =
   'You only read: no tool of yours writes in a system. When the person asks you to change, save or send something, say that you cannot and what they can do instead.'
@@ -234,23 +231,6 @@ function planner(deps: AgentDeps, frozen: Frozen, versionOf: ReturnType<typeof v
 }
 
 /**
- * Each tool as a copy of its own that never asks (step 24.5): with the controller's `yolo` off,
- * Mastra asks for every tool without a rule of its own, and only a tool's function beats that
- * (`createTool({ requireApproval })`). A copy, so the objects the Builder shares (`web_fetch`) keep
- * theirs.
- */
-function neverAsking(tools: ToolsInput): ToolsInput {
-  return Object.fromEntries(
-    Object.entries(tools).map(([id, tool]) => [
-      id,
-      Object.assign(Object.create(Object.getPrototypeOf(tool)), tool, {
-        requireApproval: NEVER_ASKS,
-      }),
-    ]),
-  )
-}
-
-/**
  * Who the version's writes speak as: the published version, answered for by who made it active
  * when the run began, or the person on its draft.
  */
@@ -287,10 +267,8 @@ function runToolsOf(
       approval: { ...deps, openWrites: deps.connectors.openWrites },
     })
     const ofTheAgent: ToolsInput = {
-      ...neverAsking({
-        ...(await companyOf(toolScope)),
-        ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
-      }),
+      ...(await companyOf(toolScope)),
+      ...codeTools({ ...deps.codeTools, scope, tools, turnOf: turnKey.of }),
       ...preset.reads,
     }
     const program = machines === undefined ? undefined : codeModeOf(ofTheAgent, machines.codeMode)
@@ -298,11 +276,9 @@ function runToolsOf(
       program,
       writes: Object.keys(preset.writes).length > 0,
       tools: {
-        ...neverAsking({
-          ...(frozen.web ? toolsOf(start.model) : {}),
-          ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
-          ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
-        }),
+        ...(frozen.web ? toolsOf(start.model) : {}),
+        ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
+        ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
         ...ofTheAgent,
         ...preset.writes,
       },
@@ -321,41 +297,66 @@ function runToolsOf(
 export function agentOf(deps: AgentDeps, frozen: Frozen): Agent {
   const versionOf = versionReader(deps, frozen)
   const plan = planner(deps, frozen, versionOf)
-  const turn = turnProcessor({
-    id: 'conexus-agent-turn',
-    none: 'NO_TURN',
-    resumes: false,
-    async take(requestContext) {
-      if (agentRunIn(requestContext) === undefined) return { kind: 'NONE' }
-      const { run, start } = await plan(requestContext)
-      const model = { id: start.model, effort: start.effort }
-      return { kind: 'TAKEN', turn: await agentTurnOf(deps.queue, requestContext, { run, model }) }
-    },
-  })
   const toolsOfRun = runToolsOf(deps, frozen, plan)
-  const agent = new Agent({
-    id: agentKey(frozen.agentId),
-    name: frozen.name,
-    description: frozen.description,
-    instructions: async ({ requestContext }) => {
-      const { runScope, toolScope } = await plan(requestContext)
-      const { program, writes } = await toolsOfRun(requestContext)
-      const shown = await companyConnections(toolScope)
-      return [
-        fixedSystem(CONEXUS_PROMPT),
-        { role: 'system', content: dataOrder() },
-        { role: 'system', content: blockOf(await deps.speakersOf(runScope), shown) },
-        { role: 'system', content: `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}` },
-        ...(program === undefined
-          ? []
-          : [{ role: 'system' as const, content: program.instructions }]),
-      ] satisfies AgentInstructions
+  const { agent } = agentOfSpec(
+    {
+      id: agentKey(frozen.agentId),
+      name: frozen.name,
+      description: frozen.description,
+      base: 'AGENT',
+      prompt: {
+        kind: 'MESSAGES',
+        parts: [
+          { kind: 'FIXED', text: CONEXUS_PROMPT },
+          { kind: 'TEXT', text: dataOrder() },
+          {
+            kind: 'OF_RUN',
+            async of(requestContext) {
+              const { runScope, toolScope } = await plan(requestContext)
+              const shown = await companyConnections(toolScope)
+              return blockOf(await deps.speakersOf(runScope), shown)
+            },
+          },
+          {
+            kind: 'OF_RUN',
+            async of(requestContext) {
+              const { writes } = await toolsOfRun(requestContext)
+              return `${frozen.instructions}\n\n${writes ? WRITES : READ_ONLY}`
+            },
+          },
+          {
+            kind: 'OF_RUN',
+            async of(requestContext) {
+              return (await toolsOfRun(requestContext)).program?.instructions
+            },
+          },
+        ],
+      },
+      model: {
+        kind: 'OF_RUN',
+        of: async (requestContext) => routedModel((await plan(requestContext)).start.model),
+      },
+      tools: async (requestContext) => (await toolsOfRun(requestContext)).tools,
+      approval: { kind: 'THE_WRITE_ASKS' },
+      memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,
+      turn: {
+        kind: 'RUN',
+        id: 'conexus-agent-turn',
+        none: 'NO_TURN',
+        resumes: false,
+        async take(requestContext) {
+          if (agentRunIn(requestContext) === undefined) return { kind: 'NONE' }
+          const { run, start } = await plan(requestContext)
+          const model = { id: start.model, effort: start.effort }
+          return {
+            kind: 'TAKEN',
+            turn: await agentTurnOf(deps.queue, requestContext, { run, model }),
+          }
+        },
+      },
     },
-    model: async ({ requestContext }) => routedModel((await plan(requestContext)).start.model),
-    tools: async ({ requestContext }) => (await toolsOfRun(requestContext)).tools,
-    memory: frozen.memory.observational ? deps.memories.observational : deps.memories.plain,
-    ...agentDefaults(deps.queue, { processor: turn }),
-  })
+    deps,
+  )
   made.set(agent, { plan, version: versionOf })
   return agent
 }

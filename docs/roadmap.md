@@ -30,7 +30,8 @@ lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
 ### A direção
 
-O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
+O Conexus são três Solutions, Dados e contexto, Agentes e Apps, sobre a Plataforma
+([VISION.md](../VISION.md)). Os agentes e os apps
 chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
 do contrato podem estar as nossas cópias, no lago de cada empresa, na AWS
 ([0070](decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md)); as ferramentas ao vivo do
@@ -68,8 +69,8 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A fundação do front-end fechou; segue A Prévia
-(https://github.com/developmentconexus-ops/conexus/pull/1229). Mais na
+A Prévia em endereço próprio fechou; segue `A1`
+(https://github.com/developmentconexus-ops/conexus/pull/1203). Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
@@ -79,11 +80,8 @@ plano em `A3`, código e teste em `A1`, revisão em `A4`.
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
 bonitos e quebrados.
 
-**O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
-a Nango fica fora do código. O kit serve o ao vivo e o login; a cópia é tap Singer
-gerado dele ([0071](decisions/0071-connectors-kit-live-copies-singer.md)). A Fábrica gera
-declarações do kit, conferidas com uma leitura de teste. Mais de um estudo aberto
-por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
+**O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
+aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
 agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
 
 ### O que você fornece, e quando

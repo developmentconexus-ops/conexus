@@ -22,9 +22,7 @@ data. Owner: docs/architecture.md §1.
 
 ## Positioning
 
-A context and ontology layer first; apps are one of four things built on it. Creation by conversation,
-real code, official data stays in the company's systems. Not an ERP, a database console or a
-drag-and-drop tool. Owner: docs/architecture.md §1 "What the product never does".
+Owner: VISION.md (in Portuguese): the three Solutions on the Platform, and "Escopo".
 
 ## Capabilities and Constraints
 
@@ -43,8 +41,7 @@ No customer yet. Never invent testimonials, customers, numbers or claims.
 
 ## Product Principles
 
-It never invents a value or simulates progress. It never lets the model declare work done. It never
-overwrites someone else's newer work. It never shows a credential. It never publishes on its own.
+Owner: VISION.md (in Portuguese): its principle sections and the "alinha" / "deve ser recusada" test.
 
 ## Accessibility & Inclusion
 

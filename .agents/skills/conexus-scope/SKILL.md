@@ -12,8 +12,9 @@ planning session, never the builder's.
 
 ## What it receives
 
-The step's line in [the roadmap](../../../docs/roadmap.md), the study's answers and reference
-table, [architecture](../../../docs/architecture.md), and the guide each unit will need.
+The step's line in [the roadmap](../../../docs/roadmap.md), [the vision](../../../VISION.md), the
+study's answers and reference table, [architecture](../../../docs/architecture.md), and the guide
+each unit will need.
 
 ## Steps
 
@@ -42,8 +43,8 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    skills come from the `docs/reference/stack.md` rows for its folders, and
    the reference lines it follows.
 7. Write the founder's page in Portuguese, as [the template](references/card.md) says: what he
-   will do at the end and only his real decisions. An amendment rewrites the page, listing what
-   changed; his words go to the card's file in `docs/approvals/`.
+   will do at the end, the vision's lines it serves and only his real decisions. An amendment
+   rewrites the page, listing what changed; his words go to the card's file in `docs/approvals/`.
 7a. Write each unit's section as its build spec ([card](references/card.md)): its builder reads
    only its unit's top-table rows and that section, so the section lists its reference table rows and
    holds every file, reference line, shape and recording the unit needs, with its order of the work
@@ -52,7 +53,7 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 8. Give the card, at the exact commit the founder will approve, to a reader of another model who
    did not write it, with [the template](references/card.md)'s questions. The reader reads
    the whole card once before any build, opening every reference table cell and cited line at the
-   installed version; a later commit, as its diff only.
+   installed version.
 
 ## What it produces
 

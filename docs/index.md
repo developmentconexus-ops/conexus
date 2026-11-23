@@ -5,6 +5,7 @@ One line per document.
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): read first.
+- [VISION.md](../VISION.md): the product's direction.
 - [README.md](../README.md): repo.
 - [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
@@ -16,7 +17,7 @@ One line per document.
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/aws-conta-de-laboratorio.md](how-to/aws-conta-de-laboratorio.md): the lab AWS account's preparation.
+- [how-to/aws-conta-de-laboratorio.md](how-to/aws-conta-de-laboratorio.md): lab AWS account.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).
@@ -57,4 +58,4 @@ One line per document.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): evals.
-- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
+- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step.
