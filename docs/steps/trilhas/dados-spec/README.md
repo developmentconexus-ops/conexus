@@ -6,7 +6,7 @@ Base: `main` do Conexus em `0d4c5730`. Entrada: o escopo aprovado da camada de d
 
 | Parte | O que continua | O que o lago troca |
 | --- | --- | --- |
-| 1. O dado guardado e o catálogo | A regra de nome, a descrição, a amostra, a coluna inativa, a página Dados | A tabela mora no lago. O login de leitura dá lugar ao leitor por etiqueta ([0078](../../../decisions/0078-how-the-lake-knows-who-reads.md)) |
+| 1. O dado guardado e o catálogo | A página Dados, com os sistemas e os apps | O catálogo das cópias, a amostra e o login de leitura saíram do banco da empresa (U14 de [a primeira cópia chega ao lago](../../a-primeira-copia-chega-ao-lago.md)), e a parte a fundo saiu com eles; a tabela volta pelo lago, com o leitor por etiqueta ([0078](../../../decisions/0078-how-the-lake-knows-who-reads.md)) |
 | 2. O conector | O kit, as operações, a janela Ligar e o login; o "só ao vivo" saiu (a emenda de 2026-11-21 em [02-conector/requirements.md](02-conector/requirements.md)) | A cópia roda como tap Singer gerado do kit, pela declaração de cada tabela ([0071](../../../decisions/0071-connectors-kit-live-copies-singer.md), [0080](../../../decisions/0080-copy-declared-per-table-raw-appends.md)) |
 | 3. A leitura para análise | O pedido de consulta, as duas ferramentas, a origem até a tela | O dialeto do Athena vem do catálogo. A origem sai do plano do Athena, e não do `EXPLAIN` (`D3`); o estudo da etapa 3 do lago decide a forma |
 | 4. A governança mínima | O Registro de dados e a recusa como "não encontrado" | Quem lê é imposto pelo Lake Formation, por etiqueta ([0078](../../../decisions/0078-how-the-lake-knows-who-reads.md)). `D1`, `D11` e `D15` valem só para o PostgreSQL |
@@ -25,7 +25,7 @@ Base: `main` do Conexus em `0d4c5730`. Entrada: o escopo aprovado da camada de d
 
 | Parte | O que ela decide | Marco | Depende de | Nesta spec |
 | --- | --- | --- | --- | --- |
-| 1. O dado guardado e o catálogo | A regra de nome. A descrição em toda tabela e coluna. O login de leitura. A amostra. A coluna inativa. `catalog` e `rows` do contrato. A página Dados | `D2` | Nada | [a fundo](01-dado-guardado-e-catalogo/) |
+| 1. O dado guardado e o catálogo | A regra de nome. A descrição em toda tabela e coluna. O login de leitura. A amostra. A coluna inativa. `catalog` e `rows` do contrato. A página Dados | `D2` | Nada | saiu do código; a parte a fundo saiu com ele |
 | 2. O conector, com a entrada conversada | A descrição do sistema. "Só ao vivo". As quatro operações. A janela Ligar em quatro passos. O link para outra pessoa. O HubSpot e o Gmail pelo login do kit. A entrada conversada | `D1`, parte do `D3` | Parte 1 | [a fundo](02-conector/) |
 | 3. A leitura para análise | O pedido de consulta no contrato. As duas ferramentas iguais nos três agentes. A ordem do agente. A origem até a tela | `D2` | Parte 1 | [a fundo](03-leitura-para-analise/) |
 | 4. A governança mínima | Quem lê cada tabela, garantido pelo banco. A recusa. O Registro de dados | `D2`, `D6` | Partes 1 e 3 | [a fundo](04-governanca-minima/) |

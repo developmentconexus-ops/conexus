@@ -1,9 +1,9 @@
-import type { CatalogSystem, CatalogTable } from '@conexus/hub-api'
+import type { CatalogSystem } from '@conexus/hub-api'
 import { OperationEffect } from '@conexus/hub-api'
 import type { LeafKey, Snapshot, Verdict } from './model.ts'
 import { operationLeaf, reach } from './reach.ts'
 
-type Listed = { table: readonly CatalogTable[]; system: readonly CatalogSystem[] }
+type Listed = { system: readonly CatalogSystem[] }
 
 /** What the door says to one principal: whether a leaf may be used so, and what it lists. */
 export type AccessView = Readonly<{
@@ -26,7 +26,7 @@ export function viewOf(snapshot: Snapshot): AccessView {
     const actions = system.actions.filter(inReach)
     return reads.length + actions.length === 0 ? [] : [{ ...system, reads, actions }]
   })
-  const listed: Listed = { table: snapshot.tables, system: systems }
+  const listed: Listed = { system: systems }
   return {
     may(leaf, effect) {
       const ceiling = reached.get(leaf)

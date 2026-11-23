@@ -5,10 +5,8 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
-import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import { dataContext } from '../app-data/public.ts'
 import type { CompanyToolDeps } from '../company-tools/public.ts'
 import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
 import type { BuilderConnectors } from '../connectors/public.ts'
@@ -34,7 +32,7 @@ import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
-import type { ConversationIndex, ProjectOf } from './turn-of.ts'
+import type { ConversationIndex } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
@@ -92,25 +90,6 @@ function toolScopes(
   })
 }
 
-/**
- * The "## Data" block of the turn, read once for the run: a Hub database that does not answer is a
- * line in the block; a person who is not a member of the company makes the read fail, and the turn
- * does not start.
- */
-function dataFor(
-  copies: (ids: {
-    companyId: CompanyId
-    personId: PersonId
-    projectId: ProjectId
-  }) => Promise<ProjectCopiesView>,
-  projectOf: ProjectOf,
-): (requestContext: RequestContext) => Promise<string> {
-  return oncePerRun(async (requestContext) => {
-    const ids = await projectOf(requestContext)
-    return ids === undefined ? '' : dataContext(await copies(ids))
-  })
-}
-
 /** The Builder's memory words, and its recall of what the observation folded. */
 const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
 
@@ -132,11 +111,6 @@ export function createBuilder(deps: {
   access: Pick<Access, 'viewOf'>
   /** The company's data, bound to the Projeto and its granted connections, and to the conversation that reads. */
   companyData: (principal: Principal, context: DataBinding) => CompanyData
-  copies: (ids: {
-    companyId: CompanyId
-    personId: PersonId
-    projectId: ProjectId
-  }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
@@ -157,7 +131,6 @@ export function createBuilder(deps: {
     projectOf,
     projectName: deps.projectName,
     granted,
-    data: dataFor(deps.copies, projectOf),
   })
   const { agent, controller } = mountAgent(
     {

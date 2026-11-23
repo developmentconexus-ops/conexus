@@ -28,7 +28,7 @@ export type GrantedConnection = Readonly<{
   name: string
   perProject: 'one' | 'many'
   skill: Readonly<{ name: string; content: string; references: Readonly<Record<string, string>> }>
-  /** Each read, and how it lists rows when it declares a list (a copy of version 2 reads it). */
+  /** Each read, and how it lists rows when it declares a list. */
   reads: readonly Readonly<{
     operation: string
     label: string
@@ -84,7 +84,7 @@ export function createSpending(): (key: string) => boolean {
 }
 
 /** The connections released to a Projeto, in any state: the one place that says which a Projeto received (C26). */
-export function givenTo(tx: ReadTx, projectId: ProjectId) {
+function givenTo(tx: ReadTx, projectId: ProjectId) {
   return inArray(
     connection.id,
     tx

@@ -48,7 +48,7 @@ export const CONNECTOR_SPECS: Record<
 type Refused = 'BUSY' | 'UNREACHABLE' | 'DEADLINE' | 'CALLS_SPENT' | 'NOT_GRANTED' | 'OTHER'
 
 /** What a read answered, as the Assistant's row says it: the rows it brought, or why it brought none. */
-export type ReadOutcome =
+type ReadOutcome =
   | { kind: 'ROWS'; rows: number; complete: boolean }
   /** Read, with no count to say: the value is no list, or the cut left no row of one. */
   | { kind: 'READ' }
@@ -172,7 +172,7 @@ export function readRefusal(result: unknown): Refusal | undefined {
   return kind === 'REFUSED' ? 'SAID' : undefined
 }
 
-export function rowsText(outcome: ReadOutcome | undefined): string | undefined {
+function rowsText(outcome: ReadOutcome | undefined): string | undefined {
   if (outcome?.kind === 'ROWS') {
     const count = `${outcome.rows} ${outcome.rows === 1 ? 'linha' : 'linhas'}`
     return outcome.complete ? count : `${count}, há mais`

@@ -131,7 +131,7 @@ async function hubServing(
     ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
     notify: subjects.notifications.notify,
     mastra: conversations.mastra,
-    ...{ copies: subjects.copies, settle: (bound: AbortSignal) => conversations.settle(bound) },
+    settle: (bound: AbortSignal) => conversations.settle(bound),
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,

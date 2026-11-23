@@ -31,20 +31,12 @@ import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
 export type { Connector, Native, Operation } from '@conexus/connectors'
-/** The kit's copy contracts, which `hub/copies` parses with and never imports from the kit (decision 0056), and `deniesAccess`, which tells a 403 from a request to correct. */
-export {
-  CONNECTORS,
-  CopyDefinition,
-  CopyDefinitionV2,
-  CopyName,
-  deniesAccess,
-} from '@conexus/connectors'
+export { CONNECTORS, deniesAccess } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { WriteShape } from './assistant-port.ts'
 export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
-export { connectionNamesOf } from './copy-sources.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export type { KitRead } from './kit-reads.ts'

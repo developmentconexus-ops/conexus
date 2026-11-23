@@ -2,7 +2,6 @@ import type { CompanyId, PersonId, ProjectId, RowCount } from '@conexus/hub-api'
 import { AppTableName, ROW_COUNT_CAP } from '@conexus/hub-api'
 import { z } from 'zod'
 import { quoted } from '../../platform/app-sql.ts'
-import { COPY_PASS_COLUMN } from '../../platform/copy-sql.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { readAppData } from './app-database.ts'
@@ -28,35 +27,21 @@ export type AppReadInput = {
   signal: AbortSignal
 }
 
-/** The schemas a table may live in: a closed union, never text from outside. */
-export type TableSchema = 'APP' | 'COPY'
-
-/** The SQL that names each schema a table may live in; `sync` holds the company's copies. */
-const SCHEMA_SQL: Record<TableSchema, string> = { APP: 'current_schema()', COPY: "'sync'" }
-
-/** The columns of a table the catalog leaves out: a copy's pass is the engine's, not data (see `COPY_PASS_COLUMN`). */
-const HIDDEN_COLUMNS: Record<TableSchema, string> = {
-  APP: '',
-  COPY: ` and a.attname <> '${COPY_PASS_COLUMN}'`,
-}
-
 /**
  * The tables of the read login's schema with their columns and primary key, from the catalog. The
  * ledger of the migrations is listed by `pg_class` but the login holds no `SELECT` on it, which
  * `has_table_privilege` filters (`information_schema.columns` hides it too, but shows no key to a
  * login that only reads).
  */
-function catalogSql(schema: TableSchema) {
-  return `select n.nspname::text, c.relname,
+const CATALOG_SQL = `select n.nspname::text, c.relname,
   (select coalesce(jsonb_agg(jsonb_build_object('name', a.attname) order by a.attnum), '[]')
-     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped${HIDDEN_COLUMNS[schema]}),
+     from pg_attribute a where a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped),
   (select coalesce(array_agg(a.attname::text order by array_position(i.indkey::int2[], a.attnum)), '{}')
      from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey)
     where i.indrelid = c.oid and i.indisprimary)
 from pg_class c join pg_namespace n on n.oid = c.relnamespace
-where n.nspname = ${SCHEMA_SQL[schema]} and c.relkind in ('r', 'p')
+where n.nspname = current_schema() and c.relkind in ('r', 'p')
   and has_table_privilege(c.oid, 'SELECT')`
-}
 
 const CatalogRow = z.tuple([
   z.string(),
@@ -100,15 +85,7 @@ async function catalogOf(
 
 /** Every table of the app in name order, or no app, or its database silent. */
 export function appTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise<AppTablesRead> {
-  return catalogOf(deps, input, { text: `${catalogSql('APP')} order by c.relname` })
-}
-
-/**
- * The copies released to the Projeto, in name order: the same read login sees `sync` only where a
- * `GRANT` gave it a table, which `has_table_privilege` keeps (Capacidade 2, U5).
- */
-export function copyTablesOf(deps: AppDatabaseDeps, input: AppReadInput): Promise<AppTablesRead> {
-  return catalogOf(deps, input, { text: `${catalogSql('COPY')} order by c.relname` })
+  return catalogOf(deps, input, { text: `${CATALOG_SQL} order by c.relname` })
 }
 
 /** What a look at one table gives: the table, or `NONE` when the catalog has none the login may read. */
@@ -118,13 +95,13 @@ export type AppTableRead =
   | { kind: 'NO_APP' }
   | AppDataFailed
 
-/** One table of `schema` by its name, bound as a value, or `NONE` when the catalog has none the login may read. */
+/** One table of the app by its name, or `NONE` when the catalog has none the login may read. */
 export async function appTableOf(
   deps: AppDatabaseDeps,
-  input: AppReadInput & { schema: TableSchema; name: AppTableName },
+  input: AppReadInput & { name: AppTableName },
 ): Promise<AppTableRead> {
   const found = await catalogOf(deps, input, {
-    text: `${catalogSql(input.schema)} and c.relname = $1`,
+    text: `${CATALOG_SQL} and c.relname = $1`,
     values: [input.name],
   })
   if (found.kind !== 'TABLES') return found
@@ -135,9 +112,7 @@ export async function appTableOf(
 const Counted = z.array(z.tuple([z.coerce.number().int(), z.coerce.number().int()]))
 
 /**
- * How many rows each table has, in the order given, up to one past the cap, which says "over": a
- * `count(*)` over a `limit` of the cap plus one, a row per table tagged with its place in the list
- * (an app table and a copy may share a name), the schema and name quoted from the catalog's own. A
+ * How many rows each table has, in the order given, up to one past the cap, which says "over". A
  * read that fails leaves every table unknown, never zero; a reply of the wrong shape is ours to
  * fix, so it throws.
  */

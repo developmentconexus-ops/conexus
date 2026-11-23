@@ -6,7 +6,7 @@ import { Failure } from '../../platform/failure.ts'
 import { pageKey, pageOf } from '../../platform/pages.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { readAppData } from './app-database.ts'
-import type { AppDataFailed, AppReadInput, AppTable, TableSchema } from './app-tables.ts'
+import type { AppDataFailed, AppReadInput, AppTable } from './app-tables.ts'
 import { appTableOf } from './app-tables.ts'
 
 export type AppRowsRead =
@@ -47,7 +47,7 @@ function pageStatement(table: AppTable, offset: number) {
 /** One page of a table, its name checked against the catalog before any row is read. */
 export async function appRowsOf(
   deps: AppDatabaseDeps,
-  input: AppReadInput & { schema: TableSchema; name: AppTableName; page: string | undefined },
+  input: AppReadInput & { name: AppTableName; page: string | undefined },
 ): Promise<AppRowsRead> {
   const offset = Number(pageKey(input.page, Offset) ?? 0)
   const found = await appTableOf(deps, input)

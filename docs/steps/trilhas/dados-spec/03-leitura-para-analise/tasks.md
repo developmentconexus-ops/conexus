@@ -17,7 +17,7 @@ Seis grupos, um PR cada.
 
 Os grupos 5 e 6 podem esperar a parte 5 sem atrasar o marco `D2`, porque nenhum consumidor desta parte chama `live` nem `funnel`.
 
-Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/tasks.md`, unidades 2.x e 4.2):
+Tudo parte de que a parte 1 está construída (a parte a fundo saiu com o seu código, na U14 do lago; unidades 2.x e 4.2):
 
 - a pasta `apps/server/src/hub/data/` com `DataDeps`, `createCompanyData`, `sourcesFor`, `catalogOf` e `rowsOf`;
 - a ligação `const data = createCompanyData({ database, identity, log, connectors: () => connectors, copies: () => copies.data })` em `apps/server/src/main.ts`, e `data: subjects.data` no Hub de teste (`apps/server/src/hub/identity/test-hub.ts`), lida nos testes por `on.hub.data`;
@@ -93,7 +93,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
       const source = sourceOf(catalog, request)   // request já sem QUERY
       ```
       O `fakeWorld` de `packages/hub-api/src/company-data.test.ts:102-144` ganha nesta unidade a fonte `query: async () => ({ kind: 'TABLE_UNAVAILABLE' })`, para o commit compilar; a 1.2 a troca pela de verdade.
-      Em `apps/server/src/hub/data/public.ts`, o objeto que `sourcesFor(deps, scope)` devolve ganha `query: async () => ({ kind: 'TABLE_UNAVAILABLE' })`, na forma das linhas `live` e `funnel` da parte 1 (`../01-dado-guardado-e-catalogo/tasks.md`, unidade 4.2), sem log. Nenhum consumidor chama `read({ kind: 'QUERY' })` antes do grupo 3, e o grupo 2 troca a linha. Essa linha é uma exceção declarada ao "PR só do contrato", como a decisão `D19` do índice (`README.md`) fez na parte 1: o corpo do PR a lista e diz que sem ela o servidor não compila.
+      Em `apps/server/src/hub/data/public.ts`, o objeto que `sourcesFor(deps, scope)` devolve ganha `query: async () => ({ kind: 'TABLE_UNAVAILABLE' })`, na forma das linhas `live` e `funnel` da parte 1 (unidade 4.2, que saiu com a parte a fundo), sem log. Nenhum consumidor chama `read({ kind: 'QUERY' })` antes do grupo 3, e o grupo 2 troca a linha. Essa linha é uma exceção declarada ao "PR só do contrato", como a decisão `D19` do índice (`README.md`) fez na parte 1: o corpo do PR a lista e diz que sem ela o servidor não compila.
     - **Testes:** nenhum caso novo nesta unidade. `npm run typecheck` prova que `fakeWorld` e `sourcesFor` ganharam `query`.
     - **Mutações à mão:** nenhuma nesta unidade. As mutações do ramo `QUERY` vão na 1.2.
     - **Pronto quando:** `npm run typecheck` passa, e `ReadRequest.parse({ kind: 'QUERY', sql: ' ' })` lança.

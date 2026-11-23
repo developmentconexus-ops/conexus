@@ -1,4 +1,4 @@
-import { DATA_TOOL, DataResult } from '@conexus/hub-api'
+import { DATA_TOOL } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { render, screen, within } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -38,44 +38,14 @@ afterEach(() => vi.useRealTimers())
 const LOGO = '<svg xmlns="http://www.w3.org/2000/svg"/>'
 const SANKHYA = { id: 'sankhya', name: 'Sankhya', auth: 'client_credentials', logo: LOGO } as const
 const WORDS = wordsOf([SANKHYA])
-const MATRIZ = { kind: 'NAMED', name: 'Matriz', state: 'ACTIVE' } as const
 
-/** The recorded copy ran at 08:45 of 14/11/2026 (America/Sao_Paulo); the clock reads this day. */
 function clockAt(instant: string) {
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(instant) })
 }
-const COPY_DAY = '2026-11-14T15:00:00.000Z'
 
-/** The recorded `data_query` with only its origin changed: how the last run went and when it ended. */
-function queried(change: {
-  lastRun?: string
-  lastRunEndedAt?: string | null
-  table?: string
-  systems?: readonly unknown[]
-}) {
-  const part = recordedPart(
-    'data-query',
-    DataPart,
-    (found) =>
-      found.toolInvocation.toolName === DATA_TOOL.query &&
-      DataResult.safeParse(found.toolInvocation.result).data?.kind === 'ROWS',
-  )
-  const result = DataResult.parse(part.toolInvocation.result)
-  if (result.kind !== 'ROWS') throw new Error('the recorded query holds no rows')
-  const origin = result.origin.map((each) => ({ ...each, ...change }))
-  part.toolInvocation.result = { ...result, origin }
-  return part
-}
-
-/** The recorded `data_describe` of one table, as stored. */
-function described() {
-  return recordedPart(
-    'data-query',
-    DataPart,
-    (found) =>
-      found.toolInvocation.toolName === DATA_TOOL.describe &&
-      DataResult.safeParse(found.toolInvocation.result).data?.kind === 'TABLE',
-  )
+/** A recorded call of a data tool, as a conversation from before U14 stored it, with the copy it read. */
+function copied(toolName: string) {
+  return recordedPart('data-query', DataPart, (found) => found.toolInvocation.toolName === toolName)
 }
 
 const AS_THE_SERVER_SENDS = '2026-11-15T22:46:12.345-03:00'
@@ -125,7 +95,6 @@ function linesOf(parts: MastraMessagePart[], words = WORDS) {
     return {
       logo: line.querySelector('img') !== null,
       name: texts[0],
-      badges: texts.slice(1, -2),
       table: texts.at(-2),
       stamp,
       ...toneOf(within(line).getByText(stamp).className),
@@ -176,131 +145,8 @@ test('as fontes: sem source, nenhuma linha', () => {
   expect(sourcesIn([])).toEqual([])
 })
 
-const COPIED = 'copiado hoje às 08:45'
-
-test('a fonte do dado: a logo, Sankhya · Matriz, a tabela e copiado hoje às 08:45', () => {
-  clockAt(COPY_DAY)
-  const line = { logo: true, name: 'Sankhya · Matriz', badges: [], table: 'vendas' }
-  expect(linesOf([queried({ systems: [MATRIZ] })])).toMatchObject([{ ...line, stamp: COPIED }])
-})
-
-test('a conexão com o nome do sistema não se repete na fonte de cópia', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [{ ...MATRIZ, name: 'Sankhya' }] })])[0]?.name).toBe('Sankhya')
-})
-
-test('a fonte vem também do data_describe de uma tabela', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([described()])[0]).toMatchObject({ table: 'vendas', stamp: COPIED })
-})
-
-function seen(change: { lastRun?: string; lastRunEndedAt?: string | null }) {
-  const [line] = linesOf([queried({ systems: [MATRIZ], ...change })])
-  document.body.innerHTML = ''
-  return line
-}
-
-test('a cópia em dia: as palavras em text-2 e o ponto em success', () => {
-  clockAt(COPY_DAY)
-  expect(seen({ lastRun: 'COMPLETE' })).toMatchObject({
-    stamp: COPIED,
-    words: 'text-2',
-    dot: 'success',
-  })
-})
-
-test('a rodada parcial diz rodada parcial, em warning', () => {
-  clockAt(COPY_DAY)
-  expect(seen({ lastRun: 'PARTIAL' })).toMatchObject({
-    stamp: 'rodada parcial, copiado hoje às 08:45',
-    words: 'warning',
-    dot: 'warning',
-  })
-})
-
-test('a rodada com erro ou interrompida diz parada, em danger, e nunca copiado', () => {
-  clockAt(COPY_DAY)
-  for (const lastRun of ['ERROR', 'INTERRUPTED']) {
-    const line = seen({ lastRun })
-    expect(line).toMatchObject({ stamp: 'parada hoje às 08:45', words: 'danger', dot: 'danger' })
-    expect(line?.stamp).not.toContain('copiado')
-  }
-})
-
-test('sem rodada diz ainda sem cópia, com o ponto neutro', () => {
-  clockAt(COPY_DAY)
-  expect(seen({ lastRun: 'NONE', lastRunEndedAt: null })).toMatchObject({
-    stamp: 'ainda sem cópia',
-    words: 'text-2',
-    dot: 'line-strong',
-  })
-})
-
-test('outro dia diz ontem ou a data', () => {
-  clockAt('2026-11-15T15:00:00.000Z')
-  expect(
-    linesOf([queried({}), queried({ lastRun: 'ERROR', table: 'sankhya_notas' })]).map(
-      (line) => line.stamp,
-    ),
-  ).toEqual(['copiado ontem às 08:45', 'parada ontem às 08:45'])
-  document.body.innerHTML = ''
-  clockAt('2026-12-20T15:00:00.000Z')
-  expect(linesOf([queried({})]).map((line) => line.stamp)).toEqual([
-    'copiado em 14/11/2026 às 08:45',
-  ])
-})
-
-const REFUSED = { ...MATRIZ, state: 'NEEDS_REAUTH' }
-
-test('a conexão à espera de nova autorização mostra o selo de Integrações', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [REFUSED] })])[0]?.badges).toEqual(['Chaves recusadas'])
-  document.body.innerHTML = ''
-  const oauth = wordsOf([{ ...SANKHYA, auth: 'oauth2_code' }])
-  expect(linesOf([queried({ systems: [REFUSED] })], oauth)[0]?.badges).toEqual([
-    'Pede para conectar de novo',
-  ])
-})
-
-test('a conexão ativa não mostra selo', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [MATRIZ] })])[0]?.badges).toEqual([])
-  expect(screen.queryByText('Funcionando')).toBeNull()
-})
-
-test('a fonte não dada ao Projeto mostra só o sistema e a logo', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([queried({ systems: [{ kind: 'NOT_GIVEN' }] })])).toMatchObject([
-    { logo: true, name: 'Sankhya', badges: [], table: 'vendas', stamp: COPIED },
-  ])
-})
-
-test('uma cópia de duas conexões com uma não dada nomeia só a dada', () => {
-  clockAt(COPY_DAY)
-  const lines = linesOf([queried({ systems: [MATRIZ, { kind: 'NOT_GIVEN' }] })])
-  expect(lines[0]?.name).toBe('Sankhya · Matriz')
-})
-
-test('duas fontes são duas linhas, cada uma com a sua logo', () => {
-  clockAt(COPY_DAY)
-  const lines = linesOf([queried({}), queried({ table: 'sankhya_notas' })])
-  expect(lines.map((line) => [line.logo, line.table])).toEqual([
-    [true, 'vendas'],
-    [true, 'sankhya_notas'],
-  ])
-})
-
-test('a mesma tabela lida duas vezes aparece uma vez', () => {
-  clockAt(COPY_DAY)
-  expect(linesOf([queried({}), queried({}), described()])).toHaveLength(1)
-})
-
-test('um resultado fora do esquema não vira fonte', () => {
-  const broken = queried({})
-  broken.toolInvocation.result = { kind: 'ROWS', columns: ['total'], rows: [[1]], complete: true }
-  const refused = queried({})
-  refused.toolInvocation.result = { kind: 'REFUSED', code: 'TABLE_UNAVAILABLE' }
-  expect(sourcesIn([broken, refused])).toEqual([])
+test('um data_query ou data_describe de uma conversa antiga, que leu uma cópia, não vira fonte', () => {
+  expect(sourcesIn([copied(DATA_TOOL.query), copied(DATA_TOOL.describe)])).toEqual([])
 })
 
 test('a leitura ao vivo de uma conexão com o nome do sistema não o repete', () => {
@@ -340,7 +186,7 @@ test.each([
   clockAt('2026-11-16T07:00:00.000Z')
   const [stamp, name] = ['ao vivo · lido agora, às 03:39', 'Sankhya · Matriz']
   expect(linesOf([read({ at })])).toMatchObject([
-    { logo: true, name, badges: [], table: 'consultar', stamp, words: 'text-2', dot: 'success' },
+    { logo: true, name, table: 'consultar', stamp, words: 'text-2', dot: 'success' },
   ])
 })
 

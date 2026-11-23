@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { DataResult, ReadCut } from '@conexus/hub-api'
+import { ReadCut } from '@conexus/hub-api'
 import { z } from 'zod'
 import {
   LEAK,
@@ -95,7 +95,8 @@ test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventad
 })
 
 // The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
-// and `plan`, `files`, `tasks`, `reads`, `data-query`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream.
+// and `plan`, `files`, `tasks`, `reads`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream;
+// `data-query` is a frozen capture that no script makes.
 const NATIVE = [
   'abort',
   'approval',
@@ -165,17 +166,13 @@ test('as gravações desta etapa são da Mastra instalada e guardam o resultado 
       ),
     ),
   ).version
-  for (const scenario of ['data-query', 'reads'])
-    assert.equal(nativeRecording(scenario).header.version, installed, scenario)
+  assert.equal(nativeRecording('reads').header.version, installed, 'reads')
 
-  const data = toolResultsOf('data-query').map(({ result }) => DataResult.parse(result))
-  assert.deepEqual(
-    data.map(({ kind }) => kind),
-    ['CATALOG', 'TABLE', 'ROWS'],
-  )
-  const [, table, rows] = data
-  assert.equal(table?.kind === 'TABLE' && table.origin.table, 'vendas')
-  assert.equal(rows?.kind === 'ROWS' && rows.origin.length > 0, true)
+  // The frozen capture keeps the shape the stream carried when the data tools read copies, not the contract's.
+  const [catalog, table, rows] = toolResultsOf('data-query').map(({ result }) => Object(result))
+  assert.deepEqual([catalog?.kind, table?.kind, rows?.kind], ['CATALOG', 'TABLE', 'ROWS'])
+  assert.equal(table?.origin.table, 'vendas')
+  assert.equal(rows?.origin.length > 0, true)
 
   const [read] = toolResultsOf('reads')
   assert.equal(read?.tool, 'connector_read')

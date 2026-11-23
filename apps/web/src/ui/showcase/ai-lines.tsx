@@ -62,7 +62,6 @@ const TABLE: SourceView = {
   key: 'd1',
   name: 'Sankhya · Matriz',
   logo: undefined,
-  badge: undefined,
   table: 'TGFCAB',
   stamp: { tone: 'success', text: 'copiado hoje, às 09:00' },
 }

@@ -1,4 +1,3 @@
-import { PROOF_PAGE_ROWS, SYSTEM_MESSAGE_MAX } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
@@ -26,6 +25,10 @@ import { project } from '../projects/public-tables.ts'
 // pass stands, its runs and the Projetos it is released to. The rows a copy reads live in the
 // company's database, never here.
 export const copies = pgSchema('copies')
+
+/** The checks of the columns the copies' screens filled, until the migration that drops the tables (U15). */
+const SYSTEM_MESSAGE_MAX = 1000
+const PROOF_PAGE_ROWS = 50
 
 function instant(name: string) {
   return timestamp(name, { withTimezone: true })

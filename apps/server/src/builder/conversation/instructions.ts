@@ -30,8 +30,6 @@ export function builderInstructions(deps: {
   projectName: (ids: ProjectIds) => Promise<string | undefined>
   /** The Projeto's granted connections for the turn, read once for the run's tools, skills and these instructions. */
   granted: (requestContext: RequestContext) => Promise<readonly GrantedConnection[]>
-  /** The "## Data" block for the turn, read once for the run (`dataContext`). */
-  data: (requestContext: RequestContext) => Promise<string>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }): Promise<string> => {
     const ids = await deps.projectOf(requestContext)
@@ -40,11 +38,10 @@ export function builderInstructions(deps: {
         details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
       })
     }
-    const [projectName, context, granted, data] = await Promise.all([
+    const [projectName, context, granted] = await Promise.all([
       deps.projectName(ids),
       projectContext(deps.runs.repositoryOf(ids)),
       deps.granted(requestContext),
-      deps.data(requestContext),
     ])
     if (projectName === undefined) {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_PROJECT_GONE' } })
@@ -60,7 +57,6 @@ export function builderInstructions(deps: {
       appFolder: APP_FOLDER,
       checks: CHECK_LIMITS.checks,
       connections: connectionsContext(granted),
-      data,
     })
     return `${prompt}\n\n${dataOrder()}`
   }

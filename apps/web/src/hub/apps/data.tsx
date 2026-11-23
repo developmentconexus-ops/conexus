@@ -14,6 +14,7 @@ const NO_APP = 'Este Projeto ainda não tem app. Peça um ao Builder.'
 const NO_TABLES = 'O app ainda não criou tabelas.'
 
 const CAP_NOTE = 'teto da contagem'
+const TABLES_HEADING = 'data-Tabelas-do-app'
 
 /** What the list says a table holds: the count in the person's language, "mais de 10.000" (its ceiling is said in `CountCell`), or that it could not be counted. */
 export function countText(rows: RowCount): string {
@@ -44,23 +45,18 @@ function CountCell({ rows }: { rows: RowCount }) {
   )
 }
 
-/** One table of the list: a link to its rows, by the route of its schema, with its count beside it. */
+/** One table of the list: a link to its rows, with its count beside it. */
 function TableLink(props: { companyId: CompanyId; projectId: ProjectId; table: AppTableSummary }) {
   const { companyId, projectId, table } = props
-  const params = { companyId, projectId, table: table.name }
   return (
     <Row>
       <SidebarMenuButton
         className="h-auto min-h-row justify-between gap-md py-xs pointer-coarse:h-auto"
         render={
-          table.schema === 'COPY' ? (
-            <Link
-              to="/companies/$companyId/projects/$projectId/data/copies/$table"
-              params={params}
-            />
-          ) : (
-            <Link to="/companies/$companyId/projects/$projectId/data/$table" params={params} />
-          )
+          <Link
+            to="/companies/$companyId/projects/$projectId/data/$table"
+            params={{ companyId, projectId, table: table.name }}
+          />
         }
       >
         <span className="min-w-0 break-all">{table.name}</span>
@@ -70,48 +66,16 @@ function TableLink(props: { companyId: CompanyId; projectId: ProjectId; table: A
   )
 }
 
-/** A titled group of the list: the app's tables, or the copies released to the Projeto. */
-function TableGroup(props: {
-  title: string
-  empty?: string
-  companyId: CompanyId
-  projectId: ProjectId
-  tables: readonly AppTableSummary[]
-}) {
-  const { title, empty, tables, ...ids } = props
-  const heading = `data-${props.title.replaceAll(' ', '-')}`
-  return (
-    <section aria-labelledby={heading} className="flex flex-col gap-sm">
-      <h2 id={heading} className="text-eyebrow text-text-2">
-        {title}
-      </h2>
-      {tables.length === 0 ? (
-        empty !== undefined && <Empty>{empty}</Empty>
-      ) : (
-        <List>
-          {tables.map((table) => (
-            <TableLink key={`${table.schema}:${table.name}`} table={table} {...ids} />
-          ))}
-        </List>
-      )}
-    </section>
-  )
-}
-
-/** What the page lists of a Projeto: the app's tables (or why it has none) and the copies released to it. */
+/** What the page lists of a Projeto: the tables the app keeps, or why it has none. */
 function listOf(data: AppTables) {
-  if (data.kind === 'NO_APP') return { tables: [], copies: [], noTables: NO_APP }
-  return {
-    tables: data.tables.filter((table) => table.schema === 'APP'),
-    copies: data.tables.filter((table) => table.schema === 'COPY'),
-    noTables: NO_TABLES,
-  }
+  if (data.kind === 'NO_APP') return { tables: [], noTables: NO_APP }
+  return { tables: data.tables, noTables: NO_TABLES }
 }
 
 /**
- * The Dados page of a Projeto's app: the tables with their row counts, then the copies released to
- * the Projeto, and a table's rows beside them in `children`, the child route. On a phone one of the
- * two shows at a time: the list, or the rows of the table the address names.
+ * The Dados page of a Projeto's app: the tables with their row counts, and a table's rows beside
+ * them in `children`, the child route. On a phone one of the two shows at a time: the list, or the
+ * rows of the table the address names.
  */
 export function DataPage({
   companyId,
@@ -126,29 +90,30 @@ export function DataPage({
   const phone = useIsMobile()
   const open = useParams({ strict: false, select: (params) => params.table })
   const rowsOnly = phone && open !== undefined
-  const { tables, copies, noTables } = listOf(data)
-  const nothing = tables.length === 0 && copies.length === 0
+  const { tables, noTables } = listOf(data)
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-lg overflow-y-auto p-xl">
       {!rowsOnly && <PageTitle>Dados</PageTitle>}
-      {nothing && <Empty>{noTables}</Empty>}
-      {!nothing && (
+      {tables.length === 0 && <Empty>{noTables}</Empty>}
+      {tables.length > 0 && (
         <div className="flex min-h-0 flex-1 flex-col gap-xl md:flex-row">
           {!rowsOnly && (
             <nav aria-label="Tabelas" className="flex flex-col gap-lg md:w-64 md:shrink-0">
-              <TableGroup
-                title="Tabelas do app"
-                empty={noTables}
-                tables={tables}
-                {...{ companyId, projectId }}
-              />
-              {copies.length > 0 && (
-                <TableGroup
-                  title="Cópias liberadas"
-                  tables={copies}
-                  {...{ companyId, projectId }}
-                />
-              )}
+              <section aria-labelledby={TABLES_HEADING} className="flex flex-col gap-sm">
+                <h2 id={TABLES_HEADING} className="text-eyebrow text-text-2">
+                  Tabelas do app
+                </h2>
+                <List>
+                  {tables.map((table) => (
+                    <TableLink
+                      key={table.name}
+                      table={table}
+                      companyId={companyId}
+                      projectId={projectId}
+                    />
+                  ))}
+                </List>
+              </section>
             </nav>
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-md">{children}</div>

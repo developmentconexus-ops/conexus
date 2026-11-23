@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { DataOrigin, DataResult, listConnections } from '@conexus/hub-api'
+import { listConnections } from '@conexus/hub-api'
+import { z } from 'zod'
 import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
 import { messageOf } from './src/builder/conversation/messages.ts'
 import { recordedRun } from './src/builder/conversation/test-recorded.ts'
@@ -56,45 +57,49 @@ test('as fontes', async () => {
   }
 })
 
-const ASKED = recordedRun('data-query')
+const ASKED = recordedRun('reads')
   .read.map(messageOf)
   .findLast((message) => message?.role === 'builder')
 
-/** The recorded answer with its origin made the worst the line has to hold: long names, a refused connection, a date. */
-function askedWith(origin: Record<string, unknown>, extra: Record<string, unknown>[] = []) {
+const READ_AT = '2026-11-14T11:45:00.000Z'
+
+type Read = { connection?: string; operation?: string }
+
+const Stored = z.looseObject({})
+
+/** The recorded live read, its call changed by `read`, and one more call for each of `extra`. */
+function askedWith(read: Read, extra: Read[] = []) {
   const message = structuredClone(ASKED)
-  for (const part of message?.parts ?? []) {
-    const result = part.type === 'tool-invocation' ? part.toolInvocation.result : undefined
-    if (!DataResult.safeParse(result).success) continue
-    const held = DataResult.parse(result)
-    if (held.kind === 'ROWS') {
-      const [first] = held.origin
-      const more = first ? extra.map((one) => ({ ...first, ...one })) : []
-      held.origin = [...held.origin, ...more].map((each) =>
-        DataOrigin.parse({ ...each, ...origin }),
-      )
-    }
-    if (part.type === 'tool-invocation') part.toolInvocation.result = held
-  }
-  return message
+  if (message === undefined) return undefined
+  const parts = message.parts.flatMap((part) => {
+    if (part.type !== 'tool-invocation' || part.toolInvocation.state !== 'result') return [part]
+    const call = part.toolInvocation
+    return [read, ...extra].map((change, at) => ({
+      ...part,
+      toolInvocation: {
+        ...call,
+        toolCallId: `${call.toolCallId}-${at}`,
+        args: { ...call.args, ...change },
+        result: { ...Stored.parse(call.result), at: READ_AT },
+      },
+    }))
+  })
+  return { ...message, parts }
 }
 
 const WORST = {
-  connector: 'mercado-livre',
-  table: 'mercado_livre_pedidos_da_loja_oficial',
-  systems: [{ kind: 'NAMED', name: 'Loja oficial do Mercado Livre', state: 'NEEDS_REAUTH' }],
-  lastRun: 'PARTIAL',
-  lastRunEndedAt: '2026-11-14T11:45:00.000Z',
+  connection: 'Loja oficial do Mercado Livre',
+  operation: 'mercado-livre.mercado_livre_pedidos_da_loja_oficial',
 }
 
 const CASES = [
-  ['a cópia em dia', {}],
-  ['a pior linha: nomes longos, o selo e a rodada parcial', WORST],
+  ['a leitura ao vivo', {}],
+  ['a pior linha: nomes longos', WORST],
 ] as const
 
-for (const [name, origin] of CASES) {
+for (const [name, read] of CASES) {
   test(`a fonte do dado: ${name}`, async () => {
-    const message = askedWith(origin)
+    const message = askedWith(read)
     const replies = {
       ...WITH_CONVERSATIONS,
       ...sessionReplies(FIRST, { messages: message ? [message] : [] }),
@@ -154,7 +159,7 @@ for (const [name, origin] of CASES) {
 }
 
 test('a fonte do dado a 1280px: a logo, o nome, a pastilha e o carimbo numa linha só, o carimbo na ponta direita; duas fontes, duas linhas de 32px com a linha fina entre elas', async () => {
-  const message = askedWith({}, [{ table: 'sankhya_notas' }])
+  const message = askedWith({}, [{ operation: 'sankhya.estoque' }])
   const replies = {
     ...cardReplies(null, message ? [message] : []),
     [`GET /api/companies/${COMPANY.id}/connections`]: ok(listConnections, {

@@ -8,7 +8,7 @@ export type CompanyToolName =
   | (typeof DATA_TOOL)[keyof typeof DATA_TOOL]
   | (typeof BUILDER_TOOL)['connectorRead' | 'connectorNotes' | 'connectorNoteSave']
   | (typeof APP_DATA_TOOL)[keyof typeof APP_DATA_TOOL]
-  | (typeof ASSISTANT_TOOL)['overview' | 'copyRuns']
+  | (typeof ASSISTANT_TOOL)['overview']
   | typeof TYPED_READS
 
 /** Who the tools are made for: a conversation's kind, or the Assistant's research helper. */
@@ -18,7 +18,6 @@ export type CompanyToolSeat = ControllerKind | 'research'
 export const TOOLS_OF = {
   assistant: [
     ASSISTANT_TOOL.overview,
-    ASSISTANT_TOOL.copyRuns,
     TYPED_READS,
     BUILDER_TOOL.connectorNotes,
     BUILDER_TOOL.connectorNoteSave,

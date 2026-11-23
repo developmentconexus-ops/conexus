@@ -1,7 +1,6 @@
-import { DATA_TOOL, DataResult } from '@conexus/hub-api'
+import { DATA_TOOL } from '@conexus/hub-api'
 import { DatabaseIcon } from 'lucide-react'
-import type { ReadOutcome } from './connector-specs.ts'
-import { LOCAL_REFUSALS, rowsText, said, thrownOf } from './connector-specs.ts'
+import { LOCAL_REFUSALS, said, thrownOf } from './connector-specs.ts'
 import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, ToolSpec, ToolStatus } from './tool-spec.ts'
@@ -44,17 +43,8 @@ function failedSentence(tool: Call, generic: string): Presented {
   return said(kind !== undefined && isDataRefusal(kind) ? REFUSED_TEXT[kind] : generic)
 }
 
-function rowsOf(rows: number, complete: boolean): ReadOutcome {
-  return rows === 0 && complete ? { kind: 'EMPTY' } : { kind: 'ROWS', rows, complete }
-}
-
-function line(sentence: string, detail: string | undefined, status: ToolStatus): Presented {
-  return {
-    icon: DatabaseIcon,
-    sentence,
-    detail,
-    beside: status !== 'running' && detail !== undefined,
-  }
+function line(sentence: string): Presented {
+  return { icon: DatabaseIcon, sentence, beside: false }
 }
 
 function presentDescribe(tool: Call, status: ToolStatus): Presented {
@@ -63,30 +53,13 @@ function presentDescribe(tool: Call, status: ToolStatus): Presented {
     return failedSentence(tool, table === undefined ? CATALOG_FAILED : TABLE_FAILED)
   }
   const running = status === 'running'
-  const result = DataResult.safeParse(tool.result).data
-  if (table !== undefined) {
-    const detail =
-      result?.kind === 'TABLE'
-        ? rowsText(rowsOf(result.sample.rows.length, !result.sample.more))
-        : undefined
-    return line(running ? `Vendo ${table}` : `Viu ${table}`, detail, status)
-  }
-  const count = result?.kind === 'CATALOG' ? result.tables.length : undefined
-  const detail = count === undefined ? undefined : `${count} ${count === 1 ? 'tabela' : 'tabelas'}`
-  return line(running ? 'Consultando o catálogo' : 'Consultou o catálogo', detail, status)
+  if (table !== undefined) return line(running ? `Vendo ${table}` : `Viu ${table}`)
+  return line(running ? 'Consultando o catálogo' : 'Consultou o catálogo')
 }
 
 function presentQuery(tool: Call, status: ToolStatus): Presented {
   if (status === 'error' || status === 'denied') return failedSentence(tool, TABLE_FAILED)
-  if (status === 'running') return line('Consultando os dados', undefined, status)
-  const result = DataResult.safeParse(tool.result).data
-  if (result?.kind !== 'ROWS') return line('Consultou os dados', undefined, status)
-  const tables = result.origin.map((each) => each.table).join(', ')
-  return line(
-    tables === '' ? 'Consultou os dados' : `Consultou ${tables}`,
-    rowsText(rowsOf(result.rows.length, result.complete)),
-    status,
-  )
+  return line(status === 'running' ? 'Consultando os dados' : 'Consultou os dados')
 }
 
 export const DATA_SPECS: Record<(typeof DATA_TOOL)[keyof typeof DATA_TOOL], ToolSpec> = {

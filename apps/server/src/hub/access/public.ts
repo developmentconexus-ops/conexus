@@ -13,7 +13,7 @@ import { viewOf } from './view.ts'
 export type { AccessSources, Choice, Consumer, ConsumerContext, Place } from './model.ts'
 export { chosenIn } from './model.ts'
 export { Principal, principalFor } from './principal.ts'
-export { operationLeaf, tableLeaf } from './reach.ts'
+export { operationLeaf } from './reach.ts'
 export type { AccessView } from './view.ts'
 
 export type AccessDeps = Readonly<{
@@ -41,10 +41,9 @@ export function createAccess(deps: AccessDeps) {
         ...{ tx, companyId, personId },
         action: 'readCompany',
       })
-      const { systems, given } = await deps.sources.systems(tx, { companyId, place })
-      const tables = await deps.sources.tables(tx, { companyId, place, role: proof.role, given })
+      const systems = await deps.sources.systems(tx, { companyId, place })
       const chosen = systems.filter((system) => chosenIn(principal.choice, system.connection))
-      return { role: proof.role, systems: chosen, tables }
+      return { role: proof.role, systems: chosen }
     })
     const person = personOf(personId, read.role)
     const speaker =
@@ -56,7 +55,7 @@ export function createAccess(deps: AccessDeps) {
         .filter((_, index) => answers[index] === true)
         .map((target) => operationLeaf(target.connectionId, target.operationId)),
     )
-    return viewOf({ systems: read.systems, tables: read.tables, allowed })
+    return viewOf({ systems: read.systems, allowed })
   }
   return Object.freeze({ viewOf: viewFor })
 }

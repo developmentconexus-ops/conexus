@@ -1,6 +1,6 @@
 ---
 name: conexus-data
-description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, reading the company's copies and connected systems (Sankhya, Mercado Livre), failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
+description: How an app saves data and runs logic on the server. Covers the operations in `shared/operations.ts` written in Zod, their handlers in `server/handlers.ts` with `query` and `write`, tables and migrations, who is calling, the values PostgreSQL gives back, reading the company's connected systems (Sankhya, Mercado Livre), failures and the limits of a call. Use before designing an app's tables or changing `shared/operations.ts` or anything in `server/`.
 ---
 
 # Server logic and saved data
@@ -28,7 +28,7 @@ Every piece this skill names comes from `@conexus/app`. When one is missing from
 - `caller` is the person using the app, set by Conexus from their sign-in: `personId`, `personName`, `projectId`, `projectName` and `access`, how they hold the app (see Roles). The browser cannot change it. To record who did something, read `caller`; never add a name or author field to the input.
 - Read with `query(db, RowSchema, text, values)`: it returns the rows, each checked against `RowSchema`. `db.query` runs in a read-only transaction.
 - Write with `write(db, [{ text, values }, ...])`: every statement of the list runs in one transaction, all or none. Put a change and the row that records it in the same `write`.
-- Always pass values as parameters (`$1`, `$2`), never inside the text. The app's own tables live in its own schema: do not prefix them with a schema name. The one exception is a company copy released to this Project, which lives in the `sync` schema: write `sync.<name>`, with every column in double quotes in the case the "## Data" block lists (`select "CODVEND" from sync.vendas`), and name the columns you read, never `select *`: a copy also holds a column of its own that is not data.
+- Always pass values as parameters (`$1`, `$2`), never inside the text. The app's own tables live in its own schema: do not prefix them with a schema name.
 - Postgres `integer` arrives as a number; `bigint`, `count(*)` and `numeric` arrive as text (`app_data_check` shows each column's type on the real data), so cast a count with `::int` in SQL and keep decimals as text, which the screens format with `lib/format.ts`; sums belong in SQL. Read a `timestamptz` with `z.coerce.date()` and return it as ISO text, as the example's `When` does. Alias columns to the names the output declares, for example `opened_at AS "openedAt"`.
 - `server/` runs in a Worker: no file system, no environment variables and no network, since the platform refuses every request the app sends out. It reaches only `db`.
 - One call may use 50 ms of CPU and 50 `db` calls, 10 s in all, and 5 s per statement.
@@ -44,9 +44,7 @@ An app has roles only when the plan names them, because the person said differen
 
 ## Connectors
 
-Where a connector copies or declares a read that lists rows, the app reads the company data from the copy (`sync.<name>`, through `db`); an app reads a system live only for a connector with neither, and to write. This section covers those two cases: an app reads the company's connected systems live only on the server, and only the reads the app declares. A refusal with `42501` on a listed copy means its release is still pending.
-
-A copy of a connector that tells its accounts apart, such as the Mercado Livre's stores, keeps every account in one table, with two columns of its own before the data's: `"_account"` (the account's id in the connector) and `"_account_name"` (the connection's name in Conexus). Filter or group by `"_account_name"` to show one store, and never write a store's name in the code.
+An app reads the company's connected systems live only on the server, and only the reads the app declares.
 
 - `shared/operations.ts` exports `connectors`, made with `defineConnectors` from `@conexus/app`: each connector's id (`sankhya`, `mercado-livre`) and the list of its reads the app calls, by the ids the connector's own skill gives, such as `defineConnectors({ sankhya: ['pedidos', 'consultar'] })`. The check carries the list to the version's manifest; a read left out of it is not in the client.
 - In a handler, `connectorsOf(context, connectors)` gives the client: `await client.sankhya.pedidos({ codigoEmpresa: 1, page: 0 })`. Each read takes the input its connector's skill describes, typed: a field that does not exist, or a read not declared, fails the check. A key or the system's address never reaches the app.
