@@ -1,38 +1,14 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { plantCodex } from '../../platform/test-openai-codex.ts'
-import { assisting, created, talking } from './test-assistant.ts'
+import { assisting, created, subscribed, talking } from './test-assistant.ts'
 
 const BLOCK = /<autonomy_and_persistence>[\s\S]*check each part of it against what you found/
 const AGENT_RULE = /autonomy_and_persistence|Reading is always allowed|failed read|ask the person/i
 
 type On = Awaited<ReturnType<typeof assisting>>
-
-/** The company's ChatGPT subscription, signed in through the double's device flow. */
-async function subscribed(on: On) {
-  await on.hub.test.asOwner(
-    `insert into builder.company_account_kind (company_id, kind) values ($1, 'openai_codex')`,
-    [on.companyId],
-  )
-  const signIns = `${on.company}/model-account-sign-ins`
-  const begun = await post(on.hub, on.ana, signIns, {
-    owner: 'company',
-    kind: 'openai_codex',
-    label: 'Assinatura',
-  })
-  assert.equal(begun.statusCode, 201, begun.body)
-  const polled = await on.hub.app.inject({
-    method: 'POST',
-    url: `${signIns}/${String(Object(begun.json()).signInId)}/poll`,
-    headers: { origin: TEST_ORIGIN, cookie: on.ana.cookie, [ATTEMPT_KEY_HEADER]: randomUUID() },
-  })
-  assert.equal(polled.statusCode, 200, polled.body)
-}
 
 /** One Assistant turn on `model`; the model's double refuses it, so only what was sent counts. */
 async function askedOn(t: TestContext, on: On, model: string) {
