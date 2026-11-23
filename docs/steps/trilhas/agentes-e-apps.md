@@ -39,7 +39,7 @@ As respostas do fundador:
 
 ## O cartão de hoje
 
-A Prévia em endereço próprio fechou em ⟦DATA DO USO⟧: o fundador a usou na nuvem, na v0.24.110, e a
+A Prévia em endereço próprio fechou em 2026-11-23: o fundador a usou na nuvem, na v0.24.111, e a
 linha de fechamento está no [arquivo de aprovação](../../approvals/a-previa-em-endereco-proprio.md).
 A Prévia mora em `<rótulo>--previa`, e o app publicado não abre dentro de outra página. O cartão está
 no histórico do `main`, no commit `eb0d2ea1`, o último que o mudou. A trilha está sem cartão em
