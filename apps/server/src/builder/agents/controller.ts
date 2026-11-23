@@ -35,6 +35,7 @@ import type { CodeToolsDeps } from './code-tools.ts'
 import type { AgentEvent, AgentEvents } from './events.ts'
 import type { AgentReads, Registry } from './registry.ts'
 import { createRegistry } from './registry.ts'
+import type { ActivationOf } from './resolver.ts'
 import { agentRuns, scopesOf } from './resolver.ts'
 import { agent, agentConversation } from './tables.ts'
 import { mayApproveAgents, writeOfAgents } from './write-of.ts'
@@ -134,12 +135,12 @@ function agentsSpec(
   parts: {
     runOf: RunOf
     resolvedOf: Resolved
-    registry: Registry
+    activationOfRun: ActivationOf
     threads: Memory
     machines: ConversationMachines
   },
 ): ConversationSpec {
-  const { runOf, resolvedOf } = parts
+  const { runOf, resolvedOf, activationOfRun } = parts
   return {
     kind: 'agents',
     name: 'Agents',
@@ -157,7 +158,7 @@ function agentsSpec(
     tools: async (requestContext) =>
       (await resolvedOf(requestContext)).listTools({ requestContext }),
     approval: { kind: 'THE_WRITE_ASKS' },
-    scopes: scopesOf(runOf, parts.registry),
+    scopes: scopesOf(runOf, activationOfRun),
     memory: async ({ requestContext }) => {
       const chosen = await (await resolvedOf(requestContext)).getMemory({ requestContext })
       if (chosen === undefined) {
@@ -225,7 +226,7 @@ export function createAgentConversations(deps: Deps) {
     ...{ mastra: deps.mastra, log },
     build: (live) => agentOf({ ...deps, memories, machines }, live),
   })
-  const { runOf, resolvedOf } = agentRuns({
+  const { runOf, resolvedOf, activationOfRun } = agentRuns({
     ...{ memory, registry },
     keptRun: (owner, id) => keptRun(database, owner, id),
   })
@@ -239,7 +240,7 @@ export function createAgentConversations(deps: Deps) {
   const { controller } = mountAgent(
     agentsSpec(
       { queue, own: { database, log } },
-      { ...{ runOf, resolvedOf, registry }, threads: memory, machines },
+      { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
     ),
     { queue, storage },
   )
