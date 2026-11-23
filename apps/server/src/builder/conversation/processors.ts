@@ -127,10 +127,14 @@ export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore; 
       // Mastra scores a throw 0 and calls the model again, with no cap; a machine that fails here is one that could not check.
       return judge(deps, requestContext).catch((cause: unknown) => {
         const conversationId = conversationIn(requestContext)
+        const about = {
+          runId: run.runId,
+          ...(conversationId === undefined ? {} : { conversationId }),
+        }
         logFailure(
           deps.log,
           new Failure('INTERNAL_UNEXPECTED', { cause }),
-          conversationId === undefined ? {} : { conversationId },
+          about,
           'CHECK_JUDGE_FAILED',
         )
         deps.runs.judged(requestContext, { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' })

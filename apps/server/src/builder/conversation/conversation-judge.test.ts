@@ -35,5 +35,6 @@ test('o juiz do fim do turno que lança: o turno termina sem conferência e o lo
   const [line] = logged
   assert.equal(line?.fields.code, 'ECONNRESET')
   assert.match(String(line?.fields.conversationId), /^[0-9a-f-]{36}$/)
+  assert.equal(typeof line?.fields.runId, 'string', 'the log names the run of the scorer')
   assert.ok(!JSON.stringify(hub.lines).includes('SECRET-PLANTED-TEXT'))
 })
