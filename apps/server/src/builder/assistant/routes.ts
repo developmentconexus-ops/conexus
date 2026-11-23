@@ -33,8 +33,8 @@ import { answer, serve } from '../../platform/http.ts'
 import type { CompanyProjects } from '../company-tools/public.ts'
 import type { Owner } from '../controller-kit/public.ts'
 import {
+  answerModelChange,
   attemptIdOf,
-  changeModel,
   ownThread,
   RUN_MARKS,
   releaseThreads,
@@ -292,26 +292,33 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     return answer({ conversation })
   })
 
-  serve(app, setAssistantModel, async (input) => {
+  serve(app, setAssistantModel, (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params
-    const {
-      thread,
-      scope: { place },
-    } = await ownScoped(deps, owner, conversationId)
-    const tags = assistantMarks(owner, {
-      projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
-      automation: automationOf(thread.metadata) ?? undefined,
-    })
-    const { model, effort } = await changeModel(deps, {
-      ...{ kind: 'assistant', owner, id: conversationId, tags },
-      choice: input.body,
-    })
-    deps.log.info(
-      { companyId: owner.companyId, traceId: input.traceId, conversationId },
-      'ASSISTANT_MODEL_SET',
+    return answerModelChange(
+      {
+        kind: 'assistant',
+        controller: deps.controller,
+        queue: deps.queue,
+        owned: async () => {
+          const {
+            thread,
+            scope: { place },
+          } = await ownScoped(deps, owner, conversationId)
+          const tags = assistantMarks(owner, {
+            projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
+            automation: automationOf(thread.metadata) ?? undefined,
+          })
+          return { owner, id: conversationId, tags }
+        },
+        logged: ({ companyId, conversationId }) =>
+          deps.log.info(
+            { companyId, traceId: input.traceId, conversationId },
+            'ASSISTANT_MODEL_SET',
+          ),
+      },
+      input.body,
     )
-    return answer({ model, effort })
   })
 }
 

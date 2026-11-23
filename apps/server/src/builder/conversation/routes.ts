@@ -12,7 +12,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { Owner } from '../controller-kit/public.ts'
-import { attemptIdOf, changeModel, openSession } from '../controller-kit/public.ts'
+import { answerModelChange, attemptIdOf, openSession } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { titleOf, titlesOf } from './history.ts'
@@ -110,18 +110,21 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
     return answer({ conversation: { id: made.id, title: null, createdAt, model: made.model } })
   })
 
-  serve(app, setConversationModel, async (input) => {
+  serve(app, setConversationModel, (input) => {
     const { person, params, body } = input
-    await store.owned({ person, ...params })
-    const { model, effort } = await changeModel(
-      { controller: deps.builder.controller, queue: deps.queue },
-      { kind: 'builder', owner: ownerOf(input), id: params.conversationId, choice: body },
+    return answerModelChange(
+      {
+        kind: 'builder',
+        controller: deps.builder.controller,
+        queue: deps.queue,
+        owned: async () => {
+          await store.owned({ person, ...params })
+          return { owner: ownerOf(input), id: params.conversationId }
+        },
+        logged: (about) => input.log.info(about, 'CONVERSATION_MODEL_SET'),
+      },
+      body,
     )
-    input.log.info(
-      { companyId: params.companyId, conversationId: params.conversationId },
-      'CONVERSATION_MODEL_SET',
-    )
-    return answer({ model, effort })
   })
 }
 
