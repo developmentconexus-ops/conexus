@@ -5,22 +5,20 @@ One line per document.
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): read first.
-- [VISION.md](../VISION.md): the product's direction.
-- [README.md](../README.md): repo.
+- [README.md](../README.md): repo; [VISION.md](../VISION.md): direction.
 - [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
 - [approvals/](approvals/): one per card.
 - [architecture.md](architecture.md): design.
 - [explanation/](explanation/): [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
-- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).
+- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md); [mail](how-to/hub-mail.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
-- [how-to/hub-mail.md](how-to/hub-mail.md): mail.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
-- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/aws-conta-de-laboratorio.md](how-to/aws-conta-de-laboratorio.md): lab AWS account.
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key; [lab AWS account](how-to/aws-conta-de-laboratorio.md).
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).
+- [conhecimento/](conhecimento/): decided, proved, read.
 - [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): checklist.
