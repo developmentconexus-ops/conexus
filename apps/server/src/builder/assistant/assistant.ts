@@ -1,14 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { CompanyData, CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import {
-  ASSISTANT_TOOL,
-  BUILDER_TOOL,
-  DATA_TOOL,
-  SKILL_TOOLS,
-  SUBAGENT_TOOL,
-  TASK_TOOLS,
-  WORKSPACE_TOOL,
-} from '@conexus/hub-api'
+import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -32,7 +24,6 @@ import {
   companyTools,
   projectsOf,
 } from '../company-tools/public.ts'
-import { TYPED_READ_NAMES } from '../connectors/public.ts'
 import type {
   ConversationSpec,
   DataBinding,
@@ -62,7 +53,7 @@ import { subagentModel } from '../model-accounts/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { AVAILABLE_TOOLS } from './available-tools.ts'
 import { chosenConnections } from './chosen.ts'
-import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
+import { companyMemory, companyScopes } from './company-memory.ts'
 import { readsFiles } from './connector-access.ts'
 import type { RunOf } from './context.ts'
 import { assistantRuns, machineMarks } from './context.ts'
