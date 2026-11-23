@@ -1,4 +1,4 @@
-import type { CompanyId, ConnectorEntry, CopyProposalSummary, CopySummary } from '@conexus/hub-api'
+import type { CompanyId, ConnectorEntry, CopySummary } from '@conexus/hub-api'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -8,8 +8,7 @@ import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { Table, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
-import type { Props } from './copy-list.tsx'
-import { CELL, CopyPhoneRow, CopyTableRow, HeadRow, Proposals } from './copy-list.tsx'
+import { CELL, CopyPhoneRow, CopyTableRow, HeadRow } from './copy-list.tsx'
 import type { System } from './data-systems.ts'
 import { narrowed, systemsOf } from './data-systems.ts'
 import {
@@ -44,38 +43,29 @@ type Listing = {
   companyId: CompanyId
   systems: System[]
   connectors: readonly ConnectorEntry[]
-  /** Whether each row draws its menu: for whoever manages copies. */
-  menu: boolean
-  onNote: Props['onNote']
 }
 
 function SystemTable(props: Listing) {
-  const { companyId, systems, connectors, onNote } = props
+  const { companyId, systems, connectors } = props
   return (
     <Table>
       <HeadRow heads={DATA_COLUMNS} right="Linhas" />
       {systems.map((system) => (
         <TableBody key={system.connector}>
           <TableRow>
-            <TableCell colSpan={DATA_COLUMNS.length + 1} className={CELL}>
+            <TableCell colSpan={DATA_COLUMNS.length} className={CELL}>
               <SystemTitle system={system} connectors={connectors} />
             </TableCell>
           </TableRow>
           {system.copies.length === 0 && (
             <TableRow>
-              <TableCell colSpan={DATA_COLUMNS.length + 1} className={`${CELL} text-text-2`}>
+              <TableCell colSpan={DATA_COLUMNS.length} className={`${CELL} text-text-2`}>
                 {NO_TABLE_COPIED}
               </TableCell>
             </TableRow>
           )}
           {system.copies.map((copy) => (
-            <CopyTableRow
-              key={copy.id}
-              companyId={companyId}
-              copy={copy}
-              menu={props.menu}
-              onNote={onNote}
-            />
+            <CopyTableRow key={copy.id} companyId={companyId} copy={copy} />
           ))}
         </TableBody>
       ))}
@@ -84,7 +74,7 @@ function SystemTable(props: Listing) {
 }
 
 function SystemPhoneList(props: Listing) {
-  const { companyId, systems, connectors, onNote } = props
+  const { companyId, systems, connectors } = props
   return (
     <div className="flex flex-col gap-lg">
       {systems.map((system) => (
@@ -95,13 +85,7 @@ function SystemPhoneList(props: Listing) {
           ) : (
             <List>
               {system.copies.map((copy) => (
-                <CopyPhoneRow
-                  key={copy.id}
-                  companyId={companyId}
-                  copy={copy}
-                  menu={props.menu}
-                  onNote={onNote}
-                />
+                <CopyPhoneRow key={copy.id} companyId={companyId} copy={copy} />
               ))}
             </List>
           )}
@@ -111,9 +95,8 @@ function SystemPhoneList(props: Listing) {
   )
 }
 
-type Read = UseQueryResult<{ copies: CopySummary[]; proposals: CopyProposalSummary[] }>
+type Read = UseQueryResult<{ copies: CopySummary[] }>
 
-/** What the layer says when the company has no system linked and no proposal. */
 function NoSystem({ companyId }: { companyId: CompanyId }) {
   return (
     <div className="flex flex-col items-start gap-sm">
@@ -130,21 +113,13 @@ function NoSystem({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-/**
- * The **Bruto** layer of Dados: the Builder's open proposals on top, then every system with its
- * copies as tables: the name in mono, what it holds, its state, its last run, its rows, interval and
- * Projetos. A system linked and not yet copied says so. The search keeps the tables that answer.
- * Whoever does not manage copies reads only the systems of the tables their role reads, with no
- * proposals and no row menu.
- */
 export function RawLayer(props: {
   companyId: CompanyId
   read: Read
   q: string | undefined
   manage: boolean
-  onNote: Props['onNote']
 }) {
-  const { companyId, read, q, onNote, manage } = props
+  const { companyId, read, q, manage } = props
   const connections = useQuery(connectionsQuery(companyId))
   const phone = useIsMobile()
   if (read.isPending) return <Skeleton className="h-24 w-full" />
@@ -155,16 +130,15 @@ export function RawLayer(props: {
     return <ReadFailure text={CATALOG_FAILED} onRetry={() => void connections.refetch()} />
   }
   if (connections.isPending) return <Skeleton className="h-24 w-full" />
-  const { copies, proposals } = read.data
+  const { copies } = read.data
   const { connectors } = connections.data
   const all = systemsOf(copies, manage ? connections.data.connections : [])
   const systems = narrowed(all, q)
   if (!manage && all.length === 0) return <p className="font-medium">{NO_TABLE_OF_ROLE}</p>
-  if (all.length === 0 && proposals.length === 0) return <NoSystem companyId={companyId} />
-  const listing = { companyId, systems, connectors, menu: manage, onNote }
+  if (all.length === 0) return <NoSystem companyId={companyId} />
+  const listing = { companyId, systems, connectors }
   return (
     <div className="flex flex-col gap-lg">
-      {manage && <Proposals companyId={companyId} proposals={proposals} onNote={onNote} />}
       <p className="text-text-2">{RAW_INTRO}</p>
       {systems.length === 0 && <Empty>{NO_MATCH}</Empty>}
       {systems.length > 0 &&

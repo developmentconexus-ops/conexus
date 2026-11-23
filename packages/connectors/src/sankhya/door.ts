@@ -103,7 +103,7 @@ const carregar = defineOperation({
 const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('ReadSql')
 
 /** What `DbExplorerSP.executeQuery` answers, its rows keyed by column: the door's `consultar` and the searches read it. */
-export const QueriedShape = z.object({
+const QueriedShape = z.object({
   fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
   rows: z.array(z.array(z.unknown())),
   burstLimit: z.boolean().optional(),

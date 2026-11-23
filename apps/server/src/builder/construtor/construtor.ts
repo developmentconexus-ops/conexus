@@ -218,7 +218,7 @@ function construtorSpec(
   },
 ): ConversationSpec {
   const { scopeOf } = parts
-  const tools: CompanyToolDeps<ConstrutorConnection> = {
+  const tools: CompanyToolDeps = {
     log: deps.log,
     connector: byPrincipal(deps.connectors, turnKey.of),
   }

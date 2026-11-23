@@ -2,16 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import pg from 'pg'
 import type { CopyTable } from './copy-sql.ts'
-import { ROLES_LOCK } from './copy-sql.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
 import { createCompanyDatabase, syncLoginOf, testCompanyPostgres } from './test-company-postgres.ts'
-import { until } from './test-until.ts'
 
 type DatabaseUrl = Awaited<ReturnType<typeof createCompanyDatabase>>
 
 const KEY = testAppsConfig().appLoginKey
 const postgres = testCompanyPostgres(KEY)
-const signal = new AbortController().signal
 
 function syncOf(owner: DatabaseUrl) {
   return syncLoginOf(owner, KEY)
@@ -49,14 +46,11 @@ test('json, chave de texto e descrições', async (t) => {
   const sync = await syncOf(owner)
   assert.equal((await postgres.ensureCopyTable(sync, PEDIDOS)).kind, 'DONE')
   assert.equal((await postgres.ensureCopyTable(sync, PEDIDOS)).kind, 'DONE', 'repetível')
-  const rows = [['MLB1', '[{"quantidade":1},{"quantidade":2}]', '2026-11-10T10:00:00-03:00']]
-  const loja = { ref: '42', name: 'Loja Centro' }
-  const written = await postgres.writePage(
+  await asSync(
     sync,
-    { ...PEDIDOS, pass: 0, rows, account: loja },
-    signal,
+    `insert into sync.pedidos (id, itens, criado, _account, _account_name, _pass)
+     values ('MLB1', '[{"quantidade":1},{"quantidade":2}]'::jsonb, '2026-11-10T10:00:00-03:00', '42', 'Loja Centro', 0)`,
   )
-  assert.equal(written.kind, 'DONE')
 
   const [row] = await asSync(
     sync,
@@ -120,60 +114,6 @@ test('uma descrição com aspas e ponto e vírgula fica como texto', async (t) =
   assert.equal(described?.tabela, said)
 })
 
-test('o fim da passada de uma conta não toca a outra, e o nome da conta segue a conexão', async (t) => {
-  const owner = await createCompanyDatabase(t)
-  await postgres.ensureSync(owner)
-  const sync = await syncOf(owner)
-  await postgres.ensureCopyTable(sync, PEDIDOS)
-  const a = { ref: 'A', name: 'Loja A' }
-  const b = { ref: 'B', name: 'Loja B' }
-  function row(id: string) {
-    return [id, null, null]
-  }
-  await postgres.writePage(
-    sync,
-    { ...PEDIDOS, pass: 0, rows: [row('1'), row('2')], account: a },
-    signal,
-  )
-  await postgres.writePage(
-    sync,
-    { ...PEDIDOS, pass: 0, rows: [row('1'), row('3')], account: b },
-    signal,
-  )
-  await postgres.writePage(sync, { ...PEDIDOS, pass: 1, rows: [row('1')], account: a }, signal)
-  const renamed = { ref: 'A', name: 'Loja A nova' }
-  const closed = await postgres.closePass(
-    sync,
-    { ...PEDIDOS, pass: 1, windowFrom: null, readAll: true, account: renamed },
-    signal,
-  )
-  assert.deepEqual(closed, { kind: 'DONE', rows: 3 })
-  assert.deepEqual(
-    await asSync(sync, 'select _account, id, _account_name from sync.pedidos order by 1, 2'),
-    [
-      { _account: 'A', id: '1', _account_name: 'Loja A nova' },
-      { _account: 'B', id: '1', _account_name: 'Loja B' },
-      { _account: 'B', id: '3', _account_name: 'Loja B' },
-    ],
-  )
-  assert.deepEqual(await postgres.accountRows(sync, { copy: 'pedidos', ref: 'B' }), {
-    kind: 'DONE',
-    rows: 2,
-  })
-  assert.equal((await postgres.dropAccountRows(sync, { copy: 'pedidos', ref: 'B' })).kind, 'DONE')
-  assert.equal((await postgres.dropAccountRows(sync, { copy: 'pedidos', ref: 'B' })).kind, 'DONE')
-  const net = await postgres.dropForeignRows(sync, { copy: 'pedidos', refs: ['B'] }, signal)
-  assert.equal(net.kind, 'DONE')
-  assert.deepEqual(await asSync(sync, 'select count(*)::int as n from sync.pedidos'), [{ n: 0 }])
-  assert.equal((await postgres.dropCopyTable(sync, { copy: 'pedidos' })).kind, 'DONE')
-  assert.equal((await postgres.dropCopyTable(sync, { copy: 'pedidos' })).kind, 'DONE', 'repetível')
-  assert.equal(
-    (await postgres.dropAccountRows(sync, { copy: 'pedidos', ref: 'A' })).kind,
-    'DONE',
-    'a tabela que já saiu não tem linha a tirar',
-  )
-})
-
 test('a versão 1 guarda a hora local, sem as colunas da conta', async (t) => {
   const owner = await createCompanyDatabase(t)
   await postgres.ensureSync(owner)
@@ -205,38 +145,4 @@ test('a versão 1 guarda a hora local, sem as colunas da conta', async (t) => {
       ['_pass', 'integer'],
     ],
   )
-})
-
-test('o DROP da tabela da cópia espera a vez dos atos do banco', async (t) => {
-  const owner = await createCompanyDatabase(t)
-  await postgres.ensureSync(owner)
-  const sync = await syncOf(owner)
-  await postgres.ensureCopyTable(sync, PEDIDOS)
-  const holder = new pg.Client({ connectionString: owner.reveal() })
-  await holder.connect()
-  try {
-    await holder.query('begin')
-    await holder.query(ROLES_LOCK.text)
-    const dropping = postgres.dropCopyTable(sync, { copy: 'pedidos' })
-    await until(
-      async () =>
-        ((
-          await holder.query(
-            `select 1 from pg_locks where locktype = 'advisory' and objid = 4207000002 and not granted`,
-          )
-        ).rowCount ?? 0) > 0,
-      'the DROP waits for the turn',
-    )
-    const kept = await holder.query(
-      `select tablename from pg_tables where schemaname = 'sync' and tablename = 'pedidos'`,
-    )
-    assert.equal(kept.rowCount, 1, 'the table stays while the turn is held')
-    await holder.query('commit')
-    assert.equal((await dropping).kind, 'DONE')
-  } finally {
-    await holder.end()
-  }
-  assert.deepEqual(await asSync(sync, `select to_regclass('sync.pedidos') as left`), [
-    { left: null },
-  ])
 })

@@ -19,13 +19,12 @@ export const SEATS: readonly CompanyToolSeat[] = [
   'agents',
 ]
 
-export const MATRIZ = { ...granted('sankhya', SANKHYA, 'Matriz'), copies: true }
+export const MATRIZ = granted('sankhya', SANKHYA, 'Matriz')
 
 /** Received by the run and out of its view: the role reaches none of its operations (`clientes`). */
 export const FILIAL = {
   ...granted('sankhya', LOJA, 'Filial'),
   reads: [{ operation: 'clientes', label: 'Clientes', summary: 'clientes', list: null }],
-  copies: true,
 }
 
 const OWNER = {
@@ -72,9 +71,8 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
   const reads: ConnectionId[] = []
   const notes: ConnectionId[] = []
   const saved: ConnectionId[] = []
-  const proposed: ConnectionId[][] = []
-  const called = { runs, reads, notes, saved, proposed, listed: 0 }
-  const deps: CompanyToolDeps<typeof MATRIZ> = {
+  const called = { runs, reads, notes, saved, listed: 0 }
+  const deps: CompanyToolDeps = {
     log: QUIET,
     connector: {
       read: async (run, read) => {
@@ -91,13 +89,6 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
       saveNote: async (_run, note) => {
         saved.push(note.connectionId)
         throw new Error('a note is never saved in this test')
-      },
-      propose: {
-        call: async (_run, proposal) => {
-          proposed.push([...proposal.connections])
-          throw new Error('a copy is never proposed in this test')
-        },
-        copying: (listed) => listed.filter((each) => each.copies),
       },
     },
     copies: () => ({

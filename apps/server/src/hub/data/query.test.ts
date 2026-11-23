@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ReadAnswer } from '@conexus/hub-api'
 import { ConversationId, PersonId } from '@conexus/hub-api'
 import pg from 'pg'
@@ -26,9 +25,8 @@ function inCompany(on: CopiesOn, personId = on.anaId) {
 
 async function withCopies(t: Parameters<typeof copiesOn>[0]) {
   const on = await copiesOn(t)
-  const sales = await on.enable('vendas')
-  const sellers = await on.enable('vendedores')
-  for (const copyId of [sales, sellers]) assert.equal((await on.run(copyId)).kind, 'ENDED')
+  await on.plant('vendas')
+  const sellers = await on.plant('vendedores')
   return { on, sellers }
 }
 

@@ -18,10 +18,8 @@ const OWN_VENDAS = {
 /** Two copies of the Matriz ligadas and run: `vendas` released to Pedidos through the Hub's own door, `clientes` not. */
 async function releasedOn(t: TestContext) {
   const on = await copiesOn(t)
-  const vendas = await on.enable('vendas')
-  const clientes = await on.enable('clientes')
-  assert.equal((await on.run(vendas)).kind, 'ENDED')
-  assert.equal((await on.run(clientes)).kind, 'ENDED')
+  const vendas = await on.plant('vendas')
+  const _clientes = await on.plant('clientes')
   const release = { companyId: on.companyId, personId: on.anaId, projectId: on.projectId }
   const project = `/api/companies/${on.companyId}/projects/${on.projectId}`
   return {

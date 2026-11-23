@@ -27,7 +27,7 @@ function lists(view: AccessView, toolName: string): boolean {
  */
 export function companyReadSearch<C extends CompanyConnection>(
   scopeOf: (requestContext: RequestContext) => Promise<CompanyToolScope<C> | undefined>,
-  deps: CompanyToolDeps<C>,
+  deps: CompanyToolDeps,
 ): ToolSearchProcessor {
   return new ToolSearchProcessor({
     tools: typedReads(async (requestContext) => {

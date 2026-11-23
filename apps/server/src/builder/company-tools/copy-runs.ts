@@ -97,7 +97,7 @@ export function copyRunsTool(
       }
       if (!scope.tables.includes(table)) return notFound()
       const { companyId, personId } = scope.run.owner
-      const { copies: listed } = await copies().list({ companyId, personId, named: [] })
+      const { copies: listed } = await copies().list({ companyId, personId })
       const found = listed.find((each) => each.name === table)
       if (found === undefined) return notFound()
       const read = await copies()

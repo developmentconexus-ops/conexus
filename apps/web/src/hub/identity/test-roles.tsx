@@ -146,9 +146,7 @@ type Written = { method: string; path: string; body?: unknown }[]
 function copiesHub(view: View, roles: RoleView[], written: Written) {
   return [
     http.get(`*/api/companies/${COMPANY.id}/copies`, () =>
-      HttpResponse.json(
-        listCopies.success.body.parse({ copies: view.copies ?? COPIES, proposals: [] }),
-      ),
+      HttpResponse.json(listCopies.success.body.parse({ copies: view.copies ?? COPIES })),
     ),
     http.get(
       `*/api/companies/${COMPANY.id}/copy-readers`,

@@ -22,24 +22,15 @@ export {
   tokenRequest,
 } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance-session.ts'
-export type {
-  ConnectorCopy,
-  CopyColumnType,
-  CopyColumnTypeV2,
-  CopyModel,
-  CopyPage,
-} from './kernel/copy.ts'
+export type { CopyColumnType, CopyColumnTypeV2 } from './kernel/copy.ts'
 export {
   CANONICAL_CELL,
   CopyDefinition,
   CopyDefinitionV1,
   CopyDefinitionV2,
   CopyName,
-  CopyPageSchema,
   CopyPosition,
   copyPrefixOf,
-  PAGE_ROWS,
-  PageInput,
 } from './kernel/copy.ts'
 export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
 export type { ListPage } from './kernel/list.ts'

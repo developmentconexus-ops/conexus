@@ -63,7 +63,6 @@ export const BUILDER_TOOL = {
   appDataCheck: APP_DATA_TOOL.check,
   dataDescribe: DATA_TOOL.describe,
   dataQuery: DATA_TOOL.query,
-  copyPropose: 'copy_propose',
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

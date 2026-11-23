@@ -12,12 +12,12 @@ import { ConnectorId as ConnectorIdSchema } from '@conexus/hub-api'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { CopyName } from '../connectors/public.ts'
+import type { CopyName } from '../connectors/public.ts'
 import { projectCopyRows, seenBy } from './list.ts'
 import { copyModeOf } from './mode.ts'
 import type { CopiesDeps } from './store.ts'
 import { personScope, shownOf } from './store.ts'
-import { copyProposal, copySource } from './tables.ts'
+import { copySource } from './tables.ts'
 
 /** What a Projeto may read of the company's copies: the released ones with their columns, the others by name, only those of the role of whoever converses. */
 export type ProjectCopiesView =
@@ -32,39 +32,11 @@ export type ProjectCopiesView =
         mode: CopyMode
         /** The copy's sources have an account: its table holds `_account` and `_account_name`. */
         accounts: boolean
-        /** The copy is the turn on of a proposal the Builder made in this Projeto: it is on and released. */
-        proposedHere: boolean
       }[]
       unreleased: CopyName[]
-      /** The Builder's proposals of this Projeto still waiting for whoever turns copies on. */
-      proposals: { name: CopyName; label: string }[]
     }
   /** The Hub's database did not answer. */
   | { kind: 'FAILED' }
-
-/** This Projeto's proposals: the open ones, and the copies that came from an accepted one. */
-async function proposalsOf(tx: ReadTx, input: { companyId: CompanyId; projectId: ProjectId }) {
-  const rows = await tx
-    .select({
-      name: copyProposal.name,
-      label: copyProposal.label,
-      state: copyProposal.state,
-      copyId: copyProposal.copyId,
-    })
-    .from(copyProposal)
-    .where(
-      and(
-        eq(copyProposal.companyId, input.companyId),
-        eq(copyProposal.projectId, input.projectId),
-        inArray(copyProposal.state, ['OPEN', 'ACCEPTED']),
-      ),
-    )
-    .orderBy(copyProposal.name)
-  return {
-    open: rows.filter(({ state }) => state === 'OPEN').map(({ name, label }) => ({ name, label })),
-    accepted: new Set(rows.flatMap(({ copyId }) => (copyId === null ? [] : [copyId]))),
-  }
-}
 
 /** The copies, of those named, that have a source with an account. */
 async function withAccounts(tx: ReadTx, companyId: CompanyId, ids: readonly CopyId[]) {
@@ -99,7 +71,6 @@ export async function projectView(
     rows: Awaited<ReturnType<typeof projectCopyRows>>
     reads: Awaited<ReturnType<typeof seenBy>>
     accounts: Set<string>
-    proposed: Awaited<ReturnType<typeof proposalsOf>>
   }
   try {
     read = await deps.database.read(personScope(input), async (tx) => {
@@ -107,14 +78,14 @@ export async function projectView(
       const rows = await projectCopyRows(tx, input)
       const granted = rows.filter((row) => row.granted).map((row) => row.copy.id)
       const accounts = await withAccounts(tx, companyId, granted)
-      return { rows, reads, accounts, proposed: await proposalsOf(tx, input) }
+      return { rows, reads, accounts }
     })
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
     logFailure(deps.log, error, { companyId, projectId }, 'COPY_VIEW_FAILED')
     return { kind: 'FAILED' }
   }
-  const { rows, reads, accounts, proposed } = read
+  const { rows, reads, accounts } = read
   const released = rows.filter(({ granted }) => granted)
   return {
     kind: 'COPIES',
@@ -124,12 +95,10 @@ export async function projectView(
         ...{ name: copy.name, connector: ConnectorIdSchema.parse(copy.connectorId) },
         ...{ source: shown.source, description: shown.description, columns: shown.columns },
         ...{ mode: copyModeOf(copy.definition), accounts: accounts.has(copy.id) },
-        proposedHere: proposed.accepted.has(copy.id),
       }
     }),
     unreleased: rows
       .filter(({ granted, copy }) => !granted && (reads === 'ALL' || reads.includes(copy.id)))
       .map(({ copy }) => copy.name),
-    proposals: proposed.open.map(({ name, label }) => ({ name: CopyName.parse(name), label })),
   }
 }

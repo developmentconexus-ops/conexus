@@ -1,11 +1,7 @@
 import type { CompanyData, DataSources } from '@conexus/hub-api'
 import { Catalog, companyData } from '@conexus/hub-api'
-import {
-  changedOn,
-  PADARIA_SOL_MATRIZ,
-  sankhyaCopyModels,
-  soldBy,
-} from '../../hub/connectors/test-sales.ts'
+import { changedOn, PADARIA_SOL_MATRIZ, soldBy } from '../../hub/connectors/test-sales.ts'
+import { MODELS } from '../../hub/copies/test-planted-models.ts'
 
 const MATRIZ = '00000000-0000-4000-8000-0000000000c1'
 const CONNECTION = { id: MATRIZ, name: 'Matriz', connector: 'sankhya' }
@@ -42,8 +38,8 @@ const CATALOG = Catalog.parse({
       actions: [],
     },
   ],
-  tables: sankhyaCopyModels().map((model) => ({
-    name: model.id,
+  tables: Object.entries(MODELS).map(([id, model]) => ({
+    name: id,
     label: model.label,
     description: model.definition.description,
     columns: model.definition.columns.map(({ name, type, description }) => ({

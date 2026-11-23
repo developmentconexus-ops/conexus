@@ -95,7 +95,7 @@ const MIGRATION_TODAY = [
   ...['agents/write-of', 'app-data/context', 'app-data/tools', 'assistant/assistant'],
   ...['assistant/connector-access', 'assistant/context', 'assistant/open', 'assistant/propose'],
   ...['assistant/routes', 'automations/automations', 'connectors/connector-tools'],
-  ...['connectors/copy-propose', 'connectors/typed-reads', 'construtor/code-tool'],
+  ...['connectors/typed-reads', 'construtor/code-tool'],
   ...['construtor/construtor', 'controller-kit/turns', 'conversation/builder'],
   ...['conversation/public', 'tools/check'],
 ]

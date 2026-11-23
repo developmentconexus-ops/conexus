@@ -136,7 +136,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 [code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md). A new one follows
 [adding a subject](how-to/add-a-subject.md).
 
-**Other subjects.** `hub/copies`, `builder/copy-clock` and the schema `sync` are [the Sync](explanation/sync.md),
+**Other subjects.** `hub/copies` and the schema `sync` are [the Sync](explanation/sync.md),
 until the lake takes the copies [0070].
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`

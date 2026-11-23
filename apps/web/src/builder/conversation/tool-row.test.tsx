@@ -127,6 +127,24 @@ test('desconhecida no nome legível, argumentos e resultado (Critério 8)', asyn
   expect(screen.getByText(/count/)).toBeTruthy()
 })
 
+test('a ferramenta que saiu: uma conversa antiga com copy_propose abre como ferramenta desconhecida, sem cartão (Critério 7)', async () => {
+  const gone: ToolItem = {
+    kind: 'tool',
+    id: 't-6',
+    toolCallId: 'call-6',
+    toolName: 'copy_propose',
+    state: 'result',
+    args: { name: 'vendas' },
+    result: { kind: 'PROPOSED', name: 'vendas' },
+  }
+  render(<ToolRow tool={gone} />)
+  expect(screen.getByText('Usou Copy propose')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
+  open(/Usou Copy propose/)
+  expect(await screen.findByText(/Argumentos:/)).toBeTruthy()
+  expect(screen.getByText(/Resultado:/)).toBeTruthy()
+})
+
 test('uma falha abre no motivo, ao vivo e relida, e a edição mostra a mudança embaixo (Critério 8)', async () => {
   const reread = render(<ToolRow tool={itemOf(WRITE_REFUSED_STORED)} />)
   const line = screen.getByText(/Não conseguiu escrever/).closest('[data-slot="trace-line"]')

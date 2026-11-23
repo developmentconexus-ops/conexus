@@ -4,8 +4,7 @@ import { test } from 'node:test'
 import { CopySample } from '@conexus/hub-api'
 import { call, codeOf, memberOn, personOn } from '../identity/test-hub.ts'
 import type { CopiesOn } from './test-copies.ts'
-import { asSync, copiesOn } from './test-copies.ts'
-import { copiesUrl, enabled, firstEnded } from './test-routes.ts'
+import { asSync, copiesOn, copiesUrl } from './test-copies.ts'
 
 async function people(on: CopiesOn) {
   const { hub, companyId } = on
@@ -22,8 +21,7 @@ function sample(on: CopiesOn, person: Parameters<typeof call>[1], copyId: string
 test('a amostra: dono e administrador veem 5 linhas e a marca de que há mais', async (t) => {
   const on = await copiesOn(t)
   const others = await people(on)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   for (const person of [on.ana, others.admin]) {
     const read = await sample(on, person, copy.id)
     assert.equal(read.statusCode, 200, read.body)
@@ -39,8 +37,7 @@ test('a amostra: dono e administrador veem 5 linhas e a marca de que há mais', 
 test('a amostra: o membro sem a marca e quem não é da empresa recebem não encontrado', async (t) => {
   const on = await copiesOn(t)
   const others = await people(on)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   const member = await sample(on, on.carla, copy.id)
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'COPY_NOT_FOUND'])
   const outsider = await sample(on, others.outsider, copy.id)
@@ -49,8 +46,7 @@ test('a amostra: o membro sem a marca e quem não é da empresa recebem não enc
 
 test('a amostra antes da primeira rodada', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   await asSync(on.owner, (client) => client.query(`DROP TABLE sync.${copy.name}`))
   const read = await sample(on, on.ana, copy.id)
   assert.equal(read.statusCode, 200, read.body)
@@ -61,8 +57,7 @@ test('a amostra antes da primeira rodada', async (t) => {
 
 test('a amostra refaz o login de leitura', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   const postgres = on.hub.postgres.companyPostgres
   const made = t.mock.method(postgres, 'ensureReader')
   const read = postgres.readCopies.bind(postgres)
@@ -85,37 +80,15 @@ test('a amostra refaz o login de leitura', async (t) => {
 
 test('a amostra de uma empresa cuja cópia veio antes do login de leitura', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   await asSync(on.owner, (client) => client.query('REVOKE USAGE ON SCHEMA sync FROM conexus_read'))
   const before = await sample(on, on.ana, copy.id)
   assert.deepEqual([before.statusCode, codeOf(before)], [503, 'COPY_DATABASE_UNAVAILABLE'])
-  await on.run(copy.id)
-  const answered = await sample(on, on.ana, copy.id)
-  assert.equal(answered.statusCode, 200, answered.body)
-  assert.equal(CopySample.parse(Object(answered.json()).sample).rows.length, 5)
-  assert.equal(on.hub.lines.filter((line) => line.message === 'COPY_READER_MADE').length, 0)
-})
-
-test('a amostra, com a leitura calada até o login existir, é atendida depois da rodada', async (t) => {
-  const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
-  const postgres = on.hub.postgres.companyPostgres
-  const made = t.mock.method(postgres, 'ensureReader')
-  const read = postgres.readCopies.bind(postgres)
-  t.mock.method(postgres, 'readCopies', async (...args: Parameters<typeof read>) =>
-    made.mock.callCount() === 0 ? { kind: 'UNAVAILABLE' as const } : read(...args),
-  )
-  await on.run(copy.id)
-  const answered = await sample(on, on.ana, copy.id)
-  assert.equal(answered.statusCode, 200, answered.body)
 })
 
 test('a amostra com o banco calado', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   t.mock.method(on.hub.postgres.companyPostgres, 'readCopies', async () => ({
     kind: 'UNAVAILABLE' as const,
   }))
@@ -132,8 +105,7 @@ test('a amostra de uma cópia que não existe', async (t) => {
 
 test('a amostra de uma tabela com até 5 linhas está completa', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'vendas')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('vendas'), name: 'sankhya_vendas' }
   for (const kept of [5, 3]) {
     await asSync(on.owner, (client) =>
       client.query(
@@ -149,8 +121,7 @@ test('a amostra de uma tabela com até 5 linhas está completa', async (t) => {
 
 test('a amostra do modelo clientes mostra o CPF ou CNPJ que o Sankhya mandou', async (t) => {
   const on = await copiesOn(t)
-  const copy = await enabled(on, 'clientes')
-  await firstEnded(on, copy.id)
+  const copy = { id: await on.plant('clientes'), name: 'sankhya_clientes' }
   const read = await sample(on, on.ana, copy.id)
   assert.equal(read.statusCode, 200, read.body)
   const shown = CopySample.parse(Object(read.json()).sample)

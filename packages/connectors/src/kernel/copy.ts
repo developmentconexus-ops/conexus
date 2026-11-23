@@ -1,9 +1,5 @@
 import { z } from 'zod'
-import type { Operation } from './operation.ts'
 import { OperationId } from './operation.ts'
-
-/** The rows one page of a copy reads; the Hub's run asks for no more (decision 0063: a page stays far under the executor's cap). */
-export const PAGE_ROWS = 500
 
 /** A copy's name: the table it fills in the company's `sync` schema; a template gives it. */
 export const CopyName = z
@@ -179,34 +175,3 @@ export const CopyPosition = z.discriminatedUnion('kind', [
   }),
 ])
 export type CopyPosition = z.infer<typeof CopyPosition>
-
-/** A starting point a connector offers; turning a copy on copies `definition` into the company's row. */
-export type CopyModel = Readonly<{ id: CopyName; label: string; definition: CopyDefinitionV1 }>
-
-/** One page: the definition, the last key read (none on a pass's first page), the two dates of the pass, and the size. */
-export const PageInput = z
-  .object({
-    definition: CopyDefinitionV1, // a connector's own paged read serves version 1 alone
-    after: z.array(z.int()).nullable(), // one per key column
-    since: z.iso.date().nullable(), // the watermark less one day; null on the first pass, which reads all (#940)
-    windowFrom: z.iso.date().nullable(), // the pass's start less the window's days
-    limit: z.int().min(1).max(PAGE_ROWS),
-  })
-  .refine((page) => page.after === null || page.after.length === page.definition.key.length, {
-    path: ['after'],
-    message: 'One value per key column.',
-  })
-export type PageInput = z.infer<typeof PageInput>
-
-/** The rows in the definition's column order, each cell its type's canonical text or null; `more` when another page follows. */
-export const CopyPageSchema = z.object({
-  rows: z.array(z.array(z.string().nullable())),
-  more: z.boolean(),
-})
-export type CopyPage = Readonly<{ rows: readonly (readonly (string | null)[])[]; more: boolean }>
-
-/** What a connector offers for copies: the one paged read and its templates. */
-export type ConnectorCopy = Readonly<{
-  read: Operation<PageInput, CopyPage, 'read'>
-  models: readonly CopyModel[]
-}>

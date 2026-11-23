@@ -11,8 +11,6 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { toldNative } from '../../platform/model-text.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
-import type { ProposeCall } from './copy-propose.ts'
-import { copyProposeTool } from './copy-propose.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
@@ -73,7 +71,7 @@ export function builderAccess(
   granted: readonly GrantedConnection[],
   who: Asker,
   log: FailureLog,
-): { access: ConnectorAccess; save: NoteSave; propose: ProposeCall } {
+): { access: ConnectorAccess; save: NoteSave } {
   const access: ConnectorAccess = {
     connections: granted,
     log,
@@ -88,15 +86,7 @@ export function builderAccess(
   }
   const save: NoteSave = (call, requestContext) =>
     port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
-  const propose: ProposeCall = ({ signal, ...call }, requestContext) =>
-    port.propose(who, {
-      ...call,
-      personId: who.personId,
-      runId: runIn(who, requestContext),
-      // A call Mastra gives no signal is one nobody can stop: the proof's own deadline still holds.
-      signal: signal ?? new AbortController().signal,
-    })
-  return { access, save, propose }
+  return { access, save }
 }
 
 /** The connection a name says; the connector too when the call names one, since two systems may share a name. */
@@ -343,11 +333,6 @@ export function connectorTools(
   access: ConnectorAccess,
   include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & {
     reads?: false
-    /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
-    propose?: {
-      copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
-      call: ProposeCall
-    }
   },
 ): ToolsInput {
   if (access.connections.length === 0) return {}
@@ -355,8 +340,5 @@ export function connectorTools(
     ...(include.reads === false ? {} : readTool(access)),
     ...notesTool(access),
     ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
-    ...(include.propose === undefined
-      ? {}
-      : copyProposeTool(include.propose.copying, include.propose.call)),
   }
 }

@@ -105,12 +105,7 @@ export function readsHub(view: View) {
       ),
     ),
     http.get(`${BASE}/copies`, () =>
-      HttpResponse.json(
-        listCopies.success.body.parse({
-          copies: [],
-          proposals: [],
-        }),
-      ),
+      HttpResponse.json(listCopies.success.body.parse({ copies: [] })),
     ),
     http.get(`${BASE}/data-reads`, ({ request }) => {
       view.asked?.push(new URL(request.url).search)
