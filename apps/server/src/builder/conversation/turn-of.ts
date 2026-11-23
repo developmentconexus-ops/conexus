@@ -1,9 +1,8 @@
 import type { ConversationId, ProjectId } from '@conexus/hub-api'
-import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
-import type { Owner, RunScope, Taken } from '../controller-kit/public.ts'
-import { ownerIn, runResolver, turnOfOwner, turnProcessor } from '../controller-kit/public.ts'
+import type { Owner, RunScope, Taken, TurnSource } from '../controller-kit/public.ts'
+import { ownerIn, runResolver, turnOfOwner } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
@@ -50,22 +49,24 @@ function projectTurn(deps: {
 }
 
 /**
- * The run's turn, made as Mastra's run reads its input, from the conversation the run is (Factory
- * `credential-policy.ts:31-90`), never from the request that woke it: the run takes the Projeto,
- * or ends refused with whose run holds it, before any model call and with nothing saved. A run
- * Mastra resumes (an answered card) reads no input: its first step takes the turn instead.
+ * The Builder's turn as its ficha holds it (`turn`): the run's, made as Mastra's run reads its
+ * input, from the conversation the run is (Factory `credential-policy.ts:31-90`), never from the
+ * request that woke it. `projectTurn` is the step: the run takes the Projeto, or ends refused with
+ * whose run holds it, before any model call and with nothing saved. A run Mastra resumes (an
+ * answered card) reads no input: its first step takes the turn instead.
  */
 export function turnOf(deps: {
   queue: QueueDeps
   runs: Pick<Runs, 'take'>
   index: ConversationIndex
-}): InputProcessor {
-  return turnProcessor({
+}): TurnSource {
+  return {
+    kind: 'RUN',
     id: TURN_PROCESSOR,
     none: 'CONVERSATION_NOT_FOUND',
     resumes: true,
     take: projectTurn(deps),
-  })
+  }
 }
 
 /** The Builder's run: its Projeto from the Hub's index, every connection the Projeto received. */

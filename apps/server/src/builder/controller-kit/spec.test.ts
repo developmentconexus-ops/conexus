@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ModelId } from '@conexus/hub-api'
+import type { Agent, StreamIsTaskCompleteConfig } from '@mastra/core/agent'
 import { Knowledge } from '@mastra/core/knowledge'
 import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
@@ -256,4 +257,62 @@ test('o turno RUN da ficha leva o id dela e só retoma no primeiro passo se a fi
   }
   assert.equal('processInputStep' in (await processorOf(false)), false)
   assert.equal('processInputStep' in (await processorOf(true)), true)
+})
+
+test('a ficha de código dá um agente sem máquina própria: sem a chave, o Mastra poria a local no servidor do Hub', async (t) => {
+  const { mount } = await mounting(t)
+  assert.equal(await mount().agent.getWorkspace(), undefined)
+  const coding = mount({ base: 'CODING_AGENT' }).agent
+  assert.equal(await coding.getWorkspace(), undefined)
+  // Only `createCodingAgent` adds the task list's signal, and only with memory.
+  assert.deepEqual(mount().agent.listSignalProviders(), [])
+  assert.equal(coding.listSignalProviders().length, 1)
+})
+
+test('as instruções de uma string só chegam ao agente como a ficha as dá, e a ficha vê o run', async (t) => {
+  const { mount } = await mounting(t)
+  const requestContext = new RequestContext()
+  requestContext.set('lido', 'do run')
+  const { agent } = mount({
+    prompt: {
+      kind: 'ONE_STRING',
+      of: async (context) => `Uma só, ${String(context.get('lido'))}.`,
+    },
+  })
+  assert.equal(await agent.getInstructions({ requestContext }), 'Uma só, do run.')
+})
+
+test('a ficha sem juiz dá um agente sem isTaskComplete; com um, ele é o padrão do agente e os outros padrões ficam', async (t) => {
+  const { mount } = await mounting(t)
+  const requestContext = new RequestContext()
+  const without = await mount().agent.getDefaultOptions({ requestContext })
+  assert.equal('isTaskComplete' in without, false)
+  const judge: StreamIsTaskCompleteConfig = { scorers: [], strategy: 'all' }
+  const judged = await mount({ judge }).agent.getDefaultOptions({ requestContext })
+  assert.equal(judged.isTaskComplete, judge)
+  assert.deepEqual(judged.toolCallConcurrency, without.toolCallConcurrency)
+  assert.deepEqual(judged.modelSettings, without.modelSettings)
+})
+
+test('uma conversa com o turno RUN leva o processador do turno e nenhum que depende da sessão', async (t) => {
+  const { mount } = await mounting(t)
+  const turn = {
+    kind: 'RUN',
+    id: 'conexus-spec-run',
+    none: 'SEM_VEZ',
+    resumes: true,
+    take: async () => ({ kind: 'NONE' }) satisfies Taken,
+  } as const
+  const { agent } = mount({ turn })
+  const listed = await agent.listConfiguredInputProcessors(new RequestContext())
+  assert.deepEqual(
+    listed.map((each) => ('id' in each ? each.id : undefined)),
+    ['conexus-spec-run', 'conexus-account-pick'],
+  )
+  async function deletedRunsOf(agent: Agent) {
+    const output = await agent.listConfiguredOutputProcessors(new RequestContext())
+    return output.flatMap((each) => ('id' in each && each.id.endsWith('-deleted') ? [each.id] : []))
+  }
+  assert.deepEqual(await deletedRunsOf(agent), [])
+  assert.deepEqual(await deletedRunsOf(mount().agent), ['conexus-spec-turn-deleted'])
 })

@@ -1,4 +1,9 @@
-import type { AgentConfig, AgentInstructions, ToolsInput } from '@mastra/core/agent'
+import type {
+  AgentConfig,
+  AgentInstructions,
+  StreamIsTaskCompleteConfig,
+  ToolsInput,
+} from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -20,11 +25,13 @@ export type PromptPart =
     }>
 
 /**
- * An agent's instructions (row 5): system messages in order, or, for the agent of a conversation
- * that delegates (row 21), the instructions of the agent the run names.
+ * An agent's instructions (row 5): system messages in order; one string, as the Builder's are; or,
+ * for the agent of a conversation that delegates (row 21), the instructions of the agent the run
+ * names.
  */
 export type Prompt =
   | Readonly<{ kind: 'MESSAGES'; parts: readonly PromptPart[] }>
+  | Readonly<{ kind: 'ONE_STRING'; of: (requestContext: RequestContext) => Promise<string> }>
   | Readonly<{
       kind: 'DELEGATED'
       of: (requestContext: RequestContext) => Promise<AgentInstructions>
@@ -52,8 +59,9 @@ type SessionTurn = Readonly<{
 }>
 
 /**
- * ...or by the run alone, with no session to hold it: an agent that runs on its own (the version
- * the Construtor tests) takes its turn at the input and ends it with the call.
+ * ...or by the run alone, with no session to hold it: the agent that runs on its own (the version
+ * the Construtor tests) and the Builder, whose run frees the Projeto itself (`onEnd`), take their
+ * turn at the input and do not end it by session.
  */
 type RunTurn = Readonly<{
   kind: 'RUN'
@@ -76,7 +84,8 @@ export type AgentSpec = Readonly<{
   id: string
   name: string
   description?: string
-  base: 'AGENT'
+  /** `CODING_AGENT` is Mastra's `createCodingAgent`, made with no workspace of its own. */
+  base: 'AGENT' | 'CODING_AGENT'
   prompt: Prompt
   model: ModelSource
   tools: (requestContext: RequestContext) => Promise<ToolsInput>
@@ -88,15 +97,16 @@ export type AgentSpec = Readonly<{
   signals?: AgentConfig['signals']
   scopes?: AgentConfig['scopes']
   knowledge?: AgentConfig['knowledge']
+  /** How a turn ends (row 11): Mastra's `isTaskComplete` scores it, and a score of 0 sends the reason back to the model. */
+  judge?: StreamIsTaskCompleteConfig
 }>
 
 type ControllerInput = Parameters<typeof controllerOf>[0]
 
 /** A conversation's agent and its controller: the id is `CONTROLLER_KINDS[kind].id`, never the ficha's. */
-export type ConversationSpec = Omit<AgentSpec, 'id' | 'memory' | 'turn'> &
+export type ConversationSpec = Omit<AgentSpec, 'id' | 'memory'> &
   Readonly<{
     kind: ControllerKind
-    turn: SessionTurn
     /** The controller's memory, where its threads live, and the agent's unless `memory` says another. */
     threads: MastraMemory
     /** The agent's own memory, when it is not the threads': the one a run's version keeps. */
