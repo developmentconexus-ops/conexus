@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { test } from 'node:test'
+import { mock, test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
@@ -310,4 +310,31 @@ test('R2 fora: a versão fica guardada no servidor e a cópia pendente é repeti
     key.startsWith(`${companyId}/${projectId}/`),
   )
   assert.equal(mine.length, 1, 'the retry reaches every Projeto on the volume, this one among them')
+})
+
+test('a repetição das cópias que falha inteira: cada volta registra a falha com o código e o relógio segue', async (t) => {
+  const { hub, ana, conversations, companyId } = await conversing(t, working(writing('a.ts', 'x\n')))
+  hub.builder.bucket.refuse.puts = 2
+  await asked(t, { hub, person: ana, conversations })
+  // The retry the failed copy armed with the real clock ends here; the clock below is the test's.
+  hub.runs.stop()
+  mock.timers.enable({ apis: ['setTimeout'] })
+  t.after(() => mock.timers.reset())
+  await hub.runs.resumeCopies()
+  const companyFolder = join(hub.config.gitRoot, companyId)
+  rmSync(companyFolder, { recursive: true })
+  writeFileSync(companyFolder, '')
+  const failed = () => hub.lines.filter((line) => line.message === 'GIT_COPY_RETRY_FAILED')
+  async function lapsed(count: number) {
+    for (let waited = 0; failed().length < count && waited < 1000; waited += 1) {
+      await new Promise((done) => setImmediate(done))
+    }
+  }
+  mock.timers.tick(30_000)
+  await lapsed(1)
+  assert.equal(failed().length, 1)
+  mock.timers.tick(60_000)
+  await lapsed(2)
+  assert.equal(failed().length, 2, 'the clock went on after the failure')
+  assert.equal(failed()[0]?.fields.code, 'ENOTDIR')
 })
