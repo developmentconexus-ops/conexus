@@ -67,6 +67,42 @@ test('o tempo de cada arquivo: o resumo e o log trazem a soma dos testes de cada
   }
 })
 
+test('o tempo de um corredor compartilhado: a tabela traz o arquivo que rodou, não o corredor', () => {
+  const dir = directory()
+  writeFileSync(
+    join(dir, 'runner.ts'),
+    [
+      "import { test } from 'node:test'",
+      'export function runner(): void {',
+      "  test('lento', () => new Promise((resolve) => setTimeout(resolve, 300)))",
+      '}',
+      '',
+    ].join('\n'),
+  )
+  writeFileSync(join(dir, 'a.test.ts'), "import { runner } from './runner.ts'\nrunner()\n")
+  writeFileSync(join(dir, 'b.test.ts'), "import test from 'node:test'\ntest('b', () => {})\n")
+  const { NODE_TEST_CONTEXT: _outer, GITHUB_STEP_SUMMARY: _summary, ...env } = process.env
+  const result = spawnSync(
+    'node',
+    [
+      '--test',
+      '--test-concurrency=1',
+      `--test-reporter=${REPORTER}`,
+      join(dir, 'a.test.ts'),
+      join(dir, 'b.test.ts'),
+    ],
+    {
+      encoding: 'utf8',
+      timeout: 120_000,
+      env: { ...env, GITHUB_STEP_SUMMARY: join(dir, 'summary.md'), npm_package_name: '@conexus/x' },
+    },
+  )
+  assert.equal(result.status, 0, result.stderr)
+  const rows = [...result.stdout.matchAll(/^\| (\d+\.\d) \| \S*?([\w.-]+\.ts) \|$/gm)]
+  assert.deepEqual(rows.map((row) => row[2]).toSorted(), ['a.test.ts', 'b.test.ts'])
+  assert.ok(Number(rows.find((row) => row[2] === 'a.test.ts')?.[1]) >= 0.3, result.stdout)
+})
+
 test('recusa zero testes', () => {
   const result = run('export {}\n')
   assert.equal(result.status, 1)
