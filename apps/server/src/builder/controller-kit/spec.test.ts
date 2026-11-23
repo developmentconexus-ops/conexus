@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { Knowledge } from '@mastra/core/knowledge'
+import { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import { createSkill } from '@mastra/core/skills'
 import { InMemoryStore } from '@mastra/core/storage'
@@ -10,7 +11,7 @@ import { Memory } from '@mastra/memory'
 import { hubOn } from '../../hub/identity/test-hub.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { ConversationSpec } from './public.ts'
-import { CONVERSATION_MODE, mountAgent } from './public.ts'
+import { CONTROLLER_KINDS, CONVERSATION_MODE, mountAgent } from './public.ts'
 
 /** A Hub's account queue and a store of memory: what the mount needs; no turn runs here. */
 async function mounting(t: TestContext) {
@@ -82,4 +83,27 @@ test('a ficha sem workspace dá um controlador sem máquina, como o do Construto
     return new Workspace({ id: 'conexus-spec' })
   }
   assert.equal(mount({ workspace }).controller.hasWorkspace(), true)
+})
+
+test('o agente da ficha leva o id do controlador do seu tipo, nunca um da ficha', async (t) => {
+  const { mount } = await mounting(t)
+  assert.equal(mount().agent.id, CONTROLLER_KINDS.construtor.id)
+})
+
+test('as instruções seguem a ordem da ficha, e uma parte do run que não dá nada fica fora', async (t) => {
+  const { mount } = await mounting(t)
+  const { agent } = mount({
+    prompt: {
+      kind: 'MESSAGES',
+      parts: [
+        { kind: 'TEXT', text: 'Primeiro.' },
+        { kind: 'OF_RUN', of: async () => undefined },
+        { kind: 'OF_RUN', of: async () => 'Do run.' },
+      ],
+    },
+  })
+  assert.deepEqual(await agent.getInstructions({ requestContext: new RequestContext() }), [
+    { role: 'system', content: 'Primeiro.' },
+    { role: 'system', content: 'Do run.' },
+  ])
 })

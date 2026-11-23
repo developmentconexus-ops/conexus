@@ -81,9 +81,9 @@ function initialStateOf(approval: Approval): Readonly<{ yolo: boolean }> {
 }
 
 /**
- * The one place that calls Mastra's agent constructor, with the turn's processor made from
- * `spec.turn`, and only the optional fields the ficha fills. `watch` comes with a
- * `SESSION` turn (`sessionTurns`): `mountAgent` calls it with the controller.
+ * The one place that calls Mastra's agent constructor for the agents on a ficha, with the turn's
+ * processor made from `spec.turn`, and only the optional fields the ficha fills. `watch` comes with
+ * a `SESSION` turn (`sessionTurns`): `mountAgent` calls it with the controller.
  */
 function agentOfSpec(
   spec: AgentSpec,

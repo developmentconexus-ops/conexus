@@ -1,9 +1,8 @@
 import type { AgentConfig, ToolsInput } from '@mastra/core/agent'
-import type { AgentControllerConfig } from '@mastra/core/agent-controller'
 import type { MastraMemory } from '@mastra/core/memory'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Turn } from '../model-accounts/public.ts'
-import type { CONVERSATION_MODE, controllerOf } from './factories.ts'
+import type { controllerOf } from './factories.ts'
 import type { ControllerKind } from './kinds.ts'
 
 /** One system message of an agent's instructions, in the order its ficha lists (C21 on `kind`). */
@@ -48,14 +47,16 @@ export type AgentSpec = Readonly<{
   knowledge?: AgentConfig['knowledge']
 }>
 
+type ControllerInput = Parameters<typeof controllerOf>[0]
+
 /** A conversation's agent and its controller: the id is `CONTROLLER_KINDS[kind].id`, never the ficha's. */
 export type ConversationSpec = Omit<AgentSpec, 'id' | 'memory'> &
   Readonly<{
     kind: ControllerKind
     /** The controller's memory, where its threads live, and the agent's. */
     threads: MastraMemory
-    mode: Readonly<{ id: typeof CONVERSATION_MODE; availableTools?: readonly string[] }>
+    mode: ControllerInput['mode']
     /** The controller's own tools under native ids (`ask_user`, `submit_plan`). */
-    own?: NonNullable<Parameters<typeof controllerOf>[0]['tools']>
-    workspace?: AgentControllerConfig['workspace']
+    own?: NonNullable<ControllerInput['tools']>
+    workspace?: ControllerInput['workspace']
   }>
