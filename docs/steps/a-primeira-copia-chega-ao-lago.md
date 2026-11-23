@@ -999,7 +999,8 @@ que está feito como atual").
 Com a palavra do fundador em cada passo que muda dado. Os resultados ficam fora do repositório, na
 pasta da tarefa do firstmate (security S40); o pull request diz só as contagens em zero.
 
-**Antes de o G0a ser publicado.** No banco do Hub de produção, com o login do operador, só leitura:
+**Antes de o G0a ser publicado.** Com o login do operador, só leitura. As três primeiras consultas
+rodam no banco `hub`; a última, dos relógios, roda no banco `mastra`:
 
 ```sql
 SELECT c.company_id, c.name, c.model, c.rows,
@@ -1008,7 +1009,7 @@ SELECT c.company_id, c.name, c.model, c.rows,
 FROM copies.copy c ORDER BY c.company_id, c.name;
 SELECT company_id, state, count(*) FROM copies.copy_proposal GROUP BY 1, 2;
 SELECT count(*) FROM copies.copy_table_left;
-SELECT count(*) FROM mastra.schedules WHERE workflow_id = 'conexus-copy-run';
+SELECT count(*) FROM mastra.mastra_schedules WHERE target->>'workflowId' = 'conexus-copy-run';
 ```
 
 1. A consulta acima, em todas as empresas. O resultado da empresa do fundador já está na pasta da
