@@ -386,7 +386,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
     - _Requisitos: 1.3, 1.5, 1.6, 1.9, 2.6, 3.3, 3.5, 3.7, 5.1, 5.6, 6.3_
   - [ ] 3.2 A montagem nos três agentes, com a porta na raiz do servidor (um commit)
     - **Arquivos:** `apps/server/src/main.ts`, `apps/server/src/conversations-of.ts`, `apps/server/src/builder/assistant/assistant.ts`, `apps/server/src/builder/assistant/instructions.ts`, `apps/server/src/builder/conversation/public.ts`, `apps/server/src/builder/conversation/builder.ts`, `apps/server/src/builder/conversation/instructions.ts`, `apps/server/src/builder/app-data/context.ts`, `apps/server/src/builder/agents/agent.ts`, `apps/server/src/builder/agents/controller.ts`, `apps/server/src/builder/data-tools/mounted.test.ts` (novo).
-    - **Referência a seguir:** a porta tardia de `conversationsOf` em `apps/server/src/conversations-of.ts:186-193` (`door`) e `main.ts:158-165` (`connectors: () => connectors`); o objeto de `tools` do Assistente em `assistant.ts:235-250` e `AVAILABLE_TOOLS` em `:82-97`; `builderInstructions` em `apps/server/src/builder/conversation/instructions.ts:28-66` e a sua chamada em `builder.ts:126-132`; o `tools` do Builder em `builder.ts:140-156` e o `admitted` em `:55-66`; `runToolsOf` do agente salvo em `agent.ts:256-305`, com o `scope` lido do `plan` em `:264` e `neverAsking` (`:224-233`); `HOW_TO_READ` em `apps/server/src/builder/app-data/context.ts:19-25`.
+    - **Referência a seguir:** a porta tardia de `conversationsOf` em `apps/server/src/conversations-of.ts:186-193` (`door`) e `main.ts:158-165` (`connectors: () => connectors`); o objeto de `tools` do Assistente em `assistant.ts:235-250` e `AVAILABLE_TOOLS` em `:82-97`; `builderInstructions` em `apps/server/src/builder/conversation/instructions.ts:28-66` e a sua chamada em `builder.ts:126-132`; o `tools` do Builder em `builder.ts:140-156` e o `admitted` em `:55-66`; `runToolsOf` do agente salvo em `agent.ts:254-285`, com o `scope` lido do `plan` em `:264`; a regra de nunca perguntar das ferramentas sem regra própria é o regime `THE_WRITE_ASKS` da ficha, aplicado por `askingOnlyByOwnRule` em `apps/server/src/builder/controller-kit/mount.ts`; `HOW_TO_READ` em `apps/server/src/builder/app-data/context.ts:19-25`.
     - **O que sai:** em `HOW_TO_READ` (`context.ts:22`), a frase "Count a read on the real data with `app_data_check`, and see a few rows with `app_data_read`; the Project app reads the same table through `db`. A copy has no row count here: ask `app_data_check`." sai.
     - **O que entra:**
       ```ts
@@ -428,7 +428,7 @@ Tudo parte de que a parte 1 está construída (`../01-dado-guardado-e-catalogo/t
 
       // apps/server/src/builder/agents/agent.ts
       // AgentDeps (:112-129) ganha companyData; controller.ts Deps (:200) também
-      // em runToolsOf, dentro de neverAsking({...}) de ofTheAgent, com o scope já lido em :264:
+      // em runToolsOf, dentro de ofTheAgent (agent.ts:269-273; o regime da ficha dá a regra de nunca perguntar à cópia), com o scope já lido em :264:
       ...dataTools({ dataOf: async (_requestContext, { threadId }) =>
         deps.companyData(scope, { by: { agent: 'AGENT', agentId: frozen.agentId, threadId } }), log: deps.log }),
       // frozen.agentId é o parâmetro de runToolsOf (agent.ts:256-260)

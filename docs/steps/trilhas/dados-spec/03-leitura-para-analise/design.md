@@ -279,7 +279,7 @@ As recusas, cada uma com uma frase em inglês para o modelo, como as de hoje [vi
 | --- | --- | --- |
 | Assistente | O objeto de `tools` [visto, `apps/server/src/builder/assistant/assistant.ts:239-249`] e o conjunto fechado `AVAILABLE_TOOLS` [`assistant.ts:82-97`]. Sem o nome ali o controlador tira a ferramenta | `...dataTools({ dataOf, log })` e os dois nomes |
 | Builder | `tools` de `createCodingAgent` [visto, `apps/server/src/builder/conversation/builder.ts:140-156`] e `TOOL_CLOSURE` [`apps/server/src/builder/conversation/permissions.ts:62-65`], com `CLOSED_TOOLS` [`packages/hub-api/src/tools.ts:62-68`] | O mesmo |
-| Agente salvo | `runToolsOf`, dentro de `neverAsking` [visto, `apps/server/src/builder/agents/agent.ts:280-289`] | O mesmo. O lugar é o Projeto do agente. Efeito: as duas também entram no programa do modo código, que é feito de `ofTheAgent` [visto, `agent.ts:290`, `codeModeOf(ofTheAgent, machines.codeMode)`] |
+| Agente salvo | `runToolsOf`, dentro de `ofTheAgent` [visto, `apps/server/src/builder/agents/agent.ts:269-273`; a regra de nunca perguntar vem do regime `THE_WRITE_ASKS` da ficha, `askingOnlyByOwnRule` em `apps/server/src/builder/controller-kit/mount.ts`] | O mesmo. O lugar é o Projeto do agente. Efeito: as duas também entram no programa do modo código, que é feito de `ofTheAgent` [visto, `agent.ts:274`, `codeModeOf(ofTheAgent, machines.codeMode)`] |
 
 O Construtor de agentes (`apps/server/src/builder/construtor/`) não recebe as ferramentas: a 24.6 está congelada [visto, `docs/roadmap.md:20`].
 

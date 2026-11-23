@@ -4,7 +4,7 @@
 gives the model tools and a machine, keeps memory, and streams the result to the screen. Conexus
 builds it on Mastra (decisions [0027](../decisions/0027-mastra-builder-engine.md) and
 [0050](../decisions/0050-conversation-on-the-agent-controller.md)), at the versions in
-`apps/server/package.json` (`@mastra/core` 1.82.0 today). This page explains which Mastra pieces
+`apps/server/package.json` (`@mastra/core` 1.83.0 today). This page explains which Mastra pieces
 Conexus uses, how it configures them, what it wraps around them, and which installed pieces it
 leaves alone. `builder/` below means `apps/server/src/builder/`. The import law keeps every
 `@mastra/*` import inside `builder/` folders (`.dependency-cruiser.cjs`, rule
@@ -21,7 +21,8 @@ Mastra down.
 
 Each kind of conversation runs on its own `AgentController`, Mastra's harness for a long-lived
 session: `builder`, `assistant`, `agents` and `construtor` (the screen that edits a Project agent's
-draft). All four are built by `controllerOf` in `builder/controller-kit/factories.ts`, each with one
+draft). All four are built by `mountAgent` in `builder/controller-kit/mount.ts` from the agent's
+ficha (see below), which calls `controllerOf` in `builder/controller-kit/factories.ts`, each with one
 mode, `conversa`. For the Builder, the Assistant and the Construtor the mode's `availableTools`
 is a closed list; the `agents` controller has none, and the tool set each version's code builds is
 the closed set. The controller's built-in tools stay off
@@ -33,23 +34,63 @@ A session's id is the thread's id and Conexus's conversation id. The thread's re
 kind and the owner, `<prefix>company:<c>:person:<p>` (`builder/controller-kit/kinds.ts`), and the
 guard reads it to learn whose a thread is.
 
-`initialState.yolo` decides approvals. The Builder, the Assistant and the Construtor run with
-`yolo: true`, so no tool waits for a person ([0053](../decisions/0053-builder-tools-run-without-asking.md)).
-The `agents` controller runs with `yolo: false`: each write tool carries its own
-`requireApproval`, and every other tool is copied with a rule that never asks
-([agents and automations](agents-and-automations.md)).
+`initialState.yolo` decides approvals, and the ficha's `approval` writes it. The Builder, the
+Assistant and the Construtor have `NOTHING_ASKS`, so they run with `yolo: true` and no tool waits for
+a person ([0053](../decisions/0053-builder-tools-run-without-asking.md)). The `agents` controller has
+`THE_WRITE_ASKS`, so it runs with `yolo: false`: each write tool carries its own `requireApproval`,
+and the mount copies every other tool whose rule is not a function with a rule that never asks
+(`askingOnlyByOwnRule`, `builder/controller-kit/mount.ts`; [agents and
+automations](agents-and-automations.md)).
+
+## A ficha and the mount
+
+Each agent is written as a **ficha**, a plain value that says what is its own, and one **mount**
+turns any ficha into an `Agent` and its controller, the same way for the four. The types are in
+`builder/controller-kit/spec.ts` (`AgentSpec`, and `ConversationSpec` for an agent that has a
+controller) and the functions in `builder/controller-kit/mount.ts`. `agentOfSpec` is the only place
+that calls Mastra's `Agent` constructor or `createCodingAgent`; `mountAgent` adds the controller
+(`controllerOf`), its mode, the controller's own tools, the helpers and the machine. A ficha holds:
+
+| Field | What it says |
+| --- | --- |
+| `kind`, `name`, `description` | which controller (its id comes from `CONTROLLER_KINDS`, never from the ficha) and the agent's names |
+| `base` | `AGENT`, or `CODING_AGENT` for the Builder, always made with `workspace: undefined` so Mastra's default local machine is never built on the server |
+| `prompt` | the instructions: `MESSAGES` (system messages in order, each `FIXED` with the one-hour cache mark, `TEXT`, `BY_MODEL` or `OF_RUN`), `ONE_STRING`, or `DELEGATED` (the agent of a conversation takes the saved version's) |
+| `model` | `SESSION` (the conversation's model) or `OF_RUN` (the model the run's plan names) |
+| `tools`, `skills`, `signals`, `scopes`, `knowledge` | what the agent gets; a key the ficha does not fill is not set on the `Agent` |
+| `approval` | `NOTHING_ASKS` or `THE_WRITE_ASKS` (above) |
+| `turn` | `SESSION` or `RUN`: how a run takes its turn in the account queue (below) |
+| `memory`, `threads` | the memory each agent already makes (`conversationMemory`), for the agent and for the controller's threads |
+| `judge` | how a turn ends: Mastra's `isTaskComplete` scorers; only the Builder has one |
+| `processors` | the input processors around the account's pick (`beforePick`, `afterPick`) |
+| `mode`, `own`, `subagents`, `workspace` | the controller's mode and closed tool list, its own tools under native ids, the helpers, and the machine the controller lends |
+
+The four agents write their instructions in four different orders. Each order is kept as data in
+the agent's ficha, and none is changed by the mount: joining them into one order would change what
+the model reads, so it waits for the work that measures the agents one at a time.
+
+| Agent | Instructions, in order |
+| --- | --- |
+| Builder | one string: `builder.md` filled with the Project's name, the turn's date, the model's knowledge cutoff, the check limits, the granted connections and the data block, then the data track's order (`dataOrder()`); no `conexus.md`, no cache mark |
+| Assistant | `conexus.md` and `assistant.md` as one `FIXED` message; the data track's order; the block of the turn's model, when it has one (`BY_MODEL`); the block of who is speaking, the connections and what the person may do (`OF_RUN`) |
+| Construtor | `conexus.md` (`FIXED`); the block of who is speaking and the connections (`OF_RUN`); the construtor manual (`construtor.md`) |
+| Project agent | `conexus.md` (`FIXED`); the data track's order; the block of who is speaking and the connections; the version's own instructions with the note that its writes ask or that it only reads; the code-mode program's instructions, when the version has one. The agent of a conversation holds none of this: it delegates to the version's agent (`DELEGATED`) |
+
+A test records the whole request each agent sends the model, per scenario
+(`builder/<agent>/requests/<scenario>.snapshot`), so a change to a ficha or to the mount that
+alters one byte of it turns that agent's tests red.
 
 ## The agents
 
 | Agent | Built with | Model | Memory | Machine |
 | --- | --- | --- | --- | --- |
-| Builder | `createCodingAgent` (`builder/conversation/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
-| Assistant | `new Agent` (`builder/assistant/assistant.ts`) | the session's | observational | an E2B machine per conversation |
-| Construtor | `new Agent` (`builder/construtor/construtor.ts`) | the session's | observational | only for its code-writing tool |
-| Project agent | `new Agent` per published version, key `agent-<id>` (`builder/agents/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |
+| Builder | `createCodingAgent`, by its ficha (`builder/conversation/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
+| Assistant | `new Agent`, by its ficha (`builder/assistant/assistant.ts`) | the session's | observational | an E2B machine per conversation |
+| Construtor | `new Agent`, by its ficha (`builder/construtor/construtor.ts`) | the session's | observational | only for its code-writing tool |
+| Project agent | `new Agent` per published version, key `agent-<id>`, by a ficha made from the version (`builder/agents/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |
 
 No agent names a model in code. The model is read from the run's `RequestContext`, as Mastra's
-router string `provider/model` (`routedModel` in `builder/conversation/builder.ts`). Every agent
+router string `provider/model` (`routedModel` in `builder/controller-kit/model.ts`). Every agent
 shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same processors,
 `maxRetries: 0`, and a model timeout of 60 seconds to the first chunk and 10 minutes a step.
 
@@ -57,9 +98,14 @@ shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same process
 
 Model accounts live in processors, not in the agents
 ([0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md)). The input processors are
-the turn processor, which builds the person's `Turn` for the account queue (and, for the Builder,
-takes the Project) and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
-model and the thinking effort for each step. The error processors are Mastra's
+the turn processor (`turnProcessor`, `builder/controller-kit/turns.ts`), the same for every agent, which
+builds the person's `Turn` for the account queue and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
+model and the thinking effort for each step. What differs is the ficha's `turn`: a `SESSION` turn is
+held until the session's `agent_end`; a `RUN` turn is taken by the run alone. The Builder's is the
+Project's lock as a named step, its `take` (`builder/conversation/turn-of.ts`): the run takes the
+Project, or ends `RUN_BUSY` with the name of whose run holds it, before any model call. Mastra's
+`threadLock` locks by conversation only, so this is Conexus code (see
+[boundaries](../reference/boundaries.md)). The error processors are Mastra's
 `CyberRefusalHandler` and `defaultStabilityErrorProcessors`, with the retry wrapped so it never
 repeats an account's own failure, then the account queue, which moves to the next account. The
 output processors are `CyberRefusalHandler`, one that keeps workspace metadata parts out of
@@ -79,7 +125,8 @@ Conexus code never writes them directly. It reads the thread state (the task lis
 schedules through `storage.getStore`. Which thread belongs to whom is indexed in the Hub's own
 database, outside Mastra's schema (`builder/conversation/public.ts`).
 
-Memory is one factory, `conversationMemory` (`builder/conversation/builder.ts`): Mastra's
+Memory is one factory, `conversationMemory` (`builder/controller-kit/memory.ts`), which each ficha's
+`memory` and `threads` take: Mastra's
 observational memory scoped to the thread, observing at 30,000 message tokens and reflecting at
 40,000 observation tokens, with async buffering off. The title writer uses the turn's account. The
 observer and the reflector use the company's memory models, read when the turn opens and picked
@@ -120,8 +167,8 @@ connector's skill, passed through the agent's `skills` option and read by the mo
 skill tools ([the app package](app-package.md)). Workspace skills are not used.
 
 The Builder's end-of-turn judge is a code scorer made with `createScorer` and given as
-`isTaskComplete` with `strategy: 'all'` (`builder/conversation/processors.ts`). It is the only
-scorer; `@mastra/evals` appears only in a test.
+`isTaskComplete` with `strategy: 'all'`, in the `judge` field of its ficha
+(`builder/conversation/processors.ts`). It is the only scorer; `@mastra/evals` appears only in a test.
 
 ## Workflow and scheduler
 
@@ -153,7 +200,11 @@ controller in the path, admits the person again, refuses a `requestContext` or `
 the browser, and refuses a new message while the Hub is updating. `BuilderServer` overrides the
 stream to slim the state events, pace writes to the socket and drop a client more than 8 MiB
 behind (`builder/conversation/stream.ts`). Creating, listing and deleting conversations are the
-Hub's own Fastify routes, not Mastra's.
+Hub's own Fastify routes, not Mastra's. So is changing a conversation's model: each agent's route
+admits the person and finds the conversation, and `answerModelChange`
+(`builder/controller-kit/routes.ts`) does the rest the same way for the Builder, the Assistant and
+the Construtor. Mastra could serve this one route natively; that waits for the harness's second
+step, which also renames the folders and the room.
 
 ## Installed and not used
 
