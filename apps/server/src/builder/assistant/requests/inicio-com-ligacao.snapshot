@@ -4326,7 +4326,7 @@
           {
             "type": "tool_result",
             "tool_use_id": "toolu_<id-4>",
-            "content": "{\"at\":\"<read-at>\",\"bytes\":36,\"complete\":true,\"file\":\"reads/<turn>-1.json\",\"kind\":\"OK\",\"rows\":1,\"value\":{\"completo\":true,\"linhas\":[{\"N\":2}]}}",
+            "content": "{\"at\":\"<read-at>Z\",\"bytes\":36,\"complete\":true,\"file\":\"reads/<turn>-1.json\",\"kind\":\"OK\",\"rows\":1,\"value\":{\"completo\":true,\"linhas\":[{\"N\":2}]}}",
             "cache_control": {
               "type": "ephemeral",
               "ttl": "1h"

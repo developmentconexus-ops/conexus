@@ -21,10 +21,10 @@ const JUDGE_DURATION = /^Duration: \d+ms$/m
 /**
  * A connector read's result, as the model reads it: `at` is the instant its answer came back
  * (`connectors/connector-tools.ts:238`), and `file` is named by the first 8 characters of the turn's
- * uuid key (`assistant/connector-access.ts:19`, `controller-kit/turns.ts:104`). Firstmate, 2026-11-23:
- * a value that changes every run is marked only in its shape.
+ * uuid key (`assistant/connector-access.ts:19`, `controller-kit/turns.ts:146`). Firstmate, 2026-11-23:
+ * a value that changes every run is marked only in its shape; the instant's zone, the company's, stays.
  */
-const READ_AT = /"at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})"/g
+const READ_AT = /"at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})"/g
 const READ_FILE = /\breads\/[0-9a-f]{8}-(\d+)\.json\b/g
 /** A saved agent as a tool's result gives it: `updatedAt` is its row's `now()` (`agents/store.ts:99`). */
 const UPDATED_AT = /"updatedAt":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z"/g
@@ -60,7 +60,7 @@ export function requestOf(body: unknown): unknown {
       ? text.replace(JUDGE_DURATION, 'Duration: <duration>ms')
       : text
     const read = judged
-      .replace(READ_AT, '"at":"<read-at>"')
+      .replace(READ_AT, '"at":"<read-at>$1"')
       .replace(READ_FILE, 'reads/<turn>-$1.json')
       .replace(UPDATED_AT, '"updatedAt":"<updated-at>"')
     return todayIn(read.replace(RUN_ID, marked))

@@ -73,21 +73,22 @@ test('o juiz: só a duração da mensagem do Mastra vira marca; outra duração 
   assert.deepEqual(requestOf('Duration: 33ms'), 'Duration: 33ms')
 })
 
-test('a leitura: o instante dela e a vez no nome do arquivo viram marca; outra hora e outro arquivo ficam', () => {
+test('a leitura: o instante dela, sem o fuso, e a vez no nome do arquivo viram marca; outro fuso, outra hora e outro arquivo ficam', () => {
   const read =
-    '{"at":"2026-11-23T01:00:48.166-03:00","bytes":36,"file":"reads/3e52ed77-2.json","kind":"OK"}'
+    '{"at":"2020-01-31T01:00:48.166-03:00","bytes":36,"file":"reads/3e52ed77-2.json","kind":"OK"}'
   assert.equal(
     requestOf(read),
-    '{"at":"<read-at>","bytes":36,"file":"reads/<turn>-2.json","kind":"OK"}',
+    '{"at":"<read-at>-03:00","bytes":36,"file":"reads/<turn>-2.json","kind":"OK"}',
   )
-  const other = '{"createdAt":"2026-11-23T01:00:48.166Z","file":"notes/3e52ed77-2.json"}'
+  assert.equal(requestOf('{"at":"2020-01-31T01:00:48.166Z"}'), '{"at":"<read-at>Z"}')
+  const other = '{"createdAt":"2020-01-31T01:00:48.166Z","file":"notes/3e52ed77-2.json"}'
   assert.equal(requestOf(other), other)
 })
 
 test('o agente salvo: o updatedAt dele vira marca; outro instante fica', () => {
-  const saved = '{"agent":{"name":"Vendas","updatedAt":"2026-11-23T01:05:14.819Z"}}'
+  const saved = '{"agent":{"name":"Vendas","updatedAt":"2020-01-31T01:05:14.819Z"}}'
   assert.equal(requestOf(saved), '{"agent":{"name":"Vendas","updatedAt":"<updated-at>"}}')
-  const other = '{"createdAt":"2026-11-23T01:05:14.819Z"}'
+  const other = '{"createdAt":"2020-01-31T01:05:14.819Z"}'
   assert.equal(requestOf(other), other)
 })
 
@@ -95,6 +96,6 @@ test('um valor que muda fica vermelho: o que não é uuid, data de hoje nem id d
   function at(iso: string) {
     return requestOf({ system: `Rodada de ${iso}`, max_tokens: 64_000 })
   }
-  assert.notDeepEqual(at('2026-11-23T10:00:00.000Z'), at('2026-11-23T10:00:01.000Z'))
+  assert.notDeepEqual(at('2020-01-31T10:00:00.000Z'), at('2020-01-31T10:00:01.000Z'))
   assert.notDeepEqual(requestOf({ max_tokens: 1 }), requestOf({ max_tokens: 2 }))
 })
