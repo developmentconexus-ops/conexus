@@ -49,15 +49,25 @@ const BUILTIN: Record<BuiltinToolId, true> = {
 }
 
 /**
- * What every conversation agent shares: the turn, then the account's pick; the account's errors;
- * Mastra retries nothing itself, the account processors retry; and the model call's budget.
+ * What every conversation agent shares: the turn, then the account's pick, with the processors an
+ * agent puts `beforePick` and `afterPick` between them; the account's errors; Mastra retries
+ * nothing itself, the account processors retry; and the model call's budget.
  */
 export function agentDefaults(
   queue: QueueDeps,
   turns: { processor: InputProcessor; deletedRun?: OutputProcessor },
+  around: {
+    beforePick: readonly InputProcessor[]
+    afterPick: readonly InputProcessor[]
+  } = { beforePick: [], afterPick: [] },
 ) {
   return {
-    inputProcessors: [turns.processor, accountPick(queue)],
+    inputProcessors: [
+      turns.processor,
+      ...around.beforePick,
+      accountPick(queue),
+      ...around.afterPick,
+    ],
     outputProcessors: [
       new CyberRefusalHandler(),
       workspaceMetadataLive,
