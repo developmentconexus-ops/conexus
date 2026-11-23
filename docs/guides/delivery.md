@@ -2,8 +2,8 @@
 
 How a roadmap step moves from its card to the founder's use. This guide adapts
 [Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and
-[DORA's small-batch capability](https://dora.dev/capabilities/), within the founder's decisions.
-[AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures.
+[DORA's small-batch capability](https://dora.dev/capabilities/).
+[AGENTS.md](../../AGENTS.md) and its skills own each stage's procedure.
 
 In every guide, each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
 **must not** state a requirement; **should** and **should not** need a stated reason to break;
@@ -96,7 +96,7 @@ product decision, security boundary or operational prohibition.
   `main`, always through firstmate's merge script, and only after the `ci` and `processo` checks reported green on that
   exact commit. After the opening commit nobody **may** push to `main` directly.
   [firstmate's merge script, review]
-- **L15.** CI **must** have one check, `ci`, that fails when any job of the code fails, is skipped or is cancelled. A second check, `processo`, always present, holds the gates of L5, L6 and L20; a merge needs both green.
+- **L15.** CI **must** have one check, `ci`, that fails when any job of the code fails, is skipped or is cancelled. A second check, `processo`, always present, holds the gates of L5, L6 and L20.
   A pull request **must not** wait on CI while CONFLICTING: it starts no `pull_request` run.
   [CI, review]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
@@ -122,7 +122,7 @@ product decision, security boundary or operational prohibition.
   move each remendo row of the reference table into [boundaries](../reference/boundaries.md) with
   its package version; the card leaves with the use line, after the use (L17). Each week, an agent
   that built none of the week's steps runs the [CI health review](../how-to/ci-health.md) and sends
-  its findings to firstmate. [review]
+  firstmate its findings. [review]
 - **L20.** Skills and guides **must** change only in a step's closing, or in the week's one
   documents-only pull request of method changes with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs
@@ -135,7 +135,7 @@ product decision, security boundary or operational prohibition.
 
 - **L21.** The repository **must** keep only what changes what the next agent does: the use line in
   the card's approval file, a proof's criterion and result in its decision record, a learned rule in its
-  guide, the study's reference table in the card. Study reports and proofs stay outside it; what
+  guide, the study's reference table in the card and its line in `docs/conhecimento/`. Study reports and proofs stay in `conexus-estudos`, at `estudos/<folder>/`; what
   only proves a stage was done stays in the pull request. Founder, 2026-10-12. [check-docs]
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
   founder's page, operational how-tos and all visible text, accessible names and placeholders,
@@ -165,6 +165,7 @@ product decision, security boundary or operational prohibition.
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | 2,500 per unit (review), none (L21) on the founder's page |
 | `docs/how-to/*.md` | 800 |
+| `docs/conhecimento/*.md` | 3,000 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |

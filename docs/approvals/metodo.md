@@ -122,3 +122,17 @@ Em 2026-11-23, como mudança de método (L20), depois da `VISION.md` (https://gi
 - As três propostas da seção 1.8 do estudo do conector no estilo novo, pedidas pelo firstmate ao mesmo pull request: toda decisão do fundador de uma trilha entra no mesmo dia na página da trilha ou em `fora-de-uma-etapa.md` (L6); a tabela de referência ganha, antes de "Hoje no main", a coluna "O que o fundador já decidiu" (`references/report.md`); e a passada de verificação ganha a terceira pergunta, se há uma decisão do fundador ou uma linha de referência na mesma situação que a linha ignora (`references/sources.md`).
 
 Para caber nos tetos (L24), saem repetições cujo dono é outro arquivo: o formato da comparação (dono, `compare.md`), a frase de custo da Bloqueia (L12), o quando da revisão (L9), as fontes do Mastra (`sources.md`) e a frase da L26 que repetia o L13 e o L14.
+
+## Mudança de método: o conhecimento por assunto
+
+Em 2026-11-23, o fundador pediu: "a gente tem que organizar melhor tudo que a gente vem estudando e definindo, senão vai ficar espalhado [...] se organize tudo primeiro, somente depois você me chama pra gente decidir". O estudo `conexus-conhecimento-organizar` achou a biblioteca `data/estudos/` (aprovada em 2026-11-16) parada desde 2026-11-20, com 210 dos 307 estudos citados fora da máquina e a regra de consultá-la fora da skill `conexus-study`. Às cinco recomendações dele, o fundador respondeu, em 2026-11-23: "Aprovado suas decisoes sobre organizacao". Entram, no pull request https://github.com/developmentconexus-ops/conexus/pull/1278, só de documentos:
+
+- A. A L21 guarda também a linha de cada estudo fechado no seu assunto de [`docs/conhecimento/`](../conhecimento/README.md).
+- B. A skill `conexus-study` recebe a página do assunto, reusada antes de pesquisar, e produz a linha dela; o relatório diz o que reusou.
+- E. A L24 dá às páginas de `docs/conhecimento/` o teto de 3.000 palavras, conferido pelo `check-docs`.
+
+- C (b). Os relatórios moram no repositório privado `conexus-estudos`, que o fundador criou em 2026-11-23 ("Repositorio agora foi"), cada um em `estudos/<pasta>/`; a L21 o nomeia, e a mudança dos relatórios para lá é de outro pull request.
+
+- D. À proposta dos estudos antigos (o estudo `conexus-estudos-210`), o fundador respondeu, em 2026-11-23: "1. Aprovo". Nenhum relatório volta. As quatro linhas que só esses estudos guardavam entram nas páginas de conhecimento: em [operação e servidor](../conhecimento/operacao-e-servidor.md), a leitura do banco do Hub a cada turno (`conexus-hub-egress`) e a saída de cerca de 460 MB por dia; em [agentes e harness](../conhecimento/agentes-e-harness.md), a rodada de uma automação que chega ao modelo como se a pessoa tivesse digitado (`conexus-automation-run-study`); em [conectores](../conhecimento/conectores.md), as duas portas de escrita de pedido do Sankhya e o que a TOP faz (`conexus-e245-write-path-study`, `conexus-e245-live-order-study`). A biblioteca antiga `data/estudos/` fica aposentada; ela está em `conexus-estudos`, em `historico/biblioteca-antiga`.
+
+Para caber nos tetos (L24), saem frases cujo dono é outro: "within the founder's decisions" na abertura do guia de entrega (a última frase da abertura já o diz), "a merge needs both green" na L15 (a L14 o diz), "sends its findings to firstmate" vira "sends firstmate its findings" na L19 e, na skill `conexus-study`, "Entry sheets, decisions and today's code are input to test" (o passo 5 e a regra do estudo o dizem).
