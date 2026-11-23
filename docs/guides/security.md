@@ -82,14 +82,14 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   and multipart bodies; routes have body limits. The Hub's responses keep CSP `script-src 'self'`
   without `unsafe-inline`, strict `Referrer-Policy`, `frame-src` only `'self'` and `https://*.<apps domain>` (`'self'`
   is the one drawing frame of the conversation, which carries its own policy and draws the
-  diagrams a message holds) and `frame-ancestors 'none'`. A published app and its Prévia each have
-  their own host [0024], and the host alone gives an answer's form, the dispatcher's own pages
-  included, never a request header: on the published app's, `frame-ancestors 'none'`, so no page
-  frames it, the Hub's included, and `SameSite=Lax` cookies; on its `--previa` host,
-  `frame-ancestors` only the Hub's origin and `SameSite=None; Partitioned` cookies, as
-  vibesdk@9da158d8 fixes each cookie's form (`worker/utils/ownerPreviewToken.ts:81-97`,
-  `worker/utils/spacePreviewToken.ts:63-87`); a host of no app gets `'none'`. The dispatcher's
-  cookies are `__Host-`, `Secure`, `HttpOnly`. Failure: a cross-site authenticated GET
+  diagrams a message holds) and `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
+  Hub's origin in `frame-ancestors`, and the dispatcher's cookies are `__Host-`, `Secure`,
+  `HttpOnly`. From the step A Prévia em endereço próprio, each address has one form:
+  `SameSite=Lax` on the published app's address and `SameSite=None; Partitioned` on its Prévia's
+  own `--previa` address, never chosen by a request header, as vibesdk@9da158d8 fixes each
+  cookie's form (`worker/utils/ownerPreviewToken.ts:81-97`, `worker/utils/spacePreviewToken.ts:63-87`).
+  Until then the app has one address [0024], and the dispatcher picks the form by `Sec-Fetch-Dest`:
+  `Lax` in the tab, `SameSite=None; Partitioned` in the frame (step 14.1). Failure: a cross-site authenticated GET
   discloses the person, or a form post bypasses admission. Existing configuration and header tests
   stay; Fastify does not supply this policy automatically. [review]
 - **S48.** The six access kinds of [code C33](code.md) mean: `page`, a read of any address outside
