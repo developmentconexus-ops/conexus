@@ -69,9 +69,9 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A Prévia em endereço próprio fechou, e a etapa 1 do harness, "Uma ficha por agente", está no ar; segue `A1`
-(https://github.com/developmentconexus-ops/conexus/pull/1203), depois a etapa 2 do harness ("Uma
-sala e os nomes certos"), `A2` e `A3`. Mais na
+A Prévia em endereço próprio fechou. A etapa 1 do harness, "Uma ficha por agente", espera o uso; segue `A1`
+(https://github.com/developmentconexus-ops/conexus/pull/1203), depois a etapa 2 ("Uma sala e os nomes
+certos"), `A2` e `A3`. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e

@@ -53,7 +53,8 @@ that calls Mastra's `Agent` constructor or `createCodingAgent`; `mountAgent` add
 
 | Field | What it says |
 | --- | --- |
-| `kind`, `name`, `description` | which controller (its id comes from `CONTROLLER_KINDS`, never from the ficha) and the agent's names |
+| `id`, `name`, `description` | the agent's key and names (`AgentSpec`); a conversation's ficha has no `id`, since its controller's comes from `CONTROLLER_KINDS` |
+| `kind` | which controller a conversation's ficha is for (`ConversationSpec`) |
 | `base` | `AGENT`, or `CODING_AGENT` for the Builder, always made with `workspace: undefined` so Mastra's default local machine is never built on the server |
 | `prompt` | the instructions: `MESSAGES` (system messages in order, each `FIXED` with the one-hour cache mark, `TEXT`, `BY_MODEL` or `OF_RUN`), `ONE_STRING`, or `DELEGATED` (the agent of a conversation takes the saved version's) |
 | `model` | `SESSION` (the conversation's model) or `OF_RUN` (the model the run's plan names) |
