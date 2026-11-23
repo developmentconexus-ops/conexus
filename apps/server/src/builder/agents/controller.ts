@@ -17,9 +17,11 @@ import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
   agentDefaults,
   agentManagerAdmission,
+  CONVERSATION_MODE,
   controllerOf,
   conversationMemory,
   RUN_MARKS,
+  releaseByMarks,
   releaseThreads,
   routedModel,
   sessionTurns,
@@ -38,8 +40,6 @@ import { createRegistry } from './registry.ts'
 import { agentRuns, scopesOf } from './resolver.ts'
 import { agent, agentConversation } from './tables.ts'
 import { mayApproveAgents, writeOfAgents } from './write-of.ts'
-
-const MODE = 'conversa'
 
 /** Which agent a conversation of the owner's runs, and whether its draft, as the Hub keeps it. */
 export async function keptRun(database: Database, owner: Owner, id: ConversationId) {
@@ -231,7 +231,7 @@ export function createAgentConversations(deps: Deps) {
       memory,
       agent: delegatingAgent(queue, { resolvedOf, scopes: scopesOf(runOf, registry) }, turns),
     },
-    mode: { id: MODE },
+    mode: { id: CONVERSATION_MODE },
     // The conversation's machine, none for a version without its Computador (Factory `session-sandbox.ts:29-36`).
     workspace: ({ requestContext }) => machines.workspace(requestContext),
     initialState: { yolo: false },
@@ -261,12 +261,15 @@ export function createAgentConversations(deps: Deps) {
       writeOf: writeOfAgents((owner, id) => keptRun(database, owner, id), deps.agents),
       mayApprove: mayApproveAgents((owner, id) => keptRun(database, owner, id), deps.agents, deps),
       async release(scope: ReleaseScope): Promise<void> {
-        const count = await sweep({
-          [RUN_MARKS.agents.company]: scope.companyId,
-          ...(scope.personId === undefined ? {} : { [RUN_MARKS.agents.person]: scope.personId }),
-          ...(scope.projectId === undefined ? {} : { [RUN_MARKS.agents.project]: scope.projectId }),
-        })
-        log.info({ companyId: scope.companyId, count }, 'AGENT_CONVERSATIONS_RELEASED')
+        await releaseByMarks(
+          { controller, memory, log },
+          {
+            kind: 'agents',
+            scope,
+            code: 'AGENT_CONVERSATIONS_RELEASED',
+            each: (id) => machines.kill(id),
+          },
+        )
       },
       /** Every published agent before the scheduler wakes, which drops what it cannot find. */
       async beforeWorkers(): Promise<void> {

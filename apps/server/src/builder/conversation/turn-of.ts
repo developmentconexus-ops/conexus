@@ -2,10 +2,9 @@ import type { ConversationId, ProjectId } from '@conexus/hub-api'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
-import type { Owner, RunScope } from '../controller-kit/public.ts'
-import { ownerIn, runResolver, turnOfOwner } from '../controller-kit/public.ts'
+import type { Owner, RunScope, Taken } from '../controller-kit/public.ts'
+import { ownerIn, runResolver, turnOfOwner, turnProcessor } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { setTurn, turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
 
@@ -31,21 +30,23 @@ async function conversationOf(
   return projectId === undefined ? undefined : { companyId, personId, conversationId, projectId }
 }
 
-type Abort = (reason: string) => never
-
-/** Takes the Projeto for the run and puts its turn on its context, or ends the run refused. */
-async function takeTurn(
-  deps: { queue: QueueDeps; runs: Pick<Runs, 'take'>; index: ConversationIndex },
-  requestContext: RequestContext | undefined,
-  abort: Abort,
-): Promise<void> {
-  const found =
-    requestContext === undefined ? undefined : await conversationOf(deps.index, requestContext)
-  if (requestContext === undefined || found === undefined) return abort('CONVERSATION_NOT_FOUND')
-  const turn = await turnOfOwner(deps.queue, found)
-  const taken = await deps.runs.take({ ...found, onEnd: () => turn.end() })
-  if (!taken.ok) return abort(`${RUN_BUSY}${taken.person ?? ''}`)
-  setTurn(requestContext, turn)
+/**
+ * The Projeto's lock as the run's take (decision 0027): the run takes the Projeto, or is refused
+ * with whose run holds it; the turn lets go of its accounts when the run ends (`onEnd`).
+ */
+function projectTurn(deps: {
+  queue: QueueDeps
+  runs: Pick<Runs, 'take'>
+  index: ConversationIndex
+}): (requestContext: RequestContext) => Promise<Taken> {
+  return async (requestContext) => {
+    const found = await conversationOf(deps.index, requestContext)
+    if (found === undefined) return { kind: 'NONE' }
+    const turn = await turnOfOwner(deps.queue, found)
+    const taken = await deps.runs.take({ ...found, onEnd: () => turn.end() })
+    if (!taken.ok) return { kind: 'REFUSED', reason: `${RUN_BUSY}${taken.person ?? ''}` }
+    return { kind: 'TAKEN', turn }
+  }
 }
 
 /**
@@ -59,17 +60,12 @@ export function turnOf(deps: {
   runs: Pick<Runs, 'take'>
   index: ConversationIndex
 }): InputProcessor {
-  return {
+  return turnProcessor({
     id: TURN_PROCESSOR,
-    async processInput({ requestContext, messages, abort }) {
-      await takeTurn(deps, requestContext, abort)
-      return messages
-    },
-    async processInputStep({ requestContext, abort }) {
-      if (turnIn(requestContext) === undefined) await takeTurn(deps, requestContext, abort)
-      return {}
-    },
-  }
+    none: 'CONVERSATION_NOT_FOUND',
+    resumes: true,
+    take: projectTurn(deps),
+  })
 }
 
 /** The Builder's run: its Projeto from the Hub's index, every connection the Projeto received. */
