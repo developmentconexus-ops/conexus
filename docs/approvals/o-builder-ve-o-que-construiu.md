@@ -11,4 +11,8 @@ As palavras do fundador antes do cartão (`docs/steps/o-builder-ve-o-que-constru
   de conferência daquele app, fechado no fim: "Aprovo emenda".
 - Depois das provas, o pedido de trazer "a implementação correta e validada".
 
+Em 2026-11-22, ao estudo do harness, a ordem que põe este marco depois de Uma ficha por agente:
+"A: Sua recomendacao" (a etapa 1 do harness antes do `A1`; a etapa 2 depois do `A1` e antes do
+`A3`). As palavras estão também no [arquivo de aprovação da ficha](uma-ficha-por-agente.md).
+
 A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der.
