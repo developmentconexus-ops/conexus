@@ -34,6 +34,9 @@ const workspaceMetadataLive: OutputProcessor = {
   },
 }
 
+/** The one mode of every conversation controller, by the id the sessions kept today carry. */
+export const CONVERSATION_MODE = 'conversa'
+
 /** Every tool of the controller's own (`BuiltinToolId`), by the type, so a new one is not missed. */
 const BUILTIN: Record<BuiltinToolId, true> = {
   ask_user: true,
@@ -91,7 +94,7 @@ export function controllerOf(input: {
   memory: MastraMemory
   agent: Agent
   /** A mode without `availableTools` filters nothing: its agent's tools are the closed set. */
-  mode: { id: string; availableTools?: readonly string[] }
+  mode: { id: typeof CONVERSATION_MODE; availableTools?: readonly string[] }
   workspace?: AgentControllerConfig['workspace']
   tools?: {
     fixed: ToolsInput

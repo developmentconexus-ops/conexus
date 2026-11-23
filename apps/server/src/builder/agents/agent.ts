@@ -10,7 +10,6 @@ import { AgentId, CompanyId, MACHINE_TOOL, PersonId, ProjectId } from '@conexus/
 import type { AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
-import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { Access, Place, Principal } from '../../hub/access/public.ts'
@@ -35,12 +34,13 @@ import {
   routedModel,
   toolsOf,
   turnKeyOn,
+  turnProcessor,
 } from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationStart, memoryModelsFor, setTurn, Turn } from '../model-accounts/public.ts'
+import { conversationStart, memoryModelsFor, Turn } from '../model-accounts/public.ts'
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'
@@ -321,22 +321,17 @@ function runToolsOf(
 export function agentOf(deps: AgentDeps, frozen: Frozen): Agent {
   const versionOf = versionReader(deps, frozen)
   const plan = planner(deps, frozen, versionOf)
-  const turn: InputProcessor = {
+  const turn = turnProcessor({
     id: 'conexus-agent-turn',
-    async processInput({ requestContext, messages, abort }) {
-      if (requestContext === undefined || agentRunIn(requestContext) === undefined)
-        return abort('NO_TURN')
+    none: 'NO_TURN',
+    resumes: false,
+    async take(requestContext) {
+      if (agentRunIn(requestContext) === undefined) return { kind: 'NONE' }
       const { run, start } = await plan(requestContext)
-      setTurn(
-        requestContext,
-        await agentTurnOf(deps.queue, requestContext, {
-          run,
-          model: { id: start.model, effort: start.effort },
-        }),
-      )
-      return messages
+      const model = { id: start.model, effort: start.effort }
+      return { kind: 'TAKEN', turn: await agentTurnOf(deps.queue, requestContext, { run, model }) }
     },
-  }
+  })
   const toolsOfRun = runToolsOf(deps, frozen, plan)
   const agent = new Agent({
     id: agentKey(frozen.agentId),

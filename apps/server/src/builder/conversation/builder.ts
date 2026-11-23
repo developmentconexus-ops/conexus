@@ -18,6 +18,7 @@ import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   agentDefaults,
+  CONVERSATION_MODE,
   controllerOf,
   conversationMemory,
   createAskUserTool,
@@ -25,19 +26,18 @@ import {
   oncePerRun,
   principalOf,
   sessionModel,
+  skillOf,
   TITLE,
   toolsOf,
 } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
-import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
+import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
 import type { ConversationIndex, ProjectOf } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
-
-const CONVERSATION_MODE = 'conversa'
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
 

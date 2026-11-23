@@ -91,7 +91,6 @@ const ChatBody = z.object({
 })
 
 function chatSentOf(init: RequestInit | undefined): Sent {
-  const headers = new Headers(init?.headers)
   const body = ChatBody.parse(JSON.parse(String(init?.body)))
   const texts = body.messages.flatMap((message) => {
     const { content } = message
@@ -101,7 +100,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
   return {
     key: null,
     model: body.model ?? null,
-    bearer: headers.get('authorization')?.replace(/^Bearer /, '') ?? null,
+    bearer: new Headers(init?.headers).get('authorization')?.replace(/^Bearer /, '') ?? null,
     stream: body.stream === true,
     tools: (body.tools ?? []).map((tool) => tool.function.name),
     descriptions: Object.fromEntries(
@@ -119,6 +118,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     toolUses: [],
     toolResults: [],
     unfilled: null,
+    body: JSON.parse(String(init?.body)),
   }
 }
 
